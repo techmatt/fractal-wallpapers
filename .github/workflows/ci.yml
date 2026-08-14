@@ -48,3 +48,10 @@ jobs:
       - name: Build the engine
         run: cargo build --release
         working-directory: engine
+
+      # The crate's own tests, which the Python suite cannot reach: the escape
+      # loop's channels, the resample kernel, the walk's gates and its focus
+      # finder. Run after the build so a compile failure is reported as one.
+      - name: Test the engine
+        run: cargo test --release
+        working-directory: engine

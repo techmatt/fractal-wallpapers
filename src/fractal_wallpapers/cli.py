@@ -168,6 +168,71 @@ def recolor(args: argparse.Namespace) -> int:
     return 0
 
 
+def refuse_impossible_walk(args: argparse.Namespace) -> str | None:
+    """Say why this walk has nowhere to start, or `None` if it has.
+
+    Checked before anything is built, because "there is no supply for this" is a
+    refusal and a refusal should not leave a run directory behind it.
+    """
+    if args.seeds:
+        return None
+    if args.family == "julia" and args.degree != 2:
+        return (
+            "the tracked c-pool is degree 2; a higher-degree julia walk needs --seeds, "
+            "because its parameters live in a different plane and no pool of them is "
+            "tracked yet"
+        )
+    if args.family in ("mandelbrot", "multibrot"):
+        return (
+            f"a {args.family} walk has no seed pool and no sampler: an unscreened draw "
+            "over the parameter plane measured zero good locations in 144, so none is "
+            "built. Supply roots with --seeds FILE, or let the reframing operators find "
+            "them from a walk that already reached somewhere."
+        )
+    return None
+
+
+def walk(args: argparse.Namespace) -> int:
+    """Run one discovery walk and print what it found."""
+    from fractal_wallpapers.discovery.walk import Gates, Limits, Policy, Reframings, Walk
+
+    complaint = refuse_impossible_walk(args)
+    if complaint is not None:
+        print(complaint)
+        return 1
+
+    run = Walk(
+        out_dir=resolve_output(args.out_dir),
+        seed=args.seed,
+        limits=Limits(
+            batch=args.batch,
+            batches=args.batches,
+            root_expansions=args.root_expansions,
+            probe_probability=args.probe,
+        ),
+        policy=Policy(candidates=args.candidates, node_width=args.node_width),
+        gates=Gates(),
+        reframings=Reframings(
+            enabled=not args.no_reframings,
+            neighborhood=args.neighborhood,
+        ),
+        colormap=args.colormap,
+    )
+
+    if args.seeds:
+        roots = run.seed_from_file(Path(args.seeds), limit=args.roots)
+    elif args.family == "phoenix":
+        roots = run.seed_from_phoenix_pool(limit=args.roots)
+    else:
+        roots = run.seed_from_julia_pool(limit=args.roots)
+
+    if roots == 0:
+        print("no roots: nothing to walk")
+        return 1
+    print(json.dumps(run.run(), indent=2))
+    return 0
+
+
 def modes(args: argparse.Namespace) -> int:
     """List the named colorings and what each one is for.
 
@@ -249,6 +314,66 @@ def build_parser() -> argparse.ArgumentParser:
         help="output PNG path (default: artifacts/recolored.png)",
     )
     again.set_defaults(handler=recolor)
+
+    search = subcommands.add_parser(
+        "walk",
+        help="descend from seeds, keeping what survives the structural gates",
+        description=(
+            "Run one discovery walk. Roots come from the tracked seed pools for the "
+            "dynamical families and from an explicit --seeds file for the parameter "
+            "plane; there is no sampler behind either. Everything the walk sees — "
+            "survivors and rejects alike — lands in walk.jsonl under --out-dir, with the "
+            "gate that refused it or a thumbnail if none did."
+        ),
+    )
+    search.add_argument(
+        "--family",
+        choices=["mandelbrot", "multibrot", "julia", "phoenix"],
+        default="julia",
+        help="which family to walk (default: julia, the one with a tracked c-pool)",
+    )
+    search.add_argument("--degree", type=int, default=2, help="exponent d, for multibrot and julia")
+    search.add_argument(
+        "--seeds",
+        help="JSONL file of root locations: one {family, viewport} object per line",
+    )
+    search.add_argument("--roots", type=int, help="use only this many of the available roots")
+    search.add_argument("--seed", type=int, default=0, help="run seed (default: 0)")
+    search.add_argument("--batch", type=int, default=8, help="nodes expanded per batch")
+    search.add_argument("--batches", type=int, default=4, help="batches to run")
+    search.add_argument(
+        "--root-expansions",
+        type=int,
+        default=12,
+        help="expansions any one root may pay for, its reframings included",
+    )
+    search.add_argument("--candidates", type=int, default=4, help="candidates drawn per node")
+    search.add_argument("--node-width", type=int, default=384, help="node render width in pixels")
+    search.add_argument(
+        "--probe",
+        type=float,
+        default=0.25,
+        help="probability the reframing probe fires on an admission (default: 0.25)",
+    )
+    search.add_argument(
+        "--no-reframings",
+        action="store_true",
+        help="expand only what the walk descends into; fire no reframing operators",
+    )
+    search.add_argument(
+        "--neighborhood",
+        action="store_true",
+        help="also enumerate neighbouring nuclei (the expensive operator; off by default)",
+    )
+    search.add_argument(
+        "--colormap", default="twilight_shifted", help="colormap for the steering thumbnails"
+    )
+    search.add_argument(
+        "--out-dir",
+        default=str(Path("artifacts") / "walk"),
+        help="where the ledger and thumbnails go (default: artifacts/walk)",
+    )
+    search.set_defaults(handler=walk)
 
     listing = subcommands.add_parser("modes", help="list the named colorings")
     listing.set_defaults(handler=modes)

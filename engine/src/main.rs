@@ -4,6 +4,7 @@
 //! fractal-engine render     [spec.json]   # a location and a coloring → a PNG
 //! fractal-engine dump-field [spec.json]   # the same, stopping at the raw field
 //! fractal-engine recolor    [spec.json]   # a dumped field → a PNG, no iteration
+//! fractal-engine expand     [spec.json]   # walk nodes → one rung each, gated
 //! fractal-engine modes                    # what the named colorings are
 //! ```
 //!
@@ -26,7 +27,7 @@ use serde::Serialize;
 use fractal_engine::{
     coloring::{self, Coloring},
     colormap::Colormap,
-    dump, field, mode, resample,
+    dump, expand, field, mode, resample,
     spec::{Location, RecolorSpec, RenderSpec},
 };
 
@@ -104,6 +105,7 @@ fn run(args: Vec<String>) -> Result<(), String> {
         Some("render") => render(argument),
         Some("dump-field") => dump_field(argument),
         Some("recolor") => recolor(argument),
+        Some("expand") => expand_nodes(argument),
         Some("modes") => print(
             &mode::CATALOG
                 .iter()
@@ -122,12 +124,16 @@ const USAGE: &str = "\
 usage: fractal-engine render     [SPEC.json]
        fractal-engine dump-field [SPEC.json]
        fractal-engine recolor    [SPEC.json]
+       fractal-engine expand     [SPEC.json]
        fractal-engine modes
 
 render      Render one location through one coloring to a PNG.
 dump-field  Write that render's raw scalar field instead, plus a record of it.
             Only for colorings that have a single scalar field behind them.
 recolor     Color a dumped field again, without iterating anything.
+expand      Take one rung of a walk from each of a batch of nodes: draw
+            candidate next frames, gate them, and report every one with its
+            fate and a thumbnail of the survivors.
 modes       List the named colorings, as JSON.
 
 The spec is read from SPEC.json, or from stdin when no path is given. A JSON
@@ -237,6 +243,11 @@ fn dump_field(spec_path: Option<&str>) -> Result<(), String> {
     })
 }
 
+fn expand_nodes(spec_path: Option<&str>) -> Result<(), String> {
+    let spec = expand::ExpandSpec::parse(&read_spec(spec_path)?)?;
+    print(&expand::run(spec)?)
+}
+
 fn recolor(spec_path: Option<&str>) -> Result<(), String> {
     let spec = RecolorSpec::parse(&read_spec(spec_path)?)?;
     let (field, record) = dump::read(&spec.field)?;
@@ -256,7 +267,7 @@ fn recolor(spec_path: Option<&str>) -> Result<(), String> {
         out_height as usize,
         record.supersample,
     );
-    resample::write_png(&spec.output, &pixels, out_width, out_height)?;
+    resample::write_image(&spec.output, &pixels, out_width, out_height)?;
     let seconds = started.elapsed().as_secs_f64();
 
     print(&RecolorReport {
@@ -284,7 +295,7 @@ fn write_image(
         view.out_height as usize,
         view.supersample,
     );
-    resample::write_png(output, &pixels, view.out_width, view.out_height)
+    resample::write_image(output, &pixels, view.out_width, view.out_height)
 }
 
 fn file_name(path: &Path) -> String {

@@ -21,7 +21,19 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from fractal_wallpapers.paths import repo_root
+from fractal_wallpapers.paths import colormap_dir, repo_root
+
+__all__ = [
+    "colormap_dir",
+    "dump_field",
+    "engine_path",
+    "expand",
+    "modes",
+    "recolor",
+    "render",
+    "render_report",
+    "run",
+]
 
 ENGINE_BINARY_NAME = "fractal-engine"
 
@@ -96,6 +108,18 @@ def recolor(spec: dict) -> dict:
     a colormap or a transform is what makes it an exploration.
     """
     return run("recolor", spec)
+
+
+def expand(spec: dict) -> dict:
+    """Take one rung of a walk from each of a batch of nodes.
+
+    The one call the discovery half makes. It hands over places and a policy and
+    gets back every candidate the engine drew, each with the gate that refused
+    it or a thumbnail if none did — so the walk's own code never renders, never
+    measures a field, and never has to agree with the engine about what a gate
+    means.
+    """
+    return run("expand", spec)
 
 
 def modes() -> list[dict]:

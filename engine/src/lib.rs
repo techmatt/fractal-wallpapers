@@ -15,6 +15,20 @@
 //! resample     Lanczos-3 down to the target resolution, then sRGB
 //! ```
 //!
+//! Beside that line sits the **search**, which uses it rather than extending it:
+//!
+//! ```text
+//! rng          SplitMix64, so a walk is reproducible from a number
+//! screen       the structural gates — interior cap, escape band, occupancy
+//! foci         where to look next: scale-space maxima, density, uniform
+//! expand       one rung of a walk, for a batch of nodes
+//! ```
+//!
+//! The search decides *where* to render and never *how*: it reads fields the
+//! pipeline above produced and returns coordinates. What makes a picture good is
+//! not its business — that judgement lives in Python, in a scorer this half is
+//! written to be steered by and does not contain.
+//!
 //! The seam that matters is between [`field`] and [`coloring`]. A field is a
 //! plain `Vec<f32>` with `NaN` marking the samples that have no value, so it can
 //! be written to disk, colored more than once, or colored by something other
@@ -31,11 +45,15 @@ pub mod coloring;
 pub mod colormap;
 pub mod direct_trap;
 pub mod dump;
+pub mod expand;
 pub mod family;
 pub mod field;
+pub mod foci;
 pub mod iterate;
 pub mod maxiter;
 pub mod mode;
 pub mod resample;
+pub mod rng;
+pub mod screen;
 pub mod spec;
 pub mod viewport;
