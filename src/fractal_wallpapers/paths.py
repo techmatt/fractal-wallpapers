@@ -21,3 +21,13 @@ def repo_root() -> Path:
 def colormap_dir() -> Path:
     """Return the directory holding the tracked colormap files."""
     return repo_root() / "data" / "palettes"
+
+
+def anchors_file() -> Path:
+    """Return the tracked record of anchor locations.
+
+    A handful of places worth rendering that are known to say something: they
+    are what a change to the engine gets compared at, so they are written down
+    rather than retyped.
+    """
+    return repo_root() / "data" / "anchors.jsonl"

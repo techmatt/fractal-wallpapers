@@ -78,6 +78,10 @@ def render_spec(args: argparse.Namespace) -> dict:
     location's identity is what was written, not the `f64` it rounds to, and
     parsing it here to hand the engine a float would throw that away at the one
     point in the pipeline that still has it.
+
+    `render` and `dump-field` build the same spec: a dump is a render stopped
+    one stage early, and the colormap it names is the one its record hands back
+    to a recolor that does not choose for itself.
     """
     family: dict[str, object] = {"kind": args.family}
     if args.family == "multibrot":
@@ -105,6 +109,7 @@ def render_spec(args: argparse.Namespace) -> dict:
         "family": family,
         "resolution": args.resolution,
         "supersample": args.supersample,
+        "mode": args.mode,
         "colormap": args.colormap,
         "colormap_dir": str(colormap_dir()),
         "output": str(resolve_output(args.out)),
@@ -116,17 +121,62 @@ def render_spec(args: argparse.Namespace) -> dict:
     return spec
 
 
+def refuse_impossible_location(args: argparse.Namespace) -> str | None:
+    """Say why this location cannot be rendered, or `None` if it can."""
+    if args.family == "julia" and args.c is None:
+        return "--c is required for a julia render: it is half of the location's identity"
+    if args.family not in ("julia", "multibrot") and args.degree != 2:
+        return f"--degree does not apply to a {args.family} render"
+    return None
+
+
 def render(args: argparse.Namespace) -> int:
     """Render one image and print the engine's report."""
-    if args.family == "julia" and args.c is None:
-        print("--c is required for a julia render: it is half of the location's identity")
-        return 1
-    if args.family not in ("julia", "multibrot") and args.degree != 2:
-        print(f"--degree does not apply to a {args.family} render")
+    complaint = refuse_impossible_location(args)
+    if complaint is not None:
+        print(complaint)
         return 1
 
-    report = engine.render_report(render_spec(args))
-    print(json.dumps(report, indent=2))
+    print(json.dumps(engine.render_report(render_spec(args)), indent=2))
+    return 0
+
+
+def dump_field(args: argparse.Namespace) -> int:
+    """Write the raw field a render would have colored, plus its record."""
+    complaint = refuse_impossible_location(args)
+    if complaint is not None:
+        print(complaint)
+        return 1
+
+    print(json.dumps(engine.dump_field(render_spec(args)), indent=2))
+    return 0
+
+
+def recolor(args: argparse.Namespace) -> int:
+    """Color a dumped field through another colormap, without re-iterating."""
+    spec: dict[str, object] = {
+        "schema": 1,
+        "field": str(resolve_output(args.field)),
+        "colormap_dir": str(colormap_dir()),
+        "output": str(resolve_output(args.out)),
+    }
+    if args.colormap is not None:
+        spec["colormap"] = args.colormap
+    if args.transform is not None:
+        spec["transform"] = args.transform
+    print(json.dumps(engine.recolor(spec), indent=2))
+    return 0
+
+
+def modes(args: argparse.Namespace) -> int:
+    """List the named colorings and what each one is for.
+
+    Takes the parsed arguments and reads none of them, because every handler
+    has the same shape and one exception is worse than one unused parameter.
+    """
+    del args
+    for mode in engine.modes():
+        print(f"{mode['name']:<22} {mode['identity']}")
     return 0
 
 
@@ -152,6 +202,66 @@ def build_parser() -> argparse.ArgumentParser:
             "strings and are recorded exactly as written."
         ),
     )
+    location_arguments(draw)
+    draw.add_argument(
+        "--out",
+        default=str(Path("artifacts") / "render.png"),
+        help="output PNG path (default: artifacts/render.png)",
+    )
+    draw.set_defaults(handler=render)
+
+    dump = subcommands.add_parser(
+        "dump-field",
+        help="write the raw scalar field a render would have colored",
+        description=(
+            "Write the field itself instead of a picture of it: little-endian f32 at "
+            "supersampled resolution, plus a record beside it saying what it is. Only for "
+            "modes with a single scalar field behind them; a composite or a direct trap has "
+            "none, and says so."
+        ),
+    )
+    location_arguments(dump)
+    dump.add_argument(
+        "--out",
+        default=str(Path("artifacts") / "field.f32"),
+        help="output field path (default: artifacts/field.f32)",
+    )
+    dump.set_defaults(handler=dump_field)
+
+    again = subcommands.add_parser(
+        "recolor",
+        help="color a dumped field again without re-iterating it",
+        description=(
+            "Read a dumped field and color it. Everything about the location comes from the "
+            "dump's own record, so this costs a pass over memory rather than a render."
+        ),
+    )
+    again.add_argument("--field", required=True, help="path to a dumped field")
+    again.add_argument("--colormap", help="colormap name (default: the one the dump recorded)")
+    again.add_argument(
+        "--transform",
+        choices=["linear", "sqrt", "log", "scurve"],
+        help="curve applied to the normalized field (default: the one the dump recorded)",
+    )
+    again.add_argument(
+        "--out",
+        default=str(Path("artifacts") / "recolored.png"),
+        help="output PNG path (default: artifacts/recolored.png)",
+    )
+    again.set_defaults(handler=recolor)
+
+    listing = subcommands.add_parser("modes", help="list the named colorings")
+    listing.set_defaults(handler=modes)
+
+    return parser
+
+
+def location_arguments(draw: argparse.ArgumentParser) -> None:
+    """Add the arguments that name a location and how to color it.
+
+    Shared by `render` and `dump-field`, which describe the same thing and
+    differ only in how far down the pipeline they go.
+    """
     draw.add_argument(
         "--family",
         choices=["mandelbrot", "multibrot", "julia", "phoenix"],
@@ -200,6 +310,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="samples per output pixel, per axis (default: 2)",
     )
     draw.add_argument(
+        "--mode",
+        default="smooth",
+        help="named coloring (default: smooth); see the modes subcommand",
+    )
+    draw.add_argument(
         "--colormap",
         default="twilight_shifted",
         help="colormap name under data/palettes (default: twilight_shifted)",
@@ -209,14 +324,6 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         help="iteration cap; omit to let the depth-aware policy choose",
     )
-    draw.add_argument(
-        "--out",
-        default=str(Path("artifacts") / "render.png"),
-        help="output PNG path (default: artifacts/render.png)",
-    )
-    draw.set_defaults(handler=render)
-
-    return parser
 
 
 def main(argv: Sequence[str] | None = None) -> int:
