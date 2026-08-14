@@ -4,3 +4,16 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+# Complex arithmetic for family parameters and viewport geometry. The iteration
+# kernels unpack to bare f64 components, where the arithmetic reads plainly.
+num-complex = "0.4"
+# Row-level parallelism in field production and resampling. That is the whole of
+# the concurrency story here: no work stealing by hand, no tiling, no gated paths.
+rayon = "1"
+# PNG encoding only. The engine writes one image format.
+png = "0.18"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+opt-level = 3
