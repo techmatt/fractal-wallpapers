@@ -11,11 +11,17 @@
 //!   "viewport": { "center_re": "0", "center_im": "0", "width": "3.0" },
 //!   "resolution": [1920, 1080],
 //!   "supersample": 2,
+//!   "mode": "smooth_stripe",
 //!   "colormap": "twilight_shifted",
 //!   "colormap_dir": "data/palettes",
 //!   "output": "artifacts/julia.png"
 //! }
 //! ```
+//!
+//! How the render is colored is either a **mode** — a name from
+//! [`crate::mode`]'s catalog — or a **coloring** written out in full. Never
+//! both: a mode *is* a coloring with a name, and a spec that gave one of each
+//! would have two answers to the same question. Neither means `smooth`.
 //!
 //! Every coordinate and every family constant is a **decimal string**, and the
 //! string is the identity: it is what gets recorded, compared, and re-rendered
@@ -28,8 +34,10 @@ use std::path::PathBuf;
 use num_complex::Complex;
 use serde::{Deserialize, Serialize};
 
+use crate::coloring::Coloring;
 use crate::family::{Family, PHOENIX_C, PHOENIX_P};
 use crate::maxiter;
+use crate::mode;
 use crate::viewport::Viewport;
 
 /// A complex constant, as the pair of decimal strings it was written as.
@@ -47,6 +55,12 @@ pub struct RenderSpec {
     pub resolution: [u32; 2],
     #[serde(default = "one")]
     pub supersample: u32,
+    /// A name from the mode catalog. Mutually exclusive with `coloring`.
+    #[serde(default)]
+    pub mode: Option<String>,
+    /// A coloring written out in full. Mutually exclusive with `mode`.
+    #[serde(default)]
+    pub coloring: Option<Coloring>,
     pub colormap: String,
     #[serde(default = "default_colormap_dir")]
     pub colormap_dir: PathBuf,
@@ -83,6 +97,39 @@ pub enum FamilySpec {
     },
 }
 
+/// A dumped field, read back and colored again.
+///
+/// Everything geometric — the grid, the location, the field itself — comes from
+/// the dump's own record, because it is already settled. What is left is the
+/// coloring tail, and every key of it is optional: a recolor that says nothing
+/// but where to write reproduces the render the dump came from, which is what
+/// makes it a usable starting point rather than a form to fill in.
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RecolorSpec {
+    pub schema: u32,
+    /// Path to the dumped field. Its record is the file beside it.
+    pub field: PathBuf,
+    #[serde(default)]
+    pub colormap: Option<String>,
+    #[serde(default = "default_colormap_dir")]
+    pub colormap_dir: PathBuf,
+    #[serde(default)]
+    pub transform: Option<crate::coloring::Transform>,
+    pub output: PathBuf,
+}
+
+impl RecolorSpec {
+    /// Read a recolor spec from JSON text.
+    pub fn parse(text: &str) -> Result<RecolorSpec, String> {
+        let spec: RecolorSpec = serde_json::from_str(text).map_err(|e| format!("spec: {e}"))?;
+        if spec.schema != 1 {
+            return Err(format!("spec has schema {}, expected 1", spec.schema));
+        }
+        Ok(spec)
+    }
+}
+
 /// Where to look. Anything omitted falls back to the family's home view.
 #[derive(Debug, Default, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -97,6 +144,9 @@ pub struct Resolved {
     pub family: Family,
     pub view: Viewport,
     pub maxiter: u32,
+    /// The mode's name, when the spec asked for one by name.
+    pub mode: Option<String>,
+    pub coloring: Coloring,
     pub colormap: String,
     pub colormap_dir: PathBuf,
     pub output: PathBuf,
@@ -105,18 +155,18 @@ pub struct Resolved {
 }
 
 /// The decimal strings that identify this render, kept verbatim.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Location {
     pub family: String,
     pub degree: u32,
     pub center_re: String,
     pub center_im: String,
     pub width: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub c: Option<Pair>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub p: Option<Pair>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub z_prev: Option<Pair>,
 }
 
@@ -179,10 +229,14 @@ impl RenderSpec {
             ));
         }
 
+        let (coloring, mode) = resolve_coloring(self.mode, self.coloring)?;
+
         Ok(Resolved {
             maxiter: self
                 .maxiter
                 .unwrap_or_else(|| maxiter::for_width(plane_width)),
+            coloring,
+            mode,
             location: Location {
                 family: kind.to_string(),
                 degree: family.degree(),
@@ -250,6 +304,33 @@ impl FamilySpec {
     }
 }
 
+/// The mode a spec that says nothing about coloring gets.
+pub const DEFAULT_MODE: &str = "smooth";
+
+/// Settle what a spec's `mode` / `coloring` keys mean, and check the result.
+///
+/// Validating here rather than at the point of use is deliberate: a coloring
+/// that cannot work should cost a message, not a minute of iteration followed by
+/// a message.
+fn resolve_coloring(
+    mode: Option<String>,
+    coloring: Option<Coloring>,
+) -> Result<(Coloring, Option<String>), String> {
+    let (coloring, mode) = match (mode, coloring) {
+        (Some(mode), Some(_)) => {
+            return Err(format!(
+                "the spec gives both mode '{mode}' and an explicit coloring; a mode is a \
+                 coloring with a name, so give one or the other"
+            ));
+        }
+        (Some(mode), None) => (mode::resolve(&mode)?, Some(mode)),
+        (None, Some(coloring)) => (coloring, None),
+        (None, None) => (mode::resolve(DEFAULT_MODE)?, Some(DEFAULT_MODE.to_string())),
+    };
+    coloring.validate()?;
+    Ok((coloring, mode))
+}
+
 /// Degrees outside `[lowest, 5]` are refused rather than rendered: the families
 /// above 5 have not been looked at, and silently rendering one would put an
 /// unexamined picture into the corpus under a name that implies it belongs.
@@ -302,7 +383,8 @@ fn one() -> u32 {
 fn two() -> u32 {
     2
 }
-fn default_colormap_dir() -> PathBuf {
+/// Where colormaps live, when a spec does not say.
+pub fn default_colormap_dir() -> PathBuf {
     PathBuf::from("data").join("palettes")
 }
 fn origin() -> Pair {
@@ -379,6 +461,41 @@ mod tests {
         assert_eq!(resolved.location.width, "0.5622541254857749");
     }
 
+    /// A spec that says nothing about coloring renders the spine.
+    #[test]
+    fn coloring_defaults_to_the_smooth_mode() {
+        let resolved = resolve(r#"{"kind":"mandelbrot"}"#);
+        assert_eq!(resolved.mode.as_deref(), Some(DEFAULT_MODE));
+        assert_eq!(resolved.coloring, Coloring::default());
+    }
+
+    #[test]
+    fn a_named_mode_resolves_to_its_coloring() {
+        let spec = r#"{"schema":1,"family":{"kind":"mandelbrot"},"resolution":[8,8],
+            "mode":"stripe","colormap":"twilight_shifted","output":"o.png"}"#;
+        let resolved = RenderSpec::parse(spec).unwrap().resolve().unwrap();
+        assert_eq!(resolved.mode.as_deref(), Some("stripe"));
+        assert_eq!(resolved.coloring, crate::mode::resolve("stripe").unwrap());
+    }
+
+    /// A coloring written out in full is nameless — the record echoes the
+    /// coloring itself, which is the thing that determines the render.
+    #[test]
+    fn a_coloring_written_out_in_full_has_no_mode_name() {
+        let spec = r#"{"schema":1,"family":{"kind":"mandelbrot"},"resolution":[8,8],
+            "coloring":{"kind":"field","field":{"kind":"tia"},"transform":"sqrt"},
+            "colormap":"twilight_shifted","output":"o.png"}"#;
+        let resolved = RenderSpec::parse(spec).unwrap().resolve().unwrap();
+        assert_eq!(resolved.mode, None);
+        assert_eq!(
+            resolved.coloring,
+            Coloring::Field {
+                field: crate::field::FieldSpec::Tia,
+                transform: crate::coloring::Transform::Sqrt,
+            }
+        );
+    }
+
     #[test]
     fn an_explicit_maxiter_wins_over_the_policy() {
         let spec = r#"{"schema":1,"family":{"kind":"mandelbrot"},"resolution":[64,36],
@@ -417,6 +534,37 @@ mod tests {
                     "viewport":{"width":"1e-20"},"colormap":"x","output":"o.png"}"#
                     .into(),
                 "f64",
+            ),
+            (
+                r#"{"schema":1,"family":{"kind":"mandelbrot"},"resolution":[8,8],
+                    "mode":"nautilus","colormap":"x","output":"o.png"}"#
+                    .into(),
+                "unknown mode",
+            ),
+            (
+                r#"{"schema":1,"family":{"kind":"mandelbrot"},"resolution":[8,8],
+                    "mode":"stripe","coloring":{"kind":"field","field":{"kind":"tia"}},
+                    "colormap":"x","output":"o.png"}"#
+                    .into(),
+                "one or the other",
+            ),
+            (
+                r#"{"schema":1,"family":{"kind":"mandelbrot"},"resolution":[8,8],
+                    "coloring":{"kind":"composite",
+                        "base":{"field":{"kind":"stripe","density":6}},
+                        "texture":{"field":{"kind":"stripe","density":3}},
+                        "blend":"screen"},
+                    "colormap":"x","output":"o.png"}"#
+                    .into(),
+                "nothing to blend",
+            ),
+            (
+                r#"{"schema":1,"family":{"kind":"mandelbrot"},"resolution":[8,8],
+                    "coloring":{"kind":"direct","shape":"ring","merge":"screen",
+                        "start_color":"puce"},
+                    "colormap":"x","output":"o.png"}"#
+                    .into(),
+                "start_color",
             ),
         ];
         for (text, expected) in cases {
