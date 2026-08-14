@@ -260,7 +260,7 @@ impl FamilySpec {
     /// Parse the constants and name the family. Returns the family, its spec
     /// name, and whichever constant strings apply to it.
     #[allow(clippy::type_complexity)]
-    fn resolve(
+    pub fn resolve(
         self,
     ) -> Result<
         (
@@ -366,15 +366,25 @@ fn pair(strings: &Pair, what: &str) -> Result<Complex<f64>, String> {
     ))
 }
 
-/// Render a default coordinate as the decimal string it will be echoed as, so a
-/// spec that omitted it and one that wrote it out are the same render.
-fn format_default(value: f64) -> String {
+/// Render an `f64` as the decimal string it will be recorded as.
+///
+/// Rust's own formatting is what makes this safe to do: `{}` on an `f64` prints
+/// the *shortest* decimal that parses back to the same bits, so nothing is lost
+/// and nothing spurious is added. A coordinate the engine computed — a walk's
+/// child frame, a family's home view — becomes an identity string here, and from
+/// that point on it is the string that is the location.
+pub fn to_decimal_string(value: f64) -> String {
     let text = format!("{value}");
-    if text.contains(['.', 'e', 'E']) {
+    if text.contains(['.', 'e', 'E', 'n', 'i']) {
         text
     } else {
         format!("{text}.0")
     }
+}
+
+/// The name kept for the defaults this module fills in.
+fn format_default(value: f64) -> String {
+    to_decimal_string(value)
 }
 
 fn one() -> u32 {

@@ -56,9 +56,12 @@ These were decided once, at the first commit, because each is expensive to rever
 python -m ruff check . && python -m ruff format --check .
 python -m pytest
 cargo build --manifest-path engine/Cargo.toml
+cargo test --manifest-path engine/Cargo.toml
 ```
 
-CI runs the same thing on Ubuntu and Windows.
+CI runs the same thing on Ubuntu and Windows. The Python suite's walk tests need
+a **release** engine (`cargo build --release --manifest-path engine/Cargo.toml`)
+and skip themselves without one.
 
 ## Standing prompt contract
 

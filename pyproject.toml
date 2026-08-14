@@ -10,7 +10,12 @@ readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
 authors = [{ name = "Matt Fisher" }]
-dependencies = []
+# Arbitrary-precision arithmetic, for one job: solving for a minibrot nucleus.
+# A nucleus at any interesting period sits at a scale where `f64` has no digits
+# left to localize it with — the frame still renders in `f64`, but its center
+# cannot be found there — and Newton needs accurate division, which the standard
+# library's `decimal` gives without a complex type to use it through.
+dependencies = ["mpmath>=1.3"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "ruff>=0.6"]
