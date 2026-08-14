@@ -1,0 +1,7 @@
+scratch/
+artifacts/
+models/**/*.pt
+target/
+__pycache__/
+*.egg-info/
+.venv/
