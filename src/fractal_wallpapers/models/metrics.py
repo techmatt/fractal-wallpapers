@@ -1,4 +1,10 @@
-"""The two numbers a judge is read in, and the interval around them.
+"""The numbers a judge is read in, and the interval around them.
+
+Two of them are about a population of pictures with a label on each — AUC and
+average precision — and two are about **one candidate set read twice**, which is
+the shape the palette head is judged in: a rank correlation and a count of
+discordant pairs. All four are here rather than beside their heads, because a
+second implementation of any of them would be a second answer.
 
 **AUC** — the probability that a randomly chosen good location scores above a
 randomly chosen bad one. It is the number to quote when what matters is the
@@ -78,6 +84,46 @@ def average_precision(labels, scores) -> float | None:
     return float((precision * hits).sum() / hits.sum())
 
 
+def spearman(first, second) -> float | None:
+    """Rank correlation between two readings of one set, or `None` if flat.
+
+    Pearson over average ranks, which is what makes it the right statistic for
+    two heads that agree about an order and disagree about a scale — a distilled
+    student is asked to reproduce both, and this is the arm that reads the first
+    on its own.
+
+    `None` when either reading gives every candidate the same score: there is no
+    order to correlate, and a zero would read as disagreement rather than as an
+    absence of evidence.
+    """
+    left = _ranks(first)
+    right = _ranks(second)
+    left = left - left.mean()
+    right = right - right.mean()
+    denominator = numpy.sqrt((left * left).sum() * (right * right).sum())
+    if denominator == 0.0:
+        return None
+    return float((left * right).sum() / denominator)
+
+
+def discordant_pairs(first, second) -> int:
+    """How many pairs the two readings order differently. Ties count as agreement.
+
+    The unit an ordering bound is stated in when the population is a handful of
+    candidates rather than a sheet: on a set of eight, one swapped pair is 3.6%
+    of the order and a correlation coefficient hides it.
+    """
+    left = numpy.asarray(first, dtype=numpy.float64)
+    right = numpy.asarray(second, dtype=numpy.float64)
+    count = 0
+    for index in range(len(left)):
+        for other in range(index + 1, len(left)):
+            a = numpy.sign(left[index] - left[other])
+            b = numpy.sign(right[index] - right[other])
+            count += int(a * b < 0)
+    return count
+
+
 def bootstrap(
     statistic,
     groups,
@@ -150,4 +196,11 @@ def paired_delta(
     return interval
 
 
-__all__ = ["auc", "average_precision", "bootstrap", "paired_delta"]
+__all__ = [
+    "auc",
+    "average_precision",
+    "bootstrap",
+    "discordant_pairs",
+    "paired_delta",
+    "spearman",
+]

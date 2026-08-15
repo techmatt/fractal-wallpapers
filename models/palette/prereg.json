@@ -1,0 +1,92 @@
+{
+  "schema": 1,
+  "head": "palette",
+  "question": "Is a palette head distilled inside this repository approximately equivalent to the teacher it was distilled from \u2014 does it choose the same map \u2014 on the real candidate sets a production colorize run put in front of that teacher, both read on this repository's own pictures?",
+  "population": {
+    "record": "data/palette_choice/candidate_sets.jsonl",
+    "source_batch": "2026-08-05_wallpaper_colorize_path_v1",
+    "sets": 180,
+    "locations": 180,
+    "candidates": 5518,
+    "set_sizes": {
+      "15": 6,
+      "22": 10,
+      "27": 8,
+      "32": 156
+    },
+    "flavours": 19,
+    "partitions": {
+      "julia:mandelbrot": 14,
+      "julia:multibrot3": 7,
+      "julia:multibrot4": 18,
+      "julia:multibrot5": 17,
+      "mandelbrot": 69,
+      "multibrot3": 10,
+      "multibrot4": 9,
+      "multibrot5": 13,
+      "phoenix": 19,
+      "phoenix:classic": 4
+    },
+    "blind": "no location here is in the distillation corpus, and none of these sets was generated for this exercise: each is a real colorize decision the source project recorded"
+  },
+  "declared": [
+    "THE TEACHER IS THE GROUND TRUTH, NOT A HUMAN. Every arm here measures agreement with a pretrained head. A PASS says the student reproduces it; it says nothing at all about whether either of them picks the palette a person would.",
+    "NOT A SAME-INPUT COMPARISON WITH THE PRODUCTION RUN. The recorded winners were chosen on the source project's own coarse recolors; every score read here is taken on a 640x360 render made by this engine through this colormap library. That gap is not assumed away \u2014 it is the renderer control, and it is measured on this same population and used to calibrate the bar.",
+    "THE JUDGED SETS ARE HARDER THAN THE TRAINED ONES. A set here is one palette flavour's members, up to 32 maps that already resemble each other; a training set is 8 maps drawn uniformly from the whole pool. The flavour taxonomy is an artifact of the source project's clustering and does not exist in this repository, so it could not be reproduced in the draw.",
+    "180 SETS RESOLVE A SHARE TO ABOUT PLUS OR MINUS 0.07. A difference smaller than the interval is reported as a band and is not called in either direction.",
+    "THE POOL IS A SUBSET. 700 of the source pool's 987 maps are held here \u2014 every map a tracked corpus row or a vendored set names. A candidate set is complete; the pool the corpus draws from is not the whole production pool."
+  ],
+  "rules": {
+    "cluster": "the SET \u2014 its candidates are one location in different colours",
+    "draws": 5000,
+    "bootstrap_seed": 0,
+    "seeds": "three, and the band is the answer. What ships is the MEDIAN seed by the top_pick arm, never the best of three."
+  },
+  "arms": {
+    "top_pick": {
+      "gated": true,
+      "statistic": "the share of sets where the student's highest-scoring candidate is the teacher's highest-scoring candidate, both read on the same pictures",
+      "bars": [
+        {
+          "name": "renderer control",
+          "rule": "at least the share of sets on which the TEACHER, re-read here on this repository's pictures, picks the map the production run recorded. Same weights, same candidate set, disagreeing with itself because the picture changed \u2014 a student cannot be asked to track the teacher more closely than a change of renderer already fails to.",
+          "value": "MEASURED AFTER THIS FILE IS WRITTEN, on this population"
+        },
+        {
+          "name": "floor",
+          "rule": "at least half of real sets coloured as the teacher would",
+          "value": 0.5
+        }
+      ],
+      "verdict": "PASS only if both bars hold on the point estimate"
+    },
+    "ordering": {
+      "gated": true,
+      "statistic": "the median per-set Spearman correlation, student against teacher",
+      "bar": 0.7,
+      "why": "the top pick is one number out of a set of thirty-two, and a head that agreed about the winner while shuffling the rest would be agreeing by luck. This arm reads the whole vector's order."
+    },
+    "regret": {
+      "gated": true,
+      "statistic": "the mean, over sets, of (the teacher's score for its own pick minus its score for the student's pick) divided by that set's teacher-score spread",
+      "bar": 0.1,
+      "why": "a disagreement over two candidates the teacher rated within a hair of each other costs nothing, and a bare agreement rate cannot tell that from picking something the teacher put near the bottom. This arm is what the choice actually costs, in the teacher's own units, normalized by how much was at stake."
+    },
+    "interface": {
+      "gated": true,
+      "rule": "the checkpoint emits one finite score per picture and the score file carries, for every set, a score for every candidate in the order the set lists them"
+    },
+    "production_argmax": {
+      "gated": false,
+      "rule": "how often the student picks the map the production run recorded. Reported beside the renderer control because both are cross-renderer readings and neither is the thing the student is scored against."
+    }
+  },
+  "fp16": {
+    "gated_at": "ship, not here",
+    "rules": [
+      "every floating tensor cast to half precision and the artifact bit-identical on re-read",
+      "at most 1% of sets change their top pick",
+      "at most 8 discordant candidate pairs in any one set"
+    ]
+  }
+}

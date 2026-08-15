@@ -124,6 +124,38 @@ def test_the_import_names_its_source_rather_than_knowing_it() -> None:
         cli.build_parser().parse_args(["import-labels"])
 
 
+def test_the_palette_head_is_eight_steps_under_one_subcommand() -> None:
+    """It is distilled rather than trained from labels, so it has two steps the
+    other heads do not: vendoring the real candidate sets and generating a corpus."""
+    parser = cli.build_parser()
+    handlers = {
+        step: parser.parse_args(["palette", step, *extra]).handler
+        for step, extra in (
+            ("extract", ["--source", "."]),
+            ("plan", []),
+            ("build", []),
+            ("label", ["--source", "."]),
+            ("preregister", []),
+            ("train", []),
+            ("score", ["--source", "."]),
+            ("accept", []),
+            ("ship", []),
+        )
+    }
+    assert handlers["extract"] is cli.palette_extract
+    assert handlers["label"] is cli.palette_label
+    assert handlers["train"] is cli.palette_train_head
+    assert len(set(handlers.values())) == len(handlers)
+
+
+def test_the_teacher_is_never_assumed_to_be_here() -> None:
+    """Every step that needs the source project names it on the command line."""
+    parser = cli.build_parser()
+    for step in ("extract", "label", "score"):
+        with pytest.raises(SystemExit):
+            parser.parse_args(["palette", step])
+
+
 def test_weights_manifest_is_valid_and_versioned() -> None:
     manifest_path = cli.repo_root() / cli.WEIGHTS_MANIFEST
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
