@@ -230,16 +230,29 @@ def build(limit: int | None = None, log: Path | None = None) -> dict:
     return engine.tiles(spec(limit), log=log)
 
 
-def read_manifest(path: Path | None = None) -> list[dict]:
-    """Every tile row of a build.
+#: What a reader of the manifest actually uses: which location a tile belongs to,
+#: which slot it is, where it is, and enough of its axes to recognize the
+#: canonical view. The rest of a row — the field geometry, the crop window, the
+#: seed tag — is there so a tile can be rebuilt from its own record, and a reader
+#: that wanted it would ask for the whole row.
+TRAINING_FIELDS = ("location_id", "tile", "path", "level", "scale", "shift_frac", "partial")
 
-    Read whole rather than streamed: the corpus-wide manifest is a third of a
-    million rows and the trainer needs all of them grouped by location before it
-    can hand out a single example.
+
+def read_manifest(path: Path | None = None, keep=TRAINING_FIELDS) -> list[dict]:
+    """Every tile row of a build, narrowed to the fields a reader uses.
+
+    Read whole rather than streamed, because the trainer needs every row grouped
+    by location before it can hand out a single example — and *narrowed*, because
+    the corpus-wide manifest is a third of a million rows and keeping all
+    eighteen fields of each is most of a gigabyte of dictionaries for the seven
+    that get read. `keep=None` returns the rows entire.
     """
     path = manifest_path() if path is None else Path(path)
     with path.open(encoding="utf-8") as handle:
-        return [json.loads(line) for line in handle if line.strip()]
+        rows = (json.loads(line) for line in handle if line.strip())
+        if keep is None:
+            return list(rows)
+        return [{field: row[field] for field in keep if field in row} for row in rows]
 
 
 def tiles_by_location(rows: list[dict]) -> dict[int, list[dict]]:
@@ -284,6 +297,7 @@ __all__ = [
     "PLAN_SEED",
     "SCHEMA",
     "SEED_TAG",
+    "TRAINING_FIELDS",
     "build",
     "build_record_path",
     "cache_root",

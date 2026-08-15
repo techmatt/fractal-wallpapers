@@ -143,7 +143,7 @@ def test_a_build_writes_every_tile_of_every_location(tmp_path) -> None:
     )
     assert report["tiles_written"] == 8
     assert report["containment"]["required"] <= report["containment"]["declared"] + 1e-9
-    rows = tile_module.read_manifest(tmp_path / "manifest.jsonl")
+    rows = tile_module.read_manifest(tmp_path / "manifest.jsonl", keep=None)
     assert len(rows) == 8
     grouped = tile_module.tiles_by_location(rows)
     assert set(grouped) == {7, 11}
@@ -205,7 +205,9 @@ def test_the_canonical_tile_is_the_render_a_deployed_judge_would_make(tmp_path) 
             "recipe": {"tiles": 1, "palette_pool": ["twilight_shifted"]},
         }
     )
-    tile = tile_module.canonical_of(tile_module.read_manifest(tmp_path / "manifest.jsonl"))
+    tile = tile_module.canonical_of(
+        tile_module.read_manifest(tmp_path / "manifest.jsonl", keep=None)
+    )
     common = {
         "schema": 1,
         "family": MANDELBROT,
