@@ -32,13 +32,32 @@ has to be able to check rather than take.
 judges the coloring *is* the label: a brightness jitter is a small edit to the
 thing the verdict is about. Both source recipes say so and both are carried.
 
-## The epoch is chosen on the training side
+## The epoch is chosen on the training side, by a rule that can see probabilities
 
 Something has to decide which epoch to keep, and choosing it on the blind sheet
 would spend the only unanchored reading of that population that exists — quietly,
 because the head never trains on it and every number read off it afterwards is
 still inflated. So a seeded slice of the *training* side pays for model
 selection, exactly as the location head's does, and the sheet pays for nothing.
+
+**What it is chosen *by* is not the source project's average precision, and that
+is the one change here that was forced rather than chosen.** Average precision is
+a rank statistic: it is invariant to any monotone rescaling of the scores, so it
+cannot see a probability at all. Selecting on it picked, for two of three seeds
+of the smooth judge, an epoch whose deploy-mode probabilities had transiently
+collapsed — one of them reading a mean `P(≥2)` of 0.002 on a slice that is 78%
+`≥2`, while its loss curve looked healthy because the loss is computed in
+training mode where batch statistics hide it. Average precision rated that
+checkpoint 0.824 and the sound one from the same run 0.810; it preferred the
+broken one.
+
+So the objective is the **validation loss** — the same cross-entropy the trainer
+minimizes, computed on the selection slice through the deploy transform. It is a
+proper scoring rule, so it is minimized only by probabilities that are both
+well ordered *and* correctly scaled, and it rated those same two checkpoints 5.85
+against 0.58. That matters here more than it might elsewhere: this head's
+interface **is** its probabilities — the supply engine reads `P(≥4)` directly —
+so an objective blind to them is an objective blind to what the head is for.
 """
 
 from __future__ import annotations
@@ -68,13 +87,11 @@ RECIPES: dict[str, dict] = {
     "smooth_render": {
         "classes": 4,
         "backbone": "mobilenetv4_conv_medium.e250_r384_in12k",
-        "selection": "max average precision at the wallpaper cutpoint, over the selection slice",
         "selection_cutpoint": 3,
     },
     "strange_render": {
         "classes": 3,
         "backbone": "mobilenetv4_conv_small.e2400_r224_in1k",
-        "selection": "max average precision at the top cutpoint, over the selection slice",
         "selection_cutpoint": 3,
     },
 }
@@ -101,6 +118,12 @@ COMMON = {
     "target_dims": [head.TARGET_WIDTH, head.TARGET_HEIGHT],
     "loss": "CORN ordinal, K-1 conditional-subset tasks",
     "sampler": "w_class[1/sqrt] x w_place[1/pictures at this place], in that order",
+    "selection": (
+        "min validation loss over the selection slice, through the deploy transform: the "
+        "mean cross-entropy of the unconditional probability at each cutpoint against that "
+        "cutpoint's own truth. A proper scoring rule, so it sees the scale and not only the "
+        "order"
+    ),
 }
 
 #: What the recipes inherited, and the three things they did not.
@@ -160,15 +183,48 @@ INHERITANCE = {
             "pinned permanently, and every other batch is anchored and trains.",
         },
         {
-            "key": "selection",
-            "was": "maximum average precision at the top cutpoint on the pooled evaluation side",
-            "now": "the same statistic, on a seeded slice of the TRAINING side",
+            "key": "selection_population",
+            "was": "the pooled evaluation side",
+            "now": "a seeded slice of the TRAINING side",
             "why": "the evaluation side here is one blind sheet bought to referee two "
             "heads. An instrument is spent the moment it trains, and choosing an epoch on "
             "it is a partial spend that leaves nothing red.",
         },
+        {
+            "key": "selection_statistic",
+            "was": "maximum average precision at the top cutpoint",
+            "now": "minimum validation loss, the same cross-entropy training minimizes",
+            "why": "FORCED, not chosen. Average precision is a rank statistic and is "
+            "invariant to any monotone rescaling of the scores, so it cannot see a "
+            "probability. It selected transiently-collapsed checkpoints for two of three "
+            "seeds of the smooth judge — one reading a mean P(>=2) of 0.002 on a slice that "
+            "is 78% >=2 — and rated the broken checkpoint ABOVE the sound one from the same "
+            "run, 0.824 to 0.810. The loss is a proper scoring rule and rated the same pair "
+            "5.85 to 0.58. This head's interface is its probabilities, so an objective "
+            "blind to them is blind to what it is for.",
+        },
     ],
 }
+
+
+def validation_loss(labels, probabilities, classes: int) -> float:
+    """The selection objective: cross-entropy of each cutpoint's own probability.
+
+    Scored on the **unconditional** probabilities, which are what the interface
+    exposes and what every consumer reads. A proper scoring rule, so it is
+    minimized only by a head that is both well ordered and correctly scaled —
+    which is the whole reason it replaced a rank statistic here.
+    """
+    import numpy
+
+    total = 0.0
+    for index in range(classes - 1):
+        truth = (numpy.asarray(labels) >= index + 2).astype(float)
+        predicted = numpy.clip(probabilities[:, index], 1e-7, 1.0 - 1e-7)
+        total += float(
+            -(truth * numpy.log(predicted) + (1.0 - truth) * numpy.log(1.0 - predicted)).mean()
+        )
+    return total / (classes - 1)
 
 
 class TrainingError(RuntimeError):
@@ -481,7 +537,7 @@ def run(
     directory.mkdir(parents=True, exist_ok=True)
     resume = directory / "resume.pt"
 
-    best_metric, best_state, best_epoch, history = -1.0, None, -1, []
+    best_metric, best_state, best_epoch, history = float("inf"), None, -1, []
     start = 0
     if resume.is_file():
         saved = torch.load(resume, map_location=where, weights_only=False)
@@ -519,23 +575,26 @@ def run(
             raise TrainingError(f"the head went non-finite at epoch {epoch}")
 
         probabilities = train.score(model, choosing_paths, deploy_transform, where, classes, recipe)
-        objective = metrics.average_precision(
-            (choosing_labels >= cutpoint + 2).astype(int), probabilities[:, cutpoint]
-        )
+        objective = validation_loss(choosing_labels, probabilities, classes)
         record = {
             "epoch": epoch,
             "loss": running / max(seen, 1),
             "seconds": round(time.time() - clock, 1),
-            f"selection_ap_ge{cutpoint + 2}": objective,
+            "selection_loss": objective,
+            f"selection_ap_ge{cutpoint + 2}": metrics.average_precision(
+                (choosing_labels >= cutpoint + 2).astype(int), probabilities[:, cutpoint]
+            ),
         }
         for index in range(classes - 1):
             record[f"selection_auc_ge{index + 2}"] = metrics.auc(
                 (choosing_labels >= index + 2).astype(int), probabilities[:, index]
             )
+            record[f"selection_mean_p_ge{index + 2}"] = float(probabilities[:, index].mean())
         history.append(record)
         log(
             f"epoch {epoch:2d}  loss {record['loss']:.4f}  "
-            f"AP>={cutpoint + 2} {train.shown(objective)}  "
+            f"val {train.shown(objective)}  "
+            f"AP>={cutpoint + 2} {train.shown(record[f'selection_ap_ge{cutpoint + 2}'])}  "
             + "  ".join(
                 f"AUC>={index + 2} {train.shown(record[f'selection_auc_ge{index + 2}'])}"
                 for index in range(classes - 1)
@@ -543,7 +602,7 @@ def run(
             + f"  ({record['seconds']}s)"
         )
 
-        if objective is not None and objective > best_metric:
+        if objective is not None and objective < best_metric:
             best_metric, best_epoch = objective, epoch
             best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
 
@@ -601,7 +660,7 @@ def run(
         "wall_seconds": round(time.time() - began, 1),
         "best_epoch": best_epoch,
         "best_selection_objective": best_metric,
-        "selection_metric": f"ap_ge{cutpoint + 2}",
+        "selection_metric": "validation loss (minimized)",
         "pictures": {
             "total": len(pictures),
             "train": len(training),
@@ -650,5 +709,6 @@ __all__ = [
     "recipe_for",
     "run",
     "sides",
+    "validation_loss",
     "weights",
 ]
