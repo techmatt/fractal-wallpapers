@@ -10,5 +10,5 @@ head's read of every location on the evaluation side, each row carrying its own
 join; `acceptance.json`, what the bar says about those scores.
 
 The weights themselves are not tracked. `head_best.pt` and `head_last.pt` are
-what training leaves on disk in full precision; `head.fp16.pt` is the halved
+what training leaves on disk in full precision; `location.fp16.pt` is the halved
 artifact `fractal-wallpapers fetch-weights` downloads and hash-checks.
