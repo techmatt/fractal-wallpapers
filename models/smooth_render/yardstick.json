@@ -1,0 +1,52 @@
+{
+  "schema": 1,
+  "head": "smooth_render",
+  "boundary": "ge4",
+  "source": {
+    "reverdict": "data/wallpaper_head/sheet_d_reverdict/report.json",
+    "adoption": "data/wallpaper_head/v4b/adoption_record.json",
+    "generated": "2026-08-11T08:35:19",
+    "adopted_on": "2026-08-11"
+  },
+  "population": {
+    "rows": 197,
+    "tiers": {
+      "1": 0,
+      "2": 6,
+      "3": 95,
+      "4": 96
+    }
+  },
+  "incumbent": {
+    "name": "v3",
+    "auc": 0.5096947194719472,
+    "ap": 0.4795420693656447
+  },
+  "adopted": {
+    "name": "v4b",
+    "auc": 0.5719884488448845,
+    "ap": 0.5260021602305184,
+    "auc_is": "the seed its own trainer staged, chosen on its pooled evaluation side rather than on this sheet",
+    "picked": 0.6089108910891089,
+    "picked_is": "the seed the adoption chose BY THIS SHEET'S OWN statistic \u2014 a selected maximum, which its adoption record says outright",
+    "seeds": [
+      0.5719884488448845,
+      0.6089108910891089,
+      0.5567244224422442,
+      0.5851897689768977,
+      0.5124793729372937
+    ],
+    "picked_from": 5,
+    "selected": true
+  },
+  "resolution": {
+    "kind": "seed band",
+    "what": "five seeds of the adopted recipe, scored on this sheet. The spread is what the seed alone is worth, and a candidate has to survive the bottom of it.",
+    "lower_reach": 0.09643151815181517,
+    "below_centre": 0.05457920792079207
+  },
+  "declared_by_the_source": [
+    "THE SEED PICK SPENDS A 197-ROW SELECTION. Sheet D was the only unanchored read of the minibrot population that will ever exist, and choosing among five seeds on it consumes it: the picked seed's 0.609 is a selected maximum, not a held-out number, and the band is the honest read of what a fresh seed would do. Nothing here is a held-out estimate of v4b/seed_1 any more.",
+    "ONE SLICE, ~200 ROWS. A null on sheet D is 'not distinguishable at this n', not 'identical'."
+  ]
+}
