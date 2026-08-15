@@ -487,14 +487,14 @@ def train(
         "sampled_mass": mass,
         "history": history,
         "checkpoints": {
-            "best": str(checkpoint_path(name, "best")),
-            "last": str(checkpoint_path(name, "last")),
+            "best": str(checkpoint_path(name, "best", run)),
+            "last": str(checkpoint_path(name, "last", run)),
         },
     }
-    config_path(name).write_text(
+    config_path(name, run).write_text(
         json.dumps(config, indent=2) + "\n", encoding="utf-8", newline="\n"
     )
-    metrics_path(name).write_text(
+    metrics_path(name, run).write_text(
         json.dumps(record, indent=2) + "\n", encoding="utf-8", newline="\n"
     )
     return record

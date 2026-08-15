@@ -1,0 +1,96 @@
+{
+  "schema": 1,
+  "head": "location",
+  "classes": 4,
+  "backbone": "mobilenetv4_conv_medium.e250_r384_in12k",
+  "pretrained": true,
+  "geometry": "stretch",
+  "epochs": 40,
+  "batch_size": 32,
+  "backbone_lr": 0.0002,
+  "head_lr": 0.001,
+  "weight_decay": 0.05,
+  "drop_rate": 0.2,
+  "drop_path_rate": 0.1,
+  "grad_clip": 1.0,
+  "seed": 0,
+  "workers": 4,
+  "amp": "off",
+  "beta_biased": 0.4,
+  "class_balance": "sqrt",
+  "source_dims": [
+    640,
+    360
+  ],
+  "target_dims": [
+    384,
+    224
+  ],
+  "loss": "CORN ordinal, K-1 conditional-subset tasks",
+  "sampler": "w_class[1/sqrt] x w_group[1/size] x w_source[beta], in that order",
+  "selection": "max average precision at the first cutpoint, over the selection slice",
+  "mean": [
+    0.485,
+    0.456,
+    0.406
+  ],
+  "std": [
+    0.229,
+    0.224,
+    0.225
+  ],
+  "interpolation": "bicubic",
+  "best_epoch": 36,
+  "inherited": {
+    "source": "the source project's deployed head, config embedded in its checkpoint",
+    "identical": [
+      "amp",
+      "backbone",
+      "backbone_lr",
+      "batch_size",
+      "beta_biased",
+      "class_balance",
+      "drop_path_rate",
+      "drop_rate",
+      "epochs",
+      "geometry",
+      "grad_clip",
+      "head_lr",
+      "input_size",
+      "interpolation",
+      "loss",
+      "mean",
+      "no_jpeg_aug",
+      "num_classes",
+      "num_workers",
+      "patience",
+      "sampler",
+      "seed",
+      "std",
+      "target",
+      "target_dims",
+      "weight_decay"
+    ],
+    "changed": {
+      "eval_split_is_val": "the incumbent chose its epoch on the evaluation side. An instrument is spent the moment it trains and picking on it is a partial spend, so the selection slice here is carved out of the training side instead",
+      "selection": "the same objective \u2014 average precision at the first cutpoint \u2014 over that training-side slice rather than over 670 held-out instrument rows",
+      "src_dims": "640x360 rather than 512x288. The head's own input is unchanged at 384x224; what moved is how much resampling happens before it",
+      "black_thresh": "dropped rather than carried. It was a crop-admission gate from an earlier corpus and nothing in the incumbent's own location-level path reads it; a carried constant that changes nothing is history, not a recipe"
+    }
+  },
+  "tiles": {
+    "seed_tag": "location-tiles-v1",
+    "plan_seed": 0
+  },
+  "selection_slice": {
+    "rule": "a seeded draw over TRAINING-side groups, taken whole. The evaluation side is never a selection population: a head that picks its epoch on an instrument has spent it, silently",
+    "seed": 0,
+    "target_share": 0.1,
+    "train_locations": 10301,
+    "groups": 7853,
+    "selection_groups": 766,
+    "selection_locations": 1030,
+    "realized_share": 0.1
+  },
+  "precision": "fp32"
+}
