@@ -358,22 +358,45 @@ class Walk:
         self.frontier.sort(key=lambda node: -node["priority"])
         del self.frontier[self.limits.frontier_cap :]
 
-    def pop_batch(self) -> list[dict]:
-        """The next batch: two reserved floors, then plain priority order.
+    def evict_capped(self) -> None:
+        """Drop every node whose root has spent its expansion budget.
 
-        A node whose root has spent its budget is *evicted*, not skipped — see
-        the module docstring for why skipping is not enough.
+        *Evicted*, not skipped — see the module docstring for why skipping is not
+        enough. Idempotent, so a caller that pops several times per batch can run
+        it once at the top and get the same frontier either way.
         """
-        live = [
+        self.frontier = [
             node
             for node in self.frontier
             if self.expansions.get(node["root_id"], 0) < self.limits.root_expansions
         ]
-        self.frontier = live
-        live = sorted(live, key=lambda node: -node["priority"])
 
-        size = min(self.limits.batch, len(live))
-        if size == 0:
+    def pop_batch(self, *, pool: list[dict] | None = None, size: int | None = None) -> list[dict]:
+        """The next batch: two reserved floors, then plain priority order.
+
+        `pool` narrows the candidates to a subset of the frontier and `size` to a
+        number of slots other than a whole batch. Both exist for one caller — the
+        supply engine, which divides a batch between partitions and then asks each
+        partition for its own share — and both default to the plain walk's
+        behaviour, which is the whole frontier and a whole batch.
+
+        **Both reserved floors are shares of whatever size is asked for**, so a
+        two-slot take reserves a fraction of two slots rather than the whole-batch
+        count. Asking for a whole batch reproduces the plain walk exactly.
+        """
+        self.evict_capped()
+        if pool is None:
+            chosen_from = self.frontier
+        else:
+            # A caller's pool was taken before the eviction and may name nodes the
+            # eviction just dropped. Intersecting is what keeps the frontier the
+            # authority on which nodes exist.
+            standing = {node["node_id"] for node in self.frontier}
+            chosen_from = [node for node in pool if node["node_id"] in standing]
+        live = sorted(chosen_from, key=lambda node: -node["priority"])
+
+        size = min(self.limits.batch if size is None else int(size), len(live))
+        if size <= 0:
             return []
 
         taken: dict[int, dict] = {}
@@ -391,7 +414,8 @@ class Walk:
                 for node in live
                 if node["origin"] in REFRAMED_ORIGINS and node["node_id"] not in taken
             ]
-            quota = min(self.limits.operator_quota, size - len(taken))
+            share = math.ceil(size * self.limits.operator_quota / max(1, self.limits.batch))
+            quota = max(0, min(share, size - len(taken)))
             for node in reframed[:quota]:
                 taken[node["node_id"]] = node
             self._count("operator_quota_filled", min(quota, len(reframed)))
@@ -404,7 +428,7 @@ class Walk:
 
         batch = list(taken.values())
         chosen = set(taken)
-        self.frontier = [node for node in live if node["node_id"] not in chosen]
+        self.frontier = [node for node in self.frontier if node["node_id"] not in chosen]
         for node in batch:
             self.expansions[node["root_id"]] = self.expansions.get(node["root_id"], 0) + 1
         return batch
@@ -415,12 +439,23 @@ class Walk:
     # ---------------------------------------------------------------- expand
 
     def expand_batch(self, batch: list[dict]) -> list[dict]:
-        """Expand one batch, one engine call per distinct family identity."""
+        """Expand one batch and return its survivors."""
+        return self.expand(batch)["survivors"]
+
+    def expand(self, batch: list[dict]) -> dict:
+        """Expand one batch, one engine call per distinct family identity.
+
+        Returns the survivors *and* the candidate rows exactly as they were
+        recorded. A caller that has to reconcile what it found against what it
+        wrote needs the rows themselves, and re-reading them from the ledger it
+        just appended to would be a second answer to what the batch did.
+        """
         groups: dict[str, list[dict]] = {}
         for node in batch:
             groups.setdefault(family_key(node["family"]), []).append(node)
 
         survivors: list[dict] = []
+        candidates: list[dict] = []
         for key, nodes in groups.items():
             report = engine.expand(
                 {
@@ -446,12 +481,15 @@ class Walk:
                 }
             )
             by_id = {node["node_id"]: node for node in nodes}
-            survivors.extend(self._record(report, by_id, json.loads(key)))
-        return survivors
+            kept, seen = self._record(report, by_id, json.loads(key))
+            survivors.extend(kept)
+            candidates.extend(seen)
+        return {"survivors": survivors, "candidates": candidates}
 
-    def _record(self, report: dict, by_id: dict, family: dict) -> list[dict]:
+    def _record(self, report: dict, by_id: dict, family: dict) -> tuple[list[dict], list[dict]]:
         """Write every candidate the engine reported, and push the survivors."""
-        survivors = []
+        survivors: list[dict] = []
+        recorded: list[dict] = []
         for row in report["candidates"]:
             parent = by_id[row["node_id"]]
             candidate = {
@@ -482,7 +520,7 @@ class Walk:
             self._count(f"fate:{row['fate']}")
 
             if row["fate"] != ledger_module.SURVIVED:
-                self.ledger.write("candidate", node_id=None, **candidate)
+                recorded.append(self.ledger.write("candidate", node_id=None, **candidate))
                 continue
 
             score = self.scorer.score(candidate)
@@ -490,7 +528,7 @@ class Walk:
             if not self.scorer.admits(candidate, score):
                 candidate["fate"] = "not_admitted"
                 self._count("fate:not_admitted")
-                self.ledger.write("candidate", node_id=None, **candidate)
+                recorded.append(self.ledger.write("candidate", node_id=None, **candidate))
                 continue
 
             node = self._node(
@@ -507,7 +545,7 @@ class Walk:
                 atom_key=parent.get("atom_key"),
             )
             node["priority"] = self._priority(score, row["depth"])
-            self.ledger.write("candidate", node_id=node["node_id"], **candidate)
+            recorded.append(self.ledger.write("candidate", node_id=node["node_id"], **candidate))
             survivors.append(node)
 
         for row in report["dead"]:
@@ -522,7 +560,7 @@ class Walk:
                 cause=row["cause"],
             )
             self._count(f"dead:{row['cause']}")
-        return survivors
+        return survivors, recorded
 
     # ------------------------------------------------------------ reframings
 

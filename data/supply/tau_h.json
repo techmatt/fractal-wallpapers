@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "_doc": "The per-partition CHEAP cut: how good a node's cheap score has to look before the walk pays for a full-resolution confirmation of it. Derived from this repository's own walks by `fractal-wallpapers derive-tau-h`, never transferred — a cut is a point on one head's probability scale, and a number carried in from another project's head is a number about nothing.",
+  "scorer": null,
+  "state": "UNDERIVED",
+  "state_note": "No head exists here yet and no walk has recorded a score, so every partition is at the fail-open value and the walk confirms everything it reaches. This file ships in that state deliberately: an absent table and a table of zeros read identically to a run, and only the second one says which partitions were considered.",
+  "keep": 0.9,
+  "good_floor": 0.5,
+  "min_n": 5,
+  "n_rows": 0,
+  "tau_h": {
+    "mandelbrot": 0.0,
+    "multibrot3": 0.0,
+    "multibrot4": 0.0,
+    "multibrot5": 0.0,
+    "julia:mandelbrot": 0.0,
+    "julia:multibrot3": 0.0,
+    "julia:multibrot4": 0.0,
+    "julia:multibrot5": 0.0,
+    "phoenix": 0.0,
+    "phoenix:classic": 0.0
+  },
+  "detail": {
+    "mandelbrot": { "n_rows": 0, "n_good": 0, "value": 0.0, "source": "fail-open" },
+    "multibrot3": { "n_rows": 0, "n_good": 0, "value": 0.0, "source": "fail-open" },
+    "multibrot4": { "n_rows": 0, "n_good": 0, "value": 0.0, "source": "fail-open" },
+    "multibrot5": { "n_rows": 0, "n_good": 0, "value": 0.0, "source": "fail-open" },
+    "julia:mandelbrot": { "n_rows": 0, "n_good": 0, "value": 0.0, "source": "fail-open" },
+    "julia:multibrot3": { "n_rows": 0, "n_good": 0, "value": 0.0, "source": "fail-open" },
+    "julia:multibrot4": { "n_rows": 0, "n_good": 0, "value": 0.0, "source": "fail-open" },
+    "julia:multibrot5": { "n_rows": 0, "n_good": 0, "value": 0.0, "source": "fail-open" },
+    "phoenix": { "n_rows": 0, "n_good": 0, "value": 0.0, "source": "fail-open" },
+    "phoenix:classic": { "n_rows": 0, "n_good": 0, "value": 0.0, "source": "fail-open" }
+  },
+  "definition": "good outcome = the canonical score clears good_floor; tau_h = the (1 - keep) quantile of the CHEAP score among those frames, per partition.",
+  "fail_open": "A partition with fewer than min_n good rows gets 0.0 and confirms everything. There is no pooled cross-family fallback and there never was a defensible one — a cut derived on other families' frames is a number about a different population. Fail OPEN, which costs visible render minutes in a run's own telemetry, never invisible supply."
+}

@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "_doc": "THE canonical release mix, as relative ratios. One table, read by everything that has an opinion about how much of each partition a release should contain. Ratios rather than shares so registering or retiring a partition renormalizes the rest instead of leaving every other row wrong until somebody re-sums them by hand.",
+  "_ratio_zero": "A partition that should get none of the release is RETIRED from the partition registry, never zeroed here. A zero ratio leaves it registered, floored, censused and permanently starved, which reads downstream as a measured absence of demand.",
+  "_externally_supplied": "A partition whose supply comes from a job outside the walk. It keeps its ratio and its key everywhere — it is still that much of a release — but the allocator gives it no share of the clock, the floor never pins it, the floor carry accrues it nothing, and the starvation census does not report its empty queue as starvation. Externally supplied is the special case; a zero ratio is not.",
+  "partitions": {
+    "mandelbrot": {
+      "ratio": 3.0,
+      "why": "the degree-2 parameter plane; with its dynamical twin it carries the release"
+    },
+    "multibrot3": { "ratio": 1.0, "why": "supporting family" },
+    "multibrot4": { "ratio": 1.0, "why": "supporting family" },
+    "multibrot5": { "ratio": 1.0, "why": "supporting family" },
+    "julia:mandelbrot": {
+      "ratio": 3.0,
+      "why": "the degree-2 dynamical plane; with its parameter plane it carries the release"
+    },
+    "julia:multibrot3": { "ratio": 1.0, "why": "supporting family" },
+    "julia:multibrot4": { "ratio": 1.0, "why": "supporting family" },
+    "julia:multibrot5": { "ratio": 1.0, "why": "supporting family" },
+    "phoenix": { "ratio": 1.0, "why": "varied phoenix: a swept six-dimensional parameter space" },
+    "phoenix:classic": {
+      "ratio": 0.2,
+      "externally_supplied": true,
+      "why": "one pinned parameter point, so a garnish rather than a family: its whole population is a few dozen distinct looks, and it is supplied by descending that one plane rather than by anything the walk can draw"
+    }
+  }
+}

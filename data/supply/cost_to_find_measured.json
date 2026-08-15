@@ -1,0 +1,70 @@
+{
+  "schema": 1,
+  "_doc": "MEASURED cost to find, per partition: active minutes per unit of currency, where a unit is one class-4 find and a class-3 is worth a tenth of one. This file is EVIDENCE — the aggregate a finished run actually spent — and nothing reads it at run time. `cost_to_find.json` is the regularized seed derived from it, and that is what a run is handed. Regenerate with `fractal-wallpapers derive-prices`; never hand-edit a row.",
+  "prices": {
+    "julia:mandelbrot": 0.19,
+    "julia:multibrot3": 0.111,
+    "julia:multibrot4": 0.098,
+    "julia:multibrot5": 0.138,
+    "mandelbrot": 0.165,
+    "multibrot3": 0.783,
+    "multibrot4": 0.447,
+    "multibrot5": 1.149,
+    "phoenix": 0.223,
+    "phoenix:classic": 3.0
+  },
+  "seed_price": 3.0,
+  "price_ema": 0.15,
+  "price_clamp": 4.0,
+  "cap_minutes": 25.0,
+  "_provenance": {
+    "estimand": "sum(minutes) / sum(units), pooled across the source runs",
+    "source_runs": [
+      {
+        "name": "steady-state run 27",
+        "when": "2026-08-12",
+        "note": "the source project's last steady-state production run, 183 wall minutes; the first of its runs to price both degree-2 partitions, which is why no row in it is defaulted"
+      }
+    ],
+    "minutes": {
+      "julia:mandelbrot": 10.43,
+      "julia:multibrot3": 21.16,
+      "julia:multibrot4": 17.4,
+      "julia:multibrot5": 8.86,
+      "mandelbrot": 13.93,
+      "multibrot3": 44.55,
+      "multibrot4": 34.5,
+      "multibrot5": 19.88,
+      "phoenix": 8.78,
+      "phoenix:classic": 0.0
+    },
+    "units": {
+      "julia:mandelbrot": 54.9,
+      "julia:multibrot3": 190.0,
+      "julia:multibrot4": 177.2,
+      "julia:multibrot5": 64.4,
+      "mandelbrot": 84.2,
+      "multibrot3": 56.9,
+      "multibrot4": 77.2,
+      "multibrot5": 17.3,
+      "phoenix": 39.3,
+      "phoenix:classic": 0.0
+    },
+    "measured": [
+      "julia:mandelbrot",
+      "julia:multibrot3",
+      "julia:multibrot4",
+      "julia:multibrot5",
+      "mandelbrot",
+      "multibrot3",
+      "multibrot4",
+      "multibrot5",
+      "phoenix"
+    ],
+    "defaulted": ["phoenix:classic"],
+    "defaulted_note": "fewer than min_units currency units found in the source runs, so the row carries seed_price and states nothing about the partition. `phoenix:classic` is externally supplied: no walk ever serves it, so no walk can ever price it, and its row is permanently a stated absence rather than a measurement waiting to arrive.",
+    "thin": [],
+    "min_units": 1.0,
+    "min_units_note": "one whole class-4's worth of currency is the evidence floor to be priced. There is deliberately no magnitude bound: the source project measured four partitions at 0.078-0.139 min/unit off 62-148 units, and a [seed/4, seed*4] band would have reported 0.75 for every one of them — a bound cannot tell `implausible` from `the thing the run was run to find out`."
+  }
+}
