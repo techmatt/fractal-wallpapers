@@ -233,6 +233,199 @@ def walk(args: argparse.Namespace) -> int:
     return 0
 
 
+def harvest(args: argparse.Namespace) -> int:
+    """Run the production loop: keep finding material where it is scarcest."""
+    from fractal_wallpapers.discovery.walk import Limits, Policy, Walk
+    from fractal_wallpapers.supply import release_mix, saturation
+    from fractal_wallpapers.supply.census import stock_census
+    from fractal_wallpapers.supply.harvest import Budget, Harvest
+    from fractal_wallpapers.supply.partitions import ALL_PARTITIONS
+    from fractal_wallpapers.supply.prices import load_table
+    from fractal_wallpapers.supply.quota import Quota
+    from fractal_wallpapers.supply.refill import Refill
+
+    run_dir = resolve_output(args.out_dir)
+    walk_run = Walk(
+        out_dir=run_dir,
+        seed=args.seed,
+        limits=Limits(batch=args.batch, root_expansions=args.root_expansions),
+        policy=Policy(candidates=args.candidates, node_width=args.node_width),
+        colormap=args.colormap,
+    )
+    partitions = list(ALL_PARTITIONS)
+    quota = Quota(
+        partitions,
+        run_dir,
+        floor=args.floor,
+        prices_config=load_table(Path(args.prices) if args.prices else None),
+        census=stock_census(partitions, discount=args.discount),
+        external=release_mix.externally_supplied(partitions),
+    )
+    refill = Refill(
+        walk_run,
+        low_water=args.low_water,
+        cooldown=args.cooldown,
+        share=args.refill_share,
+        seeds=Path(args.seeds) if args.seeds else None,
+        external=quota.external,
+        partitions=partitions,
+    )
+    memory = (
+        None
+        if args.no_saturation
+        else saturation.build(exclude=walk_run.ledger.path, root=resolve_output(args.ledgers))
+    )
+    run = Harvest(
+        walk_run,
+        quota,
+        budget=Budget(minutes=args.minutes, batches=args.batches),
+        refill=refill,
+        memory=memory,
+        saturation_strength=0.0 if args.no_saturation else saturation.STRENGTH,
+        partitions=partitions,
+    )
+    if run.resume():
+        print(f"resumed at batch {run.batch} ({run.active_minutes:.2f} active minutes spent)")
+    print(json.dumps(run.run(), indent=2))
+    return 0
+
+
+def census(args: argparse.Namespace) -> int:
+    """Print the standing deficit and the allocation it implies, running nothing.
+
+    Three reads off one census, because the question anybody asks first is what
+    the machine leg moved: the labels-only deficit as it was, the effective
+    deficit as it now is, and the discounted currency that separates them. Both
+    allocations are quoted at seed prices — a price table is a fact about a run,
+    and this is not a run.
+    """
+    from fractal_wallpapers.supply import census as census_module
+    from fractal_wallpapers.supply import release_mix
+    from fractal_wallpapers.supply.allocation import allocate
+    from fractal_wallpapers.supply.partitions import ALL_PARTITIONS
+    from fractal_wallpapers.supply.prices import load_table
+
+    partitions = list(ALL_PARTITIONS)
+    stock_census = census_module.stock_census(partitions, discount=args.discount)
+    ratios = release_mix.ratios(partitions)
+    external = release_mix.externally_supplied(partitions)
+    seed = load_table(Path(args.prices) if args.prices else None)["prices"]
+
+    labels = stock_census.currency
+    stock = stock_census.stock()
+    labels_target, labels_anchor = census_module.targets(labels, partitions, ratios)
+    labels_deficit = {p: max(0.0, labels_target[p] - float(labels.get(p, 0.0))) for p in partitions}
+    target, anchor = census_module.targets(stock, partitions, ratios)
+    deficit = {p: max(0.0, target[p] - float(stock.get(p, 0.0))) for p in partitions}
+
+    labels_allocation = allocate(labels_deficit, seed, partitions, args.floor, external)
+    allocation = allocate(deficit, seed, partitions, args.floor, external)
+    print(
+        json.dumps(
+            {
+                "currency": stock_census.summary(),
+                "target_rule": census_module.TARGET_RULE,
+                "ratio": ratios,
+                "externally_supplied": sorted(external),
+                "labels_only": {
+                    "anchor": round(labels_anchor, 3),
+                    "target": {p: round(labels_target[p], 3) for p in partitions},
+                    "deficit": {p: round(labels_deficit[p], 3) for p in partitions},
+                    "allocation_at_seed_prices": labels_allocation.summary(),
+                },
+                "with_machine_stock": {
+                    "discount": stock_census.machine_leg().discount,
+                    "anchor": round(anchor, 3),
+                    "stock": {p: round(stock[p], 3) for p in partitions},
+                    "target": {p: round(target[p], 3) for p in partitions},
+                    "deficit": {p: round(deficit[p], 3) for p in partitions},
+                    "allocation_at_seed_prices": allocation.summary(),
+                },
+                "deficit_delta": {p: round(deficit[p] - labels_deficit[p], 3) for p in partitions},
+                "share_delta": {
+                    p: round(allocation.share[p] - labels_allocation.share[p], 4)
+                    for p in partitions
+                },
+            },
+            indent=2,
+        )
+    )
+    return 0
+
+
+def derive_prices(args: argparse.Namespace) -> int:
+    """Regenerate the cost-to-find seed table from finished runs."""
+    from fractal_wallpapers.supply import prices as price_module
+    from fractal_wallpapers.supply.partitions import ALL_PARTITIONS
+
+    blocks, sources = [], []
+    for name in args.run:
+        run_dir = resolve_output(name)
+        summary = run_dir / "summary.json"
+        if not summary.is_file():
+            # The summary is written when a run finishes, so its presence is what
+            # says the run reached an end. A checkpoint holds the same counters
+            # mid-flight and would price a partial population as a whole one.
+            print(f"{summary} is missing — that run has not finished; state.json is not a")
+            print("substitute, it would price a partial population as a whole one.")
+            return 1
+        document = json.loads(summary.read_text(encoding="utf-8"))
+        cost = ((document.get("quota") or {}).get("cost")) or {}
+        if not cost:
+            print(f"{summary} carries no cost block — nothing to derive a price table from")
+            return 1
+        blocks.append(cost)
+        sources.append({"name": run_dir.name, "path": str(run_dir)})
+
+    try:
+        table = price_module.derive(blocks, sources, ALL_PARTITIONS)
+        if args.regularize:
+            table = price_module.regularize(
+                table, alpha=args.alpha, clamp=args.clamp, source=args.measured or ""
+            )
+    except price_module.PriceTableError as refusal:
+        # Fail closed rather than fall back to the seed: a regenerated table that
+        # is byte-identical to the flat seed reports itself as a measurement and
+        # is not one, and afterwards nobody can tell the two apart.
+        print(refusal)
+        return 1
+    out = (
+        resolve_output(args.out)
+        if args.out
+        else (
+            price_module.seed_table_path()
+            if args.regularize
+            else price_module.measured_table_path()
+        )
+    )
+    if args.write:
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(table, indent=2) + "\n", encoding="utf-8")
+        print(f"wrote {out}")
+    else:
+        print(json.dumps(table, indent=2))
+        print("(dry run — pass --write to replace the shipped table)")
+    return 0
+
+
+def derive_tau_h(args: argparse.Namespace) -> int:
+    """Re-derive the cheap cut from this repository's own walks."""
+    from fractal_wallpapers.supply import tau_h as tau_module
+    from fractal_wallpapers.supply.partitions import ALL_PARTITIONS
+
+    rows = tau_module.rows_from_ledgers([Path(p) for p in args.ledger] if args.ledger else None)
+    table = tau_module.artifact(rows, ALL_PARTITIONS, keep=args.keep)
+    out = resolve_output(args.out) if args.out else tau_module.table_path()
+    if args.write:
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(table, indent=2) + "\n", encoding="utf-8")
+        print(f"wrote {out}")
+    else:
+        print(json.dumps(table, indent=2))
+        print("(dry run — pass --write to replace the shipped table)")
+    return 0
+
+
 def modes(args: argparse.Namespace) -> int:
     """List the named colorings and what each one is for.
 
@@ -374,6 +567,147 @@ def build_parser() -> argparse.ArgumentParser:
         help="where the ledger and thumbnails go (default: artifacts/walk)",
     )
     search.set_defaults(handler=walk)
+
+    production = subcommands.add_parser(
+        "harvest",
+        help="the production loop: keep finding material where it is scarcest",
+        description=(
+            "Run batches until the active-time budget is spent, dividing each batch's slots "
+            "between partitions by how far each one is below its intended share of the "
+            "release. Checkpoints at every batch boundary and resumes from the checkpoint "
+            "if one is there, so a killed run continues rather than restarting."
+        ),
+    )
+    production.add_argument("--seed", type=int, default=0, help="run seed (default: 0)")
+    production.add_argument("--batch", type=int, default=8, help="node slots per batch")
+    production.add_argument(
+        "--minutes",
+        type=float,
+        default=10.0,
+        help="active-minute budget across every session of this run (default: 10; 0 for none)",
+    )
+    production.add_argument(
+        "--batches", type=int, help="stop after this many batches, whatever the clock says"
+    )
+    production.add_argument(
+        "--seeds",
+        help="JSONL seed file: the only supply for the parameter planes, which have no sampler",
+    )
+    production.add_argument(
+        "--root-expansions",
+        type=int,
+        default=12,
+        help="expansions any one root may pay for, its reframings included",
+    )
+    production.add_argument("--candidates", type=int, default=4, help="candidates drawn per node")
+    production.add_argument("--node-width", type=int, default=384, help="node render width")
+    production.add_argument(
+        "--floor",
+        type=float,
+        default=0.05,
+        help="the share of the clock every partition floors at (default: 0.05)",
+    )
+    production.add_argument(
+        "--discount",
+        type=float,
+        help="what an unlabelled machine-scored find is worth against the deficit "
+        "(default: 0.2); 0 reproduces the labels-only deficit exactly",
+    )
+    production.add_argument("--prices", help="a cost-to-find seed table other than the shipped one")
+    production.add_argument(
+        "--low-water", type=int, default=8, help="a partition below this many nodes is starved"
+    )
+    production.add_argument(
+        "--cooldown", type=int, default=10, help="batches a partition waits between refills"
+    )
+    production.add_argument(
+        "--refill-share",
+        type=float,
+        default=0.25,
+        help="share of the loop's clock refills may spend (default: 0.25)",
+    )
+    production.add_argument(
+        "--no-saturation",
+        action="store_true",
+        help="do not read earlier runs' ledgers; every place ranks as untouched",
+    )
+    production.add_argument(
+        "--ledgers",
+        default="artifacts",
+        help="where earlier runs' ledgers live (default: artifacts)",
+    )
+    production.add_argument(
+        "--colormap", default="twilight_shifted", help="colormap for the steering thumbnails"
+    )
+    production.add_argument(
+        "--out-dir",
+        default=str(Path("artifacts") / "harvest"),
+        help="the run directory (default: artifacts/harvest)",
+    )
+    production.set_defaults(handler=harvest)
+
+    standing = subcommands.add_parser(
+        "census",
+        help="print the standing deficit and the allocation it implies, running nothing",
+        description=(
+            "Census what every partition holds — human labels, plus discounted machine-scored "
+            "finds a human has not looked at — against what the release mix says it is owed, "
+            "and show the allocation that follows. Quoted at seed prices, because a price "
+            "table is a fact about a run and this is not one."
+        ),
+    )
+    standing.add_argument(
+        "--discount",
+        type=float,
+        help="what an unlabelled machine-scored find is worth against the deficit "
+        "(default: 0.2); 0 reproduces the labels-only deficit exactly",
+    )
+    standing.add_argument("--floor", type=float, default=0.05, help="the per-partition floor")
+    standing.add_argument("--prices", help="a cost-to-find seed table other than the shipped one")
+    standing.set_defaults(handler=census)
+
+    pricing = subcommands.add_parser(
+        "derive-prices",
+        help="regenerate the cost-to-find seed table from finished runs",
+        description=(
+            "Pool the minutes and the currency of every source run, divide once, and write "
+            "the measured table. With --regularize, shrink it toward its own median and "
+            "write the seed a run is actually handed. Never hand-edit either file: every "
+            "constant reaches a shipped table through a regeneration."
+        ),
+    )
+    pricing.add_argument(
+        "--run", action="append", required=True, help="a finished run directory (repeatable)"
+    )
+    pricing.add_argument(
+        "--regularize", action="store_true", help="shrink the measured table into a seed"
+    )
+    pricing.add_argument("--alpha", type=float, default=0.9, help="shrinkage weight in log space")
+    pricing.add_argument(
+        "--clamp", type=float, default=16.0, help="band the live estimate may occupy"
+    )
+    pricing.add_argument("--measured", help="path recorded as the regularizer's source")
+    pricing.add_argument("--out", help="where to write (default: the shipped table)")
+    pricing.add_argument("--write", action="store_true", help="write it; otherwise print it")
+    pricing.set_defaults(handler=derive_prices)
+
+    cut = subcommands.add_parser(
+        "derive-tau-h",
+        help="re-derive the cheap cut from this repository's own walks",
+        description=(
+            "τ_h is the cut on a cheap score that decides which candidates are worth a "
+            "full-resolution confirmation. It is a point on one scorer's probability scale, "
+            "so it is derived here and never transferred; a partition with too few good "
+            "rows fails open and confirms everything."
+        ),
+    )
+    cut.add_argument("--ledger", action="append", help="a walk ledger (repeatable)")
+    cut.add_argument(
+        "--keep", type=float, default=0.90, help="fraction of good frames the cut retains"
+    )
+    cut.add_argument("--out", help="where to write (default: the shipped table)")
+    cut.add_argument("--write", action="store_true", help="write it; otherwise print it")
+    cut.set_defaults(handler=derive_tau_h)
 
     listing = subcommands.add_parser("modes", help="list the named colorings")
     listing.set_defaults(handler=modes)
