@@ -33,6 +33,7 @@ __all__ = [
     "render",
     "render_report",
     "run",
+    "tiles",
 ]
 
 ENGINE_BINARY_NAME = "fractal-engine"
@@ -55,23 +56,41 @@ def engine_path() -> Path:
     )
 
 
-def run(subcommand: str, spec: dict | None = None) -> Any:
+def run(subcommand: str, spec: dict | None = None, log: Path | None = None) -> Any:
     """Hand `spec` to one of the engine's subcommands and return its report.
 
     Every call into the engine goes through here, so there is one place that
     knows how a spec is delivered, one place that decides what a failure looks
     like from Python, and one place to change when either does.
+
+    `log` sends the engine's progress to a file as it runs instead of holding it
+    until the call returns. Most calls here take a second and want the message
+    with the failure; a bulk build takes hours, and progress that only arrives at
+    the end is not progress.
     """
-    done = subprocess.run(
-        [str(engine_path()), subcommand],
-        input="" if spec is None else json.dumps(spec),
-        capture_output=True,
-        text=True,
-        cwd=repo_root(),
-        check=False,
-    )
+    command = [str(engine_path()), subcommand]
+    text = "" if spec is None else json.dumps(spec)
+    if log is None:
+        done = subprocess.run(
+            command, input=text, capture_output=True, text=True, cwd=repo_root(), check=False
+        )
+        if done.returncode != 0:
+            raise RuntimeError(f"engine failed: {done.stderr.strip() or done.stdout.strip()}")
+        return json.loads(done.stdout)
+
+    log.parent.mkdir(parents=True, exist_ok=True)
+    with log.open("a", encoding="utf-8") as handle:
+        done = subprocess.run(
+            command,
+            input=text,
+            stdout=subprocess.PIPE,
+            stderr=handle,
+            text=True,
+            cwd=repo_root(),
+            check=False,
+        )
     if done.returncode != 0:
-        raise RuntimeError(f"engine failed: {done.stderr.strip() or done.stdout.strip()}")
+        raise RuntimeError(f"engine failed; its progress and error are in {log}")
     return json.loads(done.stdout)
 
 
@@ -120,6 +139,17 @@ def expand(spec: dict) -> dict:
     means.
     """
     return run("expand", spec)
+
+
+def tiles(spec: dict, log: Path | None = None) -> dict:
+    """Turn a plan of locations into training tiles, and report what was written.
+
+    One iteration pass per location, every tile a colored crop of it. The whole
+    recipe — how many tiles, how far they may be shifted and zoomed, which
+    colormaps they may draw — is the engine's, so this side names the locations
+    and reads back the record rather than restating a single constant of it.
+    """
+    return run("tiles", spec, log=log)
 
 
 def modes() -> list[dict]:

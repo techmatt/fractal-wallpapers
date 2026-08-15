@@ -5,6 +5,7 @@
 //! fractal-engine dump-field [spec.json]   # the same, stopping at the raw field
 //! fractal-engine recolor    [spec.json]   # a dumped field → a PNG, no iteration
 //! fractal-engine expand     [spec.json]   # walk nodes → one rung each, gated
+//! fractal-engine tiles      [spec.json]   # one field per location → many crops
 //! fractal-engine modes                    # what the named colorings are
 //! ```
 //!
@@ -27,7 +28,7 @@ use serde::Serialize;
 use fractal_engine::{
     coloring::{self, Coloring},
     colormap::Colormap,
-    dump, expand, field, mode, resample,
+    dump, expand, field, mode, resample, tiles,
     spec::{Location, RecolorSpec, RenderSpec},
 };
 
@@ -106,6 +107,7 @@ fn run(args: Vec<String>) -> Result<(), String> {
         Some("dump-field") => dump_field(argument),
         Some("recolor") => recolor(argument),
         Some("expand") => expand_nodes(argument),
+        Some("tiles") => build_tiles(argument),
         Some("modes") => print(
             &mode::CATALOG
                 .iter()
@@ -125,6 +127,7 @@ usage: fractal-engine render     [SPEC.json]
        fractal-engine dump-field [SPEC.json]
        fractal-engine recolor    [SPEC.json]
        fractal-engine expand     [SPEC.json]
+       fractal-engine tiles      [SPEC.json]
        fractal-engine modes
 
 render      Render one location through one coloring to a PNG.
@@ -134,6 +137,8 @@ recolor     Color a dumped field again, without iterating anything.
 expand      Take one rung of a walk from each of a batch of nodes: draw
             candidate next frames, gate them, and report every one with its
             fate and a thumbnail of the survivors.
+tiles       Turn a plan of locations into training tiles: one iteration pass
+            per location, and every tile a colored crop of it.
 modes       List the named colorings, as JSON.
 
 The spec is read from SPEC.json, or from stdin when no path is given. A JSON
@@ -246,6 +251,11 @@ fn dump_field(spec_path: Option<&str>) -> Result<(), String> {
 fn expand_nodes(spec_path: Option<&str>) -> Result<(), String> {
     let spec = expand::ExpandSpec::parse(&read_spec(spec_path)?)?;
     print(&expand::run(spec)?)
+}
+
+fn build_tiles(spec_path: Option<&str>) -> Result<(), String> {
+    let spec = tiles::TilesSpec::parse(&read_spec(spec_path)?)?;
+    print(&tiles::run(spec)?)
 }
 
 fn recolor(spec_path: Option<&str>) -> Result<(), String> {
