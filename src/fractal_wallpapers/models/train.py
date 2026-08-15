@@ -88,6 +88,65 @@ RECIPE = {
 }
 
 
+#: What the recipe above inherited, and the four things it did not.
+#:
+#: The source project's deployed head embeds its own config in its checkpoint,
+#: and thirty of its keys are behavioural. Twenty-six are reproduced here value
+#: for value. The other four are listed with the reason, because "identical
+#: recipe" is a claim a reader has to be able to check rather than take.
+INHERITANCE = {
+    "source": "the source project's deployed head, config embedded in its checkpoint",
+    "identical": [
+        "amp",
+        "backbone",
+        "backbone_lr",
+        "batch_size",
+        "beta_biased",
+        "class_balance",
+        "drop_path_rate",
+        "drop_rate",
+        "epochs",
+        "geometry",
+        "grad_clip",
+        "head_lr",
+        "input_size",
+        "interpolation",
+        "loss",
+        "mean",
+        "no_jpeg_aug",
+        "num_classes",
+        "num_workers",
+        "patience",
+        "sampler",
+        "seed",
+        "std",
+        "target",
+        "target_dims",
+        "weight_decay",
+    ],
+    "changed": {
+        "eval_split_is_val": (
+            "the incumbent chose its epoch on the evaluation side. An instrument is spent the "
+            "moment it trains and picking on it is a partial spend, so the selection slice "
+            "here is carved out of the training side instead"
+        ),
+        "selection": (
+            "the same objective — average precision at the first cutpoint — over that "
+            "training-side slice rather than over 670 held-out instrument rows"
+        ),
+        "src_dims": (
+            "640x360 rather than 512x288. The head's own input is unchanged at 384x224; what "
+            "moved is how much resampling happens before it"
+        ),
+        "black_thresh": (
+            "dropped rather than carried. It was a crop-admission gate from an earlier "
+            "corpus and nothing in the incumbent's own location-level path reads it; a "
+            "carried constant that changes nothing is history, not a recipe"
+        ),
+    },
+}
+
+
 def head_dir(name: str = "location") -> Path:
     """A head's home: tracked metadata, with the weights beside it, untracked."""
     return repo_root() / "models" / name
@@ -366,6 +425,7 @@ def train(
         "std": list(data_config["std"]),
         "interpolation": data_config["interpolation"],
         "best_epoch": best_epoch,
+        "inherited": INHERITANCE,
         "tiles": {
             "seed_tag": tile_module.SEED_TAG,
             "plan_seed": tile_module.PLAN_SEED,
@@ -452,6 +512,7 @@ def score(model, paths, transform, where: str, classes: int, recipe: dict):
 
 
 __all__ = [
+    "INHERITANCE",
     "RECIPE",
     "SCHEMA",
     "assert_the_pin_holds",
