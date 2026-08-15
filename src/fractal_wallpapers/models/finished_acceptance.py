@@ -69,6 +69,7 @@ from pathlib import Path
 
 from fractal_wallpapers.labeling import finished
 from fractal_wallpapers.models import metrics
+from fractal_wallpapers.models.head import decode
 
 #: The schema the pre-registration, the yardstick and the read all carry.
 SCHEMA = 1
@@ -469,20 +470,6 @@ def preregister(head: str, root: Path) -> dict:
             },
         },
     }
-
-
-def decode(probabilities, boundary_count: int) -> int:
-    """One row's tier: 1, plus every cutpoint whose probability reaches a half.
-
-    Monotone by construction, because the probabilities are — so this is a
-    threshold on a rank rather than an argmax over classes that could name a tier
-    the head thought less likely than the one below it.
-    """
-    tier = 1
-    for index in range(boundary_count):
-        if probabilities[index] >= 0.5:
-            tier += 1
-    return tier
 
 
 def read(head: str, runs: list[str | None] | None = None) -> dict:
