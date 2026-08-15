@@ -74,6 +74,56 @@ def test_the_machine_stock_discount_is_a_flag_on_both_readers() -> None:
     assert parse(["harvest", "--discount", "0"]).discount == 0.0
 
 
+def test_the_labeling_rig_is_five_steps_under_one_subcommand() -> None:
+    """Register, cut, serve, record, split — the order they happen in, and every
+    one of them a step somebody runs twice."""
+    parse = cli.build_parser().parse_args
+    assert (
+        parse(["label", "register", "--batch", "b", "--method", "m"]).handler is cli.label_register
+    )
+    assert parse(["label", "build", "--from-batch", "b", "--batch", "b"]).handler is cli.label_build
+    assert parse(["label", "serve", "--sheet", "d"]).handler is cli.label_serve
+    assert parse(
+        ["label", "record", "--sheet", "d", "--labels", "l", "--labeler", "m"]
+    ).handler is (cli.label_record)
+    assert parse(["label", "split"]).handler is cli.label_split
+    assert parse(["label", "show"]).handler is cli.label_show
+    with pytest.raises(SystemExit):
+        parse(["label"])
+
+
+def test_a_sheet_is_cut_from_one_source_or_the_other() -> None:
+    """A ledger and a stored batch are two populations; a sheet that took both
+    would be one cut with two generation methods and one registration."""
+    with pytest.raises(SystemExit):
+        cli.build_parser().parse_args(["label", "build", "--batch", "b"])
+    with pytest.raises(SystemExit):
+        cli.build_parser().parse_args(
+            ["label", "build", "--batch", "b", "--from-batch", "x", "--from-ledger", "y"]
+        )
+
+
+def test_registering_a_batch_claims_neither_property_by_default() -> None:
+    """Both flags are claims about how a population was drawn, and the fail-closed
+    reading of an unmade claim is the safe one."""
+    args = cli.build_parser().parse_args(["label", "register", "--batch", "b", "--method", "m"])
+    assert args.score_unconditioned is False
+    assert args.anchored is False
+
+
+def test_the_split_is_not_reshipped_unasked() -> None:
+    assert cli.build_parser().parse_args(["label", "split"]).write is False
+
+
+def test_the_import_names_its_source_rather_than_knowing_it() -> None:
+    """No tracked file may hold an absolute path, and the corpus it reads lives
+    outside this repository — so the source is an argument, always."""
+    args = cli.build_parser().parse_args(["import-labels", "--source", "somewhere"])
+    assert args.handler is cli.import_labels
+    with pytest.raises(SystemExit):
+        cli.build_parser().parse_args(["import-labels"])
+
+
 def test_weights_manifest_is_valid_and_versioned() -> None:
     manifest_path = cli.repo_root() / cli.WEIGHTS_MANIFEST
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
