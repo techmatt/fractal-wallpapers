@@ -1,0 +1,97 @@
+{
+  "schema": 1,
+  "head": "strange_render",
+  "yardstick_record": "yardstick.json",
+  "question": "Is a strange_render judge trained inside this repository approximately comparable to the one the source project adopted, read on the same blind sheet at the boundary that sheet was drawn to inform, within the variance a fresh seed and a fresh rendering pipeline produce?",
+  "population": {
+    "batch": "blind_modes",
+    "source_batch": "2026-08-11_render_mode_blind_v1",
+    "rows": 150,
+    "locations": 110,
+    "tiers": {
+      "1": 74,
+      "2": 70,
+      "3": 6
+    },
+    "boundary": "ge2",
+    "positives": 76,
+    "base_rate": 0.5066666666666667,
+    "blind": "no suggestion was prefilled and no score ordered the page, which is the whole reason this sheet is the evaluation side"
+  },
+  "declared": [
+    "NOT A SAME-INPUT COMPARISON, and further from one than the location head's was: the yardstick was measured on the source project's own pictures of these rows, and this head is scored on pictures regenerated here from the recipes the rows carry, through a different renderer and a different colormap library.",
+    "NO SEED BAND WAS EVER COMMITTED for the adopted head on this sheet, so its figure of 0.7086 may carry the same selection the other sheet's does and cannot be corrected for. It is used as written.",
+    "ONE BOUNDARY. This sheet holds {'1': 74, '2': 70, '3': 6} on a 1..3 scale, so only ge2 is measurable on it with both classes present in quantity. The other boundaries are reported where they exist and gate nothing.",
+    "DECODED-VERDICT AGREEMENT DOES NOT GATE: no decoded verdict for either source head on either sheet was committed, so there is nothing to compare ours against."
+  ],
+  "yardstick": {
+    "incumbent": {
+      "name": "v1",
+      "auc": 0.6756756756756757,
+      "ap": 0.6861238665177826
+    },
+    "adopted": {
+      "name": "v3",
+      "auc": 0.708570412517781,
+      "ap": 0.7402610882026943,
+      "seeds": null,
+      "picked_from": null,
+      "selected": null
+    },
+    "target": 0.708570412517781,
+    "target_rule": "the adopted head's committed figure, there being no band",
+    "resolution": {
+      "kind": "paired interval",
+      "what": "the source's own paired bootstrap between the head it replaced and the one it adopted, on this sheet. No seed band was ever committed for it, so this is the control comparison available: the interval's lower reach is how far down a difference that changed nothing was still able to go.",
+      "lower_reach": 0.030762119660145984,
+      "below_centre": 0.030762119660145984,
+      "interval": [
+        -0.030762119660145984,
+        0.09517984602377538
+      ]
+    }
+  },
+  "rules": {
+    "statistic": "AUC at ge2, with a 95% cluster bootstrap resampling whole locations \u2014 a location contributes several pictures to these sheets and they are not independent",
+    "draws": 5000,
+    "bootstrap_seed": 0,
+    "margin": 0.035,
+    "margin_rule": "the larger of a 0.02 floor and how far below its own centre the source's control comparison on this sheet reaches (paired interval: 0.0308), rounded up to half a point of AUC. Calibrated on the LOWER REACH rather than on the width, because two readings of one recipe can sit apart and be measured imprecisely and a candidate has to survive both.",
+    "verdicts": {
+      "PASS": "the lower bound of our interval is above the target minus the margin",
+      "FAIL": "the upper bound is below the target minus the margin",
+      "BORDERLINE": "anything else \u2014 the interval straddles it"
+    },
+    "escalation": "a BORDERLINE read buys three seeds of this head, and the boundary is then judged on the MEDIAN seed by its own statistic. The median, not the best: picking the best of three is the thing pre-registration exists to stop.",
+    "not_called": "a difference smaller than the margin is reported as a band and is not called in either direction. Label noise at these boundaries is larger than it is."
+  },
+  "arms": {
+    "ordering": {
+      "gated": true,
+      "boundary": "ge2",
+      "target": 0.708570412517781,
+      "margin": 0.035,
+      "positives": 76
+    },
+    "interface": {
+      "gated": true,
+      "rule": "the checkpoint emits 2 cutpoints and the score file carries a probability for every one of them, non-increasing along the row"
+    },
+    "calibration": {
+      "gated": true,
+      "rule": "the mean predicted rate at ge2, over the sheet, within a factor of two of the observed base rate",
+      "tolerance": [
+        0.5,
+        2.0
+      ]
+    },
+    "agreement": {
+      "gated": false,
+      "rule": "the share of rows whose decoded tier equals the human one, decoded as 1 + the number of cutpoints whose unconditional probability reaches a half. Reported with its own interval; nothing to compare it to."
+    },
+    "other_boundaries": {
+      "gated": false,
+      "rule": "reported where both classes are present, and NOT_MEASURABLE with the count otherwise. This sheet was drawn to inform one boundary."
+    }
+  }
+}

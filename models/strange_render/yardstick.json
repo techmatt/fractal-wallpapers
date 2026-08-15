@@ -1,0 +1,46 @@
+{
+  "schema": 1,
+  "head": "strange_render",
+  "boundary": "ge2",
+  "source": {
+    "reverdict": "data/render_mode_head/sheet_e_reverdict/report.json",
+    "adoption": "data/render_mode_head/v3/adoption_record.json",
+    "generated": "2026-08-11T09:31:34",
+    "adopted_on": "2026-08-11"
+  },
+  "population": {
+    "rows": 150,
+    "tiers": {
+      "1": 74,
+      "2": 70,
+      "3": 6
+    }
+  },
+  "incumbent": {
+    "name": "v1",
+    "auc": 0.6756756756756757,
+    "ap": 0.6861238665177826
+  },
+  "adopted": {
+    "name": "v3",
+    "auc": 0.708570412517781,
+    "ap": 0.7402610882026943,
+    "seeds": null,
+    "picked_from": null,
+    "selected": null
+  },
+  "resolution": {
+    "kind": "paired interval",
+    "what": "the source's own paired bootstrap between the head it replaced and the one it adopted, on this sheet. No seed band was ever committed for it, so this is the control comparison available: the interval's lower reach is how far down a difference that changed nothing was still able to go.",
+    "lower_reach": 0.030762119660145984,
+    "below_centre": 0.030762119660145984,
+    "interval": [
+      -0.030762119660145984,
+      0.09517984602377538
+    ]
+  },
+  "declared_by_the_source": [
+    "PER-MODE ANCHORED COMPARISONS ARE NOT ESTABLISHED EITHER WAY. The (28) clause-(a) cells that v3 failed (curv_linear, direct_trap_lines, direct_trap_ring, direct_trap_screen) were measured on anchored labels and are therefore not evidence against v3; sheet E's per-mode cells are 25 rows each with 0-2 positives and are not evidence for it. Neither direction is shown. THE CORRECTION LOOP IS THE SAFETY NET: a mode v3 is wrong about surfaces as corrections on the next sheet.",
+    "THE BASE-RATE AUDIT IS DELIBERATELY NOT HERE. Sheet E's blind >=3 rate is ~4% against 21-46% on the anchored sheets, so the calibrations may be 5-11x off. That is next session's own prompt. Volume-matching preserves current volumes through this flip regardless of how it lands."
+  ]
+}

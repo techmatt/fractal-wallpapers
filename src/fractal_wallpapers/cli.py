@@ -652,6 +652,26 @@ def renders_build(args: argparse.Namespace) -> int:
     return 0
 
 
+def judge_preregister(args: argparse.Namespace) -> int:
+    """Write a finished-render judge's bar, before the head that it judges exists."""
+    from fractal_wallpapers.models import finished_acceptance
+
+    path = finished_acceptance.prereg_path(args.head)
+    if path.is_file() and not args.force:
+        print(f"{path} already exists. A bar rewritten after the numbers are in is not a bar;")
+        print("pass --force only if no head has been trained against this one yet.")
+        return 1
+    try:
+        bar = finished_acceptance.preregister(args.head, Path(args.source))
+    except finished_acceptance.AcceptanceError as refusal:
+        print(refusal)
+        return 1
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(bar, indent=2) + "\n", encoding="utf-8", newline="\n")
+    print(json.dumps(bar, indent=2))
+    return 0
+
+
 def head_train(args: argparse.Namespace) -> int:
     """Train one head on the built tiles."""
     from fractal_wallpapers.models import train
@@ -1304,6 +1324,24 @@ def render_commands(subcommands) -> None:
     building.add_argument("--head", required=True, help="which judge's corpus")
     building.add_argument("--limit", type=int, help="stop after this many jobs of the plan")
     building.set_defaults(handler=renders_build)
+
+    registering = steps.add_parser(
+        "preregister",
+        help="write a judge's bar, before there is a head to judge against it",
+        description=(
+            "Builds the bar out of the source project's committed reading of this judge's "
+            "blind sheet — the only labels on it that no head suggested — and out of how "
+            "precisely that sheet can tell two heads apart at all. Copies those figures in "
+            "so the bar stays re-readable without the other repository, and refuses to "
+            "overwrite a bar that already exists."
+        ),
+    )
+    registering.add_argument("--head", required=True, help="which judge")
+    registering.add_argument("--source", required=True, help="the source repository's root")
+    registering.add_argument(
+        "--force", action="store_true", help="overwrite a bar no head has been judged against"
+    )
+    registering.set_defaults(handler=judge_preregister)
 
 
 def head_commands(subcommands) -> None:
