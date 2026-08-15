@@ -155,9 +155,14 @@ def shipped_path(name: str = "location", run: str | None = None) -> Path:
 
     At the head's root, not the run's: what ships is the head, and which of its
     runs the weights came from is a fact the config inside the file carries.
+
+    **Named for the head**, because a release's assets share one namespace: three
+    heads that all shipped `head.fp16.pt` could not sit in one release together,
+    and the directory that disambiguates them here does not travel. One tag, one
+    release, one asset per head.
     """
     del run
-    return shipment_for(name).directory(name) / "head.fp16.pt"
+    return shipment_for(name).directory(name) / f"{name}.fp16.pt"
 
 
 def sha256_of(path: Path) -> str:

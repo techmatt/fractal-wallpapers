@@ -61,3 +61,14 @@ def test_the_tolerances_are_tight_enough_to_be_a_check() -> None:
     """Loose enough and the comparison passes on any pair of files."""
     assert ship.AUC_TOLERANCE <= 0.001
     assert ship.ROW_TOLERANCE <= 0.01
+
+
+def test_two_heads_cannot_ship_under_one_name() -> None:
+    """A release's assets share one namespace, and the directory that keeps these
+    apart on disk does not travel with them."""
+    names = {
+        ship.shipped_path(head).name for head in ("location", "smooth_render", "strange_render")
+    }
+    assert len(names) == 3, f"two heads would upload the same asset: {sorted(names)}"
+    for head in ("location", "smooth_render", "strange_render"):
+        assert head in ship.shipped_path(head).name

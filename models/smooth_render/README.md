@@ -22,5 +22,5 @@ boundary that sheet was drawn to inform and the one production turns on. It hold
 six rows below tier 3, so nothing else on it is measurable.
 
 The weights themselves are not tracked. `best.pt` and `last.pt` are what training
-leaves on disk in full precision; `head.fp16.pt` is the halved artifact
+leaves on disk in full precision; `smooth_render.fp16.pt` is the halved artifact
 `fractal-wallpapers fetch-weights` downloads and hash-checks.

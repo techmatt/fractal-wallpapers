@@ -25,5 +25,5 @@ Its evaluation side is one sheet of 150 pictures over 110 places —
 so `≥3` is reported on it and decides nothing.
 
 The weights themselves are not tracked. `best.pt` and `last.pt` are what training
-leaves on disk in full precision; `head.fp16.pt` is the halved artifact
+leaves on disk in full precision; `strange_render.fp16.pt` is the halved artifact
 `fractal-wallpapers fetch-weights` downloads and hash-checks.
