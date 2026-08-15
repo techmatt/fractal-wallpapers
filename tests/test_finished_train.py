@@ -146,3 +146,44 @@ def test_a_trained_judge_records_what_it_trained_under(head_name: str) -> None:
     assert config["classes"] == finished.HEADS[head_name]
     assert config["inherited"]["changed"]
     assert config["precision"] == "fp32"
+
+
+def test_the_selection_objective_can_see_a_probability() -> None:
+    """The defect this replaced: average precision is invariant to rescaling, so
+    it cannot tell a well-scaled head from one whose probabilities collapsed. The
+    loss is a proper scoring rule and can."""
+    import numpy
+
+    from fractal_wallpapers.models import metrics
+
+    labels = numpy.array([1, 1, 2, 3, 4] * 20)
+    scaled = numpy.tile(
+        numpy.array(
+            [
+                [0.1, 0.05, 0.02],
+                [0.1, 0.05, 0.02],
+                [0.8, 0.3, 0.1],
+                [0.9, 0.8, 0.3],
+                [0.95, 0.9, 0.8],
+            ]
+        ),
+        (20, 1),
+    )
+    # The same ORDER, squashed toward zero — a collapsed deploy-mode head.
+    collapsed = scaled * 1e-3
+
+    assert metrics.average_precision((labels >= 3).astype(int), scaled[:, 1]) == pytest.approx(
+        metrics.average_precision((labels >= 3).astype(int), collapsed[:, 1])
+    ), "average precision is supposed to be blind to this; if it is not, the premise moved"
+
+    assert finished_train.validation_loss(
+        labels, collapsed, 4
+    ) > 5 * finished_train.validation_loss(labels, scaled, 4), (
+        "the objective has to charge for a collapsed scale"
+    )
+
+
+def test_the_forced_change_is_recorded_as_forced() -> None:
+    changed = {entry["key"]: entry for entry in finished_train.INHERITANCE["changed"]}
+    assert "selection_statistic" in changed
+    assert "FORCED" in changed["selection_statistic"]["why"]
