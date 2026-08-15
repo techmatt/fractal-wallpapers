@@ -614,6 +614,79 @@ def tiles_build(args: argparse.Namespace) -> int:
     return 0
 
 
+def head_train(args: argparse.Namespace) -> int:
+    """Train one head on the built tiles."""
+    from fractal_wallpapers.models import train
+
+    record = train.train(name=args.head, device=args.device, epochs=args.epochs, seed=args.seed)
+    print(json.dumps({key: record[key] for key in record if key != "history"}, indent=2))
+    return 0
+
+
+def head_score(args: argparse.Namespace) -> int:
+    """Score one side of the build through a trained checkpoint."""
+    from fractal_wallpapers.models import scoring
+
+    print(
+        json.dumps(
+            scoring.run(name=args.head, which=args.which, side=args.side, device=args.device),
+            indent=2,
+        )
+    )
+    return 0
+
+
+def head_preregister(args: argparse.Namespace) -> int:
+    """Write the bar, before the head that will be judged against it exists."""
+    from fractal_wallpapers.models import acceptance
+
+    path = acceptance.prereg_path(args.head)
+    if path.is_file() and not args.force:
+        print(f"{path} already exists. A bar rewritten after the numbers are in is not a bar;")
+        print("pass --force only if no head has been trained against this one yet.")
+        return 1
+    bar = acceptance.preregister(args.head)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(bar, indent=2) + "\n", encoding="utf-8", newline="\n")
+    print(json.dumps(bar, indent=2))
+    return 0
+
+
+def head_accept(args: argparse.Namespace) -> int:
+    """Read a trained head against the pre-registered bar."""
+    from fractal_wallpapers.models import acceptance
+
+    report = acceptance.read(args.head)
+    path = acceptance.acceptance_path(args.head)
+    path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8", newline="\n")
+    print(json.dumps(report, indent=2))
+    return 0 if report["verdict"] != "FAIL" else 1
+
+
+def head_ship(args: argparse.Namespace) -> int:
+    """Stage the half-precision artifact and its manifest entry."""
+    from fractal_wallpapers.models import acceptance, ship
+
+    verdict_path = acceptance.acceptance_path(args.head)
+    if not verdict_path.is_file():
+        print(f"{verdict_path} is missing: nothing has judged this head yet.")
+        print("Run `fractal-wallpapers head accept` first.")
+        return 1
+    verdict = json.loads(verdict_path.read_text(encoding="utf-8"))["verdict"]
+    if verdict == "FAIL" and not args.force:
+        print(f"the acceptance read says {verdict}. Shipping a head that failed its own")
+        print("pre-registered bar needs --force and a sentence about why.")
+        return 1
+
+    print(
+        json.dumps(
+            ship.stage(name=args.head, which=args.which, tag=args.tag, device=args.device),
+            indent=2,
+        )
+    )
+    return 0
+
+
 def import_labels(args: argparse.Namespace) -> int:
     """Import the source project's location labels as flat rows."""
     from fractal_wallpapers.labeling import corpus_import
@@ -915,6 +988,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     label_commands(subcommands)
     tile_commands(subcommands)
+    head_commands(subcommands)
 
     bringing = subcommands.add_parser(
         "import-labels",
@@ -1101,6 +1175,96 @@ def tile_commands(subcommands) -> None:
         help="stop after this many locations; every row it writes is stamped partial",
     )
     building.set_defaults(handler=tiles_build)
+
+
+def head_commands(subcommands) -> None:
+    """A judge, end to end: pre-register the bar, train, score, judge, ship."""
+    judging = subcommands.add_parser(
+        "head",
+        help="a judge end to end: preregister, train, score, accept, ship",
+        description=(
+            "The five steps are separate commands on purpose. Each writes a record the next "
+            "one reads, so a training run can be re-scored and a score can be re-judged "
+            "without any of it happening again — and so the bar is written down before the "
+            "head it judges exists."
+        ),
+    )
+    steps = judging.add_subparsers(dest="step", required=True)
+
+    def with_head(parser):
+        parser.add_argument("--head", default="location", help="which judge (default: location)")
+        return parser
+
+    registering = with_head(
+        steps.add_parser(
+            "preregister",
+            help="write the bar, before there is a head to judge against it",
+            description=(
+                "Builds the bar out of the incumbent head's committed scores on this "
+                "repository's own evaluation side, and out of how precisely that population "
+                "can tell two heads apart at all. Refuses to overwrite an existing bar."
+            ),
+        )
+    )
+    registering.add_argument(
+        "--force", action="store_true", help="overwrite a bar no head has been judged against"
+    )
+    registering.set_defaults(handler=head_preregister)
+
+    training = with_head(steps.add_parser("train", help="train a head on the built tiles"))
+    training.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
+    training.add_argument("--epochs", type=int, help="override the recipe's epoch count")
+    training.add_argument("--seed", type=int, help="override the recipe's seed")
+    training.set_defaults(handler=head_train)
+
+    reading = with_head(
+        steps.add_parser(
+            "score",
+            help="score one side of the build through a trained checkpoint",
+            description=(
+                "Every location goes through its canonical tile — the deploy view — so the "
+                "number is the one a deployed judge would produce. A score row carries its "
+                "whole join, the same rule a label row does."
+            ),
+        )
+    )
+    reading.add_argument("--which", default="best", choices=["best", "last"])
+    reading.add_argument("--side", default="eval", choices=["eval", "train"])
+    reading.add_argument("--device", default="auto")
+    reading.set_defaults(handler=head_score)
+
+    judging_step = with_head(
+        steps.add_parser(
+            "accept",
+            help="read a trained head against the pre-registered bar",
+            description=(
+                "The bar comes from the file and nothing here may invent one. Exits non-zero "
+                "only on FAIL; BORDERLINE is a real answer and means the population could not "
+                "resolve the question with one seed."
+            ),
+        )
+    )
+    judging_step.set_defaults(handler=head_accept)
+
+    shipping = with_head(
+        steps.add_parser(
+            "ship",
+            help="stage the half-precision artifact and its manifest entry",
+            description=(
+                "Halves the weights, proves the artifact re-reads bit-identically, checks the "
+                "shipped head still orders the evaluation side the same way, hashes what was "
+                "checked, and writes the manifest entry. Creating the release is a person's "
+                "step."
+            ),
+        )
+    )
+    shipping.add_argument("--which", default="best", choices=["best", "last"])
+    shipping.add_argument("--tag", default="weights-v1", help="the release tag to name")
+    shipping.add_argument("--device", default="auto")
+    shipping.add_argument(
+        "--force", action="store_true", help="ship a head whose acceptance read failed"
+    )
+    shipping.set_defaults(handler=head_ship)
 
 
 def location_arguments(draw: argparse.ArgumentParser) -> None:
