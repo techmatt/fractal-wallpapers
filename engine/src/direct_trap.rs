@@ -181,7 +181,6 @@ impl Painter {
         view: &Viewport,
         family: &Family,
         maxiter: u32,
-        palette: &crate::coloring::Palette,
         colormap: &Colormap,
     ) -> Result<Painted, String> {
         let width = view.sample_width();
@@ -193,13 +192,8 @@ impl Painter {
                 let mut colors = Vec::with_capacity(width as usize);
                 let mut interior = 0;
                 for col in 0..width {
-                    let (color, escaped) = self.trace(
-                        family,
-                        view.sample_point(col, row),
-                        maxiter,
-                        palette,
-                        colormap,
-                    );
+                    let (color, escaped) =
+                        self.trace(family, view.sample_point(col, row), maxiter, colormap);
                     if !escaped {
                         interior += 1;
                     }
@@ -224,7 +218,6 @@ impl Painter {
         family: &Family,
         pixel: Complex<f64>,
         maxiter: u32,
-        palette: &crate::coloring::Palette,
         colormap: &Colormap,
     ) -> ([f64; 3], bool) {
         let bailout_sq = BAILOUT * BAILOUT;
@@ -241,15 +234,20 @@ impl Painter {
 
             let distance = self.shape.distance(z, self.radius);
             if distance < self.threshold {
+                // **The key is the nearness itself.** A direct trap has no
+                // field, so there is nothing to normalize and nothing for the
+                // palette recipe's gamma or traversal to act on — those describe
+                // how a field's distribution is spent across the gradient, and a
+                // trap distance is already a fraction of a threshold. Applying
+                // them here would be a category error, and a visible one: it
+                // moved these four modes by ten times what every other mode
+                // moved. What does reach a trap is the bake — a reversed or
+                // folded map is a different gradient — and the rolloff, which
+                // acts after the color is chosen.
                 let key = self
                     .transform
                     .apply((distance / self.threshold).clamp(0.0, 1.0));
-                // The palette recipe reaches here too: a direct trap has no
-                // field to stretch, so the key it already computed — how near
-                // the orbit came, as a fraction of the threshold — is what the
-                // recipe is applied to. The opacity keeps the *unplaced* key,
-                // because feathering is about nearness and not about color.
-                let sample = colormap.lookup(palette.place(key));
+                let sample = colormap.lookup(key);
                 let alpha = self.opacity * (1.0 - key);
                 for channel in 0..3 {
                     let blended = self.merge.apply(color[channel], sample[channel]);
@@ -394,9 +392,7 @@ mod tests {
             Default::default(),
         )
         .unwrap();
-        let painted = painter
-            .paint(&view(), &julia(), 60, &Default::default(), &gradient())
-            .unwrap();
+        let painted = painter.paint(&view(), &julia(), 60, &gradient()).unwrap();
         assert!(painted.linear.iter().all(|&color| color == [1.0, 1.0, 1.0]));
     }
 
@@ -415,7 +411,7 @@ mod tests {
                 Default::default(),
             )
             .unwrap()
-            .paint(&view(), &julia(), 200, &Default::default(), &gradient())
+            .paint(&view(), &julia(), 200, &gradient())
             .unwrap()
             .linear
         };
@@ -511,7 +507,6 @@ mod tests {
             &whole_set,
             &Family::Multibrot { degree: 2 },
             400,
-            &Default::default(),
             &gradient(),
         )
         .unwrap();
