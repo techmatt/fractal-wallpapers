@@ -172,6 +172,17 @@ def metrics_path(name: str = "location", run: str | None = None) -> Path:
     return head_dir(name, run) / "metrics.json"
 
 
+def say(*parts) -> None:
+    """The default progress log: printed, and **flushed**.
+
+    Flushed because a training run is redirected to a file more often than it is
+    watched in a terminal, and Python buffers a redirected stdout by the block. A
+    forty-minute run whose progress only appears when it finishes is a run nobody
+    can tell from a hung one.
+    """
+    print(*parts, flush=True)
+
+
 def shown(value) -> str:
     """A number for the log, or `n/a` where a cutpoint had nothing to measure.
 
@@ -248,7 +259,7 @@ def train(
     epochs: int | None = None,
     seed: int | None = None,
     run: str | None = None,
-    log=print,
+    log=say,
 ) -> dict:
     """Train one head and write its checkpoints, its config and its metrics."""
     import numpy
@@ -533,6 +544,7 @@ __all__ = [
     "head_dir",
     "metrics_path",
     "population",
+    "say",
     "score",
     "shown",
     "set_seed",

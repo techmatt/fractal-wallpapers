@@ -87,7 +87,7 @@ def run(
     side: str = pins.EVAL,
     device: str = "auto",
     into: str | None = None,
-    log=print,
+    log=train.say,
 ) -> dict:
     """Score one side of the build through a checkpoint, and write the rows."""
     import numpy
