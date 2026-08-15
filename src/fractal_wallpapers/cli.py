@@ -618,7 +618,9 @@ def head_train(args: argparse.Namespace) -> int:
     """Train one head on the built tiles."""
     from fractal_wallpapers.models import train
 
-    record = train.train(name=args.head, device=args.device, epochs=args.epochs, seed=args.seed)
+    record = train.train(
+        name=args.head, device=args.device, epochs=args.epochs, seed=args.seed, run=args.run
+    )
     print(json.dumps({key: record[key] for key in record if key != "history"}, indent=2))
     return 0
 
@@ -629,7 +631,13 @@ def head_score(args: argparse.Namespace) -> int:
 
     print(
         json.dumps(
-            scoring.run(name=args.head, which=args.which, side=args.side, device=args.device),
+            scoring.run(
+                name=args.head,
+                which=args.which,
+                side=args.side,
+                device=args.device,
+                into=args.run,
+            ),
             indent=2,
         )
     )
@@ -656,7 +664,7 @@ def head_accept(args: argparse.Namespace) -> int:
     """Read a trained head against the pre-registered bar."""
     from fractal_wallpapers.models import acceptance
 
-    report = acceptance.read(args.head)
+    report = acceptance.read(args.head, runs=args.run or None)
     path = acceptance.acceptance_path(args.head)
     path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8", newline="\n")
     print(json.dumps(report, indent=2))
@@ -680,7 +688,13 @@ def head_ship(args: argparse.Namespace) -> int:
 
     print(
         json.dumps(
-            ship.stage(name=args.head, which=args.which, tag=args.tag, device=args.device),
+            ship.stage(
+                name=args.head,
+                which=args.which,
+                tag=args.tag,
+                device=args.device,
+                run=args.run,
+            ),
             indent=2,
         )
     )
@@ -1215,6 +1229,11 @@ def head_commands(subcommands) -> None:
     training.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
     training.add_argument("--epochs", type=int, help="override the recipe's epoch count")
     training.add_argument("--seed", type=int, help="override the recipe's seed")
+    training.add_argument(
+        "--run",
+        help="name this run, so its checkpoint and records land in their own directory. "
+        "What a seed band is made of; omit for the head's one run",
+    )
     training.set_defaults(handler=head_train)
 
     reading = with_head(
@@ -1231,6 +1250,7 @@ def head_commands(subcommands) -> None:
     reading.add_argument("--which", default="best", choices=["best", "last"])
     reading.add_argument("--side", default="eval", choices=["eval", "train"])
     reading.add_argument("--device", default="auto")
+    reading.add_argument("--run", help="the named training run to score (default: the head's own)")
     reading.set_defaults(handler=head_score)
 
     judging_step = with_head(
@@ -1243,6 +1263,12 @@ def head_commands(subcommands) -> None:
                 "resolve the question with one seed."
             ),
         )
+    )
+    judging_step.add_argument(
+        "--run",
+        action="append",
+        help="a named run to judge (repeatable). More than one is the pre-registered "
+        "escalation: each cutpoint is read on the MEDIAN run by its own statistic",
     )
     judging_step.set_defaults(handler=head_accept)
 
@@ -1261,6 +1287,7 @@ def head_commands(subcommands) -> None:
     shipping.add_argument("--which", default="best", choices=["best", "last"])
     shipping.add_argument("--tag", default="weights-v1", help="the release tag to name")
     shipping.add_argument("--device", default="auto")
+    shipping.add_argument("--run", help="the named training run to ship (default: the head's own)")
     shipping.add_argument(
         "--force", action="store_true", help="ship a head whose acceptance read failed"
     )

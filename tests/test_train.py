@@ -35,7 +35,7 @@ def a_tiny_corpus(tmp_path, monkeypatch):
     directory = tmp_path / "tiles"
     (directory / "cache").mkdir(parents=True)
     monkeypatch.setattr(tile_module, "tile_dir", lambda: directory)
-    monkeypatch.setattr(train_module, "head_dir", lambda name="location": tmp_path / name)
+    monkeypatch.setattr(train_module, "head_dir", lambda name="location", run=None: tmp_path / name)
 
     generator = numpy.random.default_rng(0)
     locations, manifest, pinned = [], [], set()
