@@ -672,6 +672,85 @@ def judge_preregister(args: argparse.Namespace) -> int:
     return 0
 
 
+def judge_train(args: argparse.Namespace) -> int:
+    """Train one finished-render judge on the render cache."""
+    from fractal_wallpapers.models import finished_train
+
+    try:
+        record = finished_train.run(
+            args.head,
+            device=args.device,
+            epochs=args.epochs,
+            seed=args.seed,
+            run_name=args.run,
+        )
+    except finished_train.TrainingError as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps({key: record[key] for key in record if key != "history"}, indent=2))
+    return 0
+
+
+def judge_score(args: argparse.Namespace) -> int:
+    """Score one side of a judge's corpus through a trained checkpoint."""
+    from fractal_wallpapers.models import finished_scoring
+
+    print(
+        json.dumps(
+            finished_scoring.run(
+                args.head,
+                which=args.which,
+                side=args.side,
+                device=args.device,
+                into=args.run,
+            ),
+            indent=2,
+        )
+    )
+    return 0
+
+
+def judge_accept(args: argparse.Namespace) -> int:
+    """Read a trained judge against its pre-registered bar."""
+    from fractal_wallpapers.models import finished_acceptance
+
+    try:
+        report = finished_acceptance.read(args.head, runs=args.run or None)
+    except finished_acceptance.AcceptanceError as refusal:
+        print(refusal)
+        return 1
+    path = finished_acceptance.acceptance_path(args.head)
+    path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8", newline="\n")
+    print(json.dumps(report, indent=2))
+    return 0 if report["verdict"] != "FAIL" else 1
+
+
+def judge_ship(args: argparse.Namespace) -> int:
+    """Stage a judge's half-precision artifact and its manifest entry."""
+    from fractal_wallpapers.models import finished_acceptance, ship
+
+    verdict_path = finished_acceptance.acceptance_path(args.head)
+    if not verdict_path.is_file():
+        print(f"{verdict_path} is missing: nothing has judged this head yet.")
+        print("Run `fractal-wallpapers renders accept` first.")
+        return 1
+    verdict = json.loads(verdict_path.read_text(encoding="utf-8"))["verdict"]
+    if verdict == "FAIL" and not args.force:
+        print(f"the acceptance read says {verdict}. Shipping a head that failed its own")
+        print("pre-registered bar needs --force and a sentence about why.")
+        return 1
+
+    print(
+        json.dumps(
+            ship.stage(
+                name=args.head, which=args.which, tag=args.tag, device=args.device, run=args.run
+            ),
+            indent=2,
+        )
+    )
+    return 0
+
+
 def head_train(args: argparse.Namespace) -> int:
     """Train one head on the built tiles."""
     from fractal_wallpapers.models import train
@@ -1342,6 +1421,79 @@ def render_commands(subcommands) -> None:
         "--force", action="store_true", help="overwrite a bar no head has been judged against"
     )
     registering.set_defaults(handler=judge_preregister)
+
+    training = steps.add_parser(
+        "train",
+        help="train a judge on the built render cache",
+        description=(
+            "One epoch is one pass over pictures, not over places: a place that carries a "
+            "dozen colorings contributes a dozen examples, because the differences between "
+            "them are what is being learned. The sampler equalizes places so that a "
+            "heavily-coloured one is still worth one place's gradient."
+        ),
+    )
+    training.add_argument("--head", required=True, help="which judge")
+    training.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
+    training.add_argument("--epochs", type=int, help="override the recipe's epoch count")
+    training.add_argument("--seed", type=int, help="override the recipe's seed")
+    training.add_argument(
+        "--run",
+        help="name this run, so its checkpoint and records land in their own directory. "
+        "What a seed band is made of; omit for the judge's one run",
+    )
+    training.set_defaults(handler=judge_train)
+
+    reading = steps.add_parser(
+        "score",
+        help="score one side of a judge's corpus through a trained checkpoint",
+        description=(
+            "A score row carries its whole join — the place and the recipe that made the "
+            "picture — plus the picture's own name, which is a digest of that recipe."
+        ),
+    )
+    reading.add_argument("--head", required=True, help="which judge")
+    reading.add_argument("--which", default="best", choices=["best", "last"])
+    reading.add_argument("--side", default="eval", choices=["eval", "train"])
+    reading.add_argument("--device", default="auto")
+    reading.add_argument("--run", help="the named training run to score")
+    reading.set_defaults(handler=judge_score)
+
+    judging = steps.add_parser(
+        "accept",
+        help="read a trained judge against its pre-registered bar",
+        description=(
+            "The bar comes from the file and nothing here may invent one. Exits non-zero "
+            "only on FAIL; BORDERLINE is a real answer and means the sheet could not "
+            "resolve the question with one seed."
+        ),
+    )
+    judging.add_argument("--head", required=True, help="which judge")
+    judging.add_argument(
+        "--run",
+        action="append",
+        help="a named run to judge (repeatable). More than one is the pre-registered "
+        "escalation: the boundary is read on the MEDIAN run by its own statistic",
+    )
+    judging.set_defaults(handler=judge_accept)
+
+    shipping = steps.add_parser(
+        "ship",
+        help="stage a judge's half-precision artifact and its manifest entry",
+        description=(
+            "Halves the weights, proves the artifact re-reads bit-identically, checks the "
+            "shipped judge still orders its blind sheet the same way, hashes what was "
+            "checked, and writes the manifest entry. Creating the release is a person's step."
+        ),
+    )
+    shipping.add_argument("--head", required=True, help="which judge")
+    shipping.add_argument("--which", default="best", choices=["best", "last"])
+    shipping.add_argument("--tag", default="weights-v1", help="the release tag to name")
+    shipping.add_argument("--device", default="auto")
+    shipping.add_argument("--run", help="the named training run to ship")
+    shipping.add_argument(
+        "--force", action="store_true", help="ship a judge whose acceptance read failed"
+    )
+    shipping.set_defaults(handler=judge_ship)
 
 
 def head_commands(subcommands) -> None:
