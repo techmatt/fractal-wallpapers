@@ -28,9 +28,9 @@
   ],
   "loss": "CORN ordinal, K-1 conditional-subset tasks",
   "sampler": "w_class[1/sqrt] x w_place[1/pictures at this place], in that order",
+  "selection": "min validation loss over the selection slice, through the deploy transform: the mean cross-entropy of the unconditional probability at each cutpoint against that cutpoint's own truth. A proper scoring rule, so it sees the scale and not only the order",
   "classes": 4,
   "backbone": "mobilenetv4_conv_medium.e250_r384_in12k",
-  "selection": "max average precision at the wallpaper cutpoint, over the selection slice",
   "selection_cutpoint": 3,
   "mean": [
     0.485,
@@ -43,7 +43,7 @@
     0.225
   ],
   "interpolation": "bicubic",
-  "best_epoch": 25,
+  "best_epoch": 31,
   "inherited": {
     "source": {
       "smooth_render": "the source project's wallpaper head v4b, config embedded beside it",
@@ -88,10 +88,16 @@
         "why": "both of those decide which of a pooled corpus is held out. Here the held-out set is not a share of the corpus at all \u2014 it is the blind sheet, pinned permanently, and every other batch is anchored and trains."
       },
       {
-        "key": "selection",
-        "was": "maximum average precision at the top cutpoint on the pooled evaluation side",
-        "now": "the same statistic, on a seeded slice of the TRAINING side",
+        "key": "selection_population",
+        "was": "the pooled evaluation side",
+        "now": "a seeded slice of the TRAINING side",
         "why": "the evaluation side here is one blind sheet bought to referee two heads. An instrument is spent the moment it trains, and choosing an epoch on it is a partial spend that leaves nothing red."
+      },
+      {
+        "key": "selection_statistic",
+        "was": "maximum average precision at the top cutpoint",
+        "now": "minimum validation loss, the same cross-entropy training minimizes",
+        "why": "FORCED, not chosen. Average precision is a rank statistic and is invariant to any monotone rescaling of the scores, so it cannot see a probability. It selected transiently-collapsed checkpoints for two of three seeds of the smooth judge \u2014 one reading a mean P(>=2) of 0.002 on a slice that is 78% >=2 \u2014 and rated the broken checkpoint ABOVE the sound one from the same run, 0.824 to 0.810. The loss is a proper scoring rule and rated the same pair 5.85 to 0.58. This head's interface is its probabilities, so an objective blind to them is blind to what it is for."
       }
     ]
   },

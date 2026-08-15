@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "head": "smooth_render",
-  "run": "seed1",
+  "run": "seed2",
   "pretrained": true,
   "geometry": "stretch",
   "epochs": 40,
@@ -12,7 +12,7 @@
   "drop_rate": 0.2,
   "drop_path_rate": 0.1,
   "grad_clip": 1.0,
-  "seed": 1,
+  "seed": 2,
   "workers": 4,
   "amp": "off",
   "border_crop": 0.05,
@@ -43,7 +43,7 @@
     0.225
   ],
   "interpolation": "bicubic",
-  "best_epoch": 35,
+  "best_epoch": 21,
   "inherited": {
     "source": {
       "smooth_render": "the source project's wallpaper head v4b, config embedded beside it",
