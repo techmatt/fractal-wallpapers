@@ -1,4 +1,12 @@
 {
   "schema": 1,
-  "heads": {}
+  "heads": {
+    "location": {
+      "tag": "weights-v1",
+      "asset": "head.fp16.pt",
+      "sha256": "4b60deb935314cf73c53d78946c9910a265f878ab7dc36680f6ec1a581b030d3",
+      "bytes": 17156858,
+      "precision": "fp16"
+    }
+  }
 }

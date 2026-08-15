@@ -1,0 +1,378 @@
+{
+  "schema": 1,
+  "head": "location",
+  "prereg": "C:\\Code\\fractal-wallpapers\\models\\location\\prereg.json",
+  "runs": [
+    "seed0",
+    "seed1",
+    "seed2"
+  ],
+  "population": {
+    "locations": 1002,
+    "clusters": 530,
+    "positives": {
+      "ge2": 370,
+      "ge3": 103,
+      "ge4": 22
+    }
+  },
+  "ordering": {
+    "ge2": {
+      "gated": false,
+      "margin": 0.02,
+      "positives": 370,
+      "ours": 0.8590660280533698,
+      "our_band": {
+        "seed0": 0.8590660280533698,
+        "seed1": 0.8408826548067054,
+        "seed2": 0.8596091344509066
+      },
+      "judged_on": "seed0",
+      "incumbent_band": [
+        0.8699367088607595,
+        0.8845492644543278
+      ],
+      "against": {
+        "mnv4_conv_medium_s0": {
+          "ours": 0.8590660280533698,
+          "theirs": 0.8823853917208347,
+          "delta": -0.0233193636674649,
+          "ci": [
+            -0.04064818554509679,
+            -0.008004557974494923
+          ],
+          "verdict": "BORDERLINE"
+        },
+        "mnv4_conv_medium_s1": {
+          "ours": 0.8590660280533698,
+          "theirs": 0.8845492644543278,
+          "delta": -0.025483236400957954,
+          "ci": [
+            -0.043276363764631454,
+            -0.009405757244637545
+          ],
+          "verdict": "BORDERLINE"
+        },
+        "mnv4_conv_medium_s2": {
+          "ours": 0.8590660280533698,
+          "theirs": 0.8699367088607595,
+          "delta": -0.010870680807389621,
+          "ci": [
+            -0.028297165733373167,
+            0.005716887753994599
+          ],
+          "verdict": "BORDERLINE"
+        }
+      },
+      "verdict": "BORDERLINE"
+    },
+    "ge3": {
+      "gated": true,
+      "margin": 0.02,
+      "positives": 103,
+      "ours": 0.9347819043813514,
+      "our_band": {
+        "seed0": 0.9347819043813514,
+        "seed1": 0.9233668477380477,
+        "seed2": 0.9376113696988023
+      },
+      "judged_on": "seed0",
+      "incumbent_band": [
+        0.9389937038996944,
+        0.9433566962212598
+      ],
+      "against": {
+        "mnv4_conv_medium_s0": {
+          "ours": 0.9347819043813514,
+          "theirs": 0.9424927373457024,
+          "delta": -0.007710832964350933,
+          "ci": [
+            -0.02383716025953102,
+            0.006894674527821939
+          ],
+          "verdict": "BORDERLINE"
+        },
+        "mnv4_conv_medium_s1": {
+          "ours": 0.9347819043813514,
+          "theirs": 0.9433566962212598,
+          "delta": -0.008574791839908391,
+          "ci": [
+            -0.022472618529309922,
+            0.0023514117327069466
+          ],
+          "verdict": "BORDERLINE"
+        },
+        "mnv4_conv_medium_s2": {
+          "ours": 0.9347819043813514,
+          "theirs": 0.9389937038996944,
+          "delta": -0.00421179951834294,
+          "ci": [
+            -0.01676628830486291,
+            0.006914581383033066
+          ],
+          "verdict": "PASS"
+        }
+      },
+      "verdict": "BORDERLINE"
+    },
+    "ge4": {
+      "gated": true,
+      "margin": 0.03,
+      "positives": 22,
+      "ours": 0.9608534322820037,
+      "our_band": {
+        "seed0": 0.961595547309833,
+        "seed1": 0.951530612244898,
+        "seed2": 0.9608534322820037
+      },
+      "judged_on": "seed2",
+      "incumbent_band": [
+        0.9431354359925789,
+        0.9493506493506494
+      ],
+      "against": {
+        "mnv4_conv_medium_s0": {
+          "ours": 0.9608534322820037,
+          "theirs": 0.9431354359925789,
+          "delta": 0.01771799628942483,
+          "ci": [
+            -0.006079805024073961,
+            0.045826711499841466
+          ],
+          "verdict": "PASS"
+        },
+        "mnv4_conv_medium_s1": {
+          "ours": 0.9608534322820037,
+          "theirs": 0.9493506493506494,
+          "delta": 0.011502782931354316,
+          "ci": [
+            -0.011917059286536589,
+            0.032353376261747294
+          ],
+          "verdict": "PASS"
+        },
+        "mnv4_conv_medium_s2": {
+          "ours": 0.9608534322820037,
+          "theirs": 0.94860853432282,
+          "delta": 0.01224489795918371,
+          "ci": [
+            -0.013197256857427675,
+            0.03834518036963951
+          ],
+          "verdict": "PASS"
+        }
+      },
+      "verdict": "PASS"
+    }
+  },
+  "interface": {
+    "cutpoints": [
+      "p_ge2",
+      "p_ge3",
+      "p_ge4"
+    ],
+    "rows": 1002,
+    "rows_missing_a_cutpoint": 0,
+    "rows_out_of_order": 0,
+    "verdict": "PASS"
+  },
+  "calibration": {
+    "tolerance": [
+      0.5,
+      2.0
+    ],
+    "cutpoints": {
+      "ge3": {
+        "observed": 0.1027944111776447,
+        "predicted": 0.10862426493994866,
+        "ratio": 1.0567137230080443,
+        "inside": true,
+        "incumbent_ratio": {
+          "mnv4_conv_medium_s0": 0.8860195867462639,
+          "mnv4_conv_medium_s1": 0.6337463602073553,
+          "mnv4_conv_medium_s2": 0.9515609919186769
+        }
+      },
+      "ge4": {
+        "observed": 0.021956087824351298,
+        "predicted": 0.031557602082149944,
+        "ratio": 1.437305331196102,
+        "inside": true,
+        "incumbent_ratio": {
+          "mnv4_conv_medium_s0": 0.9880213700728532,
+          "mnv4_conv_medium_s1": 0.760452142286836,
+          "mnv4_conv_medium_s2": 0.9775185799212303
+        }
+      }
+    },
+    "verdict": "PASS"
+  },
+  "per_partition": {
+    "mandelbrot": {
+      "locations": 491,
+      "ge3": {
+        "verdict": "REPORTED",
+        "positives": 24,
+        "ours": 0.9023911491791577,
+        "incumbent": {
+          "mnv4_conv_medium_s0": 0.895610278372591,
+          "mnv4_conv_medium_s1": 0.9114917915774446,
+          "mnv4_conv_medium_s2": 0.9106887937187723
+        }
+      },
+      "ge4": {
+        "verdict": "NOT_MEASURABLE",
+        "positives": 0,
+        "why": "below the 10-positive rule"
+      }
+    },
+    "multibrot3": {
+      "locations": 71,
+      "ge3": {
+        "verdict": "NOT_MEASURABLE",
+        "positives": 0,
+        "why": "below the 10-positive rule"
+      },
+      "ge4": {
+        "verdict": "NOT_MEASURABLE",
+        "positives": 0,
+        "why": "below the 10-positive rule"
+      }
+    },
+    "multibrot4": {
+      "locations": 73,
+      "ge3": {
+        "verdict": "NOT_MEASURABLE",
+        "positives": 0,
+        "why": "below the 10-positive rule"
+      },
+      "ge4": {
+        "verdict": "NOT_MEASURABLE",
+        "positives": 0,
+        "why": "below the 10-positive rule"
+      }
+    },
+    "multibrot5": {
+      "locations": 77,
+      "ge3": {
+        "verdict": "NOT_MEASURABLE",
+        "positives": 0,
+        "why": "below the 10-positive rule"
+      },
+      "ge4": {
+        "verdict": "NOT_MEASURABLE",
+        "positives": 0,
+        "why": "below the 10-positive rule"
+      }
+    },
+    "julia:mandelbrot": {
+      "locations": 48,
+      "ge3": {
+        "verdict": "NOT_MEASURABLE",
+        "positives": 8,
+        "why": "below the 10-positive rule"
+      },
+      "ge4": {
+        "verdict": "NOT_MEASURABLE",
+        "positives": 0,
+        "why": "below the 10-positive rule"
+      }
+    },
+    "julia:multibrot3": {
+      "locations": 54,
+      "ge3": {
+        "verdict": "REPORTED",
+        "positives": 19,
+        "ours": 0.7533834586466165,
+        "incumbent": {
+          "mnv4_conv_medium_s0": 0.843609022556391,
+          "mnv4_conv_medium_s1": 0.7744360902255639,
+          "mnv4_conv_medium_s2": 0.806015037593985
+        }
+      },
+      "ge4": {
+        "verdict": "NOT_MEASURABLE",
+        "positives": 6,
+        "why": "below the 10-positive rule"
+      }
+    },
+    "julia:multibrot4": {
+      "locations": 51,
+      "ge3": {
+        "verdict": "REPORTED",
+        "positives": 24,
+        "ours": 0.7330246913580247,
+        "incumbent": {
+          "mnv4_conv_medium_s0": 0.7376543209876543,
+          "mnv4_conv_medium_s1": 0.7546296296296297,
+          "mnv4_conv_medium_s2": 0.7839506172839507
+        }
+      },
+      "ge4": {
+        "verdict": "NOT_MEASURABLE",
+        "positives": 8,
+        "why": "below the 10-positive rule"
+      }
+    },
+    "julia:multibrot5": {
+      "locations": 39,
+      "ge3": {
+        "verdict": "REPORTED",
+        "positives": 22,
+        "ours": 0.7272727272727273,
+        "incumbent": {
+          "mnv4_conv_medium_s0": 0.7165775401069518,
+          "mnv4_conv_medium_s1": 0.7058823529411765,
+          "mnv4_conv_medium_s2": 0.6657754010695187
+        }
+      },
+      "ge4": {
+        "verdict": "NOT_MEASURABLE",
+        "positives": 8,
+        "why": "below the 10-positive rule"
+      }
+    },
+    "phoenix": {
+      "locations": 98,
+      "ge3": {
+        "verdict": "NOT_MEASURABLE",
+        "positives": 6,
+        "why": "below the 10-positive rule"
+      },
+      "ge4": {
+        "verdict": "NOT_MEASURABLE",
+        "positives": 0,
+        "why": "below the 10-positive rule"
+      }
+    },
+    "phoenix:classic": {
+      "locations": 0,
+      "ge3": {
+        "verdict": "NOT_MEASURABLE",
+        "why": "no evaluation rows"
+      },
+      "ge4": {
+        "verdict": "NOT_MEASURABLE",
+        "why": "no evaluation rows"
+      }
+    }
+  },
+  "clean_subset": {
+    "locations": 378,
+    "why_not_a_decision": "clean on both sides, and far too thin: the wallpaper cutpoint has a handful of positives here and the release cutpoint has none. Reported so the reader can see the cost of the contamination the primary population declares.",
+    "ge3": {
+      "positives": 14,
+      "ours": 0.9532967032967034,
+      "incumbent": {
+        "mnv4_conv_medium_s0": 0.9695839874411303,
+        "mnv4_conv_medium_s1": 0.9825353218210361,
+        "mnv4_conv_medium_s2": 0.9654631083202512
+      }
+    },
+    "ge4": {
+      "positives": 0,
+      "verdict": "NOT_MEASURABLE"
+    }
+  },
+  "verdict": "BORDERLINE"
+}
