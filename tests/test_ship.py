@@ -89,8 +89,31 @@ def test_the_ordering_bound_is_stated_in_the_unit_auc_moves_in() -> None:
         "swap term has to be what binds"
     )
     assert max(ship.AUC_TOLERANCE, ship.SWAP_TOLERANCE * large) == ship.AUC_TOLERANCE, (
-        "on a thousand-row population a couple of swaps are invisible and the floor binds"
+        "on a thousand-row population a handful of swaps are invisible and the floor binds"
     )
+
+
+def test_the_ordering_bound_stays_well_inside_what_a_bar_can_detect() -> None:
+    """The bound may be generous about rounding; it may not be generous about
+    anything an acceptance read is trying to see."""
+    import json
+
+    from fractal_wallpapers.models import finished_acceptance as acceptance
+
+    for head, (positives, negatives) in (
+        ("smooth_render", (96, 101)),
+        ("strange_render", (76, 74)),
+    ):
+        path = acceptance.prereg_path(head)
+        if not path.is_file():
+            continue
+        margin = json.loads(path.read_text(encoding="utf-8"))["arms"]["ordering"]["margin"]
+        bound = max(ship.AUC_TOLERANCE, ship.SWAP_TOLERANCE / (positives * negatives))
+        assert bound <= 0.1 * margin, (
+            f"{head}: the shipping bound is {bound:.4f} against an acceptance margin of "
+            f"{margin}. A cast allowed to move the order by a tenth of what the bar reads "
+            f"is a cast that can move the verdict."
+        )
 
 
 def test_a_head_is_shipped_on_its_decisions_rather_than_its_probabilities() -> None:
