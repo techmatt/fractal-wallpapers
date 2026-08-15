@@ -24,12 +24,12 @@ def bar() -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def test_the_margin_is_the_floor_or_the_populations_own_resolution() -> None:
-    """A margin below what the population can resolve is not a bar — every
-    comparison would land inside it and read as agreement."""
+def test_the_margin_is_the_floor_or_what_the_control_seeds_need() -> None:
+    """A margin tighter than what the incumbent's own seeds do to each other is a
+    bar the incumbent fails, which says nothing about the candidate."""
     assert acceptance.margin_of(0.0) == acceptance.MATERIAL_FLOOR
     assert acceptance.margin_of(0.004) == acceptance.MATERIAL_FLOOR
-    assert acceptance.margin_of(0.0216) == 0.025
+    assert acceptance.margin_of(0.0276) == 0.030
     assert acceptance.margin_of(0.031) == 0.035
 
 
@@ -101,6 +101,58 @@ def test_the_incumbent_join_lands_on_this_projects_location_ids() -> None:
     assert not disagreements, (
         f"{len(disagreements)} locations carry different labels in the two corpora — the "
         "comparison would be against different verdicts, not a different head"
+    )
+
+
+def test_the_bar_accepts_a_head_that_is_the_incumbent(tmp_path, monkeypatch) -> None:
+    """The machinery's own calibration: hand the read one of the yardstick's own
+    seeds and it must come back ACCEPT. A bar that could not pass the head it was
+    built from would be measuring something other than what it claims to."""
+    if not acceptance.INCUMBENT_SCORES.is_file():
+        pytest.skip("the incumbent's committed scores are not on this machine")
+    import shutil
+
+    from fractal_wallpapers.models import scoring, train
+    from fractal_wallpapers.models import tiles as tile_module
+
+    shipped = acceptance.prereg_path("location")
+    monkeypatch.setattr(train, "head_dir", lambda name="location": tmp_path)
+    shutil.copy(shipped, tmp_path / "prereg.json")
+
+    control = acceptance.incumbent()
+    arm = acceptance.INCUMBENT_ARMS[0]
+    rows = [row for row in tile_module.read_locations() if row["side"] == "eval"]
+    with scoring.scores_path("location").open("w", encoding="utf-8", newline="\n") as handle:
+        for row in rows:
+            probabilities = control[row["location_id"]][arm]
+            handle.write(
+                json.dumps(
+                    {
+                        "schema": scoring.SCHEMA,
+                        "location_id": row["location_id"],
+                        "score": row["score"],
+                        "p_ge2": probabilities[0],
+                        "p_ge3": probabilities[1],
+                        "p_ge4": probabilities[2],
+                    }
+                )
+                + "\n"
+            )
+
+    report = acceptance.read("location")
+    assert report["verdict"] == "ACCEPT"
+    assert report["ordering"]["ge3"]["against"][arm]["delta"] == 0.0
+    assert report["interface"]["verdict"] == "PASS"
+    assert report["calibration"]["verdict"] == "PASS"
+    # And the thin slices refuse to be quoted rather than being quoted thinly.
+    unmeasurable = [
+        name
+        for name, entry in report["per_partition"].items()
+        if entry["ge4"]["verdict"] == "NOT_MEASURABLE"
+    ]
+    assert len(unmeasurable) == len(ALL_PARTITIONS), (
+        "no partition holds ten release-worthy locations on this evaluation side, so none of "
+        "them should be reporting a number"
     )
 
 
