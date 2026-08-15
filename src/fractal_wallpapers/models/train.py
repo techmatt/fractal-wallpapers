@@ -192,6 +192,34 @@ def shown(value) -> str:
     return "n/a" if value is None else f"{value:.4f}"
 
 
+def claim(directory: Path) -> Path:
+    """Take the run directory, or refuse because something else already has it.
+
+    Two trainers in one directory do not collide loudly — they interleave their
+    logs, take turns overwriting one checkpoint, and produce a run whose numbers
+    belong to neither. On Windows the first symptom is a permission error on the
+    resume write, tens of minutes in, and by then the log reads like one run
+    behaving strangely rather than two behaving normally.
+
+    Written once and used by every trainer here, because a second copy of this
+    would be a second answer to whether a directory is free.
+    """
+    import os
+
+    lock = directory / "training.lock"
+    try:
+        handle = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+    except FileExistsError:
+        raise RuntimeError(
+            f"{lock} exists, so another run already has {directory.name}. Two trainers in "
+            f"one directory take turns overwriting one checkpoint and produce a run whose "
+            f"numbers belong to neither. If nothing is running, delete it."
+        ) from None
+    with os.fdopen(handle, "w", encoding="utf-8") as writer:
+        writer.write(str(os.getpid()))
+    return lock
+
+
 def device_of(requested: str = "auto") -> str:
     import torch
 
@@ -539,6 +567,7 @@ __all__ = [
     "SCHEMA",
     "assert_the_pin_holds",
     "checkpoint_path",
+    "claim",
     "config_path",
     "device_of",
     "head_dir",
