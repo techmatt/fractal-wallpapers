@@ -25,6 +25,16 @@ The cast is not free — fp16 has ten bits of mantissa where fp32 has twenty-thr
 3. **The hash is of the file that was checked**, taken after both, so a manifest
    entry can never describe a file nobody verified.
 
+## One shipping path, three heads
+
+The fp16 cast, the re-read, the agreement check and the hash are the same for
+every head this project trains, and the only thing that differs is where a head's
+checkpoint lives and what population "its own evaluation side" means. So that
+difference is a small record — [`Shipment`] — and everything else is written
+once. A second copy of the verification would be a second answer to whether an
+artifact is safe to publish, and the two would drift on the day one of them was
+fixed.
+
 ## The release itself is not this step's job
 
 `fetch-weights` downloads by tag and asset name and verifies the sha256 before
@@ -38,6 +48,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
 
 from fractal_wallpapers.models import head, metrics, scoring, train
@@ -61,6 +73,78 @@ AUC_TOLERANCE = 0.001
 ROW_TOLERANCE = 0.01
 
 
+@dataclass(frozen=True)
+class Shipment:
+    """Where one head's pieces are. Everything else about shipping is shared."""
+
+    #: `(name, which, run) -> the full-precision checkpoint`.
+    checkpoint: Callable
+    #: `(name, run) -> the directory the artifact lands in`.
+    directory: Callable
+    #: `(path, device) -> (model, config, device)`.
+    load: Callable
+    #: `(name, which, run) -> (paths, labels)` for this head's own evaluation side.
+    evaluation: Callable
+
+
+def _location_evaluation(name: str, which: str, run: str | None):
+    import numpy
+
+    from fractal_wallpapers.models import dataset
+    from fractal_wallpapers.models import tiles as tile_module
+
+    del which, run
+    rows = tile_module.read_locations()
+    grouped = tile_module.tiles_by_location(tile_module.read_manifest())
+    locations = dataset.join(rows, grouped)
+    holdout = [location for location in locations if location.side == "eval"]
+    return (
+        [location.canonical() for location in holdout],
+        numpy.array([location.score for location in holdout]),
+    )
+
+
+def _finished_evaluation(name: str, which: str, run: str | None):
+    """The blind sheet, through the render cache. The pin is the whole side."""
+    import numpy
+
+    from fractal_wallpapers.labeling import finished
+    from fractal_wallpapers.labeling import registry as registry_module
+    from fractal_wallpapers.models import renders
+
+    del which, run
+    known = finished.registry(name)
+    rows = [
+        row
+        for row in finished.resolved(name).scored()
+        if registry_module.lookup(known, row["batch"]).eval_only
+    ]
+    crops = renders.crop_dir(name)
+    paths = [crops / f"{renders.job_name({**row, '_head': name})}.jpg" for row in rows]
+    return paths, numpy.array([row["score"] for row in rows])
+
+
+def shipment_for(name: str) -> Shipment:
+    """Which family a head belongs to, and where its pieces live."""
+    from fractal_wallpapers.labeling import finished
+
+    if name in finished.HEADS:
+        from fractal_wallpapers.models import finished_scoring, finished_train
+
+        return Shipment(
+            checkpoint=finished_train.checkpoint_path,
+            directory=finished_train.head_dir,
+            load=finished_scoring.load,
+            evaluation=_finished_evaluation,
+        )
+    return Shipment(
+        checkpoint=train.checkpoint_path,
+        directory=train.head_dir,
+        load=scoring.load,
+        evaluation=_location_evaluation,
+    )
+
+
 def manifest_path() -> Path:
     """The tracked manifest `fetch-weights` reads."""
     return repo_root() / "models" / "weights.json"
@@ -73,7 +157,7 @@ def shipped_path(name: str = "location", run: str | None = None) -> Path:
     runs the weights came from is a fact the config inside the file carries.
     """
     del run
-    return train.head_dir(name) / "head.fp16.pt"
+    return shipment_for(name).directory(name) / "head.fp16.pt"
 
 
 def sha256_of(path: Path) -> str:
@@ -101,7 +185,7 @@ def convert(name: str = "location", which: str = "best", run: str | None = None)
     """Write the half-precision artifact and prove it re-reads."""
     import torch
 
-    source = train.checkpoint_path(name, which, run)
+    source = shipment_for(name).checkpoint(name, which, run)
     saved = torch.load(source, map_location="cpu", weights_only=False)
     config = dict(saved["config"])
     config["precision"] = "fp16"
@@ -142,26 +226,19 @@ def convert(name: str = "location", which: str = "best", run: str | None = None)
 def agreement(
     name: str = "location", which: str = "best", device: str = "auto", run: str | None = None
 ) -> dict:
-    """Score this repository's evaluation side both ways and compare."""
+    """Score this head's own evaluation side both ways and compare."""
     import numpy
 
-    from fractal_wallpapers.models import dataset
-    from fractal_wallpapers.models import tiles as tile_module
+    kind = shipment_for(name)
+    paths, labels = kind.evaluation(name, which, run)
 
-    rows = tile_module.read_locations()
-    grouped = tile_module.tiles_by_location(tile_module.read_manifest())
-    locations = dataset.join(rows, grouped)
-    holdout = [location for location in locations if location.side == "eval"]
-    paths = [location.canonical() for location in holdout]
-    labels = numpy.array([location.score for location in holdout])
-
-    full, config, where = scoring.load(train.checkpoint_path(name, which, run), device)
+    full, config, where = kind.load(kind.checkpoint(name, which, run), device)
     transform = scoring.transform_of(config)
     classes = int(config["classes"])
     before = train.score(full, paths, transform, where, classes, {"batch_size": 64})
     del full
 
-    halved, _, _ = scoring.load(shipped_path(name), device)
+    halved, _, _ = kind.load(shipped_path(name), device)
     after = train.score(halved, paths, transform, where, classes, {"batch_size": 64})
 
     worst_row = float(numpy.abs(after - before).max())
@@ -179,7 +256,7 @@ def agreement(
 
     held = worst_auc <= AUC_TOLERANCE and worst_row <= ROW_TOLERANCE
     return {
-        "locations": len(holdout),
+        "pictures": len(paths),
         "cutpoints": cutpoints,
         "worst_auc_move": worst_auc,
         "worst_row_move": worst_row,
@@ -244,12 +321,14 @@ __all__ = [
     "ROW_TOLERANCE",
     "SCHEMA",
     "TAG",
+    "Shipment",
     "agreement",
     "convert",
     "entry",
     "halve",
     "manifest_path",
     "sha256_of",
+    "shipment_for",
     "shipped_path",
     "stage",
 ]

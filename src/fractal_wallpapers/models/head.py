@@ -42,6 +42,13 @@ never jittered. Brightness and contrast move by three percent, flips are free
 and the JPEG quality is re-drawn — which is a real deployment variable rather
 than a trick.
 
+The finished-render judges take that rule further and turn the last three off
+entirely: for them the *coloring* is what is being judged, not the place, and a
+brightness jitter is a small edit to the very thing the verdict is about. Their
+recipes say so, so the knobs are parameters here rather than constants — a zero
+brightness and an absent JPEG jitter mean the stage is skipped, not run at
+strength zero.
+
 The resize is a **stretch**, not a pad: 640×360 to 384×224 squeezes the vertical
 by four percent. Padding would spend a tenth of the head's input on black bars,
 and a four percent squeeze is far below what the judgement turns on.
@@ -135,6 +142,13 @@ class Transform:
     std: tuple
     interpolation: str = "bicubic"
     train: bool = False
+    #: How far each edge may be cropped, as a fraction of its dimension.
+    border_crop: float = BORDER_CROP
+    #: The JPEG quality band to re-encode through, or `None` to skip re-encoding.
+    jpeg: tuple | None = JPEG_JITTER
+    #: How far brightness and contrast may move. Zero skips the stage.
+    brightness: float = BRIGHTNESS
+    contrast: float = CONTRAST
 
     def __call__(self, image, rng: random.Random | None = None):
         from PIL import Image
@@ -147,10 +161,10 @@ class Transform:
 
         draw = rng or random
         width, height = image.size
-        left = round(draw.uniform(0, BORDER_CROP) * width)
-        top = round(draw.uniform(0, BORDER_CROP) * height)
-        right = round(draw.uniform(0, BORDER_CROP) * width)
-        bottom = round(draw.uniform(0, BORDER_CROP) * height)
+        left = round(draw.uniform(0, self.border_crop) * width)
+        top = round(draw.uniform(0, self.border_crop) * height)
+        right = round(draw.uniform(0, self.border_crop) * width)
+        bottom = round(draw.uniform(0, self.border_crop) * height)
         if left + right < width - 8 and top + bottom < height - 8:
             image = image.crop((left, top, width - right, height - bottom))
         image = resize(image, self.interpolation)
@@ -161,15 +175,18 @@ class Transform:
             image = image.transpose(Image.FLIP_LEFT_RIGHT)
         if draw.random() < 0.5:
             image = image.transpose(Image.FLIP_TOP_BOTTOM)
-        buffer = io.BytesIO()
-        image.save(buffer, format="JPEG", quality=draw.randint(*JPEG_JITTER))
-        buffer.seek(0)
-        image = Image.open(buffer).convert("RGB")
+        if self.jpeg is not None:
+            buffer = io.BytesIO()
+            image.save(buffer, format="JPEG", quality=draw.randint(*self.jpeg))
+            buffer.seek(0)
+            image = Image.open(buffer).convert("RGB")
 
         tensor = _to_tensor(image)
-        tensor = tensor * (1.0 + draw.uniform(-BRIGHTNESS, BRIGHTNESS))
+        if self.brightness == 0.0 and self.contrast == 0.0:
+            return self._normalize(tensor)
+        tensor = tensor * (1.0 + draw.uniform(-self.brightness, self.brightness))
         middle = tensor.mean()
-        tensor = (tensor - middle) * (1.0 + draw.uniform(-CONTRAST, CONTRAST)) + middle
+        tensor = (tensor - middle) * (1.0 + draw.uniform(-self.contrast, self.contrast)) + middle
         return self._normalize(tensor.clamp(0, 1))
 
     def _normalize(self, tensor):
