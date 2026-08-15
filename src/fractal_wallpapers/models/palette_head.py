@@ -147,6 +147,43 @@ def _to_tensor(image):
     return torch.from_numpy(array).permute(2, 0, 1).float() / 255.0
 
 
+def decoded(paths):
+    """Every picture, resized once, as one `uint8` tensor `[N, 3, H, W]`.
+
+    The resize is deterministic and the corpus is small enough to hold — 4,800
+    candidates at 224×224 is 723 MB of bytes — so it is done once instead of once
+    per epoch. That is not a micro-optimization: decoding a JPEG costs an order of
+    magnitude more than the forward pass through a two-and-a-half-million
+    parameter net, so a loop that re-decoded would spend its whole run in `libjpeg`
+    and a forty-epoch run would take forty times longer than the arithmetic in it.
+
+    `uint8` rather than the normalized float: the same pixels, a quarter of the
+    memory, and [`normalize`] is a tensor op that costs nothing on the way in.
+    """
+    import numpy
+    import torch
+    from PIL import Image
+
+    out = torch.empty((len(paths), 3, TARGET_HEIGHT, TARGET_WIDTH), dtype=torch.uint8)
+    for index, path in enumerate(paths):
+        with Image.open(path) as opened:
+            opened.load()
+            image = resize(opened.convert("RGB"))
+        out[index] = torch.from_numpy(numpy.array(image, dtype=numpy.uint8)).permute(2, 0, 1)
+    return out
+
+
+def normalize(batch, mean: tuple = MEAN, std: tuple = STD):
+    """A `uint8` batch to what the model reads. The tail of [`Transform`], exactly."""
+    import torch
+
+    device = batch.device
+    scaled = batch.float() / 255.0
+    return (scaled - torch.tensor(mean, device=device).view(1, 3, 1, 1)) / torch.tensor(
+        std, device=device
+    ).view(1, 3, 1, 1)
+
+
 def centre(scores):
     """Scores with each set's own mean removed. `scores` is `[sets, candidates]`.
 
@@ -220,6 +257,8 @@ __all__ = [
     "Transform",
     "build",
     "centre",
+    "decoded",
+    "normalize",
     "regret",
     "resize",
     "set_loss",
