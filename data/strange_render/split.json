@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "head": "strange_render",
+  "rule": "PINNED, not drawn. A batch registered eval_only is the evaluation side and may never train, for this generation of heads or any later one. No other batch here is eligible: every one of them conditions on quality through the location head before its page is drawn, and every one but the blind sheet served a head's own verdict prefilled.",
+  "asserted_on": "the location \u2014 family with every constant, and the viewport \u2014 so a later batch that re-renders a pinned place under a fresh identifier cannot spend the instrument by not naming it",
+  "eval_only_batches": [
+    "blind_modes"
+  ],
+  "renders": 150,
+  "locations": 110,
+  "tiers": {
+    "1": 74,
+    "2": 70,
+    "3": 6
+  }
+}
