@@ -316,33 +316,49 @@ def weights(pictures: list[Picture]) -> tuple[list[float], dict]:
     }
 
 
+class Crops:
+    """The training set: one picture an example, with its own seeded jitter.
+
+    **Defined here rather than inside the function that builds it**, and that is
+    not a style choice. A loader worker on Windows is spawned rather than forked,
+    so the dataset is pickled and re-imported by name in the child; a class
+    defined inside a function has no importable name and the child dies. The
+    location head shipped that defect once, because its smoke test ran with zero
+    workers and never tried.
+
+    Subclassing `torch.utils.data.Dataset` would mean importing torch to define
+    the module, which the base install does not have — the duck-typed shape is
+    all a `DataLoader` needs.
+    """
+
+    def __init__(self, rows: list[Picture], transform) -> None:
+        self.rows = rows
+        self.transform = transform
+        self.epoch = 0
+
+    def set_epoch(self, epoch: int) -> None:
+        self.epoch = epoch
+
+    def __len__(self) -> int:
+        return len(self.rows)
+
+    def __getitem__(self, index: int):
+        import random
+
+        from PIL import Image
+
+        row = self.rows[index]
+        with Image.open(row.path) as opened:
+            opened.load()
+            image = opened.convert("RGB")
+        # Seeded on the picture and the epoch, so a run reproduces and a picture
+        # still gets a different crop every pass.
+        return self.transform(image, random.Random(f"{row.name}:{self.epoch}")), row.score, index
+
+
 def _loader(pictures: list[Picture], transform, recipe: dict, where: str):
     import torch
-    from PIL import Image
-    from torch.utils.data import DataLoader, Dataset, WeightedRandomSampler
-
-    class Crops(Dataset):
-        def __init__(self, rows, tf):
-            self.rows, self.tf = rows, tf
-            self.epoch = 0
-
-        def set_epoch(self, epoch: int) -> None:
-            self.epoch = epoch
-
-        def __len__(self) -> int:
-            return len(self.rows)
-
-        def __getitem__(self, index: int):
-            import random as _random
-
-            row = self.rows[index]
-            with Image.open(row.path) as opened:
-                opened.load()
-                image = opened.convert("RGB")
-            # Seeded on the picture and the epoch, so a run is reproducible and
-            # a picture still gets a different crop every pass.
-            rng = _random.Random(f"{row.name}:{self.epoch}")
-            return self.tf(image, rng), row.score, index
+    from torch.utils.data import DataLoader, WeightedRandomSampler
 
     examples = Crops(pictures, transform)
     raw, mass = weights(pictures)
