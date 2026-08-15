@@ -7,7 +7,14 @@ verdicts on **places** — is this worth rendering — one row per location.
 does this colouring of that place work — one row per picture, because a place
 appears in them many times at many recipes and the verdicts differ.
 
+`palette_choice/` is the fourth head's material and the only one here that no
+human wrote: the palette head is distilled from a pretrained teacher, and what is
+committed is that teacher's answers plus the real candidate sets it was asked in
+production. Its README says so in a paragraph, because a machine-labeled corpus
+that does not announce itself is the kind of thing a reader takes for evidence.
+
 `palettes/` is the colormap library. Seventy-seven of its maps were curated by
 hand and are the ones a render chooses from; the rest arrived with the
-finished-render corpora, because a row naming a map nobody holds is a verdict
-about a picture nobody can rebuild.
+finished-render corpora and with the palette head's vendored candidate sets,
+because a row — or a recorded decision — naming a map nobody holds is about a
+picture nobody can rebuild.

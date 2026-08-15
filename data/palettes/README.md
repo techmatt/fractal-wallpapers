@@ -8,3 +8,7 @@ OKLab, so the stops are control points rather than samples of a final gradient;
 a dozen well-placed ones make a better map than a hundred evenly spaced ones.
 
 `tests/test_colormaps.py` holds these files to that shape.
+
+Most of them were not curated: they arrived by mechanical conversion because a
+labeled corpus row or a vendored candidate set names them, and their `source`
+line says exactly that.
