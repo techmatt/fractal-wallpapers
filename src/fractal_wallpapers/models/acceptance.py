@@ -230,26 +230,25 @@ def seed_precision(rows: list[dict], control: dict[int, dict], classes: int = he
                     seed=BOOTSTRAP_SEED,
                 )
                 if delta["lo"] is not None:
-                    half = (delta["hi"] - delta["lo"]) / 2.0
-                    widest = max(widest, half)
+                    widest = max(widest, -delta["lo"], -delta["hi"])
                     pairs[f"{a} vs {b}"] = {
                         "delta": delta["delta"],
                         "ci": [delta["lo"], delta["hi"]],
                     }
-        out[label] = {"widest_half_width": widest, "pairs": pairs}
+        out[label] = {"widest_lower_bound": widest, "pairs": pairs}
     return out
 
 
-def margin_of(half_width: float) -> float:
-    """The margin at one cutpoint: the floor, or the population's own resolution.
+def margin_of(lower_bound: float) -> float:
+    """The margin at one cutpoint: the floor, or what the control seeds need.
 
     Rounded up to the nearest half point of AUC so the number in the record is a
     decision rather than the tail of a bootstrap.
     """
     import math
 
-    resolution = math.ceil(half_width / 0.005) * 0.005
-    return round(max(MATERIAL_FLOOR, resolution), 4)
+    calibrated = math.ceil(max(lower_bound, 0.0) / 0.005) * 0.005
+    return round(max(MATERIAL_FLOOR, calibrated), 4)
 
 
 def preregister(name: str = "location", classes: int = head.CLASSES) -> dict:
@@ -279,7 +278,7 @@ def preregister(name: str = "location", classes: int = head.CLASSES) -> dict:
         label = head.cutpoint_label(index)
         gates[label] = {
             "gated": index in (1, 2),
-            "margin": margin_of(precision[label]["widest_half_width"]),
+            "margin": margin_of(precision[label]["widest_lower_bound"]),
             "positives": stick["cutpoints"][label]["positives"],
         }
 
@@ -328,11 +327,13 @@ def preregister(name: str = "location", classes: int = head.CLASSES) -> dict:
             "draws": DRAWS,
             "bootstrap_seed": BOOTSTRAP_SEED,
             "margin": (
-                "the larger of a 0.02 floor and the widest half-interval the incumbent's own "
-                "three seeds produce on this population, rounded up to half a point of AUC. "
-                "The floor is there because a fresh rendering pipeline is a bigger perturbation "
-                "than a fresh seed; the resolution term is there because a margin the "
-                "population cannot resolve is not a bar."
+                "the larger of a 0.02 floor and the lowest bound any PAIR of the incumbent's "
+                "own three seeds produces on this population under this same statistic, "
+                "rounded up to half a point of AUC. The floor is there because a fresh "
+                "rendering pipeline is a bigger perturbation than a fresh seed; the calibrated "
+                "term is there because a bar the incumbent's own seeds fail against each other "
+                "is not a bar about the candidate. Checked: `tests/test_acceptance.py` hands "
+                "the read one of the yardstick's own seeds and requires ACCEPT."
             ),
             "verdicts": {
                 "PASS": "the lower bound of the paired interval is above minus the margin, "
