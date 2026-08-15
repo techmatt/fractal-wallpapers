@@ -248,7 +248,9 @@ impl FieldGeom {
         let base_x = out_width * supersample;
         let base_y = out_height * supersample;
         // Rounded up, so the realized margin is never below what was asked for.
-        let pad = (((recipe.extend - 1.0) / 2.0) * base_x as f64).ceil().max(0.0) as u32;
+        let pad = (((recipe.extend - 1.0) / 2.0) * base_x as f64)
+            .ceil()
+            .max(0.0) as u32;
         let samples_x = base_x + 2 * pad;
         let samples_y = base_y + 2 * pad;
         FieldGeom {
@@ -581,8 +583,8 @@ fn write_tile(
         Level::Aliased => {
             let mut pixels = Vec::with_capacity(out_width * out_height * 3);
             for down in 0..out_height {
-                let row = ((window.y + (down as f64 + 0.5) * window.ratio) as usize)
-                    .min(samples_y - 1);
+                let row =
+                    ((window.y + (down as f64 + 0.5) * window.ratio) as usize).min(samples_y - 1);
                 for across in 0..out_width {
                     let column = ((window.x + (across as f64 + 0.5) * window.ratio) as usize)
                         .min(samples_x - 1);
@@ -613,8 +615,12 @@ fn write_tile(
                 .collect();
             let horizontal =
                 resample::build_taps_at(out_width, crop_width, window.x - x0 as f64, window.ratio);
-            let vertical =
-                resample::build_taps_at(out_height, crop_height, window.y - y0 as f64, window.ratio);
+            let vertical = resample::build_taps_at(
+                out_height,
+                crop_height,
+                window.y - y0 as f64,
+                window.ratio,
+            );
             resample::apply_taps(&linear, crop_width, crop_height, &horizontal, &vertical)
         }
     };
@@ -736,7 +742,9 @@ pub fn run(spec: TilesSpec) -> Result<TilesReport, String> {
     }
     let [scale_lo, scale_hi] = recipe.scale;
     if !(scale_lo > 0.0 && scale_hi >= scale_lo) {
-        return Err(format!("scale must satisfy 0 < lo ≤ hi, got [{scale_lo}, {scale_hi}]"));
+        return Err(format!(
+            "scale must satisfy 0 < lo ≤ hi, got [{scale_lo}, {scale_hi}]"
+        ));
     }
     let [quality_lo, quality_hi] = recipe.quality;
     if quality_lo == 0 || quality_hi > 100 || quality_hi < quality_lo {
@@ -844,12 +852,8 @@ pub fn run(spec: TilesSpec) -> Result<TilesReport, String> {
                     .map_err(|e| format!("create {}: {e}", parent.display()))?;
             }
             let clock = Instant::now();
-            let sampled = field::render_field(
-                &view,
-                &resolved.family,
-                resolved.maxiter,
-                FieldSpec::Smooth,
-            );
+            let sampled =
+                field::render_field(&view, &resolved.family, resolved.maxiter, FieldSpec::Smooth);
             field_seconds += clock.elapsed().as_secs_f64();
             let values = &sampled.fields[0].values;
 
@@ -970,6 +974,7 @@ fn resolve(row: &PlanRow) -> Result<Resolved, String> {
         supersample: 1,
         mode: None,
         coloring: None,
+        palette: Default::default(),
         colormap: String::new(),
         colormap_dir: PathBuf::new(),
         maxiter: row.maxiter,
@@ -1032,7 +1037,10 @@ mod tests {
         assert!(containment(&wider).is_err(), "a wider zoom must not fit");
         let mut further = recipe();
         further.shift_frac_max = 0.08;
-        assert!(containment(&further).is_err(), "a further shift must not fit");
+        assert!(
+            containment(&further).is_err(),
+            "a further shift must not fit"
+        );
     }
 
     /// The margin is an equal plane distance, so the *relative* extension is
@@ -1101,7 +1109,10 @@ mod tests {
         assert_eq!(tiles[3].palette, "blue_orange");
         assert_eq!(tiles[0].geometry.scale, 1.0);
         assert_eq!(tiles[0].geometry.shift_frac, 0.0);
-        assert!(tiles[1].geometry.scale != 1.0, "only slot 0 is the canonical framing");
+        assert!(
+            tiles[1].geometry.scale != 1.0,
+            "only slot 0 is the canonical framing"
+        );
     }
 
     /// A tile is a pure function of its location row and the tag: same inputs,
@@ -1137,7 +1148,11 @@ mod tests {
         let seed = location_seed("a-tag", 3);
         let slots = [SLOT_GEOMETRY, SLOT_PALETTE, SLOT_LEVEL, SLOT_QUALITY];
         let mut seen: Vec<u64> = (0..32u64)
-            .flat_map(|tile| slots.iter().map(move |base| rng::sub_seed(seed, base + tile)))
+            .flat_map(|tile| {
+                slots
+                    .iter()
+                    .map(move |base| rng::sub_seed(seed, base + tile))
+            })
             .collect();
         let total = seen.len();
         seen.sort_unstable();

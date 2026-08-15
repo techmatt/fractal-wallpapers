@@ -18,7 +18,7 @@
 
 use std::path::Path;
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 /// Entries in the baked table. Fine enough that the interpolation between
 /// neighbouring entries is well below one step of 8-bit output.
@@ -26,10 +26,11 @@ pub const TABLE_SIZE: usize = 4096;
 
 /// Whether a map's two ends meet.
 ///
-/// Nothing in this slice reads it — a single pass through the gradient never
-/// reaches the seam. It is recorded because the moment coloring repeats the
-/// gradient across a field, a sequential map's ends slam together and the seam
-/// becomes the most visible edge in the image.
+/// A single pass through the gradient never reaches the seam, so for most
+/// renders this is only provenance. It becomes load-bearing the moment coloring
+/// repeats the gradient across a field: a sequential map's ends slam together
+/// and the seam becomes the most visible edge in the image. [`Bake::mirror`] is
+/// the fix, and it is refused on a cyclic map — which has no seam to fix.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Kind {
@@ -57,9 +58,34 @@ pub struct Colormap {
     table: Vec<[f64; 3]>,
 }
 
+/// Which way a colormap is baked, and whether it is folded first.
+///
+/// Both belong to the *bake* rather than to a lookup: they change the table, not
+/// the index into it, so a render that uses either pays for them once.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields, default)]
+pub struct Bake {
+    /// Read the gradient from its far end back to its near one.
+    pub reverse: bool,
+    /// Fold the map into an out-and-back before baking it.
+    ///
+    /// A sequential map repeated across a field slams its last color against its
+    /// first at every wrap, and that seam is the most visible edge in the
+    /// picture. Folding removes it — at the cost of halving how much of the
+    /// gradient one pass shows, which is a real change to the image and so is
+    /// never applied on a map's behalf. A cyclic map already meets itself and
+    /// must not be folded: it would halve the cycle the map was drawn to have.
+    pub mirror: bool,
+}
+
 impl Colormap {
-    /// Load `<directory>/<name>.json`.
+    /// Load `<directory>/<name>.json`, baked as written.
     pub fn load(directory: &Path, name: &str) -> Result<Colormap, String> {
+        Colormap::load_baked(directory, name, Bake::default())
+    }
+
+    /// Load `<directory>/<name>.json` and bake it the way `bake` asks.
+    pub fn load_baked(directory: &Path, name: &str, bake: Bake) -> Result<Colormap, String> {
         let path = directory.join(format!("{name}.json"));
         let text = std::fs::read_to_string(&path)
             .map_err(|e| format!("read colormap {}: {e}", path.display()))?;
@@ -79,19 +105,43 @@ impl Colormap {
                 file.name
             ));
         }
-        Colormap::from_stops(file.name, file.kind, &file.stops)
+        Colormap::from_stops_baked(file.name, file.kind, &file.stops, bake)
     }
 
-    /// Bake a colormap from sRGB8 control points.
+    /// Bake a colormap from sRGB8 control points, as written.
     pub fn from_stops(
         name: impl Into<String>,
         kind: Kind,
         stops: &[(f64, [u8; 3])],
     ) -> Result<Colormap, String> {
+        Colormap::from_stops_baked(name, kind, stops, Bake::default())
+    }
+
+    /// Bake a colormap from sRGB8 control points, folding and flipping first.
+    pub fn from_stops_baked(
+        name: impl Into<String>,
+        kind: Kind,
+        stops: &[(f64, [u8; 3])],
+        bake: Bake,
+    ) -> Result<Colormap, String> {
         let name = name.into();
         if stops.len() < 2 {
             return Err(format!("colormap '{name}' needs at least two stops"));
         }
+        if bake.mirror && kind == Kind::Cyclic {
+            return Err(format!(
+                "colormap '{name}' is cyclic, so folding it would halve the cycle it was drawn \
+                 to have. Folding is the seam fix for a sequential map, which has a seam."
+            ));
+        }
+
+        let folded;
+        let stops: &[(f64, [u8; 3])] = if bake.mirror {
+            folded = mirror(stops);
+            &folded
+        } else {
+            stops
+        };
 
         let mut stops: Vec<(f64, [f64; 3])> = stops
             .iter()
@@ -101,6 +151,7 @@ impl Colormap {
 
         let table = (0..TABLE_SIZE)
             .map(|i| {
+                let i = if bake.reverse { TABLE_SIZE - 1 - i } else { i };
                 let t = i as f64 / (TABLE_SIZE - 1) as f64;
                 oklab_to_linear_srgb(interpolate(&stops, t))
             })
@@ -137,6 +188,35 @@ impl Colormap {
             a[2] + (b[2] - a[2]) * fraction,
         ]
     }
+}
+
+/// Fold a stop list into a symmetric out-and-back.
+///
+/// The map runs forward across the first half and back across the second, so
+/// whatever color it opened with is also what it closes with and a repeat has no
+/// seam. `n` stops become `2n − 1`: the two ends are each shared between the
+/// halves rather than duplicated, and the opening color is written again at
+/// `1.0` — that closing segment is the fold, and leaving it to be inferred would
+/// hold the second-to-last color flat across the end instead.
+fn mirror(stops: &[(f64, [u8; 3])]) -> Vec<(f64, [u8; 3])> {
+    let mut sorted = stops.to_vec();
+    sorted.sort_by(|a, b| a.0.total_cmp(&b.0));
+    let span = sorted[sorted.len() - 1].0 - sorted[0].0;
+    if span <= 0.0 || !span.is_finite() {
+        return sorted;
+    }
+    let low = sorted[0].0;
+    let at = |index: usize| 0.5 * (sorted[index].0 - low) / span;
+    let mut out: Vec<(f64, [u8; 3])> = (0..sorted.len())
+        .map(|index| (at(index), sorted[index].1))
+        .collect();
+    out.extend(
+        (1..sorted.len() - 1)
+            .rev()
+            .map(|index| (1.0 - at(index), sorted[index].1)),
+    );
+    out.push((1.0, sorted[0].1));
+    out
 }
 
 /// Interpolate the sorted OKLab stops at `t`, holding the end colors beyond the
@@ -334,5 +414,93 @@ mod tests {
                 .kind(),
             Kind::Cyclic
         );
+    }
+
+    #[test]
+    fn reversing_reads_the_same_gradient_from_the_other_end() {
+        let forward = ramp();
+        let backward = Colormap::from_stops_baked(
+            "ramp",
+            Kind::Sequential,
+            &[
+                (0.0, [10, 20, 200]),
+                (0.5, [240, 250, 250]),
+                (1.0, [255, 160, 0]),
+            ],
+            Bake {
+                reverse: true,
+                mirror: false,
+            },
+        )
+        .unwrap();
+        for step in 0..=10 {
+            let t = step as f64 / 10.0;
+            let there = forward.lookup(t);
+            let back = backward.lookup(1.0 - t);
+            for channel in 0..3 {
+                assert!(
+                    (there[channel] - back[channel]).abs() < 1e-12,
+                    "reversed lookup at {t} differs on channel {channel}"
+                );
+            }
+        }
+    }
+
+    /// The point of folding: whatever the map opened with is also what it closes
+    /// with, so repeating it has no seam. The far end of the original lands in
+    /// the middle instead.
+    #[test]
+    fn folding_turns_a_run_into_an_out_and_back() {
+        let folded = Colormap::from_stops_baked(
+            "ramp",
+            Kind::Sequential,
+            &[
+                (0.0, [10, 20, 200]),
+                (0.5, [240, 250, 250]),
+                (1.0, [255, 160, 0]),
+            ],
+            Bake {
+                reverse: false,
+                mirror: true,
+            },
+        )
+        .unwrap();
+        let opening = folded.lookup(0.0);
+        let closing = folded.lookup(1.0);
+        for channel in 0..3 {
+            assert!(
+                (opening[channel] - closing[channel]).abs() < 0.02,
+                "a folded map does not close on the color it opened with"
+            );
+        }
+        // The original far end lands at the fold. Compared loosely on purpose:
+        // the fold is a kink in the gradient and the baked table straddles it,
+        // so the entry at exactly 0.5 is an average across the turn.
+        let middle = folded.lookup(0.5);
+        let far_end = ramp().lookup(1.0);
+        for channel in 0..3 {
+            assert!(
+                (middle[channel] - far_end[channel]).abs() < 0.01,
+                "the original far end should sit at the fold"
+            );
+        }
+    }
+
+    /// Folding a cyclic map would halve the cycle it was drawn to have, so it is
+    /// refused rather than silently done.
+    #[test]
+    fn a_cyclic_map_is_not_folded() {
+        let refusal = Colormap::from_stops_baked(
+            "loop",
+            Kind::Cyclic,
+            &[(0.0, [0, 0, 0]), (0.5, [255, 255, 255]), (1.0, [0, 0, 0])],
+            Bake {
+                reverse: false,
+                mirror: true,
+            },
+        )
+        .err()
+        .expect("folding a cyclic map is refused");
+        assert!(refusal.contains("cyclic"), "got: {refusal}");
     }
 }

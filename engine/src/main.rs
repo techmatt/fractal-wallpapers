@@ -26,10 +26,11 @@ use std::time::Instant;
 use serde::Serialize;
 
 use fractal_engine::{
-    coloring::{self, Coloring},
+    coloring::{self, Coloring, Palette},
     colormap::Colormap,
-    dump, expand, field, mode, resample, tiles,
+    dump, expand, field, mode, resample,
     spec::{Location, RecolorSpec, RenderSpec},
+    tiles,
 };
 
 /// What a render did, printed to stdout as one JSON object.
@@ -45,6 +46,9 @@ struct RenderReport {
     mode: Option<String>,
     /// The coloring in full, named or not — this is what determines the picture.
     coloring: Coloring,
+    /// How the gradient was spent on it. Echoed even when it is all defaults,
+    /// because a record that omitted it would not say which render it was.
+    palette: Palette,
     colormap: String,
     /// Share of samples whose orbit never escaped — a one-number sanity check on
     /// a render, and the first thing to look at when a frame comes out flat.
@@ -85,6 +89,8 @@ struct RecolorReport {
     field: String,
     colormap: String,
     transform: coloring::Transform,
+    /// How the gradient was spent. Echoed for the same reason a render's is.
+    palette: Palette,
     resolution: [u32; 2],
     output: String,
     seconds: f64,
@@ -168,7 +174,7 @@ fn print<T: Serialize>(report: &T) -> Result<(), String> {
 
 fn render(spec_path: Option<&str>) -> Result<(), String> {
     let spec = RenderSpec::parse(&read_spec(spec_path)?)?.resolve()?;
-    let colormap = Colormap::load(&spec.colormap_dir, &spec.colormap)?;
+    let colormap = Colormap::load_baked(&spec.colormap_dir, &spec.colormap, spec.palette.bake)?;
 
     let started = Instant::now();
     let painted = coloring::paint(
@@ -176,6 +182,7 @@ fn render(spec_path: Option<&str>) -> Result<(), String> {
         &spec.family,
         spec.maxiter,
         &spec.coloring,
+        &spec.palette,
         &colormap,
     )?;
     let paint_seconds = started.elapsed().as_secs_f64();
@@ -192,6 +199,7 @@ fn render(spec_path: Option<&str>) -> Result<(), String> {
         maxiter: spec.maxiter,
         mode: spec.mode,
         coloring: spec.coloring,
+        palette: spec.palette,
         colormap: colormap.name().to_string(),
         interior_fraction: painted.interior_fraction,
         output: spec.output.display().to_string(),
@@ -263,11 +271,11 @@ fn recolor(spec_path: Option<&str>) -> Result<(), String> {
     let (field, record) = dump::read(&spec.field)?;
 
     let name = spec.colormap.unwrap_or(record.colormap);
-    let colormap = Colormap::load(&spec.colormap_dir, &name)?;
+    let colormap = Colormap::load_baked(&spec.colormap_dir, &name, spec.palette.bake)?;
     let transform = spec.transform.unwrap_or(record.transform);
 
     let started = Instant::now();
-    let linear = coloring::colorize(&field, transform, &colormap);
+    let linear = coloring::shade(&field, transform, &spec.palette, &colormap);
     let [out_width, out_height] = record.resolution;
     let pixels = resample::downsample(
         &linear,
@@ -285,6 +293,7 @@ fn recolor(spec_path: Option<&str>) -> Result<(), String> {
         field: spec.field.display().to_string(),
         colormap: colormap.name().to_string(),
         transform,
+        palette: spec.palette,
         resolution: record.resolution,
         output: spec.output.display().to_string(),
         seconds,
