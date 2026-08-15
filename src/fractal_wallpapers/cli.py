@@ -652,6 +652,19 @@ def renders_build(args: argparse.Namespace) -> int:
     return 0
 
 
+def renders_verify(args: argparse.Namespace) -> int:
+    """Compare regenerated pictures against the ones the verdicts were cast on."""
+    from fractal_wallpapers.models import renders
+
+    try:
+        report = renders.verify(Path(args.source), args.head, sample=args.sample, seed=args.seed)
+    except renders.RenderCacheError as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps(report, indent=2))
+    return 0
+
+
 def judge_preregister(args: argparse.Namespace) -> int:
     """Write a finished-render judge's bar, before the head that it judges exists."""
     from fractal_wallpapers.models import finished_acceptance
@@ -1403,6 +1416,23 @@ def render_commands(subcommands) -> None:
     building.add_argument("--head", required=True, help="which judge's corpus")
     building.add_argument("--limit", type=int, help="stop after this many jobs of the plan")
     building.set_defaults(handler=renders_build)
+
+    checking = steps.add_parser(
+        "verify",
+        help="compare regenerated pictures against the ones the verdicts were cast on",
+        description=(
+            "The whole coloring recipe is reproduced from a record rather than shared, and "
+            "every knob of it is a way to be quietly wrong: the picture still looks like a "
+            "fractal and the verdict is about something else. Compares the pairs directly "
+            "against the only honest yardstick — what re-compressing the judged picture "
+            "costs. Needs the source project present."
+        ),
+    )
+    checking.add_argument("--head", required=True, help="which judge's corpus")
+    checking.add_argument("--source", required=True, help="the source repository's root")
+    checking.add_argument("--sample", type=int, default=60, help="how many pairs to compare")
+    checking.add_argument("--seed", type=int, default=0, help="the sample's seed (default: 0)")
+    checking.set_defaults(handler=renders_verify)
 
     registering = steps.add_parser(
         "preregister",

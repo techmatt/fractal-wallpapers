@@ -296,6 +296,151 @@ def build(head: str, limit: int | None = None, log: Path | None = None) -> dict:
     }
 
 
+#: What a regenerated picture is compared against: a JPEG of the judged one, at
+#: this quality, against the judged one itself. "The same picture" is a claim,
+#: and this is the scale it has to be true on — a difference smaller than what
+#: re-compressing the original costs is not a difference anybody judged.
+JPEG_FLOOR_QUALITY = 75
+
+
+def verify(root: Path, head: str, sample: int = 60, seed: int = 0) -> dict:
+    """How close the regenerated pictures are to the ones that were judged.
+
+    The whole recipe — gamma, traversal, fold, the edge transfer, the highlight
+    rolloff — is reproduced from a record rather than shared, and every one of
+    those knobs is a way to be quietly wrong: the picture still looks like a
+    fractal, the head still trains, and the verdict is about something else. So
+    the pairs are compared directly, at the head's own input size, against the
+    only honest yardstick available — what a plain re-compression of the judged
+    picture costs.
+
+    This is a build-era check and it needs the source project present. It found
+    the one defect it was written to find: an edge-transfer floor two orders of
+    magnitude too small, which left a third of the tonal range wrong on the 1,303
+    rows that use it and nothing wrong anywhere else.
+    """
+    import io
+    import random as _random
+
+    import numpy
+    from PIL import Image
+
+    from fractal_wallpapers.labeling import finished_import
+    from fractal_wallpapers.paths import colormap_dir
+
+    head = finished.head_of(head)
+    modes = finished_import.engine_modes()
+    cyclic = finished_import.cyclic_maps(finished_import.palette_names(root, head), colormap_dir())
+    crops = crop_dir(head)
+
+    pairs = []
+    for source_batch in sorted(finished_import.SOURCES[head]):
+        directory = finished_import.batch_dir(root, head, source_batch)
+        if not (directory / "crops").is_dir():
+            continue
+        for line in (directory / "images.jsonl").read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            source_row = json.loads(line)
+            judged = directory / "crops" / f"{source_row['image_id']}.jpg"
+            if not judged.is_file():
+                continue
+            row = _row_of(source_row, head, modes, cyclic)
+            ours = crops / f"{job_name(row)}.jpg"
+            if ours.is_file():
+                pairs.append((judged, ours, row))
+
+    if not pairs:
+        raise RenderCacheError(
+            f"no picture of the {head} corpus has both a judged crop under {root} and a "
+            f"regenerated one here. There is nothing to compare."
+        )
+    drawn = _random.Random(seed).sample(pairs, min(sample, len(pairs)))
+    size = (head_module_target()[0], head_module_target()[1])
+
+    def read(path: Path):
+        with Image.open(path) as opened:
+            return numpy.asarray(
+                opened.convert("RGB").resize(size, Image.BICUBIC), dtype=numpy.float64
+            )
+
+    deltas, floors, worst = [], [], []
+    for judged, ours, row in drawn:
+        theirs = read(judged)
+        delta = float(numpy.abs(theirs - read(ours)).mean())
+        buffer = io.BytesIO()
+        Image.fromarray(theirs.astype("uint8")).save(buffer, "JPEG", quality=JPEG_FLOOR_QUALITY)
+        buffer.seek(0)
+        with Image.open(buffer) as opened:
+            recompressed = numpy.asarray(opened.convert("RGB"), dtype=numpy.float64)
+        deltas.append(delta)
+        floors.append(float(numpy.abs(theirs - recompressed).mean()))
+        worst.append((delta, row["mode"], row["colormap"], row["recipe"]["transfer"]["kind"]))
+
+    worst.sort(reverse=True)
+    array = numpy.asarray(deltas)
+    floor = float(numpy.median(floors))
+    return {
+        "head": head,
+        "compared": len(drawn),
+        "available": len(pairs),
+        "seed": seed,
+        "scale": "mean absolute channel difference, 0-255, at the head's own input size",
+        "delta": {
+            "median": float(numpy.median(array)),
+            "p90": float(numpy.percentile(array, 90)),
+            "max": float(array.max()),
+        },
+        "recompression_floor": {
+            "quality": JPEG_FLOOR_QUALITY,
+            "median": floor,
+            "what": "a JPEG of the judged picture against the judged picture",
+        },
+        "closer_than_a_recompression": int((array <= floor).sum()),
+        "furthest": [
+            {"delta": round(delta, 2), "mode": mode, "colormap": name, "transfer": transfer}
+            for delta, mode, name, transfer in worst[:5]
+        ],
+    }
+
+
+def head_module_target() -> tuple[int, int]:
+    """The head's input size, from the head rather than restated."""
+    from fractal_wallpapers.models import head as head_module
+
+    return head_module.TARGET_WIDTH, head_module.TARGET_HEIGHT
+
+
+def _row_of(source_row: dict, head: str, modes: set, cyclic: set) -> dict:
+    """One source row as the store row it becomes — the same conversion, once."""
+    from fractal_wallpapers.labeling import finished_import
+
+    render, provenance = source_row["render"], source_row.get("provenance") or {}
+    params = finished_import.color_params_of(provenance)
+    colormap = render["palette"]
+    return {
+        "family": finished_import.family_of(render, provenance),
+        "viewport": {
+            "center_re": str(render["cx"]),
+            "center_im": str(render["cy"]),
+            "width": str(render["fw"]),
+        },
+        "mode": finished_import.mode_of(render, provenance, modes),
+        "mode_params": finished_import.mode_params_of(render, provenance),
+        "curve": finished_import.curve_of(params),
+        "colormap": colormap,
+        "recipe": finished_import.recipe_of(
+            params,
+            bool(provenance.get("transfer_dropped")),
+            colormap in cyclic,
+            colormap,
+            finished_import.rolloff_of(render, provenance),
+        ),
+        "render": finished_import.render_of(render),
+        "_head": head,
+    }
+
+
 def missing(head: str) -> list[dict]:
     """The plan's jobs whose picture is not on disk."""
     crops = crop_dir(head)
@@ -310,6 +455,7 @@ def crop_of(head: str, row: dict) -> Path:
 
 
 __all__ = [
+    "JPEG_FLOOR_QUALITY",
     "NAME_LENGTH",
     "SCHEMA",
     "SEED",
@@ -329,5 +475,6 @@ __all__ = [
     "plan_path",
     "read_plan",
     "spec_of",
+    "verify",
     "write_plan",
 ]

@@ -121,3 +121,39 @@ def test_the_evaluation_side_is_in_the_plan() -> None:
         jobs = renders.plan(head)
         places = {finished.place_of(job) for job in jobs}
         assert set(pinned) <= places, f"{head}: a pinned location is not in the plan"
+
+
+def test_a_regenerated_picture_is_the_picture_that_was_judged() -> None:
+    """The check that found the one defect the recipe transfer had.
+
+    An edge-transfer floor two orders of magnitude too small left a third of the
+    tonal range wrong on the 1,303 rows that use it and nothing wrong anywhere
+    else — invisible to every other test here, because the pictures were still
+    fractals and the head would still have trained on them.
+
+    Skipped where the source project or a complete cache is absent: CI has
+    neither, and a check that cannot read its input has not found a defect.
+    """
+    pytest.importorskip("numpy")
+    pytest.importorskip("PIL")
+    from pathlib import Path
+
+    source = Path("C:/Code/fractal-maker")
+    if not (source / "data").is_dir():
+        pytest.skip("the source project is not on this machine")
+    for head in finished.HEADS:
+        if not renders.plan_path(head).is_file() or renders.missing(head):
+            pytest.skip("the render cache is not complete on this machine")
+
+    for head in finished.HEADS:
+        report = renders.verify(source, head, sample=24)
+        floor = report["recompression_floor"]["median"]
+        assert report["delta"]["median"] <= floor, (
+            f"{head}: the typical regenerated picture is further from the judged one "
+            f"({report['delta']['median']:.2f}) than re-compressing it costs ({floor:.2f}). "
+            f"Furthest: {report['furthest'][:2]}"
+        )
+        assert report["delta"]["max"] <= 4 * floor, (
+            f"{head}: one regenerated picture is {report['delta']['max']:.2f} from the judged "
+            f"one. Something in its recipe did not reach the engine: {report['furthest'][0]}"
+        )
