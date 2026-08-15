@@ -80,12 +80,24 @@ NOT_CALLED = 0.01
 #: Draws in the cluster bootstrap, and its seed.
 DRAWS, BOOTSTRAP_SEED = 5000, 0
 
-#: The incumbent's committed control scores, and the manifest that says which
-#: location each of its rows is. Both are read-only, both live outside this
-#: repository, and neither is ever written to.
-INCUMBENT_SCORES = Path("C:/Code/fractal-maker/data/backbone_search/eval_scores_backbone_v1.jsonl")
-INCUMBENT_MANIFEST = Path("C:/Code/fractal-maker-artifacts/data/v11/manifest.jsonl")
+#: The three seeds of the incumbent's control arm.
 INCUMBENT_ARMS = ("mnv4_conv_medium_s0", "mnv4_conv_medium_s1", "mnv4_conv_medium_s2")
+
+#: Where the incumbent's committed scores are extracted from, when the bar is
+#: first written. Both files are read-only, both live outside this repository,
+#: and neither is ever written to. Resolved beside this checkout rather than
+#: from an absolute path — the source project is a sibling during the build era
+#: and absent afterwards, which is exactly why the yardstick is vendored.
+INCUMBENT_SCORES = Path("fractal-maker/data/backbone_search/eval_scores_backbone_v1.jsonl")
+INCUMBENT_MANIFEST = Path("fractal-maker-artifacts/data/v11/manifest.jsonl")
+
+
+def beside(relative: Path) -> Path:
+    """A sibling checkout's file, from this one's location."""
+    from fractal_wallpapers.paths import repo_root
+
+    return repo_root().parent / relative
+
 
 #: How the incumbent's family vocabulary maps onto this project's. Its names
 #: fold the degree into the family word; here the degree is its own field, and
@@ -108,6 +120,17 @@ def prereg_path(name: str = "location") -> Path:
     return train.head_dir(name) / "prereg.json"
 
 
+def yardstick_path(name: str = "location") -> Path:
+    """The incumbent's scores on this population, vendored.
+
+    Tracked, and that is the point: the source project is a sibling checkout
+    during the build era and gone afterwards. A bar whose yardstick lives in
+    another repository is a bar nobody can re-read, so the numbers the comparison
+    runs against are copied in once, when the bar is written, and never again.
+    """
+    return train.head_dir(name) / "yardstick.jsonl"
+
+
 def acceptance_path(name: str = "location") -> Path:
     """The read against it."""
     return train.head_dir(name) / "acceptance.json"
@@ -126,9 +149,7 @@ def _incumbent_family(row: dict) -> dict:
     return family
 
 
-def incumbent(
-    scores: Path = INCUMBENT_SCORES, manifest: Path = INCUMBENT_MANIFEST
-) -> dict[int, dict]:
+def extract(scores: Path | None = None, manifest: Path | None = None) -> dict[int, dict]:
     """The incumbent's committed scores, keyed on **this** project's location id.
 
     Its own row ids mean nothing here, so the join goes through the location
@@ -136,6 +157,8 @@ def incumbent(
     and lands on the id this repository's tile build uses. That is the whole
     trick, and it is why neither project had to be told about the other.
     """
+    scores = beside(INCUMBENT_SCORES) if scores is None else Path(scores)
+    manifest = beside(INCUMBENT_MANIFEST) if manifest is None else Path(manifest)
     by_location = {}
     for line in manifest.read_text(encoding="utf-8").splitlines():
         if not line.strip():
@@ -165,6 +188,38 @@ def incumbent(
             conditional = [row[f"{arm}_p{tier}"] for tier in (2, 3, 4)]
             entry[arm] = _running_product(conditional)
         out[identifier] = entry
+    return out
+
+
+def vendor(control: dict[int, dict], name: str = "location") -> Path:
+    """Write the yardstick down, one row per location. Returns the path."""
+    path = yardstick_path(name)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8", newline="\n") as handle:
+        for identifier, entry in sorted(control.items()):
+            row = {"schema": SCHEMA, "location_id": identifier, **entry}
+            handle.write(json.dumps(row) + "\n")
+    return path
+
+
+def incumbent(name: str = "location") -> dict[int, dict]:
+    """The vendored yardstick — what every read of the bar is measured against."""
+    path = yardstick_path(name)
+    if not path.is_file():
+        raise FileNotFoundError(
+            f"{path} is missing. It is written when the bar is, from the source project's "
+            "committed scores; without it there is nothing to compare a head to."
+        )
+    out = {}
+    for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        if row.get("schema") != SCHEMA:
+            raise ValueError(f"{path}:{number}: schema {row.get('schema')!r}, expected {SCHEMA}")
+        out[int(row["location_id"])] = {
+            key: value for key, value in row.items() if key not in ("schema", "location_id")
+        }
     return out
 
 
@@ -257,7 +312,7 @@ def preregister(name: str = "location", classes: int = head.CLASSES) -> dict:
 
     rows = [row for row in tile_module.read_locations() if row["side"] == "eval"]
     rows.sort(key=lambda row: row["location_id"])
-    control = incumbent()
+    control = extract()
     covered = [row for row in rows if row["location_id"] in control]
     if len(covered) != len(rows):
         raise ValueError(
@@ -271,6 +326,7 @@ def preregister(name: str = "location", classes: int = head.CLASSES) -> dict:
     for row in covered:
         populations.setdefault(control[row["location_id"]]["population"], []).append(row)
 
+    vendored = vendor({row["location_id"]: control[row["location_id"]] for row in covered}, name)
     stick = yardstick(covered, control, classes)
     precision = seed_precision(covered, control, classes)
     gates = {}
@@ -285,6 +341,7 @@ def preregister(name: str = "location", classes: int = head.CLASSES) -> dict:
     return {
         "schema": SCHEMA,
         "head": name,
+        "yardstick_record": vendored.name,
         "question": (
             "Is a location head trained inside this repository approximately comparable to the "
             "one the source project deployed, within the variance a fresh seed and a fresh "
@@ -398,7 +455,7 @@ def read(name: str = "location", classes: int = head.CLASSES) -> dict:
 
     bar = json.loads(prereg_path(name).read_text(encoding="utf-8"))
     scored = {int(row["location_id"]): row for row in scoring.read(name=name)}
-    control = incumbent()
+    control = incumbent(name)
     rows = [row for row in tile_module.read_locations() if row["side"] == "eval"]
     rows.sort(key=lambda row: row["location_id"])
     covered = [
@@ -629,17 +686,21 @@ def _clean_subset(covered, control, ours, labels, classes: int) -> dict:
 
 __all__ = [
     "DRAWS",
+    "beside",
     "INCUMBENT_ARMS",
     "MATERIAL_FLOOR",
     "MIN_POSITIVES",
     "NOT_CALLED",
     "SCHEMA",
     "acceptance_path",
+    "extract",
     "incumbent",
     "margin_of",
     "prereg_path",
     "preregister",
     "read",
     "seed_precision",
+    "vendor",
     "yardstick",
+    "yardstick_path",
 ]
