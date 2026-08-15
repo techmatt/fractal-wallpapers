@@ -72,3 +72,34 @@ def test_two_heads_cannot_ship_under_one_name() -> None:
     assert len(names) == 3, f"two heads would upload the same asset: {sorted(names)}"
     for head in ("location", "smooth_render", "strange_render"):
         assert head in ship.shipped_path(head).name
+
+
+def test_the_ordering_bound_is_stated_in_the_unit_auc_moves_in() -> None:
+    """An AUC on `p` positives and `n` negatives moves in steps of `1/(p·n)`.
+
+    A bound finer than one of those demands *zero* rank swaps, which is not what
+    "the order is materially unchanged" means and is not something a lossy cast
+    can promise. On a large population the absolute floor is the tighter of the
+    two and binds instead — which is the right way round.
+    """
+    tiny = 1.0 / (6 * 144)  # the strange sheet at its unmeasured boundary
+    large = 1.0 / (22 * 980)  # the location head at its release cutpoint
+    assert max(ship.AUC_TOLERANCE, ship.SWAP_TOLERANCE * tiny) > ship.AUC_TOLERANCE, (
+        "on a six-positive sheet a single swap is worth more than the floor, so the "
+        "swap term has to be what binds"
+    )
+    assert max(ship.AUC_TOLERANCE, ship.SWAP_TOLERANCE * large) == ship.AUC_TOLERANCE, (
+        "on a thousand-row population a couple of swaps are invisible and the floor binds"
+    )
+
+
+def test_a_head_is_shipped_on_its_decisions_rather_than_its_probabilities() -> None:
+    """The per-row bound was a proxy; the decoded tier is the thing itself."""
+    assert 0.0 < ship.DECISION_TOLERANCE <= 0.02, "one in a hundred, not one in ten"
+    from fractal_wallpapers.models import head
+
+    # Decoding is a threshold on a rank, so a probability may move a long way
+    # without changing an answer, and a hair's move at the threshold changes one.
+    assert head.decode([0.99, 0.98, 0.51], 3) == 4
+    assert head.decode([0.99, 0.98, 0.49], 3) == 3
+    assert head.decode([0.99, 0.60, 0.49], 3) == 3, "a big move that changes nothing"

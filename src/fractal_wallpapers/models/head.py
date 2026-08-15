@@ -291,6 +291,22 @@ def rank_score(probabilities_):
     return numpy.asarray(probabilities_, dtype=numpy.float64).sum(axis=1)
 
 
+def decode(probabilities_, cutpoints: int | None = None) -> int:
+    """One row's tier: 1, plus every cutpoint whose probability reaches a half.
+
+    A threshold on a rank rather than an argmax over classes. The probabilities
+    are monotone by construction, so this can never name a tier the head thought
+    less likely than the one below it — which an argmax over four independent
+    class scores can and does.
+    """
+    row = list(probabilities_)
+    tier = 1
+    for index in range(cutpoints if cutpoints is not None else len(row)):
+        if row[index] >= 0.5:
+            tier += 1
+    return tier
+
+
 def cutpoint_label(index: int) -> str:
     """What cutpoint `index` is about, as it is written in every record."""
     return f"ge{index + 2}"
@@ -312,6 +328,7 @@ __all__ = [
     "conditional",
     "corn_loss",
     "cutpoint_label",
+    "decode",
     "data_config",
     "loss_of",
     "probabilities",
