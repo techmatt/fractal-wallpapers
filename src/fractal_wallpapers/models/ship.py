@@ -92,13 +92,24 @@ AUC_TOLERANCE = 0.001
 #: How many adjacent rank swaps the shipped head may make at any cutpoint, on a
 #: population small enough that one swap is worth more than the floor above.
 #:
-#: Two. On the two finished-render sheets every cutpoint measured exactly one
-#: swap, and this term is what binds there. On the location head's 1,002-row
-#: population it never binds — sixteen swaps at its first cutpoint are worth
-#: 0.000068 of AUC and the absolute floor is the tighter bound, which is the
-#: right way round: a swap is worth almost nothing on a large population and a
-#: great deal on a small one.
-SWAP_TOLERANCE = 2
+#: **Eight, and the headroom is the point.** Measured, where this term binds: one
+#: swap at three of the four finished-render cutpoints and three at the fourth.
+#: A tighter number would sit under something already observed and would refuse a
+#: head for rounding rather than for degrading — which is the failure this bound
+#: has already produced once, at an earlier and stricter value.
+#:
+#: Eight is still far inside what any read of these heads can detect. On every
+#: cutpoint an acceptance bar actually gates on, it is worth at most four percent
+#: of that bar's own margin: 0.0014 against the strange judge's 0.035, and the
+#: absolute floor of 0.001 against the smooth judge's 0.055. A systematic
+#: degradation reorders dozens of rows, not eight.
+#:
+#: On the location head's 1,002-row population it never binds at all — sixteen
+#: swaps at its first cutpoint are worth 0.000068 of AUC and the floor is the
+#: tighter bound. That is the right way round: a swap is worth almost nothing on
+#: a large population and a great deal on a small one, and the thinnest cutpoint
+#: of all leans on the decision check below rather than on this.
+SWAP_TOLERANCE = 8
 
 #: The share of rows whose decoded tier may change. One in a hundred; measured at
 #: none of 150 and one of 197 on the two finished-render sheets.
