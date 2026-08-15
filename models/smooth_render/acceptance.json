@@ -3,7 +3,7 @@
   "head": "smooth_render",
   "prereg": "C:\\Code\\fractal-wallpapers\\models\\smooth_render\\prereg.json",
   "runs": [
-    "None"
+    "its own"
   ],
   "population": {
     "rows": 197,
@@ -13,14 +13,14 @@
   },
   "ordering": {
     "boundary": "ge4",
-    "ours": 0.5691006600660066,
+    "ours": 0.630569306930693,
     "our_band": {
-      "None": 0.5691006600660066
+      "its own": 0.630569306930693
     },
-    "judged_on": "None",
+    "judged_on": "its own",
     "interval": [
-      0.48447380838386545,
-      0.64971254523317
+      0.5513221553851156,
+      0.7059379817531511
     ],
     "target": 0.5670585808580858,
     "margin": 0.055,
@@ -47,7 +47,7 @@
       "picked_from": 5,
       "selected": true
     },
-    "verdict": "BORDERLINE"
+    "verdict": "PASS"
   },
   "interface": {
     "cutpoints": [
@@ -66,22 +66,22 @@
       2.0
     ],
     "observed": 0.4873096446700508,
-    "predicted": 0.6090163827855987,
-    "ratio": 1.2497523688412806,
-    "verdict": "PASS"
+    "predicted": 0.20216057454367414,
+    "ratio": 0.41485034567816464,
+    "verdict": "FAIL"
   },
   "agreement": {
-    "agreement": 0.4365482233502538,
+    "agreement": 0.39086294416243655,
     "interval": [
-      0.36548223350253806,
-      0.5076142131979695
+      0.3248730964467005,
+      0.45685279187817257
     ],
-    "within_one_tier": 0.9644670050761421,
+    "within_one_tier": 0.8984771573604061,
     "decoded_tiers": {
-      "1": 4,
-      "2": 12,
-      "3": 62,
-      "4": 119
+      "1": 5,
+      "2": 47,
+      "3": 107,
+      "4": 38
     },
     "verdict": "REPORTED",
     "why_not_gated": "no decoded verdict for either source head on this sheet was committed, so there is nothing to compare this to"
@@ -97,8 +97,8 @@
       "verdict": "REPORTED",
       "positives": 191,
       "negatives": 6,
-      "ours": 0.7456369982547993
+      "ours": 0.7635253054101222
     }
   },
-  "verdict": "BORDERLINE"
+  "verdict": "FAIL"
 }
