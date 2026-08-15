@@ -222,37 +222,49 @@ def sampler(locations: list[Location], beta: float = BETA_BIASED) -> tuple:
     )
 
 
-def training_set(locations: list[Location], transform, seed: int = 0):
-    """The dataset a training epoch iterates: one tile per location, redrawn."""
-    from torch.utils.data import Dataset
+class TileDraw:
+    """The dataset a training epoch iterates: one tile per location, redrawn.
 
-    class TileDraw(Dataset):
-        def __init__(self):
-            self.epoch = 0
+    A module-level class rather than one built inside [`training_set`], and that
+    is not a style preference. The loader's workers are separate *processes* on
+    Windows — spawned, not forked — so everything they are handed has to survive
+    a pickle, and a class defined inside a function cannot be found again by
+    name on the other side. The failure is at the first batch, after the whole
+    corpus has been joined.
+    """
 
-        def set_epoch(self, epoch: int) -> None:
-            self.epoch = int(epoch)
+    def __init__(self, locations: list[Location], transform, seed: int = 0):
+        self.locations = locations
+        self.transform = transform
+        self.seed = seed
+        self.epoch = 0
 
-        def __len__(self) -> int:
-            return len(locations)
+    def set_epoch(self, epoch: int) -> None:
+        self.epoch = int(epoch)
 
-        def __getitem__(self, index: int):
-            from PIL import Image
+    def __len__(self) -> int:
+        return len(self.locations)
 
-            location = locations[index]
-            # Reproducible per (seed, epoch, index) and varying with the epoch,
-            # so the thirty-two tiles are actually exercised rather than one of
-            # them being memorized forty times.
-            draw = random.Random(
-                (seed * 2_654_435_761 + self.epoch * 1_000_003 + index) & 0xFFFF_FFFF_FFFF
-            )
-            path = location.path(draw.randrange(len(location.tiles)))
-            with Image.open(path) as opened:
-                opened.load()
-                image = opened.convert("RGB")
-            return transform(image, draw), location.score, index
+    def __getitem__(self, index: int):
+        from PIL import Image
 
-    return TileDraw()
+        location = self.locations[index]
+        # Reproducible per (seed, epoch, index) and varying with the epoch, so
+        # the thirty-two tiles are actually exercised rather than one of them
+        # being memorized forty times.
+        draw = random.Random(
+            (self.seed * 2_654_435_761 + self.epoch * 1_000_003 + index) & 0xFFFF_FFFF_FFFF
+        )
+        path = location.path(draw.randrange(len(location.tiles)))
+        with Image.open(path) as opened:
+            opened.load()
+            image = opened.convert("RGB")
+        return self.transform(image, draw), location.score, index
+
+
+def training_set(locations: list[Location], transform, seed: int = 0) -> TileDraw:
+    """One epoch's worth of examples: a location each, a tile drawn per epoch."""
+    return TileDraw(locations, transform, seed)
 
 
 def histogram(locations: list[Location]) -> dict:
@@ -282,6 +294,7 @@ __all__ = [
     "SELECTION_SEED",
     "SELECTION_SHARE",
     "Location",
+    "TileDraw",
     "assign_selection",
     "histogram",
     "join",
