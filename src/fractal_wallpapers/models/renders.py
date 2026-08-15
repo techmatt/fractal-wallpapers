@@ -140,7 +140,12 @@ def coloring_of(row: dict) -> dict:
     elif coloring["kind"] == "composite":
         coloring["base"]["transform"] = curve
     elif coloring["kind"] == "direct":
-        coloring["transform"] = curve
+        # The curve is NOT set here, and that is what the corpora did. A direct
+        # trap has no field: its colour key is how near the orbit came, as a
+        # fraction of the threshold, and the source's own path samples the
+        # gradient at that key untouched — no stretch, no curve, no gamma. Two
+        # rows that differ only in a curve are therefore the same picture here,
+        # which is why they share one file.
         for name, value in settings.items():
             if name not in ("opacity", "threshold"):
                 raise RenderCacheError(f"{mode}: no setting named {name!r}")

@@ -723,7 +723,7 @@ fn paint_untoned(
             start_color,
             *transform,
         )?
-        .paint(view, family, maxiter, palette, colormap),
+        .paint(view, family, maxiter, colormap),
     }
 }
 
