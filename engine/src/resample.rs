@@ -44,7 +44,7 @@ fn lanczos3(x: f64) -> f64 {
 
 /// One output coordinate's kernel: where its run of source samples starts, and
 /// the weights over that run, already normalized to sum to 1.
-struct Taps {
+pub struct Taps {
     start: usize,
     weights: Vec<f64>,
 }
@@ -56,11 +56,28 @@ struct Taps {
 /// coordinate because the kernel gets clipped at the edges of the image, and an
 /// unnormalized clipped kernel darkens the border.
 fn build_taps(destination_len: usize, source_len: usize, ss: u32) -> Vec<Taps> {
-    let ratio = ss as f64;
+    build_taps_at(destination_len, source_len, 0.0, ss as f64)
+}
+
+/// The same kernel, for a reduction that starts at a fractional `origin` and
+/// runs at a non-integer `ratio`.
+///
+/// A whole-frame render reduces the supersampled grid by an integer factor from
+/// its very first sample, which is the case [`build_taps`] covers. A *crop* of a
+/// larger field does neither: it begins part-way into the field, at a fraction
+/// of a subpixel, and its ratio is the crop's scale times the field's
+/// supersampling — which a random scale makes irrational. Both facts land here
+/// and nowhere else, so the filter itself is the same kernel at the same reach.
+pub fn build_taps_at(
+    destination_len: usize,
+    source_len: usize,
+    origin: f64,
+    ratio: f64,
+) -> Vec<Taps> {
     let reach = RADIUS * ratio;
     (0..destination_len)
         .map(|d| {
-            let center = (d as f64 + 0.5) * ratio;
+            let center = origin + (d as f64 + 0.5) * ratio;
             let first = ((center - reach).floor().max(0.0)) as usize;
             let last = ((center + reach).ceil() as usize).min(source_len - 1);
             let mut weights: Vec<f64> = (first..=last)
@@ -80,22 +97,20 @@ fn build_taps(destination_len: usize, source_len: usize, ss: u32) -> Vec<Taps> {
         .collect()
 }
 
-/// Reduce a supersampled linear-light image to `out_width × out_height` sRGB8.
+/// Reduce a linear-light buffer through kernels somebody else built.
 ///
-/// Separable: a horizontal pass, then a vertical one over the intermediate.
-/// Doing it separably rather than with a 2-D kernel turns `(6·ss)²` multiplies
-/// per output pixel into `2·(6·ss)`, which at `ss = 4` is the difference between
-/// a render that resamples in a second and one that resamples in a minute.
-pub fn downsample(
+/// [`downsample`] is this with the kernels of a whole-frame render; the tile
+/// builder passes the kernels of a crop. Splitting the two apart keeps one
+/// implementation of the separable passes and the sRGB encoding, which is the
+/// half that is easy to get subtly wrong twice.
+pub fn apply_taps(
     linear: &[[f64; 3]],
     source_width: usize,
     source_height: usize,
-    out_width: usize,
-    out_height: usize,
-    ss: u32,
+    horizontal: &[Taps],
+    vertical: &[Taps],
 ) -> Vec<u8> {
-    let horizontal = build_taps(out_width, source_width, ss);
-    let vertical = build_taps(out_height, source_height, ss);
+    let out_width = horizontal.len();
 
     // Horizontal pass: every source row narrowed to the output width.
     let narrowed: Vec<Vec<[f64; 3]>> = (0..source_height)
@@ -145,6 +160,31 @@ pub fn downsample(
     rows.concat()
 }
 
+/// Reduce a supersampled linear-light image to `out_width × out_height` sRGB8.
+///
+/// Separable: a horizontal pass, then a vertical one over the intermediate.
+/// Doing it separably rather than with a 2-D kernel turns `(6·ss)²` multiplies
+/// per output pixel into `2·(6·ss)`, which at `ss = 4` is the difference between
+/// a render that resamples in a second and one that resamples in a minute.
+pub fn downsample(
+    linear: &[[f64; 3]],
+    source_width: usize,
+    source_height: usize,
+    out_width: usize,
+    out_height: usize,
+    ss: u32,
+) -> Vec<u8> {
+    let horizontal = build_taps(out_width, source_width, ss);
+    let vertical = build_taps(out_height, source_height, ss);
+    apply_taps(
+        linear,
+        source_width,
+        source_height,
+        &horizontal,
+        &vertical,
+    )
+}
+
 /// JPEG quality for the steering thumbnails, on the encoder's 0–100 scale.
 ///
 /// High enough that the compression is invisible at the sizes these are looked
@@ -190,17 +230,32 @@ fn make_parent(path: &std::path::Path) -> Result<(), String> {
     Ok(())
 }
 
-/// Write an 8-bit sRGB image as a JPEG.
+/// Write an 8-bit sRGB image as a JPEG at the thumbnail quality.
 pub fn write_jpeg(
     path: &std::path::Path,
     pixels: &[u8],
     width: u32,
     height: u32,
 ) -> Result<(), String> {
+    write_jpeg_at(path, pixels, width, height, JPEG_QUALITY)
+}
+
+/// Write an 8-bit sRGB image as a JPEG at a stated quality.
+///
+/// A training tile draws its own quality, because the compression a judge will
+/// meet at deploy time is not a constant and a head trained at one quality reads
+/// the artifacts of another as structure.
+pub fn write_jpeg_at(
+    path: &std::path::Path,
+    pixels: &[u8],
+    width: u32,
+    height: u32,
+    quality: u8,
+) -> Result<(), String> {
     make_parent(path)?;
     let file =
         std::fs::File::create(path).map_err(|e| format!("create {}: {e}", path.display()))?;
-    let encoder = jpeg_encoder::Encoder::new(std::io::BufWriter::new(file), JPEG_QUALITY);
+    let encoder = jpeg_encoder::Encoder::new(std::io::BufWriter::new(file), quality);
     let (width, height) = (u16::try_from(width), u16::try_from(height));
     let (Ok(width), Ok(height)) = (width, height) else {
         return Err(format!(

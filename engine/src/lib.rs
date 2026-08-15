@@ -24,6 +24,13 @@
 //! expand       one rung of a walk, for a batch of nodes
 //! ```
 //!
+//! And beside *that*, the one bulk producer:
+//!
+//! ```text
+//! tiles        one field per location, many colored crops of it — the pictures
+//!              a judge is trained on
+//! ```
+//!
 //! The search decides *where* to render and never *how*: it reads fields the
 //! pipeline above produced and returns coordinates. What makes a picture good is
 //! not its business — that judgement lives in Python, in a scorer this half is
@@ -56,4 +63,5 @@ pub mod resample;
 pub mod rng;
 pub mod screen;
 pub mod spec;
+pub mod tiles;
 pub mod viewport;

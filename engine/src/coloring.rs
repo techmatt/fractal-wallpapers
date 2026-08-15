@@ -300,12 +300,17 @@ impl Stretch {
     /// colored by an exterior-only field — gets a degenerate but harmless
     /// stretch: nothing will be looked up through it.
     pub fn measure(field: &Field) -> Stretch {
-        let mut valid: Vec<f64> = field
-            .values
-            .iter()
-            .filter(|v| v.is_finite())
-            .map(|&v| v as f64)
-            .collect();
+        Stretch::over(field.values.iter().copied())
+    }
+
+    /// Measure the stretch over any run of samples, invalid ones included.
+    ///
+    /// A crop of a larger field normalizes against **its own** samples, not
+    /// against the field it was cut from: the whole point of the stretch is that
+    /// a frame frames itself, and a tile borrowing a wider frame's percentiles
+    /// would be colored for a picture nobody is looking at.
+    pub fn over(samples: impl Iterator<Item = f32>) -> Stretch {
+        let mut valid: Vec<f64> = samples.filter(|v| v.is_finite()).map(|v| v as f64).collect();
         if valid.is_empty() {
             return Stretch {
                 low: 0.0,
