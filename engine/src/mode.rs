@@ -113,6 +113,7 @@ pub fn resolve(name: &str) -> Result<Coloring, String> {
         opacity,
         merge,
         start_color: start_color.to_string(),
+        transform: Transform::Linear,
     };
 
     Ok(match name {

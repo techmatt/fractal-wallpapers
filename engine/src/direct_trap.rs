@@ -130,6 +130,7 @@ pub struct Painter {
     opacity: f64,
     merge: Blend,
     start_color: [f64; 3],
+    transform: crate::coloring::Transform,
 }
 
 impl Painter {
@@ -142,6 +143,7 @@ impl Painter {
         opacity: f64,
         merge: Blend,
         start_color: &str,
+        transform: crate::coloring::Transform,
     ) -> Result<Painter, String> {
         let saturating = merge == Blend::Screen && shape == Shape::Cross;
         let (opacity_cap, threshold_cap) = if saturating {
@@ -159,6 +161,7 @@ impl Painter {
             opacity: opacity.clamp(0.0, 1.0).min(opacity_cap),
             merge,
             start_color: parse_start_color(start_color)?,
+            transform,
         })
     }
 
@@ -238,7 +241,9 @@ impl Painter {
 
             let distance = self.shape.distance(z, self.radius);
             if distance < self.threshold {
-                let key = (distance / self.threshold).clamp(0.0, 1.0);
+                let key = self
+                    .transform
+                    .apply((distance / self.threshold).clamp(0.0, 1.0));
                 // The palette recipe reaches here too: a direct trap has no
                 // field to stretch, so the key it already computed — how near
                 // the orbit came, as a fraction of the threshold — is what the
@@ -386,6 +391,7 @@ mod tests {
             0.45,
             Blend::Screen,
             "white",
+            Default::default(),
         )
         .unwrap();
         let painted = painter
@@ -399,11 +405,19 @@ mod tests {
     #[test]
     fn multiplying_onto_white_darkens_and_onto_black_does_nothing() {
         let paint = |start| {
-            Painter::new(Shape::Cross, 1.0, Some(0.1), 0.2, Blend::Multiply, start)
-                .unwrap()
-                .paint(&view(), &julia(), 200, &Default::default(), &gradient())
-                .unwrap()
-                .linear
+            Painter::new(
+                Shape::Cross,
+                1.0,
+                Some(0.1),
+                0.2,
+                Blend::Multiply,
+                start,
+                Default::default(),
+            )
+            .unwrap()
+            .paint(&view(), &julia(), 200, &Default::default(), &gradient())
+            .unwrap()
+            .linear
         };
         let on_white = paint("white");
         assert!(
@@ -417,18 +431,43 @@ mod tests {
     /// spec can ask for a frame that is beyond recovery.
     #[test]
     fn a_screened_cross_is_held_below_the_saturating_corner() {
-        let painter =
-            Painter::new(Shape::Cross, 1.0, Some(0.5), 0.9, Blend::Screen, "black").unwrap();
+        let painter = Painter::new(
+            Shape::Cross,
+            1.0,
+            Some(0.5),
+            0.9,
+            Blend::Screen,
+            "black",
+            Default::default(),
+        )
+        .unwrap();
         assert_eq!(painter.opacity(), SCREEN_CROSS_OPACITY_CAP);
         assert_eq!(painter.threshold(), SCREEN_CROSS_THRESHOLD_CAP);
 
         // Below the cap the clamp is not there at all, and no other shape or
         // blend is touched by it.
-        let under =
-            Painter::new(Shape::Cross, 1.0, Some(0.05), 0.15, Blend::Screen, "black").unwrap();
+        let under = Painter::new(
+            Shape::Cross,
+            1.0,
+            Some(0.05),
+            0.15,
+            Blend::Screen,
+            "black",
+            Default::default(),
+        )
+        .unwrap();
         assert_eq!(under.threshold(), 0.05);
         assert_eq!(under.opacity(), 0.15);
-        let ring = Painter::new(Shape::Ring, 1.0, Some(0.5), 0.9, Blend::Screen, "black").unwrap();
+        let ring = Painter::new(
+            Shape::Ring,
+            1.0,
+            Some(0.5),
+            0.9,
+            Blend::Screen,
+            "black",
+            Default::default(),
+        )
+        .unwrap();
         assert_eq!(ring.threshold(), 0.5);
         assert_eq!(ring.opacity(), 0.9);
     }
@@ -436,7 +475,16 @@ mod tests {
     #[test]
     fn an_absent_threshold_takes_the_shape_s_default() {
         for shape in SHAPES {
-            let painter = Painter::new(shape, 1.0, None, 0.45, Blend::Multiply, "black").unwrap();
+            let painter = Painter::new(
+                shape,
+                1.0,
+                None,
+                0.45,
+                Blend::Multiply,
+                "black",
+                Default::default(),
+            )
+            .unwrap();
             assert_eq!(painter.threshold(), shape.default_threshold(), "{shape:?}");
         }
     }
@@ -449,16 +497,24 @@ mod tests {
             center: Complex::new(-0.5, 0.0),
             ..view()
         };
-        let painted = Painter::new(Shape::Cross, 1.0, None, 0.2, Blend::Multiply, "white")
-            .unwrap()
-            .paint(
-                &whole_set,
-                &Family::Multibrot { degree: 2 },
-                400,
-                &Default::default(),
-                &gradient(),
-            )
-            .unwrap();
+        let painted = Painter::new(
+            Shape::Cross,
+            1.0,
+            None,
+            0.2,
+            Blend::Multiply,
+            "white",
+            Default::default(),
+        )
+        .unwrap()
+        .paint(
+            &whole_set,
+            &Family::Multibrot { degree: 2 },
+            400,
+            &Default::default(),
+            &gradient(),
+        )
+        .unwrap();
         assert!(
             painted.interior_fraction > 0.02 && painted.interior_fraction < 0.9,
             "{}",

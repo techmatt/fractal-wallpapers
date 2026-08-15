@@ -359,6 +359,12 @@ pub enum Coloring {
         merge: Blend,
         #[serde(default = "black")]
         start_color: String,
+        /// The curve the nearness of a hit is read through, before the palette
+        /// recipe places it. A direct trap has no field to normalize, so this is
+        /// the one curve in its path and it acts on the same `[0, 1]` a field
+        /// mode's stretch produces.
+        #[serde(default)]
+        transform: Transform,
     },
 }
 
@@ -701,6 +707,7 @@ fn paint_untoned(
             opacity,
             merge,
             start_color,
+            transform,
         } => direct_trap::Painter::new(
             *shape,
             *trap_radius,
@@ -708,6 +715,7 @@ fn paint_untoned(
             *opacity,
             *merge,
             start_color,
+            *transform,
         )?
         .paint(view, family, maxiter, palette, colormap),
     }
@@ -1032,6 +1040,7 @@ mod tests {
                 opacity: 0.45,
                 merge: Blend::Screen,
                 start_color: "black".into(),
+                transform: Transform::Linear,
             },
         ];
         for coloring in colorings {
@@ -1070,6 +1079,7 @@ mod tests {
             opacity: 0.15,
             merge: Blend::Screen,
             start_color: "black".into(),
+            transform: Transform::Linear,
         };
         assert!(direct.dumpable_field().is_none());
         assert!(direct.why_not_a_field().unwrap().contains("color-valued"));
@@ -1188,14 +1198,20 @@ mod tests {
             let value = step as f64 / 100.0;
             assert_eq!(soft.apply(value), value, "the shadows moved");
         }
-        assert!((soft.apply(knee) - knee).abs() < 1e-12, "there is a step at the knee");
+        assert!(
+            (soft.apply(knee) - knee).abs() < 1e-12,
+            "there is a step at the knee"
+        );
         for step in 36..=200 {
             let value = step as f64 / 100.0;
             let out = soft.apply(value);
             assert!(out < value, "a highlight was not compressed");
             assert!(out < 1.0, "the shoulder reached white");
         }
-        assert!(soft.apply(4.0) > soft.apply(2.0), "the shoulder went backwards");
+        assert!(
+            soft.apply(4.0) > soft.apply(2.0),
+            "the shoulder went backwards"
+        );
     }
 
     /// A rolled-off highlight keeps its hue: all three channels are rescaled by
