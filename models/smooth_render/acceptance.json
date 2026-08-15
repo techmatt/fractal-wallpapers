@@ -1,0 +1,104 @@
+{
+  "schema": 1,
+  "head": "smooth_render",
+  "prereg": "C:\\Code\\fractal-wallpapers\\models\\smooth_render\\prereg.json",
+  "runs": [
+    "None"
+  ],
+  "population": {
+    "rows": 197,
+    "locations": 197,
+    "boundary": "ge4",
+    "positives": 96
+  },
+  "ordering": {
+    "boundary": "ge4",
+    "ours": 0.5691006600660066,
+    "our_band": {
+      "None": 0.5691006600660066
+    },
+    "judged_on": "None",
+    "interval": [
+      0.48447380838386545,
+      0.64971254523317
+    ],
+    "target": 0.5670585808580858,
+    "margin": 0.055,
+    "floor": 0.5120585808580858,
+    "incumbent": {
+      "name": "v3",
+      "auc": 0.5096947194719472,
+      "ap": 0.4795420693656447
+    },
+    "adopted": {
+      "name": "v4b",
+      "auc": 0.5719884488448845,
+      "ap": 0.5260021602305184,
+      "auc_is": "the seed its own trainer staged, chosen on its pooled evaluation side rather than on this sheet",
+      "picked": 0.6089108910891089,
+      "picked_is": "the seed the adoption chose BY THIS SHEET'S OWN statistic \u2014 a selected maximum, which its adoption record says outright",
+      "seeds": [
+        0.5719884488448845,
+        0.6089108910891089,
+        0.5567244224422442,
+        0.5851897689768977,
+        0.5124793729372937
+      ],
+      "picked_from": 5,
+      "selected": true
+    },
+    "verdict": "BORDERLINE"
+  },
+  "interface": {
+    "cutpoints": [
+      "p_ge2",
+      "p_ge3",
+      "p_ge4"
+    ],
+    "rows": 197,
+    "rows_missing_a_cutpoint": 0,
+    "rows_out_of_order": 0,
+    "verdict": "PASS"
+  },
+  "calibration": {
+    "tolerance": [
+      0.5,
+      2.0
+    ],
+    "observed": 0.4873096446700508,
+    "predicted": 0.6090163827855987,
+    "ratio": 1.2497523688412806,
+    "verdict": "PASS"
+  },
+  "agreement": {
+    "agreement": 0.4365482233502538,
+    "interval": [
+      0.36548223350253806,
+      0.5076142131979695
+    ],
+    "within_one_tier": 0.9644670050761421,
+    "decoded_tiers": {
+      "1": 4,
+      "2": 12,
+      "3": 62,
+      "4": 119
+    },
+    "verdict": "REPORTED",
+    "why_not_gated": "no decoded verdict for either source head on this sheet was committed, so there is nothing to compare this to"
+  },
+  "other_boundaries": {
+    "ge2": {
+      "verdict": "NOT_MEASURABLE",
+      "positives": 197,
+      "negatives": 0,
+      "why": "one class only"
+    },
+    "ge3": {
+      "verdict": "REPORTED",
+      "positives": 191,
+      "negatives": 6,
+      "ours": 0.7456369982547993
+    }
+  },
+  "verdict": "BORDERLINE"
+}
