@@ -178,6 +178,7 @@ impl Painter {
         view: &Viewport,
         family: &Family,
         maxiter: u32,
+        palette: &crate::coloring::Palette,
         colormap: &Colormap,
     ) -> Result<Painted, String> {
         let width = view.sample_width();
@@ -189,8 +190,13 @@ impl Painter {
                 let mut colors = Vec::with_capacity(width as usize);
                 let mut interior = 0;
                 for col in 0..width {
-                    let (color, escaped) =
-                        self.trace(family, view.sample_point(col, row), maxiter, colormap);
+                    let (color, escaped) = self.trace(
+                        family,
+                        view.sample_point(col, row),
+                        maxiter,
+                        palette,
+                        colormap,
+                    );
                     if !escaped {
                         interior += 1;
                     }
@@ -215,6 +221,7 @@ impl Painter {
         family: &Family,
         pixel: Complex<f64>,
         maxiter: u32,
+        palette: &crate::coloring::Palette,
         colormap: &Colormap,
     ) -> ([f64; 3], bool) {
         let bailout_sq = BAILOUT * BAILOUT;
@@ -232,7 +239,12 @@ impl Painter {
             let distance = self.shape.distance(z, self.radius);
             if distance < self.threshold {
                 let key = (distance / self.threshold).clamp(0.0, 1.0);
-                let sample = colormap.lookup(key);
+                // The palette recipe reaches here too: a direct trap has no
+                // field to stretch, so the key it already computed — how near
+                // the orbit came, as a fraction of the threshold — is what the
+                // recipe is applied to. The opacity keeps the *unplaced* key,
+                // because feathering is about nearness and not about color.
+                let sample = colormap.lookup(palette.place(key));
                 let alpha = self.opacity * (1.0 - key);
                 for channel in 0..3 {
                     let blended = self.merge.apply(color[channel], sample[channel]);
@@ -376,7 +388,9 @@ mod tests {
             "white",
         )
         .unwrap();
-        let painted = painter.paint(&view(), &julia(), 60, &gradient()).unwrap();
+        let painted = painter
+            .paint(&view(), &julia(), 60, &Default::default(), &gradient())
+            .unwrap();
         assert!(painted.linear.iter().all(|&color| color == [1.0, 1.0, 1.0]));
     }
 
@@ -387,7 +401,7 @@ mod tests {
         let paint = |start| {
             Painter::new(Shape::Cross, 1.0, Some(0.1), 0.2, Blend::Multiply, start)
                 .unwrap()
-                .paint(&view(), &julia(), 200, &gradient())
+                .paint(&view(), &julia(), 200, &Default::default(), &gradient())
                 .unwrap()
                 .linear
         };
@@ -441,6 +455,7 @@ mod tests {
                 &whole_set,
                 &Family::Multibrot { degree: 2 },
                 400,
+                &Default::default(),
                 &gradient(),
             )
             .unwrap();

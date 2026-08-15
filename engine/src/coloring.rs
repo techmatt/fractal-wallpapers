@@ -89,6 +89,120 @@ impl Transform {
     }
 }
 
+/// Which quantity the gradient's length is spent on.
+///
+/// The stretch spends it by **value**: equal spans of field value get equal
+/// spans of color, so a band edge lands wherever the values happen to cross a
+/// boundary. That is the right default and it is what every mode does unless
+/// told otherwise.
+///
+/// The alternative spends it by **edge**: the arc between two colors is widened
+/// where the field is changing fast and narrowed where it is flat, so color
+/// transitions land on the picture's geometric edges instead of on arbitrary
+/// isovalues.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+pub enum Transfer {
+    /// Spend the gradient by field value: the stretch on its own.
+    #[default]
+    Value,
+    /// Spend it by how fast the field is moving, with `weight` deciding how
+    /// hard. At `0` this *is* the value transfer — every bin weighs the same —
+    /// which is why it is the family's own edge rather than a separate mode.
+    Edge { weight: f64 },
+}
+
+/// How many value bins the edge transfer measures over. Fine enough that the
+/// remap is smooth, coarse enough that every bin holds samples to average.
+pub const TRANSFER_BINS: usize = 256;
+
+/// Keeps a bin that measured no movement from being weighed at exactly zero,
+/// which would spend no gradient at all on it and collapse its values onto one
+/// color.
+const TRANSFER_FLOOR: f64 = 1e-6;
+
+/// The palette pass: everything between a normalized field and a color.
+///
+/// A **mode** says which field to read and through which curve. This says how
+/// the gradient is spent on it, and it is deliberately a separate object: two
+/// pictures of the same place in the same mode through the same map can look
+/// entirely unalike because of what is here, so it is recorded per render rather
+/// than folded into the mode's name. Every default is the identity — a spec that
+/// says nothing about the palette renders exactly as it did before any of this
+/// existed.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, default)]
+pub struct Palette {
+    /// A power applied after the mode's curve. Below 1 lifts the low end toward
+    /// the top of the gradient, above 1 pushes it down.
+    pub gamma: f64,
+    /// How many times the gradient is traversed across the field's range. Only
+    /// a cyclic map can do this without a seam, which is why nothing here sets
+    /// it on a caller's behalf.
+    pub cycles: f64,
+    /// Where in the gradient the traversal starts, in turns.
+    pub phase: f64,
+    /// How the map is baked: flipped, folded, or neither.
+    #[serde(flatten)]
+    pub bake: crate::colormap::Bake,
+    /// Which quantity the gradient's length is spent on.
+    pub transfer: Transfer,
+}
+
+impl Default for Palette {
+    fn default() -> Palette {
+        Palette {
+            gamma: 1.0,
+            cycles: 1.0,
+            phase: 0.0,
+            bake: crate::colormap::Bake::default(),
+            transfer: Transfer::Value,
+        }
+    }
+}
+
+impl Palette {
+    /// Check what the type cannot, before a render starts.
+    pub fn validate(&self) -> Result<(), String> {
+        if !(self.gamma.is_finite() && self.gamma > 0.0) {
+            return Err(format!("gamma must be positive, got {}", self.gamma));
+        }
+        if !(self.cycles.is_finite() && self.cycles > 0.0) {
+            return Err(format!("cycles must be positive, got {}", self.cycles));
+        }
+        if !self.phase.is_finite() {
+            return Err(format!("phase must be a number, got {}", self.phase));
+        }
+        if let Transfer::Edge { weight } = self.transfer
+            && !(weight.is_finite() && weight >= 0.0)
+        {
+            return Err(format!(
+                "the edge transfer's weight must be at least 0, got {weight}"
+            ));
+        }
+        Ok(())
+    }
+
+    /// Whether the gradient is traversed once, from its start.
+    pub fn traverses_once(&self) -> bool {
+        self.cycles == 1.0 && self.phase == 0.0
+    }
+
+    /// Place a `[0, 1]` value on the gradient: gamma, then the traversal.
+    ///
+    /// The two wraps are kept separate and in this order because they are not
+    /// the same as one: `frac(frac(x·c) + p)` and `frac(x·c + p)` differ exactly
+    /// at the top of the range, which is the value every fully-saturated sample
+    /// in the picture takes.
+    pub fn place(&self, value: f64) -> f64 {
+        let gray = value.clamp(0.0, 1.0).powf(self.gamma);
+        if self.traverses_once() {
+            return gray;
+        }
+        ((gray * self.cycles).rem_euclid(1.0) + self.phase).rem_euclid(1.0)
+    }
+}
+
 /// How two `[0, 1]` values are merged into one.
 ///
 /// The same small table serves the composite modes (blending two fields) and the
@@ -310,7 +424,10 @@ impl Stretch {
     /// a frame frames itself, and a tile borrowing a wider frame's percentiles
     /// would be colored for a picture nobody is looking at.
     pub fn over(samples: impl Iterator<Item = f32>) -> Stretch {
-        let mut valid: Vec<f64> = samples.filter(|v| v.is_finite()).map(|v| v as f64).collect();
+        let mut valid: Vec<f64> = samples
+            .filter(|v| v.is_finite())
+            .map(|v| v as f64)
+            .collect();
         if valid.is_empty() {
             return Stretch {
                 low: 0.0,
@@ -328,6 +445,112 @@ impl Stretch {
     /// Place one field value on the gradient.
     pub fn position(&self, value: f64) -> f64 {
         ((value - self.low) / self.span).clamp(0.0, 1.0)
+    }
+}
+
+/// A remap of the stretched position that spends gradient where the field moves.
+///
+/// Built in two halves. The **profile** is a fact about the field alone: how fast
+/// the field is moving, on average, among the samples that stretched into each
+/// value bin. It is measured once. The **curve** is that profile raised to a
+/// weight and accumulated, which is the running share of the gradient each value
+/// has earned by the time it is reached; raising the weight concentrates color on
+/// the fast bins, and a weight of zero weighs every bin the same and gives back
+/// the straight line.
+pub struct Edges {
+    curve: Vec<f64>,
+}
+
+impl Edges {
+    /// Measure a field's movement, bin by stretched value.
+    ///
+    /// The movement is `|∇field|` by forward differences over samples that have
+    /// one — a partial reaching into the interior has no value to difference
+    /// against and contributes nothing rather than a fabricated zero.
+    pub fn measure(field: &Field, stretch: &Stretch, weight: f64) -> Edges {
+        let (width, height) = (field.width as usize, field.height as usize);
+        let mut sums = vec![0.0f64; TRANSFER_BINS];
+        let mut counts = vec![0u64; TRANSFER_BINS];
+
+        for row in 0..height {
+            for col in 0..width {
+                let here = field.values[row * width + col] as f64;
+                if !here.is_finite() {
+                    continue;
+                }
+                let mut moved = 0.0;
+                let mut has_partial = false;
+                if col + 1 < width {
+                    let east = field.values[row * width + col + 1] as f64;
+                    if east.is_finite() {
+                        moved += (east - here) * (east - here);
+                        has_partial = true;
+                    }
+                }
+                if row + 1 < height {
+                    let south = field.values[(row + 1) * width + col] as f64;
+                    if south.is_finite() {
+                        moved += (south - here) * (south - here);
+                        has_partial = true;
+                    }
+                }
+                if !has_partial {
+                    continue;
+                }
+                let bin = ((stretch.position(here) * TRANSFER_BINS as f64) as usize)
+                    .min(TRANSFER_BINS - 1);
+                sums[bin] += moved.sqrt();
+                counts[bin] += 1;
+            }
+        }
+
+        let mut profile: Vec<f64> = sums
+            .iter()
+            .zip(&counts)
+            .map(|(&sum, &count)| if count > 0 { sum / count as f64 } else { 0.0 })
+            .collect();
+        let peak = profile.iter().copied().fold(0.0, f64::max);
+        if peak > 0.0 {
+            for value in &mut profile {
+                *value /= peak;
+            }
+        }
+
+        // The curve holds the share earned at every bin *edge*, so it has one
+        // more entry than there are bins and opens at zero.
+        let mut curve = Vec::with_capacity(TRANSFER_BINS + 1);
+        curve.push(0.0);
+        let mut running = 0.0;
+        for value in &profile {
+            running += (value + TRANSFER_FLOOR).powf(weight);
+            curve.push(running);
+        }
+        if running > 0.0 {
+            for value in &mut curve {
+                *value /= running;
+            }
+        } else {
+            for (index, value) in curve.iter_mut().enumerate() {
+                *value = index as f64 / TRANSFER_BINS as f64;
+            }
+        }
+        Edges { curve }
+    }
+
+    /// Remap one stretched position through the curve.
+    pub fn remap(&self, position: f64) -> f64 {
+        let scaled = position.clamp(0.0, 1.0) * TRANSFER_BINS as f64;
+        let bin = (scaled.floor() as usize).min(TRANSFER_BINS - 1);
+        let fraction = scaled - bin as f64;
+        self.curve[bin] + (self.curve[bin + 1] - self.curve[bin]) * fraction
+    }
+}
+
+/// The edge transfer for a field, or `None` when the gradient is spent by value.
+fn edges_for(field: &Field, stretch: &Stretch, palette: &Palette) -> Option<Edges> {
+    match palette.transfer {
+        Transfer::Value => None,
+        Transfer::Edge { weight } => Some(Edges::measure(field, stretch, weight)),
     }
 }
 
@@ -349,13 +572,14 @@ pub fn paint(
     family: &Family,
     maxiter: u32,
     coloring: &Coloring,
+    palette: &Palette,
     colormap: &Colormap,
 ) -> Result<Painted, String> {
     match coloring {
         Coloring::Field { field, transform } => {
             let sampled = field::render_field(view, family, maxiter, *field);
             Ok(Painted {
-                linear: colorize(&sampled.fields[0], *transform, colormap),
+                linear: shade(&sampled.fields[0], *transform, palette, colormap),
                 interior_fraction: sampled.interior_fraction,
             })
         }
@@ -374,6 +598,7 @@ pub fn paint(
                     texture.transform,
                     *blend,
                     *texture_weight,
+                    palette,
                     colormap,
                 ),
                 interior_fraction: sampled.interior_fraction,
@@ -394,22 +619,43 @@ pub fn paint(
             *merge,
             start_color,
         )?
-        .paint(view, family, maxiter, colormap),
+        .paint(view, family, maxiter, palette, colormap),
     }
 }
 
 /// Color one field into linear-light RGB, one entry per sample.
+///
+/// Kept as the plain-recipe spelling of [`shade`], because a recolor of a dumped
+/// field asks exactly this and reads nothing about a palette recipe.
 pub fn colorize(field: &Field, transform: Transform, colormap: &Colormap) -> Vec<[f64; 3]> {
+    shade(field, transform, &Palette::default(), colormap)
+}
+
+/// Color one field into linear-light RGB, through a palette recipe.
+///
+/// The order is the whole of it: stretch, then transfer, then the mode's curve,
+/// then gamma and the traversal, then the map. Each stage takes `[0, 1]` to
+/// `[0, 1]`, so any of them can be the identity without the rest noticing.
+pub fn shade(
+    field: &Field,
+    transform: Transform,
+    palette: &Palette,
+    colormap: &Colormap,
+) -> Vec<[f64; 3]> {
     let stretch = Stretch::measure(field);
+    let edges = edges_for(field, &stretch, palette);
     field
         .values
         .par_iter()
         .map(|&value| {
-            if value.is_finite() {
-                colormap.lookup(transform.apply(stretch.position(value as f64)))
-            } else {
-                INTERIOR
+            if !value.is_finite() {
+                return INTERIOR;
             }
+            let mut position = stretch.position(value as f64);
+            if let Some(edges) = &edges {
+                position = edges.remap(position);
+            }
+            colormap.lookup(palette.place(transform.apply(position)))
         })
         .collect()
 }
@@ -428,17 +674,32 @@ fn composite(
     texture_transform: Transform,
     blend: Blend,
     weight: f64,
+    palette: &Palette,
     colormap: &Colormap,
 ) -> Vec<[f64; 3]> {
     let base_stretch = Stretch::measure(base);
     let texture_stretch = Stretch::measure(texture);
+    // The recipe describes the picture, and the picture is what the base makes:
+    // the texture is a screen over it and carries no gamma of its own. The
+    // traversal comes after the blend, because it is about the color the pair
+    // arrived at rather than about either field.
+    let edges = edges_for(base, &base_stretch, palette);
+    let gamma = Palette {
+        cycles: 1.0,
+        phase: 0.0,
+        ..*palette
+    };
     base.values
         .par_iter()
         .zip(&texture.values)
         .map(|(&base_value, &texture_value)| {
-            let under = base_value
-                .is_finite()
-                .then(|| base_transform.apply(base_stretch.position(base_value as f64)));
+            let under = base_value.is_finite().then(|| {
+                let mut position = base_stretch.position(base_value as f64);
+                if let Some(edges) = &edges {
+                    position = edges.remap(position);
+                }
+                gamma.place(base_transform.apply(position))
+            });
             let over = texture_value
                 .is_finite()
                 .then(|| texture_transform.apply(texture_stretch.position(texture_value as f64)));
@@ -448,7 +709,13 @@ fn composite(
                 (None, Some(over)) => over,
                 (Some(under), Some(over)) => under + (blend.apply(under, over) - under) * weight,
             };
-            colormap.lookup(gray)
+            colormap.lookup(
+                Palette {
+                    gamma: 1.0,
+                    ..*palette
+                }
+                .place(gray),
+            )
         })
         .collect()
 }
@@ -613,6 +880,7 @@ mod tests {
                 Transform::Linear,
                 Blend::Screen,
                 weight,
+                &Palette::default(),
                 &map,
             )
         };
@@ -641,6 +909,7 @@ mod tests {
             Transform::Linear,
             Blend::Screen,
             1.0,
+            &Palette::default(),
             &ramp(),
         );
         assert_eq!(colors[0], INTERIOR, "neither field had a value");
@@ -714,5 +983,108 @@ mod tests {
         };
         assert!(direct.dumpable_field().is_none());
         assert!(direct.why_not_a_field().unwrap().contains("color-valued"));
+    }
+
+    /// The default recipe is the identity: this is what lets every existing mode
+    /// and every existing record keep meaning what it meant.
+    #[test]
+    fn a_recipe_that_says_nothing_moves_nothing() {
+        let plain = Palette::default();
+        for step in 0..=20 {
+            let value = step as f64 / 20.0;
+            assert_eq!(plain.place(value), value);
+        }
+    }
+
+    /// Traversing the gradient twice puts the whole of it in each half of the
+    /// range; a phase shift rotates where it starts.
+    #[test]
+    fn cycles_repeat_the_gradient_and_phase_rotates_it() {
+        let twice = Palette {
+            cycles: 2.0,
+            ..Palette::default()
+        };
+        assert!((twice.place(0.25) - 0.5).abs() < 1e-12);
+        assert!((twice.place(0.75) - 0.5).abs() < 1e-12);
+
+        let shifted = Palette {
+            phase: 0.25,
+            ..Palette::default()
+        };
+        assert!((shifted.place(0.5) - 0.75).abs() < 1e-12);
+        assert!((shifted.place(0.9) - 0.15).abs() < 1e-12);
+    }
+
+    /// Gamma below one lifts the low end and above one pushes it down, and
+    /// neither can reorder two values.
+    #[test]
+    fn gamma_bends_the_range_without_reordering_it() {
+        let lifted = Palette {
+            gamma: 0.5,
+            ..Palette::default()
+        };
+        let pushed = Palette {
+            gamma: 2.0,
+            ..Palette::default()
+        };
+        assert!(lifted.place(0.25) > 0.25);
+        assert!(pushed.place(0.25) < 0.25);
+        for step in 0..20 {
+            let (low, high) = (step as f64 / 20.0, (step + 1) as f64 / 20.0);
+            assert!(lifted.place(low) <= lifted.place(high));
+            assert!(pushed.place(low) <= pushed.place(high));
+        }
+    }
+
+    /// A weight of zero weighs every bin the same, so the edge transfer gives
+    /// back the straight line it started from. That is the family's own edge and
+    /// the reason it is one transfer with a dial rather than two transfers.
+    #[test]
+    fn the_edge_transfer_at_zero_weight_is_the_value_transfer() {
+        let field = field_of(&[0.0, 1.0, 2.0, 40.0, 41.0, 42.0, 80.0, 81.0, 82.0]);
+        let stretch = Stretch::measure(&field);
+        let edges = Edges::measure(&field, &stretch, 0.0);
+        for step in 0..=20 {
+            let value = step as f64 / 20.0;
+            assert!(
+                (edges.remap(value) - value).abs() < 1e-9,
+                "weight 0 moved {value} to {}",
+                edges.remap(value)
+            );
+        }
+    }
+
+    /// With weight above zero the transfer is still a remap of [0, 1] onto
+    /// itself and still monotone — it may not reorder the field, only decide how
+    /// much color each part of it gets.
+    #[test]
+    fn the_edge_transfer_is_a_monotone_remap_of_the_whole_range() {
+        let mut values = Vec::new();
+        for _row in 0..16 {
+            for col in 0..16 {
+                // A field that is flat on one side and steep on the other, so
+                // the two halves have something to disagree about.
+                values.push(if col < 8 {
+                    col as f32
+                } else {
+                    (col as f32) * 20.0
+                });
+            }
+        }
+        let field = Field {
+            width: 16,
+            height: 16,
+            values,
+        };
+        let stretch = Stretch::measure(&field);
+        let edges = Edges::measure(&field, &stretch, 1.0);
+        assert!(edges.remap(0.0).abs() < 1e-12);
+        assert!((edges.remap(1.0) - 1.0).abs() < 1e-12);
+        let mut previous = -1.0;
+        for step in 0..=100 {
+            let here = edges.remap(step as f64 / 100.0);
+            assert!(here >= previous - 1e-12, "the remap went backwards");
+            previous = here;
+        }
     }
 }

@@ -176,13 +176,7 @@ pub fn downsample(
 ) -> Vec<u8> {
     let horizontal = build_taps(out_width, source_width, ss);
     let vertical = build_taps(out_height, source_height, ss);
-    apply_taps(
-        linear,
-        source_width,
-        source_height,
-        &horizontal,
-        &vertical,
-    )
+    apply_taps(linear, source_width, source_height, &horizontal, &vertical)
 }
 
 /// JPEG quality for the steering thumbnails, on the encoder's 0–100 scale.

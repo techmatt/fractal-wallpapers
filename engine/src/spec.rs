@@ -34,7 +34,7 @@ use std::path::PathBuf;
 use num_complex::Complex;
 use serde::{Deserialize, Serialize};
 
-use crate::coloring::Coloring;
+use crate::coloring::{Coloring, Palette};
 use crate::family::{Family, PHOENIX_C, PHOENIX_P};
 use crate::maxiter;
 use crate::mode;
@@ -61,6 +61,10 @@ pub struct RenderSpec {
     /// A coloring written out in full. Mutually exclusive with `mode`.
     #[serde(default)]
     pub coloring: Option<Coloring>,
+    /// How the gradient is spent on whatever the coloring produced. Independent
+    /// of the mode, and every default is the identity.
+    #[serde(default)]
+    pub palette: Palette,
     pub colormap: String,
     #[serde(default = "default_colormap_dir")]
     pub colormap_dir: PathBuf,
@@ -116,6 +120,10 @@ pub struct RecolorSpec {
     pub colormap_dir: PathBuf,
     #[serde(default)]
     pub transform: Option<crate::coloring::Transform>,
+    /// How the gradient is spent. A recolor that says nothing here reproduces
+    /// the render the dump came from.
+    #[serde(default)]
+    pub palette: Palette,
     pub output: PathBuf,
 }
 
@@ -126,6 +134,7 @@ impl RecolorSpec {
         if spec.schema != 1 {
             return Err(format!("spec has schema {}, expected 1", spec.schema));
         }
+        spec.palette.validate()?;
         Ok(spec)
     }
 }
@@ -147,6 +156,7 @@ pub struct Resolved {
     /// The mode's name, when the spec asked for one by name.
     pub mode: Option<String>,
     pub coloring: Coloring,
+    pub palette: Palette,
     pub colormap: String,
     pub colormap_dir: PathBuf,
     pub output: PathBuf,
@@ -230,12 +240,14 @@ impl RenderSpec {
         }
 
         let (coloring, mode) = resolve_coloring(self.mode, self.coloring)?;
+        self.palette.validate()?;
 
         Ok(Resolved {
             maxiter: self
                 .maxiter
                 .unwrap_or_else(|| maxiter::for_width(plane_width)),
             coloring,
+            palette: self.palette,
             mode,
             location: Location {
                 family: kind.to_string(),
