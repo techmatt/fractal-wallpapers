@@ -162,13 +162,18 @@ def test_two_epochs_leave_a_checkpoint_that_scores(a_tiny_corpus) -> None:
     # A smaller backbone and a corpus of thirty-two: what is under test is the
     # loop, not the architecture, and the shipped one is exercised by
     # `test_location_head`. Two epochs, because one cannot show a selection.
+    #
+    # One worker, not zero, and that is the whole reason the number is here. The
+    # loader's workers are separate processes, so the dataset has to survive a
+    # pickle; a zero-worker run never tries, and the failure lands at the first
+    # batch of a real run after the corpus has been joined.
     train_module.RECIPE.update(
         {
             "backbone": "mobilenetv4_conv_small",
             "pretrained": False,
             "epochs": 2,
             "batch_size": 8,
-            "workers": 0,
+            "workers": 1,
         }
     )
     try:
