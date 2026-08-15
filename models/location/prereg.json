@@ -1,0 +1,224 @@
+{
+  "schema": 1,
+  "head": "location",
+  "question": "Is a location head trained inside this repository approximately comparable to the one the source project deployed, within the variance a fresh seed and a fresh rendering pipeline produce?",
+  "population": {
+    "rule": "every location on the evaluation side of BOTH projects, joined on the c-inclusive location coordinate",
+    "locations": 1002,
+    "clusters": 530,
+    "labels": {
+      "1": 632,
+      "2": 267,
+      "3": 81,
+      "4": 22
+    },
+    "base_rates": {
+      "ge2": 0.36926147704590817,
+      "ge3": 0.1027944111776447,
+      "ge4": 0.021956087824351298
+    },
+    "incumbent_population": {
+      "primary": 378,
+      "selection": 624
+    },
+    "declared": [
+      "Not a same-input comparison: each head is scored through its own deploy view of the same location, so two pipelines are compared against one set of human verdicts.",
+      "624 of 1002 locations were the incumbent's own checkpoint-selection population. The yardstick is therefore generous to the incumbent, most at the first cutpoint.",
+      "The 378 locations that were clean on both sides are reported and are NOT a decision surface: they hold too few positives to resolve anything.",
+      "Both sides are read as unconditional probabilities \u2014 the running product of the conditional cutpoints \u2014 so neither is advantaged by the reading."
+    ]
+  },
+  "yardstick": {
+    "locations": 1002,
+    "arms": [
+      "mnv4_conv_medium_s0",
+      "mnv4_conv_medium_s1",
+      "mnv4_conv_medium_s2"
+    ],
+    "cutpoints": {
+      "ge2": {
+        "positives": 370,
+        "per_seed": {
+          "mnv4_conv_medium_s0": 0.8823853917208347,
+          "mnv4_conv_medium_s1": 0.8845492644543278,
+          "mnv4_conv_medium_s2": 0.8699367088607595
+        },
+        "band": [
+          0.8699367088607595,
+          0.8845492644543278
+        ],
+        "spread": 0.014612555593568333,
+        "mean": 0.8789571216786407
+      },
+      "ge3": {
+        "positives": 103,
+        "per_seed": {
+          "mnv4_conv_medium_s0": 0.9424927373457024,
+          "mnv4_conv_medium_s1": 0.9433566962212598,
+          "mnv4_conv_medium_s2": 0.9389937038996944
+        },
+        "band": [
+          0.9389937038996944,
+          0.9433566962212598
+        ],
+        "spread": 0.004362992321565451,
+        "mean": 0.9416143791555522
+      },
+      "ge4": {
+        "positives": 22,
+        "per_seed": {
+          "mnv4_conv_medium_s0": 0.9431354359925789,
+          "mnv4_conv_medium_s1": 0.9493506493506494,
+          "mnv4_conv_medium_s2": 0.94860853432282
+        },
+        "band": [
+          0.9431354359925789,
+          0.9493506493506494
+        ],
+        "spread": 0.006215213358070515,
+        "mean": 0.9470315398886827
+      }
+    }
+  },
+  "seed_precision": {
+    "ge2": {
+      "widest_half_width": 0.013143988186230311,
+      "pairs": {
+        "mnv4_conv_medium_s0 vs mnv4_conv_medium_s1": {
+          "delta": -0.002163872733493055,
+          "ci": [
+            -0.014730339237456137,
+            0.009266107709616559
+          ]
+        },
+        "mnv4_conv_medium_s0 vs mnv4_conv_medium_s2": {
+          "delta": 0.012448682860075277,
+          "ci": [
+            0.0013185598684747005,
+            0.02311103570703063
+          ]
+        },
+        "mnv4_conv_medium_s1 vs mnv4_conv_medium_s2": {
+          "delta": 0.014612555593568333,
+          "ci": [
+            0.0016833726239563725,
+            0.027971348996416994
+          ]
+        }
+      }
+    },
+    "ge3": {
+      "widest_half_width": 0.01051869217448331,
+      "pairs": {
+        "mnv4_conv_medium_s0 vs mnv4_conv_medium_s1": {
+          "delta": -0.0008639588755574579,
+          "ci": [
+            -0.012093410521459716,
+            0.0089439738275069
+          ]
+        },
+        "mnv4_conv_medium_s0 vs mnv4_conv_medium_s2": {
+          "delta": 0.003499033446007993,
+          "ci": [
+            -0.006523615667470464,
+            0.013247780223896497
+          ]
+        },
+        "mnv4_conv_medium_s1 vs mnv4_conv_medium_s2": {
+          "delta": 0.004362992321565451,
+          "ci": [
+            -0.004391260254096729,
+            0.01334423588409571
+          ]
+        }
+      }
+    },
+    "ge4": {
+      "widest_half_width": 0.021392796559888183,
+      "pairs": {
+        "mnv4_conv_medium_s0 vs mnv4_conv_medium_s1": {
+          "delta": -0.006215213358070515,
+          "ci": [
+            -0.027674180208426775,
+            0.015111412911349589
+          ]
+        },
+        "mnv4_conv_medium_s0 vs mnv4_conv_medium_s2": {
+          "delta": -0.005473098330241122,
+          "ci": [
+            -0.023643416871819454,
+            0.01356120773574564
+          ]
+        },
+        "mnv4_conv_medium_s1 vs mnv4_conv_medium_s2": {
+          "delta": 0.0007421150278293931,
+          "ci": [
+            -0.012617147693317472,
+            0.014492157321588945
+          ]
+        }
+      }
+    }
+  },
+  "rules": {
+    "statistic": "paired difference in AUC against each incumbent seed on the same locations, with a 95% cluster bootstrap resampling whole location groups",
+    "draws": 5000,
+    "bootstrap_seed": 0,
+    "margin": "the larger of a 0.02 floor and the widest half-interval the incumbent's own three seeds produce on this population, rounded up to half a point of AUC. The floor is there because a fresh rendering pipeline is a bigger perturbation than a fresh seed; the resolution term is there because a margin the population cannot resolve is not a bar.",
+    "verdicts": {
+      "PASS": "the lower bound of the paired interval is above minus the margin, against all three incumbent seeds",
+      "FAIL": "the upper bound is below minus the margin against any seed",
+      "BORDERLINE": "anything else \u2014 the interval straddles the margin"
+    },
+    "escalation": "a BORDERLINE gate is re-read with three seeds of this head, using the median seed by that arm's own statistic. The median, not the best: picking the best of three is the thing pre-registration exists to stop.",
+    "min_positives": 10,
+    "not_called": 0.01
+  },
+  "arms": {
+    "ordering": {
+      "ge2": {
+        "gated": false,
+        "margin": 0.02,
+        "positives": 370
+      },
+      "ge3": {
+        "gated": true,
+        "margin": 0.02,
+        "positives": 103
+      },
+      "ge4": {
+        "gated": true,
+        "margin": 0.025,
+        "positives": 22
+      }
+    },
+    "interface": {
+      "gated": true,
+      "rule": "the checkpoint emits K-1 cutpoints and the score file carries a probability for every one of them, non-increasing along the row. The supply engine's tenfold class-4 weighting reads P(>=4) directly, so a head that exposed only a rank score would not be usable at all."
+    },
+    "calibration": {
+      "gated": true,
+      "rule": "the mean predicted rate at each gated cutpoint, over the population, within a factor of two of the observed base rate",
+      "tolerance": [
+        0.5,
+        2.0
+      ],
+      "incumbent": {
+        "ge3": {
+          "mnv4_conv_medium_s0": 0.8860195867462639,
+          "mnv4_conv_medium_s1": 0.6337463602073553,
+          "mnv4_conv_medium_s2": 0.9515609919186769
+        },
+        "ge4": {
+          "mnv4_conv_medium_s0": 0.9880213700728532,
+          "mnv4_conv_medium_s1": 0.760452142286836,
+          "mnv4_conv_medium_s2": 0.9775185799212303
+        }
+      }
+    },
+    "per_partition": {
+      "gated": false,
+      "rule": "reported where a partition holds at least 10 positives at that cutpoint, and NOT_MEASURABLE with its count otherwise. Never a gate: these slices are between zero and twenty-four positives wide."
+    }
+  }
+}
