@@ -32,6 +32,14 @@ is put a population into the evaluation side by accident.
 `eval_eligible` is derived from both and never stored. A stored third fact is
 how a table grows a row that contradicts itself.
 
+**And one pin, which is not a third fact about the draw.** `eval_only` says a
+batch was bought as an instrument and may never train — not for this generation
+of heads and not for a later one. It is a decision made when the population was
+commissioned rather than a property of how it was selected, it outranks whatever
+the two flags above imply, and it exists because the failure it prevents is
+silent: a blind slice that enters a training split is spent, every later reading
+off it is inflated, and nothing is red.
+
 **Eligibility is permission, not membership.** Which locations are *in* the
 evaluation side is decided once, by a seeded draw over location groups, and
 shipped as data — see [`fractal_wallpapers.labeling.split`].
@@ -59,6 +67,7 @@ class Registration:
     method: str
     score_unconditioned: bool = False
     anchored: bool = False
+    eval_only: bool = False
     why: str = ""
     registered_at: str | None = None
 
@@ -67,9 +76,10 @@ class Registration:
         """Whether this batch's locations *may* be an evaluation instrument.
 
         Derived, never stored: an unconditioned draw judged on an unanchored
-        page, and nothing else.
+        page, and nothing else. A pinned batch is eligible whatever its draw —
+        the pin is the decision, and it is the one that outranks.
         """
-        return self.score_unconditioned and not self.anchored
+        return self.eval_only or (self.score_unconditioned and not self.anchored)
 
     @property
     def side(self) -> str:
@@ -83,6 +93,7 @@ class Registration:
             "method": self.method,
             "score_unconditioned": self.score_unconditioned,
             "anchored": self.anchored,
+            "eval_only": self.eval_only,
             "why": self.why,
             "registered_at": self.registered_at,
         }
@@ -114,6 +125,7 @@ def registration_of(row: dict) -> Registration:
         method=str(row.get("method", "")),
         score_unconditioned=bool(row.get("score_unconditioned")),
         anchored=bool(row.get("anchored")),
+        eval_only=bool(row.get("eval_only")),
         why=str(row.get("why", "")),
         registered_at=row.get("registered_at"),
     )
@@ -162,6 +174,7 @@ def summary(registry: dict[str, Registration]) -> dict:
         "batches": len(registry),
         "eval_eligible": eligible,
         "anchored": sorted(b for b, r in registry.items() if r.anchored),
+        "eval_only": sorted(b for b, r in registry.items() if r.eval_only),
         "train_side": sorted(b for b, r in registry.items() if not r.eval_eligible),
     }
 

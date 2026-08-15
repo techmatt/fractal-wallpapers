@@ -121,6 +121,62 @@ pub const TRANSFER_BINS: usize = 256;
 /// color.
 const TRANSFER_FLOOR: f64 = 1e-6;
 
+/// What happens to the brightest part of a picture before it is written.
+///
+/// The screening colorings drive their output toward white: every trap hit lifts
+/// the accumulator and enough of them stack into a flat white plateau with the
+/// color washed out of it. A rolloff bends the top of the tone range back down so
+/// that color re-emerges, and leaves the midtones and shadows where they are.
+///
+/// It acts on **luminance**, not on each channel: the three channels are rescaled
+/// by one ratio, so a highlight keeps its hue. Curving each channel separately
+/// would pull the brightest one down fastest and drain the highlight toward gray,
+/// which is the thing being fixed.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+pub enum Rolloff {
+    /// Leave the highlights alone. The exact identity.
+    #[default]
+    None,
+    /// Identity up to `knee`, then a `tanh` shoulder that approaches white
+    /// without reaching it. Continuous in value and in slope at the knee, so
+    /// nothing below it moves at all and there is no visible join.
+    SoftKnee { knee: f64 },
+}
+
+impl Rolloff {
+    /// Map one luminance value. `l` is non-negative.
+    pub fn apply(self, l: f64) -> f64 {
+        match self {
+            Rolloff::None => l,
+            Rolloff::SoftKnee { knee } => {
+                if l <= knee {
+                    l
+                } else {
+                    knee + (1.0 - knee) * ((l - knee) / (1.0 - knee)).tanh()
+                }
+            }
+        }
+    }
+
+    /// Rescale one linear-light pixel so its luminance is rolled off.
+    pub fn shade(self, pixel: [f64; 3]) -> [f64; 3] {
+        if self == Rolloff::None {
+            return pixel;
+        }
+        let luminance = 0.2126 * pixel[0] + 0.7152 * pixel[1] + 0.0722 * pixel[2];
+        if luminance <= 1e-9 {
+            return pixel;
+        }
+        let scale = self.apply(luminance) / luminance;
+        [
+            (pixel[0] * scale).clamp(0.0, 1.0),
+            (pixel[1] * scale).clamp(0.0, 1.0),
+            (pixel[2] * scale).clamp(0.0, 1.0),
+        ]
+    }
+}
+
 /// The palette pass: everything between a normalized field and a color.
 ///
 /// A **mode** says which field to read and through which curve. This says how
@@ -147,6 +203,10 @@ pub struct Palette {
     pub bake: crate::colormap::Bake,
     /// Which quantity the gradient's length is spent on.
     pub transfer: Transfer,
+    /// What happens to the highlights once a color has been chosen. The one
+    /// stage here that acts on the color rather than on the index into the map,
+    /// and it is here because it belongs to the same recipe a record carries.
+    pub rolloff: Rolloff,
 }
 
 impl Default for Palette {
@@ -157,6 +217,7 @@ impl Default for Palette {
             phase: 0.0,
             bake: crate::colormap::Bake::default(),
             transfer: Transfer::Value,
+            rolloff: Rolloff::None,
         }
     }
 }
@@ -178,6 +239,13 @@ impl Palette {
         {
             return Err(format!(
                 "the edge transfer's weight must be at least 0, got {weight}"
+            ));
+        }
+        if let Rolloff::SoftKnee { knee } = self.rolloff
+            && !(knee.is_finite() && (0.0..1.0).contains(&knee))
+        {
+            return Err(format!(
+                "the rolloff's knee must be at least 0 and below 1, got {knee}"
             ));
         }
         Ok(())
@@ -568,6 +636,28 @@ pub struct Painted {
 
 /// Iterate `view` and color it, whichever shape of coloring this is.
 pub fn paint(
+    view: &Viewport,
+    family: &Family,
+    maxiter: u32,
+    coloring: &Coloring,
+    palette: &Palette,
+    colormap: &Colormap,
+) -> Result<Painted, String> {
+    let mut painted = paint_untoned(view, family, maxiter, coloring, palette, colormap)?;
+    if palette.rolloff != Rolloff::None {
+        // Last, on the finished color and before anything averages it: rolling
+        // off after the resample would bend a highlight the resample had already
+        // blended into its neighbours.
+        painted.linear = painted
+            .linear
+            .par_iter()
+            .map(|&pixel| palette.rolloff.shade(pixel))
+            .collect();
+    }
+    Ok(painted)
+}
+
+fn paint_untoned(
     view: &Viewport,
     family: &Family,
     maxiter: u32,
@@ -1086,5 +1176,44 @@ mod tests {
             assert!(here >= previous - 1e-12, "the remap went backwards");
             previous = here;
         }
+    }
+
+    /// Below the knee nothing moves at all, above it the shoulder approaches
+    /// white without reaching it, and the two meet without a step.
+    #[test]
+    fn the_rolloff_bends_only_the_highlights() {
+        let knee = 0.35;
+        let soft = Rolloff::SoftKnee { knee };
+        for step in 0..=35 {
+            let value = step as f64 / 100.0;
+            assert_eq!(soft.apply(value), value, "the shadows moved");
+        }
+        assert!((soft.apply(knee) - knee).abs() < 1e-12, "there is a step at the knee");
+        for step in 36..=200 {
+            let value = step as f64 / 100.0;
+            let out = soft.apply(value);
+            assert!(out < value, "a highlight was not compressed");
+            assert!(out < 1.0, "the shoulder reached white");
+        }
+        assert!(soft.apply(4.0) > soft.apply(2.0), "the shoulder went backwards");
+    }
+
+    /// A rolled-off highlight keeps its hue: all three channels are rescaled by
+    /// one ratio, which is the whole reason it works on luminance.
+    #[test]
+    fn a_rolled_off_highlight_keeps_its_hue() {
+        let soft = Rolloff::SoftKnee { knee: 0.35 };
+        let pixel = [0.9, 0.6, 0.3];
+        let out = soft.shade(pixel);
+        let ratio = out[0] / pixel[0];
+        for channel in 0..3 {
+            assert!(
+                (out[channel] / pixel[channel] - ratio).abs() < 1e-12,
+                "channel {channel} was scaled differently"
+            );
+        }
+        assert!(ratio < 1.0, "the highlight was not pulled down");
+        assert_eq!(Rolloff::None.shade(pixel), pixel);
+        assert_eq!(soft.shade([0.0, 0.0, 0.0]), [0.0, 0.0, 0.0]);
     }
 }

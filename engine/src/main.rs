@@ -80,6 +80,11 @@ struct DumpReport {
 struct Mode {
     name: &'static str,
     identity: &'static str,
+    /// The coloring the name stands for, written out. A name is a claim that a
+    /// setting is worth returning to; this is the setting, so a caller that
+    /// needs to vary one knob of a mode can start from what the mode actually is
+    /// instead of restating it and drifting.
+    coloring: Coloring,
 }
 
 /// What a recolor did.
@@ -117,8 +122,14 @@ fn run(args: Vec<String>) -> Result<(), String> {
         Some("modes") => print(
             &mode::CATALOG
                 .iter()
-                .map(|(name, identity)| Mode { name, identity })
-                .collect::<Vec<_>>(),
+                .map(|(name, identity)| {
+                    Ok(Mode {
+                        name,
+                        identity,
+                        coloring: mode::resolve(name)?,
+                    })
+                })
+                .collect::<Result<Vec<_>, String>>()?,
         ),
         Some("--help") | Some("-h") | None => {
             println!("{USAGE}");

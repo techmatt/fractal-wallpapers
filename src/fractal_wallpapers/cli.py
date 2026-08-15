@@ -714,6 +714,22 @@ def import_labels(args: argparse.Namespace) -> int:
     return 0
 
 
+def import_finished(args: argparse.Namespace) -> int:
+    """Import the source project's finished-render corpora as flat rows."""
+    from fractal_wallpapers.labeling import finished, finished_import
+
+    heads = [args.head] if args.head else sorted(finished.HEADS)
+    reports = {}
+    for head in heads:
+        try:
+            reports[head] = finished_import.run(Path(args.source), head)
+        except (finished_import.FinishedImportError, finished.FinishedError) as refusal:
+            print(refusal)
+            return 1
+    print(json.dumps(reports, indent=2))
+    return 0
+
+
 def modes(args: argparse.Namespace) -> int:
     """List the named colorings and what each one is for.
 
@@ -1020,6 +1036,22 @@ def build_parser() -> argparse.ArgumentParser:
         "--share", type=float, default=0.20, help="the evaluation side's target share"
     )
     bringing.set_defaults(handler=import_labels)
+
+    finishing = subcommands.add_parser(
+        "import-finished",
+        help="import the source project's finished-render corpora into their stores",
+        description=(
+            "Read both finished-render corpora through the source's own resolution rules — "
+            "one exported file per finished sheet, joined by image id, asserted in both "
+            "directions — and write flat rows here. Every registration flag is read from the "
+            "source and checked against this repository's table row by row; a single "
+            "disagreement writes nothing. Brings across every colormap the rows name, because "
+            "a row naming a map nobody holds is not a row that can be rendered."
+        ),
+    )
+    finishing.add_argument("--source", required=True, help="the source repository's root")
+    finishing.add_argument("--head", help="import only this judge's corpus instead of both")
+    finishing.set_defaults(handler=import_finished)
 
     return parser
 
