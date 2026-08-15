@@ -187,3 +187,15 @@ def test_the_forced_change_is_recorded_as_forced() -> None:
     changed = {entry["key"]: entry for entry in finished_train.INHERITANCE["changed"]}
     assert "selection_statistic" in changed
     assert "FORCED" in changed["selection_statistic"]["why"]
+
+
+def test_two_trainers_cannot_share_a_run_directory(tmp_path) -> None:
+    """They do not collide loudly. They interleave their logs, take turns
+    overwriting one checkpoint, and produce a run whose numbers belong to
+    neither — which is what happened, and what took tens of minutes to see."""
+    lock = finished_train._claim(tmp_path)
+    assert lock.is_file()
+    with pytest.raises(finished_train.TrainingError, match="already has"):
+        finished_train._claim(tmp_path)
+    lock.unlink()
+    finished_train._claim(tmp_path).unlink()
