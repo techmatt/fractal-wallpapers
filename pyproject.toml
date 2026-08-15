@@ -27,6 +27,12 @@ fractal-wallpapers = "fractal_wallpapers.cli:main"
 where = ["src"]
 namespaces = true
 
+# The labeling rig's page is an asset of the package that serves it, not a
+# resource the server looks up on disk: an installed checkout has to be able to
+# hand a browser the same page a working tree does.
+[tool.setuptools.package-data]
+"fractal_wallpapers.labeling" = ["page.html"]
+
 [tool.ruff]
 line-length = 100
 src = ["src", "tests"]

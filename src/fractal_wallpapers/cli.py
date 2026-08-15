@@ -426,6 +426,148 @@ def derive_tau_h(args: argparse.Namespace) -> int:
     return 0
 
 
+def label_register(args: argparse.Namespace) -> int:
+    """Register a batch's generation method, before it has any rows."""
+    from fractal_wallpapers.labeling import registry as registry_module
+    from fractal_wallpapers.labeling import store
+
+    row = store.register(
+        registry_module.Registration(
+            batch=args.batch,
+            method=args.method,
+            score_unconditioned=args.score_unconditioned,
+            anchored=args.anchored,
+            why=args.why or "",
+        )
+    )
+    eligible = registry_module.registration_of(row).eval_eligible
+    print(json.dumps({**row, "eval_eligible": eligible}, indent=2))
+    return 0
+
+
+def label_build(args: argparse.Namespace) -> int:
+    """Cut a labeling sheet and render every unit of it, twice."""
+    from fractal_wallpapers.labeling import sheets, store
+
+    known = store.registry()
+    if args.batch not in known:
+        print(f"batch {args.batch!r} is not registered; register it before its rows exist:")
+        print(f"  fractal-wallpapers label register --batch {args.batch} --method '...'")
+        return 1
+
+    if args.from_ledger:
+        units = sheets.units_from_ledger(
+            resolve_output(args.from_ledger), admitted_only=args.admitted_only
+        )
+    else:
+        units = sheets.units_from_batch(args.from_batch)
+    if args.limit:
+        units = units[: args.limit]
+    if not units:
+        print("no units: there is nothing to judge")
+        return 1
+
+    sheet = sheets.build(
+        units,
+        directory=resolve_output(args.out_dir),
+        batch=args.batch,
+        seed=args.seed,
+        resolution=tuple(args.resolution),
+        supersample=args.supersample,
+    )
+    print(json.dumps(sheet.manifest, indent=2))
+    return 0
+
+
+def label_serve(args: argparse.Namespace) -> int:
+    """Serve a built sheet to a browser on this machine."""
+    from fractal_wallpapers.labeling import server, sheets
+
+    directory = resolve_output(args.sheet)
+    sheets.read(directory)  # refuse a directory that is not a sheet, before binding a port
+    return server.serve(directory, host=args.host, port=args.port)
+
+
+def label_record(args: argparse.Namespace) -> int:
+    """Record a page's export into the store, through the one writer."""
+    from fractal_wallpapers.labeling import sheets
+
+    sheet = sheets.read(resolve_output(args.sheet))
+    labels = json.loads(Path(args.labels).read_text(encoding="utf-8"))
+    rows = sheets.record(sheet, labels, labeler=args.labeler)
+    print(json.dumps({"recorded": len(rows), "batch": sheet.manifest["batch"]}, indent=2))
+    return 0
+
+
+def label_show(args: argparse.Namespace) -> int:
+    """Print what the store currently says, resolved."""
+    from collections import Counter
+
+    from fractal_wallpapers.labeling import pins, store
+    from fractal_wallpapers.labeling import registry as registry_module
+    from fractal_wallpapers.labeling import split as split_module
+    from fractal_wallpapers.supply.partitions import partition_of_family
+
+    del args
+    resolution = store.resolved()
+    scored = resolution.scored()
+    keys = pins.pinned()
+    print(
+        json.dumps(
+            {
+                "store": resolution.summary(),
+                "registry": registry_module.summary(store.registry()),
+                "scores": {
+                    str(score): sum(1 for row in scored if row["score"] == score)
+                    for score in store.SCORES
+                },
+                "partitions": dict(
+                    sorted(Counter(partition_of_family(row["family"]) for row in scored).items())
+                ),
+                "batches": dict(sorted(Counter(row["batch"] for row in scored).items())),
+                "eval_side": {"pinned_locations": len(keys), "recipe": split_module.recipe()},
+            },
+            indent=2,
+        )
+    )
+    return 0
+
+
+def label_split(args: argparse.Namespace) -> int:
+    """Re-derive the train/evaluation split, keeping every pin that already exists."""
+    from fractal_wallpapers.labeling import pins, store
+    from fractal_wallpapers.labeling import split as split_module
+
+    resolution = store.resolved()
+    drawn = split_module.derive(
+        resolution.scored(),
+        known=store.registry(),
+        seed=args.seed,
+        share=args.share,
+        pinned=pins.pinned(),
+    )
+    if args.write:
+        members, recipe = split_module.write(drawn)
+        print(f"wrote {members} and {recipe}")
+    print(json.dumps(drawn.recipe(), indent=2))
+    if not args.write:
+        print("(dry run — pass --write to ship it)")
+    return 0
+
+
+def import_labels(args: argparse.Namespace) -> int:
+    """Import the source project's location labels as flat rows."""
+    from fractal_wallpapers.labeling import corpus_import
+
+    try:
+        report = corpus_import.run(Path(args.source), seed=args.seed, share=args.share)
+    except corpus_import.CorpusImportError as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps(report, indent=2))
+    return 0
+
+
 def modes(args: argparse.Namespace) -> int:
     """List the named colorings and what each one is for.
 
@@ -712,7 +854,149 @@ def build_parser() -> argparse.ArgumentParser:
     listing = subcommands.add_parser("modes", help="list the named colorings")
     listing.set_defaults(handler=modes)
 
+    label_commands(subcommands)
+
+    bringing = subcommands.add_parser(
+        "import-labels",
+        help="import the source project's location labels into this store, as flat rows",
+        description=(
+            "Read another corpus through its own canonical reader, resolve every label once "
+            "— amendment overlay applied, revision rows read past, one verdict per location "
+            "as the maximum over its crops — and write flat rows here. Registers each batch "
+            "it lands before writing a row of it, and draws the split when it is done."
+        ),
+    )
+    bringing.add_argument("--source", required=True, help="the source repository's root")
+    bringing.add_argument("--seed", type=int, default=0, help="the split draw's seed (default: 0)")
+    bringing.add_argument(
+        "--share", type=float, default=0.20, help="the evaluation side's target share"
+    )
+    bringing.set_defaults(handler=import_labels)
+
     return parser
+
+
+def label_commands(subcommands) -> None:
+    """The labeling rig: register a batch, cut a sheet, serve it, record it, split it."""
+    labelling = subcommands.add_parser(
+        "label",
+        help="collect human verdicts: register, build, serve, record, split",
+        description=(
+            "The labeling rig and the store behind it. A batch is registered before it has "
+            "rows, a sheet is cut from a walk's ledger or from a batch already stored, the "
+            "page is served locally, and what comes back is recorded through the one writer."
+        ),
+    )
+    steps = labelling.add_subparsers(dest="step", required=True)
+
+    registering = steps.add_parser(
+        "register",
+        help="register a batch's generation method, before it has any rows",
+        description=(
+            "Say how a population was drawn, while that is still knowable. Two flags decide "
+            "whether anything measured on it can be read as a rate about the world: whether "
+            "a model score was in the draw, and whether the page anchored the labels to a "
+            "head's own verdict. Eval-eligibility follows from the two and is never stored."
+        ),
+    )
+    registering.add_argument("--batch", required=True, help="the name its rows will carry")
+    registering.add_argument("--method", required=True, help="how the population was drawn")
+    registering.add_argument(
+        "--score-unconditioned",
+        action="store_true",
+        help="no model score anywhere in the selection (a systematic draw qualifies)",
+    )
+    registering.add_argument(
+        "--anchored",
+        action="store_true",
+        help="the page serves a head's own verdict prefilled, or orders rows by its score",
+    )
+    registering.add_argument("--why", help="the sentence a later reader will need")
+    registering.set_defaults(handler=label_register)
+
+    building = steps.add_parser(
+        "build",
+        help="cut a sheet and render every unit of it twice",
+        description=(
+            "Render each unit through the canonical colormap, which is what a head sees, and "
+            "through the vivid one, which is what a person judges from. Both are named maps "
+            "in the committed library. The page serves the file order and never reshuffles."
+        ),
+    )
+    source = building.add_mutually_exclusive_group(required=True)
+    source.add_argument(
+        "--from-ledger", help="a walk ledger; its admitted candidates are the units"
+    )
+    source.add_argument("--from-batch", help="a batch already in the store, to judge again")
+    building.add_argument(
+        "--admitted-only",
+        action="store_true",
+        help="cut to what the scorer admitted rather than to everything the gates passed; "
+        "empty until a head exists, because admission needs a score",
+    )
+    building.add_argument("--batch", required=True, help="the registered batch the rows land in")
+    building.add_argument("--seed", type=int, default=0, help="the presentation seed (default: 0)")
+    building.add_argument("--limit", type=int, help="cut the sheet to this many units")
+    building.add_argument(
+        "--resolution",
+        nargs=2,
+        type=int,
+        metavar=("W", "H"),
+        default=[1280, 720],
+        help="render size for both companions (default: 1280 720)",
+    )
+    building.add_argument("--supersample", type=int, default=2, help="samples per pixel, per axis")
+    building.add_argument(
+        "--out-dir",
+        default=str(Path("artifacts") / "sheet"),
+        help="where the sheet is built (default: artifacts/sheet)",
+    )
+    building.set_defaults(handler=label_build)
+
+    serving = steps.add_parser(
+        "serve",
+        help="serve a built sheet to a browser on this machine",
+        description=(
+            "Binds exclusively, so a second launcher fails instead of silently co-hosting the "
+            "port and serving half the images out of the wrong directory."
+        ),
+    )
+    serving.add_argument("--sheet", required=True, help="a built sheet directory")
+    serving.add_argument("--host", default="127.0.0.1", help="address to bind (default: loopback)")
+    serving.add_argument("--port", type=int, default=8010, help="first port to try (default: 8010)")
+    serving.set_defaults(handler=label_serve)
+
+    recording = steps.add_parser(
+        "record",
+        help="record the page's export into the store",
+        description=(
+            "Only units the page exported become labels. A suggestion the labeler never "
+            "reviewed is absent from that file and cannot reach the store as a verdict."
+        ),
+    )
+    recording.add_argument("--sheet", required=True, help="the sheet the labels were cast on")
+    recording.add_argument("--labels", required=True, help="the labels.json the page exported")
+    recording.add_argument("--labeler", required=True, help="who cast them")
+    recording.set_defaults(handler=label_record)
+
+    showing = steps.add_parser("show", help="print what the store currently says, resolved")
+    showing.set_defaults(handler=label_show)
+
+    splitting = steps.add_parser(
+        "split",
+        help="re-derive the train/evaluation split, keeping every pin that exists",
+        description=(
+            "A seeded draw over location groups. A group reaches the evaluation side only if "
+            "every location in it is eval-eligible, and a location already pinned there is "
+            "never released — re-deriving adds, and only adds."
+        ),
+    )
+    splitting.add_argument("--seed", type=int, default=0, help="the draw's seed (default: 0)")
+    splitting.add_argument(
+        "--share", type=float, default=0.20, help="target share of locations on the evaluation side"
+    )
+    splitting.add_argument("--write", action="store_true", help="ship it; otherwise print it")
+    splitting.set_defaults(handler=label_split)
 
 
 def location_arguments(draw: argparse.ArgumentParser) -> None:

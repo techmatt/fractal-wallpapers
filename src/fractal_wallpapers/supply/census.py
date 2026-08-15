@@ -65,12 +65,10 @@ the number is a reported population and not a silence.
 
 from __future__ import annotations
 
-import json
 from collections import Counter
 from dataclasses import dataclass, field
-from pathlib import Path
 
-from fractal_wallpapers.paths import repo_root
+from fractal_wallpapers.labeling import store
 from fractal_wallpapers.supply import currency as money
 from fractal_wallpapers.supply import release_mix
 from fractal_wallpapers.supply.ledgers import admitted_union
@@ -85,47 +83,23 @@ from fractal_wallpapers.supply.partitions import ALL_PARTITIONS, partition_of_ro
 #: correction to a coarse number.
 MACHINE_STOCK_DISCOUNT = 0.2
 
-#: The schema every label row carries.
-LABEL_SCHEMA = 1
-
 TARGET_RULE = (
     "ratio-weighted: target = anchor × ratio / max(ratio), anchor = the richest partition's "
     f"stock (labelled currency + {MACHINE_STOCK_DISCOUNT:g} × unlabelled machine currency)"
 )
 
 
-def label_dir() -> Path:
-    """Where tracked label records live."""
-    return repo_root() / "data" / "labels"
-
-
 def label_rows(paths=None) -> list[dict]:
-    """Every label row, from the tracked label records.
+    """Every location's current verdict, through the label store's one reader.
 
-    A label row carries its whole join — the class *and* the complete render
-    parameters — so a labelled example is never split across two files. Absent
-    records are an empty corpus, which is this repository's normal state today
-    and is reported as a zero rather than raising: a cold start is a state, not
-    an error.
+    Not a second walk of `data/labels`: the store is append-only and a location
+    that has been re-judged has more than one row, so a census that counted rows
+    would count the correction *and* the thing it corrected. What comes back here
+    is one row per location — the latest verdict — and the census counts those.
+
+    Absent records are an empty corpus, which is a state rather than an error.
     """
-    if paths is None:
-        directory = label_dir()
-        paths = sorted(directory.glob("*.jsonl")) if directory.is_dir() else []
-    rows = []
-    for path in paths:
-        with Path(path).open(encoding="utf-8") as handle:
-            for number, line in enumerate(handle, start=1):
-                line = line.strip()
-                if not line:
-                    continue
-                row = json.loads(line)
-                if row.get("schema") != LABEL_SCHEMA:
-                    raise ValueError(
-                        f"{path}:{number}: schema {row.get('schema')!r}, expected {LABEL_SCHEMA}"
-                    )
-                if row.get("score") is not None:
-                    rows.append(row)
-    return rows
+    return store.resolved(paths).scored()
 
 
 @dataclass
@@ -349,14 +323,12 @@ def deficits(stock: dict, partitions=ALL_PARTITIONS, ratios: dict | None = None)
 
 
 __all__ = [
-    "LABEL_SCHEMA",
     "MACHINE_STOCK_DISCOUNT",
     "TARGET_RULE",
     "Census",
     "MachineStock",
     "deficits",
     "label_currency",
-    "label_dir",
     "label_rows",
     "machine_stock",
     "stock_census",

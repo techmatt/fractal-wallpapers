@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "rule": "seeded draw over location groups: a group reaches the evaluation side only if every location in it is eval-eligible, groups are taken whole until the target share is met, and a location already pinned to the evaluation side is never released",
+  "seed": 0,
+  "target_eval_share": 0.2,
+  "realized_eval_share": 0.0886,
+  "locations": {
+    "total": 11303,
+    "eval_eligible": 1050,
+    "eval": 1002
+  },
+  "groups": {
+    "total": 8383,
+    "eval_eligible": 530,
+    "eval": 530,
+    "largest": 48,
+    "straddling": 0
+  },
+  "carried_forward": 0,
+  "eligible_locations_demoted_by_a_group_mate": 48
+}
