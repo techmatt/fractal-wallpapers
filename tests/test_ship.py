@@ -63,15 +63,29 @@ def test_the_tolerances_are_tight_enough_to_be_a_check() -> None:
     assert ship.ROW_TOLERANCE <= 0.01
 
 
+HEADS = ("location", "smooth_render", "strange_render", "palette")
+
+
 def test_two_heads_cannot_ship_under_one_name() -> None:
     """A release's assets share one namespace, and the directory that keeps these
     apart on disk does not travel with them."""
-    names = {
-        ship.shipped_path(head).name for head in ("location", "smooth_render", "strange_render")
-    }
-    assert len(names) == 3, f"two heads would upload the same asset: {sorted(names)}"
-    for head in ("location", "smooth_render", "strange_render"):
+    names = {ship.shipped_path(head).name for head in HEADS}
+    assert len(names) == len(HEADS), f"two heads would upload the same asset: {sorted(names)}"
+    for head in HEADS:
         assert head in ship.shipped_path(head).name
+
+
+def test_every_head_says_where_its_pieces_are() -> None:
+    """The record is what lets one shipping path serve four heads. Three of them
+    emit a tier and share the ordinal agreement read; the palette head's answer is
+    a choice inside a candidate set, so it supplies its own statistic and nothing
+    else about shipping changes."""
+    for head in HEADS:
+        shipment = ship.shipment_for(head)
+        assert callable(shipment.checkpoint)
+        assert callable(shipment.directory)
+        assert callable(shipment.load)
+        assert (shipment.evaluation is None) == (shipment.agree is not None), head
 
 
 def test_the_ordering_bound_is_stated_in_the_unit_auc_moves_in() -> None:

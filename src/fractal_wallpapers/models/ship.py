@@ -47,7 +47,7 @@ a tenth of its rows are within 0.1 of it, which is exactly where a lossy cast
 moves a probability most and exactly where a good instrument should be. The worst
 row move is still reported, because it is worth seeing; it no longer gates.
 
-## One shipping path, three heads
+## One shipping path, four heads
 
 The fp16 cast, the re-read, the agreement check and the hash are the same for
 every head this project trains, and the only thing that differs is where a head's
@@ -56,6 +56,15 @@ difference is a small record — [`Shipment`] — and everything else is written
 once. A second copy of the verification would be a second answer to whether an
 artifact is safe to publish, and the two would drift on the day one of them was
 fixed.
+
+The fourth head is the one that shows what the record is for. Three of them emit
+a tier on an ordinal scale, so "the order held" is AUC at a cutpoint and "the
+decision held" is a decoded tier. The palette head emits a bare utility and its
+answer is a *choice inside a candidate set*, so neither statistic exists for it —
+its order is counted in discordant candidate pairs and its decision is the top
+pick. What that head supplies is a different **statistic**, through
+[`Shipment.agree`]; the cast, the re-read, the bounds it is held to and the hash
+are the same code as the other three.
 
 ## The release itself is not this step's job
 
@@ -132,6 +141,11 @@ class Shipment:
     load: Callable
     #: `(name, which, run) -> (paths, labels)` for this head's own evaluation side.
     evaluation: Callable
+    #: `(name, which, device, run) -> the agreement record`, for a head whose
+    #: answer is not a tier on an ordinal scale. Absent means the ordinal read
+    #: below applies — three heads use it and one does not, and the one that does
+    #: not needs a different *statistic*, not a different shipping path.
+    agree: Callable | None = None
 
 
 def _location_evaluation(name: str, which: str, run: str | None):
@@ -171,10 +185,77 @@ def _finished_evaluation(name: str, which: str, run: str | None):
     return paths, numpy.array([row["score"] for row in rows])
 
 
+def _palette_agreement(name: str, which: str, device: str, run: str | None) -> dict:
+    """The half-precision read for the palette head, in the units it is judged in.
+
+    Its answer is a choice inside a candidate set rather than a tier, so the two
+    things the recipe protects are spelled for that: the **decisions** are the top
+    picks, and the **ordering** is counted in discordant candidate pairs. Both
+    bounds are the ratified constants — one percent of decisions, eight swaps —
+    read on the same real candidate sets the acceptance arm uses.
+    """
+    from fractal_wallpapers.models import (
+        palette_acceptance,
+        palette_head,
+        palette_scoring,
+        palette_sets,
+    )
+    from fractal_wallpapers.models import palette_teacher as tower
+
+    del name
+    rows = palette_scoring.read(run)
+    paths, _ = palette_scoring.paths_of(palette_sets.read())
+    halved, config, where = palette_scoring.load(shipped_path("palette"), device)
+    scores = tower.scored_with(
+        halved, paths, palette_head.Transform(train=False), where, int(config.get("batch_sets", 16))
+    )
+
+    after, cursor = [], 0
+    for row in rows:
+        width = len(row["candidates"])
+        after.append(scores[cursor : cursor + width])
+        cursor += width
+    moved = palette_acceptance.fp16_agreement(rows, after)
+    decisions_held = moved["decisions"]["share"] <= DECISION_TOLERANCE
+    ordering_held = moved["ordering"]["worst_discordant_pairs"] <= SWAP_TOLERANCE
+    return {
+        "pictures": len(paths),
+        "ordering": {
+            "rule": f"at most {SWAP_TOLERANCE} discordant candidate pairs in any one set",
+            "worst_discordant_pairs": moved["ordering"]["worst_discordant_pairs"],
+            "held": ordering_held,
+        },
+        "decisions": {
+            "rule": f"at most {DECISION_TOLERANCE:.0%} of sets change their top pick",
+            "changed": moved["decisions"]["changed"],
+            "share": moved["decisions"]["share"],
+            "held": decisions_held,
+        },
+        "row_moves": {
+            "reported_only": (
+                "a moved score is not a changed answer; the decisions above are what this "
+                "used to be a proxy for"
+            ),
+            **moved["row_moves"],
+        },
+        "held": ordering_held and decisions_held,
+    }
+
+
 def shipment_for(name: str) -> Shipment:
     """Which family a head belongs to, and where its pieces live."""
     from fractal_wallpapers.labeling import finished
 
+    if name == "palette":
+        from fractal_wallpapers.models import palette_scoring, palette_train
+
+        return Shipment(
+            checkpoint=lambda _name, which, run: palette_train.checkpoint_path(which, run),
+            directory=lambda _name, run=None: palette_train.head_dir(run),
+            load=palette_scoring.load,
+            evaluation=None,
+            agree=_palette_agreement,
+        )
     if name in finished.HEADS:
         from fractal_wallpapers.models import finished_scoring, finished_train
 
@@ -282,6 +363,8 @@ def agreement(
     import numpy
 
     kind = shipment_for(name)
+    if kind.agree is not None:
+        return kind.agree(name, which, device, run)
     paths, labels = kind.evaluation(name, which, run)
 
     full, config, where = kind.load(kind.checkpoint(name, which, run), device)
@@ -391,8 +474,8 @@ def stage(
         raise ValueError(
             "the half-precision head does not agree with the full-precision one: the order "
             f"held={agreed['ordering']['held']} and "
-            f"{agreed['decisions']['changed']} of {agreed['pictures']} rows changed their "
-            f"decoded tier ({agreed['decisions']['share']:.1%}). The artifact has been "
+            f"{agreed['decisions']['changed']} of its decisions changed "
+            f"({agreed['decisions']['share']:.1%}). The artifact has been "
             "removed rather than hashed — a manifest entry for a head that decides "
             "differently is worse than no entry."
         )
