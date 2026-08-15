@@ -208,28 +208,11 @@ INHERITANCE = {
 
 
 def _claim(directory: Path) -> Path:
-    """Take the run directory, or refuse because something else already has it.
-
-    Two trainers in one directory do not collide loudly — they interleave their
-    logs, take turns overwriting one checkpoint, and produce a run whose numbers
-    belong to neither. On Windows the first symptom is a permission error on the
-    resume write, tens of minutes in, and by then the log reads like one run
-    behaving strangely rather than two behaving normally.
-    """
-    import os
-
-    lock = directory / "training.lock"
+    """Take the run directory, or refuse. The lock itself lives in [`train.claim`]."""
     try:
-        handle = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-    except FileExistsError:
-        raise TrainingError(
-            f"{lock} exists, so another run already has {directory.name}. Two trainers in "
-            f"one directory take turns overwriting one checkpoint and produce a run whose "
-            f"numbers belong to neither. If nothing is running, delete it."
-        ) from None
-    with os.fdopen(handle, "w", encoding="utf-8") as writer:
-        writer.write(str(os.getpid()))
-    return lock
+        return train.claim(directory)
+    except RuntimeError as taken:
+        raise TrainingError(str(taken)) from None
 
 
 def validation_loss(labels, probabilities, classes: int) -> float:
