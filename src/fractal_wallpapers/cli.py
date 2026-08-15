@@ -614,6 +614,44 @@ def tiles_build(args: argparse.Namespace) -> int:
     return 0
 
 
+def renders_plan(args: argparse.Namespace) -> int:
+    """Turn a finished-render store into the pictures a build has to make."""
+    from collections import Counter
+
+    from fractal_wallpapers.models import renders
+
+    jobs = renders.plan(args.head, seed=args.seed)
+    path = renders.write_plan(args.head, jobs, seed=args.seed)
+    print(
+        json.dumps(
+            {
+                "head": args.head,
+                "pictures": len(jobs),
+                "seed": args.seed,
+                "locations": len({json.dumps([j["family"], j["viewport"]]) for j in jobs}),
+                "batches": dict(sorted(Counter(job["batch"] for job in jobs).items())),
+                "modes": dict(sorted(Counter(job["mode"] for job in jobs).items())),
+                "scores": dict(sorted(Counter(job["score"] for job in jobs).items())),
+                "wrote": str(path),
+            },
+            indent=2,
+        )
+    )
+    return 0
+
+
+def renders_build(args: argparse.Namespace) -> int:
+    """Render every picture of the plan, skipping the ones already on disk."""
+    from fractal_wallpapers.models import renders
+
+    report = renders.build(args.head, limit=args.limit)
+    renders.build_record_path(args.head).write_text(
+        json.dumps(report, indent=2) + "\n", encoding="utf-8", newline="\n"
+    )
+    print(json.dumps(report, indent=2))
+    return 0
+
+
 def head_train(args: argparse.Namespace) -> int:
     """Train one head on the built tiles."""
     from fractal_wallpapers.models import train
@@ -1018,6 +1056,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     label_commands(subcommands)
     tile_commands(subcommands)
+    render_commands(subcommands)
     head_commands(subcommands)
 
     bringing = subcommands.add_parser(
@@ -1221,6 +1260,50 @@ def tile_commands(subcommands) -> None:
         help="stop after this many locations; every row it writes is stamped partial",
     )
     building.set_defaults(handler=tiles_build)
+
+
+def render_commands(subcommands) -> None:
+    """The finished-render cache: plan the pictures, then make them."""
+    caching = subcommands.add_parser(
+        "renders",
+        help="build the pictures a finished-render judge is trained on: plan, then render",
+        description=(
+            "A finished-render row records the recipe rather than the picture, so the "
+            "pictures are regenerated here — every one of them, training and evaluation "
+            "alike, through this repository's own coloring path. A head trained on one "
+            "renderer's pictures and deployed against another's measures the difference "
+            "between the two renderers."
+        ),
+    )
+    steps = caching.add_subparsers(dest="step", required=True)
+
+    planning = steps.add_parser(
+        "plan",
+        help="turn a store into the pictures a build has to make",
+        description=(
+            "One job per distinct picture: rows that share a place, a mode with its "
+            "settings, a curve, a map and a recipe share a file. The plan is shuffled by a "
+            "seed, so any prefix of it is a fair sample and a bounded rehearsal projects "
+            "the whole build honestly."
+        ),
+    )
+    planning.add_argument("--head", required=True, help="which judge's corpus")
+    planning.add_argument("--seed", type=int, default=0, help="the shuffle's seed (default: 0)")
+    planning.set_defaults(handler=renders_plan)
+
+    building = steps.add_parser(
+        "build",
+        help="render every picture of the plan",
+        description=(
+            "Resumable by construction: a picture already on disk is skipped before its "
+            "field is iterated, and a file is named for a digest of its own recipe, so a "
+            "re-planned build re-uses everything it already has. Progress goes to "
+            "build.log as it runs."
+        ),
+    )
+    building.add_argument("--head", required=True, help="which judge's corpus")
+    building.add_argument("--limit", type=int, help="stop after this many jobs of the plan")
+    building.set_defaults(handler=renders_build)
 
 
 def head_commands(subcommands) -> None:

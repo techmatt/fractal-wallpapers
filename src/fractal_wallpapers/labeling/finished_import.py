@@ -253,24 +253,31 @@ SOURCES: dict[str, dict[str, Imported]] = {
 CORPORA = {"smooth_render": "wallpaper_corpus", "strange_render": "render_mode_corpus"}
 
 
-def _source_registry(root: Path):
-    """Load the source project's own batch registry — imported, not reimplemented.
+def _source_modules(root: Path):
+    """Load the source project's own registry and store — imported, not restated.
 
-    It is the single owner of `score_unconditioned` over there, and a second copy
-    of that table here would be a second answer to whether a population may be an
-    instrument.
+    Two things come from over there and neither is rebuilt here. `batch_registry`
+    is the single owner of `score_unconditioned`, and a second copy of that table
+    would be a second answer to whether a population may be an instrument.
+    `label_store` is asked only where its project keeps exported verdicts: that
+    directory shares a name with this repository's own label store and is not it,
+    and taking the answer from the source rather than spelling it is what keeps
+    the two from ever being confused for one another.
     """
-    directory = str(Path(root) / "tools" / "scoring")
-    if directory not in sys.path:
-        sys.path.insert(0, directory)
+    for relative in (("tools", "scoring"), ("tools", "corpus")):
+        directory = str(Path(root).joinpath(*relative))
+        if directory not in sys.path:
+            sys.path.insert(0, directory)
     try:
         import batch_registry
+        import label_store
     except ModuleNotFoundError as missing:
         raise FinishedImportError(
             f"{root} does not look like the source corpus: {missing}. It needs "
-            f"tools/scoring/batch_registry.py, which owns the split classification."
+            f"tools/scoring/batch_registry.py, which owns the split classification, and "
+            f"tools/corpus/label_store.py, which owns where its exports live."
         ) from missing
-    return batch_registry
+    return batch_registry, label_store
 
 
 def batch_dir(root: Path, head: str, source_batch: str) -> Path:
@@ -309,7 +316,7 @@ def anchoring_of(record: dict) -> bool:
 
 def registrations(root: Path, head: str) -> list[registry_module.Registration]:
     """One registration per landing batch, with every flag checked against the source."""
-    source_registry = _source_registry(root)
+    source_registry, _ = _source_modules(root)
     out: list[registry_module.Registration] = []
     disagreements: list[str] = []
     for source_batch, entry in sorted(SOURCES[head].items()):
@@ -361,7 +368,8 @@ def labels_of(root: Path, head: str, source_batch: str) -> dict[str, int]:
     version = record.get("generator_version")
     if not version:
         raise FinishedImportError(f"{source_batch}: its record names no generator version")
-    path = Path(root) / "labels" / f"{version}.json"
+    _, source_store = _source_modules(root)
+    path = Path(source_store.LABELS_DIR) / f"{version}.json"
     if not path.is_file():
         raise FinishedImportError(
             f"{path} is missing — {source_batch} is listed as fully labeled and its "
