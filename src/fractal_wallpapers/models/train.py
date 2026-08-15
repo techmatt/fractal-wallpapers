@@ -60,6 +60,10 @@ SCHEMA = 1
 RECIPE = {
     "classes": head.CLASSES,
     "backbone": head.BACKBONE,
+    # The backbone starts from its ImageNet-12k weights, never from an earlier
+    # head of this project: warm-starting would make each version's numbers a
+    # statement about the whole chain behind it.
+    "pretrained": True,
     "geometry": "stretch",
     "epochs": 40,
     "batch_size": 32,
@@ -99,6 +103,15 @@ def config_path(name: str = "location") -> Path:
 
 def metrics_path(name: str = "location") -> Path:
     return head_dir(name) / "metrics.json"
+
+
+def shown(value) -> str:
+    """A number for the log, or `n/a` where a cutpoint had nothing to measure.
+
+    Spelled out rather than printed as a zero: a selection slice with no
+    release-worthy location in it has not measured a bad head.
+    """
+    return "n/a" if value is None else f"{value:.4f}"
 
 
 def device_of(requested: str = "auto") -> str:
@@ -203,7 +216,9 @@ def train(
     log(f"pin: {pin_report}")
     log(f"positives per cutpoint (train): {dataset.positives_at_cutpoints(training, classes)}")
 
-    probe = head.build(num_classes=classes, backbone=recipe["backbone"], pretrained=True)
+    probe = head.build(
+        num_classes=classes, backbone=recipe["backbone"], pretrained=recipe["pretrained"]
+    )
     data_config = head.data_config(probe)
     del probe
     log(f"data config {data_config}")
@@ -211,7 +226,7 @@ def train(
     model = head.build(
         num_classes=classes,
         backbone=recipe["backbone"],
-        pretrained=True,
+        pretrained=recipe["pretrained"],
         drop_rate=recipe["drop_rate"],
         drop_path_rate=recipe["drop_path_rate"],
     ).to(where)
@@ -308,9 +323,9 @@ def train(
         history.append(record)
         log(
             f"epoch {epoch:2d}  loss {record['loss']:.4f}  "
-            f"AP>=2 {objective:.4f}  "
+            f"AP>=2 {shown(objective)}  "
             + "  ".join(
-                f"AUC>={index + 2} {record[f'selection_auc_{head.cutpoint_label(index)}']:.4f}"
+                f"AUC>={index + 2} {shown(record[f'selection_auc_{head.cutpoint_label(index)}'])}"
                 for index in range(classes - 1)
             )
             + f"  ({record['seconds']}s)"
@@ -447,6 +462,7 @@ __all__ = [
     "metrics_path",
     "population",
     "score",
+    "shown",
     "set_seed",
     "train",
 ]
