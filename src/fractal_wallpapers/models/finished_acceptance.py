@@ -479,7 +479,9 @@ def read(head: str, runs: list[str | None] | None = None) -> dict:
     from fractal_wallpapers.models import finished_scoring
 
     head = finished.head_of(head)
-    runs = [None] if runs is None else list(runs)
+    # An empty name is the head's own run, not a run called "". The two reach
+    # the same directory either way; normalizing here keeps the record readable.
+    runs = [None] if runs is None else [run or None for run in runs]
     bar = json.loads(prereg_path(head).read_text(encoding="utf-8"))
     sheet = SHEETS[head]
     boundary, label = sheet["boundary"], boundary_label(sheet["boundary"])
@@ -510,8 +512,12 @@ def read(head: str, runs: list[str | None] | None = None) -> dict:
 
     truth = (labels >= boundary).astype(int)
     index = boundary - 2
-    band = {str(run): metrics.auc(truth, column(run, index)) for run in runs}
-    ranked = sorted(runs, key=lambda run: band[str(run)] or 0.0)
+
+    def named(run):
+        return run if run else "its own"
+
+    band = {named(run): metrics.auc(truth, column(run, index)) for run in runs}
+    ranked = sorted(runs, key=lambda run: band[named(run)] or 0.0)
     judged = ranked[len(ranked) // 2]
     ours = column(judged, index)
 
@@ -542,7 +548,7 @@ def read(head: str, runs: list[str | None] | None = None) -> dict:
         "schema": SCHEMA,
         "head": head,
         "prereg": str(prereg_path(head)),
-        "runs": [str(run) for run in runs],
+        "runs": [run if run else "its own" for run in runs],
         "population": {
             "rows": len(covered),
             "locations": int(len(set(groups.tolist()))),
@@ -553,7 +559,7 @@ def read(head: str, runs: list[str | None] | None = None) -> dict:
             "boundary": label,
             "ours": metrics.auc(truth, ours),
             "our_band": band,
-            "judged_on": str(judged),
+            "judged_on": named(judged),
             "interval": [interval["lo"], interval["hi"]],
             "target": target,
             "margin": margin,

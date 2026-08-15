@@ -3,7 +3,9 @@
   "head": "strange_render",
   "prereg": "C:\\Code\\fractal-wallpapers\\models\\strange_render\\prereg.json",
   "runs": [
-    "None"
+    "its own",
+    "seed1",
+    "seed2"
   ],
   "population": {
     "rows": 150,
@@ -15,9 +17,11 @@
     "boundary": "ge2",
     "ours": 0.7338193456614509,
     "our_band": {
-      "None": 0.7338193456614509
+      "its own": 0.7338193456614509,
+      "seed1": 0.7496443812233285,
+      "seed2": 0.7156827880512091
     },
-    "judged_on": "None",
+    "judged_on": "its own",
     "interval": [
       0.6488367024819717,
       0.8152185061456673
