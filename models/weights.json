@@ -7,6 +7,13 @@
       "sha256": "4b60deb935314cf73c53d78946c9910a265f878ab7dc36680f6ec1a581b030d3",
       "bytes": 17156858,
       "precision": "fp16"
+    },
+    "strange_render": {
+      "tag": "weights-v1",
+      "asset": "strange_render.fp16.pt",
+      "sha256": "79201d0c5eeba307ac0873333dd52f7743c74049e4c6df8951ddf2c3d15a979f",
+      "bytes": 5132862,
+      "precision": "fp16"
     }
   }
 }
