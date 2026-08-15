@@ -485,7 +485,7 @@ def read(name: str = "location", classes: int = head.CLASSES) -> dict:
         "interface": interface,
         "calibration": calibration,
         "per_partition": _partition_arm(covered, labels, ours, control, classes),
-        "clean_subset": _clean_subset(covered, control, ours, labels, groups, classes),
+        "clean_subset": _clean_subset(covered, control, ours, labels, classes),
         "verdict": (
             "FAIL"
             if "FAIL" in verdicts
@@ -546,7 +546,6 @@ def _calibration_arm(bar: dict, labels, ours: dict, classes: int) -> dict:
 def _partition_arm(covered: list[dict], labels, ours: dict, control: dict, classes: int) -> dict:
     import numpy
 
-    partitions = sorted({row["partition"] for row in covered})
     from fractal_wallpapers.supply.partitions import ALL_PARTITIONS
 
     out = {}
@@ -582,11 +581,10 @@ def _partition_arm(covered: list[dict], labels, ours: dict, control: dict, class
                 "incumbent": theirs,
             }
         out[partition] = entry
-    del partitions
     return out
 
 
-def _clean_subset(covered, control, ours, labels, groups, classes: int) -> dict:
+def _clean_subset(covered, control, ours, labels, classes: int) -> dict:
     """The locations neither project's checkpoint pick ever touched.
 
     Reported because it is the only fully clean comparison available, and framed
@@ -625,7 +623,6 @@ def _clean_subset(covered, control, ours, labels, groups, classes: int) -> dict:
                 for arm in INCUMBENT_ARMS
             },
         }
-    del groups
     return out
 
 
