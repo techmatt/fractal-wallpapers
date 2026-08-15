@@ -39,8 +39,8 @@ def scores_path(name: str = "location") -> Path:
 def _relative(path: str) -> str:
     """A tile path as a tracked record may carry it: relative, forward slashes.
 
-    The score file is tracked, and a tracked file that names `C:\\Code\\...` is a
-    file that means nothing on the machine that reads it next.
+    The score file is tracked, and a tracked file that names one machine's drive
+    letter and home directory means nothing on the machine that reads it next.
     """
     from fractal_wallpapers.paths import repo_root
 

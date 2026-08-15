@@ -81,12 +81,14 @@ def test_the_gated_cutpoints_have_positives_to_measure_with() -> None:
             assert gate["positives"] >= acceptance.MIN_POSITIVES, label
 
 
-def test_the_incumbent_join_lands_on_this_projects_location_ids() -> None:
-    """Neither project was told about the other: the join goes through the
+def test_the_vendored_yardstick_lands_on_this_projects_location_ids() -> None:
+    """Neither project was told about the other: the join went through the
     `c`-inclusive location coordinate, which is the same key the evaluation pin
-    is asserted at."""
-    if not acceptance.INCUMBENT_SCORES.is_file():
-        pytest.skip("the incumbent's committed scores are not on this machine")
+    is asserted at — and the result is written down here rather than re-derived,
+    because the source project is a sibling checkout during the build era and
+    gone afterwards."""
+    if not acceptance.yardstick_path("location").is_file():
+        pytest.skip("no yardstick has been vendored yet")
     from fractal_wallpapers.models import tiles as tile_module
 
     control = acceptance.incumbent()
@@ -108,16 +110,18 @@ def test_the_bar_accepts_a_head_that_is_the_incumbent(tmp_path, monkeypatch) -> 
     """The machinery's own calibration: hand the read one of the yardstick's own
     seeds and it must come back ACCEPT. A bar that could not pass the head it was
     built from would be measuring something other than what it claims to."""
-    if not acceptance.INCUMBENT_SCORES.is_file():
-        pytest.skip("the incumbent's committed scores are not on this machine")
+    if not acceptance.yardstick_path("location").is_file():
+        pytest.skip("no yardstick has been vendored yet")
     import shutil
 
     from fractal_wallpapers.models import scoring, train
     from fractal_wallpapers.models import tiles as tile_module
 
     shipped = acceptance.prereg_path("location")
+    vendored = acceptance.yardstick_path("location")
     monkeypatch.setattr(train, "head_dir", lambda name="location": tmp_path)
     shutil.copy(shipped, tmp_path / "prereg.json")
+    shutil.copy(vendored, tmp_path / "yardstick.jsonl")
 
     control = acceptance.incumbent()
     arm = acceptance.INCUMBENT_ARMS[0]

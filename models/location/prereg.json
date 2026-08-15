@@ -1,6 +1,7 @@
 {
   "schema": 1,
   "head": "location",
+  "yardstick_record": "yardstick.jsonl",
   "question": "Is a location head trained inside this repository approximately comparable to the one the source project deployed, within the variance a fresh seed and a fresh rendering pipeline produce?",
   "population": {
     "rule": "every location on the evaluation side of BOTH projects, joined on the c-inclusive location coordinate",
