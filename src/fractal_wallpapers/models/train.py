@@ -147,21 +147,29 @@ INHERITANCE = {
 }
 
 
-def head_dir(name: str = "location") -> Path:
-    """A head's home: tracked metadata, with the weights beside it, untracked."""
-    return repo_root() / "models" / name
+def head_dir(name: str = "location", run: str | None = None) -> Path:
+    """A head's home: tracked metadata, with the weights beside it, untracked.
+
+    `run` names one training run under it. The bar, the yardstick and the verdict
+    belong to the *head* and stay at the root; a checkpoint, its config, its
+    metrics and its scores belong to one run and go in a directory of their own.
+    That is what lets a seed band exist at all — three runs of one recipe, judged
+    against one bar that none of them may rewrite.
+    """
+    directory = repo_root() / "models" / name
+    return directory if run is None else directory / run
 
 
-def checkpoint_path(name: str = "location", which: str = "best") -> Path:
-    return head_dir(name) / f"head_{which}.pt"
+def checkpoint_path(name: str = "location", which: str = "best", run: str | None = None) -> Path:
+    return head_dir(name, run) / f"head_{which}.pt"
 
 
-def config_path(name: str = "location") -> Path:
-    return head_dir(name) / "config.json"
+def config_path(name: str = "location", run: str | None = None) -> Path:
+    return head_dir(name, run) / "config.json"
 
 
-def metrics_path(name: str = "location") -> Path:
-    return head_dir(name) / "metrics.json"
+def metrics_path(name: str = "location", run: str | None = None) -> Path:
+    return head_dir(name, run) / "metrics.json"
 
 
 def shown(value) -> str:
@@ -239,6 +247,7 @@ def train(
     device: str = "auto",
     epochs: int | None = None,
     seed: int | None = None,
+    run: str | None = None,
     log=print,
 ) -> dict:
     """Train one head and write its checkpoints, its config and its metrics."""
@@ -323,7 +332,7 @@ def train(
     choosing_paths = [location.canonical() for location in choosing]
     choosing_labels = numpy.array([location.score for location in choosing])
 
-    directory = head_dir(name)
+    directory = head_dir(name, run)
     directory.mkdir(parents=True, exist_ok=True)
     resume = directory / "resume.pt"
 
@@ -420,6 +429,7 @@ def train(
     config = {
         "schema": SCHEMA,
         "head": name,
+        "run": run,
         **recipe,
         "mean": list(data_config["mean"]),
         "std": list(data_config["std"]),
@@ -433,14 +443,15 @@ def train(
         "selection_slice": selection_record,
         "precision": "fp32",
     }
-    torch.save({"state_dict": best_state, "config": config}, checkpoint_path(name, "best"))
-    torch.save({"state_dict": last_state, "config": config}, checkpoint_path(name, "last"))
+    torch.save({"state_dict": best_state, "config": config}, checkpoint_path(name, "best", run))
+    torch.save({"state_dict": last_state, "config": config}, checkpoint_path(name, "last", run))
     if resume.is_file():
         resume.unlink()
 
     record = {
         "schema": SCHEMA,
         "head": name,
+        "run": run,
         "device": where,
         "wall_seconds": round(time.time() - began, 1),
         "best_epoch": best_epoch,

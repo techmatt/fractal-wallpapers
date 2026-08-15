@@ -66,8 +66,13 @@ def manifest_path() -> Path:
     return repo_root() / "models" / "weights.json"
 
 
-def shipped_path(name: str = "location") -> Path:
-    """The artifact itself: half precision, living beside its tracked metadata."""
+def shipped_path(name: str = "location", run: str | None = None) -> Path:
+    """The artifact itself: half precision, living beside its tracked metadata.
+
+    At the head's root, not the run's: what ships is the head, and which of its
+    runs the weights came from is a fact the config inside the file carries.
+    """
+    del run
     return train.head_dir(name) / "head.fp16.pt"
 
 
@@ -92,11 +97,11 @@ def halve(state: dict) -> dict:
     }
 
 
-def convert(name: str = "location", which: str = "best") -> dict:
+def convert(name: str = "location", which: str = "best", run: str | None = None) -> dict:
     """Write the half-precision artifact and prove it re-reads."""
     import torch
 
-    source = train.checkpoint_path(name, which)
+    source = train.checkpoint_path(name, which, run)
     saved = torch.load(source, map_location="cpu", weights_only=False)
     config = dict(saved["config"])
     config["precision"] = "fp16"
@@ -134,7 +139,9 @@ def convert(name: str = "location", which: str = "best") -> dict:
     }
 
 
-def agreement(name: str = "location", which: str = "best", device: str = "auto") -> dict:
+def agreement(
+    name: str = "location", which: str = "best", device: str = "auto", run: str | None = None
+) -> dict:
     """Score this repository's evaluation side both ways and compare."""
     import numpy
 
@@ -148,7 +155,7 @@ def agreement(name: str = "location", which: str = "best", device: str = "auto")
     paths = [location.canonical() for location in holdout]
     labels = numpy.array([location.score for location in holdout])
 
-    full, config, where = scoring.load(train.checkpoint_path(name, which), device)
+    full, config, where = scoring.load(train.checkpoint_path(name, which, run), device)
     transform = scoring.transform_of(config)
     classes = int(config["classes"])
     before = train.score(full, paths, transform, where, classes, {"batch_size": 64})
@@ -194,11 +201,15 @@ def entry(name: str = "location", tag: str = TAG) -> dict:
 
 
 def stage(
-    name: str = "location", which: str = "best", tag: str = TAG, device: str = "auto"
+    name: str = "location",
+    which: str = "best",
+    tag: str = TAG,
+    device: str = "auto",
+    run: str | None = None,
 ) -> dict:
     """Convert, verify, hash, and write the manifest entry. Uploading is a person's job."""
-    conversion = convert(name, which)
-    agreed = agreement(name, which, device)
+    conversion = convert(name, which, run)
+    agreed = agreement(name, which, device, run)
     if not agreed["held"]:
         shipped_path(name).unlink(missing_ok=True)
         raise ValueError(

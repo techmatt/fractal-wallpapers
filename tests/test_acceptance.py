@@ -119,7 +119,7 @@ def test_the_bar_accepts_a_head_that_is_the_incumbent(tmp_path, monkeypatch) -> 
 
     shipped = acceptance.prereg_path("location")
     vendored = acceptance.yardstick_path("location")
-    monkeypatch.setattr(train, "head_dir", lambda name="location": tmp_path)
+    monkeypatch.setattr(train, "head_dir", lambda name="location", run=None: tmp_path)
     shutil.copy(shipped, tmp_path / "prereg.json")
     shutil.copy(vendored, tmp_path / "yardstick.jsonl")
 

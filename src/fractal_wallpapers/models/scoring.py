@@ -31,9 +31,9 @@ from fractal_wallpapers.models import tiles as tile_module
 SCHEMA = 1
 
 
-def scores_path(name: str = "location") -> Path:
-    """Where a head's read of the evaluation side is kept, tracked."""
-    return train.head_dir(name) / "scores.jsonl"
+def scores_path(name: str = "location", run: str | None = None) -> Path:
+    """Where one run's read of the evaluation side is kept, tracked."""
+    return train.head_dir(name, run) / "scores.jsonl"
 
 
 def _relative(path: str) -> str:
@@ -86,12 +86,13 @@ def run(
     which: str = "best",
     side: str = pins.EVAL,
     device: str = "auto",
+    into: str | None = None,
     log=print,
 ) -> dict:
     """Score one side of the build through a checkpoint, and write the rows."""
     import numpy
 
-    checkpoint = train.checkpoint_path(name, which)
+    checkpoint = train.checkpoint_path(name, which, into)
     model, config, where = load(checkpoint, device)
     transform = transform_of(config)
 
@@ -117,7 +118,7 @@ def run(
         model, paths, transform, where, int(config["classes"]), {"batch_size": 64}
     )
 
-    path = scores_path(name)
+    path = scores_path(name, into)
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="\n") as handle:
         for location, probability in zip(wanted, probabilities, strict=True):
@@ -125,6 +126,7 @@ def run(
             row = {
                 "schema": SCHEMA,
                 "head": name,
+                "run": into,
                 "checkpoint": which,
                 "location_id": location.location_id,
                 "family": source["family"],
@@ -143,6 +145,7 @@ def run(
 
     return {
         "head": name,
+        "run": into,
         "checkpoint": str(checkpoint),
         "which": which,
         "side": side,
@@ -151,9 +154,9 @@ def run(
     }
 
 
-def read(path: Path | None = None, name: str = "location") -> list[dict]:
-    """A head's scores, schema-checked."""
-    path = scores_path(name) if path is None else Path(path)
+def read(path: Path | None = None, name: str = "location", run: str | None = None) -> list[dict]:
+    """One run's scores, schema-checked."""
+    path = scores_path(name, run) if path is None else Path(path)
     rows = []
     for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
         if not line.strip():

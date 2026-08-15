@@ -447,14 +447,32 @@ def preregister(name: str = "location", classes: int = head.CLASSES) -> dict:
     }
 
 
-def read(name: str = "location", classes: int = head.CLASSES) -> dict:
-    """Read a trained head's scores against the bar. The bar comes from the file."""
+def read(
+    name: str = "location",
+    classes: int = head.CLASSES,
+    runs: list[str | None] | None = None,
+) -> dict:
+    """Read this head's scores against the bar. The bar comes from the file.
+
+    `runs` names the training runs to read. One run is the ordinary case. More
+    than one is the pre-registered escalation: a gate whose interval straddled
+    the margin buys a seed band, and each cutpoint is then judged on the
+    **median** run by that cutpoint's own statistic. The median, not the best —
+    picking the best of three is the thing pre-registration exists to stop — and
+    the whole band is reported beside it so the spread is visible rather than
+    summarized away.
+    """
     import numpy
 
     from fractal_wallpapers.models import scoring
 
+    runs = [None] if runs is None else list(runs)
     bar = json.loads(prereg_path(name).read_text(encoding="utf-8"))
-    scored = {int(row["location_id"]): row for row in scoring.read(name=name)}
+    by_run = {
+        run: {int(row["location_id"]): row for row in scoring.read(name=name, run=run)}
+        for run in runs
+    }
+    scored = by_run[runs[0]]
     control = incumbent(name)
     rows = [row for row in tile_module.read_locations() if row["side"] == "eval"]
     rows.sort(key=lambda row: row["location_id"])
@@ -470,19 +488,26 @@ def read(name: str = "location", classes: int = head.CLASSES) -> dict:
 
     labels = numpy.array([row["score"] for row in covered])
     groups = numpy.array([row["group"] for row in covered])
-    ours = {
-        index: numpy.array(
-            [scored[row["location_id"]][f"p_{head.cutpoint_label(index)}"] for row in covered]
+
+    def column(run, index):
+        rows = by_run[run]
+        return numpy.array(
+            [rows[row["location_id"]][f"p_{head.cutpoint_label(index)}"] for row in covered]
         )
-        for index in range(classes - 1)
-    }
 
     arms, verdicts = {}, []
+    ours = {}
     for index in range(classes - 1):
         label = head.cutpoint_label(index)
         gate = bar["arms"]["ordering"][label]
         truth = (labels >= index + 2).astype(int)
-        ours_auc = metrics.auc(truth, ours[index])
+
+        band = {str(run): metrics.auc(truth, column(run, index)) for run in runs}
+        ranked = sorted(runs, key=lambda run: band[str(run)] or 0.0)
+        judged = ranked[len(ranked) // 2]
+        ours[index] = column(judged, index)
+        ours_auc = band[str(judged)]
+
         against = {}
         for arm in INCUMBENT_ARMS:
             theirs = numpy.array([control[row["location_id"]][arm][index] for row in covered])
@@ -516,6 +541,8 @@ def read(name: str = "location", classes: int = head.CLASSES) -> dict:
             "margin": gate["margin"],
             "positives": int(truth.sum()),
             "ours": ours_auc,
+            "our_band": band,
+            "judged_on": str(judged),
             "incumbent_band": bar["yardstick"]["cutpoints"][label]["band"],
             "against": against,
             "verdict": verdict,
@@ -531,6 +558,7 @@ def read(name: str = "location", classes: int = head.CLASSES) -> dict:
         "schema": SCHEMA,
         "head": name,
         "prereg": str(prereg_path(name)),
+        "runs": [str(run) for run in runs],
         "population": {
             "locations": len(covered),
             "clusters": int(len(set(groups.tolist()))),
