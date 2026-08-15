@@ -114,12 +114,18 @@ pub enum Transfer {
 
 /// How many value bins the edge transfer measures over. Fine enough that the
 /// remap is smooth, coarse enough that every bin holds samples to average.
-pub const TRANSFER_BINS: usize = 256;
+pub const TRANSFER_BINS: usize = 200;
 
-/// Keeps a bin that measured no movement from being weighed at exactly zero,
-/// which would spend no gradient at all on it and collapse its values onto one
-/// color.
-const TRANSFER_FLOOR: f64 = 1e-6;
+/// The weight a bin that measured no movement still gets, before the exponent.
+///
+/// Not a guard against zero — it is the **floor on how flat the transfer may
+/// get**, and it is load-bearing. At a weight of `1/4` a bin measuring nothing
+/// is worth `0.02^0.25 = 0.38` of the busiest bin's share rather than nearly
+/// nothing, so a smooth region keeps a visible span of the gradient instead of
+/// collapsing onto one color. Dropping it to a rounding guard changes the
+/// picture by a third of the range on the frames that use this transfer, which
+/// is how its value was found.
+const TRANSFER_FLOOR: f64 = 0.02;
 
 /// What happens to the brightest part of a picture before it is written.
 ///
