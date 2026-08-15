@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "rule": "a seeded draw over LOCATIONS, not over candidates: a place's candidates share one field and differ only in colour, so a split that let them straddle would report a held-out loss that is partly a training loss",
+  "seed": 20260815,
+  "target_share": 0.2,
+  "locations": 600,
+  "held_out_locations": 120,
+  "realized_share": 0.2,
+  "sets": {
+    "train": 480,
+    "holdout": 120
+  },
+  "batch": "pool_draw_seeded",
+  "candidates_per_set": 8,
+  "teacher": {
+    "name": "v3_gvo",
+    "checkpoint": "model_best.pt",
+    "sha256": "745cab2794da554765358c8c874e38623917f37ba2fa20e77d20594ecfe64bf8",
+    "backbone": "mobilenetv4_conv_small.e2400_r224_in1k",
+    "epoch": 12,
+    "config": {
+      "task": "palette-preference scorer v3-gvo (good_vs_okay INCLUDED in training)",
+      "version": "v3_gvo",
+      "ab_against": "v3",
+      "moving_part": "training pairs += good_vs_okay (v3 holds it out); everything else frozen",
+      "data": "union coldstart_v2 + warmstart_v1 + prefv2_dramatic_v1 (provenance-blind)",
+      "split_design": "VERBATIM from v3/split_manifest.json (byte-identical val)",
+      "train_include_pair_types": [
+        "good_vs_bad",
+        "okay_vs_bad",
+        "good_vs_okay"
+      ],
+      "eval_pair_types": "ALL",
+      "model": "mobilenetv4_conv_small.e2400_r224_in1k",
+      "margin": 1.0,
+      "backbone_lr": 0.0001,
+      "head_lr": 0.001,
+      "weight_decay": 0.05,
+      "batch_queries": 16,
+      "max_epochs": 40,
+      "patience": 8,
+      "seed": 0,
+      "device": "cuda"
+    },
+    "resolved_through": "tools/queries/scorer/data.py.ACTIVE_SCORER_DIR"
+  },
+  "pool": 700,
+  "floor": 2,
+  "held_out_from": "the vendored production candidate sets, whose locations are the instrument this head is judged on and may never be taught, and the location store's own evaluation pin"
+}

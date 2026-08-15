@@ -81,7 +81,6 @@ RECIPE = {
     "weight_decay": 0.05,
     "grad_clip": 1.0,
     "seed": 0,
-    "workers": 4,
     # Full precision, no autocast: these are differences between two scores that
     # can sit inside fp16's own precision, and the whole loss is those differences.
     "amp": "off",
@@ -172,58 +171,54 @@ def metrics_path(run: str | None = None) -> Path:
 
 
 class Sets:
-    """The training set: one item is one candidate set, with its teacher scores.
+    """One side of the corpus, decoded once and held: pictures, scores, and names.
 
-    **Defined at module level rather than inside the function that builds it**,
-    and that is not a style choice: a loader worker on Windows is spawned rather
-    than forked, so the dataset is pickled and re-imported by name in the child,
-    and a class defined inside a function has no importable name.
+    The whole side lives in memory as `uint8` — 3,840 candidates at 224×224 is
+    578 MB — because decoding a JPEG costs far more than the forward pass through
+    this backbone, and a loop that decoded per epoch would spend a forty-epoch
+    run inside `libjpeg`. It also means no loader workers at all, which on Windows
+    is one fewer way to be wrong: a worker there is spawned rather than forked, so
+    everything it touches has to be picklable and importable by name.
     """
 
-    def __init__(self, sets: list[dict], transform) -> None:
-        self.sets = sets
-        self.transform = transform
-        self.epoch = 0
+    def __init__(self, sets: list[dict]) -> None:
+        import torch
 
-    def set_epoch(self, epoch: int) -> None:
-        self.epoch = epoch
+        self.sets = sets
+        self.width = len(sets[0]["candidates"])
+        self.names = [entry["set"] for entry in sets]
+        self.pictures = palette_head.decoded(
+            [palette_corpus.crop_of(row) for entry in sets for row in entry["rows"]]
+        )
+        self.scores = torch.tensor([entry["scores"] for entry in sets], dtype=torch.float32)
 
     def __len__(self) -> int:
         return len(self.sets)
 
-    def __getitem__(self, index: int):
+    def batch(self, indices, where: str, epoch: int | None = None):
+        """One batch of whole sets: `[B, K, 3, H, W]` normalized, and `[B, K]` scores.
+
+        `epoch` turns the augmentation on, and it is drawn **per set**: flipping
+        the candidates of one location independently would make the geometry an
+        axis the head could read the palette off. Seeded on the set's own name and
+        the epoch, so a run reproduces and a set still gets a fresh flip each pass.
+        """
         import random
 
         import torch
-        from PIL import Image
 
-        entry = self.sets[index]
-        pictures = []
-        for row in entry["rows"]:
-            with Image.open(palette_corpus.crop_of(row)) as opened:
-                opened.load()
-                image = opened.convert("RGB")
-            # Seeded on the set and the epoch, so a run reproduces and a set
-            # still gets fresh flips every pass. The whole set draws one seed:
-            # flipping candidates of one location independently would make the
-            # geometry an axis the head could read the palette off.
-            draw = random.Random(f"{entry['set']}:{self.epoch}")
-            pictures.append(self.transform(image, draw))
-        return (
-            torch.stack(pictures),
-            torch.tensor(entry["scores"], dtype=torch.float32),
-            index,
-        )
-
-
-def collate(batch):
-    import torch
-
-    return (
-        torch.stack([item[0] for item in batch]),
-        torch.stack([item[1] for item in batch]),
-        torch.tensor([item[2] for item in batch]),
-    )
+        offsets = torch.arange(self.width)
+        flat = (torch.as_tensor(indices).view(-1, 1) * self.width + offsets).reshape(-1)
+        pictures = palette_head.normalize(self.pictures[flat].to(where, non_blocking=True))
+        pictures = pictures.view(len(indices), self.width, *pictures.shape[1:])
+        if epoch is not None:
+            for position, index in enumerate(indices):
+                draw = random.Random(f"{self.names[int(index)]}:{epoch}")
+                if draw.random() < 0.5:
+                    pictures[position] = torch.flip(pictures[position], dims=(-1,))
+                if draw.random() < 0.5:
+                    pictures[position] = torch.flip(pictures[position], dims=(-2,))
+        return pictures, self.scores[torch.as_tensor(indices)].to(where, non_blocking=True)
 
 
 def population() -> tuple[list[dict], list[dict]]:
@@ -245,19 +240,24 @@ def population() -> tuple[list[dict], list[dict]]:
     return training, holdout
 
 
-def evaluate(model, sets: list[dict], transform, where: str, batch_size: int) -> dict:
+def evaluate(model, held: Sets, where: str, batch_size: int) -> dict:
     """The held-out read: the distillation loss, and the two things it is for."""
     import numpy
+    import torch
 
-    from fractal_wallpapers.models import metrics, palette_teacher
+    from fractal_wallpapers.models import metrics
 
-    rows = [row for entry in sets for row in entry["rows"]]
-    paths = [palette_corpus.crop_of(row) for row in rows]
-    predicted = palette_teacher.scored_with(model, paths, transform, where, batch_size)
-
-    width = len(sets[0]["candidates"])
-    ours = predicted.reshape(len(sets), width)
-    theirs = numpy.array([entry["scores"] for entry in sets], dtype=numpy.float64)
+    model.eval()
+    rows = []
+    with torch.no_grad():
+        for start in range(0, len(held), batch_size):
+            indices = list(range(start, min(start + batch_size, len(held))))
+            pictures, _ = held.batch(indices, where)
+            flat = pictures.view(-1, *pictures.shape[2:])
+            rows.append(model(flat).view(len(indices), held.width).float().cpu().numpy())
+    ours = numpy.concatenate(rows).astype(numpy.float64)
+    theirs = held.scores.numpy().astype(numpy.float64)
+    sets = held.sets
     centred = (ours - ours.mean(axis=1, keepdims=True)) - (
         theirs - theirs.mean(axis=1, keepdims=True)
     )
@@ -287,7 +287,6 @@ def run(
 ) -> dict:
     """Train one palette head, and write its checkpoints and records."""
     import torch
-    from torch.utils.data import DataLoader
 
     recipe = dict(RECIPE)
     if epochs is not None:
@@ -316,19 +315,9 @@ def run(
         weight_decay=recipe["weight_decay"],
     )
 
-    train_transform = palette_head.Transform(train=True)
-    deploy_transform = palette_head.Transform(train=False)
-    examples = Sets(training, train_transform)
-    loader = DataLoader(
-        examples,
-        batch_size=recipe["batch_sets"],
-        shuffle=True,
-        collate_fn=collate,
-        num_workers=recipe["workers"],
-        pin_memory=(where == "cuda"),
-        persistent_workers=False,
-        drop_last=False,
-    )
+    clock = time.time()
+    examples, held = Sets(training), Sets(holdout)
+    log(f"decoded {len(examples) + len(held)} sets in {time.time() - clock:.1f}s")
 
     directory = head_dir(run_name)
     directory.mkdir(parents=True, exist_ok=True)
@@ -337,27 +326,27 @@ def run(
         best_metric, best_state, best_epoch, history = float("inf"), None, -1, []
         began = time.time()
         stale = 0
+        shuffler = torch.Generator().manual_seed(int(recipe["seed"]))
         for epoch in range(recipe["epochs"]):
-            examples.set_epoch(epoch)
             model.train()
             clock, running, seen = time.time(), 0.0, 0
-            for pictures, scores, _ in loader:
-                sets_in_batch, width = pictures.shape[0], pictures.shape[1]
-                flat = pictures.view(sets_in_batch * width, *pictures.shape[2:])
-                flat = flat.to(where, non_blocking=True)
-                scores = scores.to(where, non_blocking=True)
+            order = torch.randperm(len(examples), generator=shuffler).tolist()
+            for start in range(0, len(order), recipe["batch_sets"]):
+                indices = order[start : start + recipe["batch_sets"]]
+                pictures, scores = examples.batch(indices, where, epoch=epoch)
+                flat = pictures.view(-1, *pictures.shape[2:])
                 optimizer.zero_grad(set_to_none=True)
-                predicted = model(flat).view(sets_in_batch, width)
+                predicted = model(flat).view(len(indices), examples.width)
                 loss = palette_head.set_loss(predicted, scores)
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(model.parameters(), recipe["grad_clip"])
                 optimizer.step()
-                running += loss.item() * sets_in_batch
-                seen += sets_in_batch
+                running += loss.item() * len(indices)
+                seen += len(indices)
             if any(not torch.isfinite(parameter).all() for parameter in model.parameters()):
                 raise TrainingError(f"the head went non-finite at epoch {epoch}")
 
-            read = evaluate(model, holdout, deploy_transform, where, recipe["batch_sets"] * 4)
+            read = evaluate(model, held, where, recipe["batch_sets"] * 2)
             record = {
                 "epoch": epoch,
                 "loss": running / max(seen, 1),
@@ -457,7 +446,6 @@ __all__ = [
     "Sets",
     "TrainingError",
     "checkpoint_path",
-    "collate",
     "config_path",
     "evaluate",
     "head_dir",
