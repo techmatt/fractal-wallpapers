@@ -44,12 +44,17 @@ def check_weights(manifest: dict) -> int:
     itself cannot be un-cut to fix — is every head this project trains actually
     in here, does every row say the things a row has to say, and does the file
     each row names exist and hash to what the row claims.
+
+    All of it is stdlib, and stays that way: the roster comes from the light
+    module that owns it rather than from `ship`, which would drag the training
+    stack into a check that reads JSON and hashes a file. A fresh clone runs
+    this on `pip install -e .`, before it has any reason to own torch.
     """
-    from fractal_wallpapers.models import ship
+    from fractal_wallpapers.models import roster
 
     heads = manifest.get("heads", {})
     complaints = []
-    for head in ship.HEADS:
+    for head in roster.HEADS:
         if head not in heads:
             complaints.append(f"{head}: no manifest entry; a release cut now would omit it")
     for head, entry in sorted(heads.items()):
@@ -75,7 +80,7 @@ def check_weights(manifest: dict) -> int:
     for complaint in complaints:
         print(complaint)
     print(
-        f"{len(heads)} of {len(ship.HEADS)} heads present; "
+        f"{len(heads)} of {len(roster.HEADS)} heads present; "
         f"{'release-complete' if not complaints else f'{len(complaints)} gap(s)'}"
     )
     return 1 if complaints else 0

@@ -89,6 +89,13 @@ keeping the file. This stages the artifact and the manifest entry that names it;
 creating the GitHub release and uploading the asset is a human's action with a
 human's credentials, and a script that could do it is a script that could do it
 by accident.
+
+That download runs on a base install, which is why the roster of heads is
+imported from [`models.roster`] rather than declared here. `--check` needs the
+four names and nothing else in this module; when it read them from here it
+inherited numpy and torch through the imports below and exited 1 on the one
+environment it exists for. The roster still has exactly one owner — this is the
+same constant, read from the light end.
 """
 
 from __future__ import annotations
@@ -101,6 +108,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from fractal_wallpapers.models import head, metrics, scoring, train
+from fractal_wallpapers.models.roster import HEADS
 from fractal_wallpapers.paths import repo_root
 
 #: The schema of the weights manifest.
@@ -108,12 +116,6 @@ SCHEMA = 1
 
 #: The release tag a first shipment goes to.
 TAG = "weights-v1"
-
-#: Every head this project trains, and therefore every head a release has to
-#: carry. A release cut from a manifest that is missing one is a clone that
-#: cannot run that head at all, and the only way to notice is to have written
-#: the roster down somewhere a check can read it.
-HEADS = ("location", "smooth_render", "strange_render", "palette")
 
 #: What supervised each head, and where the record of it lives. A hash says
 #: which file; this says what taught it — the part a download cannot verify and
