@@ -32,6 +32,14 @@ budget. Every source that enumerated minibrots from first principles was measure
 and found dead; what a minibrot is good for is being a *marker* of a dense
 neighbourhood, at a scale the search can compute before rendering anything.
 
+**Where a root starts is not decided here.** A root given no view comes home to
+its family's frame, and that frame is the engine's — `fractal-engine home-view`,
+read through `engine.home_view`. This package holds no framing literal, and the
+guard for that is in `tests/test_home_views.py`. It held one once, `{0, 0, 3.0}`,
+which agreed with the engine until the engine's Phoenix row moved: after that a
+phoenix root framed 66% of its own set with both lobes cut, and nothing in either
+half could have noticed.
+
 **Every candidate is recorded, with the gate that refused it.** A walk that
 logged only its survivors could never afterwards tell "the gates were too tight"
 from "there was nothing there", and both look like a low yield.

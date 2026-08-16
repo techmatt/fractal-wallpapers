@@ -1,6 +1,6 @@
 The Rust renderer: it makes every pixel this project ever shows.
 
-One binary, five subcommands, one JSON object in and one file out:
+One binary, six subcommands, one JSON object in and one file out:
 
 ```
 cargo build --release --manifest-path engine/Cargo.toml
@@ -15,6 +15,7 @@ render      a location and a coloring → a PNG
 dump-field  the same, stopping at the raw scalar field (+ a record of it)
 recolor     a dumped field → a PNG, without iterating anything
 expand      walk nodes → one rung each, gated, with a thumbnail per survivor
+home-view   a family → where it is framed by default, and how that was derived
 modes       the named colorings, as JSON
 ```
 
@@ -31,8 +32,16 @@ what the smooth count replaced and is in the crate so the article can show the
 two side by side. `fractal-wallpapers render --discrete [CYCLE]` draws it.
 
 A render given no viewport comes home to its family's own frame, a table in
-`src/family.rs`. Only Phoenix's row is derived rather than inherited: its set is
-taller than it is wide and a three-unit frame at 16:9 cuts both lobes off.
+`src/family.rs` — and so does a walk root, which reads that table through
+`home-view` rather than keeping a literal of its own. **Framing has one owner.**
+
+Every row is one rule evaluated on that family's own measured set: the filled
+set found on a 4001² grid at a cap of 4000, centred on itself, contained at 16:9
+with a tenth of its deciding extent in margin. Nothing in the table was chosen —
+the textbook Mandelbrot view `(−0.5, 3.0)` does not survive it, because three
+units at 16:9 is 1.69 tall and the set is 2.2. Julia is the one exception, and a
+stated one: its set is a different shape for every `c`, so there is nothing to
+measure and it comes home to the whole plane.
 
 Beside the pipeline sits the search — `rng`, `screen`, `foci`, `expand` — which
 uses it and does not extend it. It decides *where* to render and never *how*:

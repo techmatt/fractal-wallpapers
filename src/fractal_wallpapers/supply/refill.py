@@ -35,7 +35,6 @@ import time
 from pathlib import Path
 
 from fractal_wallpapers.discovery import pools
-from fractal_wallpapers.discovery.walk import home_view
 from fractal_wallpapers.supply.partitions import ALL_PARTITIONS, partition_of_family
 
 #: A partition below this many frontier nodes is starved.
@@ -221,26 +220,28 @@ class Refill:
             if partition == "julia:mandelbrot":
                 self.walk.add_root(
                     entry.family(2),
-                    home_view(),
                     source="julia_c_pool",
                     provenance={"seed_id": entry.id, "channel": entry.channel, "refill": True},
                 )
             elif partition == "phoenix":
                 self.walk.add_root(
                     entry.family(),
-                    home_view(),
                     source="phoenix_seed_pool",
                     provenance={"seed_id": entry.id, "branch": entry.branch, "refill": True},
                 )
             else:
-                view = entry.get("viewport") or home_view()
+                view = entry.get("viewport")
                 self.walk.add_root(
                     entry["family"],
-                    {
-                        "center_re": str(view["center_re"]),
-                        "center_im": str(view["center_im"]),
-                        "width": str(view["width"]),
-                    },
+                    (
+                        {
+                            "center_re": str(view["center_re"]),
+                            "center_im": str(view["center_im"]),
+                            "width": str(view["width"]),
+                        }
+                        if view
+                        else None
+                    ),
                     source="seed_file",
                     provenance={
                         "seed_id": entry.get("id", f"row{index:04d}"),

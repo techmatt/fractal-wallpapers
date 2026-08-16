@@ -23,8 +23,12 @@ from fractal_wallpapers.discovery.walk import (
     Reframings,
     Walk,
     family_key,
-    home_view,
 )
+
+#: A place to stand, for the tests that are about the frontier rather than about
+#: framing. Where a walk root *actually* starts is the engine's home table, and
+#: `test_home_views.py` is what pins that.
+VIEW = {"center_re": "0.0", "center_im": "0.0", "width": "3.0"}
 
 
 def engine_is_built() -> bool:
@@ -67,7 +71,7 @@ def test_a_root_whose_budget_is_spent_is_evicted_not_skipped(tmp_path) -> None:
     dead weight."""
     run = walk(tmp_path, limits=Limits(batch=4, root_expansions=1))
     for _ in range(6):
-        run.add_root({"kind": "mandelbrot"}, home_view(), source="test", provenance={})
+        run.add_root({"kind": "mandelbrot"}, VIEW, source="test", provenance={})
     assert len(run.frontier) == 6
 
     first = run.pop_batch()
@@ -83,20 +87,20 @@ def test_the_breadth_floor_reserves_slots_for_roots_nothing_has_touched(tmp_path
     snapping to a nucleus is centered on a nucleus, so snapping it again nearly
     always works, and the operators multiply into the whole frontier."""
     run = walk(tmp_path, limits=Limits(batch=4, breadth_floor=0.25, operator_quota=0))
-    touched = run.add_root({"kind": "mandelbrot"}, home_view(), source="test", provenance={})
+    touched = run.add_root({"kind": "mandelbrot"}, VIEW, source="test", provenance={})
     run.expansions[touched["root_id"]] = 1
     # Six descendants of the touched root, each ranked above the fresh root.
     for _ in range(6):
         node = run._node(
             family={"kind": "mandelbrot"},
-            view=home_view(),
+            view=VIEW,
             depth=2,
             root_id=touched["root_id"],
             origin="walk",
             parent_node_id=touched["node_id"],
         )
         node["priority"] = 100.0
-    fresh = run.add_root({"kind": "mandelbrot"}, home_view(), source="test", provenance={})
+    fresh = run.add_root({"kind": "mandelbrot"}, VIEW, source="test", provenance={})
     fresh["priority"] = -100.0
 
     batch = run.pop_batch()
@@ -112,12 +116,12 @@ def test_a_floor_that_cannot_be_filled_falls_back_rather_than_stalling(tmp_path)
     quotas *of available*, and what they cannot fill goes straight back to the
     ordinary order in the same batch."""
     run = walk(tmp_path, limits=Limits(batch=4, breadth_floor=0.5, operator_quota=2))
-    root = run.add_root({"kind": "mandelbrot"}, home_view(), source="test", provenance={})
+    root = run.add_root({"kind": "mandelbrot"}, VIEW, source="test", provenance={})
     run.expansions[root["root_id"]] = 1
     for _ in range(6):
         run._node(
             family={"kind": "mandelbrot"},
-            view=home_view(),
+            view=VIEW,
             depth=2,
             root_id=root["root_id"],
             origin="walk",
@@ -136,12 +140,12 @@ def test_the_operator_floor_counts_reframings_and_not_ordinary_descent(tmp_path)
     Ordinary descent is not that population, and counting it as such would make
     the floor a floor on everything, which is no floor at all."""
     run = walk(tmp_path, limits=Limits(batch=2, breadth_floor=0.0, operator_quota=1))
-    root = run.add_root({"kind": "mandelbrot"}, home_view(), source="test", provenance={})
+    root = run.add_root({"kind": "mandelbrot"}, VIEW, source="test", provenance={})
     run.expansions[root["root_id"]] = 1
     for _ in range(4):
         node = run._node(
             family={"kind": "mandelbrot"},
-            view=home_view(),
+            view=VIEW,
             depth=2,
             root_id=root["root_id"],
             origin="walk",
@@ -150,7 +154,7 @@ def test_the_operator_floor_counts_reframings_and_not_ordinary_descent(tmp_path)
         node["priority"] = 100.0
     reframed = run._node(
         family={"kind": "mandelbrot"},
-        view=home_view(),
+        view=VIEW,
         depth=2,
         root_id=root["root_id"],
         origin="snap_to_nucleus",
@@ -167,9 +171,13 @@ def test_the_operator_floor_counts_reframings_and_not_ordinary_descent(tmp_path)
 
 # --------------------------------------------------------------------------- #
 # the seeds
+#
+# Seeding asks the engine where the family comes home — there is no framing
+# literal on this side any more — so these need the binary that owns the table.
 # --------------------------------------------------------------------------- #
 
 
+@needs_engine
 def test_the_julia_pool_seeds_one_root_per_parameter(tmp_path) -> None:
     run = walk(tmp_path)
     assert run.seed_from_julia_pool(limit=5) == 5
@@ -177,6 +185,7 @@ def test_the_julia_pool_seeds_one_root_per_parameter(tmp_path) -> None:
     assert all(node["depth"] == 1 for node in run.frontier)
 
 
+@needs_engine
 def test_the_phoenix_pool_seeds_the_whole_parameter_point(tmp_path) -> None:
     run = walk(tmp_path)
     run.seed_from_phoenix_pool(limit=3)
@@ -184,6 +193,7 @@ def test_the_phoenix_pool_seeds_the_whole_parameter_point(tmp_path) -> None:
         assert {"c", "p", "z_prev"} <= set(node["family"])
 
 
+@needs_engine
 def test_a_root_records_where_it_came_from(tmp_path) -> None:
     run = walk(tmp_path)
     run.seed_from_julia_pool(limit=2)
@@ -192,7 +202,7 @@ def test_a_root_records_where_it_came_from(tmp_path) -> None:
     assert len(roots) == 2
     assert roots[0]["source"] == "julia_c_pool"
     assert roots[0]["provenance"]["channel"]
-    assert roots[0]["viewport"]["width"] == "3.0"
+    assert roots[0]["viewport"] == VIEW, "a julia root comes home to the whole plane"
 
 
 # --------------------------------------------------------------------------- #

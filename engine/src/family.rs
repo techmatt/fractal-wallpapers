@@ -31,35 +31,84 @@ pub struct HomeView {
     pub width: f64,
 }
 
-/// A view of the whole plane the parameter-plane and Julia sets live in.
+/// A view of the whole plane a dynamical set lives in.
 ///
-/// Three units across, centered on the set: the framing every family here came
-/// home to before there was a table, kept for the four that were framed at it.
-const WHOLE_PLANE: f64 = 3.0;
-
-/// Where the classic Phoenix set is framed, and why it is not [`WHOLE_PLANE`].
-///
-/// Phoenix is the one family here whose set is **taller than it is wide**, and
-/// by a long way: measured over a 4001² grid at a cap of 4000, the filled set
-/// spans `re ∈ [−0.679, 0.755]` and `im ∈ ±1.271` — 1.43 across and 2.54 tall,
-/// an aspect of 0.56 against a 16:9 frame's 1.78. A frame is specified by its
-/// width, so at three units across it is 1.69 tall and cuts the top and bottom
-/// off both lobes, which is what the first engine slice recorded as a watch item
-/// and what this is.
-///
-/// So the width is derived from the **height** the set needs: `2.54 × 16/9 =
-/// 4.52` to contain it exactly, and 5 units to contain it with a tenth of its
-/// own height in margin. The center is the set's own, so what is left over is
-/// spread evenly rather than piled on one side. `phoenix_comes_home_to_a_frame_
-/// that_holds_its_set` re-measures it.
-///
-/// The consequence is a lot of exterior either side of a narrow flame, and that
-/// is what framing a portrait subject in a landscape frame costs. The
-/// alternative is not a tighter frame, it is a cropped set.
-pub const PHOENIX_HOME: HomeView = HomeView {
-    center: Complex::new(0.04, 0.0),
-    width: 5.0,
+/// Three units across on the origin. This is the **exception**, not the rule:
+/// the one family that gets it is [`Family::Julia`], whose set is a different
+/// shape for every `c`, so no one frame contains every member and there is
+/// nothing to derive a row from. See [`Family::measured_extent`].
+const WHOLE_PLANE: HomeView = HomeView {
+    center: Complex::new(0.0, 0.0),
+    width: 3.0,
 };
+
+/// Samples per axis of the grid every filled set below was measured on.
+pub const MEASURE_GRID: u32 = 4001;
+
+/// Half-span of that grid: it covers `[−2.5, 2.5]` on both axes, and includes
+/// them, so a set's needle on an axis is not missed between two samples.
+pub const MEASURE_HALF_SPAN: f64 = 2.5;
+
+/// Iteration cap the measurement ran at. A "filled set" here is what a render at
+/// this cap paints as interior, which is the thing a frame has to hold — not the
+/// mathematical set, which no finite loop can produce.
+pub const MEASURE_CAP: u32 = 4000;
+
+/// Slack a home frame carries beyond the set, as a share of the set's own extent
+/// on whichever axis decided the frame. One constant, shared by every row.
+pub const HOME_MARGIN: f64 = 0.10;
+
+/// The output aspect every home view is composed for. A frame is specified by
+/// its width, so a set that is tall for its width has to buy the height.
+pub const HOME_ASPECT: f64 = 16.0 / 9.0;
+
+/// The measured bounding box of one family's filled set, as `(low, high)` per
+/// axis — the raw input the family's home-view row is derived from.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Extent {
+    pub re: (f64, f64),
+    pub im: (f64, f64),
+}
+
+impl Extent {
+    /// The set's own centre: the midpoint of the box, so whatever margin the
+    /// frame has is spread evenly rather than piled on one side.
+    pub fn center(&self) -> Complex<f64> {
+        Complex::new(0.5 * (self.re.0 + self.re.1), 0.5 * (self.im.0 + self.im.1))
+    }
+
+    pub fn width(&self) -> f64 {
+        self.re.1 - self.re.0
+    }
+
+    pub fn height(&self) -> f64 {
+        self.im.1 - self.im.0
+    }
+
+    /// **The rule**, and there is only one of it.
+    ///
+    /// A frame is specified by its width, so both axes are expressed as the
+    /// width they demand: the set's own width, and the width a 16:9 frame needs
+    /// in order to be tall enough. The larger of the two decides the frame, and
+    /// [`HOME_MARGIN`] of that is added so the set does not touch the edge.
+    ///
+    /// The two roundings at the end are for the reader, and both are safe:
+    /// the width is rounded **up** to a tenth of a unit, which only ever adds
+    /// margin, and the centre to a hundredth, which moves it by at most 0.005
+    /// against a margin measured in tenths.
+    pub fn frame(&self) -> HomeView {
+        let demanded = self.width().max(self.height() * HOME_ASPECT);
+        let center = self.center();
+        HomeView {
+            center: Complex::new(round_to_hundredth(center.re), round_to_hundredth(center.im)),
+            width: ((demanded * (1.0 + HOME_MARGIN)) * 10.0).ceil() / 10.0,
+        }
+    }
+}
+
+fn round_to_hundredth(value: f64) -> f64 {
+    (value * 100.0).round() / 100.0
+}
 
 /// One escape-time family.
 ///
@@ -90,6 +139,14 @@ pub enum Family {
         z_prev: Complex<f64>,
     },
 }
+
+/// The classic Ushiki instance in full: what `{"kind": "phoenix"}` alone means,
+/// and the instance the Phoenix row of the home table was measured on.
+pub const CLASSIC_PHOENIX: Family = Family::Phoenix {
+    c: PHOENIX_C,
+    p: PHOENIX_P,
+    z_prev: Complex::new(0.0, 0.0),
+};
 
 /// The orbit's initial state: `(z₀, z₋₁, c)`.
 ///
@@ -130,37 +187,73 @@ impl Family {
         }
     }
 
+    /// What this family's filled set was measured to span, or `None` for the
+    /// one family that cannot be measured.
+    ///
+    /// These five boxes are the **only** framing numbers in the engine. They are
+    /// measurements, not choices: a `MEASURE_GRID`² grid over `±MEASURE_HALF_SPAN`
+    /// at a cap of [`MEASURE_CAP`], and a sample counts as filled when its orbit
+    /// has not left the bailout disc by the cap.
+    ///
+    /// | family | re | im | exact 16:9 width | the row it derives to |
+    /// |---|---|---|---|---|
+    /// | mandelbrot | [−2.000, 0.453] | ±1.100 | 3.91 | (−0.77, 0) w 4.4 |
+    /// | multibrot d=3 | ±0.701 | ±1.323 | 4.70 | (0, 0) w 5.2 |
+    /// | multibrot d=4 | [−1.259, 0.801] | ±1.116 | 3.97 | (−0.23, 0) w 4.4 |
+    /// | multibrot d=5 | ±0.914 | ±0.914 | 3.25 | (0, 0) w 3.6 |
+    /// | phoenix classic | [−0.679, 0.755] | ±1.271 | 4.52 | (0.04, 0) w 5.0 |
+    ///
+    /// Two of those numbers surprise. The Mandelbrot set reaches `re = 0.453`,
+    /// well right of the main cardioid's rightmost point at `0.375`: a symmetric
+    /// pair of components sits out at `0.44 ± 0.375i`, ~2 900 grid samples of it,
+    /// and they are still filled at a cap of 2 × 10⁷. And **every one of the five
+    /// is taller than a 16:9 frame three units wide** — every width in the fourth
+    /// column is height-driven — so the whole-plane framing clipped all of them,
+    /// not only Phoenix.
+    ///
+    /// Julia is the exception and stays one: its set is a different shape for
+    /// every `c`, so there is no set to measure and no containing frame to
+    /// derive. It comes home to [`WHOLE_PLANE`] by that stated exception rather
+    /// than by the rule. A degree outside the supported range is refused at the
+    /// spec, and reported here as unmeasured rather than guessed at.
+    ///
+    /// Phoenix's box is the **classic Ushiki instance**, which is what
+    /// `{"kind": "phoenix"}` alone means, and every Phoenix shares its row. That
+    /// is not the Julia case: Phoenix has a canonical instance to measure and
+    /// Julia has none, and a home view is where a picture of the family starts,
+    /// not a claim about every point of its parameter space.
+    pub fn measured_extent(&self) -> Option<Extent> {
+        let at = |re: (f64, f64), im: (f64, f64)| Some(Extent { re, im });
+        match *self {
+            Family::Multibrot { degree: 2 } => at((-2.0, 0.4525), (-1.1, 1.1)),
+            Family::Multibrot { degree: 3 } => at((-0.70125, 0.70125), (-1.3225, 1.3225)),
+            Family::Multibrot { degree: 4 } => at((-1.25875, 0.80125), (-1.11625, 1.11625)),
+            Family::Multibrot { degree: 5 } => at((-0.91375, 0.91375), (-0.91375, 0.91375)),
+            Family::Multibrot { .. } => None,
+            Family::Julia { .. } => None,
+            Family::Phoenix { .. } => at((-0.67875, 0.755), (-1.27125, 1.27125)),
+        }
+    }
+
     /// Where this family is worth looking first, and how wide.
     ///
-    /// A table, one row per family, and it is the whole of what "no viewport
-    /// given" means. Nothing in production reads it: every render a walk, a tile
-    /// build or a curation run makes names its own viewport, so this is the
-    /// default framing of a hand-run `render` and of a family's own picture in
-    /// the article, and moving a row moves those and nothing else.
+    /// The whole of what "no viewport given" means — for a hand-run `render`,
+    /// for a family's own picture in the article, and for a walk root that was
+    /// given a family and no place to start. **This function is the single owner
+    /// of that framing**: the discovery half reads it through
+    /// `fractal-engine home-view` rather than keeping a literal of its own, so
+    /// there is one table and it cannot drift.
     ///
-    /// Centers first. Everything is centered on the origin except the Mandelbrot
-    /// set, which is the one parameter plane here that is not symmetric about
-    /// it: its cardioid and the bulbs behind it sit roughly between `-2` and
-    /// `0.5`, so a view of the whole set centers on `-0.5`. The higher
-    /// multibrots regain that symmetry — `z^d + c` has `d − 1` fold rotational
-    /// symmetry about the origin — and a filled Julia set surrounds the origin
-    /// too. Phoenix is centered on its own measured set; see [`PHOENIX_HOME`].
-    ///
-    /// Widths second, and only Phoenix's is derived. A Julia set's extent
-    /// depends on its `c` and no one frame contains every member, so the
-    /// dynamical twin comes home to the whole plane and the walk composes from
-    /// there. The parameter planes are framed at the same three units they were
-    /// framed at before this table existed.
+    /// Nothing here is a taste call. Every row is [`Extent::frame`] evaluated on
+    /// [`Family::measured_extent`] — one rule, one margin, re-derived per family
+    /// — and the one family with nothing to measure is framed by a stated
+    /// exception instead. The textbook Mandelbrot view `(−0.5, 3.0)` does not
+    /// survive that: it is a choice, it clips the set at 16:9, and the rule
+    /// replaces it with `(−0.77, 4.4)`.
     pub fn home_view(&self) -> HomeView {
-        let at = |re, width| HomeView {
-            center: Complex::new(re, 0.0),
-            width,
-        };
-        match *self {
-            Family::Multibrot { degree: 2 } => at(-0.5, WHOLE_PLANE),
-            Family::Multibrot { .. } => at(0.0, WHOLE_PLANE),
-            Family::Julia { .. } => at(0.0, WHOLE_PLANE),
-            Family::Phoenix { .. } => PHOENIX_HOME,
+        match self.measured_extent() {
+            Some(extent) => extent.frame(),
+            None => WHOLE_PLANE,
         }
     }
 }
@@ -204,75 +297,129 @@ mod tests {
         assert_eq!(cj, c);
     }
 
-    fn classic_phoenix() -> Family {
-        Family::Phoenix {
-            c: PHOENIX_C,
-            p: PHOENIX_P,
-            z_prev: Complex::new(0.0, 0.0),
+    /// Every family whose set can be measured, so a test can say "each of these"
+    /// once and mean the whole table.
+    fn derivable() -> Vec<(&'static str, Family)> {
+        vec![
+            ("mandelbrot", Family::Multibrot { degree: 2 }),
+            ("multibrot3", Family::Multibrot { degree: 3 }),
+            ("multibrot4", Family::Multibrot { degree: 4 }),
+            ("multibrot5", Family::Multibrot { degree: 5 }),
+            ("phoenix", CLASSIC_PHOENIX),
+        ]
+    }
+
+    /// The home table, row by row — and the whole point of the table is that
+    /// nothing in it was chosen. Each row is the rule evaluated on that family's
+    /// measured box, so this test recomputes it rather than restating it.
+    #[test]
+    fn each_family_comes_home_to_the_rule_evaluated_on_its_own_set() {
+        for (name, family) in derivable() {
+            let extent = family.measured_extent().expect("a derivable family");
+            assert_eq!(family.home_view(), extent.frame(), "{name}");
+        }
+        // The values the rule lands on, written down once so a change to the
+        // rule cannot pass unnoticed as a change to nothing.
+        let rows = [
+            ("mandelbrot", -0.77, 4.4),
+            ("multibrot3", 0.0, 5.2),
+            ("multibrot4", -0.23, 4.4),
+            ("multibrot5", 0.0, 3.6),
+            ("phoenix", 0.04, 5.0),
+        ];
+        for ((name, family), (_, center_re, width)) in derivable().into_iter().zip(rows) {
+            let home = family.home_view();
+            assert_eq!(home.center, Complex::new(center_re, 0.0), "{name}");
+            assert_eq!(home.width, width, "{name}");
         }
     }
 
-    /// The home table, row by row. Only the Mandelbrot set is off-center among
-    /// the sets that are symmetric about the origin, and only Phoenix is framed
-    /// at anything other than the whole plane.
+    /// The textbook Mandelbrot view is an inherited choice, and the derivation
+    /// does not reproduce it: three units across at 16:9 is 1.69 tall, and the
+    /// set is 2.2. Pinned so the row cannot quietly revert to the familiar one.
     #[test]
-    fn each_family_comes_home_to_its_own_row() {
-        let origin = Complex::new(0.0, 0.0);
+    fn the_mandelbrot_row_is_derived_rather_than_textbook() {
         let home = Family::Multibrot { degree: 2 }.home_view();
-        assert_eq!(home.center, Complex::new(-0.5, 0.0));
-        assert_eq!(home.width, WHOLE_PLANE);
-        for degree in 3..=5 {
-            let home = Family::Multibrot { degree }.home_view();
-            assert_eq!(home.center, origin);
-            assert_eq!(home.width, WHOLE_PLANE);
-        }
-        let home = Family::Julia {
-            degree: 2,
-            c: origin,
-        }
-        .home_view();
-        assert_eq!(home.center, origin);
-        assert_eq!(home.width, WHOLE_PLANE);
-        assert_eq!(classic_phoenix().home_view(), PHOENIX_HOME);
+        assert_ne!(home.center, Complex::new(-0.5, 0.0));
+        assert_ne!(home.width, WHOLE_PLANE.width);
+        assert!(home.width * 9.0 / 16.0 > 2.2, "it has to hold the set");
     }
 
-    /// Phoenix's row is the one that was derived rather than inherited, so it is
-    /// the one re-measured here: at 16:9 its home frame must hold every point of
-    /// the filled set, with real margin left over on the axis that decided the
-    /// frame. The grid is coarse enough to run in a debug build and fine enough
-    /// that a frame off by a percent would show.
+    /// Julia's row is the one exception, and it is an exception about the
+    /// *family*, not about a particular `c`: no single frame contains every
+    /// member, so there is nothing to measure and nothing to derive.
     #[test]
-    fn phoenix_comes_home_to_a_frame_that_holds_its_set() {
-        let family = classic_phoenix();
-        let home = PHOENIX_HOME;
-        let half_width = home.width / 2.0;
-        let half_height = home.width * 9.0 / 16.0 / 2.0;
-
-        let (mut widest, mut tallest) = (0.0f64, 0.0f64);
-        let steps = 300;
-        for row in 0..=steps {
-            for col in 0..=steps {
-                let re = -2.5 + 5.0 * col as f64 / steps as f64;
-                let im = -2.5 + 5.0 * row as f64 / steps as f64;
-                if crate::iterate::escape(&family, Complex::new(re, im), 500).escaped {
-                    continue;
-                }
-                widest = widest.max((re - home.center.re).abs());
-                tallest = tallest.max((im - home.center.im).abs());
-            }
+    fn julia_comes_home_to_the_whole_plane_by_exception() {
+        for c in [Complex::new(0.0, 0.0), Complex::new(-0.4, 0.6)] {
+            let family = Family::Julia { degree: 2, c };
+            assert_eq!(family.measured_extent(), None);
+            assert_eq!(family.home_view(), WHOLE_PLANE);
         }
-        assert!(tallest > 1.2, "the search found no set to frame");
-        assert!(
-            widest < half_width && tallest < half_height,
-            "the set reaches ({widest:.4}, {tallest:.4}) and the frame is \
-             ({half_width:.4}, {half_height:.4})"
-        );
-        // Height is what decides this frame, so that is where the margin has to
-        // be real rather than a rounding.
-        assert!(
-            tallest < half_height * 0.95,
-            "no margin: the set reaches {tallest:.4} of {half_height:.4}"
-        );
+    }
+
+    /// The generalized containment test: **re-measure, never trust the
+    /// constant.** For every derivable family the filled set is found again from
+    /// the recurrence, and the home frame must hold all of it at 16:9 with real
+    /// margin on the axis that decided the frame.
+    ///
+    /// The grid is coarse enough to run in a debug build, so it finds slightly
+    /// less of each set than the derivation's did — which is checked too, in
+    /// both directions: a recorded box the recurrence disagrees with is the one
+    /// way this table could be wrong without any frame looking wrong.
+    #[test]
+    fn every_derivable_family_still_frames_the_set_its_recurrence_makes() {
+        let steps = 300;
+        let span = 2.0 * MEASURE_HALF_SPAN;
+        let grid_step = span / steps as f64;
+        for (name, family) in derivable() {
+            let home = family.home_view();
+            let recorded = family.measured_extent().expect("a derivable family");
+            let half_width = home.width / 2.0;
+            let half_height = home.width * 9.0 / 16.0 / 2.0;
+
+            let (mut widest, mut tallest) = (0.0f64, 0.0f64);
+            let (mut re_span, mut im_span) = (0.0f64, 0.0f64);
+            for row in 0..=steps {
+                let im = -MEASURE_HALF_SPAN + span * row as f64 / steps as f64;
+                for col in 0..=steps {
+                    let re = -MEASURE_HALF_SPAN + span * col as f64 / steps as f64;
+                    if crate::iterate::escape(&family, Complex::new(re, im), 500).escaped {
+                        continue;
+                    }
+                    widest = widest.max((re - home.center.re).abs());
+                    tallest = tallest.max((im - home.center.im).abs());
+                    re_span = re_span.max(re.abs());
+                    im_span = im_span.max(im.abs());
+                }
+            }
+
+            assert!(tallest > 0.5, "{name}: the search found no set to frame");
+            assert!(
+                widest < half_width && tallest < half_height,
+                "{name}: the set reaches ({widest:.4}, {tallest:.4}) and the frame is \
+                 ({half_width:.4}, {half_height:.4})"
+            );
+            // The width was bought to hold the height, so that is where the
+            // margin has to be real rather than a rounding.
+            assert!(
+                tallest < half_height * 0.95,
+                "{name}: no margin — the set reaches {tallest:.4} of {half_height:.4}"
+            );
+            // And the recorded box is the same set: a coarse grid can only miss
+            // the tips, never invent them, so it must land just inside.
+            let recorded_re = recorded.re.0.abs().max(recorded.re.1.abs());
+            let recorded_im = recorded.im.0.abs().max(recorded.im.1.abs());
+            assert!(
+                re_span <= recorded_re + grid_step && im_span <= recorded_im + grid_step,
+                "{name}: the recurrence reaches ({re_span:.4}, {im_span:.4}), past the \
+                 recorded ({recorded_re:.4}, {recorded_im:.4})"
+            );
+            assert!(
+                im_span > 0.85 * recorded_im,
+                "{name}: the recorded box claims {recorded_im:.4} of height and the \
+                 recurrence finds only {im_span:.4}"
+            );
+        }
     }
 
     /// The memory term is the whole of the difference between Phoenix and a
