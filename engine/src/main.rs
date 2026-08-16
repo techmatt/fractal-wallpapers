@@ -6,6 +6,7 @@
 //! fractal-engine recolor    [spec.json]   # a dumped field → a PNG, no iteration
 //! fractal-engine expand     [spec.json]   # walk nodes → one rung each, gated
 //! fractal-engine tiles      [spec.json]   # one field per location → many crops
+//! fractal-engine home-view  [spec.json]   # a family → where it is framed by default
 //! fractal-engine modes                    # what the named colorings are
 //! ```
 //!
@@ -28,7 +29,7 @@ use serde::Serialize;
 use fractal_engine::{
     coloring::{self, Coloring, Palette},
     colormap::Colormap,
-    dump, expand, field, mode, resample,
+    dump, expand, family, field, mode, resample, spec,
     spec::{Location, RecolorSpec, RenderSpec},
     tiles,
 };
@@ -87,6 +88,59 @@ struct Mode {
     coloring: Coloring,
 }
 
+/// Where one family is framed when nothing says otherwise, and how that frame
+/// was arrived at.
+///
+/// The derivation travels with the answer on purpose. A caller that reads a
+/// framing out of the engine rather than keeping its own should be able to see
+/// what the framing is *made of* — the measured set, the margin, the grid it was
+/// measured on — without reading the engine's source.
+#[derive(Serialize)]
+struct HomeViewReport {
+    schema: u32,
+    family: &'static str,
+    degree: u32,
+    viewport: HomeViewport,
+    /// True when the row is the rule evaluated on a measured set. False for the
+    /// one family that has no set to measure, which then carries `exception`.
+    derived: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    extent: Option<MeasuredExtent>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    exception: Option<&'static str>,
+    rule: DerivationRule,
+}
+
+/// The home view as the decimal strings a location is written in.
+#[derive(Serialize)]
+struct HomeViewport {
+    center_re: String,
+    center_im: String,
+    width: String,
+}
+
+/// The filled-set box the row was derived from, as `[low, high]` per axis.
+#[derive(Serialize)]
+struct MeasuredExtent {
+    re: [f64; 2],
+    im: [f64; 2],
+}
+
+/// The parameters the derivation was run with, recorded beside every answer.
+#[derive(Serialize)]
+struct DerivationRule {
+    /// Samples per axis of the measuring grid.
+    grid: u32,
+    /// Half-span the grid covered, on both axes.
+    half_span: f64,
+    /// Iteration cap a sample counted as filled at.
+    cap: u32,
+    /// Slack beyond the set, as a share of its extent on the deciding axis.
+    margin: f64,
+    /// The output aspect the frame is composed for.
+    aspect: f64,
+}
+
 /// What a recolor did.
 #[derive(Serialize)]
 struct RecolorReport {
@@ -119,6 +173,7 @@ fn run(args: Vec<String>) -> Result<(), String> {
         Some("recolor") => recolor(argument),
         Some("expand") => expand_nodes(argument),
         Some("tiles") => build_tiles(argument),
+        Some("home-view") => home_view(argument),
         Some("modes") => print(
             &mode::CATALOG
                 .iter()
@@ -145,6 +200,7 @@ usage: fractal-engine render     [SPEC.json]
        fractal-engine recolor    [SPEC.json]
        fractal-engine expand     [SPEC.json]
        fractal-engine tiles      [SPEC.json]
+       fractal-engine home-view  [SPEC.json]
        fractal-engine modes
 
 render      Render one location through one coloring to a PNG.
@@ -156,6 +212,9 @@ expand      Take one rung of a walk from each of a batch of nodes: draw
             fate and a thumbnail of the survivors.
 tiles       Turn a plan of locations into training tiles: one iteration pass
             per location, and every tile a colored crop of it.
+home-view   Where a family is framed when nothing says otherwise, with the
+            measured set and the rule the frame was derived by. Takes a spec
+            that is a schema and a family, and renders nothing.
 modes       List the named colorings, as JSON.
 
 The spec is read from SPEC.json, or from stdin when no path is given. A JSON
@@ -270,6 +329,42 @@ fn dump_field(spec_path: Option<&str>) -> Result<(), String> {
 fn expand_nodes(spec_path: Option<&str>) -> Result<(), String> {
     let spec = expand::ExpandSpec::parse(&read_spec(spec_path)?)?;
     print(&expand::run(spec)?)
+}
+
+/// The one exception in the home table, stated where a caller will read it.
+const JULIA_EXCEPTION: &str = "a Julia set is a different shape for every c, so no one frame \
+                              contains every member and there is no set to measure: this \
+                              family comes home to the whole plane by exception";
+
+fn home_view(spec_path: Option<&str>) -> Result<(), String> {
+    let spec = spec::HomeViewSpec::parse(&read_spec(spec_path)?)?;
+    let (family, kind, ..) = spec.family.resolve()?;
+    let home = family.home_view();
+    let extent = family.measured_extent();
+
+    print(&HomeViewReport {
+        schema: 1,
+        family: kind,
+        degree: family.degree(),
+        viewport: HomeViewport {
+            center_re: spec::to_decimal_string(home.center.re),
+            center_im: spec::to_decimal_string(home.center.im),
+            width: spec::to_decimal_string(home.width),
+        },
+        derived: extent.is_some(),
+        extent: extent.map(|e| MeasuredExtent {
+            re: [e.re.0, e.re.1],
+            im: [e.im.0, e.im.1],
+        }),
+        exception: extent.is_none().then_some(JULIA_EXCEPTION),
+        rule: DerivationRule {
+            grid: family::MEASURE_GRID,
+            half_span: family::MEASURE_HALF_SPAN,
+            cap: family::MEASURE_CAP,
+            margin: family::HOME_MARGIN,
+            aspect: family::HOME_ASPECT,
+        },
+    })
 }
 
 fn build_tiles(spec_path: Option<&str>) -> Result<(), String> {

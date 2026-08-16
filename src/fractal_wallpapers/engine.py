@@ -21,6 +21,7 @@ import sys
 import time
 from contextlib import contextmanager
 from dataclasses import dataclass
+from functools import cache
 from pathlib import Path
 from typing import Any
 
@@ -34,6 +35,7 @@ __all__ = [
     "dump_field",
     "engine_path",
     "expand",
+    "home_view",
     "modes",
     "recolor",
     "render",
@@ -247,6 +249,34 @@ def tiles(spec: dict, log: Path | None = None) -> dict:
     and reads back the record rather than restating a single constant of it.
     """
     return run("tiles", spec, log=log)
+
+
+def home_view(family: dict) -> dict:
+    """Where this family is framed when nothing says otherwise.
+
+    The engine's `Family::home_view` table is the **only** owner of framing in
+    this project, and this is the door to it. Python keeps no literal of its own:
+    a duplicate is a thing that agrees with the engine until the day someone
+    moves a row, and the day that happened a phoenix walk root saw two thirds of
+    its set.
+
+    Returns the three decimal strings a viewport is written in, so what comes
+    back can be recorded and re-rendered exactly as the engine wrote it.
+    """
+    return json.loads(_home_view(json.dumps(family, sort_keys=True)))["viewport"]
+
+
+@cache
+def _home_view(key: str) -> str:
+    """One subprocess per distinct family, for the whole process.
+
+    A walk asks for a home view once per root and a refill once per draw, which
+    is thousands of times for a handful of distinct families. The table is a
+    constant of the binary, so the answer is cached on the family the question
+    was asked about — keyed and returned as text because that is what a cache
+    can hold safely.
+    """
+    return json.dumps(run("home-view", {"schema": 1, "family": json.loads(key)}))
 
 
 def modes() -> list[dict]:

@@ -139,6 +139,30 @@ impl RecolorSpec {
     }
 }
 
+/// A family, and nothing else.
+///
+/// The whole input to `home-view`, which answers *where is this family framed
+/// when nothing says otherwise*. It exists so the Python half can read the home
+/// table instead of keeping a second copy of it: framing has one owner, and this
+/// is the door to it.
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct HomeViewSpec {
+    pub schema: u32,
+    pub family: FamilySpec,
+}
+
+impl HomeViewSpec {
+    /// Read a home-view spec from JSON text.
+    pub fn parse(text: &str) -> Result<HomeViewSpec, String> {
+        let spec: HomeViewSpec = serde_json::from_str(text).map_err(|e| format!("spec: {e}"))?;
+        if spec.schema != 1 {
+            return Err(format!("spec has schema {}, expected 1", spec.schema));
+        }
+        Ok(spec)
+    }
+}
+
 /// Where to look. Anything omitted falls back to the family's home view.
 #[derive(Debug, Default, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -437,6 +461,9 @@ mod tests {
             .unwrap()
     }
 
+    /// A viewport-less spec takes the family's derived row, and the cap follows
+    /// from the width it lands on rather than from a second constant: the two
+    /// were separate jobs sharing one number until the home table existed.
     #[test]
     fn a_minimal_spec_resolves_to_the_home_view_and_the_policy_cap() {
         let resolved = resolve(r#"{"kind":"mandelbrot"}"#);
@@ -444,9 +471,9 @@ mod tests {
         let home = Family::Multibrot { degree: 2 }.home_view();
         assert_eq!(resolved.view.center, home.center);
         assert_eq!(resolved.view.width, home.width);
-        assert_eq!(resolved.maxiter, maxiter::BASE as u32);
-        assert_eq!(resolved.location.center_re, "-0.5");
-        assert_eq!(resolved.location.width, "3.0");
+        assert_eq!(resolved.maxiter, maxiter::for_width(home.width));
+        assert_eq!(resolved.location.center_re, "-0.77");
+        assert_eq!(resolved.location.width, "4.4");
     }
 
     #[test]
@@ -457,13 +484,19 @@ mod tests {
     }
 
     /// A viewport-less render takes the *family's* row of the home table, not
-    /// one shared frame: Phoenix's set is tall and is framed wider than the
-    /// plane view every other family comes home to.
+    /// one shared frame: every row is derived from that family's own set, and
+    /// Phoenix's is the narrowest and tallest of the five.
     #[test]
     fn phoenix_comes_home_to_its_own_wider_frame() {
         let resolved = resolve(r#"{"kind":"phoenix"}"#);
-        assert_eq!(resolved.view.center, crate::family::PHOENIX_HOME.center);
-        assert_eq!(resolved.view.width, crate::family::PHOENIX_HOME.width);
+        assert_eq!(
+            resolved.view.center,
+            crate::family::CLASSIC_PHOENIX.home_view().center
+        );
+        assert_eq!(
+            resolved.view.width,
+            crate::family::CLASSIC_PHOENIX.home_view().width
+        );
         assert_eq!(resolved.location.center_re, "0.04");
         assert_eq!(resolved.location.width, "5.0");
         assert!(resolved.view.width > resolve(r#"{"kind":"mandelbrot"}"#).view.width);
@@ -477,7 +510,10 @@ mod tests {
             "viewport":{"width":"2.0"},"colormap":"twilight_shifted","output":"o.png"}"#;
         let resolved = RenderSpec::parse(spec).unwrap().resolve().unwrap();
         assert_eq!(resolved.view.width, 2.0);
-        assert_eq!(resolved.view.center, crate::family::PHOENIX_HOME.center);
+        assert_eq!(
+            resolved.view.center,
+            crate::family::CLASSIC_PHOENIX.home_view().center
+        );
     }
 
     #[test]

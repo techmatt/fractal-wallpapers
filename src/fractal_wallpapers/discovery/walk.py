@@ -236,8 +236,19 @@ class Walk:
 
     # ------------------------------------------------------------------ roots
 
-    def add_root(self, family: dict, view: dict, *, source: str, provenance: dict) -> dict:
-        """Push one root onto the frontier and record where it came from."""
+    def add_root(
+        self, family: dict, view: dict | None = None, *, source: str, provenance: dict
+    ) -> dict:
+        """Push one root onto the frontier and record where it came from.
+
+        `view` of `None` means *this family's home view*, and the answer comes
+        from the engine — there is no framing literal on this side of the
+        boundary. That is the whole of the fix: a walk root and a viewport-less
+        render are now the same frame by construction, and a row moved in the
+        engine's table moves both.
+        """
+        if view is None:
+            view = engine.home_view(family)
         root_id = self.next_root_id
         self.next_root_id += 1
         node = self._node(
@@ -267,7 +278,6 @@ class Walk:
         for entry in seeds:
             self.add_root(
                 entry.family(degree),
-                home_view(),
                 source="julia_c_pool",
                 provenance={"seed_id": entry.id, "channel": entry.channel},
             )
@@ -281,7 +291,6 @@ class Walk:
         for entry in seeds:
             self.add_root(
                 entry.family(),
-                home_view(),
                 source="phoenix_seed_pool",
                 provenance={
                     "seed_id": entry.id,
@@ -305,14 +314,18 @@ class Walk:
         if limit is not None:
             rows = rows[:limit]
         for index, row in enumerate(rows):
-            view = row.get("viewport") or home_view()
+            view = row.get("viewport")
             self.add_root(
                 row["family"],
-                {
-                    "center_re": str(view["center_re"]),
-                    "center_im": str(view["center_im"]),
-                    "width": str(view["width"]),
-                },
+                (
+                    {
+                        "center_re": str(view["center_re"]),
+                        "center_im": str(view["center_im"]),
+                        "width": str(view["width"]),
+                    }
+                    if view
+                    else None
+                ),
                 source="seed_file",
                 provenance={"seed_id": row.get("id", f"row{index:04d}"), "file": Path(path).name},
             )
@@ -733,17 +746,6 @@ class Walk:
         return summary
 
 
-def home_view() -> dict:
-    """The whole-plane view a dynamical root starts from.
-
-    Wide on purpose. The class of Julia set worth finding is composed at whole-set
-    framings — filaments across the frame against interior lakes — and mid-zoom
-    crops of it are not the same thing, so the search starts where the pictures
-    are and descends from there rather than starting part-way in.
-    """
-    return {"center_re": "0.0", "center_im": "0.0", "width": "3.0"}
-
-
 def _decimal(value: float) -> str:
     """A computed width, as the decimal string it will be recorded as."""
     text = repr(float(value))
@@ -758,6 +760,5 @@ __all__ = [
     "Reframings",
     "Walk",
     "family_key",
-    "home_view",
     "nucleus",
 ]
