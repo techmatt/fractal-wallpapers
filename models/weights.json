@@ -14,6 +14,38 @@
         "corpus": "data/labels"
       }
     },
+    "palette": {
+      "tag": "weights-v1",
+      "asset": "palette.fp16.pt",
+      "sha256": "d7edc31cbaa4f9e9c2084b3ef5892b08ecf9fa77bc1d1b330f64aeec1c5b9716",
+      "bytes": 5130440,
+      "precision": "fp16",
+      "run": "seed2_listwise",
+      "source_commit": "e3b2604b98ee29296edc70de9c54d666ae719df3",
+      "provenance": {
+        "supervision": "distilled from a pretrained teacher",
+        "corpus": "data/palette_choice",
+        "teacher": {
+          "name": "v3_gvo",
+          "checkpoint": "model_best.pt",
+          "sha256": "745cab2794da554765358c8c874e38623917f37ba2fa20e77d20594ecfe64bf8",
+          "resolved_through": "tools/queries/scorer/data.py.ACTIVE_SCORER_DIR"
+        }
+      }
+    },
+    "smooth_render": {
+      "tag": "weights-v1",
+      "asset": "smooth_render.fp16.pt",
+      "sha256": "c0ac536d0979713a0bcf198eb81a5a080a97bc4376b4124dc6c589b69b7767ef",
+      "bytes": 17162990,
+      "precision": "fp16",
+      "run": "its own",
+      "source_commit": "e3b2604b98ee29296edc70de9c54d666ae719df3",
+      "provenance": {
+        "supervision": "human verdicts",
+        "corpus": "data/smooth_render"
+      }
+    },
     "strange_render": {
       "tag": "weights-v1",
       "asset": "strange_render.fp16.pt",
