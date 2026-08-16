@@ -39,3 +39,9 @@ without any of it happening again.
 Everything here needs `pip install -e ".[models]"` — torch and timm are not in
 the base install, because rendering fractals, walking the plane, running the
 supply engine and collecting labels all work without them.
+
+One exception, and it is the reason the exception is written down: `roster` is
+the tuple of head names and nothing else, stdlib-only on purpose, because
+`fetch-weights --check` runs on the base install and has to know which heads a
+complete release carries. `ship` imports the roster from there. Any other module
+here that a base install can import is an accident, not a second exception.
