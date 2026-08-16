@@ -66,6 +66,22 @@ pick. What that head supplies is a different **statistic**, through
 [`Shipment.agree`]; the cast, the re-read, the bounds it is held to and the hash
 are the same code as the other three.
 
+## What a manifest row says beyond the hash
+
+A sha256 answers "is this the file we meant". It cannot answer the two questions
+a reader of a release actually has — *which repository made it* and *what taught
+it* — and neither is recoverable from the bytes. So a row carries both:
+
+- **`source_commit`**, the commit that was checked out when the artifact was
+  staged. That is the state the checkpoint, the corpus and this verification
+  code were all in, so it is the one thing that makes the artifact reproducible
+  rather than merely identifiable. Staging refuses to write a row it cannot name
+  a commit for: a row without one is the gap this field exists to close.
+- **`provenance`**, where the head's answers came from. Three of these heads
+  learned from human verdicts and the fourth from a pretrained teacher, and the
+  distilled one names that teacher by hash — because "approximately equivalent
+  to its teacher" is a claim that means nothing without saying which teacher.
+
 ## The release itself is not this step's job
 
 `fetch-weights` downloads by tag and asset name and verifies the sha256 before
@@ -79,6 +95,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import subprocess
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -91,6 +108,22 @@ SCHEMA = 1
 
 #: The release tag a first shipment goes to.
 TAG = "weights-v1"
+
+#: Every head this project trains, and therefore every head a release has to
+#: carry. A release cut from a manifest that is missing one is a clone that
+#: cannot run that head at all, and the only way to notice is to have written
+#: the roster down somewhere a check can read it.
+HEADS = ("location", "smooth_render", "strange_render", "palette")
+
+#: What supervised each head, and where the record of it lives. A hash says
+#: which file; this says what taught it — the part a download cannot verify and
+#: the part someone reading the release needs in order to know what they have.
+SUPERVISION = {
+    "location": ("human verdicts", "data/labels"),
+    "smooth_render": ("human verdicts", "data/smooth_render"),
+    "strange_render": ("human verdicts", "data/strange_render"),
+    "palette": ("distilled from a pretrained teacher", "data/palette_choice"),
+}
 
 #: The absolute floor on how far the shipped head's ordering may move, in AUC at
 #: any cutpoint. A tenth of a point: far below anything an acceptance read is
@@ -447,8 +480,56 @@ def agreement(
     }
 
 
-def entry(name: str = "location", tag: str = TAG) -> dict:
-    """The manifest row a fetch resolves: tag, asset, and the hash to check."""
+def source_commit() -> str:
+    """The commit this checkout is on — the state the artifact was staged from.
+
+    Refuses rather than shrugs. An entry that cannot say which repository state
+    produced it describes a file nobody can rebuild, and a manifest full of those
+    is what this field was added to stop.
+    """
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=repo_root(),
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError) as unreachable:
+        raise ValueError(
+            "the source commit could not be read, so this artifact cannot say which "
+            "repository state made it. Stage from a checkout with `git` on the path."
+        ) from unreachable
+    commit = result.stdout.strip()
+    if len(commit) != 40:
+        raise ValueError(f"`git rev-parse HEAD` returned {commit!r}, which is not a commit")
+    return commit
+
+
+def provenance(name: str) -> dict:
+    """Where this head's answers came from, read off the tracked record.
+
+    The distilled head names its teacher by hash. It claims approximate
+    equivalence with that function and nothing else, so a release that did not
+    say which function it was would be publishing an unfalsifiable claim.
+    """
+    supervision, corpus = SUPERVISION[name]
+    record = {"supervision": supervision, "corpus": corpus}
+    if name == "palette":
+        split = json.loads((repo_root() / corpus / "split.json").read_text(encoding="utf-8"))
+        teacher = split["teacher"]
+        record["teacher"] = {
+            key: teacher[key] for key in ("name", "checkpoint", "sha256", "resolved_through")
+        }
+    return record
+
+
+def entry(name: str = "location", tag: str = TAG, run: str | None = None) -> dict:
+    """The manifest row a fetch resolves: tag, asset, and the hash to check.
+
+    Plus the two things the hash cannot carry — which commit staged it and what
+    taught the head — because a release is read by people, not only fetched.
+    """
     artifact = shipped_path(name)
     return {
         "tag": tag,
@@ -456,6 +537,9 @@ def entry(name: str = "location", tag: str = TAG) -> dict:
         "sha256": sha256_of(artifact),
         "bytes": artifact.stat().st_size,
         "precision": "fp16",
+        "run": run or "its own",
+        "source_commit": source_commit(),
+        "provenance": provenance(name),
     }
 
 
@@ -480,9 +564,12 @@ def stage(
             "differently is worse than no entry."
         )
 
-    row = entry(name, tag)
+    row = entry(name, tag, run)
     manifest = json.loads(manifest_path().read_text(encoding="utf-8"))
-    manifest.setdefault("heads", {})[name] = row
+    heads = {**manifest.get("heads", {}), name: row}
+    # Sorted, so the order of a tracked file is a fact about the heads rather
+    # than about which one happened to be staged last.
+    manifest["heads"] = dict(sorted(heads.items()))
     manifest_path().write_text(
         json.dumps(manifest, indent=2) + "\n", encoding="utf-8", newline="\n"
     )
@@ -502,7 +589,9 @@ def stage(
 __all__ = [
     "AUC_TOLERANCE",
     "DECISION_TOLERANCE",
+    "HEADS",
     "ROW_TOLERANCE",
+    "SUPERVISION",
     "SWAP_TOLERANCE",
     "SCHEMA",
     "TAG",
@@ -512,8 +601,10 @@ __all__ = [
     "entry",
     "halve",
     "manifest_path",
+    "provenance",
     "sha256_of",
     "shipment_for",
     "shipped_path",
+    "source_commit",
     "stage",
 ]
