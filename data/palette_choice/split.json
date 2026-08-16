@@ -1,17 +1,51 @@
 {
   "schema": 1,
-  "rule": "a seeded draw over LOCATIONS, not over candidates: a place's candidates share one field and differ only in colour, so a split that let them straddle would report a held-out loss that is partly a training loss",
+  "rule": "a seeded draw over LOCATIONS, not over candidates: a place's candidates share one field and differ only in colour, so a split that let them straddle would report a held-out loss that is partly a training loss. Locations a previous draw held out are pinned to the held-out side and the draw fills around them",
   "seed": 20260815,
   "target_share": 0.2,
-  "locations": 800,
-  "held_out_locations": 160,
+  "locations": 2000,
+  "held_out_locations": 400,
+  "carried_from_earlier_draws": 110,
   "realized_share": 0.2,
   "sets": {
-    "train": 640,
-    "holdout": 160
+    "train": 1600,
+    "holdout": 400
   },
   "batch": "pool_draw_seeded",
-  "candidates_per_set": 20,
+  "candidates_per_set": 32,
+  "listwise_temperature": 1.1022852435910524,
+  "mix": {
+    "declared_hard_share": 0.7,
+    "kinds": {
+      "hard": {
+        "sets": 1400,
+        "share": 0.7,
+        "palette_distance": {
+          "mean": 0.9252367533824005,
+          "median": 0.9031410723573319
+        },
+        "sides": {
+          "train": 1113,
+          "holdout": 287
+        },
+        "distinct_candidate_sets": 700
+      },
+      "uniform": {
+        "sets": 600,
+        "share": 0.3,
+        "palette_distance": {
+          "mean": 1.9072473061363573,
+          "median": 1.9101218571582872
+        },
+        "sides": {
+          "train": 487,
+          "holdout": 113
+        },
+        "distinct_candidate_sets": 600
+      }
+    },
+    "maps_used": 700
+  },
   "teacher": {
     "name": "v3_gvo",
     "checkpoint": "model_best.pt",
@@ -46,5 +80,10 @@
   },
   "pool": 700,
   "floor": 2,
+  "held_out_pin": {
+    "pinned": 450,
+    "added": 290,
+    "path": "C:\\Code\\fractal-wallpapers\\data\\palette_choice\\held_out.jsonl"
+  },
   "held_out_from": "the vendored production candidate sets, whose locations are the instrument this head is judged on and may never be taught, and the location store's own evaluation pin"
 }

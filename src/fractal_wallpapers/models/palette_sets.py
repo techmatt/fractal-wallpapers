@@ -6,12 +6,21 @@ one it scores highest is the one the picture is coloured with. So the only
 honest question to ask a distilled student is **would it have chosen the same
 palette**, on the sets a production run really put in front of the teacher.
 
-Those sets exist. The source project's last colorize-path batch recorded, for
-each of 180 locations, the palette flavour the deficit model assigned it and the
-map its own head then picked out of that flavour. This module reconstructs the
-set the head chose from, checks the reconstruction against all 180 recorded
-decisions, and writes it here as data — so the acceptance read is repeatable
-without the other repository, exactly as the finished-render yardsticks are.
+Those sets exist. The source project ran the colorize path twice with its
+decisions recorded: a 180-row sheet and a 197-row blind slice, each carrying, per
+location, the palette flavour the deficit model assigned it and the map its own
+head then picked out of that flavour. Both were ranked by the same head this one
+is distilled from. This module reconstructs the set the head chose from, checks
+the reconstruction against all 377 recorded decisions, and writes it here as data
+— so the acceptance read is repeatable without the other repository, exactly as
+the finished-render yardsticks are.
+
+**Every batch the source records this way is taken, and the reason is arithmetic
+rather than appetite.** A share measured on 180 sets carries an interval of about
+±0.07, which is wide enough to straddle the bar it is read against; 377 shrinks
+that to about ±0.05. A batch is admitted on one test — that it is a colorize-path
+run whose recorded winner falls inside the set rebuilt for it — and the two that
+pass are the two that are here.
 
 ## What "the candidate set" is, and how it is rebuilt
 
@@ -27,16 +36,16 @@ Three facts from the source, each read from the file that owns it:
 The set is then that flavour's pool members, in library order, capped at
 [`CAP`]. The cap is the one part of the rule that is restated rather than
 imported — it lives in the source's release driver, which is a large module with
-a large import cost — so it is *checked* instead of trusted: every one of the 180
+a large import cost — so it is *checked* instead of trusted: every one of the
 recorded winners must fall inside the reconstructed set, and the extraction
 refuses to write anything if a single one does not. A cap that was wrong, or an
 ordering that was, would put a recorded winner outside its own candidate set.
 
 ## These locations are held out, and the maps they name are brought across
 
-None of the 180 may appear in the distillation corpus. They are the instrument:
-the whole point of them is that they were never taught, so the agreement read on
-them is a reading and not a memory.
+None of them may appear in the distillation corpus. They are the instrument: the
+whole point of them is that they were never taught, so the agreement read on them
+is a reading and not a memory.
 
 Their sets name 576 maps, and 243 of those were not tracked here. A candidate
 set naming a map nobody holds is a decision nobody can reproduce, so they arrive
@@ -66,9 +75,15 @@ SCHEMA = 1
 #: imported, and therefore checked — see the module docstring.
 CAP = 32
 
-#: The source batch the real decisions come from: its last colorize-path sheet,
-#: one render per location, coloured the way a release run colours it.
-SOURCE_BATCH = "2026-08-05_wallpaper_colorize_path_v1"
+#: Every source batch the real decisions come from, each a colorize-path run —
+#: one render per location, coloured the way a release run colours it — and each
+#: paired with the short key its set ids carry, so a set names its own origin
+#: without carrying a date. Order is fixed: it is the order the ids are numbered
+#: in, and a set id is a join key that other files quote.
+SOURCE_BATCHES = (
+    ("colorize", "2026-08-05_wallpaper_colorize_path_v1"),
+    ("minibrot", "2026-08-11_wallpaper_blind_minibrot_v1"),
+)
 
 #: Where that batch lives under the source root.
 BATCH = Path("data") / "wallpaper_corpus" / "batches"
@@ -161,12 +176,12 @@ def members_of(flavour: str, flavours: dict[str, str], order: list[str]) -> list
     return [name for name in order if flavours.get(name) == flavour][:CAP]
 
 
-def _rows_of(root: Path) -> list[dict]:
-    path = Path(root) / BATCH / SOURCE_BATCH / "images.jsonl"
+def _rows_of(root: Path, batch: str) -> list[dict]:
+    path = Path(root) / BATCH / batch / "images.jsonl"
     if not path.is_file():
         raise SetsError(
-            f"{path} is missing. It is the source project's colorize-path sheet, and its "
-            f"rows are the only record of what a production run really asked the head."
+            f"{path} is missing. It is a source colorize-path sheet, and its rows are the "
+            f"only record of what a production run really asked the head."
         )
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line]
 
@@ -177,48 +192,9 @@ def extract(root: Path) -> list[dict]:
 
     flavours, order = _flavours(root)
     out, missed = [], []
-    for index, source_row in enumerate(_rows_of(root)):
-        render = source_row["render"]
-        colorize = (source_row.get("provenance") or {}).get("colorize") or {}
-        flavour = colorize.get("palette_flavor")
-        if not flavour:
-            raise SetsError(f"{source_row.get('image_id')!r} records no palette flavour")
-        candidates = members_of(flavour, flavours, order)
-        chosen = render["palette"]
-        if chosen not in candidates:
-            missed.append((source_row.get("image_id"), flavour, chosen, len(candidates)))
-            continue
-        family = finished_import.family_of(render, source_row.get("provenance") or {})
-        out.append(
-            {
-                "schema": SCHEMA,
-                "set": f"{index:04d}",
-                "source_batch": SOURCE_BATCH,
-                "source_id": source_row.get("image_id"),
-                "family": family,
-                "partition": partition_of_family(family),
-                "viewport": {
-                    "center_re": str(render["cx"]),
-                    "center_im": str(render["cy"]),
-                    "width": str(render["fw"]),
-                },
-                "render": {
-                    "resolution": list(RESOLUTION),
-                    "supersample": SUPERSAMPLE,
-                    "maxiter": int(render["maxiter"]),
-                },
-                "mode": MODE,
-                "curve": CURVE,
-                "flavour": flavour,
-                "candidates": candidates,
-                "chosen": chosen,
-                # The score the deployed head gave its own pick, under the source's
-                # key for it. Carried as a fact about that run, not as a yardstick:
-                # it was measured on the source's own picture of this location and
-                # this repository's picture of it is a different picture.
-                "chosen_score": colorize.get("pref_fit"),
-            }
-        )
+    for key, batch in SOURCE_BATCHES:
+        for index, source_row in enumerate(_rows_of(root, batch)):
+            _one(out, missed, key, batch, index, source_row, flavours, order, finished_import)
     if missed:
         raise SetsError(
             f"{len(missed)} of the source's recorded decisions name a map that is not in the "
@@ -227,7 +203,58 @@ def extract(root: Path) -> list[dict]:
             f"set means one of those three is wrong, and every number read on these sets "
             f"afterwards would be about a question nobody asked."
         )
+    seen = {row["set"] for row in out}
+    if len(seen) != len(out):
+        raise SetsError(
+            "two extracted sets carry the same id. A set id is the join key every score "
+            "file and every acceptance read quotes, so it has to be unique across batches."
+        )
     return out
+
+
+def _one(out, missed, key, batch, index, source_row, flavours, order, finished_import) -> None:
+    """One source row to one candidate-set row, or to the refusal list."""
+    render = source_row["render"]
+    colorize = (source_row.get("provenance") or {}).get("colorize") or {}
+    flavour = colorize.get("palette_flavor")
+    if not flavour:
+        raise SetsError(f"{source_row.get('image_id')!r} records no palette flavour")
+    candidates = members_of(flavour, flavours, order)
+    chosen = render["palette"]
+    if chosen not in candidates:
+        missed.append((source_row.get("image_id"), flavour, chosen, len(candidates)))
+        return
+    family = finished_import.family_of(render, source_row.get("provenance") or {})
+    out.append(
+        {
+            "schema": SCHEMA,
+            "set": f"{key}-{index:04d}",
+            "source_batch": batch,
+            "source_id": source_row.get("image_id"),
+            "family": family,
+            "partition": partition_of_family(family),
+            "viewport": {
+                "center_re": str(render["cx"]),
+                "center_im": str(render["cy"]),
+                "width": str(render["fw"]),
+            },
+            "render": {
+                "resolution": list(RESOLUTION),
+                "supersample": SUPERSAMPLE,
+                "maxiter": int(render["maxiter"]),
+            },
+            "mode": MODE,
+            "curve": CURVE,
+            "flavour": flavour,
+            "candidates": candidates,
+            "chosen": chosen,
+            # The score the deployed head gave its own pick, under the source's
+            # key for it. Carried as a fact about that run, not as a yardstick:
+            # it was measured on the source's own picture of this location and
+            # this repository's picture of it is a different picture.
+            "chosen_score": colorize.get("pref_fit"),
+        }
+    )
 
 
 def cyclic() -> set[str]:
@@ -333,8 +360,11 @@ def run(root: Path) -> dict:
         "source": str(Path(root) / POOL),
     }
     write(rows, document)
+    from collections import Counter
+
     return {
         "sets": len(rows),
+        "per_batch": dict(sorted(Counter(row["source_batch"] for row in rows).items())),
         "locations": len({location_key(row["family"], row["viewport"]) for row in rows}),
         "candidates": sum(len(row["candidates"]) for row in rows),
         "set_sizes": sorted({len(row["candidates"]) for row in rows}),
@@ -356,7 +386,7 @@ __all__ = [
     "POOL",
     "RESOLUTION",
     "SCHEMA",
-    "SOURCE_BATCH",
+    "SOURCE_BATCHES",
     "SUPERSAMPLE",
     "SetsError",
     "candidate_row",

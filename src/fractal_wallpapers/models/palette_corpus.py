@@ -31,24 +31,36 @@ Locations pinned to the location store's evaluation side are left out, and so is
 every location the vendored production sets hold. The second is the one that
 matters: a set the head trained on is not an instrument.
 
-## What a set is here, and how it differs from a production one
+## What a set is here, and how it is made hard on purpose
 
-Twenty candidates, drawn uniformly from the whole pool. A production set is one
-palette *flavour's* members — up to thirty-two maps that already resemble each
-other, whose top two sit a twentieth of the set's own spread apart — so it asks a
-finer question than a uniform draw does. The flavour taxonomy is an artifact of
-the source project's own clustering and does not exist here, so the mismatch
-cannot be closed; what a wider set does is narrow it, because twenty draws from
-seven hundred maps put near-ties at the top far more often than eight do.
+Thirty-two candidates — the size of a production set, not a compromise with it —
+and **seventy per cent of the sets are near-ties by construction**.
 
-That is why the width is twenty rather than eight, and the number came from a
-measurement rather than a guess: the first corpus, 600 sets of 8, produced a head
-that reproduced the teacher's *order* on the real sets at a rank correlation of
-0.88 and its *top pick* only 38% of the time. The distinction it had never been
-asked to make was the one the sets it is judged on are made of.
+A production set is one palette *flavour's* members: up to thirty-two maps that
+already resemble each other, whose top two sit a twentieth of the set's own
+spread apart. Two corpora have now been measured against that, and both times the
+thing that failed was the fine distinction rather than the coarse one:
 
-The head is still judged on the harder population, which is the direction an
-unmatched difference should point.
+* 600 sets of 8, drawn uniformly, gave a head that reproduced the teacher's
+  *order* at a rank correlation of 0.88 and its *top pick* 38% of the time;
+* 800 sets of 20, drawn uniformly, moved that to 0.89 and 46% — and the median
+  miss was the teacher's **second** favourite winning.
+
+Widening a uniform draw only buys near-ties by accident. So they are bought on
+purpose instead: a **hard** set is one map and the thirty-one nearest it in
+[`palettes.space`], which measures how alike two gradients look as the renderer
+spends them. Its members resemble each other for the same reason a flavour's
+members do, and the whole library is covered because the anchors walk a seeded
+permutation of the pool.
+
+[`HARD_SHARE`] of the sets are built that way and the rest are uniform draws,
+because a corpus of nothing but near-ties would teach a head to split hairs and
+forget the shape of a preference — and the ordering arm, which passes, is a bar
+too. The mix is declared before training and written into the split record.
+
+What is matched is the *property*, not the partition: the flavour taxonomy is the
+source project's own clustering over a library this repository holds a subset of,
+and it is not reproduced here. The judged sets are still not the trained ones.
 
 ## One row per candidate, and every row carries its whole join
 
@@ -69,6 +81,7 @@ from pathlib import Path
 from fractal_wallpapers import engine
 from fractal_wallpapers.labeling import pins, store
 from fractal_wallpapers.models import palette_sets, renders
+from fractal_wallpapers.palettes import space
 from fractal_wallpapers.paths import repo_root
 from fractal_wallpapers.supply import partitions
 from fractal_wallpapers.supply.location import location_key
@@ -84,19 +97,25 @@ BATCH = "pool_draw_seeded"
 SEED = 20260815
 
 #: How many candidate sets to generate, before the per-partition supply caps
-#: bite. Ten partitions and eighty each; a partition that cannot supply eighty
-#: gives what it has and the shortfall is spread over the ones that can.
-SETS = 800
+#: bite. A partition that cannot supply its even share gives what it has and the
+#: shortfall is spread over the ones that can. 2,000 of the 5,452 locations this
+#: repository holds at [`FLOOR`] and above, which is what one afternoon of
+#: rendering and four training runs fit into.
+SETS = 2000
 
-#: Candidates per set. Twenty, and the number is the answer to an acceptance
-#: read rather than a guess: a first corpus of 600 sets of 8 produced a head that
-#: reproduced the teacher's ORDER on the real sets (rank correlation 0.88) and
-#: its top pick only 38% of the time, against a bar of 50%. A production set is
-#: up to 32 maps of one palette flavour whose top two sit a twentieth of the
-#: set's own spread apart; a set of 8 drawn uniformly from 700 almost never asks
-#: a question that fine. Twenty is what the render budget allows once the field
-#: is dumped once per location instead of iterated once per candidate.
-CANDIDATES = 20
+#: Candidates per set. Thirty-two, which is the size of a production candidate
+#: set rather than an approach to it: 156 of the 377 vendored real sets hold
+#: exactly this many and the rest are the flavours too small to. Affordable
+#: because the field is dumped once per location, and trainable on eight
+#: gigabytes because the batch is put through the net in halves.
+CANDIDATES = 32
+
+#: The share of sets built as palette-space neighbourhoods rather than uniform
+#: draws. Declared here, before training, and carried into the split record.
+#: Seventy per cent: enough that the head is mostly asked the fine question the
+#: real sets ask, with 600 uniform sets left over — nearly the whole of the last
+#: corpus — so the ordering arm has the population it was passing on.
+HARD_SHARE = 0.70
 
 #: The lowest human tier a location may be drawn at. A 2 has structure but is
 #: unremarkable, and places like that do reach colorize — the source's own
@@ -149,6 +168,64 @@ def split_path() -> Path:
     return palette_sets.store_dir() / "split.json"
 
 
+def held_out_path() -> Path:
+    """The locations that have been on the held-out side and must stay there."""
+    return palette_sets.store_dir() / "held_out.jsonl"
+
+
+def carried_holdout() -> set[str]:
+    """Every location a previous draw held out, as the repr of its location key.
+
+    A corpus that grows must not grow into its own held-out side. The epoch this
+    head ships at is chosen on the held-out distillation loss, and a location that
+    was scoring that loss last time and is teaching the model this time makes the
+    two readings incomparable in the one direction that flatters the second.
+
+    So the held-out side is *data*, accumulated: the pin file names the locations,
+    and it only ever gains rows. Locations it names that a later draw never picks
+    are simply not in that corpus; nothing forces them back in.
+    """
+    path = held_out_path()
+    if not path.is_file():
+        return set()
+    out = set()
+    for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        if row.get("schema") != SCHEMA:
+            raise CorpusError(f"{path}:{number}: schema {row.get('schema')!r}, expected {SCHEMA}")
+        out.add(repr(location_key(row["family"], row["viewport"])))
+    return out
+
+
+def pin_holdout(set_rows: list[dict]) -> dict:
+    """Add this draw's held-out locations to the pin, and write it back."""
+    known = carried_holdout()
+    rows = []
+    for row in set_rows:
+        if row.get("side") != "holdout":
+            continue
+        key = repr(location_key(row["family"], row["viewport"]))
+        if key in known:
+            continue
+        known.add(key)
+        rows.append(
+            {
+                "schema": SCHEMA,
+                "family": row["family"],
+                "viewport": row["viewport"],
+                "batch": row["batch"],
+            }
+        )
+    path = held_out_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8", newline="\n") as handle:
+        for row in rows:
+            handle.write(json.dumps(row, ensure_ascii=False) + "\n")
+    return {"pinned": len(known), "added": len(rows), "path": str(path)}
+
+
 def supply() -> list[dict]:
     """Every location a candidate set may be drawn at, and why the rest are not.
 
@@ -195,16 +272,45 @@ def apportion(available: dict[str, int], target: int) -> dict[str, int]:
     return quota
 
 
-def draw(sets: int = SETS, candidates: int = CANDIDATES, seed: int = SEED) -> list[dict]:
-    """The whole plan: which places, which maps, in which order.
+def anchors(pool: list[str], count: int, seed: int) -> list[str]:
+    """Which map each hard set is built around: a seeded walk over the pool.
+
+    A permutation rather than a draw with replacement, repeated as often as the
+    count needs, so every map in the library anchors its own neighbourhood before
+    any map anchors a second one. A corpus that sampled anchors independently
+    would leave a tail of maps that never sat at the centre of a set.
+    """
+    generator = random.Random(f"anchors:{seed}")
+    out: list[str] = []
+    while len(out) < count:
+        lap = list(pool)
+        generator.shuffle(lap)
+        out.extend(lap[: count - len(out)])
+    return out
+
+
+def draw(
+    sets: int = SETS,
+    candidates: int = CANDIDATES,
+    seed: int = SEED,
+    hard_share: float = HARD_SHARE,
+) -> list[dict]:
+    """The whole plan: which places, which maps, how hard, in which order.
 
     Seeded end to end. The locations are drawn per partition from a sorted list,
     so the draw is a function of the seed and the tracked corpus and of nothing
     else — not of a dictionary's iteration order and not of when it was run.
+
+    A set is `hard` or `uniform`, and which it is is decided by position in the
+    shuffled plan rather than by a coin: the first share of the plan is hard. The
+    plan is already shuffled across partitions, so that is a random assignment
+    with an exact realized share instead of an approximate one.
     """
     pool = palette_sets.pool()["pool"]
     if candidates > len(pool):
         raise CorpusError(f"a set of {candidates} cannot be drawn from a pool of {len(pool)}")
+    if not 0.0 <= hard_share <= 1.0:
+        raise CorpusError(f"a hard share of {hard_share} is not a share")
 
     by_partition: dict[str, list[dict]] = {}
     for row in supply():
@@ -224,15 +330,25 @@ def draw(sets: int = SETS, candidates: int = CANDIDATES, seed: int = SEED) -> li
         )
     generator.shuffle(chosen)
 
+    hard = round(len(chosen) * hard_share)
+    centres = anchors(pool, hard, seed)
     out = []
     for index, picked in enumerate(chosen):
         row = picked["row"]
+        if index < hard:
+            anchor = centres[index]
+            members = space.neighbourhood(anchor, pool, candidates)
+        else:
+            anchor = None
+            members = generator.sample(pool, candidates)
         out.append(
             {
                 "schema": SCHEMA,
                 "batch": BATCH,
                 "set": f"{index:04d}",
                 "seed": seed,
+                "kind": "hard" if index < hard else "uniform",
+                "anchor": anchor,
                 "partition": picked["partition"],
                 "family": row["family"],
                 "viewport": row["viewport"],
@@ -243,7 +359,7 @@ def draw(sets: int = SETS, candidates: int = CANDIDATES, seed: int = SEED) -> li
                 },
                 "mode": palette_sets.MODE,
                 "curve": palette_sets.CURVE,
-                "candidates": generator.sample(pool, candidates),
+                "candidates": members,
                 "location_score": int(row["score"]),
                 "location_batch": row["batch"],
             }
@@ -381,17 +497,24 @@ def crop_of(row: dict) -> Path:
 
 
 def sides(set_rows: list[dict], seed: int = SEED, share: float = HOLDOUT_SHARE) -> dict:
-    """Assign whole locations to `train` or `holdout`, seeded.
+    """Assign whole locations to `train` or `holdout`, seeded, honouring the pin.
 
-    Over locations rather than over candidates: a place's eight candidates share
-    a field and differ only in colour, so splitting them would put nearly the
-    same picture on both sides of the boundary and report a held-out loss that is
-    partly a training loss.
+    Over locations rather than over candidates: a place's candidates share a field
+    and differ only in colour, so splitting them would put nearly the same picture
+    on both sides of the boundary and report a held-out loss that is partly a
+    training loss.
+
+    Locations [`carried_holdout`] names are held out first and the seeded draw
+    fills the rest of the share around them — see that function for why a corpus
+    is not allowed to grow into its own held-out side.
     """
     places = sorted({repr(location_key(row["family"], row["viewport"])) for row in set_rows})
+    pinned = carried_holdout() & set(places)
+    wanted = max(1, round(len(places) * share))
+    free = [place for place in places if place not in pinned]
     generator = random.Random(seed)
-    generator.shuffle(places)
-    held = set(places[: max(1, round(len(places) * share))])
+    generator.shuffle(free)
+    held = set(pinned) | set(free[: max(0, wanted - len(pinned))])
     for row in set_rows:
         row["side"] = (
             "holdout" if repr(location_key(row["family"], row["viewport"])) in held else "train"
@@ -401,18 +524,74 @@ def sides(set_rows: list[dict], seed: int = SEED, share: float = HOLDOUT_SHARE) 
         "rule": (
             "a seeded draw over LOCATIONS, not over candidates: a place's candidates share "
             "one field and differ only in colour, so a split that let them straddle would "
-            "report a held-out loss that is partly a training loss"
+            "report a held-out loss that is partly a training loss. Locations a previous "
+            "draw held out are pinned to the held-out side and the draw fills around them"
         ),
         "seed": seed,
         "target_share": share,
         "locations": len(places),
         "held_out_locations": len(held),
+        "carried_from_earlier_draws": len(pinned),
         "realized_share": len(held) / max(len(places), 1),
         "sets": {
             "train": sum(1 for row in set_rows if row["side"] == "train"),
             "holdout": sum(1 for row in set_rows if row["side"] == "holdout"),
         },
     }
+
+
+def temperature(set_scores: list[list[float]]) -> float:
+    """The scale a per-set softmax reads this corpus at: half a typical set's spread.
+
+    The teacher's units mean nothing on their own — its scores here run from −77
+    to 18 — so a listwise term cannot carry a constant temperature and mean the
+    same thing. This is a rule instead of a number: the median within-set standard
+    deviation, halved, so a candidate two deviations above its set's mean carries
+    about `e**4` of the weight of an average one. That concentrates the term on
+    the top handful of a set, which is where the misses are.
+
+    Computed once from the labeled corpus and written into its split record, so
+    the trainer reads a fact rather than recomputing a guess.
+    """
+    import numpy
+
+    spreads = [
+        float(numpy.std(numpy.asarray(scores, dtype=numpy.float64))) for scores in set_scores
+    ]
+    return float(numpy.median(spreads)) / 2.0
+
+
+def mix(set_rows: list[dict]) -> dict:
+    """The declared hard/uniform mix, realized and measured.
+
+    The share is a decision; the *tightness* is the check on it. A hard set is
+    meant to be a near-tie by construction, and the number that says whether it is
+    is the mean palette-space distance between its members. Reported per kind and
+    per side, so a corpus cannot claim a mix it does not have.
+    """
+    import numpy
+
+    out: dict = {"declared_hard_share": HARD_SHARE, "kinds": {}}
+    for kind in ("hard", "uniform"):
+        group = [row for row in set_rows if row.get("kind") == kind]
+        if not group:
+            continue
+        spreads = [space.tightness(row["candidates"])["mean"] for row in group]
+        out["kinds"][kind] = {
+            "sets": len(group),
+            "share": len(group) / max(len(set_rows), 1),
+            "palette_distance": {
+                "mean": float(numpy.mean(spreads)),
+                "median": float(numpy.median(spreads)),
+            },
+            "sides": {
+                side: sum(1 for row in group if row.get("side") == side)
+                for side in ("train", "holdout")
+            },
+            "distinct_candidate_sets": len({tuple(row["candidates"]) for row in group}),
+        }
+    out["maps_used"] = len({name for row in set_rows for name in row["candidates"]})
+    return out
 
 
 def label(root: Path, set_rows: list[dict], device: str = "auto", log=print) -> dict:
@@ -452,6 +631,8 @@ def label(root: Path, set_rows: list[dict], device: str = "auto", log=print) -> 
                 "batch": set_row["batch"],
                 "set": set_row["set"],
                 "side": set_row["side"],
+                "kind": set_row["kind"],
+                "anchor": set_row["anchor"],
                 "origin": "teacher",
                 "score": float(scores[cursor]),
                 "partition": set_row["partition"],
@@ -477,13 +658,22 @@ def label(root: Path, set_rows: list[dict], device: str = "auto", log=print) -> 
                 handle.write(json.dumps(record, ensure_ascii=False) + "\n")
         written[partition] = len(records)
 
+    pin = pin_holdout(set_rows)
+    width = len(set_rows[0]["candidates"]) if set_rows else 0
+    per_set = [
+        [float(value) for value in scores[start : start + width]]
+        for start in range(0, width * len(set_rows), width)
+    ]
     document = {
         **split,
         "batch": BATCH,
-        "candidates_per_set": len(set_rows[0]["candidates"]) if set_rows else 0,
+        "candidates_per_set": width,
+        "listwise_temperature": temperature(per_set) if per_set else None,
+        "mix": mix(set_rows),
         "teacher": identity,
         "pool": len(palette_sets.pool()["pool"]),
         "floor": FLOOR,
+        "held_out_pin": pin,
         "held_out_from": (
             "the vendored production candidate sets, whose locations are the instrument this "
             "head is judged on and may never be taught, and the location store's own "
@@ -496,13 +686,15 @@ def label(root: Path, set_rows: list[dict], device: str = "auto", log=print) -> 
         "sets": len(set_rows),
         "per_partition": written,
         "split": split,
+        "mix": document["mix"],
         "teacher": {"name": identity["name"], "sha256": identity["sha256"]},
         "score": {
             "min": float(scores.min()),
             "median": float(sorted(scores)[len(scores) // 2]),
             "max": float(scores.max()),
         },
-        "wrote": sorted(str(path) for path in row_dir().glob("*.jsonl")) + [str(split_path())],
+        "wrote": sorted(str(path) for path in row_dir().glob("*.jsonl"))
+        + [str(split_path()), str(held_out_path())],
     }
 
 
@@ -534,6 +726,7 @@ def grouped(rows: list[dict] | None = None) -> list[dict]:
             {
                 "set": row["set"],
                 "side": row["side"],
+                "kind": row.get("kind", "uniform"),
                 "partition": row["partition"],
                 "candidates": [],
                 "scores": [],
@@ -550,21 +743,27 @@ __all__ = [
     "BATCH",
     "CANDIDATES",
     "FLOOR",
+    "HARD_SHARE",
     "HOLDOUT_SHARE",
     "SCHEMA",
     "SEED",
     "SETS",
     "CorpusError",
+    "anchors",
     "apportion",
     "batch_path",
     "build",
     "cache_dir",
+    "carried_holdout",
     "crop_dir",
     "crop_of",
     "draw",
     "grouped",
+    "held_out_path",
     "label",
     "log_path",
+    "mix",
+    "pin_holdout",
     "plan_path",
     "read",
     "read_plan",
@@ -573,5 +772,6 @@ __all__ = [
     "sides",
     "split_path",
     "supply",
+    "temperature",
     "write_plan",
 ]

@@ -90,6 +90,36 @@ def test_a_set_is_worth_a_set_however_wide_it_is() -> None:
     )
 
 
+def test_the_listwise_term_is_off_unless_it_is_asked_for() -> None:
+    """An arm that is on unless somebody turns it off is not an arm: the default
+    has to be exactly the loss the previous pass trained under."""
+    teacher = torch.tensor([[1.0, 3.0, 2.0, 0.0]])
+    student = torch.tensor([[0.0, 1.0, 3.0, 2.0]])
+    plain = palette_head.set_loss(student, teacher).item()
+    assert palette_head.set_loss(student, teacher, listwise=0.0).item() == pytest.approx(plain)
+    assert palette_head.set_loss(student, teacher, listwise=1.0, temperature=1.0).item() > plain
+
+
+def test_the_listwise_term_is_zero_only_when_the_two_sets_agree_in_shape() -> None:
+    teacher = torch.tensor([[1.0, 3.0, 2.0, 0.0], [0.5, 0.25, 0.75, 1.0]])
+    assert palette_head.listwise_loss(teacher, teacher).item() == pytest.approx(0.0, abs=1e-6)
+    assert palette_head.listwise_loss(teacher + 4.0, teacher).item() == pytest.approx(0.0, abs=1e-6)
+    assert palette_head.listwise_loss(-teacher, teacher).item() > 0.0
+
+
+def test_a_cold_listwise_term_cares_about_the_top_and_a_hot_one_about_the_vector() -> None:
+    """The temperature is what says how much of the set the term looks at, and the
+    miss this arm exists for is the teacher's SECOND favourite winning."""
+    teacher = torch.tensor([[0.0, 1.0, 4.0, 4.2]])
+    swapped_top = torch.tensor([[0.0, 1.0, 4.2, 4.0]])
+    swapped_bottom = torch.tensor([[1.0, 0.0, 4.0, 4.2]])
+    cold = 0.1
+    assert (
+        palette_head.listwise_loss(swapped_top, teacher, cold).item()
+        > palette_head.listwise_loss(swapped_bottom, teacher, cold).item()
+    )
+
+
 def test_regret_is_zero_when_the_picks_agree_and_never_negative() -> None:
     import numpy
 
@@ -97,6 +127,34 @@ def test_regret_is_zero_when_the_picks_agree_and_never_negative() -> None:
     assert palette_head.regret(numpy.array([0.0, 1.0, 0.0]), teacher) == pytest.approx(0.0)
     assert palette_head.regret(numpy.array([1.0, 0.0, 0.0]), teacher) == pytest.approx(0.8)
     assert palette_head.spread(teacher) == pytest.approx(0.8)
+
+
+def test_the_decode_cache_holds_the_same_pixels_and_is_reused(tmp_path) -> None:
+    """The corpus is bigger than this machine's spare memory, so it is decoded to
+    a file and mapped back. A cache that returned different pixels, or that a
+    second run silently shared with a different corpus, would both be worse than
+    decoding again."""
+    import numpy
+    from PIL import Image as PILImage
+
+    paths = []
+    for index in range(4):
+        path = tmp_path / f"{index}.jpg"
+        PILImage.fromarray(numpy.full((360, 640, 3), index * 40, numpy.uint8)).save(path)
+        paths.append(path)
+
+    held = palette_head.decoded(paths)
+    mapped = palette_head.decoded(paths, cache=tmp_path / "decoded")
+    assert numpy.array_equal(numpy.asarray(held), numpy.asarray(mapped))
+
+    files = sorted(tmp_path.glob("*.u8"))
+    assert len(files) == 1
+    palette_head.decoded(paths, cache=tmp_path / "decoded")
+    assert sorted(tmp_path.glob("*.u8")) == files
+
+    # A different corpus is a different file, never a silent reuse of this one.
+    palette_head.decoded(paths[:3], cache=tmp_path / "decoded")
+    assert len(sorted(tmp_path.glob("*.u8"))) == 2
 
 
 def test_the_head_emits_exactly_one_number_per_picture() -> None:

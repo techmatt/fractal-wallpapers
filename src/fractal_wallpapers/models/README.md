@@ -22,6 +22,9 @@ labels — there are none here to train it on — so it has two stages the other
 not. `palette_sets` vendors the real candidate sets a production colorize run put
 in front of the head it is distilled from; `palette_corpus` generates a corpus by
 rendering candidates here and asking that teacher (`palette_teacher`) about each.
+Most of that corpus is made *hard on purpose* — a set is a map and its nearest
+neighbours in `palettes/space`, so it asks the near-tie question a production
+flavour asks instead of waiting for a uniform draw to ask it by accident.
 After that the shape is the same: `palette_train` runs the loop over sets rather
 than pictures, `palette_scoring` reads a checkpoint, `palette_acceptance` judges
 it against its own pre-registered bar. Its model, transform and loss are in

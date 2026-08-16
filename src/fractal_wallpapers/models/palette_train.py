@@ -37,17 +37,39 @@ broken checkpoint. It is not a coincidence: a selection rule that cannot see the
 quantity the head exists to emit will eventually pick a head that gets that
 quantity wrong.
 
-## The unit is a set
+## The unit is a set, and a batch of them goes through the net in halves
 
 A batch is sixteen *sets*, not sixteen pictures, because the loss is defined
 inside a set — the mean is removed per set before anything is compared. A
 sampler that shuffled candidates across set boundaries would be centring on a
 mean that belongs to no location.
 
+Sixteen sets of thirty-two candidates is five hundred and twelve pictures, and
+that does not fit in eight gigabytes: measured on this machine, a step of 320
+pictures takes 0.25 s and a step of 384 takes 3.05 s, because the allocator
+starts fighting for room rather than because the arithmetic grew twelve-fold. So
+each batch is put through the net in [`RECIPE`]`["microbatch_sets"]`-set pieces
+with the gradients accumulated. The loss is a mean over sets, so weighting each
+piece by its share of the batch reproduces the whole batch's gradient — measured
+at a relative difference of **1.3e-6**, which is float32 summing the same terms in
+a different order. The one thing that is not identical is BatchNorm, which now
+sees 256 pictures at a time instead of 512 — both far past the point where a batch
+statistic is noisy, and it is declared rather than assumed away.
+
 There is no class balance and no place weight here, and their absence is
 structural rather than an omission: every set is one location and holds the same
 number of candidates, so the population is already balanced over the only unit
 that exists.
+
+## The loss carries an optional listwise term, and it was a pre-declared arm
+
+The first pass's miss pattern was the teacher's *second* favourite winning, which
+is the one thing a per-set-centred regression is least sharp about: it spends
+thirty-one of a set's thirty-two squared errors on candidates nobody will colour
+with. [`palette_head.listwise_loss`] reads the set as a distribution instead. It
+is off unless asked for, its temperature is read off the corpus rather than
+chosen, and whether it is on at all was decided by a **held-out** read between two
+arms — never by the real sets, which are the instrument.
 
 ## Three seeds, and the band is the answer
 
@@ -84,6 +106,17 @@ RECIPE = {
     # here moves by a factor of four between adjacent epochs.
     "patience": None,
     "batch_sets": 16,
+    # How many sets go through the net at once. Not an optimization knob: the
+    # gradient of a batch is assembled from these and is identical either way.
+    # Eight sets of 32 candidates is 256 pictures, which is inside the measured
+    # cliff at ~320 on an eight-gigabyte card.
+    "microbatch_sets": 8,
+    # The listwise arm. Zero is the first pass's loss exactly; the weight is 1.0
+    # when it is on, which is "equal footing with the regression" and not a
+    # searched value. The temperature is null here because it is a fact about the
+    # corpus and is read out of its split record — see [`palette_corpus.temperature`].
+    "listwise": 0.0,
+    "listwise_temperature": None,
     "backbone_lr": 1e-4,
     "head_lr": 1e-3,
     "weight_decay": 0.05,
@@ -96,6 +129,10 @@ RECIPE = {
     "target_dims": [palette_head.TARGET_WIDTH, palette_head.TARGET_HEIGHT],
     "augmentation": "geometric only — both flips. No colour: the colour is the question",
     "loss": "centred mean squared error against the teacher's score vector, per set",
+    "LISTWISE_ARM": (
+        "declared before training and decided on the HELD-OUT top-pick agreement at seed 0, "
+        "never on the real sets. Both arms' numbers are recorded either way"
+    ),
     "selection": (
         "min held-out distillation loss — the same objective the trainer minimizes, over "
         "locations the run never saw. A proper scoring rule for a score vector, so it sees "
@@ -160,6 +197,17 @@ INHERITANCE = {
             "saving time, and a full run of this head is three minutes.",
         },
         {
+            "key": "batch delivery",
+            "was": "one forward and backward pass over the whole batch",
+            "now": "the batch in microbatch_sets-set pieces with the gradients accumulated",
+            "why": "MECHANICAL, and the gradient is unchanged. Sixteen sets of 32 candidates "
+            "is 512 pictures and this card holds 8 GB: a measured step of 320 pictures takes "
+            "0.25 s and one of 384 takes 3.05 s. The loss is a mean over sets, so a piece "
+            "weighted by its share of the batch contributes exactly its share of the "
+            "gradient. The one difference is that BatchNorm sees 256 pictures per update "
+            "instead of 512.",
+        },
+        {
             "key": "split",
             "was": "location-disjoint 80/20 over the query corpus, stratified by query type",
             "now": "a seeded 80/20 over the corpus's own locations, shipped as data",
@@ -192,24 +240,31 @@ def metrics_path(run: str | None = None) -> Path:
 
 
 class Sets:
-    """One side of the corpus, decoded once and held: pictures, scores, and names.
+    """One side of the corpus, decoded once and mapped: pictures, scores, names.
 
-    The whole side lives in memory as `uint8` — 3,840 candidates at 224×224 is
-    578 MB — because decoding a JPEG costs far more than the forward pass through
-    this backbone, and a loop that decoded per epoch would spend a forty-epoch
-    run inside `libjpeg`. It also means no loader workers at all, which on Windows
-    is one fewer way to be wrong: a worker there is spawned rather than forked, so
-    everything it touches has to be picklable and importable by name.
+    The whole side is decoded to a file of `uint8` bytes and memory-mapped back —
+    51,200 candidates at 224×224 is 7.7 GB — because decoding a JPEG costs far
+    more than the forward pass through this backbone, and a loop that decoded per
+    epoch would spend a forty-epoch run inside `libjpeg`. A *file* rather than an
+    allocation because this machine's commit charge already exceeds its physical
+    memory: an anonymous 7.7 GB would be paged to the swap file and read back
+    from an SSD anyway, so it is written to an SSD deliberately instead, where the
+    pages are clean and the next run reuses them.
+
+    It also means no loader workers at all, which on Windows is one fewer way to
+    be wrong: a worker there is spawned rather than forked, so everything it
+    touches has to be picklable and importable by name.
     """
 
-    def __init__(self, sets: list[dict]) -> None:
+    def __init__(self, sets: list[dict], cache=None) -> None:
         import torch
 
         self.sets = sets
         self.width = len(sets[0]["candidates"])
         self.names = [entry["set"] for entry in sets]
         self.pictures = palette_head.decoded(
-            [palette_corpus.crop_of(row) for entry in sets for row in entry["rows"]]
+            [palette_corpus.crop_of(row) for entry in sets for row in entry["rows"]],
+            cache=cache,
         )
         self.scores = torch.tensor([entry["scores"] for entry in sets], dtype=torch.float32)
 
@@ -226,11 +281,15 @@ class Sets:
         """
         import random
 
+        import numpy
         import torch
 
-        offsets = torch.arange(self.width)
-        flat = (torch.as_tensor(indices).view(-1, 1) * self.width + offsets).reshape(-1)
-        pictures = palette_head.normalize(self.pictures[flat].to(where, non_blocking=True))
+        offsets = numpy.arange(self.width)
+        flat = (numpy.asarray(indices).reshape(-1, 1) * self.width + offsets).reshape(-1)
+        # Indexed in numpy, which turns the mapped pages into one owned copy of
+        # exactly this batch — the tensor never holds a view of the whole file.
+        taken = torch.from_numpy(numpy.ascontiguousarray(self.pictures[flat]))
+        pictures = palette_head.normalize(taken.to(where, non_blocking=True))
         pictures = pictures.view(len(indices), self.width, *pictures.shape[1:])
         if epoch is not None:
             for position, index in enumerate(indices):
@@ -261,8 +320,54 @@ def population() -> tuple[list[dict], list[dict]]:
     return training, holdout
 
 
+def accumulate(
+    model,
+    examples: Sets,
+    indices: list[int],
+    where: str,
+    recipe: dict,
+    epoch: int | None,
+    piece_sets: int,
+) -> float:
+    """One batch's gradient, assembled from pieces that fit in the card.
+
+    The whole batch is `indices`; it goes through the net `piece_sets` sets at a
+    time and each piece's loss is scaled by its share of the batch before
+    `backward`. Because the objective is a **mean over sets**, those scaled pieces
+    sum to the gradient a single pass over the whole batch would have produced —
+    the same vector to within float32's own last bits, which is what
+    `tests/test_palette_train.py` measures rather than assumes. The one thing that
+    genuinely differs is BatchNorm, which sees a piece's pictures rather than the
+    batch's.
+
+    Returns the batch's loss, assembled the same way.
+    """
+    total = 0.0
+    for cut in range(0, len(indices), piece_sets):
+        piece = indices[cut : cut + piece_sets]
+        weight = len(piece) / len(indices)
+        pictures, scores = examples.batch(piece, where, epoch=epoch)
+        flat = pictures.view(-1, *pictures.shape[2:])
+        predicted = model(flat).view(len(piece), examples.width)
+        loss = palette_head.set_loss(
+            predicted,
+            scores,
+            listwise=recipe["listwise"],
+            temperature=recipe["listwise_temperature"] or 1.0,
+        )
+        (loss * weight).backward()
+        total += loss.item() * weight
+    return total
+
+
 def evaluate(model, held: Sets, where: str, batch_size: int) -> dict:
-    """The held-out read: the distillation loss, and the two things it is for."""
+    """The held-out read: the distillation loss, and the two things it is for.
+
+    The top-pick agreement is broken out by set kind, because the corpus now holds
+    two populations. The **hard** figure is the one that resembles what a
+    production colorize really asks; the uniform one says whether teaching the
+    fine question cost the coarse one.
+    """
     import numpy
     import torch
 
@@ -291,9 +396,15 @@ def evaluate(model, held: Sets, where: str, batch_size: int) -> dict:
         for index in range(len(sets))
         if (value := metrics.spearman(ours[index], theirs[index])) is not None
     ]
+    by_kind = {}
+    for kind in ("hard", "uniform"):
+        picked = [index for index, entry in enumerate(sets) if entry.get("kind") == kind]
+        if picked:
+            by_kind[kind] = float(numpy.mean([agreements[index] for index in picked]))
     return {
         "loss": float((centred * centred).mean(axis=1).mean()),
         "top_pick_agreement": float(numpy.mean(agreements)),
+        "top_pick_by_kind": by_kind,
         "median_spearman": float(numpy.median(correlations)) if correlations else None,
         "sets": len(sets),
     }
@@ -304,6 +415,7 @@ def run(
     epochs: int | None = None,
     seed: int | None = None,
     run_name: str | None = None,
+    listwise: float | None = None,
     log=train.say,
 ) -> dict:
     """Train one palette head, and write its checkpoints and records."""
@@ -314,6 +426,15 @@ def run(
         recipe["epochs"] = int(epochs)
     if seed is not None:
         recipe["seed"] = int(seed)
+    if listwise is not None:
+        recipe["listwise"] = float(listwise)
+    if recipe["listwise"]:
+        recipe["listwise_temperature"] = _temperature()
+        if recipe["listwise_temperature"] is None:
+            raise TrainingError(
+                "the listwise arm reads its temperature off the corpus's split record and "
+                "that record does not carry one — relabel the corpus before training with it."
+            )
 
     where = train.device_of(device)
     train.set_seed(int(recipe["seed"]))
@@ -337,7 +458,8 @@ def run(
     )
 
     clock = time.time()
-    examples, held = Sets(training), Sets(holdout)
+    cache = palette_corpus.cache_dir() / "decoded"
+    examples, held = Sets(training, cache), Sets(holdout, cache)
     log(f"decoded {len(examples) + len(held)} sets in {time.time() - clock:.1f}s")
 
     directory = head_dir(run_name)
@@ -345,35 +467,34 @@ def run(
     lock = train.claim(directory)
     try:
         best_metric, best_state, best_epoch, history = float("inf"), None, -1, []
+        best_read: dict = {}
         began = time.time()
         stale = 0
         shuffler = torch.Generator().manual_seed(int(recipe["seed"]))
+        piece_sets = recipe["microbatch_sets"]
         for epoch in range(recipe["epochs"]):
             model.train()
             clock, running, seen = time.time(), 0.0, 0
             order = torch.randperm(len(examples), generator=shuffler).tolist()
             for start in range(0, len(order), recipe["batch_sets"]):
                 indices = order[start : start + recipe["batch_sets"]]
-                pictures, scores = examples.batch(indices, where, epoch=epoch)
-                flat = pictures.view(-1, *pictures.shape[2:])
                 optimizer.zero_grad(set_to_none=True)
-                predicted = model(flat).view(len(indices), examples.width)
-                loss = palette_head.set_loss(predicted, scores)
-                loss.backward()
+                batch_loss = accumulate(model, examples, indices, where, recipe, epoch, piece_sets)
                 torch.nn.utils.clip_grad_norm_(model.parameters(), recipe["grad_clip"])
                 optimizer.step()
-                running += loss.item() * len(indices)
+                running += batch_loss * len(indices)
                 seen += len(indices)
             if any(not torch.isfinite(parameter).all() for parameter in model.parameters()):
                 raise TrainingError(f"the head went non-finite at epoch {epoch}")
 
-            read = evaluate(model, held, where, recipe["batch_sets"] * 2)
+            read = evaluate(model, held, where, piece_sets)
             record = {
                 "epoch": epoch,
                 "loss": running / max(seen, 1),
                 "seconds": round(time.time() - clock, 1),
                 "holdout_loss": read["loss"],
                 "holdout_top_pick_agreement": read["top_pick_agreement"],
+                "holdout_top_pick_by_kind": read["top_pick_by_kind"],
                 "holdout_median_spearman": read["median_spearman"],
             }
             history.append(record)
@@ -381,11 +502,13 @@ def run(
                 f"epoch {epoch:2d}  loss {record['loss']:.4f}  "
                 f"held out {read['loss']:.4f}  "
                 f"top-1 {read['top_pick_agreement']:.3f}  "
+                f"hard {train.shown(read['top_pick_by_kind'].get('hard'))}  "
                 f"rho {train.shown(read['median_spearman'])}  ({record['seconds']}s)"
             )
 
             if read["loss"] < best_metric:
                 best_metric, best_epoch, stale = read["loss"], epoch, 0
+                best_read = read
                 best_state = {
                     key: value.detach().cpu().clone() for key, value in model.state_dict().items()
                 }
@@ -417,6 +540,7 @@ def run(
             "seed": palette_corpus.SEED,
             "sets": len(training) + len(holdout),
             "candidates_per_set": len(training[0]["candidates"]),
+            "hard_sets": sum(1 for entry in training + holdout if entry.get("kind") == "hard"),
         },
         "precision": "fp32",
     }
@@ -432,6 +556,15 @@ def run(
         "best_epoch": best_epoch,
         "best_holdout_loss": best_metric,
         "selection_metric": "held-out distillation loss (minimized)",
+        "listwise": recipe["listwise"],
+        "listwise_temperature": recipe["listwise_temperature"],
+        # The arm statistic, at the epoch the selection rule chose. This is what
+        # decides whether the listwise term ships, and it is a held-out number.
+        "arm": {
+            "holdout_top_pick_agreement": best_read.get("top_pick_agreement"),
+            "holdout_top_pick_by_kind": best_read.get("top_pick_by_kind"),
+            "holdout_median_spearman": best_read.get("median_spearman"),
+        },
         "sets": {"train": len(training), "holdout": len(holdout)},
         "history": history,
         "checkpoints": {
@@ -446,6 +579,12 @@ def run(
         json.dumps(record, indent=2, default=str) + "\n", encoding="utf-8", newline="\n"
     )
     return record
+
+
+def _temperature() -> float | None:
+    """The listwise term's scale, read off the corpus rather than chosen here."""
+    document = json.loads(palette_corpus.split_path().read_text(encoding="utf-8"))
+    return document.get("listwise_temperature")
 
 
 def _teacher_note() -> dict:
@@ -466,6 +605,7 @@ __all__ = [
     "SCHEMA",
     "Sets",
     "TrainingError",
+    "accumulate",
     "checkpoint_path",
     "config_path",
     "evaluate",
