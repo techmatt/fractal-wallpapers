@@ -3,13 +3,13 @@
 ## The recipe is the teacher's; the loss is not
 
 Everything that decides *how* the model learns — the two learning rates, the
-decay, sixteen sets to a batch, forty epochs, a patience of eight, the seed — is
-read out of the teacher's own committed config and carried unchanged. That is
+decay, sixteen sets to a batch, forty epochs, the seed — is read out of the
+teacher's own committed config and carried unchanged. That is
 what makes the resulting head comparable to it at all: this repository is already
 changing the corpus, the renderer and the colormap library, and a knob that
 drifted alongside them would be measured as if it were one of them.
 
-Two things move, and both are forced by what distillation *is*:
+Three things move. Two are forced by what distillation *is*:
 
 * **The objective.** The teacher learned from human tiers, through a
   margin-ranking hinge over cross-tier pairs — the only thing a tier ordering
@@ -26,7 +26,12 @@ Two things move, and both are forced by what distillation *is*:
   locations the run never trained on. It is minimized only at the teacher's own
   centred scores, so it sees the scale as well as the order.
 
-That second change is the same one the finished-render judges were forced into,
+The third is the teacher's early stop, and it was dropped after being measured
+rather than on principle: the objective it would watch here moves by a factor of
+four between adjacent epochs of a perfectly healthy run, so a patience of eight
+is a coin toss rather than a stopping rule. [`INHERITANCE`] carries the numbers.
+
+The second change is the same one the finished-render judges were forced into,
 for the same reason and after a rank statistic there had already selected a
 broken checkpoint. It is not a coincidence: a selection rule that cannot see the
 quantity the head exists to emit will eventually pick a head that gets that
@@ -74,7 +79,10 @@ RECIPE = {
     "pretrained": True,
     "geometry": "squash",
     "epochs": 40,
-    "patience": 8,
+    # No early stop. See [`INHERITANCE`]: the teacher's patience of 8 is the one
+    # inherited value that had to go, because the objective it would be watching
+    # here moves by a factor of four between adjacent epochs.
+    "patience": None,
     "batch_sets": 16,
     "backbone_lr": 1e-4,
     "head_lr": 1e-3,
@@ -95,7 +103,7 @@ RECIPE = {
     ),
 }
 
-#: What the recipe inherited from the teacher, and the three things it did not.
+#: What the recipe inherited from the teacher, and the four things it did not.
 INHERITANCE = {
     "source": (
         "the teacher's own config, embedded in its checkpoint and resolved through the "
@@ -111,7 +119,6 @@ INHERITANCE = {
         "head_lr",
         "interpolation",
         "mean",
-        "patience",
         "pretrained",
         "seed",
         "std",
@@ -137,6 +144,20 @@ INHERITANCE = {
             "student that keeps the teacher's order while flattening its gaps from one that "
             "reproduces both. The distillation loss is a proper scoring rule for the vector "
             "being distilled.",
+        },
+        {
+            "key": "patience",
+            "was": "8 epochs without an improvement in the selection objective",
+            "now": "none — every run takes all 40 epochs",
+            "why": "MEASURED, not assumed. The teacher's objective was a pair-direction "
+            "accuracy over 200 validation queries, which moves smoothly; this one is a "
+            "squared error over 120 held-out sets and it moves by a FACTOR OF FOUR between "
+            "adjacent epochs of a healthy run — seed 0 read 1.52, 1.52, 2.63, 1.76 across "
+            "epochs 30 to 33. A patience of 8 on a signal that noisy is not an early stop, "
+            "it is a coin toss: at the first attempt it cut seed 2 off at epoch 12 on a "
+            "lucky epoch-4 reading of 2.82, while the two seeds that survived reached 1.52. "
+            "The epoch is chosen on the held-out loss either way, so patience was only ever "
+            "saving time, and a full run of this head is three minutes.",
         },
         {
             "key": "split",
@@ -368,7 +389,7 @@ def run(
                 best_state = {
                     key: value.detach().cpu().clone() for key, value in model.state_dict().items()
                 }
-            else:
+            elif recipe["patience"] is not None:
                 stale += 1
                 if stale >= recipe["patience"]:
                     log(f"early stop: no held-out improvement for {recipe['patience']} epochs")
