@@ -77,6 +77,52 @@ def oklab(rgb):
     )
 
 
+def srgb(lab):
+    """Oklab `[..., 3]` back to sRGB `[..., 3]` on the 0–255 scale, clipped.
+
+    The inverse of [`oklab`] and on the same scale it reads, so the two compose:
+    `oklab(srgb(lab))` is `lab` for any colour inside the gamut.
+
+    Here rather than in the module that needs it, because a second copy of
+    Ottosson's matrices is how two parts of one repository come to disagree about
+    what a colour is. The autolevel operator pushes a tone curve through a
+    colormap's stops in this space and has to come back out of it.
+
+    **The clip is not a gamut fit.** A lightness the curve moved may leave the
+    sRGB cube, and clipping each channel independently rotates hue *and* moves
+    lightness — the one axis the curve exists to control. So the caller asks
+    whether a colour survived the round trip and pulls its chroma back if it did
+    not; this function just does the arithmetic and says what it did.
+    """
+    import numpy
+
+    lab = numpy.asarray(lab, dtype=numpy.float64)
+    lightness, green_red, blue_yellow = lab[..., 0], lab[..., 1], lab[..., 2]
+    long = (lightness + 0.3963377774 * green_red + 0.2158037573 * blue_yellow) ** 3
+    medium = (lightness - 0.1055613458 * green_red - 0.0638541728 * blue_yellow) ** 3
+    short = (lightness - 0.0894841775 * green_red - 1.2914855480 * blue_yellow) ** 3
+    linear = numpy.stack(
+        [
+            +4.0767416621 * long - 3.3077115913 * medium + 0.2309699292 * short,
+            -1.2684380046 * long + 2.6097574011 * medium - 0.3413193965 * short,
+            -0.0041960863 * long - 0.7034186147 * medium + 1.7076147010 * short,
+        ],
+        axis=-1,
+    )
+    return numpy.clip(_linear_to_srgb(linear), 0.0, 1.0) * 255.0
+
+
+def _linear_to_srgb(channel):
+    import numpy
+
+    channel = numpy.asarray(channel, dtype=numpy.float64)
+    return numpy.where(
+        channel <= 0.0031308,
+        channel * 12.92,
+        1.055 * numpy.abs(channel) ** (1.0 / 2.4) - 0.055,
+    )
+
+
 def ramp(name: str):
     """One map's stops as `(positions, sRGB8)`, read from the tracked library."""
     path = colormap_dir() / f"{name}.json"
@@ -194,6 +240,7 @@ __all__ = [
     "oklab",
     "ramp",
     "spent",
+    "srgb",
     "table",
     "tightness",
 ]

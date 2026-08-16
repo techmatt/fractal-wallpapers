@@ -1,0 +1,234 @@
+{
+  "schema": 1,
+  "run": "release_v1",
+  "seconds": 461.1,
+  "counts": {
+    "found": 184,
+    "above_junk_floor": 44,
+    "above_good_floor": 35,
+    "unscored": 0,
+    "attempts_planned": 24,
+    "attempts_made": 24,
+    "attempts_scored": 24,
+    "attempts_failed": 0,
+    "selected": 6,
+    "released": 6,
+    "requested": 6
+  },
+  "supply": {
+    "size": 184,
+    "ledgers": 5,
+    "per_ledger": {
+      "artifacts/walk/walk.jsonl": 0,
+      "artifacts/walk_demo/walk.jsonl": 124,
+      "artifacts/walk_j/walk.jsonl": 23,
+      "artifacts/walk_m/walk.jsonl": 26,
+      "artifacts/walk_t/walk.jsonl": 11
+    },
+    "location_overlaps": 1,
+    "overlap_sample": [
+      "artifacts/walk_demo/walk.jsonl vs artifacts/walk_m/walk.jsonl"
+    ],
+    "unkeyed_rows": 0,
+    "junk_floor": 0.2,
+    "good_floor": 0.5,
+    "found_by_partition": {
+      "julia:mandelbrot": 34,
+      "mandelbrot": 150
+    },
+    "passing_by_partition": {
+      "julia:mandelbrot": 28,
+      "mandelbrot": 16
+    },
+    "good_by_partition": {
+      "julia:mandelbrot": 27,
+      "mandelbrot": 8
+    },
+    "found": 184,
+    "passing": 44,
+    "good": 35,
+    "unscored": 0
+  },
+  "budget": {
+    "attempt_multiplier": 4,
+    "attempt_budget": null,
+    "head_slots": {
+      "smooth_render": 3,
+      "strange_render": 3
+    },
+    "head_want": {
+      "smooth_render": 12,
+      "strange_render": 12
+    },
+    "scaled_to_budget": false,
+    "head_attempts": {
+      "smooth_render": 12,
+      "strange_render": 12
+    },
+    "seated_slots": {
+      "smooth_render": {
+        "julia:mandelbrot": 1,
+        "mandelbrot": 2
+      },
+      "strange_render": {
+        "julia:mandelbrot": 1,
+        "mandelbrot": 2
+      }
+    },
+    "guaranteed": [
+      "julia:mandelbrot",
+      "mandelbrot"
+    ],
+    "guarantee_head": {
+      "julia:mandelbrot": "smooth_render",
+      "mandelbrot": "strange_render"
+    },
+    "guarantee_unplaced": [],
+    "planned_by_partition": {
+      "smooth_render": {
+        "julia:mandelbrot": 4,
+        "mandelbrot": 8
+      },
+      "strange_render": {
+        "julia:mandelbrot": 4,
+        "mandelbrot": 8
+      }
+    },
+    "planned": 24,
+    "supply_short_by_partition": {},
+    "supply_short": 0,
+    "scheduled": 24,
+    "supply_partitions": {
+      "julia:mandelbrot": 28,
+      "mandelbrot": 16
+    },
+    "prefix_deviation": 0.667
+  },
+  "realized_fills": {
+    "smooth_render": {
+      "julia:mandelbrot": 4,
+      "mandelbrot": 8
+    },
+    "strange_render": {
+      "julia:mandelbrot": 4,
+      "mandelbrot": 8
+    }
+  },
+  "selection": {
+    "requested": 6,
+    "strange_share_target": 0.5,
+    "head_slots": {
+      "smooth_render": 3,
+      "strange_render": 3
+    },
+    "head_eligible": {
+      "smooth_render": 12,
+      "strange_render": 12
+    },
+    "head_selected": {
+      "smooth_render": 3,
+      "strange_render": 3
+    },
+    "partition_slots": {
+      "smooth_render": {
+        "julia:mandelbrot": 1,
+        "mandelbrot": 2
+      },
+      "strange_render": {
+        "julia:mandelbrot": 1,
+        "mandelbrot": 2
+      }
+    },
+    "emit_caps": {
+      "julia:mandelbrot": 7,
+      "mandelbrot": 4
+    },
+    "cluster_cap": 2,
+    "cluster_cap_skips": 0,
+    "guarantee": {
+      "owed": {
+        "julia:mandelbrot": "smooth_render",
+        "mandelbrot": "strange_render"
+      },
+      "unplaced": [],
+      "slots_taken": 2
+    },
+    "short_by": 0
+  },
+  "release": {
+    "rows": 6,
+    "workers": 3,
+    "engine_threads": 7,
+    "fell_back_serial": 0,
+    "seconds": 454.2,
+    "row_seconds": 926.8,
+    "reused": 0,
+    "geometry": {
+      "resolution": [
+        2560,
+        1440
+      ],
+      "supersample": 4
+    }
+  },
+  "cuts": {
+    "acting": {
+      "junk_floor": {
+        "value": 0.2,
+        "head": "location",
+        "where": "intake, the colorize draw"
+      },
+      "good_floor": {
+        "value": 0.5,
+        "head": "location",
+        "where": "the slot guarantee's trigger",
+        "owner": "supply.currency.GOOD_FLOOR \u2014 re-exported, never restated"
+      }
+    },
+    "advisory": {
+      "render heads": 0.5
+    },
+    "caps": {
+      "thin_supply_divisor": 4,
+      "cluster_cap": 2,
+      "attempt_multiplier": 4
+    }
+  },
+  "config": {
+    "seed": 0,
+    "strange_share": 0.5,
+    "candidates_per_set": 32,
+    "colorize_geometry": {
+      "resolution": [
+        640,
+        360
+      ],
+      "supersample": 2
+    },
+    "release_geometry": {
+      "resolution": [
+        2560,
+        1440
+      ],
+      "supersample": 4
+    },
+    "autolevel": {
+      "switch": "on"
+    },
+    "heads": {
+      "location": "4b60deb935314cf7",
+      "palette": "d7edc31cbaa4f9e9",
+      "smooth_render": "c0ac536d0979713a",
+      "strange_render": "79201d0c5eeba307"
+    }
+  },
+  "records": {
+    "durable": true,
+    "root": "C:\\Code\\fractal-wallpapers\\data\\curation",
+    "gate": "C:\\Code\\fractal-wallpapers\\data\\curation\\gate.jsonl (+0)",
+    "release": "C:\\Code\\fractal-wallpapers\\data\\curation\\release.jsonl (+0)",
+    "population": "C:\\Code\\fractal-wallpapers\\data\\curation\\runs.jsonl"
+  },
+  "sheet": "C:\\Code\\fractal-wallpapers\\artifacts\\curation\\runs\\release_v1\\release_sheet_release_v1.html",
+  "run_dir": "C:\\Code\\fractal-wallpapers\\artifacts\\curation\\runs\\release_v1"
+}

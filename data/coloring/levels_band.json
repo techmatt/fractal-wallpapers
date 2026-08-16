@@ -1,0 +1,381 @@
+{
+  "schema": 1,
+  "what": "The tone band the autolevel operator projects a render onto, read off a reference set of finished wallpapers. A render whose three statistics all sit inside these bands is left EXACTLY untouched.",
+  "source": "LevelsCheck, read only, 48 pictures",
+  "source_digest": "50ef1affa2fae2868a029e1f8aa44af3b5ad4834e32934e3e700a90463a5144b",
+  "n_images": 48,
+  "band_percentiles": [
+    10.0,
+    90.0
+  ],
+  "band_choice": "[P10, P90] across images keeps the middle 80% of a set already judged good. The inter-quartile range beside it calls one reference image in four out of range; the min-max is one image's opinion at each edge. Stated, not derived \u2014 the sensitivity is in this record.",
+  "definitions": {
+    "black_pt": "P0.5 of Oklab L over NEUTRAL pixels (chroma <= 0.06); null when the chroma guard declares it unmeasurable (neutral share < 0.05, or a neutral black more than 0.10 above the all-pixel black)",
+    "white_pt": "P99.5 of Oklab L, every pixel",
+    "mid": "median Oklab L over the structure mask (L > 0.04)"
+  },
+  "measured_by": "coloring.autolevel.tone_stats \u2014 the operator's own measurement",
+  "derived": "2026-08-15",
+  "bands": {
+    "black_pt": {
+      "n": 43,
+      "band": [
+        0.0,
+        0.3008176686683185
+      ],
+      "median": 0.07312981474595805,
+      "iqr": [
+        0.019136568037676733,
+        0.14486991168442304
+      ],
+      "minmax": [
+        0.0,
+        0.48892889769638587
+      ]
+    },
+    "white_pt": {
+      "n": 48,
+      "band": [
+        0.8629886965307019,
+        0.9960350764349456
+      ],
+      "median": 0.973971615323814,
+      "iqr": [
+        0.9266932921110955,
+        0.99083662891165
+      ],
+      "minmax": [
+        0.6741266569615412,
+        0.9999999934735462
+      ]
+    },
+    "mid": {
+      "n": 48,
+      "band": [
+        0.2663290436868155,
+        0.7380826210003913
+      ],
+      "median": 0.5145452046064325,
+      "iqr": [
+        0.3723720508617169,
+        0.6734484437054483
+      ],
+      "minmax": [
+        0.12416161165516702,
+        0.8634181451182625
+      ]
+    }
+  },
+  "black_unmeasurable": [
+    {
+      "image": "command-of-empire-25.jpg",
+      "why": "chromatic dark tail (neutral black 0.531 vs all 0.178)"
+    },
+    {
+      "image": "dolphin-dance-25.jpg",
+      "why": "neutral pixels 0.041 < 0.05"
+    },
+    {
+      "image": "glowdon.jpg",
+      "why": "neutral pixels 0.028 < 0.05"
+    },
+    {
+      "image": "orbits-25.jpg",
+      "why": "neutral pixels 0.004 < 0.05"
+    },
+    {
+      "image": "purple-gourds-25.jpg",
+      "why": "neutral pixels 0.044 < 0.05"
+    }
+  ],
+  "per_image": [
+    {
+      "image": "103489.jpg",
+      "black_pt": 0.042201498685263905,
+      "white_pt": 0.9906603929188047,
+      "mid": 0.6384711704755888
+    },
+    {
+      "image": "A.png",
+      "black_pt": 0.15862554516499555,
+      "white_pt": 0.9932187616465485,
+      "mid": 0.6733527599314463
+    },
+    {
+      "image": "alina-25.jpg",
+      "black_pt": 0.19310221419908327,
+      "white_pt": 0.8650588431116032,
+      "mid": 0.43540794200564836
+    },
+    {
+      "image": "B.png",
+      "black_pt": 0.12852087168252477,
+      "white_pt": 0.9964713443303543,
+      "mid": 0.6518895717982376
+    },
+    {
+      "image": "brisbee.jpg",
+      "black_pt": 0.41977102463916877,
+      "white_pt": 0.944155604047904,
+      "mid": 0.6854639009310672
+    },
+    {
+      "image": "carnival-25.jpg",
+      "black_pt": 0.16334008633361521,
+      "white_pt": 0.9223912192769207,
+      "mid": 0.4137809120100301
+    },
+    {
+      "image": "clokette.jpg",
+      "black_pt": 0.06318755545393077,
+      "white_pt": 0.9958481044797705,
+      "mid": 0.5578517263924226
+    },
+    {
+      "image": "command-of-empire-25.jpg",
+      "black_pt": null,
+      "white_pt": 0.9701757163497833,
+      "mid": 0.49122491746249497
+    },
+    {
+      "image": "commons_Kalles_Fraktaler_adventurous-forest_00024_1.17e222.jpg",
+      "black_pt": 0.058228741118315414,
+      "white_pt": 0.9859195842072777,
+      "mid": 0.5536052589344962
+    },
+    {
+      "image": "commons_Mandelbrot_3_Xo_C3_A1y_B_C3_A1nh_Ng_E1_BB_8Dt.jpg",
+      "black_pt": 0.48892889769638587,
+      "white_pt": 0.9970251851547624,
+      "mid": 0.7994168295689669
+    },
+    {
+      "image": "commons_Mandelbrot_5__E1_BB_90c_D_C3_A3y_B_C3_B4ng.png",
+      "black_pt": 0.0,
+      "white_pt": 0.9076756474944601,
+      "mid": 0.48701900950898047
+    },
+    {
+      "image": "commons_Mandelbrot_6_R_E1_BB_ABng_Nhi_E1_BB_87t__C4_90_E1_BB_9Bi.png",
+      "black_pt": 0.0,
+      "white_pt": 0.9749482737356874,
+      "mid": 0.8568566163155759
+    },
+    {
+      "image": "commons_Mandelbrot_Hai__E1_BB_90c_M_E1_BB_8Bn.png",
+      "black_pt": 0.0,
+      "white_pt": 0.9907592063374286,
+      "mid": 0.6737354950274543
+    },
+    {
+      "image": "council.jpg",
+      "black_pt": 0.24853922928226788,
+      "white_pt": 0.9625681053147951,
+      "mid": 0.6950657548334276
+    },
+    {
+      "image": "crisis-25.jpg",
+      "black_pt": 0.11959421316640795,
+      "white_pt": 0.9267867607835507,
+      "mid": 0.5105334393988195
+    },
+    {
+      "image": "D.png",
+      "black_pt": 0.05766873408674573,
+      "white_pt": 0.9860490093324911,
+      "mid": 0.5178890368318249
+    },
+    {
+      "image": "delicacy.jpg",
+      "black_pt": 0.3115522066567777,
+      "white_pt": 0.9999999934735462,
+      "mid": 0.7566146264730949
+    },
+    {
+      "image": "dolphin-dance-25.jpg",
+      "black_pt": null,
+      "white_pt": 0.954468693302008,
+      "mid": 0.4497770089636465
+    },
+    {
+      "image": "E.png",
+      "black_pt": 0.11590680858631397,
+      "white_pt": 0.9208148795522433,
+      "mid": 0.5112013723810402
+    },
+    {
+      "image": "echoes-of-the-mind-25.jpg",
+      "black_pt": 0.1311142782038505,
+      "white_pt": 0.9001196942508949,
+      "mid": 0.5284378640367231
+    },
+    {
+      "image": "F.png",
+      "black_pt": 0.09664393146699382,
+      "white_pt": 0.9800153450605958,
+      "mid": 0.7020731070660425
+    },
+    {
+      "image": "forgery-25.jpg",
+      "black_pt": 0.06327550400622078,
+      "white_pt": 0.9854737332359105,
+      "mid": 0.8066735441199921
+    },
+    {
+      "image": "freedor.jpg",
+      "black_pt": 0.0,
+      "white_pt": 0.9666526673786314,
+      "mid": 0.29681117099559345
+    },
+    {
+      "image": "G.png",
+      "black_pt": 0.0,
+      "white_pt": 0.9006733533519174,
+      "mid": 0.49139361782752977
+    },
+    {
+      "image": "glowdon.jpg",
+      "black_pt": null,
+      "white_pt": 0.9934567488821188,
+      "mid": 0.6677127154512039
+    },
+    {
+      "image": "golden-egg-closeup-25.jpg",
+      "black_pt": 0.098177669654897,
+      "white_pt": 0.9869708750510506,
+      "mid": 0.5335522768166489
+    },
+    {
+      "image": "heat-wave-25.jpg",
+      "black_pt": 0.0,
+      "white_pt": 0.8581583545085988,
+      "mid": 0.21268354098860018
+    },
+    {
+      "image": "ivory-and-lace-25.jpg",
+      "black_pt": 0.4484947836460489,
+      "white_pt": 0.9964713443303543,
+      "mid": 0.8634181451182625
+    },
+    {
+      "image": "kirin-25.jpg",
+      "black_pt": 0.11260925546524807,
+      "white_pt": 0.979486052682272,
+      "mid": 0.32359494513543446
+    },
+    {
+      "image": "krinshinda.jpg",
+      "black_pt": 0.06699070340762249,
+      "white_pt": 0.9889025934980429,
+      "mid": 0.2984027052880868
+    },
+    {
+      "image": "lander.jpg",
+      "black_pt": 0.0,
+      "white_pt": 0.9372198566958614,
+      "mid": 0.14893400488249192
+    },
+    {
+      "image": "limelon.jpg",
+      "black_pt": 0.25853452067271054,
+      "white_pt": 0.9913002893853061,
+      "mid": 0.730140332940661
+    },
+    {
+      "image": "mardeline.jpg",
+      "black_pt": 0.05766873408674573,
+      "white_pt": 0.9530432815308398,
+      "mid": 0.310594173845068
+    },
+    {
+      "image": "orbits-25.jpg",
+      "black_pt": null,
+      "white_pt": 0.8363008865193627,
+      "mid": 0.3503790436909196
+    },
+    {
+      "image": "purple-gourds-25.jpg",
+      "black_pt": null,
+      "white_pt": 0.6741266569615412,
+      "mid": 0.3107907246699958
+    },
+    {
+      "image": "raishine.jpg",
+      "black_pt": 0.0,
+      "white_pt": 0.9710230350032936,
+      "mid": 0.6933583925632165
+    },
+    {
+      "image": "reciprocal-25.jpg",
+      "black_pt": 0.09148788404309494,
+      "white_pt": 0.9821176331531959,
+      "mid": 0.5078953922450585
+    },
+    {
+      "image": "rolling.jpg",
+      "black_pt": 0.0,
+      "white_pt": 0.9925307556090619,
+      "mid": 0.6834771920692654
+    },
+    {
+      "image": "sevenfold-sapphire-25.jpg",
+      "black_pt": 0.16717133335541107,
+      "white_pt": 0.8167332353160396,
+      "mid": 0.3828869474670855
+    },
+    {
+      "image": "shadalu.jpg",
+      "black_pt": 0.042201498685263905,
+      "white_pt": 0.9599355771099667,
+      "mid": 0.3797030532519826
+    },
+    {
+      "image": "solipstic.jpg",
+      "black_pt": 0.0,
+      "white_pt": 0.9879143553370717,
+      "mid": 0.49782357084271617
+    },
+    {
+      "image": "triglandal.jpg",
+      "black_pt": 0.0,
+      "white_pt": 0.9936352704378597,
+      "mid": 0.6290569962160643
+    },
+    {
+      "image": "twilight-ascending-25.jpg",
+      "black_pt": 0.038273136075353466,
+      "white_pt": 0.8081710726609598,
+      "mid": 0.20860132036942702
+    },
+    {
+      "image": "undula.jpg",
+      "black_pt": 0.10716936131663875,
+      "white_pt": 0.9910688966343142,
+      "mid": 0.5884190332656412
+    },
+    {
+      "image": "valhalla.jpg",
+      "black_pt": 0.06761090862845648,
+      "white_pt": 0.9992443344077501,
+      "mid": 0.2604901718211789
+    },
+    {
+      "image": "wallhaven_wallhaven-1joljg.png",
+      "black_pt": 0.07312981474595805,
+      "white_pt": 0.9264128860937301,
+      "mid": 0.12416161165516702
+    },
+    {
+      "image": "wallhaven_wallhaven-47k2py.jpg",
+      "black_pt": 0.3113884556672202,
+      "white_pt": 0.9617829325686298,
+      "mid": 0.536576146825449
+    },
+    {
+      "image": "wallhaven_wallhaven-8xz1mk.jpg",
+      "black_pt": 0.10514046736305982,
+      "white_pt": 0.9729949569119406,
+      "mid": 0.26883141734351684
+    }
+  ]
+}
