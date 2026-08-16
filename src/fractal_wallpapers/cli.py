@@ -418,13 +418,13 @@ def derive_prices(args: argparse.Namespace) -> int:
             # The summary is written when a run finishes, so its presence is what
             # says the run reached an end. A checkpoint holds the same counters
             # mid-flight and would price a partial population as a whole one.
-            print(f"{summary} is missing — that run has not finished; state.json is not a")
+            print(f"{summary} is missing - that run has not finished; state.json is not a")
             print("substitute, it would price a partial population as a whole one.")
             return 1
         document = json.loads(summary.read_text(encoding="utf-8"))
         cost = ((document.get("quota") or {}).get("cost")) or {}
         if not cost:
-            print(f"{summary} carries no cost block — nothing to derive a price table from")
+            print(f"{summary} carries no cost block - nothing to derive a price table from")
             return 1
         blocks.append(cost)
         sources.append({"name": run_dir.name, "path": str(run_dir)})
@@ -456,7 +456,7 @@ def derive_prices(args: argparse.Namespace) -> int:
         print(f"wrote {out}")
     else:
         print(json.dumps(table, indent=2))
-        print("(dry run — pass --write to replace the shipped table)")
+        print("(dry run - pass --write to replace the shipped table)")
     return 0
 
 
@@ -474,7 +474,7 @@ def derive_tau_h(args: argparse.Namespace) -> int:
         print(f"wrote {out}")
     else:
         print(json.dumps(table, indent=2))
-        print("(dry run — pass --write to replace the shipped table)")
+        print("(dry run - pass --write to replace the shipped table)")
     return 0
 
 
@@ -603,7 +603,7 @@ def label_split(args: argparse.Namespace) -> int:
         print(f"wrote {members} and {recipe}")
     print(json.dumps(drawn.recipe(), indent=2))
     if not args.write:
-        print("(dry run — pass --write to ship it)")
+        print("(dry run - pass --write to ship it)")
     return 0
 
 
@@ -1090,6 +1090,155 @@ def import_finished(args: argparse.Namespace) -> int:
     return 0
 
 
+def coloring_derive_band(args: argparse.Namespace) -> int:
+    """Measure a reference set of finished wallpapers and derive the tone band."""
+    from fractal_wallpapers.coloring import band
+
+    try:
+        record = band.derive(Path(args.source))
+    except band.BandError as refusal:
+        print(refusal)
+        return 1
+    if args.write:
+        print(f"wrote {band.write(record)}")
+    printable = {key: value for key, value in record.items() if key != "per_image"}
+    print(json.dumps(printable, indent=2))
+    if not args.write:
+        print("(dry run - pass --write to replace the shipped band)")
+    return 0
+
+
+def coloring_show(args: argparse.Namespace) -> int:
+    """Print the operator's switch and the band it is projecting onto."""
+    from fractal_wallpapers.coloring import autolevel, band
+
+    del args
+    try:
+        record = band.load()
+    except band.BandError as refusal:
+        print(refusal)
+        return 1
+    print(
+        f"{autolevel.OPERATOR} · switch {'ON' if autolevel.enabled() else 'OFF'} "
+        f"(default {autolevel.SWITCH_DEFAULT}, {autolevel.SWITCH_ENV}="
+        f"{__import__('os').environ.get(autolevel.SWITCH_ENV)!r})"
+    )
+    print(
+        f"band {record['_path']} · {record['n_images']} images · derived {record['derived']} "
+        f"· sha256 {record['_sha256'][:16]}"
+    )
+    for name, edges in band.bands(record).items():
+        print(f"  {name:<10} [{edges[0]:.4f}, {edges[1]:.4f}]")
+    return 0
+
+
+def curate_score(args: argparse.Namespace) -> int:
+    """Read the harvest ledgers through the location head, into curation's sidecar."""
+    from fractal_wallpapers.curation import intake
+
+    try:
+        report = intake.score(
+            [resolve_output(p) for p in args.ledger] if args.ledger else None,
+            device=args.device,
+            limit=args.limit,
+        )
+    except intake.IntakeError as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps(report, indent=2))
+    return 0
+
+
+def curate_plan(args: argparse.Namespace) -> int:
+    """Print the offer and the budget it implies, making no picture."""
+    from fractal_wallpapers.curation import budget, floors, intake
+
+    ledgers = [resolve_output(p) for p in args.ledger] if args.ledger else None
+    try:
+        offer, supply = intake.ranked(ledgers)
+    except intake.IntakeError as refusal:
+        print(refusal)
+        return 1
+    claims = intake.guaranteed(supply)
+    plan, record = budget.plan(
+        offer, args.n, args.strange_share, budget=args.attempts, guarantees=claims
+    )
+    print(
+        json.dumps(
+            {
+                "cuts": floors.summary(),
+                "supply": supply,
+                "lines": intake.supply_lines(supply),
+                "emit_caps": intake.emit_caps(offer),
+                "guaranteed": claims,
+                "budget": record,
+                "attempts": [
+                    {"head": a.head, "partition": a.partition, "rank": a.rank} for a in plan
+                ],
+            },
+            indent=2,
+        )
+    )
+    return 0
+
+
+def curate_run(args: argparse.Namespace) -> int:
+    """Make a release: colorize, select, render at full resolution, record it all."""
+    from fractal_wallpapers.curation import intake, records
+    from fractal_wallpapers.curation import run as run_module
+
+    try:
+        summary = run_module.curate(
+            run=args.run,
+            n=args.n,
+            seed=args.seed,
+            strange_share=args.strange_share,
+            attempts=args.attempts,
+            workers=args.workers,
+            ephemeral=args.ephemeral,
+            ledgers=[resolve_output(p) for p in args.ledger] if args.ledger else None,
+            device=args.device,
+            skip_release=args.skip_release,
+        )
+    except (intake.IntakeError, records.NotIsolated) as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps(summary, indent=2))
+    return 0
+
+
+def curate_parity(args: argparse.Namespace) -> int:
+    """Render a real release plan both ways and compare the bytes."""
+    from fractal_wallpapers.curation import checks, records
+
+    if args.ephemeral:
+        records.use(records.scratch_root(args.run))
+    try:
+        report = checks.parity(args.run, rows=args.rows, workers=args.workers)
+    except checks.CheckError as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps(report, indent=2))
+    return 0 if report["held"] else 1
+
+
+def curate_replay(args: argparse.Namespace) -> int:
+    """Re-derive every released picture from its own record and compare the bytes."""
+    from fractal_wallpapers.curation import checks, records
+
+    if args.ephemeral:
+        records.use(records.scratch_root(args.run))
+    try:
+        report = checks.replay(args.run)
+    except (checks.CheckError, FileNotFoundError) as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps({key: report[key] for key in report if key != "detail"}, indent=2))
+    for row in report["detail"]:
+        print(f"  {row['candidate']}: {row.get('arm', 'no picture')} -> {row['verdict']}")
+    return 0 if report["held"] else 1
+
+
 def modes(args: argparse.Namespace) -> int:
     """List the named colorings and what each one is for.
 
@@ -1389,6 +1538,8 @@ def build_parser() -> argparse.ArgumentParser:
     render_commands(subcommands)
     head_commands(subcommands)
     palette_commands(subcommands)
+    coloring_commands(subcommands)
+    curate_commands(subcommands)
 
     bringing = subcommands.add_parser(
         "import-labels",
@@ -2018,6 +2169,167 @@ def head_commands(subcommands) -> None:
         "--force", action="store_true", help="ship a head whose acceptance read failed"
     )
     shipping.set_defaults(handler=head_ship)
+
+
+def coloring_commands(subcommands) -> None:
+    """The tone band, and the operator that projects onto it."""
+    colouring = subcommands.add_parser(
+        "coloring",
+        help="the tone band and the autolevel operator: show it, derive it",
+        description=(
+            "The autolevel operator pulls a render's tone onto a band of finished "
+            "wallpapers that are already good, or — when it is already inside the band — "
+            "leaves it exactly alone and hands back the render's own bytes."
+        ),
+    )
+    steps = colouring.add_subparsers(dest="step", required=True)
+
+    showing = steps.add_parser("show", help="print the switch and the band it projects onto")
+    showing.set_defaults(handler=coloring_show)
+
+    deriving = steps.add_parser(
+        "derive-band",
+        help="measure a reference set of finished wallpapers and derive the band",
+        description=(
+            "Reads a folder of finished wallpapers and writes the tracked band record. The "
+            "folder is only ever read, and what ships is the measurement plus the names it "
+            "was taken over — never a path. A re-derivation that moves an edge is a new band "
+            "and therefore a new decision, which is why it needs --write."
+        ),
+    )
+    deriving.add_argument(
+        "--from",
+        dest="source",
+        required=True,
+        help="a folder of finished wallpapers, read only",
+    )
+    deriving.add_argument("--write", action="store_true", help="write it; otherwise print it")
+    deriving.set_defaults(handler=coloring_derive_band)
+
+
+def curate_commands(subcommands) -> None:
+    """The last stage: harvest supply in, released wallpapers out."""
+    curating = subcommands.add_parser(
+        "curate",
+        help="make a release: score the supply, colorize, select, render at full size",
+        description=(
+            "The end-to-end path. `score` reads the harvest ledgers through the location "
+            "head into a sidecar this stage owns — the ledgers themselves are never "
+            "rewritten — `plan` prints the offer and the budget it implies without making a "
+            "picture, and `run` does the whole thing and records every decision."
+        ),
+    )
+    steps = curating.add_subparsers(dest="step", required=True)
+
+    def with_ledgers(parser):
+        parser.add_argument(
+            "--ledger", action="append", help="a walk ledger (repeatable; default: all of them)"
+        )
+        return parser
+
+    reading = with_ledgers(
+        steps.add_parser(
+            "score",
+            help="read the harvest ledgers through the location head",
+            description=(
+                "Renders each gate-surviving location's canonical view — the same picture a "
+                "deployed judge is handed — and scores it. Resumable in both halves: a view "
+                "already on disk is not re-rendered."
+            ),
+        )
+    )
+    reading.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
+    reading.add_argument("--limit", type=int, help="score only this many locations")
+    reading.set_defaults(handler=curate_score)
+
+    def with_shape(parser):
+        parser.add_argument("-n", type=int, default=6, help="release slots to fill (default: 6)")
+        parser.add_argument(
+            "--strange-share",
+            type=float,
+            default=0.5,
+            help="share of the slots the strange judge fills (default: 0.5)",
+        )
+        parser.add_argument(
+            "--attempts", type=int, help="cap the total colorize attempts; omit for the multiple"
+        )
+        return parser
+
+    planning = with_shape(
+        with_ledgers(
+            steps.add_parser(
+                "plan",
+                help="print the offer and the budget it implies, making nothing",
+            )
+        )
+    )
+    planning.set_defaults(handler=curate_plan)
+
+    running = with_shape(
+        with_ledgers(
+            steps.add_parser(
+                "run",
+                help="make a release and record every decision",
+                description=(
+                    "Full resolution is the expensive part — measure one before asking for "
+                    "many. Nothing is padded or backfilled: a judge that cannot fill its "
+                    "quota under the slot, supply and look caps ships fewer, and says so."
+                ),
+            )
+        )
+    )
+    running.add_argument("--run", required=True, help="the name this run's records carry")
+    running.add_argument("--seed", type=int, default=0, help="run seed (default: 0)")
+    running.add_argument(
+        "--workers",
+        type=int,
+        default=3,
+        help="worker processes for the full-resolution pass (1 is the serial path)",
+    )
+    running.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
+    running.add_argument(
+        "--ephemeral",
+        action="store_true",
+        help="redirect the WHOLE record store under scratch/. A rehearsal that writes the "
+        "durable store adds rows a later calibration pass cannot tell from a release's",
+    )
+    running.add_argument(
+        "--skip-release",
+        action="store_true",
+        help="reuse the full-resolution pictures already on disk instead of rendering",
+    )
+    running.set_defaults(handler=curate_run)
+
+    checking = steps.add_parser(
+        "parity",
+        help="render a real release plan serially and concurrently, and compare the bytes",
+        description=(
+            "The concurrent pass claims to produce the same file as the serial one, not "
+            "merely equivalent output. This is the only way to know."
+        ),
+    )
+    checking.add_argument("--run", required=True, help="the run whose plan to re-render")
+    checking.add_argument("--rows", type=int, default=2, help="how many rows (default: 2)")
+    checking.add_argument("--workers", type=int, default=3, help="the concurrent arm's workers")
+    checking.add_argument(
+        "--ephemeral", action="store_true", help="read the run's ephemeral record store"
+    )
+    checking.set_defaults(handler=curate_parity)
+
+    replaying = steps.add_parser(
+        "replay",
+        help="re-derive every released picture from its own record and compare the bytes",
+        description=(
+            "An in-band row is re-rendered with the operator off and must be identical; an "
+            "acting row's stop list is rebuilt from its stamp alone — no image, no "
+            "re-measurement — and must render identically."
+        ),
+    )
+    replaying.add_argument("--run", required=True, help="the run to replay")
+    replaying.add_argument(
+        "--ephemeral", action="store_true", help="read the run's ephemeral record store"
+    )
+    replaying.set_defaults(handler=curate_replay)
 
 
 def location_arguments(draw: argparse.ArgumentParser) -> None:
