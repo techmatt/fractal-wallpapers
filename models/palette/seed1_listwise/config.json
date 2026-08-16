@@ -1,18 +1,21 @@
 {
   "schema": 1,
   "head": "palette",
-  "run": "seed2",
+  "run": "seed1_listwise",
   "backbone": "mobilenetv4_conv_small.e2400_r224_in1k",
   "pretrained": true,
   "geometry": "squash",
   "epochs": 40,
   "patience": null,
   "batch_sets": 16,
+  "microbatch_sets": 8,
+  "listwise": 1.0,
+  "listwise_temperature": 1.1022852435910524,
   "backbone_lr": 0.0001,
   "head_lr": 0.001,
   "weight_decay": 0.05,
   "grad_clip": 1.0,
-  "seed": 2,
+  "seed": 1,
   "amp": "off",
   "source_dims": [
     640,
@@ -24,6 +27,7 @@
   ],
   "augmentation": "geometric only \u2014 both flips. No colour: the colour is the question",
   "loss": "centred mean squared error against the teacher's score vector, per set",
+  "LISTWISE_ARM": "declared before training and decided on the HELD-OUT top-pick agreement at seed 0, never on the real sets. Both arms' numbers are recorded either way",
   "selection": "min held-out distillation loss \u2014 the same objective the trainer minimizes, over locations the run never saw. A proper scoring rule for a score vector, so it sees the scale and not only the order",
   "mean": [
     0.485,
@@ -36,7 +40,7 @@
     0.225
   ],
   "interpolation": "bicubic",
-  "best_epoch": 25,
+  "best_epoch": 36,
   "inherited": {
     "source": "the teacher's own config, embedded in its checkpoint and resolved through the source project's single-source pointer",
     "identical": [
@@ -73,6 +77,12 @@
         "was": "8 epochs without an improvement in the selection objective",
         "now": "none \u2014 every run takes all 40 epochs",
         "why": "MEASURED, not assumed. The teacher's objective was a pair-direction accuracy over 200 validation queries, which moves smoothly; this one is a squared error over 120 held-out sets and it moves by a FACTOR OF FOUR between adjacent epochs of a healthy run \u2014 seed 0 read 1.52, 1.52, 2.63, 1.76 across epochs 30 to 33. A patience of 8 on a signal that noisy is not an early stop, it is a coin toss: at the first attempt it cut seed 2 off at epoch 12 on a lucky epoch-4 reading of 2.82, while the two seeds that survived reached 1.52. The epoch is chosen on the held-out loss either way, so patience was only ever saving time, and a full run of this head is three minutes."
+      },
+      {
+        "key": "batch delivery",
+        "was": "one forward and backward pass over the whole batch",
+        "now": "the batch in microbatch_sets-set pieces with the gradients accumulated",
+        "why": "MECHANICAL, and the gradient is unchanged. Sixteen sets of 32 candidates is 512 pictures and this card holds 8 GB: a measured step of 320 pictures takes 0.25 s and one of 384 takes 3.05 s. The loss is a mean over sets, so a piece weighted by its share of the batch contributes exactly its share of the gradient. The one difference is that BatchNorm sees 256 pictures per update instead of 512."
       },
       {
         "key": "split",
@@ -117,8 +127,9 @@
   "corpus": {
     "batch": "pool_draw_seeded",
     "seed": 20260815,
-    "sets": 800,
-    "candidates_per_set": 20
+    "sets": 2000,
+    "candidates_per_set": 32,
+    "hard_sets": 1400
   },
   "precision": "fp32"
 }
