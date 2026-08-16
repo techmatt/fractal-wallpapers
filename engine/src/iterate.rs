@@ -174,6 +174,15 @@ impl Lattice {
 pub struct Orbit {
     /// The orbit left the bailout disc within the iteration cap.
     pub escaped: bool,
+    /// The step the orbit left on when `escaped`, `0` otherwise.
+    ///
+    /// The classic escape count, kept beside the smooth one because it is a
+    /// different number and not a rounding of it: the smooth count is what a
+    /// picture wants and this is what the algorithm actually measured. Only
+    /// [`FieldSpec::Discrete`](crate::field::FieldSpec::Discrete) reads it, and
+    /// only for orbits that escaped — an orbit that did not has no escape step,
+    /// and `0` is that absence rather than a step it reached.
+    pub iteration: u32,
     /// Smooth iteration count when `escaped`, `NaN` otherwise.
     pub smooth: f64,
     /// Mean of `½ + ½·sin(density · arg z)`.
@@ -194,6 +203,7 @@ impl Orbit {
     fn new() -> Orbit {
         Orbit {
             escaped: false,
+            iteration: 0,
             smooth: f64::NAN,
             stripe: Average::default(),
             tia: Average::default(),
@@ -299,6 +309,7 @@ pub fn run(family: &Family, pixel: Complex<f64>, maxiter: u32, wants: &Wants) ->
 
         if magnitude_sq > bailout_sq {
             orbit.escaped = true;
+            orbit.iteration = n;
             orbit.smooth = smooth_count(n, magnitude_sq, family.degree());
             return orbit;
         }
@@ -516,6 +527,50 @@ mod tests {
             largest_step < 0.05,
             "terrace of {largest_step} in the field"
         );
+    }
+
+    /// The integer count and the smooth one are two readings of one escape, and
+    /// the smooth one *refines* the other: it lands inside the step the orbit
+    /// actually left on. That is what makes a discrete render the floor of a
+    /// smooth one, which is the whole content of the figure the two make
+    /// together — so it is pinned here rather than assumed there.
+    #[test]
+    fn the_smooth_count_lands_inside_the_step_the_orbit_left_on() {
+        let families = [
+            Family::Multibrot { degree: 2 },
+            Family::Multibrot { degree: 5 },
+            julia(Complex::new(-0.8, 0.156)),
+            Family::Phoenix {
+                c: crate::family::PHOENIX_C,
+                p: crate::family::PHOENIX_P,
+                z_prev: Complex::new(0.0, 0.0),
+            },
+        ];
+        for family in families {
+            for row in 0..60 {
+                for col in 0..60 {
+                    let pixel = Complex::new(
+                        -2.0 + 4.0 * (col as f64 + 0.5) / 60.0,
+                        -2.0 + 4.0 * (row as f64 + 0.5) / 60.0,
+                    );
+                    let orbit = escape(&family, pixel, 500);
+                    if !orbit.escaped {
+                        assert_eq!(
+                            orbit.iteration, 0,
+                            "{family:?}: an interior point has no step"
+                        );
+                        continue;
+                    }
+                    assert_eq!(
+                        orbit.smooth.floor() as u32,
+                        orbit.iteration,
+                        "{family:?} at {pixel}: smooth {} is not inside step {}",
+                        orbit.smooth,
+                        orbit.iteration
+                    );
+                }
+            }
+        }
     }
 
     /// Asking for nothing must not change what the escape says. This is the

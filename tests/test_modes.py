@@ -32,6 +32,11 @@ ANCHOR = {
 }
 
 
+#: The teaching field, written out in full — the only way to ask for it, because
+#: it is deliberately not in the catalog a mode name is looked up in.
+DISCRETE = {"kind": "field", "field": {"kind": "discrete"}}
+
+
 def spec(mode: str, output, **overrides) -> dict:
     return {**ANCHOR, "mode": mode, "output": str(output), **overrides}
 
@@ -56,6 +61,23 @@ def test_a_render_names_the_mode_it_wants() -> None:
     assert cli.render_spec(arguments("render", mode="tia"))["mode"] == "tia"
 
 
+def test_a_discrete_render_writes_its_coloring_out_instead_of_naming_a_mode() -> None:
+    """The integer count has no name in the catalog, so the spec carries the
+    coloring itself — and carries no `mode` key, which the engine would refuse
+    alongside it."""
+    plain = cli.render_spec(arguments("render", discrete=0))
+    assert "mode" not in plain
+    assert plain["coloring"] == {"kind": "field", "field": {"kind": "discrete"}}
+
+    banded = cli.render_spec(arguments("render", discrete=24))
+    assert banded["coloring"]["field"] == {"kind": "discrete", "cycle": 24}
+
+
+def test_a_render_that_asks_for_both_a_mode_and_the_integer_count_is_refused() -> None:
+    assert cli.render(arguments("render", mode="tia", discrete=0)) == 1
+    assert cli.render(arguments("render", discrete=-3)) == 1
+
+
 def test_a_dump_is_the_same_spec_as_the_render_it_stops_short_of() -> None:
     """Only the output differs, which is what makes the two comparable at all."""
     render = cli.render_spec(arguments("render", mode="stripe"))
@@ -74,6 +96,63 @@ def test_the_catalog_is_the_engines_and_covers_all_three_shapes() -> None:
     for expected in ("tia", "smooth_stripe", "direct_trap_multiply"):
         assert expected in names
     assert all(mode["identity"] for mode in engine.modes())
+
+
+@needs_engine
+def test_the_integer_count_is_reachable_and_renders_a_picture(tmp_path) -> None:
+    """It is a real coloring: it renders, it dumps like any other field, and its
+    record carries the coloring rather than a name.
+
+    What it renders — flat bands rather than a gradient — is a property of the
+    *field* and is pinned in the crate, where the comparison against the smooth
+    count is exact. Here the claim is only that the whole path is open, so this
+    reads the same "not one flat color" size floor every named mode is held to.
+    """
+    location = {key: value for key, value in ANCHOR.items() if key != "mode"}
+    discrete = tmp_path / "discrete.png"
+    report = engine.render_report({**location, "coloring": DISCRETE, "output": str(discrete)})
+    assert report.get("mode") is None, "a written-out coloring has no mode name"
+    assert report["coloring"] == {
+        "kind": "field",
+        # The echo carries the field's whole state, `cycle` included, the way
+        # every other field's constants are echoed: the record is what a render
+        # is repeated from.
+        "field": {"kind": "discrete", "cycle": None},
+        "transform": "linear",
+    }
+    assert discrete.stat().st_size > 1500, "the discrete render is nearly uniform"
+
+    field = tmp_path / "discrete.f32"
+    dumped = engine.dump_field({**location, "coloring": DISCRETE, "output": str(field)})
+    assert dumped["samples"] == [64, 36]
+
+    banded = {"kind": "field", "field": {"kind": "discrete", "cycle": 12}}
+    report = engine.render_report(
+        {**location, "coloring": banded, "output": str(tmp_path / "b.png")}
+    )
+    assert report["coloring"]["field"]["cycle"] == 12
+
+
+@needs_engine
+def test_the_integer_count_is_not_a_named_mode_and_curation_cannot_draw_it() -> None:
+    """The guard the whole teaching mode rests on.
+
+    A production render picks its coloring by name out of the engine's catalog,
+    so a field that is not in the catalog cannot be picked — not by the mode
+    draw, not by the render cache, not by a corpus row. This asserts the absence
+    at all three readers rather than only at the one that would be noticed.
+    """
+    from fractal_wallpapers.curation import budget, colorize
+    from fractal_wallpapers.labeling import finished_import
+    from fractal_wallpapers.models import renders
+
+    assert "discrete" not in {mode["name"] for mode in engine.modes()}
+    assert "discrete" not in renders.catalog()
+    assert "discrete" not in finished_import.engine_modes()
+    for head in (budget.SMOOTH, budget.STRANGE):
+        assert "discrete" not in colorize.modes_for(head)
+    with pytest.raises(renders.RenderCacheError, match="no mode named"):
+        renders.coloring_of({"mode": "discrete", "curve": "linear"})
 
 
 @needs_engine

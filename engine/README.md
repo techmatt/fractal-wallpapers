@@ -24,6 +24,16 @@ field and its coloring is the one that matters. `src/spec.rs` documents the JSON
 and `src/mode.rs` the named colorings — sixteen of them, in three shapes: one
 field, two fields blended, or no field at all.
 
+The catalog is also the production roster, so anything meant to be *looked at*
+rather than shipped stays out of it and is asked for by writing the coloring out
+in full. There is one such field: `discrete`, the integer escape count, which is
+what the smooth count replaced and is in the crate so the article can show the
+two side by side. `fractal-wallpapers render --discrete [CYCLE]` draws it.
+
+A render given no viewport comes home to its family's own frame, a table in
+`src/family.rs`. Only Phoenix's row is derived rather than inherited: its set is
+taller than it is wide and a three-unit frame at 16:9 cuts both lobes off.
+
 Beside the pipeline sits the search — `rng`, `screen`, `foci`, `expand` — which
 uses it and does not extend it. It decides *where* to render and never *how*:
 `expand` reads fields the pipeline produced and returns coordinates with the

@@ -20,6 +20,15 @@
 //! Anything not in this list is still reachable by writing the coloring out in
 //! full. A name is a claim that a setting is worth returning to, and that claim
 //! is what this list is for.
+//!
+//! It is also the **production roster**: everything downstream that has to pick
+//! a coloring — the render cache, the finished-render corpora, curation's mode
+//! draw — reads this catalog rather than a list of its own. So a field that is
+//! here to be *looked at* rather than shipped must stay out of it, and
+//! [`crate::field::FieldSpec::Discrete`] is the one such field. Keeping it out
+//! is what makes "curation cannot draw it" a property of the code instead of a
+//! rule four call sites have to remember; `no_catalogued_mode_reads_a_teaching_field`
+//! is the guard.
 
 use crate::coloring::{Blend, Coloring, Layer, Transform};
 use crate::direct_trap::Shape;
@@ -233,6 +242,27 @@ mod tests {
         }
         for name in composites.iter().chain(&direct) {
             assert!(resolve(name).unwrap().why_not_a_field().is_some(), "{name}");
+        }
+    }
+
+    /// The catalog is the production roster, so a teaching field may not appear
+    /// anywhere in it — not as a mode of its own, and not hidden as one half of
+    /// a composite. Every field a catalogued mode reads is checked, because the
+    /// second way in is the one nobody would look for.
+    #[test]
+    fn no_catalogued_mode_reads_a_teaching_field() {
+        for name in names() {
+            let fields: Vec<FieldSpec> = match resolve(name).unwrap() {
+                Coloring::Field { field, .. } => vec![field],
+                Coloring::Composite { base, texture, .. } => vec![base.field, texture.field],
+                Coloring::Direct { .. } => Vec::new(),
+            };
+            for field in fields {
+                assert!(
+                    !matches!(field, FieldSpec::Discrete { .. }),
+                    "{name} reads the discrete field, which is not a production coloring"
+                );
+            }
         }
     }
 

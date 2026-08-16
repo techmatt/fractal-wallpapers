@@ -194,19 +194,19 @@ impl RenderSpec {
     pub fn resolve(self) -> Result<Resolved, String> {
         let (family, kind, c, p, z_prev) = self.family.resolve()?;
 
-        let home = family.home_center();
+        let home = family.home_view();
         let center_re = self
             .viewport
             .center_re
-            .unwrap_or_else(|| format_default(home.re));
+            .unwrap_or_else(|| format_default(home.center.re));
         let center_im = self
             .viewport
             .center_im
-            .unwrap_or_else(|| format_default(home.im));
+            .unwrap_or_else(|| format_default(home.center.im));
         let width = self
             .viewport
             .width
-            .unwrap_or_else(|| format_default(maxiter::HOME_WIDTH));
+            .unwrap_or_else(|| format_default(home.width));
 
         let [out_width, out_height] = self.resolution;
         if out_width == 0 || out_height == 0 {
@@ -441,18 +441,43 @@ mod tests {
     fn a_minimal_spec_resolves_to_the_home_view_and_the_policy_cap() {
         let resolved = resolve(r#"{"kind":"mandelbrot"}"#);
         assert_eq!(resolved.family, Family::Multibrot { degree: 2 });
-        assert_eq!(resolved.view.center, Complex::new(-0.5, 0.0));
-        assert_eq!(resolved.view.width, maxiter::HOME_WIDTH);
+        let home = Family::Multibrot { degree: 2 }.home_view();
+        assert_eq!(resolved.view.center, home.center);
+        assert_eq!(resolved.view.width, home.width);
         assert_eq!(resolved.maxiter, maxiter::BASE as u32);
         assert_eq!(resolved.location.center_re, "-0.5");
         assert_eq!(resolved.location.width, "3.0");
     }
 
     #[test]
-    fn dynamical_families_come_home_to_the_origin() {
+    fn a_julia_comes_home_to_the_origin() {
         let resolved = resolve(r#"{"kind":"julia","c":["-0.4","0.6"]}"#);
         assert_eq!(resolved.view.center, Complex::new(0.0, 0.0));
         assert_eq!(resolved.location.c.unwrap(), ["-0.4", "0.6"]);
+    }
+
+    /// A viewport-less render takes the *family's* row of the home table, not
+    /// one shared frame: Phoenix's set is tall and is framed wider than the
+    /// plane view every other family comes home to.
+    #[test]
+    fn phoenix_comes_home_to_its_own_wider_frame() {
+        let resolved = resolve(r#"{"kind":"phoenix"}"#);
+        assert_eq!(resolved.view.center, crate::family::PHOENIX_HOME.center);
+        assert_eq!(resolved.view.width, crate::family::PHOENIX_HOME.width);
+        assert_eq!(resolved.location.center_re, "0.04");
+        assert_eq!(resolved.location.width, "5.0");
+        assert!(resolved.view.width > resolve(r#"{"kind":"mandelbrot"}"#).view.width);
+    }
+
+    /// A viewport that gives only some of its keys fills the rest from the same
+    /// row, rather than from whatever the last family to be rendered used.
+    #[test]
+    fn a_partial_viewport_takes_the_rest_of_the_family_s_home() {
+        let spec = r#"{"schema":1,"family":{"kind":"phoenix"},"resolution":[64,36],
+            "viewport":{"width":"2.0"},"colormap":"twilight_shifted","output":"o.png"}"#;
+        let resolved = RenderSpec::parse(spec).unwrap().resolve().unwrap();
+        assert_eq!(resolved.view.width, 2.0);
+        assert_eq!(resolved.view.center, crate::family::PHOENIX_HOME.center);
     }
 
     #[test]

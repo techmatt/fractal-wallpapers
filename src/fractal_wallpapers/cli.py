@@ -20,6 +20,11 @@ from fractal_wallpapers.paths import colormap_dir, repo_root
 WEIGHTS_MANIFEST = Path("models") / "weights.json"
 RELEASE_URL = "https://github.com/techmatt/fractal-wallpapers/releases/download/{tag}/{asset}"
 
+#: The mode a `render` that says nothing about coloring asks for. The engine has
+#: the same default and would apply it to a spec with no `mode` key at all; it is
+#: written here too so the spec a command built says what it rendered.
+DEFAULT_MODE = "smooth"
+
 __all__ = ["build_parser", "main", "repo_root"]
 
 
@@ -139,6 +144,11 @@ def render_spec(args: argparse.Namespace) -> dict:
     `render` and `dump-field` build the same spec: a dump is a render stopped
     one stage early, and the colormap it names is the one its record hands back
     to a recolor that does not choose for itself.
+
+    A spec says either `mode` or `coloring`, never both — a mode *is* a coloring
+    with a name. `--discrete` is the one thing here that takes the second door:
+    the integer escape count is not a named mode and deliberately never will be,
+    so asking for it means writing the coloring out.
     """
     family: dict[str, object] = {"kind": args.family}
     if args.family == "multibrot":
@@ -166,7 +176,7 @@ def render_spec(args: argparse.Namespace) -> dict:
         "family": family,
         "resolution": args.resolution,
         "supersample": args.supersample,
-        "mode": args.mode,
+        **discrete_or_mode(args),
         "colormap": args.colormap,
         "colormap_dir": str(colormap_dir()),
         "output": str(resolve_output(args.out)),
@@ -178,12 +188,30 @@ def render_spec(args: argparse.Namespace) -> dict:
     return spec
 
 
+def discrete_or_mode(args: argparse.Namespace) -> dict:
+    """The half of a spec that says how to color: `{"mode": ...}` or a coloring."""
+    if getattr(args, "discrete", None) is None:
+        return {"mode": args.mode or DEFAULT_MODE}
+    field: dict[str, object] = {"kind": "discrete"}
+    if args.discrete > 0:
+        field["cycle"] = args.discrete
+    return {"coloring": {"kind": "field", "field": field}}
+
+
 def refuse_impossible_location(args: argparse.Namespace) -> str | None:
     """Say why this location cannot be rendered, or `None` if it can."""
     if args.family == "julia" and args.c is None:
         return "--c is required for a julia render: it is half of the location's identity"
     if args.family not in ("julia", "multibrot") and args.degree != 2:
         return f"--degree does not apply to a {args.family} render"
+    if args.discrete is not None:
+        if args.mode is not None:
+            return (
+                "--mode and --discrete both say how to color the render, and a mode is a "
+                "coloring with a name: give one or the other"
+            )
+        if args.discrete < 0:
+            return "--discrete takes a positive band length, or no value at all for no bands"
     return None
 
 
@@ -2407,7 +2435,9 @@ def location_arguments(draw: argparse.ArgumentParser) -> None:
     )
     draw.add_argument("--center-re", help="view center, real part (default: the family's home)")
     draw.add_argument("--center-im", help="view center, imaginary part")
-    draw.add_argument("--width", help="view width in plane units (default: 3.0)")
+    draw.add_argument(
+        "--width", help="view width in plane units (default: the family's home width)"
+    )
     draw.add_argument(
         "--resolution",
         nargs=2,
@@ -2424,8 +2454,20 @@ def location_arguments(draw: argparse.ArgumentParser) -> None:
     )
     draw.add_argument(
         "--mode",
-        default="smooth",
-        help="named coloring (default: smooth); see the modes subcommand",
+        help=f"named coloring (default: {DEFAULT_MODE}); see the modes subcommand",
+    )
+    draw.add_argument(
+        "--discrete",
+        nargs="?",
+        type=int,
+        const=0,
+        metavar="CYCLE",
+        help=(
+            "color from the INTEGER iteration count instead of a named mode: flat bands, "
+            "the picture the smooth count exists to fix. Give CYCLE to repeat the gradient "
+            "every CYCLE iterations. A teaching mode — it is not in the catalog, so nothing "
+            "that draws a mode can reach it"
+        ),
     )
     draw.add_argument(
         "--colormap",

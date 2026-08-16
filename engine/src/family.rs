@@ -18,6 +18,49 @@ pub const PHOENIX_C: Complex<f64> = Complex::new(0.5667, 0.0);
 /// The Phoenix `z_{n-1}` coefficient of the classic Ushiki instance.
 pub const PHOENIX_P: Complex<f64> = Complex::new(-0.5, 0.0);
 
+/// The frame a render gets when it is told nothing about where to look.
+///
+/// The same two numbers a viewport is, with the resolution left out: a home view
+/// is not a picture, it is where a picture of this family starts.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct HomeView {
+    pub center: Complex<f64>,
+    /// Width of the view in plane units. The height follows from the output
+    /// aspect ratio, which is why a home view for a *tall* set has to be
+    /// specified as a width wide enough to buy the height.
+    pub width: f64,
+}
+
+/// A view of the whole plane the parameter-plane and Julia sets live in.
+///
+/// Three units across, centered on the set: the framing every family here came
+/// home to before there was a table, kept for the four that were framed at it.
+const WHOLE_PLANE: f64 = 3.0;
+
+/// Where the classic Phoenix set is framed, and why it is not [`WHOLE_PLANE`].
+///
+/// Phoenix is the one family here whose set is **taller than it is wide**, and
+/// by a long way: measured over a 4001² grid at a cap of 4000, the filled set
+/// spans `re ∈ [−0.679, 0.755]` and `im ∈ ±1.271` — 1.43 across and 2.54 tall,
+/// an aspect of 0.56 against a 16:9 frame's 1.78. A frame is specified by its
+/// width, so at three units across it is 1.69 tall and cuts the top and bottom
+/// off both lobes, which is what the first engine slice recorded as a watch item
+/// and what this is.
+///
+/// So the width is derived from the **height** the set needs: `2.54 × 16/9 =
+/// 4.52` to contain it exactly, and 5 units to contain it with a tenth of its
+/// own height in margin. The center is the set's own, so what is left over is
+/// spread evenly rather than piled on one side. `phoenix_comes_home_to_a_frame_
+/// that_holds_its_set` re-measures it.
+///
+/// The consequence is a lot of exterior either side of a narrow flame, and that
+/// is what framing a portrait subject in a landscape frame costs. The
+/// alternative is not a tighter frame, it is a cropped set.
+pub const PHOENIX_HOME: HomeView = HomeView {
+    center: Complex::new(0.04, 0.0),
+    width: 5.0,
+};
+
 /// One escape-time family.
 ///
 /// [`Multibrot`](Family::Multibrot) at degree 2 *is* the Mandelbrot set, and
@@ -87,19 +130,37 @@ impl Family {
         }
     }
 
-    /// Where this family is worth looking first, in the plane it lives in.
+    /// Where this family is worth looking first, and how wide.
     ///
-    /// Everything is centered on the origin except the Mandelbrot set, which is
-    /// the one family here that is not symmetric about it: its cardioid and the
-    /// bulbs behind it sit roughly between `-2` and `0.5`, so a view of the
-    /// whole set centers on `-0.5`. The higher multibrots regain that symmetry —
-    /// `z^d + c` has `d − 1` fold rotational symmetry about the origin — and the
-    /// dynamical planes have it too, since every filled Julia and Phoenix set
-    /// surrounds the origin.
-    pub fn home_center(&self) -> Complex<f64> {
+    /// A table, one row per family, and it is the whole of what "no viewport
+    /// given" means. Nothing in production reads it: every render a walk, a tile
+    /// build or a curation run makes names its own viewport, so this is the
+    /// default framing of a hand-run `render` and of a family's own picture in
+    /// the article, and moving a row moves those and nothing else.
+    ///
+    /// Centers first. Everything is centered on the origin except the Mandelbrot
+    /// set, which is the one parameter plane here that is not symmetric about
+    /// it: its cardioid and the bulbs behind it sit roughly between `-2` and
+    /// `0.5`, so a view of the whole set centers on `-0.5`. The higher
+    /// multibrots regain that symmetry — `z^d + c` has `d − 1` fold rotational
+    /// symmetry about the origin — and a filled Julia set surrounds the origin
+    /// too. Phoenix is centered on its own measured set; see [`PHOENIX_HOME`].
+    ///
+    /// Widths second, and only Phoenix's is derived. A Julia set's extent
+    /// depends on its `c` and no one frame contains every member, so the
+    /// dynamical twin comes home to the whole plane and the walk composes from
+    /// there. The parameter planes are framed at the same three units they were
+    /// framed at before this table existed.
+    pub fn home_view(&self) -> HomeView {
+        let at = |re, width| HomeView {
+            center: Complex::new(re, 0.0),
+            width,
+        };
         match *self {
-            Family::Multibrot { degree: 2 } => Complex::new(-0.5, 0.0),
-            _ => Complex::new(0.0, 0.0),
+            Family::Multibrot { degree: 2 } => at(-0.5, WHOLE_PLANE),
+            Family::Multibrot { .. } => at(0.0, WHOLE_PLANE),
+            Family::Julia { .. } => at(0.0, WHOLE_PLANE),
+            Family::Phoenix { .. } => PHOENIX_HOME,
         }
     }
 }
@@ -143,34 +204,74 @@ mod tests {
         assert_eq!(cj, c);
     }
 
-    /// Only the Mandelbrot set is off-center; the rest are symmetric about the
-    /// origin and are framed there.
-    #[test]
-    fn only_the_mandelbrot_set_comes_home_off_the_origin() {
-        let origin = Complex::new(0.0, 0.0);
-        assert_eq!(
-            Family::Multibrot { degree: 2 }.home_center(),
-            Complex::new(-0.5, 0.0)
-        );
-        for degree in 3..=5 {
-            assert_eq!(Family::Multibrot { degree }.home_center(), origin);
+    fn classic_phoenix() -> Family {
+        Family::Phoenix {
+            c: PHOENIX_C,
+            p: PHOENIX_P,
+            z_prev: Complex::new(0.0, 0.0),
         }
-        assert_eq!(
-            Family::Julia {
-                degree: 2,
-                c: origin
+    }
+
+    /// The home table, row by row. Only the Mandelbrot set is off-center among
+    /// the sets that are symmetric about the origin, and only Phoenix is framed
+    /// at anything other than the whole plane.
+    #[test]
+    fn each_family_comes_home_to_its_own_row() {
+        let origin = Complex::new(0.0, 0.0);
+        let home = Family::Multibrot { degree: 2 }.home_view();
+        assert_eq!(home.center, Complex::new(-0.5, 0.0));
+        assert_eq!(home.width, WHOLE_PLANE);
+        for degree in 3..=5 {
+            let home = Family::Multibrot { degree }.home_view();
+            assert_eq!(home.center, origin);
+            assert_eq!(home.width, WHOLE_PLANE);
+        }
+        let home = Family::Julia {
+            degree: 2,
+            c: origin,
+        }
+        .home_view();
+        assert_eq!(home.center, origin);
+        assert_eq!(home.width, WHOLE_PLANE);
+        assert_eq!(classic_phoenix().home_view(), PHOENIX_HOME);
+    }
+
+    /// Phoenix's row is the one that was derived rather than inherited, so it is
+    /// the one re-measured here: at 16:9 its home frame must hold every point of
+    /// the filled set, with real margin left over on the axis that decided the
+    /// frame. The grid is coarse enough to run in a debug build and fine enough
+    /// that a frame off by a percent would show.
+    #[test]
+    fn phoenix_comes_home_to_a_frame_that_holds_its_set() {
+        let family = classic_phoenix();
+        let home = PHOENIX_HOME;
+        let half_width = home.width / 2.0;
+        let half_height = home.width * 9.0 / 16.0 / 2.0;
+
+        let (mut widest, mut tallest) = (0.0f64, 0.0f64);
+        let steps = 300;
+        for row in 0..=steps {
+            for col in 0..=steps {
+                let re = -2.5 + 5.0 * col as f64 / steps as f64;
+                let im = -2.5 + 5.0 * row as f64 / steps as f64;
+                if crate::iterate::escape(&family, Complex::new(re, im), 500).escaped {
+                    continue;
+                }
+                widest = widest.max((re - home.center.re).abs());
+                tallest = tallest.max((im - home.center.im).abs());
             }
-            .home_center(),
-            origin
+        }
+        assert!(tallest > 1.2, "the search found no set to frame");
+        assert!(
+            widest < half_width && tallest < half_height,
+            "the set reaches ({widest:.4}, {tallest:.4}) and the frame is \
+             ({half_width:.4}, {half_height:.4})"
         );
-        assert_eq!(
-            Family::Phoenix {
-                c: PHOENIX_C,
-                p: PHOENIX_P,
-                z_prev: origin
-            }
-            .home_center(),
-            origin
+        // Height is what decides this frame, so that is where the margin has to
+        // be real rather than a rounding.
+        assert!(
+            tallest < half_height * 0.95,
+            "no margin: the set reaches {tallest:.4} of {half_height:.4}"
         );
     }
 
