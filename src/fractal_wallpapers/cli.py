@@ -1194,7 +1194,7 @@ def curate_run(args: argparse.Namespace) -> int:
 
     try:
         summary = run_module.curate(
-            run=args.run,
+            run=args.resume or args.run,
             n=args.n,
             seed=args.seed,
             strange_share=args.strange_share,
@@ -1204,12 +1204,17 @@ def curate_run(args: argparse.Namespace) -> int:
             ledgers=[resolve_output(p) for p in args.ledger] if args.ledger else None,
             device=args.device,
             skip_release=args.skip_release,
+            wall_budget=args.wall_budget,
+            resume=bool(args.resume),
         )
-    except (intake.IntakeError, records.NotIsolated) as refusal:
+    except (intake.IntakeError, records.NotIsolated, run_module.RunRefused) as refusal:
         print(refusal)
         return 1
     print(json.dumps(summary, indent=2))
-    return 0
+    # A run that cannot balance its plan against what it made has shipped
+    # pictures and lost track of which, and that is a failure whatever the
+    # release looks like.
+    return 0 if summary["reconciliation"]["holds"] else 1
 
 
 def curate_parity(args: argparse.Namespace) -> int:
@@ -2247,12 +2252,20 @@ def curate_commands(subcommands) -> None:
     reading.add_argument("--limit", type=int, help="score only this many locations")
     reading.set_defaults(handler=curate_score)
 
-    def with_shape(parser):
-        parser.add_argument("-n", type=int, default=6, help="release slots to fill (default: 6)")
+    def with_shape(parser, defaults=True):
+        # A run takes `None` where `plan` takes a number: a resumed run reads its
+        # shape back out of its own sidecar, and a flag that defaulted to 6 here
+        # could not be told from a flag that asked for 6.
+        parser.add_argument(
+            "-n",
+            type=int,
+            default=6 if defaults else None,
+            help="release slots to fill (default: 6, or the resumed run's own)",
+        )
         parser.add_argument(
             "--strange-share",
             type=float,
-            default=0.5,
+            default=0.5 if defaults else None,
             help="share of the slots the strange judge fills (default: 0.5)",
         )
         parser.add_argument(
@@ -2278,13 +2291,31 @@ def curate_commands(subcommands) -> None:
                 description=(
                     "Full resolution is the expensive part — measure one before asking for "
                     "many. Nothing is padded or backfilled: a judge that cannot fill its "
-                    "quota under the slot, supply and look caps ships fewer, and says so."
+                    "quota under the slot, supply and look caps ships fewer, and says so. "
+                    "A long run wants --wall-budget: it stops cleanly at the last unit it "
+                    "can afford rather than finding out afterwards, and --resume continues "
+                    "an interrupted one from what it finished."
                 ),
             )
-        )
+        ),
+        defaults=False,
     )
-    running.add_argument("--run", required=True, help="the name this run's records carry")
-    running.add_argument("--seed", type=int, default=0, help="run seed (default: 0)")
+    naming = running.add_mutually_exclusive_group(required=True)
+    naming.add_argument("--run", help="the name this run's records carry")
+    naming.add_argument(
+        "--resume",
+        metavar="RUN",
+        help="continue an interrupted run: its finished attempts and release renders are "
+        "skipped, and its shape is read back from its own plan rather than from these flags",
+    )
+    running.add_argument("--seed", type=int, help="run seed (default: 0)")
+    running.add_argument(
+        "--wall-budget",
+        type=float,
+        metavar="SECONDS",
+        help="stop cleanly rather than start a unit of work that would overrun this. Covers "
+        "the whole run, intake through the last release render",
+    )
     running.add_argument(
         "--workers",
         type=int,
@@ -2301,7 +2332,8 @@ def curate_commands(subcommands) -> None:
     running.add_argument(
         "--skip-release",
         action="store_true",
-        help="reuse the full-resolution pictures already on disk instead of rendering",
+        help="reuse the full-resolution pictures already on disk instead of rendering "
+        "(with --resume: the pictures are this run's own, from before it was interrupted)",
     )
     running.set_defaults(handler=curate_run)
 

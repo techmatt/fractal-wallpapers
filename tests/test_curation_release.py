@@ -2,11 +2,33 @@
 
 from __future__ import annotations
 
+import subprocess
+from concurrent.futures import TimeoutError as FutureTimeout
 from concurrent.futures.process import BrokenProcessPool
 
 import pytest
 
-from fractal_wallpapers.curation import release
+from fractal_wallpapers.curation import pacing, release
+
+
+class Gate:
+    """A leg that allows `allow` rows and then stops, without a real clock."""
+
+    def __init__(self, allow: int, timeout: float | None = None):
+        self.allow, self.timeout_seconds = allow, timeout
+        self.observed: list = []
+
+    def may_start(self):
+        if self.allow <= 0:
+            return "out of budget, for the test"
+        self.allow -= 1
+        return None
+
+    def timeout(self):
+        return self.timeout_seconds
+
+    def observe(self, seconds, ok=True, expired=False):
+        self.observed.append((round(seconds, 3), ok, expired))
 
 
 def task(identifier: str) -> release.Task:
@@ -139,6 +161,146 @@ def test_a_truncated_picture_is_removed_rather_than_reused(tmp_path) -> None:
 def test_the_engine_thread_count_is_explicit_above_one_worker() -> None:
     assert release.engine_threads_for(1) is None
     assert release.engine_threads_for(3) == release.ENGINE_THREADS_PER_WORKER
+
+
+def test_a_gated_serial_pass_stops_at_a_row_boundary_and_names_what_never_started(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(
+        release, "render_task", lambda t: release.Result(t.id, True, {}, 1.0, None, False)
+    )
+    seen, sink = recorder()
+    gate = Gate(allow=1)
+    record = release.run_pass([task("a"), task("b"), task("c")], 1, sink, lambda _m: None, gate)
+    assert [identifier for identifier, _ in seen] == ["a"]
+    assert record["not_started"] == ["b", "c"]
+    assert "out of budget" in record["stopped"]
+    assert gate.observed == [(1.0, True, False)]
+
+
+def test_the_pool_is_not_handed_every_row_at_once(monkeypatch) -> None:
+    """A plan submitted in one go has started every row before the first finishes,
+    and a gate that cannot decline a row is not a gate."""
+    submitted: list = []
+
+    class Future:
+        def __init__(self, identifier):
+            self.identifier = identifier
+
+        def result(self, timeout=None):
+            return release.Result(self.identifier, True, {}, 0.0, None, False)
+
+    class Pool:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def submit(self, _entry, task_):
+            submitted.append(task_.id)
+            return Future(task_.id)
+
+        def shutdown(self, **kwargs):
+            pass
+
+    monkeypatch.setattr(release, "ProcessPoolExecutor", Pool)
+    plan = [task(name) for name in "abcdef"]
+    seen, sink = recorder()
+    record = release.run_pass(plan, 2, sink, lambda _m: None, Gate(allow=3))
+    assert submitted == ["a", "b", "c"], "the window is workers + SUBMIT_AHEAD deep"
+    assert [identifier for identifier, _ in seen] == ["a", "b", "c"]
+    assert record["not_started"] == ["d", "e", "f"]
+
+
+def test_a_row_carries_the_deadline_it_was_started_under_across_the_pool(monkeypatch) -> None:
+    """A deadline the parent could only impose by waiting is no deadline for the
+    thing that is already stuck."""
+    submitted: list = []
+
+    class Future:
+        def result(self, timeout=None):
+            return release.Result("a", True, {}, 0.0, None, False)
+
+    class Pool:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def submit(self, _entry, task_):
+            submitted.append(task_.timeout)
+            return Future()
+
+        def shutdown(self, **kwargs):
+            pass
+
+    monkeypatch.setattr(release, "ProcessPoolExecutor", Pool)
+    _seen, sink = recorder()
+    release.run_pass([task("a")], 2, sink, lambda _m: None, Gate(allow=9, timeout=42.0))
+    assert submitted == [42.0]
+
+
+def test_a_hung_worker_is_killed_by_the_parent_and_the_rest_finish_serially(
+    monkeypatch,
+) -> None:
+    """The backstop behind the backstop: a worker stuck somewhere its own engine
+    deadline cannot reach."""
+    killed: list = []
+
+    class Hung:
+        def result(self, timeout=None):
+            raise FutureTimeout()
+
+    class Pool:
+        def __init__(self, *args, **kwargs):
+            self._processes = {1: type("P", (), {"pid": 1, "kill": lambda s: killed.append(1)})()}
+
+        def submit(self, _entry, _task):
+            return Hung()
+
+        def shutdown(self, **kwargs):
+            pass
+
+    monkeypatch.setattr(release, "ProcessPoolExecutor", Pool)
+    monkeypatch.setattr(
+        release, "render_task", lambda t: release.Result(t.id, True, {}, 0.5, None, False)
+    )
+    said: list = []
+    seen, sink = recorder()
+    gate = Gate(allow=9, timeout=1.0)
+    record = release.run_pass([task("a"), task("b")], 2, sink, said.append, gate)
+    assert killed == [1]
+    assert seen == [("a", False), ("b", True)], "the killed row is recorded, then the rest run"
+    assert record["killed"] == 1
+    assert record["fell_back_serial"] == 1
+    assert any("HUNG" in line for line in said)
+    assert gate.observed[0] == (1.0 + release.KILL_GRACE, False, True)
+
+
+def test_a_killed_row_is_a_failed_row_that_says_it_was_killed(monkeypatch) -> None:
+    """The engine call is where the wall clock goes, so that is where it is cut —
+    and a row that failed on its own must not be reported as a kill."""
+    from fractal_wallpapers import engine
+    from fractal_wallpapers.curation import colorize
+
+    monkeypatch.setattr(colorize, "render", lambda *a, **k: (_ for _ in ()).throw(ValueError("no")))
+    fell_over = release.render_task(release.Task("a", {}, "x", "smooth", "a.png", {}, timeout=5.0))
+    assert (fell_over.ok, fell_over.timed_out) == (False, False)
+
+    def hang(*args, **kwargs):
+        raise subprocess.TimeoutExpired(cmd="fractal-engine", timeout=kwargs.get("timeout") or 0)
+
+    monkeypatch.setattr(engine, "engine_path", lambda: "fractal-engine")
+    monkeypatch.setattr(engine.subprocess, "run", hang)
+    monkeypatch.setattr(colorize, "render", lambda *a, **k: engine.run("render", {}))
+    killed = release.render_task(release.Task("b", {}, "x", "smooth", "b.png", {}, timeout=5.0))
+    assert (killed.ok, killed.timed_out) == (False, True)
+    assert "deadline" in killed.error
+
+
+def test_the_pacing_leg_and_the_pass_agree_on_the_contract() -> None:
+    """The pass takes any object with these three; `pacing.Leg` is the one it gets."""
+    leg = pacing.Clock(100.0).leg(pacing.RELEASE)
+    assert leg.may_start() is None
+    assert leg.timeout() is not None
+    leg.observe(1.0, ok=True, expired=False)
+    assert leg.estimate() == 1.0
 
 
 def test_an_empty_plan_is_not_a_pass(monkeypatch) -> None:

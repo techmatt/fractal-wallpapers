@@ -101,3 +101,27 @@ def _pool_dir():
     from fractal_wallpapers.paths import colormap_dir
 
     return colormap_dir()
+
+
+def test_an_attempt_killed_at_its_deadline_is_a_recorded_row_and_not_a_dead_run(
+    monkeypatch, tmp_path
+) -> None:
+    """Every step that can fail is inside the try, the mode draw included: it
+    reads the roster out of the engine, so it is an engine call like any other and
+    a killed one would otherwise take the whole run down with it."""
+    colorizer = object.__new__(colorize.Colorizer)
+    colorizer.seed, colorizer.pool, colorizer.directory = 0, ["a"] * 40, tmp_path
+    colorizer.cyclic, colorizer.band = set(), None
+
+    def killed(_head):
+        raise engine.EngineTimeout("engine modes was killed after 60.0s")
+
+    monkeypatch.setattr(colorize, "modes_for", killed)
+    monkeypatch.setattr(colorize, "candidate_set", lambda anchor, pool: ["a"])
+    plan = budget.Attempt(head=budget.SMOOTH, partition="mandelbrot", key="k", rank=0)
+    row = colorize.Colorizer.attempt(
+        colorizer, plan, {"family": "mandelbrot", "viewport": {}, "maxiter": 500}, "a", 3
+    )
+    assert row["attempt"] == 3 and row["mode"] is None
+    assert "EngineTimeout" in row["error"]
+    assert row.get("p_ge3") is None, "a crash and a bad wallpaper are not the same number"
