@@ -52,9 +52,21 @@ def test_the_manifest_keeps_its_shape() -> None:
     manifest = json.loads(ship.manifest_path().read_text(encoding="utf-8"))
     assert manifest["schema"] == ship.SCHEMA
     for name, entry in manifest.get("heads", {}).items():
-        assert set(entry) >= {"tag", "asset", "sha256"}, name
+        assert set(entry) >= {"tag", "asset", "sha256", "source_commit", "provenance"}, name
         assert len(entry["sha256"]) == 64, name
+        assert len(entry["source_commit"]) == 40, name
         assert entry["asset"].endswith(".pt"), name
+        assert entry["provenance"]["supervision"], name
+
+
+def test_the_distilled_head_names_its_teacher() -> None:
+    """Its whole claim is approximate equivalence with one function. A release
+    that did not say which function would be publishing an unfalsifiable one."""
+    teacher = ship.provenance("palette")["teacher"]
+    assert len(teacher["sha256"]) == 64
+    assert teacher["name"] and teacher["resolved_through"]
+    for head in set(ship.HEADS) - {"palette"}:
+        assert "teacher" not in ship.provenance(head), f"{head} learned from human verdicts"
 
 
 def test_the_tolerances_are_tight_enough_to_be_a_check() -> None:
@@ -63,7 +75,7 @@ def test_the_tolerances_are_tight_enough_to_be_a_check() -> None:
     assert ship.ROW_TOLERANCE <= 0.01
 
 
-HEADS = ("location", "smooth_render", "strange_render", "palette")
+HEADS = ship.HEADS
 
 
 def test_two_heads_cannot_ship_under_one_name() -> None:
