@@ -18,6 +18,8 @@
 //!   makes a dumped field worth keeping: everything downstream of it is cheap
 //!   and reversible, and everything upstream is neither.
 
+use std::num::NonZeroU32;
+
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -33,6 +35,25 @@ pub enum FieldSpec {
     /// varies smoothly everywhere outside the set, and every composite mode
     /// here uses it as the base the texture is laid over.
     Smooth,
+    /// The integer step the orbit escaped on — the classic escape count, before
+    /// anyone thought to make it fractional.
+    ///
+    /// A **teaching field**, and the one field here that is deliberately worse
+    /// than its neighbour: it is the floor of [`Smooth`](FieldSpec::Smooth), so
+    /// a render of it terraces into flat bands exactly where the smooth one runs
+    /// continuously. That contrast is the whole of why the smooth count exists,
+    /// and it is easier to show than to describe.
+    ///
+    /// `cycle` is the classic band mapping `palette[n mod N]`: the count wraps
+    /// every `N` iterations, so the gradient repeats across the frame instead of
+    /// being spent once over whatever range the frame happened to hold. Absent
+    /// means no wrap. Exterior only, like the smooth count it shadows.
+    ///
+    /// It is not in the mode catalog and never will be — see [`crate::mode`].
+    Discrete {
+        #[serde(default)]
+        cycle: Option<NonZeroU32>,
+    },
     /// Mean of `½ + ½·sin(density · arg z)` over the orbit.
     ///
     /// The sine turns the angle each iterate arrived at into a stripe, and
@@ -108,6 +129,7 @@ impl FieldSpec {
     pub fn name(&self) -> &'static str {
         match self {
             FieldSpec::Smooth => "smooth",
+            FieldSpec::Discrete { .. } => "discrete",
             FieldSpec::Stripe { .. } => "stripe",
             FieldSpec::Tia => "tia",
             FieldSpec::Curvature => "curvature",
@@ -120,7 +142,8 @@ impl FieldSpec {
     /// Which per-iteration channels this field reads.
     pub fn wants(&self) -> Wants {
         match *self {
-            FieldSpec::Smooth => Wants::default(),
+            // Both read the escape itself, which the loop always records.
+            FieldSpec::Smooth | FieldSpec::Discrete { .. } => Wants::default(),
             FieldSpec::Stripe { density } => Wants {
                 stripe: Some(density),
                 ..Wants::default()
@@ -154,6 +177,10 @@ impl FieldSpec {
         let fade = orbit.fade();
         match *self {
             FieldSpec::Smooth => orbit.escaped.then_some(orbit.smooth),
+            FieldSpec::Discrete { cycle } => orbit.escaped.then(|| match cycle {
+                Some(length) => (orbit.iteration % length.get()) as f64,
+                None => orbit.iteration as f64,
+            }),
             FieldSpec::Stripe { .. } => orbit.escaped.then(|| orbit.stripe.deband(fade)).flatten(),
             FieldSpec::Tia => orbit.escaped.then(|| orbit.tia.deband(fade)).flatten(),
             FieldSpec::Curvature => orbit
@@ -306,6 +333,7 @@ mod tests {
     fn every_field() -> Vec<FieldSpec> {
         vec![
             FieldSpec::Smooth,
+            FieldSpec::Discrete { cycle: None },
             FieldSpec::Stripe { density: 6.0 },
             FieldSpec::Tia,
             FieldSpec::Curvature,
@@ -407,26 +435,98 @@ mod tests {
         let family = Family::Multibrot { degree: 2 };
         let view = whole_set_view(1);
         let sampled = sample(&view, &family, 400, &every_field());
-        let empty = |index: usize| {
-            sampled.fields[index]
-                .values
-                .iter()
-                .filter(|v| !v.is_finite())
-                .count()
-        };
         let interior = (sampled.interior_fraction * sampled.fields[0].values.len() as f64) as usize;
         assert!(interior > 0);
-        for index in 0..4 {
-            assert_eq!(
-                empty(index),
-                interior,
-                "field {index} should be exterior only"
+
+        // The two orbit traps, which have a closest approach to report whether
+        // or not the orbit ever left. Everything else reads an escape.
+        let fills_the_interior = [
+            FieldSpec::TrapCircle { radius: 1.0 },
+            FieldSpec::GaussianInt {
+                reduce: Reduction::MinimumDistance,
+            },
+        ];
+        for (spec, field) in every_field().iter().zip(&sampled.fields) {
+            let empty = field.values.iter().filter(|v| !v.is_finite()).count();
+            let expected = if fills_the_interior.contains(spec) {
+                0
+            } else {
+                interior
+            };
+            assert_eq!(empty, expected, "{spec:?}");
+        }
+    }
+
+    /// The discrete field is the step the smooth one sits in, sample for sample.
+    /// That is what the article's smooth-versus-discrete figure is a picture of,
+    /// and it is the reason the pair is worth rendering at one location.
+    ///
+    /// Compared with a tolerance because a field is `f32`: the exact claim —
+    /// `floor(smooth) == iteration` — is `f64` arithmetic and is pinned where
+    /// that arithmetic happens, in [`crate::iterate`]. Here a smooth count a
+    /// thousandth below a whole number can have rounded up on the way into the
+    /// array, and that is a fact about storage rather than about the fields.
+    #[test]
+    fn the_discrete_field_is_the_step_the_smooth_one_sits_in() {
+        let view = whole_set_view(1);
+        let family = Family::Multibrot { degree: 2 };
+        let sampled = sample(
+            &view,
+            &family,
+            400,
+            &[FieldSpec::Smooth, FieldSpec::Discrete { cycle: None }],
+        );
+        let mut bands = std::collections::BTreeSet::new();
+        for (smooth, discrete) in sampled.fields[0]
+            .values
+            .iter()
+            .zip(&sampled.fields[1].values)
+        {
+            if smooth.is_nan() {
+                assert!(discrete.is_nan(), "the two disagree about the interior");
+                continue;
+            }
+            let into_the_step = smooth - discrete;
+            assert!(
+                (-1e-3..1.0).contains(&into_the_step),
+                "smooth {smooth} is not inside step {discrete}"
             );
+            assert_eq!(*discrete, discrete.trunc(), "a step that is not whole");
+            bands.insert(*discrete as u32);
         }
-        for index in 4..6 {
-            assert_eq!(empty(index), 0, "field {index} should fill the interior");
+        assert!(bands.len() > 4, "a frame with no bands proves nothing");
+    }
+
+    /// A cycle is the classic `palette[n mod N]`: the count wraps, so the field
+    /// cannot leave `[0, N)` however deep the frame's escape counts run.
+    #[test]
+    fn a_cycle_wraps_the_count_it_reads() {
+        let length = 8;
+        let cycled = FieldSpec::Discrete {
+            cycle: Some(NonZeroU32::new(length).unwrap()),
+        };
+        let sampled = sample(
+            &whole_set_view(1),
+            &Family::Multibrot { degree: 2 },
+            400,
+            &[FieldSpec::Discrete { cycle: None }, cycled],
+        );
+        let mut wrapped = false;
+        for (plain, banded) in sampled.fields[0]
+            .values
+            .iter()
+            .zip(&sampled.fields[1].values)
+        {
+            if plain.is_nan() {
+                continue;
+            }
+            assert_eq!(*banded, (*plain as u32 % length) as f32);
+            wrapped |= *plain >= length as f32;
         }
-        assert_eq!(empty(6), interior);
+        assert!(
+            wrapped,
+            "no sample ran past the cycle, so nothing was wrapped"
+        );
     }
 
     #[test]
@@ -466,5 +566,16 @@ mod tests {
         }
         let defaulted: FieldSpec = serde_json::from_str(r#"{"kind":"stripe"}"#).unwrap();
         assert_eq!(defaulted, FieldSpec::Stripe { density: 6.0 });
+
+        let banded: FieldSpec = serde_json::from_str(r#"{"kind":"discrete","cycle":24}"#).unwrap();
+        assert_eq!(
+            banded,
+            FieldSpec::Discrete {
+                cycle: NonZeroU32::new(24)
+            }
+        );
+        // A cycle of zero is not a band mapping, and the type refuses it at the
+        // door rather than leaving a modulo-by-zero for the reduction to meet.
+        assert!(serde_json::from_str::<FieldSpec>(r#"{"kind":"discrete","cycle":0}"#).is_err());
     }
 }
