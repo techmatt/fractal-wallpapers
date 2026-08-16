@@ -33,13 +33,22 @@ matters: a set the head trained on is not an instrument.
 
 ## What a set is here, and how it differs from a production one
 
-Eight candidates, drawn uniformly from the whole pool. A production set is one
+Twenty candidates, drawn uniformly from the whole pool. A production set is one
 palette *flavour's* members — up to thirty-two maps that already resemble each
-other — so it asks a harder question than a uniform draw does. That difference is
-deliberate and declared rather than hidden: the flavour taxonomy is an artifact
-of the source project's own clustering and does not exist here, and the head is
-**judged** on the real sets, which is the direction an unmatched difference
-should point. Training is the easier population; acceptance is the harder one.
+other, whose top two sit a twentieth of the set's own spread apart — so it asks a
+finer question than a uniform draw does. The flavour taxonomy is an artifact of
+the source project's own clustering and does not exist here, so the mismatch
+cannot be closed; what a wider set does is narrow it, because twenty draws from
+seven hundred maps put near-ties at the top far more often than eight do.
+
+That is why the width is twenty rather than eight, and the number came from a
+measurement rather than a guess: the first corpus, 600 sets of 8, produced a head
+that reproduced the teacher's *order* on the real sets at a rank correlation of
+0.88 and its *top pick* only 38% of the time. The distinction it had never been
+asked to make was the one the sets it is judged on are made of.
+
+The head is still judged on the harder population, which is the direction an
+unmatched difference should point.
 
 ## One row per candidate, and every row carries its whole join
 
@@ -75,14 +84,19 @@ BATCH = "pool_draw_seeded"
 SEED = 20260815
 
 #: How many candidate sets to generate, before the per-partition supply caps
-#: bite. Ten partitions and sixty each; a partition that cannot supply sixty
+#: bite. Ten partitions and eighty each; a partition that cannot supply eighty
 #: gives what it has and the shortfall is spread over the ones that can.
-SETS = 600
+SETS = 800
 
-#: Candidates per set. Eight is enough for the centred loss to have a stable
-#: mean to remove, and a set is worth a set regardless — more maps at one place
-#: buys less than the same renders spent at more places.
-CANDIDATES = 8
+#: Candidates per set. Twenty, and the number is the answer to an acceptance
+#: read rather than a guess: a first corpus of 600 sets of 8 produced a head that
+#: reproduced the teacher's ORDER on the real sets (rank correlation 0.88) and
+#: its top pick only 38% of the time, against a bar of 50%. A production set is
+#: up to 32 maps of one palette flavour whose top two sit a twentieth of the
+#: set's own spread apart; a set of 8 drawn uniformly from 700 almost never asks
+#: a question that fine. Twenty is what the render budget allows once the field
+#: is dumped once per location instead of iterated once per candidate.
+CANDIDATES = 20
 
 #: The lowest human tier a location may be drawn at. A 2 has structure but is
 #: unremarkable, and places like that do reach colorize — the source's own
@@ -92,7 +106,7 @@ CANDIDATES = 8
 FLOOR = 2
 
 #: Share of the corpus's locations held out, and it is drawn over locations so a
-#: place's eight candidates cannot straddle the boundary.
+#: place's candidates cannot straddle the boundary.
 HOLDOUT_SHARE = 0.20
 
 
@@ -122,6 +136,12 @@ def row_dir() -> Path:
 
 
 def batch_path(partition: str) -> Path:
+    """One file per partition, which is the axis the draw is apportioned on.
+
+    These are the repository's only tracked files over a mebibyte, and the size
+    rule carries a named exemption for them rather than the corpus being split
+    into numbered parts to fit under it — see `tests/test_history_purity.py`.
+    """
     return row_dir() / f"{partition.replace(':', '_')}.jsonl"
 
 
@@ -247,67 +267,106 @@ def read_plan() -> list[dict]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line]
 
 
-def pictures(set_rows: list[dict], cyclic_maps: set[str]) -> list[tuple[str, dict]]:
-    """`(name, row)` for every candidate of every set, one entry per picture.
+def recolor_spec(row: dict, field: Path, output: Path) -> dict:
+    """What the engine is told to colour a dumped field with, for one candidate.
 
-    Two sets that draw the same map at the same place produce the same picture
-    and share a file: the name is a digest of the whole spec, so the cache is
-    keyed on what was rendered rather than on which set asked for it.
+    Everything geometric comes from the dump's own record — the grid, the place,
+    the curve — so all that is named here is the map and how its gradient is
+    spent. Which is exactly the axis a candidate set varies.
     """
-    out = []
-    for set_row in set_rows:
-        for colormap in set_row["candidates"]:
-            row = palette_sets.candidate_row(set_row, colormap, cyclic_maps)
-            out.append((renders.job_name(row), row))
-    return out
+    from fractal_wallpapers.paths import colormap_dir
+
+    return {
+        "schema": 1,
+        "field": str(field),
+        "colormap": row["colormap"],
+        "colormap_dir": str(colormap_dir()),
+        "palette": renders.spec_of(row, output)["palette"],
+        "output": str(output),
+    }
 
 
 def build(set_rows: list[dict], limit: int | None = None, log: Path | None = None) -> dict:
-    """Render every candidate that is not already on disk."""
-    cyclic_maps = palette_sets.cyclic()
-    jobs = pictures(set_rows, cyclic_maps)
-    seen, unique = set(), []
-    for name, row in jobs:
-        if name not in seen:
-            seen.add(name)
-            unique.append((name, row))
-    if limit is not None:
-        unique = unique[:limit]
+    """Make every candidate picture that is not already on disk.
 
+    **One iteration per location, not one per candidate.** A set's candidates are
+    the same place through different maps, so the expensive stage — the escape-time
+    field — is identical across all of them. The field is dumped once, every
+    missing candidate is coloured off it, and the dump is thrown away: 0.22 s and
+    then 0.042 s each, against 0.25 s each. On a corpus of twenty maps a location
+    that is the difference between fourteen minutes and an hour.
+
+    Nothing about the pictures changes. A recolor of a dumped field reproduces the
+    render it came from **byte for byte** — the engine's own guarantee, and
+    `tests/test_palette_corpus.py` holds it to that rather than taking it — so the
+    cache is keyed on the same digest either way and a file made by one path is
+    indistinguishable from one made by the other.
+    """
+    cyclic_maps = palette_sets.cyclic()
     crops = crop_dir()
     crops.mkdir(parents=True, exist_ok=True)
     log = log or log_path()
     log.parent.mkdir(parents=True, exist_ok=True)
+    field = cache_dir() / "field.f32"
 
-    started = time.monotonic()
-    rendered = skipped = 0
-    with log.open("a", encoding="utf-8", newline="\n") as handle:
-        handle.write(f"--- build: {len(unique)} pictures ---\n")
-        handle.flush()
-        for index, (name, row) in enumerate(unique, start=1):
-            output = crops / f"{name}.jpg"
-            if output.is_file():
-                skipped += 1
+    wanted: list[tuple[dict, list[tuple[str, dict]]]] = []
+    seen: set[str] = set()
+    asked = 0
+    for set_row in set_rows:
+        missing = []
+        for colormap in set_row["candidates"]:
+            row = palette_sets.candidate_row(set_row, colormap, cyclic_maps)
+            name = renders.job_name(row)
+            asked += 1
+            if name in seen or (crops / f"{name}.jpg").is_file():
                 continue
-            engine.run("render", renders.spec_of(row, output))
-            rendered += 1
-            if rendered % 100 == 0 or index == len(unique):
+            seen.add(name)
+            missing.append((name, row))
+        if missing:
+            wanted.append((set_row, missing))
+    needed = sum(len(missing) for _, missing in wanted)
+    if limit is not None:
+        trimmed, budget = [], limit
+        for set_row, missing in wanted:
+            if budget <= 0:
+                break
+            trimmed.append((set_row, missing[:budget]))
+            budget -= len(missing[:budget])
+        wanted = trimmed
+
+    total = sum(len(missing) for _, missing in wanted)
+    started = time.monotonic()
+    rendered = fields = 0
+    with log.open("a", encoding="utf-8", newline="\n") as handle:
+        handle.write(f"--- build: {total} pictures over {len(wanted)} locations ---\n")
+        handle.flush()
+        for index, (_set_row, missing) in enumerate(wanted, start=1):
+            first = missing[0][1]
+            engine.run("dump-field", {**renders.spec_of(first, field), "output": str(field)})
+            fields += 1
+            for name, row in missing:
+                engine.run("recolor", recolor_spec(row, field, crops / f"{name}.jpg"))
+                rendered += 1
+            if index % 25 == 0 or index == len(wanted):
                 spent = time.monotonic() - started
                 rate = spent / max(rendered, 1)
                 handle.write(
-                    f"{index}/{len(unique)}  rendered {rendered}  skipped {skipped}  "
-                    f"{rate:.3f}s each  {(len(unique) - index) * rate / 60:.1f} min left\n"
+                    f"location {index}/{len(wanted)}  pictures {rendered}/{total}  "
+                    f"{rate:.3f}s each  {(total - rendered) * rate / 60:.1f} min left\n"
                 )
                 handle.flush()
+    field.unlink(missing_ok=True)
+    field.with_suffix(".json").unlink(missing_ok=True)
 
     seconds = time.monotonic() - started
     on_disk = sorted(crops.glob("*.jpg"))
     return {
         "schema": SCHEMA,
-        "asked": len(jobs),
-        "pictures": len(unique),
+        "asked": asked,
+        "pictures": total,
         "rendered": rendered,
-        "skipped": skipped,
+        "fields": fields,
+        "skipped": asked - needed,
         "seconds": round(seconds, 1),
         "seconds_each": round(seconds / rendered, 3) if rendered else None,
         "files": len(on_disk),
@@ -404,7 +463,13 @@ def label(root: Path, set_rows: list[dict], device: str = "auto", log=print) -> 
             by_partition.setdefault(set_row["partition"], []).append(record)
             cursor += 1
 
-    row_dir().mkdir(parents=True, exist_ok=True)
+    directory = row_dir()
+    directory.mkdir(parents=True, exist_ok=True)
+    # Cleared rather than overwritten: a re-draw can retire a partition or rename
+    # a file, and a leftover from the last one would be read as corpus by
+    # everything downstream — silently, because the reader globs the directory.
+    for stale in directory.glob("*.jsonl"):
+        stale.unlink()
     for partition, records in sorted(by_partition.items()):
         path = batch_path(partition)
         with path.open("w", encoding="utf-8", newline="\n") as handle:
@@ -437,7 +502,7 @@ def label(root: Path, set_rows: list[dict], device: str = "auto", log=print) -> 
             "median": float(sorted(scores)[len(scores) // 2]),
             "max": float(scores.max()),
         },
-        "wrote": [str(batch_path(name)) for name in sorted(written)] + [str(split_path())],
+        "wrote": sorted(str(path) for path in row_dir().glob("*.jsonl")) + [str(split_path())],
     }
 
 
@@ -500,10 +565,10 @@ __all__ = [
     "grouped",
     "label",
     "log_path",
-    "pictures",
     "plan_path",
     "read",
     "read_plan",
+    "recolor_spec",
     "row_dir",
     "sides",
     "split_path",

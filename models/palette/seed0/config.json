@@ -1,0 +1,124 @@
+{
+  "schema": 1,
+  "head": "palette",
+  "run": "seed0",
+  "backbone": "mobilenetv4_conv_small.e2400_r224_in1k",
+  "pretrained": true,
+  "geometry": "squash",
+  "epochs": 40,
+  "patience": null,
+  "batch_sets": 16,
+  "backbone_lr": 0.0001,
+  "head_lr": 0.001,
+  "weight_decay": 0.05,
+  "grad_clip": 1.0,
+  "seed": 0,
+  "amp": "off",
+  "source_dims": [
+    640,
+    360
+  ],
+  "target_dims": [
+    224,
+    224
+  ],
+  "augmentation": "geometric only \u2014 both flips. No colour: the colour is the question",
+  "loss": "centred mean squared error against the teacher's score vector, per set",
+  "selection": "min held-out distillation loss \u2014 the same objective the trainer minimizes, over locations the run never saw. A proper scoring rule for a score vector, so it sees the scale and not only the order",
+  "mean": [
+    0.485,
+    0.456,
+    0.406
+  ],
+  "std": [
+    0.229,
+    0.224,
+    0.225
+  ],
+  "interpolation": "bicubic",
+  "best_epoch": 37,
+  "inherited": {
+    "source": "the teacher's own config, embedded in its checkpoint and resolved through the source project's single-source pointer",
+    "identical": [
+      "backbone",
+      "backbone_lr",
+      "batch_sets",
+      "epochs",
+      "geometry",
+      "grad_clip",
+      "head_lr",
+      "interpolation",
+      "mean",
+      "pretrained",
+      "seed",
+      "std",
+      "target_dims",
+      "weight_decay"
+    ],
+    "changed": [
+      {
+        "key": "loss",
+        "was": "margin-ranking hinge, margin 1.0, over cross-tier candidate pairs",
+        "now": "centred mean squared error over the teacher's whole score vector",
+        "why": "FORCED. The teacher's labels were human tiers, which support an ordering and nothing more. The student's labels are the teacher's own real-valued scores, and a pairwise hinge would throw away every gap and keep only its sign \u2014 which is most of what a set of candidates says."
+      },
+      {
+        "key": "selection",
+        "was": "max validation pair-direction accuracy",
+        "now": "min held-out distillation loss",
+        "why": "FORCED, for the reason the finished-render judges were: a rank statistic is invariant to any monotone rescaling of the scores, so it cannot tell a student that keeps the teacher's order while flattening its gaps from one that reproduces both. The distillation loss is a proper scoring rule for the vector being distilled."
+      },
+      {
+        "key": "patience",
+        "was": "8 epochs without an improvement in the selection objective",
+        "now": "none \u2014 every run takes all 40 epochs",
+        "why": "MEASURED, not assumed. The teacher's objective was a pair-direction accuracy over 200 validation queries, which moves smoothly; this one is a squared error over 120 held-out sets and it moves by a FACTOR OF FOUR between adjacent epochs of a healthy run \u2014 seed 0 read 1.52, 1.52, 2.63, 1.76 across epochs 30 to 33. A patience of 8 on a signal that noisy is not an early stop, it is a coin toss: at the first attempt it cut seed 2 off at epoch 12 on a lucky epoch-4 reading of 2.82, while the two seeds that survived reached 1.52. The epoch is chosen on the held-out loss either way, so patience was only ever saving time, and a full run of this head is three minutes."
+      },
+      {
+        "key": "split",
+        "was": "location-disjoint 80/20 over the query corpus, stratified by query type",
+        "now": "a seeded 80/20 over the corpus's own locations, shipped as data",
+        "why": "the corpora are different objects. There is no query type here \u2014 every set is a uniform pool draw at one place \u2014 so there is nothing to stratify on, and location-disjointness is the property that carries across."
+      }
+    ]
+  },
+  "teacher": {
+    "name": "v3_gvo",
+    "checkpoint": "model_best.pt",
+    "sha256": "745cab2794da554765358c8c874e38623917f37ba2fa20e77d20594ecfe64bf8",
+    "backbone": "mobilenetv4_conv_small.e2400_r224_in1k",
+    "epoch": 12,
+    "config": {
+      "task": "palette-preference scorer v3-gvo (good_vs_okay INCLUDED in training)",
+      "version": "v3_gvo",
+      "ab_against": "v3",
+      "moving_part": "training pairs += good_vs_okay (v3 holds it out); everything else frozen",
+      "data": "union coldstart_v2 + warmstart_v1 + prefv2_dramatic_v1 (provenance-blind)",
+      "split_design": "VERBATIM from v3/split_manifest.json (byte-identical val)",
+      "train_include_pair_types": [
+        "good_vs_bad",
+        "okay_vs_bad",
+        "good_vs_okay"
+      ],
+      "eval_pair_types": "ALL",
+      "model": "mobilenetv4_conv_small.e2400_r224_in1k",
+      "margin": 1.0,
+      "backbone_lr": 0.0001,
+      "head_lr": 0.001,
+      "weight_decay": 0.05,
+      "batch_queries": 16,
+      "max_epochs": 40,
+      "patience": 8,
+      "seed": 0,
+      "device": "cuda"
+    },
+    "resolved_through": "tools/queries/scorer/data.py.ACTIVE_SCORER_DIR"
+  },
+  "corpus": {
+    "batch": "pool_draw_seeded",
+    "seed": 20260815,
+    "sets": 800,
+    "candidates_per_set": 20
+  },
+  "precision": "fp32"
+}

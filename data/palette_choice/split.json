@@ -3,15 +3,15 @@
   "rule": "a seeded draw over LOCATIONS, not over candidates: a place's candidates share one field and differ only in colour, so a split that let them straddle would report a held-out loss that is partly a training loss",
   "seed": 20260815,
   "target_share": 0.2,
-  "locations": 600,
-  "held_out_locations": 120,
+  "locations": 800,
+  "held_out_locations": 160,
   "realized_share": 0.2,
   "sets": {
-    "train": 480,
-    "holdout": 120
+    "train": 640,
+    "holdout": 160
   },
   "batch": "pool_draw_seeded",
-  "candidates_per_set": 8,
+  "candidates_per_set": 20,
   "teacher": {
     "name": "v3_gvo",
     "checkpoint": "model_best.pt",

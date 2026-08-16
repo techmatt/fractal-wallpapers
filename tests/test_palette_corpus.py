@@ -120,8 +120,15 @@ class TestTheTrackedCorpus:
     def test_every_location_cleared_the_floor(self, rows) -> None:
         assert min(row["location_score"] for row in rows) >= palette_corpus.FLOOR
 
-    def test_no_tracked_row_file_is_large_enough_to_worry_the_history_rule(self) -> None:
-        """The corpus is sharded by partition so no single file approaches the
-        one-mebibyte tracked-file limit."""
+    def test_the_corpus_is_the_one_thing_the_size_rule_is_widened_for(self) -> None:
+        """These files are over a mebibyte and are meant to be. The exemption is
+        named and narrow — the corpus directory, nothing else — and it exempts the
+        size rule only, so a blob dropped in here still fails the build."""
+        from tests.test_history_purity import LARGE_TEXT_ALLOWLIST
+
+        assert any("palette_choice/rows" in prefix for prefix in LARGE_TEXT_ALLOWLIST), (
+            "the corpus is over the limit and nothing records that as a decision"
+        )
         for path in palette_corpus.row_dir().glob("*.jsonl"):
-            assert path.stat().st_size < 1024 * 1024, path
+            assert path.suffix == ".jsonl"
+            path.read_text(encoding="utf-8")

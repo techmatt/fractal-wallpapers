@@ -54,6 +54,20 @@ BINARY_SUFFIXES = frozenset(
 # Deliberately empty. Every entry here is a permanent exception to the rule above.
 ALLOWLIST: frozenset[str] = frozenset()
 
+# Exempt from the SIZE rule only, and still held to being text. The two rules are
+# separated here because they protect different things: a binary blob is a
+# one-way door whatever its size, and a megabyte of JSONL is a file `git` packs,
+# `diff` reads and a person can open.
+#
+# The palette head's distillation corpus is the one thing that needs it. It is
+# 16,000 machine-labeled rows — the entire input to a training run, which is what
+# makes that head regenerable rather than merely reproducible — and it is written
+# one file per partition because that is the axis its draw is apportioned on.
+# Splitting a partition into numbered parts to sit under a limit would be
+# arranging the data around the guard instead of around what it is. Matt's call,
+# recorded here rather than in a commit message nobody will find again.
+LARGE_TEXT_ALLOWLIST = ("data/palette_choice/rows/",)
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -80,12 +94,26 @@ def test_no_binary_files_are_tracked() -> None:
 def test_no_tracked_file_exceeds_one_mebibyte() -> None:
     offenders = []
     for name in tracked_files():
-        if name in ALLOWLIST:
+        if name in ALLOWLIST or name.startswith(LARGE_TEXT_ALLOWLIST):
             continue
         path = REPO_ROOT / name
         if path.is_file() and path.stat().st_size > MAX_TRACKED_BYTES:
             offenders.append(f"{name} ({path.stat().st_size} bytes)")
     assert not offenders, f"tracked files exceed {MAX_TRACKED_BYTES} bytes: {offenders}"
+
+
+def test_the_size_exemption_does_not_exempt_a_blob() -> None:
+    """A file allowed to be large is still not allowed to be binary.
+
+    The whole reason the two rules are separated: `LARGE_TEXT_ALLOWLIST` widens
+    one of them and must not quietly widen the other.
+    """
+    for prefix in LARGE_TEXT_ALLOWLIST:
+        exempt = [name for name in tracked_files() if name.startswith(prefix)]
+        assert exempt, f"{prefix} exempts nothing — a dead exception is a rule nobody reads"
+        assert not [name for name in exempt if Path(name).suffix.lower() in BINARY_SUFFIXES], (
+            f"{prefix} holds a binary-by-nature file"
+        )
 
 
 def test_no_absolute_paths_in_source() -> None:
