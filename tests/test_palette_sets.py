@@ -70,7 +70,21 @@ def rows():
 
 
 class TestTheTrackedRecord:
-    """The 180 vendored sets, held to what they claim about themselves."""
+    """The vendored sets, held to what they claim about themselves."""
+
+    def test_every_recorded_colorize_batch_is_here(self, rows) -> None:
+        """The instrument is the whole recorded population, not the convenient
+        half of it: 180 sets resolve a share to about ±0.07 and 377 to about
+        ±0.05, and the first pass's reading straddled its own floor inside that."""
+        assert {row["source_batch"] for row in rows} == {
+            batch for _, batch in palette_sets.SOURCE_BATCHES
+        }
+
+    def test_a_set_id_is_unique_across_batches(self, rows) -> None:
+        """It is the join key every score file and every acceptance read quotes."""
+        ids = [row["set"] for row in rows]
+        assert len(set(ids)) == len(ids)
+        assert all("-" in row["set"] for row in rows)
 
     def test_every_recorded_winner_is_inside_its_own_candidate_set(self, rows) -> None:
         """The check the extraction refuses to write without. A winner outside its

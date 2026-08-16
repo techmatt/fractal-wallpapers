@@ -63,6 +63,66 @@ def test_the_split_reports_what_it_realized_rather_than_what_it_asked_for() -> N
     assert record["realized_share"] != 0.2
 
 
+def test_a_pinned_location_cannot_be_drawn_back_onto_the_training_side(monkeypatch) -> None:
+    """A corpus that grows must not grow into its own held-out side: the epoch
+    this head ships at is chosen there, and a location that scored that loss last
+    time and teaches the model this time makes the two readings incomparable."""
+    rows = [
+        {
+            "family": {"kind": "mandelbrot"},
+            "viewport": {"center_re": str(index), "center_im": "0", "width": "3.0"},
+        }
+        for index in range(100)
+    ]
+    pinned = {repr(location_key(row["family"], row["viewport"])) for row in rows[:5]}
+    monkeypatch.setattr(palette_corpus, "carried_holdout", lambda: pinned)
+    record = palette_corpus.sides(rows, seed=1, share=0.2)
+    held = {
+        repr(location_key(row["family"], row["viewport"]))
+        for row in rows
+        if row["side"] == "holdout"
+    }
+    assert pinned <= held
+    assert record["carried_from_earlier_draws"] == 5
+    assert record["held_out_locations"] == 20
+
+
+def test_the_pin_never_shrinks_the_held_out_share_it_was_asked_for(monkeypatch) -> None:
+    """More pins than the share asks for is a bigger held-out side, not a
+    truncated pin. Dropping one would be dropping the property the pin exists for."""
+    rows = [
+        {
+            "family": {"kind": "mandelbrot"},
+            "viewport": {"center_re": str(index), "center_im": "0", "width": "3.0"},
+        }
+        for index in range(10)
+    ]
+    everything = {repr(location_key(row["family"], row["viewport"])) for row in rows}
+    monkeypatch.setattr(palette_corpus, "carried_holdout", lambda: everything)
+    record = palette_corpus.sides(rows, seed=0, share=0.2)
+    assert record["held_out_locations"] == 10
+    assert all(row["side"] == "holdout" for row in rows)
+
+
+def test_every_map_anchors_a_set_before_any_map_anchors_two() -> None:
+    """A corpus that sampled anchors independently would leave a tail of maps that
+    never sat at the centre of a set."""
+    pool = [f"map{index:03d}" for index in range(50)]
+    assert sorted(palette_corpus.anchors(pool, 50, seed=3)) == pool
+    twice = palette_corpus.anchors(pool, 100, seed=3)
+    assert sorted(twice) == sorted(pool + pool)
+    assert palette_corpus.anchors(pool, 30, seed=3) == twice[:30]
+
+
+def test_the_temperature_is_read_off_the_corpus_rather_than_chosen() -> None:
+    """The teacher's units mean nothing on their own, so a listwise term cannot
+    carry a constant temperature and mean the same thing twice."""
+    tight = palette_corpus.temperature([[0.0, 1.0, 2.0], [1.0, 2.0, 3.0]])
+    loose = palette_corpus.temperature([[0.0, 10.0, 20.0], [10.0, 20.0, 30.0]])
+    assert loose == pytest.approx(10 * tight)
+    assert tight > 0
+
+
 @pytest.fixture(scope="module")
 def rows():
     if not palette_corpus.row_dir().is_dir():
@@ -119,6 +179,44 @@ class TestTheTrackedCorpus:
 
     def test_every_location_cleared_the_floor(self, rows) -> None:
         assert min(row["location_score"] for row in rows) >= palette_corpus.FLOOR
+
+    def test_the_hard_sets_really_are_tighter_than_the_uniform_ones(self, rows) -> None:
+        """The mix is a declaration and this is the check on it. A hard set is
+        meant to be a near-tie by construction; if its members were no nearer each
+        other than a uniform draw's, the corpus would be claiming a property it
+        does not have."""
+        import json
+
+        document = json.loads(palette_corpus.split_path().read_text(encoding="utf-8"))
+        kinds = document["mix"]["kinds"]
+        assert kinds["hard"]["share"] == pytest.approx(document["mix"]["declared_hard_share"])
+        assert (
+            kinds["hard"]["palette_distance"]["mean"] < kinds["uniform"]["palette_distance"]["mean"]
+        )
+
+    def test_a_hard_set_opens_on_the_anchor_it_was_built_around(self, rows) -> None:
+        from fractal_wallpapers.models import palette_sets
+        from fractal_wallpapers.palettes import space
+
+        pool = palette_sets.pool()["pool"]
+        hard = [entry for entry in palette_corpus.grouped(rows) if entry["kind"] == "hard"]
+        assert hard
+        for entry in hard[:5]:
+            anchor = entry["rows"][0]["anchor"]
+            assert anchor is not None
+            assert set(entry["candidates"]) == set(
+                space.neighbourhood(anchor, pool, len(entry["candidates"]))
+            )
+
+    def test_no_location_a_previous_draw_held_out_is_being_taught(self, rows) -> None:
+        """The pin is data, and this is what it is for."""
+        pinned = palette_corpus.carried_holdout()
+        taught = {
+            repr(location_key(row["family"], row["viewport"]))
+            for row in rows
+            if row["side"] == "train"
+        }
+        assert not (pinned & taught)
 
     def test_the_corpus_is_the_one_thing_the_size_rule_is_widened_for(self) -> None:
         """These files are over a mebibyte and are meant to be. The exemption is

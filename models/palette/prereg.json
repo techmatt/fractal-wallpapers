@@ -4,15 +4,18 @@
   "question": "Is a palette head distilled inside this repository approximately equivalent to the teacher it was distilled from \u2014 does it choose the same map \u2014 on the real candidate sets a production colorize run put in front of that teacher, both read on this repository's own pictures?",
   "population": {
     "record": "data/palette_choice/candidate_sets.jsonl",
-    "source_batch": "2026-08-05_wallpaper_colorize_path_v1",
-    "sets": 180,
-    "locations": 180,
-    "candidates": 5518,
+    "source_batches": {
+      "2026-08-05_wallpaper_colorize_path_v1": 180,
+      "2026-08-11_wallpaper_blind_minibrot_v1": 197
+    },
+    "sets": 377,
+    "locations": 377,
+    "candidates": 11626,
     "set_sizes": {
-      "15": 6,
-      "22": 10,
-      "27": 8,
-      "32": 156
+      "15": 9,
+      "22": 18,
+      "27": 21,
+      "32": 329
     },
     "flavours": 19,
     "partitions": {
@@ -20,8 +23,8 @@
       "julia:multibrot3": 7,
       "julia:multibrot4": 18,
       "julia:multibrot5": 17,
-      "mandelbrot": 69,
-      "multibrot3": 10,
+      "mandelbrot": 106,
+      "multibrot3": 170,
       "multibrot4": 9,
       "multibrot5": 13,
       "phoenix": 19,
@@ -29,11 +32,49 @@
     },
     "blind": "no location here is in the distillation corpus, and none of these sets was generated for this exercise: each is a real colorize decision the source project recorded"
   },
+  "corpus": {
+    "present": true,
+    "sets": 2000,
+    "candidates_per_set": 32,
+    "mix": {
+      "declared_hard_share": 0.7,
+      "kinds": {
+        "hard": {
+          "sets": 1400,
+          "share": 0.7,
+          "palette_distance": {
+            "mean": 0.9252367533824005,
+            "median": 0.9031410723573319
+          },
+          "sides": {
+            "train": 1113,
+            "holdout": 287
+          },
+          "distinct_candidate_sets": 700
+        },
+        "uniform": {
+          "sets": 600,
+          "share": 0.3,
+          "palette_distance": {
+            "mean": 1.9072473061363573,
+            "median": 1.9101218571582872
+          },
+          "sides": {
+            "train": 487,
+            "holdout": 113
+          },
+          "distinct_candidate_sets": 600
+        }
+      },
+      "maps_used": 700
+    }
+  },
   "declared": [
     "THE TEACHER IS THE GROUND TRUTH, NOT A HUMAN. Every arm here measures agreement with a pretrained head. A PASS says the student reproduces it; it says nothing at all about whether either of them picks the palette a person would.",
     "NOT A SAME-INPUT COMPARISON WITH THE PRODUCTION RUN. The recorded winners were chosen on the source project's own coarse recolors; every score read here is taken on a 640x360 render made by this engine through this colormap library. That gap is not assumed away \u2014 it is the renderer control, and it is measured on this same population and used to calibrate the bar.",
-    "THE JUDGED SETS ARE HARDER THAN THE TRAINED ONES. A set here is one palette flavour's members, up to 32 maps that already resemble each other; a training set is 8 maps drawn uniformly from the whole pool. The flavour taxonomy is an artifact of the source project's clustering and does not exist in this repository, so it could not be reproduced in the draw.",
-    "180 SETS RESOLVE A SHARE TO ABOUT PLUS OR MINUS 0.07. A difference smaller than the interval is reported as a band and is not called in either direction.",
+    "THE JUDGED SETS ARE STILL NOT THE TRAINED ONES. A set here is one palette flavour's members, up to 32 maps that already resemble each other. The corpus now answers that with 32-map sets of which a declared majority are palette-space neighbourhoods, so the width and the near-tie are matched \u2014 but the flavour taxonomy itself is an artifact of the source project's clustering over a library this repository holds a subset of, and it is NOT reproduced. What is matched is the property, not the partition.",
+    "377 SETS RESOLVE A SHARE TO ABOUT PLUS OR MINUS 0.05. A difference smaller than the interval is reported as a band and is not called in either direction.",
+    "THE TWO BATCHES ARE NOT ALIKE. The 180-row sheet spans all ten partitions; the 197-row blind slice is 160 multibrot3 and 37 mandelbrot locations at minibrot depth. Every arm is therefore reported per batch as well as pooled, and the pooled number is what the bar reads \u2014 the instrument is the whole recorded population, not the half of it that is evenly spread.",
     "THE POOL IS A SUBSET. 700 of the source pool's 987 maps are held here \u2014 every map a tracked corpus row or a vendored set names. A candidate set is complete; the pool the corpus draws from is not the whole production pool."
   ],
   "rules": {
@@ -41,6 +82,15 @@
     "draws": 5000,
     "bootstrap_seed": 0,
     "seeds": "three, and the band is the answer. What ships is the MEDIAN seed by the top_pick arm, never the best of three."
+  },
+  "training_arms": {
+    "why": "the first pass's miss pattern was the teacher's SECOND favourite winning, which is what a per-set-centred regression is least sharp about. A listwise term over each set is the obvious answer and it is worth exactly one arm.",
+    "arms": [
+      "regression only \u2014 the centred squared error the first pass trained under",
+      "regression + listwise \u2014 the same loss plus a temperature-scaled KL from the teacher's per-set softmax to the student's"
+    ],
+    "decided_on": "HELD-OUT TOP-PICK AGREEMENT over all held-out sets of the distillation corpus, at each arm's own selected epoch, at seed 0 and seed 0 only. Never on the real sets: those are the instrument and choosing a loss on them would spend the instrument to build the thing it is meant to measure.",
+    "recorded": "either way \u2014 the losing arm's numbers are written down too"
   },
   "arms": {
     "top_pick": {

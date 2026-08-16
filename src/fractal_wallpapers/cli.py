@@ -783,7 +783,12 @@ def palette_plan(args: argparse.Namespace) -> int:
     from fractal_wallpapers.models import palette_corpus
 
     try:
-        rows = palette_corpus.draw(sets=args.sets, candidates=args.candidates, seed=args.seed)
+        rows = palette_corpus.draw(
+            sets=args.sets,
+            candidates=args.candidates,
+            seed=args.seed,
+            hard_share=args.hard_share,
+        )
     except palette_corpus.CorpusError as refusal:
         print(refusal)
         return 1
@@ -798,6 +803,7 @@ def palette_plan(args: argparse.Namespace) -> int:
                 "candidates": sum(len(row["candidates"]) for row in rows),
                 "per_partition": dict(sorted(Counter(r["partition"] for r in rows).items())),
                 "seed": args.seed,
+                "mix": palette_corpus.mix(rows),
             },
             indent=2,
         )
@@ -850,7 +856,11 @@ def palette_train_head(args: argparse.Namespace) -> int:
 
     try:
         record = palette_train.run(
-            device=args.device, epochs=args.epochs, seed=args.seed, run_name=args.run
+            device=args.device,
+            epochs=args.epochs,
+            seed=args.seed,
+            run_name=args.run,
+            listwise=args.listwise,
         )
     except palette_train.TrainingError as refusal:
         print(refusal)
@@ -1723,6 +1733,12 @@ def palette_commands(subcommands) -> None:
         "--candidates", type=int, default=palette_corpus.CANDIDATES, help="maps per set"
     )
     planning.add_argument("--seed", type=int, default=palette_corpus.SEED, help="the draw's seed")
+    planning.add_argument(
+        "--hard-share",
+        type=float,
+        default=palette_corpus.HARD_SHARE,
+        help="the share of sets built as palette-space neighbourhoods rather than uniform draws",
+    )
     planning.set_defaults(handler=palette_plan)
 
     building = steps.add_parser(
@@ -1782,6 +1798,14 @@ def palette_commands(subcommands) -> None:
     training.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
     training.add_argument("--epochs", type=int, help="override the recipe's epoch count")
     training.add_argument("--seed", type=int, help="override the recipe's seed")
+    training.add_argument(
+        "--listwise",
+        type=float,
+        help=(
+            "weight of the listwise term beside the regression (0 is the regression alone). "
+            "Its temperature is read off the corpus, never passed here"
+        ),
+    )
     training.add_argument(
         "--run", help="name this run, so its records land in their own directory: a seed band"
     )

@@ -147,29 +147,56 @@ def _to_tensor(image):
     return torch.from_numpy(array).permute(2, 0, 1).float() / 255.0
 
 
-def decoded(paths):
-    """Every picture, resized once, as one `uint8` tensor `[N, 3, H, W]`.
+def decoded(paths, cache=None):
+    """Every picture, resized once, as one `uint8` array `[N, 3, H, W]`.
 
-    The resize is deterministic and the corpus is small enough to hold — 4,800
-    candidates at 224×224 is 723 MB of bytes — so it is done once instead of once
-    per epoch. That is not a micro-optimization: decoding a JPEG costs an order of
-    magnitude more than the forward pass through a two-and-a-half-million
-    parameter net, so a loop that re-decoded would spend its whole run in `libjpeg`
-    and a forty-epoch run would take forty times longer than the arithmetic in it.
+    The resize is deterministic, so it is done once instead of once per epoch.
+    That is not a micro-optimization: decoding a JPEG costs an order of magnitude
+    more than the forward pass through a two-and-a-half-million parameter net, so
+    a loop that re-decoded would spend its whole run in `libjpeg` and a forty-epoch
+    run would take forty times longer than the arithmetic in it.
 
     `uint8` rather than the normalized float: the same pixels, a quarter of the
     memory, and [`normalize`] is a tensor op that costs nothing on the way in.
+
+    `cache` names a file to decode **into**, and the array comes back memory-mapped
+    from it. A corpus of 51,200 candidates at 224×224 is 7.7 GB, which on a machine
+    already committed past its physical memory would be paged out to the swap file
+    and read back from disk anyway — so it is written to a file on purpose instead,
+    where the pages are clean, evictable, and shared by every run that asks for the
+    same pictures in the same order. The file is named for a digest of the path
+    list, so a second training run reuses the first one's decode rather than
+    spending five minutes repeating it, and a different corpus cannot silently
+    collide with it.
     """
+    import hashlib
+
     import numpy
-    import torch
     from PIL import Image
 
-    out = torch.empty((len(paths), 3, TARGET_HEIGHT, TARGET_WIDTH), dtype=torch.uint8)
+    shape = (len(paths), 3, TARGET_HEIGHT, TARGET_WIDTH)
+    if cache is not None:
+        from pathlib import Path
+
+        listed = "\n".join(str(path) for path in paths).encode("utf-8")
+        digest = hashlib.sha256(listed).hexdigest()[:16]
+        cache = Path(cache).parent / f"{Path(cache).stem}_{digest}.u8"
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        wanted = len(paths) * 3 * TARGET_HEIGHT * TARGET_WIDTH
+        if cache.is_file() and cache.stat().st_size == wanted:
+            return numpy.memmap(cache, dtype=numpy.uint8, mode="r", shape=shape)
+        out = numpy.memmap(cache, dtype=numpy.uint8, mode="w+", shape=shape)
+    else:
+        out = numpy.empty(shape, dtype=numpy.uint8)
+
     for index, path in enumerate(paths):
         with Image.open(path) as opened:
             opened.load()
             image = resize(opened.convert("RGB"))
-        out[index] = torch.from_numpy(numpy.array(image, dtype=numpy.uint8)).permute(2, 0, 1)
+        out[index] = numpy.asarray(image, dtype=numpy.uint8).transpose(2, 0, 1)
+    if cache is not None:
+        out.flush()
+        return numpy.memmap(cache, dtype=numpy.uint8, mode="r", shape=shape)
     return out
 
 
@@ -194,14 +221,47 @@ def centre(scores):
     return scores - scores.mean(dim=1, keepdim=True)
 
 
-def set_loss(student, teacher):
+def set_loss(student, teacher, listwise: float = 0.0, temperature: float = 1.0):
     """THE distillation objective: centred mean squared error, per set.
 
     Both arguments are `[sets, candidates]`. Averaged over candidates first and
     over sets second, so a set is worth a set however many candidates it holds.
+
+    `listwise` adds [`listwise_loss`] beside it. It is zero by default because the
+    regression alone is what the first distillation pass trained under, and an
+    arm that is on unless someone turns it off is not an arm.
     """
     difference = centre(student.float()) - centre(teacher.float())
-    return (difference * difference).mean(dim=1).mean()
+    regression = (difference * difference).mean(dim=1).mean()
+    if not listwise:
+        return regression
+    return regression + listwise * listwise_loss(student, teacher, temperature)
+
+
+def listwise_loss(student, teacher, temperature: float = 1.0):
+    """How far the student's per-set softmax is from the teacher's: `KL(t || s)`.
+
+    The regression above is a *pointwise* objective wearing a set's clothes: it
+    centres inside a set, but every candidate then contributes its own squared
+    error and a set of thirty-two spends thirty-one of them on candidates nobody
+    will colour with. Two students with the same squared error can disagree about
+    which candidate is top, and the head's whole job is which candidate is top.
+
+    So this term reads the set as a distribution. `temperature` is what says how
+    much of the set it looks at: a large one flattens the teacher's softmax until
+    the term is about the whole vector again, and a small one concentrates it on
+    the top two or three — which is exactly where the misses are, the median one
+    being the teacher's second favourite winning. Multiplied by `temperature`
+    squared, the standard scaling, so its gradient does not shrink as the
+    temperature falls and the weight means the same thing at any temperature.
+    """
+    import torch
+
+    scale = max(float(temperature), 1e-6)
+    theirs = torch.log_softmax(centre(teacher.float()) / scale, dim=1)
+    ours = torch.log_softmax(centre(student.float()) / scale, dim=1)
+    divergence = (theirs.exp() * (theirs - ours)).sum(dim=1).mean()
+    return (scale * scale) * divergence
 
 
 def top_pick(scores) -> int:
@@ -258,6 +318,7 @@ __all__ = [
     "build",
     "centre",
     "decoded",
+    "listwise_loss",
     "normalize",
     "regret",
     "resize",

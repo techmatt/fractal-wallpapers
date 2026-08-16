@@ -14,17 +14,21 @@ will say PASS.
 
 ## The population is what a production run really asked
 
-180 candidate sets, vendored from the source project's last colorize-path batch:
-each one a real location, the palette flavour a real deficit model assigned it,
-and the maps its head really chose between. Nothing about them was generated for
-this exercise, none of their locations is in the distillation corpus, and the
-sets are up to thirty-two flavour-tight maps where the corpus's are eight drawn
-uniformly — so the head is judged on a **harder** population than it trained on,
-which is the direction an unmatched difference should point.
+377 candidate sets, vendored from **every** colorize-path batch the source
+project recorded decisions for: each one a real location, the palette flavour a
+real deficit model assigned it, and the map its head really chose out of that
+flavour. Nothing about them was generated for this exercise and none of their
+locations is in the distillation corpus.
 
 Both readings are taken on this repository's own renders of those candidates,
 through the same transform, so what is compared is two functions rather than two
 rendering pipelines.
+
+The size is not a preference. A share measured on 180 sets carries an interval of
+about ±0.07 — wide enough that the first pass's reading straddled its own floor
+and the sheet could say nothing about whether the head cleared it. 377 sets carry
+about ±0.05. The instrument was widened, and frozen, before any head of this pass
+was measured; nothing about the bars moved with it.
 
 ## Where the bar comes from
 
@@ -109,7 +113,7 @@ def population() -> dict:
         "record": str(palette_sets.sets_path().relative_to(head_dir().parents[1])).replace(
             "\\", "/"
         ),
-        "source_batch": palette_sets.SOURCE_BATCH,
+        "source_batches": dict(sorted(Counter(row["source_batch"] for row in sets).items())),
         "sets": len(sets),
         "locations": len({(repr(row["family"]), repr(row["viewport"])) for row in sets}),
         "candidates": sum(sizes),
@@ -121,6 +125,26 @@ def population() -> dict:
             "generated for this exercise: each is a real colorize decision the source "
             "project recorded"
         ),
+    }
+
+
+def corpus_note() -> dict:
+    """What the head trained on, read off the corpus's own split record.
+
+    Carried into the bar so the declaration about how the judged sets differ from
+    the trained ones is a reading of the corpus rather than a memory of it.
+    """
+    from fractal_wallpapers.models import palette_corpus
+
+    path = palette_corpus.split_path()
+    if not path.is_file():
+        return {"present": False}
+    document = json.loads(path.read_text(encoding="utf-8"))
+    return {
+        "present": True,
+        "sets": sum(document.get("sets", {}).values()) or None,
+        "candidates_per_set": document.get("candidates_per_set"),
+        "mix": document.get("mix"),
     }
 
 
@@ -136,6 +160,7 @@ def preregister() -> dict:
             "on this repository's own pictures?"
         ),
         "population": population(),
+        "corpus": corpus_note(),
         "declared": [
             "THE TEACHER IS THE GROUND TRUTH, NOT A HUMAN. Every arm here measures agreement "
             "with a pretrained head. A PASS says the student reproduces it; it says nothing "
@@ -145,13 +170,20 @@ def preregister() -> dict:
             "taken on a 640x360 render made by this engine through this colormap library. "
             "That gap is not assumed away — it is the renderer control, and it is measured "
             "on this same population and used to calibrate the bar.",
-            "THE JUDGED SETS ARE HARDER THAN THE TRAINED ONES. A set here is one palette "
-            "flavour's members, up to 32 maps that already resemble each other; a training "
-            "set is 8 maps drawn uniformly from the whole pool. The flavour taxonomy is an "
-            "artifact of the source project's clustering and does not exist in this "
-            "repository, so it could not be reproduced in the draw.",
-            "180 SETS RESOLVE A SHARE TO ABOUT PLUS OR MINUS 0.07. A difference smaller than "
+            "THE JUDGED SETS ARE STILL NOT THE TRAINED ONES. A set here is one palette "
+            "flavour's members, up to 32 maps that already resemble each other. The corpus "
+            "now answers that with 32-map sets of which a declared majority are palette-space "
+            "neighbourhoods, so the width and the near-tie are matched — but the flavour "
+            "taxonomy itself is an artifact of the source project's clustering over a library "
+            "this repository holds a subset of, and it is NOT reproduced. What is matched is "
+            "the property, not the partition.",
+            "377 SETS RESOLVE A SHARE TO ABOUT PLUS OR MINUS 0.05. A difference smaller than "
             "the interval is reported as a band and is not called in either direction.",
+            "THE TWO BATCHES ARE NOT ALIKE. The 180-row sheet spans all ten partitions; the "
+            "197-row blind slice is 160 multibrot3 and 37 mandelbrot locations at minibrot "
+            "depth. Every arm is therefore reported per batch as well as pooled, and the "
+            "pooled number is what the bar reads — the instrument is the whole recorded "
+            "population, not the half of it that is evenly spread.",
             "THE POOL IS A SUBSET. 700 of the source pool's 987 maps are held here — every "
             "map a tracked corpus row or a vendored set names. A candidate set is complete; "
             "the pool the corpus draws from is not the whole production pool.",
@@ -164,6 +196,25 @@ def preregister() -> dict:
                 "three, and the band is the answer. What ships is the MEDIAN seed by the "
                 "top_pick arm, never the best of three."
             ),
+        },
+        "training_arms": {
+            "why": (
+                "the first pass's miss pattern was the teacher's SECOND favourite winning, "
+                "which is what a per-set-centred regression is least sharp about. A listwise "
+                "term over each set is the obvious answer and it is worth exactly one arm."
+            ),
+            "arms": [
+                "regression only — the centred squared error the first pass trained under",
+                "regression + listwise — the same loss plus a temperature-scaled KL from the "
+                "teacher's per-set softmax to the student's",
+            ],
+            "decided_on": (
+                "HELD-OUT TOP-PICK AGREEMENT over all held-out sets of the distillation "
+                "corpus, at each arm's own selected epoch, at seed 0 and seed 0 only. Never "
+                "on the real sets: those are the instrument and choosing a loss on them "
+                "would spend the instrument to build the thing it is meant to measure."
+            ),
+            "recorded": "either way — the losing arm's numbers are written down too",
         },
         "arms": {
             "top_pick": {
@@ -312,6 +363,31 @@ def measure(rows: list[dict]) -> dict:
     }
 
 
+def by_batch(rows: list[dict]) -> dict:
+    """The same numbers, split by the source batch a set came from.
+
+    Reported because the instrument is two recorded runs and they do not cover the
+    same ground: one spans every partition and the other is a deep slice of two.
+    The bar reads the pooled number; this is what says whether the pooled number
+    is one population or an average of two.
+    """
+    out: dict[str, list[dict]] = {}
+    for row in rows:
+        out.setdefault(row["source_batch"], []).append(row)
+    wanted = (
+        "top_pick_agreement",
+        "median_spearman",
+        "mean_normalized_regret",
+        "renderer_control",
+        "production_argmax",
+    )
+    reads = {batch: measure(group) for batch, group in sorted(out.items())}
+    return {
+        batch: {"sets": len(out[batch]), **{key: read[key] for key in wanted}}
+        for batch, read in reads.items()
+    }
+
+
 def _interface_arm(rows: list[dict]) -> dict:
     import math
 
@@ -419,6 +495,7 @@ def read(runs: list[str | None] | None = None) -> dict:
         "shipped_rule": "the median seed by the top_pick arm, never the best of three",
         "runs": {name: measured[name] for name in sorted(measured)},
         "arms": arms,
+        "by_batch": by_batch(by_run[median_run]),
         "population": bar["population"],
         "declared": bar["declared"],
         "band_width": float(numpy.ptp([value["top_pick_agreement"] for value in measured.values()]))
@@ -471,6 +548,8 @@ __all__ = [
     "SCHEMA",
     "AcceptanceError",
     "acceptance_path",
+    "by_batch",
+    "corpus_note",
     "fp16_agreement",
     "head_dir",
     "measure",

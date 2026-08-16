@@ -148,6 +148,18 @@ def test_the_palette_head_is_eight_steps_under_one_subcommand() -> None:
     assert len(set(handlers.values())) == len(handlers)
 
 
+def test_the_two_things_that_were_arms_are_arms_on_the_command_line() -> None:
+    """The hard/uniform mix and the listwise term are both decisions the records
+    have to carry, so both are flags with the declared default already in them."""
+    from fractal_wallpapers.models import palette_corpus
+
+    parser = cli.build_parser()
+    assert parser.parse_args(["palette", "plan"]).hard_share == palette_corpus.HARD_SHARE
+    assert parser.parse_args(["palette", "plan", "--hard-share", "0"]).hard_share == 0.0
+    assert parser.parse_args(["palette", "train"]).listwise is None
+    assert parser.parse_args(["palette", "train", "--listwise", "1"]).listwise == 1.0
+
+
 def test_the_teacher_is_never_assumed_to_be_here() -> None:
     """Every step that needs the source project names it on the command line."""
     parser = cli.build_parser()
