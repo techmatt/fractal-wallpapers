@@ -2,135 +2,135 @@
   "schema": 1,
   "head": "palette",
   "verdict": "FAIL",
-  "shipped_run": "seed0",
+  "shipped_run": "seed2_listwise",
   "shipped_rule": "the median seed by the top_pick arm, never the best of three",
   "runs": {
-    "seed0": {
-      "sets": 180,
-      "top_pick_agreement": 0.46111111111111114,
+    "seed0_listwise": {
+      "sets": 377,
+      "top_pick_agreement": 0.5384615384615384,
       "top_pick_interval": {
         "draws": 5000,
         "undefined": 0,
-        "clusters": 180,
-        "lo": 0.3888888888888889,
-        "hi": 0.5333333333333333,
-        "median": 0.46111111111111114
+        "clusters": 377,
+        "lo": 0.4907161803713528,
+        "hi": 0.5888594164456233,
+        "median": 0.5384615384615384
       },
-      "median_spearman": 0.8936950146627566,
+      "median_spearman": 0.908357771260997,
       "spearman_interval": {
         "draws": 5000,
         "undefined": 0,
-        "clusters": 180,
-        "lo": 0.8815628815628815,
-        "hi": 0.9085262563523433,
-        "median": 0.8936950146627566
+        "clusters": 377,
+        "lo": 0.8988269794721407,
+        "hi": 0.9120234604105572,
+        "median": 0.908357771260997
       },
       "spearman_below_half": 1,
-      "mean_normalized_regret": 0.06622008905161253,
-      "median_normalized_regret": 0.00932681190529848,
-      "p90_normalized_regret": 0.21589266258213438,
+      "mean_normalized_regret": 0.05373174195407004,
+      "median_normalized_regret": 0.0,
+      "p90_normalized_regret": 0.20047827250624742,
       "regret_interval": {
         "draws": 5000,
         "undefined": 0,
-        "clusters": 180,
-        "lo": 0.05189264014055231,
-        "hi": 0.08147848348896632,
-        "median": 0.06586599617365614
+        "clusters": 377,
+        "lo": 0.04484445989033464,
+        "hi": 0.06317306558969492,
+        "median": 0.053510683758651686
       },
-      "renderer_control": 0.5833333333333334,
-      "production_argmax": 0.45,
+      "renderer_control": 0.5915119363395226,
+      "production_argmax": 0.4403183023872679,
       "discordant_pairs": {
-        "median": 63.5,
-        "max": 147
+        "median": 59.0,
+        "max": 158
       },
       "teacher_spread": {
-        "median": 9.085249185562134,
+        "median": 9.616259336471558,
         "min": 2.5059711933135986
       }
     },
-    "seed1": {
-      "sets": 180,
-      "top_pick_agreement": 0.45555555555555555,
+    "seed1_listwise": {
+      "sets": 377,
+      "top_pick_agreement": 0.4827586206896552,
       "top_pick_interval": {
         "draws": 5000,
         "undefined": 0,
-        "clusters": 180,
-        "lo": 0.3888888888888889,
-        "hi": 0.5277777777777778,
-        "median": 0.45555555555555555
+        "clusters": 377,
+        "lo": 0.4323607427055703,
+        "hi": 0.53315649867374,
+        "median": 0.4827586206896552
       },
-      "median_spearman": 0.8808651026392962,
+      "median_spearman": 0.9050586510263929,
       "spearman_interval": {
         "draws": 5000,
         "undefined": 0,
-        "clusters": 180,
-        "lo": 0.8673020527859238,
-        "hi": 0.8951612903225806,
-        "median": 0.8808651026392962
+        "clusters": 377,
+        "lo": 0.8966275659824047,
+        "hi": 0.9109237536656891,
+        "median": 0.9050586510263929
       },
       "spearman_below_half": 1,
-      "mean_normalized_regret": 0.06586413777168061,
-      "median_normalized_regret": 0.012820944364979516,
-      "p90_normalized_regret": 0.2111258127915279,
+      "mean_normalized_regret": 0.05720009450138203,
+      "median_normalized_regret": 0.003602809532430434,
+      "p90_normalized_regret": 0.19261160599695448,
       "regret_interval": {
         "draws": 5000,
         "undefined": 0,
-        "clusters": 180,
-        "lo": 0.05113355392461338,
-        "hi": 0.0813850809805377,
-        "median": 0.06557007276202477
+        "clusters": 377,
+        "lo": 0.047704282929442884,
+        "hi": 0.06703466901521,
+        "median": 0.05698576944541314
       },
-      "renderer_control": 0.5833333333333334,
-      "production_argmax": 0.43333333333333335,
+      "renderer_control": 0.5915119363395226,
+      "production_argmax": 0.4323607427055703,
       "discordant_pairs": {
-        "median": 65.5,
-        "max": 147
+        "median": 59.0,
+        "max": 158
       },
       "teacher_spread": {
-        "median": 9.085249185562134,
+        "median": 9.616259336471558,
         "min": 2.5059711933135986
       }
     },
-    "seed2": {
-      "sets": 180,
-      "top_pick_agreement": 0.48333333333333334,
+    "seed2_listwise": {
+      "sets": 377,
+      "top_pick_agreement": 0.53315649867374,
       "top_pick_interval": {
         "draws": 5000,
         "undefined": 0,
-        "clusters": 180,
-        "lo": 0.4111111111111111,
-        "hi": 0.5555555555555556,
-        "median": 0.48333333333333334
+        "clusters": 377,
+        "lo": 0.48269230769230775,
+        "hi": 0.5809018567639257,
+        "median": 0.53315649867374
       },
-      "median_spearman": 0.8909247114892276,
+      "median_spearman": 0.907258064516129,
       "spearman_interval": {
         "draws": 5000,
         "undefined": 0,
-        "clusters": 180,
-        "lo": 0.8808651026392962,
-        "hi": 0.9017595307917888,
-        "median": 0.8909247114892276
+        "clusters": 377,
+        "lo": 0.8980938416422287,
+        "hi": 0.9153225806451613,
+        "median": 0.907258064516129
       },
       "spearman_below_half": 1,
-      "mean_normalized_regret": 0.05781233227766247,
-      "median_normalized_regret": 0.0023822597357487066,
-      "p90_normalized_regret": 0.2063829420830835,
+      "mean_normalized_regret": 0.05532307405899744,
+      "median_normalized_regret": 0.0,
+      "p90_normalized_regret": 0.18414636184817876,
       "regret_interval": {
         "draws": 5000,
         "undefined": 0,
-        "clusters": 180,
-        "lo": 0.0455169521768245,
-        "hi": 0.07090290974018484,
-        "median": 0.057516640243479
+        "clusters": 377,
+        "lo": 0.04607195148597612,
+        "hi": 0.06509271562470395,
+        "median": 0.05529669266815146
       },
-      "renderer_control": 0.5833333333333334,
-      "production_argmax": 0.45,
+      "renderer_control": 0.5915119363395226,
+      "production_argmax": 0.44562334217506633,
       "discordant_pairs": {
-        "median": 63.0,
-        "max": 151
+        "median": 57.0,
+        "max": 138
       },
       "teacher_spread": {
-        "median": 9.085249185562134,
+        "median": 9.616259336471558,
         "min": 2.5059711933135986
       }
     }
@@ -138,91 +138,112 @@
   "arms": {
     "top_pick": {
       "gated": true,
-      "ours": 0.46111111111111114,
+      "ours": 0.53315649867374,
       "interval": {
         "draws": 5000,
         "undefined": 0,
-        "clusters": 180,
-        "lo": 0.3888888888888889,
-        "hi": 0.5333333333333333,
-        "median": 0.46111111111111114
+        "clusters": 377,
+        "lo": 0.48269230769230775,
+        "hi": 0.5809018567639257,
+        "median": 0.53315649867374
       },
       "bars": {
-        "renderer_control": 0.5833333333333334,
+        "renderer_control": 0.5915119363395226,
         "floor": 0.5
       },
       "held": false,
       "band": [
-        0.45555555555555555,
-        0.46111111111111114,
-        0.48333333333333334
+        0.4827586206896552,
+        0.53315649867374,
+        0.5384615384615384
       ]
     },
     "ordering": {
       "gated": true,
-      "ours": 0.8936950146627566,
+      "ours": 0.907258064516129,
       "interval": {
         "draws": 5000,
         "undefined": 0,
-        "clusters": 180,
-        "lo": 0.8815628815628815,
-        "hi": 0.9085262563523433,
-        "median": 0.8936950146627566
+        "clusters": 377,
+        "lo": 0.8980938416422287,
+        "hi": 0.9153225806451613,
+        "median": 0.907258064516129
       },
       "bar": 0.7,
       "sets_below_half": 1,
       "held": true,
       "band": [
-        0.8808651026392962,
-        0.8909247114892276,
-        0.8936950146627566
+        0.9050586510263929,
+        0.907258064516129,
+        0.908357771260997
       ]
     },
     "regret": {
       "gated": true,
-      "ours": 0.06622008905161253,
-      "median": 0.00932681190529848,
-      "p90": 0.21589266258213438,
+      "ours": 0.05532307405899744,
+      "median": 0.0,
+      "p90": 0.18414636184817876,
       "interval": {
         "draws": 5000,
         "undefined": 0,
-        "clusters": 180,
-        "lo": 0.05189264014055231,
-        "hi": 0.08147848348896632,
-        "median": 0.06586599617365614
+        "clusters": 377,
+        "lo": 0.04607195148597612,
+        "hi": 0.06509271562470395,
+        "median": 0.05529669266815146
       },
       "bar": 0.1,
       "held": true,
       "band": [
-        0.05781233227766247,
-        0.06586413777168061,
-        0.06622008905161253
+        0.05373174195407004,
+        0.05532307405899744,
+        0.05720009450138203
       ]
     },
     "interface": {
       "gated": true,
-      "sets": 180,
+      "sets": 377,
       "complaints": [],
       "held": true
     },
     "production_argmax": {
       "gated": false,
-      "ours": 0.45,
-      "renderer_control": 0.5833333333333334,
+      "ours": 0.44562334217506633,
+      "renderer_control": 0.5915119363395226,
       "note": "both are cross-renderer readings: the control is the teacher disagreeing with its own recorded choice because the picture changed, and ours is the student's distance from that same recorded choice"
+    }
+  },
+  "by_batch": {
+    "2026-08-05_wallpaper_colorize_path_v1": {
+      "sets": 180,
+      "top_pick_agreement": 0.5,
+      "median_spearman": 0.8977272727272727,
+      "mean_normalized_regret": 0.0645823726552844,
+      "renderer_control": 0.5833333333333334,
+      "production_argmax": 0.43333333333333335
+    },
+    "2026-08-11_wallpaper_blind_minibrot_v1": {
+      "sets": 197,
+      "top_pick_agreement": 0.5634517766497462,
+      "median_spearman": 0.9145894428152492,
+      "mean_normalized_regret": 0.04686280122990276,
+      "renderer_control": 0.5989847715736041,
+      "production_argmax": 0.45685279187817257
     }
   },
   "population": {
     "record": "data/palette_choice/candidate_sets.jsonl",
-    "source_batch": "2026-08-05_wallpaper_colorize_path_v1",
-    "sets": 180,
-    "locations": 180,
-    "candidates": 5518,
+    "source_batches": {
+      "2026-08-05_wallpaper_colorize_path_v1": 180,
+      "2026-08-11_wallpaper_blind_minibrot_v1": 197
+    },
+    "sets": 377,
+    "locations": 377,
+    "candidates": 11626,
     "set_sizes": {
-      "15": 6,
-      "22": 10,
-      "27": 8,
-      "32": 156
+      "15": 9,
+      "22": 18,
+      "27": 21,
+      "32": 329
     },
     "flavours": 19,
     "partitions": {
@@ -230,8 +251,8 @@
       "julia:multibrot3": 7,
       "julia:multibrot4": 18,
       "julia:multibrot5": 17,
-      "mandelbrot": 69,
-      "multibrot3": 10,
+      "mandelbrot": 106,
+      "multibrot3": 170,
       "multibrot4": 9,
       "multibrot5": 13,
       "phoenix": 19,
@@ -242,9 +263,10 @@
   "declared": [
     "THE TEACHER IS THE GROUND TRUTH, NOT A HUMAN. Every arm here measures agreement with a pretrained head. A PASS says the student reproduces it; it says nothing at all about whether either of them picks the palette a person would.",
     "NOT A SAME-INPUT COMPARISON WITH THE PRODUCTION RUN. The recorded winners were chosen on the source project's own coarse recolors; every score read here is taken on a 640x360 render made by this engine through this colormap library. That gap is not assumed away \u2014 it is the renderer control, and it is measured on this same population and used to calibrate the bar.",
-    "THE JUDGED SETS ARE HARDER THAN THE TRAINED ONES. A set here is one palette flavour's members, up to 32 maps that already resemble each other; a training set is 8 maps drawn uniformly from the whole pool. The flavour taxonomy is an artifact of the source project's clustering and does not exist in this repository, so it could not be reproduced in the draw.",
-    "180 SETS RESOLVE A SHARE TO ABOUT PLUS OR MINUS 0.07. A difference smaller than the interval is reported as a band and is not called in either direction.",
+    "THE JUDGED SETS ARE STILL NOT THE TRAINED ONES. A set here is one palette flavour's members, up to 32 maps that already resemble each other. The corpus now answers that with 32-map sets of which a declared majority are palette-space neighbourhoods, so the width and the near-tie are matched \u2014 but the flavour taxonomy itself is an artifact of the source project's clustering over a library this repository holds a subset of, and it is NOT reproduced. What is matched is the property, not the partition.",
+    "377 SETS RESOLVE A SHARE TO ABOUT PLUS OR MINUS 0.05. A difference smaller than the interval is reported as a band and is not called in either direction.",
+    "THE TWO BATCHES ARE NOT ALIKE. The 180-row sheet spans all ten partitions; the 197-row blind slice is 160 multibrot3 and 37 mandelbrot locations at minibrot depth. Every arm is therefore reported per batch as well as pooled, and the pooled number is what the bar reads \u2014 the instrument is the whole recorded population, not the half of it that is evenly spread.",
     "THE POOL IS A SUBSET. 700 of the source pool's 987 maps are held here \u2014 every map a tracked corpus row or a vendored set names. A candidate set is complete; the pool the corpus draws from is not the whole production pool."
   ],
-  "band_width": 0.02777777777777779
+  "band_width": 0.05570291777188324
 }

@@ -1,0 +1,510 @@
+{
+  "schema": 1,
+  "head": "palette",
+  "run": "seed2_listwise",
+  "device": "cuda",
+  "wall_seconds": 2100.6,
+  "best_epoch": 33,
+  "best_holdout_loss": 1.1616908987836438,
+  "selection_metric": "held-out distillation loss (minimized)",
+  "listwise": 1.0,
+  "listwise_temperature": 1.1022852435910524,
+  "arm": {
+    "holdout_top_pick_agreement": 0.5025,
+    "holdout_top_pick_by_kind": {
+      "hard": 0.445993031358885,
+      "uniform": 0.6460176991150443
+    },
+    "holdout_median_spearman": 0.8968108504398826
+  },
+  "sets": {
+    "train": 1600,
+    "holdout": 400
+  },
+  "history": [
+    {
+      "epoch": 0,
+      "loss": 24.015901976823805,
+      "seconds": 52.6,
+      "holdout_loss": 4.433618156032045,
+      "holdout_top_pick_agreement": 0.325,
+      "holdout_top_pick_by_kind": {
+        "hard": 0.2508710801393728,
+        "uniform": 0.5132743362831859
+      },
+      "holdout_median_spearman": 0.781158357771261
+    },
+    {
+      "epoch": 1,
+      "loss": 3.654249491095543,
+      "seconds": 53.1,
+      "holdout_loss": 2.419397322032802,
+      "holdout_top_pick_agreement": 0.4325,
+      "holdout_top_pick_by_kind": {
+        "hard": 0.3832752613240418,
+        "uniform": 0.5575221238938053
+      },
+      "holdout_median_spearman": 0.8478739002932552
+    },
+    {
+      "epoch": 2,
+      "loss": 3.0591917073726655,
+      "seconds": 52.8,
+      "holdout_loss": 3.755524661278443,
+      "holdout_top_pick_agreement": 0.4275,
+      "holdout_top_pick_by_kind": {
+        "hard": 0.3693379790940767,
+        "uniform": 0.5752212389380531
+      },
+      "holdout_median_spearman": 0.8625366568914956
+    },
+    {
+      "epoch": 3,
+      "loss": 2.7621693432331087,
+      "seconds": 52.5,
+      "holdout_loss": 2.885022953441705,
+      "holdout_top_pick_agreement": 0.4725,
+      "holdout_top_pick_by_kind": {
+        "hard": 0.42160278745644597,
+        "uniform": 0.6017699115044248
+      },
+      "holdout_median_spearman": 0.8702346041055719
+    },
+    {
+      "epoch": 4,
+      "loss": 2.493092584013939,
+      "seconds": 52.4,
+      "holdout_loss": 2.000169753719147,
+      "holdout_top_pick_agreement": 0.455,
+      "holdout_top_pick_by_kind": {
+        "hard": 0.397212543554007,
+        "uniform": 0.6017699115044248
+      },
+      "holdout_median_spearman": 0.8687683284457478
+    },
+    {
+      "epoch": 5,
+      "loss": 2.4289027994871137,
+      "seconds": 52.4,
+      "holdout_loss": 2.833457653099616,
+      "holdout_top_pick_agreement": 0.4675,
+      "holdout_top_pick_by_kind": {
+        "hard": 0.41114982578397213,
+        "uniform": 0.6106194690265486
+      },
+      "holdout_median_spearman": 0.8810483870967742
+    },
+    {
+      "epoch": 6,
+      "loss": 2.077037615776062,
+      "seconds": 52.6,
+      "holdout_loss": 1.7912279188875704,
+      "holdout_top_pick_agreement": 0.47,
+      "holdout_top_pick_by_kind": {
+        "hard": 0.4181184668989547,
+        "uniform": 0.6017699115044248
+      },
+      "holdout_median_spearman": 0.8837976539589443
+    },
+    {
+      "epoch": 7,
+      "loss": 2.0775840878486633,
+      "seconds": 52.5,
+      "holdout_loss": 1.5393913185572365,
+      "holdout_top_pick_agreement": 0.4975,
+      "holdout_top_pick_by_kind": {
+        "hard": 0.445993031358885,
+        "uniform": 0.6283185840707964
+      },
+      "holdout_median_spearman": 0.8876466275659824
+    },
+    {
+      "epoch": 8,
+      "loss": 2.1340461838245393,
+      "seconds": 52.6,
+      "holdout_loss": 1.6516645886905772,
+      "holdout_top_pick_agreement": 0.525,
+      "holdout_top_pick_by_kind": {
+        "hard": 0.4738675958188153,
+        "uniform": 0.6548672566371682
+      },
+      "holdout_median_spearman": 0.8834310850439883
+    },
+    {
+      "epoch": 9,
+      "loss": 1.9683161488175391,
+      "seconds": 52.8,
+      "holdout_loss": 1.5782882140485193,
+      "holdout_top_pick_agreement": 0.455,
+      "holdout_top_pick_by_kind": {
+        "hard": 0.40418118466898956,
+        "uniform": 0.584070796460177
+      },
+      "holdout_median_spearman": 0.8817815249266863
+    },
+    {
+      "epoch": 10,
+      "loss": 1.7425546219944954,
+      "seconds": 52.8,
+      "holdout_loss": 1.6978519487919046,
+      "holdout_top_pick_agreement": 0.5125,
+      "holdout_top_pick_by_kind": {
+        "hard": 0.45993031358885017,
+        "uniform": 0.6460176991150443
+      },
+      "holdout_median_spearman": 0.8914956011730205
+    },
+    {
+      "epoch": 11,
+      "loss": 2.0061071610450742,
+      "seconds": 52.7,
+      "holdout_loss": 1.7388874153870484,
+      "holdout_top_pick_agreement": 0.4825,
+      "holdout_top_pick_by_kind": {
+        "hard": 0.4425087108013937,
+        "uniform": 0.584070796460177
+      },
+      "holdout_median_spearman": 0.8894794721407624
+    },
+    {
+      "epoch": 12,
+      "loss": 1.6658286181092263,
+      "seconds": 52.6,
+      "holdout_loss": 1.9051583047528637,
+      "holdout_top_pick_agreement": 0.5175,
+      "holdout_top_pick_by_kind": {
+        "hard": 0.4564459930313589,
+        "uniform": 0.672566371681416
+      },
+      "holdout_median_spearman": 0.8870967741935484
+    },
+    {
+      "epoch": 13,
+      "loss": 1.6609789058566093,
+      "seconds": 52.8,
+      "holdout_loss": 1.5019108160077719,
+      "holdout_top_pick_agreement": 0.4875,
+      "holdout_top_pick_by_kind": {
+        "hard": 0.42857142857142855,
+        "uniform": 0.6371681415929203
+      },
+      "holdout_median_spearman": 0.8896627565982405
+    },
+    {
+      "epoch": 14,
+      "loss": 1.5617776188254355,
+      "seconds": 52.7,
+      "holdout_loss": 3.2353013872281964,
+      "holdout_top_pick_agreement": 0.475,
+      "holdout_top_pick_by_kind": {
+        "hard": 0.4146341463414634,
+        "uniform": 0.6283185840707964
+      },
+      "holdout_median_spearman": 0.8933284457478006
+    },
+    {
+      "epoch": 15,
+      "loss": 1.5738647431135178,
+      "seconds": 52.6,
+      "holdout_loss": 1.3761229743499956,
+      "holdout_top_pick_agreement": 0.465,
+      "holdout_top_pick_by_kind": {
+        "hard": 0.40418118466898956,
+        "uniform": 0.6194690265486725
+      },
+      "holdout_median_spearman": 0.8935117302052786
+    },
+    {
+      "epoch": 16,
+      "loss": 1.4339329865574837,
+      "seconds": 52.6,
+      "holdout_loss": 1.4041801281829234,
+      "holdout_top_pick_agreement": 0.505,
+      "holdout_top_pick_by_kind": {
+        "hard": 0.46689895470383275,
+        "uniform": 0.6017699115044248
+      },
+      "holdout_median_spearman": 0.8973607038123167
+    },
+    {
+      "epoch": 17,
+      "loss": 1.4525153261423112,
+      "seconds": 52.6,
+      "holdout_loss": 1.2831370672405398,
+      "holdout_top_pick_agreement": 0.4975,
+      "holdout_top_pick_by_kind": {
+        "hard": 0.4529616724738676,
+        "uniform": 0.6106194690265486
+      },
+      "holdout_median_spearman": 0.8914956011730205
+    },
+    {
+      "epoch": 18,
+      "loss": 1.4707823213934899,
+      "seconds": 52.7,
+      "holdout_loss": 1.6548202773984246,
+      "holdout_top_pick_agreement": 0.5275,
+      "holdout_top_pick_by_kind": {
+        "hard": 0.4808362369337979,
+        "uniform": 0.6460176991150443
+      },
+      "holdout_median_spearman": 0.8951612903225806
+    },
+    {
+      "epoch": 19,
+      "loss": 1.3855457818508148,
+      "seconds": 52.5,
+      "holdout_loss": 1.551661536749362,
+      "holdout_top_pick_agreement": 0.525,
+      "holdout_top_pick_by_kind": {
+        "hard": 0.47735191637630664,
+        "uniform": 0.6460176991150443
+      },
+      "holdout_median_spearman": 0.8986436950146628
+    },
+    {
+      "epoch": 20,
+      "loss": 1.2493062236905097,
+      "seconds": 52.4,
+      "holdout_loss": 1.2166519224161703,
+      "holdout_top_pick_agreement": 0.5075,
+      "holdout_top_pick_by_kind": {
+        "hard": 0.4529616724738676,
+        "uniform": 0.6460176991150443
+      },
+      "holdout_median_spearman": 0.8940615835777126
+    },
+    {
+      "epoch": 21,
+      "loss": 1.338657849431038,
+      "seconds": 52.4,
+      "holdout_loss": 1.5765125640277307,
+      "holdout_top_pick_agreement": 0.525,
+      "holdout_top_pick_by_kind": {
+        "hard": 0.4529616724738676,
+        "uniform": 0.7079646017699115
+      },
+      "holdout_median_spearman": 0.8955278592375366
+    },
+    {
+      "epoch": 22,
+      "loss": 1.233881053328514,
+      "seconds": 52.6,
+      "holdout_loss": 1.309138024211999,
+      "holdout_top_pick_agreement": 0.505,
+      "holdout_top_pick_by_kind": {
+        "hard": 0.44947735191637633,
+        "uniform": 0.6460176991150443
+      },
+      "holdout_median_spearman": 0.8938782991202345
+    },
+    {
+      "epoch": 23,
+      "loss": 1.1996839815378189,
+      "seconds": 52.3,
+      "holdout_loss": 1.70045123618006,
+      "holdout_top_pick_agreement": 0.5275,
+      "holdout_top_pick_by_kind": {
+        "hard": 0.47735191637630664,
+        "uniform": 0.6548672566371682
+      },
+      "holdout_median_spearman": 0.9012096774193548
+    },
+    {
+      "epoch": 24,
+      "loss": 1.2162765508890152,
+      "seconds": 52.3,
+      "holdout_loss": 1.6876170908376642,
+      "holdout_top_pick_agreement": 0.495,
+      "holdout_top_pick_by_kind": {
+        "hard": 0.4355400696864111,
+        "uniform": 0.6460176991150443
+      },
+      "holdout_median_spearman": 0.8966275659824047
+    },
+    {
+      "epoch": 25,
+      "loss": 1.1119738647341728,
+      "seconds": 52.3,
+      "holdout_loss": 1.2129359498917325,
+      "holdout_top_pick_agreement": 0.5075,
+      "holdout_top_pick_by_kind": {
+        "hard": 0.45993031358885017,
+        "uniform": 0.6283185840707964
+      },
+      "holdout_median_spearman": 0.8946114369501466
+    },
+    {
+      "epoch": 26,
+      "loss": 1.1028250083327293,
+      "seconds": 52.2,
+      "holdout_loss": 1.4455165499469456,
+      "holdout_top_pick_agreement": 0.5225,
+      "holdout_top_pick_by_kind": {
+        "hard": 0.4878048780487805,
+        "uniform": 0.6106194690265486
+      },
+      "holdout_median_spearman": 0.8975439882697946
+    },
+    {
+      "epoch": 27,
+      "loss": 1.122836454808712,
+      "seconds": 52.4,
+      "holdout_loss": 1.3589336591809162,
+      "holdout_top_pick_agreement": 0.495,
+      "holdout_top_pick_by_kind": {
+        "hard": 0.4529616724738676,
+        "uniform": 0.6017699115044248
+      },
+      "holdout_median_spearman": 0.8938782991202345
+    },
+    {
+      "epoch": 28,
+      "loss": 1.121652483344078,
+      "seconds": 52.3,
+      "holdout_loss": 1.6310477019323366,
+      "holdout_top_pick_agreement": 0.4975,
+      "holdout_top_pick_by_kind": {
+        "hard": 0.4425087108013937,
+        "uniform": 0.6371681415929203
+      },
+      "holdout_median_spearman": 0.8977272727272727
+    },
+    {
+      "epoch": 29,
+      "loss": 1.0957334357500077,
+      "seconds": 52.3,
+      "holdout_loss": 1.3329745222780875,
+      "holdout_top_pick_agreement": 0.5075,
+      "holdout_top_pick_by_kind": {
+        "hard": 0.44947735191637633,
+        "uniform": 0.6548672566371682
+      },
+      "holdout_median_spearman": 0.8977272727272727
+    },
+    {
+      "epoch": 30,
+      "loss": 1.1328279653191566,
+      "seconds": 52.2,
+      "holdout_loss": 1.5801338384932502,
+      "holdout_top_pick_agreement": 0.49,
+      "holdout_top_pick_by_kind": {
+        "hard": 0.445993031358885,
+        "uniform": 0.6017699115044248
+      },
+      "holdout_median_spearman": 0.9004765395894427
+    },
+    {
+      "epoch": 31,
+      "loss": 1.0106576406955718,
+      "seconds": 52.1,
+      "holdout_loss": 1.2753599377134386,
+      "holdout_top_pick_agreement": 0.5,
+      "holdout_top_pick_by_kind": {
+        "hard": 0.46689895470383275,
+        "uniform": 0.584070796460177
+      },
+      "holdout_median_spearman": 0.8982771260997067
+    },
+    {
+      "epoch": 32,
+      "loss": 0.9892578202486039,
+      "seconds": 52.2,
+      "holdout_loss": 1.58718931643018,
+      "holdout_top_pick_agreement": 0.5,
+      "holdout_top_pick_by_kind": {
+        "hard": 0.4529616724738676,
+        "uniform": 0.6194690265486725
+      },
+      "holdout_median_spearman": 0.8942448680351907
+    },
+    {
+      "epoch": 33,
+      "loss": 0.9519449505209923,
+      "seconds": 52.3,
+      "holdout_loss": 1.1616908987836438,
+      "holdout_top_pick_agreement": 0.5025,
+      "holdout_top_pick_by_kind": {
+        "hard": 0.445993031358885,
+        "uniform": 0.6460176991150443
+      },
+      "holdout_median_spearman": 0.8968108504398826
+    },
+    {
+      "epoch": 34,
+      "loss": 1.0460703015327453,
+      "seconds": 52.3,
+      "holdout_loss": 1.2504222165509262,
+      "holdout_top_pick_agreement": 0.5275,
+      "holdout_top_pick_by_kind": {
+        "hard": 0.4738675958188153,
+        "uniform": 0.6637168141592921
+      },
+      "holdout_median_spearman": 0.8990102639296187
+    },
+    {
+      "epoch": 35,
+      "loss": 0.9447550821304321,
+      "seconds": 52.3,
+      "holdout_loss": 1.3006930241065129,
+      "holdout_top_pick_agreement": 0.4675,
+      "holdout_top_pick_by_kind": {
+        "hard": 0.4146341463414634,
+        "uniform": 0.6017699115044248
+      },
+      "holdout_median_spearman": 0.8988269794721407
+    },
+    {
+      "epoch": 36,
+      "loss": 0.9043883584439755,
+      "seconds": 52.5,
+      "holdout_loss": 1.4399065187144502,
+      "holdout_top_pick_agreement": 0.52,
+      "holdout_top_pick_by_kind": {
+        "hard": 0.4634146341463415,
+        "uniform": 0.6637168141592921
+      },
+      "holdout_median_spearman": 0.9024926686217009
+    },
+    {
+      "epoch": 37,
+      "loss": 0.8604277865588665,
+      "seconds": 53.1,
+      "holdout_loss": 1.2865164126323094,
+      "holdout_top_pick_agreement": 0.49,
+      "holdout_top_pick_by_kind": {
+        "hard": 0.4355400696864111,
+        "uniform": 0.6283185840707964
+      },
+      "holdout_median_spearman": 0.8964442815249267
+    },
+    {
+      "epoch": 38,
+      "loss": 0.8864819514751434,
+      "seconds": 52.4,
+      "holdout_loss": 1.1869444449880882,
+      "holdout_top_pick_agreement": 0.4875,
+      "holdout_top_pick_by_kind": {
+        "hard": 0.4529616724738676,
+        "uniform": 0.5752212389380531
+      },
+      "holdout_median_spearman": 0.8951612903225806
+    },
+    {
+      "epoch": 39,
+      "loss": 0.8571765968203544,
+      "seconds": 52.6,
+      "holdout_loss": 1.3356743329487784,
+      "holdout_top_pick_agreement": 0.5175,
+      "holdout_top_pick_by_kind": {
+        "hard": 0.4634146341463415,
+        "uniform": 0.6548672566371682
+      },
+      "holdout_median_spearman": 0.8962609970674487
+    }
+  ],
+  "checkpoints": {
+    "best": "C:\\Code\\fractal-wallpapers\\models\\palette\\seed2_listwise\\best.pt",
+    "last": "C:\\Code\\fractal-wallpapers\\models\\palette\\seed2_listwise\\last.pt"
+  }
+}
