@@ -18,13 +18,19 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
+import time
+from contextlib import contextmanager
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 from fractal_wallpapers.paths import colormap_dir, repo_root
 
 __all__ = [
+    "Bound",
+    "EngineTimeout",
     "colormap_dir",
+    "deadline",
     "dump_field",
     "engine_path",
     "expand",
@@ -56,6 +62,79 @@ def engine_path() -> Path:
     )
 
 
+class EngineTimeout(RuntimeError):
+    """An engine call was killed for running past the deadline it was given."""
+
+
+@dataclass
+class Bound:
+    """The deadline one block of engine calls is under, and whether it fired.
+
+    Handed back by [`deadline`] so a caller can tell a unit that *failed* from a
+    unit that was *killed*. Those are different facts about a run and a bare
+    exception cannot carry the difference across a worker boundary.
+    """
+
+    seconds: float | None
+    expired: bool = False
+
+
+#: When the calls made in this process must be finished by, as a monotonic
+#: instant, or `None` for the default: an engine call takes as long as it takes.
+#: Process-wide because the deadline belongs to the *unit of work* the process is
+#: in the middle of, and every engine call that unit makes is part of it.
+_DEADLINE: float | None = None
+
+#: The bounds currently open, innermost last, so an expiry can be reported to
+#: every block that is waiting on it.
+_BOUNDS: list[Bound] = []
+
+
+@contextmanager
+def deadline(seconds: float | None):
+    """Bound every engine call made inside this block by one shared clock.
+
+    A hung render is the realistic way a long run stops making progress, and it
+    is not a thing the caller can interrupt: the wall clock disappears inside a
+    subprocess that will never return. So the bound goes where the calls are made
+    — one choke point, one timeout, the child killed by the same call that
+    imposed it — rather than at each of the dozen places a picture is asked for.
+
+    Nested blocks take the *earlier* of the two deadlines: an inner block may
+    shorten what it is allowed, never lengthen it. `None` means unbounded, which
+    stays the default: only a run that has promised to finish by a certain time
+    has any business killing a render that would have succeeded.
+    """
+    global _DEADLINE
+    previous = _DEADLINE
+    until = None if seconds is None else time.monotonic() + max(0.0, float(seconds))
+    if previous is not None:
+        until = previous if until is None else min(previous, until)
+    bound = Bound(None if seconds is None else float(seconds))
+    _DEADLINE = until
+    _BOUNDS.append(bound)
+    try:
+        yield bound
+    finally:
+        _BOUNDS.pop()
+        _DEADLINE = previous
+
+
+def _remaining() -> float | None:
+    """Seconds an engine call may take, or `None` when nothing is bounding it."""
+    return None if _DEADLINE is None else _DEADLINE - time.monotonic()
+
+
+def _expire(subcommand: str, seconds: float) -> EngineTimeout:
+    """Mark every open bound as fired and return the failure to raise."""
+    for bound in _BOUNDS:
+        bound.expired = True
+    return EngineTimeout(
+        f"engine {subcommand} was killed after {seconds:.1f}s: it ran past the deadline "
+        f"the unit of work that started it was given"
+    )
+
+
 def run(subcommand: str, spec: dict | None = None, log: Path | None = None) -> Any:
     """Hand `spec` to one of the engine's subcommands and return its report.
 
@@ -67,28 +146,46 @@ def run(subcommand: str, spec: dict | None = None, log: Path | None = None) -> A
     until the call returns. Most calls here take a second and want the message
     with the failure; a bulk build takes hours, and progress that only arrives at
     the end is not progress.
+
+    Inside a [`deadline`] block the call is killed rather than waited on. The
+    child dies with the timeout — `subprocess.run` kills it before it raises —
+    and the engine starts no grandchildren, so there is nothing left behind.
     """
     command = [str(engine_path()), subcommand]
     text = "" if spec is None else json.dumps(spec)
-    if log is None:
-        done = subprocess.run(
-            command, input=text, capture_output=True, text=True, cwd=repo_root(), check=False
-        )
-        if done.returncode != 0:
-            raise RuntimeError(f"engine failed: {done.stderr.strip() or done.stdout.strip()}")
-        return json.loads(done.stdout)
+    remaining = _remaining()
+    if remaining is not None and remaining <= 0:
+        raise _expire(subcommand, 0.0)
+    started = time.monotonic()
+    try:
+        if log is None:
+            done = subprocess.run(
+                command,
+                input=text,
+                capture_output=True,
+                text=True,
+                cwd=repo_root(),
+                check=False,
+                timeout=remaining,
+            )
+            if done.returncode != 0:
+                raise RuntimeError(f"engine failed: {done.stderr.strip() or done.stdout.strip()}")
+            return json.loads(done.stdout)
 
-    log.parent.mkdir(parents=True, exist_ok=True)
-    with log.open("a", encoding="utf-8") as handle:
-        done = subprocess.run(
-            command,
-            input=text,
-            stdout=subprocess.PIPE,
-            stderr=handle,
-            text=True,
-            cwd=repo_root(),
-            check=False,
-        )
+        log.parent.mkdir(parents=True, exist_ok=True)
+        with log.open("a", encoding="utf-8") as handle:
+            done = subprocess.run(
+                command,
+                input=text,
+                stdout=subprocess.PIPE,
+                stderr=handle,
+                text=True,
+                cwd=repo_root(),
+                check=False,
+                timeout=remaining,
+            )
+    except subprocess.TimeoutExpired:
+        raise _expire(subcommand, time.monotonic() - started) from None
     if done.returncode != 0:
         raise RuntimeError(f"engine failed; its progress and error are in {log}")
     return json.loads(done.stdout)

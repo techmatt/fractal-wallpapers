@@ -35,6 +35,20 @@ real plan rather than by construction ([`parity`]).
   to serial reads afterwards as "concurrency bought nothing".
 * Each worker puts itself in a job object its engine children inherit, so a worker
   killed by anything at all takes its engine with it.
+* A row that **hangs** is killed at the deadline its task carries, in the worker
+  that started it, and comes back as a failed row. The parent keeps its own grace
+  on top of that ([`KILL_GRACE`]) and takes the workers down itself if it expires,
+  because a worker stuck somewhere the engine deadline cannot reach is exactly the
+  case the worker's own bound cannot cover.
+
+## Rows are submitted a window at a time, not all at once
+
+A pass handed a gate ([`pacing.Leg`]) must be able to *not start* a row, and a
+plan submitted in one go has started every row before the first one finishes.
+So submission runs a window ahead of the sink's cursor — deep enough that no
+worker ever waits for work, shallow enough that the gate still has a decision to
+make — and the rows the gate declines are named in the record rather than
+silently missing from it.
 
 ## Sizing is measured, not argued from core counts
 
@@ -53,12 +67,26 @@ import multiprocessing
 import os
 import time
 from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import TimeoutError as FutureTimeout
 from concurrent.futures.process import BrokenProcessPool
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
+
+from fractal_wallpapers import engine
 
 #: How many worker processes a release pass uses by default.
 DEFAULT_WORKERS = 3
+
+#: How much longer than its own deadline a worker gets before the parent stops
+#: waiting and kills it. Generous, because it is the backstop *behind* the
+#: backstop: the worker bounds its own engine call, so this only fires when the
+#: worker is stuck somewhere that bound cannot reach.
+KILL_GRACE = 30.0
+
+#: How many rows are submitted ahead of the sink's cursor. One deeper than the
+#: worker count, so a worker never waits for the parent to notice it is free and
+#: the gate still gets asked about every row before it starts.
+SUBMIT_AHEAD = 1
 
 #: What each worker's engine is told to use, passed **explicitly** at every
 #: fan-out rather than inherited. Deliberately more than a fair share of a
@@ -78,7 +106,13 @@ def engine_threads_for(workers: int) -> int | None:
 
 @dataclass(frozen=True)
 class Task:
-    """One release row. Everything in it survives a spawn pickle on any platform."""
+    """One release row. Everything in it survives a spawn pickle on any platform.
+
+    `timeout` is the row's own kill deadline, decided by the parent when the row
+    is submitted and carried across so the **worker** imposes it. A deadline the
+    parent could only impose by waiting is not a deadline for the thing that is
+    already stuck.
+    """
 
     id: str
     row: dict
@@ -86,6 +120,7 @@ class Task:
     mode: str
     output: str
     geometry: dict
+    timeout: float | None = None
 
 
 @dataclass(frozen=True)
@@ -97,6 +132,10 @@ class Result:
     own, so there is no switch here that a worker could get wrong and no path on
     which a stamp is written twice. False means there is nothing to write — a
     failure, or a coloring kind the operator does not touch.
+
+    `timed_out` separates the row that was *killed* from the row that failed. Both
+    are failed rows and only one of them is the run's own doing, and a pass whose
+    estimate is formed off row timings must not learn the length of a deadline.
     """
 
     id: str
@@ -105,6 +144,7 @@ class Result:
     seconds: float = 0.0
     error: str | None = None
     stamp_pending: bool = False
+    timed_out: bool = False
 
     @property
     def stamp(self):
@@ -112,30 +152,39 @@ class Result:
 
 
 def render_task(task: Task) -> Result:
-    """Render one row. Never raises: a failed row is a recorded row."""
+    """Render one row under its own deadline. Never raises: a failed row is a recorded row."""
     started = time.monotonic()
-    try:
-        from fractal_wallpapers.curation import colorize
-        from fractal_wallpapers.models import palette_sets
+    with engine.deadline(task.timeout) as bound:
+        try:
+            from fractal_wallpapers.curation import colorize
+            from fractal_wallpapers.models import palette_sets
 
-        picture, stamp = colorize.render(
-            task.row,
-            task.mode,
-            task.colormap,
-            palette_sets.cyclic(),
-            Path(task.output),
-            render_geometry=task.geometry,
-        )
-        return Result(
-            task.id,
-            True,
-            {"picture": str(picture), "autolevel": stamp},
-            time.monotonic() - started,
-            None,
-            stamp is not None,
-        )
-    except Exception as failure:  # noqa: BLE001
-        return Result(task.id, False, {}, time.monotonic() - started, repr(failure)[:400], False)
+            picture, stamp = colorize.render(
+                task.row,
+                task.mode,
+                task.colormap,
+                palette_sets.cyclic(),
+                Path(task.output),
+                render_geometry=task.geometry,
+            )
+            return Result(
+                task.id,
+                True,
+                {"picture": str(picture), "autolevel": stamp},
+                time.monotonic() - started,
+                None,
+                stamp is not None,
+            )
+        except Exception as failure:  # noqa: BLE001
+            return Result(
+                task.id,
+                False,
+                {},
+                time.monotonic() - started,
+                repr(failure)[:400],
+                False,
+                bound.expired,
+            )
 
 
 def _worker(task: Task) -> Result:
@@ -159,7 +208,56 @@ def _worker_init(threads, quiet: bool) -> None:
         )
 
 
-def run_pass(tasks, workers: int, sink, log=print) -> dict:
+def _bounded(task: Task, leg) -> Task:
+    """The task with the deadline it is being started under stamped into it."""
+    return task if leg is None else replace(task, timeout=leg.timeout())
+
+
+def _took(record: dict, leg, task: Task, result: Result, sink, log, note: str) -> None:
+    """One finished row: counted, taught to the estimate, recorded, announced."""
+    record["row_seconds"] += result.seconds
+    if result.timed_out:
+        record["killed"] += 1
+    if leg is not None:
+        leg.observe(result.seconds, result.ok, result.timed_out)
+    sink(task, result)
+    verdict = "ok" if result.ok else ("KILLED" if result.timed_out else "FAILED")
+    log(f"[release] {task.id} {verdict} {result.seconds:.1f}s{note}")
+
+
+def _serially(tasks, sink, record: dict, leg, log, note: str = " (serial)") -> None:
+    """Render `tasks` in this process, gated one at a time.
+
+    The fallback path and the one-worker path are the same code, which is the
+    point: the serial path must not become a branch of the thing it is a fallback
+    for. The gate is asked here too — a pass that stopped starting rows in the
+    pool and then started them all in the parent would be no backstop at all.
+    """
+    for index, task in enumerate(tasks):
+        decline = leg.may_start() if leg is not None else None
+        if decline is not None:
+            record["stopped"] = str(decline)
+            record["not_started"] = [rest.id for rest in tasks[index:]]
+            log(f"[release] BUDGET STOP before {task.id}: {decline}")
+            return
+        _took(record, leg, task, render_task(_bounded(task, leg)), sink, log, note)
+
+
+def _kill_workers(pool, log) -> None:
+    """Take the pool's workers down where they stand.
+
+    Reaching for the executor's own process table is the only way to end a worker
+    that is not going to answer: nothing in the public interface interrupts a
+    running future. Each worker carries a job object, so its engine goes with it.
+    """
+    for process in list(getattr(pool, "_processes", {}).values()):
+        try:
+            process.kill()
+        except Exception as failure:  # noqa: BLE001 — a worker already gone is the good case
+            log(f"[release] worker {getattr(process, 'pid', '?')} would not die: {failure!r}")
+
+
+def run_pass(tasks, workers: int, sink, log=print, leg=None) -> dict:
     """Render `tasks` and hand each result to `sink(task, result)` **in plan order**.
 
     The sink runs in the parent, exactly once per task, in the order `tasks` was
@@ -167,9 +265,14 @@ def run_pass(tasks, workers: int, sink, log=print) -> dict:
     written, which is the whole reason a worker renders with its stamp write
     suppressed and hands the stamp back instead.
 
+    `leg` is the pass's share of the run's wall clock ([`pacing.Leg`]) and is
+    optional: without one the pass renders every row, unbounded, exactly as it
+    always has. With one, each row is asked for before it is started and carries
+    the deadline it was granted.
+
     Returns a small record of what the pass *did* — the worker count, the engine
-    threads, whether the serial fallback fired — for the caller to stamp into its
-    own summary rather than restate.
+    threads, whether the serial fallback fired, which rows never started — for the
+    caller to stamp into its own summary rather than restate.
     """
     tasks = list(tasks)
     workers = max(1, int(workers))
@@ -184,21 +287,21 @@ def run_pass(tasks, workers: int, sink, log=print) -> dict:
         # the thing anybody wants to know.
         "seconds": 0.0,
         "row_seconds": 0.0,
+        "killed": 0,
+        "stopped": None,
+        "not_started": [],
     }
     if not tasks:
         return record
 
-    if workers <= 1:
-        for index, task in enumerate(tasks, start=1):
-            result = render_task(task)
-            sink(task, result)
-            record["row_seconds"] += result.seconds
-            log(
-                f"[release] {index}/{len(tasks)} {task.id} "
-                f"{'ok' if result.ok else 'FAILED'} {result.seconds:.1f}s (serial)"
-            )
+    def close() -> dict:
         record["seconds"] = round(time.monotonic() - started, 1)
+        record["row_seconds"] = round(record["row_seconds"], 1)
         return record
+
+    if workers <= 1:
+        _serially(tasks, sink, record, leg, log)
+        return close()
 
     pool = ProcessPoolExecutor(
         max_workers=workers,
@@ -207,15 +310,64 @@ def run_pass(tasks, workers: int, sink, log=print) -> dict:
         initargs=(record["engine_threads"], False),
     )
     clean = False
+    futures: dict = {}
+    limits: dict = {}
+    horizon = 0
+
+    def fill(upto: int) -> None:
+        """Submit rows up to `upto`, asking the gate about each one first."""
+        nonlocal horizon
+        while horizon < min(upto, len(tasks)) and record["stopped"] is None:
+            decline = leg.may_start() if leg is not None else None
+            if decline is not None:
+                record["stopped"] = str(decline)
+                record["not_started"] = [rest.id for rest in tasks[horizon:]]
+                log(f"[release] BUDGET STOP before {tasks[horizon].id}: {decline}")
+                return
+            bounded = _bounded(tasks[horizon], leg)
+            limits[horizon] = bounded.timeout
+            futures[horizon] = pool.submit(_worker, bounded)
+            horizon += 1
+
     try:
         log(
             f"[release] {len(tasks)} row(s) over {workers} worker process(es) at "
             f"{THREADS_ENV}={record['engine_threads']} (serial fallback: --workers 1)"
         )
-        futures = [pool.submit(_worker, task) for task in tasks]
-        for index, (task, future) in enumerate(zip(tasks, futures, strict=True)):
+        fill(workers + SUBMIT_AHEAD)
+        for index, task in enumerate(tasks):
+            if index not in futures:
+                break  # the gate stopped the pass before this row was submitted
+            grace = None if limits[index] is None else limits[index] + KILL_GRACE
             try:
-                result = future.result()
+                result = futures[index].result() if grace is None else futures[index].result(grace)
+            except FutureTimeout:
+                log(
+                    f"[release] {task.id} HUNG past its {limits[index]:.0f}s deadline and a "
+                    f"{KILL_GRACE:.0f}s grace - killing the pool and finishing in the parent"
+                )
+                _kill_workers(pool, log)
+                _took(
+                    record,
+                    leg,
+                    task,
+                    Result(
+                        task.id,
+                        False,
+                        {},
+                        limits[index] + KILL_GRACE,
+                        "killed: hung past its deadline and the parent's grace",
+                        False,
+                        True,
+                    ),
+                    sink,
+                    log,
+                    " (killed by the parent)",
+                )
+                rest = tasks[index + 1 :]
+                record["fell_back_serial"] += len(rest)
+                _serially(rest, sink, record, leg, log, " (serial, after a kill)")
+                return close()
             except BrokenProcessPool as broken:
                 rest = tasks[index:]
                 record["fell_back_serial"] = len(rest)
@@ -223,30 +375,20 @@ def run_pass(tasks, workers: int, sink, log=print) -> dict:
                     f"[release] POOL BROKEN ({broken!r}) - rendering the remaining "
                     f"{len(rest)} row(s) serially in the parent rather than dropping them"
                 )
-                for remaining in rest:
-                    outcome = render_task(remaining)
-                    record["row_seconds"] += outcome.seconds
-                    sink(remaining, outcome)
+                _serially(rest, sink, record, leg, log, " (serial, after the pool broke)")
                 clean = True
-                record["seconds"] = round(time.monotonic() - started, 1)
-                return record
+                return close()
             except Exception as failure:  # noqa: BLE001
                 result = Result(task.id, False, {}, 0.0, repr(failure)[:400], False)
-            record["row_seconds"] += result.seconds
-            sink(task, result)
-            log(
-                f"[release] {index + 1}/{len(tasks)} {task.id} "
-                f"{'ok' if result.ok else 'FAILED'} {result.seconds:.1f}s"
-            )
+            _took(record, leg, task, result, sink, log, f" [{index + 1}/{len(tasks)}]")
+            fill(index + 1 + workers + SUBMIT_AHEAD)
         clean = True
     finally:
         # A clean end waits for the workers; an interrupted one cancels what has
         # not started and does not block on what has — each worker's own job
         # object takes its engine down with it.
         pool.shutdown(wait=clean, cancel_futures=not clean)
-    record["seconds"] = round(time.monotonic() - started, 1)
-    record["row_seconds"] = round(record["row_seconds"], 1)
-    return record
+    return close()
 
 
 def resumable(picture: Path) -> bool:
@@ -344,6 +486,8 @@ def parity(tasks, workers: int, directory: Path, log=print) -> dict:
 __all__ = [
     "DEFAULT_WORKERS",
     "ENGINE_THREADS_PER_WORKER",
+    "KILL_GRACE",
+    "SUBMIT_AHEAD",
     "THREADS_ENV",
     "Result",
     "Task",

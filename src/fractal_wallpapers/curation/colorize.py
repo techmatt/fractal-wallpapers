@@ -371,7 +371,6 @@ class Colorizer:
         """
         draw = random.Random((self.seed, index, plan.key).__str__())
         names = candidate_set(anchor, self.pool)
-        mode = draw.choice(modes_for(plan.head))
         record = {
             "schema": intake.SCHEMA,
             "attempt": index,
@@ -386,12 +385,20 @@ class Colorizer:
             "ledger": row.get("_ledger"),
             "anchor": anchor,
             "candidates": names,
-            "mode": mode,
-            "mode_kind": kind_of(mode),
+            "mode": None,
+            "mode_kind": None,
             "curve": CURVE,
             "render": _geometry(row),
         }
         try:
+            # The roster is read out of the engine, so drawing the mode is an
+            # engine call like any other and belongs inside the try: "a failed
+            # attempt is a recorded row" is not true of a step taken before the
+            # first one, and a killed attempt would take the whole run down.
+            # Uniform over the paying head's roster, by Matt's call for the first
+            # long run: steering this draw is a future lever, not an unmade decision.
+            mode = draw.choice(modes_for(plan.head))
+            record.update({"mode": mode, "mode_kind": kind_of(mode)})
             colormap, scores = self.pick_palette(row, names)
             picture = self.directory / "pictures" / f"{index:04d}.jpg"
             picture, stamp = render(

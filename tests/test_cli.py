@@ -173,3 +173,31 @@ def test_weights_manifest_is_valid_and_versioned() -> None:
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     assert manifest["schema"] == 1
     assert isinstance(manifest["heads"], dict)
+
+
+def test_a_run_is_either_started_or_resumed_and_never_both() -> None:
+    """Continuing a run is a decision, not a default: the name it is given says
+    which of the two the caller meant."""
+    parse = cli.build_parser().parse_args
+    assert parse(["curate", "run", "--run", "v1"]).resume is None
+    assert parse(["curate", "run", "--resume", "v1"]).run is None
+    with pytest.raises(SystemExit):
+        parse(["curate", "run"])
+    with pytest.raises(SystemExit):
+        parse(["curate", "run", "--run", "v1", "--resume", "v1"])
+
+
+def test_a_run_s_shape_defaults_to_the_run_s_own_and_a_plan_s_to_a_number() -> None:
+    """`curate run` cannot tell a flag that defaulted to 6 from one that asked for
+    6, so it does not default at all — the run's own plan answers instead."""
+    parse = cli.build_parser().parse_args
+    running = parse(["curate", "run", "--run", "v1"])
+    assert (running.n, running.seed, running.strange_share, running.wall_budget) == (
+        None,
+        None,
+        None,
+        None,
+    )
+    planning = parse(["curate", "plan"])
+    assert (planning.n, planning.strange_share) == (6, 0.5)
+    assert parse(["curate", "run", "--run", "v1", "--wall-budget", "900"]).wall_budget == 900.0
