@@ -24,3 +24,21 @@ six rows below tier 3, so nothing else on it is measurable.
 The weights themselves are not tracked. `best.pt` and `last.pt` are what training
 leaves on disk in full precision; `smooth_render.fp16.pt` is the halved artifact
 `fractal-wallpapers fetch-weights` downloads and hash-checks.
+
+## The adoption
+
+**Shipped on Matt's call**, alongside the palette head and in the same shape: a
+recorded policy call over a FAIL arm, with the bar record untouched. The
+ordering arm this sheet was bought to read PASSes at **0.6306** against a target
+of 0.5671 and a floor of 0.5121, and the interface arm PASSes. What fails is
+**calibration**, on an arm this repository's own bar made unsatisfiable: sheet
+D's `≥4` base rate is 0.4873 against the training distribution's 0.1233, an
+enrichment of 3.95×, and clearing the arm would require the head to be
+systematically over-confident about everything it trained on. All three seeds
+agree — 0.415 / 0.448 / 0.333 — so it is a fact about the bar, not about the
+seed.
+
+The bar is not rewritten after the fact and the arm still reads FAIL. Withholding
+the head instead would have shipped a release that cannot judge a smooth render
+at all, which is the larger of the two wrongs; the arm stays on the record so
+that a later reader sees the trade rather than a PASS.

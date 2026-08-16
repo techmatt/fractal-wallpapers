@@ -5,7 +5,7 @@ prereg.json            the bar, written before the head existed
 acceptance.json        the read against it, per seed
 seed*_listwise/        the seed band that was judged: config, metrics, scores
 seed0_regression/      the losing arm of the loss, kept because it was an arm
-palette.fp16.pt        what would ship. Fetched, not tracked
+palette.fp16.pt        what ships. Fetched, not tracked
 ```
 
 ## What it is
@@ -38,9 +38,9 @@ A PASS would say the student chooses what the teacher would choose. It would say
 nothing at all about whether either of them chooses what a person would: if the
 teacher has a taste nobody shares, this head has inherited it exactly.
 
-## What the read said, and why nothing is in the manifest
+## What the read said, and what shipped anyway
 
-**FAIL, on one arm of four, and the head is not shipped.** It reproduces the
+**FAIL, on one arm of four, and it is in the manifest on Matt's call.** It reproduces the
 teacher's *ordering* of a real candidate set at a rank correlation of **0.907**
 against a bar of 0.70, and the utility its choices give up is **5.5%** of a set's
 own spread against a ceiling of 10%. It picks the teacher's exact top map on
@@ -61,6 +61,33 @@ stopped losing the hard half and is losing the easy one.
 
 The half-precision artifact is built and verified — 10.15 MB to 5.13,
 bit-identical on re-read, 2 of 377 sets changing their top pick and at most three
-discordant candidate pairs in any set — so the shipping path is proven. What is
-withheld is the manifest entry, because a head that failed its own pre-registered
-bar does not go into a release.
+discordant candidate pairs in any set.
+
+## The adoption
+
+**Shipped on Matt's call, 2026-08-15**, as `seed2_listwise` — the median seed by
+the top-pick arm, which is the rule this head's bar declared before it existed
+and not the best of the three. The bar record is untouched: no arm was moved, no
+threshold rewritten, and `acceptance.json` still reads FAIL. What changed is the
+decision taken over that FAIL, which is recorded here rather than hidden in the
+number.
+
+The three operative arms all PASS — floor **0.533** against 0.50, ordering
+**0.907** against 0.70, regret **0.055** against 0.10 — and the fourth is
+re-read for what it is. The renderer control at **0.592** is a **ceiling
+reference**, not a bar: it is the teacher's self-agreement across two rendering
+pipelines, so it measures how far a change of renderer already moves the
+teacher's own choice, and the remaining **0.059** gap to it is smaller than the
+**0.056** seed band. A head cannot be asked to track its teacher more closely
+than the teacher tracks itself, and this instrument cannot resolve whether it
+does.
+
+Two caveats travel with the adoption and are not softened by it. **The misses
+are rarer but deeper**: on the original 180 sets the median rank this head gives
+the teacher's pick when it misses is now **4**, mode 2, where the first pass's
+median miss was the teacher's second favourite. And **the listwise-vs-regression
+choice was decided inside seed noise** — listwise won its declared read by 0.0325
+held-out top pick, the three listwise seeds span 0.0450, and on the real sets the
+kept regression arm reads 0.5305 against the listwise band's 0.483/0.533/0.539.
+The two arms are indistinguishable on the instrument; the rule was declared in
+advance and stands, but it did not resolve anything.

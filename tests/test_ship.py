@@ -59,6 +59,15 @@ def test_the_manifest_keeps_its_shape() -> None:
         assert entry["provenance"]["supervision"], name
 
 
+def test_the_manifest_is_release_complete() -> None:
+    """A release is cut from this file and cannot be un-cut. A head missing from
+    it is a clone that cannot run that head, and nothing else here would notice:
+    the checkpoint is on the author's disk and every other test passes."""
+    manifest = json.loads(ship.manifest_path().read_text(encoding="utf-8"))
+    missing = [head for head in ship.HEADS if head not in manifest.get("heads", {})]
+    assert not missing, f"the release would ship without: {missing}"
+
+
 def test_the_distilled_head_names_its_teacher() -> None:
     """Its whole claim is approximate equivalence with one function. A release
     that did not say which function would be publishing an unfalsifiable one."""
