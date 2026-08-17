@@ -15,10 +15,11 @@ import json
 import pytest
 
 from fractal_wallpapers import engine
+from fractal_wallpapers.curation import floors
 from fractal_wallpapers.discovery import ledger as ledger_module
 from fractal_wallpapers.discovery import scoring
 from fractal_wallpapers.discovery.walk import Limits, Policy, Walk
-from fractal_wallpapers.supply import currency
+from fractal_wallpapers.supply import currency, ledgers
 
 #: Three Mandelbrot frames the walk tests already stand on — known to produce
 #: candidates through the real gates, so a smoke walk here has something to score.
@@ -72,6 +73,9 @@ class Stub:
     def admits(self, candidate, score):
         return currency.passes_good_floor(score) if self.admit_floor else True
 
+    def expandable(self, candidate, score):
+        return floors.passes_junk_floor(score) if self.admit_floor else True
+
 
 # --------------------------------------------------------------------------- #
 # the seam
@@ -107,6 +111,51 @@ def test_the_location_head_admits_at_the_keeper_floor_and_nowhere_else() -> None
     assert admits(scorer, {}, currency.GOOD_FLOOR) is True
     assert admits(scorer, {}, currency.GOOD_FLOOR - 1e-9) is False
     assert admits(scorer, {}, None) is False
+
+
+def test_the_location_head_expands_at_the_junk_floor_and_nowhere_else() -> None:
+    """The other half of the split, on the number curation already owns: booking
+    is the good floor, standing on a place is the junk floor, and nothing in the
+    walk restates either."""
+    expandable = scoring.LocationScorer.expandable
+    scorer = object.__new__(scoring.LocationScorer)
+    assert floors.JUNK_FLOOR < currency.GOOD_FLOOR, "the tiers would collapse otherwise"
+    assert expandable(scorer, {}, floors.JUNK_FLOOR) is True
+    assert expandable(scorer, {}, floors.JUNK_FLOOR - 1e-9) is False
+    assert expandable(scorer, {}, None) is False
+    assert expandable(scorer, {}, currency.GOOD_FLOOR) is True, "every admission is expandable"
+
+
+def test_a_middle_tier_candidate_reaches_the_frontier_and_not_the_books() -> None:
+    """The tiers are a property of the scorer pair, not of any one scorer: a score
+    between the floors must answer no to one and yes to the other."""
+    for judge in (scoring.LocationScorer, scoring.NullScorer):
+        scorer = object.__new__(judge)
+        middle = (floors.JUNK_FLOOR + currency.GOOD_FLOOR) / 2
+        assert judge.expandable(scorer, {}, middle) is True
+        if judge is scoring.LocationScorer:
+            assert judge.admits(scorer, {}, middle) is False
+
+
+@needs_engine
+def test_the_middle_tier_is_recorded_under_its_own_fate(tmp_path) -> None:
+    """Expansion and booking are two decisions, so a row that passed one and
+    failed the other must be readable as exactly that."""
+    middle = (floors.JUNK_FLOOR + currency.GOOD_FLOOR) / 2
+    run = _walk(tmp_path, Stub([scoring.Reading(middle, 0.0)] * 64))
+    summary = run.run()
+
+    rows = _rows(run)
+    expandable = [row for row in rows if row["fate"] == ledger_module.EXPANDABLE]
+    assert expandable, "a score above the junk floor must leave the walk somewhere to stand"
+    assert all(row["node_id"] is not None for row in expandable), "it reached the frontier"
+    assert all(row["score"] == middle for row in expandable)
+    assert not [row for row in rows if row["fate"] == ledger_module.SURVIVED], "none was booked"
+    assert summary["counts"]["tier:expandable"] == len(expandable)
+    assert summary["counts"].get("tier:admitted") is None
+    # And the union agrees on both halves: the gates passed, the books stay empty.
+    assert all(ledgers.passes_gates(row) for row in expandable)
+    assert not [row for row in expandable if ledgers.is_admitted(row)]
 
 
 def test_views_come_back_in_the_order_they_were_asked_for(tmp_path, monkeypatch) -> None:

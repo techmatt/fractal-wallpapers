@@ -234,13 +234,13 @@ def harvest(tmp_path, **kwargs) -> Harvest:
     return Harvest(walk, quota(), **kwargs)
 
 
-def candidate(fate: str, node_id=None, re: str = "0.1") -> dict:
+def candidate(fate: str, node_id=None, re: str = "0.1", score=None, family=None) -> dict:
     return {
         "kind": "candidate",
         "fate": fate,
         "node_id": node_id,
-        "score": None,
-        "family": {"kind": "mandelbrot"},
+        "score": score,
+        "family": family or {"kind": "mandelbrot"},
         "viewport": {"center_re": re, "center_im": "0.0", "width": "0.5"},
     }
 
@@ -263,6 +263,28 @@ def test_a_survivor_that_never_reached_the_frontier_ends_the_run(tmp_path) -> No
         run._account("mandelbrot", report, 1.0, 1)
 
 
+def test_the_frontier_is_fed_by_more_than_the_books_count(tmp_path) -> None:
+    """The whole of the split, in the reconcile: an expandable row reaches the
+    frontier, is counted as growth, and is invisible to the books."""
+    run = harvest(tmp_path)
+    rows = [
+        candidate(ledger_module.SURVIVED, node_id=1, re="0.1", score=0.9),
+        candidate(ledger_module.EXPANDABLE, node_id=2, re="0.2", score=0.3),
+        candidate(ledger_module.EXPANDABLE, node_id=3, re="0.3", score=0.25),
+        candidate(ledger_module.NOT_ADMITTED, re="0.4", score=0.01),
+        candidate("flat"),
+    ]
+    counted = run._account("mandelbrot", {"candidates": rows, "survivors": rows[:3]}, 1.0, 2)
+    assert counted["admitted"] == 1
+    assert counted["expandable"] == 2
+    assert counted["distinct"] == 1, "only the admitted row is supply"
+    assert run.quota.realized.admitted["mandelbrot"] == 1
+    assert run.tally.refused == {"flat": 1, ledger_module.NOT_ADMITTED: 1}
+    assert run.tally.feed() == 3
+    assert run.tally.growth() == pytest.approx(1.5), "three frontier nodes off two expansions"
+    assert run.tally.as_dict()["found"] == run.tally.feed() + sum(run.tally.refused.values())
+
+
 def test_admissions_are_counted_as_distinct_locations(tmp_path) -> None:
     """A raw count of what a scorer waved through runs about twice what the
     distinct-location count does, so a run reporting the raw number reports
@@ -277,7 +299,8 @@ def test_admissions_are_counted_as_distinct_locations(tmp_path) -> None:
     counted = run._account("mandelbrot", {"candidates": rows, "survivors": rows[:3]}, 1.0, 2)
     assert counted == {
         "found": 4,
-        "survived": 3,
+        "admitted": 3,
+        "expandable": 0,
         "distinct": 2,
         "duplicate": 1,
         "currency": 0.0,
@@ -289,8 +312,11 @@ def test_the_books_balance_across_every_named_bucket(tmp_path) -> None:
     run = harvest(tmp_path)
     rows = [candidate(fate) for fate in ("flat", "interior_cap", "occupancy_floor")]
     rows.append(candidate(ledger_module.SURVIVED, node_id=1))
-    counted = run._account("phoenix", {"candidates": rows, "survivors": rows[-1:]}, 1.0, 1)
-    assert counted["found"] == counted["survived"] + sum(run.tally.refused.values())
+    rows.append(candidate(ledger_module.EXPANDABLE, node_id=2, re="0.9"))
+    counted = run._account("phoenix", {"candidates": rows, "survivors": rows[-2:]}, 1.0, 1)
+    assert counted["found"] == (
+        counted["admitted"] + counted["expandable"] + sum(run.tally.refused.values())
+    )
 
 
 # --------------------------------------------------------------------------- #
@@ -320,8 +346,13 @@ def test_a_smoke_harvest_serves_more_than_one_partition_and_balances(tmp_path) -
     assert summary["batches"] == 2
     assert summary["stopped"] == "batch budget"
     tally = summary["tally"]
-    assert tally["found"] == tally["survived"] + sum(tally["refused"].values())
-    assert tally["survived"] == tally["distinct_admissions"] + tally["duplicate_admissions"]
+    assert tally["found"] == tally["frontier_feed"] + sum(tally["refused"].values())
+    assert tally["frontier_feed"] == tally["admitted"] + tally["expandable"]
+    assert tally["admitted"] == tally["distinct_admissions"] + tally["duplicate_admissions"]
+    assert tally["expandable"] == 0, "the null scorer admits everything; no middle tier"
+    assert tally["growth_per_expansion"] == pytest.approx(
+        tally["frontier_feed"] / tally["expanded"], abs=1e-3
+    )
     assert tally["currency"] == 0.0, "no scorer, so nothing is a keeper yet"
 
     served = {p for p, row in summary["quota"]["mix"]["minutes"].items() if row["realized"] > 0}
@@ -334,9 +365,12 @@ def test_a_smoke_harvest_serves_more_than_one_partition_and_balances(tmp_path) -
     # took it off, and a run that cannot refill four of ten partitions is the
     # state the first production run stalled in.
     deferred = summary["refill"]["deferred"]
-    assert "julia:multibrot3" in deferred
     assert "mandelbrot" not in deferred, "the plane seed pool is the channel it now has"
     assert CLASSIC_PHOENIX not in deferred
+    # No twin channel was wired into this run, and the deferral says exactly that
+    # rather than the old standing claim that no such channel could exist.
+    assert "no twin channel is wired into this run" in deferred["julia:multibrot3"]["reason"]
+    assert summary["refill"]["twins"] is None
 
 
 @needs_engine

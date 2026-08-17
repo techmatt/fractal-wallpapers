@@ -8,7 +8,9 @@ saturation memory both come through here, so there is exactly one answer to
 **Admitted means three things at once**, and they are checked in this order:
 
 * *the gates passed* — a candidate any structural gate refused is a recorded
-  refusal, not supply;
+  refusal, not supply. The gates are the *structural* ones only: a candidate the
+  walk stood on but did not book passed them too, and is filtered out by the next
+  line rather than by this one;
 * *the score clears the keeper floor* — a candidate the scorer declined to score
   has no verdict to be kept on, so it is not admitted and is counted as such;
 * *the location has not already been admitted* — the ledgers overlap, because a
@@ -89,8 +91,15 @@ def rows(path: Path, kind: str | None = None):
 
 
 def passes_gates(row: dict) -> bool:
-    """Whether every structural gate let this candidate through."""
-    return row.get("fate") == ledger_module.SURVIVED
+    """Whether every structural gate let this candidate through.
+
+    All three *scored* fates pass here, because the scorer's two floors are a
+    different question from the gates and are asked of the row's own score a line
+    later. Reading `survived` for this would quietly re-apply the good floor at
+    the reader: curation's junk floor, at a third of the height, would then be
+    comparing against a population the walk had already cut above it.
+    """
+    return row.get("fate") in ledger_module.SCORED
 
 
 def is_admitted(row: dict) -> bool:

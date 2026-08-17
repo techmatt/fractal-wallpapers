@@ -44,6 +44,15 @@ half could have noticed.
 logged only its survivors could never afterwards tell "the gates were too tight"
 from "there was nothing there", and both look like a low yield.
 
+**Standing on a place and booking it are two decisions, at two heights.** The
+scorer is asked twice about every gate survivor: *may the walk continue from
+here?* at the junk floor, and *is this a find worth counting?* at the good floor.
+One cut used to answer both, which meant a place too ordinary to keep was also a
+place the walk could not stand on — and a frontier fed only by its own admissions
+shrinks whenever the pass rate falls below one over the branching factor. The
+middle tier carries its own fate (`expandable`), so it reaches the frontier and
+no book in the project can see it.
+
 ```
 fractal-wallpapers walk --family julia --roots 20 --batches 8
 fractal-wallpapers walk --seeds my_locations.jsonl --neighborhood

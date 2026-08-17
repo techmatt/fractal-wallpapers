@@ -16,6 +16,16 @@ Three bounds on that, and each one exists because the unbounded version fails:
 * **the pool is finite and the cursor only moves forward**, so a refill hands over
   roots the run has not seen rather than re-seeding the same ones.
 
+**A Julia twin's pool is manufactured, not shipped.** The degree-2 twin draws
+from a tracked `c`-pool; the higher-degree twins have none, and used to be
+deferred forever with "fed by reframing only" — which reached them never, because
+a reframing operator is undefined on a dynamical viewport. Their channel is
+[`fractal_wallpapers.supply.twins`]: an admitted location of the degree-`d`
+parameter plane *is* a `c` for the degree-`d` Julia family, so serving the parent
+manufactures the twin's supply. It hands over the same seed object the tracked
+pool does, through the same cursor and the same low-water mark; the only
+difference is that its list grows during the run.
+
 **A partition with no channel is deferred, with a reason, not silently skipped.**
 A starved partition absent from both the refill list and the run record is
 indistinguishable from a healthy one — which is how a run once went four hundred
@@ -35,7 +45,12 @@ import time
 from pathlib import Path
 
 from fractal_wallpapers.discovery import pools
-from fractal_wallpapers.supply.partitions import ALL_PARTITIONS, partition_of_family
+from fractal_wallpapers.supply.partitions import (
+    ALL_PARTITIONS,
+    is_dynamical,
+    parameter_plane_of,
+    partition_of_family,
+)
 
 #: A partition below this many frontier nodes is starved.
 LOW_WATER = 8
@@ -46,12 +61,20 @@ COOLDOWN = 10
 #: Refill seconds may not exceed this share of the loop's wall clock.
 SHARE = 0.25
 
-#: Why a starved partition gets no refill, by partition.
-DEFERRAL = {
-    "julia:multibrot3": "no tracked pool of degree-3 Julia parameters; fed by reframing only",
-    "julia:multibrot4": "no tracked pool of degree-4 Julia parameters; fed by reframing only",
-    "julia:multibrot5": "no tracked pool of degree-5 Julia parameters; fed by reframing only",
-}
+#: Why a starved partition gets no refill, by partition. Empty, and that is the
+#: news: the three higher-degree Julia twins were the whole of this table, and
+#: [`fractal_wallpapers.supply.twins`] is the channel they were missing. A run
+#: with no twin channel wired in says so through [`NO_TWIN_CHANNEL`] instead,
+#: because "this run was built without it" and "no such channel exists" are
+#: different statements and only one of them used to be sayable.
+DEFERRAL: dict = {}
+
+#: Why a Julia twin gets no refill when the run holds no twin channel at all.
+NO_TWIN_CHANNEL = (
+    "no twin channel is wired into this run, so nothing derives Julia parameters from "
+    "{plane}'s admissions. Build the harvest with one — `supply.twins.build()` — or accept "
+    "that this partition is fed by reframing only, which reaches it never."
+)
 
 #: Why a parameter-plane partition gets no refill when it has no pool to draw on.
 NO_SEED_FILE = (
@@ -89,8 +112,10 @@ class Refill:
         seeds: Path | None = None,
         external=(),
         partitions=ALL_PARTITIONS,
+        twins=None,
     ):
         self.walk = walk
+        self.twins = twins
         self.low_water = int(low_water)
         self.cooldown = int(cooldown)
         self.share = float(share)
@@ -127,6 +152,11 @@ class Refill:
 
     def _pool(self, partition: str) -> list:
         """The entries this partition's channel can still hand over."""
+        # The twin channel's list is never cached: it grows as the run books
+        # parent-plane admissions, and a snapshot of it would freeze a channel
+        # whose whole point is that serving the parent fills it.
+        if self._is_twin(partition):
+            return self.twins.seeds(partition)
         if partition in self._pools:
             return self._pools[partition]
         if partition == "julia:mandelbrot":
@@ -140,12 +170,23 @@ class Refill:
         self._pools[partition] = rows
         return rows
 
+    def _is_twin(self, partition: str) -> bool:
+        """Whether the twin channel is this partition's channel.
+
+        The channel names the twins it serves, and it deliberately leaves out the
+        degree-2 one: that twin has a tracked `c`-pool a three-stage screen
+        produced, and a derived parameter must not displace it.
+        """
+        return self.twins is not None and partition in self.twins.partitions
+
     def has_channel(self, partition: str) -> bool:
         """Whether any draw could serve this partition at all."""
         if partition in self.external or partition in DEFERRAL:
             return False
         if partition in ("julia:mandelbrot", "phoenix"):
             return True
+        if is_dynamical(partition):
+            return self._is_twin(partition)
         return self._seeds is not None and partition != "phoenix:classic"
 
     def remaining(self, partition: str) -> int:
@@ -182,6 +223,10 @@ class Refill:
                 continue
             if partition in DEFERRAL:
                 reason = DEFERRAL[partition]
+            elif self._is_twin(partition):
+                reason = self.twins.starvation(partition, drawn=self.cursor.get(partition, 0))
+            elif is_dynamical(partition) and partition != "julia:mandelbrot":
+                reason = NO_TWIN_CHANNEL.format(plane=parameter_plane_of(partition))
             elif not self.has_channel(partition):
                 reason = NO_SEED_FILE
             else:
@@ -241,6 +286,21 @@ class Refill:
                     source="julia_c_pool",
                     provenance={"seed_id": entry.id, "channel": entry.channel, "refill": True},
                 )
+            elif self._is_twin(partition):
+                # The same seed object and the same call the degree-2 channel
+                # makes, at the degree its parent plane carries. That is what
+                # keeps this one channel more rather than a second mechanism.
+                plane = self.twins.plane_of(partition)
+                self.walk.add_root(
+                    entry.family(self.twins.degree_of(partition)),
+                    source="twin_channel",
+                    provenance={
+                        "seed_id": entry.id,
+                        "channel": entry.channel,
+                        "parent_plane": plane,
+                        "refill": True,
+                    },
+                )
             elif partition == "phoenix":
                 self.walk.add_root(
                     entry.family(),
@@ -269,6 +329,16 @@ class Refill:
                 )
         return len(taken)
 
+    def note_admission(self, partition: str, row: dict) -> None:
+        """One location the run just booked, offered to whatever channel it feeds.
+
+        The refill is where a channel's supply arrives, so it is where an
+        admission that *is* another partition's supply gets handed over. The
+        harvest stays ignorant of which channels exist.
+        """
+        if self.twins is not None:
+            self.twins.note(partition, row)
+
     def summary(self, loop_seconds: float = 0.0) -> dict:
         return {
             "low_water": self.low_water,
@@ -284,6 +354,7 @@ class Refill:
                 else 0.0
             ),
             "remaining": {p: self.remaining(p) for p in self.partitions if self.has_channel(p)},
+            "twins": None if self.twins is None else self.twins.summary(),
         }
 
 
@@ -292,4 +363,12 @@ def _seed_partition(row: dict) -> str | None:
     return partition_of_family(family) if isinstance(family, dict) else None
 
 
-__all__ = ["COOLDOWN", "DEFERRAL", "LOW_WATER", "NO_SEED_FILE", "SHARE", "Refill"]
+__all__ = [
+    "COOLDOWN",
+    "DEFERRAL",
+    "LOW_WATER",
+    "NO_SEED_FILE",
+    "NO_TWIN_CHANNEL",
+    "SHARE",
+    "Refill",
+]
