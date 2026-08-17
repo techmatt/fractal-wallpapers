@@ -265,6 +265,9 @@ def test_the_three_niche_modes_render_at_the_parameters_they_were_kept_at(tmp_pa
         "sectors": 4,
         "weight_base": 4.0,
         "depth": 26,
+        # The anchor is a Julia set, and on a dynamical plane the mode opens its
+        # address one step in. See the plane test below.
+        "start": "z1",
     }
 
     de = engine.render_report(spec("de", tmp_path / "de.png"))
@@ -277,14 +280,12 @@ def test_the_three_niche_modes_render_at_the_parameters_they_were_kept_at(tmp_pa
 
 @needs_engine
 def test_the_address_can_be_asked_to_open_at_z1_on_a_dynamical_plane(tmp_path) -> None:
-    """The non-default start, through the door Python has to it: written out in
-    full, because it is not a mode and is not going to become one until Matt has
-    looked at the pair.
+    """The start as the *wire* carries it, which the mode's adoption did not move.
 
-    The record echoes the key only when it is asked for. That is what keeps the
-    render cache's file names where they are — they are a digest of the coloring,
-    so a key that appeared unconditionally would rename every picture already made
-    under `itinerary` without changing one of them.
+    A coloring written out in full is taken exactly as written, defaults and all,
+    so `z₀` is still reachable on a dynamical plane and the comparison sheets can
+    still render the pair. The record echoes the key only when it is asked for,
+    which is what keeps every other field's cached file names where they are.
     """
     wedge = {"kind": "modulate", "base": {"field": {"kind": "smooth"}}, "shift": 0.5}
     default = engine.render_report(
@@ -323,6 +324,69 @@ def test_the_z1_address_start_is_refused_on_a_parameter_plane(tmp_path) -> None:
                 "output": str(tmp_path / "refused.png"),
             }
         )
+
+
+#: One family of every kind the engine renders, and which plane each is on. Both
+#: tests below walk this, so "every kind" means the same set at the two sites.
+FAMILIES = {
+    "mandelbrot": ({"kind": "mandelbrot"}, False),
+    "multibrot4": ({"kind": "multibrot", "degree": 4}, False),
+    "julia": ({"kind": "julia", "c": ["-0.8", "0.156"]}, True),
+    "julia5": ({"kind": "julia", "degree": 5, "c": ["0.4", "0.0"]}, True),
+    "phoenix": ({"kind": "phoenix"}, True),
+}
+
+
+@needs_engine
+def test_the_named_itinerary_mode_opens_its_address_where_the_plane_wants(tmp_path) -> None:
+    """Matt's verdict of 2026-08-17, at the name rather than at the wire.
+
+    The mode is what adopted `z₁`: asking for `itinerary` on a dynamical plane now
+    renders the address opened one step in, and the record says so — a niche mode
+    with no production stock, so there was nothing to re-render. On a parameter
+    plane nothing moved, because there is no wedge there to remove.
+    """
+    for name, (family, dynamical) in FAMILIES.items():
+        report = engine.render_report(
+            {
+                **{key: value for key, value in ANCHOR.items() if key != "mode"},
+                "family": family,
+                "mode": "itinerary",
+                "output": str(tmp_path / f"{name}.png"),
+            }
+        )
+        field = report["coloring"]["texture"]["field"]
+        assert field.get("start") == ("z1" if dynamical else None), name
+        # Everything else the mode is stays the same on both planes.
+        assert report["coloring"]["shift"] == 0.5, name
+        assert (field["sectors"], field["weight_base"], field["depth"]) == (4, 4.0, 26), name
+
+
+@needs_engine
+def test_the_render_cache_builds_the_same_itinerary_coloring_the_engine_resolves(tmp_path) -> None:
+    """The guard on the one rule that is written down on both sides of the boundary.
+
+    The catalog listing has no family, so the render cache opens the address itself
+    — it has to, because the job name is a digest of the spec it sends. This is what
+    holds `engine.pixel_is_z0` to `Family::pixel_is_z0`: if the two ever disagreed
+    about a kind, a picture would be cached under a name for the other plane's
+    address.
+    """
+    from fractal_wallpapers.models import renders
+
+    for name, (family, _) in FAMILIES.items():
+        ours = renders.coloring_of(
+            {"mode": "itinerary", "curve": "linear", "mode_params": {}, "family": family}
+        )
+        theirs = engine.render_report(
+            {
+                **{key: value for key, value in ANCHOR.items() if key != "mode"},
+                "family": family,
+                "mode": "itinerary",
+                "output": str(tmp_path / f"{name}.png"),
+            }
+        )["coloring"]
+        assert ours["texture"]["field"] == theirs["texture"]["field"], name
 
 
 @needs_engine

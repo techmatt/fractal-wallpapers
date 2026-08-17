@@ -263,7 +263,7 @@ impl RenderSpec {
             ));
         }
 
-        let (coloring, mode) = resolve_coloring(self.mode, self.coloring)?;
+        let (coloring, mode) = resolve_coloring(self.mode, self.coloring, &family)?;
         self.palette.validate()?;
         // The two halves are settled separately and then checked against each
         // other: almost every pairing is free, and the one that is not should cost
@@ -355,9 +355,16 @@ pub const DEFAULT_MODE: &str = "smooth";
 /// Validating here rather than at the point of use is deliberate: a coloring
 /// that cannot work should cost a message, not a minute of iteration followed by
 /// a message.
+///
+/// The family is here because one catalogued setting depends on it — where
+/// `itinerary` opens its address — and a **named** mode is the only thing it
+/// moves. A coloring written out in full is taken exactly as written, defaults
+/// and all: the wire says what it says, and this is what keeps the door the
+/// comparison sheets rendered `z0` through open.
 fn resolve_coloring(
     mode: Option<String>,
     coloring: Option<Coloring>,
+    family: &Family,
 ) -> Result<(Coloring, Option<String>), String> {
     let (coloring, mode) = match (mode, coloring) {
         (Some(mode), Some(_)) => {
@@ -366,9 +373,12 @@ fn resolve_coloring(
                  coloring with a name, so give one or the other"
             ));
         }
-        (Some(mode), None) => (mode::resolve(&mode)?, Some(mode)),
+        (Some(mode), None) => (mode::resolve(&mode, Some(family))?, Some(mode)),
         (None, Some(coloring)) => (coloring, None),
-        (None, None) => (mode::resolve(DEFAULT_MODE)?, Some(DEFAULT_MODE.to_string())),
+        (None, None) => (
+            mode::resolve(DEFAULT_MODE, Some(family))?,
+            Some(DEFAULT_MODE.to_string()),
+        ),
     };
     coloring.validate()?;
     Ok((coloring, mode))
@@ -565,7 +575,45 @@ mod tests {
             "mode":"stripe","colormap":"twilight_shifted","output":"o.png"}"#;
         let resolved = RenderSpec::parse(spec).unwrap().resolve().unwrap();
         assert_eq!(resolved.mode.as_deref(), Some("stripe"));
-        assert_eq!(resolved.coloring, crate::mode::resolve("stripe").unwrap());
+        assert_eq!(
+            resolved.coloring,
+            crate::mode::resolve("stripe", None).unwrap()
+        );
+    }
+
+    /// The adoption, at the door Python and the command line both come through:
+    /// the *name* `itinerary` means the `z₁` address on a dynamical plane and the
+    /// `z₀` one on a parameter plane, so the record of either says which it was.
+    #[test]
+    fn the_named_itinerary_mode_opens_its_address_where_the_plane_wants() {
+        let opened = |family: &str| {
+            let spec = format!(
+                r#"{{"schema":1,"family":{family},"resolution":[8,8],"mode":"itinerary",
+                    "colormap":"twilight_shifted","output":"o.png"}}"#
+            );
+            let resolved = RenderSpec::parse(&spec).unwrap().resolve().unwrap();
+            assert_eq!(resolved.mode.as_deref(), Some("itinerary"));
+            let crate::coloring::Coloring::Modulate { texture, .. } = resolved.coloring else {
+                panic!("itinerary is a modulate");
+            };
+            let crate::field::FieldSpec::Itinerary { start, .. } = texture.field else {
+                panic!("itinerary's texture is the address");
+            };
+            start
+        };
+        for family in [
+            r#"{"kind":"julia","c":["-0.4","0.6"]}"#,
+            r#"{"kind":"julia","degree":5,"c":["0.4","0"]}"#,
+            r#"{"kind":"phoenix"}"#,
+        ] {
+            assert_eq!(opened(family), crate::field::AddressStart::Z1, "{family}");
+        }
+        for family in [
+            r#"{"kind":"mandelbrot"}"#,
+            r#"{"kind":"multibrot","degree":4}"#,
+        ] {
+            assert_eq!(opened(family), crate::field::AddressStart::Z0, "{family}");
+        }
     }
 
     /// A coloring written out in full is nameless — the record echoes the

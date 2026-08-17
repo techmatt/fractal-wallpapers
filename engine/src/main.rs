@@ -88,6 +88,11 @@ struct Mode {
     /// setting is worth returning to; this is the setting, so a caller that
     /// needs to vary one knob of a mode can start from what the mode actually is
     /// instead of restating it and drifting.
+    ///
+    /// A listing has no family, so this is the **catalog form**: exact for
+    /// eighteen of the nineteen, and `itinerary`'s parameter-plane one. Where the
+    /// pixel is `z₀` that mode opens its address at `z₁` instead, which its
+    /// identity line says and [`mode::resolve`] does.
     coloring: Coloring,
 }
 
@@ -185,7 +190,7 @@ fn run(args: Vec<String>) -> Result<(), String> {
                         name: entry.name,
                         identity: entry.identity,
                         tier: entry.tier,
-                        coloring: mode::resolve(entry.name)?,
+                        coloring: mode::resolve(entry.name, None)?,
                     })
                 })
                 .collect::<Result<Vec<_>, String>>()?,
