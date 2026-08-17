@@ -159,6 +159,12 @@ def applies_to(kind: str) -> bool:
     band was measured on. `direct` is a trap figure over a flat ground: its tone
     statistics describe the ground, so it is excluded here — at the site that
     decides — rather than by a test inside the measurement.
+
+    `modulate` is excluded for a different reason and it is not a tone judgement:
+    the operator works by re-baking the *colormap*, and a modulate reads a
+    different place in that map per sample. Levelling the map would move every
+    sample by an amount that depends on where its texture happened to send it, so
+    the levelled picture would not be the same picture with its tone moved.
     """
     return kind in ("field", "composite")
 

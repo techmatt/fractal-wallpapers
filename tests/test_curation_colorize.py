@@ -24,15 +24,40 @@ needs_engine = pytest.mark.skipif(
 
 
 @needs_engine
-def test_the_two_judges_own_disjoint_modes_and_between_them_the_whole_catalog() -> None:
+def test_the_two_judges_own_disjoint_modes_and_between_them_the_whole_roster() -> None:
     """The roster is the engine's own, so a mode cannot exist on one side of the
     boundary and not the other."""
     smooth = colorize.modes_for(budget.SMOOTH)
     strange = colorize.modes_for(budget.STRANGE)
-    catalog = {mode["name"] for mode in engine.modes()}
+    roster = set(engine.production_modes())
     assert smooth == [colorize.SMOOTH_MODE]
     assert not set(smooth) & set(strange)
-    assert set(smooth) | set(strange) == catalog
+    assert set(smooth) | set(strange) == roster
+
+
+@needs_engine
+def test_a_production_draw_can_never_yield_a_niche_mode() -> None:
+    """The guard the tier rests on.
+
+    A niche mode is a real mode — it resolves, it renders, its kind is known — and
+    the *only* thing that is true of it is that no draw here can reach it. So the
+    absence is asserted at the draw, and the presence everywhere else, because a
+    tier that excluded a mode from the catalog outright would be a different and
+    weaker claim.
+    """
+    catalog = {mode["name"]: mode for mode in engine.modes()}
+    niche = {name for name, mode in catalog.items() if mode["tier"] == engine.NICHE}
+    assert niche, "there is nothing to exclude, so this proves nothing"
+
+    for head in (budget.SMOOTH, budget.STRANGE):
+        drawn = colorize.modes_for(head)
+        assert drawn, head
+        assert not niche & set(drawn), f"{head} can draw {niche & set(drawn)}"
+
+    # Still real modes: named in the catalog, resolvable, and kind-known.
+    for name in niche:
+        assert catalog[name]["coloring"]
+        assert colorize.kind_of(name) in ("field", "composite", "modulate", "direct")
 
 
 @needs_engine

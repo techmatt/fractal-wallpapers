@@ -265,6 +265,10 @@ impl RenderSpec {
 
         let (coloring, mode) = resolve_coloring(self.mode, self.coloring)?;
         self.palette.validate()?;
+        // The two halves are settled separately and then checked against each
+        // other: almost every pairing is free, and the one that is not should cost
+        // a message rather than a render that ignored half the spec.
+        coloring.agrees_with(&self.palette)?;
 
         Ok(Resolved {
             maxiter: self

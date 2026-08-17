@@ -44,9 +44,13 @@ nobody trained it on.
 ## The mode is drawn inside the paying head's roster
 
 The smooth judge owns the one smooth coloring; the strange judge owns every other
-mode the engine knows. The roster is read out of the engine's own catalog at call
-time, so a mode cannot exist on one side of the boundary and not the other, and
-the draw is seeded per attempt and recorded.
+**production** mode the engine knows. The roster is read out of the engine's own
+catalog at call time, so a mode cannot exist on one side of the boundary and not
+the other, and the draw is seeded per attempt and recorded.
+
+A mode the catalog tiers as *niche* is renderable by name and can never be drawn
+here. That exclusion lives in [`modes_for`] — the one place a mode is drawn —
+rather than at each of its callers.
 """
 
 from __future__ import annotations
@@ -104,8 +108,14 @@ class Candidate:
 
 
 def modes_for(head: str) -> list[str]:
-    """The modes one judge owns, read out of the engine's catalog at call time."""
-    names = [mode["name"] for mode in engine.modes()]
+    """The modes one judge owns, read out of the engine's catalog at call time.
+
+    The **production** roster only: a niche mode is renderable by name and is
+    excluded from every draw, and the exclusion happens here because this is the
+    one place a curation mode is drawn. Asking the engine for the production names
+    rather than filtering the catalog keeps the tier's meaning in one place.
+    """
+    names = engine.production_modes()
     if head == budget_module.SMOOTH:
         return [SMOOTH_MODE]
     return [name for name in names if name != SMOOTH_MODE]

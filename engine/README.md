@@ -22,14 +22,32 @@ modes       the named colorings, as JSON
 The pipeline runs `spec → family → iterate → field → coloring → resample`, one
 module per stage; `src/lib.rs` says what each does and why the seam between the
 field and its coloring is the one that matters. `src/spec.rs` documents the JSON
-and `src/mode.rs` the named colorings — sixteen of them, in three shapes: one
-field, two fields blended, or no field at all.
+and `src/mode.rs` the named colorings — nineteen of them, in four shapes: one
+field, two fields blended, a base whose palette position a second field shifts,
+or no field at all.
 
-The catalog is also the production roster, so anything meant to be *looked at*
-rather than shipped stays out of it and is asked for by writing the coloring out
-in full. There is one such field: `discrete`, the integer escape count, which is
-what the smooth count replaced and is in the crate so the article can show the
-two side by side. `fractal-wallpapers render --discrete [CYCLE]` draws it.
+Every catalog entry carries a **tier**. Sixteen are `production` — a run may draw
+them, and the finished-render judges were trained on them. Three are `niche`:
+`threads`, `itinerary`, and `de`, renderable on demand by name and excluded from
+every production draw. The exclusion is enforced in one place on each side of the
+boundary — `mode::production_names` here, `engine.production_modes()` in Python —
+so it is a property of a function rather than a rule every draw site remembers.
+`fractal-wallpapers modes` prints the tier beside each name.
+
+A field meant to be *looked at* rather than named stays out of the catalog
+entirely. There is one: `discrete`, the integer escape count, which is what the
+smooth count replaced and is in the crate so the article can show the two side by
+side. `fractal-wallpapers render --discrete [CYCLE]` draws it.
+
+**One capability is deliberately absent and is not debt: normal-map shading** —
+lighting a render by the surface normal of a distance estimate, with an azimuth
+and a lamp height. It makes a fractal read as an embossed metal plaque rather than
+as a field, replacing the picture's own structure with a lighting model's. The
+`de` field ships without it, as a scalar coloring like any other. Two further
+gaps *are* open decisions rather than omissions: `biomorph`, which would change
+what `n` means and so what every cached render means, and perturbation-based deep
+zoom, which is the one genuinely large thing this engine lacks (`iterate.rs`
+carries the TODO).
 
 A render given no viewport comes home to its family's own frame, a table in
 `src/family.rs` — and so does a walk root, which reads that table through

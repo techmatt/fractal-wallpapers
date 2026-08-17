@@ -100,6 +100,9 @@ impl Transform {
 /// where the field is changing fast and narrowed where it is flat, so color
 /// transitions land on the picture's geometric edges instead of on arbitrary
 /// isovalues.
+///
+/// The third spends it by **rank**: every sample gets the same share, so the
+/// gradient is spent evenly over the *samples* rather than over the values.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Transfer {
@@ -110,6 +113,23 @@ pub enum Transfer {
     /// hard. At `0` this *is* the value transfer — every bin weighs the same —
     /// which is why it is the family's own edge rather than a separate mode.
     Edge { weight: f64 },
+    /// Spend it by the sample's rank among the frame's own samples: histogram
+    /// equalization, and the one transfer that replaces the percentile stretch
+    /// rather than remapping it.
+    ///
+    /// It replaces it because it *is* a normalization, and a stronger one: the
+    /// stretch trims half a percent from each end and maps what is left linearly,
+    /// so a badly skewed field still lands skewed. A rank flattens the
+    /// distribution outright — half the samples are below the middle of the
+    /// gradient by construction, whatever the values were — which is why nothing
+    /// clips and why the result is the same picture at every location.
+    ///
+    /// The price is that it is not a function of the value alone: two frames of
+    /// the same field at different places spend their gradient differently, and
+    /// equal spans of value no longer get equal spans of color. That is the right
+    /// trade only when the *ordering* is the content, which is the case for the
+    /// palette-position modulation in [`Coloring::Modulate`].
+    Rank,
 }
 
 /// How many value bins the edge transfer measures over. Fine enough that the
@@ -148,6 +168,25 @@ pub enum Rolloff {
     /// without reaching it. Continuous in value and in slope at the knee, so
     /// nothing below it moves at all and there is no visible join.
     SoftKnee { knee: f64 },
+    /// `l/(1+l)` everywhere. The classic photographic curve: it has no knee, so
+    /// it starts compressing from zero and *every* tone moves, the shadows least.
+    /// Half unit slope at the origin, which is what makes it read as a flatter,
+    /// filmic picture rather than as a rescued highlight.
+    Reinhard,
+    /// The ACES filmic approximation, `(l(2.51l+0.03))/(l(2.43l+0.59)+0.14)`.
+    ///
+    /// The one curve here that is an **S** rather than a compression: it *darkens*
+    /// the deep shadows, *lifts* the midtones above the identity, and compresses
+    /// the highlights. So contrast survives the rolloff instead of being spent on
+    /// it — which is the difference between a picture that has been tone-mapped and
+    /// one that has been flattened — and it is also why this is the only rolloff
+    /// here that can make a sample brighter than it arrived.
+    ///
+    /// It has a genuine white point: the fit crosses 1 at `l ≈ 7.24` and is clamped
+    /// there. Nothing in this pipeline reaches it — a painted pixel is a colormap
+    /// lookup in `[0, 1]`, where the curve tops out at `0.80` — but the clamp is
+    /// what keeps that a fact about the input rather than a hazard.
+    Aces,
 }
 
 impl Rolloff {
@@ -161,6 +200,10 @@ impl Rolloff {
                 } else {
                     knee + (1.0 - knee) * ((l - knee) / (1.0 - knee)).tanh()
                 }
+            }
+            Rolloff::Reinhard => l / (1.0 + l),
+            Rolloff::Aces => {
+                ((l * (2.51 * l + 0.03)) / (l * (2.43 * l + 0.59) + 0.14)).clamp(0.0, 1.0)
             }
         }
     }
@@ -297,6 +340,16 @@ pub enum Blend {
     Overlay,
     /// `min(a,b)` — the texture clamps the base from above.
     Min,
+    /// `min(a+b, 1)` — genuinely additive, clamped at the top of the range.
+    ///
+    /// Not screen, and the difference is the point. Screen is `a+b−ab`, so the
+    /// texture's contribution shrinks as the base brightens and vanishes where the
+    /// base is already white: it is a *soft* lift that can never overshoot. Add
+    /// lifts by the same amount everywhere and saturates when the sum runs out of
+    /// range, which is a harder, brighter texture — and the operator the `threads`
+    /// mode was tuned against. Substituting screen for it is a different picture,
+    /// not a rounding of the same one.
+    Add,
 }
 
 impl Blend {
@@ -314,7 +367,41 @@ impl Blend {
                 }
             }
             Blend::Min => under.min(over),
+            Blend::Add => (under + over).min(1.0),
         }
+    }
+}
+
+/// Which side of a direct trap's merge the new gradient sample is on.
+///
+/// A direct trap composites one sample per near miss into what the earlier misses
+/// already left behind, so there are two operands and an order to put them in.
+/// **Three of the five blends are commutative and cannot tell the difference**;
+/// `normal` and `overlay` can, and for those the order decides whether the orbit's
+/// last near miss covers its first or is covered by it.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum MergeOrder {
+    /// The new sample goes over what is already there. The order every mode in the
+    /// catalog uses, and what every record written before this key existed meant.
+    #[default]
+    BottomUp,
+    /// What is already there goes over the new sample, so the orbit's *earliest*
+    /// near miss is the one on top.
+    TopDown,
+}
+
+impl MergeOrder {
+    /// Merge an existing pixel with a new gradient sample, this way round.
+    pub fn merge(self, blend: Blend, standing: f64, sample: f64) -> f64 {
+        match self {
+            MergeOrder::BottomUp => blend.apply(standing, sample),
+            MergeOrder::TopDown => blend.apply(sample, standing),
+        }
+    }
+
+    fn is_default(&self) -> bool {
+        *self == MergeOrder::BottomUp
     }
 }
 
@@ -348,6 +435,48 @@ pub enum Coloring {
         blend: Blend,
         #[serde(default = "full")]
         texture_weight: f64,
+        /// A power applied to the texture's normalized value before the blend, so
+        /// the texture can be bent without bending the base.
+        ///
+        /// The palette recipe's own `gamma` describes the *picture*, which is what
+        /// the base makes; this is the texture's alone. Absent means the texture
+        /// carries no gamma of its own, which is what every composite here does
+        /// and what every record written before this key existed means — so the
+        /// key appears in a record only when it says something. That is a
+        /// deliberate exception to "echo every default": the composite coloring is
+        /// hashed into the render cache's file names, and a key that appeared
+        /// unconditionally would rename every picture the corpora were built from.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        texture_gamma: Option<f64>,
+    },
+    /// A base whose *palette position* the texture perturbs, rather than whose
+    /// value it blends with.
+    ///
+    /// Every other composite here is a blend in field space: two fields are
+    /// normalized, merged into one number, and that number is looked up once. This
+    /// one looks up a **different place in the gradient per sample**: the base is
+    /// spent by rank, and the texture shifts where in the gradient that rank lands.
+    ///
+    /// The consequence is what the shape is for. Where the base is detailed its
+    /// rank sweeps the gradient quickly and a modest shift is a minor recolor;
+    /// where the base is flat the rank barely moves and the shift is the only
+    /// variation there is. So the texture fills in the *boring* regions and leaves
+    /// the busy ones nearly alone — which no field-space blend does, because a
+    /// blend's strength does not know how fast the base is moving.
+    ///
+    /// **The base is spent by rank as part of what this is**, not as a palette
+    /// knob: `shift` is a distance along the gradient, and it only means the same
+    /// thing everywhere in the frame if the base's own spending is uniform. A
+    /// palette recipe that asks for another transfer alongside this coloring is
+    /// refused rather than quietly overridden — see [`Coloring::agrees_with`].
+    Modulate {
+        base: Layer,
+        texture: Layer,
+        /// How far the texture may push the base's palette position, in turns of
+        /// the gradient. Modest is the point: at 0.5 the address perturbs the
+        /// base's own structure, and by 1.5 it overrides it.
+        #[serde(default = "half")]
+        shift: f64,
     },
     /// Gradient samples composited during the iteration itself. See
     /// [`crate::direct_trap`] — this one never makes a scalar field at all.
@@ -363,6 +492,10 @@ pub enum Coloring {
         #[serde(default = "half")]
         opacity: f64,
         merge: Blend,
+        /// Which side of the merge a new sample is on. Absent is `bottom_up`, and
+        /// absent for the same recorded-name reason `texture_gamma` is.
+        #[serde(default, skip_serializing_if = "MergeOrder::is_default")]
+        merge_order: MergeOrder,
         #[serde(default = "black")]
         start_color: String,
         /// The curve the nearness of a hit is read through, before the palette
@@ -406,6 +539,7 @@ impl Coloring {
                 base,
                 texture,
                 texture_weight,
+                texture_gamma,
                 ..
             } => {
                 if base.field.conflicts_with(&texture.field) {
@@ -415,7 +549,31 @@ impl Coloring {
                         base.field.name()
                     ));
                 }
-                in_unit_interval(*texture_weight, "texture_weight")
+                in_unit_interval(*texture_weight, "texture_weight")?;
+                if texture_gamma.is_some_and(|gamma| !(gamma.is_finite() && gamma > 0.0)) {
+                    return Err(format!(
+                        "texture_gamma must be positive, got {}",
+                        texture_gamma.expect("checked as present above")
+                    ));
+                }
+                Ok(())
+            }
+            Coloring::Modulate {
+                base,
+                texture,
+                shift,
+            } => {
+                if base.field.conflicts_with(&texture.field) {
+                    return Err(format!(
+                        "a modulate of '{}' with itself would shift the gradient by the same \
+                         quantity it is spending it on",
+                        base.field.name()
+                    ));
+                }
+                if !shift.is_finite() {
+                    return Err(format!("shift must be a number, got {shift}"));
+                }
+                Ok(())
             }
             Coloring::Direct {
                 trap_radius,
@@ -464,11 +622,36 @@ impl Coloring {
                  blending them, so no single raw field reproduces it. Dump one of its two \
                  fields on its own instead.",
             ),
+            Coloring::Modulate { .. } => Some(
+                "a modulate looks up a different place in the gradient per sample, so there is \
+                 no single scalar index behind it — and its texture is carried at f64 precisely \
+                 to keep it out of the f32 dump. Dump one of its two fields on its own instead.",
+            ),
             Coloring::Direct { .. } => Some(
                 "a direct trap is color-valued: it composites gradient samples during the \
                  iteration and never produces a scalar index, so there is nothing to serialize",
             ),
         }
+    }
+
+    /// Check this coloring against the palette recipe it will be rendered through.
+    ///
+    /// Almost every pairing is free — a coloring produces a `[0, 1]` and a recipe
+    /// spends the gradient on it, and neither needs to know about the other. The
+    /// one exception is [`Coloring::Modulate`], which spends its base by rank as
+    /// part of its own definition: a recipe asking for a different transfer
+    /// alongside it is asking for something this cannot do, and the honest answer
+    /// is a message rather than a render that quietly ignored the request.
+    pub fn agrees_with(&self, palette: &Palette) -> Result<(), String> {
+        if matches!(self, Coloring::Modulate { .. }) && palette.transfer != Transfer::Value {
+            return Err(format!(
+                "a modulate spends its base by rank as part of what it is, so a recipe cannot \
+                 also spend it by {:?} — one of the two requests would have to be dropped. Leave \
+                 the palette's transfer unset with this coloring.",
+                palette.transfer
+            ));
+        }
+        Ok(())
     }
 }
 
@@ -494,7 +677,7 @@ impl Stretch {
     /// colored by an exterior-only field — gets a degenerate but harmless
     /// stretch: nothing will be looked up through it.
     pub fn measure(field: &Field) -> Stretch {
-        Stretch::over(field.values.iter().copied())
+        Stretch::over(field.values.iter().map(|&value| value as f64))
     }
 
     /// Measure the stretch over any run of samples, invalid ones included.
@@ -503,11 +686,8 @@ impl Stretch {
     /// against the field it was cut from: the whole point of the stretch is that
     /// a frame frames itself, and a tile borrowing a wider frame's percentiles
     /// would be colored for a picture nobody is looking at.
-    pub fn over(samples: impl Iterator<Item = f32>) -> Stretch {
-        let mut valid: Vec<f64> = samples
-            .filter(|v| v.is_finite())
-            .map(|v| v as f64)
-            .collect();
+    pub fn over(samples: impl Iterator<Item = f64>) -> Stretch {
+        let mut valid: Vec<f64> = samples.filter(|v| v.is_finite()).collect();
         if valid.is_empty() {
             return Stretch {
                 low: 0.0,
@@ -626,11 +806,76 @@ impl Edges {
     }
 }
 
-/// The edge transfer for a field, or `None` when the gradient is spent by value.
-fn edges_for(field: &Field, stretch: &Stretch, palette: &Palette) -> Option<Edges> {
-    match palette.transfer {
-        Transfer::Value => None,
-        Transfer::Edge { weight } => Some(Edges::measure(field, stretch, weight)),
+/// A frame's samples in sorted order: what turns a value into its rank.
+///
+/// The one normalization here that is not a formula but a *sort*. It is built from
+/// the frame's own valid samples and answers, for any value, what share of them
+/// were below it — histogram equalization, and the same thing the percentile
+/// stretch already computes at two points rather than at all of them.
+///
+/// The rank is a **midrank**: the mean of the shares strictly below and at-or-below
+/// the value, so a plateau of equal samples lands at the middle of the span it
+/// occupies rather than at one end of it. That is what keeps a field with a large
+/// flat region from putting the whole region at the very top or bottom of the
+/// gradient.
+pub struct Ranks {
+    sorted: Vec<f64>,
+}
+
+impl Ranks {
+    /// Sort a frame's valid samples, ready to rank against.
+    pub fn measure(samples: impl Iterator<Item = f64>) -> Ranks {
+        let mut sorted: Vec<f64> = samples.filter(|value| value.is_finite()).collect();
+        sorted.sort_unstable_by(f64::total_cmp);
+        Ranks { sorted }
+    }
+
+    /// Where this value falls among the frame's samples, in `[0, 1]`.
+    pub fn position(&self, value: f64) -> f64 {
+        if self.sorted.is_empty() {
+            return 0.0;
+        }
+        let below = self.sorted.partition_point(|&other| other < value);
+        let at_or_below = self.sorted.partition_point(|&other| other <= value);
+        0.5 * (below + at_or_below) as f64 / self.sorted.len() as f64
+    }
+}
+
+/// A [`Transfer`] measured against one frame: what a raw field value becomes.
+///
+/// The three variants are not three stages — they are three answers to the same
+/// question, and picking one is what a transfer *is*. Value and edge share the
+/// percentile stretch, because the edge transfer remaps a stretched position;
+/// rank replaces the stretch outright, because it is a normalization of its own.
+enum Spend {
+    Value(Stretch),
+    Edge(Stretch, Edges),
+    Rank(Ranks),
+}
+
+impl Spend {
+    /// Measure the transfer this recipe asks for over one field.
+    fn measure(field: &Field, transfer: Transfer) -> Spend {
+        match transfer {
+            Transfer::Value => Spend::Value(Stretch::measure(field)),
+            Transfer::Edge { weight } => {
+                let stretch = Stretch::measure(field);
+                let edges = Edges::measure(field, &stretch, weight);
+                Spend::Edge(stretch, edges)
+            }
+            Transfer::Rank => Spend::Rank(Ranks::measure(
+                field.values.iter().map(|&value| value as f64),
+            )),
+        }
+    }
+
+    /// Where one raw field value lands on the gradient, in `[0, 1]`.
+    fn position(&self, value: f64) -> f64 {
+        match self {
+            Spend::Value(stretch) => stretch.position(value),
+            Spend::Edge(stretch, edges) => edges.remap(stretch.position(value)),
+            Spend::Rank(ranks) => ranks.position(value),
+        }
     }
 }
 
@@ -690,6 +935,7 @@ fn paint_untoned(
             texture,
             blend,
             texture_weight,
+            texture_gamma,
         } => {
             let sampled = field::sample(view, family, maxiter, &[base.field, texture.field]);
             Ok(Painted {
@@ -700,10 +946,33 @@ fn paint_untoned(
                     texture.transform,
                     *blend,
                     *texture_weight,
+                    *texture_gamma,
                     palette,
                     colormap,
                 ),
                 interior_fraction: sampled.interior_fraction,
+            })
+        }
+        Coloring::Modulate {
+            base,
+            texture,
+            shift,
+        } => {
+            // The exact pass, and the reason it exists: the texture here is an
+            // address whose deep digits are the picture, so it never narrows.
+            let (fields, interior_fraction) =
+                field::sample_exact(view, family, maxiter, &[base.field, texture.field]);
+            Ok(Painted {
+                linear: modulate(
+                    &fields[0].narrow(),
+                    &fields[1],
+                    base.transform,
+                    texture.transform,
+                    *shift,
+                    palette,
+                    colormap,
+                ),
+                interior_fraction,
             })
         }
         Coloring::Direct {
@@ -712,6 +981,7 @@ fn paint_untoned(
             threshold,
             opacity,
             merge,
+            merge_order,
             start_color,
             transform,
         } => direct_trap::Painter::new(
@@ -720,6 +990,7 @@ fn paint_untoned(
             *threshold,
             *opacity,
             *merge,
+            *merge_order,
             start_color,
             *transform,
         )?
@@ -746,8 +1017,7 @@ pub fn shade(
     palette: &Palette,
     colormap: &Colormap,
 ) -> Vec<[f64; 3]> {
-    let stretch = Stretch::measure(field);
-    let edges = edges_for(field, &stretch, palette);
+    let spend = Spend::measure(field, palette.transfer);
     field
         .values
         .par_iter()
@@ -755,10 +1025,7 @@ pub fn shade(
             if !value.is_finite() {
                 return INTERIOR;
             }
-            let mut position = stretch.position(value as f64);
-            if let Some(edges) = &edges {
-                position = edges.remap(position);
-            }
+            let position = spend.position(value as f64);
             colormap.lookup(palette.place(transform.apply(position)))
         })
         .collect()
@@ -778,16 +1045,17 @@ fn composite(
     texture_transform: Transform,
     blend: Blend,
     weight: f64,
+    texture_gamma: Option<f64>,
     palette: &Palette,
     colormap: &Colormap,
 ) -> Vec<[f64; 3]> {
-    let base_stretch = Stretch::measure(base);
+    let base_spend = Spend::measure(base, palette.transfer);
     let texture_stretch = Stretch::measure(texture);
     // The recipe describes the picture, and the picture is what the base makes:
-    // the texture is a screen over it and carries no gamma of its own. The
-    // traversal comes after the blend, because it is about the color the pair
-    // arrived at rather than about either field.
-    let edges = edges_for(base, &base_stretch, palette);
+    // the texture is a screen over it and carries no gamma from the recipe. Its own
+    // `texture_gamma` is the one power that reaches it. The traversal comes after
+    // the blend, because it is about the color the pair arrived at rather than
+    // about either field.
     let gamma = Palette {
         cycles: 1.0,
         phase: 0.0,
@@ -797,16 +1065,16 @@ fn composite(
         .par_iter()
         .zip(&texture.values)
         .map(|(&base_value, &texture_value)| {
-            let under = base_value.is_finite().then(|| {
-                let mut position = base_stretch.position(base_value as f64);
-                if let Some(edges) = &edges {
-                    position = edges.remap(position);
-                }
-                gamma.place(base_transform.apply(position))
-            });
-            let over = texture_value
+            let under = base_value
                 .is_finite()
-                .then(|| texture_transform.apply(texture_stretch.position(texture_value as f64)));
+                .then(|| gamma.place(base_transform.apply(base_spend.position(base_value as f64))));
+            let over = texture_value.is_finite().then(|| {
+                let value = texture_transform.apply(texture_stretch.position(texture_value as f64));
+                match texture_gamma {
+                    Some(power) => value.powf(power),
+                    None => value,
+                }
+            });
             let gray = match (under, over) {
                 (None, None) => return INTERIOR,
                 (Some(under), None) => under,
@@ -820,6 +1088,57 @@ fn composite(
                 }
                 .place(gray),
             )
+        })
+        .collect()
+}
+
+/// Modulate the base's palette position by the texture.
+///
+/// `position = frac( rank(base) + shift · normalize(texture) )`, and the texture
+/// arrives as [`field::Exact`] rather than as a `Field` because the one coloring
+/// this shape exists for carries a value whose deep digits do not survive `f32`.
+///
+/// Two departures from [`composite`], both deliberate:
+///
+/// * **The base is spent by rank**, always. See [`Coloring::Modulate`].
+/// * **A sample the base has nothing to say about is interior**, even where the
+///   texture does have a value. A composite falls back to the texture alone
+///   because the two are peers; here the texture is a perturbation *of* the base
+///   and there is nothing to perturb, so the honest answer is the set's own black.
+fn modulate(
+    base: &Field,
+    texture: &field::Exact,
+    base_transform: Transform,
+    texture_transform: Transform,
+    shift: f64,
+    palette: &Palette,
+    colormap: &Colormap,
+) -> Vec<[f64; 3]> {
+    let ranks = Ranks::measure(base.values.iter().map(|&value| value as f64));
+    let spread = Stretch::over(texture.values.iter().copied());
+    base.values
+        .par_iter()
+        .zip(&texture.values)
+        .map(|(&base_value, &texture_value)| {
+            if !base_value.is_finite() {
+                return INTERIOR;
+            }
+            let gray = base_transform.apply(ranks.position(base_value as f64));
+            let over = if texture_value.is_finite() {
+                texture_transform.apply(spread.position(texture_value))
+            } else {
+                0.0
+            };
+            // The perturbation rides on the recipe's own phase rather than
+            // replacing it: `place` already computes `frac(gray·cycles + phase)`,
+            // so a per-sample phase is the whole of what this coloring needs and
+            // there is no second traversal stage to keep in agreement with it.
+            let placed = Palette {
+                phase: palette.phase + shift * over,
+                ..*palette
+            }
+            .place(gray);
+            colormap.lookup(placed)
         })
         .collect()
 }
@@ -938,13 +1257,7 @@ mod tests {
 
     #[test]
     fn every_blend_stays_inside_the_unit_square() {
-        for blend in [
-            Blend::Normal,
-            Blend::Multiply,
-            Blend::Screen,
-            Blend::Overlay,
-            Blend::Min,
-        ] {
+        for blend in EVERY_BLEND {
             for a in 0..=20 {
                 for b in 0..=20 {
                     let value = blend.apply(a as f64 / 20.0, b as f64 / 20.0);
@@ -955,6 +1268,69 @@ mod tests {
         assert_eq!(Blend::Screen.apply(0.0, 0.5), 0.5);
         assert_eq!(Blend::Screen.apply(1.0, 0.0), 1.0);
         assert_eq!(Blend::Multiply.apply(0.5, 0.5), 0.25);
+    }
+
+    const EVERY_BLEND: [Blend; 6] = [
+        Blend::Normal,
+        Blend::Multiply,
+        Blend::Screen,
+        Blend::Overlay,
+        Blend::Min,
+        Blend::Add,
+    ];
+
+    /// Add is a sum, and that is what makes it a different operator from screen
+    /// rather than a rounding of it: below saturation the two disagree by exactly
+    /// the product they differ by on paper, and add is the brighter of them.
+    #[test]
+    fn add_is_a_sum_and_screen_is_not() {
+        assert_eq!(Blend::Add.apply(0.25, 0.5), 0.75);
+        assert_eq!(
+            Blend::Add.apply(0.5, 0.75),
+            1.0,
+            "add saturates, it does not wrap"
+        );
+        assert_eq!(Blend::Add.apply(0.0, 0.4), 0.4);
+        for a in 0..=20 {
+            for b in 0..=20 {
+                let (under, over) = (a as f64 / 20.0, b as f64 / 20.0);
+                let (sum, screen) = (
+                    Blend::Add.apply(under, over),
+                    Blend::Screen.apply(under, over),
+                );
+                assert!(sum >= screen - 1e-12, "screen out-brightened add");
+                if under + over <= 1.0 {
+                    assert!(
+                        ((sum - screen) - under * over).abs() < 1e-12,
+                        "the two differ by something other than their product"
+                    );
+                }
+            }
+        }
+    }
+
+    /// The commutative blends cannot tell the two merge orders apart, and the two
+    /// that are not commutative must. That split is the whole content of the knob:
+    /// setting it on a screened trap would be a no-op that looked like a choice.
+    #[test]
+    fn the_merge_order_matters_exactly_where_the_blend_is_not_commutative() {
+        let (standing, sample) = (0.3, 0.8);
+        for blend in EVERY_BLEND {
+            let up = MergeOrder::BottomUp.merge(blend, standing, sample);
+            let down = MergeOrder::TopDown.merge(blend, standing, sample);
+            let commutative = matches!(
+                blend,
+                Blend::Multiply | Blend::Screen | Blend::Min | Blend::Add
+            );
+            if commutative {
+                assert_eq!(up, down, "{blend:?} should not notice the order");
+            } else {
+                assert_ne!(up, down, "{blend:?} should notice the order");
+            }
+        }
+        assert_eq!(MergeOrder::BottomUp.merge(Blend::Normal, 0.3, 0.8), 0.8);
+        assert_eq!(MergeOrder::TopDown.merge(Blend::Normal, 0.3, 0.8), 0.3);
+        assert_eq!(MergeOrder::default(), MergeOrder::BottomUp);
     }
 
     /// Screen only ever brightens, which is why it is the composite blend: a
@@ -984,6 +1360,7 @@ mod tests {
                 Transform::Linear,
                 Blend::Screen,
                 weight,
+                None,
                 &Palette::default(),
                 &map,
             )
@@ -1013,6 +1390,7 @@ mod tests {
             Transform::Linear,
             Blend::Screen,
             1.0,
+            None,
             &Palette::default(),
             &ramp(),
         );
@@ -1038,6 +1416,35 @@ mod tests {
                 },
                 blend: Blend::Screen,
                 texture_weight: 0.85,
+                texture_gamma: None,
+            },
+            Coloring::Composite {
+                base: Layer {
+                    field: FieldSpec::Smooth,
+                    transform: Transform::Linear,
+                },
+                texture: Layer {
+                    field: FieldSpec::Threads { sigma: 0.15 },
+                    transform: Transform::Linear,
+                },
+                blend: Blend::Add,
+                texture_weight: 0.5,
+                texture_gamma: Some(0.7),
+            },
+            Coloring::Modulate {
+                base: Layer {
+                    field: FieldSpec::Smooth,
+                    transform: Transform::Linear,
+                },
+                texture: Layer {
+                    field: FieldSpec::Itinerary {
+                        sectors: 4,
+                        weight_base: Some(4.0),
+                        depth: 26,
+                    },
+                    transform: Transform::Linear,
+                },
+                shift: 0.5,
             },
             Coloring::Direct {
                 shape: Shape::Ring,
@@ -1045,6 +1452,7 @@ mod tests {
                 threshold: Some(0.0597),
                 opacity: 0.45,
                 merge: Blend::Screen,
+                merge_order: MergeOrder::TopDown,
                 start_color: "black".into(),
                 transform: Transform::Linear,
             },
@@ -1068,6 +1476,7 @@ mod tests {
             texture: layer(3.0),
             blend: Blend::Screen,
             texture_weight: 0.85,
+            texture_gamma: None,
         }
         .validate()
         .unwrap_err();
@@ -1084,6 +1493,7 @@ mod tests {
             threshold: None,
             opacity: 0.15,
             merge: Blend::Screen,
+            merge_order: MergeOrder::BottomUp,
             start_color: "black".into(),
             transform: Transform::Linear,
         };
@@ -1194,6 +1604,286 @@ mod tests {
         }
     }
 
+    /// The rank transfer spends the gradient evenly over the *samples*, so a field
+    /// whose values pile up in one corner comes out flat: every decile of the
+    /// samples gets a decile of the gradient, whatever the values were. That is the
+    /// property the percentile stretch does not have, and the reason this transfer
+    /// replaces it rather than remapping it.
+    #[test]
+    fn the_rank_transfer_flattens_the_distribution_the_stretch_leaves_skewed() {
+        // Ninety samples crushed into the bottom hundredth of the range and ten
+        // spread across the rest: the shape a trap field actually has.
+        let mut values: Vec<f32> = (0..90).map(|i| i as f32 / 9000.0).collect();
+        values.extend((0..10).map(|i| 0.1 + i as f32));
+        let field = Field {
+            values,
+            width: 100,
+            height: 1,
+        };
+        let stretch = Stretch::measure(&field);
+        let ranks = Ranks::measure(field.values.iter().map(|&v| v as f64));
+
+        let crushed = field.values[..90]
+            .iter()
+            .filter(|&&v| stretch.position(v as f64) < 0.1)
+            .count();
+        assert!(crushed > 80, "the stretch was not skewed to begin with");
+        let low = field.values[..90]
+            .iter()
+            .filter(|&&v| ranks.position(v as f64) < 0.1)
+            .count();
+        assert!(low < 20, "the rank left the pile piled up: {low} of 90");
+
+        // Half the samples below the middle of the gradient, by construction.
+        let below = field
+            .values
+            .iter()
+            .filter(|&&v| ranks.position(v as f64) < 0.5)
+            .count();
+        assert!(
+            (45..=55).contains(&below),
+            "{below} of 100 below the middle"
+        );
+    }
+
+    /// A rank is still a monotone remap onto `[0, 1]` — it may reweight the
+    /// gradient, never reorder the field — and it answers for a frame with nothing
+    /// in it rather than dividing by zero.
+    #[test]
+    fn a_rank_is_monotone_and_survives_an_empty_frame() {
+        let ranks = Ranks::measure([3.0, 1.0, 2.0, 2.0, 5.0].into_iter());
+        let mut previous = -1.0;
+        for step in 0..=60 {
+            let here = ranks.position(step as f64 / 10.0);
+            assert!(
+                (0.0..=1.0).contains(&here),
+                "rank left the interval: {here}"
+            );
+            assert!(here >= previous, "the rank went backwards");
+            previous = here;
+        }
+        // The repeated value lands at the middle of the span it occupies rather
+        // than at either end of it: one sample below it, two at it, so the midrank
+        // is halfway across the second and third of five.
+        assert!((ranks.position(2.0) - 0.4).abs() < 1e-12);
+        assert_eq!(Ranks::measure(std::iter::empty()).position(1.0), 0.0);
+    }
+
+    /// The whole path must honour the transfer the recipe names, not only the
+    /// object that measures it: a rank-spent render of a skewed field has to differ
+    /// from a value-spent one, and neither may leave the interior painted.
+    #[test]
+    fn shading_through_a_rank_differs_from_shading_through_the_stretch() {
+        let mut values: Vec<f32> = (0..90).map(|i| i as f32 / 9000.0).collect();
+        values.extend((0..9).map(|i| 0.1 + i as f32));
+        values.push(f32::NAN);
+        let field = Field {
+            values,
+            width: 100,
+            height: 1,
+        };
+        let recipe = |transfer| Palette {
+            transfer,
+            ..Palette::default()
+        };
+        let by_value = shade(&field, Transform::Linear, &recipe(Transfer::Value), &ramp());
+        let by_rank = shade(&field, Transform::Linear, &recipe(Transfer::Rank), &ramp());
+        assert_eq!(by_value.last(), Some(&INTERIOR));
+        assert_eq!(by_rank.last(), Some(&INTERIOR));
+        let moved = by_value
+            .iter()
+            .zip(&by_rank)
+            .filter(|(a, b)| (a[0] - b[0]).abs() > 1e-6)
+            .count();
+        assert!(moved > 50, "the rank transfer changed {moved} samples");
+    }
+
+    /// The texture's own gamma bends the texture and leaves the base where it is —
+    /// which is the whole reason it is a separate knob from the recipe's gamma.
+    #[test]
+    fn the_texture_gamma_bends_the_texture_and_not_the_base() {
+        let base = field_of(&[0.0, 1.0, 2.0, 3.0]);
+        let texture = field_of(&[0.0, 1.0, 2.0, 3.0]);
+        let paint = |gamma| {
+            composite(
+                &base,
+                &texture,
+                Transform::Linear,
+                Transform::Linear,
+                Blend::Screen,
+                1.0,
+                gamma,
+                &Palette::default(),
+                &ramp(),
+            )
+        };
+        let plain = paint(None);
+        assert_eq!(plain, paint(Some(1.0)), "a gamma of one is the identity");
+        // A gamma below one lifts the texture, so a screen over it brightens.
+        let lifted = paint(Some(0.4));
+        let interior_lifted = lifted[1][0] > plain[1][0] + 1e-9;
+        assert!(interior_lifted, "the texture gamma did nothing");
+        // Where the texture is at the bottom of its range there is nothing for a
+        // power to lift, so the base still decides that sample alone.
+        assert!((lifted[0][0] - plain[0][0]).abs() < 1e-12);
+    }
+
+    /// The modulate's defining property: where the base is flat the texture is the
+    /// only variation there is, and where the base is busy it is a perturbation.
+    /// Read as two frames of the same texture over two different bases.
+    #[test]
+    fn a_modulate_fills_the_flat_base_and_perturbs_the_busy_one() {
+        let texture = field::Exact {
+            values: (0..64).map(|i| (i % 8) as f64).collect(),
+            width: 8,
+            height: 8,
+        };
+        let paint = |base: &Field| {
+            modulate(
+                base,
+                &texture,
+                Transform::Linear,
+                Transform::Linear,
+                0.5,
+                &Palette::default(),
+                &ramp(),
+            )
+        };
+        let flat = Field {
+            values: vec![1.0; 64],
+            width: 8,
+            height: 8,
+        };
+        let busy = Field {
+            values: (0..64).map(|i| i as f32).collect(),
+            width: 8,
+            height: 8,
+        };
+        let over_flat = paint(&flat);
+        let distinct: std::collections::BTreeSet<u64> =
+            over_flat.iter().map(|c| c[0].to_bits()).collect();
+        assert!(
+            distinct.len() >= 8,
+            "a flat base left the texture invisible: {} colors",
+            distinct.len()
+        );
+
+        // Against the busy base the same texture must not be the whole picture:
+        // the rank of the base has to be moving the color too.
+        let over_busy = paint(&busy);
+        let rows_agree = (0..8).all(|row| {
+            let start = row * 8;
+            over_busy[start..start + 8]
+                .iter()
+                .zip(&over_flat[start..start + 8])
+                .all(|(a, b)| (a[0] - b[0]).abs() < 1e-9)
+        });
+        assert!(!rows_agree, "the base's own structure was overridden");
+    }
+
+    /// A modulate paints the set black wherever its base has nothing to say, even
+    /// where the texture does. That is the one place it departs from a composite,
+    /// and it is what keeps the interior black under `itinerary`.
+    #[test]
+    fn a_modulate_leaves_the_interior_black_even_where_the_texture_speaks() {
+        let base = Field {
+            values: vec![f32::NAN, f32::NAN, 1.0, 2.0],
+            width: 4,
+            height: 1,
+        };
+        let texture = field::Exact {
+            values: vec![0.25, 0.75, 0.5, 0.9],
+            width: 4,
+            height: 1,
+        };
+        let colors = modulate(
+            &base,
+            &texture,
+            Transform::Linear,
+            Transform::Linear,
+            0.5,
+            &Palette::default(),
+            &ramp(),
+        );
+        assert_eq!(colors[0], INTERIOR);
+        assert_eq!(colors[1], INTERIOR, "the texture painted the interior");
+        assert_ne!(colors[2], INTERIOR);
+    }
+
+    /// A shift of zero leaves the base alone, so the modulate degenerates to a
+    /// rank-spent render of its base — the check that the perturbation is a
+    /// perturbation rather than a replacement.
+    #[test]
+    fn a_modulate_with_no_shift_is_its_base_spent_by_rank() {
+        let base = Field {
+            values: (0..32).map(|i| (i * i) as f32).collect(),
+            width: 32,
+            height: 1,
+        };
+        let texture = field::Exact {
+            values: (0..32).map(|i| i as f64).collect(),
+            width: 32,
+            height: 1,
+        };
+        let modulated = modulate(
+            &base,
+            &texture,
+            Transform::Linear,
+            Transform::Linear,
+            0.0,
+            &Palette::default(),
+            &ramp(),
+        );
+        let ranked = shade(
+            &base,
+            Transform::Linear,
+            &Palette {
+                transfer: Transfer::Rank,
+                ..Palette::default()
+            },
+            &ramp(),
+        );
+        for (a, b) in modulated.iter().zip(&ranked) {
+            assert!((a[0] - b[0]).abs() < 1e-12, "{a:?} against {b:?}");
+        }
+    }
+
+    /// A modulate spends its base by rank as part of what it is, so a recipe that
+    /// asks for another transfer is refused rather than half-honoured.
+    #[test]
+    fn a_modulate_refuses_a_recipe_that_spends_its_base_another_way() {
+        let coloring = Coloring::Modulate {
+            base: Layer {
+                field: FieldSpec::Smooth,
+                transform: Transform::Linear,
+            },
+            texture: Layer {
+                field: FieldSpec::Itinerary {
+                    sectors: 4,
+                    weight_base: Some(4.0),
+                    depth: 26,
+                },
+                transform: Transform::Linear,
+            },
+            shift: 0.5,
+        };
+        coloring.agrees_with(&Palette::default()).unwrap();
+        let message = coloring
+            .agrees_with(&Palette {
+                transfer: Transfer::Edge { weight: 0.25 },
+                ..Palette::default()
+            })
+            .unwrap_err();
+        assert!(message.contains("rank"), "{message}");
+        // Every other coloring is free to be spent any way at all.
+        Coloring::default()
+            .agrees_with(&Palette {
+                transfer: Transfer::Rank,
+                ..Palette::default()
+            })
+            .unwrap();
+    }
+
     /// Below the knee nothing moves at all, above it the shoulder approaches
     /// white without reaching it, and the two meet without a step.
     #[test]
@@ -1218,6 +1908,74 @@ mod tests {
             soft.apply(4.0) > soft.apply(2.0),
             "the shoulder went backwards"
         );
+    }
+
+    /// Every rolloff is a monotone map of the non-negative reals into `[0, 1]` that
+    /// fixes black, and none of them reaches white over the range a painted pixel
+    /// actually takes. Monotone because a tone curve may not reorder two tones;
+    /// fixing black because a curve that lifted the shadows off zero would put a fog
+    /// over the set itself.
+    #[test]
+    fn every_rolloff_is_a_monotone_curve_that_fixes_black() {
+        for rolloff in [
+            Rolloff::None,
+            Rolloff::SoftKnee { knee: 0.35 },
+            Rolloff::Reinhard,
+            Rolloff::Aces,
+        ] {
+            assert_eq!(rolloff.apply(0.0), 0.0, "{rolloff:?} lifted black");
+            let mut previous = -1.0;
+            for step in 0..=4000 {
+                let value = step as f64 / 100.0;
+                let out = rolloff.apply(value);
+                assert!(out >= previous, "{rolloff:?} went backwards at {value}");
+                previous = out;
+            }
+            // The identity is the one curve that is allowed to hand back whatever it
+            // was given; every actual rolloff bounds its output, and none of them
+            // reaches white over `[0, 1]` — the range a painted pixel, being a
+            // colormap lookup, actually arrives in.
+            if rolloff == Rolloff::None {
+                continue;
+            }
+            for step in 0..=4000 {
+                let out = rolloff.apply(step as f64 / 100.0);
+                assert!((0.0..=1.0).contains(&out), "{rolloff:?} left the range");
+            }
+            assert!(rolloff.apply(1.0) < 1.0, "{rolloff:?} reached white at 1");
+        }
+    }
+
+    /// The three curves are three different shapes, and each one's own doc claim is
+    /// what separates it: the knee leaves the shadows exactly alone, Reinhard
+    /// compresses from zero and only ever darkens, and ACES is the S — deep shadows
+    /// down, midtones *up*, highlights compressed.
+    #[test]
+    fn the_three_rolloffs_are_three_shapes() {
+        let knee = Rolloff::SoftKnee { knee: 0.35 };
+        assert_eq!(knee.apply(0.1), 0.1, "the knee moved a shadow");
+
+        assert_eq!(Rolloff::Reinhard.apply(1.0), 0.5);
+        for step in 1..=200 {
+            let value = step as f64 / 100.0;
+            assert!(
+                Rolloff::Reinhard.apply(value) < value,
+                "reinhard failed to darken {value}"
+            );
+        }
+
+        assert!(
+            Rolloff::Aces.apply(0.01) < 0.01,
+            "aces lifted a deep shadow"
+        );
+        assert!(
+            Rolloff::Aces.apply(0.4) > 0.4,
+            "aces failed to lift a midtone"
+        );
+        assert!((Rolloff::Aces.apply(1.0) - 0.804).abs() < 0.01);
+        // Which is what makes it the one curve here that is not a compression: it
+        // crosses the identity, and the other two never do.
+        assert!(Rolloff::Aces.apply(0.4) > Rolloff::Reinhard.apply(0.4));
     }
 
     /// A rolled-off highlight keeps its hue: all three channels are rescaled by
