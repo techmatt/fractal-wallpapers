@@ -133,6 +133,20 @@ def resolve_output(out: str) -> Path:
     return path if path.is_absolute() else repo_root() / path
 
 
+def write_tracked_json(path: Path, document: dict) -> Path:
+    """Write a JSON document that git tracks, with the line endings git will keep.
+
+    Every other writer of a tracked file in this project pins `newline="\\n"`; the
+    two table regenerators did not, and on Windows `write_text` translates each
+    `\\n` to CRLF. `.gitattributes` normalizes that back on the way into the index,
+    so the commit was always right — but the working tree afterwards held bytes
+    that were not the committed bytes, and a regeneration therefore could not be
+    checked by comparing the file to the one it replaced.
+    """
+    path.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8", newline="\n")
+    return path
+
+
 def render_spec(args: argparse.Namespace) -> dict:
     """Turn command-line arguments into the JSON object the engine reads.
 
@@ -630,7 +644,11 @@ def derive_prices(args: argparse.Namespace) -> int:
     )
     if args.write:
         out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text(json.dumps(table, indent=2) + "\n", encoding="utf-8")
+        # `newline="\n"` because this writes a TRACKED table: without it Windows
+        # writes CRLF, `.gitattributes` normalizes it back to LF on the way into
+        # the index, and every regeneration leaves a working tree whose bytes are
+        # not the bytes that were committed.
+        write_tracked_json(out, table)
         print(f"wrote {out}")
     else:
         print(json.dumps(table, indent=2))
@@ -648,7 +666,7 @@ def derive_tau_h(args: argparse.Namespace) -> int:
     out = resolve_output(args.out) if args.out else tau_module.table_path()
     if args.write:
         out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text(json.dumps(table, indent=2) + "\n", encoding="utf-8")
+        write_tracked_json(out, table)
         print(f"wrote {out}")
     else:
         print(json.dumps(table, indent=2))
