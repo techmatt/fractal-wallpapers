@@ -100,6 +100,35 @@ def split_recipe_path() -> Path:
     return label_dir() / "split.json"
 
 
+def export_dir() -> Path:
+    """Where a labeling page drops what it exported, for every head.
+
+    A **drop**, not a store. What lands here is intake: one file per head, named
+    for the head — `labels/smooth_render.json` — overwritten as a session goes
+    on, and redundant the moment
+    [`fractal_wallpapers.labeling.intake`] has resolved it into rows that carry
+    their own join. Nothing reads a verdict from here except the intake step.
+
+    It is spelled in this module for the same reason the records are: this is the
+    one place allowed to know where anything called a label lives, and a second
+    module that spelled the directory would be a second answer to where a page's
+    export goes.
+    """
+    return repo_root() / "labels"
+
+
+def export_path(head: str) -> Path:
+    """The one name `head`'s export is written under, downloaded or saved.
+
+    The name is the head, never a generic one. Two sheets are open in two browser
+    tabs during a session, and `labels.json` twice is one file that overwrites
+    the other in the download directory with no way to tell which survived.
+    """
+    if not head or "/" in head or "\\" in head or head.startswith("."):
+        raise LabelError(f"{head!r} is not a head name")
+    return export_dir() / f"{head}.json"
+
+
 def now() -> str:
     """The timestamp a fresh row is stamped with: ISO-8601, UTC, to the second.
 
@@ -324,6 +353,8 @@ __all__ = [
     "batch_path",
     "check",
     "eval_split_path",
+    "export_dir",
+    "export_path",
     "label_dir",
     "label_row",
     "now",

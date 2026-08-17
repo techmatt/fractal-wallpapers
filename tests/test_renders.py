@@ -156,6 +156,45 @@ def test_the_evaluation_side_is_in_the_plan() -> None:
         assert set(pinned) <= places, f"{head}: a pinned location is not in the plan"
 
 
+def test_a_complete_cache_is_measured_against_the_store_and_not_a_stale_plan(
+    tmp_path, monkeypatch
+) -> None:
+    """A plan is a record of what a build was asked for, and the store grows after
+    it — every labeling session ingested grows it. Answering "is the cache
+    complete" from the plan reports a full cache while the trainer refuses to
+    start, which is the confusing half of the failure rather than the loud one."""
+    from fractal_wallpapers.labeling import registry as registry_module
+
+    head = "smooth_render"
+    monkeypatch.setattr(finished, "store_dir", lambda name: tmp_path / finished.head_of(name))
+    monkeypatch.setattr(renders, "cache_dir", lambda name: tmp_path / "cache")
+    renders.write_plan(head, [])  # planned before a single verdict existed
+
+    finished.register(head, registry_module.Registration(batch="b", method="a draw, for a test"))
+    row = a_row()
+    finished.append(
+        head,
+        [
+            finished.render_row(
+                head=head,
+                batch="b",
+                score=3,
+                family=row["family"],
+                viewport=row["viewport"],
+                mode=row["mode"],
+                mode_params=row["mode_params"],
+                curve=row["curve"],
+                colormap=row["colormap"],
+                recipe_=row["recipe"],
+                render=row["render"],
+            )
+        ],
+    )
+
+    assert renders.read_plan(head) == []
+    assert len(renders.missing(head)) == 1, "a plan written before the ingest hid a missing crop"
+
+
 def test_a_regenerated_picture_is_the_picture_that_was_judged() -> None:
     """The check that found the one defect the recipe transfer had.
 

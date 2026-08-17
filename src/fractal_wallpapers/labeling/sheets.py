@@ -53,6 +53,12 @@ from fractal_wallpapers.paths import colormap_dir
 #: The schema every sheet row carries.
 SCHEMA = 1
 
+#: The judge this rig collects for. It is on the manifest because the page's
+#: export is named after it — `labels/location.json` — and a sheet that did not
+#: say which judge it was cut for would export under a generic name that the next
+#: sheet's export overwrites.
+HEAD = "location"
+
 #: The map a head sees, and the one a label is stored against.
 CANONICAL_COLORMAP = "twilight_shifted"
 
@@ -243,6 +249,7 @@ def build(
 
     manifest = {
         "schema": SCHEMA,
+        "head": HEAD,
         "batch": batch,
         "seed": seed,
         "order": order_mode,
@@ -327,6 +334,7 @@ def record(
 
 __all__ = [
     "CANONICAL_COLORMAP",
+    "HEAD",
     "MANIFEST_NAME",
     "ROWS_NAME",
     "SCHEMA",
