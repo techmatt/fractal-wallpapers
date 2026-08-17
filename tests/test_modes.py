@@ -8,6 +8,8 @@ half that needs a built binary skips when there is none, as elsewhere.
 from __future__ import annotations
 
 import argparse
+import math
+import struct
 
 import pytest
 
@@ -89,13 +91,33 @@ def test_a_dump_is_the_same_spec_as_the_render_it_stops_short_of() -> None:
 
 
 @needs_engine
-def test_the_catalog_is_the_engines_and_covers_all_three_shapes() -> None:
+def test_the_catalog_is_the_engines_and_covers_all_four_shapes() -> None:
     names = [mode["name"] for mode in engine.modes()]
     assert names[0] == "smooth", "the spine comes first"
     assert len(names) == len(set(names))
-    for expected in ("tia", "smooth_stripe", "direct_trap_multiply"):
+    for expected in ("tia", "smooth_stripe", "direct_trap_multiply", "itinerary"):
         assert expected in names
     assert all(mode["identity"] for mode in engine.modes())
+    assert all(mode["tier"] in (engine.PRODUCTION, engine.NICHE) for mode in engine.modes())
+
+
+@needs_engine
+def test_the_production_roster_is_the_catalog_without_the_three_niche_modes() -> None:
+    """The tier's whole content: what a draw may reach, and what it may not.
+
+    Asserted against the names rather than a count, because the point is *which*
+    three are held back — the two experimental modes and the distance estimate —
+    and a count would keep passing if the set changed underneath it.
+    """
+    catalog = {mode["name"]: mode["tier"] for mode in engine.modes()}
+    niche = sorted(name for name, tier in catalog.items() if tier == engine.NICHE)
+    assert niche == ["de", "itinerary", "threads"]
+
+    roster = engine.production_modes()
+    assert set(roster) == set(catalog) - set(niche)
+    assert roster == [name for name in catalog if catalog[name] == engine.PRODUCTION], (
+        "the roster keeps catalog order"
+    )
 
 
 @needs_engine
@@ -213,12 +235,179 @@ def test_recoloring_through_another_colormap_changes_the_picture(tmp_path) -> No
 
 @needs_engine
 def test_the_modes_with_no_scalar_field_refuse_to_be_dumped(tmp_path) -> None:
-    """And say which of the two reasons it is, because they are different
+    """And say which of the three reasons it is, because they are different
     reasons and the fix differs with them."""
     with pytest.raises(RuntimeError, match="composite normalizes"):
         engine.dump_field(spec("smooth_trap_circle", tmp_path / "no.f32"))
     with pytest.raises(RuntimeError, match="color-valued"):
         engine.dump_field(spec("direct_trap_ring", tmp_path / "no.f32"))
+    with pytest.raises(RuntimeError, match="different place in the gradient"):
+        engine.dump_field(spec("itinerary", tmp_path / "no.f32"))
+
+
+@needs_engine
+def test_the_three_niche_modes_render_at_the_parameters_they_were_kept_at(tmp_path) -> None:
+    """A niche mode is a mode: it renders by name, and the record echoes the whole
+    coloring — including the parameters Matt kept, which live in the engine's
+    catalog and nowhere else.
+    """
+    threads = engine.render_report(spec("threads", tmp_path / "threads.png"))
+    assert threads["coloring"]["kind"] == "composite"
+    assert threads["coloring"]["blend"] == "add", "threads is additive, not screened"
+    assert threads["coloring"]["texture"]["field"] == {"kind": "threads", "sigma": 0.15}
+    assert threads["coloring"]["texture_weight"] == 0.5
+
+    address = engine.render_report(spec("itinerary", tmp_path / "itinerary.png"))
+    assert address["coloring"]["kind"] == "modulate"
+    assert address["coloring"]["shift"] == 0.5
+    assert address["coloring"]["texture"]["field"] == {
+        "kind": "itinerary",
+        "sectors": 4,
+        "weight_base": 4.0,
+        "depth": 26,
+    }
+
+    de = engine.render_report(spec("de", tmp_path / "de.png"))
+    assert de["coloring"] == {
+        "kind": "field",
+        "field": {"kind": "de", "scale": 1.0},
+        "transform": "log",
+    }
+
+
+@needs_engine
+def test_a_modulate_refuses_a_recipe_that_spends_its_base_another_way(tmp_path) -> None:
+    """The mode ranks its base as part of what it is, so a recipe that asks for
+    another transfer is refused rather than half-honoured."""
+    with pytest.raises(RuntimeError, match="rank"):
+        engine.render_report(
+            spec(
+                "itinerary",
+                tmp_path / "refused.png",
+                palette={"transfer": {"kind": "edge", "weight": 0.25}},
+            )
+        )
+
+
+@needs_engine
+def test_the_parity_fields_are_reachable_by_writing_the_coloring_out(tmp_path) -> None:
+    """The closure fields that are not modes of their own: every one renders, and
+    the ones that fill the interior say so in the record."""
+    location = {key: value for key, value in ANCHOR.items() if key != "mode"}
+    fills = {"trap_cross": True, "velocity": True, "decomposition": False, "de": False}
+    for name, in_the_interior in fills.items():
+        output = tmp_path / f"{name}.png"
+        coloring = {"kind": "field", "field": {"kind": name}}
+        report = engine.render_report({**location, "coloring": coloring, "output": str(output)})
+        assert report["coloring"]["field"]["kind"] == name
+        assert output.stat().st_size > 1500, f"{name} rendered a nearly uniform image"
+        assert report["interior_fraction"] > 0.01, "the anchor has no interior to speak of"
+
+        field = tmp_path / f"{name}.f32"
+        engine.dump_field({**location, "coloring": coloring, "output": str(field)})
+        values = field.read_bytes()
+        assert len(values) == 64 * 36 * 4
+        # A field that fills the interior leaves no NaN behind; one that reads an
+        # escape leaves the interior empty.
+        empty = sum(1 for (value,) in struct.iter_unpack("<f", values) if math.isnan(value))
+        assert (empty == 0) == in_the_interior, f"{name}: {empty} empty samples"
+
+    # All nine lattice reductions resolve and paint.
+    for reduce in (
+        "minimum_distance",
+        "average_distance",
+        "maximum_distance",
+        "iter_min",
+        "iter_max",
+        "angle_min",
+        "angle_max",
+        "mean_angle",
+        "ratio",
+    ):
+        output = tmp_path / f"lattice_{reduce}.png"
+        report = engine.render_report(
+            {
+                **location,
+                "coloring": {
+                    "kind": "field",
+                    "field": {"kind": "gaussian_int", "reduce": reduce},
+                },
+                "output": str(output),
+            }
+        )
+        assert report["coloring"]["field"]["reduce"] == reduce
+        assert output.stat().st_size > 1500, f"{reduce} rendered a nearly uniform image"
+
+
+@needs_engine
+def test_the_parity_palette_knobs_change_the_picture(tmp_path) -> None:
+    """The closure items that live on the palette recipe rather than on a field.
+
+    Each is checked the only way a tone or transfer knob can be: the picture it
+    makes differs from the one the identity recipe makes, and the record echoes
+    what was asked for.
+    """
+    plain = tmp_path / "plain.png"
+    engine.render_report(spec("smooth", plain, supersample=2))
+    baseline = plain.read_bytes()
+
+    recipes = {
+        "reinhard": {"rolloff": {"kind": "reinhard"}},
+        "aces": {"rolloff": {"kind": "aces"}},
+        "rank": {"transfer": {"kind": "rank"}},
+    }
+    for name, palette in recipes.items():
+        output = tmp_path / f"{name}.png"
+        report = engine.render_report(spec("smooth", output, supersample=2, palette=palette))
+        for key, value in palette.items():
+            assert report["palette"][key] == value
+        assert output.read_bytes() != baseline, f"the {name} recipe changed nothing"
+
+
+@needs_engine
+def test_a_direct_trap_reads_its_merge_order_and_a_composite_its_texture_gamma(tmp_path) -> None:
+    """Two knobs whose absence from a record means the settled default, so that the
+    render cache's file names — which are a digest of the coloring — did not all
+    change when they arrived."""
+    location = {key: value for key, value in ANCHOR.items() if key != "mode"}
+    # A commutative blend cannot notice the order, so the order is exercised on the
+    # one blend in the catalog's reach that can: `normal`.
+    trap = {
+        "kind": "direct",
+        "shape": "ring",
+        "threshold": 0.0597,
+        "opacity": 0.45,
+        "merge": "normal",
+        "start_color": "black",
+    }
+    pictures = {}
+    for order in (None, "bottom_up", "top_down"):
+        coloring = dict(trap) if order is None else {**trap, "merge_order": order}
+        output = tmp_path / f"trap_{order}.png"
+        report = engine.render_report({**location, "coloring": coloring, "output": str(output)})
+        assert ("merge_order" in report["coloring"]) == (order == "top_down"), (
+            "the default order must stay out of the record"
+        )
+        pictures[order] = output.read_bytes()
+    assert pictures[None] == pictures["bottom_up"], "absent is bottom-up"
+    assert pictures[None] != pictures["top_down"]
+
+    composite = {
+        "kind": "composite",
+        "base": {"field": {"kind": "smooth"}},
+        "texture": {"field": {"kind": "stripe"}},
+        "blend": "screen",
+        "texture_weight": 0.85,
+    }
+    pictures = {}
+    for gamma in (None, 1.0, 0.4):
+        coloring = dict(composite) if gamma is None else {**composite, "texture_gamma": gamma}
+        output = tmp_path / f"composite_{gamma}.png"
+        report = engine.render_report({**location, "coloring": coloring, "output": str(output)})
+        assert ("texture_gamma" in report["coloring"]) == (gamma is not None)
+        pictures[gamma] = output.read_bytes()
+    assert pictures[None] == pictures[1.0], "a gamma of one is the identity"
+    assert pictures[None] != pictures[0.4]
 
 
 @needs_engine

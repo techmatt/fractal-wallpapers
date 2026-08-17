@@ -576,7 +576,7 @@ fn write_tile(
     let stretch = Stretch::over(
         (inside_y0..inside_y1)
             .flat_map(|row| values[row * samples_x + inside_x0..row * samples_x + inside_x1].iter())
-            .copied(),
+            .map(|&value| value as f64),
     );
 
     let pixels = match tile.level {

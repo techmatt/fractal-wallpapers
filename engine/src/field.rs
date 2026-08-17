@@ -24,7 +24,7 @@ use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::family::Family;
-use crate::iterate::{self, Lattice, Orbit, Wants};
+use crate::iterate::{self, Lattice, Orbit, Symbols, Wants};
 use crate::viewport::Viewport;
 
 /// Which scalar to reduce an orbit to, and the constants that shape it.
@@ -84,6 +84,89 @@ pub enum FieldSpec {
         #[serde(default = "trap_radius")]
         radius: f64,
     },
+    /// Closest the orbit came to the axis cross through the origin:
+    /// `min min(|Re z|, |Im z|)` — the Pickover stalk.
+    ///
+    /// The circle trap's sparse twin. A circle is a closed curve and a cross is
+    /// two lines through the origin, so this trap is *non-periodic and unbounded*:
+    /// there is no repeating unit cell the way the lattice trap has one, and no
+    /// centre the way the circle has one. The texture that comes out reads as
+    /// organic flow rather than as a grid, and like the other traps it is defined
+    /// in the interior too.
+    TrapCross,
+    /// Mean of `exp(−D²/σ²)` over the orbit, `D` the cross-trap distance.
+    ///
+    /// The accumulating cross. [`TrapCross`](FieldSpec::TrapCross) keeps the
+    /// single closest pass and throws the rest of the orbit away; this weighs
+    /// *every* pass by how close it came and averages them, so a pixel whose orbit
+    /// grazed the cross a dozen times reads differently from one that grazed it
+    /// once. `sigma` is the width of the kernel and is a live parameter rather
+    /// than a curve in disguise: it sits **inside** the average, and no monotone
+    /// curve applied to `mean(D)` reproduces `mean(exp(−D²/σ²))`.
+    ///
+    /// Exterior only, like the other averaging fields — which is also what keeps
+    /// the interior black under the composite this field was found for.
+    Threads {
+        #[serde(default = "threads_sigma")]
+        sigma: f64,
+    },
+    /// Mean step length `|zₙ − zₙ₋₁|` over the orbit.
+    ///
+    /// How fast the orbit was moving, on average, rather than where it went. It is
+    /// defined for a bounded orbit too — a periodic cycle has a perfectly good mean
+    /// step — so it fills the interior, and inside the set it separates the
+    /// components by the size of the cycle they fall into.
+    Velocity,
+    /// The angle of the iterate the orbit escaped on, as a fraction of a turn.
+    ///
+    /// The classic decomposition: which way the orbit was pointing when it left.
+    /// The exterior of the set is tiled by the escape count into rings, and this
+    /// cuts each ring the other way, into the cells that lead to each other by one
+    /// step of the recurrence. Exterior only — an orbit that never left has no
+    /// escape angle.
+    Decomposition,
+    /// The exterior distance estimate, `2·|z|·ln|z|/|dz|`, scaled.
+    ///
+    /// The one field here that is a **length in the plane** rather than a
+    /// statistic of the orbit: it estimates how far the sample is from the set
+    /// itself. That makes it the field whose contours are the set's own offset
+    /// curves, and the reason it looks so unlike an escape count at the same
+    /// place — the escape count crowds every contour against the boundary, and
+    /// this one spaces them evenly out from it.
+    ///
+    /// It is the only field that needs the derivative recurrence, which costs a
+    /// complex multiply per iteration, so it is also the most expensive.
+    ///
+    /// `scale` multiplies the estimate. It cannot change the picture — the
+    /// per-frame stretch divides it straight back out — and is here because the
+    /// estimate is a physical length that a reader of a dumped field may want in
+    /// the units of their own choosing.
+    ///
+    /// **No lighting.** A distance estimate is often the input to a normal-map
+    /// shading pass; that pass is deliberately not in this engine. See
+    /// [`crate::mode`].
+    De {
+        #[serde(default = "de_scale")]
+        scale: f64,
+    },
+    /// The orbit's symbolic address: which angular sector each step landed in,
+    /// read as the digits of one fractional number.
+    ///
+    /// See [`crate::iterate::Address`] for the accumulation and for why the
+    /// address must not travel through an `f32`. Defined everywhere: `z₀` alone
+    /// spells a first symbol, so even a point that never moves has an address.
+    Itinerary {
+        #[serde(default = "itinerary_sectors")]
+        sectors: u32,
+        /// The base the symbols are written in. Absent means `= sectors`, a clean
+        /// base-`k` expansion — the sensible default, and the reason this is an
+        /// option rather than a number: a default written as a constant could not
+        /// follow `sectors` when a caller moved it.
+        #[serde(default)]
+        weight_base: Option<f64>,
+        #[serde(default = "itinerary_depth")]
+        depth: u32,
+    },
     /// Closest approach to the Gaussian integers — the points of the complex
     /// plane with whole real and imaginary parts — or an angle read off that
     /// approach. An orbit trap whose unit cell repeats across the whole plane,
@@ -102,19 +185,37 @@ pub enum FieldSpec {
 
 /// Which statistic of the lattice trap becomes the field.
 ///
-/// All three read the same accumulation, so they are free alternatives rather
-/// than separate renders.
+/// All nine read the same accumulation, so they are free alternatives rather than
+/// separate renders: one pass over the orbit records the closest and farthest
+/// approach, where and when each happened, and the running mean, and each of
+/// these is a different question asked of that one record.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Reduction {
     /// The closest approach itself — the canonical, beaded look.
     #[default]
     MinimumDistance,
+    /// The mean distance to the lattice over the whole orbit. Smoother than the
+    /// minimum, because every step contributes instead of only the best one.
+    AverageDistance,
+    /// The farthest the orbit ever got from every lattice point. Bounded above by
+    /// half the unit cell's diagonal, so this is the one reduction here whose
+    /// range is the same at every location.
+    MaximumDistance,
+    /// The step the closest approach happened on — *when*, not *how close*.
+    IterMin,
+    /// The step the farthest approach happened on.
+    IterMax,
     /// The angle of the iterate at the closest approach.
     AngleMin,
+    /// The angle of the iterate at the farthest approach.
+    AngleMax,
     /// The angle of `(mean − nearest) + i(farthest − mean)`: how lopsided the
     /// orbit's spread of lattice distances was, read as a direction.
     MeanAngle,
+    /// `nearest / farthest` — how tightly the orbit's approaches bunched, as a
+    /// number in `[0, 1]` that is scale-free by construction.
+    Ratio,
 }
 
 fn stripe_density() -> f64 {
@@ -122,6 +223,28 @@ fn stripe_density() -> f64 {
 }
 fn trap_radius() -> f64 {
     1.0
+}
+/// The kernel width Matt kept: sharp enough to read as threads rather than haze.
+fn threads_sigma() -> f64 {
+    0.15
+}
+fn de_scale() -> f64 {
+    1.0
+}
+fn itinerary_sectors() -> u32 {
+    4
+}
+/// Symbols the address holds by default.
+///
+/// **26, which is the `f64` ceiling at the default four sectors** — 53 mantissa
+/// bits over 2 bits per base-4 symbol — and not a taste call. Past it the deep
+/// digits are rounding noise, and rounding noise in an address does not look like
+/// noise: it collapses whole subtrees of the lamination onto one value and reads
+/// as banding. A caller raising `sectors` has to lower this in step (17 at 8, 13
+/// at 16); nothing here does it on their behalf, because the number of symbols is
+/// what the field *is*.
+fn itinerary_depth() -> u32 {
+    26
 }
 
 impl FieldSpec {
@@ -134,8 +257,14 @@ impl FieldSpec {
             FieldSpec::Tia => "tia",
             FieldSpec::Curvature => "curvature",
             FieldSpec::TrapCircle { .. } => "trap_circle",
+            FieldSpec::TrapCross => "trap_cross",
+            FieldSpec::Threads { .. } => "threads",
             FieldSpec::GaussianInt { .. } => "gaussian_int",
             FieldSpec::ExpSmoothing => "exp_smoothing",
+            FieldSpec::Velocity => "velocity",
+            FieldSpec::Decomposition => "decomposition",
+            FieldSpec::De { .. } => "de",
+            FieldSpec::Itinerary { .. } => "itinerary",
         }
     }
 
@@ -160,12 +289,43 @@ impl FieldSpec {
                 trap_circle: Some(radius),
                 ..Wants::default()
             },
+            FieldSpec::TrapCross => Wants {
+                trap_cross: true,
+                ..Wants::default()
+            },
+            FieldSpec::Threads { sigma } => Wants {
+                threads: Some(sigma),
+                ..Wants::default()
+            },
             FieldSpec::GaussianInt { .. } => Wants {
                 gaussian_int: true,
                 ..Wants::default()
             },
             FieldSpec::ExpSmoothing => Wants {
                 exp_smoothing: true,
+                ..Wants::default()
+            },
+            FieldSpec::Velocity => Wants {
+                velocity: true,
+                ..Wants::default()
+            },
+            // The escape angle reads the last iterate, which the loop keeps
+            // whether or not anyone asked.
+            FieldSpec::Decomposition => Wants::default(),
+            FieldSpec::De { .. } => Wants {
+                derivative: true,
+                ..Wants::default()
+            },
+            FieldSpec::Itinerary {
+                sectors,
+                weight_base,
+                depth,
+            } => Wants {
+                itinerary: Some(Symbols {
+                    sectors,
+                    base: weight_base.unwrap_or(sectors as f64),
+                    depth,
+                }),
                 ..Wants::default()
             },
         }
@@ -190,11 +350,19 @@ impl FieldSpec {
             FieldSpec::TrapCircle { .. } => {
                 orbit.trap_circle.is_finite().then_some(orbit.trap_circle)
             }
+            FieldSpec::TrapCross => orbit.trap_cross.is_finite().then_some(orbit.trap_cross),
+            FieldSpec::Threads { .. } => {
+                orbit.escaped.then(|| orbit.threads.deband(fade)).flatten()
+            }
             FieldSpec::GaussianInt { reduce } => reduce.of(&orbit.lattice),
             FieldSpec::ExpSmoothing => {
                 let (sum, count) = orbit.exp_smoothing;
                 (orbit.escaped && count > 0).then_some(sum)
             }
+            FieldSpec::Velocity => orbit.velocity.deband(fade),
+            FieldSpec::Decomposition => orbit.escaped.then(|| turn(orbit.last)),
+            FieldSpec::De { scale } => orbit.distance_estimate().map(|estimate| scale * estimate),
+            FieldSpec::Itinerary { .. } => orbit.itinerary.value(),
         }
     }
 
@@ -213,11 +381,26 @@ impl Reduction {
         let mean = lattice.mean()?;
         Some(match self {
             Reduction::MinimumDistance => lattice.nearest,
+            Reduction::AverageDistance => mean,
+            Reduction::MaximumDistance => lattice.farthest,
+            Reduction::IterMin => lattice.step_nearest as f64,
+            Reduction::IterMax => lattice.step_farthest as f64,
             Reduction::AngleMin => turn(lattice.at_nearest),
+            Reduction::AngleMax => turn(lattice.at_farthest),
             Reduction::MeanAngle => turn(num_complex::Complex::new(
                 mean - lattice.nearest,
                 lattice.farthest - mean,
             )),
+            // An orbit that never left a lattice point has no bunching to
+            // measure; zero is the tightest ratio there is, which is what that
+            // degenerate case means.
+            Reduction::Ratio => {
+                if lattice.farthest > 0.0 {
+                    lattice.nearest / lattice.farthest
+                } else {
+                    0.0
+                }
+            }
         })
     }
 }
@@ -238,6 +421,31 @@ pub struct Field {
     pub values: Vec<f32>,
     pub width: u32,
     pub height: u32,
+}
+
+/// The same field before it was narrowed to `f32`.
+///
+/// Every field here is *reduced* at `f64` and then stored at `f32`, because that
+/// is what a dump is worth keeping as: half the bytes, and 24 bits of mantissa is
+/// more than any escape count or trap distance carries. One field breaks that
+/// bargain — [`FieldSpec::Itinerary`], whose value is a base-`k` expansion whose
+/// deep digits *are* the picture — so the coloring that reads it takes this
+/// instead and never touches the narrow form.
+pub struct Exact {
+    pub values: Vec<f64>,
+    pub width: u32,
+    pub height: u32,
+}
+
+impl Exact {
+    /// The `f32` field this would have been stored as.
+    pub fn narrow(&self) -> Field {
+        Field {
+            values: self.values.iter().map(|&value| value as f32).collect(),
+            width: self.width,
+            height: self.height,
+        }
+    }
 }
 
 /// Everything one pass over the viewport produced.
@@ -261,6 +469,58 @@ pub struct Sampled {
 /// that depends on thread timing cannot be compared against anything, including
 /// its own earlier self.
 pub fn sample(view: &Viewport, family: &Family, maxiter: u32, fields: &[FieldSpec]) -> Sampled {
+    let (lanes, interior_fraction) = gather(view, family, maxiter, fields, |value| {
+        value.map_or(f32::NAN, |value| value as f32)
+    });
+    Sampled {
+        fields: lanes
+            .into_iter()
+            .map(|values| Field {
+                values,
+                width: view.sample_width(),
+                height: view.sample_height(),
+            })
+            .collect(),
+        interior_fraction,
+    }
+}
+
+/// The same pass, keeping every field at the precision it was reduced at.
+///
+/// Costs twice the memory of [`sample`] and is worth it for exactly one field —
+/// see [`Exact`]. Everything else about the pass is identical, which is the point:
+/// the narrow and the exact form of a field differ only in the last conversion, so
+/// there is no second sampler to keep in agreement with the first.
+pub fn sample_exact(
+    view: &Viewport,
+    family: &Family,
+    maxiter: u32,
+    fields: &[FieldSpec],
+) -> (Vec<Exact>, f64) {
+    let (lanes, interior_fraction) = gather(view, family, maxiter, fields, |value| {
+        value.unwrap_or(f64::NAN)
+    });
+    (
+        lanes
+            .into_iter()
+            .map(|values| Exact {
+                values,
+                width: view.sample_width(),
+                height: view.sample_height(),
+            })
+            .collect(),
+        interior_fraction,
+    )
+}
+
+/// One pass over the viewport, one lane per field, each value kept as `keep` says.
+fn gather<T: Copy + Send>(
+    view: &Viewport,
+    family: &Family,
+    maxiter: u32,
+    fields: &[FieldSpec],
+    keep: fn(Option<f64>) -> T,
+) -> (Vec<Vec<T>>, f64) {
     let width = view.sample_width();
     let height = view.sample_height();
     let wants = fields
@@ -270,7 +530,7 @@ pub fn sample(view: &Viewport, family: &Family, maxiter: u32, fields: &[FieldSpe
 
     // One row of every field at once, plus that row's interior count: the orbit
     // is expensive and is visited once.
-    let rows: Vec<(Vec<Vec<f32>>, u32)> = (0..height)
+    let rows: Vec<(Vec<Vec<T>>, u32)> = (0..height)
         .into_par_iter()
         .map(|row| {
             let mut lanes = vec![Vec::with_capacity(width as usize); fields.len()];
@@ -281,7 +541,7 @@ pub fn sample(view: &Viewport, family: &Family, maxiter: u32, fields: &[FieldSpe
                     interior += 1;
                 }
                 for (lane, field) in lanes.iter_mut().zip(fields) {
-                    lane.push(field.reduce(&orbit).map_or(f32::NAN, |value| value as f32));
+                    lane.push(keep(field.reduce(&orbit)));
                 }
             }
             (lanes, interior)
@@ -290,24 +550,13 @@ pub fn sample(view: &Viewport, family: &Family, maxiter: u32, fields: &[FieldSpe
 
     let samples = (width as u64 * height as u64).max(1);
     let interior: u64 = rows.iter().map(|(_, count)| *count as u64).sum();
-    let mut values: Vec<Vec<f32>> = vec![Vec::with_capacity(samples as usize); fields.len()];
+    let mut values: Vec<Vec<T>> = vec![Vec::with_capacity(samples as usize); fields.len()];
     for (lanes, _) in rows {
         for (all, row) in values.iter_mut().zip(lanes) {
             all.extend(row);
         }
     }
-
-    Sampled {
-        fields: values
-            .into_iter()
-            .map(|values| Field {
-                values,
-                width,
-                height,
-            })
-            .collect(),
-        interior_fraction: interior as f64 / samples as f64,
-    }
+    (values, interior as f64 / samples as f64)
 }
 
 /// Iterate `family` over `view`, reducing to a single field.
@@ -330,6 +579,20 @@ mod tests {
         }
     }
 
+    /// Every reduction of the lattice trap, so a test that walks the fields walks
+    /// all nine rather than the one that happens to be the default.
+    const EVERY_REDUCTION: [Reduction; 9] = [
+        Reduction::MinimumDistance,
+        Reduction::AverageDistance,
+        Reduction::MaximumDistance,
+        Reduction::IterMin,
+        Reduction::IterMax,
+        Reduction::AngleMin,
+        Reduction::AngleMax,
+        Reduction::MeanAngle,
+        Reduction::Ratio,
+    ];
+
     fn every_field() -> Vec<FieldSpec> {
         vec![
             FieldSpec::Smooth,
@@ -338,10 +601,40 @@ mod tests {
             FieldSpec::Tia,
             FieldSpec::Curvature,
             FieldSpec::TrapCircle { radius: 1.0 },
+            FieldSpec::TrapCross,
+            FieldSpec::Threads { sigma: 0.15 },
             FieldSpec::GaussianInt {
                 reduce: Reduction::MinimumDistance,
             },
             FieldSpec::ExpSmoothing,
+            FieldSpec::Velocity,
+            FieldSpec::Decomposition,
+            FieldSpec::De { scale: 1.0 },
+            FieldSpec::Itinerary {
+                sectors: 4,
+                weight_base: None,
+                depth: 26,
+            },
+        ]
+    }
+
+    /// The fields that have a value for a bounded orbit too. Two orbit traps —
+    /// which have a closest approach whether or not the orbit left — plus the mean
+    /// step length and the address, both of which a periodic cycle has as much as
+    /// an escaping orbit does. Everything else reads an escape.
+    fn fills_the_interior() -> Vec<FieldSpec> {
+        vec![
+            FieldSpec::TrapCircle { radius: 1.0 },
+            FieldSpec::TrapCross,
+            FieldSpec::GaussianInt {
+                reduce: Reduction::MinimumDistance,
+            },
+            FieldSpec::Velocity,
+            FieldSpec::Itinerary {
+                sectors: 4,
+                weight_base: None,
+                depth: 26,
+            },
         ]
     }
 
@@ -438,23 +731,143 @@ mod tests {
         let interior = (sampled.interior_fraction * sampled.fields[0].values.len() as f64) as usize;
         assert!(interior > 0);
 
-        // The two orbit traps, which have a closest approach to report whether
-        // or not the orbit ever left. Everything else reads an escape.
-        let fills_the_interior = [
-            FieldSpec::TrapCircle { radius: 1.0 },
-            FieldSpec::GaussianInt {
-                reduce: Reduction::MinimumDistance,
-            },
-        ];
+        let filling = fills_the_interior();
         for (spec, field) in every_field().iter().zip(&sampled.fields) {
             let empty = field.values.iter().filter(|v| !v.is_finite()).count();
-            let expected = if fills_the_interior.contains(spec) {
-                0
+            if filling.contains(spec) {
+                assert_eq!(empty, 0, "{spec:?} left the interior empty");
             } else {
-                interior
-            };
-            assert_eq!(empty, expected, "{spec:?}");
+                // An exterior-only field is empty exactly on the interior — except
+                // the distance estimate, which also declines a vanishing
+                // derivative, so it is held to "at least the interior" instead.
+                let floor = matches!(spec, FieldSpec::De { .. });
+                assert!(
+                    if floor {
+                        empty >= interior
+                    } else {
+                        empty == interior
+                    },
+                    "{spec:?}: {empty} empty samples against {interior} interior"
+                );
+            }
         }
+    }
+
+    /// Every reduction of the lattice trap must produce a live field, and the two
+    /// that are angles must be fractions of a turn. Nine free alternatives are only
+    /// worth having if each one says something.
+    #[test]
+    fn every_lattice_reduction_reads_the_same_pass_and_says_something() {
+        let view = whole_set_view(1);
+        let family = Family::Multibrot { degree: 2 };
+        let fields: Vec<FieldSpec> = EVERY_REDUCTION
+            .iter()
+            .map(|&reduce| FieldSpec::GaussianInt { reduce })
+            .collect();
+        let sampled = sample(&view, &family, 400, &fields);
+        for (reduce, field) in EVERY_REDUCTION.iter().zip(&sampled.fields) {
+            let mut distinct = std::collections::BTreeSet::new();
+            for value in &field.values {
+                assert!(value.is_finite(), "{reduce:?} left a sample empty");
+                distinct.insert(value.to_bits());
+            }
+            assert!(distinct.len() > 4, "{reduce:?} is nearly one flat value");
+            if matches!(reduce, Reduction::AngleMin | Reduction::AngleMax) {
+                for value in &field.values {
+                    assert!((0.0..1.0).contains(value), "{reduce:?} gave {value}");
+                }
+            }
+            if matches!(reduce, Reduction::Ratio) {
+                for value in &field.values {
+                    assert!((0.0..=1.0).contains(value), "ratio gave {value}");
+                }
+            }
+        }
+    }
+
+    /// The distance estimate is a length in the plane, so scaling it must not move
+    /// the picture: the per-frame stretch divides the scale straight back out. That
+    /// is the whole reason `scale` is allowed to exist as a knob on a field.
+    #[test]
+    fn scaling_the_distance_estimate_does_not_change_where_it_lands() {
+        use crate::coloring::Stretch;
+        let view = whole_set_view(1);
+        let family = Family::Multibrot { degree: 2 };
+        let plain = render_field(&view, &family, 400, FieldSpec::De { scale: 1.0 });
+        let scaled = render_field(&view, &family, 400, FieldSpec::De { scale: 1000.0 });
+        let (a, b) = (
+            Stretch::measure(&plain.fields[0]),
+            Stretch::measure(&scaled.fields[0]),
+        );
+        let mut compared = 0;
+        for (one, many) in plain.fields[0].values.iter().zip(&scaled.fields[0].values) {
+            if !one.is_finite() {
+                continue;
+            }
+            compared += 1;
+            assert!(
+                (a.position(*one as f64) - b.position(*many as f64)).abs() < 1e-4,
+                "the scale moved a sample from {one} to {many}"
+            );
+        }
+        assert!(compared > 100, "nothing was compared");
+    }
+
+    /// The address must spell its most significant digit from `z₀`. On the
+    /// dynamical plane `z₀` is the pixel, so the first symbol is a fact about the
+    /// pixel alone: sample four points, one per quadrant sector, and the addresses
+    /// must land in four different quarters of `[0, 1)`.
+    #[test]
+    fn the_address_opens_on_the_starting_point_s_own_sector() {
+        let family = Family::Julia {
+            degree: 2,
+            c: Complex::new(-0.4, 0.6),
+        };
+        let spec = FieldSpec::Itinerary {
+            sectors: 4,
+            weight_base: Some(4.0),
+            depth: 26,
+        };
+        let mut quarters = std::collections::BTreeSet::new();
+        for &(re, im) in &[(0.9, 0.1), (-0.1, 0.9), (-0.9, -0.1), (0.1, -0.9)] {
+            let orbit = iterate::run(&family, Complex::new(re, im), 200, &spec.wants());
+            let address = spec.reduce(&orbit).expect("the address is always defined");
+            assert!((0.0..1.0).contains(&address), "address {address}");
+            quarters.insert((address * 4.0).floor() as u32);
+        }
+        assert_eq!(quarters.len(), 4, "z₀ did not decide the leading symbol");
+    }
+
+    /// An address is `depth` symbols and no more: past the ceiling the digits are
+    /// rounding noise, so the accumulation has to actually stop.
+    #[test]
+    fn the_address_stops_at_its_depth() {
+        let family = Family::Julia {
+            degree: 2,
+            c: Complex::new(-0.4, 0.6),
+        };
+        let deep = FieldSpec::Itinerary {
+            sectors: 4,
+            weight_base: Some(4.0),
+            depth: 26,
+        };
+        let shallow = FieldSpec::Itinerary {
+            sectors: 4,
+            weight_base: Some(4.0),
+            depth: 2,
+        };
+        let point = Complex::new(0.31, 0.22);
+        let deep_orbit = iterate::run(&family, point, 500, &deep.wants());
+        let shallow_orbit = iterate::run(&family, point, 500, &shallow.wants());
+        assert_eq!(shallow_orbit.itinerary.symbols(), 2);
+        assert!(deep_orbit.itinerary.symbols() <= 26);
+        // The shallow address is the deep one's leading two digits, so the two
+        // agree to within the weight of the third.
+        let (a, b) = (
+            deep.reduce(&deep_orbit).unwrap(),
+            shallow.reduce(&shallow_orbit).unwrap(),
+        );
+        assert!((a - b).abs() < 1.0 / 16.0, "{a} against {b}");
     }
 
     /// The discrete field is the step the smooth one sits in, sample for sample.
@@ -577,5 +990,43 @@ mod tests {
         // A cycle of zero is not a band mapping, and the type refuses it at the
         // door rather than leaving a modulo-by-zero for the reduction to meet.
         assert!(serde_json::from_str::<FieldSpec>(r#"{"kind":"discrete","cycle":0}"#).is_err());
+
+        // The kept parameters are the defaults, so the two experimental fields can
+        // be asked for by name alone.
+        let threads: FieldSpec = serde_json::from_str(r#"{"kind":"threads"}"#).unwrap();
+        assert_eq!(threads, FieldSpec::Threads { sigma: 0.15 });
+        let address: FieldSpec = serde_json::from_str(r#"{"kind":"itinerary"}"#).unwrap();
+        assert_eq!(
+            address,
+            FieldSpec::Itinerary {
+                sectors: 4,
+                weight_base: None,
+                depth: 26,
+            }
+        );
+    }
+
+    /// An absent `weight_base` means "= sectors", and it has to follow `sectors`
+    /// rather than being pinned to the default four — that is the whole reason it
+    /// is an option instead of a number with a default.
+    #[test]
+    fn an_absent_weight_base_follows_the_sector_count() {
+        let follows = FieldSpec::Itinerary {
+            sectors: 8,
+            weight_base: None,
+            depth: 17,
+        };
+        let stated = FieldSpec::Itinerary {
+            sectors: 8,
+            weight_base: Some(8.0),
+            depth: 17,
+        };
+        assert_eq!(follows.wants(), stated.wants());
+        let differing = FieldSpec::Itinerary {
+            sectors: 8,
+            weight_base: Some(2.0),
+            depth: 17,
+        };
+        assert_ne!(follows.wants(), differing.wants());
     }
 }

@@ -123,9 +123,9 @@ def catalog() -> dict[str, dict]:
 def coloring_of(row: dict) -> dict:
     """The mode's coloring, with this row's curve and trap settings put into it.
 
-    The curve lands on the **base** of a composite and nowhere else: the texture
-    is a screen over the base and the corpora set one curve per render, which is
-    the one the base is read through.
+    The curve lands on the **base** of a composite or a modulate and nowhere else:
+    the texture lies over the base and the corpora set one curve per render, which
+    is the one the base is read through.
     """
     mode = row["mode"]
     known = catalog()
@@ -137,7 +137,7 @@ def coloring_of(row: dict) -> dict:
 
     if coloring["kind"] == "field":
         coloring["transform"] = curve
-    elif coloring["kind"] == "composite":
+    elif coloring["kind"] in ("composite", "modulate"):
         coloring["base"]["transform"] = curve
     elif coloring["kind"] == "direct":
         # The curve is NOT set here, and that is what the corpora did. A direct

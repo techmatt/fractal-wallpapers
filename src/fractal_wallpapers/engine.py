@@ -28,6 +28,8 @@ from typing import Any
 from fractal_wallpapers.paths import colormap_dir, repo_root
 
 __all__ = [
+    "NICHE",
+    "PRODUCTION",
     "Bound",
     "EngineTimeout",
     "colormap_dir",
@@ -37,6 +39,7 @@ __all__ = [
     "expand",
     "home_view",
     "modes",
+    "production_modes",
     "recolor",
     "render",
     "render_report",
@@ -279,10 +282,33 @@ def _home_view(key: str) -> str:
     return json.dumps(run("home-view", {"schema": 1, "family": json.loads(key)}))
 
 
+#: A mode a production draw may pick. The corpora were collected over these, and
+#: the finished-render judges were trained on them.
+PRODUCTION = "production"
+
+#: A mode that is renderable on demand by name and excluded from every production
+#: draw. Niche because it is expensive, unproven at scale, or interesting rather
+#: than good — never because it is broken, which would keep it out of the catalog.
+NICHE = "niche"
+
+
 def modes() -> list[dict]:
     """List the named colorings the engine knows, with what each is for.
 
     The catalog lives in the engine — one list, so a mode cannot exist on one
-    side of the boundary and not the other.
+    side of the boundary and not the other. Each entry carries its `tier`; a
+    caller that *draws* a mode wants [`production_modes`] instead of this.
     """
     return run("modes")
+
+
+def production_modes() -> list[str]:
+    """Every mode a production draw may pick, in catalog order.
+
+    **The one place the tier is enforced on this side of the boundary.** A caller
+    that draws a mode reads this rather than filtering [`modes`] itself, so "a
+    production draw cannot yield a niche mode" is a property of one function
+    instead of a rule every draw site has to remember — which is the same reason
+    the catalog itself lives in the engine and not here.
+    """
+    return [mode["name"] for mode in modes() if mode["tier"] == PRODUCTION]

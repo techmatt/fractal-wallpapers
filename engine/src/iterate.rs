@@ -20,6 +20,7 @@
 
 use num_complex::Complex;
 
+use crate::direct_trap::cross_distance;
 use crate::family::Family;
 
 /// Escape radius `B`.
@@ -48,10 +49,22 @@ pub struct Wants {
     pub curvature: bool,
     /// Closest approach to a circle of this radius.
     pub trap_circle: Option<f64>,
+    /// Closest approach to the axis cross through the origin.
+    pub trap_cross: bool,
+    /// Accumulated cross trap, at this kernel width.
+    pub threads: Option<f64>,
     /// Gaussian-integer lattice statistics.
     pub gaussian_int: bool,
     /// Exponential smoothing.
     pub exp_smoothing: bool,
+    /// Mean step length.
+    pub velocity: bool,
+    /// The symbolic address, to this many symbols in this base.
+    pub itinerary: Option<Symbols>,
+    /// The derivative of the orbit with respect to the pixel, which the distance
+    /// estimate divides by. The most expensive flag here — a complex multiply per
+    /// iteration on top of the recurrence's own — so nothing but `de` sets it.
+    pub derivative: bool,
 }
 
 impl Wants {
@@ -67,10 +80,28 @@ impl Wants {
             tia: self.tia || other.tia,
             curvature: self.curvature || other.curvature,
             trap_circle: self.trap_circle.or(other.trap_circle),
+            trap_cross: self.trap_cross || other.trap_cross,
+            threads: self.threads.or(other.threads),
             gaussian_int: self.gaussian_int || other.gaussian_int,
             exp_smoothing: self.exp_smoothing || other.exp_smoothing,
+            velocity: self.velocity || other.velocity,
+            itinerary: self.itinerary.or(other.itinerary),
+            derivative: self.derivative || other.derivative,
         }
     }
+}
+
+/// How an orbit's angular itinerary is read off as one number.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Symbols {
+    /// How many equal angular sectors the plane is cut into.
+    pub sectors: u32,
+    /// The base the symbols are written in. `= sectors` makes the address a clean
+    /// base-`k` expansion; a smaller base decays more slowly and so keeps more of
+    /// the deep symbols visible.
+    pub base: f64,
+    /// How many symbols to take before stopping.
+    pub depth: u32,
 }
 
 /// A running mean that remembers its last term.
@@ -117,6 +148,60 @@ impl Average {
     }
 }
 
+/// The orbit's angular itinerary, accumulated as one fractional number.
+///
+/// Each step contributes the index of the angular sector its iterate landed in,
+/// written as the next digit of a base-`base` fraction: the first symbol is the
+/// most significant, and the sum is the orbit's *address* in the fractal's own
+/// self-similar lamination. Two nearby pixels whose orbits take the same route
+/// through the sectors get nearly the same address however long they run, which
+/// is what makes this independent of the escape time rather than a restretch of
+/// it.
+///
+/// **The address is `f64` and stays `f64`.** A base-`k` expansion to `d` symbols
+/// needs `d·log₂k` bits of mantissa, so at `k = 4` the 53 bits of an `f64` are
+/// spent after 26 symbols and an `f32` after 11. Rounding a deep address into
+/// `f32` does not blur it — it bands it, because whole subtrees of the lamination
+/// collapse onto one value. That is why the coloring this feeds never travels
+/// through the `f32` field dump.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct Address {
+    value: f64,
+    /// The weight the next symbol will carry: `base^{−(n+1)}`.
+    weight: f64,
+    count: u32,
+}
+
+impl Address {
+    /// Add the sector this iterate landed in, unless the address is already full.
+    fn push(&mut self, z: Complex<f64>, symbols: Symbols) {
+        if self.count >= symbols.depth {
+            return;
+        }
+        if self.count == 0 {
+            self.weight = 1.0 / symbols.base;
+        }
+        // `atan2` runs `(−π, π]`; shifting by π puts the cut on the negative real
+        // axis and the sectors in `[0, k)` counting counter-clockwise from there.
+        let turns = (z.im.atan2(z.re) + std::f64::consts::PI) / std::f64::consts::TAU;
+        let sector = (turns * symbols.sectors as f64).floor();
+        let sector = sector.clamp(0.0, (symbols.sectors - 1) as f64);
+        self.value += sector * self.weight;
+        self.weight /= symbols.base;
+        self.count += 1;
+    }
+
+    /// The address, if any symbol was spelled at all.
+    pub fn value(&self) -> Option<f64> {
+        (self.count > 0).then_some(self.value)
+    }
+
+    /// How many symbols the address holds.
+    pub fn symbols(&self) -> u32 {
+        self.count
+    }
+}
+
 /// How close an orbit came to the integer lattice, and where.
 ///
 /// Every point of the complex plane has a nearest Gaussian integer — a point
@@ -129,10 +214,14 @@ pub struct Lattice {
     pub nearest: f64,
     /// The iterate at that closest approach.
     pub at_nearest: Complex<f64>,
+    /// The step the closest approach happened on.
+    pub step_nearest: u32,
     /// Farthest the orbit ever got from every lattice point.
     pub farthest: f64,
     /// The iterate at that farthest approach.
     pub at_farthest: Complex<f64>,
+    /// The step the farthest approach happened on.
+    pub step_farthest: u32,
     sum: f64,
     count: u32,
 }
@@ -142,8 +231,10 @@ impl Lattice {
         Lattice {
             nearest: f64::INFINITY,
             at_nearest: Complex::new(0.0, 0.0),
+            step_nearest: 0,
             farthest: 0.0,
             at_farthest: Complex::new(0.0, 0.0),
+            step_farthest: 0,
             sum: 0.0,
             count: 0,
         }
@@ -154,17 +245,19 @@ impl Lattice {
         (self.count > 0).then(|| self.sum / self.count as f64)
     }
 
-    fn push(&mut self, z: Complex<f64>) {
+    fn push(&mut self, z: Complex<f64>, step: u32) {
         let distance = (z - Complex::new(z.re.round(), z.im.round())).norm();
         self.sum += distance;
         self.count += 1;
         if distance < self.nearest {
             self.nearest = distance;
             self.at_nearest = z;
+            self.step_nearest = step;
         }
         if distance > self.farthest {
             self.farthest = distance;
             self.at_farthest = z;
+            self.step_farthest = step;
         }
     }
 }
@@ -193,10 +286,26 @@ pub struct Orbit {
     pub curvature: Average,
     /// Closest approach to the trap circle; `∞` if that channel was not wanted.
     pub trap_circle: f64,
+    /// Closest approach to the axis cross; `∞` if that channel was not wanted.
+    pub trap_cross: f64,
+    /// Mean of `exp(−D²/σ²)` over the orbit, `D` the cross-trap distance.
+    pub threads: Average,
     /// Lattice-trap statistics.
     pub lattice: Lattice,
     /// `Σ exp(−|z|)` and the number of terms in it.
     pub exp_smoothing: (f64, u32),
+    /// Mean length of a step, `|zₙ − zₙ₋₁|`.
+    pub velocity: Average,
+    /// The orbit's angular address.
+    pub itinerary: Address,
+    /// The last iterate the loop produced — the one it escaped on when it did.
+    ///
+    /// Not gated: `z` is already in hand at the moment the loop returns, so
+    /// keeping it costs a move. The escape angle reads it, and so does the
+    /// distance estimate, which needs `|z|` and `|dz|` from the same step.
+    pub last: Complex<f64>,
+    /// `dz/d(pixel)` at that last iterate; `0` if the derivative was not wanted.
+    pub derivative: Complex<f64>,
 }
 
 impl Orbit {
@@ -209,9 +318,55 @@ impl Orbit {
             tia: Average::default(),
             curvature: Average::default(),
             trap_circle: f64::INFINITY,
+            trap_cross: f64::INFINITY,
+            threads: Average::default(),
             lattice: Lattice::empty(),
             exp_smoothing: (0.0, 0),
+            velocity: Average::default(),
+            itinerary: Address::default(),
+            last: Complex::new(0.0, 0.0),
+            derivative: Complex::new(0.0, 0.0),
         }
+    }
+
+    /// The exterior distance estimate: how far this point is from the set.
+    ///
+    /// `2·|z|·ln|z| / |dz|`, read at the iterate the orbit escaped on. The
+    /// classic Koenigs/Douady–Hubbard estimate: the orbit's escape speed measures
+    /// how fast the potential is climbing, and the derivative measures how much
+    /// of that climb is the *pixel* moving rather than the iteration running, so
+    /// their ratio is a length in the plane. It is a real distance, which is what
+    /// makes it useful as a field — it does not restretch with the iteration cap
+    /// the way an escape count does.
+    ///
+    /// `None` for an orbit that did not escape (there is no boundary crossing to
+    /// read the estimate at) and for a vanishing derivative, which is a critical
+    /// point of the iteration rather than a distance of zero.
+    ///
+    /// **An overflowed derivative reports zero rather than nothing.** The
+    /// derivative grows by a factor of `d·|z|^{d−1}` per step, so a sample within a
+    /// hair of the boundary at a deep zoom can run `|dz|` past `f64`'s ceiling —
+    /// and once it is infinite the recurrence can turn it into a `NaN` on the next
+    /// step. Both mean the same thing: the quotient has underflowed, and the sample
+    /// is closer to the set than this arithmetic can measure. That is a distance of
+    /// zero, not an absent value; reporting it as absent would paint an exterior
+    /// sample with the interior's own black and dust a deep frame's brightest region
+    /// with speckles. It has not been seen on the frames measured — on a released
+    /// 2·10⁻⁵-wide multibrot frame at a cap of 24 462 this field's empty samples are
+    /// exactly the interior, to the sample — so the arm is a guard rather than a
+    /// fix, and it is here because the failure it guards against is invisible until
+    /// somebody zooms further.
+    pub fn distance_estimate(&self) -> Option<f64> {
+        if !self.escaped {
+            return None;
+        }
+        let slope = self.derivative.norm();
+        if !slope.is_finite() {
+            return Some(0.0);
+        }
+        let magnitude = self.last.norm();
+        let estimate = 2.0 * magnitude * magnitude.ln() / slope;
+        (slope > 0.0 && estimate.is_finite() && estimate >= 0.0).then_some(estimate)
     }
 
     /// How far past the last whole iteration the orbit escaped, in `[0, 1)`.
@@ -250,7 +405,22 @@ pub fn run(family: &Family, pixel: Complex<f64>, maxiter: u32, wants: &Wants) ->
     // which needs three points and so waits for the second pass anyway.
     let mut two_back;
 
+    // The derivative of the orbit with respect to the pixel, advanced in lockstep
+    // with `z` when a field asks for it. Two steps of history, because Phoenix's
+    // derivative has a memory term exactly as Phoenix does.
+    let (mut dz, mut dz_prev) = family.derivative_seed();
+
     let mut orbit = Orbit::new();
+    orbit.last = z;
+
+    // **The address's first symbol is `z₀`'s.** Every other channel here
+    // accumulates from `n = 1`, which for an average is a rounding difference. For
+    // an address it is not: `s₀` is the most significant digit, so dropping it
+    // shifts every address by a whole base-`k` place and the field means something
+    // else. This push is the only reason `z₀` is offered to any channel at all.
+    if let Some(symbols) = wants.itinerary {
+        orbit.itinerary.push(z, symbols);
+    }
 
     for n in 1..=maxiter {
         // |z²| before the step: the triangle inequality compares the actual next
@@ -259,11 +429,20 @@ pub fn run(family: &Family, pixel: Complex<f64>, maxiter: u32, wants: &Wants) ->
         // only for the one channel that reads it.
         let squared_abs = if wants.tia { (z * z).norm() } else { 0.0 };
 
+        // Before the step, because `dz_{n+1} = f'(z_n)·dz_n` reads the iterate the
+        // step is about to leave behind.
+        if wants.derivative {
+            let next = family.derivative_step(z, dz, dz_prev);
+            dz_prev = dz;
+            dz = next;
+        }
+
         let next = family.step(z, z_prev, c);
         two_back = one_back;
         one_back = z;
         z_prev = z;
         z = next;
+        orbit.last = z;
 
         let magnitude_sq = z.norm_sqr();
         let magnitude = magnitude_sq.sqrt();
@@ -271,8 +450,26 @@ pub fn run(family: &Family, pixel: Complex<f64>, maxiter: u32, wants: &Wants) ->
         if let Some(radius) = wants.trap_circle {
             orbit.trap_circle = orbit.trap_circle.min((magnitude - radius).abs());
         }
+        if wants.trap_cross {
+            orbit.trap_cross = orbit.trap_cross.min(cross_distance(z));
+        }
+        if let Some(sigma) = wants.threads {
+            // The kernel is inside the average, not outside it: `mean(exp(−D²/σ²))`
+            // is not any curve applied to `mean(D)`, which is what makes σ a live
+            // parameter rather than something the post-stretch curve could absorb.
+            let distance = cross_distance(z);
+            orbit
+                .threads
+                .push((-(distance * distance) / (sigma * sigma)).exp());
+        }
         if wants.gaussian_int {
-            orbit.lattice.push(z);
+            orbit.lattice.push(z, n);
+        }
+        if wants.velocity {
+            orbit.velocity.push((z - one_back).norm());
+        }
+        if let Some(symbols) = wants.itinerary {
+            orbit.itinerary.push(z, symbols);
         }
         if wants.exp_smoothing {
             orbit.exp_smoothing.0 += (-magnitude).exp();
@@ -311,10 +508,16 @@ pub fn run(family: &Family, pixel: Complex<f64>, maxiter: u32, wants: &Wants) ->
             orbit.escaped = true;
             orbit.iteration = n;
             orbit.smooth = smooth_count(n, magnitude_sq, family.degree());
+            if wants.derivative {
+                orbit.derivative = dz;
+            }
             return orbit;
         }
     }
 
+    if wants.derivative {
+        orbit.derivative = dz;
+    }
     orbit
 }
 
@@ -372,8 +575,17 @@ mod tests {
             tia: true,
             curvature: true,
             trap_circle: Some(1.0),
+            trap_cross: true,
+            threads: Some(0.15),
             gaussian_int: true,
             exp_smoothing: true,
+            velocity: true,
+            itinerary: Some(Symbols {
+                sectors: 4,
+                base: 4.0,
+                depth: 26,
+            }),
+            derivative: true,
         }
     }
 
@@ -625,8 +837,91 @@ mod tests {
                 assert!(orbit.lattice.mean().unwrap() <= corner);
                 let (sum, count) = orbit.exp_smoothing;
                 assert!(sum >= 0.0 && sum <= count as f64);
+
+                assert!(orbit.trap_cross >= 0.0 && orbit.trap_cross.is_finite());
+                // A Gaussian kernel of a real distance: strictly in (0, 1].
+                let threads = orbit.threads.deband(fade).unwrap();
+                assert!(threads > 0.0 && threads <= 1.0, "threads {threads}");
+                let velocity = orbit.velocity.deband(fade).unwrap();
+                assert!(
+                    velocity >= 0.0 && velocity.is_finite(),
+                    "velocity {velocity}"
+                );
+                // The address is a base-4 fraction of at most 26 digits, so it is
+                // strictly inside [0, 1) whatever the orbit did.
+                let address = orbit.itinerary.value().unwrap();
+                assert!((0.0..1.0).contains(&address), "address {address}");
+                assert!(orbit.itinerary.symbols() <= 26);
+                if let Some(estimate) = orbit.distance_estimate() {
+                    assert!(estimate >= 0.0 && estimate.is_finite(), "de {estimate}");
+                }
             }
         }
+    }
+
+    /// The distance estimate has to be a **distance**, not merely a field that
+    /// looks like one. On the real axis right of the Mandelbrot set the true
+    /// distance is known — the cardioid cusp sits at `0.25` — so the estimate can
+    /// be held to two things a mere field would fail: it stays within a small
+    /// factor of the truth, and that factor *tightens toward one* as the point
+    /// closes in on the set. The second is the load-bearing half: the estimate is
+    /// asymptotic in the number of steps the orbit survives, so a far point escapes
+    /// in two iterations and is over-estimated, and a near one is not.
+    #[test]
+    fn the_distance_estimate_is_within_a_small_factor_of_the_real_distance() {
+        let family = Family::Multibrot { degree: 2 };
+        let wants = Wants {
+            derivative: true,
+            ..Wants::default()
+        };
+        let mut ratios = Vec::new();
+        let mut previous = f64::INFINITY;
+        for &c in &[4.0, 2.0, 1.0, 0.5] {
+            let estimate = run(&family, Complex::new(c, 0.0), 4000, &wants)
+                .distance_estimate()
+                .unwrap_or_else(|| panic!("no estimate at c = {c}"));
+            let truth = c - 0.25;
+            let ratio = estimate / truth;
+            assert!(
+                (0.5..4.0).contains(&ratio),
+                "at c = {c} the estimate {estimate} is {ratio}x the true distance {truth}"
+            );
+            assert!(
+                estimate < previous,
+                "the estimate did not shrink at c = {c}"
+            );
+            previous = estimate;
+            ratios.push(ratio);
+        }
+        for pair in ratios.windows(2) {
+            assert!(
+                pair[1] < pair[0],
+                "the estimate did not tighten on the way in: {ratios:?}"
+            );
+        }
+        assert!(*ratios.last().unwrap() < 1.5, "{ratios:?}");
+    }
+
+    /// An overflowed derivative means the quotient underflowed, which is a distance
+    /// of zero and not an absent value — otherwise a deep frame's brightest region
+    /// comes back speckled with the interior's black.
+    #[test]
+    fn an_overflowed_derivative_reads_as_a_distance_of_zero() {
+        let mut orbit = Orbit::new();
+        orbit.escaped = true;
+        orbit.last = Complex::new(BAILOUT * 2.0, 0.0);
+        for slope in [f64::INFINITY, f64::NAN] {
+            orbit.derivative = Complex::new(slope, 0.0);
+            assert_eq!(orbit.distance_estimate(), Some(0.0), "slope {slope}");
+        }
+        // A vanishing derivative is a different thing — a critical point of the
+        // iteration — and has no distance to report at all.
+        orbit.derivative = Complex::new(0.0, 0.0);
+        assert_eq!(orbit.distance_estimate(), None);
+        // And an orbit that never escaped has no boundary crossing to read.
+        orbit.derivative = Complex::new(1.0, 0.0);
+        orbit.escaped = false;
+        assert_eq!(orbit.distance_estimate(), None);
     }
 
     /// The averaging channels get the same treatment the smooth count gets, and
@@ -677,8 +972,16 @@ mod tests {
         assert_eq!(orbit.tia, Average::default());
         assert_eq!(orbit.curvature, Average::default());
         assert_eq!(orbit.trap_circle, f64::INFINITY);
+        assert_eq!(orbit.trap_cross, f64::INFINITY);
+        assert_eq!(orbit.threads, Average::default());
         assert_eq!(orbit.lattice.mean(), None);
         assert_eq!(orbit.exp_smoothing, (0.0, 0));
+        assert_eq!(orbit.velocity, Average::default());
+        assert_eq!(orbit.itinerary.value(), None);
+        // The derivative is the most expensive gate here, so the one thing that
+        // must be true of it when nobody asked is that it never ran.
+        assert_eq!(orbit.derivative, Complex::new(0.0, 0.0));
+        assert_eq!(orbit.distance_estimate(), None);
     }
 
     #[test]
@@ -695,6 +998,41 @@ mod tests {
         assert_eq!(both.stripe, Some(6.0));
         assert_eq!(both.trap_circle, Some(1.0));
         assert!(!both.tia);
+        assert!(!both.derivative);
+    }
+
+    /// The derivative recurrence is differentiated from the recurrence itself, so
+    /// the cheapest honest check on it is a numerical one: the analytic derivative
+    /// must agree with a finite difference of the orbit in the pixel.
+    #[test]
+    fn the_derivative_recurrence_matches_a_finite_difference() {
+        let wants = Wants {
+            derivative: true,
+            ..Wants::default()
+        };
+        let families = [
+            Family::Multibrot { degree: 2 },
+            Family::Multibrot { degree: 4 },
+            julia(Complex::new(-0.4, 0.6)),
+            Family::Phoenix {
+                c: crate::family::PHOENIX_C,
+                p: crate::family::PHOENIX_P,
+                z_prev: Complex::new(0.0, 0.0),
+            },
+        ];
+        // Short, so the derivative and the difference are both far from overflow;
+        // a long orbit is exponentially sensitive and a difference cannot follow it.
+        let steps = 6;
+        let step = 1e-7;
+        for family in families {
+            let pixel = Complex::new(0.31, 0.22);
+            let analytic = run(&family, pixel, steps, &wants).derivative;
+            let ahead = run(&family, pixel + Complex::new(step, 0.0), steps, &wants).last;
+            let behind = run(&family, pixel - Complex::new(step, 0.0), steps, &wants).last;
+            let difference = (ahead - behind) / (2.0 * step);
+            let error = (analytic - difference).norm() / analytic.norm().max(1.0);
+            assert!(error < 1e-4, "{family:?}: {analytic} against {difference}");
+        }
     }
 
     /// An average of one term has nothing to fade against, and an average of

@@ -1,6 +1,6 @@
 //! The five families: what each recurrence is, and how a pixel enters it.
 //!
-//! A family answers three questions and nothing else:
+//! A family answers four questions and nothing else:
 //!
 //!  * [`seed`](Family::seed) — where does the orbit start, and what is the fixed
 //!    constant? Parameter-plane families read the pixel as the constant `c` and
@@ -8,6 +8,11 @@
 //!  * [`step`](Family::step) — one application of the recurrence.
 //!  * [`degree`](Family::degree) — the exponent that dominates escape, which is
 //!    the base of the outer logarithm in the smooth iteration count.
+//!  * [`derivative_seed`](Family::derivative_seed) and
+//!    [`derivative_step`](Family::derivative_step) — the same recurrence
+//!    differentiated with respect to the pixel, which is what the distance
+//!    estimate reads. One question, asked in two halves for the same reason the
+//!    orbit is: where it starts, and how it advances.
 //!
 //! The escape loop itself lives in [`crate::iterate`] and is written once.
 
@@ -170,6 +175,51 @@ impl Family {
         match *self {
             Family::Multibrot { degree } | Family::Julia { degree, .. } => cpow(z, degree) + c,
             Family::Phoenix { p, .. } => z * z + c + p * z_prev,
+        }
+    }
+
+    /// The derivative's initial state: `(dz₀, dz₋₁)`, differentiated with
+    /// respect to whichever quantity the pixel *is*.
+    ///
+    /// That is the whole subtlety of the derivative recurrence, and it is why it
+    /// lives beside [`seed`](Family::seed) rather than in the loop: a
+    /// parameter-plane family differentiates by `c`, and `z₀ = 0` does not depend
+    /// on `c`, so it opens at zero. A dynamical family differentiates by `z₀`,
+    /// which *is* the pixel, so it opens at one. Get the two the wrong way round
+    /// and the distance estimate is off by a whole term everywhere.
+    pub fn derivative_seed(&self) -> (Complex<f64>, Complex<f64>) {
+        let (zero, one) = (Complex::new(0.0, 0.0), Complex::new(1.0, 0.0));
+        match *self {
+            Family::Multibrot { .. } => (zero, zero),
+            Family::Julia { .. } => (one, zero),
+            Family::Phoenix { .. } => (one, zero),
+        }
+    }
+
+    /// One step of the derivative recurrence, differentiated term by term from
+    /// [`step`](Family::step): `(z_n, dz_n, dz_{n-1}) → dz_{n+1}`.
+    ///
+    /// * `z^d + c` by `c`  → `d·z^{d−1}·dz + 1`
+    /// * `z^d + c` by `z₀` → `d·z^{d−1}·dz`
+    /// * `z² + c + p·z_{n−1}` by `z₀` → `2·z·dz + p·dz_{n−1}`
+    ///
+    /// The `+1` is the parameter plane's alone, and Phoenix is the one family
+    /// whose derivative needs its own memory term — which is why this takes two
+    /// steps of history exactly as `step` does.
+    pub fn derivative_step(
+        &self,
+        z: Complex<f64>,
+        dz: Complex<f64>,
+        dz_prev: Complex<f64>,
+    ) -> Complex<f64> {
+        match *self {
+            Family::Multibrot { degree } => {
+                Complex::new(degree as f64, 0.0) * cpow(z, degree - 1) * dz + 1.0
+            }
+            Family::Julia { degree, .. } => {
+                Complex::new(degree as f64, 0.0) * cpow(z, degree - 1) * dz
+            }
+            Family::Phoenix { p, .. } => 2.0 * z * dz + p * dz_prev,
         }
     }
 

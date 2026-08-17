@@ -31,7 +31,7 @@ use rayon::prelude::*;
 use num_complex::Complex;
 use serde::{Deserialize, Serialize};
 
-use crate::coloring::{Blend, Painted};
+use crate::coloring::{Blend, MergeOrder, Painted};
 use crate::colormap::{Colormap, srgb_to_linear};
 use crate::family::Family;
 use crate::iterate::BAILOUT;
@@ -64,6 +64,17 @@ pub enum Shape {
     Lines,
 }
 
+/// Distance from a point to the axis cross through the origin: `min(|Re z|, |Im z|)`.
+///
+/// Written out here, once, because two unrelated things read it: this module's
+/// [`Shape::Cross`] and the scalar `trap_cross` / `threads` channels in
+/// [`crate::iterate`]. A cross is the cheapest trap there is and the temptation
+/// to re-spell `min(|Re|, |Im|)` at each site is exactly how the direct family
+/// and the scalar family would drift into measuring two different crosses.
+pub fn cross_distance(z: Complex<f64>) -> f64 {
+    z.re.abs().min(z.im.abs())
+}
+
 impl Shape {
     /// Distance from an iterate to this shape, centered on the origin.
     pub fn distance(self, z: Complex<f64>, radius: f64) -> f64 {
@@ -71,11 +82,11 @@ impl Shape {
         match self {
             Shape::Point => z.norm(),
             Shape::Ring => (z.norm() - radius).abs(),
-            Shape::Cross => re.min(im),
+            Shape::Cross => cross_distance(z),
             Shape::Hypercross => {
                 let diagonal =
                     (z.re - z.im).abs().min((z.re + z.im).abs()) * std::f64::consts::FRAC_1_SQRT_2;
-                re.min(im).min(diagonal)
+                cross_distance(z).min(diagonal)
             }
             Shape::Diamond => re + im,
             Shape::Box => re.max(im),
@@ -129,6 +140,7 @@ pub struct Painter {
     threshold: f64,
     opacity: f64,
     merge: Blend,
+    merge_order: MergeOrder,
     start_color: [f64; 3],
     transform: crate::coloring::Transform,
 }
@@ -136,12 +148,14 @@ pub struct Painter {
 impl Painter {
     /// Resolve a direct-trap coloring, filling in the shape's default threshold
     /// and applying the screened-cross clamp.
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         shape: Shape,
         radius: f64,
         threshold: Option<f64>,
         opacity: f64,
         merge: Blend,
+        merge_order: MergeOrder,
         start_color: &str,
         transform: crate::coloring::Transform,
     ) -> Result<Painter, String> {
@@ -160,6 +174,7 @@ impl Painter {
                 .min(threshold_cap),
             opacity: opacity.clamp(0.0, 1.0).min(opacity_cap),
             merge,
+            merge_order,
             start_color: parse_start_color(start_color)?,
             transform,
         })
@@ -250,7 +265,9 @@ impl Painter {
                 let sample = colormap.lookup(key);
                 let alpha = self.opacity * (1.0 - key);
                 for channel in 0..3 {
-                    let blended = self.merge.apply(color[channel], sample[channel]);
+                    let blended =
+                        self.merge_order
+                            .merge(self.merge, color[channel], sample[channel]);
                     color[channel] = blended * alpha + color[channel] * (1.0 - alpha);
                 }
             }
@@ -388,6 +405,7 @@ mod tests {
             Some(1e-9), // hit essentially nothing
             0.45,
             Blend::Screen,
+            MergeOrder::BottomUp,
             "white",
             Default::default(),
         )
@@ -407,6 +425,7 @@ mod tests {
                 Some(0.1),
                 0.2,
                 Blend::Multiply,
+                MergeOrder::BottomUp,
                 start,
                 Default::default(),
             )
@@ -433,6 +452,7 @@ mod tests {
             Some(0.5),
             0.9,
             Blend::Screen,
+            MergeOrder::BottomUp,
             "black",
             Default::default(),
         )
@@ -448,6 +468,7 @@ mod tests {
             Some(0.05),
             0.15,
             Blend::Screen,
+            MergeOrder::BottomUp,
             "black",
             Default::default(),
         )
@@ -460,6 +481,7 @@ mod tests {
             Some(0.5),
             0.9,
             Blend::Screen,
+            MergeOrder::BottomUp,
             "black",
             Default::default(),
         )
@@ -477,6 +499,7 @@ mod tests {
                 None,
                 0.45,
                 Blend::Multiply,
+                MergeOrder::BottomUp,
                 "black",
                 Default::default(),
             )
@@ -499,6 +522,7 @@ mod tests {
             None,
             0.2,
             Blend::Multiply,
+            MergeOrder::BottomUp,
             "white",
             Default::default(),
         )

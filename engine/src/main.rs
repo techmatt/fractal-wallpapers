@@ -81,6 +81,9 @@ struct DumpReport {
 struct Mode {
     name: &'static str,
     identity: &'static str,
+    /// Whether a production draw may pick this mode. Every reader that draws one
+    /// filters on this rather than keeping a list of exclusions.
+    tier: mode::Tier,
     /// The coloring the name stands for, written out. A name is a claim that a
     /// setting is worth returning to; this is the setting, so a caller that
     /// needs to vary one knob of a mode can start from what the mode actually is
@@ -177,11 +180,12 @@ fn run(args: Vec<String>) -> Result<(), String> {
         Some("modes") => print(
             &mode::CATALOG
                 .iter()
-                .map(|(name, identity)| {
+                .map(|entry| {
                     Ok(Mode {
-                        name,
-                        identity,
-                        coloring: mode::resolve(name)?,
+                        name: entry.name,
+                        identity: entry.identity,
+                        tier: entry.tier,
+                        coloring: mode::resolve(entry.name)?,
                     })
                 })
                 .collect::<Result<Vec<_>, String>>()?,
