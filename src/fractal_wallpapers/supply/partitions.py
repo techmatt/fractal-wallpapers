@@ -93,6 +93,22 @@ def dynamical_twin(partition: str) -> str:
     return f"julia:{registered(partition)}"
 
 
+def degree_of_plane(plane: str) -> int:
+    """The exponent of a parameter plane's recurrence; `mandelbrot` is 2.
+
+    The twin channel needs it and nothing else does: a point of the degree-`d`
+    parameter plane is a `c` for the degree-`d` Julia family and for no other, so
+    the degree has to travel with the parameter rather than be re-guessed where
+    the root is built.
+    """
+    if plane not in PARAMETER_PLANES:
+        raise UnregisteredPartition(
+            f"{plane!r} is not a parameter plane, so it has no degree to read. The "
+            f"parameter planes are {list(PARAMETER_PLANES)}."
+        )
+    return 2 if plane == "mandelbrot" else int(plane.removeprefix("multibrot"))
+
+
 def _pair(value, default: tuple[float, float]) -> tuple[float, float]:
     """A `[re, im]` family constant as floats, or `default` when it is absent.
 
@@ -167,6 +183,7 @@ __all__ = [
     "DYNAMICAL_PLANES",
     "PARAMETER_PLANES",
     "UnregisteredPartition",
+    "degree_of_plane",
     "dynamical_twin",
     "is_classic_phoenix",
     "is_dynamical",

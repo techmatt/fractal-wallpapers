@@ -26,12 +26,19 @@ family per call, and a family belongs to exactly one partition, so a batch that
 spans four partitions produces four timed pieces of work rather than one number to
 apportion after the fact. The price is measured, so it should be measured.
 
-**Every batch reconciles, and a batch that does not balance ends the run.** Two
+**Every batch reconciles, and a batch that does not balance ends the run.** Three
 identities have to close: every candidate the engine reported was written with a
-fate this project knows, and every survivor either is a new location or is one the
-run already had. A long unattended run that silently loses candidates is exactly
-the failure a summary cannot show you afterwards — the numbers all look plausible,
+fate this project knows; everything that reached the frontier was either admitted
+or expandable; and every admission either is a new location or is one the run
+already had. A long unattended run that silently loses candidates is exactly the
+failure a summary cannot show you afterwards — the numbers all look plausible,
 because the missing ones are missing from both sides.
+
+**The frontier is fed by more than the books count.** Expansion is gated at the
+junk floor and booking at the good floor, so a batch pushes `admitted +
+expandable` nodes and credits only `admitted`. The ratio of the first to the
+nodes expanded is the run's growth rate, it is in every summary, and below one
+the walk is dying however healthy the admission count looks.
 
 **Admissions are counted as distinct locations**, and that is not bookkeeping
 pedantry: a raw count of what a scorer waved through runs about twice what the
@@ -73,7 +80,7 @@ from fractal_wallpapers.supply.partitions import ALL_PARTITIONS, partition_of_fa
 from fractal_wallpapers.supply.quota import Quota
 from fractal_wallpapers.supply.refill import Refill
 
-STATE_SCHEMA = 1
+STATE_SCHEMA = 2
 
 
 class ReconcileError(SystemExit):
@@ -92,11 +99,20 @@ class Budget:
 
 @dataclass
 class Tally:
-    """What the run has found, in the buckets the reconcile is written in."""
+    """What the run has found, in the buckets the reconcile is written in.
+
+    Two of these are new and they are the split: `admitted` is what the books
+    count, `expandable` is what the frontier stands on and the books do not. Their
+    sum is the frontier's feed, and `feed / expanded` is the growth rate that says
+    whether the walk is alive — the one number a run whose frontier was quietly
+    dying had no way to report.
+    """
 
     batches: int = 0
+    expanded: int = 0
     found: int = 0
-    survived: int = 0
+    admitted: int = 0
+    expandable: int = 0
     distinct: int = 0
     duplicate: int = 0
     refused: Counter = field(default_factory=Counter)
@@ -104,11 +120,24 @@ class Tally:
     saturation_seen: int = 0
     saturation_discounted: int = 0
 
+    def feed(self) -> int:
+        """Nodes this run pushed onto the frontier from its own expansions."""
+        return self.admitted + self.expandable
+
+    def growth(self) -> float | None:
+        """Frontier nodes gained per node expanded. Below 1 the walk is dying."""
+        return self.feed() / self.expanded if self.expanded else None
+
     def as_dict(self) -> dict:
+        growth = self.growth()
         return {
             "batches": self.batches,
+            "expanded": self.expanded,
             "found": self.found,
-            "survived": self.survived,
+            "admitted": self.admitted,
+            "expandable": self.expandable,
+            "frontier_feed": self.feed(),
+            "growth_per_expansion": None if growth is None else round(growth, 3),
             "distinct_admissions": self.distinct,
             "duplicate_admissions": self.duplicate,
             "refused": dict(sorted(self.refused.items())),
@@ -241,7 +270,12 @@ class Harvest:
 
     def _account(self, partition: str, report: dict, minutes: float, nodes: int) -> dict:
         """Charge the minutes, count the fates, credit the distinct finds, and
-        prove the batch's books balance."""
+        prove the batch's books balance.
+
+        Three identities close here rather than two, because the frontier and the
+        books are now fed by different populations: what reached the frontier is
+        the admitted *plus* the expandable, and only the admitted are supply.
+        """
         candidates = report["candidates"]
         fates = Counter(row["fate"] for row in candidates)
         unknown = set(fates) - set(ledger_module.FATES)
@@ -251,11 +285,13 @@ class Harvest:
                 f"are not in the ledger's declared fates. A gate that can refuse a candidate "
                 f"without naming itself is a gate that can eat supply and still balance."
             )
-        survived = fates.get(ledger_module.SURVIVED, 0)
-        if survived != len(report["survivors"]):
+        admitted = fates.get(ledger_module.SURVIVED, 0)
+        expandable = fates.get(ledger_module.EXPANDABLE, 0)
+        if admitted + expandable != len(report["survivors"]):
             raise ReconcileError(
-                f"[reconcile] batch {self.batch} in {partition}: {survived} candidates recorded "
-                f"as survived but {len(report['survivors'])} nodes reached the frontier."
+                f"[reconcile] batch {self.batch} in {partition}: {admitted} admitted plus "
+                f"{expandable} expandable but {len(report['survivors'])} nodes reached the "
+                f"frontier."
             )
 
         distinct = duplicate = 0
@@ -274,32 +310,41 @@ class Harvest:
                 self.seen.add(key)
             distinct += 1
             units += self.quota.credit(partition, row.get("score"), row.get("score_great"))
+            # A booked location may be another partition's supply: the twin
+            # channel derives a Julia parameter from an admitted parameter-plane
+            # find. Offered once per *distinct* admission, so a duplicate cannot
+            # spend the c-spacing floor twice.
+            if self.refill is not None:
+                self.refill.note_admission(partition, row)
 
         if len(candidates) != sum(fates.values()):
             raise ReconcileError(
                 f"[reconcile] batch {self.batch} in {partition}: {len(candidates)} candidates "
                 f"found against {sum(fates.values())} fated."
             )
-        if survived != distinct + duplicate:
+        if admitted != distinct + duplicate:
             raise ReconcileError(
-                f"[reconcile] batch {self.batch} in {partition}: {survived} survivors != "
+                f"[reconcile] batch {self.batch} in {partition}: {admitted} admitted != "
                 f"{distinct} distinct + {duplicate} duplicate."
             )
 
         self.quota.charge(partition, minutes, nodes)
         self.quota.note_candidates(partition, len(candidates))
         self.quota.note_admission(partition, distinct)
+        self.tally.expanded += nodes
         self.tally.found += len(candidates)
-        self.tally.survived += survived
+        self.tally.admitted += admitted
+        self.tally.expandable += expandable
         self.tally.distinct += distinct
         self.tally.duplicate += duplicate
         self.tally.units += units
         for fate, n in fates.items():
-            if fate != ledger_module.SURVIVED:
+            if fate not in (ledger_module.SURVIVED, ledger_module.EXPANDABLE):
                 self.tally.refused[fate] += n
         return {
             "found": len(candidates),
-            "survived": survived,
+            "admitted": admitted,
+            "expandable": expandable,
             "distinct": distinct,
             "duplicate": duplicate,
             "currency": round(units, 4),
@@ -433,8 +478,10 @@ class Harvest:
             "active_minutes": self.active_minutes,
             "tally": {
                 "batches": self.tally.batches,
+                "expanded": self.tally.expanded,
                 "found": self.tally.found,
-                "survived": self.tally.survived,
+                "admitted": self.tally.admitted,
+                "expandable": self.tally.expandable,
                 "distinct": self.tally.distinct,
                 "duplicate": self.tally.duplicate,
                 "refused": dict(self.tally.refused),
@@ -462,6 +509,12 @@ class Harvest:
                     "seconds": self.refill.seconds,
                     "draws": self.refill.draws,
                     "roots_added": self.refill.roots_added,
+                    # Checkpointed whole. The standing legs would re-prime
+                    # identically, but the parameters derived from *this run's*
+                    # admissions would not, and a c-spacing floor that forgot half
+                    # its accepted parameters hands out near-duplicates of what it
+                    # has already spent.
+                    "twins": (None if self.refill.twins is None else self.refill.twins.state()),
                 }
             ),
         }
@@ -484,8 +537,10 @@ class Harvest:
         saved = state.get("tally") or {}
         self.tally = Tally(
             batches=int(saved.get("batches", 0)),
+            expanded=int(saved.get("expanded", 0)),
             found=int(saved.get("found", 0)),
-            survived=int(saved.get("survived", 0)),
+            admitted=int(saved.get("admitted", 0)),
+            expandable=int(saved.get("expandable", 0)),
             distinct=int(saved.get("distinct", 0)),
             duplicate=int(saved.get("duplicate", 0)),
             refused=Counter(saved.get("refused") or {}),
@@ -517,6 +572,8 @@ class Harvest:
             self.refill.seconds = float(saved_refill.get("seconds", 0.0))
             self.refill.draws = int(saved_refill.get("draws", 0))
             self.refill.roots_added = int(saved_refill.get("roots_added", 0))
+            if self.refill.twins is not None and saved_refill.get("twins"):
+                self.refill.twins.load_state(saved_refill["twins"])
         return True
 
 

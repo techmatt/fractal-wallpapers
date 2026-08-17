@@ -16,6 +16,7 @@ apportion    a share vector into whole slots, without zeroing anybody
 allocation   the floor, the water-filling, and the floor's carry
 quota        the object a run holds; the only thing that decides the mix
 refill       what to do about a partition whose queue has run dry
+twins        Julia parameters derived from the parent plane's admissions
 saturation   cross-run memory, straight off the ledgers
 tau_h        how good a cheap look must be before a real one is paid for
 harvest      the production loop, and everything that keeps it honest
@@ -31,7 +32,17 @@ serve     divide the batch's slots by how far each partition is below its intent
 credit    what the batch found, deduplicated, back into the price and the stock
 ```
 
-Four things are worth reading before changing anything here.
+Five things are worth reading before changing anything here.
+
+**A Julia twin's supply is manufactured by serving its parent.** The allocator
+has always folded a twin's demand into its parameter plane on the ground that
+descending the plane is what produces places worth taking the twin of — but for
+the three higher degrees the step that turned a plane find into a Julia root did
+not exist, so the fold was a promise nothing kept. `twins` is that step: an
+admitted degree-`d` plane location's centre *is* a `c` for the degree-`d` Julia
+family, and it becomes a root through the same seed object and the same cursor
+the tracked degree-2 pool uses. Parameters closer than the pool's own c-spacing
+floor to one already taken are skipped and recorded.
 
 **The mix is decided where the batch is popped.** Weighting the *root draw* by
 family cannot enforce a mix: anything that only changes what enters the frontier

@@ -42,6 +42,18 @@ back to the ordinary priority order in the same batch.
 An operator is not a source: it applies to a place the walk already found, and
 it inherits both the provenance and the cost of that place.
 
+## Standing on a place and booking it are two decisions
+
+The scorer is asked twice about every gate survivor, at two heights. *May the
+walk continue from here?* is the junk floor; *is this a find worth counting?* is
+the good floor. One cut used to answer both, and the cost was arithmetic rather
+than taste: a frontier fed only by its own admissions grows by `admissions per
+expansion` and dies below one, which is where the first steered run's realized
+pass rate put it. The middle tier — good enough to stand on, not good enough to
+book — is what keeps the walk moving between finds, and it is invisible to every
+book in the project because its rows carry their own fate. See
+[`fractal_wallpapers.discovery.ledger`] for the three of them.
+
 ## The scorer is asked once per batch, not once per candidate
 
 Every candidate the engine reports is built first, the survivors are read
@@ -565,6 +577,9 @@ class Walk:
         candidates = [
             self._candidate(row, by_id[row["node_id"]], family) for row in report["candidates"]
         ]
+        # The engine's own verdict, counted before the scorer sees any of it — so
+        # `fate:survived` stays the gate-survivor count it has always been, and
+        # the three `tier:` counters below divide exactly that number.
         for candidate in candidates:
             self._count(f"fate:{candidate['fate']}")
 
@@ -588,14 +603,26 @@ class Walk:
             if candidate["fate"] != ledger_module.SURVIVED:
                 recorded.append(self.ledger.write("candidate", node_id=None, **candidate))
                 continue
+            # Two questions, two floors. Booking decides what the census counts;
+            # expansion decides what the frontier may stand on. A row that fails
+            # the second is recorded and not walked from; a row that passes only
+            # the second reaches the frontier under its own fate and is invisible
+            # to every book in the project.
             if not self.scorer.admits(candidate, candidate["score"]):
-                candidate["fate"] = "not_admitted"
-                self._count("fate:not_admitted")
-                self._count(
-                    "not_admitted:no_score" if candidate["score"] is None else "not_admitted:below"
-                )
-                recorded.append(self.ledger.write("candidate", node_id=None, **candidate))
-                continue
+                if not self.scorer.expandable(candidate, candidate["score"]):
+                    candidate["fate"] = ledger_module.NOT_ADMITTED
+                    self._count("tier:refused")
+                    self._count(
+                        "not_admitted:no_score"
+                        if candidate["score"] is None
+                        else "not_admitted:below"
+                    )
+                    recorded.append(self.ledger.write("candidate", node_id=None, **candidate))
+                    continue
+                candidate["fate"] = ledger_module.EXPANDABLE
+                self._count("tier:expandable")
+            else:
+                self._count("tier:admitted")
 
             node = self._node(
                 family=family,

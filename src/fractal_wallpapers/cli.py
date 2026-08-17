@@ -425,7 +425,7 @@ def walk(args: argparse.Namespace) -> int:
 def harvest(args: argparse.Namespace) -> int:
     """Run the production loop: keep finding material where it is scarcest."""
     from fractal_wallpapers.discovery.walk import Limits, Policy, Walk
-    from fractal_wallpapers.supply import release_mix, saturation
+    from fractal_wallpapers.supply import ledgers, release_mix, saturation, twins
     from fractal_wallpapers.supply.census import stock_census
     from fractal_wallpapers.supply.harvest import Budget, Harvest
     from fractal_wallpapers.supply.partitions import ALL_PARTITIONS
@@ -451,6 +451,20 @@ def harvest(args: argparse.Namespace) -> int:
         census=stock_census(partitions, discount=args.discount),
         external=release_mix.externally_supplied(partitions),
     )
+    # Primed before the first batch, off the same two legs of admitted stock the
+    # census reads, and extended by whatever this run books. Its ledger is the
+    # walk's, so what the channel accepted and what the c-spacing floor refused
+    # land in the run's own record rather than only in a summary.
+    twin_channel = (
+        None
+        if args.no_twins
+        else twins.build(
+            ledger=walk_run.ledger,
+            ledger_paths=ledgers.ledger_paths(
+                root=resolve_output(args.ledgers), exclude=walk_run.ledger.path
+            ),
+        )
+    )
     refill = Refill(
         walk_run,
         low_water=args.low_water,
@@ -459,6 +473,7 @@ def harvest(args: argparse.Namespace) -> int:
         seeds=Path(args.seeds) if args.seeds else None,
         external=quota.external,
         partitions=partitions,
+        twins=twin_channel,
     )
     memory = (
         None
@@ -1596,6 +1611,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--no-saturation",
         action="store_true",
         help="do not read earlier runs' ledgers; every place ranks as untouched",
+    )
+    production.add_argument(
+        "--no-twins",
+        action="store_true",
+        help="do not derive Julia parameters from admitted parameter-plane locations; the "
+        "three higher-degree Julia partitions then have no channel at all and say so",
     )
     production.add_argument(
         "--ledgers",

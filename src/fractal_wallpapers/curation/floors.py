@@ -25,11 +25,15 @@ quality* of the old rows instead of deleting them.
 
 ## The two that act
 
-* [`JUNK_FLOOR`] — at intake, on the location head's `P(≥3)`. It says *do not
-  spend colorize compute on this*. Deliberately coarse: it is not an operating
-  point, no evaluation derived it, and it must not be made per-partition. It sits
-  at the confidently-junk end of a scale and leaves every judgement of quality to
-  the person at the sheet.
+* [`JUNK_FLOOR`] — on the location head's `P(≥3)`, at **two** sites now. At
+  intake it says *do not spend colorize compute on this*; in the walk it says
+  *do not stand on this*, which is the expansion half of a cut that used to do
+  expansion and booking together. One number, one meaning — "the judging head is
+  confident this is junk" — and both sites read it from here rather than
+  restating it. Deliberately coarse: it is not an operating point, no evaluation
+  derived it, and it must not be made per-partition. It sits at the
+  confidently-junk end of a scale and leaves every judgement of quality to the
+  person at the sheet.
 * the **good floor**, and it is not declared here. `supply.currency.GOOD_FLOOR`
   already owns "this find is worth keeping" on the same head and the same scale,
   and curation asks the same question at the slot guarantee. A second copy of one
@@ -59,14 +63,16 @@ from dataclasses import dataclass
 
 from fractal_wallpapers.supply.currency import GOOD_FLOOR
 
-#: **The one enforcing cut curation owns.** At intake, on the location head's
-#: stored `P(≥3)`: below this, a candidate does not get a colorize.
+#: **The one enforcing cut curation owns.** On the location head's `P(≥3)`:
+#: below this, a candidate does not get a colorize at intake, and the walk does
+#: not expand from it.
 #:
 #: Coarse on purpose, and read as a *semantic* statement rather than an operating
 #: point — "the judging head is confident this is junk" — which is what makes it
-#: the one cut a head flip can leave alone. Its cost is named rather than hidden:
-#: the exact volume it removes drifts a little at each flip. Contrast the good
-#: floor, which is a single-head cut and would have to be restated.
+#: the one cut a head flip can leave alone, and what lets two stages this far
+#: apart share it. Its cost is named rather than hidden: the exact volume it
+#: removes drifts a little at each flip. Contrast the good floor, which is a
+#: single-head cut and would have to be restated.
 JUNK_FLOOR = 0.20
 
 #: A partition emits at most `floor(passing supply / this)` pictures. The rule is
@@ -233,12 +239,12 @@ def summary() -> dict:
             "junk_floor": {
                 "value": JUNK_FLOOR,
                 "head": "location",
-                "where": "intake, the colorize draw",
+                "where": "intake, the colorize draw; and the walk's expansion tier",
             },
             "good_floor": {
                 "value": GOOD_FLOOR,
                 "head": "location",
-                "where": "the slot guarantee's trigger",
+                "where": "the slot guarantee's trigger; and the walk's booking tier",
                 "owner": "supply.currency.GOOD_FLOOR — re-exported, never restated",
             },
         },

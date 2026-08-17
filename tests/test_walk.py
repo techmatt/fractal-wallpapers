@@ -240,8 +240,11 @@ def test_a_seeded_smoke_walk_records_a_fate_for_every_candidate(tmp_path) -> Non
         assert row["family"]["kind"] == "julia"
         assert set(row["viewport"]) == {"center_re", "center_im", "width"}
         assert row["score"] is None and row["scorer"] == "null"
-        assert (row["image"] is not None) == (row["fate"] == ledger_module.SURVIVED)
-        assert (row["node_id"] is not None) == (row["fate"] == ledger_module.SURVIVED)
+        # A picture and a node id both mean *this candidate reached the
+        # frontier*, which is the expansion tier and not the booking one.
+        on_frontier = row["fate"] in (ledger_module.SURVIVED, ledger_module.EXPANDABLE)
+        assert (row["image"] is not None) == on_frontier
+        assert (row["node_id"] is not None) == on_frontier
 
     for row in rows:
         if row["kind"] == "node_dead":

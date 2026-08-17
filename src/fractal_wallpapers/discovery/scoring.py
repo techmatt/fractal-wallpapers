@@ -154,10 +154,20 @@ class Scorer(Protocol):
         """
 
     def admits(self, candidate: dict, score: float | None) -> bool:
-        """Whether this candidate is a find worth recording as one.
+        """Whether this candidate is a find worth *booking* as one.
 
         Called only for candidates that already passed every structural gate,
         so a scorer that admits everything is the structural-gates-only policy.
+        """
+
+    def expandable(self, candidate: dict, score: float | None) -> bool:
+        """Whether the walk may continue from this candidate.
+
+        The other half of [`admits`], and deliberately a lower bar. Booking
+        decides what the census counts; this decides what the frontier stands on,
+        and a frontier that may only stand on its own admissions shrinks at any
+        pass rate below one over the branching factor. Every admission is
+        expandable — no scorer may answer `False` here and `True` there.
         """
 
 
@@ -180,6 +190,10 @@ class NullScorer:
         return [NO_OPINION for _ in candidates]
 
     def admits(self, candidate: dict, score: float | None) -> bool:
+        del candidate, score
+        return True
+
+    def expandable(self, candidate: dict, score: float | None) -> bool:
         del candidate, score
         return True
 
@@ -472,13 +486,26 @@ class LocationScorer:
         `supply.currency.passes_good_floor` owns that comparison for the census,
         the intake's slot guarantee and the ledger union's own admission
         predicate; asking it here is what makes "admitted" one word. A candidate
-        below it is **recorded**, with the `not_admitted` fate — record and rank,
-        never gate and forget.
+        below it is **recorded**, with the fate its score earned — record and
+        rank, never gate and forget.
         """
         from fractal_wallpapers.supply import currency
 
         del candidate
         return currency.passes_good_floor(score)
+
+    def expandable(self, candidate: dict, score: float | None) -> bool:
+        """The junk floor, which is the same number curation spends compute on.
+
+        `curation.floors.JUNK_FLOOR` owns it, and it is the *same* point on the
+        *same* head's scale: "the judge is confident this is junk". A place the
+        judge is merely unenthusiastic about is a place worth standing on, and
+        expanding from it costs one engine call rather than a colorize.
+        """
+        from fractal_wallpapers.curation import floors
+
+        del candidate
+        return floors.passes_junk_floor(score)
 
     def summary(self) -> dict:
         return {

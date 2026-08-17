@@ -35,6 +35,31 @@ carrying only the first would make every machine-classed find a 3 forever.
 one. All four are `null` on a row written under the null scorer, which is what
 keeps a corpus mixed across the day the head was wired in readable: the reader
 asks the row what judged it rather than assuming.
+
+## Expanding from a place and booking it are two decisions, and the fate says both
+
+A candidate that clears every structural gate reaches the scorer, and the scorer
+answers two different questions about it. *May the walk continue from here?* is
+about the frontier, and it is asked at the junk floor. *Is this a find worth
+counting?* is about the books — the census, the deficit, the word "admitted" —
+and it is asked at the good floor. One cut used to do both jobs, which meant a
+place too ordinary to keep was also a place the walk could not stand on, and a
+frontier fed only by its own admissions shrinks at any realized pass rate under
+one over the branching factor.
+
+So there are three scored fates rather than two, and every row carries the one it
+earned:
+
+```text
+score ≥ good floor   survived      admitted: on the frontier and in the books
+score ≥ junk floor   expandable    on the frontier, not in the books
+otherwise            not_admitted  neither — recorded, and not walked from
+```
+
+[`SCORED`] is the three of them together, and it is what "the structural gates
+passed" means to a reader. Nothing downstream keys on `survived` to mean *the
+gates passed*: that would silently re-couple the two decisions at the reader
+after they were separated at the writer.
 """
 
 from __future__ import annotations
@@ -46,14 +71,32 @@ from typing import Any
 #: The schema every row in this file carries, from the first row.
 SCHEMA = 1
 
-#: A candidate that passed every structural gate.
+#: A candidate that passed every structural gate and cleared the good floor: it
+#: is on the frontier *and* in the books, which is what "admitted" means
+#: everywhere in this project.
 SURVIVED = "survived"
 
-#: The fates a candidate can be recorded with. Everything but [`SURVIVED`] names
-#: the gate that refused it — the *furthest* gate it reached, so the tally reads
-#: as a picture of what the search is actually spending its refusals on.
+#: A candidate that passed every structural gate and cleared the junk floor but
+#: not the good floor. The walk may continue from it; nothing counts it as
+#: supply. This is the tier that keeps a frontier alive between admissions.
+EXPANDABLE = "expandable"
+
+#: A candidate the structural gates passed and the scorer would not stand on:
+#: below the junk floor, or carrying no score at all. Recorded, never walked from.
+NOT_ADMITTED = "not_admitted"
+
+#: The three fates of a candidate that reached the scorer — i.e. that every
+#: structural gate let through. THE answer to "did the gates pass", because
+#: reading [`SURVIVED`] for that would re-couple expansion to booking at the
+#: reader after they were separated at the writer.
+SCORED = (SURVIVED, EXPANDABLE, NOT_ADMITTED)
+
+#: The fates a candidate can be recorded with. Everything outside [`SCORED`]
+#: names the gate that refused it — the *furthest* gate it reached, so the tally
+#: reads as a picture of what the search is actually spending its refusals on.
 FATES = (
     SURVIVED,
+    EXPANDABLE,
     #: Too much of the frame is the set's interior.
     "interior_cap",
     #: The whole frame escapes almost at once: far exterior, nothing in it.
@@ -62,8 +105,7 @@ FATES = (
     "flat",
     #: Detail present but confined to a corner; the frame is mostly empty.
     "occupancy_floor",
-    #: Structurally fine, and the scorer declined to admit it.
-    "not_admitted",
+    NOT_ADMITTED,
 )
 
 #: Why a node produced no child at all.
