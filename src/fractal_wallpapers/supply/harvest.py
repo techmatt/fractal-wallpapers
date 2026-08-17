@@ -80,7 +80,11 @@ from fractal_wallpapers.supply.partitions import ALL_PARTITIONS, partition_of_fa
 from fractal_wallpapers.supply.quota import Quota
 from fractal_wallpapers.supply.refill import Refill
 
-STATE_SCHEMA = 2
+#: The checkpoint's schema. **3** because the walk's plane roots joined it: a
+#: session resumed from a schema-2 checkpoint would carry the grace for the roots
+#: it drew and not for the roots the earlier session drew, which is two policies
+#: under one run seed. Refused rather than defaulted.
+STATE_SCHEMA = 3
 
 
 class ReconcileError(SystemExit):
@@ -495,6 +499,11 @@ class Harvest:
                 "next_node_id": self.walk.next_node_id,
                 "next_root_id": self.walk.next_root_id,
                 "visited_reframings": [list(k) for k in self.walk.visited_reframings],
+                # Which roots the expansion grace applies below. A resumed run that
+                # rebuilt this from nothing would silently drop the grace for every
+                # root the first session drew, and the ledger would carry two
+                # policies under one run seed.
+                "plane_roots": sorted(self.walk.plane_roots),
                 "counts": self.walk.tally,
                 "rng": _rng_state(self.walk.rng),
             },
@@ -558,6 +567,7 @@ class Harvest:
         self.walk.visited_reframings = {
             (row[0], row[1]) for row in (walk_state.get("visited_reframings") or [])
         }
+        self.walk.plane_roots = {int(root) for root in (walk_state.get("plane_roots") or [])}
         self.walk.tally = dict(walk_state.get("counts") or {})
         if walk_state.get("rng"):
             self.walk.rng.setstate(_rng_from_state(walk_state["rng"]))

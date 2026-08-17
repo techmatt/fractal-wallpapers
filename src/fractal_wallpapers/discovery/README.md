@@ -53,7 +53,19 @@ shrinks whenever the pass rate falls below one over the branching factor. The
 middle tier carries its own fate (`expandable`), so it reaches the frontier and
 no book in the project can see it.
 
+**A parameter-plane root starts above its own material, so its first rungs are
+ungated.** Labelled class-3/4 plane locations sit at width 1e-4 to 1e-5, four or
+five rungs below where a plane seed root begins, and the head scores the shallow
+end near zero — so every rung was refused at the junk floor and plane nodes
+reached the frontier at a measured 1.2%. The first `--plane-grace-rungs` rungs
+below a plane-seed root are exempt from that floor and the floor resumes below
+them. Booking is untouched at every rung, dynamical roots are untouched
+altogether, and every gate survivor under a plane root records its rung and its
+raw junk-floor verdict — which is the survival-by-rung table a depth-aware floor
+would have to be shaped from.
+
 ```
 fractal-wallpapers walk --family julia --roots 20 --batches 8
 fractal-wallpapers walk --seeds my_locations.jsonl --neighborhood
+fractal-wallpapers walk --seeds my_locations.jsonl --plane-grace-rungs 0
 ```

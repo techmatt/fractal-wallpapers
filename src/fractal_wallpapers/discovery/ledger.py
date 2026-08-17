@@ -60,6 +60,25 @@ otherwise            not_admitted  neither — recorded, and not walked from
 passed" means to a reader. Nothing downstream keys on `survived` to mean *the
 gates passed*: that would silently re-couple the two decisions at the reader
 after they were separated at the writer.
+
+## Three more fields, because one channel's floor is waived by depth
+
+A parameter-plane root starts four or five rungs above the widths its labelled
+material lives at, so the first rungs below one are exempt from the expansion
+floor. That makes the fate alone ambiguous — an `expandable` row under a plane
+root either cleared the junk floor or was carried past it — so every gate
+survivor carries the three facts that disambiguate it and, together, are the
+survival-by-rung table:
+
+* `plane_rung` — rungs below a plane-seed root, `0` being the root itself and
+  `null` under every other kind of root;
+* `cleared_junk` — the junk floor's own verdict, recorded whether or not it was
+  the one that decided;
+* `grace` — whether the waiver was in force at this rung.
+
+A row where `grace` is true and `cleared_junk` is false is one the grace stood
+on. A depth-aware floor, if the cliff turns out to be the wrong shape, is fitted
+from these and nothing else.
 """
 
 from __future__ import annotations
