@@ -10,7 +10,9 @@ would be a test that skips itself on the machine it matters on.
 
 from __future__ import annotations
 
-from fractal_wallpapers.labeling import pins, sheets, store
+import json
+
+from fractal_wallpapers.labeling import intake, pins, sheets, store
 from fractal_wallpapers.labeling import registry as registry_module
 from fractal_wallpapers.labeling import split as split_module
 from fractal_wallpapers.supply import census
@@ -38,11 +40,14 @@ def units(count: int, spacing: float = 10.0) -> list[dict]:
     ]
 
 
-def judge(sheet: sheets.Sheet) -> dict:
-    """What the page would have exported: a repeating 1-2-3-4 verdict."""
-    return {
-        row["unit"]: {"score": 1 + index % 4, "revealed": 0} for index, row in enumerate(sheet.rows)
-    }
+def judge(tmp_path, sheet: sheets.Sheet) -> str:
+    """What the page would have saved: a repeating 1-2-3-4 verdict, in the drop."""
+    path = tmp_path / "export.json"
+    path.write_text(
+        json.dumps({row["unit"]: {"score": 1 + index % 4} for index, row in enumerate(sheet.rows)}),
+        encoding="utf-8",
+    )
+    return str(path)
 
 
 def run(tmp_path, unconditioned: bool) -> tuple:
@@ -56,9 +61,16 @@ def run(tmp_path, unconditioned: bool) -> tuple:
     )
     known = store.registry()
     sheet = sheets.build(
-        units(40), directory=tmp_path / "sheet", batch="a_walk", seed=SEED, renderer=stub
+        sheets.location_source(renderer=stub),
+        units(40),
+        directory=tmp_path / "sheet",
+        batch="a_walk",
+        seed=SEED,
+        log=lambda _: None,
     )
-    sheets.record(sheet, judge(sheet), labeler="matt", known=known)
+    # The ONE ingest path, over the location store: same step, same guarantees,
+    # same report as a finished-render sheet takes.
+    intake.run(sheet=sheet.directory, labels=judge(tmp_path, sheet), labeler="matt", write=True)
     resolution = store.resolved()
     drawn = split_module.derive(
         resolution.scored(), known=known, seed=SEED, share=0.25, pinned=pins.pinned()
@@ -77,7 +89,7 @@ def test_the_round_trip_lands_every_judged_unit_in_the_store(tmp_path, store_dir
         "unkeyed": 0,
     }
     assert {row["viewport"]["center_re"] for row in resolution.scored()} == {
-        row["viewport"]["center_re"] for row in sheet.rows
+        row["join"]["viewport"]["center_re"] for row in sheet.rows
     }
 
 

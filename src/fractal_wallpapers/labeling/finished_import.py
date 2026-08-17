@@ -252,6 +252,13 @@ SOURCES: dict[str, dict[str, Imported]] = {
 #: The source corpus each store is imported from.
 CORPORA = {"smooth_render": "wallpaper_corpus", "strange_render": "render_mode_corpus"}
 
+#: The top tier each source corpus was *collected* on, over there. A fact about
+#: pages that were served years ago and can never be served again, so it lives
+#: with the importer rather than on the store: this repository's own scale is
+#: [`finished.SCALE`] and is wider than one of these. A source row outside its own
+#: corpus's scale is a misread file, not a labeler reaching a tier.
+SOURCE_SCALE = {"smooth_render": 4, "strange_render": 3}
+
 
 def _source_modules(root: Path):
     """Load the source project's own registry and store — imported, not restated.
@@ -540,7 +547,7 @@ def read_batch(
     directory = batch_dir(root, head, source_batch)
     labels = labels_of(root, head, source_batch)
     created = read_record(root, head, source_batch).get("created") or source_batch[:10]
-    ceiling = finished.HEADS[head]
+    ceiling = SOURCE_SCALE[head]
 
     rows: list[dict] = []
     seen: set[str] = set()
@@ -560,7 +567,7 @@ def read_batch(
         if not 1 <= score <= ceiling:
             raise FinishedImportError(
                 f"{source_batch}: {image_id!r} scored {score}, outside the 1..{ceiling} scale "
-                f"{head} was collected on"
+                f"the source project collected {head} on"
             )
         seen.add(image_id)
 

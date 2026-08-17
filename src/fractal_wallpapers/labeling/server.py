@@ -12,9 +12,12 @@ not. Binding exclusively turns that into a second launcher that fails to start.
 If the requested port is taken, it walks upward and prints the port it got.
 
 **It serves the sheet, and the page, and nothing else.** The document root is
-the sheet directory; `/` is the rig page, read out of the package. A server
-rooted at the repository would work just as well and would also serve every file
-in the checkout to anything that can reach the port.
+the sheet directory; `/` is the rig page, read out of the package. One page
+serves both row sources — it reads the manifest for the scale, the rubric and
+the order, and each row for its own pictures — so there is nothing here that
+knows which kind of sheet it is handing over. A server rooted at the repository
+would work just as well and would also serve every file in the checkout to
+anything that can reach the port.
 
 **It takes one write, and it is the export.** `PUT /labels/<head>.json` hands the
 page's verdicts to [`fractal_wallpapers.labeling.intake.write_export`], which

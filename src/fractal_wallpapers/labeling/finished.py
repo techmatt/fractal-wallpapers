@@ -12,7 +12,7 @@ Two heads, two stores, same shape:
 
 ```text
 smooth_render    the smooth coloring, judged as a wallpaper.   Tiers 1..4.
-strange_render   the strange colorings, judged as renderings.  Tiers 1..3.
+strange_render   the strange colorings, judged as renderings.  Tiers 1..4.
 ```
 
 ## A row carries its whole join, and the join is bigger here
@@ -33,13 +33,24 @@ these corpora set that curve per render. Naming the mode and the curve separatel
 is what lets a row say "this mode, read straight" without inventing a mode name
 for every combination.
 
-## The scale is per store, and it is not four everywhere
+## One scale, every head — and it is not the shipped model's class count
 
-`smooth_render` is judged on the same 1..4 scale the location corpus uses.
-`strange_render` is judged on 1..3: its corpus was collected on three tiers and
-there is no fourth to read. The ceiling lives on the store rather than in the
-head, so a row scored 4 in a three-tier store is refused at the writer instead of
-becoming a cutpoint nothing ever trained.
+Every judge in this project is cast on **1..4**, the same scale the location
+corpus uses, `strange_render` included. Its corpus was *collected* on three
+tiers, and that is a fact about the rows already in it rather than a ceiling on
+the rows to come: a labeler looking at a page of strange renders can see the
+difference between "worth keeping" and "the best of those", and a store that
+refused to write it down would be throwing away the only tier the release path
+actually cuts on.
+
+**The store's scale and a model's class count are two different numbers**, and
+conflating them is what this section exists to stop. The shipped `strange_render`
+head was trained on three classes and emits two cutpoints; it can never suggest a
+4 and its decode stays capped at 3. That cap is in the checkpoint's own config,
+read by whoever loads it — see [`fractal_wallpapers.models.finished_train`] — and
+it moves when, and only when, the head is retrained on four. Until then the
+corpus grows a tier the incumbent cannot see, which is exactly what a retrain
+needs and what a capped store could never collect.
 
 ## Eligibility, and why it is not the location store's rule
 
@@ -75,9 +86,13 @@ from fractal_wallpapers.supply.location import location_key
 #: The schema every finished-render row carries, from the first row.
 SCHEMA = 1
 
-#: Each judge, and the top tier its corpus was collected on. The ceiling is a
-#: fact about the labels, so it lives beside the store rather than in the head.
-HEADS: dict[str, int] = {"smooth_render": 4, "strange_render": 3}
+#: Every finished-render judge, and therefore every store this module owns.
+HEADS: tuple[str, ...] = ("smooth_render", "strange_render")
+
+#: The scale a person casts on, for every one of them. One number, not a per-head
+#: ceiling: what a model can emit is the model's own config and is read off its
+#: checkpoint, never off the corpus it was trained from.
+SCALE: tuple[int, ...] = (1, 2, 3, 4)
 
 
 class FinishedError(ValueError):
@@ -92,8 +107,9 @@ def head_of(name: str) -> str:
 
 
 def tiers(head: str) -> tuple[int, ...]:
-    """The scores a labeler could cast for this judge."""
-    return tuple(range(1, HEADS[head_of(head)] + 1))
+    """The scores a labeler may cast for this judge: [`SCALE`], for every one."""
+    head_of(head)
+    return SCALE
 
 
 def store_dir(head: str) -> Path:
@@ -198,8 +214,9 @@ def check(head: str, row: dict) -> dict:
     score = row.get("score")
     if score is not None and score not in tiers(head):
         raise FinishedError(
-            f"score {score!r} is not one of {tiers(head)} or null. {head} was collected on "
-            f"{HEADS[head]} tiers, and a score outside them is a cutpoint nothing trained."
+            f"score {score!r} is not one of {tiers(head)} or null. Every judge in this project "
+            f"is cast on one scale, and a verdict outside it is not a tier anybody could have "
+            f"meant."
         )
     origin = row.get("origin")
     if origin != store.HUMAN and not (
@@ -445,6 +462,7 @@ def assert_pin_holds(head: str, train_rows: list[dict]) -> dict:
 __all__ = [
     "HEADS",
     "RECIPE_KEYS",
+    "SCALE",
     "SCHEMA",
     "FinishedError",
     "Resolution",

@@ -138,14 +138,50 @@ def test_the_split_is_the_pin_and_the_selection_slice_comes_out_of_training(head
 
 @pytest.mark.parametrize("head_name", sorted(finished.HEADS))
 def test_a_trained_judge_records_what_it_trained_under(head_name: str) -> None:
+    """The pin protects the MODEL's agreement with itself, not the corpus's scale.
+
+    `classes` used to be checked against the store's ceiling, which made the two
+    numbers one number: a corpus that grew a tier could not be collected without
+    claiming the shipped head had learned it. What has to agree is the recipe, the
+    config written beside the checkpoint, and the checkpoint's own output width —
+    a head whose weights emit two cutpoints while its config claims three is one
+    every reader of its scores misreads.
+    """
     path = finished_train.config_path(head_name)
     if not path.is_file():
         pytest.skip(f"the {head_name} judge has not been trained on this machine")
     config = json.loads(path.read_text(encoding="utf-8"))
     assert config["head"] == head_name
-    assert config["classes"] == finished.HEADS[head_name]
+    assert config["classes"] == finished_train.recipe_for(head_name)["classes"]
     assert config["inherited"]["changed"]
     assert config["precision"] == "fp32"
+
+
+@pytest.mark.parametrize("head_name", sorted(finished.HEADS))
+def test_a_checkpoint_emits_as_many_cutpoints_as_its_config_claims(head_name: str) -> None:
+    """The other half of the same pin, read off the weights rather than the JSON."""
+    torch = pytest.importorskip("torch")
+    path = finished_train.checkpoint_path(head_name)
+    if not path.is_file():
+        pytest.skip(f"the {head_name} judge has not been trained on this machine")
+    saved = torch.load(path, map_location="cpu", weights_only=False)
+    classes = int(saved["config"]["classes"])
+    final = [value for value in saved["state_dict"].values() if value.ndim >= 1][-1]
+    assert final.shape[0] == classes - 1, (
+        f"{head_name}: the config claims {classes} classes and the head emits "
+        f"{final.shape[0]} cutpoints"
+    )
+
+
+def test_a_corpus_wider_than_the_recipe_refuses_to_train_rather_than_mis_fit() -> None:
+    """The decoupling's one real hazard, closed. A 4 handed to a three-class CORN
+    head is a rank with no task to carry it, and the failure is a silently
+    mis-fitted top cutpoint rather than a crash — so the pass says so instead,
+    and names the one edit that fixes it."""
+    assert finished_train.refuse_inexpressible("strange_render", [1, 2, 3]) == 3
+    assert finished_train.refuse_inexpressible("smooth_render", [1, 2, 3, 4]) == 4
+    with pytest.raises(finished_train.TrainingError, match="IS the retrain"):
+        finished_train.refuse_inexpressible("strange_render", [1, 3, 4])
 
 
 def test_the_selection_objective_can_see_a_probability() -> None:

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><title>label — 1/2/3/4</title>
+<html lang="en"><head><meta charset="utf-8"><title>label</title>
 <style>
 :root{color-scheme:dark}
 *{box-sizing:border-box}
@@ -21,15 +21,20 @@ main{display:flex;gap:18px;padding:18px;align-items:flex-start}
 #pair{display:flex;gap:10px;width:100%;justify-content:center;align-items:flex-start}
 #pair figure{margin:0;flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
 #pair figcaption{color:#888;font-size:11px;text-align:center}
-#vivid-cap{color:#c9a0ff}
-#stage img{width:100%;height:auto;max-height:80vh;object-fit:contain;border:1px solid #23252e;
+#pair img{width:100%;height:auto;max-height:80vh;object-fit:contain;border:1px solid #23252e;
   border-radius:6px;background:#000;cursor:zoom-in}
-.meta{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap;color:#777;font-size:11px}
+.section{color:#7a9;font-size:12px;letter-spacing:.04em;text-transform:uppercase}
+.meta{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap;color:#777;font-size:11px;
+  justify-content:center}
 .cap{border:1px solid #23252e;border-radius:4px;padding:1px 7px}
+.cols{font-family:ui-monospace,monospace;color:#9bb}
+.facts{list-style:none;margin:0;padding:0;color:#777;font-size:11px;max-width:900px;
+  text-align:center}
+.facts li{overflow-wrap:anywhere}
 .btns{display:flex;gap:10px}
 .btns button{font-size:15px;padding:8px 18px}
 .b1{border-color:#5a2c2c}.b2{border-color:#5a4a2c}.b3{border-color:#2c5a3a}.b4{border-color:#4a2c5a}
-aside{width:320px;flex:none;max-height:80vh;overflow:auto;border:1px solid #1c1f29;
+aside{width:330px;flex:none;max-height:82vh;overflow:auto;border:1px solid #1c1f29;
   border-radius:6px;padding:6px}
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
 .cell{position:relative;border:2px solid transparent;border-radius:3px;cursor:pointer;
@@ -40,9 +45,9 @@ aside{width:320px;flex:none;max-height:80vh;overflow:auto;border:1px solid #1c1f
 .cell.c3{border-color:#2c5a3a}.cell.c4{border-color:#4a2c5a}
 .cell .tag{position:absolute;right:1px;bottom:0;font-size:10px;padding:0 3px;border-radius:2px;
   background:rgba(0,0,0,.6)}
-.hint{color:#777;font-size:11px;max-width:640px;text-align:center}
-.rubric{color:#8a8d99;font-size:11px;max-width:660px;border:1px solid #1c1f29;border-radius:6px;
-  padding:8px 12px;background:#12141a}
+.hint{color:#777;font-size:11px;max-width:760px;text-align:center}
+.rubric{color:#8a8d99;font-size:11px;max-width:760px;border:1px solid #1c1f29;border-radius:6px;
+  padding:8px 12px;background:#12141a;text-align:center}
 .rubric b{color:#cdd}
 #loader{padding:30px;max-width:680px}
 code{color:#9bb}
@@ -52,7 +57,7 @@ code{color:#9bb}
 </style></head><body>
 
 <header>
-  <h1>label</h1>
+  <h1 id="title">label</h1>
   <span class="sheet" id="sheet-name"></span>
   <span class="counts" id="counts"></span>
   <span class="spacer"></span>
@@ -67,31 +72,20 @@ code{color:#9bb}
 
 <main id="app" hidden>
   <div id="stage">
-    <div id="pair">
-      <figure><img id="vivid" alt=""><figcaption id="vivid-cap">judge from · vivid</figcaption></figure>
-      <figure><img id="canonical" alt=""><figcaption id="canon-cap">stored against · canonical</figcaption></figure>
-    </div>
+    <div class="section" id="section"></div>
+    <div id="pair"></div>
     <div class="meta">
       <span class="cap" id="cap-pos"></span>
-      <span class="cap" id="cap-family"></span>
       <span class="cap" id="cap-suggest"></span>
-      <span id="cap-score"></span>
+      <span class="cap" id="cap-score"></span>
+      <span class="cols" id="cols"></span>
     </div>
-    <div class="btns">
-      <button class="b1" data-s="1">1 · bad</button>
-      <button class="b2" data-s="2">2 · okay</button>
-      <button class="b3" data-s="3">3 · good</button>
-      <button class="b4" data-s="4">4 · exceptional</button>
-    </div>
-    <div class="hint">does <b>this picture</b> work as a wallpaper · keys
-      <b>1</b>/<b>2</b>/<b>3</b>/<b>4</b> label and jump to the next unlabeled ·
-      <b>←</b>/<b>→</b> move · <b>u</b> next unlabeled · click an image to zoom</div>
-    <div class="rubric"><b>1–4, one scale, every family</b> — judge from the vivid render.
-      <span class="s1">1 bad</span>: dead or structureless; never ships.
-      <span class="s2">2 okay</span>: has structure but unremarkable; below the floor.
-      <span class="s3">3 good</span>: a genuine wallpaper; this is the floor.
-      <span class="s4">4 exceptional</span>: the best of the good ones, worth surfacing first.
-      A 4 is a tier on the same scale, not a new floor.</div>
+    <ul class="facts" id="facts"></ul>
+    <div class="btns" id="btns"></div>
+    <div class="rubric" id="rubric"></div>
+    <div class="hint">judge <b>this picture</b> · number keys label and jump to the next
+      unlabeled · <b>←</b>/<b>→</b> move · <b>u</b> next unlabeled · click a picture to zoom ·
+      the suggestion is a head's own decode and is not a label until you accept it</div>
   </div>
   <aside><div class="grid" id="overview"></div></aside>
 </main>
@@ -101,18 +95,20 @@ code{color:#9bb}
 <script src="export_control.js"></script>
 <script>
 "use strict";
-// The page serves the sheet EXACTLY as the file orders it. The order was designed when the
-// sheet was cut — good->bad where a head had an opinion, a seeded shuffle otherwise — and an
-// in-page reshuffle would silently discard that decision.
-const WORD = {1:"bad", 2:"okay", 3:"good", 4:"exceptional"};
-// The judge this rig collects for, and therefore what its export is called. Read off the
-// manifest when the sheet names one; this is the fallback for a sheet cut before it did.
-const HEAD = "location";
-let MANIFEST = {}, ROWS = [], scores = {}, cur = 0, KEY = "label::";
+// ONE page, both row sources. A location row carries two pictures and a
+// finished-render row carries one; everything else about judging them is the same,
+// so the page reads what the row hands it rather than knowing which kind it is.
+//
+// The page serves the sheet EXACTLY as the file orders it. The order was designed
+// when the sheet was cut — good->bad where a head had an opinion, sections in
+// reading order, a seeded shuffle where there is no opinion at all — and an in-page
+// reshuffle would silently discard that decision.
+const WORD = {1:"does not work", 2:"unremarkable", 3:"worth keeping", 4:"the best of those"};
+let MANIFEST = {}, ROWS = [], TIERS = [1,2,3,4], scores = {}, cur = 0, KEY = "label::";
 
 function el(id){ return document.getElementById(id); }
-function load(){ try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; } }
 function save(){ localStorage.setItem(KEY, JSON.stringify(scores)); }
+function num(v){ return (v === null || v === undefined) ? "—" : Number(v).toFixed(4); }
 
 function parseJsonl(text){
   const out = [];
@@ -123,20 +119,61 @@ function parseJsonl(text){
   return out;
 }
 
+// A verdict already cast is never stranded by a rebuild. The key is the sheet and
+// its size, NOT when it was built: a page is rebuilt for exactly the reason that
+// matters here — a caption was wrong, or the scale changed under a labeler who had
+// already started — and a fresh stamp would orphan every verdict cast so far behind
+// a key nothing reads again. An EMPTY primary key falls back to the fullest
+// `label::<batch>::*` entry there is and adopts it. Only when the primary is empty:
+// a session in progress under the right key is never overwritten by an older one.
+function adopt(){
+  let best = null, most = 0;
+  for (let i = 0; i < localStorage.length; i++) {
+    const name = localStorage.key(i);
+    if (!name || !name.startsWith("label::" + MANIFEST.batch + "::") || name === KEY) continue;
+    try {
+      const held = JSON.parse(localStorage.getItem(name)) || {};
+      const n = Object.keys(held).filter(u => held[u]).length;
+      if (n > most) { most = n; best = held; }
+    } catch { /* an entry that will not parse is not a session */ }
+  }
+  return most ? best : {};
+}
+
 function start(){
+  TIERS = MANIFEST.tiers || TIERS;
+  KEY = "label::" + MANIFEST.batch + "::" + ROWS.length;
+  try { scores = JSON.parse(localStorage.getItem(KEY)) || {}; } catch { scores = {}; }
+  if (!Object.keys(scores).length) { scores = adopt(); if (Object.keys(scores).length) save(); }
+
   el("loader").hidden = true;
   el("app").hidden = false;
-  el("sheet-name").textContent = MANIFEST.batch + " · " + ROWS.length + " units · order: " + MANIFEST.order;
-  el("vivid-cap").textContent = "judge from · " + MANIFEST.vivid_colormap;
-  el("canon-cap").textContent = "stored against · " + MANIFEST.canonical_colormap;
-  // The sweep exists only when a head actually suggested something. With no head there is
-  // nothing to accept, and a button that accepts nothing is a button that will one day
-  // accept everything.
+  el("title").textContent = MANIFEST.title || "label";
+  el("sheet-name").textContent =
+    MANIFEST.head + " · " + ROWS.length + " units · order: " + MANIFEST.order;
+  el("rubric").innerHTML = MANIFEST.rubric || "";
+  // The sweep exists only when a head actually suggested something. With no head
+  // there is nothing to accept, and a button that accepts nothing is a button that
+  // will one day accept everything.
   el("sweep").hidden = !ROWS.some(r => r.suggestion !== null && r.suggestion !== undefined);
+  buildButtons();
   buildOverview();
   const first = ROWS.findIndex(r => !scores[r.unit]);
   cur = first < 0 ? 0 : first;
   show();
+}
+
+function buildButtons(){
+  const box = el("btns");
+  box.innerHTML = "";
+  for (const t of TIERS) {
+    const b = document.createElement("button");
+    b.className = "b" + t;
+    b.dataset.s = t;
+    b.textContent = t + " · " + (WORD[t] || t);
+    b.onclick = () => setScore(t);
+    box.appendChild(b);
+  }
 }
 
 function buildOverview(){
@@ -145,7 +182,8 @@ function buildOverview(){
   ROWS.forEach((row, i) => {
     const cell = document.createElement("div");
     cell.className = "cell";
-    cell.innerHTML = '<img loading="lazy" src="' + row.vivid + '" title="' + (i + 1) + '"><span class="tag"></span>';
+    cell.innerHTML = '<img loading="lazy" src="' + row.thumb + '" title="' + (i + 1) +
+      (row.section ? " · " + row.section : "") + '"><span class="tag"></span>';
     cell.onclick = () => { cur = i; show(); };
     grid.appendChild(cell);
   });
@@ -160,39 +198,53 @@ function refreshCell(i){
 }
 
 function refreshCounts(){
-  const n = [0, 0, 0, 0, 0];
-  for (const row of ROWS) { const s = scores[row.unit]; if (s) n[s]++; }
-  const done = n[1] + n[2] + n[3] + n[4];
+  const n = {}; let done = 0;
+  for (const row of ROWS) { const s = scores[row.unit]; if (s) { n[s] = (n[s]||0)+1; done++; } }
   el("counts").innerHTML = "<b>" + done + "/" + ROWS.length + "</b> labeled &nbsp; " +
-    '<span class="s1">' + n[1] + "</span> / " + '<span class="s2">' + n[2] + "</span> / " +
-    '<span class="s3">' + n[3] + "</span> / " + '<span class="s4">' + n[4] + "</span>";
+    TIERS.map(t => '<span class="s' + t + '">' + (n[t]||0) + "</span>").join(" / ");
+}
+
+function showPictures(row){
+  const pair = el("pair");
+  pair.innerHTML = "";
+  for (const picture of row.pictures) {
+    const figure = document.createElement("figure");
+    const image = document.createElement("img");
+    image.src = picture.path;
+    image.alt = "";
+    image.onclick = () => { el("zoom-img").src = image.src; el("zoom").style.display = "flex"; };
+    const caption = document.createElement("figcaption");
+    caption.textContent = picture.caption || "";
+    figure.appendChild(image);
+    figure.appendChild(caption);
+    pair.appendChild(figure);
+  }
 }
 
 function show(){
   const row = ROWS[cur];
-  el("vivid").src = row.vivid;
-  el("canonical").src = row.canonical;
+  showPictures(row);
+  el("section").textContent = (row.section ? row.section + "  ·  " : "") + row.batch;
   el("cap-pos").textContent = (cur + 1) + "/" + ROWS.length;
-  el("cap-family").textContent = row.family.kind + (row.family.degree ? " d" + row.family.degree : "");
   el("cap-suggest").textContent = (row.suggestion === null || row.suggestion === undefined)
-    ? "" : ("suggested " + row.suggestion + " · " + WORD[row.suggestion]);
+    ? "" : ("suggested " + row.suggestion + " · " + (WORD[row.suggestion] || ""));
+  const columns = row.columns || {};
+  const names = Object.keys(columns).sort();
+  el("cols").textContent = names.map(k =>
+    k.replace("p_ge", "P(≥") + ") " + num(columns[k])).join("   ");
+  el("facts").innerHTML = (row.facts || []).map(f =>
+    "<li>" + String(f).replace(/&/g,"&amp;").replace(/</g,"&lt;") + "</li>").join("");
   const s = scores[row.unit];
   const score = el("cap-score");
-  score.textContent = s ? ("label: " + s + " · " + WORD[s]) : "unlabeled";
-  score.className = s ? "s" + s : "";
+  score.textContent = s ? ("label: " + s) : "unlabeled";
+  score.className = s ? "cap s" + s : "cap";
   [...el("overview").children].forEach((_, i) => refreshCell(i));
   el("overview").children[cur]?.scrollIntoView({block: "nearest"});
   refreshCounts();
 }
 
-function setScore(s){
-  scores[ROWS[cur].unit] = s;
-  save();
-  if (!nextUnlabeled()) show();
-}
-
+function setScore(s){ scores[ROWS[cur].unit] = s; save(); if (!nextUnlabeled()) show(); }
 function move(d){ cur = (cur + d + ROWS.length) % ROWS.length; show(); }
-
 function nextUnlabeled(){
   for (let k = 1; k <= ROWS.length; k++) {
     const i = (cur + k) % ROWS.length;
@@ -201,49 +253,47 @@ function nextUnlabeled(){
   return false;
 }
 
-// The sweep: accept the head's suggestion for every UNLABELED row from here to the end of the
-// page. It is behind a confirm and it is the only path by which a suggestion becomes a label —
-// which is what makes it a human act rather than a default. It never overwrites a verdict
-// already cast, and it skips rows the head had no opinion about.
+// The sweep: accept the head's suggestion for every UNLABELED row from here to the
+// end of the page. It is behind a confirm and it is the only path by which a
+// suggestion becomes a label — which is what makes it a human act rather than a
+// default. It never overwrites a verdict already cast, and it skips rows the head
+// had no opinion about.
 el("sweep").onclick = () => {
-  const rest = ROWS.slice(cur).filter(r => !scores[r.unit] && r.suggestion !== null && r.suggestion !== undefined);
+  const rest = ROWS.slice(cur).filter(r =>
+    !scores[r.unit] && r.suggestion !== null && r.suggestion !== undefined);
   if (!rest.length) { alert("nothing below here carries a suggestion to accept"); return; }
-  if (!confirm("Accept the suggested label for " + rest.length + " unlabeled row(s) from position " +
-      (cur + 1) + " to the end? The page is ordered good to bad, so this says everything below " +
-      "here is judged correctly already.")) return;
+  if (!confirm("Accept the suggested tier for " + rest.length + " unlabeled row(s) from " +
+      "position " + (cur + 1) + " to the end? Each section is ordered good to bad, so this " +
+      "says everything below here is judged correctly already.")) return;
   for (const row of rest) scores[row.unit] = row.suggestion;
   save();
   show();
 };
 
-document.querySelectorAll(".btns button").forEach(b => { b.onclick = () => setScore(+b.dataset.s); });
 el("next").onclick = nextUnlabeled;
 
 window.addEventListener("keydown", e => {
   if (el("app").hidden) return;
   if (e.key === "Escape") { el("zoom").style.display = "none"; return; }
-  if (["1", "2", "3", "4"].includes(e.key)) { setScore(+e.key); e.preventDefault(); }
+  if (TIERS.map(String).includes(e.key)) { setScore(+e.key); e.preventDefault(); }
   else if (e.key === "ArrowRight") move(1);
   else if (e.key === "ArrowLeft") move(-1);
   else if (e.key === "u" || e.key === "U") nextUnlabeled();
 });
 
-for (const id of ["vivid", "canonical"]) {
-  el(id).onclick = () => { el("zoom-img").src = el(id).src; el("zoom").style.display = "flex"; };
-}
 el("zoom").onclick = () => { el("zoom").style.display = "none"; };
 
-// The export: one entry per row a PERSON acted on, and nothing else. A suggestion the labeler
-// never looked at is absent from it, so it cannot reach the store as a verdict. Where it goes
-// and what it is called are decided in export_control.js, once, for every sheet this project
-// serves — labels/<head>.json, saved by the rig, downloaded under the same name if it cannot be.
+// The export: one entry per row a PERSON acted on, and nothing else. A suggestion
+// the labeler never looked at is absent from it, so it cannot reach the store as a
+// verdict. Where it goes and what it is called are decided in export_control.js,
+// once, for every sheet this project serves — labels/<head>.json, saved by the rig,
+// downloaded under the same name if it cannot be.
 el("export").onclick = async () => {
   const out = {};
-  Object.keys(scores).sort().forEach(k => { if (scores[k]) out[k] = {score: scores[k], revealed: 0}; });
-  const head = (MANIFEST && MANIFEST.head) || HEAD;
-  const done = await labelExport.save(head, out);
-  el("export").textContent = (done.saved ? "saved " : "exported ") + head + ".json";
-  if (!done.saved) el("loader-msg").textContent = done.note;
+  Object.keys(scores).sort().forEach(k => { if (scores[k]) out[k] = {score: scores[k]}; });
+  const done = await labelExport.save(MANIFEST.head, out);
+  el("export").textContent = (done.saved ? "saved " : "downloaded ") + MANIFEST.head + ".json";
+  if (!done.saved) { el("loader-msg").textContent = done.note; alert(done.note); }
 };
 
 el("load").onchange = e => {
@@ -253,7 +303,9 @@ el("load").onchange = e => {
   reader.onload = () => {
     const raw = JSON.parse(reader.result);
     scores = {};
-    Object.keys(raw).forEach(k => { scores[k] = (raw[k] && typeof raw[k] === "object") ? raw[k].score : raw[k]; });
+    Object.keys(raw).forEach(k => {
+      scores[k] = (raw[k] && typeof raw[k] === "object") ? raw[k].score : raw[k];
+    });
     save();
     show();
   };
@@ -261,12 +313,7 @@ el("load").onchange = e => {
 };
 
 fetch("sheet.json").then(r => r.json())
-  .then(manifest => {
-    MANIFEST = manifest;
-    KEY = "label::" + manifest.batch + "::" + manifest.built_at;
-    scores = load();
-    return fetch("sheet.jsonl");
-  })
+  .then(manifest => { MANIFEST = manifest; return fetch("sheet.jsonl"); })
   .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); })
   .then(text => { ROWS = parseJsonl(text); start(); })
   .catch(err => { el("loader-msg").textContent = "could not load the sheet: " + err.message; });
