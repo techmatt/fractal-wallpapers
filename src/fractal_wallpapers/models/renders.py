@@ -496,9 +496,16 @@ def _row_of(source_row: dict, head: str, modes: set, cyclic: set) -> dict:
 
 
 def missing(head: str) -> list[dict]:
-    """The plan's jobs whose picture is not on disk."""
+    """Every picture the store's verdicts need that is not on disk.
+
+    Derived from the corpus rather than read off the written plan, because those
+    two answer different questions and only one of them is *is the cache
+    complete*. A plan is a record of what a build was asked for; the store grows
+    afterwards, every ingest of a labeling session grows it, and a plan that
+    predates those rows reports a full cache while the trainer refuses to start.
+    """
     crops = crop_dir(head)
-    return [job for job in read_plan(head) if not (crops / f"{job['name']}.jpg").is_file()]
+    return [job for job in plan(head) if not (crops / f"{job['name']}.jpg").is_file()]
 
 
 def crop_of(head: str, row: dict) -> Path:

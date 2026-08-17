@@ -74,9 +74,9 @@ def test_the_machine_stock_discount_is_a_flag_on_both_readers() -> None:
     assert parse(["harvest", "--discount", "0"]).discount == 0.0
 
 
-def test_the_labeling_rig_is_five_steps_under_one_subcommand() -> None:
-    """Register, cut, serve, record, split — the order they happen in, and every
-    one of them a step somebody runs twice."""
+def test_the_labeling_rig_is_seven_steps_under_one_subcommand() -> None:
+    """Register, cut, serve, record or ingest, show, split — the order they happen
+    in, and every one of them a step somebody runs twice."""
     parse = cli.build_parser().parse_args
     assert (
         parse(["label", "register", "--batch", "b", "--method", "m"]).handler is cli.label_register
@@ -86,10 +86,43 @@ def test_the_labeling_rig_is_five_steps_under_one_subcommand() -> None:
     assert parse(
         ["label", "record", "--sheet", "d", "--labels", "l", "--labeler", "m"]
     ).handler is (cli.label_record)
+    assert parse(["label", "ingest", "--sheet", "s", "--labeler", "m"]).handler is cli.label_ingest
     assert parse(["label", "split"]).handler is cli.label_split
     assert parse(["label", "show"]).handler is cli.label_show
     with pytest.raises(SystemExit):
         parse(["label"])
+
+
+def test_an_export_defaults_to_the_head_s_own_drop() -> None:
+    """Matt's convention, and now the rig's: a page saves to labels/<head>.json,
+    so neither step has to be told where the file it just wrote is."""
+    parse = cli.build_parser().parse_args
+    assert parse(["label", "record", "--sheet", "d", "--labeler", "m"]).labels is None
+    assert parse(["label", "ingest", "--sheet", "s", "--labeler", "m"]).labels is None
+
+
+def test_an_ingest_does_not_append_to_a_shipped_store_unasked() -> None:
+    """The store is the corpus. Appending to it is a deliberate act, so the
+    default prints what would be written and touches nothing."""
+    assert (
+        cli.build_parser().parse_args(["label", "ingest", "--sheet", "s", "--labeler", "m"]).write
+        is False
+    )
+
+
+def test_a_finished_render_batch_is_registered_by_the_same_step() -> None:
+    """Registration before rows is enforced by both writers, so both stores need
+    a way to register that is not a one-off script."""
+    parse = cli.build_parser().parse_args
+    assert parse(["label", "register", "--batch", "b", "--method", "m"]).head is None
+    assert (
+        parse(
+            ["label", "register", "--batch", "b", "--method", "m", "--head", "strange_render"]
+        ).head
+        == "strange_render"
+    )
+    with pytest.raises(SystemExit):
+        parse(["label", "register", "--batch", "b", "--method", "m", "--head", "no_such_head"])
 
 
 def test_a_sheet_is_cut_from_one_source_or_the_other() -> None:
@@ -109,6 +142,7 @@ def test_registering_a_batch_claims_neither_property_by_default() -> None:
     args = cli.build_parser().parse_args(["label", "register", "--batch", "b", "--method", "m"])
     assert args.score_unconditioned is False
     assert args.anchored is False
+    assert args.eval_only is False, "a pin is bought on purpose, never by default"
 
 
 def test_the_split_is_not_reshipped_unasked() -> None:

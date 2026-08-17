@@ -58,7 +58,7 @@ code{color:#9bb}
   <span class="spacer"></span>
   <button id="sweep" hidden>accept suggestions below here</button>
   <button id="next">next unlabeled (u)</button>
-  <button id="export">export labels.json</button>
+  <button id="export">save labels</button>
   <label class="cap" style="cursor:pointer;color:#ccc">load labels
     <input id="load" type="file" accept=".json" hidden></label>
 </header>
@@ -98,12 +98,16 @@ code{color:#9bb}
 
 <div id="zoom"><img id="zoom-img" alt=""></div>
 
+<script src="export_control.js"></script>
 <script>
 "use strict";
 // The page serves the sheet EXACTLY as the file orders it. The order was designed when the
 // sheet was cut — good->bad where a head had an opinion, a seeded shuffle otherwise — and an
 // in-page reshuffle would silently discard that decision.
 const WORD = {1:"bad", 2:"okay", 3:"good", 4:"exceptional"};
+// The judge this rig collects for, and therefore what its export is called. Read off the
+// manifest when the sheet names one; this is the fallback for a sheet cut before it did.
+const HEAD = "location";
 let MANIFEST = {}, ROWS = [], scores = {}, cur = 0, KEY = "label::";
 
 function el(id){ return document.getElementById(id); }
@@ -229,17 +233,17 @@ for (const id of ["vivid", "canonical"]) {
 }
 el("zoom").onclick = () => { el("zoom").style.display = "none"; };
 
-// labels.json: one entry per row a PERSON acted on, and nothing else. A suggestion the labeler
-// never looked at is absent from this file, so it cannot reach the store as a verdict.
-el("export").onclick = () => {
+// The export: one entry per row a PERSON acted on, and nothing else. A suggestion the labeler
+// never looked at is absent from it, so it cannot reach the store as a verdict. Where it goes
+// and what it is called are decided in export_control.js, once, for every sheet this project
+// serves — labels/<head>.json, saved by the rig, downloaded under the same name if it cannot be.
+el("export").onclick = async () => {
   const out = {};
   Object.keys(scores).sort().forEach(k => { if (scores[k]) out[k] = {score: scores[k], revealed: 0}; });
-  const blob = new Blob([JSON.stringify(out, null, 0)], {type: "application/json"});
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "labels.json";
-  a.click();
-  URL.revokeObjectURL(a.href);
+  const head = (MANIFEST && MANIFEST.head) || HEAD;
+  const done = await labelExport.save(head, out);
+  el("export").textContent = (done.saved ? "saved " : "exported ") + head + ".json";
+  if (!done.saved) el("loader-msg").textContent = done.note;
 };
 
 el("load").onchange = e => {

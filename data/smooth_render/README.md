@@ -32,7 +32,7 @@ on one scale, not a separate head and not a new floor.
 **The evaluation side is pinned, not drawn.** Every batch here conditions on
 quality through the location head before its page exists, so none of them is an
 unbiased draw and no rate read on one is a base rate. What separates them is
-whether the page served a head's own verdict prefilled: 3 of 7 did,
+whether the page served a head's own verdict prefilled: 5 of 9 did,
 and their labels measure agreement with that head. `blind_minibrot` is the one that did
 not, and it is registered `eval_only` — bought to referee two heads on unanchored
 labels, and spent the moment it enters a training split. The pin is asserted on

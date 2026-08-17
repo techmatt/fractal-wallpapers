@@ -15,6 +15,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from fractal_wallpapers import engine
+from fractal_wallpapers.labeling.finished import HEADS as FINISHED_HEADS
 from fractal_wallpapers.paths import colormap_dir, repo_root
 
 WEIGHTS_MANIFEST = Path("models") / "weights.json"
@@ -676,20 +677,24 @@ def derive_tau_h(args: argparse.Namespace) -> int:
 
 def label_register(args: argparse.Namespace) -> int:
     """Register a batch's generation method, before it has any rows."""
+    from fractal_wallpapers.labeling import finished, store
     from fractal_wallpapers.labeling import registry as registry_module
-    from fractal_wallpapers.labeling import store
 
-    row = store.register(
-        registry_module.Registration(
-            batch=args.batch,
-            method=args.method,
-            score_unconditioned=args.score_unconditioned,
-            anchored=args.anchored,
-            why=args.why or "",
-        )
+    registration = registry_module.Registration(
+        batch=args.batch,
+        method=args.method,
+        score_unconditioned=args.score_unconditioned,
+        anchored=args.anchored,
+        eval_only=args.eval_only,
+        why=args.why or "",
     )
+    known = finished.registry(args.head) if args.head else store.registry()
+    if args.batch in known:
+        print(f"batch {args.batch!r} is already registered; a second row would restate it")
+        return 1
+    row = finished.register(args.head, registration) if args.head else store.register(registration)
     eligible = registry_module.registration_of(row).eval_eligible
-    print(json.dumps({**row, "eval_eligible": eligible}, indent=2))
+    print(json.dumps({**row, "head": args.head or "location", "eval_eligible": eligible}, indent=2))
     return 0
 
 
@@ -738,12 +743,33 @@ def label_serve(args: argparse.Namespace) -> int:
 
 def label_record(args: argparse.Namespace) -> int:
     """Record a page's export into the store, through the one writer."""
-    from fractal_wallpapers.labeling import sheets
+    from fractal_wallpapers.labeling import sheets, store
 
     sheet = sheets.read(resolve_output(args.sheet))
-    labels = json.loads(Path(args.labels).read_text(encoding="utf-8"))
+    head = sheet.manifest.get("head", sheets.HEAD)
+    export = Path(args.labels) if args.labels else store.export_path(head)
+    labels = json.loads(export.read_text(encoding="utf-8"))
     rows = sheets.record(sheet, labels, labeler=args.labeler)
-    print(json.dumps({"recorded": len(rows), "batch": sheet.manifest["batch"]}, indent=2))
+    print(
+        json.dumps(
+            {"recorded": len(rows), "batch": sheet.manifest["batch"], "export": str(export)},
+            indent=2,
+        )
+    )
+    return 0
+
+
+def label_ingest(args: argparse.Namespace) -> int:
+    """Resolve a finished-render sheet's export into store rows, through the one writer."""
+    from fractal_wallpapers.labeling import intake
+
+    report = intake.run(
+        sheet=resolve_output(args.sheet),
+        labels=args.labels,
+        labeler=args.labeler,
+        write=args.write,
+    )
+    print(json.dumps(report, indent=2))
     return 0
 
 
@@ -1890,6 +1916,11 @@ def label_commands(subcommands) -> None:
     registering.add_argument("--batch", required=True, help="the name its rows will carry")
     registering.add_argument("--method", required=True, help="how the population was drawn")
     registering.add_argument(
+        "--head",
+        choices=sorted(FINISHED_HEADS),
+        help="register in a finished-render store instead of the location store",
+    )
+    registering.add_argument(
         "--score-unconditioned",
         action="store_true",
         help="no model score anywhere in the selection (a systematic draw qualifies)",
@@ -1898,6 +1929,11 @@ def label_commands(subcommands) -> None:
         "--anchored",
         action="store_true",
         help="the page serves a head's own verdict prefilled, or orders rows by its score",
+    )
+    registering.add_argument(
+        "--eval-only",
+        action="store_true",
+        help="bought as an instrument: pinned to the evaluation side and never trainable",
     )
     registering.add_argument("--why", help="the sentence a later reader will need")
     registering.set_defaults(handler=label_register)
@@ -1963,9 +1999,31 @@ def label_commands(subcommands) -> None:
         ),
     )
     recording.add_argument("--sheet", required=True, help="the sheet the labels were cast on")
-    recording.add_argument("--labels", required=True, help="the labels.json the page exported")
+    recording.add_argument(
+        "--labels", help="the export to read (default: labels/<head>.json, where a page saves)"
+    )
     recording.add_argument("--labeler", required=True, help="who cast them")
     recording.set_defaults(handler=label_record)
+
+    ingesting = steps.add_parser(
+        "ingest",
+        help="resolve a finished-render sheet's export into store rows",
+        description=(
+            "The seam between a sheet that lives somewhere untracked and a store that has to "
+            "outlive it. Each exported unit is joined to its sheet row here, once, and lands "
+            "as a row carrying the whole join: the place, the mode with its own settings and "
+            "its curve, the map, every knob of the palette pass, and the geometry. Both counts "
+            "are checked in both directions, nothing already stored is written twice, and a "
+            "verdict that changed is a new row rather than an edit."
+        ),
+    )
+    ingesting.add_argument("--sheet", required=True, help="the sheet's manifest, rows, or stem")
+    ingesting.add_argument(
+        "--labels", help="the export to read (default: labels/<head>.json, where a page saves)"
+    )
+    ingesting.add_argument("--labeler", required=True, help="who cast the verdicts")
+    ingesting.add_argument("--write", action="store_true", help="append; otherwise print the plan")
+    ingesting.set_defaults(handler=label_ingest)
 
     showing = steps.add_parser("show", help="print what the store currently says, resolved")
     showing.set_defaults(handler=label_show)
