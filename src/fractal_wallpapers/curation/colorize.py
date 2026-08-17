@@ -56,7 +56,7 @@ import random
 from dataclasses import dataclass
 from pathlib import Path
 
-from fractal_wallpapers import engine
+from fractal_wallpapers import engine, paths
 from fractal_wallpapers.coloring import autolevel
 from fractal_wallpapers.curation import budget as budget_module
 from fractal_wallpapers.curation import floors, intake
@@ -256,6 +256,14 @@ def render_row(row: dict, mode: str, colormap: str, cyclic: set[str], render: di
     }
 
 
+#: The temporary-then-rename convention, re-exported rather than restated. It is
+#: `paths`' because the location head's view cache writes through it too, and a
+#: second spelling of "unfinished" is a sweep that misses half of them.
+WRITING_INFIX = paths.WRITING_INFIX
+writing_path = paths.writing_path
+sweep_writing = paths.sweep_writing
+
+
 def render(
     row: dict,
     mode: str,
@@ -272,29 +280,47 @@ def render(
     stamped" is true by construction rather than by four remembered edits. The
     direct-trap family is excluded here, where the kind is known, and not by a
     test inside the operator.
+
+    **Nothing exists at `output` until the row is finished.** Every render lands
+    on a temporary and is renamed into place at the end, which makes the file's
+    presence mean *complete* rather than *started*. That is not a nicety: the
+    autolevel path is two full-resolution renders to one path, and the first
+    production run lost four rows to it — the deadline killed the second render,
+    the first one's decodable picture stayed on disk, and the resume counted all
+    four as finished. Every number balanced and four pictures carried no operator
+    pass. A rename is atomic on both platforms this repository runs on, so the
+    intermediate state has no name a reader can reach.
     """
     from fractal_wallpapers.models import renders
 
+    output = Path(output)
+    scratch = writing_path(output)
     recipe = render_row(row, mode, colormap, cyclic, render_geometry)
-    spec = renders.spec_of(recipe, output)
+    spec = renders.spec_of(recipe, scratch)
     output.parent.mkdir(parents=True, exist_ok=True)
+    scratch.unlink(missing_ok=True)
     engine.run("render", spec)
     if not level or not autolevel.applies_to(kind_of(mode)):
+        scratch.replace(output)
         return output, None
 
     entry = json.loads((_colormap_dir() / f"{colormap}.json").read_text(encoding="utf-8"))
     mirror = bool(recipe["recipe"]["mirror"])
 
     def rerender(stops):
+        # Named for the FINAL picture, not the temporary: the levelled colormap is
+        # a record of what this row was rendered through, and a resume looks for
+        # it under the row's own name.
         directory = output.parent / f"{output.stem}.leveled"
         autolevel.overriding_colormap(colormap, stops, entry.get("kind"), directory)
         engine.run("render", {**spec, "colormap_dir": str(directory)})
-        return output
+        return scratch
 
     leveled = autolevel.maybe_level(
-        output, {"name": colormap, "stops": entry["stops"], "mirror": mirror}, rerender, band
+        scratch, {"name": colormap, "stops": entry["stops"], "mirror": mirror}, rerender, band
     )
-    return leveled.image, leveled.stamp
+    Path(leveled.image).replace(output)
+    return output, leveled.stamp
 
 
 # --------------------------------------------------------------------------- #
@@ -460,6 +486,7 @@ __all__ = [
     "RESOLUTION",
     "SMOOTH_MODE",
     "SUPERSAMPLE",
+    "WRITING_INFIX",
     "Candidate",
     "ColorizeError",
     "Colorizer",
@@ -473,4 +500,6 @@ __all__ = [
     "recolored",
     "render",
     "render_row",
+    "sweep_writing",
+    "writing_path",
 ]

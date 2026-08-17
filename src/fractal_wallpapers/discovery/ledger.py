@@ -27,10 +27,14 @@ will not be forever. Whatever was written is what is recorded, unaltered, and
 [`fractal_wallpapers.discovery.nucleus.key_from_strings`] is what normalizes at
 the *reader* — never by trusting the writer.
 
-**Score fields are present and null.** The scorer arrives two slices from now.
-`score` and `scorer` are on every candidate row today, holding `null` and the
-name of the scorer that declined to have an opinion, so the head can be wired in
-without a schema break and a mixed corpus stays readable.
+**A row carries the verdict as well as the frame.** `scorer` names the judge,
+`score` is its `P(≥3)` and `score_great` its `P(≥4)` — two numbers rather than
+one because the supply currency weights a class 4 ten times a class 3, so a row
+carrying only the first would make every machine-classed find a 3 forever.
+`score_error` says why there is no verdict, which is a different fact from a low
+one. All four are `null` on a row written under the null scorer, which is what
+keeps a corpus mixed across the day the head was wired in readable: the reader
+asks the row what judged it rather than assuming.
 """
 
 from __future__ import annotations

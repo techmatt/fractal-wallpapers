@@ -169,11 +169,8 @@ def curate(
             log(f"[intake] {line}")
         claims = intake.guaranteed(supply)
         caps = intake.emit_caps(offer)
-        log(
-            f"[intake] {supply['passing']} of {supply['found']} above the junk floor "
-            f"({floors.JUNK_FLOOR}), {supply['good']} above the good floor ({floors.GOOD_FLOOR}); "
-            f"{len(claims)} partition(s) owed a guaranteed slot"
-        )
+        log(f"[intake] {intake.funnel_line(supply)}")
+        log(f"[intake] {len(claims)} partition(s) owed a guaranteed slot")
         by_key = {row["key"]: row for rows in offer.values() for row in rows}
 
         # --- budget ------------------------------------------------------ #
@@ -440,7 +437,7 @@ def _discard_partials(directory: Path, planned: int, done: dict, log) -> dict:
     half-written one is indistinguishable from a finished one at the point of use.
     Every one of them is regenerable, which makes this cheap; trusting one is not.
     """
-    scrubbed = {"pictures": 0, "candidates": 0, "fields": 0}
+    scrubbed = {"pictures": 0, "candidates": 0, "fields": 0, "unfinished": 0}
     for index in range(planned):
         if index in done:
             continue
@@ -451,10 +448,16 @@ def _discard_partials(directory: Path, planned: int, done: dict, log) -> dict:
             scrubbed["pictures"] += 1
         if leveled.is_dir():
             shutil.rmtree(leveled)
+    # A render killed between its temporary and the rename leaves the temporary.
+    # It is regenerable and it is never read, but a tree that accumulates them
+    # across resumes is a tree nobody can size.
+    scrubbed["unfinished"] = colorize.sweep_writing(directory)
     for candidate in sorted((directory / "candidates").rglob("*.jpg")):
-        # `resumable` verifies the file and removes it when it cannot be read,
-        # which is the same question asked of a release picture and the same answer.
-        if not release.resumable(candidate):
+        # `decodable` verifies the file and removes it when it cannot be read.
+        # The recolors have no completion record of their own — they are named
+        # for their recipe and made in one engine call — so bytes are the whole
+        # question here, unlike a release row.
+        if not release.decodable(candidate):
             scrubbed["candidates"] += 1
     for dumped in sorted((directory / "fields").glob("*.f32")):
         if not _intact_field(dumped):
@@ -554,9 +557,12 @@ def _select(scored, n, strange_share, caps, claims, log):
 def _release(selected, by_key, directory, workers, skip, log, leg=None):
     """The full-resolution pass. The parent writes every record, in plan order.
 
-    A picture already on disk and readable is this run's own work from before it
-    was interrupted — selection is deterministic from the candidate log, so a
-    resumed run picks the same rows — and it is reused rather than made again.
+    A row this run **recorded as finished** before it was interrupted is carried
+    across — selection is deterministic from the candidate log, so a resumed run
+    picks the same rows — and every other row is made again. The reuse test is
+    the leg's own completion record and not the file on disk, because a picture
+    on disk is only evidence that a render wrote bytes: see
+    [`release.completed`] for the four rows that cost.
     """
     where = directory / "release"
     where.mkdir(parents=True, exist_ok=True)
@@ -565,13 +571,17 @@ def _release(selected, by_key, directory, workers, skip, log, leg=None):
         "resolution": list(RELEASE_RESOLUTION),
         "supersample": RELEASE_SUPERSAMPLE,
     }
+    finished = release.completed(where)
+    swept = colorize.sweep_writing(where)
+    if swept:
+        log(f"[release] discarded {swept} unfinished render(s) left by an earlier attempt")
 
     tasks, done, reused = [], {}, []
     for entry in selected:
         row = entry["row"]
         identifier = entry["id"]
         picture = where / f"{identifier}.png"
-        if skip or release.resumable(picture):
+        if skip or release.resumable(identifier, picture, finished):
             # Reusing a picture is only reuse when there is one. `--skip-release`
             # over a run that has never rendered leaves the row unreleased, and
             # counting it as reused would report a release that did not happen.
@@ -579,6 +589,10 @@ def _release(selected, by_key, directory, workers, skip, log, leg=None):
                 done[identifier] = picture
                 reused.append(identifier)
             continue
+        # A row that is being remade must not leave its predecessor behind: the
+        # renderer writes to a temporary and renames, so an old picture would
+        # survive a failure and read as this attempt's work.
+        picture.unlink(missing_ok=True)
         tasks.append(
             release.Task(
                 id=identifier,
@@ -609,7 +623,9 @@ def _release(selected, by_key, directory, workers, skip, log, leg=None):
                     json.dumps({"id": task.id, "autolevel": result.stamp}, ensure_ascii=False)
                     + "\n"
                 )
-        with (where / "timing.jsonl").open("a", encoding="utf-8", newline="\n") as handle:
+        # Written last, and it is what a resume reads: a row is finished when the
+        # parent says so, never when a file merely exists.
+        with release.timing_path(where).open("a", encoding="utf-8", newline="\n") as handle:
             handle.write(
                 json.dumps(
                     {
@@ -718,7 +734,12 @@ def _record(**k) -> dict:
         release_rows.append(decision)
 
     counts = {
+        # Three populations, named as three: `found` is every gate survivor,
+        # `scored` is the subset the sidecar has an opinion about, and the two
+        # floor counts are over `scored`. A funnel that skipped the middle number
+        # invited its own rate to be read against the wrong denominator.
         "found": k["supply"]["found"],
+        "scored": k["supply"]["scored"],
         "above_junk_floor": k["supply"]["passing"],
         "above_good_floor": k["supply"]["good"],
         "unscored": k["supply"]["unscored"],

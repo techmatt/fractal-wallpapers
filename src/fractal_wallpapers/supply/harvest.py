@@ -8,7 +8,7 @@ seconds.
 ```text
 per batch:  refill anything starved
             ask the quota how the batch's slots divide between partitions
-            take each partition's slots off its own queue, expand, reframe
+            take each partition's slots off its own queue, expand, score, reframe
             charge the minutes, credit the finds, close the price window
             reconcile what was found against what was written
             checkpoint
@@ -385,6 +385,11 @@ class Harvest:
                 "probe": self.walk.governor.tally(),
                 "ledger": str(self.walk.ledger.path),
             },
+            # Which judge wrote the scores on this run's rows, and what its
+            # renders cost. The census reads those scores, so a summary that did
+            # not name the judge would leave a ledger nobody could attribute.
+            "scorer": self.walk.scorer.name,
+            "scoring": self.walk.scoring_record(),
             "quota": self.quota.summary(),
             "refill": (
                 None

@@ -53,12 +53,21 @@ DEFERRAL = {
     "julia:multibrot5": "no tracked pool of degree-5 Julia parameters; fed by reframing only",
 }
 
-#: Why a parameter-plane partition gets no refill when no seed file was supplied.
+#: Why a parameter-plane partition gets no refill when it has no pool to draw on.
 NO_SEED_FILE = (
     "the parameter planes have no sampler: an unscreened draw over the higher degrees "
-    "measured zero good locations in 144, so roots come from an explicit --seeds file or "
-    "from what the reframing operators reach. None was supplied to this run."
+    "measured zero good locations in 144, so roots come from the tracked plane seed pool, "
+    "an explicit --seeds file, or what the reframing operators reach. This run has none of "
+    "the three — derive the pool with `fractal-wallpapers derive-plane-seeds --write`."
 )
+
+
+def _tracked_plane_pool() -> Path | None:
+    """The shipped parameter-plane pool, or `None` on a clone that has not derived it."""
+    from fractal_wallpapers.discovery import plane_seeds
+
+    path = plane_seeds.pool_path()
+    return path if path.is_file() else None
 
 
 class Refill:
@@ -99,9 +108,22 @@ class Refill:
             "phoenix": ("phoenix_seed_pool", None),
         }
         self._pools: dict = {}
-        self._seeds = Path(seeds) if seeds is not None else None
+        # The tracked pool is the default channel for the parameter planes, not a
+        # fallback nobody reaches: a run that had to be handed a seed file to
+        # refill four of its ten partitions is a run that silently does not, and
+        # the first production run spent two hours proving it.
+        self._seeds = Path(seeds) if seeds is not None else _tracked_plane_pool()
 
     # ----------------------------------------------------------- the channels
+
+    def _seed_rows(self) -> list[dict]:
+        """The seed file's rows. The tracked pool is read through its own reader,
+        so its invariants are checked here and not only where it was derived."""
+        from fractal_wallpapers.discovery import plane_seeds
+
+        if self._seeds == plane_seeds.pool_path():
+            return pools.plane_pool(self._seeds)
+        return pools.read_seed_file(self._seeds)
 
     def _pool(self, partition: str) -> list:
         """The entries this partition's channel can still hand over."""
@@ -112,11 +134,7 @@ class Refill:
         elif partition == "phoenix":
             rows = pools.phoenix_pool()
         elif self._seeds is not None:
-            rows = [
-                row
-                for row in pools.read_seed_file(self._seeds)
-                if _seed_partition(row) == partition
-            ]
+            rows = [row for row in self._seed_rows() if _seed_partition(row) == partition]
         else:
             rows = []
         self._pools[partition] = rows

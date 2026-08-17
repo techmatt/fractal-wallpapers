@@ -1,10 +1,10 @@
-The seed pools a walk starts from. Data, not samplers — a walk over the
-dynamical families draws its roots from these files, and the parameter-plane
-families have no draw at all.
+The seed pools a walk starts from. Data, not samplers — a walk draws its roots
+from these files, and no family in this project invents one.
 
 ```
-julia_c_pool.jsonl       209 julia parameters, thinned at the c-spacing floor
-phoenix_seed_pool.jsonl   96 phoenix parameter points, (c, p, z₋₁) in full
+julia_c_pool.jsonl         209 julia parameters, thinned at the c-spacing floor
+phoenix_seed_pool.jsonl     96 phoenix parameter points, (c, p, z₋₁) in full
+plane_seed_pool.jsonl    1,922 parameter-plane roots, solved for rather than drawn
 ```
 
 **The julia pool** is what a three-stage screen left after drawing the
@@ -36,8 +36,29 @@ the classic pinned instance; it says `p` was drawn on the real axis with no
 displacement off the curve and `z₋₁` zero, while `c` still comes from the closed
 form at a complex phase.
 
-There is deliberately **no pool for the parameter-plane families**. An unscreened
-shell draw over the higher multibrot degrees measured zero good locations out of
-a hundred and forty-four, so those walks are supplied by an explicit seed file
-(`--seeds`) and by what the reframing operators find from places a walk already
-reached.
+**The plane pool is solved for, not drawn.** An unscreened shell draw over the
+higher multibrot degrees measured zero good locations out of a hundred and
+forty-four, so there is no sampler for `mandelbrot` or `multibrot3/4/5` and there
+will not be one. Instead a coarse grid — 340×191 — is laid over each family's home
+frame, every point is handed to this repository's own `identify_nucleus`, and each
+distinct atom becomes one root framed at `FRAME_MULTIPLE ×` its own window scale.
+Roots are kept round-robin across periods (21–37 per family) and ranked on `f64`
+headroom only *within* a period, so the pool is places rather than five hundred
+views of one place. Each family also contributes its home view, and the six
+hand-picked Mandelbrot frames the earliest walks ran on are carried along as the
+only roots here a person chose.
+
+Regenerate it — never hand-edit it — with:
+
+```
+fractal-wallpapers derive-plane-seeds          # re-derive and check the shipped file
+fractal-wallpapers derive-plane-seeds --write  # re-derive and replace it
+```
+
+The verify is the default because the file's only real claim is that the
+procedure still produces it. Roughly fifteen minutes of Newton either way.
+
+This pool is load-bearing rather than convenient: without it `has_channel` is
+false for all four parameter-plane partitions, they can never be refilled once
+their queues drain, and a harvest that intended two thirds of its clock for them
+spends none of it. That is exactly how the first production run stalled.

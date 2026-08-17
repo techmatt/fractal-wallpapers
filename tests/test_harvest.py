@@ -22,7 +22,18 @@ from fractal_wallpapers.supply.prices import load_table
 from fractal_wallpapers.supply.quota import Quota
 from fractal_wallpapers.supply.refill import Refill
 
-POOL_FED = ["julia:mandelbrot", "phoenix"]
+#: Every partition a tracked pool can seed: the two dynamical `c`-pools and the
+#: four parameter planes, which are fed from the plane seed pool. Only the three
+#: higher-degree Julia partitions have no pool of their own, and they are fed by
+#: reframing from places a walk already reached.
+POOL_FED = [
+    "julia:mandelbrot",
+    "phoenix",
+    "mandelbrot",
+    "multibrot3",
+    "multibrot4",
+    "multibrot5",
+]
 
 
 def engine_is_built() -> bool:
@@ -319,8 +330,12 @@ def test_a_smoke_harvest_serves_more_than_one_partition_and_balances(tmp_path) -
 
     # The partitions no channel can feed are named with a reason, never silently
     # absent — and the externally-supplied one is not called starved at all.
+    # `mandelbrot` used to be on that list; the tracked plane seed pool is what
+    # took it off, and a run that cannot refill four of ten partitions is the
+    # state the first production run stalled in.
     deferred = summary["refill"]["deferred"]
-    assert "mandelbrot" in deferred and "julia:multibrot3" in deferred
+    assert "julia:multibrot3" in deferred
+    assert "mandelbrot" not in deferred, "the plane seed pool is the channel it now has"
     assert CLASSIC_PHOENIX not in deferred
 
 

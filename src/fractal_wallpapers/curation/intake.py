@@ -8,20 +8,21 @@ not decide how many pictures to make ([`budget`]), it does not choose a palette
 
 ## The order is read at the moment it is used, and nothing is frozen
 
-A ledger row records what a walk *found*: the gates it passed, its frame, its
-family. It does not record a verdict about quality, because the walks that filled
-these ledgers ran before any head existed — every row in them carries a null
-score from the null scorer. So the score is a separate, re-runnable read
-([`score`]), kept in a sidecar this module owns, and the ranking is `P(≥3)`
-descending at read time.
+A ledger row now records the head's verdict at the moment the walk found the
+place, which is what lets the supply engine's census move on a harvest alone.
+Curation does **not** read that number. It re-scores the whole standing supply
+into a sidecar this module owns, and ranks on `P(≥3)` descending at read time.
 
-**The ledgers are never rewritten.** A score written back into a ledger is a
-verdict frozen on the day it was minted; when the head that produced it is
-retrained the pipeline has to either believe a stale number or delete the row.
-Both have happened, and the second one is worse: a head flip once took an intake
-from about fourteen hundred locations to sixteen. Here a flip is a re-score of
-the sidecar, the ledgers are untouched, and an old score degrades the *rank
-quality* of a row rather than removing it.
+**The ledgers are never rewritten.** A ledger's score is a verdict frozen on the
+day it was minted; when the head that produced it is retrained the pipeline has
+to either believe a stale number or delete the row. Both have happened, and the
+second one is worse: a head flip once took an intake from about fourteen hundred
+locations to sixteen. Here a flip is a re-score of the sidecar, the ledgers are
+untouched, and an old ledger score degrades the *rank quality* of a row rather
+than removing it. The two readings are the same recipe through the same head
+([`fractal_wallpapers.models.location_view`] owns it, so they cannot drift) and
+they share one view cache, so re-scoring a harvested location costs the head and
+not the engine.
 
 ## One reader, and it is the one the supply engine already has
 
@@ -52,6 +53,7 @@ import json
 from pathlib import Path
 
 from fractal_wallpapers.curation import floors
+from fractal_wallpapers.models import location_view
 from fractal_wallpapers.paths import repo_root
 from fractal_wallpapers.supply import apportion, ledgers, release_mix
 from fractal_wallpapers.supply.location import key_of_row
@@ -60,20 +62,14 @@ from fractal_wallpapers.supply.partitions import partition_of_row
 #: The schema every score row carries.
 SCHEMA = 1
 
-#: The picture a location is judged on, pre-colour: the **canonical tile's** own
-#: recipe. The location head is trained on those tiles and reads slot zero of
-#: each location at deploy, so a curation intake that scored a different picture
-#: would be asking a head about a distribution nobody trained it on.
-#:
-#: Measured rather than assumed: a plain render at this geometry differs from the
-#: cached canonical tile of the same location by 0.02–0.77 of a channel level on
-#: this repository's own tile cache, against a JPEG re-compression floor an order
-#: of magnitude larger. The tile path reconstructs from an extended field and this
-#: one does not; below that scale the two are the same picture.
-VIEW_RESOLUTION = (640, 360)
-VIEW_SUPERSAMPLE = 2
-VIEW_MODE = "smooth"
-VIEW_CURVE = "linear"
+#: The picture a location is judged on, pre-colour. Re-exported rather than
+#: restated: [`fractal_wallpapers.models.location_view`] owns the recipe, because
+#: the walk scores through it too and a head asked about two distributions under
+#: one name is a head whose scores cannot be compared.
+VIEW_RESOLUTION = location_view.RESOLUTION
+VIEW_SUPERSAMPLE = location_view.SUPERSAMPLE
+VIEW_MODE = location_view.MODE
+VIEW_CURVE = location_view.CURVE
 
 
 class IntakeError(RuntimeError):
@@ -91,8 +87,15 @@ def scores_path() -> Path:
 
 
 def view_dir() -> Path:
-    """Where the pictures the head is scored on live."""
-    return store_dir() / "views"
+    """Where the pictures the head is scored on live.
+
+    Not under curation's own store: the walk renders the same pictures, under the
+    same recipe and the same digest, and two caches of one file is one render
+    paid for twice.
+    """
+    from fractal_wallpapers.discovery import scoring as discovery_scoring
+
+    return discovery_scoring.view_dir()
 
 
 # --------------------------------------------------------------------------- #
@@ -109,54 +112,21 @@ def gate_survivors(paths=None) -> tuple[list[dict], dict]:
 
 
 def canonical_map() -> str:
-    """The colormap the location view is drawn through, read off the tile pool.
-
-    The tile build reserves its low slots for named maps and slot zero carries
-    the canonical view, so the deploy map is the first of those reservations. Read
-    from the tracked table rather than typed here, because a map named in two
-    places is a map that can be changed in one.
-    """
-    from fractal_wallpapers.models import tiles as tile_module
-
-    floor = tile_module.palette_pool().get("floor") or []
-    if not floor:
-        raise IntakeError(
-            f"{tile_module.pool_path()} reserves no floor palette, so nothing says which map "
-            f"a location's canonical view is drawn through."
-        )
-    return str(floor[0][0])
+    """The colormap the location view is drawn through, read off the tile pool."""
+    try:
+        return location_view.canonical_map()
+    except location_view.ViewError as refusal:
+        raise IntakeError(str(refusal)) from refusal
 
 
 def view_row(row: dict, colormap: str, cyclic: set[str]) -> dict:
-    """One ledger row as the render-cache row its picture is made from.
-
-    Through the same shape the finished-render cache uses, so `renders.spec_of`
-    is the one place that knows how a row becomes an engine spec — here as
-    everywhere else.
-    """
-    from fractal_wallpapers.labeling import finished
-
-    return {
-        "family": row["family"],
-        "viewport": row["viewport"],
-        "mode": VIEW_MODE,
-        "mode_params": {},
-        "curve": VIEW_CURVE,
-        "colormap": colormap,
-        "recipe": finished.recipe(mirror=colormap not in cyclic),
-        "render": {
-            "resolution": list(VIEW_RESOLUTION),
-            "supersample": VIEW_SUPERSAMPLE,
-            "maxiter": int(row["maxiter"]),
-        },
-    }
+    """One ledger row as the render-cache row its picture is made from."""
+    return location_view.view_row(row, colormap, cyclic)
 
 
 def view_name(row: dict, colormap: str, cyclic: set[str]) -> str:
     """The file name of one location's view: a digest of the whole recipe."""
-    from fractal_wallpapers.models import renders
-
-    return renders.job_name(view_row(row, colormap, cyclic))
+    return location_view.view_name(row, colormap, cyclic)
 
 
 # --------------------------------------------------------------------------- #
@@ -169,7 +139,7 @@ def score(paths=None, device: str = "auto", limit: int | None = None, log=print)
     re-rendered, and the sidecar is rewritten whole from the union so a re-run
     over more ledgers is a superset rather than an append nobody can deduplicate.
     """
-    from fractal_wallpapers.models import renders, scoring, ship, train
+    from fractal_wallpapers.models import scoring, ship, train
 
     rows, diagnostics = gate_survivors(paths)
     if limit is not None:
@@ -188,15 +158,10 @@ def score(paths=None, device: str = "auto", limit: int | None = None, log=print)
     made = 0
     pictures = []
     for index, row in enumerate(rows, start=1):
-        name = view_name(row, colormap, cyclic)
-        output = directory / f"{name}.jpg"
-        if not output.is_file():
-            from fractal_wallpapers import engine
-
-            engine.run("render", renders.spec_of(view_row(row, colormap, cyclic), output))
-            made += 1
-            if made % 25 == 0:
-                log(f"{index}/{len(rows)} views rendered ({made} new)")
+        output, fresh = location_view.render_view(row, colormap, cyclic, directory)
+        made += int(fresh)
+        if fresh and made % 25 == 0:
+            log(f"{index}/{len(rows)} views rendered ({made} new)")
         pictures.append(output)
 
     model, config, where = scoring.load(ship.shipped_path("location"), device)
@@ -235,22 +200,14 @@ def score(paths=None, device: str = "auto", limit: int | None = None, log=print)
         "gate_survivors": len(rows),
         "views_rendered": made,
         "views_reused": len(rows) - made,
-        "view": {
-            "resolution": list(VIEW_RESOLUTION),
-            "supersample": VIEW_SUPERSAMPLE,
-            "mode": VIEW_MODE,
-            "curve": VIEW_CURVE,
-            "colormap": colormap,
-        },
+        "view": location_view.summary(colormap),
         "union": diagnostics,
         "wrote": str(path),
     }
 
 
 def _cyclic_maps() -> set[str]:
-    from fractal_wallpapers.models import palette_sets
-
-    return palette_sets.cyclic()
+    return location_view.cyclic_maps()
 
 
 def _key_text(row: dict) -> str:
@@ -312,6 +269,7 @@ def ranked(paths=None, scores: dict | None = None) -> tuple[dict, dict]:
 
     offer: dict[str, list[dict]] = {}
     found: dict[str, int] = {}
+    scored_counts: dict[str, int] = {}
     passing: dict[str, int] = {}
     good: dict[str, int] = {}
     unscored = 0
@@ -325,6 +283,8 @@ def ranked(paths=None, scores: dict | None = None) -> tuple[dict, dict]:
         value = None if read is None else float(read.get("p_ge3"))
         if read is None:
             unscored += 1
+        else:
+            scored_counts[partition] = scored_counts.get(partition, 0) + 1
         found[partition] = found.get(partition, 0) + 1
         if floors.passes_good_floor(value):
             good[partition] = good.get(partition, 0) + 1
@@ -343,15 +303,40 @@ def ranked(paths=None, scores: dict | None = None) -> tuple[dict, dict]:
             "junk_floor": floors.JUNK_FLOOR,
             "good_floor": floors.GOOD_FLOOR,
             "found_by_partition": dict(sorted(found.items())),
+            "scored_by_partition": dict(sorted(scored_counts.items())),
             "passing_by_partition": dict(sorted(passing.items())),
             "good_by_partition": dict(sorted(good.items())),
+            # `found` is every gate survivor; `scored` is how many of those the
+            # sidecar has an opinion about; `passing` and `good` are counted over
+            # `scored` and NOT over `found`. Three names for three populations,
+            # because a run that printed the first as the denominator of the third
+            # reported a pass rate over rows nothing had looked at.
             "found": sum(found.values()),
+            "scored": sum(scored_counts.values()),
             "passing": sum(passing.values()),
             "good": sum(good.values()),
             "unscored": unscored,
         }
     )
     return offer, diagnostics
+
+
+def funnel_line(diagnostics: dict) -> str:
+    """The whole supply in one line, with each number over the population it is of.
+
+    Written this way because the first production run's version was not: *"22,751
+    found, 1,245 above the junk floor"* put every gate survivor in the denominator
+    and only the scored prefix in the numerator, and the resulting rate was a
+    fifth of the real one. The scored count sits between the two, so the reader
+    can see which denominator each number belongs to instead of assuming.
+    """
+    found = int(diagnostics.get("found", 0))
+    scored = int(diagnostics.get("scored", 0))
+    return (
+        f"{found} found -> {scored} scored -> {diagnostics.get('passing', 0)} above the junk "
+        f"floor ({floors.JUNK_FLOOR}), {diagnostics.get('good', 0)} above the good floor "
+        f"({floors.GOOD_FLOOR}); {found - scored} found but unscored"
+    )
 
 
 def supply_lines(diagnostics: dict) -> list[str]:
@@ -362,15 +347,16 @@ def supply_lines(diagnostics: dict) -> list[str]:
     rather than no line.
     """
     found = diagnostics.get("found_by_partition", {})
+    scored = diagnostics.get("scored_by_partition", {})
     passing = diagnostics.get("passing_by_partition", {})
     good = diagnostics.get("good_by_partition", {})
     out = []
-    for partition in sorted(set(found) | set(passing) | set(good)):
+    for partition in sorted(set(found) | set(scored) | set(passing) | set(good)):
         n_pass = passing.get(partition, 0)
         n_good = good.get(partition, 0)
         line = (
-            f"{partition}: {found.get(partition, 0)} found, {n_pass} above the junk floor, "
-            f"{n_good} above the good floor"
+            f"{partition}: {found.get(partition, 0)} found, {scored.get(partition, 0)} scored, "
+            f"{n_pass} of those above the junk floor, {n_good} above the good floor"
         )
         if not floors.emit_cap(n_pass):
             line += (
@@ -422,6 +408,7 @@ __all__ = [
     "IntakeError",
     "canonical_map",
     "emit_caps",
+    "funnel_line",
     "gate_survivors",
     "guaranteed",
     "rank_key",

@@ -85,7 +85,7 @@ def test_the_unfinished_attempt_s_own_output_is_discarded_rather_than_trusted(tm
     assert not (pictures / "0001.leveled").exists()
     assert not (fields / "short.f32").exists()
     assert not (fields / "short.json").exists()
-    assert scrubbed == {"pictures": 1, "candidates": 0, "fields": 1}
+    assert scrubbed == {"pictures": 1, "candidates": 0, "fields": 1, "unfinished": 0}
     assert any("discarded partial output" in line for line in said)
 
 

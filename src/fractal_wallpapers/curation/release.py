@@ -391,13 +391,13 @@ def run_pass(tasks, workers: int, sink, log=print, leg=None) -> dict:
     return close()
 
 
-def resumable(picture: Path) -> bool:
-    """Whether a full-resolution picture already on disk can be reused.
+def decodable(picture: Path) -> bool:
+    """Whether a picture on disk can be read back at all.
 
-    Selection is deterministic from the candidate log, so a relaunch picks the
-    same rows and any complete picture is the picture this run would have made. A
-    truncated mid-write victim is removed here rather than left for the render to
-    overwrite, so "already there" cannot mean "half there".
+    A truncated mid-write victim is removed here rather than left for the render
+    to overwrite, so "already there" cannot mean "half there". This is a question
+    about *bytes* and it is deliberately not the resume question: see
+    [`resumable`].
     """
     if not picture.is_file():
         return False
@@ -410,6 +410,54 @@ def resumable(picture: Path) -> bool:
     except Exception:  # noqa: BLE001 — truncated or corrupt: re-render it
         picture.unlink(missing_ok=True)
         return False
+
+
+def timing_path(directory: Path) -> Path:
+    """The release leg's own per-row record, which is what says a row finished."""
+    return Path(directory) / "timing.jsonl"
+
+
+def completed(directory: Path) -> set[str]:
+    """The ids the release leg recorded as finished, last row winning.
+
+    **The completion stamp, not the file, is what a resume trusts.** A decodable
+    picture proves a render wrote bytes; it does not prove the *row* is done, and
+    on the autolevel path those are different claims — one unit deadline is spent
+    by two full-resolution renders to one path, so a kill on the second leaves a
+    perfectly readable picture that never got its operator pass. The first
+    production run resumed four such rows as finished, reconciled `28 planned =
+    28 resumed`, and shipped four pictures the record described wrongly.
+
+    A row is done when the parent wrote a timing record saying so. Rows are
+    upserted by id because a row killed once and made again has two, and only the
+    last one describes the picture that exists.
+    """
+    import json
+
+    path = timing_path(directory)
+    if not path.is_file():
+        return set()
+    done: dict[str, bool] = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue  # a killed run's half-written last line
+        if "id" in row:
+            done[str(row["id"])] = bool(row.get("ok"))
+    return {identifier for identifier, ok in done.items() if ok}
+
+
+def resumable(identifier: str, picture: Path, done: set[str]) -> bool:
+    """Whether a released row may be carried across a resume rather than remade.
+
+    Both halves, and each one catches what the other cannot: the record says the
+    row *finished*, and the decode says the picture it finished into is still
+    there and still readable.
+    """
+    return str(identifier) in done and decodable(Path(picture))
 
 
 def parity(tasks, workers: int, directory: Path, log=print) -> dict:
@@ -491,9 +539,12 @@ __all__ = [
     "THREADS_ENV",
     "Result",
     "Task",
+    "completed",
+    "decodable",
     "engine_threads_for",
     "parity",
     "render_task",
     "resumable",
     "run_pass",
+    "timing_path",
 ]

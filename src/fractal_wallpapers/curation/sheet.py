@@ -17,6 +17,22 @@ reader has to have in order to disagree with the run: the location, the mode and
 the map, which judge scored it and what it said, which kind of slot it took, and
 what the autolevel operator did — including *nothing*, which is the common case
 and the one a sheet that only showed acting rows would hide.
+
+**Both cutpoints, because the top one is where a release is judged.** The first
+production run's released smooth rows had a median `P(≥3)` of 0.9999: at the top
+of the distribution that column is saturated and cannot order anything, which is
+precisely the end a reviewer is looking at. `P(≥4)` is a different question — *is
+this worth releasing* rather than *is this a wallpaper* — and it is the
+unconditional probability, the running product of the head's conditional
+cutpoints, never a raw cutpoint sigmoid read as one. A judge whose scale has no
+fourth class says so on the line instead of showing a blank.
+
+**A caption never states a cause it did not observe.** This page used to describe
+a missing stamp as "palette-indifferent, or the switch was off" — a disjunction
+nothing on the row had checked, and on the run where four rows lost their
+operator pass to a deadline it was simply false about all four. The kind is on
+the row, so the palette-indifferent case is *read*; everything else says that
+there is no stamp and stops.
 """
 
 from __future__ import annotations
@@ -50,7 +66,7 @@ def thumbnail(picture: Path, width: int = THUMBNAIL_WIDTH) -> str:
     return "data:image/jpeg;base64," + base64.b64encode(buffer.getvalue()).decode("ascii")
 
 
-def _autolevel_line(stamp: dict | None, what: str = "") -> str:
+def autolevel_line(stamp: dict | None, what: str = "", kind: str | None = None) -> str:
     """What the operator did, prefixed by *which render* it did it to.
 
     A released row has two stamps and they are different renders — the candidate
@@ -58,14 +74,20 @@ def _autolevel_line(stamp: dict | None, what: str = "") -> str:
     one and captioning the other is how a sheet says something false while every
     field on it is true.
     """
-    return f"{what}{_did(stamp)}" if what else _did(stamp)
+    return f"{what}{_did(stamp, kind)}" if what else _did(stamp, kind)
 
 
-def _did(stamp: dict | None) -> str:
+def _did(stamp: dict | None, kind: str | None = None) -> str:
     if stamp is None:
-        return (
-            "autolevel: not run — this coloring kind is palette-indifferent, or the switch was off"
-        )
+        from fractal_wallpapers.coloring import autolevel
+
+        if kind and not autolevel.applies_to(kind):
+            return f"autolevel: not run — a {kind} coloring is palette-indifferent"
+        # No claim about WHY. The switch may have been off, the render may have
+        # been killed before its operator pass, or the stamp may never have been
+        # written — nothing on this row distinguishes them, and the run that
+        # guessed described four killed rows as a decision nobody made.
+        return "autolevel: no stamp on this render — the row does not say why"
     if not stamp.get("acted"):
         reason = (stamp.get("curve") or {}).get("reason")
         why = f" ({reason})" if reason else ""
@@ -85,22 +107,22 @@ def _facts(row: dict) -> list[str]:
     scores = row.get("scores") or {}
     viewport = location.get("viewport") or {}
     advisory = row.get("advisory") or {}
+    kind = recipe.get("mode_kind")
     facts = [
         f"{location.get('partition')} · {recipe.get('mode')} · {recipe.get('colormap')}",
         f"centre {viewport.get('center_re')}, {viewport.get('center_im')} · "
         f"width {viewport.get('width')} · maxiter {location.get('maxiter')}",
-        f"{scores.get('head')} P(≥3) {_number(scores.get('p_ge3'))}"
-        + (f" · P(≥4) {_number(scores.get('p_ge4'))}" if scores.get("p_ge4") is not None else "")
-        + f" · location head P(≥3) {_number(scores.get('location_p_ge3'))}",
+        f"{scores.get('head')} — P(≥3) {_number(scores.get('p_ge3'))} · {top_end(scores)}",
+        f"location head P(≥3) {_number(scores.get('location_p_ge3'))} · "
         f"slot: {row.get('slot_source') or '—'} · look group {row.get('group') or '—'} · "
         f"palette anchor {(row.get('palette') or {}).get('anchor')} of "
         f"{len((row.get('palette') or {}).get('candidates') or [])} candidates",
     ]
     if row.get("release_autolevel") is not None:
-        facts.append(_autolevel_line(row["release_autolevel"], "this picture — "))
-        facts.append(_autolevel_line(row.get("autolevel"), "the render judged — "))
+        facts.append(autolevel_line(row["release_autolevel"], "this picture — ", kind))
+        facts.append(autolevel_line(row.get("autolevel"), "the render judged — ", kind))
     else:
-        facts.append(_autolevel_line(row.get("autolevel")))
+        facts.append(autolevel_line(row.get("autolevel"), "", kind))
     if advisory:
         clears = advisory.get("clears")
         facts.append(
@@ -111,6 +133,21 @@ def _facts(row: dict) -> list[str]:
     if row.get("reason"):
         facts.append(f"reason: {row['reason']}")
     return facts
+
+
+def top_end(scores: dict) -> str:
+    """`P(≥4)`, which is the only column that can order a saturated top end.
+
+    Present and null are different states and the line says which. A judge with
+    three classes has no fourth cutpoint at all — that is a fact about its scale,
+    not a missing number — and a scored row whose `P(≥4)` is absent for any other
+    reason is a record that predates this column.
+    """
+    if scores.get("p_ge4") is not None:
+        return f"P(≥4) {_number(scores['p_ge4'])} (unconditional)"
+    if scores.get("p_ge3") is None:
+        return "P(≥4) — (no score: this row has a reason instead)"
+    return "P(≥4) — (not on this judge's scale)"
 
 
 def _number(value) -> str:
@@ -204,4 +241,11 @@ def _table(summary: dict) -> str:
     return f"<table>{rows}</table>"
 
 
-__all__ = ["THUMBNAIL_QUALITY", "THUMBNAIL_WIDTH", "build", "thumbnail"]
+__all__ = [
+    "THUMBNAIL_QUALITY",
+    "THUMBNAIL_WIDTH",
+    "autolevel_line",
+    "build",
+    "thumbnail",
+    "top_end",
+]

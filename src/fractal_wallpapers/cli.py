@@ -268,13 +268,116 @@ def refuse_impossible_walk(args: argparse.Namespace) -> str | None:
             "tracked yet"
         )
     if args.family in ("mandelbrot", "multibrot"):
+        from fractal_wallpapers.discovery import plane_seeds
+
         return (
-            f"a {args.family} walk has no seed pool and no sampler: an unscreened draw "
-            "over the parameter plane measured zero good locations in 144, so none is "
-            "built. Supply roots with --seeds FILE, or let the reframing operators find "
-            "them from a walk that already reached somewhere."
+            f"a {args.family} walk has no sampler: an unscreened draw over the parameter "
+            f"plane measured zero good locations in 144, so none is built. Its roots come "
+            f"from the tracked plane seed pool — pass --seeds {plane_seeds.pool_path()} "
+            f"(derive it with `fractal-wallpapers derive-plane-seeds --write` if it is not "
+            f"there), or let the reframing operators find them from a walk that already "
+            f"reached somewhere."
         )
     return None
+
+
+def scoring_flags(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
+    """The three flags every command that scores locations takes.
+
+    One definition, because a walk and the harvest that wraps it have to be able
+    to score the same way: a flag that exists on one and not the other is how a
+    resumed run writes rows a different judge produced.
+    """
+    from fractal_wallpapers.discovery import scoring
+
+    parser.add_argument(
+        "--score-workers",
+        type=int,
+        default=scoring.DEFAULT_WORKERS,
+        help=f"worker processes rendering the views the head reads "
+        f"(default: {scoring.DEFAULT_WORKERS}; 1 renders in this process)",
+    )
+    parser.add_argument("--device", default="auto", help="cuda, cpu, or auto")
+    parser.add_argument(
+        "--no-scoring",
+        action="store_true",
+        help="run the null scorer: structural gates only, every row left unclassed and "
+        "invisible to the standing deficit",
+    )
+    return parser
+
+
+def plane_seed_default(name: str):
+    """One of the plane-seed deriver's constants, for a help string that cannot drift."""
+    from fractal_wallpapers.discovery import plane_seeds
+
+    return getattr(plane_seeds, name)
+
+
+def score_parity(args: argparse.Namespace) -> int:
+    """Score one batch of real locations both ways and compare."""
+    from fractal_wallpapers.curation import intake
+    from fractal_wallpapers.discovery import scoring
+
+    ledgers = [resolve_output(p) for p in args.ledger] if args.ledger else None
+    rows, _diagnostics = intake.gate_survivors(ledgers)
+    candidates = rows[: max(1, int(args.rows))]
+    if not candidates:
+        print(
+            "no walk ledger holds a gate-surviving candidate, so there is nothing to score "
+            "both ways. Run `fractal-wallpapers harvest` first."
+        )
+        return 1
+    report = scoring.parity(candidates, args.score_workers, resolve_output(args.out_dir))
+    print(json.dumps(report, indent=2))
+    return 0 if report["held"] else 1
+
+
+def derive_plane_seeds(args: argparse.Namespace) -> int:
+    """Re-derive the parameter-plane seed pool; verify unless told to write."""
+    from fractal_wallpapers.discovery import plane_seeds
+
+    out = Path(args.out) if args.out else plane_seeds.pool_path()
+    derived = plane_seeds.derive(
+        columns=args.columns if args.columns is not None else plane_seeds.COLUMNS,
+        per_partition=(
+            args.per_partition if args.per_partition is not None else plane_seeds.PER_PARTITION
+        ),
+    )
+    if args.write:
+        plane_seeds.write(derived["rows"], out)
+        print(json.dumps({"wrote": str(out), **derived["record"]}, indent=2))
+        return 0
+    verdict = plane_seeds.verify(derived["rows"], out)
+    print(json.dumps({"verify": verdict, **derived["record"]}, indent=2))
+    if not verdict["held"]:
+        print(
+            "\nthe tracked pool is not what this procedure produces. Nothing was written: "
+            "re-run with --write if the procedure is the thing that changed."
+        )
+    return 0 if verdict["held"] else 1
+
+
+def build_scorer(args: argparse.Namespace, log=print):
+    """The judge a walk consults, or `None` for the structural gates alone.
+
+    One builder for both the walk and the harvest, because a scorer chosen two
+    ways is a scorer that can differ between the run that fills a ledger and the
+    run that continues it — and the ledger's `scorer` field would then name two
+    things under one word.
+    """
+    from fractal_wallpapers.discovery import scoring
+
+    if args.no_scoring:
+        return None
+    try:
+        return scoring.LocationScorer(workers=args.score_workers, device=args.device, log=log)
+    except Exception as refusal:  # noqa: BLE001 — an unshipped head is a refusal, not a crash
+        raise SystemExit(
+            f"the location head cannot be loaded, so nothing can score what this run finds: "
+            f"{refusal!r}\nFetch the weights (`fractal-wallpapers fetch-weights`), or pass "
+            f"--no-scoring to walk on the structural gates alone and leave every row unclassed."
+        ) from refusal
 
 
 def walk(args: argparse.Namespace) -> int:
@@ -287,6 +390,7 @@ def walk(args: argparse.Namespace) -> int:
         return 1
 
     run = Walk(
+        scorer=build_scorer(args),
         out_dir=resolve_output(args.out_dir),
         seed=args.seed,
         limits=Limits(
@@ -336,6 +440,7 @@ def harvest(args: argparse.Namespace) -> int:
         limits=Limits(batch=args.batch, root_expansions=args.root_expansions),
         policy=Policy(candidates=args.candidates, node_width=args.node_width),
         colormap=args.colormap,
+        scorer=build_scorer(args),
     )
     partitions = list(ALL_PARTITIONS)
     quota = Quota(
@@ -1425,6 +1530,7 @@ def build_parser() -> argparse.ArgumentParser:
         default=str(Path("artifacts") / "walk"),
         help="where the ledger and thumbnails go (default: artifacts/walk)",
     )
+    scoring_flags(search)
     search.set_defaults(handler=walk)
 
     production = subcommands.add_parser(
@@ -1450,7 +1556,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     production.add_argument(
         "--seeds",
-        help="JSONL seed file: the only supply for the parameter planes, which have no sampler",
+        help="a JSONL seed file for the parameter planes, which have no sampler "
+        "(default: the tracked plane seed pool, data/discovery/plane_seed_pool.jsonl)",
     )
     production.add_argument(
         "--root-expansions",
@@ -1503,7 +1610,61 @@ def build_parser() -> argparse.ArgumentParser:
         default=str(Path("artifacts") / "harvest"),
         help="the run directory (default: artifacts/harvest)",
     )
+    scoring_flags(production)
     production.set_defaults(handler=harvest)
+
+    checking = subcommands.add_parser(
+        "score-parity",
+        help="score one batch of locations serially and through the pool, and compare",
+        description=(
+            "The scoring pass renders each location's canonical view in worker processes "
+            "and reads the batch through the head in the parent. This makes the same views "
+            "both ways, into two directories, and compares the bytes and the scores — so a "
+            "disagreement is attributable to the render or to the read rather than to "
+            "either by elimination."
+        ),
+    )
+    checking.add_argument(
+        "--ledger", action="append", help="a walk ledger to draw candidates from (repeatable)"
+    )
+    checking.add_argument("--rows", type=int, default=6, help="locations to score both ways")
+    checking.add_argument(
+        "--out-dir",
+        default=str(Path("scratch") / "score_parity"),
+        help="where the two arms' views go (default: scratch/score_parity)",
+    )
+    scoring_flags(checking)
+    checking.set_defaults(handler=score_parity)
+
+    seeding = subcommands.add_parser(
+        "derive-plane-seeds",
+        help="re-derive the tracked parameter-plane seed pool, and check the shipped one",
+        description=(
+            "Walk a grid over each parameter plane's home frame, identify the atom under "
+            "every point, and keep one root per distinct atom spread over periods. Verifies "
+            "against the tracked pool by default and writes only with --write: the pool is "
+            "shipped data, and the claim it makes is that this procedure still produces it."
+        ),
+    )
+    seeding.add_argument(
+        "--columns",
+        type=int,
+        default=None,
+        help=f"grid columns over each home frame (default: {plane_seed_default('COLUMNS')})",
+    )
+    seeding.add_argument(
+        "--per-partition",
+        type=int,
+        default=None,
+        help=f"roots kept per partition (default: {plane_seed_default('PER_PARTITION')})",
+    )
+    seeding.add_argument(
+        "--out", help="path to verify against or write (default: the tracked pool)"
+    )
+    seeding.add_argument(
+        "--write", action="store_true", help="write it; otherwise verify and print the difference"
+    )
+    seeding.set_defaults(handler=derive_plane_seeds)
 
     standing = subcommands.add_parser(
         "census",
