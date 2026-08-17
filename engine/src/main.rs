@@ -107,7 +107,7 @@ struct Mode {
 struct HomeViewReport {
     schema: u32,
     family: &'static str,
-    degree: u32,
+    degree: spec::Degree,
     viewport: HomeViewport,
     /// True when the row is the rule evaluated on a measured set. False for the
     /// one family that has no set to measure, which then carries `exception`.
@@ -347,14 +347,17 @@ const JULIA_EXCEPTION: &str = "a Julia set is a different shape for every c, so 
 
 fn home_view(spec_path: Option<&str>) -> Result<(), String> {
     let spec = spec::HomeViewSpec::parse(&read_spec(spec_path)?)?;
-    let (family, kind, ..) = spec.family.resolve()?;
-    let home = family.home_view();
+    let resolved = spec.family.resolve()?;
+    let family = resolved.family;
+    let home = family
+        .home_view()
+        .ok_or_else(|| spec::render_only_refusal(resolved.kind, "framed by the home table"))?;
     let extent = family.measured_extent();
 
     print(&HomeViewReport {
         schema: 1,
-        family: kind,
-        degree: family.degree(),
+        family: resolved.kind,
+        degree: resolved.degree,
         viewport: HomeViewport {
             center_re: spec::to_decimal_string(home.center.re),
             center_im: spec::to_decimal_string(home.center.im),

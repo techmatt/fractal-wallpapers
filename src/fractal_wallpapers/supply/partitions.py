@@ -144,18 +144,22 @@ def partition_of_family(family: dict) -> str:
     parameter point tells classic phoenix from varied.
     """
     kind = family.get("kind")
-    degree = int(family.get("degree", 2))
     if kind == "mandelbrot":
         return "mandelbrot"
-    if kind == "multibrot":
-        return registered("mandelbrot" if degree == 2 else f"multibrot{degree}")
-    if kind == "julia":
-        return registered(dynamical_twin("mandelbrot" if degree == 2 else f"multibrot{degree}"))
     if kind == "phoenix":
         return CLASSIC_PHOENIX if is_classic_phoenix(family) else "phoenix"
+    # The degree is read only where a partition rule turns on it, so a family
+    # whose degree this registry would not know what to do with is refused as an
+    # unregistered *kind* — which is what it is — rather than as an unparseable
+    # number, which would say nothing about why it does not belong.
+    if kind in ("multibrot", "julia"):
+        degree = int(family.get("degree", 2))
+        plane = "mandelbrot" if degree == 2 else f"multibrot{degree}"
+        return registered(plane if kind == "multibrot" else dynamical_twin(plane))
     raise UnregisteredPartition(
-        f"family kind {kind!r} belongs to no registered partition; the engine renders "
-        f"mandelbrot, multibrot, julia and phoenix"
+        f"family kind {kind!r} belongs to no registered partition. The engine renders "
+        f"mandelbrot, multibrot, julia and phoenix into the books, and a render-only "
+        f"family into pictures and nothing else."
     )
 
 

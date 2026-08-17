@@ -1,4 +1,4 @@
-//! The five families: what each recurrence is, and how a pixel enters it.
+//! The families: what each recurrence is, and how a pixel enters it.
 //!
 //! A family answers four questions and nothing else:
 //!
@@ -6,8 +6,9 @@
 //!    constant? Parameter-plane families read the pixel as the constant `c` and
 //!    start at `z = 0`; dynamical families fix `c` and start at `z = pixel`.
 //!  * [`step`](Family::step) — one application of the recurrence.
-//!  * [`degree`](Family::degree) — the exponent that dominates escape, which is
-//!    the base of the outer logarithm in the smooth iteration count.
+//!  * [`escape_exponent`](Family::escape_exponent) — the exponent that dominates
+//!    escape, which is the base of the outer logarithm in the smooth iteration
+//!    count.
 //!  * [`derivative_seed`](Family::derivative_seed) and
 //!    [`derivative_step`](Family::derivative_step) — the same recurrence
 //!    differentiated with respect to the pixel, which is what the distance
@@ -122,6 +123,14 @@ fn round_to_hundredth(value: f64) -> f64 {
 /// two-plus-three families the spec names collapse to three recurrences here.
 /// The spec keeps `mandelbrot` as a name because that is what the thing is
 /// called; the engine keeps one code path because that is what it is.
+///
+/// [`FractionalMultibrot`](Family::FractionalMultibrot) is the fourth, and it is
+/// a fourth recurrence rather than a wider `degree` on the first because it is a
+/// different kind of thing: an integer power is single-valued and a real power is
+/// not, so it needs a branch, and it exists to be drawn rather than to be
+/// searched. Keeping it separate is what lets everything else stay exactly as it
+/// was — the same bytes on the wire, the same fast path in the loop — and lets
+/// [`is_render_only`](Family::is_render_only) be a single honest question.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Family {
     /// `z ← z^d + c`, `z₀ = 0`, `c` = the pixel. The parameter plane: each pixel
@@ -142,6 +151,24 @@ pub enum Family {
         /// The `z₋₁` the orbit starts with. Zero is the classic slice; anything
         /// else is a different set from the same `(c, p)`.
         z_prev: Complex<f64>,
+    },
+    /// `z ← z^d + c` over the parameter plane at a **non-integer** `d`, on the
+    /// principal branch. The gaps between the integer degrees the other families
+    /// render, and **render-only**: see [`Family::is_render_only`].
+    ///
+    /// A non-integer power of a complex number is many-valued, so this family
+    /// only exists once a branch is chosen. The choice here is the principal one
+    /// — [`cpowf`], `exp(d · Log z)` with `Arg z ∈ (−π, π]` — which puts the cut
+    /// on the negative real axis. The picture therefore carries a **seam** along
+    /// every ray where an iterate crosses that axis, and the seam is not an
+    /// artifact to be smoothed away: it is what a fractional degree *is* on a
+    /// single-valued branch, and it is the subject of the figure this family
+    /// exists to draw. A different branch would move the seam, not remove it.
+    FractionalMultibrot {
+        /// The exponent, strictly between 2 and 5 and never an integer: the
+        /// integer degrees in that range are the [`Multibrot`](Family::Multibrot)
+        /// family's, and one picture gets one name.
+        degree: f64,
     },
 }
 
@@ -164,7 +191,7 @@ impl Family {
     pub fn seed(&self, pixel: Complex<f64>) -> Seed {
         let zero = Complex::new(0.0, 0.0);
         match *self {
-            Family::Multibrot { .. } => (zero, zero, pixel),
+            Family::Multibrot { .. } | Family::FractionalMultibrot { .. } => (zero, zero, pixel),
             Family::Julia { c, .. } => (pixel, zero, c),
             Family::Phoenix { c, z_prev, .. } => (pixel, z_prev, c),
         }
@@ -178,7 +205,7 @@ impl Family {
     /// instead of matching the families over again and forgetting Phoenix.
     pub fn pixel_is_z0(&self) -> bool {
         match *self {
-            Family::Multibrot { .. } => false,
+            Family::Multibrot { .. } | Family::FractionalMultibrot { .. } => false,
             Family::Julia { .. } | Family::Phoenix { .. } => true,
         }
     }
@@ -188,6 +215,7 @@ impl Family {
         match *self {
             Family::Multibrot { degree } | Family::Julia { degree, .. } => cpow(z, degree) + c,
             Family::Phoenix { p, .. } => z * z + c + p * z_prev,
+            Family::FractionalMultibrot { degree } => cpowf(z, degree) + c,
         }
     }
 
@@ -203,7 +231,7 @@ impl Family {
     pub fn derivative_seed(&self) -> (Complex<f64>, Complex<f64>) {
         let (zero, one) = (Complex::new(0.0, 0.0), Complex::new(1.0, 0.0));
         match *self {
-            Family::Multibrot { .. } => (zero, zero),
+            Family::Multibrot { .. } | Family::FractionalMultibrot { .. } => (zero, zero),
             Family::Julia { .. } => (one, zero),
             Family::Phoenix { .. } => (one, zero),
         }
@@ -233,6 +261,9 @@ impl Family {
                 Complex::new(degree as f64, 0.0) * cpow(z, degree - 1) * dz
             }
             Family::Phoenix { p, .. } => 2.0 * z * dz + p * dz_prev,
+            Family::FractionalMultibrot { degree } => {
+                Complex::new(degree, 0.0) * cpowf(z, degree - 1.0) * dz + 1.0
+            }
         }
     }
 
@@ -243,10 +274,30 @@ impl Family {
     /// linear memory term `p·z_{n-1}`, so the escape is quadratic even though
     /// the set is not. The memory reshapes which points escape, not how fast the
     /// ones that do run away.
-    pub fn degree(&self) -> u32 {
+    ///
+    /// It is an `f64` because one family's exponent is not a whole number, and
+    /// the smooth count wants a real base either way: `u32 → f64` is exact, so
+    /// every integer family reports the bits it always did.
+    pub fn escape_exponent(&self) -> f64 {
         match *self {
-            Family::Multibrot { degree } | Family::Julia { degree, .. } => degree,
-            Family::Phoenix { .. } => 2,
+            Family::Multibrot { degree } | Family::Julia { degree, .. } => degree as f64,
+            Family::Phoenix { .. } => 2.0,
+            Family::FractionalMultibrot { degree } => degree,
+        }
+    }
+
+    /// Whether this family may be reached only by a written render or
+    /// dump-field spec.
+    ///
+    /// A **render-only** family draws pictures and does nothing else: no home
+    /// view, no walk, no training tile, no place in the supply engine's books.
+    /// It is a property of the family rather than a check at each door so that
+    /// adding a door cannot quietly add a way in — every caller that is not a
+    /// render asks this and refuses.
+    pub fn is_render_only(&self) -> bool {
+        match *self {
+            Family::Multibrot { .. } | Family::Julia { .. } | Family::Phoenix { .. } => false,
+            Family::FractionalMultibrot { .. } => true,
         }
     }
 
@@ -295,6 +346,7 @@ impl Family {
             Family::Multibrot { .. } => None,
             Family::Julia { .. } => None,
             Family::Phoenix { .. } => at((-0.67875, 0.755), (-1.27125, 1.27125)),
+            Family::FractionalMultibrot { .. } => None,
         }
     }
 
@@ -313,11 +365,19 @@ impl Family {
     /// exception instead. The textbook Mandelbrot view `(−0.5, 3.0)` does not
     /// survive that: it is a choice, it clips the set at 16:9, and the rule
     /// replaces it with `(−0.77, 4.4)`.
-    pub fn home_view(&self) -> HomeView {
-        match self.measured_extent() {
+    ///
+    /// `None` is a **render-only** family, which has no row here at all and is
+    /// not given one by default: a table row is a claim that the family is worth
+    /// looking at unprompted, which is the one thing a render-only family is not.
+    /// Such a render says where to look or is refused.
+    pub fn home_view(&self) -> Option<HomeView> {
+        if self.is_render_only() {
+            return None;
+        }
+        Some(match self.measured_extent() {
             Some(extent) => extent.frame(),
             None => WHOLE_PLANE,
-        }
+        })
     }
 }
 
@@ -334,6 +394,32 @@ fn cpow(z: Complex<f64>, k: u32) -> Complex<f64> {
     acc
 }
 
+/// `z^d` for real `d`, on the **principal branch**.
+///
+/// `exp(d · Log z)` written out in polar form, where `Log z = ln|z| + i·Arg z`
+/// and `Arg z = atan2(im, re) ∈ (−π, π]`. That is the whole of the branch
+/// choice, and it is written here rather than delegated so that the cut is a
+/// line of code somebody can point at: the argument jumps by `2π` across the
+/// negative real axis, so `z^d` jumps by a factor of `e^{2πid}` there — a
+/// discontinuity for every `d` that is not a whole number, and exactly none for
+/// every `d` that is.
+///
+/// `z = 0` returns zero. The limit of `|z|^d` as `z → 0` is zero for every `d`
+/// this family admits (all of them are greater than 2), and the parameter plane
+/// starts every orbit there, so the alternative would be a `NaN` at the first
+/// step of every pixel.
+///
+/// Not used by any integer-degree render: those go through [`cpow`], which is
+/// both faster and exact where this polar round trip is neither.
+fn cpowf(z: Complex<f64>, d: f64) -> Complex<f64> {
+    if z.re == 0.0 && z.im == 0.0 {
+        return Complex::new(0.0, 0.0);
+    }
+    let modulus = z.norm().powf(d);
+    let angle = d * z.arg();
+    Complex::new(modulus * angle.cos(), modulus * angle.sin())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -344,6 +430,115 @@ mod tests {
         assert_eq!(cpow(z, 1), z);
         assert_eq!(cpow(z, 2), z * z);
         assert_eq!(cpow(z, 5), z * z * z * z * z);
+    }
+
+    /// The branch is the whole of what makes a real power single-valued, so the
+    /// choice is pinned rather than described: the principal branch cuts along
+    /// the negative real axis, and two points a hair either side of it — the
+    /// same point to fifteen digits — come out a factor of `e^{2πid}` apart.
+    ///
+    /// This is the figure's subject rather than a defect. At `d = 2.5` that
+    /// factor is `e^{5πi} = −1`, so the seam is a sign flip: as sharp as the
+    /// discontinuity gets, and visible in the render as a ray.
+    #[test]
+    fn the_fractional_power_takes_the_principal_branch_and_seams_on_the_cut() {
+        let d = 2.5;
+        let epsilon = 1e-12;
+        let above = cpowf(Complex::new(-1.5, epsilon), d);
+        let below = cpowf(Complex::new(-1.5, -epsilon), d);
+
+        // The cut runs along the negative real axis and nowhere else: the same
+        // straddle on the positive side is continuous.
+        let right_above = cpowf(Complex::new(1.5, epsilon), d);
+        let right_below = cpowf(Complex::new(1.5, -epsilon), d);
+        assert!((right_above - right_below).norm() < 1e-9);
+
+        // Across the cut the argument jumps by 2π, so the value is multiplied by
+        // e^{2πid} — which at d = 2.5 is exactly −1.
+        assert!((above + below).norm() < 1e-9, "{above} vs {below}");
+        assert!(above.norm() > 1.0, "the seam is not a cancellation to zero");
+
+        // `atan2` runs (−π, π], so the axis itself belongs to the branch above
+        // it: the pixel *on* the cut agrees with its neighbour on the `+im` side.
+        let on_the_cut = cpowf(Complex::new(-1.5, 0.0), d);
+        assert!((on_the_cut - above).norm() < 1e-9);
+    }
+
+    /// The fractional power is the same function as the integer one wherever the
+    /// two are both defined — which is what makes it the *extension* of the
+    /// multibrot family rather than a second unrelated recurrence. The spec
+    /// refuses a whole degree, so this agreement is provable and unreachable at
+    /// once, which is exactly the right shape for it.
+    #[test]
+    fn the_fractional_power_extends_the_integer_one() {
+        for z in [Complex::new(0.3, -0.7), Complex::new(-1.2, 0.4)] {
+            for k in 2..=5u32 {
+                let difference = cpowf(z, k as f64) - cpow(z, k);
+                assert!(difference.norm() < 1e-12, "z^{k} at {z}: {difference}");
+            }
+        }
+        assert_eq!(cpowf(Complex::new(0.0, 0.0), 2.5), Complex::new(0.0, 0.0));
+    }
+
+    /// A fractional degree is a parameter plane like every other multibrot — the
+    /// pixel is `c`, the orbit opens at zero — and it is render-only, which
+    /// means it has no home view at all rather than a defaulted one.
+    #[test]
+    fn a_fractional_degree_is_a_parameter_plane_with_no_home() {
+        let family = Family::FractionalMultibrot { degree: 2.5 };
+        let pixel = Complex::new(0.1, 0.2);
+        assert_eq!(
+            family.seed(pixel),
+            (Complex::new(0.0, 0.0), Complex::new(0.0, 0.0), pixel)
+        );
+        assert!(!family.pixel_is_z0());
+        assert_eq!(family.derivative_seed().0, Complex::new(0.0, 0.0));
+        assert_eq!(family.escape_exponent(), 2.5);
+
+        assert!(family.is_render_only());
+        assert_eq!(family.measured_extent(), None);
+        assert_eq!(family.home_view(), None);
+    }
+
+    /// The render-only question is asked of every family, so a family added
+    /// later cannot answer it by omission.
+    #[test]
+    fn every_other_family_is_reachable_from_everywhere() {
+        for family in [
+            Family::Multibrot { degree: 2 },
+            Family::Multibrot { degree: 5 },
+            Family::Julia {
+                degree: 2,
+                c: Complex::new(-0.8, 0.156),
+            },
+            CLASSIC_PHOENIX,
+        ] {
+            assert!(!family.is_render_only(), "{family:?}");
+            assert!(family.home_view().is_some(), "{family:?}");
+        }
+    }
+
+    /// The exponent the smooth count reads is a real number now, and every
+    /// integer family reports the integer it always did — exactly, because
+    /// `u32 → f64` loses nothing at these sizes.
+    #[test]
+    fn the_escape_exponent_is_the_degree_that_dominates_escape() {
+        assert_eq!(Family::Multibrot { degree: 2 }.escape_exponent(), 2.0);
+        assert_eq!(Family::Multibrot { degree: 5 }.escape_exponent(), 5.0);
+        assert_eq!(
+            Family::Julia {
+                degree: 4,
+                c: Complex::new(0.0, 0.0)
+            }
+            .escape_exponent(),
+            4.0
+        );
+        // Phoenix escapes quadratically however the memory term reshapes the set.
+        assert_eq!(CLASSIC_PHOENIX.escape_exponent(), 2.0);
+        assert_eq!(
+            Family::FractionalMultibrot { degree: 3.75 }.escape_exponent(),
+            3.75
+        );
     }
 
     #[test]
@@ -399,7 +594,7 @@ mod tests {
     fn each_family_comes_home_to_the_rule_evaluated_on_its_own_set() {
         for (name, family) in derivable() {
             let extent = family.measured_extent().expect("a derivable family");
-            assert_eq!(family.home_view(), extent.frame(), "{name}");
+            assert_eq!(family.home_view(), Some(extent.frame()), "{name}");
         }
         // The values the rule lands on, written down once so a change to the
         // rule cannot pass unnoticed as a change to nothing.
@@ -411,7 +606,7 @@ mod tests {
             ("phoenix", 0.04, 5.0),
         ];
         for ((name, family), (_, center_re, width)) in derivable().into_iter().zip(rows) {
-            let home = family.home_view();
+            let home = family.home_view().expect("a framed family");
             assert_eq!(home.center, Complex::new(center_re, 0.0), "{name}");
             assert_eq!(home.width, width, "{name}");
         }
@@ -422,7 +617,7 @@ mod tests {
     /// set is 2.2. Pinned so the row cannot quietly revert to the familiar one.
     #[test]
     fn the_mandelbrot_row_is_derived_rather_than_textbook() {
-        let home = Family::Multibrot { degree: 2 }.home_view();
+        let home = Family::Multibrot { degree: 2 }.home_view().unwrap();
         assert_ne!(home.center, Complex::new(-0.5, 0.0));
         assert_ne!(home.width, WHOLE_PLANE.width);
         assert!(home.width * 9.0 / 16.0 > 2.2, "it has to hold the set");
@@ -436,7 +631,7 @@ mod tests {
         for c in [Complex::new(0.0, 0.0), Complex::new(-0.4, 0.6)] {
             let family = Family::Julia { degree: 2, c };
             assert_eq!(family.measured_extent(), None);
-            assert_eq!(family.home_view(), WHOLE_PLANE);
+            assert_eq!(family.home_view(), Some(WHOLE_PLANE));
         }
     }
 
@@ -455,7 +650,7 @@ mod tests {
         let span = 2.0 * MEASURE_HALF_SPAN;
         let grid_step = span / steps as f64;
         for (name, family) in derivable() {
-            let home = family.home_view();
+            let home = family.home_view().expect("a framed family");
             let recorded = family.measured_extent().expect("a derivable family");
             let half_width = home.width / 2.0;
             let half_height = home.width * 9.0 / 16.0 / 2.0;

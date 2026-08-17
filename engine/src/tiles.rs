@@ -1006,6 +1006,16 @@ fn clone_family(family: &FamilySpec) -> Result<FamilySpec, String> {
             p: pair(p),
             z_prev: pair(z_prev),
         },
+        // A render-only family has no business in a training tile: the tiles are
+        // what the judges learn a location from, and this family is never a
+        // location a judge will be asked about. Refused here rather than in the
+        // loop, because a plan is read whole before a single field is iterated.
+        FamilySpec::FractionalMultibrot { .. } => {
+            return Err(crate::spec::render_only_refusal(
+                "fractional_multibrot",
+                "cut into training tiles",
+            ));
+        }
     })
 }
 
@@ -1052,6 +1062,29 @@ mod tests {
         assert!(across >= 1.2 && down > across, "{across} vs {down}");
         assert_eq!(geom.samples_x, 640 * 2 + 2 * 128);
         assert_eq!(geom.samples_y, 360 * 2 + 2 * 128);
+    }
+
+    /// Tiles are what the judges learn a location from, so a render-only family
+    /// is refused where the plan is read — before a field is iterated, and long
+    /// before a tile could be written under a head's name.
+    #[test]
+    fn a_render_only_family_cannot_be_cut_into_tiles() {
+        let message = clone_family(&FamilySpec::FractionalMultibrot {
+            degree: "2.5".into(),
+        })
+        .unwrap_err();
+        assert!(message.contains("render-only"), "{message}");
+        for family in [
+            FamilySpec::Mandelbrot,
+            FamilySpec::Multibrot { degree: 4 },
+            FamilySpec::Phoenix {
+                c: ["0.5667".into(), "0.0".into()],
+                p: ["-0.5".into(), "0.0".into()],
+                z_prev: ["0.0".into(), "0.0".into()],
+            },
+        ] {
+            clone_family(&family).expect("every other family still copies");
+        }
     }
 
     /// The canonical framing must land on the field's own grid at an integer

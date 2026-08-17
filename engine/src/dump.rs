@@ -165,7 +165,7 @@ mod tests {
             colormap: "twilight_shifted".into(),
             location: Location {
                 family: "mandelbrot".into(),
-                degree: 2,
+                degree: crate::spec::Degree::Integer(2),
                 center_re: "-0.5".into(),
                 center_im: "0.0".into(),
                 width: "3.0".into(),
