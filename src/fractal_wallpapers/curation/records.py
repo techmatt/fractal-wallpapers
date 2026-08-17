@@ -31,6 +31,19 @@ calibration pass can read a bar's precision off accumulated releases.
 the assertion a run makes **before its first write**. One binding at the run's
 entry point rather than a flag at each write site, because a redirect applied at
 three of four sites is not a redirect.
+
+## A verdict taken after the run is added to the row, never written over it
+
+A release can be wrong, and it is a person who finds out. When that happens the
+row keeps `verdict: released` — that *is* what the run decided, and a store that
+edited it would lose the only evidence the release path had a defect — and gains
+a [`rejected`] block saying who rejected it, when, and against what. Scores are
+untouched, nothing is deleted, and [`served`] is what every listing reads instead
+of the raw verdict.
+
+The block outlives a re-record. `_upsert` carries it forward when a fresh run of
+the same name writes the same key without one, because the alternative is that
+re-running a curation silently un-rejects rows a person rejected by hand.
 """
 
 from __future__ import annotations
@@ -46,6 +59,14 @@ SCHEMA = 1
 #: The two decisions a run records.
 GATE = "gate"
 RELEASE = "release"
+
+#: The sentence a decision row gives for each way a candidate can lose a slot to
+#: something other than its own score. One spelling, here, because the sheet
+#: re-derives the sections of a run it did not make by reading these back.
+REASONS = {
+    "cluster_cap": "a third picture of a look already taken twice",
+    "below_bar": "below the acting release bar for this head",
+}
 
 _ROOT: Path | None = None
 
@@ -188,10 +209,58 @@ def decision(
             "p_ge4": row.get("p_ge4"),
             "rank_score": row.get("rank_score"),
         },
+        # Exactly one of these two is present on a scored row, and which one says
+        # whether this head's release cut acts. An advisory annotated and removed
+        # nothing; a bar decided whether the row could be seated at all, and
+        # carries the height and the artifact that height lives on.
         "advisory": row.get("advisory"),
+        "bar": row.get("bar"),
+        # A verdict taken after the run, by a person, on a row the run released.
+        # `None` on everything the review has not touched.
+        "rejected": row.get("rejected"),
         "autolevel": row.get("autolevel"),
         "error": row.get("error"),
     }
+
+
+# --------------------------------------------------------------------------- #
+# What a run serves, once a review has been over it.
+# --------------------------------------------------------------------------- #
+def rejection(*, rejector: str, date: str, reason: str, note: str, bar: dict | None) -> dict:
+    """The block a post-run review adds to a released row it is taking back.
+
+    `rejector` is who — a person or the named review that stands for one — and
+    `date` is when, both required, because an unattributed retraction is
+    indistinguishable from a bug in the release path. `bar` is the cut the row
+    failed, carried whole so the rejection can be restated against the same
+    artifact after the head moves.
+    """
+    return {
+        "rejector": str(rejector),
+        "date": str(date),
+        "reason": str(reason),
+        "note": str(note),
+        "bar": bar,
+    }
+
+
+def is_rejected(row: dict) -> bool:
+    """Whether a later review took this row back."""
+    return bool(row.get("rejected"))
+
+
+def served(rows) -> list[dict]:
+    """The rows a run actually serves, in candidate order.
+
+    Released, minus what a review rejected. **This, not `verdict == "released"`,
+    is what a listing reads.** The raw verdict is what the run decided and it
+    stays true; the served set is what a person would find at the end of a link,
+    and the two come apart the moment anybody reviews a release.
+    """
+    return sorted(
+        (row for row in rows if row.get("verdict") == "released" and not is_rejected(row)),
+        key=lambda row: str(row.get("candidate")),
+    )
 
 
 def population(*, run: str, ledgers, counts: dict, cuts: dict, config: dict) -> dict:
@@ -213,6 +282,19 @@ def population(*, run: str, ledgers, counts: dict, cuts: dict, config: dict) -> 
     }
 
 
+def _carry(previous: dict | None, row: dict) -> dict:
+    """The incoming row, keeping any review verdict the stored one already had.
+
+    The one thing an upsert does not overwrite. A re-run re-derives every field on
+    this row from the same inputs and would re-derive the rejection as absent,
+    because the rejection was never one of its inputs — a person was. Silently
+    un-rejecting a row a person took back is the failure this prevents.
+    """
+    if previous and previous.get("rejected") and not row.get("rejected"):
+        return {**row, "rejected": previous["rejected"]}
+    return row
+
+
 def _upsert(path: Path, rows) -> tuple[int, int]:
     """Merge `rows` into `path` by key, rewritten in key order. `(total, new)`.
 
@@ -228,7 +310,7 @@ def _upsert(path: Path, rows) -> tuple[int, int]:
                 merged[existing["key"]] = existing
     before = set(merged)
     for row in rows:
-        merged[row["key"]] = row
+        merged[row["key"]] = _carry(merged.get(row["key"]), row)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         "".join(json.dumps(merged[key], ensure_ascii=False) + "\n" for key in sorted(merged)),
@@ -275,6 +357,7 @@ def read_decisions(stage: str, run: str | None = None) -> list[dict]:
 
 __all__ = [
     "GATE",
+    "REASONS",
     "RELEASE",
     "SCHEMA",
     "NotIsolated",
@@ -282,10 +365,13 @@ __all__ = [
     "decision",
     "default_root",
     "is_durable",
+    "is_rejected",
     "population",
     "read_decisions",
+    "rejection",
     "root",
     "scratch_root",
+    "served",
     "sinks",
     "use",
     "write_decisions",

@@ -52,6 +52,14 @@ quota under the caps ships fewer. A slot a thin partition could not use is not
 handed to a partition that had plenty — that is the thin-supply rule undone one
 level up — and a short-fill is printed with the three numbers that make it
 attributable.
+
+That rule now has an enforcing edge on one head. The strange judge's release cut
+**acts** ([`floors.STRANGE_RELEASE_BAR`]): a strange row below it is not seated
+under any supply condition, and a strange slot with nothing above it goes
+*unfilled*. The release target is a cap and not a quota, and the run summary
+reports planned against seated against unfilled per head and per partition so a
+short release is attributable to the bar rather than mistaken for thin supply.
+The smooth judge's cut still only annotates.
 """
 
 from __future__ import annotations
@@ -487,7 +495,15 @@ def _intact_field(path: Path) -> bool:
 
 
 def _select(scored, n, strange_share, caps, claims, log):
-    """Two disjoint judge passes, one look counter across both."""
+    """Two disjoint judge passes, one look counter across both, one bar on one head.
+
+    The allocation is solved over the partitions that have a *scored* candidate,
+    not over the ones that have a candidate clearing the bar. That is deliberate
+    and it is the no-redistribution rule again: a partition whose whole supply the
+    bar rejects holds its slot and leaves it unfilled, because handing the slot to
+    a partition that had plenty is padding one level up from the padding this bar
+    exists to end.
+    """
     slots = budget_module.head_slots(n, strange_share)
     by_head = {head: [row for row in scored if row["head"] == head] for head in budget_module.HEADS}
     entries = {head: selection.entries(rows) for head, rows in by_head.items()}
@@ -497,23 +513,40 @@ def _select(scored, n, strange_share, caps, claims, log):
     )
 
     used: dict = {}
-    selected, log_rows, allocations = [], [], {}
+    selected, log_rows, allocations, fill = [], [], {}, {}
     for head in budget_module.HEADS:
         present = {entry["partition"] for entry in entries[head]}
         mine = {p for p, h in owed.items() if h == head and p in present}
         allocation = intake.slots(present, slots[head], mine, caps=None)
         allocations[head] = allocation
-        picks, rows = selection.select(
+        bar = floors.release_bar(head)
+        picks, rows, fills = selection.select(
             entries[head],
             allocation,
             {p: caps.get(p, 0) for p in present},
             used,
             guarantees=mine,
+            bar=bar,
         )
         for row in rows:
             row["head"] = head
         selected.extend(picks)
         log_rows.extend(rows)
+        fill[head] = {
+            # `target` is the head's share of -n; `planned` is that share once the
+            # allocation has put it on partitions, and the two differ when a head
+            # has fewer supplied partitions than slots. Both, because a release
+            # short at the first number and a release short at the second are
+            # different failures.
+            "target": int(slots[head]),
+            "planned": sum(cell["planned"] for cell in fills.values()),
+            "seated": len(picks),
+            "unfilled": sum(cell["unfilled"] for cell in fills.values()),
+            "bar": None
+            if bar is None
+            else {"name": bar.name, "value": bar.value, "head_sha256": bar.stamp, "acts": True},
+            "by_partition": {p: fills[p] for p in sorted(fills)},
+        }
 
     split = {
         "requested": n,
@@ -528,6 +561,12 @@ def _select(scored, n, strange_share, caps, claims, log):
         "emit_caps": dict(caps),
         "cluster_cap": floors.CLUSTER_CAP,
         "cluster_cap_skips": sum(1 for row in log_rows if row.get("skipped") == "cluster_cap"),
+        "below_bar_skips": sum(1 for row in log_rows if row.get("skipped") == "below_bar"),
+        # Planned against seated against unfilled, per head and per partition.
+        # A short release is attributable at a glance or it is read as thin
+        # supply, and after a bar started acting those are no longer the same
+        # thing.
+        "fill": fill,
         "guarantee": {
             "owed": dict(sorted(owed.items())),
             "unplaced": list(unplaced),
@@ -535,6 +574,22 @@ def _select(scored, n, strange_share, caps, claims, log):
         },
         "short_by": max(0, n - len(selected)),
     }
+    for head in budget_module.HEADS:
+        cells = fill[head]
+        bar = cells["bar"]
+        line = (
+            f"[select] {head}: {cells['planned']} planned, {cells['seated']} seated, "
+            f"{cells['unfilled']} unfilled"
+            + (f" · bar {bar['value']:g} ACTING" if bar else " · no acting bar")
+        )
+        short = {
+            partition: cell["reason"]
+            for partition, cell in cells["by_partition"].items()
+            if cell["unfilled"]
+        }
+        if short:
+            line += " · " + ", ".join(f"{p} {r}" for p, r in sorted(short.items()))
+        log(line)
     if split["short_by"]:
         log(
             f"[select] SHORT-FILL {len(selected)}/{n}: "
@@ -543,8 +598,9 @@ def _select(scored, n, strange_share, caps, claims, log):
                 f"(eligible {split['head_eligible'][head]})"
                 for head in budget_module.HEADS
             )
-            + f". Shipping fewer rather than filling past a slot, supply or look cap "
-            f"({split['cluster_cap_skips']} look-cap skips)."
+            + f". Shipping fewer rather than filling past a slot, supply, look or bar cut "
+            f"({split['cluster_cap_skips']} look-cap skips, "
+            f"{split['below_bar_skips']} below the bar)."
         )
     log(
         f"[select] {len(selected)} selected: "
@@ -693,7 +749,13 @@ def _record(**k) -> dict:
     chosen = {entry["id"] for entry in selected}
     group_of = {entry["id"]: entry["group"] for entry in selection.entries(scored)}
     source = {row["id"]: row.get("slot_source") for row in k["log_rows"] if row.get("picked")}
-    skipped = {row["id"] for row in k["log_rows"] if row.get("skipped") == "cluster_cap"}
+    # Every way a row lost a slot to something other than its own rank, in the
+    # one spelling the sheet reads back when it rebuilds a run it did not make.
+    why = {
+        row["id"]: records.REASONS[row["skipped"]]
+        for row in k["log_rows"]
+        if row.get("skipped") in records.REASONS
+    }
 
     gate_rows = [
         records.decision(
@@ -723,9 +785,7 @@ def _record(**k) -> dict:
             candidate=identifier,
             verdict="released" if identifier in chosen else "passed_over",
             row=row,
-            reason="a third picture of a look already taken twice"
-            if identifier in skipped
-            else None,
+            reason=why.get(identifier),
             slot_source=source.get(identifier),
             group=group_of.get(identifier),
             picture=(str(Path(picture).relative_to(directory)) if picture else row.get("picture")),
@@ -785,16 +845,14 @@ def _record(**k) -> dict:
         ),
     )
 
-    by_candidate = {row["candidate"]: row for row in release_rows}
-    page = sheet.build(
+    # Built from the rows as *written*, not from the rows in hand, and that is
+    # the difference between one sheet generator and two. A re-recorded run keeps
+    # any review verdict the store already carried ([`records._carry`]), so the
+    # page a run draws and the page a rejection redraws are the same page from
+    # the same function over the same rows.
+    page = sheet.from_records(
         run,
-        [by_candidate[i] for i in sorted(chosen) if i in by_candidate],
-        [
-            row
-            for row in sorted(release_rows, key=lambda r: -(r["scores"]["p_ge3"] or 0))
-            if row["verdict"] == "passed_over" and row["candidate"] not in skipped
-        ][: max(6, len(chosen))],
-        [row for row in release_rows if row["candidate"] in skipped],
+        records.read_decisions(records.RELEASE, run),
         {
             "requested": k["n"],
             "scored": len(scored),

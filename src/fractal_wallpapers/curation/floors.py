@@ -40,20 +40,37 @@ quality* of the old rows instead of deleting them.
   number under a second name is exactly the six-site restatement this module was
   written to end, so it is re-exported and never restated.
 
-## The render heads only annotate, and that is a measurement gap being honest
+## The render heads: one bar acts now, the other still only annotates
 
 A render head's floor would be its own production gate — the score above which a
-finished picture is worth releasing. This project has never measured one: the two
-render judges shipped at BORDERLINE and FAIL against their pre-registered bars,
-so no number here would be a claim anybody could defend. What ships instead is an
-advisory at each head's own natural rank cutpoint, written onto every release
-record, so *"was a bar at this height buying anything"* stays answerable off the
-accumulating record rather than only off runs made while a bar was enforcing.
+finished picture is worth releasing. This project measured neither: the two render
+judges shipped at BORDERLINE and FAIL against their pre-registered bars. So both
+shipped as advisories at each head's own natural rank cutpoint, written onto every
+release record, on the reasoning that *"was a bar at this height buying anything"*
+stays answerable off the accumulating record rather than only off runs made while
+a bar was enforcing.
 
-Each advisory carries the sha256 of the shipped head it reads. That is this
-repository's head version: a head is a file with a hash, the manifest names it,
-and an advisory whose stamp disagrees with the live artifact refuses rather than
-producing a plausible-looking column about a scale that no longer exists.
+The strange head's advisory has since been **promoted to an acting bar**, and by
+a review verdict rather than by a measurement. Matt read `run2` on 2026-08-17: the
+eleven released strange rows that sat below 0.50 were all bad and the head had
+been right about every one of them, and the path that seated them was padding
+strange slots out of thin passing supply. So [`STRANGE_RELEASE_BAR`] acts at
+release selection — a strange row below it is not seated, and a strange slot with
+no passing supply goes unfilled. It is still not a measured operating point; a
+labels-derived restatement is future work the label accumulator holds. The smooth
+head stays advisory: its own below-advisory rows belong to a mix-ratio decision
+that has not been taken.
+
+That split is why there are two types here. An [`Advisory`] is computed, recorded,
+and structurally unable to remove a row — no `gate()`, no `seats()`, no `acts`
+flag beside it. A [`Bar`] is the other thing, named as the other thing, and
+[`release_cut`] hands out whichever one a head actually has.
+
+Both carry the sha256 of the shipped head they read. That is this repository's
+head version: a head is a file with a hash, the manifest names it, and a cut whose
+stamp disagrees with the live artifact refuses rather than producing a
+plausible-looking column — or, now, a seating decision — about a scale that no
+longer exists.
 """
 
 from __future__ import annotations
@@ -104,14 +121,14 @@ class HeadStampMismatch(RuntimeError):
 
 
 @dataclass(frozen=True)
-class Advisory:
-    """One cut that is computed, recorded, and never allowed to remove a row.
+class Cut:
+    """A threshold on one head's probability scale, and the artifact it reads.
 
-    It carries the head whose scale its value lives on and the sha256 of the
-    artifact it was set against, and [`annotates`] checks the stamp before it
-    compares. An advisory **cannot** cut: there is no `gate()` here and no `acts`
-    flag beside it, because a switch nobody may flip next to a method named for
-    flipping it is an invitation.
+    The shared half of the two things below: the number, whose scale it lives on,
+    the stamp that pins that scale, and the tri-state comparison. What a cut is
+    *allowed to do* with that comparison is the subclass's whole content, and it
+    is a type rather than a flag on purpose — a switch nobody may flip is an
+    invitation, and a class that cannot be asked the question is not.
     """
 
     #: The name a record writes.
@@ -130,15 +147,15 @@ class Advisory:
         live = live_stamp(self.head)
         if live != self.stamp:
             raise HeadStampMismatch(
-                f"the {self.name!r} advisory ({self.value}) was set against "
+                f"the {self.name!r} cut ({self.value}) was set against "
                 f"{self.head} sha256 {self.stamp[:12]}, but the live artifact is "
                 f"{live[:12]}. {self.value} is a point on the first head's probability scale "
-                f"and says nothing on the second's — re-state the advisory against the live "
+                f"and says nothing on the second's — re-state the cut against the live "
                 f"head and move the stamp, or restore the head the record names. Refusing to "
-                f"annotate."
+                f"compare."
             )
 
-    def annotates(self, score) -> bool | None:
+    def clears(self, score) -> bool | None:
         """`score >= value`, after the stamp check. `None` when there is no score.
 
         Tri-state on purpose. A render that failed is a decision with a reason and
@@ -148,8 +165,48 @@ class Advisory:
         self.check()
         return None if score is None else float(score) >= self.value
 
+
+@dataclass(frozen=True)
+class Advisory(Cut):
+    """A cut that is computed, recorded, and never allowed to remove a row.
+
+    An advisory **cannot** cut: there is no `gate()` here, no `seats()` and no
+    `acts` flag beside it. A head whose cut acts gets a [`Bar`] instead, which is
+    a different class with a different method, so the difference is visible at
+    every call site rather than hidden in a boolean.
+    """
+
+    def annotates(self, score) -> bool | None:
+        """What [`Cut.clears`] says, under the name that says it removes nothing."""
+        return self.clears(score)
+
     def __str__(self) -> str:
         return f"{self.name} {self.value:g} ({self.head} {self.stamp[:12]}, advisory)"
+
+
+@dataclass(frozen=True)
+class Bar(Cut):
+    """A cut that ACTS: a row below it does not take a release slot.
+
+    The only one of these is the strange head's, and it exists by Matt's review
+    verdict of 2026-08-17 rather than by a measurement — see the module docstring.
+    Its `basis` says so, and it says so on every row it stamps, because a bar that
+    reads like a measured operating point is exactly the frozen verdict this
+    module was written to avoid.
+    """
+
+    def seats(self, score) -> bool:
+        """Whether a row scoring this may take a slot.
+
+        Strict where [`Cut.clears`] is tri-state, and that is the whole difference
+        between recording a comparison and acting on one: a row with no score has
+        nothing to seat it on, so it is not seated. The record keeps the third
+        state; the seating decision cannot have one.
+        """
+        return self.clears(score) is True
+
+    def __str__(self) -> str:
+        return f"{self.name} {self.value:g} ({self.head} {self.stamp[:12]}, ACTING)"
 
 
 def live_stamp(head: str) -> str:
@@ -171,36 +228,91 @@ def live_stamp(head: str) -> str:
     return str(entry["sha256"])
 
 
-def _advisory(head: str, basis: str) -> Advisory:
-    return Advisory(
-        name=f"{head}_release",
-        value=RELEASE_ADVISORY,
-        head=head,
-        stamp=live_stamp(head),
-        basis=basis,
-    )
-
-
-#: Where the render heads' advisories sit: the natural rank cutpoint of a CORN
+#: Where a render head's advisory sits: the natural rank cutpoint of a CORN
 #: probability, which is the midpoint of the scale and not an operating point.
 #: It answers "would this head call the picture a wallpaper", which is a sentence
 #: about the head rather than a bar somebody measured.
 RELEASE_ADVISORY = 0.50
 
+#: **The strange head's ACTING release bar.** The same height as the advisory it
+#: was promoted from, and a second number rather than an alias of the first
+#: because it is a second decision: the advisory is a property of the scale, this
+#: is a policy about what may ship. Moving either alone is a real change and has
+#: to read as one.
+STRANGE_RELEASE_BAR = 0.50
 
-def release_advisory(head: str) -> Advisory:
-    """The advisory a finished-render head's score is annotated against.
+#: Which render heads' release cut ACTS, and at what height. Everything not in
+#: here gets an [`Advisory`]. Spelled out rather than imported from `budget.HEADS`
+#: only because that module already imports this one; the suite checks the
+#: spelling against it.
+ACTING_RELEASE_BARS = {"strange_render": STRANGE_RELEASE_BAR}
+
+#: Why the one acting bar acts. Carried onto every row it stamps, because a bar
+#: whose provenance is a review verdict must not read like a measured one.
+STRANGE_BAR_BASIS = (
+    "an ACTING bar by Matt's review verdict of 2026-08-17, not by a measurement: every one "
+    "of run2's eleven released strange rows below this height was bad and the head was right "
+    "about all eleven, and the release path that seated them was padding strange slots from "
+    "thin passing supply. Promoted from the advisory at the same height. A labels-derived "
+    "restatement of the bar is future work; the label accumulator holds it."
+)
+
+
+def release_cut(head: str) -> Advisory | Bar:
+    """The release cut on a finished-render head's score — whichever kind it has.
+
+    THE dispatcher, and the reason a caller never decides for itself whether a
+    head gates: [`ACTING_RELEASE_BARS`] is the one place that answers it, and
+    every other site reads the answer off the returned type.
 
     Built at call time so its stamp is the live artifact's, which is the whole
     point of the stamp: a cut object cached at import would carry the hash of
     whatever was shipped when the process started.
     """
-    return _advisory(
-        head,
-        "the natural rank cutpoint of this head's own P(>=3) — not an operating point and "
-        "no evaluation derived it. This project has never measured a release gate for a "
-        "render head, and an advisory that pretended to be one would be a bar nobody could "
-        "defend. It annotates so the question stays answerable off the record.",
+    if head in ACTING_RELEASE_BARS:
+        return Bar(
+            name=f"{head}_release",
+            value=float(ACTING_RELEASE_BARS[head]),
+            head=head,
+            stamp=live_stamp(head),
+            basis=STRANGE_BAR_BASIS,
+        )
+    return release_advisory(head)
+
+
+def release_bar(head: str) -> Bar | None:
+    """The acting bar this head is gated on, or `None` where nothing gates it.
+
+    What the release selection asks. `None` is not a weaker bar — it is no bar,
+    and the selection must go on picking exactly as it did before.
+    """
+    cut = release_cut(head)
+    return cut if isinstance(cut, Bar) else None
+
+
+def release_advisory(head: str) -> Advisory:
+    """The advisory a finished-render head's score is annotated against.
+
+    Only the heads with no acting bar have one. Asking for an advisory on a head
+    whose cut acts is a category error rather than a weaker reading of it, so it
+    refuses: a caller that got an object with no `seats` back would go on to seat
+    a row the bar had rejected.
+    """
+    if head in ACTING_RELEASE_BARS:
+        raise ValueError(
+            f"{head!r}'s release cut ACTS at {ACTING_RELEASE_BARS[head]} — it is a Bar, not an "
+            f"advisory. Call release_cut() and read the type, or release_bar() if the question "
+            f"is whether this head gates."
+        )
+    return Advisory(
+        name=f"{head}_release",
+        value=RELEASE_ADVISORY,
+        head=head,
+        stamp=live_stamp(head),
+        basis="the natural rank cutpoint of this head's own P(>=3) — not an operating point "
+        "and no evaluation derived it. No release gate has been measured for this head, and "
+        "an advisory that pretended to be one would be a bar nobody could defend. It "
+        "annotates so the question stays answerable off the record.",
     )
 
 
@@ -247,8 +359,21 @@ def summary() -> dict:
                 "where": "the slot guarantee's trigger; and the walk's booking tier",
                 "owner": "supply.currency.GOOD_FLOOR — re-exported, never restated",
             },
+            **{
+                f"{head}_release_bar": {
+                    "value": value,
+                    "head": head,
+                    "where": "release selection: a row below it is not seated, and a slot "
+                    "with no passing supply goes unfilled",
+                    "basis": STRANGE_BAR_BASIS,
+                }
+                for head, value in sorted(ACTING_RELEASE_BARS.items())
+            },
         },
-        "advisory": {"render heads": RELEASE_ADVISORY},
+        "advisory": {
+            "render heads with no acting bar": RELEASE_ADVISORY,
+            "acting instead": sorted(ACTING_RELEASE_BARS),
+        },
         "caps": {
             "thin_supply_divisor": THIN_SUPPLY_DIVISOR,
             "cluster_cap": CLUSTER_CAP,
@@ -258,18 +383,25 @@ def summary() -> dict:
 
 
 __all__ = [
+    "ACTING_RELEASE_BARS",
     "ATTEMPT_MULTIPLIER",
     "CLUSTER_CAP",
     "GOOD_FLOOR",
     "JUNK_FLOOR",
     "RELEASE_ADVISORY",
+    "STRANGE_BAR_BASIS",
+    "STRANGE_RELEASE_BAR",
     "THIN_SUPPLY_DIVISOR",
     "Advisory",
+    "Bar",
+    "Cut",
     "HeadStampMismatch",
     "emit_cap",
     "live_stamp",
     "passes_good_floor",
     "passes_junk_floor",
     "release_advisory",
+    "release_bar",
+    "release_cut",
     "summary",
 ]

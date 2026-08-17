@@ -37,16 +37,19 @@ def _sha256(path: Path) -> str:
 
 
 def released_rows(run: str) -> list[dict]:
-    """The rows one run actually released, in candidate order."""
-    rows = [
-        row for row in records.read_decisions(records.RELEASE, run) if row["verdict"] == "released"
-    ]
+    """The rows one run actually **serves**, in candidate order.
+
+    Served and not merely released: a row a later review took back is still in the
+    records with its scores intact, and re-deriving a picture nobody serves would
+    spend the expensive half of both checks on a wallpaper that is not shipping.
+    """
+    rows = records.served(records.read_decisions(records.RELEASE, run))
     if not rows:
         raise CheckError(
-            f"run {run!r} released nothing this store knows about. Point --record-root at "
+            f"run {run!r} serves nothing this store knows about. Point --record-root at "
             f"the store the run wrote, or run the curation first."
         )
-    return sorted(rows, key=lambda row: row["candidate"])
+    return rows
 
 
 def tasks_of(run: str, rows: list[dict], directory: Path) -> list[release.Task]:
