@@ -281,6 +281,26 @@ def refuse_impossible_walk(args: argparse.Namespace) -> str | None:
     return None
 
 
+def grace_flag(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
+    """The expansion grace, on every command that walks.
+
+    One definition for the same reason [`scoring_flags`] is one: a harvest that
+    resumes a walk under a different depth policy writes two policies into one
+    run seed's ledger.
+    """
+    from fractal_wallpapers.discovery.walk import Limits
+
+    parser.add_argument(
+        "--plane-grace-rungs",
+        type=int,
+        default=Limits.plane_grace_rungs,
+        help=f"rungs below a parameter-plane seed root that the expansion junk floor does "
+        f"not act on (default: {Limits.plane_grace_rungs}; 0 gates every rung). Booking "
+        f"stays at the good floor, and dynamical roots are untouched",
+    )
+    return parser
+
+
 def scoring_flags(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     """The three flags every command that scores locations takes.
 
@@ -398,6 +418,7 @@ def walk(args: argparse.Namespace) -> int:
             batches=args.batches,
             root_expansions=args.root_expansions,
             probe_probability=args.probe,
+            plane_grace_rungs=args.plane_grace_rungs,
         ),
         policy=Policy(candidates=args.candidates, node_width=args.node_width),
         gates=Gates(),
@@ -437,7 +458,11 @@ def harvest(args: argparse.Namespace) -> int:
     walk_run = Walk(
         out_dir=run_dir,
         seed=args.seed,
-        limits=Limits(batch=args.batch, root_expansions=args.root_expansions),
+        limits=Limits(
+            batch=args.batch,
+            root_expansions=args.root_expansions,
+            plane_grace_rungs=args.plane_grace_rungs,
+        ),
         policy=Policy(candidates=args.candidates, node_width=args.node_width),
         colormap=args.colormap,
         scorer=build_scorer(args),
@@ -1545,6 +1570,7 @@ def build_parser() -> argparse.ArgumentParser:
         default=str(Path("artifacts") / "walk"),
         help="where the ledger and thumbnails go (default: artifacts/walk)",
     )
+    grace_flag(search)
     scoring_flags(search)
     search.set_defaults(handler=walk)
 
@@ -1631,6 +1657,7 @@ def build_parser() -> argparse.ArgumentParser:
         default=str(Path("artifacts") / "harvest"),
         help="the run directory (default: artifacts/harvest)",
     )
+    grace_flag(production)
     scoring_flags(production)
     production.set_defaults(handler=harvest)
 

@@ -54,6 +54,33 @@ book — is what keeps the walk moving between finds, and it is invisible to eve
 book in the project because its rows carry their own fate. See
 [`fractal_wallpapers.discovery.ledger`] for the three of them.
 
+## A parameter-plane root starts above the depths its material lives at
+
+The head scores parameter-plane locations near zero at the widths a plane seed
+root *starts* at — measured maxima of 1e-4 to 2.4e-2 against a junk floor of
+0.20, so roughly one gate survivor in eighty could be stood on and plane nodes
+never reached the frontier at all. It is not a bias in the head: labelled class
+3/4 parameter-plane material sits at width 1e-4 to 1e-5, four or five rungs below
+where a plane root begins, and every one of those rungs was gated on a score the
+material only earns *after* the descent. The lever is depth, not height.
+
+So the first [`Limits.plane_grace_rungs`] rungs below a plane-seed root are
+exempt from the expansion floor: the walk descends ungated, and the floor resumes
+at rung N+1. Four things bound it.
+
+* **Expansion only.** Booking still happens at the good floor everywhere, so
+  grace can put a node on the frontier and can never put a find in the books.
+* **Plane provenance only.** Julia, twin and phoenix roots are dynamical — their
+  home view *is* where their material lives — and are untouched.
+* **A waived floor, not a waived verdict.** A candidate with no score at all has
+  a failed render behind it rather than a low opinion, and there is no opinion for
+  grace to overrule; it stays refused.
+* **The measurement is bought with it.** Every gate survivor under a plane root
+  records its rung below that root, the raw junk-floor verdict, and whether grace
+  was in force — which is the survival-by-rung table a depth-aware floor would
+  need if this cliff turns out to be the wrong shape. N is the machinery; the
+  table is the reason for it.
+
 ## The scorer is asked once per batch, not once per candidate
 
 Every candidate the engine reports is built first, the survivors are read
@@ -106,6 +133,17 @@ ROOT_ORIGIN = "root"
 WALK_ORIGIN = "walk"
 REFRAMED_ORIGINS = frozenset({"snap_to_nucleus", "lateral_to_sibling", "expand_neighborhood"})
 
+#: The depth a root stands at. The engine counts rungs from the root and calls the
+#: first one 1, so a root's own children are one rung below it.
+ROOT_DEPTH = 1
+
+#: The root sources the expansion grace applies to: the parameter-plane channel,
+#: which is the tracked plane seed pool and an explicit `--seeds` file alike — one
+#: reader, one source name, and the same starting-too-shallow problem either way.
+#: A seed file may still carry a dynamical family, so provenance is necessary and
+#: not sufficient: the family has to be a parameter plane as well.
+PLANE_ROOT_SOURCES = frozenset({"seed_file"})
+
 
 @dataclass
 class Limits:
@@ -125,6 +163,12 @@ class Limits:
     probe_probability: float = 0.25
     #: Nodes the frontier holds before the worst are dropped.
     frontier_cap: int = 4000
+    #: Rungs below a plane-seed root that the expansion floor does not act on.
+    #:
+    #: Five, matched to the measured four-to-five rung gap between where a plane
+    #: root starts and the widths labelled plane material lives at. `0` is the
+    #: ungraced walk exactly.
+    plane_grace_rungs: int = 5
 
 
 @dataclass
@@ -232,6 +276,11 @@ class Walk:
         self.governor = operators.ProbeGovernor(self.limits.probe_probability, self.rng)
         self.frontier: list[dict] = []
         self.expansions: dict[int, int] = {}
+        #: Roots the expansion grace applies below. Kept by root id rather than
+        #: re-derived from a node, because a reframing's node carries its own
+        #: family and framing but inherits the root — and it is the root's
+        #: provenance that says whether the walk started too shallow.
+        self.plane_roots: set[int] = set()
         self.visited_reframings: set[tuple[str, float | None]] = set()
         self.next_node_id = 1
         self.next_root_id = 1
@@ -282,10 +331,13 @@ class Walk:
             view = engine.home_view(family)
         root_id = self.next_root_id
         self.next_root_id += 1
+        plane = is_plane_root(source, family)
+        if plane:
+            self.plane_roots.add(root_id)
         node = self._node(
             family=family,
             view=view,
-            depth=1,
+            depth=ROOT_DEPTH,
             root_id=root_id,
             origin=ROOT_ORIGIN,
             parent_node_id=None,
@@ -298,6 +350,7 @@ class Walk:
             family=family,
             viewport=ledger_module.viewport(**view),
             provenance=provenance,
+            plane_root=plane,
         )
         return node
 
@@ -480,6 +533,39 @@ class Walk:
     def _count(self, name: str, amount: int = 1) -> None:
         self.tally[name] = self.tally.get(name, 0) + amount
 
+    # ------------------------------------------------------------------ grace
+
+    def plane_rung(self, root_id: int, depth: int) -> int | None:
+        """Rungs below a plane-seed root, or `None` when the root is not one.
+
+        Zero is the root itself, so a root's own children are rung 1. Nothing
+        below a non-plane root has a rung: the number is a statement about the
+        one channel that starts above its material, not a second name for depth.
+        """
+        if int(root_id) not in self.plane_roots:
+            return None
+        return max(0, int(depth) - ROOT_DEPTH)
+
+    def graced(self, rung: int | None) -> bool:
+        """Whether the expansion floor is waived at this rung below a plane root."""
+        return rung is not None and 1 <= rung <= self.limits.plane_grace_rungs
+
+    def _rung_counts(self, rung: int | None, *, cleared: bool, grace: bool) -> None:
+        """One gate survivor's line in the survival-by-rung table.
+
+        Counted in the tally rather than only on the row, so the table is in every
+        run's summary and does not need the ledger re-read to be seen. Zero-padded
+        because the counters are reported in sorted order and rung 10 must not sort
+        between 1 and 2.
+        """
+        if rung is None:
+            return
+        self._count(f"plane_rung:{rung:02d}:survivors")
+        if cleared:
+            self._count(f"plane_rung:{rung:02d}:cleared_junk")
+        if grace:
+            self._count(f"plane_rung:{rung:02d}:graced")
+
     # ---------------------------------------------------------------- expand
 
     def expand_batch(self, batch: list[dict]) -> list[dict]:
@@ -558,6 +644,12 @@ class Walk:
             "atom_key": parent.get("atom_key"),
             "fate": row["fate"],
             "scorer": self.scorer.name,
+            # The three the survival-by-rung table is built from. `plane_rung` is
+            # structural and known now; the other two are verdicts and are filled
+            # in beside the score, where the floors are actually consulted.
+            "plane_rung": self.plane_rung(row["root_id"], row["depth"]),
+            "cleared_junk": None,
+            "grace": None,
             # `P(≥3)`, `P(≥4)`, and why there is neither. The currency weights a
             # class 4 ten times a class 3, so a row that carried only the first
             # would make every machine-classed find a 3 whatever the head said.
@@ -608,8 +700,17 @@ class Walk:
             # the second is recorded and not walked from; a row that passes only
             # the second reaches the frontier under its own fate and is invisible
             # to every book in the project.
+            rung = candidate["plane_rung"]
+            grace = self.graced(rung)
+            candidate["grace"] = grace
             if not self.scorer.admits(candidate, candidate["score"]):
-                if not self.scorer.expandable(candidate, candidate["score"]):
+                cleared = self.scorer.expandable(candidate, candidate["score"])
+                candidate["cleared_junk"] = cleared
+                self._rung_counts(rung, cleared=cleared, grace=grace)
+                # Grace waives the floor, never the missing verdict: a candidate
+                # with no score at all has a failed render behind it rather than a
+                # low opinion, and there is nothing for the waiver to overrule.
+                if not cleared and not (grace and candidate["score"] is not None):
                     candidate["fate"] = ledger_module.NOT_ADMITTED
                     self._count("tier:refused")
                     self._count(
@@ -621,7 +722,14 @@ class Walk:
                     continue
                 candidate["fate"] = ledger_module.EXPANDABLE
                 self._count("tier:expandable")
+                if not cleared:
+                    self._count("grace:rescued")
+                    self._count(f"plane_rung:{rung:02d}:rescued")
             else:
+                # Every admission is expandable by the scorer's own contract, so
+                # the junk floor is not asked a second time to be told so.
+                candidate["cleared_junk"] = True
+                self._rung_counts(rung, cleared=True, grace=grace)
                 self._count("tier:admitted")
 
             node = self._node(
@@ -828,6 +936,23 @@ class Walk:
         return summary
 
 
+def is_plane_root(source: str, family: dict) -> bool:
+    """Whether a root is one of the parameter-plane ones the grace applies below.
+
+    Both halves are load-bearing. The source names the one channel that hands over
+    roots at a family's home frame rather than at a place the walk found, and
+    [`fractal_wallpapers.discovery.operators.degree_of`] is what the walk already
+    means by *parameter plane* — the same predicate the reframing probe reads, so
+    a dynamical row in a seed file is not annexed by the word "seeds".
+    """
+    if source not in PLANE_ROOT_SOURCES:
+        return False
+    kind = family.get("kind")
+    if not isinstance(kind, str):
+        return False
+    return operators.degree_of(kind, int(family.get("degree", 2))) is not None
+
+
 def _decimal(value: float) -> str:
     """A computed width, as the decimal string it will be recorded as."""
     text = repr(float(value))
@@ -835,6 +960,8 @@ def _decimal(value: float) -> str:
 
 
 __all__ = [
+    "PLANE_ROOT_SOURCES",
+    "ROOT_DEPTH",
     "Gates",
     "Limits",
     "NullScorer",
@@ -842,5 +969,6 @@ __all__ = [
     "Reframings",
     "Walk",
     "family_key",
+    "is_plane_root",
     "nucleus",
 ]
