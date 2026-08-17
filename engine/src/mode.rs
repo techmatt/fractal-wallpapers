@@ -53,6 +53,7 @@
 
 use crate::coloring::{Blend, Coloring, Layer, Transform};
 use crate::direct_trap::Shape;
+use crate::family::Family;
 use crate::field::{AddressStart, FieldSpec, Reduction};
 
 /// Whether a mode may be drawn by production or only asked for by name.
@@ -154,7 +155,8 @@ pub const CATALOG: [Entry; 19] = [
     ),
     niche(
         "itinerary",
-        "Smooth base whose palette position the orbit's angular address shifts.",
+        "Smooth base whose palette position the orbit's angular address shifts. \
+         The address opens at z1 on a dynamical plane and at z0 on a parameter one.",
     ),
     niche(
         "de",
@@ -189,16 +191,37 @@ const ITINERARY_SECTORS: u32 = 4;
 const ITINERARY_BASE: f64 = 4.0;
 const ITINERARY_DEPTH: u32 = 26;
 const ITINERARY_SHIFT: f64 = 0.5;
-/// Where the named mode opens its address, written out rather than defaulted.
-///
-/// The mode is a catalogued setting and this is one of its numbers, so it is
-/// stated here beside the other four. It is also the field's own default, which
-/// keeps `itinerary` serializing exactly the keys it always has — see
-/// [`crate::field::AddressStart`] for the alternative and what it is for.
-const ITINERARY_START: AddressStart = AddressStart::Z0;
 
-/// Look a mode up by name.
-pub fn resolve(name: &str) -> Result<Coloring, String> {
+/// Where the named mode opens its address, which is the one setting in this
+/// catalog that the family decides.
+///
+/// On a **dynamical plane** `z₀` is the pixel, so an address opened there spells
+/// its most significant symbol from the pixel's own angular sector — a hard wedge
+/// seam along the axes, drawn over the set rather than by it. Matt looked at the
+/// pair on 2026-08-17 and kept `z1`, so that is what the mode is here. On a
+/// **parameter plane** `z₀ = 0` for every pixel: there is no wedge to remove and
+/// opening at `z₁` would only renumber every address by a base-`k` place, so the
+/// mode stays at `z0` and [`Coloring::agrees_with_family`] refuses the other.
+///
+/// The choice serializes because it is no longer the field's default everywhere:
+/// a dynamical-plane `itinerary` record carries `"start": "z1"`, which is what
+/// keeps the record and the picture the same statement.
+///
+/// [`Coloring::agrees_with_family`]: crate::coloring::Coloring::agrees_with_family
+fn itinerary_start(family: Option<&Family>) -> AddressStart {
+    match family {
+        Some(family) if family.pixel_is_z0() => AddressStart::Z1,
+        _ => AddressStart::Z0,
+    }
+}
+
+/// Look a mode up by name, over the family it will be rendered on.
+///
+/// `None` is the **catalog's own form** — what `fractal-engine modes` prints.
+/// Eighteen of the nineteen entries are the same coloring whatever they are drawn
+/// over; `itinerary` is not, and its catalog form is its parameter-plane one. See
+/// [`itinerary_start`].
+pub fn resolve(name: &str, family: Option<&Family>) -> Result<Coloring, String> {
     let field = |field, transform| Coloring::Field { field, transform };
     let over_smooth = |field| Coloring::Composite {
         base: smooth_base(),
@@ -275,7 +298,7 @@ pub fn resolve(name: &str) -> Result<Coloring, String> {
                     sectors: ITINERARY_SECTORS,
                     weight_base: Some(ITINERARY_BASE),
                     depth: ITINERARY_DEPTH,
-                    start: ITINERARY_START,
+                    start: itinerary_start(family),
                 },
                 transform: Transform::Linear,
             },
@@ -336,10 +359,26 @@ pub fn tier(name: &str) -> Option<Tier> {
 mod tests {
     use super::*;
 
+    use num_complex::Complex;
+
+    /// The catalog's own form of a mode — no family, so `itinerary` comes back at
+    /// `z0`. Every claim below that is not about the plane is a claim about this.
+    fn catalogued(name: &str) -> Result<Coloring, String> {
+        resolve(name, None)
+    }
+
+    /// One dynamical plane and one parameter plane, which is the whole of the
+    /// split [`itinerary_start`] turns on.
+    const JULIA: Family = Family::Julia {
+        degree: 2,
+        c: Complex::new(-0.8, 0.156),
+    };
+    const MANDELBROT: Family = Family::Multibrot { degree: 2 };
+
     #[test]
     fn every_catalogued_mode_resolves_and_is_valid() {
         for entry in CATALOG {
-            let coloring = resolve(entry.name).unwrap_or_else(|e| panic!("{}: {e}", entry.name));
+            let coloring = catalogued(entry.name).unwrap_or_else(|e| panic!("{}: {e}", entry.name));
             coloring
                 .validate()
                 .unwrap_or_else(|e| panic!("{} is not a valid coloring: {e}", entry.name));
@@ -365,9 +404,9 @@ mod tests {
     /// laid over something other than what `smooth` renders.
     #[test]
     fn smooth_is_the_default_and_the_base_of_every_composite() {
-        assert_eq!(resolve("smooth").unwrap(), Coloring::default());
+        assert_eq!(catalogued("smooth").unwrap(), Coloring::default());
         for name in names() {
-            let base = match resolve(name).unwrap() {
+            let base = match catalogued(name).unwrap() {
                 Coloring::Composite { base, .. } | Coloring::Modulate { base, .. } => base,
                 _ => continue,
             };
@@ -384,7 +423,7 @@ mod tests {
         let mut modulates = Vec::new();
         let mut direct = Vec::new();
         for name in names() {
-            match resolve(name).unwrap() {
+            match catalogued(name).unwrap() {
                 Coloring::Field { .. } => fields.push(name),
                 Coloring::Composite { .. } => composites.push(name),
                 Coloring::Modulate { .. } => modulates.push(name),
@@ -396,10 +435,16 @@ mod tests {
         assert_eq!(modulates.len(), 1, "{modulates:?}");
         assert_eq!(direct.len(), 4, "{direct:?}");
         for name in &fields {
-            assert!(resolve(name).unwrap().dumpable_field().is_some(), "{name}");
+            assert!(
+                catalogued(name).unwrap().dumpable_field().is_some(),
+                "{name}"
+            );
         }
         for name in composites.iter().chain(&modulates).chain(&direct) {
-            assert!(resolve(name).unwrap().why_not_a_field().is_some(), "{name}");
+            assert!(
+                catalogued(name).unwrap().why_not_a_field().is_some(),
+                "{name}"
+            );
         }
     }
 
@@ -420,7 +465,7 @@ mod tests {
     }
 
     fn fields_of(name: &str) -> Vec<FieldSpec> {
-        match resolve(name).unwrap() {
+        match catalogued(name).unwrap() {
             Coloring::Field { field, .. } => vec![field],
             Coloring::Composite { base, texture, .. }
             | Coloring::Modulate { base, texture, .. } => vec![base.field, texture.field],
@@ -456,7 +501,7 @@ mod tests {
     #[test]
     fn a_niche_mode_still_resolves_by_name() {
         for name in ["threads", "itinerary", "de"] {
-            resolve(name).unwrap_or_else(|e| panic!("{name}: {e}"));
+            catalogued(name).unwrap_or_else(|e| panic!("{name}: {e}"));
         }
     }
 
@@ -471,7 +516,7 @@ mod tests {
             blend,
             texture_weight,
             ..
-        } = resolve("threads").unwrap()
+        } = catalogued("threads").unwrap()
         else {
             panic!("threads is a composite");
         };
@@ -479,7 +524,7 @@ mod tests {
         assert_eq!(blend, Blend::Add, "threads is additive, not screened");
         assert_eq!(texture_weight, 0.5);
 
-        let Coloring::Modulate { texture, shift, .. } = resolve("itinerary").unwrap() else {
+        let Coloring::Modulate { texture, shift, .. } = catalogued("itinerary").unwrap() else {
             panic!("itinerary is a modulate");
         };
         assert_eq!(
@@ -494,13 +539,75 @@ mod tests {
         assert_eq!(shift, 0.5);
     }
 
+    /// The one setting in the catalog the family decides, and the only difference
+    /// between the two answers: everything else about the mode is the same coloring
+    /// on both planes, so a reader can hold "itinerary means one thing" and this.
+    #[test]
+    fn the_address_opens_at_z1_where_the_mode_is_drawn_over_a_dynamical_plane() {
+        fn address(family: Option<&Family>) -> FieldSpec {
+            let Coloring::Modulate { texture, .. } = resolve("itinerary", family).unwrap() else {
+                panic!("itinerary is a modulate");
+            };
+            texture.field
+        }
+        let with = |start| FieldSpec::Itinerary {
+            sectors: ITINERARY_SECTORS,
+            weight_base: Some(ITINERARY_BASE),
+            depth: ITINERARY_DEPTH,
+            start,
+        };
+
+        for family in [
+            JULIA,
+            Family::Julia {
+                degree: 5,
+                c: Complex::new(0.4, 0.0),
+            },
+            crate::family::CLASSIC_PHOENIX,
+        ] {
+            assert_eq!(address(Some(&family)), with(AddressStart::Z1), "{family:?}");
+        }
+        for degree in 2..=5 {
+            let family = Family::Multibrot { degree };
+            assert_eq!(address(Some(&family)), with(AddressStart::Z0), "{family:?}");
+        }
+        assert_eq!(address(None), with(AddressStart::Z0), "the catalog's form");
+    }
+
+    /// The plane moves one key and nothing else — not the shift, not the base, not
+    /// any other entry in the catalog. Otherwise "which plane is this?" would be a
+    /// question every mode's record had to be read against.
+    #[test]
+    fn no_other_mode_changes_with_the_plane() {
+        for name in names() {
+            let over_julia = resolve(name, Some(&JULIA)).unwrap();
+            let over_mandelbrot = resolve(name, Some(&MANDELBROT)).unwrap();
+            assert_eq!(over_mandelbrot, catalogued(name).unwrap(), "{name}");
+            assert_eq!(over_julia == over_mandelbrot, name != "itinerary", "{name}");
+        }
+    }
+
+    /// The refusal and the mode agree: the catalog never hands back a coloring the
+    /// family it was resolved over would reject.
+    #[test]
+    fn every_mode_resolves_to_a_coloring_its_own_family_accepts() {
+        for family in [JULIA, MANDELBROT, crate::family::CLASSIC_PHOENIX] {
+            for name in names() {
+                resolve(name, Some(&family))
+                    .unwrap()
+                    .agrees_with_family(&family)
+                    .unwrap_or_else(|e| panic!("{name} over {family:?}: {e}"));
+            }
+        }
+    }
+
     /// The distance estimate ships as a scalar field and nothing else: no lighting,
     /// no normal map, no lamp. That absence is a decision, so it is asserted rather
     /// than left to be noticed.
     #[test]
     fn the_distance_estimate_is_a_plain_field_coloring() {
         assert_eq!(
-            resolve("de").unwrap(),
+            catalogued("de").unwrap(),
             Coloring::Field {
                 field: FieldSpec::De { scale: 1.0 },
                 transform: Transform::Log,
@@ -510,7 +617,7 @@ mod tests {
 
     #[test]
     fn an_unknown_mode_names_the_ones_that_exist() {
-        let message = resolve("nautilus").unwrap_err();
+        let message = catalogued("nautilus").unwrap_err();
         assert!(message.contains("nautilus"));
         assert!(message.contains("smooth_stripe"), "{message}");
     }

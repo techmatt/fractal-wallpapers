@@ -38,6 +38,11 @@ the engine: it reads the mode's coloring out of the engine's own catalog, puts t
 row's curve in it, puts the row's trap settings in it, and hands over the result
 in full. The catalog is the engine's, so a mode cannot mean one thing here and
 another there.
+
+One catalogued setting is decided by the family rather than by the name, and it
+is put in here for the same reason the curve is: what goes to the engine has to
+be the whole picture, and the job name is a digest of exactly that. See
+[`coloring_of`] and `engine.pixel_is_z0`.
 """
 
 from __future__ import annotations
@@ -120,8 +125,51 @@ def catalog() -> dict[str, dict]:
     return _CATALOG
 
 
+#: The mode whose coloring is not the same on both planes, and where its address
+#: opens when the pixel is `z₀`.
+#:
+#: Matt's verdict of 2026-08-17: on a dynamical plane the `z₀` address spells its
+#: leading symbol from the pixel's own angular sector, which draws a hard wedge
+#: seam along the axes; `z₁` opens the address one step in, so every symbol is one
+#: the recurrence produced. On a parameter plane `z₀ = 0` for every pixel, there is
+#: no wedge to remove, and the engine refuses `z1` there.
+ITINERARY = "itinerary"
+Z1 = "z1"
+
+
+def open_the_address(coloring: dict, family: dict) -> dict:
+    """Put the plane's answer for where an `itinerary` address opens into `coloring`.
+
+    The **catalog listing has no family**, so the coloring `catalog()` holds is the
+    parameter-plane form and this is what makes it the row's. Written explicitly
+    rather than left to the engine's default: the job name is a digest of the spec
+    that goes over the wire, so a choice the engine made after the digest would let
+    two different pictures share one file.
+
+    Every field of the coloring is walked, not just the modulate's texture, because
+    the second way an address could arrive is the one nobody would look for. The
+    plane is asked about only when there is an address to open, so the eighteen
+    modes that read no address are untouched by a family the split has no answer
+    for.
+    """
+    addresses = [f for f in _fields_of(coloring) if f.get("kind") == ITINERARY]
+    if addresses and engine.pixel_is_z0(family):
+        for field in addresses:
+            field["start"] = Z1
+    return coloring
+
+
+def _fields_of(coloring: dict) -> list[dict]:
+    """Every field this coloring reads. A direct trap makes none."""
+    if coloring["kind"] == "field":
+        return [coloring["field"]]
+    if coloring["kind"] in ("composite", "modulate"):
+        return [coloring["base"]["field"], coloring["texture"]["field"]]
+    return []
+
+
 def coloring_of(row: dict) -> dict:
-    """The mode's coloring, with this row's curve and trap settings put into it.
+    """The mode's coloring, with this row's curve, trap settings and plane in it.
 
     The curve lands on the **base** of a composite or a modulate and nowhere else:
     the texture lies over the base and the corpora set one curve per render, which
@@ -134,6 +182,7 @@ def coloring_of(row: dict) -> dict:
     coloring = json.loads(json.dumps(known[mode]))
     curve = row["curve"]
     settings = row.get("mode_params") or {}
+    open_the_address(coloring, row["family"])
 
     if coloring["kind"] == "field":
         coloring["transform"] = curve

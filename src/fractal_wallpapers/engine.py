@@ -28,7 +28,9 @@ from typing import Any
 from fractal_wallpapers.paths import colormap_dir, repo_root
 
 __all__ = [
+    "DYNAMICAL_KINDS",
     "NICHE",
+    "PARAMETER_KINDS",
     "PRODUCTION",
     "Bound",
     "EngineTimeout",
@@ -39,6 +41,7 @@ __all__ = [
     "expand",
     "home_view",
     "modes",
+    "pixel_is_z0",
     "production_modes",
     "recolor",
     "render",
@@ -280,6 +283,41 @@ def _home_view(key: str) -> str:
     can hold safely.
     """
     return json.dumps(run("home-view", {"schema": 1, "family": json.loads(key)}))
+
+
+#: The family kinds whose pixel is `z₀` — the dynamical planes. Every other kind
+#: the engine renders reads the pixel as `c`.
+#:
+#: The engine's `Family::pixel_is_z0` is the owner of this split and this is the
+#: only mirror of it on this side. A mirror rather than a door because the answer
+#: is needed *per row* while building a render spec, and a subprocess per row is
+#: not a thing a plan of eight thousand pictures can afford. What keeps the two
+#: honest is a test, not a comment: `test_modes` resolves `itinerary` through the
+#: engine over one family of every kind and checks the coloring against the one
+#: this side built.
+DYNAMICAL_KINDS = frozenset({"julia", "phoenix"})
+
+#: The kinds whose pixel is the constant `c`: the parameter planes.
+PARAMETER_KINDS = frozenset({"mandelbrot", "multibrot"})
+
+
+def pixel_is_z0(family: dict) -> bool:
+    """Whether this family reads the pixel as `z₀` rather than as `c`.
+
+    The dynamical/parameter split, asked as one question, because two things now
+    turn on it and both would otherwise re-derive it from a list of family names.
+    Refused rather than defaulted for a kind nobody registered: guessing here puts
+    a differently-addressed picture on record under a name that says otherwise.
+    """
+    kind = (family or {}).get("kind")
+    if kind in DYNAMICAL_KINDS:
+        return True
+    if kind in PARAMETER_KINDS:
+        return False
+    raise ValueError(
+        f"family kind {kind!r} is not one the engine renders, so which plane it is on cannot "
+        f"be read. The kinds are {sorted(DYNAMICAL_KINDS | PARAMETER_KINDS)}."
+    )
 
 
 #: A mode a production draw may pick. The corpora were collected over these, and

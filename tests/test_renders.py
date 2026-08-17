@@ -66,6 +66,39 @@ def test_a_setting_the_mode_does_not_take_is_refused() -> None:
         renders.coloring_of(a_row(mode="smooth", mode_params={"opacity": 0.3}))
 
 
+JULIA = {"kind": "julia", "c": ["-0.8", "0.156"]}
+
+
+def test_an_itinerary_row_carries_the_plane_s_own_address_start() -> None:
+    """The one catalogued setting the family decides rather than the name.
+
+    It has to be written into the spec rather than left to the engine, because the
+    file name below is a digest of the spec: an address the engine opened after the
+    digest would put two different pictures in one file.
+    """
+    over_c = renders.coloring_of(a_row(mode="itinerary"))
+    assert "start" not in over_c["texture"]["field"], "a parameter plane has no wedge to remove"
+
+    over_z = renders.coloring_of(a_row(mode="itinerary", family=JULIA))
+    assert over_z["texture"]["field"]["start"] == "z1"
+    assert over_z["base"] == over_c["base"], "only the address moved"
+
+
+def test_the_plane_moves_only_the_itinerary_row_s_name() -> None:
+    """Adopting `z₁` renamed the dynamical-plane `itinerary` pictures and nothing
+    else: every other mode makes the same coloring on both planes, so the family is
+    the only part of its name that changed."""
+    for mode in renders.catalog():
+        over_c = renders.coloring_of(a_row(mode=mode, mode_params=_settings(mode)))
+        over_z = renders.coloring_of(a_row(mode=mode, family=JULIA, mode_params=_settings(mode)))
+        assert (over_c == over_z) == (mode != "itinerary"), mode
+
+
+def _settings(mode: str) -> dict:
+    """The trap settings a direct-trap row carries; every other mode takes none."""
+    return {"opacity": 0.3, "threshold": 0.12} if mode.startswith("direct_trap") else {}
+
+
 def test_the_whole_recipe_reaches_the_spec() -> None:
     recipe = finished.recipe(
         gamma=0.5,
