@@ -472,21 +472,33 @@ def _band() -> dict | None:
 
 
 def annotate(record: dict) -> dict:
-    """The advisory cut's verdict on one candidate, written onto its row.
+    """This head's release cut, and its verdict on one candidate, onto the row.
 
-    Tri-state, and `None` on a failed render for the reason the advisory itself
-    is tri-state: a crash has no score to compare and recording it as a failure to
-    clear the bar would make the two indistinguishable.
+    Written under `bar` where the head's cut acts and under `advisory` where it
+    only annotates, so the field name says which one a reader is looking at
+    rather than a flag inside it. Every scored row of a gated head carries the
+    bar, released or not: the record of what a bar removed is the population half
+    of the question anybody later asks about what it bought.
+
+    Tri-state either way, and `None` on a failed render for the reason the cut
+    itself is tri-state: a crash has no score to compare and recording it as a
+    failure to clear would make the two indistinguishable. The *seating* decision
+    is not tri-state — see [`floors.Bar.seats`] — and it is taken at selection,
+    not here.
     """
     if record.get("head") is None:
         return record
-    advisory = floors.release_advisory(record["head"])
-    record["advisory"] = {
-        "name": advisory.name,
-        "value": advisory.value,
-        "head_sha256": advisory.stamp,
-        "clears": advisory.annotates(record.get("p_ge3")),
+    cut = floors.release_cut(record["head"])
+    written = {
+        "name": cut.name,
+        "value": cut.value,
+        "head_sha256": cut.stamp,
+        "clears": cut.clears(record.get("p_ge3")),
     }
+    if isinstance(cut, floors.Bar):
+        record["bar"] = {**written, "acts": True}
+    else:
+        record["advisory"] = written
     return record
 
 

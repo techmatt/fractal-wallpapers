@@ -24,6 +24,14 @@ lives in another file is orphaned the day that file moves.
 record of what shipped can count what passed and never learn what it passed out
 of, which is the shape of every question about a release worth asking later.
 
+**A verdict taken after the run is added, never written over.** A released row a
+later review takes back keeps `verdict: released` — that is what the run decided
+and it stays true, and a store that edited it would delete the evidence the
+release path had a defect — and gains a `rejected` block: who, when, why, and the
+bar and artifact it failed. Scores are untouched. What a release *serves* is
+released minus rejected, and every listing reads that rather than the raw
+verdict. `run2`'s eleven below-bar strange rows are here on exactly those terms.
+
 Rows upsert by key and the key carries the run id, so a re-run replaces its own
 rows byte for byte and a second run adds rows without touching the first. A
 rehearsal must not write here at all — `curate run --ephemeral` redirects the
@@ -37,4 +45,5 @@ the untracked `artifacts/curation/runs/<run>/`.
 fractal-wallpapers curate score
 fractal-wallpapers curate plan -n 6
 fractal-wallpapers curate run --run <name> -n 6
+fractal-wallpapers curate reject --run <name> --rejector <who> --date <when>
 ```

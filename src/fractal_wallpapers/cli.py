@@ -1408,6 +1408,23 @@ def curate_run(args: argparse.Namespace) -> int:
     return 0 if summary["reconciliation"]["holds"] else 1
 
 
+def curate_reject(args: argparse.Namespace) -> int:
+    """Apply today's acting release bars to a run that was released before they acted."""
+    from fractal_wallpapers.curation import floors, records, rejection
+
+    if args.ephemeral:
+        records.use(records.scratch_root(args.run))
+    try:
+        report = rejection.apply(
+            args.run, rejector=args.rejector, date=args.date, dry_run=args.dry_run
+        )
+    except (rejection.RejectionRefused, floors.HeadStampMismatch) as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps(report, indent=2))
+    return 0
+
+
 def curate_parity(args: argparse.Namespace) -> int:
     """Render a real release plan both ways and compare the bytes."""
     from fractal_wallpapers.curation import checks, records
@@ -2596,6 +2613,36 @@ def curate_commands(subcommands) -> None:
         "(with --resume: the pictures are this run's own, from before it was interrupted)",
     )
     running.set_defaults(handler=curate_run)
+
+    rejecting = steps.add_parser(
+        "reject",
+        help="apply today's acting release bars to a run released before they acted",
+        description=(
+            "A rule, not a list: every row this run serves whose head has an ACTING release "
+            "bar and which does not clear it is stamped rejected — recorded, dated and "
+            "attributed, with nothing deleted and no score touched — and the run's sheet is "
+            "redrawn so those rows no longer appear as released. Heads whose cut only "
+            "annotates are not touched. Idempotent: a second pass with the same arguments "
+            "finds nothing left to do and rewrites the same bytes."
+        ),
+    )
+    rejecting.add_argument("--run", required=True, help="the run to apply the bars to")
+    rejecting.add_argument(
+        "--rejector",
+        required=True,
+        help="who is taking these rows back — a person, or the named review standing for one. "
+        "An unattributed retraction cannot be told from a bug in the release path",
+    )
+    rejecting.add_argument(
+        "--date", required=True, metavar="YYYY-MM-DD", help="the date of the review verdict"
+    )
+    rejecting.add_argument(
+        "--dry-run", action="store_true", help="print what would be rejected and write nothing"
+    )
+    rejecting.add_argument(
+        "--ephemeral", action="store_true", help="read the run's ephemeral record store"
+    )
+    rejecting.set_defaults(handler=curate_reject)
 
     checking = steps.add_parser(
         "parity",

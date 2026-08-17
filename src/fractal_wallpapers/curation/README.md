@@ -11,10 +11,11 @@ floors     every number that removes a picture, in one file
 intake     the ranked offer, best first per partition
 budget     how many pictures to make, and for which judge
 colorize   a candidate set of maps, the head's pick, a render, a verdict
-selection  top-N per judge, under the slot, supply and look caps
+selection  top-N per judge, under the slot, supply and look caps — and the bar
 release    the selected rows again at full size, workers rendering
 pacing     the wall clock: what may still start, and what is killed
 records    what the run decided, and out of what population
+rejection  taking a released row back afterwards, without losing what the run did
 sheet      the same thing laid out for a person to disagree with
 checks     the two claims only a re-render can settle
 run        the wiring, and nothing else
@@ -26,19 +27,28 @@ fractal-wallpapers curate plan -n 6       # the offer and the budget, making not
 fractal-wallpapers curate run --run v1 -n 6
 fractal-wallpapers curate run --run v1 -n 60 --wall-budget 28800   # eight hours, or less
 fractal-wallpapers curate run --resume v1                          # carry on where it stopped
+fractal-wallpapers curate reject --run v1 --rejector matt_review --date 2026-08-17
 ```
 
-Six things here are worth reading before changing anything.
+Seven things here are worth reading before changing anything.
 
-**One cut acts, and everything else annotates.** `floors` owns every threshold,
-and only the junk floor removes a row — at intake, on the location head's scale,
-saying no more than *do not spend colorize compute on this*. The finished-render
-judges' cuts are advisories: computed, written onto every record, never allowed to
-drop a candidate. That is not caution, it is a measurement gap being honest — this
-project has never measured a release gate for either render judge, so a bar here
-would be a number nobody could defend. The advisories keep the question
-answerable off the accumulating record instead of only off runs made while a bar
-was enforcing.
+**Two cuts act; everything else annotates.** `floors` owns every threshold. The
+junk floor removes a row at intake, on the location head's scale, saying no more
+than *do not spend colorize compute on this*. The **strange head's release bar**
+removes one at selection: a strange row below 0.50 is not seated, and a strange
+slot with nothing above it goes unfilled.
+
+Both render judges shipped as advisories — computed, written onto every record,
+never allowed to drop a candidate — because neither had a measured release gate
+and a bar without one is a number nobody can defend. The strange bar is an
+exception taken deliberately, by review rather than by measurement: Matt read
+`run2` on 2026-08-17, and all eleven released strange rows below 0.50 were bad,
+the head had been right about every one, and the release path had been padding
+strange slots out of thin passing supply. A labels-derived restatement of the bar
+is future work; the label accumulator holds it. **The smooth head stays
+advisory** — its below-advisory rows belong to a mix-ratio decision that has not
+been taken. An `Advisory` and a `Bar` are two classes rather than one class with
+a flag, so which kind a head has is visible at every call site.
 
 **Nothing is frozen into a row.** Scores are read at the moment they are used, out
 of a sidecar this stage owns; the walk ledgers themselves are never rewritten. A
@@ -57,7 +67,22 @@ that had no opinion about the release.
 **Nothing is padded, backfilled or redistributed.** A judge that cannot fill its
 quota under the caps ships fewer and says so with the three numbers that make the
 shortfall attributable. A slot a thin partition could not use is not handed to a
-partition that had plenty: that is the thin-supply rule undone one level up.
+partition that had plenty: that is the thin-supply rule undone one level up. With
+the strange bar acting the same rule has an edge — the allocation is still solved
+over the partitions that have a *scored* candidate, not over the ones that have a
+passing one, so a partition the bar empties holds its slot and leaves it unfilled
+rather than exporting it. Every run reports planned against seated against
+unfilled, per head and per partition, with the reason each shortfall bound on.
+
+**A release can be wrong, and taking a row back adds to the record.** `rejection`
+stamps a released row with who rejected it, when, and against which bar and
+artifact; `verdict` stays `released`, the scores are untouched, nothing is
+deleted. `records.served` — released minus rejected — is what every listing,
+every check and the sheet read, so a row leaves service everywhere at once. The
+sheet keeps it on the page under its own heading, because a review page that
+disagreed with its own records would be the one thing a review page may not be.
+`curate reject` applies today's acting bars to a run released before they acted,
+which is a rule rather than a list, and re-running it rewrites the same bytes.
 
 **A run is sized by a clock as well as by `-n`, and the gate is prospective.** At
 six pictures the size of a run is `-n`; at sixty it is the wall clock, because one

@@ -33,6 +33,14 @@ nothing on the row had checked, and on the run where four rows lost their
 operator pass to a deadline it was simply false about all four. The kind is on
 the row, so the palette-indifferent case is *read*; everything else says that
 there is no stamp and stops.
+
+**The released grid is the SERVED set, and a row a review took back is on the
+page under its own heading.** Removing it outright would make this sheet
+disagree with the records it is drawn from, which is the one thing a review
+sheet may not do; leaving it in the released grid would keep serving a picture
+somebody rejected. [`from_records`] draws both sections off the accumulated
+record rather than off a run's own memory, so the page a run writes and the page
+a rejection redraws are the same function over the same rows.
 """
 
 from __future__ import annotations
@@ -124,15 +132,28 @@ def _facts(row: dict) -> list[str]:
     else:
         facts.append(autolevel_line(row.get("autolevel"), "", kind))
     if advisory:
-        clears = advisory.get("clears")
+        facts.append(_cut_line(advisory, "advisory", "annotation only — it removed nothing"))
+    if row.get("bar"):
+        facts.append(_cut_line(row["bar"], "bar", "ACTING — a row below it is not seated"))
+    if row.get("rejected"):
+        taken = row["rejected"]
         facts.append(
-            f"advisory {advisory.get('name')} {advisory.get('value')}: "
-            + ("clears" if clears else "below" if clears is False else "no score")
-            + " (annotation only — it removed nothing)"
+            f"REJECTED by {taken.get('rejector')} on {taken.get('date')}: {taken.get('reason')}"
+            " — recorded, not deleted; this row is no longer served"
         )
     if row.get("reason"):
         facts.append(f"reason: {row['reason']}")
     return facts
+
+
+def _cut_line(cut: dict, kind: str, what: str) -> str:
+    """One release cut as the sheet states it: the height, the verdict, the standing."""
+    clears = cut.get("clears")
+    return (
+        f"{kind} {cut.get('name')} {cut.get('value')}: "
+        + ("clears" if clears else "below" if clears is False else "no score")
+        + f" ({what})"
+    )
 
 
 def top_end(scores: dict) -> str:
@@ -198,9 +219,15 @@ def build(
     summary: dict,
     directory: Path,
     output: Path,
+    rejected: list[dict] | None = None,
 ) -> Path:
-    """Write the sheet. `directory` is what the rows' picture paths are relative to."""
+    """Write the sheet. `directory` is what the rows' picture paths are relative to.
+
+    `released` is the **served** set — a row a later review rejected belongs in
+    `rejected`, which draws its own section rather than disappearing.
+    """
     directory = Path(directory)
+    rejected = list(rejected or ())
     lines = [
         "<!doctype html><meta charset='utf-8'>",
         f"<title>release {html.escape(run)}</title>",
@@ -213,6 +240,14 @@ def build(
         "<h2>Released</h2>",
         "<div class='grid'>" + "".join(_card(row, directory) for row in released) + "</div>",
     ]
+    if rejected:
+        lines += [
+            f"<h2>Rejected after review ({len(rejected)})</h2>",
+            "<p class='lede'>Seated by the run, taken back by a person afterwards. The rows "
+            "are still in the records with their scores untouched — they are not served, and "
+            "they are here so the page and the record agree about what happened.</p>",
+            "<div class='grid'>" + "".join(_card(row, directory) for row in rejected) + "</div>",
+        ]
     if passed_over:
         lines += [
             f"<h2>Passed over ({len(passed_over)})</h2>",
@@ -233,6 +268,50 @@ def build(
     return output
 
 
+#: Near misses shown when a run seated fewer pictures than this. A floor and not
+#: a count: a release that seated two rows still wants a page a reviewer can
+#: disagree with, and two cards is not one.
+NEAR_MISSES = 6
+
+
+def from_records(run: str, rows: list[dict], summary: dict, directory: Path, output: Path) -> Path:
+    """The sheet for a run, drawn off its accumulated release records alone.
+
+    THE one place a sheet's sections are decided, used by the run that makes the
+    records and by anything that later changes them. Everything it needs is on the
+    rows — the served set, what a review took back, what the look cap removed —
+    which is exactly the property the records were written to have.
+
+    Deterministic in the rows it is given, so redrawing an unchanged run rewrites
+    the same bytes.
+    """
+    from fractal_wallpapers.curation import records
+
+    served = records.served(rows)
+    rejected = sorted(
+        (row for row in rows if records.is_rejected(row)), key=lambda row: str(row["candidate"])
+    )
+    capped = records.REASONS["cluster_cap"]
+    passed_over = sorted(
+        (
+            row
+            for row in rows
+            if row.get("verdict") == "passed_over" and row.get("reason") != capped
+        ),
+        key=lambda row: (-((row.get("scores") or {}).get("p_ge3") or 0), str(row["candidate"])),
+    )
+    return build(
+        run,
+        served,
+        passed_over[: max(NEAR_MISSES, len(served))],
+        [row for row in rows if row.get("reason") == capped],
+        summary,
+        directory,
+        output,
+        rejected=rejected,
+    )
+
+
 def _table(summary: dict) -> str:
     rows = "".join(
         f"<tr><th>{html.escape(str(key))}</th><td>{html.escape(str(value))}</td></tr>"
@@ -242,10 +321,12 @@ def _table(summary: dict) -> str:
 
 
 __all__ = [
+    "NEAR_MISSES",
     "THUMBNAIL_QUALITY",
     "THUMBNAIL_WIDTH",
     "autolevel_line",
     "build",
+    "from_records",
     "thumbnail",
     "top_end",
 ]

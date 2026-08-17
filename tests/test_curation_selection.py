@@ -15,20 +15,20 @@ def test_top_n_within_a_partition_under_its_slot_budget() -> None:
         entry("b", "mandelbrot", "g2", 0.7),
         entry("c", "mandelbrot", "g3", 0.5),
     ]
-    picked, _ = selection.select(pool, {"mandelbrot": 2})
+    picked, *_ = selection.select(pool, {"mandelbrot": 2})
     assert [e["id"] for e in picked] == ["a", "b"]
 
 
 def test_a_partition_absent_from_the_allocation_releases_nothing() -> None:
     """The allocation is the authority on which partitions may release at all."""
     pool = [entry("a", "phoenix", "g1", 0.99)]
-    picked, _ = selection.select(pool, {"mandelbrot": 3})
+    picked, *_ = selection.select(pool, {"mandelbrot": 3})
     assert picked == []
 
 
 def test_the_thin_supply_cap_binds_below_the_slot_budget() -> None:
     pool = [entry(str(i), "mandelbrot", f"g{i}", 0.9 - i / 10) for i in range(4)]
-    picked, _ = selection.select(pool, {"mandelbrot": 3}, caps={"mandelbrot": 1})
+    picked, *_ = selection.select(pool, {"mandelbrot": 3}, caps={"mandelbrot": 1})
     assert len(picked) == 1
 
 
@@ -37,8 +37,8 @@ def test_the_look_cap_holds_across_both_judge_passes() -> None:
     used: dict = {}
     first = [entry(f"s{i}", "mandelbrot", "one_look", 0.9) for i in range(3)]
     second = [entry(f"t{i}", "mandelbrot", "one_look", 0.9) for i in range(3)]
-    picked_a, _ = selection.select(first, {"mandelbrot": 3}, used=used)
-    picked_b, log_b = selection.select(second, {"mandelbrot": 3}, used=used)
+    picked_a, *_ = selection.select(first, {"mandelbrot": 3}, used=used)
+    picked_b, log_b, _ = selection.select(second, {"mandelbrot": 3}, used=used)
     assert len(picked_a) == floors.CLUSTER_CAP
     assert picked_b == []
     assert all(row["skipped"] == "cluster_cap" for row in log_b)
@@ -46,7 +46,7 @@ def test_the_look_cap_holds_across_both_judge_passes() -> None:
 
 def test_the_guarantee_floors_the_budget_at_one_over_the_supply_cap() -> None:
     pool = [entry("a", "phoenix:classic", "g1", 0.6)]
-    picked, log = selection.select(
+    picked, log, _ = selection.select(
         pool,
         {"phoenix:classic": 1},
         caps={"phoenix:classic": 0},
@@ -58,7 +58,7 @@ def test_the_guarantee_floors_the_budget_at_one_over_the_supply_cap() -> None:
 
 def test_only_the_first_pick_of_an_owed_partition_is_a_guarantee_slot() -> None:
     pool = [entry(str(i), "mandelbrot", f"g{i}", 0.9 - i / 10) for i in range(3)]
-    _, log = selection.select(
+    _, log, _fills = selection.select(
         pool, {"mandelbrot": 3}, caps={"mandelbrot": 3}, guarantees=["mandelbrot"]
     )
     sources = [row["slot_source"] for row in log if row["picked"]]
@@ -70,7 +70,7 @@ def test_the_look_cap_outranks_the_guarantee() -> None:
     a look the release has already taken twice."""
     used = {"one_look": floors.CLUSTER_CAP}
     pool = [entry("a", "phoenix:classic", "one_look", 0.99)]
-    picked, log = selection.select(
+    picked, log, _ = selection.select(
         pool, {"phoenix:classic": 1}, used=used, guarantees=["phoenix:classic"]
     )
     assert picked == []
@@ -130,6 +130,6 @@ def test_a_row_the_grouping_cannot_place_gets_its_own_look() -> None:
 def test_the_log_carries_a_reason_for_every_row_it_did_not_pick() -> None:
     used = {"one_look": floors.CLUSTER_CAP}
     pool = [entry("a", "mandelbrot", "one_look", 0.9), entry("b", "mandelbrot", "g2", 0.8)]
-    picked, log = selection.select(pool, {"mandelbrot": 1}, used=used)
+    picked, log, _ = selection.select(pool, {"mandelbrot": 1}, used=used)
     assert [e["id"] for e in picked] == ["b"]
     assert {row["id"]: row["skipped"] for row in log} == {"a": "cluster_cap", "b": None}
