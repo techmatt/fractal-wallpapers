@@ -153,9 +153,9 @@ def test_a_truncated_picture_is_removed_rather_than_reused(tmp_path) -> None:
     """ "Already there" must not be able to mean "half there"."""
     half = tmp_path / "a.png"
     half.write_bytes(b"\x89PNG\r\n\x1a\n truncated")
-    assert release.resumable(half) is False
+    assert release.decodable(half) is False
     assert not half.exists()
-    assert release.resumable(tmp_path / "missing.png") is False
+    assert release.decodable(tmp_path / "missing.png") is False
 
 
 def test_the_engine_thread_count_is_explicit_above_one_worker() -> None:

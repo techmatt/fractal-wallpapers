@@ -14,12 +14,15 @@ seeds ──▶ frontier ──▶ batch ──▶ engine expand ──▶ candi
 
 Four decisions shape the loop, and none of them is about pictures.
 
-**The batch is chosen by priority, and priority is mostly noise today.** A
+**The batch is chosen by priority, and priority is score plus a draw.** A
 survivor's priority is its score plus a Gumbel draw plus a small depth term.
-With the null scorer the score is neutral for everything, so the Gumbel is the
-whole of it and the walk explores uniformly — which is the right policy for a
-run whose purpose is to produce the first labels. When a head arrives the same
-expression becomes score-driven and the Gumbel becomes a tie-break.
+Under the null scorer the score is neutral for everything and the Gumbel is the
+whole of it, so the walk explores uniformly; under the location head the score
+is a probability and the draw is what keeps the queue from collapsing onto one
+lineage. The two terms are on comparable scales at [`GUMBEL_TEMPERATURE`] `1.0`,
+which means the head *tilts* the order rather than dictating it — a deliberate
+level for a first steered run, and the one knob to move when a measurement says
+the head deserves more of a say.
 
 **A per-root expansion cap, and capped nodes are evicted rather than skipped.**
 A root spawns children faster than it drains, so nodes belonging to a capped root
@@ -38,6 +41,15 @@ back to the ordinary priority order in the same batch.
 **Reframings inherit the root they were triggered from, and burn its budget.**
 An operator is not a source: it applies to a place the walk already found, and
 it inherits both the provenance and the cost of that place.
+
+## The scorer is asked once per batch, not once per candidate
+
+Every candidate the engine reports is built first, the survivors are read
+**together**, and only then are the rows written — in the order the engine
+reported them, in one pass, by this process. That is what lets the scorer fan its
+renders out across worker processes without the ledger's order becoming a
+function of which worker finished first, and it is why [`_record`] is three loops
+rather than one.
 """
 
 from __future__ import annotations
@@ -221,6 +233,7 @@ class Walk:
             "run",
             seed=self.seed,
             scorer=self.scorer.name,
+            scoring=self.scoring_record(),
             colormap=self.colormap,
             limits=vars(self.limits),
             policy=self.policy.wire(),
@@ -233,6 +246,12 @@ class Walk:
                 "framings": list(self.reframings.framings),
             },
         )
+
+    def scoring_record(self) -> dict | None:
+        """What the scorer is, for the header and the summary, or `None` for a
+        scorer with nothing to declare."""
+        summary = getattr(self.scorer, "summary", None)
+        return summary() if callable(summary) else None
 
     # ------------------------------------------------------------------ roots
 
@@ -499,48 +518,82 @@ class Walk:
             candidates.extend(seen)
         return {"survivors": survivors, "candidates": candidates}
 
+    def _candidate(self, row: dict, parent: dict, family: dict) -> dict:
+        """One engine candidate as the ledger row it will become, score fields blank.
+
+        Built before anything is scored and *before* anything is written, because
+        the scorer is handed this row: a judge that saw a different object from
+        the one the ledger keeps could not be checked against the record.
+        """
+        return {
+            "run_seed": self.seed,
+            "batch": self.batch_index,
+            "parent_node_id": row["node_id"],
+            "root_id": row["root_id"],
+            "depth": row["depth"],
+            "child_index": row["child_index"],
+            "family": family,
+            "viewport": ledger_module.viewport(row["center_re"], row["center_im"], row["width"]),
+            "branch": row["branch"],
+            "placement": row["placement"],
+            "focus_score": row.get("focus_score"),
+            "maxiter": row["maxiter"],
+            "interior_fraction": row["interior_fraction"],
+            "escape": row.get("escape"),
+            "occupancy": row.get("occupancy"),
+            "image": row.get("image"),
+            "origin": parent["origin"],
+            "atom_key": parent.get("atom_key"),
+            "fate": row["fate"],
+            "scorer": self.scorer.name,
+            # `P(≥3)`, `P(≥4)`, and why there is neither. The currency weights a
+            # class 4 ten times a class 3, so a row that carried only the first
+            # would make every machine-classed find a 3 whatever the head said.
+            "score": None,
+            "score_great": None,
+            "score_error": None,
+        }
+
     def _record(self, report: dict, by_id: dict, family: dict) -> tuple[list[dict], list[dict]]:
-        """Write every candidate the engine reported, and push the survivors."""
+        """Score the batch, then write every candidate the engine reported, in order.
+
+        Three passes, and the middle one is the reason: the scorer is handed
+        every survivor at once so its renders can fan out, and nothing is written
+        until it has answered for all of them. A per-candidate score inside the
+        write loop would fix the ledger's order to the order the renders finished.
+        """
+        candidates = [
+            self._candidate(row, by_id[row["node_id"]], family) for row in report["candidates"]
+        ]
+        for candidate in candidates:
+            self._count(f"fate:{candidate['fate']}")
+
+        standing = [
+            index
+            for index, candidate in enumerate(candidates)
+            if candidate["fate"] == ledger_module.SURVIVED
+        ]
+        readings = self.scorer.read([candidates[index] for index in standing])
+        for index, reading in zip(standing, readings, strict=True):
+            candidates[index]["score"] = reading.score
+            candidates[index]["score_great"] = reading.great
+            candidates[index]["score_error"] = reading.error
+            if reading.error is not None:
+                self._count("score_failed")
+
         survivors: list[dict] = []
         recorded: list[dict] = []
-        for row in report["candidates"]:
+        for row, candidate in zip(report["candidates"], candidates, strict=True):
             parent = by_id[row["node_id"]]
-            candidate = {
-                "run_seed": self.seed,
-                "batch": self.batch_index,
-                "parent_node_id": row["node_id"],
-                "root_id": row["root_id"],
-                "depth": row["depth"],
-                "child_index": row["child_index"],
-                "family": family,
-                "viewport": ledger_module.viewport(
-                    row["center_re"], row["center_im"], row["width"]
-                ),
-                "branch": row["branch"],
-                "placement": row["placement"],
-                "focus_score": row.get("focus_score"),
-                "maxiter": row["maxiter"],
-                "interior_fraction": row["interior_fraction"],
-                "escape": row.get("escape"),
-                "occupancy": row.get("occupancy"),
-                "image": row.get("image"),
-                "origin": parent["origin"],
-                "atom_key": parent.get("atom_key"),
-                "fate": row["fate"],
-                "scorer": self.scorer.name,
-                "score": None,
-            }
-            self._count(f"fate:{row['fate']}")
-
-            if row["fate"] != ledger_module.SURVIVED:
+            if candidate["fate"] != ledger_module.SURVIVED:
                 recorded.append(self.ledger.write("candidate", node_id=None, **candidate))
                 continue
-
-            score = self.scorer.score(candidate)
-            candidate["score"] = score
-            if not self.scorer.admits(candidate, score):
+            if not self.scorer.admits(candidate, candidate["score"]):
                 candidate["fate"] = "not_admitted"
                 self._count("fate:not_admitted")
+                self._count(
+                    "not_admitted:no_score" if candidate["score"] is None else "not_admitted:below"
+                )
                 recorded.append(self.ledger.write("candidate", node_id=None, **candidate))
                 continue
 
@@ -557,7 +610,7 @@ class Walk:
                 parent_node_id=row["node_id"],
                 atom_key=parent.get("atom_key"),
             )
-            node["priority"] = self._priority(score, row["depth"])
+            node["priority"] = self._priority(candidate["score"], row["depth"])
             recorded.append(self.ledger.write("candidate", node_id=node["node_id"], **candidate))
             survivors.append(node)
 
@@ -737,6 +790,8 @@ class Walk:
             "batches": self.tally.get("batches", 0),
             "roots": self.next_root_id - 1,
             "frontier": len(self.frontier),
+            "scorer": self.scorer.name,
+            "scoring": self.scoring_record(),
             "probe": self.governor.tally(),
             "counts": dict(sorted(self.tally.items())),
             "ledger": str(self.ledger.path),

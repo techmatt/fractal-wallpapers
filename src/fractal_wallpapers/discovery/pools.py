@@ -1,9 +1,9 @@
 """The seed pools, and the one property they have to keep.
 
 A walk needs somewhere to start, and where it starts is **data, not a sampler**.
-Two pools are tracked in this repository, one per dynamical family, and a walk
-over those families draws its roots from them. That is a decision with a
-measurement behind it, and it cuts in two directions.
+Three pools are tracked in this repository — two dynamical, one parameter-plane —
+and a walk over those families draws its roots from them. That is a decision with
+a measurement behind it, and it cuts in two directions.
 
 **For the dynamical families the pool is the good supply.** Julia sets worth
 looking at cluster in a thin, targetable class of `c` — filament detail at
@@ -15,9 +15,12 @@ ranking on boundary proximity with the interior-lake channel required to fire.
 **For the parameter-plane families there is deliberately no draw at all.** An
 unscreened shell draw over the higher multibrot degrees measured zero good
 locations out of a hundred and forty-four — not a low rate, a zero — so this
-module builds no raw-draw path for them. Those families run on explicit seeds
-and on what the reframing operators find from what the walk already reached, and
-a walk asked to source them from nothing says so instead of guessing.
+module builds no raw-draw path for them. Their pool is *solved for* instead:
+[`fractal_wallpapers.discovery.plane_seeds`] walks a grid over each home frame
+and keeps the atoms it identifies, which is a screen rather than a draw. Beyond
+that pool those families run on what the reframing operators find from what the
+walk already reached, and a walk asked to source them from nothing says so
+instead of guessing.
 
 ## The `c`-spacing floor
 
@@ -173,6 +176,19 @@ def phoenix_pool(path: Path | None = None) -> list[PhoenixSeed]:
         )
         for row in read_rows(path)
     ]
+
+
+def plane_pool(path: Path | None = None) -> list[dict]:
+    """The tracked parameter-plane seed pool, with its invariants checked at load.
+
+    The third pool, and the one the first production run had to build by hand in
+    a scratch file: without it `has_channel` is false for all four parameter-plane
+    partitions and half the registry can never be refilled.
+    [`fractal_wallpapers.discovery.plane_seeds`] owns it and derives it.
+    """
+    from fractal_wallpapers.discovery import plane_seeds
+
+    return plane_seeds.read(path)
 
 
 def read_seed_file(path: Path) -> list[dict]:

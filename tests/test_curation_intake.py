@@ -84,6 +84,34 @@ def test_every_partition_the_union_saw_gets_a_line_including_the_ones_that_ship_
     assert any("thin supply" in line for line in lines)
 
 
+def test_the_funnel_puts_each_number_over_the_population_it_is_of(ledger) -> None:
+    """The first production run printed "22,751 found, 1,245 above the junk floor"
+    with every gate survivor as the denominator and only the scored prefix as the
+    numerator, which understated the pass rate by a factor of four. The scored
+    count sits between the two so a reader can see which is which."""
+    survivors, _ = intake.gate_survivors([ledger])
+    scores = scores_for(survivors[:2], [0.4, 0.9])
+    _, diagnostics = intake.ranked([ledger], scores)
+
+    assert diagnostics["found"] == 3
+    assert diagnostics["scored"] == 2
+    assert diagnostics["passing"] == 2
+    assert diagnostics["unscored"] == 1
+    assert diagnostics["scored"] + diagnostics["unscored"] == diagnostics["found"]
+
+    line = intake.funnel_line(diagnostics)
+    assert "3 found" in line and "2 scored" in line and "1 found but unscored" in line
+
+
+def test_a_partition_s_line_names_its_own_scored_denominator(ledger) -> None:
+    survivors, _ = intake.gate_survivors([ledger])
+    scores = scores_for(survivors[:1], [0.9])
+    _, diagnostics = intake.ranked([ledger], scores)
+    assert diagnostics["scored_by_partition"] == {"mandelbrot": 1}
+    line = next(line for line in intake.supply_lines(diagnostics) if line.startswith("mandelbrot:"))
+    assert "2 found, 1 scored, 1 of those above the junk floor" in line
+
+
 def test_the_guarantee_triggers_on_the_good_floor_not_the_junk_floor(ledger) -> None:
     survivors, _ = intake.gate_survivors([ledger])
     scores = scores_for(survivors, [0.4, 0.9, 0.05])
