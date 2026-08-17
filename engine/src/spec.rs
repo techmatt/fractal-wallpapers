@@ -35,7 +35,7 @@ use num_complex::Complex;
 use serde::{Deserialize, Serialize};
 
 use crate::coloring::{Coloring, Palette};
-use crate::family::{Family, PHOENIX_C, PHOENIX_P};
+use crate::family::{Family, HomeView, PHOENIX_C, PHOENIX_P};
 use crate::maxiter;
 use crate::mode;
 use crate::viewport::Viewport;
@@ -99,6 +99,15 @@ pub enum FamilySpec {
         #[serde(default = "origin")]
         z_prev: Pair,
     },
+    /// `z ← z^d + c` over the parameter plane at a **non-integer** `d`, on the
+    /// principal branch: the gaps between the integer degrees the families above
+    /// render, and **render-only** — `render` and `dump-field` take it and every
+    /// other door refuses it. See [`Family::FractionalMultibrot`].
+    ///
+    /// The degree is a decimal string for the same reason every coordinate is:
+    /// it is not a whole number, so the string is the identity of the render and
+    /// the `f64` is a view of it.
+    FractionalMultibrot { degree: String },
 }
 
 /// A dumped field, read back and colored again.
@@ -188,11 +197,29 @@ pub struct Resolved {
     pub location: Location,
 }
 
+/// The exponent of a location, as its record writes it.
+///
+/// Integer degrees stay integers on the wire — `"degree": 2` is the same five
+/// bytes it has always been — and a fractional degree is the decimal string it
+/// was written as, exactly like every coordinate. Untagged, so neither form
+/// carries a discriminator and neither is a new key: one `degree`, two shapes,
+/// and a record from before this existed reads back unchanged.
+///
+/// The two shapes cannot collide, and that is by construction rather than by
+/// care: [`FamilySpec::FractionalMultibrot`] refuses a whole number, so an
+/// integer exponent has exactly one spelling.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum Degree {
+    Integer(u32),
+    Fractional(String),
+}
+
 /// The decimal strings that identify this render, kept verbatim.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Location {
     pub family: String,
-    pub degree: u32,
+    pub degree: Degree,
     pub center_re: String,
     pub center_im: String,
     pub width: String,
@@ -216,21 +243,20 @@ impl RenderSpec {
 
     /// Parse the strings, fill in the defaults, and check the result is sane.
     pub fn resolve(self) -> Result<Resolved, String> {
-        let (family, kind, c, p, z_prev) = self.family.resolve()?;
+        let resolved = self.family.resolve()?;
+        let family = resolved.family;
 
         let home = family.home_view();
-        let center_re = self
-            .viewport
-            .center_re
-            .unwrap_or_else(|| format_default(home.center.re));
-        let center_im = self
-            .viewport
-            .center_im
-            .unwrap_or_else(|| format_default(home.center.im));
-        let width = self
-            .viewport
-            .width
-            .unwrap_or_else(|| format_default(home.width));
+        let framed = |written: Option<String>, key: &str, of: fn(&HomeView) -> f64| match written {
+            Some(text) => Ok(text),
+            None => home
+                .as_ref()
+                .map(|home| format_default(of(home)))
+                .ok_or_else(|| unframed_refusal(resolved.kind, key)),
+        };
+        let center_re = framed(self.viewport.center_re, "center_re", |home| home.center.re)?;
+        let center_im = framed(self.viewport.center_im, "center_im", |home| home.center.im)?;
+        let width = framed(self.viewport.width, "width", |home| home.width)?;
 
         let [out_width, out_height] = self.resolution;
         if out_width == 0 || out_height == 0 {
@@ -281,14 +307,14 @@ impl RenderSpec {
             palette: self.palette,
             mode,
             location: Location {
-                family: kind.to_string(),
-                degree: family.degree(),
+                family: resolved.kind.to_string(),
+                degree: resolved.degree,
                 center_re,
                 center_im,
                 width,
-                c,
-                p,
-                z_prev,
+                c: resolved.c,
+                p: resolved.p,
+                z_prev: resolved.z_prev,
             },
             family,
             view,
@@ -299,33 +325,40 @@ impl RenderSpec {
     }
 }
 
+/// A family spec with its constants parsed: the recurrence, and everything the
+/// record echoes back about it.
+///
+/// One struct rather than a tuple because the record's exponent is no longer
+/// derivable from the recurrence — a Phoenix escapes quadratically and records no
+/// degree of its own, and a fractional degree is a string the spec wrote rather
+/// than a number the engine chose.
+pub struct ResolvedFamily {
+    pub family: Family,
+    /// The `kind` the spec named it by, which is what the record calls it.
+    pub kind: &'static str,
+    /// The exponent as the record writes it.
+    pub degree: Degree,
+    pub c: Option<Pair>,
+    pub p: Option<Pair>,
+    pub z_prev: Option<Pair>,
+}
+
 impl FamilySpec {
-    /// Parse the constants and name the family. Returns the family, its spec
-    /// name, and whichever constant strings apply to it.
-    #[allow(clippy::type_complexity)]
-    pub fn resolve(
-        self,
-    ) -> Result<
-        (
-            Family,
-            &'static str,
-            Option<Pair>,
-            Option<Pair>,
-            Option<Pair>,
-        ),
-        String,
-    > {
+    /// Parse the constants and name the family.
+    pub fn resolve(self) -> Result<ResolvedFamily, String> {
+        let plain = |family: Family, kind: &'static str, degree: u32| ResolvedFamily {
+            family,
+            kind,
+            degree: Degree::Integer(degree),
+            c: None,
+            p: None,
+            z_prev: None,
+        };
         match self {
-            FamilySpec::Mandelbrot => Ok((
-                Family::Multibrot { degree: 2 },
-                "mandelbrot",
-                None,
-                None,
-                None,
-            )),
+            FamilySpec::Mandelbrot => Ok(plain(Family::Multibrot { degree: 2 }, "mandelbrot", 2)),
             FamilySpec::Multibrot { degree } => {
                 check_degree(degree, 3)?;
-                Ok((Family::Multibrot { degree }, "multibrot", None, None, None))
+                Ok(plain(Family::Multibrot { degree }, "multibrot", degree))
             }
             FamilySpec::Julia { degree, c } => {
                 check_degree(degree, 2)?;
@@ -333,7 +366,10 @@ impl FamilySpec {
                     degree,
                     c: pair(&c, "family.c")?,
                 };
-                Ok((family, "julia", Some(c), None, None))
+                Ok(ResolvedFamily {
+                    c: Some(c),
+                    ..plain(family, "julia", degree)
+                })
             }
             FamilySpec::Phoenix { c, p, z_prev } => {
                 let family = Family::Phoenix {
@@ -341,10 +377,53 @@ impl FamilySpec {
                     p: pair(&p, "family.p")?,
                     z_prev: pair(&z_prev, "family.z_prev")?,
                 };
-                Ok((family, "phoenix", Some(c), Some(p), Some(z_prev)))
+                Ok(ResolvedFamily {
+                    c: Some(c),
+                    p: Some(p),
+                    z_prev: Some(z_prev),
+                    ..plain(family, "phoenix", 2)
+                })
+            }
+            FamilySpec::FractionalMultibrot { degree } => {
+                let value = decimal(&degree, "family.degree")?;
+                check_fractional_degree(value)?;
+                Ok(ResolvedFamily {
+                    family: Family::FractionalMultibrot { degree: value },
+                    kind: "fractional_multibrot",
+                    degree: Degree::Fractional(degree),
+                    c: None,
+                    p: None,
+                    z_prev: None,
+                })
             }
         }
     }
+}
+
+/// Why a render with no viewport could not be framed for it.
+///
+/// A render-only family has no row in the home table, on purpose: a row is a
+/// claim that the family is worth looking at unprompted, and this one is drawn
+/// where it is asked for or not at all. So the missing key is named rather than
+/// filled in.
+fn unframed_refusal(kind: &str, key: &str) -> String {
+    format!(
+        "viewport.{key} is required for a {kind} render: this family has no home view to \
+         fall back on, and is framed by hand or not at all"
+    )
+}
+
+/// Why a render-only family was turned away from a door that is not a render.
+///
+/// One message, and one place it is written, because the refusal is the whole of
+/// what makes the guarantee true: a fractional degree may be rendered and dumped
+/// and nothing else. Every caller that is not one of those two asks
+/// [`Family::is_render_only`] and comes here.
+pub fn render_only_refusal(kind: &str, what: &str) -> String {
+    format!(
+        "the {kind} family is render-only and cannot be {what}: it is reachable from a \
+         written render or dump-field spec and from nowhere else"
+    )
 }
 
 /// The mode a spec that says nothing about coloring gets.
@@ -395,6 +474,32 @@ fn check_degree(degree: u32, lowest: u32) -> Result<(), String> {
             "degree {degree} is outside the supported range {lowest}..=5"
         ))
     }
+}
+
+/// A fractional degree must be **between** two supported integer degrees and
+/// must not be one of them.
+///
+/// The open interval is where the family means something: below 2 and above 5
+/// are exponents nobody has looked at, exactly as [`check_degree`] says of the
+/// integers. The whole-number refusal is the same rule the integer families
+/// already keep — `multibrot` refuses degree 2 because that set is the
+/// Mandelbrot set and one picture gets one name — read the other way round: an
+/// integer exponent is the integer family's, so `degree: "3.0"` is refused
+/// rather than rendered under a second name and cached under a second identity.
+fn check_fractional_degree(degree: f64) -> Result<(), String> {
+    if degree.fract() == 0.0 {
+        return Err(format!(
+            "family.degree {degree} is a whole number, and the whole degrees are the \
+             mandelbrot and multibrot families' — render it as a multibrot at \
+             degree {degree:.0} so that one picture keeps one name"
+        ));
+    }
+    if !(2.0..=5.0).contains(&degree) {
+        return Err(format!(
+            "family.degree {degree} is outside the supported range 2..=5"
+        ));
+    }
+    Ok(())
 }
 
 /// Parse one decimal string to `f64`, refusing anything that is not a finite
@@ -485,7 +590,7 @@ mod tests {
     fn a_minimal_spec_resolves_to_the_home_view_and_the_policy_cap() {
         let resolved = resolve(r#"{"kind":"mandelbrot"}"#);
         assert_eq!(resolved.family, Family::Multibrot { degree: 2 });
-        let home = Family::Multibrot { degree: 2 }.home_view();
+        let home = Family::Multibrot { degree: 2 }.home_view().unwrap();
         assert_eq!(resolved.view.center, home.center);
         assert_eq!(resolved.view.width, home.width);
         assert_eq!(resolved.maxiter, maxiter::for_width(home.width));
@@ -508,11 +613,11 @@ mod tests {
         let resolved = resolve(r#"{"kind":"phoenix"}"#);
         assert_eq!(
             resolved.view.center,
-            crate::family::CLASSIC_PHOENIX.home_view().center
+            crate::family::CLASSIC_PHOENIX.home_view().unwrap().center
         );
         assert_eq!(
             resolved.view.width,
-            crate::family::CLASSIC_PHOENIX.home_view().width
+            crate::family::CLASSIC_PHOENIX.home_view().unwrap().width
         );
         assert_eq!(resolved.location.center_re, "0.04");
         assert_eq!(resolved.location.width, "5.0");
@@ -529,7 +634,7 @@ mod tests {
         assert_eq!(resolved.view.width, 2.0);
         assert_eq!(
             resolved.view.center,
-            crate::family::CLASSIC_PHOENIX.home_view().center
+            crate::family::CLASSIC_PHOENIX.home_view().unwrap().center
         );
     }
 
@@ -674,6 +779,131 @@ mod tests {
         assert_eq!(resolved.maxiter, 37);
     }
 
+    /// **The wire is the record**, so what a location serializes to is pinned
+    /// as text rather than as a struct. Every existing family writes `degree` as
+    /// a bare integer, which is what it wrote before [`Degree`] had a second
+    /// shape at all — a record from any earlier run reads back and writes out
+    /// the same bytes.
+    #[test]
+    fn an_integer_degree_still_serializes_as_a_bare_number() {
+        let written = |family: &str| {
+            serde_json::to_string(&resolve(family).location).expect("a location serializes")
+        };
+        assert_eq!(
+            written(r#"{"kind":"mandelbrot"}"#),
+            r#"{"family":"mandelbrot","degree":2,"center_re":"-0.77","center_im":"0.0","width":"4.4"}"#
+        );
+        assert_eq!(
+            written(r#"{"kind":"multibrot","degree":5}"#),
+            r#"{"family":"multibrot","degree":5,"center_re":"0.0","center_im":"0.0","width":"3.6"}"#
+        );
+        assert_eq!(
+            written(r#"{"kind":"julia","c":["-0.4","0.6"]}"#),
+            r#"{"family":"julia","degree":2,"center_re":"0.0","center_im":"0.0","width":"3.0",
+               "c":["-0.4","0.6"]}"#
+                .replace("\n               ", "")
+        );
+        assert_eq!(
+            written(r#"{"kind":"phoenix"}"#),
+            r#"{"family":"phoenix","degree":2,"center_re":"0.04","center_im":"0.0","width":"5.0",
+               "c":["0.5667","0.0"],"p":["-0.5","0.0"],"z_prev":["0.0","0.0"]}"#
+                .replace("\n               ", "")
+        );
+    }
+
+    /// The record a location round-trips through has to survive it: a written
+    /// record is read back by `recolor` and by every reader of a dump.
+    #[test]
+    fn a_location_round_trips_through_its_own_record() {
+        for family in [
+            r#"{"kind":"mandelbrot"}"#,
+            r#"{"kind":"multibrot","degree":4}"#,
+            r#"{"kind":"julia","degree":3,"c":["-0.4","0.6"]}"#,
+            r#"{"kind":"phoenix"}"#,
+        ] {
+            let location = resolve(family).location;
+            let text = serde_json::to_string(&location).unwrap();
+            let back: Location = serde_json::from_str(&text).unwrap();
+            assert_eq!(back, location, "{family}");
+        }
+        let fractional = fractional("2.5").location;
+        let text = serde_json::to_string(&fractional).unwrap();
+        let back: Location = serde_json::from_str(&text).unwrap();
+        assert_eq!(back, fractional);
+    }
+
+    /// A spec that says where to look, which a fractional degree must.
+    fn fractional(degree: &str) -> Resolved {
+        let spec = format!(
+            r#"{{"schema":1,"family":{{"kind":"fractional_multibrot","degree":"{degree}"}},
+                "viewport":{{"center_re":"-0.4","center_im":"0","width":"4.0"}},
+                "resolution":[64,36],"colormap":"twilight_shifted","output":"out.png"}}"#
+        );
+        RenderSpec::parse(&spec).unwrap().resolve().unwrap()
+    }
+
+    /// A fractional degree reaches the engine as a decimal string and is
+    /// recorded as the string that was written, exactly like a coordinate. That
+    /// is what keeps `2.5` and `2.50` one picture under two names rather than a
+    /// rounding, and what keeps both distinct from every integer degree.
+    #[test]
+    fn a_fractional_degree_is_recorded_as_the_string_it_was_written_as() {
+        let resolved = fractional("2.5");
+        assert_eq!(resolved.family, Family::FractionalMultibrot { degree: 2.5 });
+        assert_eq!(
+            serde_json::to_string(&resolved.location).unwrap(),
+            r#"{"family":"fractional_multibrot","degree":"2.5","center_re":"-0.4",
+               "center_im":"0","width":"4.0"}"#
+                .replace("\n               ", "")
+        );
+    }
+
+    /// The identity a field cache and a replay are keyed on is the record, so
+    /// what matters is that no two of these renders write the same one. Two
+    /// fractional degrees differ, and a fractional degree differs from every
+    /// integer one in the family name as well as in the degree.
+    #[test]
+    fn no_fractional_render_collides_with_another_render() {
+        let mut written = std::collections::HashSet::new();
+        for degree in ["2.5", "2.75", "3.5", "4.25"] {
+            let text = serde_json::to_string(&fractional(degree).location).unwrap();
+            assert!(written.insert(text.clone()), "{degree} collided: {text}");
+        }
+        for family in [
+            r#"{"kind":"mandelbrot"}"#,
+            r#"{"kind":"multibrot","degree":3}"#,
+            r#"{"kind":"multibrot","degree":4}"#,
+            r#"{"kind":"multibrot","degree":5}"#,
+        ] {
+            let text = serde_json::to_string(&resolve(family).location).unwrap();
+            assert!(written.insert(text.clone()), "{family} collided: {text}");
+        }
+    }
+
+    /// A render-only family has no row in the home table, so a spec that does
+    /// not say where to look is refused rather than framed by a default nobody
+    /// derived. Every missing key says so on its own.
+    #[test]
+    fn a_fractional_render_has_to_say_where_to_look() {
+        for viewport in [
+            r#""viewport":{"center_im":"0","width":"4.0"},"#,
+            r#""viewport":{"center_re":"-0.4","width":"4.0"},"#,
+            r#""viewport":{"center_re":"-0.4","center_im":"0"},"#,
+            "",
+        ] {
+            let spec = format!(
+                r#"{{"schema":1,"family":{{"kind":"fractional_multibrot","degree":"2.5"}},
+                    {viewport}"resolution":[64,36],"colormap":"twilight_shifted",
+                    "output":"out.png"}}"#
+            );
+            let message = RenderSpec::parse(&spec)
+                .and_then(RenderSpec::resolve)
+                .err()
+                .unwrap_or_else(|| panic!("accepted: {spec}"));
+            assert!(message.contains("no home"), "{message}");
+        }
+    }
+
     #[test]
     fn bad_specs_are_refused_rather_than_guessed_at() {
         let cases = [
@@ -744,6 +974,39 @@ mod tests {
                     .into(),
                 "dynamical-plane option",
             ),
+            // A whole degree belongs to the integer family, so it is refused
+            // here rather than rendered under a second name — the same rule that
+            // refuses `multibrot` at degree 2, read the other way round.
+            (
+                minimal(r#"{"kind":"fractional_multibrot","degree":"3"}"#),
+                "whole number",
+            ),
+            (
+                minimal(r#"{"kind":"fractional_multibrot","degree":"4.0"}"#),
+                "whole number",
+            ),
+            // And the interval is the one the integer families cover: below and
+            // above it are exponents nobody has looked at.
+            (
+                minimal(r#"{"kind":"fractional_multibrot","degree":"1.5"}"#),
+                "supported range",
+            ),
+            (
+                minimal(r#"{"kind":"fractional_multibrot","degree":"5.5"}"#),
+                "supported range",
+            ),
+            (
+                minimal(r#"{"kind":"fractional_multibrot","degree":"two and a half"}"#),
+                "decimal",
+            ),
+            // The degree is a string here for the same reason a coordinate is,
+            // and a spec that writes it as a number is refused rather than read
+            // through an f64 nobody wrote down.
+            (
+                minimal(r#"{"kind":"fractional_multibrot","degree":2.5}"#),
+                "spec",
+            ),
+            (minimal(r#"{"kind":"fractional_multibrot"}"#), "spec"),
         ];
         for (text, expected) in cases {
             let outcome = RenderSpec::parse(&text).and_then(RenderSpec::resolve);

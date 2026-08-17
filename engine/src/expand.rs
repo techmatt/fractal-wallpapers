@@ -302,7 +302,11 @@ fn render(view: &Viewport, family: &Family, cap: u32, colormap: &Colormap) -> Re
 /// Expand every node in `spec` by one rung.
 pub fn run(spec: ExpandSpec) -> Result<ExpandReport, String> {
     let started = Instant::now();
-    let (family, _kind, _c, _p, _z_prev) = spec.family.resolve()?;
+    let resolved = spec.family.resolve()?;
+    let family = resolved.family;
+    if family.is_render_only() {
+        return Err(crate::spec::render_only_refusal(resolved.kind, "walked"));
+    }
     let colormap = Colormap::load(&spec.colormap_dir, &spec.colormap)?;
     let policy = spec.policy.policy();
     let gates = spec.gates;
@@ -552,6 +556,19 @@ mod tests {
                 "width":"{width}","depth":{depth}}}"#,
             center.0, center.1
         )
+    }
+
+    /// A walk is discovery, and a render-only family is not discoverable: it is
+    /// refused before a single node is drawn, so there is no way for one to
+    /// reach a ledger, a supply book, or a seed pool by way of a walk.
+    #[test]
+    fn a_render_only_family_cannot_be_walked() {
+        let text = spec_text(&node(1, ("-0.5", "0"), "3.0", 1), "").replace(
+            r#""family":{"kind":"mandelbrot"}"#,
+            r#""family":{"kind":"fractional_multibrot","degree":"2.5"}"#,
+        );
+        let message = run(ExpandSpec::parse(&text).unwrap()).unwrap_err();
+        assert!(message.contains("render-only"), "{message}");
     }
 
     #[test]

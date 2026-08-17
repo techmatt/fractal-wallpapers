@@ -515,7 +515,7 @@ pub fn run(family: &Family, pixel: Complex<f64>, maxiter: u32, wants: &Wants) ->
         if magnitude_sq > bailout_sq {
             orbit.escaped = true;
             orbit.iteration = n;
-            orbit.smooth = smooth_count(n, magnitude_sq, family.degree());
+            orbit.smooth = smooth_count(n, magnitude_sq, family.escape_exponent());
             if wants.derivative {
                 orbit.derivative = dz;
             }
@@ -553,7 +553,7 @@ pub fn escape(family: &Family, pixel: Complex<f64>, maxiter: u32) -> Orbit {
 /// Drop the `ln B` and that fraction is offset by a constant, the fade happens
 /// at the wrong moment, and the averaging modes terrace in a way that looks like
 /// brickwork.
-fn smooth_count(n: u32, magnitude_sq: f64, degree: u32) -> f64 {
+fn smooth_count(n: u32, magnitude_sq: f64, degree: f64) -> f64 {
     let log_z = 0.5 * magnitude_sq.ln(); // ln|z|
     let log_bailout = BAILOUT.ln();
     let overshoot = log_z / log_bailout;
@@ -563,7 +563,7 @@ fn smooth_count(n: u32, magnitude_sq: f64, degree: u32) -> f64 {
     // bailout — falls back to the integer count rather than poisoning the field
     // with a NaN that would read as "interior".
     if overshoot.is_finite() && overshoot > 0.0 {
-        (n + 1) as f64 - overshoot.ln() / (degree as f64).ln()
+        (n + 1) as f64 - overshoot.ln() / degree.ln()
     } else {
         (n + 1) as f64
     }

@@ -298,6 +298,12 @@ def _home_view(key: str) -> str:
 DYNAMICAL_KINDS = frozenset({"julia", "phoenix"})
 
 #: The kinds whose pixel is the constant `c`: the parameter planes.
+#:
+#: The engine renders one more parameter plane than this — `fractional_multibrot`
+#: — and its absence here is the point rather than an omission. That family is
+#: render-only: it is drawn from a written spec and never enters a plan, a walk,
+#: or a judge's corpus, so a caller that reaches this asking which plane it is on
+#: has routed it somewhere it does not belong, and is told so.
 PARAMETER_KINDS = frozenset({"mandelbrot", "multibrot"})
 
 
@@ -315,8 +321,8 @@ def pixel_is_z0(family: dict) -> bool:
     if kind in PARAMETER_KINDS:
         return False
     raise ValueError(
-        f"family kind {kind!r} is not one the engine renders, so which plane it is on cannot "
-        f"be read. The kinds are {sorted(DYNAMICAL_KINDS | PARAMETER_KINDS)}."
+        f"family kind {kind!r} is not one this side builds render jobs for, so which plane "
+        f"it is on cannot be read. The kinds are {sorted(DYNAMICAL_KINDS | PARAMETER_KINDS)}."
     )
 
 
