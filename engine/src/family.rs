@@ -170,6 +170,19 @@ impl Family {
         }
     }
 
+    /// Whether the pixel is `z₀` — the dynamical planes — rather than `c`.
+    ///
+    /// The same split [`seed`](Family::seed) and
+    /// [`derivative_seed`](Family::derivative_seed) already turn on, asked as a
+    /// question so a caller that needs to know which plane it is on reads it here
+    /// instead of matching the families over again and forgetting Phoenix.
+    pub fn pixel_is_z0(&self) -> bool {
+        match *self {
+            Family::Multibrot { .. } => false,
+            Family::Julia { .. } | Family::Phoenix { .. } => true,
+        }
+    }
+
     /// One step of the recurrence: `(z_n, z_{n-1}, c) → z_{n+1}`.
     pub fn step(&self, z: Complex<f64>, z_prev: Complex<f64>, c: Complex<f64>) -> Complex<f64> {
         match *self {
@@ -345,6 +358,26 @@ mod tests {
         let (z0, _, cj) = Family::Julia { degree: 2, c }.seed(pixel);
         assert_eq!(z0, pixel);
         assert_eq!(cj, c);
+    }
+
+    /// The plane question and the seed have to agree, because a caller reads the
+    /// question and then assumes the seed: `pixel_is_z0` is true exactly where
+    /// `seed` hands the pixel back as `z₀`.
+    #[test]
+    fn the_plane_question_answers_what_the_seed_does() {
+        let pixel = Complex::new(0.1, 0.2);
+        for family in [
+            Family::Multibrot { degree: 2 },
+            Family::Multibrot { degree: 5 },
+            Family::Julia {
+                degree: 2,
+                c: Complex::new(-0.8, 0.156),
+            },
+            CLASSIC_PHOENIX,
+        ] {
+            let (z0, ..) = family.seed(pixel);
+            assert_eq!(family.pixel_is_z0(), z0 == pixel, "{family:?}");
+        }
     }
 
     /// Every family whose set can be measured, so a test can say "each of these"

@@ -53,7 +53,7 @@
 
 use crate::coloring::{Blend, Coloring, Layer, Transform};
 use crate::direct_trap::Shape;
-use crate::field::{FieldSpec, Reduction};
+use crate::field::{AddressStart, FieldSpec, Reduction};
 
 /// Whether a mode may be drawn by production or only asked for by name.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize)]
@@ -189,6 +189,13 @@ const ITINERARY_SECTORS: u32 = 4;
 const ITINERARY_BASE: f64 = 4.0;
 const ITINERARY_DEPTH: u32 = 26;
 const ITINERARY_SHIFT: f64 = 0.5;
+/// Where the named mode opens its address, written out rather than defaulted.
+///
+/// The mode is a catalogued setting and this is one of its numbers, so it is
+/// stated here beside the other four. It is also the field's own default, which
+/// keeps `itinerary` serializing exactly the keys it always has — see
+/// [`crate::field::AddressStart`] for the alternative and what it is for.
+const ITINERARY_START: AddressStart = AddressStart::Z0;
 
 /// Look a mode up by name.
 pub fn resolve(name: &str) -> Result<Coloring, String> {
@@ -268,6 +275,7 @@ pub fn resolve(name: &str) -> Result<Coloring, String> {
                     sectors: ITINERARY_SECTORS,
                     weight_base: Some(ITINERARY_BASE),
                     depth: ITINERARY_DEPTH,
+                    start: ITINERARY_START,
                 },
                 transform: Transform::Linear,
             },
@@ -480,6 +488,7 @@ mod tests {
                 sectors: 4,
                 weight_base: Some(4.0),
                 depth: 26,
+                start: AddressStart::Z0,
             }
         );
         assert_eq!(shift, 0.5);

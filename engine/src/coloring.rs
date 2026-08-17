@@ -653,6 +653,58 @@ impl Coloring {
         }
         Ok(())
     }
+
+    /// Check this coloring against the family it will be rendered over.
+    ///
+    /// Almost every pairing is free here too — a field reduces an orbit, and the
+    /// orbit is the family's business. The exception is
+    /// [`AddressStart::Z1`](crate::field::AddressStart::Z1), which is a fix for
+    /// something only a dynamical plane has: `z₀` is the pixel there, so its
+    /// sector is a wedge over the frame. On a parameter plane `z₀ = 0` and the
+    /// leading symbol is one constant, so opening the address at `z₁` removes no
+    /// seam and renumbers every address by a base-`k` place. Rendering that
+    /// quietly would put a differently-addressed picture on record under an option
+    /// whose name says what it is for.
+    pub fn agrees_with_family(&self, family: &Family) -> Result<(), String> {
+        if family.pixel_is_z0() {
+            return Ok(());
+        }
+        for field in self.fields() {
+            if matches!(
+                field,
+                FieldSpec::Itinerary {
+                    start: field::AddressStart::Z1,
+                    ..
+                }
+            ) {
+                return Err(
+                    "itinerary's z1 start is a dynamical-plane option: it opens the address at \
+                     the first iterate so the pixel's own sector stops drawing a wedge over the \
+                     frame. This family's pixel is c and z0 = 0 everywhere, so there is no such \
+                     wedge and starting at z1 would only renumber the address. Drop `start`, or \
+                     render it on a julia or phoenix view."
+                        .into(),
+                );
+            }
+        }
+        Ok(())
+    }
+
+    /// Every field this coloring reads, in no particular order.
+    ///
+    /// A direct trap has none: it paints during the iteration and makes no field
+    /// at all, which is the same thing [`why_not_a_field`](Coloring::why_not_a_field)
+    /// says at more length.
+    pub fn fields(&self) -> Vec<FieldSpec> {
+        match self {
+            Coloring::Field { field, .. } => vec![*field],
+            Coloring::Composite { base, texture, .. }
+            | Coloring::Modulate { base, texture, .. } => {
+                vec![base.field, texture.field]
+            }
+            Coloring::Direct { .. } => Vec::new(),
+        }
+    }
 }
 
 fn in_unit_interval(value: f64, name: &str) -> Result<(), String> {
@@ -1441,6 +1493,7 @@ mod tests {
                         sectors: 4,
                         weight_base: Some(4.0),
                         depth: 26,
+                        start: field::AddressStart::Z0,
                     },
                     transform: Transform::Linear,
                 },
@@ -1862,6 +1915,7 @@ mod tests {
                     sectors: 4,
                     weight_base: Some(4.0),
                     depth: 26,
+                    start: field::AddressStart::Z0,
                 },
                 transform: Transform::Linear,
             },
@@ -1882,6 +1936,54 @@ mod tests {
                 ..Palette::default()
             })
             .unwrap();
+    }
+
+    /// The `z1` start removes a wedge only a dynamical plane has, so it is refused
+    /// on the plane where the pixel is `c` — and the default is refused nowhere,
+    /// which is the half that says this check cannot cost an existing render.
+    #[test]
+    fn the_z1_address_start_is_refused_on_a_parameter_plane() {
+        let address = |start| Coloring::Modulate {
+            base: Layer {
+                field: FieldSpec::Smooth,
+                transform: Transform::Linear,
+            },
+            texture: Layer {
+                field: FieldSpec::Itinerary {
+                    sectors: 4,
+                    weight_base: Some(4.0),
+                    depth: 26,
+                    start,
+                },
+                transform: Transform::Linear,
+            },
+            shift: 0.5,
+        };
+        let dynamical = [
+            Family::Julia {
+                degree: 2,
+                c: num_complex::Complex::new(-0.4, 0.6),
+            },
+            crate::family::CLASSIC_PHOENIX,
+        ];
+        let parameter = Family::Multibrot { degree: 2 };
+
+        for family in dynamical {
+            address(field::AddressStart::Z1)
+                .agrees_with_family(&family)
+                .unwrap_or_else(|e| panic!("{family:?}: {e}"));
+        }
+        let message = address(field::AddressStart::Z1)
+            .agrees_with_family(&parameter)
+            .unwrap_err();
+        assert!(message.contains("dynamical-plane"), "{message}");
+
+        // The settled default renders everywhere, including the plane the option
+        // is refused on, and so does every coloring that reads no address at all.
+        address(field::AddressStart::Z0)
+            .agrees_with_family(&parameter)
+            .unwrap();
+        Coloring::default().agrees_with_family(&parameter).unwrap();
     }
 
     /// Below the knee nothing moves at all, above it the shoulder approaches

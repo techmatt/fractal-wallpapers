@@ -166,6 +166,16 @@ pub enum FieldSpec {
         weight_base: Option<f64>,
         #[serde(default = "itinerary_depth")]
         depth: u32,
+        /// Which iterate spells the first symbol. See [`AddressStart`]; `z0` is
+        /// the settled default and the only one a named mode asks for.
+        ///
+        /// **Absent from the record when it is the default**, which is the same
+        /// exception [`crate::coloring::Coloring::Composite::texture_gamma`]
+        /// makes and for the same reason: the coloring is hashed into the render
+        /// cache's file names, and a key that appeared unconditionally would
+        /// rename every picture already made under this field.
+        #[serde(default, skip_serializing_if = "AddressStart::is_default")]
+        start: AddressStart,
     },
     /// Closest approach to the Gaussian integers — the points of the complex
     /// plane with whole real and imaginary parts — or an angle read off that
@@ -181,6 +191,47 @@ pub enum FieldSpec {
     /// so the sum is dominated by the slow early part of the orbit and runs
     /// smoothly with escape time. Exterior only.
     ExpSmoothing,
+}
+
+/// Which iterate the address spells its first symbol from.
+///
+/// The most significant digit is a fact about wherever the address opens, and on
+/// a **dynamical plane** `z₀` *is* the pixel — so under [`Z0`](AddressStart::Z0)
+/// that digit is the pixel's own angular sector, constant across each of the `k`
+/// sectors and jumping at their boundaries. The render shows it as a hard wedge
+/// seam along the axes, drawn over the set instead of by it.
+///
+/// [`Z1`](AddressStart::Z1) opens the address one step in, at `f(z₀)`. The
+/// symbols are then all read off iterates the recurrence produced, so the leading
+/// digit's boundaries are the preimages of the sector boundaries — the set's own
+/// curves — rather than straight lines through the frame.
+///
+/// **This is a dynamical-plane option and the engine refuses it elsewhere.** On a
+/// parameter plane `z₀ = 0` for every pixel, so the leading digit is one constant
+/// and dropping it does not remove a seam — it renumbers every address by a whole
+/// base-`k` place, which is a different picture for no stated reason. See
+/// [`Coloring::agrees_with_family`](crate::coloring::Coloring::agrees_with_family).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AddressStart {
+    /// The address opens on `z₀`. The settled default: `s₀` is the most
+    /// significant digit, and on a parameter plane it is the only choice that
+    /// means anything.
+    #[default]
+    Z0,
+    /// The address opens on `z₁`, the first iterate. Dynamical planes only.
+    Z1,
+}
+
+impl AddressStart {
+    /// Whether the first symbol is `z₀`'s.
+    pub fn spells_z0(self) -> bool {
+        self == AddressStart::Z0
+    }
+
+    fn is_default(&self) -> bool {
+        *self == AddressStart::Z0
+    }
 }
 
 /// Which statistic of the lattice trap becomes the field.
@@ -320,11 +371,13 @@ impl FieldSpec {
                 sectors,
                 weight_base,
                 depth,
+                start,
             } => Wants {
                 itinerary: Some(Symbols {
                     sectors,
                     base: weight_base.unwrap_or(sectors as f64),
                     depth,
+                    spells_z0: start.spells_z0(),
                 }),
                 ..Wants::default()
             },
@@ -614,6 +667,7 @@ mod tests {
                 sectors: 4,
                 weight_base: None,
                 depth: 26,
+                start: AddressStart::Z0,
             },
         ]
     }
@@ -634,6 +688,7 @@ mod tests {
                 sectors: 4,
                 weight_base: None,
                 depth: 26,
+                start: AddressStart::Z0,
             },
         ]
     }
@@ -827,6 +882,7 @@ mod tests {
             sectors: 4,
             weight_base: Some(4.0),
             depth: 26,
+            start: AddressStart::Z0,
         };
         let mut quarters = std::collections::BTreeSet::new();
         for &(re, im) in &[(0.9, 0.1), (-0.1, 0.9), (-0.9, -0.1), (0.1, -0.9)] {
@@ -836,6 +892,94 @@ mod tests {
             quarters.insert((address * 4.0).floor() as u32);
         }
         assert_eq!(quarters.len(), 4, "z₀ did not decide the leading symbol");
+    }
+
+    /// The `z₁` start is the same address with its leading symbol removed and
+    /// everything shifted up one place — which is the whole claim, because it is
+    /// what says the option drops the pixel's own sector rather than reading some
+    /// other quantity. Stated exactly: `a₁ = k·a₀ − s₀`, to within the weight of
+    /// the one extra symbol `a₁` has room for at the deep end.
+    #[test]
+    fn a_z1_start_is_the_same_address_without_the_pixel_s_own_symbol() {
+        let family = Family::Julia {
+            degree: 2,
+            c: Complex::new(-0.4, 0.6),
+        };
+        let from_z0 = FieldSpec::Itinerary {
+            sectors: 4,
+            weight_base: Some(4.0),
+            depth: 26,
+            start: AddressStart::Z0,
+        };
+        let from_z1 = FieldSpec::Itinerary {
+            sectors: 4,
+            weight_base: Some(4.0),
+            depth: 26,
+            start: AddressStart::Z1,
+        };
+        for &(re, im) in &[(0.9, 0.1), (-0.1, 0.9), (-0.9, -0.1), (0.31, 0.22)] {
+            let point = Complex::new(re, im);
+            let zero = iterate::run(&family, point, 500, &from_z0.wants());
+            let one = iterate::run(&family, point, 500, &from_z1.wants());
+            let (a0, a1) = (
+                from_z0
+                    .reduce(&zero)
+                    .expect("the address is always defined"),
+                from_z1.reduce(&one).expect("the address is always defined"),
+            );
+            let leading = (a0 * 4.0).floor();
+            assert!(
+                (a1 - (4.0 * a0 - leading)).abs() < 4.0_f64.powi(-25),
+                "{a1} is not {a0} shifted up a place at {point}"
+            );
+            assert_ne!(a0, a1, "the two starts spelled the same address");
+        }
+    }
+
+    /// The first symbol is the *pixel's* sector only under `z0`. Four points, one
+    /// per quadrant, land in four different quarters of the gradient under the
+    /// default — that is the wedge — and under `z1` they do not, because the
+    /// leading symbol is then a fact about where the recurrence sent them.
+    #[test]
+    fn only_the_z0_start_puts_the_four_quadrants_in_four_quarters() {
+        let family = Family::Julia {
+            degree: 2,
+            c: Complex::new(-0.4, 0.6),
+        };
+        let spec = FieldSpec::Itinerary {
+            sectors: 4,
+            weight_base: Some(4.0),
+            depth: 26,
+            start: AddressStart::Z1,
+        };
+        let mut quarters = std::collections::BTreeSet::new();
+        for &(re, im) in &[(0.9, 0.1), (-0.1, 0.9), (-0.9, -0.1), (0.1, -0.9)] {
+            let orbit = iterate::run(&family, Complex::new(re, im), 200, &spec.wants());
+            let address = spec.reduce(&orbit).expect("the address is always defined");
+            quarters.insert((address * 4.0).floor() as u32);
+        }
+        assert!(
+            quarters.len() < 4,
+            "the four quadrants still landed in four quarters: {quarters:?}"
+        );
+    }
+
+    /// A `z1` address is still `depth` symbols: the start moves where the
+    /// accumulation opens, not how much of it there is.
+    #[test]
+    fn a_z1_start_spells_as_many_symbols_as_a_z0_one() {
+        let family = Family::Julia {
+            degree: 2,
+            c: Complex::new(-0.4, 0.6),
+        };
+        let spec = FieldSpec::Itinerary {
+            sectors: 4,
+            weight_base: Some(4.0),
+            depth: 5,
+            start: AddressStart::Z1,
+        };
+        let orbit = iterate::run(&family, Complex::new(0.31, 0.22), 500, &spec.wants());
+        assert_eq!(orbit.itinerary.symbols(), 5);
     }
 
     /// An address is `depth` symbols and no more: past the ceiling the digits are
@@ -850,11 +994,13 @@ mod tests {
             sectors: 4,
             weight_base: Some(4.0),
             depth: 26,
+            start: AddressStart::Z0,
         };
         let shallow = FieldSpec::Itinerary {
             sectors: 4,
             weight_base: Some(4.0),
             depth: 2,
+            start: AddressStart::Z0,
         };
         let point = Complex::new(0.31, 0.22);
         let deep_orbit = iterate::run(&family, point, 500, &deep.wants());
@@ -1002,8 +1148,53 @@ mod tests {
                 sectors: 4,
                 weight_base: None,
                 depth: 26,
+                start: AddressStart::Z0,
             }
         );
+    }
+
+    /// **The default start does not appear in the record.** The coloring is hashed
+    /// into the render cache's file names, so a key that serialized
+    /// unconditionally would rename every picture already made under this field
+    /// while changing none of them. The non-default is written out, because there
+    /// it is the whole difference between two renders.
+    #[test]
+    fn the_address_start_is_recorded_only_when_it_is_not_the_default() {
+        let settled = FieldSpec::Itinerary {
+            sectors: 4,
+            weight_base: Some(4.0),
+            depth: 26,
+            start: AddressStart::Z0,
+        };
+        let text = serde_json::to_string(&settled).unwrap();
+        assert!(!text.contains("start"), "{text}");
+        assert_eq!(
+            text,
+            r#"{"kind":"itinerary","sectors":4,"weight_base":4.0,"depth":26}"#
+        );
+
+        let moved = FieldSpec::Itinerary {
+            sectors: 4,
+            weight_base: Some(4.0),
+            depth: 26,
+            start: AddressStart::Z1,
+        };
+        let text = serde_json::to_string(&moved).unwrap();
+        assert!(text.contains(r#""start":"z1""#), "{text}");
+        assert_eq!(serde_json::from_str::<FieldSpec>(&text).unwrap(), moved);
+
+        let asked: FieldSpec =
+            serde_json::from_str(r#"{"kind":"itinerary","start":"z1"}"#).unwrap();
+        assert_eq!(
+            asked,
+            FieldSpec::Itinerary {
+                sectors: 4,
+                weight_base: None,
+                depth: 26,
+                start: AddressStart::Z1,
+            }
+        );
+        assert!(serde_json::from_str::<FieldSpec>(r#"{"kind":"itinerary","start":"z2"}"#).is_err());
     }
 
     /// An absent `weight_base` means "= sectors", and it has to follow `sectors`
@@ -1015,17 +1206,20 @@ mod tests {
             sectors: 8,
             weight_base: None,
             depth: 17,
+            start: AddressStart::Z0,
         };
         let stated = FieldSpec::Itinerary {
             sectors: 8,
             weight_base: Some(8.0),
             depth: 17,
+            start: AddressStart::Z0,
         };
         assert_eq!(follows.wants(), stated.wants());
         let differing = FieldSpec::Itinerary {
             sectors: 8,
             weight_base: Some(2.0),
             depth: 17,
+            start: AddressStart::Z0,
         };
         assert_ne!(follows.wants(), differing.wants());
     }
