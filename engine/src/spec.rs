@@ -267,8 +267,11 @@ impl RenderSpec {
         self.palette.validate()?;
         // The two halves are settled separately and then checked against each
         // other: almost every pairing is free, and the one that is not should cost
-        // a message rather than a render that ignored half the spec.
+        // a message rather than a render that ignored half the spec. The family is
+        // the third such pairing, and it is checked here rather than in the loop
+        // for the same reason: it is knowable before a single orbit is run.
         coloring.agrees_with(&self.palette)?;
+        coloring.agrees_with_family(&family)?;
 
         Ok(Resolved {
             maxiter: self
@@ -583,6 +586,38 @@ mod tests {
         );
     }
 
+    /// The same coloring the parameter plane refuses resolves on a dynamical one,
+    /// which is what makes the refusal a statement about the plane rather than
+    /// about the option.
+    #[test]
+    fn the_z1_address_start_resolves_on_a_dynamical_plane() {
+        for family in [
+            r#"{"kind":"julia","c":["-0.4","0.6"]}"#,
+            r#"{"kind":"phoenix"}"#,
+        ] {
+            let spec = format!(
+                r#"{{"schema":1,"family":{family},"resolution":[8,8],
+                    "coloring":{{"kind":"field",
+                        "field":{{"kind":"itinerary","start":"z1"}}}},
+                    "colormap":"twilight_shifted","output":"o.png"}}"#
+            );
+            let resolved = RenderSpec::parse(&spec).unwrap().resolve().unwrap();
+            assert_eq!(resolved.mode, None);
+            assert_eq!(
+                resolved.coloring,
+                Coloring::Field {
+                    field: crate::field::FieldSpec::Itinerary {
+                        sectors: 4,
+                        weight_base: None,
+                        depth: 26,
+                        start: crate::field::AddressStart::Z1,
+                    },
+                    transform: crate::coloring::Transform::Linear,
+                }
+            );
+        }
+    }
+
     #[test]
     fn an_explicit_maxiter_wins_over_the_policy() {
         let spec = r#"{"schema":1,"family":{"kind":"mandelbrot"},"resolution":[64,36],
@@ -652,6 +687,14 @@ mod tests {
                     "colormap":"x","output":"o.png"}"#
                     .into(),
                 "start_color",
+            ),
+            (
+                r#"{"schema":1,"family":{"kind":"mandelbrot"},"resolution":[8,8],
+                    "coloring":{"kind":"field",
+                        "field":{"kind":"itinerary","start":"z1"}},
+                    "colormap":"x","output":"o.png"}"#
+                    .into(),
+                "dynamical-plane option",
             ),
         ];
         for (text, expected) in cases {

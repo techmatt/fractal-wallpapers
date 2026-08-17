@@ -276,6 +276,56 @@ def test_the_three_niche_modes_render_at_the_parameters_they_were_kept_at(tmp_pa
 
 
 @needs_engine
+def test_the_address_can_be_asked_to_open_at_z1_on_a_dynamical_plane(tmp_path) -> None:
+    """The non-default start, through the door Python has to it: written out in
+    full, because it is not a mode and is not going to become one until Matt has
+    looked at the pair.
+
+    The record echoes the key only when it is asked for. That is what keeps the
+    render cache's file names where they are — they are a digest of the coloring,
+    so a key that appeared unconditionally would rename every picture already made
+    under `itinerary` without changing one of them.
+    """
+    wedge = {"kind": "modulate", "base": {"field": {"kind": "smooth"}}, "shift": 0.5}
+    default = engine.render_report(
+        {
+            **{key: value for key, value in ANCHOR.items() if key != "mode"},
+            "coloring": {**wedge, "texture": {"field": {"kind": "itinerary"}}},
+            "output": str(tmp_path / "z0.png"),
+        }
+    )
+    assert "start" not in default["coloring"]["texture"]["field"]
+
+    moved = engine.render_report(
+        {
+            **{key: value for key, value in ANCHOR.items() if key != "mode"},
+            "coloring": {**wedge, "texture": {"field": {"kind": "itinerary", "start": "z1"}}},
+            "output": str(tmp_path / "z1.png"),
+        }
+    )
+    assert moved["coloring"]["texture"]["field"]["start"] == "z1"
+    assert (tmp_path / "z0.png").read_bytes() != (tmp_path / "z1.png").read_bytes()
+
+
+@needs_engine
+def test_the_z1_address_start_is_refused_on_a_parameter_plane(tmp_path) -> None:
+    """It removes a seam only a dynamical plane has: where the pixel is `c` there
+    is no wedge to remove, and starting at `z1` would only renumber the address."""
+    with pytest.raises(RuntimeError, match="dynamical-plane"):
+        engine.render_report(
+            {
+                **{key: value for key, value in ANCHOR.items() if key != "mode"},
+                "family": {"kind": "mandelbrot"},
+                "coloring": {
+                    "kind": "field",
+                    "field": {"kind": "itinerary", "start": "z1"},
+                },
+                "output": str(tmp_path / "refused.png"),
+            }
+        )
+
+
+@needs_engine
 def test_a_modulate_refuses_a_recipe_that_spends_its_base_another_way(tmp_path) -> None:
     """The mode ranks its base as part of what it is, so a recipe that asks for
     another transfer is refused rather than half-honoured."""

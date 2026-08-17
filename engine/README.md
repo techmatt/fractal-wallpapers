@@ -34,6 +34,14 @@ boundary — `mode::production_names` here, `engine.production_modes()` in Pytho
 so it is a property of a function rather than a rule every draw site remembers.
 `fractal-wallpapers modes` prints the tier beside each name.
 
+One option is reachable only by writing the coloring out: `itinerary`'s address
+normally opens on `z₀`, which on a dynamical plane *is* the pixel — so its leading
+symbol is the pixel's own angular sector and the modulate draws it as a hard wedge
+along the axes. `{"kind": "itinerary", "start": "z1"}` opens the address at the
+first iterate instead, so every symbol is one the recurrence produced. It is
+refused on the parameter planes, where `z₀ = 0` leaves no wedge to remove, and the
+named mode still asks for `z0`.
+
 A field meant to be *looked at* rather than named stays out of the catalog
 entirely. There is one: `discrete`, the integer escape count, which is what the
 smooth count replaced and is in the crate so the article can show the two side by

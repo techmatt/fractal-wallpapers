@@ -102,6 +102,11 @@ pub struct Symbols {
     pub base: f64,
     /// How many symbols to take before stopping.
     pub depth: u32,
+    /// Whether the first symbol is `z₀`'s, or whether the address opens one step
+    /// in at `z₁`. The spec-level spelling is
+    /// [`AddressStart`](crate::field::AddressStart); the loop needs only the
+    /// answer, which is what keeps the wire format out of it.
+    pub spells_z0: bool,
 }
 
 /// A running mean that remembers its last term.
@@ -417,8 +422,11 @@ pub fn run(family: &Family, pixel: Complex<f64>, maxiter: u32, wants: &Wants) ->
     // accumulates from `n = 1`, which for an average is a rounding difference. For
     // an address it is not: `s₀` is the most significant digit, so dropping it
     // shifts every address by a whole base-`k` place and the field means something
-    // else. This push is the only reason `z₀` is offered to any channel at all.
-    if let Some(symbols) = wants.itinerary {
+    // else. This push is the only reason `z₀` is offered to any channel at all —
+    // and `spells_z0` is the one field that asks not to be offered it, because on
+    // a dynamical plane `z₀` is the pixel and its sector is a wedge rather than a
+    // fact about the orbit.
+    if let Some(symbols) = wants.itinerary.filter(|symbols| symbols.spells_z0) {
         orbit.itinerary.push(z, symbols);
     }
 
@@ -584,6 +592,7 @@ mod tests {
                 sectors: 4,
                 base: 4.0,
                 depth: 26,
+                spells_z0: true,
             }),
             derivative: true,
         }
