@@ -83,6 +83,13 @@ SELECTION_SEED = dataset.SELECTION_SEED
 
 #: What each judge trains under. Every value is one the source project's own head
 #: for that corpus trained under, read out of its committed config.
+#:
+#: **`classes` is the model's own, not the store's.** The corpus is cast on
+#: [`finished.SCALE`] for every head; what a checkpoint can emit is decided here,
+#: written into its config, and read back off the checkpoint by everything that
+#: loads one. `strange_render` trains on three and therefore decodes to at most a
+#: 3 — its store holds 4s the incumbent cannot see, and moving this number to 4 is
+#: what the retrain that learns them consists of.
 RECIPES: dict[str, dict] = {
     "smooth_render": {
         "classes": 4,
@@ -263,6 +270,28 @@ def recipe_for(head_name: str) -> dict:
     return {**COMMON, **RECIPES[finished.head_of(head_name)]}
 
 
+def refuse_inexpressible(head_name: str, scores: list[int]) -> int:
+    """Return the recipe's class count, having proved it can carry every verdict.
+
+    The store is cast on [`finished.SCALE`] and the recipe says how many tiers
+    this head can express. The two are allowed to differ — that difference is the
+    whole point of a pending retrain. What is not allowed is training *through*
+    it: a 4 handed to a three-class CORN head is a rank with no task to carry it,
+    and the failure is a silently mis-fitted top cutpoint rather than a crash.
+    """
+    expressible = int(recipe_for(head_name)["classes"])
+    beyond = sorted({score for score in scores if score > expressible})
+    if beyond:
+        raise TrainingError(
+            f"the {head_name} corpus holds verdicts at tier(s) {beyond} and this recipe trains "
+            f"{expressible} classes. Raise `RECIPES[{head_name!r}]['classes']` to {max(beyond)} "
+            f"— that edit IS the retrain, and it re-reads the whole corpus at the wider scale. "
+            f"Dropping the rows instead would train a head on a population its own labelers no "
+            f"longer judge."
+        )
+    return expressible
+
+
 @dataclass
 class Picture:
     """One training unit: a finished render, its verdict, and where it is."""
@@ -317,6 +346,8 @@ def population(head_name: str) -> tuple[list[Picture], dict]:
             f"(e.g. {absent[:3]}). Build it before training: a head trained on the subset "
             f"that happened to be on disk is a head nobody can reproduce."
         )
+
+    refuse_inexpressible(head_name, [picture.score for picture in pictures])
 
     training = [picture for picture in pictures if picture.side == "train"]
     places = sorted({picture.place for picture in training})

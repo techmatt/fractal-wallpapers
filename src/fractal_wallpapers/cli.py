@@ -699,21 +699,41 @@ def label_register(args: argparse.Namespace) -> int:
 
 
 def label_build(args: argparse.Namespace) -> int:
-    """Cut a labeling sheet and render every unit of it, twice."""
-    from fractal_wallpapers.labeling import sheets, store
+    """Cut a labeling sheet and render every unit of it."""
+    from fractal_wallpapers.labeling import finished, sheets, store
 
-    known = store.registry()
-    if args.batch not in known:
-        print(f"batch {args.batch!r} is not registered; register it before its rows exist:")
-        print(f"  fractal-wallpapers label register --batch {args.batch} --method '...'")
+    if args.from_plan and not args.head:
+        print("--from-plan cuts a finished-render sheet, so it needs --head")
+        return 1
+    if args.head and not args.from_plan:
+        print("--head names a finished-render judge, and those sheets are cut from --from-plan")
         return 1
 
-    if args.from_ledger:
-        units = sheets.units_from_ledger(
-            resolve_output(args.from_ledger), admitted_only=args.admitted_only
+    known = finished.registry(args.head) if args.head else store.registry()
+    if args.batch not in known:
+        head = f" --head {args.head}" if args.head else ""
+        print(f"batch {args.batch!r} is not registered; register it before its rows exist:")
+        print(f"  fractal-wallpapers label register --batch {args.batch} --method '...'{head}")
+        return 1
+
+    if args.from_plan:
+        units = sheets.units_from_plan(resolve_output(args.from_plan))
+        source = sheets.finished_source(
+            args.head,
+            seed=args.seed,
+            resolution=tuple(args.resolution),
+            supersample=args.supersample,
         )
     else:
-        units = sheets.units_from_batch(args.from_batch)
+        if args.from_ledger:
+            units = sheets.units_from_ledger(
+                resolve_output(args.from_ledger), admitted_only=args.admitted_only
+            )
+        else:
+            units = sheets.units_from_batch(args.from_batch)
+        source = sheets.location_source(
+            resolution=tuple(args.resolution), supersample=args.supersample
+        )
     if args.limit:
         units = units[: args.limit]
     if not units:
@@ -721,12 +741,12 @@ def label_build(args: argparse.Namespace) -> int:
         return 1
 
     sheet = sheets.build(
+        source,
         units,
         directory=resolve_output(args.out_dir),
         batch=args.batch,
         seed=args.seed,
-        resolution=tuple(args.resolution),
-        supersample=args.supersample,
+        title=args.title,
     )
     print(json.dumps(sheet.manifest, indent=2))
     return 0
@@ -741,26 +761,8 @@ def label_serve(args: argparse.Namespace) -> int:
     return server.serve(directory, host=args.host, port=args.port)
 
 
-def label_record(args: argparse.Namespace) -> int:
-    """Record a page's export into the store, through the one writer."""
-    from fractal_wallpapers.labeling import sheets, store
-
-    sheet = sheets.read(resolve_output(args.sheet))
-    head = sheet.manifest.get("head", sheets.HEAD)
-    export = Path(args.labels) if args.labels else store.export_path(head)
-    labels = json.loads(export.read_text(encoding="utf-8"))
-    rows = sheets.record(sheet, labels, labeler=args.labeler)
-    print(
-        json.dumps(
-            {"recorded": len(rows), "batch": sheet.manifest["batch"], "export": str(export)},
-            indent=2,
-        )
-    )
-    return 0
-
-
 def label_ingest(args: argparse.Namespace) -> int:
-    """Resolve a finished-render sheet's export into store rows, through the one writer."""
+    """Resolve a sheet's export into store rows, through the one writer."""
     from fractal_wallpapers.labeling import intake
 
     report = intake.run(
@@ -1940,11 +1942,16 @@ def label_commands(subcommands) -> None:
 
     building = steps.add_parser(
         "build",
-        help="cut a sheet and render every unit of it twice",
+        help="cut a sheet and render every unit of it",
         description=(
-            "Render each unit through the canonical colormap, which is what a head sees, and "
-            "through the vivid one, which is what a person judges from. Both are named maps "
-            "in the committed library. The page serves the file order and never reshuffles."
+            "One generator, two row sources. A LOCATION sheet asks whether a place is worth "
+            "rendering and renders each unit twice — through the canonical colormap, which is "
+            "what a head sees, and through the vivid one, which is what a person judges from, "
+            "both named maps in the committed library. A FINISHED-RENDER sheet asks whether a "
+            "picture is worth keeping and renders each unit once, through its own whole recipe, "
+            "at the geometry both corpora were collected at; its suggestions are the shipped "
+            "judge's own decode. Either way the sheet is a manifest, a row file carrying every "
+            "unit's whole join, and a page that serves the file order and never reshuffles."
         ),
     )
     source = building.add_mutually_exclusive_group(required=True)
@@ -1952,6 +1959,16 @@ def label_commands(subcommands) -> None:
         "--from-ledger", help="a walk ledger; its admitted candidates are the units"
     )
     source.add_argument("--from-batch", help="a batch already in the store, to judge again")
+    source.add_argument(
+        "--from-plan",
+        help="a JSONL of finished-render units — the population somebody selected. Requires "
+        "--head; the selection itself is the caller's and is recorded in the registration",
+    )
+    building.add_argument(
+        "--head",
+        choices=sorted(FINISHED_HEADS),
+        help="the finished-render judge a --from-plan sheet is cut for",
+    )
     building.add_argument(
         "--admitted-only",
         action="store_true",
@@ -1961,13 +1978,14 @@ def label_commands(subcommands) -> None:
     building.add_argument("--batch", required=True, help="the registered batch the rows land in")
     building.add_argument("--seed", type=int, default=0, help="the presentation seed (default: 0)")
     building.add_argument("--limit", type=int, help="cut the sheet to this many units")
+    building.add_argument("--title", default="", help="what the page calls itself")
     building.add_argument(
         "--resolution",
         nargs=2,
         type=int,
         metavar=("W", "H"),
         default=[1280, 720],
-        help="render size for both companions (default: 1280 720)",
+        help="render size (default: 1280 720, what both finished corpora were collected at)",
     )
     building.add_argument("--supersample", type=int, default=2, help="samples per pixel, per axis")
     building.add_argument(
@@ -1990,34 +2008,25 @@ def label_commands(subcommands) -> None:
     serving.add_argument("--port", type=int, default=8010, help="first port to try (default: 8010)")
     serving.set_defaults(handler=label_serve)
 
-    recording = steps.add_parser(
-        "record",
-        help="record the page's export into the store",
-        description=(
-            "Only units the page exported become labels. A suggestion the labeler never "
-            "reviewed is absent from that file and cannot reach the store as a verdict."
-        ),
-    )
-    recording.add_argument("--sheet", required=True, help="the sheet the labels were cast on")
-    recording.add_argument(
-        "--labels", help="the export to read (default: labels/<head>.json, where a page saves)"
-    )
-    recording.add_argument("--labeler", required=True, help="who cast them")
-    recording.set_defaults(handler=label_record)
-
     ingesting = steps.add_parser(
         "ingest",
-        help="resolve a finished-render sheet's export into store rows",
+        help="resolve a sheet's export into store rows — the one path into either store",
         description=(
             "The seam between a sheet that lives somewhere untracked and a store that has to "
             "outlive it. Each exported unit is joined to its sheet row here, once, and lands "
-            "as a row carrying the whole join: the place, the mode with its own settings and "
-            "its curve, the map, every knob of the palette pass, and the geometry. Both counts "
-            "are checked in both directions, nothing already stored is written twice, and a "
-            "verdict that changed is a new row rather than an edit."
+            "as a row carrying the whole join — the place for a location, and the place with "
+            "the mode, its own settings, its curve, the map, every knob of the palette pass "
+            "and the geometry for a finished render. The sheet says which judge it was cut "
+            "for and that decides which store it lands in. Only units the page exported become "
+            "labels: a suggestion the labeler never reviewed is absent from that file and "
+            "cannot reach a store as a verdict. Both counts are checked in both directions, "
+            "nothing already stored is written twice, a verdict that changed is a new row "
+            "rather than an edit, and the evaluation pin is asserted after the write."
         ),
     )
-    ingesting.add_argument("--sheet", required=True, help="the sheet's manifest, rows, or stem")
+    ingesting.add_argument(
+        "--sheet", required=True, help="a built sheet directory, or a manifest, rows or stem"
+    )
     ingesting.add_argument(
         "--labels", help="the export to read (default: labels/<head>.json, where a page saves)"
     )

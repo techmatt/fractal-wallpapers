@@ -66,16 +66,23 @@ def put(base: str, path: str, payload) -> tuple[int, str]:
 # --------------------------------------------------------------------------- #
 # The name.
 # --------------------------------------------------------------------------- #
-def test_a_sheet_names_the_head_it_was_cut_for() -> None:
+def test_every_sheet_names_a_head_on_the_roster() -> None:
     """The export's name comes off the manifest, so it cannot be generic."""
-    assert sheets.HEAD in HEADS
+    assert sheets.LOCATION_HEAD in HEADS
+    assert all(head in HEADS for head in sheets.FINISHED_RUBRIC)
 
 
 def test_the_page_takes_its_export_name_from_the_head_and_never_a_generic_one() -> None:
     assert 'a.download = "labels.json"' not in PAGE
     assert "export_control.js" in PAGE, "the page has its own copy of the export decision"
-    assert 'const HEAD = "location"' in PAGE
-    assert "labelExport.save(head, out)" in PAGE
+    assert "labelExport.save(MANIFEST.head, out)" in PAGE
+
+
+def test_one_page_serves_both_row_sources() -> None:
+    """A location row hands over two pictures and a finished-render row one. A
+    second page is a second answer to what an export is called."""
+    assert "row.pictures" in PAGE
+    assert "MANIFEST.tiers" in PAGE and "MANIFEST.rubric" in PAGE
 
 
 def test_the_export_control_is_one_file_and_says_both_halves() -> None:

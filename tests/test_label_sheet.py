@@ -1,8 +1,8 @@
-"""The rig: how a sheet is ordered, what it renders, and what may become a label.
+"""The generator: two row sources, one cut, and what may become a label.
 
-The invariant that does not bend in either mode: **a suggestion is not a label**.
-A sheet row carries no verdict, and the only thing that becomes one is what a
-person exported from the page.
+The invariant that does not bend in either mode or either source: **a suggestion
+is not a label**. A sheet row carries no verdict, and the only thing that becomes
+one is what a person exported from the page.
 """
 
 from __future__ import annotations
@@ -11,7 +11,7 @@ import json
 
 import pytest
 
-from fractal_wallpapers.labeling import sheets, store
+from fractal_wallpapers.labeling import intake, sheets, store
 
 MANDELBROT = {"kind": "mandelbrot"}
 
@@ -52,23 +52,39 @@ class Head:
         return True
 
 
-def build(tmp_path, units, **kwargs):
+def build(tmp_path, units, scorer=None, seed=0, **kwargs):
+    source = sheets.location_source(scorer=scorer, renderer=stub)
     return sheets.build(
-        units, directory=tmp_path / "sheet", batch="a_batch", renderer=stub, **kwargs
+        source,
+        units,
+        directory=tmp_path / "sheet",
+        batch="a_batch",
+        seed=seed,
+        log=lambda _: None,
+        **kwargs,
     )
 
 
+# --------------------------------------------------------------------------- #
+# The location source.
+# --------------------------------------------------------------------------- #
 def test_without_a_head_the_page_is_a_seeded_shuffle(tmp_path) -> None:
     """Not draw order: it arrives in blocks, and a block of one source's material
     drags the bar for as long as it lasts."""
     units = [unit(i) for i in range(20)]
     first = build(tmp_path, units, seed=3)
     second = sheets.build(
-        units, directory=tmp_path / "again", batch="a_batch", seed=3, renderer=stub
+        sheets.location_source(renderer=stub),
+        units,
+        directory=tmp_path / "again",
+        batch="a_batch",
+        seed=3,
+        log=lambda _: None,
     )
     assert first.manifest["order"] == "shuffle"
-    assert [r["viewport"] for r in first.rows] == [r["viewport"] for r in second.rows]
-    assert [r["viewport"] for r in first.rows] != [u["viewport"] for u in units]
+    places = [row["join"]["viewport"] for row in first.rows]
+    assert places == [row["join"]["viewport"] for row in second.rows]
+    assert places != [u["viewport"] for u in units]
 
 
 def test_with_a_head_the_page_is_ordered_good_to_bad(tmp_path) -> None:
@@ -76,6 +92,7 @@ def test_with_a_head_the_page_is_ordered_good_to_bad(tmp_path) -> None:
     head = Head({"0.0": 0.1, "0.1": 0.9, "0.2": 0.5, "0.3": 0.7})
     sheet = build(tmp_path, units, scorer=head)
     assert sheet.manifest["order"] == "score"
+    assert sheet.manifest["scorer"] == "a_head"
     assert [r["suggestion_score"] for r in sheet.rows] == [0.9, 0.7, 0.5, 0.1]
 
 
@@ -86,6 +103,17 @@ def test_the_unit_id_is_assigned_after_the_order_is_fixed(tmp_path) -> None:
     assert [r["unit"] for r in sheet.rows] == ["u0001", "u0002", "u0003", "u0004", "u0005"]
 
 
+def test_a_picture_is_named_for_the_build_so_re_ordering_costs_no_render(tmp_path) -> None:
+    """The id moves when the order does; the file does not. That is what makes a
+    long cut resumable."""
+    head = Head({"0.0": 0.1, "0.1": 0.9})
+    sheet = build(tmp_path, [unit(0), unit(1)], scorer=head)
+    assert sheet.rows[0]["unit"] == "u0001"
+    assert sheet.rows[0]["pictures"][0]["path"] == "vivid/0001.png"
+    assert (sheet.directory / "vivid" / "0000.png").exists()
+    assert (sheet.directory / "vivid" / "0001.png").exists()
+
+
 def test_a_sheet_row_carries_no_verdict(tmp_path) -> None:
     sheet = build(tmp_path, [unit(0)])
     assert "score" not in sheet.rows[0]
@@ -94,10 +122,15 @@ def test_a_sheet_row_carries_no_verdict(tmp_path) -> None:
 
 def test_both_companions_are_rendered_from_the_committed_library(tmp_path) -> None:
     sheet = build(tmp_path, [unit(0)])
-    assert (sheet.directory / "canonical" / "u0001.png").exists()
-    assert (sheet.directory / "vivid" / "u0001.png").exists()
-    assert sheet.rows[0]["render"]["colormap"] == sheets.CANONICAL_COLORMAP
-    assert sheet.rows[0]["judged_from"] == sheets.VIVID_COLORMAP
+    assert (sheet.directory / "canonical" / "0000.png").exists()
+    assert (sheet.directory / "vivid" / "0000.png").exists()
+    assert sheet.rows[0]["join"]["render"]["colormap"] == sheets.CANONICAL_COLORMAP
+    assert sheet.rows[0]["join"]["judged_from"] == sheets.VIVID_COLORMAP
+    captions = [picture["caption"] for picture in sheet.rows[0]["pictures"]]
+    assert captions == [
+        f"judge from · {sheets.VIVID_COLORMAP}",
+        f"stored against · {sheets.CANONICAL_COLORMAP}",
+    ]
 
 
 def test_a_colormap_outside_the_library_is_refused() -> None:
@@ -117,32 +150,37 @@ def test_a_sheet_reads_back_as_it_was_written(tmp_path) -> None:
     assert again.rows == sheet.rows
 
 
-def test_only_exported_units_become_labels(tmp_path, store_dir, registered) -> None:
-    """The whole point of correction mode's guard rail: three rows are served
-    with suggestions, one is judged, and one label exists."""
-    known = registered("a_batch")
-    sheet = build(tmp_path, [unit(i) for i in range(3)])
-    rows = sheets.record(sheet, {"u0002": {"score": 4, "revealed": 0}}, labeler="matt", known=known)
-    assert len(rows) == 1
-    assert store.resolved().summary()["scored"] == 1
-
-
-def test_a_label_for_a_unit_not_on_the_sheet_is_refused(tmp_path, store_dir, registered) -> None:
-    known = registered("a_batch")
+# --------------------------------------------------------------------------- #
+# One shape, both sources.
+# --------------------------------------------------------------------------- #
+def test_a_sheet_hands_over_the_whole_join_its_store_keys_on(tmp_path) -> None:
+    """The generator writes what the one ingest path reads, so the two cannot
+    drift into two answers about what a sheet row is."""
     sheet = build(tmp_path, [unit(0)])
-    with pytest.raises(sheets.SheetError, match="not on this sheet"):
-        sheets.record(sheet, {"u9999": {"score": 3}}, labeler="matt", known=known)
+    read = intake.read_sheet(sheet.directory)
+    assert read.head == sheets.LOCATION_HEAD
+    assert set(intake.LOCATION_JOIN_KEYS) <= set(read.rows[0]["join"])
 
 
-def test_a_recorded_label_carries_the_whole_join(tmp_path, store_dir, registered) -> None:
-    known = registered("a_batch")
+def test_the_manifest_says_which_source_cut_it_and_on_what_scale(tmp_path) -> None:
     sheet = build(tmp_path, [unit(0)])
-    rows = sheets.record(sheet, {"u0001": {"score": 3}}, labeler="matt", known=known)
-    assert rows[0]["family"] == MANDELBROT
-    assert rows[0]["viewport"] == sheet.rows[0]["viewport"]
-    assert rows[0]["render"]["colormap"] == sheets.CANONICAL_COLORMAP
+    assert sheet.manifest["kind"] == "location"
+    assert sheet.manifest["head"] == sheets.LOCATION_HEAD
+    assert sheet.manifest["tiers"] == list(store.SCORES)
+    assert sheet.manifest["rubric"]
 
 
+def test_a_finished_sheet_is_cast_on_the_same_scale_as_every_other(tmp_path) -> None:
+    """Matt's decision: one scale, every head. The shipped strange judge still
+    decodes to at most a 3, and that is the model's number, not the page's."""
+    source = sheets.finished_source("strange_render", scores=([], 3))
+    assert list(source.tiers) == [1, 2, 3, 4]
+    assert source.head == "strange_render"
+
+
+# --------------------------------------------------------------------------- #
+# The populations.
+# --------------------------------------------------------------------------- #
 def test_units_come_off_a_walk_ledger_through_the_supply_reader(tmp_path) -> None:
     ledger = tmp_path / "walk.jsonl"
     rows = [
@@ -187,3 +225,25 @@ def test_units_come_off_a_stored_batch_at_its_current_verdict(store_dir, registe
     units = sheets.units_from_batch("a_batch")
     assert len(units) == 1
     assert units[0]["maxiter"] == 900
+
+
+def test_a_plan_unit_short_of_the_recipe_is_refused_before_a_pixel_is_rendered(tmp_path) -> None:
+    """A finished render is a place AND how it was colored. Finding that out at
+    the writer, one row at a time, is finding it out after the render bill."""
+    plan = tmp_path / "plan.jsonl"
+    plan.write_text(json.dumps({"family": MANDELBROT, "maxiter": 500}) + "\n", encoding="utf-8")
+    with pytest.raises(sheets.SheetError, match="viewport, mode"):
+        sheets.units_from_plan(plan)
+
+
+def test_a_plan_reads_back_the_units_it_holds(tmp_path) -> None:
+    plan = tmp_path / "plan.jsonl"
+    written = {
+        "family": MANDELBROT,
+        "viewport": {"center_re": "0.1", "center_im": "0.0", "width": "1.0"},
+        "mode": "threads",
+        "maxiter": 800,
+        "section": "promotion draw",
+    }
+    plan.write_text(json.dumps(written) + "\n", encoding="utf-8")
+    assert sheets.units_from_plan(plan) == [written]

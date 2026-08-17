@@ -82,7 +82,10 @@ DRAWS, BOOTSTRAP_SEED = 5000, 0
 MATERIAL_FLOOR = 0.02
 
 #: What each judge is read on. `boundary` is the tier the sheet was drawn to
-#: inform, decided before the draw; `classes` is its store's own ceiling.
+#: inform, decided before the draw; `classes` is how many tiers the checkpoints
+#: being compared emit, which is what decides how many cutpoints there are to read
+#: — a fact about the models on both sides of the comparison, not about the store,
+#: which is cast on [`finished.SCALE`].
 SHEETS = {
     "smooth_render": {
         "batch": "blind_minibrot",

@@ -88,6 +88,28 @@ def pin(sides: dict, keys: set | None = None, where: str = "") -> dict:
     }
 
 
+def assert_none_training(rows: list[dict], keys: set | None = None) -> dict:
+    """Raise unless no row in `rows` sits on a pinned location.
+
+    The row-level twin of [`assert_eval`]: that one refuses a *split* that put an
+    instrument on the training side, this one refuses a *population*. It is what
+    an ingest asserts after writing — a fresh batch that happens to re-draw a
+    pinned place is caught the day it lands rather than by whichever training
+    pass reads the store first.
+    """
+    keys = pinned() if keys is None else keys
+    if not keys:
+        return {"pinned_locations": 0, "checked_rows": len(rows), "ok": True}
+    caught = [row for row in rows if key_of_row(row) in keys]
+    if caught:
+        raise EvalPinViolation(
+            f"{len(caught)} training row(s) sit on a location pinned to the evaluation side, "
+            f"e.g. batch {caught[0].get('batch')!r}. A blind slice is spent the moment it "
+            f"trains — fix the split, never the pin."
+        )
+    return {"pinned_locations": len(keys), "checked_rows": len(rows), "ok": True}
+
+
 def assert_eval(sides: dict, keys: set | None = None, where: str = "") -> dict:
     """Raise unless every pinned key present in `sides` is on the evaluation side."""
     keys = pinned() if keys is None else keys
@@ -106,6 +128,7 @@ __all__ = [
     "TRAIN",
     "EvalPinViolation",
     "assert_eval",
+    "assert_none_training",
     "pin",
     "pinned",
     "side_of",

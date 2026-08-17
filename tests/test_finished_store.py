@@ -60,12 +60,27 @@ def test_a_row_missing_its_mode_settings_is_refused() -> None:
         a_row(mode_params=None)
 
 
-def test_the_ceiling_belongs_to_the_store_and_not_to_the_head() -> None:
-    assert finished.tiers("smooth_render") == (1, 2, 3, 4)
-    assert finished.tiers("strange_render") == (1, 2, 3)
+def test_one_scale_for_every_head_and_it_is_not_the_shipped_model_s_class_count() -> None:
+    """Matt's ratified decision. `strange_render` was *collected* on three tiers
+    and the shipped judge trains on three classes; neither is a ceiling on what a
+    person may cast, and a store that made one would be a store that can never
+    collect the retrain that widens the model."""
+    assert finished.tiers("smooth_render") == finished.SCALE
+    assert finished.tiers("strange_render") == finished.SCALE
     a_row("smooth_render", score=4)
-    with pytest.raises(finished.FinishedError, match="collected on 3 tiers"):
-        a_row("strange_render", score=4)
+    a_row("strange_render", score=4)
+    for head in finished.HEADS:
+        with pytest.raises(finished.FinishedError, match="one scale"):
+            a_row(head, score=5)
+
+
+def test_the_model_s_class_count_is_the_model_s_own_and_still_says_three() -> None:
+    """The decoupling has a second half: the number moved to the recipe, it did
+    not disappear. The strange head's decode stays capped at 3 until the retrain."""
+    from fractal_wallpapers.models import finished_train
+
+    assert finished_train.recipe_for("strange_render")["classes"] == 3
+    assert finished_train.recipe_for("smooth_render")["classes"] == 4
 
 
 def test_a_later_verdict_on_one_picture_wins_and_the_earlier_stays_readable() -> None:

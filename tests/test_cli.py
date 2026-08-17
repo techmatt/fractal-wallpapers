@@ -74,18 +74,15 @@ def test_the_machine_stock_discount_is_a_flag_on_both_readers() -> None:
     assert parse(["harvest", "--discount", "0"]).discount == 0.0
 
 
-def test_the_labeling_rig_is_seven_steps_under_one_subcommand() -> None:
-    """Register, cut, serve, record or ingest, show, split — the order they happen
-    in, and every one of them a step somebody runs twice."""
+def test_the_labeling_rig_is_six_steps_under_one_subcommand() -> None:
+    """Register, cut, serve, ingest, show, split — the order they happen in, and
+    every one of them a step somebody runs twice."""
     parse = cli.build_parser().parse_args
     assert (
         parse(["label", "register", "--batch", "b", "--method", "m"]).handler is cli.label_register
     )
     assert parse(["label", "build", "--from-batch", "b", "--batch", "b"]).handler is cli.label_build
     assert parse(["label", "serve", "--sheet", "d"]).handler is cli.label_serve
-    assert parse(
-        ["label", "record", "--sheet", "d", "--labels", "l", "--labeler", "m"]
-    ).handler is (cli.label_record)
     assert parse(["label", "ingest", "--sheet", "s", "--labeler", "m"]).handler is cli.label_ingest
     assert parse(["label", "split"]).handler is cli.label_split
     assert parse(["label", "show"]).handler is cli.label_show
@@ -93,11 +90,31 @@ def test_the_labeling_rig_is_seven_steps_under_one_subcommand() -> None:
         parse(["label"])
 
 
+def test_there_is_one_path_into_the_stores_and_not_one_each() -> None:
+    """`record` and `ingest` did the same thing against two stores, and only one
+    of them ever grew the count checks. There is no `record`."""
+    with pytest.raises(SystemExit):
+        cli.build_parser().parse_args(["label", "record", "--sheet", "d", "--labeler", "m"])
+    assert not hasattr(cli, "label_record")
+
+
+def test_a_finished_render_sheet_is_cut_from_a_plan_and_names_its_judge() -> None:
+    """The population is a decision the generator does not make. What it needs to
+    be told is which judge the page prefills from, and that decides the store."""
+    parse = cli.build_parser().parse_args
+    cut = parse(["label", "build", "--from-plan", "p", "--head", "strange_render", "--batch", "b"])
+    assert cut.handler is cli.label_build and cut.head == "strange_render"
+    assert parse(["label", "build", "--from-batch", "b", "--batch", "b"]).head is None
+    with pytest.raises(SystemExit):
+        parse(["label", "build", "--from-plan", "p", "--head", "no_such_head", "--batch", "b"])
+    with pytest.raises(SystemExit):
+        parse(["label", "build", "--from-plan", "p", "--from-batch", "b", "--batch", "b"])
+
+
 def test_an_export_defaults_to_the_head_s_own_drop() -> None:
     """Matt's convention, and now the rig's: a page saves to labels/<head>.json,
-    so neither step has to be told where the file it just wrote is."""
+    so the step has to be told nothing about where the file it just wrote is."""
     parse = cli.build_parser().parse_args
-    assert parse(["label", "record", "--sheet", "d", "--labeler", "m"]).labels is None
     assert parse(["label", "ingest", "--sheet", "s", "--labeler", "m"]).labels is None
 
 

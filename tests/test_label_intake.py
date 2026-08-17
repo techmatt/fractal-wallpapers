@@ -193,15 +193,41 @@ def test_a_sheet_that_miscounts_itself_is_refused(tmp_path, head_store) -> None:
         intake.read_sheet(stem)
 
 
-def test_a_score_outside_the_store_s_scale_is_refused(tmp_path, head_store) -> None:
-    """`strange_render` was collected on three tiers; a 4 there trained nothing."""
+def test_the_store_takes_the_corpus_scale_and_not_the_shipped_model_s(tmp_path, head_store) -> None:
+    """Matt's ratified decision: 1..4 for every head, `strange_render` included.
+
+    The shipped strange judge trains on three classes and can never suggest a 4;
+    that is the model's own config and it is not the store's ceiling. A store that
+    refused the tier would be a store that can never collect the retrain.
+    """
     stem = a_sheet(tmp_path, head="strange_render")
     finished.register(
         "strange_render",
         registry_module.Registration(batch="a_batch", method="a draw, for a test"),
     )
-    with pytest.raises(finished.FinishedError, match="tiers"):
-        intake.run(sheet=stem, labels=an_export(tmp_path, {"u0001": 4}), labeler="matt", write=True)
+    report = intake.run(
+        sheet=stem, labels=an_export(tmp_path, {"u0001": 4}), labeler="matt", write=True
+    )
+    assert report["written"] == 1
+    assert report["tiers"] == {"1": 0, "2": 0, "3": 0, "4": 1}
+    assert [row["score"] for row in finished.resolved("strange_render").scored()] == [4]
+
+
+def test_the_writer_itself_takes_a_four_for_the_strange_head(tmp_path, head_store) -> None:
+    """The plainest statement of the same decision, at the writer."""
+    join = a_join()
+    join.pop("partition")
+    row = finished.render_row(
+        head="strange_render", batch="a_batch", score=4, recipe_=join.pop("recipe"), **join
+    )
+    assert row["score"] == 4
+    assert finished.tiers("strange_render") == (1, 2, 3, 4)
+
+
+def test_a_score_off_the_scale_entirely_is_still_refused(tmp_path, head_store) -> None:
+    stem = a_sheet(tmp_path)
+    with pytest.raises(finished.FinishedError, match="one scale"):
+        intake.run(sheet=stem, labels=an_export(tmp_path, {"u0001": 5}), labeler="matt", write=True)
 
 
 # --------------------------------------------------------------------------- #
@@ -269,6 +295,116 @@ def test_the_registration_flags_reach_the_report_from_the_registry(tmp_path, hea
         "score_unconditioned": False,
         "side": "train",
     }
+
+
+# --------------------------------------------------------------------------- #
+# One path, both stores.
+# --------------------------------------------------------------------------- #
+def a_location_sheet(directory, units: int = 3, batch: str = "a_batch"):
+    """A location sheet, in the shape the generator writes one."""
+    stem = directory / "a_location_sheet"
+    rows = [
+        {
+            "unit": f"u{index:04d}",
+            "batch": batch,
+            "suggestion": None,
+            "join": {
+                "family": {"kind": "mandelbrot"},
+                "viewport": {"center_re": f"0.{index}", "center_im": "0.2", "width": "0.5"},
+                "render": {"resolution": [1280, 720], "supersample": 2, "maxiter": 500},
+                "judged_from": "blue_orange",
+            },
+        }
+        for index in range(1, units + 1)
+    ]
+    stem.with_suffix(".json").write_text(
+        json.dumps({"schema": 1, "head": "location", "units": units, "sheet": "a_location_sheet"}),
+        encoding="utf-8",
+    )
+    stem.with_suffix(".jsonl").write_text(
+        "\n".join(json.dumps(row) for row in rows) + "\n", encoding="utf-8"
+    )
+    return stem
+
+
+def test_the_sheet_s_head_decides_which_store_it_lands_in(tmp_path, store_dir, registered) -> None:
+    """One step, two stores. The location half used to be a second path that had
+    none of the checks below it; it is the same path now."""
+    registered("a_batch")
+    stem = a_location_sheet(tmp_path)
+    report = intake.run(
+        sheet=stem, labels=an_export(tmp_path, {"u0001": 3, "u0002": 1}), labeler="matt", write=True
+    )
+    assert report["head"] == "location"
+    assert report["written"] == 2
+    assert store.resolved().summary()["scored"] == 2
+    assert report["pin"]["ok"]
+
+
+def test_a_location_ingest_is_counted_and_idempotent_like_the_other(
+    tmp_path, store_dir, registered
+) -> None:
+    """The §2 guarantees were absent from `record` and are not optional now."""
+    registered("a_batch")
+    stem = a_location_sheet(tmp_path)
+    labels = an_export(tmp_path, {"u0001": 3, "u0002": 1, "u0003": 2})
+    first = intake.run(sheet=stem, labels=labels, labeler="matt", write=True)
+    written = store.batch_path("a_batch").read_bytes()
+
+    second = intake.run(sheet=stem, labels=labels, labeler="matt", write=True)
+    assert first["written"] == 3
+    assert second["written"] == 0 and second["rows"]["already stored"] == 3
+    assert store.batch_path("a_batch").read_bytes() == written
+
+
+def test_a_location_verdict_that_changed_appends(tmp_path, store_dir, registered) -> None:
+    registered("a_batch")
+    stem = a_location_sheet(tmp_path)
+    intake.run(sheet=stem, labels=an_export(tmp_path, {"u0001": 2}), labeler="matt", write=True)
+    report = intake.run(
+        sheet=stem, labels=an_export(tmp_path, {"u0001": 4}), labeler="matt", write=True
+    )
+    assert report["rows"]["revised"] == 1
+    assert store.resolved().n_rows == 2
+    assert [row["score"] for row in store.resolved().scored()] == [4]
+
+
+def test_a_location_sheet_short_of_its_join_is_refused(tmp_path, store_dir, registered) -> None:
+    registered("a_batch")
+    stem = a_location_sheet(tmp_path)
+    rows = [
+        json.loads(line)
+        for line in stem.with_suffix(".jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+    del rows[0]["join"]["viewport"]
+    stem.with_suffix(".jsonl").write_text(
+        "\n".join(json.dumps(row) for row in rows) + "\n", encoding="utf-8"
+    )
+    with pytest.raises(intake.IntakeError, match="viewport"):
+        intake.run(sheet=stem, labels=an_export(tmp_path, {"u0001": 3}), labeler="matt", write=True)
+    assert store.resolved().n_rows == 0
+
+
+def test_a_sheet_cut_for_no_known_judge_is_refused(tmp_path) -> None:
+    stem = a_sheet(tmp_path, head="not_a_head")
+    with pytest.raises(intake.IntakeError, match="unknown head"):
+        intake.read_sheet(stem)
+
+
+def test_a_sheet_directory_and_a_stem_are_both_read(tmp_path, head_store) -> None:
+    """A cut sheet is a directory; a one-off writes a stem. An open session is not
+    rebuilt into a new shape just to be ingested."""
+    directory = tmp_path / "cut"
+    directory.mkdir()
+    stem = a_sheet(tmp_path)
+    manifest = json.loads(stem.with_suffix(".json").read_text(encoding="utf-8"))
+    del manifest["sheet"]  # a cut sheet is named by its directory, not by a field
+    (directory / "sheet.json").write_text(json.dumps(manifest), encoding="utf-8")
+    (directory / "sheet.jsonl").write_text(
+        stem.with_suffix(".jsonl").read_text(encoding="utf-8"), encoding="utf-8"
+    )
+    assert intake.read_sheet(directory).name == "cut"
+    assert intake.read_sheet(stem).name == "a_sheet"
 
 
 # --------------------------------------------------------------------------- #
