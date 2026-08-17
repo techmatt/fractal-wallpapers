@@ -1,16 +1,16 @@
 {
   "schema": 1,
-  "_doc": "The cost-to-find SEED a run is handed: the measured table shrunk geometrically toward its own median price. Read once, into the price model's seed; the in-run estimate moves away from it within a few served batches. `price_clamp` is the band that estimate may occupy around THIS seed. Regenerate with `fractal-wallpapers derive-prices --regularize`; never hand-edit a row, and never edit the measured table it is derived from.",
+  "_doc": "The cost-to-find SEED a run is handed: the measured table shrunk geometrically toward its own median price. Regenerate with `fractal-wallpapers derive-prices --regularize`; never hand-edit a row, and never edit the measured table.",
   "prices": {
-    "julia:mandelbrot": 0.19,
-    "julia:multibrot3": 0.1171,
-    "julia:multibrot4": 0.1047,
-    "julia:multibrot5": 0.1425,
-    "mandelbrot": 0.1673,
-    "multibrot3": 0.6796,
-    "multibrot4": 0.4103,
-    "multibrot5": 0.9598,
-    "phoenix": 0.2195,
+    "julia:mandelbrot": 0.0416,
+    "julia:multibrot3": 0.037,
+    "julia:multibrot4": 0.0314,
+    "julia:multibrot5": 0.0295,
+    "mandelbrot": 3.0,
+    "multibrot3": 0.8816,
+    "multibrot4": 0.7319,
+    "multibrot5": 0.8045,
+    "phoenix": 0.0524,
     "phoenix:classic": 3.0
   },
   "seed_price": 3.0,
@@ -19,30 +19,80 @@
   "cap_minutes": 25.0,
   "_provenance": {
     "estimand": "the measured seed, shrunk toward the measured median in LOG space",
-    "formula": "seed_p = exp(alpha * ln(price_p) + (1 - alpha) * ln(median(measured prices)))",
+    "formula": "seed = exp(alpha\u00b7ln(price) + (1\u2212alpha)\u00b7ln(median(measured prices)))",
     "alpha": 0.9,
-    "alpha_basis": "Allocation share is deficit/price, so seeding the raw table hands a run's first batches a 12x spread asserted on one run's telemetry, and seeding a flat table asserts a spread of 1x on nothing. Shrinkage is the middle: every partition keeps its measured ORDER and alpha of its log-distance from the median, so a 10x signal survives as a 5x one instead of being flattened to a bound. 0.9 because the source is a 183-minute production run rather than a warm-up hour — there is not much uncertainty left for the shrink to absorb.",
     "price_clamp": 16.0,
-    "price_clamp_basis": "The band the LIVE estimate may occupy around this seed. A 4x band bound three of nine partitions for a whole run in the source project — the run had measured 15.6x, 18.1x and 5.0x and reported 4.0x for all three — and a run quoting the band instead of its own measurement is a run that is not measuring. 16x is wide enough to hold every ratio that run produced.",
     "price_clamp_applies_to": "the in-run estimate only; it moves no price in this file",
     "shrink_target": "median",
-    "shrink_target_value": 0.19,
-    "shrink_target_population": "MEASURED rows only. A defaulted row carries seed_price because it has no measurement; shrinking it would manufacture a price for a partition nobody priced, and letting it into the median would drag the target toward the flat seed by however many partitions went unserved.",
+    "shrink_target_value": 0.047,
     "source_table": "data/supply/cost_to_find_measured.json",
     "source_measured": [
+      "multibrot3",
+      "multibrot4",
+      "multibrot5",
       "julia:mandelbrot",
       "julia:multibrot3",
       "julia:multibrot4",
       "julia:multibrot5",
-      "mandelbrot",
-      "multibrot3",
-      "multibrot4",
-      "multibrot5",
       "phoenix"
     ],
-    "source_defaulted": ["phoenix:classic"],
-    "source_is_pristine": "the measured table is read-only to the regularizer and is never rewritten: it is the evidence, this is a policy on top of it, and a policy that edits its evidence cannot be re-derived at another alpha",
-    "spread_measured": 11.724,
-    "spread_regularized": 9.167
+    "source_defaulted": [
+      "mandelbrot",
+      "phoenix:classic"
+    ],
+    "columns": {
+      "julia:mandelbrot": {
+        "measured": 0.041,
+        "regularized": 0.0416,
+        "status": "measured"
+      },
+      "julia:multibrot3": {
+        "measured": 0.036,
+        "regularized": 0.037,
+        "status": "measured"
+      },
+      "julia:multibrot4": {
+        "measured": 0.03,
+        "regularized": 0.0314,
+        "status": "measured"
+      },
+      "julia:multibrot5": {
+        "measured": 0.028,
+        "regularized": 0.0295,
+        "status": "measured"
+      },
+      "mandelbrot": {
+        "measured": 3.0,
+        "regularized": 3.0,
+        "status": "defaulted"
+      },
+      "multibrot3": {
+        "measured": 1.221,
+        "regularized": 0.8816,
+        "status": "measured"
+      },
+      "multibrot4": {
+        "measured": 0.993,
+        "regularized": 0.7319,
+        "status": "measured"
+      },
+      "multibrot5": {
+        "measured": 1.103,
+        "regularized": 0.8045,
+        "status": "measured"
+      },
+      "phoenix": {
+        "measured": 0.053,
+        "regularized": 0.0524,
+        "status": "measured"
+      },
+      "phoenix:classic": {
+        "measured": 3.0,
+        "regularized": 3.0,
+        "status": "defaulted"
+      }
+    },
+    "spread_measured": 43.607,
+    "spread_regularized": 29.885
   }
 }

@@ -1,0 +1,422 @@
+{
+  "schema": 1,
+  "run": "run2",
+  "outcome": "completed",
+  "seconds": 2804.1,
+  "wall": {
+    "wall_budget": 5400.0,
+    "elapsed": 2804.1,
+    "legs": {
+      "colorize": {
+        "margin": 30.0,
+        "unmeasured_minimum": 10.0,
+        "completed": 114,
+        "killed": 0,
+        "longest": 23.9,
+        "estimate": 23.9
+      },
+      "release": {
+        "margin": 20.0,
+        "unmeasured_minimum": 60.0,
+        "completed": 28,
+        "killed": 0,
+        "longest": 1084.6,
+        "estimate": 1084.6
+      }
+    },
+    "declined": []
+  },
+  "reconciliation": {
+    "colorize": {
+      "resumed": 0,
+      "made": 114,
+      "failed": 0,
+      "not_started": 0,
+      "holds": true,
+      "planned": 114
+    },
+    "release": {
+      "resumed": 0,
+      "made": 28,
+      "failed": 0,
+      "not_started": 0,
+      "holds": true,
+      "planned": 28
+    },
+    "holds": true
+  },
+  "counts": {
+    "found": 12580,
+    "scored": 12580,
+    "above_junk_floor": 6280,
+    "above_good_floor": 4049,
+    "unscored": 0,
+    "attempts_planned": 120,
+    "attempts_made": 114,
+    "attempts_scored": 114,
+    "attempts_failed": 0,
+    "attempts_resumed": 0,
+    "attempts_not_started": 0,
+    "attempts_killed": 0,
+    "selected": 28,
+    "released": 28,
+    "requested": 30
+  },
+  "supply": {
+    "size": 12580,
+    "ledgers": 1,
+    "per_ledger": {
+      "artifacts/harvest_run2/walk.jsonl": 12580
+    },
+    "location_overlaps": 176,
+    "overlap_sample": [
+      "artifacts/harvest_run2/walk.jsonl vs artifacts/harvest_run2/walk.jsonl",
+      "artifacts/harvest_run2/walk.jsonl vs artifacts/harvest_run2/walk.jsonl",
+      "artifacts/harvest_run2/walk.jsonl vs artifacts/harvest_run2/walk.jsonl",
+      "artifacts/harvest_run2/walk.jsonl vs artifacts/harvest_run2/walk.jsonl",
+      "artifacts/harvest_run2/walk.jsonl vs artifacts/harvest_run2/walk.jsonl"
+    ],
+    "unkeyed_rows": 0,
+    "junk_floor": 0.2,
+    "good_floor": 0.5,
+    "found_by_partition": {
+      "julia:mandelbrot": 1319,
+      "julia:multibrot3": 1981,
+      "julia:multibrot4": 1764,
+      "julia:multibrot5": 1695,
+      "mandelbrot": 353,
+      "multibrot3": 1873,
+      "multibrot4": 1802,
+      "multibrot5": 1094,
+      "phoenix": 699
+    },
+    "scored_by_partition": {
+      "julia:mandelbrot": 1319,
+      "julia:multibrot3": 1981,
+      "julia:multibrot4": 1764,
+      "julia:multibrot5": 1695,
+      "mandelbrot": 353,
+      "multibrot3": 1873,
+      "multibrot4": 1802,
+      "multibrot5": 1094,
+      "phoenix": 699
+    },
+    "passing_by_partition": {
+      "julia:mandelbrot": 1005,
+      "julia:multibrot3": 1459,
+      "julia:multibrot4": 1279,
+      "julia:multibrot5": 1239,
+      "mandelbrot": 13,
+      "multibrot3": 312,
+      "multibrot4": 336,
+      "multibrot5": 182,
+      "phoenix": 455
+    },
+    "good_by_partition": {
+      "julia:mandelbrot": 736,
+      "julia:multibrot3": 938,
+      "julia:multibrot4": 766,
+      "julia:multibrot5": 807,
+      "mandelbrot": 2,
+      "multibrot3": 158,
+      "multibrot4": 185,
+      "multibrot5": 115,
+      "phoenix": 342
+    },
+    "found": 12580,
+    "scored": 12580,
+    "passing": 6280,
+    "good": 4049,
+    "unscored": 0
+  },
+  "budget": {
+    "attempt_multiplier": 4,
+    "attempt_budget": null,
+    "head_slots": {
+      "smooth_render": 15,
+      "strange_render": 15
+    },
+    "head_want": {
+      "smooth_render": 60,
+      "strange_render": 60
+    },
+    "scaled_to_budget": false,
+    "head_attempts": {
+      "smooth_render": 60,
+      "strange_render": 60
+    },
+    "seated_slots": {
+      "smooth_render": {
+        "julia:mandelbrot": 4,
+        "julia:multibrot3": 1,
+        "julia:multibrot4": 1,
+        "julia:multibrot5": 1,
+        "mandelbrot": 4,
+        "multibrot3": 1,
+        "multibrot4": 1,
+        "multibrot5": 1,
+        "phoenix": 1
+      },
+      "strange_render": {
+        "julia:mandelbrot": 4,
+        "julia:multibrot3": 1,
+        "julia:multibrot4": 1,
+        "julia:multibrot5": 1,
+        "mandelbrot": 4,
+        "multibrot3": 1,
+        "multibrot4": 1,
+        "multibrot5": 1,
+        "phoenix": 1
+      }
+    },
+    "guaranteed": [
+      "julia:mandelbrot",
+      "julia:multibrot3",
+      "julia:multibrot4",
+      "julia:multibrot5",
+      "mandelbrot",
+      "multibrot3",
+      "multibrot4",
+      "multibrot5",
+      "phoenix"
+    ],
+    "guarantee_head": {
+      "julia:mandelbrot": "smooth_render",
+      "julia:multibrot3": "strange_render",
+      "julia:multibrot4": "smooth_render",
+      "julia:multibrot5": "strange_render",
+      "mandelbrot": "smooth_render",
+      "multibrot3": "strange_render",
+      "multibrot4": "smooth_render",
+      "multibrot5": "strange_render",
+      "phoenix": "smooth_render"
+    },
+    "guarantee_unplaced": [],
+    "planned_by_partition": {
+      "smooth_render": {
+        "julia:mandelbrot": 16,
+        "julia:multibrot3": 4,
+        "julia:multibrot4": 4,
+        "julia:multibrot5": 4,
+        "mandelbrot": 16,
+        "multibrot3": 4,
+        "multibrot4": 4,
+        "multibrot5": 4,
+        "phoenix": 4
+      },
+      "strange_render": {
+        "julia:mandelbrot": 16,
+        "julia:multibrot3": 4,
+        "julia:multibrot4": 4,
+        "julia:multibrot5": 4,
+        "mandelbrot": 16,
+        "multibrot3": 4,
+        "multibrot4": 4,
+        "multibrot5": 4,
+        "phoenix": 4
+      }
+    },
+    "planned": 120,
+    "supply_short_by_partition": {
+      "smooth_render": {
+        "mandelbrot": 3
+      },
+      "strange_render": {
+        "mandelbrot": 3
+      }
+    },
+    "supply_short": 6,
+    "scheduled": 114,
+    "supply_partitions": {
+      "julia:mandelbrot": 1005,
+      "julia:multibrot3": 1459,
+      "julia:multibrot4": 1279,
+      "julia:multibrot5": 1239,
+      "mandelbrot": 13,
+      "multibrot3": 312,
+      "multibrot4": 336,
+      "multibrot5": 182,
+      "phoenix": 455
+    },
+    "prefix_deviation": 1.009
+  },
+  "realized_fills": {
+    "smooth_render": {
+      "julia:mandelbrot": 16,
+      "julia:multibrot3": 4,
+      "julia:multibrot4": 4,
+      "julia:multibrot5": 4,
+      "mandelbrot": 13,
+      "multibrot3": 4,
+      "multibrot4": 4,
+      "multibrot5": 4,
+      "phoenix": 4
+    },
+    "strange_render": {
+      "julia:mandelbrot": 16,
+      "julia:multibrot3": 4,
+      "julia:multibrot4": 4,
+      "julia:multibrot5": 4,
+      "mandelbrot": 13,
+      "multibrot3": 4,
+      "multibrot4": 4,
+      "multibrot5": 4,
+      "phoenix": 4
+    }
+  },
+  "selection": {
+    "requested": 30,
+    "strange_share_target": 0.5,
+    "head_slots": {
+      "smooth_render": 15,
+      "strange_render": 15
+    },
+    "head_eligible": {
+      "smooth_render": 57,
+      "strange_render": 57
+    },
+    "head_selected": {
+      "smooth_render": 14,
+      "strange_render": 14
+    },
+    "partition_slots": {
+      "smooth_render": {
+        "julia:mandelbrot": 4,
+        "julia:multibrot3": 1,
+        "julia:multibrot4": 1,
+        "julia:multibrot5": 1,
+        "mandelbrot": 4,
+        "multibrot3": 1,
+        "multibrot4": 1,
+        "multibrot5": 1,
+        "phoenix": 1
+      },
+      "strange_render": {
+        "julia:mandelbrot": 4,
+        "julia:multibrot3": 1,
+        "julia:multibrot4": 1,
+        "julia:multibrot5": 1,
+        "mandelbrot": 4,
+        "multibrot3": 1,
+        "multibrot4": 1,
+        "multibrot5": 1,
+        "phoenix": 1
+      }
+    },
+    "emit_caps": {
+      "julia:mandelbrot": 251,
+      "julia:multibrot3": 364,
+      "julia:multibrot4": 319,
+      "julia:multibrot5": 309,
+      "mandelbrot": 3,
+      "multibrot3": 78,
+      "multibrot4": 84,
+      "multibrot5": 45,
+      "phoenix": 113
+    },
+    "cluster_cap": 2,
+    "cluster_cap_skips": 0,
+    "guarantee": {
+      "owed": {
+        "julia:mandelbrot": "smooth_render",
+        "julia:multibrot3": "strange_render",
+        "julia:multibrot4": "smooth_render",
+        "julia:multibrot5": "strange_render",
+        "mandelbrot": "smooth_render",
+        "multibrot3": "strange_render",
+        "multibrot4": "smooth_render",
+        "multibrot5": "strange_render",
+        "phoenix": "smooth_render"
+      },
+      "unplaced": [],
+      "slots_taken": 9
+    },
+    "short_by": 2
+  },
+  "release": {
+    "rows": 28,
+    "workers": 3,
+    "engine_threads": 7,
+    "fell_back_serial": 0,
+    "seconds": 2414.6,
+    "row_seconds": 5228.9,
+    "killed": 0,
+    "stopped": null,
+    "not_started": [],
+    "reused": 0,
+    "geometry": {
+      "resolution": [
+        2560,
+        1440
+      ],
+      "supersample": 4
+    },
+    "counts": {
+      "planned": 28,
+      "resumed": 0,
+      "made": 28,
+      "failed": 0,
+      "not_started": 0
+    }
+  },
+  "cuts": {
+    "acting": {
+      "junk_floor": {
+        "value": 0.2,
+        "head": "location",
+        "where": "intake, the colorize draw; and the walk's expansion tier"
+      },
+      "good_floor": {
+        "value": 0.5,
+        "head": "location",
+        "where": "the slot guarantee's trigger; and the walk's booking tier",
+        "owner": "supply.currency.GOOD_FLOOR \u2014 re-exported, never restated"
+      }
+    },
+    "advisory": {
+      "render heads": 0.5
+    },
+    "caps": {
+      "thin_supply_divisor": 4,
+      "cluster_cap": 2,
+      "attempt_multiplier": 4
+    }
+  },
+  "config": {
+    "seed": 20260817,
+    "strange_share": 0.5,
+    "candidates_per_set": 32,
+    "colorize_geometry": {
+      "resolution": [
+        640,
+        360
+      ],
+      "supersample": 2
+    },
+    "release_geometry": {
+      "resolution": [
+        2560,
+        1440
+      ],
+      "supersample": 4
+    },
+    "autolevel": {
+      "switch": "on"
+    },
+    "heads": {
+      "location": "4b60deb935314cf7",
+      "palette": "d7edc31cbaa4f9e9",
+      "smooth_render": "c0ac536d0979713a",
+      "strange_render": "79201d0c5eeba307"
+    }
+  },
+  "records": {
+    "durable": true,
+    "root": "C:\\Code\\fractal-wallpapers\\data\\curation",
+    "gate": "C:\\Code\\fractal-wallpapers\\data\\curation\\gate.jsonl (+114)",
+    "release": "C:\\Code\\fractal-wallpapers\\data\\curation\\release.jsonl (+114)",
+    "population": "C:\\Code\\fractal-wallpapers\\data\\curation\\runs.jsonl"
+  },
+  "sheet": "C:\\Code\\fractal-wallpapers\\artifacts\\curation\\runs\\run2\\release_sheet_run2.html",
+  "run_dir": "C:\\Code\\fractal-wallpapers\\artifacts\\curation\\runs\\run2"
+}
