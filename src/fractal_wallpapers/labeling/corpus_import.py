@@ -83,6 +83,13 @@ class Imported:
 #: Every source batch that holds a location label, the name it lands under here,
 #: and its registration. Entries are ordered within a batch: the first whose
 #: `partition_prefix` matches wins, so a narrowed entry precedes the catch-all.
+#:
+#: **The keys are the source project's directory names, verbatim.** They are the
+#: only names here the naming rule does not reach: renaming one does not rename a
+#: directory in a repository this one may not write to, it breaks the read. The
+#: values are where the rule applies, and every one of them is renamed on the way
+#: in. `tests/test_banned_vocabulary.py` names the two keys carrying old
+#: vocabulary, as literals, so the exception is that wide and no wider.
 SOURCES: dict[str, tuple[Imported, ...]] = {
     "2026-06-23_flat_generate_loose0_v3": (
         Imported(

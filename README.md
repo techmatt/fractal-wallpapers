@@ -34,6 +34,22 @@ Fetch the trained judges before anything that scores:
 
 To hand a built sheet to a labeler, see [the labeling rig](src/fractal_wallpapers/labeling/README.md#serving-a-sheet-to-label).
 
+## Where things are documented
+
+**Every directory explains itself, next to the code it explains.** There is no
+`docs/` tree; a paragraph about a component lives in that component's own README,
+where the thing it describes cannot move away from it.
+
+```
+engine/                     the Rust renderer: the spec it reads, what it makes
+src/                        the Python side, one README per package —
+  fractal_wallpapers/         coloring, curation, discovery, labeling,
+                              models, palettes, supply
+data/                       the records: one README per store, plus what a row means
+models/                     the trained judges, one README per head
+tests/                      what the suite guards, and why each guard exists
+```
+
 ## Checks
 
 ```

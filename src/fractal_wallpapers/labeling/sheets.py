@@ -67,11 +67,15 @@ as a verdict.
 
 ## The picture is named for the build, the unit for the page
 
-A picture is written under its position in the *plan*, and the `u0001` id is
-assigned after the order is fixed — so the id encodes the page position and
-nothing else, and re-ordering a sheet does not invalidate a single render. That
-second half is what makes a long cut resumable: a killed build finds its pictures
-on disk and continues.
+A picture is written under its position in the *plan*, as `cut0000`, and the
+`u0001` id is assigned after the order is fixed — so the id encodes the page
+position and nothing else, and re-ordering a sheet does not invalidate a single
+render. That second half is what makes a long cut resumable: a killed build finds
+its pictures on disk and continues.
+
+The two are different numbers for the same unit, and the `cut` prefix is there so
+they cannot be confused for each other on disk: `u0096` has no picture called
+`0096.png` to reach by accident. See [`cut_name`].
 """
 
 from __future__ import annotations
@@ -118,6 +122,21 @@ THUMB_QUALITY = 80
 
 MANIFEST_NAME = "sheet.json"
 ROWS_NAME = "sheet.jsonl"
+
+#: A sheet holds two zero-padded integer spaces over the same units: a render is
+#: numbered by its position in the **cut**, a row is numbered by its position on
+#: the **page**, and the second is assigned after the ordering moves the first.
+#: They are never equal beyond luck, so the render's number wears this prefix and
+#: `u0096` cannot be typed at a file and hit the wrong picture — `canonical/0096.png`
+#: does not exist, which is a clean miss instead of a confident wrong answer.
+#: This is a sheet-local name only; the render *cache* keys pictures by a digest
+#: of the whole engine spec, and nothing here touches that.
+CUT_PREFIX = "cut"
+
+
+def cut_name(index: int) -> str:
+    """What the picture for the `index`-th unit of the cut is called, on disk."""
+    return f"{CUT_PREFIX}{index:04d}"
 
 
 class SheetError(ValueError):
@@ -845,7 +864,7 @@ def build(
         # `_index` and `_of` are how a source that draws per-unit resources — a
         # seeded palette neighbourhood — knows where in the cut it is. They are
         # read by `cut` and never reach a row.
-        row = source.cut({**unit, "_index": index, "_of": len(units)}, directory, f"{index:04d}")
+        row = source.cut({**unit, "_index": index, "_of": len(units)}, directory, cut_name(index))
         # A REVISION sheet re-serves rows from several batches at once, and a row
         # revised under somebody else's batch is a row whose registration — train
         # or eval, anchored or not — silently changed under it. So a unit may
@@ -951,6 +970,7 @@ def read(directory: Path) -> Sheet:
 
 __all__ = [
     "CANONICAL_COLORMAP",
+    "CUT_PREFIX",
     "FINISHED_RUBRIC",
     "LABEL_FILTER",
     "LABEL_RESOLUTION",
@@ -970,6 +990,7 @@ __all__ = [
     "Source",
     "build",
     "colormap",
+    "cut_name",
     "family_line",
     "finished_source",
     "location_source",
