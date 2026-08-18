@@ -192,9 +192,12 @@ def test_a_picture_is_named_for_the_build_so_re_ordering_costs_no_render(tmp_pat
     head = Head({"0.0": 0.1, "0.1": 0.9})
     sheet = build(tmp_path, [unit(0), unit(1)], scorer=head)
     assert sheet.rows[0]["unit"] == "u0001"
-    assert sheet.rows[0]["pictures"][0]["path"] == "vivid/0001.png"
-    assert (sheet.directory / "vivid" / "0000.png").exists()
-    assert (sheet.directory / "vivid" / "0001.png").exists()
+    assert sheet.rows[0]["pictures"][0]["path"] == "vivid/cut0001.png"
+    assert (sheet.directory / "vivid" / "cut0000.png").exists()
+    assert (sheet.directory / "vivid" / "cut0001.png").exists()
+    # The id and the render number are different numbers for the same unit, so no
+    # picture answers to the id: `u0001` cannot reach a file by having its `u` cut off.
+    assert not (sheet.directory / "vivid" / "0001.png").exists()
 
 
 def test_a_sheet_row_carries_no_verdict(tmp_path) -> None:
@@ -205,8 +208,8 @@ def test_a_sheet_row_carries_no_verdict(tmp_path) -> None:
 
 def test_both_companions_are_rendered_from_the_committed_library(tmp_path) -> None:
     sheet = build(tmp_path, [unit(0)])
-    assert (sheet.directory / "canonical" / "0000.png").exists()
-    assert (sheet.directory / "vivid" / "0000.png").exists()
+    assert (sheet.directory / "canonical" / "cut0000.png").exists()
+    assert (sheet.directory / "vivid" / "cut0000.png").exists()
     assert sheet.rows[0]["join"]["render"]["colormap"] == sheets.CANONICAL_COLORMAP
     assert sheet.rows[0]["join"]["judged_from"] == sheets.VIVID_COLORMAP
     captions = [picture["caption"] for picture in sheet.rows[0]["pictures"]]

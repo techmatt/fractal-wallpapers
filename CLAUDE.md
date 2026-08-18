@@ -20,6 +20,14 @@ names, and vocabulary say what the thing *does* — `coloring/`, `discovery/`,
 the wrong name. Vocabulary from earlier private versions of this project does not
 transfer; rename on the way in.
 
+**Comments and docstrings illustrate a shape, never a live instance.** Write
+`<head>.<sheet>.json`, not the name of a drop that exists — otherwise a grep for a
+live name answers out of a comment about a different one, confidently and wrongly.
+
+`tests/test_banned_vocabulary.py` enforces the first paragraph. It matches a term
+wherever letters do not touch it, so `_` and path separators count: the names this
+rule is about are snake_case, and a `\b`-anchored guard cannot see them.
+
 ## Locked conventions
 
 These were decided once, at the first commit, because each is expensive to reverse.
@@ -73,6 +81,10 @@ Each prompt in this project ends the same way:
 - Report findings, numbers, decisions, and surprises only. No process narration, no
   restating the prompt back.
 - Then copy the report to `C:\Code\fractal-drive-sync\reports\`.
+- **Operational facts learned on the way — launch commands, ports, drop paths,
+  conventions — get promoted into the relevant module README as you pass them**, not
+  left only in a scratch report. `scratch/` is defined as disposable; a fact worth
+  writing down twice belongs in tracked documentation once.
 
 ## Rules
 

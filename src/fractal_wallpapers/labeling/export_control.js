@@ -3,8 +3,8 @@
 // every sheet this project ever serves has to agree about both.
 //
 // The name is the HEAD the sheet was cut for and the SHEET's own name —
-// `location.plane_deep_admissions.json`, never `labels.json` and never the head
-// alone. Two sheets are open in two tabs during a session, and a generic name is
+// `<head>.<sheet>.json`, never `labels.json` and never the head alone. Two sheets
+// are open in two tabs during a session, and a generic name is
 // two downloads where the second silently replaces the first; two sheets cut for
 // one judge is the same collision with a worse ending, because both pages number
 // their rows from `u0001` and the drop cannot tell whose `u0007` it holds.

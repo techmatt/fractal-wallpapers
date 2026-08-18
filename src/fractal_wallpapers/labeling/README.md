@@ -45,8 +45,12 @@ fractal-wallpapers label sheets --drops
 ```
 artifacts/graduation_sheet          strange_render · threads_promotion · 3 units
                                     labels -> labels/strange_render.threads_promotion.json
+artifacts/plane_deep_admissions     location · plane_deep_admissions · 172 units
+                                    labels -> labels/location.plane_deep_admissions.json
 artifacts/strange3_promotion        strange_render · strange3_promotion · 634 units
                                     labels -> labels/strange_render.strange3_promotion.json
+artifacts/twin_top_slices           location · twin_top_slices · 96 units
+                                    labels -> labels/location.twin_top_slices.json
 ```
 
 `--under` looks somewhere other than `artifacts/`; `--drops` adds the file each sheet's page
@@ -80,9 +84,12 @@ and rows, so a 200 on `/` alone does not prove the sheet loaded:
 curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8021/sheet.jsonl
 ```
 
-Render filenames are positions in the **render** order, not unit ids: a 96-unit sheet holds
-`0000`–`0095`, and unit `u0096` may point at `0061.png`. A 404 on a filename you guessed
-from a unit id is expected — the manifest is the only ordering.
+Render filenames are positions in the **cut** order, not unit ids: a 96-unit sheet holds
+`cut0000`–`cut0095`, and unit `u0096` may be `cut0061.png`. The prefix is there so the two
+numbers cannot be confused on disk — nothing is called `0096.png`, so a filename guessed
+from a unit id misses cleanly instead of returning another unit's picture. The manifest is
+the only ordering. (Sheets built before the prefix hold bare `0061.png`; their rows name
+their own paths, so they keep serving.)
 
 ### Where the labels land
 
@@ -112,10 +119,11 @@ crushing palette makes good material look dead, and the verdict is about the
 place. A finished-render unit is already a picture, so it is rendered once,
 exactly as it is recorded, at the geometry both corpora were collected at.
 
-A picture is named for its position in the **plan** and the `u0001` id is
-assigned after the order is fixed, so the id encodes the page position and
+A picture is named `cut0000` for its position in the **plan** and the `u0001` id
+is assigned after the order is fixed, so the id encodes the page position and
 nothing else — and re-ordering a sheet costs no render, which is what makes a
-long cut resumable.
+long cut resumable. The prefix keeps the two numberings apart on disk: they are
+different numbers for the same unit, and without it one reads as the other.
 
 ### A revision sheet re-serves rows the store already holds
 
