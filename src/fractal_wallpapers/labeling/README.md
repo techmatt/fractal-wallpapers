@@ -50,6 +50,26 @@ assigned after the order is fixed, so the id encodes the page position and
 nothing else — and re-ordering a sheet costs no render, which is what makes a
 long cut resumable.
 
+### A revision sheet re-serves rows the store already holds
+
+Re-judging a stored population is the same generator with three things stated by
+the plan rather than derived. A unit's own **recipe** and map re-serve the exact
+picture a verdict was cast on, so the new verdict keys on that render and lands
+as a revision of it. A unit's own **suggestion** prefills the incumbent verdict —
+which here is the stored label, not the head's decode, and is the only prefill
+that can name a tier the shipped checkpoint cannot reach; the manifest records
+`suggested_by`, because a prefill read back as agreement means one thing when a
+model made it and another when the labeler did. And a unit's own **batch** keeps
+the row's registration: one sheet re-serves rows from several batches at once,
+and a row revised under somebody else's batch is a row whose side, anchoring and
+draw method changed under it. The head still scores every row and still orders
+the page good→bad, because that is what a correction sheet is worth.
+
+`--reuse-renders` takes a picture off the head's render cache where the cache
+already holds that spec. The cache names a picture by a digest of everything the
+engine is told, so a hit is the same picture and anything different anywhere is
+a miss.
+
 ## One ingest, two stores
 
 **A page saves to `labels/<head>.json`, and that is the whole convention.** The

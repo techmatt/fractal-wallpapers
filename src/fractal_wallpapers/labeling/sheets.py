@@ -74,6 +74,8 @@ from __future__ import annotations
 
 import json
 import random
+import shutil
+from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -156,6 +158,9 @@ class Source:
     rubric: str
     #: What goes on the manifest under `render`, for a reader with no pictures.
     render_record: dict = field(default_factory=dict)
+    #: Anything the cut learned that a reader of the manifest needs. Written
+    #: under `cut` when it is not empty, and left off the manifest when it is.
+    notes: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -357,6 +362,48 @@ def thumbnail(picture: Path, output: Path) -> Path:
     return output
 
 
+def stated_recipe(recipe: dict) -> dict:
+    """A plan's own palette pass, normalized through the one owner of that object.
+
+    A revision sheet re-serves pictures the store already holds, and a picture
+    the store holds was made through a recipe nobody is free to re-derive: two
+    rows that differ in a gamma are two pictures and two identities. So a plan
+    unit may hand over the whole recipe, and it hands over the **whole** one —
+    a partial recipe topped up with defaults is a guess about what somebody was
+    looking at when they judged it.
+    """
+    if not isinstance(recipe, dict):
+        raise SheetError(f"a plan unit's recipe is {type(recipe).__name__}, not an object")
+    missing = [key for key in finished.RECIPE_KEYS if key not in recipe]
+    if missing:
+        raise SheetError(
+            f"a plan unit's recipe names no {', '.join(missing)}. Every knob of the palette "
+            f"pass travels or the picture cannot be rebuilt."
+        )
+    unknown = sorted(set(recipe) - set(finished.RECIPE_KEYS))
+    if unknown:
+        raise SheetError(f"a plan unit's recipe carries {unknown}, which the engine never reads")
+    return finished.recipe(**recipe)
+
+
+def cached_picture(head: str, join: dict) -> Path | None:
+    """The render cache's own picture for exactly this join, if it holds one.
+
+    The cache names a picture by a digest of the whole engine spec, so a hit is
+    the picture this sheet would have rendered — same renderer, same recipe,
+    same geometry — and anything that differs anywhere at all is a miss. That is
+    what makes reuse safe rather than an optimization somebody has to trust.
+    """
+    from fractal_wallpapers.models import renders
+
+    try:
+        name = renders.job_name({**join, "_head": head})
+    except renders.RenderCacheError:
+        return None
+    path = renders.crop_dir(head) / f"{name}.jpg"
+    return path if path.is_file() else None
+
+
 def render_finished(join: dict, output: Path, colormaps: Path | None = None) -> None:
     """Render one finished unit through its own recipe, into `output`.
 
@@ -401,18 +448,31 @@ def finished_source(
     supersample: int = LABEL_SUPERSAMPLE,
     renderer=None,
     scores=None,
+    reuse_cache: bool = False,
 ) -> Source:
     """The source that asks whether a finished picture is worth keeping.
 
     A unit names a place, a mode and a maxiter. It may also name the map it is to
     be rendered through; where it does not, the palette head picks one out of a
     seeded neighbourhood of the shipped pool, which is what a release run does.
+
+    ## A revision sheet re-serves pictures the store already holds
+
+    Three things a unit may carry exist for that sheet and no other. A **recipe**
+    re-serves the picture a stored row was judged as, knob for knob, so the
+    verdict cast on this page keys on the same render and lands as a revision of
+    that row rather than beside it. A **suggestion** prefills the incumbent
+    verdict — which on a re-judging pass is the stored label and not this head's
+    decode, and is the only prefill that can name a tier the checkpoint cannot
+    reach. And `reuse_cache` takes the picture off the render cache when the
+    cache already holds this exact spec, which is most of a revision sheet.
     """
     from fractal_wallpapers.supply.partitions import partition_of_family
 
     head = finished.head_of(head)
     render = render_finished if renderer is None else renderer
     picked: dict = {"colorizer": None, "anchors": None, "cyclic": None}
+    notes: dict = {"reused_from_cache": 0, "rendered": 0}
 
     def _map_for(unit: dict, index: int, directory: Path) -> tuple[str, bool]:
         """The map this unit is rendered through, and whether it is mirrored."""
@@ -443,7 +503,20 @@ def finished_source(
     def cut(unit: dict, directory: Path, name: str) -> dict:
         from fractal_wallpapers.curation import colorize
 
-        map_name, mirror = _map_for(unit, unit["_index"], directory)
+        if unit.get("recipe") is None:
+            map_name, mirror = _map_for(unit, unit["_index"], directory)
+            recipe_ = finished.recipe(mirror=mirror)
+        else:
+            # A unit that states its recipe states its map too: a recipe was
+            # recorded against one gradient, and re-picking the map under it
+            # would keep every knob and change the picture.
+            if unit.get("colormap") is None:
+                raise SheetError(
+                    "a plan unit states a recipe and no colormap. The recipe was recorded "
+                    "against one map; picking another under it is a different picture."
+                )
+            recipe_ = stated_recipe(unit["recipe"])
+            map_name, mirror = colormap(unit["colormap"]), recipe_["mirror"]
         # The whole join, in the shape the finished store's own reader keys on, so
         # a verdict cast on this page is ingested without anything being rebuilt.
         # The recipe comes from `finished.recipe`, which is the one owner of that
@@ -455,7 +528,7 @@ def finished_source(
             "mode_params": unit.get("mode_params") or {},
             "curve": unit.get("curve") or colorize.CURVE,
             "colormap": map_name,
-            "recipe": finished.recipe(mirror=mirror),
+            "recipe": recipe_,
             "render": {
                 "resolution": list(resolution),
                 "supersample": supersample,
@@ -465,9 +538,16 @@ def finished_source(
             "partition": partition_of_family(unit["family"]),
         }
         picture = directory / "full" / f"{name}.jpg"
+        leveled = unit.get("leveled")
+        if not picture.is_file() and reuse_cache and leveled is None:
+            held = cached_picture(head, join)
+            if held is not None:
+                picture.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(held, picture)
+                notes["reused_from_cache"] += 1
         if not picture.is_file():
-            leveled = unit.get("leveled")
             render(join, picture, Path(leveled) if leveled else None)
+            notes["rendered"] += 1
         facts = [
             f"{join['partition']} · {family_line(unit['family'])}",
             viewport_line(unit["viewport"], unit["maxiter"]),
@@ -485,25 +565,45 @@ def finished_source(
         }
 
     def suggest(rows: list[dict], units: list[dict], log) -> str:
-        del units
         pictures = [row.pop("_picture") for row in rows]
         thumbs = [row.pop("_thumb") for row in rows]
         for picture, thumb in zip(pictures, thumbs, strict=True):
             thumbnail(picture, thumb)
+        incumbent = [unit.get("suggestion") for unit in units]
+        if any(value is not None for value in incumbent) and not all(
+            value is not None for value in incumbent
+        ):
+            raise SheetError(
+                "some plan units state a suggestion and some leave it to the head. A page "
+                "whose prefills mean an incumbent verdict on one row and a decode on the next "
+                "cannot be read back as either, so a sheet states all of them or none."
+            )
         if scores is None:
             log(f"scoring {len(pictures)} pictures through the shipped {head}")
             probabilities, classes = score_pictures(head, pictures)
         else:
             probabilities, classes = scores
-        for row, probability in zip(rows, probabilities, strict=True):
+        for row, probability, stated in zip(rows, probabilities, incumbent, strict=True):
             row["columns"] = {
                 f"p_ge{index + 2}": float(value) for index, value in enumerate(probability)
             }
+            # The score orders the page whoever prefilled it: a revision sheet is
+            # still worth most read good→bad by the judge the labels train.
             row["suggestion_score"] = float(sum(probability))
-            # The decode reaches as far as the CHECKPOINT can, never as far as the
-            # page can: this head emits `classes - 1` cutpoints and a tier above
-            # them is one it has no opinion about.
-            row["suggestion"] = min(classes, 1 + sum(1 for value in probability if value >= 0.5))
+            if stated is None:
+                # The decode reaches as far as the CHECKPOINT can, never as far as
+                # the page can: this head emits `classes - 1` cutpoints and a tier
+                # above them is one it has no opinion about.
+                row["suggestion"] = min(
+                    classes, 1 + sum(1 for value in probability if value >= 0.5)
+                )
+            elif stated not in finished.tiers(head):
+                raise SheetError(
+                    f"a plan unit states suggestion {stated!r}, which is not one of "
+                    f"{finished.tiers(head)}"
+                )
+            else:
+                row["suggestion"] = int(stated)
         return head
 
     def order(rows: list[dict], seed_: int) -> tuple[list[int], str]:
@@ -532,6 +632,7 @@ def finished_source(
             "supersample": supersample,
             "filter": LABEL_FILTER,
         },
+        notes=notes,
     )
 
 
@@ -641,9 +742,19 @@ def build(
         # `_index` and `_of` are how a source that draws per-unit resources — a
         # seeded palette neighbourhood — knows where in the cut it is. They are
         # read by `cut` and never reach a row.
-        rows.append(
-            source.cut({**unit, "_index": index, "_of": len(units)}, directory, f"{index:04d}")
-        )
+        row = source.cut({**unit, "_index": index, "_of": len(units)}, directory, f"{index:04d}")
+        # A REVISION sheet re-serves rows from several batches at once, and a row
+        # revised under somebody else's batch is a row whose registration — train
+        # or eval, anchored or not — silently changed under it. So a unit may
+        # carry its own, and the sheet's `batch` is what a unit that names none
+        # falls back to.
+        row["_batch"] = unit.get("batch") or batch
+        if not row["_batch"]:
+            raise SheetError(
+                f"unit {index} names no batch and the sheet names none either; every row "
+                f"lands in a registered batch or its population is unanswerable"
+            )
+        rows.append(row)
         if (index + 1) % 10 == 0 or index + 1 == len(units):
             log(f"cut {index + 1}/{len(units)}")
 
@@ -662,7 +773,7 @@ def build(
             {
                 "schema": SCHEMA,
                 "unit": f"u{position:04d}",
-                "batch": batch,
+                "batch": row.pop("_batch"),
                 "section": section,
                 "join": row["join"],
                 "pictures": row["pictures"],
@@ -679,10 +790,17 @@ def build(
         "kind": source.kind,
         "head": source.head,
         "batch": batch,
+        "batches": dict(sorted(Counter(row["batch"] for row in written).items())),
         "title": title or f"{source.head} · {batch}",
         "seed": seed,
         "order": order_mode,
         "scorer": scorer,
+        # Who prefilled the suggestions, because it decides what they MEAN. A
+        # head's decode read back as agreement is a measurement; an incumbent
+        # verdict read back as agreement is the labeler agreeing with himself.
+        "suggested_by": (
+            "plan" if any(unit.get("suggestion") is not None for unit in units) else scorer
+        ),
         "units": len(written),
         "tiers": list(source.tiers),
         "rubric": source.rubric,
@@ -691,6 +809,8 @@ def build(
         "render": source.render_record,
         "built_at": store.now(),
     }
+    if source.notes:
+        manifest["cut"] = dict(source.notes)
     (directory / MANIFEST_NAME).write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     with (directory / ROWS_NAME).open("w", encoding="utf-8", newline="\n") as handle:
         for row in written:

@@ -85,7 +85,7 @@ code{color:#9bb}
     <div class="rubric" id="rubric"></div>
     <div class="hint">judge <b>this picture</b> · number keys label and jump to the next
       unlabeled · <b>←</b>/<b>→</b> move · <b>u</b> next unlabeled · click a picture to zoom ·
-      the suggestion is a head's own decode and is not a label until you accept it</div>
+      <span id="prefill"></span></div>
   </div>
   <aside><div class="grid" id="overview"></div></aside>
 </main>
@@ -152,6 +152,12 @@ function start(){
   el("sheet-name").textContent =
     MANIFEST.head + " · " + ROWS.length + " units · order: " + MANIFEST.order;
   el("rubric").innerHTML = MANIFEST.rubric || "";
+  // What a prefill IS, in the page's own words, because it is not always the same
+  // thing: a revision sheet prefills the verdict this row already carries, and a
+  // labeler who reads that as a model's guess is being told the wrong thing.
+  el("prefill").textContent = MANIFEST.suggested_by === "plan"
+    ? "the suggestion is the verdict this row already carries and stands until you change it"
+    : "the suggestion is a head's own decode and is not a label until you accept it";
   // The sweep exists only when a head actually suggested something. With no head
   // there is nothing to accept, and a button that accepts nothing is a button that
   // will one day accept everything.
