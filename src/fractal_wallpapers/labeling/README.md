@@ -97,13 +97,14 @@ re-runs it after finding a mistake.
 ## The scale is the corpus's; the class count is the model's
 
 Every judge here is cast on **1..4**, `strange_render` included. Its corpus was
-*collected* on three tiers and its shipped head *trains* on three classes, and
-neither of those is a ceiling on what a person may write down. What a checkpoint
-can emit lives in that checkpoint's own config, is read back by whoever loads it,
-and moves only when the head is retrained — until then the corpus grows a tier the
-incumbent cannot see, which is exactly what a retrain needs and what a capped
-store could never collect. A training pass whose recipe cannot express a verdict
-in its population refuses rather than mis-fitting its top cutpoint.
+*collected* on three tiers and its head *trained* on three classes, and neither of
+those was ever a ceiling on what a person may write down. What a checkpoint can
+emit lives in that checkpoint's own config, is read back by whoever loads it, and
+moves only when the head is retrained — so the corpus was free to grow a tier the
+incumbent could not see, which is exactly what the retrain to four then had to
+learn from and what a capped store could never have collected. A training pass
+whose recipe cannot express a verdict in its population refuses rather than
+mis-fitting its top cutpoint.
 
 ## The order is the design
 

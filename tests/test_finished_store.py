@@ -62,9 +62,9 @@ def test_a_row_missing_its_mode_settings_is_refused() -> None:
 
 def test_one_scale_for_every_head_and_it_is_not_the_shipped_model_s_class_count() -> None:
     """Matt's ratified decision. `strange_render` was *collected* on three tiers
-    and the shipped judge trains on three classes; neither is a ceiling on what a
-    person may cast, and a store that made one would be a store that can never
-    collect the retrain that widens the model."""
+    and its first judge trained on three classes; neither was a ceiling on what a
+    person may cast, and a store that had made one would be a store that could
+    never have collected the retrain that widened the model."""
     assert finished.tiers("smooth_render") == finished.SCALE
     assert finished.tiers("strange_render") == finished.SCALE
     a_row("smooth_render", score=4)
@@ -74,12 +74,18 @@ def test_one_scale_for_every_head_and_it_is_not_the_shipped_model_s_class_count(
             a_row(head, score=5)
 
 
-def test_the_model_s_class_count_is_the_model_s_own_and_still_says_three() -> None:
+def test_the_model_s_class_count_is_the_model_s_own_and_lives_on_the_recipe() -> None:
     """The decoupling has a second half: the number moved to the recipe, it did
-    not disappear. The strange head's decode stays capped at 3 until the retrain."""
+    not disappear. It is read there, never off the store — which is what let the
+    strange head sit at three while its corpus was already collecting 4s, and then
+    move to four without the store having to change at all."""
     from fractal_wallpapers.models import finished_train
 
-    assert finished_train.recipe_for("strange_render")["classes"] == 3
+    for head in finished.HEADS:
+        # What a person may cast is the store's, and it does not move with the model.
+        assert finished.tiers(head) == finished.SCALE
+        assert finished_train.recipe_for(head)["classes"] <= len(finished.SCALE)
+    assert finished_train.recipe_for("strange_render")["classes"] == 4
     assert finished_train.recipe_for("smooth_render")["classes"] == 4
 
 

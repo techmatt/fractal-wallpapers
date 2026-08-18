@@ -22,9 +22,11 @@ root for the same reason.
 Each judge's recipe is the one the source project trained its own head under,
 read out of that checkpoint's committed config. They agree on almost everything —
 forty epochs, batches of thirty-two, the same two learning rates and the same
-decay, geometric augmentation only — and differ where the corpora differ: four
-tiers and a medium backbone for smooth renders, three tiers and a small one for
-strange. [`INHERITANCE`] lists every behavioural key that came across and every
+decay, geometric augmentation only — and differ where the corpora differ: a
+medium backbone for smooth renders and a small one for strange. Both now train
+**four** tiers; strange's third was a fact about a corpus collected before a 4
+existed in it, and it moved the session its store first held one.
+[`INHERITANCE`] lists every behavioural key that came across and every
 one that did not, with the reason, because "the same recipe" is a claim a reader
 has to be able to check rather than take.
 
@@ -87,9 +89,11 @@ SELECTION_SEED = dataset.SELECTION_SEED
 #: **`classes` is the model's own, not the store's.** The corpus is cast on
 #: [`finished.SCALE`] for every head; what a checkpoint can emit is decided here,
 #: written into its config, and read back off the checkpoint by everything that
-#: loads one. `strange_render` trains on three and therefore decodes to at most a
-#: 3 — its store holds 4s the incumbent cannot see, and moving this number to 4 is
-#: what the retrain that learns them consists of.
+#: loads one. The two numbers stay separate on purpose — a store may hold a tier
+#: no trained head has learned yet, which is the only way a retrain can ever be
+#: collected. `strange_render` sat at three while its store grew 4s the shipped
+#: head could not see; this is the edit that closed that gap, and every head here
+#: now trains the whole scale.
 RECIPES: dict[str, dict] = {
     "smooth_render": {
         "classes": 4,
@@ -97,7 +101,7 @@ RECIPES: dict[str, dict] = {
         "selection_cutpoint": 3,
     },
     "strange_render": {
-        "classes": 3,
+        "classes": 4,
         "backbone": "mobilenetv4_conv_small.e2400_r224_in1k",
         "selection_cutpoint": 3,
     },
@@ -133,7 +137,7 @@ COMMON = {
     ),
 }
 
-#: What the recipes inherited, and the three things they did not.
+#: What the recipes inherited, and every key that did not come across.
 INHERITANCE = {
     "source": {
         "smooth_render": "the source project's wallpaper head v4b, config embedded beside it",
@@ -145,7 +149,6 @@ INHERITANCE = {
         "backbone_lr",
         "batch_size",
         "border_crop",
-        "classes",
         "drop_path_rate",
         "drop_rate",
         "epochs",
@@ -159,6 +162,18 @@ INHERITANCE = {
         "weight_decay",
     ],
     "changed": [
+        {
+            "key": "classes",
+            "was": "four for smooth renders and three for strange, each the source head's own",
+            "now": "four for both",
+            "why": "the strange corpus was collected before a 4 existed in it, so three was a "
+            "fact about that population rather than a property of the scale. Its store now "
+            "holds 4s, and a recipe that cannot express a verdict present in its own "
+            "population refuses to train rather than mis-fit a top cutpoint — see "
+            "[`refuse_inexpressible`]. Widening it is the only move that does not throw the "
+            "tier away, and it makes the head's decode reach the tier the release path cuts "
+            "on. The smooth recipe is untouched; it was already four.",
+        },
         {
             "key": "augmentation",
             "was": "geometric only (border crop + both flips), colour off",

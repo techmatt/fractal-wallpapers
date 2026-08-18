@@ -196,9 +196,10 @@ def test_a_sheet_that_miscounts_itself_is_refused(tmp_path, head_store) -> None:
 def test_the_store_takes_the_corpus_scale_and_not_the_shipped_model_s(tmp_path, head_store) -> None:
     """Matt's ratified decision: 1..4 for every head, `strange_render` included.
 
-    The shipped strange judge trains on three classes and can never suggest a 4;
-    that is the model's own config and it is not the store's ceiling. A store that
-    refused the tier would be a store that can never collect the retrain.
+    The strange judge trained on three classes for a generation and could not
+    suggest a 4; that is the model's own config and it is not the store's ceiling.
+    A store that refused the tier would be a store that can never collect the
+    retrain — and this corpus collected exactly that.
     """
     stem = a_sheet(tmp_path, head="strange_render")
     finished.register(
