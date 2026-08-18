@@ -3,9 +3,9 @@
   "head": "strange_render",
   "prereg": "C:\\Code\\fractal-wallpapers\\models\\strange_render\\prereg.json",
   "runs": [
-    "its own",
-    "seed1",
-    "seed2"
+    "four_class_seed0",
+    "four_class_seed1",
+    "four_class_seed2"
   ],
   "population": {
     "rows": 150,
@@ -15,16 +15,16 @@
   },
   "ordering": {
     "boundary": "ge2",
-    "ours": 0.7338193456614509,
+    "ours": 0.7604907539118065,
     "our_band": {
-      "its own": 0.7338193456614509,
-      "seed1": 0.7496443812233285,
-      "seed2": 0.7156827880512091
+      "four_class_seed0": 0.7604907539118065,
+      "four_class_seed1": 0.7402204836415363,
+      "four_class_seed2": 0.7756045519203414
     },
-    "judged_on": "its own",
+    "judged_on": "four_class_seed0",
     "interval": [
-      0.6488367024819717,
-      0.8152185061456673
+      0.6841638112682652,
+      0.8324497462713747
     ],
     "target": 0.708570412517781,
     "margin": 0.035,
@@ -42,12 +42,15 @@
       "picked_from": null,
       "selected": null
     },
-    "verdict": "BORDERLINE"
+    "verdict": "PASS"
   },
   "interface": {
+    "rule": "the checkpoint emits as many cutpoints as its own recipe has classes, less one, and the score file carries a probability for every one of them, non-increasing along the row",
+    "amended_on": "2026-08-17",
     "cutpoints": [
       "p_ge2",
-      "p_ge3"
+      "p_ge3",
+      "p_ge4"
     ],
     "rows": 150,
     "rows_missing_a_cutpoint": 0,
@@ -60,21 +63,22 @@
       2.0
     ],
     "observed": 0.5066666666666667,
-    "predicted": 0.464820654922239,
-    "ratio": 0.9174091873465243,
+    "predicted": 0.5527646009103723,
+    "ratio": 1.090982764954682,
     "verdict": "PASS"
   },
   "agreement": {
-    "agreement": 0.6266666666666667,
+    "agreement": 0.6,
     "interval": [
-      0.5490196078431373,
-      0.7019867549668874
+      0.5194805194805194,
+      0.6776370981985164
     ],
-    "within_one_tier": 0.9933333333333333,
+    "within_one_tier": 0.9866666666666667,
     "decoded_tiers": {
-      "1": 79,
-      "2": 55,
-      "3": 16
+      "1": 67,
+      "2": 69,
+      "3": 13,
+      "4": 1
     },
     "verdict": "REPORTED",
     "why_not_gated": "no decoded verdict for either source head on this sheet was committed, so there is nothing to compare this to"
@@ -84,8 +88,14 @@
       "verdict": "REPORTED",
       "positives": 6,
       "negatives": 144,
-      "ours": 0.9884259259259259
+      "ours": 0.9618055555555556
+    },
+    "ge4": {
+      "verdict": "REPORTED",
+      "positives": 4,
+      "negatives": 146,
+      "ours": 1.0
     }
   },
-  "verdict": "BORDERLINE"
+  "verdict": "ACCEPT"
 }

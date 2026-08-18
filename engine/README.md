@@ -26,11 +26,12 @@ and `src/mode.rs` the named colorings — nineteen of them, in four shapes: one
 field, two fields blended, a base whose palette position a second field shifts,
 or no field at all.
 
-Every catalog entry carries a **tier**. Sixteen are `production` — a run may draw
-them, and the finished-render judges were trained on them. Three are `niche`:
-`threads`, `itinerary`, and `de`, renderable on demand by name and excluded from
-every production draw. The exclusion is enforced in one place on each side of the
-boundary — `mode::production_names` here, `engine.production_modes()` in Python —
+Every catalog entry carries a **tier**. Eighteen are `production` — a run may draw
+them, and the finished-render judges were trained on them. One is `niche`: `de`,
+renderable on demand by name and excluded from every production draw. `threads`
+and `itinerary` were niche too, until a round of labels over both of them said
+they were worth drawing. The exclusion is enforced in one place on each side of
+the boundary — `mode::production_names` here, `engine.production_modes()` in Python —
 so it is a property of a function rather than a rule every draw site remembers.
 `fractal-wallpapers modes` prints the tier beside each name.
 

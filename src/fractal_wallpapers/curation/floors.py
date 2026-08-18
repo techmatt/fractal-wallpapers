@@ -50,16 +50,23 @@ release record, on the reasoning that *"was a bar at this height buying anything
 stays answerable off the accumulating record rather than only off runs made while
 a bar was enforcing.
 
-The strange head's advisory has since been **promoted to an acting bar**, and by
-a review verdict rather than by a measurement. Matt read `run2` on 2026-08-17: the
-eleven released strange rows that sat below 0.50 were all bad and the head had
-been right about every one of them, and the path that seated them was padding
-strange slots out of thin passing supply. So [`STRANGE_RELEASE_BAR`] acts at
-release selection — a strange row below it is not seated, and a strange slot with
-no passing supply goes unfilled. It is still not a measured operating point; a
-labels-derived restatement is future work the label accumulator holds. The smooth
-head stays advisory: its own below-advisory rows belong to a mix-ratio decision
-that has not been taken.
+The strange head's advisory was **promoted to an acting bar** on 2026-08-17, by a
+review verdict rather than by a measurement: Matt read `run2` and the eleven
+released strange rows that sat below 0.50 were all bad, the head had been right
+about every one of them, and the path that seated them was padding strange slots
+out of thin passing supply. So [`STRANGE_RELEASE_BAR`] acts at release selection —
+a strange row below it is not seated, and a strange slot with no passing supply
+goes unfilled. The smooth head stays advisory: its own below-advisory rows belong
+to a mix-ratio decision that has not been taken.
+
+That bar has since been **restated against the head it is on**, which is the whole
+reason this module exists. The 4-class retrain moved the strange head's whole
+probability scale, and a float set on the retired head's scale says nothing at all
+on the new one — so the value is no longer the advisory's height carried over by
+policy, it is a *measurement* off the labels: [`Restatement`] carries the number,
+the sha of the head it was read against, how it was read, and when. It is still
+a `>=3` bar. The head now emits a `P(>=4)` and that cutpoint gates nothing: a four
+is a class the release path prefers where it finds one, not a second floor.
 
 That split is why there are two types here. An [`Advisory`] is computed, recorded,
 and structurally unable to remove a row — no `gate()`, no `seats()`, no `acts`
@@ -71,6 +78,13 @@ head version: a head is a file with a hash, the manifest names it, and a cut who
 stamp disagrees with the live artifact refuses rather than producing a
 plausible-looking column — or, now, a seating decision — about a scale that no
 longer exists.
+
+The two kinds stamp themselves differently, and the difference is the same one
+that makes them two classes. An advisory is the *natural cutpoint of whatever
+scale is live*, so it stamps the live artifact and only catches a re-ship that
+lands mid-run. A bar is a number somebody measured on one named head, so it stamps
+**that** head — [`Restatement.head_sha256`] — and refuses from the first call after
+a flip. Nobody had to remember to restate this one; the check would have said so.
 """
 
 from __future__ import annotations
@@ -209,6 +223,36 @@ class Bar(Cut):
         return f"{self.name} {self.value:g} ({self.head} {self.stamp[:12]}, ACTING)"
 
 
+@dataclass(frozen=True)
+class Restatement:
+    """A bar's height, and the reading that put it there.
+
+    A [`Bar`]'s `value` is a float and a float is unreadable on its own: 0.50 and
+    0.685 are the same kind of thing only if you already know which head's scale
+    each was measured on. So the height a bar is declared at is not a bare number
+    in this module — it is this, and it travels with the sha of the head it was
+    read against, the method that read it, and the day it was read.
+
+    The sha is the load-bearing field. [`release_cut`] stamps the bar with it
+    rather than with whatever is shipped right now, so a head flip makes every
+    seating decision refuse until somebody restates the number, instead of quietly
+    comparing this head's probabilities against the last head's cutpoint.
+    """
+
+    #: The threshold, on the scale of the head named below and no other.
+    value: float
+    #: The sha256 of the artifact this height was measured against.
+    head_sha256: str
+    #: How it was measured, in enough detail to be re-run.
+    method: str
+    #: When, ISO. A restatement is an event; a bar with no date is a bar nobody
+    #: can place against the retrains around it.
+    date: str
+
+    def __str__(self) -> str:
+        return f"{self.value:g} on {self.head_sha256[:12]}, restated {self.date} — {self.method}"
+
+
 def live_stamp(head: str) -> str:
     """The sha256 of the head that is shipped right now, read at call time.
 
@@ -234,12 +278,28 @@ def live_stamp(head: str) -> str:
 #: about the head rather than a bar somebody measured.
 RELEASE_ADVISORY = 0.50
 
-#: **The strange head's ACTING release bar.** The same height as the advisory it
-#: was promoted from, and a second number rather than an alias of the first
-#: because it is a second decision: the advisory is a property of the scale, this
-#: is a policy about what may ship. Moving either alone is a real change and has
-#: to read as one.
-STRANGE_RELEASE_BAR = 0.50
+#: **The strange head's ACTING release bar**, and the reading that set it.
+#:
+#: Not the advisory's height any more. The bar was promoted at 0.50 because that
+#: was where the advisory sat, and the retrain that widened the head to four
+#: classes moved every probability under it — so the number was restated the only
+#: way a release bar can honestly be restated, off the verdicts a person actually
+#: cast, and it landed well above where policy had left it.
+STRANGE_RELEASE_BAR = Restatement(
+    value=0.685,
+    head_sha256="a011188bbcaaeef49421146e31b7eb411db57044d653c2e0986d5040d32e35de",
+    method=(
+        "the labels-derived crossover. Isotonic regression of P(the human said >=3) against "
+        "this head's own P(>=3), over all 3,085 labeled strange_render pictures scored through "
+        "the staged artifact, ties pooled, non-decreasing; the crossing is the LOWEST score "
+        "whose fitted agreement reaches a half, and the bar is that crossing rounded up to the "
+        "next 0.005. Crossing 0.6809, 95% cluster bootstrap over places [0.540, 0.776]; the "
+        "held-out selection slice crosses at 0.6987 on its own. Declared before it was read, "
+        "and the roundings go up because a bar is a floor. STILL A >=3 BAR: the head's fourth "
+        "class is preferred where it appears and gates nothing."
+    ),
+    date="2026-08-17",
+)
 
 #: Which render heads' release cut ACTS, and at what height. Everything not in
 #: here gets an [`Advisory`]. Spelled out rather than imported from `budget.HEADS`
@@ -247,14 +307,15 @@ STRANGE_RELEASE_BAR = 0.50
 #: spelling against it.
 ACTING_RELEASE_BARS = {"strange_render": STRANGE_RELEASE_BAR}
 
-#: Why the one acting bar acts. Carried onto every row it stamps, because a bar
-#: whose provenance is a review verdict must not read like a measured one.
+#: Why the one acting bar acts, and what its height now rests on. Carried onto
+#: every row it stamps: the two halves have different provenance and a row that
+#: reported one of them would misstate the other.
 STRANGE_BAR_BASIS = (
-    "an ACTING bar by Matt's review verdict of 2026-08-17, not by a measurement: every one "
-    "of run2's eleven released strange rows below this height was bad and the head was right "
-    "about all eleven, and the release path that seated them was padding strange slots from "
-    "thin passing supply. Promoted from the advisory at the same height. A labels-derived "
-    "restatement of the bar is future work; the label accumulator holds it."
+    "an ACTING bar by Matt's review verdict of 2026-08-17 — every one of run2's eleven "
+    "released strange rows below the advisory was bad, the head was right about all eleven, "
+    "and the release path that seated them was padding strange slots from thin passing "
+    f"supply. THAT the cut acts is that verdict; WHERE it sits is a measurement: "
+    f"{STRANGE_RELEASE_BAR}"
 )
 
 
@@ -270,11 +331,14 @@ def release_cut(head: str) -> Advisory | Bar:
     whatever was shipped when the process started.
     """
     if head in ACTING_RELEASE_BARS:
+        restated = ACTING_RELEASE_BARS[head]
         return Bar(
             name=f"{head}_release",
-            value=float(ACTING_RELEASE_BARS[head]),
+            value=float(restated.value),
             head=head,
-            stamp=live_stamp(head),
+            # The head the height was MEASURED on, not the one that happens to be
+            # shipped. That is what makes the stamp check bite on a flip.
+            stamp=restated.head_sha256,
             basis=STRANGE_BAR_BASIS,
         )
     return release_advisory(head)
@@ -361,13 +425,16 @@ def summary() -> dict:
             },
             **{
                 f"{head}_release_bar": {
-                    "value": value,
+                    "value": restated.value,
                     "head": head,
+                    "restated_against": restated.head_sha256,
+                    "restated_on": restated.date,
+                    "method": restated.method,
                     "where": "release selection: a row below it is not seated, and a slot "
                     "with no passing supply goes unfilled",
                     "basis": STRANGE_BAR_BASIS,
                 }
-                for head, value in sorted(ACTING_RELEASE_BARS.items())
+                for head, restated in sorted(ACTING_RELEASE_BARS.items())
             },
         },
         "advisory": {
@@ -396,6 +463,7 @@ __all__ = [
     "Bar",
     "Cut",
     "HeadStampMismatch",
+    "Restatement",
     "emit_cap",
     "live_stamp",
     "passes_good_floor",

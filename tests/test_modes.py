@@ -102,16 +102,18 @@ def test_the_catalog_is_the_engines_and_covers_all_four_shapes() -> None:
 
 
 @needs_engine
-def test_the_production_roster_is_the_catalog_without_the_three_niche_modes() -> None:
+def test_the_production_roster_is_the_catalog_without_the_distance_estimate() -> None:
     """The tier's whole content: what a draw may reach, and what it may not.
 
     Asserted against the names rather than a count, because the point is *which*
-    three are held back — the two experimental modes and the distance estimate —
-    and a count would keep passing if the set changed underneath it.
+    one is held back and a count would keep passing if the set changed underneath
+    it. It was three: `threads` and `itinerary` were held out of the draw until the
+    judge that ranks a strange render could express the top of its own scale, and
+    they have since been ratified into the release tier. `de` stays, by Matt's call.
     """
     catalog = {mode["name"]: mode["tier"] for mode in engine.modes()}
     niche = sorted(name for name, tier in catalog.items() if tier == engine.NICHE)
-    assert niche == ["de", "itinerary", "threads"]
+    assert niche == ["de"]
 
     roster = engine.production_modes()
     assert set(roster) == set(catalog) - set(niche)
@@ -246,10 +248,11 @@ def test_the_modes_with_no_scalar_field_refuse_to_be_dumped(tmp_path) -> None:
 
 
 @needs_engine
-def test_the_three_niche_modes_render_at_the_parameters_they_were_kept_at(tmp_path) -> None:
-    """A niche mode is a mode: it renders by name, and the record echoes the whole
+def test_the_three_newest_modes_render_at_the_parameters_they_were_kept_at(tmp_path) -> None:
+    """Whatever its tier, a mode renders by name and the record echoes the whole
     coloring — including the parameters Matt kept, which live in the engine's
-    catalog and nowhere else.
+    catalog and nowhere else. Two of these three are drawable now and one is not;
+    a tier moves what may draw a mode and nothing at all about what it renders.
     """
     threads = engine.render_report(spec("threads", tmp_path / "threads.png"))
     assert threads["coloring"]["kind"] == "composite"
