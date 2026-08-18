@@ -750,6 +750,65 @@ mod tests {
         );
     }
 
+    /// The escape radius has to be at least `2^(1/(d−1))` for the escape test to
+    /// mean anything: below that a point can leave the disc and come back. The
+    /// requirement grows without bound as `d` falls toward 1 — it is 2 at the
+    /// quadratic degree and ~2.38 at 1.8 — so the lowest degree the spec admits
+    /// is where the check belongs, and [`BAILOUT`] has to clear it.
+    ///
+    /// It clears it by four orders of magnitude, which is the point: `2^16`
+    /// stays a valid bailout down to `d = 1 + 1/16`, so
+    /// [`LOWEST_FRACTIONAL_DEGREE`](crate::spec::LOWEST_FRACTIONAL_DEGREE) is a
+    /// claim about what has been looked at rather than about the arithmetic.
+    #[test]
+    fn the_bailout_covers_the_lowest_degree() {
+        let required = |d: f64| 2f64.powf(1.0 / (d - 1.0));
+        assert!((required(1.8) - 2.378).abs() < 0.001, "{}", required(1.8));
+        assert!(required(crate::spec::LOWEST_FRACTIONAL_DEGREE) < BAILOUT);
+
+        // Where the margin actually runs out, so that lowering the bound past
+        // this point cannot pass silently.
+        let breaking = 1.0 + 1.0 / BAILOUT.log2();
+        assert!((breaking - 1.0625).abs() < 1e-12, "{breaking}");
+        assert!(crate::spec::LOWEST_FRACTIONAL_DEGREE > breaking);
+    }
+
+    /// Below the quadratic degree the smooth count's base is `ln d < ln 2`, which
+    /// *amplifies* the overshoot correction rather than shrinking it — so a
+    /// wrong normalization would show up here more loudly than at `d = 2`. Walk
+    /// the real axis of the `d = 1.8` parameter plane across an escape-step
+    /// boundary and require the same continuity [`the_smooth_count_does_not_terrace`]
+    /// requires of the quadratic.
+    #[test]
+    fn the_smooth_count_does_not_terrace_below_degree_two() {
+        for degree in [1.8, 1.9] {
+            let family = Family::FractionalMultibrot { degree };
+            let samples: Vec<f64> = (0..2000)
+                .map(|step| {
+                    let re = 4.0 - 1.9 * step as f64 / 2000.0;
+                    let sample = escape(&family, Complex::new(re, 0.0), 200);
+                    assert!(sample.escaped, "d = {degree}, c = {re} should escape");
+                    sample.smooth
+                })
+                .collect();
+
+            let total: f64 = samples.last().unwrap() - samples.first().unwrap();
+            assert!(
+                total > 0.5,
+                "d = {degree}: no step boundary crossed ({total})"
+            );
+
+            let largest_step = samples
+                .windows(2)
+                .map(|pair| (pair[1] - pair[0]).abs())
+                .fold(0.0f64, f64::max);
+            assert!(
+                largest_step < 0.05,
+                "d = {degree}: terrace of {largest_step}"
+            );
+        }
+    }
+
     /// The integer count and the smooth one are two readings of one escape, and
     /// the smooth one *refines* the other: it lands inside the step the orbit
     /// actually left on. That is what makes a discrete render the floor of a
@@ -760,6 +819,7 @@ mod tests {
         let families = [
             Family::Multibrot { degree: 2 },
             Family::Multibrot { degree: 5 },
+            Family::FractionalMultibrot { degree: 1.8 },
             julia(Complex::new(-0.8, 0.156)),
             Family::Phoenix {
                 c: crate::family::PHOENIX_C,

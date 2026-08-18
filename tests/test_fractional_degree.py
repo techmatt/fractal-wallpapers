@@ -172,6 +172,48 @@ def test_a_render_without_a_viewport_is_refused_rather_than_framed(tmp_path) -> 
 
 
 @needs_engine
+def test_the_range_reaches_below_the_quadratic_degree(tmp_path) -> None:
+    """1.8 and 1.9 are renderable; just below the bound is refused.
+
+    The range's ends are a claim about what has been looked at rather than about
+    where the arithmetic breaks — the engine's 2^16 bailout stays a valid escape
+    radius far below 1.8 — so the bound is pinned from both sides here.
+    """
+    for degree in ["1.8", "1.9"]:
+        output = tmp_path / f"sub_two_{degree}.png"
+        report = engine.render_report(
+            {
+                "schema": 1,
+                "family": {"kind": "fractional_multibrot", "degree": degree},
+                "viewport": VIEWPORT,
+                "resolution": [160, 90],
+                "supersample": 1,
+                "mode": "smooth",
+                "colormap": "twilight_shifted",
+                "colormap_dir": str(engine.colormap_dir()),
+                "output": str(output),
+            }
+        )
+        assert output.is_file()
+        assert report["location"]["degree"] == degree
+        assert 0.05 < report["interior_fraction"] < 0.95
+
+    with pytest.raises(RuntimeError, match="supported range"):
+        engine.render_report(
+            {
+                "schema": 1,
+                "family": {"kind": "fractional_multibrot", "degree": "1.75"},
+                "viewport": VIEWPORT,
+                "resolution": [32, 18],
+                "mode": "smooth",
+                "colormap": "twilight_shifted",
+                "colormap_dir": str(engine.colormap_dir()),
+                "output": str(tmp_path / "too_low.png"),
+            }
+        )
+
+
+@needs_engine
 def test_a_whole_degree_belongs_to_the_integer_family(tmp_path) -> None:
     """One picture, one name: `degree: "3.0"` is the multibrot's and is refused."""
     with pytest.raises(RuntimeError, match="whole number"):

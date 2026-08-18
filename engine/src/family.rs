@@ -154,7 +154,9 @@ pub enum Family {
     },
     /// `z ← z^d + c` over the parameter plane at a **non-integer** `d`, on the
     /// principal branch. The gaps between the integer degrees the other families
-    /// render, and **render-only**: see [`Family::is_render_only`].
+    /// render — and a stretch below the quadratic one, where the set thins
+    /// toward the point it degenerates to at `d = 1` — and **render-only**: see
+    /// [`Family::is_render_only`].
     ///
     /// A non-integer power of a complex number is many-valued, so this family
     /// only exists once a branch is chosen. The choice here is the principal one
@@ -165,9 +167,13 @@ pub enum Family {
     /// single-valued branch, and it is the subject of the figure this family
     /// exists to draw. A different branch would move the seam, not remove it.
     FractionalMultibrot {
-        /// The exponent, strictly between 2 and 5 and never an integer: the
-        /// integer degrees in that range are the [`Multibrot`](Family::Multibrot)
-        /// family's, and one picture gets one name.
+        /// The exponent, inside
+        /// [`LOWEST_FRACTIONAL_DEGREE`](crate::spec::LOWEST_FRACTIONAL_DEGREE)`..=5`
+        /// and never an integer: the integer degrees in that range are the
+        /// [`Multibrot`](Family::Multibrot) family's, and one picture gets one
+        /// name. The range reaches below 2, where there is no integer family on
+        /// the far side — `z^1.8 + c` is a set of its own, not an interpolation
+        /// between two named ones.
         degree: f64,
     },
 }
@@ -405,9 +411,9 @@ fn cpow(z: Complex<f64>, k: u32) -> Complex<f64> {
 /// every `d` that is.
 ///
 /// `z = 0` returns zero. The limit of `|z|^d` as `z → 0` is zero for every `d`
-/// this family admits (all of them are greater than 2), and the parameter plane
-/// starts every orbit there, so the alternative would be a `NaN` at the first
-/// step of every pixel.
+/// this family admits (all of them are greater than 1, which is what the range's
+/// lower bound is really guarding), and the parameter plane starts every orbit
+/// there, so the alternative would be a `NaN` at the first step of every pixel.
 ///
 /// Not used by any integer-degree render: those go through [`cpow`], which is
 /// both faster and exact where this polar round trip is neither.
@@ -478,6 +484,9 @@ mod tests {
             }
         }
         assert_eq!(cpowf(Complex::new(0.0, 0.0), 2.5), Complex::new(0.0, 0.0));
+        // The parameter plane opens every orbit at zero, and below the quadratic
+        // degree that is still the branch this returns rather than a NaN.
+        assert_eq!(cpowf(Complex::new(0.0, 0.0), 1.8), Complex::new(0.0, 0.0));
     }
 
     /// A fractional degree is a parameter plane like every other multibrot — the
