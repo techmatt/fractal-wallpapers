@@ -331,8 +331,75 @@ def is_rejected(row: dict) -> bool:
     return bool(row.get("rejected"))
 
 
+def _partition_of(row: dict) -> str:
+    return str((row.get("location") or {}).get("partition") or "")
+
+
+def _head_of(row: dict) -> str:
+    return str((row.get("scores") or {}).get("head") or "")
+
+
+def _score_of(row: dict):
+    value = (row.get("scores") or {}).get("p_ge3")
+    return None if value is None else float(value)
+
+
+def _partition_index(partition: str) -> int:
+    """A partition's place in the canonical report order; unregistered ones last."""
+    from fractal_wallpapers.supply import partitions
+
+    try:
+        return partitions.ALL_PARTITIONS.index(partition)
+    except ValueError:
+        return len(partitions.ALL_PARTITIONS)
+
+
+def _within_pool(row: dict) -> tuple:
+    """Best first inside one `(partition, head)` pool; unscored last, never a zero."""
+    return (_score_of(row) is None, -(_score_of(row) or 0.0), str(row.get("candidate")))
+
+
+def _across_pools(position: int, partition: str, head: str, row: dict) -> tuple:
+    """Rank first, so every prefix of the listing covers the partitions evenly."""
+    return (position, _partition_index(partition), partition, head, str(row.get("candidate")))
+
+
+def score_rank(rows) -> list[dict]:
+    """`rows` in **score rank within the partition**, best of each partition first.
+
+    THE order every listing of decided rows reads, and it is a rank rather than a
+    score for one reason: a score is a probability on one head's
+    train-prior-calibrated scale and the two finished-render judges do not share
+    one, so a single sort over both would order the release by whichever head's
+    scale runs higher. This never compares two heads' numbers. Each `(partition,
+    head)` pool is ranked on its own scale, and the pools are then interleaved by
+    *position*: every partition's best row, then every partition's second, and so
+    on.
+
+    That makes **every prefix near-proportional across the partitions**, which is
+    the property [`budget`] already spends its plan order on and the only one that
+    survives a consumer that truncates — the sheet's near-miss section takes a
+    prefix of this, and a partition-major order would have handed the whole
+    section to whichever partition sorts first.
+
+    A row with no score sorts last inside its own pool. It is not a zero: a failed
+    render has a reason instead of a number, and ranking it against a wallpaper is
+    the comparison the record exists to prevent.
+    """
+    pools: dict = {}
+    for row in rows:
+        pools.setdefault((_partition_of(row), _head_of(row)), []).append(row)
+    decorated = []
+    for (partition, head), pool in pools.items():
+        pool.sort(key=_within_pool)
+        for position, row in enumerate(pool):
+            decorated.append((_across_pools(position, partition, head, row), row))
+    decorated.sort(key=lambda item: item[0])
+    return [row for _, row in decorated]
+
+
 def served(rows) -> list[dict]:
-    """The rows a run actually serves, in candidate order.
+    """The rows a run actually serves, in score rank within partition.
 
     Released, minus what a review rejected, minus anything with no release picture
     to serve. **This, not `verdict == "released"`, is what a listing reads.** The
@@ -346,14 +413,20 @@ def served(rows) -> list[dict]:
     function names is "rows with a wallpaper at the end of them", and a set defined
     on the verdict alone would be one schema change away from serving a link to
     nothing.
+
+    The order is [`score_rank`] and it used to be the candidate id, which is the
+    attempt number — **arrival order**. Nothing about it was a decision: the
+    attempt number is the position the plan's largest-deficit sequence happened to
+    put a `(head, partition)` cell in, so the release sheet led with whichever
+    partition the budget interleaved first and a reader saw the run's best picture
+    wherever it fell. Floors are untouched by this: the junk floor still acts at
+    intake and a release bar still refuses a seat. Rank only decides the order of
+    what survived them.
     """
-    return sorted(
-        (
-            row
-            for row in rows
-            if row.get("verdict") == RELEASED and row.get("picture") and not is_rejected(row)
-        ),
-        key=lambda row: str(row.get("candidate")),
+    return score_rank(
+        row
+        for row in rows
+        if row.get("verdict") == RELEASED and row.get("picture") and not is_rejected(row)
     )
 
 
@@ -531,6 +604,7 @@ __all__ = [
     "rejection",
     "root",
     "scratch_root",
+    "score_rank",
     "served",
     "sinks",
     "use",
