@@ -47,13 +47,13 @@
       }
     },
     "strange_render": {
-      "tag": "weights-v1",
+      "tag": "weights-v2",
       "asset": "strange_render.fp16.pt",
-      "sha256": "79201d0c5eeba307ac0873333dd52f7743c74049e4c6df8951ddf2c3d15a979f",
-      "bytes": 5132862,
+      "sha256": "a011188bbcaaeef49421146e31b7eb411db57044d653c2e0986d5040d32e35de",
+      "bytes": 5137022,
       "precision": "fp16",
-      "run": "its own",
-      "source_commit": "445cefb4033c50977fc6e3b66920bdcf2aabb0b4",
+      "run": "four_class_seed0",
+      "source_commit": "11c59070bdd2e352a138b3d7de0e891cfe844042",
       "provenance": {
         "supervision": "human verdicts",
         "corpus": "data/strange_render"
