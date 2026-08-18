@@ -1,7 +1,7 @@
 """Which locations curation is offered, and in what order.
 
-A release starts from everything every walk has ever found. This module turns
-that union into an ordered offer — best first, per partition — and it answers
+A release starts from the walk ledgers it is bound to. This module turns their
+union into an ordered offer — best first, per partition — and it answers
 exactly one question plus the supply arithmetic that question implies. It does
 not decide how many pictures to make ([`budget`]), it does not choose a palette
 ([`colorize`]), and it does not select a release ([`selection`]).
@@ -23,6 +23,15 @@ than removing it. The two readings are the same recipe through the same head
 ([`fractal_wallpapers.models.location_view`] owns it, so they cannot drift) and
 they share one view cache, so re-scoring a harvested location costs the head and
 not the engine.
+
+## The ledgers are bound, not defaulted
+
+Which ledgers is a decision and it is taken once, by [`binding`], at the run's
+entry — never re-derived here and never defaulted to "everything under
+`artifacts/`". Two harvests ranked into one offer is one funnel printed over two
+populations, and nothing about it looks wrong. Every entry point in this module
+resolves through the binding, so an unbound invocation with more than one ledger
+present refuses and lists them rather than reading them all.
 
 ## One reader, and it is the one the supply engine already has
 
@@ -52,7 +61,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from fractal_wallpapers.curation import floors
+from fractal_wallpapers.curation import binding, floors
 from fractal_wallpapers.models import location_view
 from fractal_wallpapers.paths import repo_root
 from fractal_wallpapers.supply import apportion, ledgers, release_mix
@@ -102,13 +111,16 @@ def view_dir() -> Path:
 # The union, at the gates.
 # --------------------------------------------------------------------------- #
 def gate_survivors(paths=None) -> tuple[list[dict], dict]:
-    """`(rows, diagnostics)` — every location any walk found and no gate refused.
+    """`(rows, diagnostics)` — every bound location no gate refused.
 
     The pre-floor population, which is the denominator of every "N found, M above
     floor" line this module prints. A caller that only kept the passing rows
     could not recover it.
+
+    `paths` is the binding. It is resolved rather than defaulted: `None` means
+    "the only ledger there is", and a refusal when there is more than one.
     """
-    return ledgers.admitted_union(paths, admit=ledgers.passes_gates)
+    return ledgers.admitted_union(binding.resolve(paths), admit=ledgers.passes_gates)
 
 
 def canonical_map() -> str:
@@ -133,11 +145,19 @@ def view_name(row: dict, colormap: str, cyclic: set[str]) -> str:
 # The read: what the location head says about the supply.
 # --------------------------------------------------------------------------- #
 def score(paths=None, device: str = "auto", limit: int | None = None, log=print) -> dict:
-    """Render every gate-surviving location's canonical view and score it.
+    """Render every bound location's canonical view and score it.
 
     Idempotent and resumable in both halves: a view already on disk is not
-    re-rendered, and the sidecar is rewritten whole from the union so a re-run
-    over more ledgers is a superset rather than an append nobody can deduplicate.
+    re-rendered, and the sidecar is **upserted per ledger** rather than rewritten
+    whole. Scoring one binding replaces that binding's rows and leaves every other
+    ledger's alone, so two ledgers scored in two invocations hold their union and
+    a re-score of one is not a deletion of the other. Written whole, this stage
+    made scoping a run a destructive act: narrowing to one harvest's ledger took
+    the sidecar from 12,580 rows to 6,907 and said nothing.
+
+    A `limit` pass is explicitly a prefix, so it upserts the locations it looked
+    at and clears nothing — deleting the rows it declined to re-score would be a
+    partial pass silently truncating a complete one.
     """
     from fractal_wallpapers.models import scoring, ship, train
 
@@ -172,26 +192,30 @@ def score(paths=None, device: str = "auto", limit: int | None = None, log=print)
     )
 
     stamp = floors.live_stamp("location")
-    path = scores_path()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8", newline="\n") as handle:
-        for row, picture, probability in zip(rows, pictures, probabilities, strict=True):
-            record = {
-                "schema": SCHEMA,
-                "head": "location",
-                "head_sha256": stamp,
-                "key": _key_text(row),
-                "ledger": row.get("_ledger"),
-                "node_id": row.get("node_id"),
-                "partition": partition_of_row(row),
-                "family": row["family"],
-                "viewport": row["viewport"],
-                "maxiter": row.get("maxiter"),
-                "view": picture.name,
-            }
-            for index in range(classes - 1):
-                record[f"p_ge{index + 2}"] = float(probability[index])
-            handle.write(json.dumps(record, ensure_ascii=False) + "\n")
+    minted = []
+    for row, picture, probability in zip(rows, pictures, probabilities, strict=True):
+        record = {
+            "schema": SCHEMA,
+            "head": "location",
+            "head_sha256": stamp,
+            "key": _key_text(row),
+            "ledger": row.get("_ledger"),
+            "node_id": row.get("node_id"),
+            "partition": partition_of_row(row),
+            "family": row["family"],
+            "viewport": row["viewport"],
+            "maxiter": row.get("maxiter"),
+            "view": picture.name,
+        }
+        for index in range(classes - 1):
+            record[f"p_ge{index + 2}"] = float(probability[index])
+        minted.append(record)
+
+    # The ledgers this invocation is answerable for, named exactly as the union
+    # stamps them onto a row — including one that contributed nothing, whose
+    # stale rows are still this pass's to clear.
+    scoped = frozenset(diagnostics["per_ledger"]) if limit is None else frozenset()
+    path, upsert = _upsert_scores(minted, scoped)
 
     return {
         "schema": SCHEMA,
@@ -202,8 +226,54 @@ def score(paths=None, device: str = "auto", limit: int | None = None, log=print)
         "views_reused": len(rows) - made,
         "view": location_view.summary(colormap),
         "union": diagnostics,
+        "sidecar": upsert,
         "wrote": str(path),
     }
+
+
+def _upsert_scores(minted: list[dict], scoped) -> tuple[Path, dict]:
+    """Write `minted` into the sidecar, replacing `scoped`'s rows and keeping the rest.
+
+    One row per *location*, because a score is a statement about a place rather
+    than about a ledger row: two ledgers that found the same place hold one row
+    between them, carrying whichever of them scored it last. Sorted by key on the
+    way out, so re-scoring unchanged supply rewrites the same bytes.
+    """
+    path = scores_path()
+    fresh = {row["key"] for row in minted}
+    kept = {
+        row["key"]: row
+        for row in _stored_scores(path)
+        if row.get("ledger") not in scoped and row["key"] not in fresh
+    }
+    merged = dict(kept)
+    for row in minted:
+        merged[row["key"]] = row
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8", newline="\n") as handle:
+        for key in sorted(merged):
+            handle.write(json.dumps(merged[key], ensure_ascii=False) + "\n")
+    return path, {
+        "scoped_ledgers": sorted(scoped),
+        "rows_scored": len(minted),
+        "rows_kept": len(kept),
+        "rows_total": len(merged),
+    }
+
+
+def _stored_scores(path: Path) -> list[dict]:
+    """The sidecar as it stands, or nothing at all. Schema-checked either way."""
+    if not path.is_file():
+        return []
+    out = []
+    for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        if row.get("schema") != SCHEMA:
+            raise IntakeError(f"{path}:{number}: schema {row.get('schema')!r}, expected {SCHEMA}")
+        out.append(row)
+    return out
 
 
 def _cyclic_maps() -> set[str]:
@@ -229,15 +299,7 @@ def read_scores(path: Path | None = None) -> dict:
             f"{path} is missing — nothing has read the supply yet. Run "
             f"`fractal-wallpapers curate score` before an intake."
         )
-    out = {}
-    for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
-        if not line.strip():
-            continue
-        row = json.loads(line)
-        if row.get("schema") != SCHEMA:
-            raise IntakeError(f"{path}:{number}: schema {row.get('schema')!r}, expected {SCHEMA}")
-        out[row["key"]] = row
-    return out
+    return {row["key"]: row for row in _stored_scores(path)}
 
 
 # --------------------------------------------------------------------------- #
@@ -263,6 +325,11 @@ def ranked(paths=None, scores: dict | None = None) -> tuple[dict, dict]:
     it. A row the sidecar has no opinion about keeps a `None` score, sorts last,
     and never passes the junk floor — which is the same answer an unscored row
     gets everywhere else in this project.
+
+    The scores are read unscoped on purpose: the binding decides which *places*
+    are on offer, and a score is a statement about a place. A location this
+    binding offers that some other invocation already scored joins on its key and
+    keeps its number, rather than arriving unscored and dying at the floor.
     """
     survivors, diagnostics = gate_survivors(paths)
     scores = read_scores() if scores is None else scores

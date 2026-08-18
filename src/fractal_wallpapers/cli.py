@@ -349,13 +349,55 @@ def plane_seed_default(name: str):
     return getattr(plane_seeds, name)
 
 
+def ledger_flags(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
+    """The two ways an invocation declares which ledgers it is bound to.
+
+    One definition, because every curation stage has to declare the binding the
+    same way: a flag that exists on `run` and not on `score` is a run scored
+    against a supply it did not release.
+    """
+    parser.add_argument(
+        "--ledger",
+        action="append",
+        help="a walk ledger this invocation is bound to (repeatable). With more than one "
+        "ledger present and none named, the command refuses and lists them",
+    )
+    parser.add_argument(
+        "--harvest",
+        action="append",
+        metavar="DIR",
+        help="a harvest run's --out-dir; its walk.jsonl is the binding (repeatable). The "
+        "usual way to say 'the harvest that fed this run'",
+    )
+    return parser
+
+
+def declared_ledgers(args: argparse.Namespace):
+    """The ledgers this invocation names, or `None` if it named none.
+
+    Resolution — including the refusal when nothing is named and there is more
+    than one ledger to mean — belongs to `curation.binding` and happens where the
+    binding is used, not here: a resumed run names nothing and is bound by its
+    own plan.
+    """
+    from fractal_wallpapers.curation import binding
+
+    harvests = getattr(args, "harvest", None) or []
+    chosen = [resolve_output(p) for p in (args.ledger or [])]
+    chosen += [binding.of_harvest(resolve_output(d)) for d in harvests]
+    return chosen or None
+
+
 def score_parity(args: argparse.Namespace) -> int:
     """Score one batch of real locations both ways and compare."""
-    from fractal_wallpapers.curation import intake
+    from fractal_wallpapers.curation import binding, intake
     from fractal_wallpapers.discovery import scoring
 
-    ledgers = [resolve_output(p) for p in args.ledger] if args.ledger else None
-    rows, _diagnostics = intake.gate_survivors(ledgers)
+    try:
+        rows, _diagnostics = intake.gate_survivors(declared_ledgers(args))
+    except binding.Unbound as refusal:
+        print(refusal)
+        return 1
     candidates = rows[: max(1, int(args.rows))]
     if not candidates:
         print(
@@ -1366,15 +1408,11 @@ def coloring_show(args: argparse.Namespace) -> int:
 
 def curate_score(args: argparse.Namespace) -> int:
     """Read the harvest ledgers through the location head, into curation's sidecar."""
-    from fractal_wallpapers.curation import intake
+    from fractal_wallpapers.curation import binding, intake
 
     try:
-        report = intake.score(
-            [resolve_output(p) for p in args.ledger] if args.ledger else None,
-            device=args.device,
-            limit=args.limit,
-        )
-    except intake.IntakeError as refusal:
+        report = intake.score(declared_ledgers(args), device=args.device, limit=args.limit)
+    except (binding.Unbound, intake.IntakeError) as refusal:
         print(refusal)
         return 1
     print(json.dumps(report, indent=2))
@@ -1383,12 +1421,11 @@ def curate_score(args: argparse.Namespace) -> int:
 
 def curate_plan(args: argparse.Namespace) -> int:
     """Print the offer and the budget it implies, making no picture."""
-    from fractal_wallpapers.curation import budget, floors, intake
+    from fractal_wallpapers.curation import binding, budget, floors, intake
 
-    ledgers = [resolve_output(p) for p in args.ledger] if args.ledger else None
     try:
-        offer, supply = intake.ranked(ledgers)
-    except intake.IntakeError as refusal:
+        offer, supply = intake.ranked(declared_ledgers(args))
+    except (binding.Unbound, intake.IntakeError) as refusal:
         print(refusal)
         return 1
     claims = intake.guaranteed(supply)
@@ -1416,7 +1453,7 @@ def curate_plan(args: argparse.Namespace) -> int:
 
 def curate_run(args: argparse.Namespace) -> int:
     """Make a release: colorize, select, render at full resolution, record it all."""
-    from fractal_wallpapers.curation import intake, records
+    from fractal_wallpapers.curation import binding, intake, records
     from fractal_wallpapers.curation import run as run_module
 
     try:
@@ -1428,13 +1465,18 @@ def curate_run(args: argparse.Namespace) -> int:
             attempts=args.attempts,
             workers=args.workers,
             ephemeral=args.ephemeral,
-            ledgers=[resolve_output(p) for p in args.ledger] if args.ledger else None,
+            ledgers=declared_ledgers(args),
             device=args.device,
             skip_release=args.skip_release,
             wall_budget=args.wall_budget,
             resume=bool(args.resume),
         )
-    except (intake.IntakeError, records.NotIsolated, run_module.RunRefused) as refusal:
+    except (
+        binding.Unbound,
+        intake.IntakeError,
+        records.NotIsolated,
+        run_module.RunRefused,
+    ) as refusal:
         print(refusal)
         return 1
     print(json.dumps(summary, indent=2))
@@ -1748,9 +1790,7 @@ def build_parser() -> argparse.ArgumentParser:
             "either by elimination."
         ),
     )
-    checking.add_argument(
-        "--ledger", action="append", help="a walk ledger to draw candidates from (repeatable)"
-    )
+    ledger_flags(checking)
     checking.add_argument("--rows", type=int, default=6, help="locations to score both ways")
     checking.add_argument(
         "--out-dir",
@@ -2588,21 +2628,18 @@ def curate_commands(subcommands) -> None:
         "curate",
         help="make a release: score the supply, colorize, select, render at full size",
         description=(
-            "The end-to-end path. `score` reads the harvest ledgers through the location "
-            "head into a sidecar this stage owns — the ledgers themselves are never "
-            "rewritten — `plan` prints the offer and the budget it implies without making a "
-            "picture, and `run` does the whole thing and records every decision."
+            "The end-to-end path. Every step is bound to the ledgers it reads — name them "
+            "with --ledger, or name the harvest that wrote them with --harvest; nothing "
+            "defaults to all of them. `score` reads the bound ledgers through the location "
+            "head into a sidecar this stage owns, upserting one binding's rows without "
+            "touching another's and never rewriting a ledger; `plan` prints the offer and "
+            "the budget it implies without making a picture; and `run` does the whole thing, "
+            "records its binding in its own plan, and records every decision."
         ),
     )
     steps = curating.add_subparsers(dest="step", required=True)
 
-    def with_ledgers(parser):
-        parser.add_argument(
-            "--ledger", action="append", help="a walk ledger (repeatable; default: all of them)"
-        )
-        return parser
-
-    reading = with_ledgers(
+    reading = ledger_flags(
         steps.add_parser(
             "score",
             help="read the harvest ledgers through the location head",
@@ -2639,7 +2676,7 @@ def curate_commands(subcommands) -> None:
         return parser
 
     planning = with_shape(
-        with_ledgers(
+        ledger_flags(
             steps.add_parser(
                 "plan",
                 help="print the offer and the budget it implies, making nothing",
@@ -2649,7 +2686,7 @@ def curate_commands(subcommands) -> None:
     planning.set_defaults(handler=curate_plan)
 
     running = with_shape(
-        with_ledgers(
+        ledger_flags(
             steps.add_parser(
                 "run",
                 help="make a release and record every decision",

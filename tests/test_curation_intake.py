@@ -159,3 +159,88 @@ def test_a_score_read_needs_a_sidecar_before_it_can_rank(tmp_path, monkeypatch) 
     monkeypatch.setattr(intake, "store_dir", lambda: tmp_path)
     with pytest.raises(intake.IntakeError):
         intake.read_scores()
+
+
+# --------------------------------------------------------------------------- #
+# The sidecar: one upsert per ledger, never a wholesale rewrite.
+# --------------------------------------------------------------------------- #
+def written(path, centers) -> object:
+    """A walk ledger holding one gate-surviving candidate per centre."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("".join(json.dumps(candidate(c)) + "\n" for c in centers), encoding="utf-8")
+    return path
+
+
+@pytest.fixture
+def score(tmp_path, monkeypatch):
+    """`intake.score`, with the renderer and the head stubbed out.
+
+    What is under test is which rows the sidecar keeps across invocations, not
+    what the judge said about them, and the real halves need a release engine and
+    a shipped head that this question does not depend on.
+    """
+    from fractal_wallpapers.models import scoring, ship, train
+
+    monkeypatch.setattr(intake, "store_dir", lambda: tmp_path / "curation")
+    monkeypatch.setattr(intake, "view_dir", lambda: tmp_path / "views")
+    monkeypatch.setattr(intake.floors, "live_stamp", lambda head: "a-stamp")
+    monkeypatch.setattr(intake.location_view, "canonical_map", lambda: "twilight_shifted")
+    monkeypatch.setattr(intake.location_view, "cyclic_maps", lambda: set())
+    monkeypatch.setattr(intake.location_view, "summary", lambda colormap: {"map": colormap})
+    monkeypatch.setattr(
+        intake.location_view,
+        "render_view",
+        lambda row, colormap, cyclic, directory: (directory / f"{row['node_id']}.jpg", False),
+    )
+    monkeypatch.setattr(ship, "shipped_path", lambda head: tmp_path / "head.pt")
+    monkeypatch.setattr(scoring, "load", lambda path, device: (None, {"classes": 4}, "cpu"))
+    monkeypatch.setattr(scoring, "transform_of", lambda config: None)
+    monkeypatch.setattr(
+        train, "score", lambda model, pictures, *rest: [[0.9, 0.8, 0.7]] * len(pictures)
+    )
+    return lambda paths, **kw: intake.score(paths, log=lambda _m: None, **kw)
+
+
+def test_two_ledgers_scored_in_two_invocations_hold_their_union(tmp_path, score) -> None:
+    """Scoping a run's scoring to its own ledger used to be destructive: it took
+    the sidecar from 12,580 rows to 6,907 and reported nothing about the 5,673."""
+    first = written(tmp_path / "a" / "walk.jsonl", ["-0.5", "-0.6"])
+    second = written(tmp_path / "b" / "walk.jsonl", ["-0.7"])
+    score([first])
+    report = score([second])
+    assert (report["sidecar"]["rows_scored"], report["sidecar"]["rows_kept"]) == (1, 2)
+    assert len(intake.read_scores()) == 3
+
+
+def test_re_scoring_one_ledger_replaces_its_own_rows_and_touches_no_other(tmp_path, score) -> None:
+    first = written(tmp_path / "a" / "walk.jsonl", ["-0.5", "-0.6"])
+    second = written(tmp_path / "b" / "walk.jsonl", ["-0.7"])
+    score([first])
+    score([second])
+    before = intake.scores_path().read_bytes()
+
+    report = score([first])
+    assert report["sidecar"]["rows_scored"] == 2, "its own rows, minted again"
+    assert report["sidecar"]["rows_kept"] == 1, "the other ledger's row, untouched"
+    assert intake.scores_path().read_bytes() == before, "an idempotent re-score"
+
+
+def test_a_ledger_that_lost_a_location_loses_its_row(tmp_path, score) -> None:
+    """The replacement is per ledger rather than per row, so a re-score is the
+    ledger's whole current answer and not a merge with its old one."""
+    first = written(tmp_path / "a" / "walk.jsonl", ["-0.5", "-0.6"])
+    written(tmp_path / "b" / "walk.jsonl", ["-0.7"])
+    score([first])
+    score([tmp_path / "b" / "walk.jsonl"])
+    written(first, ["-0.5"])
+    score([first])
+    assert sorted(row["node_id"] for row in intake.read_scores().values()) == ["-0.5", "-0.7"]
+
+
+def test_a_limited_pass_upserts_what_it_looked_at_and_clears_nothing(tmp_path, score) -> None:
+    """A prefix is not an answer about the rows it never reached."""
+    ledger = written(tmp_path / "a" / "walk.jsonl", ["-0.5", "-0.6"])
+    score([ledger])
+    report = score([ledger], limit=1)
+    assert report["sidecar"]["scoped_ledgers"] == []
+    assert len(intake.read_scores()) == 2

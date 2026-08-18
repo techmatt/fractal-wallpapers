@@ -107,7 +107,16 @@ def test_a_candidate_recolor_that_cannot_be_read_is_made_again(tmp_path) -> None
 # --------------------------------------------------------------------------- #
 # The shape of a run, fixed once.
 # --------------------------------------------------------------------------- #
+def a_ledger(tmp_path):
+    """The walk ledger a run is bound to. A run declares one; there is no default."""
+    path = tmp_path / "supply" / "walk.jsonl"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("", encoding="utf-8")
+    return path
+
+
 def shape_of(tmp_path, resume=False, log=None, **given) -> dict:
+    given.setdefault("ledgers", [a_ledger(tmp_path)])
     asked = {name: given.get(name) for name in run_module.SHAPE}
     return run_module._shape(tmp_path, "v1", resume, asked, log or (lambda _m: None))
 
@@ -118,6 +127,34 @@ def test_a_fresh_run_writes_its_shape_down(tmp_path) -> None:
     assert shape["strange_share"] == run_module.STRANGE_SHARE
     stored = json.loads((tmp_path / "run_plan.json").read_text(encoding="utf-8"))
     assert stored == shape and stored["schema"] == run_module.PLAN_SCHEMA
+
+
+def test_the_plan_records_the_binding_and_a_resume_reads_it_back(tmp_path) -> None:
+    """Which ledgers a run drew from is part of its shape, not a flag per stage:
+    a resume that re-derived it could continue a run against another supply."""
+    ledger = a_ledger(tmp_path)
+    assert shape_of(tmp_path, n=4, ledgers=[ledger])["ledgers"] == [str(ledger.resolve())]
+    resumed = shape_of(tmp_path, resume=True, ledgers=None)
+    assert resumed["ledgers"] == [str(ledger.resolve())]
+
+
+def test_a_binding_spelled_differently_is_the_same_binding(tmp_path) -> None:
+    """The plan holds resolved names, so a resume that retypes --ledger with a
+    `.` in it is agreeing rather than contradicting."""
+    ledger = a_ledger(tmp_path)
+    shape_of(tmp_path, n=4, ledgers=[ledger])
+    other = ledger.parent / "." / ledger.name
+    assert shape_of(tmp_path, resume=True, ledgers=[other])["ledgers"] == [str(ledger.resolve())]
+
+
+def test_a_run_bound_to_another_supply_cannot_resume_this_one(tmp_path) -> None:
+    ledger = a_ledger(tmp_path)
+    shape_of(tmp_path, n=4, ledgers=[ledger])
+    second = tmp_path / "other" / "walk.jsonl"
+    second.parent.mkdir(parents=True)
+    second.write_text("", encoding="utf-8")
+    with pytest.raises(run_module.RunRefused, match="different shape"):
+        shape_of(tmp_path, resume=True, ledgers=[second])
 
 
 def test_a_second_run_under_the_same_name_is_a_refusal_not_a_restart(tmp_path) -> None:
