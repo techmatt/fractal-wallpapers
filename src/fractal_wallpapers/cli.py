@@ -502,7 +502,7 @@ def walk(args: argparse.Namespace) -> int:
 
 def harvest(args: argparse.Namespace) -> int:
     """Run the production loop: keep finding material where it is scarcest."""
-    from fractal_wallpapers.discovery.walk import Limits, Policy, Walk
+    from fractal_wallpapers.discovery.walk import Limits, Policy, Reframings, Walk
     from fractal_wallpapers.supply import ledgers, release_mix, saturation, twins
     from fractal_wallpapers.supply.census import stock_census
     from fractal_wallpapers.supply.harvest import Budget, Harvest
@@ -512,19 +512,27 @@ def harvest(args: argparse.Namespace) -> int:
     from fractal_wallpapers.supply.refill import Refill
 
     run_dir = resolve_output(args.out_dir)
+    limits = Limits(
+        batch=args.batch,
+        root_expansions=args.root_expansions,
+        plane_grace_rungs=args.plane_grace_rungs,
+    )
+    if args.probe is not None:
+        limits.probe_probability = args.probe
     walk_run = Walk(
         out_dir=run_dir,
         seed=args.seed,
-        limits=Limits(
-            batch=args.batch,
-            root_expansions=args.root_expansions,
-            plane_grace_rungs=args.plane_grace_rungs,
-        ),
+        limits=limits,
         policy=Policy(candidates=args.candidates, node_width=args.node_width),
+        reframings=Reframings(neighborhood=args.neighborhood),
         colormap=args.colormap,
         scorer=build_scorer(args),
     )
-    partitions = list(ALL_PARTITIONS)
+    # A run told which partitions to keep books for keeps them for those alone:
+    # the census, the allocation, the refill census and the served mix all read
+    # this list, so naming one partition is how a leg spends a whole clock there
+    # rather than steering toward it and hoping.
+    partitions = list(args.partition or ALL_PARTITIONS)
     quota = Quota(
         partitions,
         run_dir,
@@ -1553,6 +1561,9 @@ def modes(args: argparse.Namespace) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
+    from fractal_wallpapers.discovery.walk import Limits as WalkLimits
+    from fractal_wallpapers.supply.partitions import ALL_PARTITIONS
+
     parser = argparse.ArgumentParser(
         prog="fractal-wallpapers",
         description="ML-steered fractal wallpaper generator.",
@@ -1726,6 +1737,26 @@ def build_parser() -> argparse.ArgumentParser:
     )
     production.add_argument("--candidates", type=int, default=4, help="candidates drawn per node")
     production.add_argument("--node-width", type=int, default=384, help="node render width")
+    production.add_argument(
+        "--partition",
+        action="append",
+        choices=list(ALL_PARTITIONS),
+        help="keep the books for this partition alone (repeatable; default: every one). A "
+        "run told one partition allocates its whole clock there, and its census, price "
+        "and refill census cover that partition only",
+    )
+    production.add_argument(
+        "--probe",
+        type=float,
+        default=None,
+        help="probability the reframing probe fires on an admission (default: "
+        f"{WalkLimits.probe_probability})",
+    )
+    production.add_argument(
+        "--neighborhood",
+        action="store_true",
+        help="also enumerate neighbouring nuclei (the expensive operator; off by default)",
+    )
     production.add_argument(
         "--floor",
         type=float,
