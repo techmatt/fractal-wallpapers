@@ -59,6 +59,33 @@ def test_the_supply_engine_is_four_subcommands_and_no_scripts() -> None:
     assert parse(["derive-tau-h"]).handler is cli.derive_tau_h
 
 
+def test_a_run_can_be_told_to_keep_one_partition_s_books_alone() -> None:
+    """A leg aimed at one partition has to be able to say so. Steering toward it
+    through the mix is not the same statement: the census, the allocation and the
+    refill census all read the partition list, so naming one spends the whole
+    clock there instead of whatever share the standing deficit implies."""
+    parse = cli.build_parser().parse_args
+    assert parse(["harvest"]).partition is None
+    assert parse(["harvest", "--partition", "mandelbrot"]).partition == ["mandelbrot"]
+    assert parse(["harvest", "--partition", "mandelbrot", "--partition", "phoenix"]).partition == [
+        "mandelbrot",
+        "phoenix",
+    ]
+    with pytest.raises(SystemExit):
+        parse(["harvest", "--partition", "not-a-partition"])
+
+
+def test_the_reframing_channel_is_reachable_from_the_production_loop() -> None:
+    """`walk` could turn the probe up and the neighbourhood operator on and
+    `harvest` could not, so the one command that runs for hours was the one that
+    could not reach the channel. Both, or the flag on `walk` is a demo."""
+    parse = cli.build_parser().parse_args
+    assert parse(["harvest"]).probe is None
+    assert parse(["harvest"]).neighborhood is False
+    assert parse(["harvest", "--probe", "1.0"]).probe == 1.0
+    assert parse(["harvest", "--neighborhood"]).neighborhood is True
+
+
 def test_a_derivation_does_not_overwrite_a_shipped_table_unasked() -> None:
     """A table is the record of a decision. Replacing one is a deliberate act, so
     the default is to print what would be written."""

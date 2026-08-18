@@ -67,6 +67,7 @@ costing in that partition. Being cheap buys more turns, not more time.
 ```
 fractal-wallpapers census
 fractal-wallpapers harvest --minutes 90 --batch 8
+fractal-wallpapers harvest --partition mandelbrot --seeds proven.jsonl   # one leg, one book
 fractal-wallpapers derive-prices --run artifacts/harvest --regularize --write
 fractal-wallpapers derive-tau-h --write
 ```
