@@ -2,7 +2,7 @@
 
 A sheet is one cut, one manifest, one export. It is built into an untracked run
 directory, served by [`fractal_wallpapers.labeling.server`], and comes back as a
-single `labels/<head>.json` that [`fractal_wallpapers.labeling.intake`] turns
+single `labels/<head>.<sheet>.json` that [`fractal_wallpapers.labeling.intake`] turns
 into store rows. Nothing else writes a label.
 
 ## Two row sources, and everything after them is shared
@@ -49,12 +49,16 @@ The intended sheet serves a head's own decode as a **prefilled suggestion**,
 orders the page good→bad by its score, and offers a sweep that accepts every
 suggestion below a chosen row behind a confirmation. That is what makes a
 labeling hour worth more than a blind one: the labeler spends it on the rows the
-head got wrong. The two finished-render judges exist and do this. No location
-head exists in this repository yet, and that sheet says so rather than pretending
-— with the null scorer there are no suggestions, no sweep and no score order, and
-the page serves a **seeded shuffle**, which is unsorted with respect to anything
-but is still reproducible, and is not draw order, because draw order arrives in
-blocks and a block of one source's material drags the bar.
+head got wrong. All three judges do this, the location head included, and the
+scorer is the one the walk and the harvest consult, so the judge that prefills a
+correction sheet is the judge that scored the ledger it was cut from.
+
+**A blind page is still a page, and it is `--no-scoring`.** With the null scorer
+there are no suggestions, no sweep and no score order, and the sheet serves a
+**seeded shuffle** — unsorted with respect to anything but reproducible, and not
+draw order, because draw order arrives in blocks and a block of one source's
+material drags the bar. That is what an evaluation instrument is cut as, and it
+is now a decision rather than the only thing the rig could do.
 
 **A suggestion is not a label.** A sheet row carries no score field at all. The
 only thing that becomes a label is what a person exported from the page, and
@@ -241,6 +245,53 @@ LOCATION_RUBRIC = (
 )
 
 
+def stated_suggestions(units: list[dict], tiers: tuple) -> list:
+    """What the plan prefilled, one per unit — all of them, or none of them.
+
+    A revision sheet prefills the **incumbent verdict**, which is the stored
+    label and not any head's decode, and is the only prefill that can name a tier
+    the shipped checkpoint cannot reach. It is all-or-none because the manifest
+    records one `suggested_by` for the page: prefills that mean an incumbent
+    verdict on one row and a decode on the next cannot be read back as either.
+
+    One rule, both sources — the location sheet and the finished-render sheet
+    ask the same question of a plan and must not answer it two ways.
+    """
+    stated = [unit.get("suggestion") for unit in units]
+    if any(value is not None for value in stated) and not all(
+        value is not None for value in stated
+    ):
+        raise SheetError(
+            "some plan units state a suggestion and some leave it to the head. A page whose "
+            "prefills mean an incumbent verdict on one row and a decode on the next cannot be "
+            "read back as either, so a sheet states all of them or none."
+        )
+    for value in stated:
+        if value is not None and value not in tiers:
+            raise SheetError(
+                f"a plan unit states suggestion {value!r}, which is not one of {tiers}"
+            )
+    return stated
+
+
+def readings(scorer, units: list[dict], log) -> list:
+    """One reading per unit, through the batch door where the scorer has one.
+
+    [`fractal_wallpapers.discovery.scoring.Scorer`] keeps both doors on purpose:
+    `read` is the batch one, because the expensive part of an opinion is a render
+    and renders fan out, and `score` is the single-candidate one. A sheet asks
+    for the whole page at once and falls back to the other, so a scorer that only
+    ranks still orders a page.
+    """
+    from fractal_wallpapers.discovery.scoring import Reading
+
+    reader = getattr(scorer, "read", None)
+    if reader is None:
+        return [Reading(score=scorer.score(unit)) for unit in units]
+    log(f"reading {len(units)} locations through {getattr(scorer, 'name', 'the scorer')}")
+    return list(reader(units))
+
+
 def location_source(
     scorer=None,
     renderer=None,
@@ -262,6 +313,7 @@ def location_source(
             picture.parent.mkdir(parents=True, exist_ok=True)
         report = render(unit, canonical_png, vivid_png, resolution, supersample) or {}
         return {
+            "section": unit.get("section") or "",
             "join": {
                 "family": unit["family"],
                 "viewport": unit["viewport"],
@@ -282,28 +334,57 @@ def location_source(
             "facts": [
                 family_line(unit["family"]),
                 viewport_line(unit["viewport"], report.get("maxiter", unit.get("maxiter"))),
+                *(str(line) for line in (unit.get("facts") or [])),
             ],
         }
 
     def suggest(rows: list[dict], units: list[dict], log) -> str:
-        del log
-        for row, unit in zip(rows, units, strict=True):
-            # A location head would decode a tier here. None exists, and a sheet
-            # that invented one would be serving a suggestion nobody stands behind.
-            row["suggestion"] = None
-            row["suggestion_score"] = scorer.score(unit)
+        stated = stated_suggestions(units, tuple(store.SCORES))
+        for row, reading, incumbent in zip(rows, readings(scorer, units, log), stated, strict=True):
+            # The decode reaches as far as the CHECKPOINT can and no further: the
+            # head emits one probability per cutpoint, and a tier above the last
+            # of them is one it has no opinion about. A scorer that hands back a
+            # bare number — the null one, and any judge that only ranks — orders
+            # the page and suggests nothing, because a rank is not a tier.
+            probabilities = tuple(reading.probabilities)
+            row["columns"] = {
+                f"p_ge{index + 2}": float(value) for index, value in enumerate(probabilities)
+            }
+            row["suggestion_score"] = float(sum(probabilities)) if probabilities else reading.score
+            if incumbent is not None:
+                row["suggestion"] = int(incumbent)
+            elif probabilities:
+                row["suggestion"] = min(
+                    len(probabilities) + 1,
+                    1 + sum(1 for value in probabilities if value >= 0.5),
+                )
+            else:
+                row["suggestion"] = None
         return getattr(scorer, "name", "null")
 
     def order(rows: list[dict], seed: int) -> tuple[list[int], str]:
+        """Sections in the order the plan introduced them, each good→bad inside."""
+        sections: list[str] = []
+        for row in rows:
+            if row["section"] not in sections:
+                sections.append(row["section"])
         scores = [row["suggestion_score"] for row in rows]
         if any(score is not None for score in scores):
             indices = sorted(
                 range(len(rows)),
-                key=lambda i: (scores[i] is None, -(scores[i] or 0.0), i),
+                key=lambda i: (
+                    sections.index(rows[i]["section"]),
+                    scores[i] is None,
+                    -(scores[i] or 0.0),
+                    i,
+                ),
             )
-            return indices, "score"
+            return indices, "score" if len(sections) == 1 else "sections"
         indices = list(range(len(rows)))
         random.Random(seed).shuffle(indices)
+        if len(sections) > 1:
+            indices.sort(key=lambda i: sections.index(rows[i]["section"]))
+            return indices, "sections"
         return indices, "shuffle"
 
     return Source(
@@ -568,15 +649,7 @@ def finished_source(
         thumbs = [row.pop("_thumb") for row in rows]
         for picture, thumb in zip(pictures, thumbs, strict=True):
             thumbnail(picture, thumb)
-        incumbent = [unit.get("suggestion") for unit in units]
-        if any(value is not None for value in incumbent) and not all(
-            value is not None for value in incumbent
-        ):
-            raise SheetError(
-                "some plan units state a suggestion and some leave it to the head. A page "
-                "whose prefills mean an incumbent verdict on one row and a decode on the next "
-                "cannot be read back as either, so a sheet states all of them or none."
-            )
+        incumbent = stated_suggestions(units, finished.tiers(head))
         if scores is None:
             log(f"scoring {len(pictures)} pictures through the shipped {head}")
             probabilities, classes = score_pictures(head, pictures)
@@ -595,11 +668,6 @@ def finished_source(
                 # above them is one it has no opinion about.
                 row["suggestion"] = min(
                     classes, 1 + sum(1 for value in probability if value >= 0.5)
-                )
-            elif stated not in finished.tiers(head):
-                raise SheetError(
-                    f"a plan unit states suggestion {stated!r}, which is not one of "
-                    f"{finished.tiers(head)}"
                 )
             else:
                 row["suggestion"] = int(stated)
@@ -684,6 +752,42 @@ def units_from_batch(batch: str) -> list[dict]:
         }
         for _key, row in sorted(resolution.current.items())
     ]
+
+
+def units_from_location_plan(path: Path) -> list[dict]:
+    """Sheet units from a written plan of *places* — a selection somebody made.
+
+    The location twin of [`units_from_plan`], and it exists for the same reason:
+    a stratified draw, a top-scored slice, an anchor section — these are
+    decisions, and this generator does not make them. A unit names its place and
+    the iteration cap it was found at; `section` groups it on the page, `batch`
+    keeps its own registration where the plan re-serves a row some other batch
+    drew, and `facts` are extra lines for the card.
+
+    A plan that states no `maxiter` is refused rather than defaulted. The head
+    reads a canonical view addressed by the digest of its whole recipe, and the
+    cap is in that digest — so a unit short of one is a unit whose view is a
+    fresh render of a picture the walk already made and scored.
+    """
+    path = Path(path)
+    if not path.is_file():
+        raise SheetError(f"{path} does not exist; a planned location sheet is cut from a plan")
+    units = []
+    for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        line = line.strip()
+        if not line:
+            continue
+        unit = json.loads(line)
+        missing = [key for key in ("family", "viewport", "maxiter") if unit.get(key) is None]
+        if missing:
+            raise SheetError(
+                f"{path}:{number}: a plan unit names no {', '.join(missing)}. A location is a "
+                f"family and a frame, and the cap is what the head's view is addressed by."
+            )
+        units.append(unit)
+    if not units:
+        raise SheetError(f"{path} holds no units")
+    return units
 
 
 def units_from_plan(path: Path) -> list[dict]:

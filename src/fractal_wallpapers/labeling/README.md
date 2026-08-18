@@ -21,6 +21,7 @@ Everything runnable here is a `fractal-wallpapers label` subcommand:
 ```
 label register --batch NAME --method "how the population was drawn" [--head smooth_render]
 label build --from-ledger artifacts/walk/walk.jsonl --batch NAME
+label build --from-plan artifacts/places.jsonl --batch NAME
 label build --from-plan artifacts/promotion.jsonl --head strange_render --batch NAME
 label serve --sheet artifacts/sheet
 label ingest --sheet artifacts/sheet --labeler matt --write
@@ -72,10 +73,14 @@ a miss.
 
 ## One ingest, two stores
 
-**A page saves to `labels/<head>.json`, and that is the whole convention.** The
-name is the head the sheet was cut for, never a generic one: two sheets are open
-in two tabs during a session, and `labels.json` twice is one file overwriting the
-other. The rig takes the save itself — `PUT /labels/<head>.json` — so a session
+**A page saves to `labels/<head>.<sheet>.json`, and that is the whole
+convention.** The name is the head the sheet was cut for *and* the sheet's own
+name, never a generic one and never the head alone: two sheets are open in two
+tabs during a session, `labels.json` twice is one file overwriting the other, and
+two sheets cut for one judge is the same collision with a worse ending — both
+pages number their rows from `u0001`, so a shared drop is either refused for
+being short or joined, unit for unit, against the wrong sheet's places. The rig
+takes the save itself — `PUT /labels/<head>.<sheet>.json` — so a session
 does not end with a file in a download directory somebody has to move, and a
 static server that refuses the endpoint gets the same file downloaded under the
 same name. The drop is untracked, ignored, and disposable; `label ingest` is what
@@ -122,7 +127,8 @@ under a fresh identifier is the same place and cannot spend the instrument.
 
 The rig's design is correction mode: a head's own verdict prefilled, the page
 ordered good→bad by its score, and a sweep that accepts everything below a chosen
-row behind a confirmation. The two finished-render judges do this. No location
-head exists here yet, so that sheet serves a seeded shuffle with no suggestions
-and no sweep. The invariant holds in both modes and is the one worth stating
-twice: **a suggestion is not a label**.
+row behind a confirmation. All three judges do this, and the location sheet
+consults the same scorer the walk does. `--no-scoring` is the other mode — no
+suggestions, no sweep, a seeded shuffle — and it is what an instrument is cut as.
+The invariant holds in both modes and is the one worth stating twice: **a
+suggestion is not a label**.

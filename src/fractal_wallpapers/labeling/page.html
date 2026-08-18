@@ -292,13 +292,14 @@ el("zoom").onclick = () => { el("zoom").style.display = "none"; };
 // The export: one entry per row a PERSON acted on, and nothing else. A suggestion
 // the labeler never looked at is absent from it, so it cannot reach the store as a
 // verdict. Where it goes and what it is called are decided in export_control.js,
-// once, for every sheet this project serves — labels/<head>.json, saved by the rig,
-// downloaded under the same name if it cannot be.
+// once, for every sheet this project serves — labels/<head>.<sheet>.json, saved by
+// the rig, downloaded under the same name if it cannot be.
 el("export").onclick = async () => {
   const out = {};
   Object.keys(scores).sort().forEach(k => { if (scores[k]) out[k] = {score: scores[k]}; });
-  const done = await labelExport.save(MANIFEST.head, out);
-  el("export").textContent = (done.saved ? "saved " : "downloaded ") + MANIFEST.head + ".json";
+  const done = await labelExport.save(MANIFEST.head, MANIFEST.batch, out);
+  el("export").textContent =
+    (done.saved ? "saved " : "downloaded ") + labelExport.exportName(MANIFEST.head, MANIFEST.batch);
   if (!done.saved) { el("loader-msg").textContent = done.note; alert(done.note); }
 };
 

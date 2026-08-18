@@ -121,11 +121,17 @@ class Reading:
     one the currency's ten-to-one weighting reads. `error` is set when there was
     no picture to ask about, so a failed render is a stated fact rather than a
     silent absence of opinion.
+
+    `probabilities` is every cutpoint the head emitted, `P(≥2)` first — the two
+    named fields are the two the walk spends, and a *tier* is not derivable from
+    either of them alone. The labeling rig decodes one, so the whole vector
+    travels rather than being read a second way out of a second call.
     """
 
     score: float | None = None
     great: float | None = None
     error: str | None = None
+    probabilities: tuple = ()
 
 
 #: The reading a scorer with nothing to say hands back.
@@ -476,6 +482,8 @@ class LocationScorer:
             out[index] = Reading(
                 float(probability[1]),
                 float(probability[2]) if classes > 3 else None,
+                None,
+                tuple(float(value) for value in probability),
             )
             self.tally["read"] += 1
         return out

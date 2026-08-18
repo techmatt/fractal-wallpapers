@@ -52,6 +52,23 @@ class Head:
         return True
 
 
+class Judge:
+    """A head with cutpoints, standing in for the shipped location one."""
+
+    name = "location:abcdef012345"
+
+    def __init__(self, vectors):
+        self.vectors = vectors
+
+    def read(self, units):
+        from fractal_wallpapers.discovery.scoring import Reading
+
+        return [
+            Reading(vector[1], vector[2] if len(vector) > 2 else None, None, tuple(vector))
+            for vector in (self.vectors[u["viewport"]["center_re"]] for u in units)
+        ]
+
+
 def build(tmp_path, units, scorer=None, seed=0, **kwargs):
     source = sheets.location_source(scorer=scorer, renderer=stub)
     return sheets.build(
@@ -94,6 +111,72 @@ def test_with_a_head_the_page_is_ordered_good_to_bad(tmp_path) -> None:
     assert sheet.manifest["order"] == "score"
     assert sheet.manifest["scorer"] == "a_head"
     assert [r["suggestion_score"] for r in sheet.rows] == [0.9, 0.7, 0.5, 0.1]
+
+
+def test_a_head_with_cutpoints_prefills_a_tier_and_surfaces_every_column(tmp_path) -> None:
+    """The decode reaches as far as the checkpoint can: one cutpoint cleared is a
+    2, all three are a 4, and the columns are the head's own numbers."""
+    judge = Judge(
+        {
+            "0.0": [0.9, 0.8, 0.7],
+            "0.1": [0.9, 0.8, 0.2],
+            "0.2": [0.9, 0.1, 0.0],
+            "0.3": [0.1, 0.0, 0.0],
+        }
+    )
+    sheet = build(tmp_path, [unit(i) for i in range(4)], scorer=judge)
+    assert [row["suggestion"] for row in sheet.rows] == [4, 3, 2, 1]
+    assert sheet.manifest["suggested_tiers"] == {"1": 1, "2": 1, "3": 1, "4": 1}
+    assert sheet.manifest["scorer"] == judge.name
+    assert sheet.manifest["suggested_by"] == judge.name
+    assert sheet.rows[0]["columns"] == {"p_ge2": 0.9, "p_ge3": 0.8, "p_ge4": 0.7}
+
+
+def test_a_scorer_that_only_ranks_orders_the_page_and_suggests_nothing(tmp_path) -> None:
+    """A rank is not a tier. The old location page was this, and it is what a
+    judge without cutpoints still gets."""
+    head = Head({"0.0": 0.1, "0.1": 0.9})
+    sheet = build(tmp_path, [unit(0), unit(1)], scorer=head)
+    assert [row["suggestion"] for row in sheet.rows] == [None, None]
+    assert [row["columns"] for row in sheet.rows] == [{}, {}]
+    assert sheet.manifest["order"] == "score"
+
+
+def test_sections_lead_in_plan_order_and_each_reads_good_to_bad(tmp_path) -> None:
+    """Anchor rows first, and the head's order inside every section — so a sweep
+    from a chosen row cannot reach back over the rows that set the scale."""
+    judge = Judge({"0.0": [0.2, 0.1, 0.0], "0.1": [0.9, 0.9, 0.9], "0.2": [0.9, 0.5, 0.1]})
+    units = [
+        {**unit(0), "section": "the 4 bar"},
+        {**unit(1), "section": "the draw"},
+        {**unit(2), "section": "the draw"},
+    ]
+    sheet = build(tmp_path, units, scorer=judge)
+    assert sheet.manifest["order"] == "sections"
+    assert [row["section"] for row in sheet.rows] == ["the 4 bar", "the draw", "the draw"]
+    assert [row["join"]["viewport"]["center_re"] for row in sheet.rows] == ["0.0", "0.1", "0.2"]
+    assert sheet.manifest["sections"] == {"the 4 bar": 1, "the draw": 2}
+
+
+def test_a_location_plan_may_prefill_the_incumbent_verdict(tmp_path) -> None:
+    """One rule, both sources: a stated suggestion is the verdict a row already
+    carries, and a page states all of them or none."""
+    judge = Judge({"0.0": [0.2, 0.1, 0.0], "0.1": [0.9, 0.9, 0.2]})
+    units = [{**unit(0), "suggestion": 4}, {**unit(1), "suggestion": 1}]
+    sheet = build(tmp_path, units, scorer=judge)
+    assert [row["suggestion"] for row in sheet.rows] == [1, 4]
+    assert sheet.manifest["suggested_by"] == "plan"
+    with pytest.raises(sheets.SheetError, match="all of them or none"):
+        build(tmp_path / "mixed", [{**unit(0), "suggestion": 4}, unit(1)], scorer=judge)
+    with pytest.raises(sheets.SheetError, match="not one of"):
+        build(tmp_path / "off", [{**unit(0), "suggestion": 7}], scorer=judge)
+
+
+def test_a_location_plan_row_keeps_the_batch_it_was_drawn_from(tmp_path) -> None:
+    units = [{**unit(0), "batch": "top_tier_anchor"}, unit(1)]
+    sheet = build(tmp_path, units)
+    assert {row["batch"] for row in sheet.rows} == {"top_tier_anchor", "a_batch"}
+    assert sheet.manifest["batches"] == {"a_batch": 1, "top_tier_anchor": 1}
 
 
 def test_the_unit_id_is_assigned_after_the_order_is_fixed(tmp_path) -> None:
@@ -225,6 +308,22 @@ def test_units_come_off_a_stored_batch_at_its_current_verdict(store_dir, registe
     units = sheets.units_from_batch("a_batch")
     assert len(units) == 1
     assert units[0]["maxiter"] == 900
+
+
+def test_a_location_plan_unit_short_of_its_cap_is_refused(tmp_path) -> None:
+    """The head's view is addressed by a digest the cap is inside, so a unit
+    without one is a fresh render of a picture the walk already scored."""
+    plan = tmp_path / "plan.jsonl"
+    plan.write_text(json.dumps({"family": MANDELBROT}) + "\n", encoding="utf-8")
+    with pytest.raises(sheets.SheetError, match="viewport, maxiter"):
+        sheets.units_from_location_plan(plan)
+
+
+def test_a_location_plan_reads_back_the_units_it_holds(tmp_path) -> None:
+    plan = tmp_path / "plan.jsonl"
+    written = {**unit(3), "section": "the draw", "batch": "a_batch", "facts": ["rung 7"]}
+    plan.write_text(json.dumps(written) + "\n", encoding="utf-8")
+    assert sheets.units_from_location_plan(plan) == [written]
 
 
 def test_a_plan_unit_short_of_the_recipe_is_refused_before_a_pixel_is_rendered(tmp_path) -> None:

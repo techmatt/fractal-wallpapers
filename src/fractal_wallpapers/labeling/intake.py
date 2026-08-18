@@ -26,8 +26,11 @@ them ever grew the count checks.
 
 ## The drop
 
-A page writes what it exported to `labels/<head>.json` — the head's own name,
-through [`store.export_path`]. [`write_export`] is the only writer of that file
+A page writes what it exported to `labels/<head>.<sheet>.json` — the judge it was
+cut for and its own name — through [`store.export_path`], because two sheets cut
+for one judge in one session both number their rows from `u0001` and a shared
+drop is joined against the wrong sheet's places. [`write_export`] is the only
+writer of that file
 and it refuses one shape: a payload that does not carry every unit the file
 already holds. Everything else about a session is repeatable, and that one is
 not.
@@ -257,7 +260,7 @@ def read_export(path: Path) -> dict[str, int]:
     return out
 
 
-def write_export(head: str, payload: dict) -> Path:
+def write_export(head: str, payload: dict, sheet: str = "") -> Path:
     """Write `head`'s drop, and refuse the one write that loses a verdict.
 
     A page exports everything it holds, so a payload is always a superset of the
@@ -269,7 +272,7 @@ def write_export(head: str, payload: dict) -> Path:
     Written to a temporary and renamed into place, so the file is never the
     half-written one a killed process leaves.
     """
-    path = store.export_path(head)
+    path = store.export_path(head, sheet)
     body = json.dumps(payload, ensure_ascii=False, sort_keys=True)
     if len(body.encode("utf-8")) > MAX_EXPORT_BYTES:
         raise IntakeError(f"{head}: an export of {len(body)} bytes is not a labeling session")
@@ -313,6 +316,12 @@ class Sheet:
     @property
     def head(self) -> str:
         return self.manifest["head"]
+
+    @property
+    def batch(self) -> str:
+        """The sheet's own name — the batch it was cut under, which on a revision
+        sheet is not any batch its rows land in. Half of what its drop is called."""
+        return str(self.manifest.get("batch") or "")
 
     @property
     def by_unit(self) -> dict[str, dict]:
@@ -449,15 +458,15 @@ def classify(records: Records, rows: list[dict]) -> dict[str, list[dict]]:
 def run(sheet: Path, labels=None, labeler: str = "", write: bool = False) -> dict:
     """Ingest one sheet's export into its store. Returns what happened, or what would.
 
-    `labels` defaults to the head's own drop, which is where a page saves and
-    what a session is named after.
+    `labels` defaults to this sheet's own drop — the head it was cut for and the
+    sheet's own name — which is where its page saves.
     """
     if not labeler:
         raise IntakeError("an ingest records who cast the verdicts; there is no default labeler")
     read = read_sheet(sheet)
     head = read.head
     records = records_for(head)
-    export_file = Path(labels) if labels else store.export_path(head)
+    export_file = Path(labels) if labels else store.export_path(head, read.batch)
     export = read_export(export_file)
     if not export:
         raise IntakeError(f"{export_file} carries no scored unit; nothing to record")
