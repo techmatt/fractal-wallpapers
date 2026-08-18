@@ -318,8 +318,8 @@ def test_a_stated_recipe_without_a_map_is_refused(tmp_path) -> None:
 
 
 def test_a_plan_may_prefill_the_incumbent_verdict_the_head_cannot_reach(tmp_path) -> None:
-    """The shipped strange head has two cutpoints and can never suggest a 4. On a
-    re-judging pass the incumbent is the stored label, not the decode."""
+    """A head with two cutpoints can never suggest a 4. On a re-judging pass the
+    incumbent is the stored label, not the decode."""
     sheet = finished_sheet(tmp_path, [finished_unit(0, suggestion=4)])
     assert sheet.rows[0]["suggestion"] == 4
     assert sheet.manifest["suggested_by"] == "plan"

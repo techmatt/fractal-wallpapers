@@ -341,8 +341,7 @@ FINISHED_RUBRIC = {
         "<span class='s2'>2</span> has structure but is unremarkable · "
         "<span class='s3'>3</span> a rendering worth keeping · "
         "<span class='s4'>4</span> exceptional — the best of those. A 4 is a tier on the same "
-        "scale, not a new floor. The shipped head has only ever seen three tiers, so it can "
-        "never suggest a 4 and every one is yours."
+        "scale, not a new floor."
     ),
 }
 

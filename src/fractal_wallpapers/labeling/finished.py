@@ -44,13 +44,13 @@ refused to write it down would be throwing away the only tier the release path
 actually cuts on.
 
 **The store's scale and a model's class count are two different numbers**, and
-conflating them is what this section exists to stop. The shipped `strange_render`
-head was trained on three classes and emits two cutpoints; it can never suggest a
-4 and its decode stays capped at 3. That cap is in the checkpoint's own config,
-read by whoever loads it — see [`fractal_wallpapers.models.finished_train`] — and
-it moves when, and only when, the head is retrained on four. Until then the
-corpus grows a tier the incumbent cannot see, which is exactly what a retrain
-needs and what a capped store could never collect.
+conflating them is what this section exists to stop. Whatever a checkpoint can
+emit is in that checkpoint's own config, read by whoever loads it — see
+[`fractal_wallpapers.models.finished_train`] — and it is never read off the
+corpus. `strange_render` is the case that proves it: it was trained on three
+classes and could not suggest a 4 while its store was already collecting them,
+and the retrain that widened it to four could only happen because the store had
+been free to grow the tier first. A capped store could never have collected it.
 
 ## Eligibility, and why it is not the location store's rule
 

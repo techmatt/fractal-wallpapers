@@ -57,9 +57,11 @@ def test_the_class_balance_is_a_square_root_and_softens_rather_than_inverts() ->
 
 
 def test_the_two_recipes_carry_their_source_s_own_shape() -> None:
+    """Everything but the class count, which strange's retrain moved to four."""
     smooth = finished_train.recipe_for("smooth_render")
     strange = finished_train.recipe_for("strange_render")
-    assert smooth["classes"] == 4 and strange["classes"] == 3
+    assert smooth["classes"] == len(finished.SCALE)
+    assert strange["classes"] == len(finished.SCALE)
     assert smooth["backbone"] != strange["backbone"]
     for recipe in (smooth, strange):
         assert recipe["epochs"] == 40
@@ -142,44 +144,59 @@ def test_a_trained_judge_records_what_it_trained_under(head_name: str) -> None:
 
     `classes` used to be checked against the store's ceiling, which made the two
     numbers one number: a corpus that grew a tier could not be collected without
-    claiming the shipped head had learned it. What has to agree is the recipe, the
-    config written beside the checkpoint, and the checkpoint's own output width —
-    a head whose weights emit two cutpoints while its config claims three is one
-    every reader of its scores misreads.
+    claiming the shipped head had learned it. What has to agree is the config
+    written beside a checkpoint and that checkpoint's own output width — a head
+    whose weights emit two cutpoints while its config claims three is one every
+    reader of its scores misreads.
+
+    It is NOT checked against today's recipe. A run record says what that run
+    trained under, and a retrain that widens the recipe leaves the superseded
+    run's directory readable exactly as it was; re-reading it against the current
+    recipe would mean a retrain could only ever happen by destroying the baseline
+    it is measured against.
     """
-    path = finished_train.config_path(head_name)
-    if not path.is_file():
+    configs = sorted(finished_train.head_dir(head_name).glob("**/config.json"))
+    if not configs:
         pytest.skip(f"the {head_name} judge has not been trained on this machine")
-    config = json.loads(path.read_text(encoding="utf-8"))
-    assert config["head"] == head_name
-    assert config["classes"] == finished_train.recipe_for(head_name)["classes"]
-    assert config["inherited"]["changed"]
-    assert config["precision"] == "fp32"
+    for path in configs:
+        config = json.loads(path.read_text(encoding="utf-8"))
+        assert config["head"] == head_name
+        assert config["classes"] in finished.SCALE
+        assert config["inherited"]["changed"]
+        assert config["precision"] == "fp32"
 
 
 @pytest.mark.parametrize("head_name", sorted(finished.HEADS))
 def test_a_checkpoint_emits_as_many_cutpoints_as_its_config_claims(head_name: str) -> None:
     """The other half of the same pin, read off the weights rather than the JSON."""
     torch = pytest.importorskip("torch")
-    path = finished_train.checkpoint_path(head_name)
-    if not path.is_file():
+    checkpoints = sorted(finished_train.head_dir(head_name).glob("**/best.pt"))
+    if not checkpoints:
         pytest.skip(f"the {head_name} judge has not been trained on this machine")
-    saved = torch.load(path, map_location="cpu", weights_only=False)
-    classes = int(saved["config"]["classes"])
-    final = [value for value in saved["state_dict"].values() if value.ndim >= 1][-1]
-    assert final.shape[0] == classes - 1, (
-        f"{head_name}: the config claims {classes} classes and the head emits "
-        f"{final.shape[0]} cutpoints"
-    )
+    for path in checkpoints:
+        saved = torch.load(path, map_location="cpu", weights_only=False)
+        classes = int(saved["config"]["classes"])
+        final = [value for value in saved["state_dict"].values() if value.ndim >= 1][-1]
+        assert final.shape[0] == classes - 1, (
+            f"{path}: the config claims {classes} classes and the head emits "
+            f"{final.shape[0]} cutpoints"
+        )
 
 
-def test_a_corpus_wider_than_the_recipe_refuses_to_train_rather_than_mis_fit() -> None:
+def test_a_corpus_wider_than_the_recipe_refuses_to_train_rather_than_mis_fit(monkeypatch) -> None:
     """The decoupling's one real hazard, closed. A 4 handed to a three-class CORN
     head is a rank with no task to carry it, and the failure is a silently
     mis-fitted top cutpoint rather than a crash — so the pass says so instead,
-    and names the one edit that fixes it."""
-    assert finished_train.refuse_inexpressible("strange_render", [1, 2, 3]) == 3
+    and names the one edit that fixes it.
+
+    Both recipes now train the whole scale, so the narrow one this guards against
+    has to be built here. That is the right way round: the guarantee is about any
+    recipe narrower than its own population, not about a head that happened to be
+    narrow on the day it was written."""
+    assert finished_train.refuse_inexpressible("strange_render", [1, 2, 3, 4]) == 4
     assert finished_train.refuse_inexpressible("smooth_render", [1, 2, 3, 4]) == 4
+    monkeypatch.setitem(finished_train.RECIPES["strange_render"], "classes", 3)
+    assert finished_train.refuse_inexpressible("strange_render", [1, 2, 3]) == 3
     with pytest.raises(finished_train.TrainingError, match="IS the retrain"):
         finished_train.refuse_inexpressible("strange_render", [1, 3, 4])
 

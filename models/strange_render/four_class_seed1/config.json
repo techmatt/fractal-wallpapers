@@ -1,0 +1,122 @@
+{
+  "schema": 1,
+  "head": "strange_render",
+  "run": "four_class_seed1",
+  "pretrained": true,
+  "geometry": "stretch",
+  "epochs": 40,
+  "batch_size": 32,
+  "backbone_lr": 0.0002,
+  "head_lr": 0.001,
+  "weight_decay": 0.05,
+  "drop_rate": 0.2,
+  "drop_path_rate": 0.1,
+  "grad_clip": 1.0,
+  "seed": 1,
+  "workers": 4,
+  "amp": "off",
+  "border_crop": 0.05,
+  "augmentation": "geometric only \u2014 border crop and both flips. No colour, no JPEG jitter",
+  "class_balance": "sqrt",
+  "source_dims": [
+    1280,
+    720
+  ],
+  "target_dims": [
+    384,
+    224
+  ],
+  "loss": "CORN ordinal, K-1 conditional-subset tasks",
+  "sampler": "w_class[1/sqrt] x w_place[1/pictures at this place], in that order",
+  "selection": "min validation loss over the selection slice, through the deploy transform: the mean cross-entropy of the unconditional probability at each cutpoint against that cutpoint's own truth. A proper scoring rule, so it sees the scale and not only the order",
+  "classes": 4,
+  "backbone": "mobilenetv4_conv_small.e2400_r224_in1k",
+  "selection_cutpoint": 3,
+  "mean": [
+    0.485,
+    0.456,
+    0.406
+  ],
+  "std": [
+    0.229,
+    0.224,
+    0.225
+  ],
+  "interpolation": "bicubic",
+  "best_epoch": 6,
+  "inherited": {
+    "source": {
+      "smooth_render": "the source project's wallpaper head v4b, config embedded beside it",
+      "strange_render": "the source project's render-mode head v3, config embedded beside it"
+    },
+    "identical": [
+      "amp",
+      "backbone",
+      "backbone_lr",
+      "batch_size",
+      "border_crop",
+      "drop_path_rate",
+      "drop_rate",
+      "epochs",
+      "geometry",
+      "grad_clip",
+      "head_lr",
+      "loss",
+      "pretrained",
+      "source_dims",
+      "target_dims",
+      "weight_decay"
+    ],
+    "changed": [
+      {
+        "key": "classes",
+        "was": "four for smooth renders and three for strange, each the source head's own",
+        "now": "four for both",
+        "why": "the strange corpus was collected before a 4 existed in it, so three was a fact about that population rather than a property of the scale. Its store now holds 4s, and a recipe that cannot express a verdict present in its own population refuses to train rather than mis-fit a top cutpoint \u2014 see [`refuse_inexpressible`]. Widening it is the only move that does not throw the tier away, and it makes the head's decode reach the tier the release path cuts on. The smooth recipe is untouched; it was already four."
+      },
+      {
+        "key": "augmentation",
+        "was": "geometric only (border crop + both flips), colour off",
+        "now": "the same, spelled through this repository's own transform",
+        "why": "the same three stages, and colour is off in both. Named here because this repository's transform jitters brightness, contrast and JPEG quality by default for the location head, and those defaults are switched off rather than absent."
+      },
+      {
+        "key": "row_weighting",
+        "was": "1 / near-duplicate group size, from a colour-CLIP grouping of the source's own crops at a 0.974 cut (strange renders only)",
+        "now": "1 / pictures at this place",
+        "why": "the grouping is an artifact keyed on the source project's image ids, and this repository keeps none of them \u2014 every picture here is regenerated from a recipe. Re-deriving it would need a model this project does not have. The structural weight is what remains: it equalizes places rather than look-alikes, so it is coarser, and it is the same weight the location head's sampler already carried."
+      },
+      {
+        "key": "split",
+        "was": "a seeded re-derivation over locations, at a 40% evaluation share (strange), or one batch set frozen as authority (smooth)",
+        "now": "the eval-only pin, and nothing else",
+        "why": "both of those decide which of a pooled corpus is held out. Here the held-out set is not a share of the corpus at all \u2014 it is the blind sheet, pinned permanently, and every other batch is anchored and trains."
+      },
+      {
+        "key": "selection_population",
+        "was": "the pooled evaluation side",
+        "now": "a seeded slice of the TRAINING side",
+        "why": "the evaluation side here is one blind sheet bought to referee two heads. An instrument is spent the moment it trains, and choosing an epoch on it is a partial spend that leaves nothing red."
+      },
+      {
+        "key": "selection_statistic",
+        "was": "maximum average precision at the top cutpoint",
+        "now": "minimum validation loss, the same cross-entropy training minimizes",
+        "why": "FORCED, not chosen. Average precision is a rank statistic and is invariant to any monotone rescaling of the scores, so it cannot see a probability. It selected transiently-collapsed checkpoints for two of three seeds of the smooth judge \u2014 one reading a mean P(>=2) of 0.002 on a slice that is 78% >=2 \u2014 and rated the broken checkpoint ABOVE the sound one from the same run, 0.824 to 0.810. The loss is a proper scoring rule and rated the same pair 5.85 to 0.58. This head's interface is its probabilities, so an objective blind to them is blind to what it is for."
+      }
+    ]
+  },
+  "renders": {
+    "seed": 0,
+    "jpeg_quality": 90
+  },
+  "selection_slice": {
+    "share": 0.1,
+    "seed": 0,
+    "drawn_over": "places on the training side, so a place's pictures cannot straddle",
+    "places": 74,
+    "of_places": 740,
+    "pictures": 356
+  },
+  "precision": "fp32"
+}
