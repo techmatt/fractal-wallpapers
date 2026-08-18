@@ -1,0 +1,651 @@
+{
+  "schema": 1,
+  "run": "run3",
+  "outcome": "completed",
+  "seconds": 2530.1,
+  "wall": {
+    "wall_budget": 14400.0,
+    "elapsed": 2530.1,
+    "legs": {
+      "colorize": {
+        "margin": 30.0,
+        "unmeasured_minimum": 10.0,
+        "completed": 240,
+        "killed": 0,
+        "longest": 29.0,
+        "estimate": 29.0
+      },
+      "release": {
+        "margin": 20.0,
+        "unmeasured_minimum": 60.0,
+        "completed": 37,
+        "killed": 2,
+        "longest": 451.6,
+        "estimate": 451.6
+      }
+    },
+    "declined": []
+  },
+  "reconciliation": {
+    "colorize": {
+      "resumed": 0,
+      "made": 240,
+      "failed": 0,
+      "not_started": 0,
+      "holds": true,
+      "planned": 240
+    },
+    "release": {
+      "resumed": 0,
+      "made": 37,
+      "failed": 2,
+      "not_started": 0,
+      "holds": true,
+      "planned": 39
+    },
+    "holds": true
+  },
+  "counts": {
+    "found": 6907,
+    "scored": 6907,
+    "above_junk_floor": 3851,
+    "above_good_floor": 2498,
+    "unscored": 0,
+    "attempts_planned": 240,
+    "attempts_made": 240,
+    "attempts_scored": 240,
+    "attempts_failed": 0,
+    "attempts_resumed": 0,
+    "attempts_not_started": 0,
+    "attempts_killed": 0,
+    "selected": 39,
+    "released": 37,
+    "requested": 60
+  },
+  "supply": {
+    "size": 6907,
+    "ledgers": 1,
+    "per_ledger": {
+      "artifacts/harvest_run3/walk.jsonl": 6907
+    },
+    "location_overlaps": 67,
+    "overlap_sample": [
+      "artifacts/harvest_run3/walk.jsonl vs artifacts/harvest_run3/walk.jsonl",
+      "artifacts/harvest_run3/walk.jsonl vs artifacts/harvest_run3/walk.jsonl",
+      "artifacts/harvest_run3/walk.jsonl vs artifacts/harvest_run3/walk.jsonl",
+      "artifacts/harvest_run3/walk.jsonl vs artifacts/harvest_run3/walk.jsonl",
+      "artifacts/harvest_run3/walk.jsonl vs artifacts/harvest_run3/walk.jsonl"
+    ],
+    "unkeyed_rows": 0,
+    "junk_floor": 0.2,
+    "good_floor": 0.5,
+    "found_by_partition": {
+      "julia:mandelbrot": 684,
+      "julia:multibrot3": 1870,
+      "julia:multibrot4": 1064,
+      "julia:multibrot5": 1035,
+      "mandelbrot": 1072,
+      "multibrot3": 361,
+      "multibrot4": 220,
+      "multibrot5": 386,
+      "phoenix": 215
+    },
+    "scored_by_partition": {
+      "julia:mandelbrot": 684,
+      "julia:multibrot3": 1870,
+      "julia:multibrot4": 1064,
+      "julia:multibrot5": 1035,
+      "mandelbrot": 1072,
+      "multibrot3": 361,
+      "multibrot4": 220,
+      "multibrot5": 386,
+      "phoenix": 215
+    },
+    "passing_by_partition": {
+      "julia:mandelbrot": 544,
+      "julia:multibrot3": 1319,
+      "julia:multibrot4": 794,
+      "julia:multibrot5": 754,
+      "mandelbrot": 181,
+      "multibrot3": 37,
+      "multibrot4": 13,
+      "multibrot5": 54,
+      "phoenix": 155
+    },
+    "good_by_partition": {
+      "julia:mandelbrot": 437,
+      "julia:multibrot3": 840,
+      "julia:multibrot4": 498,
+      "julia:multibrot5": 464,
+      "mandelbrot": 96,
+      "multibrot3": 15,
+      "multibrot4": 4,
+      "multibrot5": 13,
+      "phoenix": 131
+    },
+    "found": 6907,
+    "scored": 6907,
+    "passing": 3851,
+    "good": 2498,
+    "unscored": 0
+  },
+  "budget": {
+    "attempt_multiplier": 4,
+    "attempt_budget": null,
+    "head_slots": {
+      "smooth_render": 30,
+      "strange_render": 30
+    },
+    "head_want": {
+      "smooth_render": 120,
+      "strange_render": 120
+    },
+    "scaled_to_budget": false,
+    "head_attempts": {
+      "smooth_render": 120,
+      "strange_render": 120
+    },
+    "seated_slots": {
+      "smooth_render": {
+        "julia:mandelbrot": 7,
+        "julia:multibrot3": 2,
+        "julia:multibrot4": 2,
+        "julia:multibrot5": 2,
+        "mandelbrot": 7,
+        "multibrot3": 2,
+        "multibrot4": 2,
+        "multibrot5": 3,
+        "phoenix": 3
+      },
+      "strange_render": {
+        "julia:mandelbrot": 7,
+        "julia:multibrot3": 2,
+        "julia:multibrot4": 2,
+        "julia:multibrot5": 2,
+        "mandelbrot": 7,
+        "multibrot3": 2,
+        "multibrot4": 2,
+        "multibrot5": 3,
+        "phoenix": 3
+      }
+    },
+    "guaranteed": [
+      "julia:mandelbrot",
+      "julia:multibrot3",
+      "julia:multibrot4",
+      "julia:multibrot5",
+      "mandelbrot",
+      "multibrot3",
+      "multibrot4",
+      "multibrot5",
+      "phoenix"
+    ],
+    "guarantee_head": {
+      "julia:mandelbrot": "smooth_render",
+      "julia:multibrot3": "strange_render",
+      "julia:multibrot4": "smooth_render",
+      "julia:multibrot5": "strange_render",
+      "mandelbrot": "smooth_render",
+      "multibrot3": "strange_render",
+      "multibrot4": "smooth_render",
+      "multibrot5": "strange_render",
+      "phoenix": "smooth_render"
+    },
+    "guarantee_unplaced": [],
+    "planned_by_partition": {
+      "smooth_render": {
+        "julia:mandelbrot": 28,
+        "julia:multibrot3": 8,
+        "julia:multibrot4": 8,
+        "julia:multibrot5": 8,
+        "mandelbrot": 28,
+        "multibrot3": 8,
+        "multibrot4": 8,
+        "multibrot5": 12,
+        "phoenix": 12
+      },
+      "strange_render": {
+        "julia:mandelbrot": 28,
+        "julia:multibrot3": 8,
+        "julia:multibrot4": 8,
+        "julia:multibrot5": 8,
+        "mandelbrot": 28,
+        "multibrot3": 8,
+        "multibrot4": 8,
+        "multibrot5": 12,
+        "phoenix": 12
+      }
+    },
+    "planned": 240,
+    "supply_short_by_partition": {},
+    "supply_short": 0,
+    "scheduled": 240,
+    "supply_partitions": {
+      "julia:mandelbrot": 544,
+      "julia:multibrot3": 1319,
+      "julia:multibrot4": 794,
+      "julia:multibrot5": 754,
+      "mandelbrot": 181,
+      "multibrot3": 37,
+      "multibrot4": 13,
+      "multibrot5": 54,
+      "phoenix": 155
+    },
+    "prefix_deviation": 0.95
+  },
+  "realized_fills": {
+    "smooth_render": {
+      "julia:mandelbrot": 28,
+      "julia:multibrot3": 8,
+      "julia:multibrot4": 8,
+      "julia:multibrot5": 8,
+      "mandelbrot": 28,
+      "multibrot3": 8,
+      "multibrot4": 8,
+      "multibrot5": 12,
+      "phoenix": 12
+    },
+    "strange_render": {
+      "julia:mandelbrot": 28,
+      "julia:multibrot3": 8,
+      "julia:multibrot4": 8,
+      "julia:multibrot5": 8,
+      "mandelbrot": 28,
+      "multibrot3": 8,
+      "multibrot4": 8,
+      "multibrot5": 12,
+      "phoenix": 12
+    }
+  },
+  "selection": {
+    "requested": 60,
+    "strange_share_target": 0.5,
+    "head_slots": {
+      "smooth_render": 30,
+      "strange_render": 30
+    },
+    "head_eligible": {
+      "smooth_render": 120,
+      "strange_render": 120
+    },
+    "head_selected": {
+      "smooth_render": 30,
+      "strange_render": 9
+    },
+    "partition_slots": {
+      "smooth_render": {
+        "julia:mandelbrot": 7,
+        "julia:multibrot3": 2,
+        "julia:multibrot4": 2,
+        "julia:multibrot5": 2,
+        "mandelbrot": 7,
+        "multibrot3": 2,
+        "multibrot4": 2,
+        "multibrot5": 3,
+        "phoenix": 3
+      },
+      "strange_render": {
+        "julia:mandelbrot": 7,
+        "julia:multibrot3": 2,
+        "julia:multibrot4": 2,
+        "julia:multibrot5": 2,
+        "mandelbrot": 7,
+        "multibrot3": 2,
+        "multibrot4": 2,
+        "multibrot5": 3,
+        "phoenix": 3
+      }
+    },
+    "emit_caps": {
+      "julia:mandelbrot": 136,
+      "julia:multibrot3": 329,
+      "julia:multibrot4": 198,
+      "julia:multibrot5": 188,
+      "mandelbrot": 45,
+      "multibrot3": 9,
+      "multibrot4": 3,
+      "multibrot5": 13,
+      "phoenix": 38
+    },
+    "cluster_cap": 2,
+    "cluster_cap_skips": 1,
+    "below_bar_skips": 99,
+    "fill": {
+      "smooth_render": {
+        "target": 30,
+        "planned": 30,
+        "seated": 30,
+        "unfilled": 0,
+        "bar": null,
+        "by_partition": {
+          "julia:mandelbrot": {
+            "planned": 7,
+            "budget": 7,
+            "eligible": 28,
+            "seated": 7,
+            "unfilled": 0,
+            "below_bar": 0,
+            "cluster_cap": 0,
+            "reason": null,
+            "why": null
+          },
+          "julia:multibrot3": {
+            "planned": 2,
+            "budget": 2,
+            "eligible": 8,
+            "seated": 2,
+            "unfilled": 0,
+            "below_bar": 0,
+            "cluster_cap": 0,
+            "reason": null,
+            "why": null
+          },
+          "julia:multibrot4": {
+            "planned": 2,
+            "budget": 2,
+            "eligible": 8,
+            "seated": 2,
+            "unfilled": 0,
+            "below_bar": 0,
+            "cluster_cap": 0,
+            "reason": null,
+            "why": null
+          },
+          "julia:multibrot5": {
+            "planned": 2,
+            "budget": 2,
+            "eligible": 8,
+            "seated": 2,
+            "unfilled": 0,
+            "below_bar": 0,
+            "cluster_cap": 0,
+            "reason": null,
+            "why": null
+          },
+          "mandelbrot": {
+            "planned": 7,
+            "budget": 7,
+            "eligible": 28,
+            "seated": 7,
+            "unfilled": 0,
+            "below_bar": 0,
+            "cluster_cap": 0,
+            "reason": null,
+            "why": null
+          },
+          "multibrot3": {
+            "planned": 2,
+            "budget": 2,
+            "eligible": 8,
+            "seated": 2,
+            "unfilled": 0,
+            "below_bar": 0,
+            "cluster_cap": 0,
+            "reason": null,
+            "why": null
+          },
+          "multibrot4": {
+            "planned": 2,
+            "budget": 2,
+            "eligible": 8,
+            "seated": 2,
+            "unfilled": 0,
+            "below_bar": 0,
+            "cluster_cap": 0,
+            "reason": null,
+            "why": null
+          },
+          "multibrot5": {
+            "planned": 3,
+            "budget": 3,
+            "eligible": 12,
+            "seated": 3,
+            "unfilled": 0,
+            "below_bar": 0,
+            "cluster_cap": 0,
+            "reason": null,
+            "why": null
+          },
+          "phoenix": {
+            "planned": 3,
+            "budget": 3,
+            "eligible": 12,
+            "seated": 3,
+            "unfilled": 0,
+            "below_bar": 0,
+            "cluster_cap": 0,
+            "reason": null,
+            "why": null
+          }
+        }
+      },
+      "strange_render": {
+        "target": 30,
+        "planned": 30,
+        "seated": 9,
+        "unfilled": 21,
+        "bar": {
+          "name": "strange_render_release",
+          "value": 0.685,
+          "head_sha256": "a011188bbcaaeef49421146e31b7eb411db57044d653c2e0986d5040d32e35de",
+          "acts": true
+        },
+        "by_partition": {
+          "julia:mandelbrot": {
+            "planned": 7,
+            "budget": 7,
+            "eligible": 28,
+            "seated": 4,
+            "unfilled": 3,
+            "below_bar": 24,
+            "cluster_cap": 0,
+            "reason": "below_bar",
+            "why": "no remaining candidate cleared the head's acting release bar"
+          },
+          "julia:multibrot3": {
+            "planned": 2,
+            "budget": 2,
+            "eligible": 8,
+            "seated": 2,
+            "unfilled": 0,
+            "below_bar": 0,
+            "cluster_cap": 1,
+            "reason": null,
+            "why": null
+          },
+          "julia:multibrot4": {
+            "planned": 2,
+            "budget": 2,
+            "eligible": 8,
+            "seated": 2,
+            "unfilled": 0,
+            "below_bar": 0,
+            "cluster_cap": 0,
+            "reason": null,
+            "why": null
+          },
+          "julia:multibrot5": {
+            "planned": 2,
+            "budget": 2,
+            "eligible": 8,
+            "seated": 0,
+            "unfilled": 2,
+            "below_bar": 8,
+            "cluster_cap": 0,
+            "reason": "below_bar",
+            "why": "no remaining candidate cleared the head's acting release bar"
+          },
+          "mandelbrot": {
+            "planned": 7,
+            "budget": 7,
+            "eligible": 28,
+            "seated": 0,
+            "unfilled": 7,
+            "below_bar": 28,
+            "cluster_cap": 0,
+            "reason": "below_bar",
+            "why": "no remaining candidate cleared the head's acting release bar"
+          },
+          "multibrot3": {
+            "planned": 2,
+            "budget": 2,
+            "eligible": 8,
+            "seated": 0,
+            "unfilled": 2,
+            "below_bar": 8,
+            "cluster_cap": 0,
+            "reason": "below_bar",
+            "why": "no remaining candidate cleared the head's acting release bar"
+          },
+          "multibrot4": {
+            "planned": 2,
+            "budget": 2,
+            "eligible": 8,
+            "seated": 0,
+            "unfilled": 2,
+            "below_bar": 8,
+            "cluster_cap": 0,
+            "reason": "below_bar",
+            "why": "no remaining candidate cleared the head's acting release bar"
+          },
+          "multibrot5": {
+            "planned": 3,
+            "budget": 3,
+            "eligible": 12,
+            "seated": 0,
+            "unfilled": 3,
+            "below_bar": 12,
+            "cluster_cap": 0,
+            "reason": "below_bar",
+            "why": "no remaining candidate cleared the head's acting release bar"
+          },
+          "phoenix": {
+            "planned": 3,
+            "budget": 3,
+            "eligible": 12,
+            "seated": 1,
+            "unfilled": 2,
+            "below_bar": 11,
+            "cluster_cap": 0,
+            "reason": "below_bar",
+            "why": "no remaining candidate cleared the head's acting release bar"
+          }
+        }
+      }
+    },
+    "guarantee": {
+      "owed": {
+        "julia:mandelbrot": "smooth_render",
+        "julia:multibrot3": "strange_render",
+        "julia:multibrot4": "smooth_render",
+        "julia:multibrot5": "strange_render",
+        "mandelbrot": "smooth_render",
+        "multibrot3": "strange_render",
+        "multibrot4": "smooth_render",
+        "multibrot5": "strange_render",
+        "phoenix": "smooth_render"
+      },
+      "unplaced": [],
+      "slots_taken": 6
+    },
+    "short_by": 21
+  },
+  "release": {
+    "rows": 39,
+    "workers": 3,
+    "engine_threads": 7,
+    "fell_back_serial": 0,
+    "seconds": 1638.7,
+    "row_seconds": 4049.2,
+    "killed": 2,
+    "stopped": null,
+    "not_started": [],
+    "reused": 0,
+    "geometry": {
+      "resolution": [
+        2560,
+        1440
+      ],
+      "supersample": 4
+    },
+    "counts": {
+      "planned": 39,
+      "resumed": 0,
+      "made": 37,
+      "failed": 2,
+      "not_started": 0
+    }
+  },
+  "cuts": {
+    "acting": {
+      "junk_floor": {
+        "value": 0.2,
+        "head": "location",
+        "where": "intake, the colorize draw; and the walk's expansion tier"
+      },
+      "good_floor": {
+        "value": 0.5,
+        "head": "location",
+        "where": "the slot guarantee's trigger; and the walk's booking tier",
+        "owner": "supply.currency.GOOD_FLOOR \u2014 re-exported, never restated"
+      },
+      "strange_render_release_bar": {
+        "value": 0.685,
+        "head": "strange_render",
+        "restated_against": "a011188bbcaaeef49421146e31b7eb411db57044d653c2e0986d5040d32e35de",
+        "restated_on": "2026-08-17",
+        "method": "the labels-derived crossover. Isotonic regression of P(the human said >=3) against this head's own P(>=3), over all 3,085 labeled strange_render pictures scored through the staged artifact, ties pooled, non-decreasing; the crossing is the LOWEST score whose fitted agreement reaches a half, and the bar is that crossing rounded up to the next 0.005. Crossing 0.6809, 95% cluster bootstrap over places [0.540, 0.776]; the held-out selection slice crosses at 0.6987 on its own. Declared before it was read, and the roundings go up because a bar is a floor. STILL A >=3 BAR: the head's fourth class is preferred where it appears and gates nothing.",
+        "where": "release selection: a row below it is not seated, and a slot with no passing supply goes unfilled",
+        "basis": "an ACTING bar by Matt's review verdict of 2026-08-17 \u2014 every one of run2's eleven released strange rows below the advisory was bad, the head was right about all eleven, and the release path that seated them was padding strange slots from thin passing supply. THAT the cut acts is that verdict; WHERE it sits is a measurement: 0.685 on a011188bbcaa, restated 2026-08-17 \u2014 the labels-derived crossover. Isotonic regression of P(the human said >=3) against this head's own P(>=3), over all 3,085 labeled strange_render pictures scored through the staged artifact, ties pooled, non-decreasing; the crossing is the LOWEST score whose fitted agreement reaches a half, and the bar is that crossing rounded up to the next 0.005. Crossing 0.6809, 95% cluster bootstrap over places [0.540, 0.776]; the held-out selection slice crosses at 0.6987 on its own. Declared before it was read, and the roundings go up because a bar is a floor. STILL A >=3 BAR: the head's fourth class is preferred where it appears and gates nothing."
+      }
+    },
+    "advisory": {
+      "render heads with no acting bar": 0.5,
+      "acting instead": [
+        "strange_render"
+      ]
+    },
+    "caps": {
+      "thin_supply_divisor": 4,
+      "cluster_cap": 2,
+      "attempt_multiplier": 4
+    }
+  },
+  "config": {
+    "seed": 20260818,
+    "strange_share": 0.5,
+    "candidates_per_set": 32,
+    "colorize_geometry": {
+      "resolution": [
+        640,
+        360
+      ],
+      "supersample": 2
+    },
+    "release_geometry": {
+      "resolution": [
+        2560,
+        1440
+      ],
+      "supersample": 4
+    },
+    "autolevel": {
+      "switch": "on"
+    },
+    "heads": {
+      "location": "4b60deb935314cf7",
+      "palette": "d7edc31cbaa4f9e9",
+      "smooth_render": "c0ac536d0979713a",
+      "strange_render": "a011188bbcaaeef4"
+    }
+  },
+  "records": {
+    "durable": true,
+    "root": "C:\\Code\\fractal-wallpapers\\data\\curation",
+    "gate": "C:\\Code\\fractal-wallpapers\\data\\curation\\gate\\run3 (+240)",
+    "release": "C:\\Code\\fractal-wallpapers\\data\\curation\\release\\run3 (+240)",
+    "population": "C:\\Code\\fractal-wallpapers\\data\\curation\\runs.jsonl"
+  },
+  "sheet": "C:\\Code\\fractal-wallpapers\\artifacts\\curation\\runs\\run3\\release_sheet_run3.html",
+  "run_dir": "C:\\Code\\fractal-wallpapers\\artifacts\\curation\\runs\\run3"
+}

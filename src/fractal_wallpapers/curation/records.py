@@ -19,21 +19,27 @@ A record of what shipped can count what passed and never learn what it passed
 *out of*, which is exactly the shape of every question about a release that is
 worth asking later.
 
-## One file per run, and one reader over all of them
+## A file per run per partition, and one reader over all of them
 
-Both decision stores are directories — `gate/<run>.jsonl`, `release/<run>.jsonl`
-— rather than one file each. A row's key already carries its run, a re-run only
-ever rewrites its own rows and a second run only ever adds, so the file a run
-writes and the rows a run owns are the same set and nothing about the store's
-semantics moves. What moves is what grows: a store that accumulated every run
-into one file grew for as long as the project did and was 918 KiB against the
-1 MiB history guard by the third run, which is a build that fails partway through
-a fourth. Sharded, the ceiling is *one run's* rows — a 6-hour run is around
-0.4 MiB — and a fifth run does not make the fourth one's file any bigger.
+Both decision stores are trees — `gate/<run>/<partition>.jsonl` and
+`release/<run>/<partition>.jsonl` — rather than one file each. Neither axis is
+invented for the filesystem's sake. The row key already carries the run, a re-run
+only ever rewrites its own rows and a second run only ever adds; and the partition
+is the axis every apportionment in this project is taken on, so it is the axis the
+rows already arrive in blocks of. `data/palette_choice/rows/` is written the same
+way for the same reason, down to the file names.
+
+What this buys is a ceiling that does not move with the project's age. Accumulated
+into one file per stage, `release.jsonl` reached 918 KiB against the 1 MiB history
+guard by the third run — a build that fails partway through a fourth. One file per
+run alone would not have been enough either: the 240-attempt run that followed
+wrote 828 KiB of release rows, the same squeak-under one run later. Per run *and*
+partition the largest file that run wrote is 195 KiB, and a run five times its
+size still fits.
 
 [`read_decisions`] is the unified reader and the only thing a consumer needs: it
 hands back the whole store in key order, exactly as the single file did, and a
-caller that names a run reads that run's file alone.
+caller that names a run reads that run's directory alone.
 
 ## One ephemeral flag, and it moves the whole store
 
@@ -117,29 +123,38 @@ def root() -> Path:
     return default_root() if _ROOT is None else _ROOT
 
 
-def decisions_path(stage: str, run: str) -> Path:
-    """Where one run's decisions at one stage live: `<stage>/<run>.jsonl`.
+def partition_file(partition: str | None) -> str:
+    """The file name one partition's rows are written under.
 
-    The run is the axis because it is already the axis the key is on. A row's key
-    is `run|stage|candidate`, a re-run replaces its own rows and touches nothing
-    else, and a second run only ever adds — so the file a run writes and the rows
-    a run owns are now the same set, and the store stops being one file that grows
-    for as long as the project does.
+    `:` is not legal in a Windows path, so the separator in `julia:mandelbrot`
+    becomes an underscore — the same rule, and the same resulting names, as the
+    palette head's per-partition corpus under `data/palette_choice/rows/`.
     """
-    return root() / str(stage) / f"{run}.jsonl"
+    return f"{str(partition or 'unpartitioned').replace(':', '_')}.jsonl"
 
 
-def decisions_dir(stage: str) -> Path:
-    """The directory holding every run's decisions at one stage."""
-    return root() / str(stage)
+def decisions_dir(stage: str, run: str | None = None) -> Path:
+    """`<stage>`, holding every run's decisions, or `<stage>/<run>` for one run's."""
+    where = root() / str(stage)
+    return where if run is None else where / str(run)
+
+
+def decisions_path(stage: str, run: str, partition: str | None) -> Path:
+    """Where one run's decisions for one partition at one stage live."""
+    return decisions_dir(stage, run) / partition_file(partition)
 
 
 def sinks(run: str) -> dict:
-    """Every file a run may write. The complete set, so the isolation check sees it all."""
+    """Everywhere a run may write. The complete set, so the isolation check sees it all.
+
+    The two decision entries are the run's own **directories**. A run owns every
+    file under its directory and no other run writes there, which is the property
+    that makes rewriting the whole thing on a re-run safe.
+    """
     where = root()
     return {
-        "gate": decisions_path(GATE, run),
-        "release": decisions_path(RELEASE, run),
+        "gate": decisions_dir(GATE, run),
+        "release": decisions_dir(RELEASE, run),
         "runs": where / "runs.jsonl",
         "run_record": where / "runs" / f"{run}.json",
     }
@@ -328,13 +343,11 @@ def _carry(previous: dict | None, row: dict) -> dict:
     return row
 
 
-def _upsert(path: Path, rows) -> tuple[int, int]:
-    """Merge `rows` into `path` by key, rewritten in key order. `(total, new)`.
+def _upsert_file(path: Path, rows) -> tuple[int, int]:
+    """Merge `rows` into one flat file by key, rewritten in key order. `(total, new)`.
 
-    Idempotent on an unchanged run — a re-run writes byte-identical output. Rows
-    are only ever added or replaced by their own run; nothing else is dropped, and
-    since a decision file holds exactly one run there is nothing else in it to
-    drop.
+    What `runs.jsonl` is written with. It takes a row per run rather than a run's
+    worth of rows, so it has no reason to be anything but one file.
     """
     merged: dict = {}
     if path.is_file():
@@ -354,15 +367,57 @@ def _upsert(path: Path, rows) -> tuple[int, int]:
     return len(merged), len(set(merged) - before)
 
 
+def _upsert(directory: Path, rows) -> tuple[int, int]:
+    """Merge `rows` into one run's decision directory by key. `(total, new)`.
+
+    The whole directory is rewritten from the merge rather than only the file a row
+    happens to land in, because a row that changed partition between two runs of
+    the same name would otherwise be written twice and read twice. Every file is in
+    key order, and a partition left with no rows loses its file, so the listing is
+    always the partitions the run actually decided in.
+
+    Idempotent on an unchanged run — a re-run writes byte-identical output. Rows
+    are only ever added or replaced by their own run, and since a run owns its
+    directory outright there is nothing else in there to drop.
+    """
+    merged: dict = {}
+    if directory.is_dir():
+        for path in sorted(directory.glob("*.jsonl")):
+            for line in path.read_text(encoding="utf-8").splitlines():
+                if line.strip():
+                    existing = json.loads(line)
+                    merged[existing["key"]] = existing
+    before = set(merged)
+    for row in rows:
+        merged[row["key"]] = _carry(merged.get(row["key"]), row)
+
+    written: dict = {}
+    for key in sorted(merged):
+        row = merged[key]
+        name = partition_file((row.get("location") or {}).get("partition"))
+        written.setdefault(name, []).append(row)
+    directory.mkdir(parents=True, exist_ok=True)
+    for name, part in sorted(written.items()):
+        (directory / name).write_text(
+            "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in part),
+            encoding="utf-8",
+            newline="\n",
+        )
+    for stale in directory.glob("*.jsonl"):
+        if stale.name not in written:
+            stale.unlink()
+    return len(merged), len(set(merged) - before)
+
+
 def write_decisions(stage: str, run: str, rows) -> tuple[Path, int, int]:
-    path = sinks(run)["gate" if stage == GATE else "release"]
-    total, new = _upsert(path, rows)
-    return path, total, new
+    directory = sinks(run)["gate" if stage == GATE else "release"]
+    total, new = _upsert(directory, rows)
+    return directory, total, new
 
 
 def write_population(run: str, row: dict) -> tuple[Path, int, int]:
     path = sinks(run)["runs"]
-    total, new = _upsert(path, [row])
+    total, new = _upsert_file(path, [row])
     return path, total, new
 
 
@@ -386,20 +441,24 @@ def read_decisions(stage: str, run: str | None = None) -> list[dict]:
     """Every recorded decision at `stage`, optionally for one run.
 
     **This is the unified reader, and it is the only thing a consumer needs.** The
-    rows live one file per run and this hands back the whole store in key order
-    regardless — the same list, in the same order, that a single accumulated file
-    gave. A caller that named a run reads one file; a caller that did not reads
-    every file there is, so a store split across runs is still one logical store.
+    rows live a file per run per partition and this hands back the whole store in
+    key order regardless — the same list, in the same order, that a single
+    accumulated file gave. A caller that named a run reads that run's directory; a
+    caller that did not reads every one of them, so a store spread over many files
+    is still one logical store.
 
     The read side exists because a record nothing can get at without parsing by
     hand is a record nobody will read.
     """
-    if run is not None:
-        return [row for row in _rows_of(decisions_path(stage, run)) if row["run"] == run]
-    directory = decisions_dir(stage)
+    directory = decisions_dir(stage, run)
     if not directory.is_dir():
         return []
-    rows = [row for path in sorted(directory.glob("*.jsonl")) for row in _rows_of(path)]
+    rows = [
+        row
+        for path in sorted(directory.glob("*.jsonl" if run is not None else "*/*.jsonl"))
+        for row in _rows_of(path)
+        if run is None or row["run"] == run
+    ]
     return sorted(rows, key=lambda row: str(row["key"]))
 
 
@@ -413,6 +472,7 @@ __all__ = [
     "decision",
     "decisions_dir",
     "decisions_path",
+    "partition_file",
     "default_root",
     "is_durable",
     "is_rejected",
