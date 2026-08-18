@@ -18,6 +18,27 @@ rather than quoted from the source's records, and that is the difference between
 comparing two functions and comparing two pipelines. What the source's own run
 chose is carried too, as a third column, but it was chosen on a different
 picture and it is never the thing the student is scored against.
+
+## A file per corpus batch per partition, and one reader over all of them
+
+The scores of one checkpoint are a tree — `scores/<source_batch>/<partition>.jsonl`
+— rather than one file. A row is roughly 2.6 KiB because it carries two full score
+vectors and the candidate list they are aligned to, so 377 sets came to 999 KiB
+against the 1 MiB history guard on every one of the four seeds: 47 KiB of headroom
+on a file whose length is the corpus's, and the corpus is the thing that grows.
+
+Neither axis is invented for the filesystem's sake. **The batch is the axis the
+corpus grows on** — a new labeling batch adds sets and never lengthens an existing
+batch's rows — so it is what keeps the ceiling from moving with the project's age.
+**The partition is the axis the rows already arrive in blocks of**, the same axis
+`data/palette_choice/rows/` is written on, down to the file names. Together they
+put the largest file at 425 KiB where the corpus stands; partition alone would
+have left one 452 KiB file that every future batch grows.
+
+[`read`] is the unified reader and the only thing a consumer needs. It hands back
+the whole store **in `set` order** — the order the single file had, and the order
+[`palette_sets.read`] emits — so a bootstrap seeded on the row order reads the
+same interval it did before the split.
 """
 
 from __future__ import annotations
@@ -31,11 +52,26 @@ from fractal_wallpapers.models import metrics, palette_corpus, palette_head, pal
 SCHEMA = 1
 
 
-def scores_path(run: str | None = None) -> Path:
-    """Where one run's read of the real sets is kept, tracked."""
+def scores_dir(run: str | None = None) -> Path:
+    """Where one run's read of the real sets is kept, tracked: a directory of shards."""
     from fractal_wallpapers.models import palette_train
 
-    return palette_train.head_dir(run) / "scores.jsonl"
+    return palette_train.head_dir(run) / "scores"
+
+
+def shard_name(partition: str | None) -> str:
+    """The file name one partition's rows are written under.
+
+    `:` is not legal in a Windows path, so the separator in `julia:mandelbrot`
+    becomes an underscore — the same rule, and the same resulting names, as the
+    corpus these sets were drawn from under `data/palette_choice/rows/`.
+    """
+    return f"{str(partition or 'unpartitioned').replace(':', '_')}.jsonl"
+
+
+def shard_path(run: str | None, source_batch: str | None, partition: str | None) -> Path:
+    """Where one batch's rows for one partition live."""
+    return scores_dir(run) / str(source_batch or "unbatched") / shard_name(partition)
 
 
 def load(path: Path, device: str = "auto"):
@@ -134,33 +170,90 @@ def run(root: Path, which: str = "best", device: str = "auto", into: str | None 
 
     checkpoint = palette_train.checkpoint_path(which, into)
     rows = read_both(Path(root), checkpoint, device, log)
-    path = scores_path(into)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8", newline="\n") as handle:
-        for row in rows:
-            handle.write(json.dumps({**row, "checkpoint": which}, ensure_ascii=False) + "\n")
+    written = write(rows, which, into)
     return {
         "head": "palette",
         "run": into,
         "checkpoint": str(checkpoint),
         "sets": len(rows),
         "candidates": sum(len(row["candidates"]) for row in rows),
-        "wrote": str(path),
+        "wrote": str(scores_dir(into)),
+        "shards": {
+            str(path.relative_to(scores_dir(into))).replace("\\", "/"): count
+            for path, count in written
+        },
     }
 
 
+def write(rows: list[dict], which: str = "best", run: str | None = None) -> list[tuple[Path, int]]:
+    """Write `rows` as the whole score store for one run. `(path, rows)` per shard.
+
+    The directory is rewritten from the rows given rather than added to, and a
+    shard left with no rows loses its file — so the tree is always exactly the
+    batches and partitions this scoring pass read, and a re-score taken after the
+    corpus dropped a partition cannot leave the old one behind to be read back.
+
+    Every shard is in `set` order, which is what lets [`read`] hand back one
+    ordered stream without holding an index of anything.
+    """
+    where = scores_dir(run)
+    shards: dict[Path, list[dict]] = {}
+    for row in sorted(rows, key=lambda row: str(row["set"])):
+        path = shard_path(run, row.get("source_batch"), row.get("partition"))
+        shards.setdefault(path, []).append({**row, "checkpoint": which})
+
+    for stale in sorted(where.glob("*/*.jsonl")):
+        stale.unlink()
+    for path, part in sorted(shards.items()):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in part),
+            encoding="utf-8",
+            newline="\n",
+        )
+    for stale in sorted(where.glob("*")):
+        if stale.is_dir() and not any(stale.iterdir()):
+            stale.rmdir()
+    return [(path, len(part)) for path, part in sorted(shards.items())]
+
+
 def read(run: str | None = None, path: Path | None = None) -> list[dict]:
-    """One run's scores, schema-checked."""
-    path = scores_path(run) if path is None else Path(path)
+    """One run's scores, schema-checked, in `set` order.
+
+    **The unified reader, and the only thing a consumer needs.** The rows live a
+    file per corpus batch per partition and this hands back the whole store as one
+    ordered stream regardless — the same list, in the same order, that the single
+    accumulated file gave.
+
+    `path` reads a store somewhere else: a directory of shards, or a single JSONL
+    file, so the pre-split files can be read through the same function that reads
+    what replaced them.
+    """
+    where = scores_dir(run) if path is None else Path(path)
+    files = sorted(where.glob("*/*.jsonl")) if where.is_dir() else [where]
     rows = []
-    for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
-        if not line.strip():
-            continue
-        row = json.loads(line)
-        if row.get("schema") != SCHEMA:
-            raise ValueError(f"{path}:{number}: schema {row.get('schema')!r}, expected {SCHEMA}")
-        rows.append(row)
-    return rows
+    for file in files:
+        for number, line in enumerate(file.read_text(encoding="utf-8").splitlines(), start=1):
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            if row.get("schema") != SCHEMA:
+                raise ValueError(
+                    f"{file}:{number}: schema {row.get('schema')!r}, expected {SCHEMA}"
+                )
+            rows.append(row)
+    return sorted(rows, key=lambda row: str(row["set"]))
 
 
-__all__ = ["SCHEMA", "load", "paths_of", "read", "read_both", "run", "scores_path"]
+__all__ = [
+    "SCHEMA",
+    "load",
+    "paths_of",
+    "read",
+    "read_both",
+    "run",
+    "scores_dir",
+    "shard_name",
+    "shard_path",
+    "write",
+]

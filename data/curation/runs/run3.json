@@ -2,43 +2,45 @@
   "schema": 1,
   "run": "run3",
   "outcome": "completed",
-  "seconds": 2530.1,
+  "seconds": 619.4,
   "wall": {
-    "wall_budget": 14400.0,
-    "elapsed": 2530.1,
+    "wall_budget": null,
+    "elapsed": 619.4,
     "legs": {
       "colorize": {
         "margin": 30.0,
         "unmeasured_minimum": 10.0,
-        "completed": 240,
+        "hung_ceiling": 600.0,
+        "completed": 0,
         "killed": 0,
-        "longest": 29.0,
-        "estimate": 29.0
+        "longest": null,
+        "estimate": null
       },
       "release": {
         "margin": 20.0,
         "unmeasured_minimum": 60.0,
-        "completed": 37,
-        "killed": 2,
-        "longest": 451.6,
-        "estimate": 451.6
+        "hung_ceiling": 1800.0,
+        "completed": 2,
+        "killed": 0,
+        "longest": 614.9,
+        "estimate": 614.9
       }
     },
     "declined": []
   },
   "reconciliation": {
     "colorize": {
-      "resumed": 0,
-      "made": 240,
+      "resumed": 240,
+      "made": 0,
       "failed": 0,
       "not_started": 0,
       "holds": true,
       "planned": 240
     },
     "release": {
-      "resumed": 0,
-      "made": 37,
-      "failed": 2,
+      "resumed": 37,
+      "made": 2,
+      "failed": 0,
       "not_started": 0,
       "holds": true,
       "planned": 39
@@ -55,11 +57,11 @@
     "attempts_made": 240,
     "attempts_scored": 240,
     "attempts_failed": 0,
-    "attempts_resumed": 0,
+    "attempts_resumed": 240,
     "attempts_not_started": 0,
     "attempts_killed": 0,
     "selected": 39,
-    "released": 37,
+    "released": 39,
     "requested": 60
   },
   "supply": {
@@ -551,16 +553,16 @@
     "short_by": 21
   },
   "release": {
-    "rows": 39,
+    "rows": 2,
     "workers": 3,
     "engine_threads": 7,
     "fell_back_serial": 0,
-    "seconds": 1638.7,
-    "row_seconds": 4049.2,
-    "killed": 2,
+    "seconds": 615.1,
+    "row_seconds": 836.6,
+    "killed": 0,
     "stopped": null,
     "not_started": [],
-    "reused": 0,
+    "reused": 37,
     "geometry": {
       "resolution": [
         2560,
@@ -570,9 +572,9 @@
     },
     "counts": {
       "planned": 39,
-      "resumed": 0,
-      "made": 37,
-      "failed": 2,
+      "resumed": 37,
+      "made": 2,
+      "failed": 0,
       "not_started": 0
     }
   },
@@ -642,8 +644,8 @@
   "records": {
     "durable": true,
     "root": "C:\\Code\\fractal-wallpapers\\data\\curation",
-    "gate": "C:\\Code\\fractal-wallpapers\\data\\curation\\gate\\run3 (+240)",
-    "release": "C:\\Code\\fractal-wallpapers\\data\\curation\\release\\run3 (+240)",
+    "gate": "C:\\Code\\fractal-wallpapers\\data\\curation\\gate\\run3 (+0)",
+    "release": "C:\\Code\\fractal-wallpapers\\data\\curation\\release\\run3 (+0)",
     "population": "C:\\Code\\fractal-wallpapers\\data\\curation\\runs.jsonl"
   },
   "sheet": "C:\\Code\\fractal-wallpapers\\artifacts\\curation\\runs\\run3\\release_sheet_run3.html",

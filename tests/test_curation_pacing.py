@@ -20,9 +20,14 @@ class Ticker:
         return self.at
 
 
-def clock(budget=None, at=0.0, margins=None, minimums=None) -> tuple[pacing.Clock, Ticker]:
+def clock(
+    budget=None, at=0.0, margins=None, minimums=None, ceilings=None
+) -> tuple[pacing.Clock, Ticker]:
     ticker = Ticker(at)
-    return pacing.Clock(budget, margins=margins, minimums=minimums, now=ticker), ticker
+    return (
+        pacing.Clock(budget, margins=margins, minimums=minimums, ceilings=ceilings, now=ticker),
+        ticker,
+    )
 
 
 def test_the_gate_declines_before_the_overrun_rather_than_reporting_it() -> None:
@@ -105,21 +110,90 @@ def test_the_first_unit_of_a_class_is_bounded_by_what_the_budget_has_left() -> N
     assert leg.timeout() == pytest.approx(480.0)
 
     unbudgeted, _ = clock(budget=None)
-    assert unbudgeted.leg(pacing.RELEASE).timeout() == pacing.UNMEASURED_CEILING
+    assert unbudgeted.leg(pacing.RELEASE).timeout() == pacing.HUNG_CEILING[pacing.RELEASE]
 
 
-def test_a_measured_unit_is_killed_at_a_multiple_of_the_class_s_own_cost() -> None:
-    paced, ticker = clock(budget=10_000.0, margins={pacing.RELEASE: 20.0})
+def test_a_unit_is_killed_at_its_leg_s_ceiling_unless_the_class_costs_more() -> None:
+    paced, ticker = clock(budget=100_000.0, margins={pacing.RELEASE: 20.0})
     leg = paced.leg(pacing.RELEASE)
+    ceiling = pacing.HUNG_CEILING[pacing.RELEASE]
+
     leg.observe(200.0)
-    assert leg.timeout() == pytest.approx(pacing.HUNG_MULTIPLE * 200.0)
+    assert leg.timeout() == ceiling, "a class cheaper than the ceiling does not shorten it"
 
-    leg.seen.clear()
-    leg.observe(0.5)
-    assert leg.timeout() == pacing.HUNG_FLOOR, "a fast class still gets a usable floor"
+    leg.observe(3_000.0)
+    assert leg.timeout() == pytest.approx(pacing.HUNG_MULTIPLE * 3_000.0), (
+        "a class that costs more than the ceiling raises it"
+    )
 
-    ticker.at = 9_950.0
+    ticker.at = 99_950.0
     assert leg.timeout() == pytest.approx(30.0), "the budget's own remainder wins"
+
+
+def test_the_ceiling_is_per_leg_and_a_colorize_unit_is_not_given_a_release_s() -> None:
+    """One number for both legs is either a licence for one or a false kill for the other."""
+    paced, _ = clock()
+    assert paced.leg(pacing.COLORIZE).timeout() == pacing.HUNG_CEILING[pacing.COLORIZE]
+    assert paced.leg(pacing.RELEASE).timeout() == pacing.HUNG_CEILING[pacing.RELEASE]
+    assert paced.leg("something else").timeout() == pacing.DEFAULT_HUNG_CEILING
+    assert pacing.HUNG_CEILING[pacing.COLORIZE] < pacing.HUNG_CEILING[pacing.RELEASE]
+
+
+#: run3's release leg, in the order it finished them. Thirteen shallow rows first;
+#: `0118` and `0002` were killed at 227.8s and 227.9s, which is 4x the longest of
+#: those thirteen; `0175` then ran 451.6s and was fine.
+RUN3_RELEASE_SECONDS = [
+    32.0, 44.1, 36.7, 37.2, 35.2, 21.2, 35.0, 29.4, 56.9, 36.7, 37.1, 23.9, 19.3,
+    181.3, 113.6, 149.9, 280.4, 133.6, 62.9, 224.5, 35.1, 34.2, 451.6, 79.2, 41.0,
+    83.3, 133.8, 124.6, 47.6, 45.8, 245.1, 296.9, 65.4, 121.1, 89.2, 59.2, 49.3,
+]  # fmt: skip
+
+
+def test_a_short_early_sample_cannot_shorten_the_deadline_a_later_unit_gets() -> None:
+    """The order dependence that cost run3 two healthy pictures.
+
+    The deadline was a multiple of the longest unit completed *so far*, so a queue
+    that happened to open with cheap units narrowed it for everything behind them.
+    Now the measured number can only raise the ceiling, so every prefix of the same
+    run grants at least as much as the longest row that run actually needed.
+    """
+    paced, _ = clock(budget=14_400.0, margins={pacing.RELEASE: 20.0})
+    leg = paced.leg(pacing.RELEASE)
+    longest = max(RUN3_RELEASE_SECONDS)
+    for seconds in RUN3_RELEASE_SECONDS:
+        assert leg.timeout() > longest, (
+            f"after {len(leg.seen)} completed row(s) the next one may take only "
+            f"{leg.timeout():.0f}s, and this run's longest healthy row took {longest:.1f}s"
+        )
+        leg.observe(seconds)
+
+
+def test_the_deadline_does_not_depend_on_the_order_units_finished_in() -> None:
+    """A `max` over a set, so the set is all that decides it."""
+    forwards, _ = clock()
+    backwards, _ = clock()
+    for seconds in RUN3_RELEASE_SECONDS:
+        forwards.leg(pacing.RELEASE).observe(seconds)
+    for seconds in reversed(RUN3_RELEASE_SECONDS):
+        backwards.leg(pacing.RELEASE).observe(seconds)
+    assert forwards.leg(pacing.RELEASE).timeout() == backwards.leg(pacing.RELEASE).timeout()
+
+
+def test_a_truly_hung_unit_still_dies() -> None:
+    """Conservative is not unbounded: the backstop is a ceiling, not a suggestion.
+
+    Every unit of run3's release leg is bounded, from the first — which had nothing
+    measured at all — to the last, by which point the leg's longest healthy row has
+    pushed the deadline a little above the ceiling on its own.
+    """
+    paced, _ = clock()
+    leg = paced.leg(pacing.RELEASE)
+    ceiling = pacing.HUNG_CEILING[pacing.RELEASE]
+    assert leg.timeout() == ceiling
+    for seconds in RUN3_RELEASE_SECONDS:
+        leg.observe(seconds)
+        assert ceiling <= leg.timeout() <= 2 * ceiling
+    assert leg.timeout() == pytest.approx(pacing.HUNG_MULTIPLE * max(RUN3_RELEASE_SECONDS))
 
 
 def test_the_margin_is_per_leg_and_not_once_for_the_run() -> None:

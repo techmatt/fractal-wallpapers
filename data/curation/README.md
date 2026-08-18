@@ -39,6 +39,15 @@ lives in another file is orphaned the day that file moves.
 record of what shipped can count what passed and never learn what it passed out
 of, which is the shape of every question about a release worth asking later.
 
+**A row that took a slot and has no picture is not a released row.** The release
+verdict answers one question — is there a wallpaper at the end of this row — so a
+row whose full-resolution render was killed reads `verdict: killed` with its
+picture pointer cleared, rather than `released` pointing at the 640x360 candidate
+JPEG the gate decision was taken on. That render is on disk and resolves, so the
+difference is a listing serving a thumbnail as a wallpaper: `run3` released 39
+rows, made 37 pictures and shipped two such links. What a release *serves* asks
+for the picture as well as the verdict.
+
 **A verdict taken after the run is added, never written over.** A released row a
 later review takes back keeps `verdict: released` — that is what the run decided
 and it stays true, and a store that edited it would delete the evidence the

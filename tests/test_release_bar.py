@@ -176,9 +176,11 @@ def released(candidate: str, head: str, score: float, **extra) -> dict:
         run="r",
         stage=records.RELEASE,
         candidate=candidate,
-        verdict="released",
+        verdict=records.RELEASED,
         row={"head": head, "p_ge3": score, "partition": "mandelbrot"},
         slot_source="mix",
+        # A released row has a release picture, and `served` now asks for it.
+        picture=f"release/{candidate}.png",
     )
     row.update(extra)
     return row
