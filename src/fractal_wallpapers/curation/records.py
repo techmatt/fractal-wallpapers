@@ -19,6 +19,22 @@ A record of what shipped can count what passed and never learn what it passed
 *out of*, which is exactly the shape of every question about a release that is
 worth asking later.
 
+## One file per run, and one reader over all of them
+
+Both decision stores are directories — `gate/<run>.jsonl`, `release/<run>.jsonl`
+— rather than one file each. A row's key already carries its run, a re-run only
+ever rewrites its own rows and a second run only ever adds, so the file a run
+writes and the rows a run owns are the same set and nothing about the store's
+semantics moves. What moves is what grows: a store that accumulated every run
+into one file grew for as long as the project did and was 918 KiB against the
+1 MiB history guard by the third run, which is a build that fails partway through
+a fourth. Sharded, the ceiling is *one run's* rows — a 6-hour run is around
+0.4 MiB — and a fifth run does not make the fourth one's file any bigger.
+
+[`read_decisions`] is the unified reader and the only thing a consumer needs: it
+hands back the whole store in key order, exactly as the single file did, and a
+caller that names a run reads that run's file alone.
+
 ## One ephemeral flag, and it moves the whole store
 
 A smoke run writes real rows. They upsert by key and the key carries the run id,
@@ -101,12 +117,29 @@ def root() -> Path:
     return default_root() if _ROOT is None else _ROOT
 
 
+def decisions_path(stage: str, run: str) -> Path:
+    """Where one run's decisions at one stage live: `<stage>/<run>.jsonl`.
+
+    The run is the axis because it is already the axis the key is on. A row's key
+    is `run|stage|candidate`, a re-run replaces its own rows and touches nothing
+    else, and a second run only ever adds — so the file a run writes and the rows
+    a run owns are now the same set, and the store stops being one file that grows
+    for as long as the project does.
+    """
+    return root() / str(stage) / f"{run}.jsonl"
+
+
+def decisions_dir(stage: str) -> Path:
+    """The directory holding every run's decisions at one stage."""
+    return root() / str(stage)
+
+
 def sinks(run: str) -> dict:
     """Every file a run may write. The complete set, so the isolation check sees it all."""
     where = root()
     return {
-        "gate": where / f"{GATE}.jsonl",
-        "release": where / f"{RELEASE}.jsonl",
+        "gate": decisions_path(GATE, run),
+        "release": decisions_path(RELEASE, run),
         "runs": where / "runs.jsonl",
         "run_record": where / "runs" / f"{run}.json",
     }
@@ -298,9 +331,10 @@ def _carry(previous: dict | None, row: dict) -> dict:
 def _upsert(path: Path, rows) -> tuple[int, int]:
     """Merge `rows` into `path` by key, rewritten in key order. `(total, new)`.
 
-    Idempotent on an unchanged run — a re-run writes byte-identical output — and
-    additive across runs, because their keys differ by the run id prefix. Rows are
-    only ever added or replaced by their own run; nothing else is dropped.
+    Idempotent on an unchanged run — a re-run writes byte-identical output. Rows
+    are only ever added or replaced by their own run; nothing else is dropped, and
+    since a decision file holds exactly one run there is nothing else in it to
+    drop.
     """
     merged: dict = {}
     if path.is_file():
@@ -340,19 +374,33 @@ def write_run(run: str, record: dict) -> Path:
     return path
 
 
+def _rows_of(path: Path) -> list[dict]:
+    if not path.is_file():
+        return []
+    return [
+        json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
+    ]
+
+
 def read_decisions(stage: str, run: str | None = None) -> list[dict]:
-    """Every recorded decision, optionally for one run.
+    """Every recorded decision at `stage`, optionally for one run.
+
+    **This is the unified reader, and it is the only thing a consumer needs.** The
+    rows live one file per run and this hands back the whole store in key order
+    regardless — the same list, in the same order, that a single accumulated file
+    gave. A caller that named a run reads one file; a caller that did not reads
+    every file there is, so a store split across runs is still one logical store.
 
     The read side exists because a record nothing can get at without parsing by
     hand is a record nobody will read.
     """
-    path = sinks(run or "run")["gate" if stage == GATE else "release"]
-    if not path.is_file():
+    if run is not None:
+        return [row for row in _rows_of(decisions_path(stage, run)) if row["run"] == run]
+    directory = decisions_dir(stage)
+    if not directory.is_dir():
         return []
-    rows = [
-        json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
-    ]
-    return [row for row in rows if run is None or row["run"] == run]
+    rows = [row for path in sorted(directory.glob("*.jsonl")) for row in _rows_of(path)]
+    return sorted(rows, key=lambda row: str(row["key"]))
 
 
 __all__ = [
@@ -363,6 +411,8 @@ __all__ = [
     "NotIsolated",
     "assert_isolated",
     "decision",
+    "decisions_dir",
+    "decisions_path",
     "default_root",
     "is_durable",
     "is_rejected",

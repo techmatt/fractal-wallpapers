@@ -1,11 +1,22 @@
 What every release run decided, and out of what population.
 
 ```
-gate.jsonl      one row per colorize attempt: kept, or dropped with a reason
-release.jsonl   one row per scored candidate: released, or passed over
-runs.jsonl      one row per run: the whole funnel, the cuts, the configuration
-runs/<run>.json that run's own summary, whole
+gate/<run>.jsonl     one row per colorize attempt: kept, or dropped with a reason
+release/<run>.jsonl  one row per scored candidate: released, or passed over
+runs.jsonl           one row per run: the whole funnel, the cuts, the configuration
+runs/<run>.json      that run's own summary, whole
 ```
+
+**The two decision stores are directories, one file per run, and one reader over
+all of them.** `records.read_decisions(stage)` hands back the whole store in key
+order and `read_decisions(stage, run)` reads that run's file alone; nothing
+downstream knows there is more than one file. The run is the shard axis because
+it was already the key's axis — a re-run rewrites its own rows and a second run
+only ever adds — so what changed is not the semantics but the growth: as one file
+each these grew for as long as the project does, and `release.jsonl` was 918 KiB
+against the 1 MiB `test_history_purity` guard by the third run. Per run the
+ceiling is one run's rows, about 0.4 MiB for a six-hour production run, and a
+fifth run does not make the fourth one's file any bigger.
 
 **The pictures are regenerable and the population is not.** A run over ledgers
 that have since grown, through heads that have since been re-shipped, cannot be
