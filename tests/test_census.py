@@ -144,6 +144,20 @@ def test_one_location_in_two_ledgers_is_counted_once(tmp_path) -> None:
     machine = census.machine_stock(ALL_PARTITIONS, ledger_paths=[first, second])
     assert machine.n_admitted == 1
     assert machine.union["location_overlaps"] == 1
+    assert machine.union["overlap_sample"] == [f"{first} vs {second}"]
+    assert machine.union["same_ledger_repeats"] == 0
+
+
+def test_a_ledger_that_found_one_place_twice_is_not_an_overlap_with_itself(tmp_path) -> None:
+    """The sample says which ledgers cover the same ground, so "x vs x" is the one
+    line in a run's summary that reads as a bug while describing a real dedup."""
+    ledger = tmp_path / "one" / "walk.jsonl"
+    write(ledger, [candidate(JULIA, 0.9), candidate(JULIA, 0.9)])
+    machine = census.machine_stock(ALL_PARTITIONS, ledger_paths=[ledger])
+    assert machine.n_admitted == 1
+    assert machine.union["location_overlaps"] == 1, "the row was still dropped"
+    assert machine.union["same_ledger_repeats"] == 1
+    assert machine.union["overlap_sample"] == []
 
 
 def test_a_refused_candidate_is_not_supply(tmp_path) -> None:

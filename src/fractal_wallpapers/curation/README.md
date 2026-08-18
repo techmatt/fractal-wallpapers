@@ -7,6 +7,7 @@ Curation spends it: it turns the union of every walk into a small set of finishe
 wallpapers and a durable account of why those and not the others.
 
 ```
+binding    which ledgers this curation reads, declared once and never guessed
 floors     every number that removes a picture, in one file
 intake     the ranked offer, best first per partition
 budget     how many pictures to make, and for which judge
@@ -22,15 +23,26 @@ run        the wiring, and nothing else
 ```
 
 ```
-fractal-wallpapers curate score           # read the ledgers through the location head
-fractal-wallpapers curate plan -n 6       # the offer and the budget, making nothing
-fractal-wallpapers curate run --run v1 -n 6
-fractal-wallpapers curate run --run v1 -n 60 --wall-budget 28800   # eight hours, or less
+fractal-wallpapers curate score --harvest artifacts/harvest_run3   # through the location head
+fractal-wallpapers curate plan --harvest artifacts/harvest_run3 -n 6   # making nothing
+fractal-wallpapers curate run --run v1 --harvest artifacts/harvest_run3 -n 6
+fractal-wallpapers curate run --run v1 --ledger artifacts/harvest_run3/walk.jsonl -n 60 \
+    --wall-budget 28800                                            # eight hours, or less
 fractal-wallpapers curate run --resume v1                          # carry on where it stopped
 fractal-wallpapers curate reject --run v1 --rejector matt_review --date 2026-08-17
 ```
 
-Seven things here are worth reading before changing anything.
+Eight things here are worth reading before changing anything.
+
+**A run is bound to its ledgers, and nothing defaults to all of them.** `--ledger`
+names them; `--harvest` names the run that wrote them and takes its `walk.jsonl`.
+`curate run` resolves the binding at its entry, writes it into `run_plan.json`
+beside `n` and the seed, and every stage downstream reads it from there — a resume
+names no ledger and is bound by its own plan. An invocation that names none with
+more than one ledger present **refuses and lists them**. The old default was to
+read every `walk.jsonl` under `artifacts/`, which would have ranked one harvest's
+17,251 unscored rows into another harvest's intake and printed one funnel over
+both populations, with nothing raising and nothing looking wrong.
 
 **Two cuts act; everything else annotates.** `floors` owns every threshold. The
 junk floor removes a row at intake, on the location head's scale, saying no more
@@ -54,7 +66,9 @@ been taken. An `Advisory` and a `Bar` are two classes rather than one class with
 a flag, so which kind a head has is visible at every call site.
 
 **Nothing is frozen into a row.** Scores are read at the moment they are used, out
-of a sidecar this stage owns; the walk ledgers themselves are never rewritten. A
+of a sidecar this stage owns — upserted per ledger, so scoring one binding
+replaces that binding's rows and leaves every other ledger's alone; the walk
+ledgers themselves are never rewritten. A
 verdict stamped into a ledger on the day it was minted is a verdict the pipeline
 must later either believe or delete, and deleting is how a head flip once took an
 intake from about fourteen hundred locations to sixteen. Here a flip is a

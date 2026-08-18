@@ -25,6 +25,16 @@ summary says `budget_stopped`, which is a different thing from `completed` and a
 different thing again from `crashed`, and a short release is attributable to the
 clock instead of being mistaken for thin supply.
 
+## A run is bound to its supply, once
+
+Which ledgers this release is drawn from is part of the plan, not a flag each
+stage carries: it is declared at the run's entry — as ledgers, or as the harvest
+run that fed it — resolved, written into `run_plan.json`, and read from there by
+the intake and by everything the intake feeds. There is no "all of them" default
+anywhere in the path. A run that could reach every ledger under `artifacts/`
+because a flag was forgotten is a run whose funnel is printed over two harvests'
+supply, and nothing about the numbers looks wrong.
+
 ## An interrupted run is continued, not restarted
 
 `--resume` reads the run's own sidecars — the candidate log for the colorize, the
@@ -70,9 +80,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 from fractal_wallpapers.curation import (
-    budget as budget_module,
-)
-from fractal_wallpapers.curation import (
+    binding,
     colorize,
     floors,
     intake,
@@ -81,6 +89,9 @@ from fractal_wallpapers.curation import (
     release,
     selection,
     sheet,
+)
+from fractal_wallpapers.curation import (
+    budget as budget_module,
 )
 from fractal_wallpapers.paths import repo_root
 
@@ -159,6 +170,7 @@ def curate(
     )
     n, seed, strange_share = shape["n"], shape["seed"], shape["strange_share"]
     attempts, ledgers = shape["attempts"], shape["ledgers"]
+    log(f"[intake] bound to {len(ledgers)} ledger(s): {', '.join(ledgers)}")
 
     if shape["ephemeral"]:
         records.use(records.scratch_root(run))
@@ -249,6 +261,12 @@ def _shape(directory: Path, run: str, resume: bool, given: dict, log) -> dict:
     rather than a warning when a flag contradicts it.
     """
     path = directory / "run_plan.json"
+    # Resolved before anything is compared or written, so the plan records the
+    # binding rather than the flags that implied it — and so a resume whose
+    # --ledger spells the same file differently is not read as a second shape.
+    given = dict(given)
+    if given["ledgers"] is not None:
+        given["ledgers"] = [binding.label(p) for p in binding.resolve(given["ledgers"])]
     if resume:
         if not path.is_file():
             raise RunRefused(
@@ -286,7 +304,10 @@ def _shape(directory: Path, run: str, resume: bool, given: dict, log) -> dict:
             STRANGE_SHARE if given["strange_share"] is None else float(given["strange_share"])
         ),
         "attempts": None if given["attempts"] is None else int(given["attempts"]),
-        "ledgers": None if given["ledgers"] is None else [str(p) for p in given["ledgers"]],
+        # Never `None`: a run declares its supply at its entry, and the one case
+        # resolution settles without being told — the only ledger there is — is
+        # still written down, because next month there will be two.
+        "ledgers": [binding.label(p) for p in binding.resolve(given["ledgers"])],
         "ephemeral": bool(given["ephemeral"]),
     }
     path.write_text(json.dumps(shape, indent=2) + "\n", encoding="utf-8", newline="\n")
@@ -863,7 +884,7 @@ def _record(**k) -> dict:
         run,
         records.population(
             run=run,
-            ledgers=k["ledgers"] or ["artifacts/**/walk.jsonl"],
+            ledgers=k["ledgers"],
             counts=counts,
             cuts=cuts,
             config=config,
@@ -903,6 +924,7 @@ def _record(**k) -> dict:
         "wall": k["wall"],
         "reconciliation": k["reconciliation"],
         "counts": counts,
+        "ledgers": k["ledgers"],
         "supply": k["supply"],
         "budget": k["budget_record"],
         "realized_fills": k["realized"],

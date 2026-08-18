@@ -125,13 +125,16 @@ def admitted_union(paths=None, admit=None) -> tuple[list[dict], dict]:
     Each returned row is the ledger's own row with `_ledger` added, naming the
     file it came from. The diagnostics carry what a census wants to print: the
     size, the per-ledger contribution, and how many rows an earlier ledger had
-    already admitted the same location for.
+    already admitted the same location for. Of those, the ones a ledger duplicated
+    against *itself* are counted separately and kept out of `overlap_sample`,
+    which is a statement about which ledgers overlap.
     """
     paths = ledger_paths() if paths is None else [Path(p) for p in paths]
     root = repo_root()
     seen: dict = {}
     kept: list[dict] = []
     overlaps: list[str] = []
+    repeats = 0
     per_ledger: dict = {}
     unkeyed = 0
     for path in paths:
@@ -148,7 +151,14 @@ def admitted_union(paths=None, admit=None) -> tuple[list[dict], dict]:
                 # What it cannot be is deduplicated, which is why it is reported.
                 unkeyed += 1
             elif key in seen:
-                overlaps.append(f"{seen[key]} vs {label}")
+                # A ledger that found one place twice is a repeat, not an
+                # overlap: the sample exists to say which ledgers cover the same
+                # ground, and "x vs x" answers a question nobody asked. Counted
+                # either way — the row is dropped either way.
+                if seen[key] == label:
+                    repeats += 1
+                else:
+                    overlaps.append(f"{seen[key]} vs {label}")
                 continue
             else:
                 seen[key] = label
@@ -161,7 +171,8 @@ def admitted_union(paths=None, admit=None) -> tuple[list[dict], dict]:
         "size": len(kept),
         "ledgers": len(paths),
         "per_ledger": per_ledger,
-        "location_overlaps": len(overlaps),
+        "location_overlaps": len(overlaps) + repeats,
+        "same_ledger_repeats": repeats,
         "overlap_sample": overlaps[:5],
         "unkeyed_rows": unkeyed,
     }
