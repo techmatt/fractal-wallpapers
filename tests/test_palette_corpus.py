@@ -124,10 +124,25 @@ def test_the_temperature_is_read_off_the_corpus_rather_than_chosen() -> None:
 
 
 @pytest.fixture(scope="module")
-def rows():
-    if not palette_corpus.row_dir().is_dir():
-        pytest.skip("the distillation corpus has not been built")
-    return palette_corpus.read()
+def rows(distillation_rows):
+    """The tracked corpus, under the name this file's tests read it by."""
+    return distillation_rows
+
+
+@pytest.fixture(scope="module")
+def grouped(rows):
+    """The corpus folded back into the candidate sets it was drawn as."""
+    return palette_corpus.grouped(rows)
+
+
+@pytest.fixture(scope="module")
+def places(rows):
+    """One location coordinate per row, in row order.
+
+    Deriving it is a pass over every row of the corpus, and three of the tests
+    below are about which side of the split a *place* landed on rather than a row.
+    """
+    return [repr(location_key(row["family"], row["viewport"])) for row in rows]
 
 
 class TestTheTrackedCorpus:
@@ -156,18 +171,16 @@ class TestTheTrackedCorpus:
             spec = renders.spec_of(row, __import__("pathlib").Path("out.jpg"))
             assert spec["colormap"] == row["colormap"]
 
-    def test_a_set_holds_one_place_and_no_map_twice(self, rows) -> None:
-        for entry in palette_corpus.grouped(rows):
+    def test_a_set_holds_one_place_and_no_map_twice(self, grouped) -> None:
+        for entry in grouped:
             assert len(set(entry["candidates"])) == len(entry["candidates"])
-            places = {location_key(row["family"], row["viewport"]) for row in entry["rows"]}
-            assert len(places) == 1
+            held = {location_key(row["family"], row["viewport"]) for row in entry["rows"]}
+            assert len(held) == 1
 
-    def test_no_location_is_on_both_sides_of_the_split(self, rows) -> None:
+    def test_no_location_is_on_both_sides_of_the_split(self, rows, places) -> None:
         sides: dict[str, set] = {}
-        for row in rows:
-            sides.setdefault(repr(location_key(row["family"], row["viewport"])), set()).add(
-                row["side"]
-            )
+        for row, place in zip(rows, places, strict=True):
+            sides.setdefault(place, set()).add(row["side"])
         assert all(len(seen) == 1 for seen in sides.values())
 
     def test_the_split_record_matches_the_rows(self, rows) -> None:
@@ -194,12 +207,12 @@ class TestTheTrackedCorpus:
             kinds["hard"]["palette_distance"]["mean"] < kinds["uniform"]["palette_distance"]["mean"]
         )
 
-    def test_a_hard_set_opens_on_the_anchor_it_was_built_around(self, rows) -> None:
+    def test_a_hard_set_opens_on_the_anchor_it_was_built_around(self, grouped) -> None:
         from fractal_wallpapers.models import palette_sets
         from fractal_wallpapers.palettes import space
 
         pool = palette_sets.pool()["pool"]
-        hard = [entry for entry in palette_corpus.grouped(rows) if entry["kind"] == "hard"]
+        hard = [entry for entry in grouped if entry["kind"] == "hard"]
         assert hard
         for entry in hard[:5]:
             anchor = entry["rows"][0]["anchor"]
@@ -208,14 +221,10 @@ class TestTheTrackedCorpus:
                 space.neighbourhood(anchor, pool, len(entry["candidates"]))
             )
 
-    def test_no_location_a_previous_draw_held_out_is_being_taught(self, rows) -> None:
+    def test_no_location_a_previous_draw_held_out_is_being_taught(self, rows, places) -> None:
         """The pin is data, and this is what it is for."""
         pinned = palette_corpus.carried_holdout()
-        taught = {
-            repr(location_key(row["family"], row["viewport"]))
-            for row in rows
-            if row["side"] == "train"
-        }
+        taught = {place for row, place in zip(rows, places, strict=True) if row["side"] == "train"}
         assert not (pinned & taught)
 
     def test_the_corpus_is_the_one_thing_the_size_rule_is_widened_for(self) -> None:

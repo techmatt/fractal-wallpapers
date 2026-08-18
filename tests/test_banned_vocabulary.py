@@ -30,6 +30,7 @@ exception.
 
 from __future__ import annotations
 
+import functools
 import json
 import re
 import subprocess
@@ -98,7 +99,8 @@ ALLOWLIST: frozenset[str] = frozenset()
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
-def tracked_files() -> list[str]:
+@functools.cache
+def tracked_files() -> tuple[str, ...]:
     result = subprocess.run(
         ["git", "ls-files", "-z"],
         cwd=REPO_ROOT,
@@ -106,7 +108,7 @@ def tracked_files() -> list[str]:
         capture_output=True,
         text=True,
     )
-    return [name for name in result.stdout.split("\0") if name]
+    return tuple(name for name in result.stdout.split("\0") if name)
 
 
 def is_frozen_record(name: str) -> bool:
@@ -122,6 +124,36 @@ def without_foreign_keys(name: str, line: str) -> str:
     return line
 
 
+#: The banned terms as plain lowercase strings, for the pre-check below.
+SPELLED = tuple(spelled_out(term).lower() for term in BANNED_TERMS)
+
+
+def offenders_in(name: str, text: str) -> list[str]:
+    """Every banned name in one file, as `file:line: pattern`.
+
+    Two passes, and the first one is a substring search rather than a regex. Each
+    pattern is a literal wearing a pair of lookarounds, so a file that does not
+    contain the bare characters cannot match — the pre-check is a superset of the
+    ban and is allowed to be as generous as it likes, since the second pass is
+    what convicts. It is generous: every ordinary use of `preference` reaches it.
+
+    That matters because this sweep reads every tracked file, which is twenty-odd
+    megabytes of text here. Running seven lookaround patterns over all of it was
+    the whole cost of this file; running one lowercase substring search over it
+    and the patterns over the sixty-odd files that survive is not measurable.
+    """
+    text = without_foreign_keys(name, text)
+    lowered = text.lower()
+    if not any(spelled in lowered for spelled in SPELLED):
+        return []
+    return [
+        f"{name}:{number}: {pattern.pattern}"
+        for number, line in enumerate(text.splitlines(), start=1)
+        for pattern in BANNED
+        if pattern.search(line)
+    ]
+
+
 def test_no_tracked_file_uses_the_old_vocabulary() -> None:
     offenders = []
     for name in tracked_files():
@@ -134,12 +166,38 @@ def test_no_tracked_file_uses_the_old_vocabulary() -> None:
             text = path.read_text(encoding="utf-8")
         except UnicodeDecodeError:  # not text; test_history_purity owns that complaint
             continue
-        for line_number, line in enumerate(text.splitlines(), start=1):
-            line = without_foreign_keys(name, line)
-            for pattern in BANNED:
-                if pattern.search(line):
-                    offenders.append(f"{name}:{line_number}: {pattern.pattern}")
+        offenders.extend(offenders_in(name, text))
     assert not offenders, "old-repository vocabulary in tracked files: " + "; ".join(offenders)
+
+
+def test_the_sweep_reports_the_line_a_planted_name_is_on() -> None:
+    """The planted red for the sweep, as distinct from the patterns it runs.
+
+    A pre-check that answered "clean" for a file the patterns would have
+    convicted is the one way this guard can go quiet without failing, so the
+    planted name is buried in a long otherwise-clean file and the sweep is asked
+    to name the line it is on.
+    """
+    for index, term in enumerate(BANNED_TERMS):
+        spelled = spelled_out(term)
+        text = "a clean line\n" * 40 + f"batch = 'twin_top_{spelled}'\n" + "a clean line\n"
+        assert offenders_in("src/somewhere.py", text) == [
+            f"src/somewhere.py:41: {BANNED[index].pattern}"
+        ], spelled
+    assert not offenders_in("src/somewhere.py", "a clean line\n" * 41)
+
+
+def test_the_pre_check_cannot_reject_a_file_the_patterns_would_convict() -> None:
+    """The sweep's fast path is a substring search, and it is sound only because
+    every pattern is a literal in lookarounds. A term written with anything the
+    substring search could not find — a character class doing real work, an
+    alternation — would pass this guard while never being looked for."""
+    for term, spelled, pattern in zip(BANNED_TERMS, SPELLED, BANNED, strict=True):
+        assert pattern.pattern == rf"(?<![a-z]){term}(?![a-z])", term
+        # The term is the spelled name with one character wrapped in a class, and
+        # what is left over holds nothing a regex reads as anything but itself.
+        assert not set(spelled) & set(r".^$*+?{}|()[]\\"), term
+        assert pattern.search(spelled) and pattern.search(spelled.upper()), term
 
 
 def test_the_guard_would_actually_catch_something() -> None:
@@ -218,7 +276,5 @@ def test_a_foreign_key_excuses_itself_and_not_its_line() -> None:
     name, literal, _ = FOREIGN_KEYS[0]
     spelled = spelled_out(literal)
     line = f'    "{spelled}": Imported(batch="{spelled_out("sittin[g]")}_plane_deep"),'
-    survivor = without_foreign_keys(name, line)
-    assert any(pattern.search(survivor) for pattern in BANNED), (
-        "the exception swallowed a violation that shared its line"
-    )
+    assert offenders_in(name, line), "the exception swallowed a violation that shared its line"
+    assert not offenders_in(name, f'    "{spelled}",'), "the declared key is not excused"

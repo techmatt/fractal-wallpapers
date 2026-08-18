@@ -9,6 +9,8 @@ what makes them runnable on every commit rather than every so often.
 from __future__ import annotations
 
 import json
+import math
+import re
 
 import pytest
 
@@ -264,14 +266,18 @@ def test_a_smoke_walk_records_coordinates_as_decimal_strings(tmp_path) -> None:
     run.seed_from_julia_pool(limit=2)
     run.run()
 
+    seen = 0
     for row in ledger_module.read(run.ledger.path):
         if row["kind"] != "candidate":
             continue
-        for value in row["viewport"].values():
+        seen += 1
+        for value in list(row["viewport"].values()) + list(row["family"]["c"]):
             assert isinstance(value, str)
-            assert float(value) == float(value), "and it parses back to a number"
-        for value in row["family"]["c"]:
-            assert isinstance(value, str)
+            # And a decimal string, not any string: written by a formatter that
+            # reached for an exponent or a repr it would still be a `str`.
+            assert math.isfinite(float(value)), value
+            assert re.fullmatch(r"-?\d+(\.\d+)?", value), value
+    assert seen, "the walk recorded no candidates, so nothing above was checked"
 
 
 @needs_engine

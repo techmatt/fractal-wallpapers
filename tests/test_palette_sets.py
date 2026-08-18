@@ -108,13 +108,11 @@ class TestTheTrackedRecord:
         keys = [location_key(row["family"], row["viewport"]) for row in rows]
         assert len(set(keys)) == len(keys)
 
-    def test_the_sets_are_held_out_of_the_distillation_corpus(self, rows) -> None:
+    def test_the_sets_are_held_out_of_the_distillation_corpus(
+        self, rows, distillation_rows
+    ) -> None:
         """The whole point of them: a set the head trained on is not an instrument."""
-        from fractal_wallpapers.models import palette_corpus
-
-        if not palette_corpus.row_dir().is_dir():
-            pytest.skip("the distillation corpus has not been built")
-        taught = {location_key(row["family"], row["viewport"]) for row in palette_corpus.read()}
+        taught = {location_key(row["family"], row["viewport"]) for row in distillation_rows}
         assert not taught & palette_sets.places()
 
     def test_a_row_carries_the_geometry_its_pictures_are_made_at(self, rows) -> None:

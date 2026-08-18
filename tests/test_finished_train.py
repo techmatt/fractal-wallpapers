@@ -113,14 +113,16 @@ def test_the_transform_still_runs_with_the_colour_stages_off() -> None:
 
 
 @pytest.mark.parametrize("head_name", sorted(finished.HEADS))
-def test_the_split_is_the_pin_and_the_selection_slice_comes_out_of_training(head_name: str) -> None:
+def test_the_split_is_the_pin_and_the_selection_slice_comes_out_of_training(
+    head_name: str, shipped_render_cache
+) -> None:
     from fractal_wallpapers.models import renders
 
     if not finished.registry_path(head_name).is_file():
         pytest.skip(f"the {head_name} store has not been imported on this machine")
     if not renders.crop_dir(head_name).is_dir() or not renders.plan_path(head_name).is_file():
         pytest.skip("the render cache has not been built on this machine")
-    if renders.missing(head_name):
+    if shipped_render_cache.missing(head_name):
         pytest.skip("the render cache is incomplete on this machine")
 
     pictures, record = finished_train.population(head_name)

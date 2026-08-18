@@ -6,6 +6,21 @@ import pytest
 
 from fractal_wallpapers.models import palette_acceptance
 
+#: What the module ships, read before the fixture below replaces it.
+SHIPPED_DRAWS = palette_acceptance.DRAWS
+
+#: Bootstrap draws for the reads below. Nothing in this file asserts on an
+#: interval — every test here reads a point statistic out of `measure` — and the
+#: bootstrap is linear in this, so the shipped five thousand buys nothing but a
+#: second per call. `test_the_shipped_bar_is_read_with_the_bootstrap_it_declares`
+#: is what keeps the real number honest.
+CHEAP_DRAWS = 50
+
+
+@pytest.fixture(autouse=True)
+def cheap_bootstrap(monkeypatch):
+    monkeypatch.setattr(palette_acceptance, "DRAWS", CHEAP_DRAWS)
+
 
 def a_row(agreed: bool, spearman: float, regret: float, spread: float = 1.0, **extra) -> dict:
     return {
@@ -71,6 +86,17 @@ def test_the_written_bar_names_both_bars_of_the_gated_arm() -> None:
     assert names == {"renderer control", "floor"}
     assert bar["arms"]["top_pick"]["gated"] is True
     assert bar["arms"]["production_argmax"]["gated"] is False
+
+
+def test_the_shipped_bar_is_read_with_the_bootstrap_it_declares() -> None:
+    """The written bar names the resampling it was drawn up under, and the reads
+    in this file run a fraction of it to stay cheap. That is a fair substitution
+    only while the number the module ships is the one the document promised."""
+    if not palette_acceptance.prereg_path().is_file():
+        pytest.skip("the bar has not been written")
+    rules = palette_acceptance.prereg()["rules"]
+    assert rules["draws"] == SHIPPED_DRAWS
+    assert rules["bootstrap_seed"] == palette_acceptance.BOOTSTRAP_SEED
 
 
 def test_the_bar_says_out_loud_that_the_ground_truth_is_a_model() -> None:

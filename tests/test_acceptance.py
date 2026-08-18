@@ -74,6 +74,16 @@ def test_the_yardstick_covers_the_whole_population() -> None:
         assert cutpoint["band"][0] <= cutpoint["mean"] <= cutpoint["band"][1]
 
 
+def test_the_shipped_bar_is_read_with_the_bootstrap_it_declares() -> None:
+    """The pre-registration names the resampling it was written under, and the
+    calibration read below runs a fraction of it to stay affordable. That is a
+    fair substitution only while the number the module actually ships is the one
+    the document promised — so it is asserted here rather than assumed there."""
+    rules = bar()["rules"]
+    assert rules["draws"] == acceptance.DRAWS
+    assert rules["bootstrap_seed"] == acceptance.BOOTSTRAP_SEED
+
+
 def test_the_gated_cutpoints_have_positives_to_measure_with() -> None:
     document = bar()
     for label, gate in document["arms"]["ordering"].items():
@@ -106,6 +116,15 @@ def test_the_vendored_yardstick_lands_on_this_projects_location_ids() -> None:
     )
 
 
+#: Bootstrap draws for the calibration read below. The shipped number is
+#: `acceptance.DRAWS`, and this is two per cent of it: the arm being calibrated
+#: is the incumbent against itself, where every resample gives exactly zero, and
+#: the two off-arms clear their margins by more than a hundredth either way at
+#: any draw count from fifty upwards. What the read costs is linear in this, and
+#: at the shipped count this one test was two fifths of the whole suite.
+CALIBRATION_DRAWS = 100
+
+
 def test_the_bar_accepts_a_head_that_is_the_incumbent(tmp_path, monkeypatch) -> None:
     """The machinery's own calibration: hand the read one of the yardstick's own
     seeds and it must come back ACCEPT. A bar that could not pass the head it was
@@ -120,6 +139,7 @@ def test_the_bar_accepts_a_head_that_is_the_incumbent(tmp_path, monkeypatch) -> 
     shipped = acceptance.prereg_path("location")
     vendored = acceptance.yardstick_path("location")
     monkeypatch.setattr(train, "head_dir", lambda name="location", run=None: tmp_path)
+    monkeypatch.setattr(acceptance, "DRAWS", CALIBRATION_DRAWS)
     shutil.copy(shipped, tmp_path / "prereg.json")
     shutil.copy(vendored, tmp_path / "yardstick.jsonl")
 
