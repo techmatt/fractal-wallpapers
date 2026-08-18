@@ -238,8 +238,22 @@ def _palette_agreement(name: str, which: str, device: str, run: str | None) -> d
     from fractal_wallpapers.models import palette_teacher as tower
 
     del name
-    rows = palette_scoring.read(run)
-    paths, _ = palette_scoring.paths_of(palette_sets.read())
+    # Aligned to the sets by name rather than by position: the pictures are laid
+    # out in the vendored record's order and the scores are read back out of a
+    # tree of shards, and two files agreeing on an order is not something either
+    # of them promises.
+    sets = palette_sets.read()
+    scored = {row["set"]: row for row in palette_scoring.read(run)}
+    missing = [entry["set"] for entry in sets if entry["set"] not in scored]
+    if missing:
+        raise ValueError(
+            f"{len(missing)} of the {len(sets)} vendored sets have no score row in run "
+            f"{run!r} (e.g. {missing[:3]}). The candidates below are sliced out of one flat "
+            f"vector in the record's order, so a partial read would compare each set against "
+            f"the next one's scores. Re-score this checkpoint."
+        )
+    rows = [scored[entry["set"]] for entry in sets]
+    paths, _ = palette_scoring.paths_of(sets)
     halved, config, where = palette_scoring.load(shipped_path("palette"), device)
     scores = tower.scored_with(
         halved, paths, palette_head.Transform(train=False), where, int(config.get("batch_sets", 16))

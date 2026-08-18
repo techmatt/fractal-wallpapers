@@ -741,6 +741,23 @@ def _reconcile(colorize_counts: dict, release_record: dict, log) -> dict:
     return out
 
 
+def release_verdict(seated: bool, picture) -> tuple[str, str | None]:
+    """What a release row's verdict and reason are, given a slot and a picture.
+
+    Three states and they are not two: a row that took no slot was passed over, a
+    row that took one and has a full-resolution picture was released, and a row
+    that took one and has no picture is a row whose render died under it. The last
+    used to be recorded as the second, with the candidate JPEG the gate decision
+    was taken on left in the picture pointer — a 640x360 thumbnail that is on disk
+    and resolves, so every listing downstream served it as the wallpaper.
+    """
+    if not seated:
+        return records.PASSED_OVER, None
+    if picture is None:
+        return records.KILLED, records.KILLED_REASON
+    return records.RELEASED, None
+
+
 def _record(**k) -> dict:
     """Write every record the run leaves behind, and return its own summary."""
     run, rows, scored, selected = k["run"], k["rows"], k["scored"], k["selected"]
@@ -779,16 +796,24 @@ def _record(**k) -> dict:
     for row in scored:
         identifier = f"{row['attempt']:04d}"
         picture = released.get(identifier)
+        verdict, killed = release_verdict(identifier in chosen, picture)
+        # The candidate JPEG is the right pointer for a passed-over row — that
+        # render is what the decision was taken on, and the sheet shows it — and
+        # exactly the wrong one on a killed row, where nothing may resolve.
         decision = records.decision(
             run=run,
             stage=records.RELEASE,
             candidate=identifier,
-            verdict="released" if identifier in chosen else "passed_over",
+            verdict=verdict,
             row=row,
-            reason=why.get(identifier),
+            reason=killed or why.get(identifier),
             slot_source=source.get(identifier),
             group=group_of.get(identifier),
-            picture=(str(Path(picture).relative_to(directory)) if picture else row.get("picture")),
+            picture=(
+                None
+                if killed
+                else (str(Path(picture).relative_to(directory)) if picture else row.get("picture"))
+            ),
         )
         decision["release_autolevel"] = at_release.get(identifier)
         release_rows.append(decision)
@@ -943,6 +968,7 @@ __all__ = [
     "PLAN_SCHEMA",
     "RELEASE_RESOLUTION",
     "RELEASE_SUPERSAMPLE",
+    "release_verdict",
     "SHAPE",
     "STRANGE_SHARE",
     "RunRefused",

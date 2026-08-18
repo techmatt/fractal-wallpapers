@@ -3,10 +3,19 @@ The head that ranks palette choices for a given location.
 ```
 prereg.json            the bar, written before the head existed
 acceptance.json        the read against it, per seed
-seed*_listwise/        the seed band that was judged: config, metrics, scores
+seed*_listwise/        the seed band that was judged: config, metrics, scores/
 seed0_regression/      the losing arm of the loss, kept because it was an arm
 palette.fp16.pt        what ships. Fetched, not tracked
 ```
+
+Each seed's `scores/` is a tree — `<source_batch>/<partition>.jsonl` — and not one
+file. A score row carries two whole score vectors and the candidate list they are
+aligned to, so 377 sets read 999 KiB against the repository's 1 MiB size guard on
+every seed. The batch is the axis the corpus grows on and the partition is the
+axis its rows already arrive in blocks of; split on both, the largest file is
+425 KiB and a new labeling batch adds a directory rather than lengthening one.
+`palette_scoring.read()` is the reader over the whole tree and hands the rows back
+in `set` order, which is the order the single file had.
 
 ## What it is
 

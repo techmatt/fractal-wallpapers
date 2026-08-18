@@ -54,6 +54,21 @@ the assertion a run makes **before its first write**. One binding at the run's
 entry point rather than a flag at each write site, because a redirect applied at
 three of four sites is not a redirect.
 
+## A row that took a slot and has no picture is not a released row
+
+The release verdict answers one question — is there a wallpaper at the end of this
+row — so a row whose full-resolution render was killed reads [`KILLED`] and has its
+picture pointer cleared, rather than reading `released` and pointing at the
+candidate JPEG the gate decision was taken on. That is not a cosmetic difference:
+the candidate render is a 640x360 thumbnail, it is on disk, and it resolves, so
+every listing downstream would have served it as the wallpaper. run3 released 39
+rows, made 37 pictures, and shipped two links to a thumbnail before anybody
+noticed. [`served`] therefore asks for the picture as well as the verdict.
+
+Unlike a rejection, this is not a verdict added after the fact by a person: it is
+what the run itself decided, written by the run, and a re-run that makes the
+picture flips the row back through the same upsert.
+
 ## A verdict taken after the run is added to the row, never written over it
 
 A release can be wrong, and it is a person who finds out. When that happens the
@@ -81,6 +96,25 @@ SCHEMA = 1
 #: The two decisions a run records.
 GATE = "gate"
 RELEASE = "release"
+
+#: The three verdicts a release decision can carry. A row is `released` when it
+#: took a slot **and** the picture for that slot exists; `killed` when it took the
+#: slot and the full-resolution render died under it; `passed_over` when it took
+#: no slot at all.
+#:
+#: `killed` is its own verdict rather than an annotation on `released` because the
+#: two are answers to the same question — is there a wallpaper at the end of this
+#: row — and the whole point of the record is that a reader can take the verdict
+#: at face value. run3 released 39 rows and made 37 pictures; the two rows the
+#: hung-unit backstop killed read `released` and pointed at the candidate JPEG the
+#: gate decision was taken on, which is a 640x360 thumbnail of a wallpaper that
+#: does not exist.
+RELEASED, KILLED, PASSED_OVER = "released", "killed", "passed_over"
+
+#: What a killed row says for itself, in the same one-spelling discipline as
+#: [`REASONS`]. Not a member of that mapping: those are the ways a candidate loses
+#: a slot, and this row won its slot — what it lost was the render.
+KILLED_REASON = "the release render was killed at its deadline and no picture was made"
 
 #: The sentence a decision row gives for each way a candidate can lose a slot to
 #: something other than its own score. One spelling, here, because the sheet
@@ -206,8 +240,8 @@ def decision(
 ) -> dict:
     """One decision, carrying the whole join it was taken on.
 
-    `verdict`      at the gate, `kept` or `dropped`; at the release, `released`
-                   or `passed_over`.
+    `verdict`      at the gate, `kept` or `dropped`; at the release, one of
+                   [`RELEASED`], [`KILLED`] or [`PASSED_OVER`].
     `slot_source`  which kind of slot a released row took — `guarantee` or `mix`.
                    `None` on every gate row and every passed-over row: a row that
                    took no slot has no slot provenance, and defaulting it to
@@ -300,13 +334,25 @@ def is_rejected(row: dict) -> bool:
 def served(rows) -> list[dict]:
     """The rows a run actually serves, in candidate order.
 
-    Released, minus what a review rejected. **This, not `verdict == "released"`,
-    is what a listing reads.** The raw verdict is what the run decided and it
-    stays true; the served set is what a person would find at the end of a link,
-    and the two come apart the moment anybody reviews a release.
+    Released, minus what a review rejected, minus anything with no release picture
+    to serve. **This, not `verdict == "released"`, is what a listing reads.** The
+    raw verdict is what the run decided and it stays true; the served set is what a
+    person would find at the end of a link, and the two come apart the moment
+    anybody reviews a release.
+
+    The picture is the third condition and it is not redundant with the verdict.
+    A row whose render was killed is recorded as [`KILLED`] with its pointer
+    cleared, so both halves of that row say the same thing — but the set this
+    function names is "rows with a wallpaper at the end of them", and a set defined
+    on the verdict alone would be one schema change away from serving a link to
+    nothing.
     """
     return sorted(
-        (row for row in rows if row.get("verdict") == "released" and not is_rejected(row)),
+        (
+            row
+            for row in rows
+            if row.get("verdict") == RELEASED and row.get("picture") and not is_rejected(row)
+        ),
         key=lambda row: str(row.get("candidate")),
     )
 
@@ -464,8 +510,12 @@ def read_decisions(stage: str, run: str | None = None) -> list[dict]:
 
 __all__ = [
     "GATE",
+    "KILLED",
+    "KILLED_REASON",
+    "PASSED_OVER",
     "REASONS",
     "RELEASE",
+    "RELEASED",
     "SCHEMA",
     "NotIsolated",
     "assert_isolated",

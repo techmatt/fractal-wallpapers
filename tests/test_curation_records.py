@@ -71,6 +71,63 @@ def test_a_row_that_took_no_slot_has_no_slot_provenance() -> None:
     assert row["slot_source"] is None
 
 
+def _release_row(candidate: str, seated: bool, picture) -> dict:
+    """One release row exactly as a run writes it, verdict and all."""
+    from fractal_wallpapers.curation import run as run_module
+
+    verdict, reason = run_module.release_verdict(seated, picture)
+    # The gate render this decision was taken on. On disk, and it resolves.
+    candidate_picture = f"pictures/{candidate}.jpg"
+    return records.decision(
+        run="r",
+        stage=records.RELEASE,
+        candidate=candidate,
+        verdict=verdict,
+        row=candidate_row(picture=candidate_picture),
+        reason=reason,
+        picture=None if verdict == records.KILLED else (picture or candidate_picture),
+    )
+
+
+def test_a_row_whose_release_render_was_killed_is_not_served() -> None:
+    """run3: two seated rows, no full-resolution picture, and `verdict: released`.
+
+    The candidate JPEG the gate decision was taken on is a 640x360 thumbnail, it is
+    on disk and it resolves, so a listing that read the verdict alone served it as
+    the wallpaper.
+    """
+    made = _release_row("0001", True, "release/0001.png")
+    killed = _release_row("0002", True, None)
+    assert killed["verdict"] == records.KILLED
+    assert killed["picture"] is None, "nothing may resolve to the gate render"
+    assert killed["reason"] == records.KILLED_REASON
+    assert [row["candidate"] for row in records.served([made, killed])] == ["0001"]
+
+    # A row that took no slot keeps its candidate render — that is what the sheet
+    # shows a near miss with — and is not served either.
+    passed = _release_row("0003", False, None)
+    assert passed["verdict"] == records.PASSED_OVER
+    assert passed["picture"] == "pictures/0003.jpg"
+    assert records.served([passed]) == []
+
+    # Belt and braces: `served` checks the verdict and the pointer separately, so a
+    # row that somehow kept one of the two is still not served.
+    assert records.served([{**killed, "verdict": records.RELEASED}]) == []
+    assert records.served([{**made, "picture": None}]) == []
+
+
+def test_a_killed_row_flips_back_through_the_upsert_when_the_picture_is_made(tmp_path) -> None:
+    """The re-render is a state change on the same key, not a second row."""
+    records.use(tmp_path)
+    records.write_decisions(records.RELEASE, "r", [_release_row("0002", True, None)])
+    records.write_decisions(records.RELEASE, "r", [_release_row("0002", True, "release/0002.png")])
+
+    rows = records.read_decisions(records.RELEASE, "r")
+    assert len(rows) == 1
+    assert rows[0]["verdict"] == records.RELEASED
+    assert [row["candidate"] for row in records.served(rows)] == ["0002"]
+
+
 def test_a_failed_render_records_a_reason_and_no_score() -> None:
     """Recording it as a zero would make a crash indistinguishable from a bad wallpaper."""
     row = records.decision(

@@ -27,7 +27,7 @@ is worse than none because it is trusted. The estimate of a class is **the longe
 one this run has finished** — a stop is cheap and an overrun is not, so the gate
 errs by declining.
 
-**A class with nothing measured yet is covered by a hard timeout instead.** The
+**A class with nothing measured yet is covered by the hard timeout instead.** The
 first unit of a class has no estimate by construction, and letting it run
 unbounded to obtain one would put the whole budget at the mercy of one hung
 render. It gets what is left after the margin as a *kill* deadline, and it only
@@ -47,7 +47,7 @@ from `completed` and a different one again from `crashed`. A run that merely
 stopped early and reported success would be indistinguishable from a run whose
 supply ran out, which is exactly the question a short release is asked.
 
-## The hung-unit backstop
+## The hung-unit backstop, and why it is not measured
 
 Every unit runs under a kill deadline whether or not the gate is armed, because a
 unit that never returns is not a budget problem — it is the failure the budget
@@ -56,6 +56,19 @@ engine call ([`engine.deadline`]), so a killed unit comes back as a *failed row*
 with its reason and the run carries on to the next one. Worker processes already
 carry a job object that takes their engine down with them; this is the same
 discipline for the units that run in the parent.
+
+The backstop is a **fixed ceiling per leg** ([`HUNG_CEILING`]), and it is the one
+number here that is deliberately not measured. The gate's estimate may be sharp
+because a wrong estimate costs a unit not attempted; a wrong kill deadline costs a
+finished picture and leaves a record that says the run released it. So the two
+errors are not traded off against each other: this asks only "has this unit
+stopped being work", answers it at a height no healthy unit of either leg has
+ever come near, and lets a run that turns out to be slow simply be slow.
+
+What the run has measured may still **raise** the ceiling, never lower it
+([`HUNG_MULTIPLE`]), which is what keeps the deadline independent of the order
+units finish in. run3 lost two healthy release rows to the version that lowered
+it.
 """
 
 from __future__ import annotations
@@ -77,18 +90,36 @@ TEARDOWN_MARGIN = {COLORIZE: 30.0, RELEASE: 20.0}
 #: The margin a leg not named above gets.
 DEFAULT_MARGIN = 30.0
 
-#: What a unit may take before it is killed, as a multiple of the longest one of
-#: its class this run has already finished, and the floor under that multiple so
-#: a class of very fast units does not get a kill deadline measured in
-#: milliseconds. A hung render is what this catches; a slow one is not a fault.
-HUNG_MULTIPLE = 4.0
-HUNG_FLOOR = 60.0
+#: The hard backstop: what a unit of a leg may take before it is killed, whatever
+#: this run has or has not measured. Per leg, because the legs are two orders of
+#: magnitude apart — a colorize unit is tens of seconds at 640x360 and a release
+#: render was measured between 16 and 452 seconds at 2560x1440 supersampled — and
+#: a single number is either a licence for one or a false kill for the other.
+#:
+#: This is the number a unit is actually held to almost always. It is deliberately
+#: many times the longest unit either leg has ever produced: the cost of setting
+#: it high is that one genuinely hung unit takes this long to die, and the cost of
+#: setting it low is a healthy unit killed for being slow, which is a lost picture
+#: and a record that reads as a release.
+HUNG_CEILING = {COLORIZE: 600.0, RELEASE: 1800.0}
 
-#: What the first unit of a class gets, before this run has measured one: the
-#: budget's own remainder, or this ceiling in a run with no budget at all. The
-#: first unit of a class must never be effectively unbounded — that is the one
-#: hole a prospective gate cannot close by itself.
-UNMEASURED_CEILING = 1800.0
+#: What a leg not named above is held to.
+DEFAULT_HUNG_CEILING = 1800.0
+
+#: What a unit may take when its class turns out to cost more than the ceiling
+#: allows for, as a multiple of the longest one this run has finished. It only
+#: ever **raises** the deadline above [`HUNG_CEILING`], never lowers it.
+#:
+#: It used to lower it, and that is the bug this shape exists to prevent. The
+#: multiple was applied to the longest unit completed *so far*, so the deadline a
+#: unit got depended on which units happened to finish before it. run3's release
+#: leg opened with thirteen shallow rows whose longest was 56.9s; the next two
+#: were killed at 4x that, and the row after them ran 451.6s and was fine. A
+#: sample of thirteen was not small — it was unrepresentative, which no sample
+#: size threshold detects, and the tail of this distribution is 8x its own
+#: observed maximum. So the measured number is not trusted to make a deadline
+#: shorter at all.
+HUNG_MULTIPLE = 4.0
 
 #: How much room, after the margin, a unit needs before this run will risk one of
 #: a class it has never measured. Per leg like the margin, and for a stronger
@@ -180,6 +211,7 @@ class Leg:
     name: str
     margin: float
     minimum: float = DEFAULT_UNMEASURED_MINIMUM
+    ceiling: float = DEFAULT_HUNG_CEILING
     seen: list[float] = field(default_factory=list)
     killed: int = 0
 
@@ -224,16 +256,21 @@ class Leg:
     def timeout(self) -> float | None:
         """How long the next unit of this leg may take before it is killed.
 
-        Two bounds and the tighter one wins: the hung-unit multiple over what this
-        class costs, and whatever the budget actually has left. The second is what
-        makes the deadline a promise rather than an estimate — a unit that passed
-        the gate on a four-second estimate does not get to spend a minute.
+        The leg's hard ceiling, **raised** if this run has measured a unit whose
+        own multiple is longer than it, and then capped by whatever the budget
+        actually has left. The last bound is what makes the deadline a promise
+        rather than an estimate — a unit that passed the gate on a four-second
+        estimate does not get to spend a minute.
+
+        What this run has measured can only ever lengthen the deadline, never
+        shorten it, and that is the whole of the order-independence property: the
+        value is `max` over a set, so it does not matter which units of the set
+        have finished, and every unit of a leg is granted at least its ceiling no
+        matter where in the queue it sits. See [`HUNG_MULTIPLE`] for the run this
+        was written after.
         """
         estimate = self.estimate()
-        if estimate is None:
-            limit = UNMEASURED_CEILING
-        else:
-            limit = max(HUNG_FLOOR, HUNG_MULTIPLE * estimate)
+        limit = self.ceiling if estimate is None else max(self.ceiling, HUNG_MULTIPLE * estimate)
         if self.clock.budget is not None:
             limit = min(limit, max(0.0, self.clock.remaining() - self.margin))
         return limit
@@ -277,6 +314,7 @@ class Leg:
         return {
             "margin": self.margin,
             "unmeasured_minimum": self.minimum,
+            "hung_ceiling": self.ceiling,
             "completed": len(self.seen),
             "killed": self.killed,
             "longest": round(max(self.seen), 1) if self.seen else None,
@@ -298,6 +336,7 @@ class Clock:
         budget: float | None = None,
         margins: dict | None = None,
         minimums: dict | None = None,
+        ceilings: dict | None = None,
         now=None,
     ):
         self.now = now or time.monotonic
@@ -305,6 +344,7 @@ class Clock:
         self.started = self.now()
         self.margins = dict(TEARDOWN_MARGIN if margins is None else margins)
         self.minimums = dict(UNMEASURED_MINIMUM if minimums is None else minimums)
+        self.ceilings = dict(HUNG_CEILING if ceilings is None else ceilings)
         self.legs: dict[str, Leg] = {}
         self.declines: list[Decline] = []
 
@@ -322,6 +362,7 @@ class Clock:
                 name=name,
                 margin=float(self.margins.get(name, DEFAULT_MARGIN)),
                 minimum=float(self.minimums.get(name, DEFAULT_UNMEASURED_MINIMUM)),
+                ceiling=float(self.ceilings.get(name, DEFAULT_HUNG_CEILING)),
             )
         return self.legs[name]
 
@@ -341,13 +382,13 @@ class Clock:
 
 __all__ = [
     "COLORIZE",
+    "DEFAULT_HUNG_CEILING",
     "DEFAULT_MARGIN",
     "DEFAULT_UNMEASURED_MINIMUM",
-    "HUNG_FLOOR",
+    "HUNG_CEILING",
     "HUNG_MULTIPLE",
     "RELEASE",
     "TEARDOWN_MARGIN",
-    "UNMEASURED_CEILING",
     "UNMEASURED_MINIMUM",
     "Clock",
     "Decline",
