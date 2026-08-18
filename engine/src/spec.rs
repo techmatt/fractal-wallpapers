@@ -476,16 +476,37 @@ fn check_degree(degree: u32, lowest: u32) -> Result<(), String> {
     }
 }
 
-/// A fractional degree must be **between** two supported integer degrees and
-/// must not be one of them.
+/// The lowest fractional degree that may be rendered.
 ///
-/// The open interval is where the family means something: below 2 and above 5
-/// are exponents nobody has looked at, exactly as [`check_degree`] says of the
-/// integers. The whole-number refusal is the same rule the integer families
-/// already keep — `multibrot` refuses degree 2 because that set is the
-/// Mandelbrot set and one picture gets one name — read the other way round: an
-/// integer exponent is the integer family's, so `degree: "3.0"` is refused
-/// rather than rendered under a second name and cached under a second identity.
+/// **1.8, because that is the lowest degree anybody has looked at** — the same
+/// kind of claim [`check_degree`] makes about the integers, and a smaller number
+/// than the arithmetic forbids: [`iterate::BAILOUT`](crate::iterate::BAILOUT) is
+/// `2^16`, and a multibrot's escape radius `2^(1/(d−1))` stays inside it all the
+/// way down to `d = 1 + 1/16`, so the bound below is a statement about what has
+/// been rendered and eyeballed rather than about where the loop breaks.
+/// [`the_bailout_covers_the_lowest_degree`](crate::iterate::tests) pins the gap.
+///
+/// Not a whole number, so it is admitted rather than caught by the whole-number
+/// refusal below — which is why the range test is inclusive at this end and the
+/// upper end's inclusivity is decorative.
+pub const LOWEST_FRACTIONAL_DEGREE: f64 = 1.8;
+
+/// The highest fractional degree that may be rendered.
+pub const HIGHEST_FRACTIONAL_DEGREE: f64 = 5.0;
+
+/// A fractional degree must lie inside the supported range and must not be a
+/// whole number.
+///
+/// The range is where the family means something: outside
+/// `[LOWEST_FRACTIONAL_DEGREE, 5]` are exponents nobody has looked at, exactly
+/// as [`check_degree`] says of the integers. The whole-number refusal is the
+/// same rule the integer families already keep — `multibrot` refuses degree 2
+/// because that set is the Mandelbrot set and one picture gets one name — read
+/// the other way round: an integer exponent is the integer family's, so
+/// `degree: "3.0"` is refused rather than rendered under a second name and
+/// cached under a second identity. That refusal is also what keeps the two
+/// [`Degree`] wire shapes non-colliding by construction, and it is unaffected by
+/// where the range's ends sit.
 fn check_fractional_degree(degree: f64) -> Result<(), String> {
     if degree.fract() == 0.0 {
         return Err(format!(
@@ -494,9 +515,10 @@ fn check_fractional_degree(degree: f64) -> Result<(), String> {
              degree {degree:.0} so that one picture keeps one name"
         ));
     }
-    if !(2.0..=5.0).contains(&degree) {
+    if !(LOWEST_FRACTIONAL_DEGREE..=HIGHEST_FRACTIONAL_DEGREE).contains(&degree) {
         return Err(format!(
-            "family.degree {degree} is outside the supported range 2..=5"
+            "family.degree {degree} is outside the supported range \
+             {LOWEST_FRACTIONAL_DEGREE}..={HIGHEST_FRACTIONAL_DEGREE:.0}"
         ));
     }
     Ok(())
@@ -858,6 +880,23 @@ mod tests {
         );
     }
 
+    /// The range reaches below the quadratic degree, so the two degrees that
+    /// made it reach are pinned as accepted — including the bound itself, which
+    /// is admitted rather than refused because the range test is inclusive and
+    /// 1.8 is not a whole number.
+    #[test]
+    fn the_range_reaches_below_the_quadratic_degree() {
+        for (degree, value) in [("1.8", 1.8), ("1.9", 1.9)] {
+            let resolved = fractional(degree);
+            assert_eq!(
+                resolved.family,
+                Family::FractionalMultibrot { degree: value },
+                "{degree}"
+            );
+            assert_eq!(resolved.location.degree, Degree::Fractional(degree.into()));
+        }
+    }
+
     /// The identity a field cache and a replay are keyed on is the record, so
     /// what matters is that no two of these renders write the same one. Two
     /// fractional degrees differ, and a fractional degree differs from every
@@ -865,7 +904,7 @@ mod tests {
     #[test]
     fn no_fractional_render_collides_with_another_render() {
         let mut written = std::collections::HashSet::new();
-        for degree in ["2.5", "2.75", "3.5", "4.25"] {
+        for degree in ["1.8", "1.9", "2.5", "2.75", "3.5", "4.25"] {
             let text = serde_json::to_string(&fractional(degree).location).unwrap();
             assert!(written.insert(text.clone()), "{degree} collided: {text}");
         }
@@ -985,8 +1024,13 @@ mod tests {
                 minimal(r#"{"kind":"fractional_multibrot","degree":"4.0"}"#),
                 "whole number",
             ),
-            // And the interval is the one the integer families cover: below and
-            // above it are exponents nobody has looked at.
+            // And the interval ends where the looking stopped: 1.8 is the lowest
+            // degree that has been rendered and eyeballed, and above 5 nobody
+            // has looked at all. Just outside either end is refused.
+            (
+                minimal(r#"{"kind":"fractional_multibrot","degree":"1.75"}"#),
+                "supported range",
+            ),
             (
                 minimal(r#"{"kind":"fractional_multibrot","degree":"1.5"}"#),
                 "supported range",
