@@ -246,13 +246,13 @@ def test_rejecting_twice_writes_the_same_bytes(tmp_path) -> None:
         [released("0000", budget.STRANGE, 0.0001), released("0001", budget.STRANGE, 0.99)],
     )
     rejection.apply("r", rejector="matt_review", date="2026-08-17", log=lambda *_: None)
-    path = records.sinks("r")["release"]
-    once = path.read_bytes()
+    directory = records.sinks("r")["release"]
+    once = {file.name: file.read_bytes() for file in sorted(directory.glob("*.jsonl"))}
     sheet_once = (rejection.run_module.run_dir("r") / "release_sheet_r.html").read_bytes()
 
     second = rejection.apply("r", rejector="matt_review", date="2026-08-17", log=lambda *_: None)
     assert second["newly_rejected"] == []
-    assert path.read_bytes() == once
+    assert {file.name: file.read_bytes() for file in sorted(directory.glob("*.jsonl"))} == once
     assert (rejection.run_module.run_dir("r") / "release_sheet_r.html").read_bytes() == sheet_once
 
 

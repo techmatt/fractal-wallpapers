@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import json
-
 import pytest
 
 from fractal_wallpapers.curation import records
@@ -15,6 +13,12 @@ def unbound():
     records.use(None)
     yield
     records.use(None)
+
+
+def _bytes(directory) -> dict:
+    """Every file under one run's decision directory, by name. What "byte for byte"
+    means once a run's rows are more than one file."""
+    return {path.name: path.read_bytes() for path in sorted(directory.glob("*.jsonl"))}
 
 
 def candidate_row(**extra) -> dict:
@@ -103,13 +107,13 @@ def test_a_re_run_is_idempotent_and_a_second_run_is_additive(tmp_path) -> None:
             row=candidate_row(),
         )
     ]
-    path, total, new = records.write_decisions(records.GATE, "a", first)
+    directory, total, new = records.write_decisions(records.GATE, "a", first)
     assert (total, new) == (1, 1)
-    before = path.read_bytes()
+    before = _bytes(directory)
 
     _, total, new = records.write_decisions(records.GATE, "a", first)
     assert (total, new) == (1, 0)
-    assert path.read_bytes() == before
+    assert _bytes(directory) == before
 
     second = [
         records.decision(
@@ -122,21 +126,23 @@ def test_a_re_run_is_idempotent_and_a_second_run_is_additive(tmp_path) -> None:
     ]
     other, total, new = records.write_decisions(records.GATE, "b", second)
     assert (total, new) == (1, 1)
-    assert other != path
-    # Additive, and now structurally so: the second run wrote its own file and the
-    # first run's bytes are the ones it wrote.
-    assert path.read_bytes() == before
+    assert other != directory
+    # Additive, and now structurally so: the second run wrote its own directory and
+    # the first run's bytes are the ones it wrote.
+    assert _bytes(directory) == before
     assert len(records.read_decisions(records.GATE)) == 2
-    keys = [json.loads(line)["key"] for line in path.read_text(encoding="utf-8").splitlines()]
+    keys = [row["key"] for row in records.read_decisions(records.GATE, "a")]
     assert keys == sorted(keys)
 
 
-def test_a_run_writes_one_file_of_its_own_at_each_stage(tmp_path) -> None:
-    """The shard axis is the run, because it was already the key's axis.
+def test_a_run_writes_a_file_per_partition_under_a_directory_of_its_own(tmp_path) -> None:
+    """Neither shard axis is invented for the filesystem's sake.
 
-    A store that accumulated every run into one file grew for as long as the
-    project did — 918 KiB against the 1 MiB history guard by the third run — and
-    the fix is not a smaller row but a file whose ceiling is one run's rows.
+    The run was already the key's axis and the partition is the axis every
+    apportionment is taken on. Accumulated into one file per stage the store grew
+    for as long as the project did — 918 KiB against the 1 MiB history guard by the
+    third run — and one file per run alone was still 828 KiB after a 240-attempt
+    run. The fix is not a smaller row.
     """
     records.use(tmp_path)
     for run in ("a", "b"):
@@ -148,18 +154,49 @@ def test_a_run_writes_one_file_of_its_own_at_each_stage(tmp_path) -> None:
                     records.decision(
                         run=run,
                         stage=stage,
-                        candidate="0000",
+                        candidate=f"000{index}",
                         verdict="kept",
-                        row=candidate_row(),
+                        row=candidate_row(partition=partition),
                     )
+                    for index, partition in enumerate(("mandelbrot", "julia:mandelbrot"))
                 ],
             )
-    assert sorted(path.name for path in (tmp_path / records.GATE).glob("*.jsonl")) == [
-        "a.jsonl",
-        "b.jsonl",
+    assert sorted(path.name for path in (tmp_path / records.GATE / "a").glob("*.jsonl")) == [
+        "julia_mandelbrot.jsonl",
+        "mandelbrot.jsonl",
     ]
     assert not (tmp_path / "gate.jsonl").exists()
-    assert records.decisions_path(records.RELEASE, "a") == tmp_path / "release" / "a.jsonl"
+    assert not (tmp_path / "gate" / "a.jsonl").exists()
+    assert (
+        records.decisions_path(records.RELEASE, "a", "julia:multibrot3")
+        == tmp_path / "release" / "a" / "julia_multibrot3.jsonl"
+    )
+
+
+def test_a_partition_left_with_no_rows_loses_its_file(tmp_path) -> None:
+    """The listing is the partitions the run decided in, not the ones it once did."""
+    records.use(tmp_path)
+
+    def write(partition):
+        records.write_decisions(
+            records.GATE,
+            "a",
+            [
+                records.decision(
+                    run="a",
+                    stage=records.GATE,
+                    candidate="0000",
+                    verdict="kept",
+                    row=candidate_row(partition=partition),
+                )
+            ],
+        )
+
+    write("mandelbrot")
+    write("phoenix")
+    names = sorted(path.name for path in (tmp_path / records.GATE / "a").glob("*.jsonl"))
+    assert names == ["phoenix.jsonl"]
+    assert len(records.read_decisions(records.GATE, "a")) == 1
 
 
 def test_the_unified_reader_is_the_whole_store_in_key_order(tmp_path) -> None:
