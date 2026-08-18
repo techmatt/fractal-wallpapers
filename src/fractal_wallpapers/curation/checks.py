@@ -37,7 +37,7 @@ def _sha256(path: Path) -> str:
 
 
 def released_rows(run: str) -> list[dict]:
-    """The rows one run actually **serves**, in candidate order.
+    """The rows one run actually **serves**, in score rank within partition.
 
     Served and not merely released: a row a later review took back is still in the
     records with its scores intact, and re-deriving a picture nobody serves would

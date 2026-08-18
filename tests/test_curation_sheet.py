@@ -125,3 +125,36 @@ def test_a_released_row_captions_each_of_its_two_renders(tmp_path) -> None:
     page = sheet.build("r", [row], [], [], {}, tmp_path, tmp_path / "s.html")
     text = page.read_text(encoding="utf-8")
     assert "this picture —" in text and "the render judged —" in text
+
+
+# --------------------------------------------------------------------------- #
+# the near-miss prefix
+# --------------------------------------------------------------------------- #
+def test_the_near_miss_section_is_not_handed_to_one_head_by_its_scale(tmp_path) -> None:
+    """`from_records` takes a PREFIX of the passed-over rows, so an order that
+    sorted both judges' probabilities together gave the whole section to whichever
+    head's scale runs higher. Ranked on each head's own scale, the strange row is
+    its partition's best and leads."""
+    from fractal_wallpapers.curation import records
+    from fractal_wallpapers.curation import sheet as sheet_module
+
+    def passed(candidate: str, head: str, score: float) -> dict:
+        return {
+            **_row(),
+            "candidate": candidate,
+            "verdict": "passed_over",
+            "reason": None,
+            "picture": None,
+            "scores": {"head": head, "p_ge3": score, "p_ge4": None, "location_p_ge3": 0.5},
+        }
+
+    rows = [
+        passed("0001", "smooth_render", 0.9999),
+        passed("0002", "smooth_render", 0.9998),
+        passed("0003", "strange_render", 0.72),
+    ]
+    ordered = records.score_rank(rows)
+    assert [row["candidate"] for row in ordered][:2] == ["0001", "0003"]
+
+    page = sheet_module.from_records("r", rows, {}, tmp_path, tmp_path / "s.html")
+    assert "Passed over (3)" in page.read_text(encoding="utf-8")

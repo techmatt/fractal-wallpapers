@@ -101,6 +101,16 @@ disagreed with its own records would be the one thing a review page may not be.
 `curate reject` applies today's acting bars to a run released before they acted,
 which is a rule rather than a list, and re-running it rewrites the same bytes.
 
+**Serving order is score rank within the partition, on each head's own scale.**
+`records.score_rank` ranks every `(partition, head)` pool separately and then
+interleaves the pools by *position*, so no sort ever compares the two judges'
+probabilities and every prefix of a listing covers the partitions evenly — the
+property the near-miss section needs, because it takes a prefix. The served set
+used to come out in candidate order, which is the attempt number, which is
+arrival order: a page led with whichever partition the attempt plan interleaved
+first. Floors are untouched by this. The junk floor still acts at intake and an
+acting release bar still refuses a seat; rank only orders what survived them.
+
 **A run is sized by a clock as well as by `-n`, and the gate is prospective.** At
 six pictures the size of a run is `-n`; at sixty it is the wall clock, because one
 release row measured between sixteen seconds and three and a half minutes turns

@@ -325,3 +325,76 @@ def test_the_read_side_exists_so_the_record_can_be_read(tmp_path) -> None:
         records.write_decisions(records.RELEASE, row["run"], [row])
     assert len(records.read_decisions(records.RELEASE)) == 2
     assert len(records.read_decisions(records.RELEASE, "a")) == 1
+
+
+# --------------------------------------------------------------------------- #
+# the serving order
+# --------------------------------------------------------------------------- #
+def _served_row(candidate: str, partition: str, head: str, score) -> dict:
+    """One served release row: the three fields the order is taken on."""
+    return records.decision(
+        run="r",
+        stage=records.RELEASE,
+        candidate=candidate,
+        verdict=records.RELEASED,
+        row=candidate_row(partition=partition, head=head, p_ge3=score),
+        picture=f"release/{candidate}.png",
+    )
+
+
+def test_a_run_serves_its_rows_in_score_rank_and_not_in_arrival_order() -> None:
+    """The candidate id is the attempt number, and the attempt number is the
+    position the plan's largest-deficit sequence happened to put a cell in."""
+    weak = _served_row("0001", "mandelbrot", "smooth_render", 0.10)
+    strong = _served_row("0007", "mandelbrot", "smooth_render", 0.90)
+    middle = _served_row("0004", "mandelbrot", "smooth_render", 0.50)
+
+    assert [row["candidate"] for row in records.served([weak, strong, middle])] == [
+        "0007",
+        "0004",
+        "0001",
+    ]
+
+
+def test_the_two_judges_are_never_compared_in_one_sort() -> None:
+    """A score is a probability on one head's scale. Ranked on its own scale the
+    strange row leads its partition; sorted against the smooth head's number it
+    would come last on the page."""
+    smooth = _served_row("0001", "mandelbrot", "smooth_render", 0.98)
+    strange = _served_row("0002", "mandelbrot", "strange_render", 0.71)
+    quiet = _served_row("0003", "mandelbrot", "smooth_render", 0.80)
+
+    order = [row["candidate"] for row in records.served([quiet, strange, smooth])]
+    assert order[:2] == ["0001", "0002"], "each head's best sits at rank 0"
+    assert order[2] == "0003"
+
+
+def test_every_prefix_of_the_served_set_covers_the_partitions_evenly() -> None:
+    """The near-miss section is a prefix of this order, so a partition-major sort
+    would have handed the whole section to whichever partition sorts first."""
+    rows = [
+        _served_row("0001", "mandelbrot", "smooth_render", 0.90),
+        _served_row("0002", "mandelbrot", "smooth_render", 0.80),
+        _served_row("0003", "mandelbrot", "smooth_render", 0.70),
+        _served_row("0004", "phoenix", "smooth_render", 0.60),
+        _served_row("0005", "phoenix", "smooth_render", 0.50),
+    ]
+    order = [(row["location"]["partition"], row["candidate"]) for row in records.served(rows)]
+    assert order[:2] == [("mandelbrot", "0001"), ("phoenix", "0004")]
+    assert order[2:4] == [("mandelbrot", "0002"), ("phoenix", "0005")]
+    assert order[4] == ("mandelbrot", "0003")
+
+
+def test_a_partition_is_served_in_the_canonical_report_order() -> None:
+    """Two rows of one rank are broken by the registry's order, not by the name."""
+    julia = _served_row("0001", "julia:mandelbrot", "smooth_render", 0.99)
+    plane = _served_row("0002", "mandelbrot", "smooth_render", 0.10)
+    assert [row["candidate"] for row in records.served([julia, plane])] == ["0002", "0001"]
+
+
+def test_a_row_with_no_score_sorts_last_inside_its_own_pool_and_is_not_a_zero() -> None:
+    """A failed render has a reason instead of a number, and ranking it against a
+    wallpaper is the comparison the record exists to prevent."""
+    scored = _served_row("0001", "mandelbrot", "smooth_render", 0.01)
+    unscored = _served_row("0002", "mandelbrot", "smooth_render", None)
+    assert [row["candidate"] for row in records.score_rank([unscored, scored])] == ["0001", "0002"]

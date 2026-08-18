@@ -288,17 +288,15 @@ def from_records(run: str, rows: list[dict], summary: dict, directory: Path, out
     from fractal_wallpapers.curation import records
 
     served = records.served(rows)
-    rejected = sorted(
-        (row for row in rows if records.is_rejected(row)), key=lambda row: str(row["candidate"])
-    )
+    rejected = records.score_rank(row for row in rows if records.is_rejected(row))
     capped = records.REASONS["cluster_cap"]
-    passed_over = sorted(
-        (
-            row
-            for row in rows
-            if row.get("verdict") == "passed_over" and row.get("reason") != capped
-        ),
-        key=lambda row: (-((row.get("scores") or {}).get("p_ge3") or 0), str(row["candidate"])),
+    # Score rank within partition, not raw score across the page. The near-miss
+    # section is a *prefix* of this list, and the two judges do not share a scale
+    # — sorting both heads' probabilities together handed the whole section to
+    # whichever head's scale runs higher, which is the same failure a single
+    # selection pass over both heads once made one stage upstream.
+    passed_over = records.score_rank(
+        row for row in rows if row.get("verdict") == "passed_over" and row.get("reason") != capped
     )
     return build(
         run,
