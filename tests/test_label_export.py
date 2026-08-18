@@ -72,10 +72,10 @@ def test_every_sheet_names_a_head_on_the_roster() -> None:
     assert all(head in HEADS for head in sheets.FINISHED_RUBRIC)
 
 
-def test_the_page_takes_its_export_name_from_the_head_and_never_a_generic_one() -> None:
+def test_the_page_takes_its_export_name_from_the_head_and_the_sheet() -> None:
     assert 'a.download = "labels.json"' not in PAGE
     assert "export_control.js" in PAGE, "the page has its own copy of the export decision"
-    assert "labelExport.save(MANIFEST.head, out)" in PAGE
+    assert "labelExport.save(MANIFEST.head, MANIFEST.batch, out)" in PAGE
 
 
 def test_one_page_serves_both_row_sources() -> None:
@@ -86,9 +86,11 @@ def test_one_page_serves_both_row_sources() -> None:
 
 
 def test_the_export_control_is_one_file_and_says_both_halves() -> None:
-    assert 'return head + ".json";' in CONTROL
+    assert 'return sheet ? head + "." + sheet + ".json" : head + ".json";' in CONTROL
     assert '"/labels/" + name' in CONTROL
-    assert "download(head, payload)" in CONTROL, "there is no path that leaves the labeler stuck"
+    assert "download(head, sheet, payload)" in CONTROL, (
+        "there is no path that leaves the labeler stuck"
+    )
 
 
 # --------------------------------------------------------------------------- #
@@ -135,10 +137,11 @@ def test_the_page_and_the_control_are_served_by_the_rig(rig) -> None:
 
 
 def test_a_head_name_is_read_off_the_roster(tmp_path) -> None:
-    assert server.head_of_save("/labels/strange_render.json") == "strange_render"
-    assert server.head_of_save("/labels/labels.json") is None
-    assert server.head_of_save("/labels/smooth_render.png") is None
-    assert server.head_of_save("/sheet.json") is None
+    assert server.target_of_save("/labels/strange_render.json") == ("strange_render", "")
+    assert server.target_of_save("/labels/location.plane_deep.json") == ("location", "plane_deep")
+    assert server.target_of_save("/labels/labels.json") is None
+    assert server.target_of_save("/labels/smooth_render.png") is None
+    assert server.target_of_save("/sheet.json") is None
 
 
 def test_a_static_server_still_gets_the_named_download(tmp_path, drop) -> None:

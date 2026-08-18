@@ -19,9 +19,9 @@ knows which kind of sheet it is handing over. A server rooted at the repository
 would work just as well and would also serve every file in the checkout to
 anything that can reach the port.
 
-**It takes one write, and it is the export.** `PUT /labels/<head>.json` hands the
-page's verdicts to [`fractal_wallpapers.labeling.intake.write_export`], which
-writes the head's drop directly. That is the whole reason the endpoint exists: a
+**It takes one write, and it is the export.** `PUT /labels/<head>.<sheet>.json`
+hands the page's verdicts to [`fractal_wallpapers.labeling.intake.write_export`],
+which writes that sheet's drop directly. That is the whole reason the endpoint exists: a
 session that ends with a file in a browser's download directory ends with a step
 somebody has to remember, and the file is named after whichever sheet was
 exported last. The head is checked against the roster, the body is checked as an
@@ -57,20 +57,28 @@ PORT_SCAN = 20
 SAVE_PREFIX = "/labels/"
 
 
-def head_of_save(path: str) -> str | None:
-    """The head a save request names, or `None` if it names no head at all."""
+def target_of_save(path: str) -> tuple[str, str] | None:
+    """The `(head, sheet)` a save request names, or `None` if it names no head.
+
+    `labels/<head>.<sheet>.json`, and `labels/<head>.json` for a page cut before
+    a drop carried its sheet. The head is the part before the first dot because
+    no head name holds one and no sheet name may.
+    """
     relative = urlsplit(path).path
     if not relative.startswith(SAVE_PREFIX):
         return None
     name = relative[len(SAVE_PREFIX) :]
     if not name.endswith(".json"):
         return None
-    head = name[: -len(".json")]
-    return head if head in HEADS else None
+    head, _, sheet = name[: -len(".json")].partition(".")
+    if head not in HEADS or "." in sheet:
+        return None
+    return head, sheet
 
 
 class SaveEndpoint:
-    """`PUT /labels/<head>.json` writes that head's drop. Mixed into a file handler.
+    """`PUT /labels/<head>.<sheet>.json` writes one sheet's drop. Mixed into a file
+    handler.
 
     Separate from the file serving because the two rigs root their servers at
     different directories and only one of them serves the packaged page — the
@@ -110,13 +118,13 @@ class SaveEndpoint:
         # body in the socket looks like a dropped connection at the browser, and
         # a labeler reads that as "my save vanished".
         raw = self.rfile.read(length)
-        head = head_of_save(self.path)
-        if head is None:
-            self.answer(404, "this server saves labels/<head>.json and nothing else")
+        target = target_of_save(self.path)
+        if target is None:
+            self.answer(404, "this server saves labels/<head>.<sheet>.json and nothing else")
             return
         try:
             payload = json.loads(raw.decode("utf-8"))
-            path = intake.write_export(head, payload)
+            path = intake.write_export(target[0], payload, target[1])
         except intake.IntakeError as refusal:
             # 409, not 400: the payload is well formed and the file is the reason.
             self.answer(409, str(refusal))
@@ -195,6 +203,6 @@ __all__ = [
     "SaveEndpoint",
     "SheetHandler",
     "bind",
-    "head_of_save",
+    "target_of_save",
     "serve",
 ]

@@ -411,11 +411,22 @@ def test_a_sheet_directory_and_a_stem_are_both_read(tmp_path, head_store) -> Non
 # --------------------------------------------------------------------------- #
 # The drop.
 # --------------------------------------------------------------------------- #
-def test_the_drop_is_named_for_the_head(drop) -> None:
+def test_the_drop_is_named_for_the_head_and_the_sheet(drop) -> None:
+    """Two sheets cut for one judge in one session both number their rows from
+    `u0001`, so a drop they share is joined against the wrong sheet's places."""
+    assert store.export_path("location", "plane_deep") == drop / "location.plane_deep.json"
+    assert store.export_path("location", "twin_top") == drop / "location.twin_top.json"
     assert store.export_path("smooth_render") == drop / "smooth_render.json"
-    assert store.export_path("location") == drop / "location.json"
-    with pytest.raises(store.LabelError):
-        store.export_path("../escape")
+    for head, sheet in (("../escape", ""), ("a.b", ""), ("location", "../escape")):
+        with pytest.raises(store.LabelError):
+            store.export_path(head, sheet)
+
+
+def test_two_sheets_for_one_judge_write_two_drops(drop) -> None:
+    intake.write_export("location", {"u0001": {"score": 3}}, "plane_deep")
+    intake.write_export("location", {"u0001": {"score": 1}}, "twin_top")
+    assert intake.read_export(store.export_path("location", "plane_deep")) == {"u0001": 3}
+    assert intake.read_export(store.export_path("location", "twin_top")) == {"u0001": 1}
 
 
 def test_a_save_that_would_drop_a_unit_is_refused(drop) -> None:

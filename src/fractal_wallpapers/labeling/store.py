@@ -117,16 +117,25 @@ def export_dir() -> Path:
     return repo_root() / "labels"
 
 
-def export_path(head: str) -> Path:
-    """The one name `head`'s export is written under, downloaded or saved.
+def export_path(head: str, sheet: str = "") -> Path:
+    """The one name a sheet's export is written under, downloaded or saved.
 
-    The name is the head, never a generic one. Two sheets are open in two browser
-    tabs during a session, and `labels.json` twice is one file that overwrites
-    the other in the download directory with no way to tell which survived.
+    The name is the head **and the sheet**, never a generic one, and never the
+    head alone. Two sheets are open in two browser tabs during a session, so
+    `labels.json` twice is one file overwriting the other — and two sheets cut
+    for the *same* judge in one session is the same collision one level in, with
+    a worse ending: both pages number their rows from `u0001`, so the second
+    save is either refused for being short or accepted and joined, unit for
+    unit, against the wrong sheet's places.
+
+    A sheet with no name of its own still gets the bare head, which is what the
+    drops written before sheets carried one are called.
     """
-    if not head or "/" in head or "\\" in head or head.startswith("."):
+    if not head or "/" in head or "\\" in head or head.startswith(".") or "." in head:
         raise LabelError(f"{head!r} is not a head name")
-    return export_dir() / f"{head}.json"
+    if sheet and ("/" in sheet or "\\" in sheet or sheet.startswith(".") or "." in sheet):
+        raise LabelError(f"{sheet!r} is not a sheet name")
+    return export_dir() / (f"{head}.{sheet}.json" if sheet else f"{head}.json")
 
 
 def now() -> str:

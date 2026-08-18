@@ -752,17 +752,14 @@ def label_build(args: argparse.Namespace) -> int:
     """Cut a labeling sheet and render every unit of it."""
     from fractal_wallpapers.labeling import finished, sheets, store
 
-    if args.from_plan and not args.head:
-        print("--from-plan cuts a finished-render sheet, so it needs --head")
-        return 1
     if args.head and not args.from_plan:
         print("--head names a finished-render judge, and those sheets are cut from --from-plan")
         return 1
-    if args.reuse_renders and not args.from_plan:
-        print("--reuse-renders reads a finished-render cache, so it needs --from-plan")
+    if args.reuse_renders and not args.head:
+        print("--reuse-renders reads a finished-render cache, so it needs --head")
         return 1
 
-    if args.from_plan:
+    if args.head:
         units = sheets.units_from_plan(resolve_output(args.from_plan))
         source = sheets.finished_source(
             args.head,
@@ -772,14 +769,21 @@ def label_build(args: argparse.Namespace) -> int:
             reuse_cache=args.reuse_renders,
         )
     else:
-        if args.from_ledger:
+        if args.from_plan:
+            units = sheets.units_from_location_plan(resolve_output(args.from_plan))
+        elif args.from_ledger:
             units = sheets.units_from_ledger(
                 resolve_output(args.from_ledger), admitted_only=args.admitted_only
             )
         else:
             units = sheets.units_from_batch(args.from_batch)
+        # The same builder the walk and the harvest consult, so the judge that
+        # prefills a correction sheet is the judge that scored the ledger it was
+        # cut from — and `--no-scoring` is the one way to a blind page.
         source = sheets.location_source(
-            resolution=tuple(args.resolution), supersample=args.supersample
+            scorer=build_scorer(args),
+            resolution=tuple(args.resolution),
+            supersample=args.supersample,
         )
     if args.limit:
         units = units[: args.limit]
@@ -2028,9 +2032,10 @@ def label_commands(subcommands) -> None:
             "what a head sees, and through the vivid one, which is what a person judges from, "
             "both named maps in the committed library. A FINISHED-RENDER sheet asks whether a "
             "picture is worth keeping and renders each unit once, through its own whole recipe, "
-            "at the geometry both corpora were collected at; its suggestions are the shipped "
-            "judge's own decode. Either way the sheet is a manifest, a row file carrying every "
-            "unit's whole join, and a page that serves the file order and never reshuffles."
+            "at the geometry both corpora were collected at. Either way the suggestions are the "
+            "shipped judge's own decode, the page reads good→bad by its score, and the sheet "
+            "is a manifest, a row file carrying every unit's whole join, and a page that serves "
+            "the file order and never reshuffles."
         ),
     )
     source = building.add_mutually_exclusive_group(required=True)
@@ -2040,8 +2045,9 @@ def label_commands(subcommands) -> None:
     source.add_argument("--from-batch", help="a batch already in the store, to judge again")
     source.add_argument(
         "--from-plan",
-        help="a JSONL of finished-render units — the population somebody selected. Requires "
-        "--head; the selection itself is the caller's and is recorded in the registration",
+        help="a JSONL of units — the population somebody selected. Finished-render units with "
+        "--head, locations without it; either way the selection is the caller's and is "
+        "recorded in the batch's registration",
     )
     building.add_argument(
         "--head",
@@ -2085,6 +2091,7 @@ def label_commands(subcommands) -> None:
         default=str(Path("artifacts") / "sheet"),
         help="where the sheet is built (default: artifacts/sheet)",
     )
+    scoring_flags(building)
     building.set_defaults(handler=label_build)
 
     serving = steps.add_parser(
@@ -2120,7 +2127,9 @@ def label_commands(subcommands) -> None:
         "--sheet", required=True, help="a built sheet directory, or a manifest, rows or stem"
     )
     ingesting.add_argument(
-        "--labels", help="the export to read (default: labels/<head>.json, where a page saves)"
+        "--labels",
+        help="the export to read (default: labels/<head>.<sheet>.json, where this "
+        "sheet's page saves)",
     )
     ingesting.add_argument("--labeler", required=True, help="who cast the verdicts")
     ingesting.add_argument("--write", action="store_true", help="append; otherwise print the plan")

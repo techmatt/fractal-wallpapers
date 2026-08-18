@@ -138,9 +138,10 @@ def test_a_finished_render_sheet_is_cut_from_a_plan_and_names_its_judge() -> Non
         parse(["label", "build", "--from-plan", "p", "--from-batch", "b", "--batch", "b"])
 
 
-def test_an_export_defaults_to_the_head_s_own_drop() -> None:
-    """Matt's convention, and now the rig's: a page saves to labels/<head>.json,
-    so the step has to be told nothing about where the file it just wrote is."""
+def test_an_export_defaults_to_the_sheet_s_own_drop() -> None:
+    """Matt's convention, and now the rig's: a page saves to
+    labels/<head>.<sheet>.json, so the step has to be told nothing about where
+    the file it just wrote is."""
     parse = cli.build_parser().parse_args
     assert parse(["label", "ingest", "--sheet", "s", "--labeler", "m"]).labels is None
 
