@@ -120,10 +120,73 @@ def test_a_re_run_is_idempotent_and_a_second_run_is_additive(tmp_path) -> None:
             row=candidate_row(),
         )
     ]
-    _, total, new = records.write_decisions(records.GATE, "b", second)
-    assert (total, new) == (2, 1)
+    other, total, new = records.write_decisions(records.GATE, "b", second)
+    assert (total, new) == (1, 1)
+    assert other != path
+    # Additive, and now structurally so: the second run wrote its own file and the
+    # first run's bytes are the ones it wrote.
+    assert path.read_bytes() == before
+    assert len(records.read_decisions(records.GATE)) == 2
     keys = [json.loads(line)["key"] for line in path.read_text(encoding="utf-8").splitlines()]
     assert keys == sorted(keys)
+
+
+def test_a_run_writes_one_file_of_its_own_at_each_stage(tmp_path) -> None:
+    """The shard axis is the run, because it was already the key's axis.
+
+    A store that accumulated every run into one file grew for as long as the
+    project did — 918 KiB against the 1 MiB history guard by the third run — and
+    the fix is not a smaller row but a file whose ceiling is one run's rows.
+    """
+    records.use(tmp_path)
+    for run in ("a", "b"):
+        for stage in (records.GATE, records.RELEASE):
+            records.write_decisions(
+                stage,
+                run,
+                [
+                    records.decision(
+                        run=run,
+                        stage=stage,
+                        candidate="0000",
+                        verdict="kept",
+                        row=candidate_row(),
+                    )
+                ],
+            )
+    assert sorted(path.name for path in (tmp_path / records.GATE).glob("*.jsonl")) == [
+        "a.jsonl",
+        "b.jsonl",
+    ]
+    assert not (tmp_path / "gate.jsonl").exists()
+    assert records.decisions_path(records.RELEASE, "a") == tmp_path / "release" / "a.jsonl"
+
+
+def test_the_unified_reader_is_the_whole_store_in_key_order(tmp_path) -> None:
+    """A store split across runs is still one logical store, and every consumer
+    reads it through here rather than knowing how many files it is."""
+    records.use(tmp_path)
+    for run in ("b", "a", "c"):
+        records.write_decisions(
+            records.RELEASE,
+            run,
+            [
+                records.decision(
+                    run=run,
+                    stage=records.RELEASE,
+                    candidate=candidate,
+                    verdict="released",
+                    row=candidate_row(),
+                )
+                for candidate in ("0001", "0000")
+            ],
+        )
+    rows = records.read_decisions(records.RELEASE)
+    assert len(rows) == 6
+    keys = [row["key"] for row in rows]
+    assert keys == sorted(keys)
+    assert [row["run"] for row in records.read_decisions(records.RELEASE, "b")] == ["b", "b"]
+    assert records.read_decisions(records.RELEASE, "nobody") == []
 
 
 def test_the_ephemeral_binding_moves_the_whole_store(tmp_path) -> None:
