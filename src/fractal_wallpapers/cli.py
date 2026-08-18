@@ -134,6 +134,20 @@ def resolve_output(out: str) -> Path:
     return path if path.is_absolute() else repo_root() / path
 
 
+def display_path(path: Path) -> str:
+    """The counterpart to `resolve_output`: an absolute path said the short way.
+
+    Printed paths are for a person to read and retype, and `artifacts/walk` is
+    both shorter and more portable than the absolute path this process resolved
+    it to. Anything outside the repository is printed whole, because shortening
+    it would be a lie about where it is.
+    """
+    try:
+        return Path(path).relative_to(repo_root()).as_posix()
+    except ValueError:
+        return str(path)
+
+
 def write_tracked_json(path: Path, document: dict) -> Path:
     """Write a JSON document that git tracks, with the line endings git will keep.
 
@@ -814,13 +828,67 @@ def label_build(args: argparse.Namespace) -> int:
     return 0
 
 
+def sheet_identity(manifest: dict, units: int) -> str:
+    """What a sheet is, said the one way both `label sheets` and `label serve` say it."""
+    batch = manifest.get("batch") or "(no batch)"
+    return f"{manifest.get('head', '?')} · {batch} · {units} units"
+
+
+def label_sheets(args: argparse.Namespace) -> int:
+    """Print every built sheet under a directory: where it is, and what it holds.
+
+    A sheet's directory name is chosen by whoever cut it and need not be the
+    batch inside it, so the only authority on what a directory holds is its own
+    manifest. Without this, finding a sheet to serve means opening them by hand.
+    """
+    from fractal_wallpapers.labeling import sheets, store
+
+    root = resolve_output(args.under)
+    if not root.is_dir():
+        print(f"{display_path(root)} is not a directory")
+        return 1
+    found = 0
+    for manifest_path in sorted(root.rglob(sheets.MANIFEST_NAME)):
+        directory = manifest_path.parent
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as unreadable:
+            # One unreadable manifest is not a reason to hide the others.
+            print(f"{display_path(directory)}  unreadable: {unreadable}")
+            found += 1
+            continue
+        units = manifest.get("units")
+        if units is None:
+            units = sum(1 for _ in (directory / sheets.ROWS_NAME).open(encoding="utf-8"))
+        print(f"{display_path(directory):34}  {sheet_identity(manifest, units)}")
+        if args.drops:
+            try:
+                drop = display_path(store.export_path(manifest.get("head", ""), manifest["batch"]))
+            except (store.LabelError, KeyError) as unnamed:
+                # A sheet whose manifest cannot name a drop is worth listing anyway.
+                drop = f"(none: {unnamed})"
+            print(f"{'':34}  labels -> {drop}")
+        found += 1
+    if not found:
+        print(f"no sheet under {display_path(root)}")
+    return 0
+
+
 def label_serve(args: argparse.Namespace) -> int:
     """Serve a built sheet to a browser on this machine."""
-    from fractal_wallpapers.labeling import server, sheets
+    from fractal_wallpapers.labeling import server, sheets, store
 
     directory = resolve_output(args.sheet)
-    sheets.read(directory)  # refuse a directory that is not a sheet, before binding a port
-    return server.serve(directory, host=args.host, port=args.port)
+    sheet = sheets.read(directory)  # refuse a directory that is not a sheet, before binding a port
+    manifest = sheet.manifest
+    # What a labeler actually needs to know before typing into the page: which
+    # sheet this is, and where their verdicts will land when they save.
+    drop = store.export_path(manifest["head"], manifest.get("batch", ""))
+    banner = [
+        sheet_identity(manifest, len(sheet.rows)),
+        f"labels -> {display_path(drop)}",
+    ]
+    return server.serve(directory, host=args.host, port=args.port, banner=banner)
 
 
 def label_ingest(args: argparse.Namespace) -> int:
@@ -1979,7 +2047,7 @@ def label_commands(subcommands) -> None:
     """The labeling rig: register a batch, cut a sheet, serve it, record it, split it."""
     labelling = subcommands.add_parser(
         "label",
-        help="collect human verdicts: register, build, serve, record, split",
+        help="collect human verdicts: register, build, sheets, serve, ingest, show, split",
         description=(
             "The labeling rig and the store behind it. A batch is registered before it has "
             "rows, a sheet is cut from a walk's ledger or from a batch already stored, the "
@@ -2093,6 +2161,24 @@ def label_commands(subcommands) -> None:
     )
     scoring_flags(building)
     building.set_defaults(handler=label_build)
+
+    listing_sheets = steps.add_parser(
+        "sheets",
+        help="list the built sheets, with what each one holds",
+        description=(
+            "A sheet's directory name is chosen by whoever cut it and does not have to be "
+            "the batch inside it, so the only authority on what a directory holds is its own "
+            "manifest. This reads them, so that finding a sheet to serve is a command rather "
+            "than opening candidates by hand."
+        ),
+    )
+    listing_sheets.add_argument(
+        "--under", default="artifacts", help="where to look (default: artifacts)"
+    )
+    listing_sheets.add_argument(
+        "--drops", action="store_true", help="also print where each sheet's labels would land"
+    )
+    listing_sheets.set_defaults(handler=label_sheets)
 
     serving = steps.add_parser(
         "serve",

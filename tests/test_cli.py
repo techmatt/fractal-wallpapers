@@ -101,14 +101,15 @@ def test_the_machine_stock_discount_is_a_flag_on_both_readers() -> None:
     assert parse(["harvest", "--discount", "0"]).discount == 0.0
 
 
-def test_the_labeling_rig_is_six_steps_under_one_subcommand() -> None:
-    """Register, cut, serve, ingest, show, split — the order they happen in, and
-    every one of them a step somebody runs twice."""
+def test_the_labeling_rig_is_seven_steps_under_one_subcommand() -> None:
+    """Register, cut, list, serve, ingest, show, split — the order they happen in,
+    and every one of them a step somebody runs twice."""
     parse = cli.build_parser().parse_args
     assert (
         parse(["label", "register", "--batch", "b", "--method", "m"]).handler is cli.label_register
     )
     assert parse(["label", "build", "--from-batch", "b", "--batch", "b"]).handler is cli.label_build
+    assert parse(["label", "sheets"]).handler is cli.label_sheets
     assert parse(["label", "serve", "--sheet", "d"]).handler is cli.label_serve
     assert parse(["label", "ingest", "--sheet", "s", "--labeler", "m"]).handler is cli.label_ingest
     assert parse(["label", "split"]).handler is cli.label_split
@@ -280,3 +281,23 @@ def test_a_run_s_shape_defaults_to_the_run_s_own_and_a_plan_s_to_a_number() -> N
     planning = parse(["curate", "plan"])
     assert (planning.n, planning.strange_share) == (6, 0.5)
     assert parse(["curate", "run", "--run", "v1", "--wall-budget", "900"]).wall_budget == 900.0
+
+
+def test_finding_a_sheet_to_serve_is_a_command() -> None:
+    """A sheet's directory name is whoever-cut-it's choice and need not be the
+    batch inside it, so the mapping lived only in each manifest and finding a
+    sheet meant opening candidates by hand."""
+    parse = cli.build_parser().parse_args
+    listing = parse(["label", "sheets"])
+    assert listing.handler is cli.label_sheets
+    assert listing.under == "artifacts", "the ignored tree everything is built into"
+    assert listing.drops is False
+    assert parse(["label", "sheets", "--drops"]).drops is True
+
+
+def test_a_sheet_says_its_judge_its_batch_and_its_size() -> None:
+    """One phrasing, used by the listing and by the server's banner, so a sheet
+    is not described two different ways by two commands."""
+    said = cli.sheet_identity({"head": "location", "batch": "twin_top_slices"}, 96)
+    assert "location" in said and "twin_top_slices" in said and "96 units" in said
+    assert "(no batch)" in cli.sheet_identity({"head": "location"}, 3), "a batch is not required"
