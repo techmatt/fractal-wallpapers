@@ -1,6 +1,6 @@
 scratch/
 artifacts/
-labels/
+/labels/
 models/**/*.pt
 target/
 __pycache__/

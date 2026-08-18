@@ -553,11 +553,15 @@ def run(sheet: Path, labels=None, labeler: str = "", write: bool = False) -> dic
             f"e.g. {disagreements[:5]}"
         )
 
-    scored = after.scored()
-    train = [row for row in scored if not registry_module.lookup(known, row["batch"]).eval_only]
+    # The pin is asserted over the rows this ingest just wrote, and nothing else. The
+    # store as a whole is the wrong population: the evaluation side is drawn *from* it,
+    # so every pinned location is already a stored row and asking whether one exists is
+    # asking whether the split is empty. What an ingest can newly break is a fresh batch
+    # that re-drew a pinned place, and that is exactly this population.
+    landed = [row for row in writing if not registry_module.lookup(known, row["batch"]).eval_only]
     report["written"] = written
     report["store after"] = after.summary()
-    report["pin"] = records.assert_pin(train)
+    report["pin"] = records.assert_pin(landed)
     report["registry"] = registry_module.summary(known)
     return report
 

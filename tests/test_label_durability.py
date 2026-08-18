@@ -247,6 +247,32 @@ def test_the_drop_is_intake_and_no_tracked_file_lives_in_it() -> None:
 
 def test_the_drop_is_ignored_rather_than_merely_untracked() -> None:
     """It was untracked by decision and enforced by nothing, which is the state a
-    rule rots from. The one line in `.gitignore` is what makes it a rule."""
-    ignored = (REPO_ROOT / ".gitignore").read_text(encoding="utf-8").splitlines()
-    assert "labels/" in [line.strip() for line in ignored]
+    rule rots from. The one line in `.gitignore` is what makes it a rule — and the
+    rule is asked what it does rather than how it is spelled, because an unanchored
+    `labels/` also swallows `data/labels/`, where the store lives: a new batch's
+    rows would then be written, resolved, and silently left out of the commit."""
+
+    def ignored(path: str) -> bool:
+        return (
+            subprocess.run(
+                ["git", "check-ignore", "-q", path], cwd=REPO_ROOT, check=False
+            ).returncode
+            == 0
+        )
+
+    assert ignored("labels/location.some_sheet.json"), "the drop is not ignored"
+    assert not ignored(str(store.batch_path("some_batch").relative_to(REPO_ROOT))), (
+        "the ignore rule reaches the store's row files: a batch ingested tomorrow would "
+        "never make it into a commit."
+    )
+    shadowed = subprocess.run(
+        ["git", "ls-files", "-z", "-ci", "--exclude-standard"],
+        cwd=REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
+    assert not [name for name in shadowed.split("\0") if name], (
+        "tracked files match an ignore rule. A tracked file inside an ignored tree is how "
+        "these rules rot."
+    )
