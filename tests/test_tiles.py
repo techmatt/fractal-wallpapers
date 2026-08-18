@@ -55,36 +55,37 @@ def test_an_id_survives_a_json_round_trip_exactly() -> None:
     assert json.loads(json.dumps({"id": identifier}))["id"] == identifier
 
 
-def test_the_ids_of_the_shipped_corpus_do_not_collide() -> None:
-    from fractal_wallpapers.labeling import store
-
-    rows = store.resolved().scored()
-    population = tile_module.plan(rows)
-    assert len(population) == len(rows)
-    assert len({row["location_id"] for row in population}) == len(population)
+def test_the_ids_of_the_shipped_corpus_do_not_collide(shipped_scored, shipped_tile_plan) -> None:
+    assert len(shipped_tile_plan) == len(shipped_scored)
+    assert len({row["location_id"] for row in shipped_tile_plan}) == len(shipped_tile_plan)
 
 
-def test_the_plan_holds_the_evaluation_side_too() -> None:
+def test_the_plan_holds_the_evaluation_side_too(shipped_tile_plan) -> None:
     """A held-out location has to be scored through the same pictures the
     training side was learned from, or the number measures the render as well."""
-    from fractal_wallpapers.labeling import store
-
-    population = tile_module.plan(store.resolved().scored())
-    sides = {row["side"] for row in population}
+    sides = {row["side"] for row in shipped_tile_plan}
     assert sides == {pins.TRAIN, pins.EVAL}
-    assert sum(1 for row in population if row["side"] == pins.EVAL) == len(pins.pinned())
+    assert sum(1 for row in shipped_tile_plan if row["side"] == pins.EVAL) == len(pins.pinned())
 
 
-def test_the_plan_is_shuffled_so_a_prefix_is_a_fair_sample() -> None:
+def test_the_plan_is_shuffled_so_a_prefix_is_a_fair_sample(shipped_tile_plan) -> None:
     """Sorted by coordinate the deep, expensive material lands contiguously and
     any bounded rehearsal measures the cheap end of the corpus."""
-    from fractal_wallpapers.labeling import store
-
-    population = tile_module.plan(store.resolved().scored(), seed=0)
-    prefix = [row["partition"] for row in population[:400]]
+    prefix = [row["partition"] for row in shipped_tile_plan[:400]]
     assert len(set(prefix)) >= 6, "a prefix that holds one partition is not a fair sample"
-    other = tile_module.plan(store.resolved().scored(), seed=1)
-    assert [row["location_id"] for row in population] != [row["location_id"] for row in other]
+
+
+def test_the_seed_is_what_the_shuffle_comes_out_of(shipped_scored) -> None:
+    """Asked on a slice rather than the whole store: laying a plan out assigns
+    every row to a neighbourhood group, which is quadratic-ish in the rows, and
+    the property here is about the shuffle rather than about the corpus."""
+    slice_of_it = shipped_scored[:400]
+    first = [row["location_id"] for row in tile_module.plan(slice_of_it, seed=0)]
+    again = [row["location_id"] for row in tile_module.plan(slice_of_it, seed=0)]
+    other = [row["location_id"] for row in tile_module.plan(slice_of_it, seed=1)]
+    assert first == again, "the same seed is the same order"
+    assert first != other
+    assert sorted(first) == sorted(other), "a reseed reorders and does not requalify"
 
 
 def test_the_palette_pool_is_the_draw_the_floor_and_the_holdout() -> None:

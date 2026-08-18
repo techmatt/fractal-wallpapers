@@ -34,19 +34,45 @@ def drop(tmp_path, monkeypatch):
     return directory
 
 
+#: How often a serving thread looks for the stop it has been sent. The default is
+#: half a second, and `shutdown` waits for the thread to notice — which in a file
+#: of small request tests is longer than everything else in it put together.
+POLL = 0.01
+
+
 @pytest.fixture
-def rig(tmp_path, drop):
-    """A bound rig on the loopback address, and the base URL to reach it at."""
-    handler = functools.partial(server.SheetHandler, directory=str(tmp_path))
-    bound = server.ExclusiveServer((server.DEFAULT_HOST, 0), handler)
-    thread = threading.Thread(target=bound.serve_forever, daemon=True)
-    thread.start()
+def serving(tmp_path):
+    """Bind a rig on the loopback address and hand back the URL to reach it at.
+
+    A factory rather than a server, because one test here wants a plain static
+    server in place of the rig's own handler and everything about starting and
+    stopping it is the same.
+    """
+    running = []
+
+    def serve(handler_class=server.SheetHandler) -> str:
+        handler = functools.partial(handler_class, directory=str(tmp_path))
+        bound = server.ExclusiveServer((server.DEFAULT_HOST, 0), handler)
+        thread = threading.Thread(
+            target=bound.serve_forever, kwargs={"poll_interval": POLL}, daemon=True
+        )
+        thread.start()
+        running.append((bound, thread))
+        return f"http://{server.DEFAULT_HOST}:{bound.server_address[1]}"
+
     try:
-        yield f"http://{server.DEFAULT_HOST}:{bound.server_address[1]}"
+        yield serve
     finally:
-        bound.shutdown()
-        bound.server_close()
-        thread.join(timeout=5)
+        for bound, thread in running:
+            bound.shutdown()
+            bound.server_close()
+            thread.join(timeout=5)
+
+
+@pytest.fixture
+def rig(drop, serving):
+    """The labeling rig itself, serving, with its export directory redirected."""
+    return serving()
 
 
 def put(base: str, path: str, payload) -> tuple[int, str]:
@@ -144,17 +170,8 @@ def test_a_head_name_is_read_off_the_roster(tmp_path) -> None:
     assert server.target_of_save("/sheet.json") is None
 
 
-def test_a_static_server_still_gets_the_named_download(tmp_path, drop) -> None:
+def test_a_static_server_still_gets_the_named_download(drop, serving) -> None:
     """The fallback is a slower path to the same file, not a different outcome."""
-    handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=str(tmp_path))
-    bound = server.ExclusiveServer((server.DEFAULT_HOST, 0), handler)
-    thread = threading.Thread(target=bound.serve_forever, daemon=True)
-    thread.start()
-    try:
-        base = f"http://{server.DEFAULT_HOST}:{bound.server_address[1]}"
-        status, _ = put(base, "/labels/smooth_render.json", {"u0001": {"score": 3}})
-        assert status in (405, 501), "a dumb static server refuses the save, and the page downloads"
-    finally:
-        bound.shutdown()
-        bound.server_close()
-        thread.join(timeout=5)
+    base = serving(http.server.SimpleHTTPRequestHandler)
+    status, _ = put(base, "/labels/smooth_render.json", {"u0001": {"score": 3}})
+    assert status in (405, 501), "a dumb static server refuses the save, and the page downloads"

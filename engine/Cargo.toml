@@ -22,3 +22,13 @@ serde_json = "1"
 
 [profile.release]
 opt-level = 3
+
+# The tests render. Four of them in `expand` put whole candidate frames through
+# the structural gates, which is the engine doing its actual job, and at `dev`'s
+# `opt-level = 0` those four were about a minute of the suite's seventy seconds.
+# Optimizing the test profile costs twenty seconds of compilation once and takes
+# `cargo test` from around a minute to about seven seconds. `debug-assertions`
+# and overflow checks are untouched — this is a speed setting, not a strictness
+# one — and `dev` stays at zero so `cargo build` is still a fast build.
+[profile.test]
+opt-level = 2

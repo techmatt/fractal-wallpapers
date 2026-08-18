@@ -144,15 +144,14 @@ def test_a_picture_s_name_depends_on_every_part_of_its_recipe() -> None:
         assert renders.job_name(base) != renders.job_name(changed), changed
 
 
-def test_the_evaluation_side_is_in_the_plan() -> None:
+def test_the_evaluation_side_is_in_the_plan(shipped_render_cache) -> None:
     """A held-out picture is scored through the same renderer the training side
     was learned from, or the number measures the render as much as the head."""
     for head in finished.HEADS:
         if not finished.registry_path(head).is_file():
             pytest.skip(f"the {head} store has not been imported on this machine")
         pinned = finished.pinned(head)
-        jobs = renders.plan(head)
-        places = {finished.place_of(job) for job in jobs}
+        places = {finished.place_of(job) for job in shipped_render_cache.plan(head)}
         assert set(pinned) <= places, f"{head}: a pinned location is not in the plan"
 
 
@@ -195,7 +194,7 @@ def test_a_complete_cache_is_measured_against_the_store_and_not_a_stale_plan(
     assert len(renders.missing(head)) == 1, "a plan written before the ingest hid a missing crop"
 
 
-def test_a_regenerated_picture_is_the_picture_that_was_judged() -> None:
+def test_a_regenerated_picture_is_the_picture_that_was_judged(shipped_render_cache) -> None:
     """The check that found the one defect the recipe transfer had.
 
     An edge-transfer floor two orders of magnitude too small left a third of the
@@ -214,7 +213,7 @@ def test_a_regenerated_picture_is_the_picture_that_was_judged() -> None:
     if not (source / "data").is_dir():
         pytest.skip("the source project is not on this machine")
     for head in finished.HEADS:
-        if not renders.plan_path(head).is_file() or renders.missing(head):
+        if not renders.plan_path(head).is_file() or shipped_render_cache.missing(head):
             pytest.skip("the render cache is not complete on this machine")
 
     for head in finished.HEADS:
