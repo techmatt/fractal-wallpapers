@@ -9,7 +9,9 @@ requests then split between the two processes nondeterministically. If the two
 were started from different directories the page shows one unit's canonical
 render beside another unit's vivid one, which looks like a rendering bug and is
 not. Binding exclusively turns that into a second launcher that fails to start.
-If the requested port is taken, it walks upward and prints the port it got.
+If the requested port is taken, it walks upward and prints the port it got —
+flushed, because the rig is normally launched into the background and a buffered
+banner reaches a redirected log only when the process exits.
 
 **It serves the sheet, and the page, and nothing else.** The document root is
 the sheet directory; `/` is the rig page, read out of the package. One page
@@ -36,6 +38,7 @@ import json
 import socket
 import socketserver
 import sys
+from collections.abc import Sequence
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -176,17 +179,32 @@ def bind(
 
 
 def serve(
-    directory: Path, host: str = DEFAULT_HOST, port: int = DEFAULT_PORT, scan: int = PORT_SCAN
+    directory: Path,
+    host: str = DEFAULT_HOST,
+    port: int = DEFAULT_PORT,
+    scan: int = PORT_SCAN,
+    banner: Sequence[str] = (),
 ) -> int:
-    """Serve `directory` until interrupted."""
+    """Serve `directory` until interrupted.
+
+    `banner` is what the caller wants said about the sheet under the URL. The
+    server does not compute it: this module serves a directory and deliberately
+    does not know which kind of sheet it is handing over.
+    """
     server = bind(Path(directory), host, port, scan)
     bound = server.server_address[1]
-    print(f"serving {directory}")
-    print(f"  -> http://{host}:{bound}/")
+    # Every line is flushed. The documented way to run this is backgrounded with
+    # stdout redirected to a file, and a redirected stream is block-buffered: a
+    # sixty-byte banner sits in the buffer until the process exits, so a server
+    # that runs until it is killed is a server whose URL is never printed at all.
+    print(f"serving {directory}", flush=True)
+    print(f"  -> http://{host}:{bound}/", flush=True)
+    for line in banner:
+        print(f"  {line}", flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        print("\nshutting down")
+        print("\nshutting down", flush=True)
     finally:
         server.server_close()
     return 0

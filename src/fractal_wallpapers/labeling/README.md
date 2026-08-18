@@ -23,11 +23,77 @@ label register --batch NAME --method "how the population was drawn" [--head smoo
 label build --from-ledger artifacts/walk/walk.jsonl --batch NAME
 label build --from-plan artifacts/places.jsonl --batch NAME
 label build --from-plan artifacts/promotion.jsonl --head strange_render --batch NAME
+label sheets
 label serve --sheet artifacts/sheet
 label ingest --sheet artifacts/sheet --labeler matt --write
 label show
 label split --write
 ```
+
+## Serving a sheet to label
+
+A built sheet is a directory: `sheet.json` (the manifest), `sheet.jsonl` (the rows) and
+the rendered pictures beside them. Serving one is two commands, and the server says what it is serving.
+
+**1. See what is already built.** A sheet directory is named by whoever cut it and does
+*not* have to match the batch inside it, so ask the manifests rather than reading the
+directory names — `graduation_sheet` below holds the batch `threads_promotion`:
+
+```
+fractal-wallpapers label sheets --drops
+```
+```
+artifacts/graduation_sheet          strange_render · threads_promotion · 3 units
+                                    labels -> labels/strange_render.threads_promotion.json
+artifacts/strange3_promotion        strange_render · strange3_promotion · 634 units
+                                    labels -> labels/strange_render.strange3_promotion.json
+```
+
+`--under` looks somewhere other than `artifacts/`; `--drops` adds the file each sheet's page
+saves to.
+
+**2. Serve it.** One sheet, one port, and pick the port explicitly whenever more than one
+sheet is open — the bind is exclusive, so a clash fails loudly instead of serving half the
+images out of the other sheet's directory:
+
+```
+fractal-wallpapers label serve --sheet artifacts/graduation_sheet --port 8021
+```
+
+It runs until stopped, so launch it in the background. It prints, flushed so a redirected
+log shows it immediately, the URL and what it is serving:
+
+```
+serving <...>/artifacts/graduation_sheet
+  -> http://127.0.0.1:8021/
+  strange_render · threads_promotion · 3 units
+  labels -> labels/strange_render.threads_promotion.json
+```
+
+The default port is 8010; the convention when several are open is 8020, 8021, … one per
+sheet.
+
+**3. Check it is really up** before handing over the URL. The page fetches its own manifest
+and rows, so a 200 on `/` alone does not prove the sheet loaded:
+
+```
+curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8021/sheet.jsonl
+```
+
+Render filenames are positions in the **render** order, not unit ids: a 96-unit sheet holds
+`0000`–`0095`, and unit `u0096` may point at `0061.png`. A 404 on a filename you guessed
+from a unit id is expected — the manifest is the only ordering.
+
+### Where the labels land
+
+Saving from the page writes `labels/<head>.<sheet>.json` — both halves, always, so two
+sheets cut for the same judge cannot overwrite each other (see [`export_control.js`] and
+`store.export_path`). `label sheets --drops` prints the name for every built sheet, and
+`label serve` prints it for the one it is serving.
+
+**Serving is not ingesting.** The drop sits in `labels/` until `label ingest` resolves it
+against its sheet; until then the store is untouched. Drops written before sheets carried
+their own name are called `<head>.json`, and re-ingesting one needs an explicit `--labels`.
 
 ## One generator, two row sources
 
