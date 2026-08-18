@@ -101,7 +101,7 @@ def test_the_one_acting_release_bar_is_the_strange_head_and_it_is_a_real_head() 
 
     assert set(floors.ACTING_RELEASE_BARS) == {budget.STRANGE}
     assert set(floors.ACTING_RELEASE_BARS) < set(budget.HEADS)
-    assert floors.ACTING_RELEASE_BARS[budget.STRANGE] == floors.STRANGE_RELEASE_BAR
+    assert floors.ACTING_RELEASE_BARS[budget.STRANGE] is floors.STRANGE_RELEASE_BAR
 
 
 def test_the_smooth_head_still_only_annotates() -> None:
@@ -117,9 +117,56 @@ def test_the_strange_head_gets_a_bar_and_refuses_to_pose_as_an_advisory() -> Non
 
     cut = floors.release_cut(budget.STRANGE)
     assert isinstance(cut, floors.Bar)
-    assert cut.value == floors.STRANGE_RELEASE_BAR
+    assert cut.value == floors.STRANGE_RELEASE_BAR.value
     with pytest.raises(ValueError, match="ACTS"):
         floors.release_advisory(budget.STRANGE)
+
+
+def test_the_acting_bar_is_stamped_with_the_head_its_height_was_measured_on() -> None:
+    """The half of the stamp that is different for a bar.
+
+    An advisory is the natural cutpoint of whatever scale is live, so it stamps
+    the live artifact. A bar's height was *measured*, on one named head, and it
+    stamps that one — which is what makes a flip refuse from the first call rather
+    than only when a re-ship lands in the middle of a run.
+    """
+    from fractal_wallpapers.curation import budget
+
+    cut = floors.release_cut(budget.STRANGE)
+    assert cut.stamp == floors.STRANGE_RELEASE_BAR.head_sha256
+    assert cut.stamp == floors.live_stamp(budget.STRANGE), (
+        "the shipped head is not the one this bar was restated against — restate it"
+    )
+
+
+def test_a_restated_bar_carries_the_scale_the_method_and_the_day() -> None:
+    """A bare float is unreadable: 0.50 and 0.685 are the same kind of thing only
+    if you already know which head's probabilities each was read against."""
+    restated = floors.STRANGE_RELEASE_BAR
+    assert 0.0 < restated.value < 1.0
+    assert len(restated.head_sha256) == 64
+    assert "isotonic" in restated.method.lower()
+    assert restated.date.count("-") == 2
+    assert str(restated).startswith(f"{restated.value:g} on {restated.head_sha256[:12]}")
+
+
+def test_a_head_flip_refuses_every_seating_decision_until_the_bar_is_restated(
+    tmp_path, monkeypatch
+) -> None:
+    """The failure this restatement exists to make impossible.
+
+    A retrain moves the whole probability scale, so yesterday's height is a point
+    on a scale that no longer exists. The bar does not silently keep gating: it
+    refuses, and the refusal names both artifacts.
+    """
+    from fractal_wallpapers.curation import budget
+    from fractal_wallpapers.models import ship
+
+    manifest = tmp_path / "weights.json"
+    manifest.write_text(json.dumps({"schema": 1, "heads": {budget.STRANGE: {"sha256": "def"}}}))
+    monkeypatch.setattr(ship, "manifest_path", lambda: manifest)
+    with pytest.raises(floors.HeadStampMismatch, match="re-state the cut"):
+        floors.release_cut(budget.STRANGE).seats(0.99)
 
 
 def test_a_bar_seats_nothing_without_a_score_while_the_record_keeps_the_third_state(

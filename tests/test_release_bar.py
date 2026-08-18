@@ -161,7 +161,7 @@ def test_the_run_reports_planned_against_seated_against_unfilled_per_head() -> N
     assert (smooth["planned"], smooth["seated"], smooth["unfilled"]) == (2, 2, 0)
     assert smooth["bar"] is None
     assert (strange["planned"], strange["seated"], strange["unfilled"]) == (2, 0, 2)
-    assert strange["bar"]["value"] == floors.STRANGE_RELEASE_BAR
+    assert strange["bar"]["value"] == floors.STRANGE_RELEASE_BAR.value
     assert strange["bar"]["acts"] is True
     assert strange["by_partition"]["mandelbrot"]["reason"] == "below_bar"
     assert split["below_bar_skips"] == 2
@@ -201,7 +201,7 @@ def test_a_rejection_is_added_and_nothing_is_deleted(tmp_path) -> None:
     assert taken["rejected"]["rejector"] == "matt_review"
     assert taken["rejected"]["date"] == "2026-08-17"
     assert taken["rejected"]["reason"] == rejection.BELOW_ACTING_BAR
-    assert taken["rejected"]["bar"]["value"] == floors.STRANGE_RELEASE_BAR
+    assert taken["rejected"]["bar"]["value"] == floors.STRANGE_RELEASE_BAR.value
     assert back["0001"]["rejected"] is None
 
 

@@ -52,6 +52,18 @@ cannot resolve a difference smaller than about six points. Sheet D's yardstick
 moves 0.096 across five seeds of one recipe. Differences inside those are
 reported as bands and are not called in either direction.
 
+## An arm may be amended, and only by appending
+
+A pre-registration written before a head exists will eventually be wrong about
+something that is not the comparison: this one asserted the shape of the
+checkpoint by a *number*, and the sanctioned retrain that widened the recipe then
+failed that arm for producing exactly the shape it was authorised to produce. So
+[`amended`] resolves an arm as *written plus every amendment to it*: the original
+stays in the file byte-identical, the amendment sits beside it with the day and
+the reason, and the read reports which rule it was held to. The ordering arm —
+the target, the margin, the boundary — is the comparison itself and is never what
+this is for.
+
 ## What gates and what is only reported
 
 Ordering at the live boundary gates. So do the interface — every cutpoint present
@@ -82,21 +94,23 @@ DRAWS, BOOTSTRAP_SEED = 5000, 0
 MATERIAL_FLOOR = 0.02
 
 #: What each judge is read on. `boundary` is the tier the sheet was drawn to
-#: inform, decided before the draw; `classes` is how many tiers the checkpoints
-#: being compared emit, which is what decides how many cutpoints there are to read
-#: — a fact about the models on both sides of the comparison, not about the store,
-#: which is cast on [`finished.SCALE`].
+#: inform, decided before the draw and never moved by anything here.
+#:
+#: **How many cutpoints there are is not written here.** It was, at 3 and 4, and
+#: that was a number about the checkpoints being compared typed while one of the
+#: recipes was still narrow — so the sanctioned 4-class retrain produced a head of
+#: exactly the right shape and failed the interface arm for it. The count now comes
+#: from [`cutpoints_of`], off the recipe the head actually trains under, and the
+#: pre-registration says so in an amendment rather than by having been rewritten.
 SHEETS = {
     "smooth_render": {
         "batch": "blind_minibrot",
         "boundary": 4,
-        "classes": 4,
         "source_batch": "2026-08-11_wallpaper_blind_minibrot_v1",
     },
     "strange_render": {
         "batch": "blind_modes",
         "boundary": 2,
-        "classes": 3,
         "source_batch": "2026-08-11_render_mode_blind_v1",
     },
 }
@@ -153,6 +167,48 @@ def acceptance_path(head: str) -> Path:
 
 def boundary_label(boundary: int) -> str:
     return f"ge{boundary}"
+
+
+def cutpoints_of(head: str) -> int:
+    """How many cutpoints this head's checkpoints emit: its recipe's classes, less one.
+
+    Read off [`finished_train.RECIPES`] rather than restated, because those two
+    numbers *are* one number — a CORN head with `K` classes has `K-1` conditional
+    subtasks and writes `K-1` columns — and the one time they were allowed to
+    disagree, the interface arm refused the head the retrain had been authorised
+    to produce.
+    """
+    from fractal_wallpapers.models.finished_train import RECIPES
+
+    return int(RECIPES[finished.head_of(head)]["classes"]) - 1
+
+
+def amended(bar: dict, arm: str) -> dict:
+    """One arm of a pre-registration as it now stands: as written, plus its amendments.
+
+    An amendment is **appended**. The arm as it was first written stays in the file
+    byte-identical and every amendment sits beside it with the day and the reason,
+    so what a read was held to is recoverable and so is what it was originally
+    going to be held to. A bar somebody may quietly rewrite is not a bar; a bar
+    nobody may ever correct refuses the right head for the wrong reason. The
+    difference is whether the correction is in the record next to what it corrected.
+
+    The **ordering** arm is the one this must never be used to move, and nothing
+    does: the target, the margin and the boundary are the whole of the comparison,
+    and an amendment to those after the numbers are in would be the thing
+    pre-registration exists to stop.
+    """
+    out = dict(bar["arms"][arm])
+    for amendment in bar.get("amendments") or []:
+        if amendment.get("arm") != arm:
+            continue
+        out = {
+            **out,
+            **amendment["now"],
+            "amended_on": amendment["date"],
+            "amended_because": amendment["why"],
+        }
+    return out
 
 
 def extract(head: str, root: Path) -> dict:
@@ -314,6 +370,7 @@ def preregister(head: str, root: Path) -> dict:
     sheet = SHEETS[head]
     boundary = sheet["boundary"]
     label = boundary_label(boundary)
+    cutpoints = cutpoints_of(head)
     vendored = vendor(head, root)
     stick = yardstick(head)
     rows = population(head)
@@ -383,7 +440,7 @@ def preregister(head: str, root: Path) -> dict:
                 f"figure of {stick['adopted']['auc']:.4f} may carry the same selection the "
                 "other sheet's does and cannot be corrected for. It is used as written."
             ),
-            f"ONE BOUNDARY. This sheet holds {tiers} on a 1..{sheet['classes']} scale, so only "
+            f"ONE BOUNDARY. This sheet holds {tiers} on a 1..{cutpoints + 1} scale, so only "
             f"{label} is measurable on it with both classes present in quantity. The other "
             f"boundaries are reported where they exist and gate nothing.",
             "DECODED-VERDICT AGREEMENT DOES NOT GATE: no decoded verdict for either source "
@@ -444,7 +501,8 @@ def preregister(head: str, root: Path) -> dict:
             "interface": {
                 "gated": True,
                 "rule": (
-                    f"the checkpoint emits {sheet['classes'] - 1} cutpoints and the score file "
+                    f"the checkpoint emits as many cutpoints as its own recipe has classes, "
+                    f"less one ({cutpoints} today), and the score file "
                     "carries a probability for every one of them, non-increasing along the row"
                 ),
             },
@@ -488,7 +546,7 @@ def read(head: str, runs: list[str | None] | None = None) -> dict:
     bar = json.loads(prereg_path(head).read_text(encoding="utf-8"))
     sheet = SHEETS[head]
     boundary, label = sheet["boundary"], boundary_label(sheet["boundary"])
-    cutpoints = sheet["classes"] - 1
+    cutpoints = cutpoints_of(head)
 
     rows = population(head)
     by_run = {
@@ -542,7 +600,7 @@ def read(head: str, runs: list[str | None] | None = None) -> dict:
     else:
         ordering_verdict = "BORDERLINE"
 
-    interface = _interface_arm(scored, cutpoints)
+    interface = _interface_arm(scored, cutpoints, amended(bar, "interface"))
     calibration = _calibration_arm(truth, ours, bar)
     agreement = _agreement_arm(labels, [column(judged, i) for i in range(cutpoints)], groups)
     verdicts = [ordering_verdict, interface["verdict"], calibration["verdict"]]
@@ -583,7 +641,14 @@ def read(head: str, runs: list[str | None] | None = None) -> dict:
     }
 
 
-def _interface_arm(scored: dict, cutpoints: int) -> dict:
+def _interface_arm(scored: dict, cutpoints: int, arm: dict) -> dict:
+    """Every cutpoint present and never out of order, against the rule as it stands.
+
+    The rule is carried into the verdict rather than left in the bar, because this
+    arm is the one an amendment has already had to move: a reader of an acceptance
+    record has to be able to see which shape was demanded of the head without
+    holding the pre-registration's whole history in their head.
+    """
     columns = [f"p_ge{index + 2}" for index in range(cutpoints)]
     missing = [name for name, row in scored.items() if any(c not in row for c in columns)]
     inverted = [
@@ -596,6 +661,8 @@ def _interface_arm(scored: dict, cutpoints: int) -> dict:
         )
     ]
     return {
+        "rule": arm["rule"],
+        "amended_on": arm.get("amended_on"),
         "cutpoints": columns,
         "rows": len(scored),
         "rows_missing_a_cutpoint": len(missing),
@@ -684,7 +751,9 @@ __all__ = [
     "SOURCE_RECORDS",
     "AcceptanceError",
     "acceptance_path",
+    "amended",
     "boundary_label",
+    "cutpoints_of",
     "decode",
     "extract",
     "head_dir",

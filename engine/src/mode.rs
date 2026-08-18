@@ -65,6 +65,12 @@ pub enum Tier {
     /// Renderable on demand, excluded from every production draw. A mode is niche
     /// because it is expensive, unproven at scale, or interesting rather than
     /// good — never because it is broken, which would make it absent instead.
+    ///
+    /// The tier is a **holding place**, not a verdict: `threads` and `itinerary`
+    /// stayed here until a round of human labels said they were worth drawing and
+    /// the judge that ranks them could express the tier those labels used. `de` is
+    /// the one that stays, because what it is for is a picture somebody asks for by
+    /// name.
     Niche,
 }
 
@@ -149,11 +155,11 @@ pub const CATALOG: [Entry; 19] = [
         "direct_trap_lines",
         "Direct trap on the real axis: the narrowest, most directional member.",
     ),
-    niche(
+    production(
         "threads",
         "Smooth base plus the accumulated cross trap: sparse organic flow.",
     ),
-    niche(
+    production(
         "itinerary",
         "Smooth base whose palette position the orbit's angular address shifts. \
          The address opens at z1 on a dynamical plane and at z0 on a parameter one.",
@@ -473,16 +479,21 @@ mod tests {
         }
     }
 
-    /// The tier split, stated once: three niche modes, everything else ships, and
-    /// the production roster is a strict subset of the catalog.
+    /// The tier split, stated once: one niche mode, everything else ships, and the
+    /// production roster is a strict subset of the catalog.
+    ///
+    /// `threads` and `itinerary` were held here while the judge that would have to
+    /// rank them could not express the top of its own scale. That gate is closed —
+    /// the strange head trains four classes and its release bar has been restated
+    /// against it — so they are drawable. `de` stays, and permanently: Matt's call.
     #[test]
-    fn the_three_experimental_modes_are_niche_and_nothing_else_is() {
+    fn the_distance_estimate_is_the_one_niche_mode_and_nothing_else_is() {
         let niche: Vec<&str> = CATALOG
             .iter()
             .filter(|entry| entry.tier == Tier::Niche)
             .map(|entry| entry.name)
             .collect();
-        assert_eq!(niche, vec!["threads", "itinerary", "de"]);
+        assert_eq!(niche, vec!["de"]);
 
         let drawn: Vec<&str> = production_names().collect();
         assert_eq!(drawn.len(), CATALOG.len() - niche.len());
@@ -497,7 +508,9 @@ mod tests {
     }
 
     /// A niche mode is still a real mode: it resolves by name and renders, which
-    /// is the whole difference between "not drawn" and "not there".
+    /// is the whole difference between "not drawn" and "not there". The two that
+    /// have since been promoted resolve the same way they always did — a tier
+    /// moves what may *draw* a mode and nothing else about it.
     #[test]
     fn a_niche_mode_still_resolves_by_name() {
         for name in ["threads", "itinerary", "de"] {

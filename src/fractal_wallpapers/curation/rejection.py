@@ -194,8 +194,11 @@ def _summary(run: str, rows) -> dict:
         "junk floor": floors.JUNK_FLOOR,
         "good floor": floors.GOOD_FLOOR,
     }
-    for head, value in sorted(floors.ACTING_RELEASE_BARS.items()):
-        summary[f"{head} bar"] = f"{value:g} (acting)"
+    for head, restated in sorted(floors.ACTING_RELEASE_BARS.items()):
+        summary[f"{head} bar"] = (
+            f"{restated.value:g} (acting; restated {restated.date} against "
+            f"{restated.head_sha256[:12]})"
+        )
     return summary
 
 

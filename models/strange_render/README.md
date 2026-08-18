@@ -1,8 +1,10 @@
 The head that judges a finished render in one of the strange colourings.
 
-Fifteen colourings beside `smooth` — engraved banding, orbit traps, stripe and
-curvature averages, and the composites that screen one over the other — and they
-fail differently from a smooth render. A trap mode that catches nothing is a
+Seventeen colourings beside `smooth` — engraved banding, orbit traps, stripe and
+curvature averages, the composites that screen one over the other, and the two
+newest, `threads` and `itinerary`, whose own labels arrived in one round and
+carried them into the release tier — and they fail differently from a smooth
+render. A trap mode that catches nothing is a
 black frame; one that catches everything is white lace on white. So this is its
 own judge over its own corpus, on the mode-and-palette axis rather than the
 location one.
@@ -33,6 +35,13 @@ is `four_class_seed0`, `four_class_seed1` and `four_class_seed2`, and the staged
 artifact is the median of that band by its own overall score. A superseded run's
 records are left exactly as they were — a config says what *that* run trained
 under and is never re-read against a later recipe.
+
+`acceptance.json` is the 4-class read, judged on the median of its three seeds:
+**ACCEPT**, where the baseline's read of the same sheet was BORDERLINE. The
+baseline's verdict is not deleted, it is one file in git history. Reaching it
+needed one amendment to `prereg.json` — appended, never edited — because the
+interface arm asserted the *number* of cutpoints a checkpoint emits, and a head
+widened to four classes failed it for being the shape it was authorised to be.
 
 The weights themselves are not tracked. `best.pt` and `last.pt` are what training
 leaves on disk in full precision; `strange_render.fp16.pt` is the halved artifact

@@ -93,5 +93,20 @@
       "gated": false,
       "rule": "reported where both classes are present, and NOT_MEASURABLE with the count otherwise. This sheet was drawn to inform one boundary."
     }
-  }
+  },
+  "amendments": [
+    {
+      "date": "2026-08-17",
+      "arm": "interface",
+      "was": {
+        "rule": "the checkpoint emits 2 cutpoints and the score file carries a probability for every one of them, non-increasing along the row"
+      },
+      "now": {
+        "rule": "the checkpoint emits as many cutpoints as its own recipe has classes, less one, and the score file carries a probability for every one of them, non-increasing along the row"
+      },
+      "why": "the class count moved with the sanctioned 4-class retrain. This corpus was collected before a 4 existed in it, so `RECIPES['strange_render']['classes']` was three and this arm was written as the literal '2 cutpoints'. The store now holds 4s, the recipe went to four, and a checkpoint of the right shape emits three cutpoints \u2014 which the arm as written called a FAIL for being right. The arm was always about the interface being complete and ordered, never about a particular width, so it now asserts the width the recipe implies and the read takes the count from `finished_acceptance.cutpoints_of` rather than from a number typed beside the sheet.",
+      "does_not_move": "the ordering arm and everything the comparison rests on: the boundary is still ge2, the target still 0.708570412517781, the margin still 0.035, the population still the 150 blind_modes rows. A 4-class head is read at ge2 through the same P(>=2) column a 3-class one was, so the comparison is unchanged and this amendment could not have been chosen to change it.",
+      "amended_by": "matt"
+    }
+  ]
 }

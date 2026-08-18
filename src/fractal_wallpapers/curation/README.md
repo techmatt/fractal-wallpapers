@@ -35,17 +35,20 @@ Seven things here are worth reading before changing anything.
 **Two cuts act; everything else annotates.** `floors` owns every threshold. The
 junk floor removes a row at intake, on the location head's scale, saying no more
 than *do not spend colorize compute on this*. The **strange head's release bar**
-removes one at selection: a strange row below 0.50 is not seated, and a strange
+removes one at selection: a strange row below 0.685 is not seated, and a strange
 slot with nothing above it goes unfilled.
 
 Both render judges shipped as advisories — computed, written onto every record,
 never allowed to drop a candidate — because neither had a measured release gate
 and a bar without one is a number nobody can defend. The strange bar is an
 exception taken deliberately, by review rather than by measurement: Matt read
-`run2` on 2026-08-17, and all eleven released strange rows below 0.50 were bad,
-the head had been right about every one, and the release path had been padding
-strange slots out of thin passing supply. A labels-derived restatement of the bar
-is future work; the label accumulator holds it. **The smooth head stays
+`run2` on 2026-08-17, and all eleven released strange rows below the advisory were
+bad, the head had been right about every one, and the release path had been
+padding strange slots out of thin passing supply. Its *height* is no longer that
+verdict: the 4-class retrain moved the head's whole probability scale, so the bar
+was restated off the labels — the crossover where the head's own P(>=3) stops
+disagreeing with the people who judged 3,085 pictures — and it landed at 0.685
+rather than at the advisory it was promoted from. **The smooth head stays
 advisory** — its below-advisory rows belong to a mix-ratio decision that has not
 been taken. An `Advisory` and a `Bar` are two classes rather than one class with
 a flag, so which kind a head has is visible at every call site.
