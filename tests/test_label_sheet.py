@@ -247,3 +247,133 @@ def test_a_plan_reads_back_the_units_it_holds(tmp_path) -> None:
     }
     plan.write_text(json.dumps(written) + "\n", encoding="utf-8")
     assert sheets.units_from_plan(plan) == [written]
+
+
+# --------------------------------------------------------------------------- #
+# The revision sheet: a plan that re-serves rows the store already holds.
+# --------------------------------------------------------------------------- #
+RECIPE = {
+    "gamma": 1.25,
+    "cycles": 2.0,
+    "phase": 0.5,
+    "reverse": True,
+    "mirror": True,
+    "transfer": {"kind": "edge", "weight": 2.0},
+    "rolloff": {"kind": "soft_knee", "knee": 0.35},
+}
+
+
+def picture_stub(join, output, leveled=None):
+    """A renderer that writes a real (tiny) picture, because thumbnails open it."""
+    from PIL import Image
+
+    del join, leveled
+    output.parent.mkdir(parents=True, exist_ok=True)
+    Image.new("RGB", (8, 5), (10, 20, 30)).save(output, "JPEG")
+
+
+def finished_unit(index: int, **extra) -> dict:
+    return {
+        "family": MANDELBROT,
+        "viewport": {"center_re": f"0.{index}", "center_im": "0.0", "width": "1.0"},
+        "mode": "stripe",
+        "maxiter": 500,
+        "colormap": sheets.CANONICAL_COLORMAP,
+        "recipe": dict(RECIPE),
+        **extra,
+    }
+
+
+def finished_sheet(tmp_path, units, probabilities=None, **kwargs):
+    scores = probabilities or [[0.9, 0.1]] * len(units)
+    source = sheets.finished_source(
+        "strange_render", renderer=picture_stub, scores=(scores, 3), **kwargs
+    )
+    return sheets.build(
+        source,
+        units,
+        directory=tmp_path / "sheet",
+        batch="a_sheet_name",
+        log=lambda _: None,
+    )
+
+
+def test_a_plan_unit_carries_its_own_recipe_into_the_join(tmp_path) -> None:
+    """A revision sheet re-serves a picture the store already holds, and a knob
+    re-derived from defaults is a different picture and a different identity."""
+    sheet = finished_sheet(tmp_path, [finished_unit(0)])
+    assert sheet.rows[0]["join"]["recipe"] == RECIPE
+
+
+def test_a_partial_recipe_is_refused_rather_than_topped_up(tmp_path) -> None:
+    with pytest.raises(sheets.SheetError, match="names no phase"):
+        sheets.stated_recipe({key: value for key, value in RECIPE.items() if key != "phase"})
+
+
+def test_a_stated_recipe_without_a_map_is_refused(tmp_path) -> None:
+    unit = finished_unit(0)
+    unit.pop("colormap")
+    with pytest.raises(sheets.SheetError, match="states a recipe and no colormap"):
+        finished_sheet(tmp_path, [unit])
+
+
+def test_a_plan_may_prefill_the_incumbent_verdict_the_head_cannot_reach(tmp_path) -> None:
+    """The shipped strange head has two cutpoints and can never suggest a 4. On a
+    re-judging pass the incumbent is the stored label, not the decode."""
+    sheet = finished_sheet(tmp_path, [finished_unit(0, suggestion=4)])
+    assert sheet.rows[0]["suggestion"] == 4
+    assert sheet.manifest["suggested_by"] == "plan"
+    assert sheet.manifest["scorer"] == "strange_render"
+
+
+def test_a_head_prefilled_sheet_still_says_so(tmp_path) -> None:
+    sheet = finished_sheet(tmp_path, [finished_unit(0)])
+    assert sheet.rows[0]["suggestion"] == 2
+    assert sheet.manifest["suggested_by"] == "strange_render"
+
+
+def test_a_sheet_states_every_suggestion_or_none_of_them(tmp_path) -> None:
+    """A page whose prefills mean two different things cannot be read back."""
+    units = [finished_unit(0, suggestion=3), finished_unit(1)]
+    with pytest.raises(sheets.SheetError, match="all of them or none"):
+        finished_sheet(tmp_path, units, probabilities=[[0.9, 0.1], [0.2, 0.1]])
+
+
+def test_a_suggestion_outside_the_scale_is_refused(tmp_path) -> None:
+    with pytest.raises(sheets.SheetError, match="not one of"):
+        finished_sheet(tmp_path, [finished_unit(0, suggestion=7)])
+
+
+def test_a_revision_row_keeps_the_batch_it_was_drawn_from(tmp_path) -> None:
+    """The sheet's own name is not a registration, and a row revised under it
+    would silently change side, anchoring and draw method."""
+    units = [finished_unit(0, batch="mode_sweep"), finished_unit(1, batch="rare_palette")]
+    sheet = finished_sheet(tmp_path, units, probabilities=[[0.9, 0.1], [0.2, 0.1]])
+    assert {row["batch"] for row in sheet.rows} == {"mode_sweep", "rare_palette"}
+    assert sheet.manifest["batch"] == "a_sheet_name"
+    assert sheet.manifest["batches"] == {"mode_sweep": 1, "rare_palette": 1}
+
+
+def test_a_unit_that_names_no_batch_falls_back_to_the_sheet(tmp_path) -> None:
+    sheet = finished_sheet(tmp_path, [finished_unit(0)])
+    assert sheet.rows[0]["batch"] == "a_sheet_name"
+
+
+def test_the_render_cache_is_reused_only_on_an_exact_spec(tmp_path, monkeypatch) -> None:
+    """The cache names a picture by a digest of everything the engine is told, so
+    a hit is the same picture and anything different at all is a miss."""
+    from fractal_wallpapers.models import renders
+
+    crops = tmp_path / "crops"
+    crops.mkdir()
+    monkeypatch.setattr(renders, "crop_dir", lambda head: crops)
+    unit = finished_unit(0)
+    plain = finished_sheet(tmp_path / "first", [unit], reuse_cache=True)
+    assert plain.manifest["cut"] == {"reused_from_cache": 0, "rendered": 1}
+
+    join = plain.rows[0]["join"]
+    picture_stub(join, crops / f"{renders.job_name({**join, '_head': 'strange_render'})}.jpg")
+    hit = finished_sheet(tmp_path / "second", [unit], reuse_cache=True)
+    assert hit.manifest["cut"] == {"reused_from_cache": 1, "rendered": 0}
+    missed = finished_sheet(tmp_path / "third", [finished_unit(1)], reuse_cache=True)
+    assert missed.manifest["cut"] == {"reused_from_cache": 0, "rendered": 1}

@@ -708,12 +708,8 @@ def label_build(args: argparse.Namespace) -> int:
     if args.head and not args.from_plan:
         print("--head names a finished-render judge, and those sheets are cut from --from-plan")
         return 1
-
-    known = finished.registry(args.head) if args.head else store.registry()
-    if args.batch not in known:
-        head = f" --head {args.head}" if args.head else ""
-        print(f"batch {args.batch!r} is not registered; register it before its rows exist:")
-        print(f"  fractal-wallpapers label register --batch {args.batch} --method '...'{head}")
+    if args.reuse_renders and not args.from_plan:
+        print("--reuse-renders reads a finished-render cache, so it needs --from-plan")
         return 1
 
     if args.from_plan:
@@ -723,6 +719,7 @@ def label_build(args: argparse.Namespace) -> int:
             seed=args.seed,
             resolution=tuple(args.resolution),
             supersample=args.supersample,
+            reuse_cache=args.reuse_renders,
         )
     else:
         if args.from_ledger:
@@ -738,6 +735,17 @@ def label_build(args: argparse.Namespace) -> int:
         units = units[: args.limit]
     if not units:
         print("no units: there is nothing to judge")
+        return 1
+
+    # Every batch a row will LAND in, which on a revision sheet is the batch each
+    # unit came out of and not the sheet's own name. Checked after the units are
+    # read and before a pixel is rendered.
+    known = finished.registry(args.head) if args.head else store.registry()
+    unregistered = sorted({unit.get("batch") or args.batch for unit in units} - set(known))
+    if unregistered:
+        head = f" --head {args.head}" if args.head else ""
+        print(f"not registered: {unregistered}; register a batch before its rows exist:")
+        print(f"  fractal-wallpapers label register --batch {unregistered[0]} --method '...'{head}")
         return 1
 
     sheet = sheets.build(
@@ -1975,7 +1983,13 @@ def label_commands(subcommands) -> None:
         help="cut to what the scorer admitted rather than to everything the gates passed; "
         "empty until a head exists, because admission needs a score",
     )
-    building.add_argument("--batch", required=True, help="the registered batch the rows land in")
+    building.add_argument(
+        "--batch",
+        required=True,
+        help="the registered batch the rows land in, and what the page keys its saved session "
+        "on. A plan unit may name its own batch — a revision sheet re-serves rows from several "
+        "at once and each keeps its registration — and then this is only the sheet's name",
+    )
     building.add_argument("--seed", type=int, default=0, help="the presentation seed (default: 0)")
     building.add_argument("--limit", type=int, help="cut the sheet to this many units")
     building.add_argument("--title", default="", help="what the page calls itself")
@@ -1988,6 +2002,13 @@ def label_commands(subcommands) -> None:
         help="render size (default: 1280 720, what both finished corpora were collected at)",
     )
     building.add_argument("--supersample", type=int, default=2, help="samples per pixel, per axis")
+    building.add_argument(
+        "--reuse-renders",
+        action="store_true",
+        help="take a unit's picture off this head's render cache where the cache already holds "
+        "that exact spec, instead of rendering it again. The cache names a picture by a digest "
+        "of everything the engine is told, so a hit is the same picture",
+    )
     building.add_argument(
         "--out-dir",
         default=str(Path("artifacts") / "sheet"),
