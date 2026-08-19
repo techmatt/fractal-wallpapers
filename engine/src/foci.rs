@@ -157,45 +157,99 @@ pub fn pixel_to_point(view: &Viewport, x: f64, y: f64) -> Complex<f64> {
     )
 }
 
-/// Draw the next target on `view`, whose escape field is `field`.
-pub fn propose(
-    view: &Viewport,
-    field: &[f32],
-    pixels: &[u8],
-    policy: &Policy,
-    rng: &mut Rng,
-) -> Target {
-    let (weight_foci, weight_density, weight_random) = policy.branch;
-    let total = weight_foci.max(0.0) + weight_density.max(0.0) + weight_random.max(0.0);
-    let draw = rng.unit() * if total > 0.0 { total } else { 1.0 };
+/// The frame a rung proposes from, and the readings of it the draws share.
+///
+/// A node draws several candidates off **one** parent frame, and two of the
+/// three branches are pure functions of that frame: the scale-space focus set
+/// and the detail-weighted centroid are the same points however many times they
+/// are asked for. Reading them per *draw* rather than per *frame* is the whole
+/// of what this type exists to stop — the focus finder is twenty smoothing
+/// passes over the field and was measured at 47% of a walk's expansion clock,
+/// two thirds of it spent re-deriving a set that had not moved.
+///
+/// So a frame is built once per node and each reading is taken on the first
+/// draw that wants it. The randomness stays where it was: the branch draw, the
+/// weighted focus draw and the uniform point still consume the node's stream in
+/// the same order, because none of the cached work ever touched it.
+///
+/// **The policy is the node's, not the draw's.** A frame caches under the
+/// assumption that the policy it is asked with does not change beneath it,
+/// which is true by construction — a batch carries one policy — and is why the
+/// readings are not keyed by anything.
+pub struct Frame<'a> {
+    view: &'a Viewport,
+    field: &'a [f32],
+    pixels: &'a [u8],
+    /// The spread focus set, taken on the first foci draw.
+    foci: Option<Vec<Focus>>,
+    /// The detail-weighted centroid, taken on the first density draw.
+    density: Option<Complex<f64>>,
+}
 
-    if draw < weight_foci {
-        let found = find_foci(view, field, &policy.sigmas);
-        let spread = spread_out(&found, policy.focus_spread * view.out_width as f64);
-        if let Some(focus) = sample_focus(&spread, rng) {
+impl<'a> Frame<'a> {
+    /// A frame over one node render: its escape field and the pixels of it.
+    pub fn new(view: &'a Viewport, field: &'a [f32], pixels: &'a [u8]) -> Frame<'a> {
+        Frame {
+            view,
+            field,
+            pixels,
+            foci: None,
+            density: None,
+        }
+    }
+
+    /// Draw the next target on this frame.
+    pub fn propose(&mut self, policy: &Policy, rng: &mut Rng) -> Target {
+        let (weight_foci, weight_density, weight_random) = policy.branch;
+        let total = weight_foci.max(0.0) + weight_density.max(0.0) + weight_random.max(0.0);
+        let draw = rng.unit() * if total > 0.0 { total } else { 1.0 };
+
+        if draw < weight_foci {
+            let view = self.view;
+            if let Some(focus) = sample_focus(self.foci(policy), rng) {
+                return Target {
+                    point: pixel_to_point(view, focus.x, focus.y),
+                    branch: Branch::Foci,
+                    score: focus.score,
+                };
+            }
+            // An empty focus set is a fact about the frame, not a failure: fall
+            // through to density rather than redrawing the branch, so the rung
+            // still costs one draw and the stream stays reproducible.
+        }
+
+        if draw < weight_foci + weight_density {
             return Target {
-                point: pixel_to_point(view, focus.x, focus.y),
-                branch: Branch::Foci,
-                score: focus.score,
+                point: self.density(),
+                branch: Branch::Density,
+                score: f64::NAN,
             };
         }
-        // An empty focus set is a fact about the frame, not a failure: fall
-        // through to density rather than redrawing the branch, so the rung
-        // still costs one draw and the stream stays reproducible.
-    }
 
-    if draw < weight_foci + weight_density {
-        return Target {
-            point: density_point(view, pixels),
-            branch: Branch::Density,
+        Target {
+            point: interior_point(self.view, rng),
+            branch: Branch::Random,
             score: f64::NAN,
-        };
+        }
     }
 
-    Target {
-        point: interior_point(view, rng),
-        branch: Branch::Random,
-        score: f64::NAN,
+    /// This frame's foci, spread out — found on the first ask, kept after it.
+    fn foci(&mut self, policy: &Policy) -> &[Focus] {
+        if self.foci.is_none() {
+            let found = find_foci(self.view, self.field, &policy.sigmas);
+            self.foci = Some(spread_out(
+                &found,
+                policy.focus_spread * self.view.out_width as f64,
+            ));
+        }
+        self.foci.as_deref().unwrap_or_default()
+    }
+
+    /// This frame's detail-weighted centroid — measured on the first ask.
+    fn density(&mut self) -> Complex<f64> {
+        *self
+            .density
+            .get_or_insert_with(|| density_point(self.view, self.pixels))
     }
 }
 
@@ -678,6 +732,43 @@ mod tests {
             sampled.interior_fraction
         );
         assert!(find_foci(&inside, &sampled.fields[0].values, &SIGMAS).is_empty());
+    }
+
+    /// A frame keeps its readings, and keeping them changes nothing.
+    ///
+    /// The saving is real work removed — the focus finder ran once per draw and
+    /// now runs once per frame — so the claim that has to be pinned is that the
+    /// draws are the *same* draws. A fresh frame per proposal is exactly what
+    /// the per-draw path was, so proposing four times off one frame and
+    /// proposing once off each of four frames, on one stream, must agree point
+    /// for point.
+    #[test]
+    fn a_frame_proposes_what_a_fresh_frame_per_draw_would_have() {
+        let family = Family::Multibrot { degree: 2 };
+        let busy = view(3.0, Complex::new(-0.5, 0.0));
+        let sampled = field::render_field(&busy, &family, 2000, FieldSpec::Smooth);
+        let field = &sampled.fields[0].values;
+        let pixels = vec![128u8; (busy.out_width * busy.out_height * 3) as usize];
+        let policy = Policy::default();
+
+        let mut kept = Frame::new(&busy, field, &pixels);
+        let mut shared = Rng(0xD15C0);
+        let mut fresh = Rng(0xD15C0);
+        let mut branches = Vec::new();
+        for _ in 0..16 {
+            let one = kept.propose(&policy, &mut shared);
+            let two = Frame::new(&busy, field, &pixels).propose(&policy, &mut fresh);
+            assert_eq!(one.point, two.point);
+            assert_eq!(one.branch, two.branch);
+            assert_eq!(one.score.is_nan(), two.score.is_nan());
+            if !one.score.is_nan() {
+                assert_eq!(one.score, two.score);
+            }
+            branches.push(one.branch);
+        }
+        // The run has to have exercised the branch the cache is for, or it
+        // pinned nothing.
+        assert!(branches.contains(&Branch::Foci), "{branches:?}");
     }
 
     /// Foci are the sampling weight, so they must be sorted by it — a caller
