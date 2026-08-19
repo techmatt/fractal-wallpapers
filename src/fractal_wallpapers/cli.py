@@ -363,6 +363,13 @@ def plane_seed_default(name: str):
     return getattr(plane_seeds, name)
 
 
+def proven_default(name: str):
+    """One of the proven channel's constants, for a help string that cannot drift."""
+    from fractal_wallpapers.supply import proven
+
+    return getattr(proven, name)
+
+
 def ledger_flags(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     """The two ways an invocation declares which ledgers it is bound to.
 
@@ -447,6 +454,48 @@ def derive_plane_seeds(args: argparse.Namespace) -> int:
             "re-run with --write if the procedure is the thing that changed."
         )
     return 0 if verdict["held"] else 1
+
+
+def derive_proven_seeds(args: argparse.Namespace) -> int:
+    """Emit the proven-label seed set, and say how it compares to a file."""
+    from fractal_wallpapers.supply import proven
+
+    derived = proven.derive(
+        tier_floor=args.tier_floor if args.tier_floor is not None else proven.TIER_FLOOR,
+        partitions=tuple(args.partition or proven.SERVED),
+    )
+    out: dict = {"record": derived["record"]}
+    if args.against:
+        out["against"] = proven.compare(derived["rows"], resolve_output(args.against))
+    if args.write:
+        path = resolve_output(args.out)
+        proven.write(derived["rows"], path)
+        out["wrote"] = display_path(path)
+    print(json.dumps(out, indent=2))
+    lost = (out.get("against") or {}).get("lost", 0)
+    if lost:
+        print(
+            f"\n{lost} location(s) the file holds are not in the derived set. A verdict was "
+            "withdrawn, lowered, or is no longer readable — that is a thing to explain, not "
+            "a thing to re-derive past."
+        )
+        return 1
+    return 0
+
+
+def build_proven_channel(args: argparse.Namespace, partitions):
+    """The proven-label channel this run asked for by name, or `None`.
+
+    Derived from the label store as it stands rather than read from a file: a
+    keeper labelled this morning is a root this afternoon, and there is nothing
+    to refresh. Off by default — the channel feeds on this project's own past
+    output, so adopting it is a decision a run states.
+    """
+    from fractal_wallpapers.supply import proven
+
+    if proven.CHANNEL not in (getattr(args, "root_channels", None) or ()):
+        return None
+    return proven.build(partitions=partitions)
 
 
 def build_scorer(args: argparse.Namespace, log=print):
@@ -578,6 +627,7 @@ def harvest(args: argparse.Namespace) -> int:
         external=quota.external,
         partitions=partitions,
         twins=twin_channel,
+        proven=build_proven_channel(args, partitions),
     )
     memory = (
         None
@@ -1866,6 +1916,15 @@ def build_parser() -> argparse.ArgumentParser:
         "three higher-degree Julia partitions then have no channel at all and say so",
     )
     production.add_argument(
+        "--root-channel",
+        action="append",
+        dest="root_channels",
+        choices=[proven_default("CHANNEL")],
+        help=f"draw parameter-plane roots from this channel as well as the plane pool; "
+        f"repeatable. {proven_default('CHANNEL')!r} roots the walk at every location a human "
+        f"has scored a keeper, interleaved with the pool rather than replacing it",
+    )
+    production.add_argument(
         "--ledgers",
         default="artifacts",
         help="where earlier runs' ledgers live (default: artifacts)",
@@ -1932,6 +1991,39 @@ def build_parser() -> argparse.ArgumentParser:
         "--write", action="store_true", help="write it; otherwise verify and print the difference"
     )
     seeding.set_defaults(handler=derive_plane_seeds)
+
+    proving = subcommands.add_parser(
+        "derive-proven-seeds",
+        help="build the proven-label seed set from the label store",
+        description=(
+            "One root per location a human scored a keeper, on the parameter planes. Not a "
+            "tracked file: the seed set is a query over the label store, re-derived whenever "
+            "it is asked for, and a harvest draws it live with `--root-channel proven_label`. "
+            "Emitting one is for reading it, diffing it, or passing it as --seeds."
+        ),
+    )
+    proving.add_argument(
+        "--tier-floor",
+        type=int,
+        default=None,
+        help=f"the label class a location must reach (default: {proven_default('TIER_FLOOR')})",
+    )
+    proving.add_argument(
+        "--partition",
+        action="append",
+        help="derive for this partition alone; repeatable (default: the parameter planes)",
+    )
+    proving.add_argument(
+        "--out",
+        default="artifacts/proven_label_seeds.jsonl",
+        help="where --write puts the seed file (default: artifacts/proven_label_seeds.jsonl)",
+    )
+    proving.add_argument("--write", action="store_true", help="write the seed file")
+    proving.add_argument(
+        "--against",
+        help="a seed file to compare the derived set against, by location and not by id",
+    )
+    proving.set_defaults(handler=derive_proven_seeds)
 
     standing = subcommands.add_parser(
         "census",

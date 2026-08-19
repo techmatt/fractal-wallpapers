@@ -17,6 +17,7 @@ allocation   the floor, the water-filling, and the floor's carry
 quota        the object a run holds; the only thing that decides the mix
 refill       what to do about a partition whose queue has run dry
 twins        Julia parameters derived from the parent plane's admissions
+proven       parameter-plane roots at every location a human scored a keeper
 saturation   cross-run memory, straight off the ledgers
 tau_h        how good a cheap look must be before a real one is paid for
 harvest      the production loop, and everything that keeps it honest
@@ -32,7 +33,7 @@ serve     divide the batch's slots by how far each partition is below its intent
 credit    what the batch found, deduplicated, back into the price and the stock
 ```
 
-Five things are worth reading before changing anything here.
+Eight things are worth reading before changing anything here.
 
 **A Julia twin's supply is manufactured by serving its parent.** The allocator
 has always folded a twin's demand into its parameter plane on the ground that
@@ -43,6 +44,17 @@ admitted degree-`d` plane location's centre *is* a `c` for the degree-`d` Julia
 family, and it becomes a root through the same seed object and the same cursor
 the tracked degree-2 pool uses. Parameters closer than the pool's own c-spacing
 floor to one already taken are skipped and recorded.
+
+**The best mandelbrot supply this project has found came from its own labels.**
+A dedicated 95-minute leg rooted the walk at the 471 distinct locations a human
+had scored q3+ and interleaved them 2:1 with never-walked plane-pool roots. The
+seeded roots put 91.6% of their finds over the junk floor and 53% of the sample
+over the smooth head's advisory; the fresh roots returned the partition's historic
+rate — 21 rows over the floor out of 333, one clearing. `proven` is that channel,
+derived live from the label store rather than from a file, so a keeper labelled
+this morning is a root this afternoon. It is off unless a run names it, and it is
+interleaved rather than substituted: a channel fed by this project's own past
+output cannot open new ground, and it runs out at the rate the store grows.
 
 **The mix is decided where the batch is popped.** Weighting the *root draw* by
 family cannot enforce a mix: anything that only changes what enters the frontier
@@ -90,7 +102,9 @@ costing in that partition. Being cheap buys more turns, not more time.
 ```
 fractal-wallpapers census
 fractal-wallpapers harvest --minutes 90 --batch 8
-fractal-wallpapers harvest --partition mandelbrot --seeds proven.jsonl   # one leg, one book
+fractal-wallpapers harvest --partition mandelbrot --root-channel proven_label
+fractal-wallpapers derive-proven-seeds --partition mandelbrot --write   # to read it
+fractal-wallpapers harvest --partition mandelbrot --seeds seeds.jsonl   # one leg, one book
 fractal-wallpapers derive-prices --run artifacts/harvest --regularize --write
 fractal-wallpapers derive-tau-h --write
 ```

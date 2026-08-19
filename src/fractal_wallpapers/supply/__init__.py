@@ -25,6 +25,8 @@ apportion    a share vector into whole slots, without zeroing anybody
 allocation   the floor, the water-filling, and the floor's carry
 quota        the object a run holds; the only thing that decides the mix
 refill       what to do about a partition whose queue has run dry
+twins        Julia parameters derived from the parent plane's admissions
+proven       parameter-plane roots at every location a human scored a keeper
 saturation   cross-run memory, straight off the ledgers
 tau_h        how good a cheap look must be before a real one is paid for
 harvest      the production loop, and everything that keeps it honest
