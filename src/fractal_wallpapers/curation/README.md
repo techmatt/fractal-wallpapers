@@ -44,6 +44,18 @@ read every `walk.jsonl` under `artifacts/`, which would have ranked one harvest'
 17,251 unscored rows into another harvest's intake and printed one funnel over
 both populations, with nothing raising and nothing looking wrong.
 
+**The head's rank orders the offer; its level is not a quantity.** An earlier
+standing rule said never to order or gate the mandelbrot offer by location-head
+rank. `mandelbrot_offer_body` (n=150, five equal-count score bands over the
+offer's junk-floor survivors, 2026-08-19) contradicts it on the order: quality
+decays monotonically with the head's `P(≥3)` — ρ = 0.582 over the body, 0.410
+within bands 1–4 alone, 90% keepers in the top two fifths against 46.7% in the
+fourth — so intake's best-first read is right and the rule is retired. What that
+batch did *not* rescue is the calibrated level: the head corrected downward on
+38.7% of the body and upward on 4.0%, and seven of its 36 tier-4 prefills held.
+The score is therefore a rank and never a height, and the only cuts placed on it
+are floors.
+
 **Two cuts act; everything else annotates.** `floors` owns every threshold. The
 junk floor removes a row at intake, on the location head's scale, saying no more
 than *do not spend colorize compute on this*. The **strange head's release bar**

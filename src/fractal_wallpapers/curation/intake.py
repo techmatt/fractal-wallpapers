@@ -24,6 +24,26 @@ than removing it. The two readings are the same recipe through the same head
 they share one view cache, so re-scoring a harvested location costs the head and
 not the engine.
 
+## The rank orders; the level is not a quantity
+
+An earlier standing rule said **never order or gate the mandelbrot offer by
+location-head rank**. It is retired, on the batch that measured it.
+`mandelbrot_offer_body` (n=150, thirty rows in each of five equal-count bands by
+`P(≥3)` over the offer's junk-floor survivors, 2026-08-19) has quality decaying
+with the head's score monotonically: Spearman ρ = 0.582 over the body and 0.410
+within bands 1–4 alone, 90% keepers in the top two fifths against 46.7% in the
+fourth. **Reading this offer best-first is correct**, which is what this module
+does, and the retired rule was a claim about the order.
+
+**What failed is the calibrated level.** The same read corrected downward on
+38.7% of that body and upward on 4.0%, and of the 36 rows the head prefilled at
+tier 4, seven held — a tier-4 read is close to uninformative on this material. So
+the score is used as a *rank* and never as a quantity: no cut here is placed by
+asking what probability means "good enough", and the two that exist are floors
+rather than operating points. Floors still act — the junk floor at intake, on
+this same head's scale, and it is a semantic statement at the confidently-junk
+end rather than a calibrated one (see [`floors`]).
+
 ## The ledgers are bound, not defaulted
 
 Which ledgers is a decision and it is taken once, by [`binding`], at the run's

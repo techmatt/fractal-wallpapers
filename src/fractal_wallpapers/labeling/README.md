@@ -129,6 +129,31 @@ was measured on were shallow, gate-passing stock. Scale off a *built sheet* of s
 material instead, and when the material is deep or ungated, budget an hour per
 hundred rows.
 
+## A rule answers the mostly-black frames, and nobody is asked again
+
+A location whose frame is mostly the set's own interior renders mostly black, and that
+verdict is settled. Over the 306 human verdicts of `run9_plane_depth` and
+`mandelbrot_offer_body` (2026-08-19), **every** row at interior fraction ≥ 0.10 was
+scored 1, and the highest-scoring keeper anywhere in them sits at 0.0960. So the location
+sheet builder excludes a unit at **`interior_fraction ≥ 0.12`** — `sheets.INTERIOR_THRESHOLD`,
+rule id `interior_ge12_v1` — before the cut, which on that evidence removes 65% of those
+sittings' 1s and not one row a person scored 2 or better, at two renders saved each.
+
+* **It reads a cached statistic and computes nothing.** `units_from_ledger` carries the
+  walk's own `interior_fraction` across, and a location plan carries whatever its drawer
+  copied in. A unit without the number **serves normally** — the manifest's `screen.measured`
+  says how many units the rule could actually read, so "excluded nothing" and "saw nothing"
+  are distinguishable. Cached interior at 384×216 ss1 tracks the near-black pixel share of
+  the 1280×720 ss2 picture a person judges at r = 0.9999 over those 306 rows.
+* **The verdicts stay derived.** Excluded units are written to `excluded.jsonl` in the sheet
+  directory — the rule, the threshold, the value that fired it, the batch, and the full
+  location — and are **never** written to the label store. An analysis that wants them as 1s
+  in a denominator reads them from the rule at the moment it wants them; a stored row would
+  be a verdict nobody could un-derive when the threshold moves.
+* **It is not the walk's gate.** `discovery.walk.Gates.interior_cap` is 0.30 and decides
+  where a walk may stand. This is a build-time decision about a page. Neither moves the other,
+  and the sheet rule does not change a walk's gates or caps.
+
 ## One generator, two row sources
 
 This project asks a person two questions, about two different objects — *is this

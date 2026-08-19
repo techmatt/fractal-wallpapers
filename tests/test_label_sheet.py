@@ -237,6 +237,102 @@ def test_a_sheet_reads_back_as_it_was_written(tmp_path) -> None:
 
 
 # --------------------------------------------------------------------------- #
+# The rule that answers a unit instead of serving it.
+# --------------------------------------------------------------------------- #
+def interior(index: int, value) -> dict:
+    return {**unit(index), sheets.INTERIOR_STATISTIC: value}
+
+
+def test_the_interior_threshold_is_the_one_the_labels_ratified() -> None:
+    """0.12, and below the walk's own gate rather than equal to it. Every one of
+    306 human verdicts at interior >= 0.10 was a 1 and the highest-scoring keeper
+    sat at 0.0960; the walk's 0.30 answers a different question."""
+    from fractal_wallpapers.discovery import walk
+
+    assert sheets.INTERIOR_THRESHOLD == 0.12
+    assert sheets.INTERIOR_SCREEN.threshold == sheets.INTERIOR_THRESHOLD
+    assert sheets.INTERIOR_SCREEN.verdict == 1
+    assert walk.Gates().interior_cap > sheets.INTERIOR_THRESHOLD
+
+
+def test_a_location_the_rule_has_answered_is_never_put_on_the_page(tmp_path) -> None:
+    sheet = build(tmp_path, [interior(0, 0.0), interior(1, 0.5), interior(2, 0.02)])
+    assert [row["join"]["viewport"]["center_re"] for row in sheet.rows] == ["0.0", "0.2"]
+    assert len(sheet.excluded) == 1
+    assert sheet.excluded[0]["value"] == 0.5
+
+
+def test_the_rule_fires_at_the_threshold_and_not_below_it(tmp_path) -> None:
+    sheet = build(tmp_path, [interior(0, 0.12), interior(1, 0.1199)])
+    assert [record["value"] for record in sheet.excluded] == [0.12]
+
+
+def test_a_location_the_statistic_was_never_read_on_serves(tmp_path) -> None:
+    """No fresh computation to manufacture one: a sheet that rendered a field to
+    decide whether to render a page would have spent the render it was saving."""
+    sheet = build(tmp_path, [unit(0), interior(1, 0.9)])
+    assert len(sheet.rows) == 1
+    assert sheet.manifest["screen"]["measured"] == 1
+    assert sheet.manifest["screen"]["excluded"] == 1
+
+
+def test_an_excluded_unit_is_recorded_with_the_rule_that_answered_it(tmp_path) -> None:
+    """A rule is a statement, not a silent truncation: what it removed is on
+    disk with the threshold and the value, so an analysis can count it as a 1 in
+    the denominator it came out of."""
+    sheet = build(tmp_path, [interior(0, 0.4), interior(1, 0.01)])
+    written = [
+        json.loads(line)
+        for line in (sheet.directory / sheets.EXCLUDED_NAME)
+        .read_text(encoding="utf-8")
+        .splitlines()
+    ]
+    assert written == sheet.excluded
+    record = written[0]
+    assert record["rule"] == sheets.INTERIOR_RULE
+    assert record["origin"] == f"{store.RULE_PREFIX}{sheets.INTERIOR_RULE}"
+    assert record["score"] == 1
+    assert record["threshold"] == sheets.INTERIOR_THRESHOLD
+    assert record["statistic"] == sheets.INTERIOR_STATISTIC
+    assert record["value"] == 0.4
+    assert record["batch"] == "a_batch"
+    assert record["family"] and record["viewport"]
+
+
+def test_a_derived_verdict_is_not_a_row_of_the_sheet(tmp_path) -> None:
+    """The rule's verdicts stay out of everything a label is read from: they are
+    not sheet rows, so intake cannot resolve one into the store."""
+    sheet = build(tmp_path, [interior(0, 0.4), interior(1, 0.01)])
+    assert len(intake.read_sheet(sheet.directory).rows) == 1
+    assert all("suggestion" not in record for record in sheet.excluded)
+
+
+def test_the_manifest_says_the_rule_ran_even_when_it_answered_nothing(tmp_path) -> None:
+    sheet = build(tmp_path, [interior(0, 0.01)])
+    assert sheet.manifest["screen"]["rule"] == sheets.INTERIOR_RULE
+    assert sheet.manifest["screen"]["excluded"] == 0
+    assert sheet.manifest["screen"]["rows"] is None
+    assert sheet.manifest["screen"]["basis"]
+    assert not (sheet.directory / sheets.EXCLUDED_NAME).exists()
+
+
+def test_a_page_the_rule_answers_entirely_is_refused(tmp_path) -> None:
+    with pytest.raises(sheets.SheetError, match="answered every unit"):
+        build(tmp_path, [interior(0, 0.4), interior(1, 0.9)])
+
+
+def test_a_sheet_reads_back_the_verdicts_its_rule_derived(tmp_path) -> None:
+    sheet = build(tmp_path, [interior(0, 0.4), interior(1, 0.01)])
+    assert sheets.read(sheet.directory).excluded == sheet.excluded
+
+
+def test_a_finished_sheet_states_no_rule(tmp_path) -> None:
+    """The rule is about a place, and a finished-render unit is a picture
+    somebody already made — the screen is the location source's alone."""
+    assert sheets.finished_source("smooth_render", scores=([], 4)).screen is None
+
+
+# --------------------------------------------------------------------------- #
 # One shape, both sources.
 # --------------------------------------------------------------------------- #
 def test_a_sheet_hands_over_the_whole_join_its_store_keys_on(tmp_path) -> None:
@@ -278,6 +374,7 @@ def test_units_come_off_a_walk_ledger_through_the_supply_reader(tmp_path) -> Non
             "family": MANDELBROT,
             "viewport": {"center_re": "0.1", "center_im": "0.0", "width": "1.0"},
             "maxiter": 800,
+            "interior_fraction": 0.04,
         },
         {
             "schema": 1,
@@ -292,6 +389,8 @@ def test_units_come_off_a_walk_ledger_through_the_supply_reader(tmp_path) -> Non
     units = sheets.units_from_ledger(ledger)
     assert len(units) == 1
     assert units[0]["maxiter"] == 800
+    # Carried off the walk's own row, so the rule that reads it costs no render.
+    assert units[0][sheets.INTERIOR_STATISTIC] == 0.04
 
 
 def test_units_come_off_a_stored_batch_at_its_current_verdict(store_dir, registered) -> None:
