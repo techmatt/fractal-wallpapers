@@ -200,6 +200,35 @@ verdict that changed is a new row rather than an edit, and the pin is asserted
 after the write — so the step is safe to re-run, which is the only reason anybody
 re-runs it after finding a mistake.
 
+### Reading a labelled batch back afterwards
+
+An ingested row carries the place and the verdict, and deliberately not the facts the
+sheet printed under the picture — the arm, the band, the walk fate. Reading a batch
+back is therefore a three-way join, and each side has exactly one right source:
+
+* **verdicts** come from `store.resolved()`, never from the drop and never from the
+  row files directly — latest-wins is the resolver's job. Body rows are the ones whose
+  `batch` is the sheet's own batch; anchors carry somebody else's and are excluded by
+  that test rather than by position.
+* **what the page said** — `facts`, `suggestion`, the head's `columns` — comes from the
+  sheet's own `sheet.jsonl`, joined on `unit`.
+* **what the pixels did** comes from the source walk ledger, joined on the viewport
+  triple `(center_re, center_im, width)` as *strings*. They are the engine's own
+  shortest round-tripping decimals on both sides, so the match is exact; parsing them
+  to float first is how a join starts missing.
+
+A `candidate` row in the ledger caches `interior_fraction`, `occupancy` and the
+`escape` spread, which is what makes gate calibration cost nothing: the statistics are
+already on disk and no picture has to be rendered again to get them. Two caveats worth
+knowing before trusting them. They are measured on the **node render** (384×216 ss1),
+not on the sheet's 1280×720 ss2 picture — `interior_fraction` is an area share and
+transfers exactly (r = 0.9999 against the near-black pixel share of the canonical
+render, over 306 rows), while `occupancy` counts detail tiles and is resolution-bound.
+And `occupancy` is **absent on rows refused for `interior_cap`**, which is not missing
+data but the refusal order showing through: the frame was thrown out before anything
+measured it. Any rate computed over occupancy has a smaller denominator than the sheet,
+and the rows it drops are the interior-heavy ones.
+
 ## The scale is the corpus's; the class count is the model's
 
 Every judge here is cast on **1..4**, `strange_render` included. Its corpus was
