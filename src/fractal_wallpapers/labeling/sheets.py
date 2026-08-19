@@ -76,6 +76,29 @@ its pictures on disk and continues.
 The two are different numbers for the same unit, and the `cut` prefix is there so
 they cannot be confused for each other on disk: `u0096` has no picture called
 `0096.png` to reach by accident. See [`cut_name`].
+
+## A rule may answer a unit, and then nobody is asked about it
+
+Some questions are settled. A location whose frame is mostly the set's own
+interior renders mostly black, and over 306 human verdicts — `run9_plane_depth`
+and `mandelbrot_offer_body`, 2026-08-19 — **every** row at interior fraction
+≥ 0.10 was scored 1, with the highest-scoring keeper at 0.0960. Asking a person
+about those rows again buys nothing and costs two renders each, so a [`Screen`]
+takes them off the page before the cut. See [`INTERIOR_SCREEN`].
+
+**The rule's verdicts stay derived.** They are written into the sheet's own
+readout — the rule, its threshold, and each excluded unit with the value that
+excluded it, in [`EXCLUDED_NAME`] — and never into the label store, whose rows
+are what a person cast. An analysis that needs them as 1s in a denominator reads
+them off that file, from the rule, at the moment it wants them; a store row would
+be a verdict nobody could later un-derive when the threshold moved. The store
+does hold `rule:<rule_id>` rows, imported from an older corpus, and that is the
+shape this rule declines to add more of.
+
+**A unit the statistic cannot be read off serves normally.** The screen reads the
+cached statistic the population already carries and computes nothing: a sheet
+that rendered a field to decide whether to render a page would have spent the
+render it was avoiding.
 """
 
 from __future__ import annotations
@@ -123,6 +146,12 @@ THUMB_QUALITY = 80
 MANIFEST_NAME = "sheet.json"
 ROWS_NAME = "sheet.jsonl"
 
+#: The readout of what a [`Screen`] answered instead of serving. Written only
+#: when a screen excluded something, and it is the whole record of those units:
+#: the rule, the threshold, the verdict it stands for, and the statistic value
+#: that earned it, one JSON object per line.
+EXCLUDED_NAME = "excluded.jsonl"
+
 #: A sheet holds two zero-padded integer spaces over the same units: a render is
 #: numbered by its position in the **cut**, a row is numbered by its position on
 #: the **page**, and the second is assigned after the ordering moves the first.
@@ -155,6 +184,124 @@ def colormap(name: str) -> str:
 
 
 # --------------------------------------------------------------------------- #
+# What a rule may answer without asking anybody.
+# --------------------------------------------------------------------------- #
+#: The statistic the interior rule reads, spelled the way a unit carries it —
+#: the share of a frame's samples whose orbit never escaped, which is what
+#: renders black. Cached on a walk's candidate rows, and validated against the
+#: picture a person actually judged at r = 0.9999 over 306 rows, so the cheap
+#: field is the thing and nothing needs re-rendering to ask this.
+INTERIOR_STATISTIC = "interior_fraction"
+
+#: At or above this, a location is not put in front of a person again.
+#:
+#: Ratified 2026-08-19 on the 306 human verdicts of `run9_plane_depth` and
+#: `mandelbrot_offer_body` pooled: **every** row at interior ≥ 0.10 was scored 1,
+#: and the highest-scoring keeper anywhere in them sits at 0.0960. So 0.12 keeps
+#: 0.024 of headroom above anything anybody has ever kept, and on that evidence
+#: excludes 56 of the 306 — 65% of their 1s — without excluding a single row a
+#: person scored 2 or better. 0.10 buys seven more exclusions and leaves 0.004 of
+#: margin, which is a rounding error rather than a margin.
+#:
+#: Deliberately **not** [`fractal_wallpapers.discovery.walk.Gates.interior_cap`],
+#: which sits at 0.30 and decides where a walk may stand. That is a different
+#: question asked at a different price, and this number moving must not move it.
+INTERIOR_THRESHOLD = 0.12
+
+#: How the rule names itself, in the store's own `rule:<rule_id>` vocabulary —
+#: version included, because a threshold that moves is a different rule and a
+#: readout that said only "interior" could not be told apart from the old one.
+INTERIOR_RULE = "interior_ge12_v1"
+
+
+@dataclass(frozen=True)
+class Screen:
+    """A stated rule that answers a unit outright, so nobody is asked about it.
+
+    It is a *statement*, not a filter: what it removes it also records, with the
+    rule that removed it and the value that earned the verdict, so the units that
+    never reached the page are still counted in the population they came from.
+    That is the whole difference between a rule and a silent truncation.
+
+    The statistic is read off the unit and never computed. A unit that does not
+    carry it is served — a screen that manufactured the number it screens on
+    would spend the render it exists to save, and would answer for a picture
+    nobody had looked at.
+    """
+
+    #: The rule's id, in the store's `rule:<rule_id>` spelling.
+    rule: str
+    #: The unit field the rule reads.
+    statistic: str
+    #: At or above this, the rule fires.
+    threshold: float
+    #: The tier the rule's verdict stands for, on the labeler's own scale.
+    verdict: int
+    #: What ratified the threshold. Travels into the readout, because a number
+    #: without its provenance is one nobody can argue with later.
+    basis: str
+
+    def fires(self, unit: dict) -> bool:
+        value = unit.get(self.statistic)
+        return value is not None and float(value) >= self.threshold
+
+    def apply(self, units: list[dict]) -> tuple[list[dict], list[dict]]:
+        """`(served, derived)` — the page's units, and the rule's own verdicts."""
+        served, derived = [], []
+        for unit in units:
+            if not self.fires(unit):
+                served.append(unit)
+                continue
+            derived.append(
+                {
+                    "schema": SCHEMA,
+                    "rule": self.rule,
+                    "origin": f"{store.RULE_PREFIX}{self.rule}",
+                    "score": self.verdict,
+                    "statistic": self.statistic,
+                    "threshold": self.threshold,
+                    "value": float(unit[self.statistic]),
+                    "batch": unit.get("batch"),
+                    "section": unit.get("section") or "",
+                    "family": unit["family"],
+                    "viewport": unit["viewport"],
+                    "maxiter": unit.get("maxiter"),
+                }
+            )
+        return served, derived
+
+    def record(self, derived: list[dict], measured: int) -> dict:
+        """What the manifest says about this screen, whether or not it fired."""
+        return {
+            "rule": self.rule,
+            "statistic": self.statistic,
+            "threshold": self.threshold,
+            "verdict": self.verdict,
+            "basis": self.basis,
+            "excluded": len(derived),
+            # A screen that saw the statistic on none of its units excluded
+            # nothing for a reason that is not "the rule found nothing", and a
+            # reader of a manifest cannot tell those apart without this.
+            "measured": measured,
+            "rows": EXCLUDED_NAME if derived else None,
+        }
+
+
+#: THE rule the location rig applies at build. A mostly-black frame is a settled
+#: question, and it is settled at [`INTERIOR_THRESHOLD`].
+INTERIOR_SCREEN = Screen(
+    rule=INTERIOR_RULE,
+    statistic=INTERIOR_STATISTIC,
+    threshold=INTERIOR_THRESHOLD,
+    verdict=1,
+    basis=(
+        "306 human verdicts across run9_plane_depth and mandelbrot_offer_body, 2026-08-19: "
+        "every row at interior >= 0.10 was scored 1, highest-scoring keeper 0.0960"
+    ),
+)
+
+
+# --------------------------------------------------------------------------- #
 # What a source is.
 # --------------------------------------------------------------------------- #
 @dataclass(frozen=True)
@@ -184,6 +331,9 @@ class Source:
     #: Anything the cut learned that a reader of the manifest needs. Written
     #: under `cut` when it is not empty, and left off the manifest when it is.
     notes: dict = field(default_factory=dict)
+    #: The stated rule that answers a unit instead of serving it, or `None` for a
+    #: source where nothing is settled. See [`Screen`].
+    screen: object = None
 
 
 @dataclass
@@ -193,6 +343,10 @@ class Sheet:
     directory: Path
     manifest: dict
     rows: list
+    #: The rule-derived verdicts, in the shape [`EXCLUDED_NAME`] holds them.
+    #: Never labels: nothing here was cast by a person and nothing here is
+    #: written to the store.
+    excluded: list = field(default_factory=list)
 
     def path(self, name: str) -> Path:
         return self.directory / name
@@ -414,6 +568,7 @@ def location_source(
         order=order,
         tiers=store.SCORES,
         rubric=LOCATION_RUBRIC,
+        screen=INTERIOR_SCREEN,
         render_record={
             "resolution": list(resolution),
             "supersample": supersample,
@@ -750,6 +905,10 @@ def units_from_ledger(path: Path, admitted_only: bool = False) -> list[dict]:
             "viewport": row["viewport"],
             "maxiter": row.get("maxiter"),
             "score": row.get("score"),
+            # Carried, never recomputed: the walk measured this at the moment it
+            # looked, and it is what [`INTERIOR_SCREEN`] reads. A ledger written
+            # before the field existed hands over `None`, and its rows serve.
+            INTERIOR_STATISTIC: row.get(INTERIOR_STATISTIC),
         }
         for row in rows
     ]
@@ -787,6 +946,12 @@ def units_from_location_plan(path: Path) -> list[dict]:
     reads a canonical view addressed by the digest of its whole recipe, and the
     cap is in that digest — so a unit short of one is a unit whose view is a
     fresh render of a picture the walk already made and scored.
+
+    A unit is handed over whole, so a plan that copies its rows' cached
+    `interior_fraction` across gets [`INTERIOR_SCREEN`] applied to them and a
+    plan that does not gets a page with every row on it. Nothing here computes
+    the statistic: a drawer that has the ledger row has the number already, and
+    one that does not would have to render to invent it.
     """
     path = Path(path)
     if not path.is_file():
@@ -859,6 +1024,26 @@ def build(
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
 
+    # The screen runs BEFORE the cut, which is the whole point of it: a unit a
+    # stated rule has already answered must not cost the two renders it would
+    # take to ask a person the same question again. What it removes it records.
+    screen = source.screen
+    excluded: list[dict] = []
+    measured = 0
+    if screen is not None:
+        measured = sum(1 for unit in units if unit.get(screen.statistic) is not None)
+        units, excluded = screen.apply(units)
+        if excluded:
+            log(
+                f"{screen.rule} answered {len(excluded)} of {len(excluded) + len(units)} units "
+                f"at {screen.statistic} >= {screen.threshold}; they are not served"
+            )
+        if not units:
+            raise SheetError(
+                f"{screen.rule} answered every unit of this plan, so there is nothing left to "
+                f"judge. The verdicts are the rule's and the population is the caller's."
+            )
+
     rows = []
     for index, unit in enumerate(units):
         # `_index` and `_of` are how a source that draws per-unit resources — a
@@ -879,6 +1064,17 @@ def build(
         rows.append(row)
         if (index + 1) % 10 == 0 or index + 1 == len(units):
             log(f"cut {index + 1}/{len(units)}")
+
+    for record in excluded:
+        # The same fallback the served rows take, and for the same reason: a
+        # derived verdict outside a registered batch is one whose population
+        # nobody can state.
+        record["batch"] = record.get("batch") or batch
+        if not record["batch"]:
+            raise SheetError(
+                f"a unit the {screen.rule} rule answered names no batch and the sheet names "
+                f"none either; a derived verdict outside a batch is one no denominator holds"
+            )
 
     scorer = source.suggest(rows, units, log)
     indices, order_mode = source.order(rows, seed)
@@ -933,11 +1129,20 @@ def build(
     }
     if source.notes:
         manifest["cut"] = dict(source.notes)
+    if screen is not None:
+        # On the manifest whether or not it fired, because "the rule excluded
+        # nothing" and "no rule ran" are different sheets and a reader has to
+        # be able to tell them apart a month later.
+        manifest["screen"] = screen.record(excluded, measured)
     (directory / MANIFEST_NAME).write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     with (directory / ROWS_NAME).open("w", encoding="utf-8", newline="\n") as handle:
         for row in written:
             handle.write(json.dumps(row, ensure_ascii=False) + "\n")
-    return Sheet(directory=directory, manifest=manifest, rows=written)
+    if excluded:
+        with (directory / EXCLUDED_NAME).open("w", encoding="utf-8", newline="\n") as handle:
+            for record in excluded:
+                handle.write(json.dumps(record, ensure_ascii=False) + "\n")
+    return Sheet(directory=directory, manifest=manifest, rows=written, excluded=excluded)
 
 
 def _histogram(rows: list[dict]) -> dict[str, int]:
@@ -965,13 +1170,28 @@ def read(directory: Path) -> Sheet:
             if row.get("schema") != SCHEMA:
                 raise SheetError(f"{directory / ROWS_NAME}:{number}: schema {row.get('schema')!r}")
             rows.append(row)
-    return Sheet(directory=directory, manifest=manifest, rows=rows)
+    excluded = []
+    excluded_path = directory / EXCLUDED_NAME
+    if excluded_path.is_file():
+        for number, line in enumerate(excluded_path.read_text(encoding="utf-8").splitlines(), 1):
+            if not line.strip():
+                continue
+            record = json.loads(line)
+            if record.get("schema") != SCHEMA:
+                raise SheetError(f"{excluded_path}:{number}: schema {record.get('schema')!r}")
+            excluded.append(record)
+    return Sheet(directory=directory, manifest=manifest, rows=rows, excluded=excluded)
 
 
 __all__ = [
     "CANONICAL_COLORMAP",
     "CUT_PREFIX",
+    "EXCLUDED_NAME",
     "FINISHED_RUBRIC",
+    "INTERIOR_RULE",
+    "INTERIOR_SCREEN",
+    "INTERIOR_STATISTIC",
+    "INTERIOR_THRESHOLD",
     "LABEL_FILTER",
     "LABEL_RESOLUTION",
     "LABEL_SUPERSAMPLE",
@@ -982,6 +1202,7 @@ __all__ = [
     "SCHEMA",
     "SHEET_RESOLUTION",
     "SHEET_SUPERSAMPLE",
+    "Screen",
     "THUMB_QUALITY",
     "THUMB_WIDTH",
     "VIVID_COLORMAP",
