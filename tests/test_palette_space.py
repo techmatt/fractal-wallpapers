@@ -21,6 +21,32 @@ def test_black_and_white_are_the_ends_of_the_lightness_axis() -> None:
     assert abs(values[1][1]) < 1e-3 and abs(values[1][2]) < 1e-3
 
 
+def test_the_linearisation_table_answers_every_code_exactly_as_the_arithmetic_does() -> None:
+    """A `uint8` channel is linearised by table, and a table is only allowed to
+    replace the `**2.4` it stands in for if it is that expression's own answer at
+    all 256 codes — bit for bit, not to a tolerance. Otherwise every tone
+    statistic in the repository quietly moves."""
+    numpy = pytest.importorskip("numpy")
+
+    codes = numpy.arange(256, dtype=numpy.uint8)
+    by_table = space._srgb_to_linear(codes)
+    by_arithmetic = space._linearise(numpy.arange(256))
+    assert by_table.dtype == numpy.float64
+    assert numpy.array_equal(by_table.view(numpy.uint64), by_arithmetic.view(numpy.uint64))
+
+    # And through the conversion a measurement really calls, on a picture that
+    # holds every code in every channel: the same numbers whichever dtype the
+    # caller hands over.
+    picture = numpy.stack([codes, numpy.roll(codes, 85), numpy.roll(codes, 170)], axis=-1).reshape(
+        16, 16, 3
+    )
+    lab = space.oklab(picture)
+    assert numpy.array_equal(
+        lab.view(numpy.uint64),
+        space.oklab(picture.astype(numpy.float64)).view(numpy.uint64),
+    )
+
+
 def test_a_sequential_map_is_sampled_folded_and_a_cyclic_one_is_not() -> None:
     """What the descriptor compares is the gradient the renderer really spends,
     and a map that does not close on the colour it opened with is folded to hide

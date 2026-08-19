@@ -50,15 +50,49 @@ class SpaceError(RuntimeError):
     """A map cannot be placed in palette space."""
 
 
-def _srgb_to_linear(channel):
+def _linearise(channel):
+    """The sRGB transfer curve, undone. The arithmetic, on whatever it is handed."""
     import numpy
 
     channel = numpy.asarray(channel, dtype=numpy.float64) / 255.0
     return numpy.where(channel <= 0.04045, channel / 12.92, ((channel + 0.055) / 1.055) ** 2.4)
 
 
+@lru_cache(maxsize=1)
+def _linear_table():
+    """The same curve, evaluated once at every code an sRGB8 channel can hold."""
+    import numpy
+
+    table = _linearise(numpy.arange(256))
+    table.flags.writeable = False
+    return table
+
+
+def _srgb_to_linear(channel):
+    """[`_linearise`], by table where the input says a table is exact.
+
+    A `uint8` array is the whole of sRGB8 and nothing else: 256 codes, none
+    fractional, none out of range. So the curve over one is a lookup into 256
+    values the same expression produced, bit for bit — not an approximation of
+    it, which is why no tolerance appears anywhere near this. The `**2.4` is
+    where a tone measurement spent about a third of its clock, and a picture
+    arrives as `uint8`; anything else — a gradient sampled between its stops,
+    say — is fractional and takes the arithmetic.
+    """
+    import numpy
+
+    values = numpy.asarray(channel)
+    if values.dtype == numpy.uint8:
+        return _linear_table()[values]
+    return _linearise(values)
+
+
 def oklab(rgb):
-    """sRGB8 `[..., 3]` to Oklab `[..., 3]`. Ottosson's matrices, unmodified."""
+    """sRGB8 `[..., 3]` to Oklab `[..., 3]`. Ottosson's matrices, unmodified.
+
+    Hand it the picture's own `uint8` and the linearisation is a table lookup;
+    see [`_srgb_to_linear`].
+    """
     import numpy
 
     linear = _srgb_to_linear(rgb)

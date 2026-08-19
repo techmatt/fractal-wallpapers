@@ -37,12 +37,15 @@ which *image* that row was, which after the operator ships on is no longer a
 record of the decision.
 
 **What the operator costs, measured.** The measurement is linear in the picture:
-0.39–0.43 s per megapixel across a 64× range of sizes, which is 0.10 s on a
-candidate and 1.6 s on a release render — and 87% of that is the sRGB→Oklab
-conversion, of which the linearisation exponent alone is a third. The application is
-size-independent, because it works on the stops rather than on pixels. What the
-operator really costs is the *second render*: on the release rows profiled so far it
-acted on 42% of them, and an acting row pays a full second pass at release size.
+0.27 s per megapixel, which is 0.063 s on a candidate and 1.01 s on a release
+render. Most of that is still the sRGB→Oklab conversion; the linearisation inside it
+used to be a third of the measurement and is now a 256-entry table, which is exact
+because the input is `uint8` (`palettes.space._srgb_to_linear`). Before the table the
+same three release pictures measured 1.42–1.48 s, so the rate was 0.39–0.43 s/Mpx.
+The application is size-independent, because it works on the stops rather than on
+pixels. What the operator really costs is the *second render*: on the release rows
+profiled so far it acted on 42% of them, and an acting row pays a full second pass at
+release size.
 
 **The direct-trap family is excluded by kind**, at the site that decides rather
 than by a test buried in the measurement. A direct trap is a thin bright figure

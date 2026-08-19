@@ -181,7 +181,11 @@ def tone_stats(image) -> dict:
     """
     import numpy
 
-    lab = space.oklab(numpy.asarray(image, dtype=numpy.float64))
+    # Handed on as it arrives, because a picture's `uint8` is what lets the
+    # conversion linearise by table instead of by `**2.4` — see
+    # `palettes.space._srgb_to_linear`. Widening it here would cost a third
+    # of this measurement and change nothing else.
+    lab = space.oklab(numpy.asarray(image))
     lightness = lab[..., 0]
     chroma = numpy.hypot(lab[..., 1], lab[..., 2])
     mask = lightness > MASK_L
