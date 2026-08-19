@@ -40,6 +40,16 @@ which agreed with the engine until the engine's Phoenix row moved: after that a
 phoenix root framed 66% of its own set with both lobes cut, and nothing in either
 half could have noticed.
 
+**A rung's clock is the steering view, and the rest of it is the focus finder.**
+Measured on a real julia leg — release engine, 23 nodes, 90 gate survivors, one
+score worker, an idle machine: 19.4 s rendering the 90 steering views (640x360
+ss2, the picture the location head reads) against 7.7 s in `expand`, which is
+every node render, every 128-px probe and every proposal. Inside `expand` the
+escape-time iteration is the *smaller* half: the focus finder — twenty smoothing
+passes over the node field, no iteration in it at all — was 47% of expansion
+before it was read once per node instead of once per draw, and is the first place
+to look when a walk is slower than its views explain.
+
 **Every candidate is recorded, with the gate that refused it.** A walk that
 logged only its survivors could never afterwards tell "the gates were too tight"
 from "there was nothing there", and both look like a low yield.

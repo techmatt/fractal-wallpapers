@@ -23,6 +23,14 @@
 //! * **A node expands identically wherever it is popped.** The stream comes from
 //!   `(seed, node_id)`, so a rung is reproducible on its own, out of order, in a
 //!   different batch, a week later.
+//! * **A frame's readings are taken once, not once per draw.** The candidates
+//!   of one rung all come off the same parent render, and two of the three
+//!   proposal branches are pure functions of it. Measured on a real julia leg:
+//!   the focus finder was 47% of expansion at 105 ms a call, 117 calls over 44
+//!   distinct frames, because it ran per candidate. [`foci::Frame`] is where
+//!   that became per node, and it took 34% off expansion for a bit-identical
+//!   ledger. The rest of the clock is where it looks: the child renders 27%,
+//!   occupancy 15%, the parent render 6%, the probes 3%, the JPEGs 2%.
 //! * **The gate render is the reported image.** The source project rendered the
 //!   gates at one iteration cap and the thumbnail at another, and paid for both;
 //!   here the cap is a function of the frame's width, so the two are the same
@@ -362,16 +370,15 @@ pub fn run(spec: ExpandSpec) -> Result<ExpandReport, String> {
         let occupancy_here =
             gates.occupancy_floor > 0.0 && (node.depth > 1 || gates.occupancy_at_first_rung);
 
+        // One frame for the node, not one per draw: the focus set and the
+        // centroid are readings of the parent render, and every candidate of
+        // this rung would otherwise take them again off the same pixels.
+        let mut frame = foci::Frame::new(&parent, &parent_field.field, &parent_field.pixels);
+
         let mut survivors = 0usize;
         let mut refused_by: Option<&'static str> = None;
         for index in 0..spec.policy.candidates {
-            let target = foci::propose(
-                &parent,
-                &parent_field.field,
-                &parent_field.pixels,
-                &policy,
-                &mut rng,
-            );
+            let target = frame.propose(&policy, &mut rng);
             // The random branch is always centered: it is there to sample the
             // plane evenly, and offsetting it would re-introduce the very bias
             // the branch exists to counter.
