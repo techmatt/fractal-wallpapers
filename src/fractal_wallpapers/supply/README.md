@@ -60,6 +60,15 @@ saturates at the intent, so a floored partition's claim is the same at the first
 batch and the three hundredth. Unspent floor time is carried in minutes, and
 comes due at batch twenty at a 5% floor — whatever a batch costs.
 
+**A harvest's clock is mostly the steering view, not the walk.** Profiled over
+three real batches: rendering the location head's canonical view at 640×360 ss2 is
+56% of a batch's seconds, the engine's own expansion rung 33%, and reading the batch
+through the head 11%; everything Python does around them is under 1%. A
+135-active-minute production harvest agrees — 6 974 views for 6 096 s, three
+quarters of its own active clock, with none of them reused. Anything that changes
+what a steering view costs moves the harvest's throughput and almost nothing else
+does.
+
 **A slot is not a minute.** The quota allocates the clock and hands out node
 slots, so the slot demand is the minute demand divided by what a slot has been
 costing in that partition. Being cheap buys more turns, not more time.
