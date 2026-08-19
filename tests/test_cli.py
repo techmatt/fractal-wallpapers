@@ -48,15 +48,16 @@ def test_a_parameter_plane_walk_refuses_rather_than_inventing_roots() -> None:
     )
 
 
-def test_the_supply_engine_is_four_subcommands_and_no_scripts() -> None:
-    """The production loop, the census it runs on, and the two derivations that
-    regenerate the tables it reads. Every one of them is a step somebody will run
-    twice, so every one of them has a name and `--help` text."""
+def test_the_supply_engine_is_five_subcommands_and_no_scripts() -> None:
+    """The production loop, the census it runs on, and the three derivations that
+    regenerate what it reads. Every one of them is a step somebody will run twice,
+    so every one of them has a name and `--help` text."""
     parse = cli.build_parser().parse_args
     assert parse(["harvest"]).handler is cli.harvest
     assert parse(["census"]).handler is cli.census
     assert parse(["derive-prices", "--run", "x"]).handler is cli.derive_prices
     assert parse(["derive-tau-h"]).handler is cli.derive_tau_h
+    assert parse(["derive-proven-seeds"]).handler is cli.derive_proven_seeds
 
 
 def test_a_run_can_be_told_to_keep_one_partition_s_books_alone() -> None:
@@ -89,7 +90,7 @@ def test_the_reframing_channel_is_reachable_from_the_production_loop() -> None:
 def test_a_derivation_does_not_overwrite_a_shipped_table_unasked() -> None:
     """A table is the record of a decision. Replacing one is a deliberate act, so
     the default is to print what would be written."""
-    for arguments in (["derive-prices", "--run", "x"], ["derive-tau-h"]):
+    for arguments in (["derive-prices", "--run", "x"], ["derive-tau-h"], ["derive-proven-seeds"]):
         assert cli.build_parser().parse_args(arguments).write is False
 
 

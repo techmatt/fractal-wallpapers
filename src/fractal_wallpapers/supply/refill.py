@@ -26,6 +26,14 @@ manufactures the twin's supply. It hands over the same seed object the tracked
 pool does, through the same cursor and the same low-water mark; the only
 difference is that its list grows during the run.
 
+**A parameter plane can also be seeded from what a human already liked.** The
+proven channel — [`fractal_wallpapers.supply.proven`] — derives a root from every
+location the label store holds a keeper verdict on, and hands it over through the
+same cursor and the same low-water mark as everything else. It is *interleaved*
+with the plane's own pool rather than replacing it: a channel fed by the project's
+own past output cannot open new ground, so crowding the pool out would leave the
+run nowhere new to look. Off unless a run asks for it by name.
+
 **A partition with no channel is deferred, with a reason, not silently skipped.**
 A starved partition absent from both the refill list and the run record is
 indistinguishable from a healthy one — which is how a run once went four hundred
@@ -45,6 +53,7 @@ import time
 from pathlib import Path
 
 from fractal_wallpapers.discovery import pools
+from fractal_wallpapers.supply import proven as proven_channel
 from fractal_wallpapers.supply.partitions import (
     ALL_PARTITIONS,
     is_dynamical,
@@ -80,8 +89,9 @@ NO_TWIN_CHANNEL = (
 NO_SEED_FILE = (
     "the parameter planes have no sampler: an unscreened draw over the higher degrees "
     "measured zero good locations in 144, so roots come from the tracked plane seed pool, "
-    "an explicit --seeds file, or what the reframing operators reach. This run has none of "
-    "the three — derive the pool with `fractal-wallpapers derive-plane-seeds --write`."
+    "an explicit --seeds file, the proven-label channel, or what the reframing operators "
+    "reach. This run has none of them — derive the pool with `fractal-wallpapers "
+    "derive-plane-seeds --write`, or add `--root-channel proven_label`."
 )
 
 
@@ -113,9 +123,11 @@ class Refill:
         external=(),
         partitions=ALL_PARTITIONS,
         twins=None,
+        proven=None,
     ):
         self.walk = walk
         self.twins = twins
+        self.proven = proven
         self.low_water = int(low_water)
         self.cooldown = int(cooldown)
         self.share = float(share)
@@ -163,10 +175,17 @@ class Refill:
             rows = pools.julia_pool()
         elif partition == "phoenix":
             rows = pools.phoenix_pool()
-        elif self._seeds is not None:
-            rows = [row for row in self._seed_rows() if _seed_partition(row) == partition]
         else:
-            rows = []
+            rows = (
+                [row for row in self._seed_rows() if _seed_partition(row) == partition]
+                if self._seeds is not None
+                else []
+            )
+            # Interleaved rather than prepended: the proven channel feeds on this
+            # project's own past output, so a queue that spent itself on proven
+            # roots first would reach new ground only after it ran out.
+            if self._is_proven(partition):
+                rows = self.proven.pool(partition, rows)
         self._pools[partition] = rows
         return rows
 
@@ -179,6 +198,14 @@ class Refill:
         """
         return self.twins is not None and partition in self.twins.partitions
 
+    def _is_proven(self, partition: str) -> bool:
+        """Whether the proven channel holds roots for this partition.
+
+        It serves the parameter planes only, so this never competes with a
+        tracked `c`-pool — the planes are the side with no sampler at all.
+        """
+        return self.proven is not None and partition in self.proven.partitions
+
     def has_channel(self, partition: str) -> bool:
         """Whether any draw could serve this partition at all."""
         if partition in self.external or partition in DEFERRAL:
@@ -187,7 +214,9 @@ class Refill:
             return True
         if is_dynamical(partition):
             return self._is_twin(partition)
-        return self._seeds is not None and partition != "phoenix:classic"
+        if partition == "phoenix:classic":
+            return False
+        return self._seeds is not None or self._is_proven(partition)
 
     def remaining(self, partition: str) -> int:
         return max(0, len(self._pool(partition)) - self.cursor.get(partition, 0))
@@ -309,6 +338,10 @@ class Refill:
                 )
             else:
                 view = entry.get("viewport")
+                # The row's own channel, carried onto the root. A plane queue can
+                # hold two channels at once, and attributing a find afterwards
+                # should be a join on a field rather than a guess at an id prefix.
+                channel = (entry.get("provenance") or {}).get("channel")
                 self.walk.add_root(
                     entry["family"],
                     (
@@ -320,10 +353,21 @@ class Refill:
                         if view
                         else None
                     ),
+                    # One source for the whole plane channel, and the grace below
+                    # a plane root is what it decides: a proven root is still a
+                    # parameter-plane root handed over at a frame nobody walked.
                     source="seed_file",
                     provenance={
                         "seed_id": entry.get("id", f"row{index:04d}"),
-                        "file": self._seeds.name if self._seeds else None,
+                        "channel": channel,
+                        # Named only for a row that actually came out of one: a
+                        # proven root is derived, and a file name beside it is a
+                        # provenance field that reads true and is not.
+                        "file": (
+                            self._seeds.name
+                            if self._seeds and channel != proven_channel.CHANNEL
+                            else None
+                        ),
                         "refill": True,
                     },
                 )
@@ -355,6 +399,7 @@ class Refill:
             ),
             "remaining": {p: self.remaining(p) for p in self.partitions if self.has_channel(p)},
             "twins": None if self.twins is None else self.twins.summary(),
+            "proven": None if self.proven is None else self.proven.summary(),
         }
 
 
