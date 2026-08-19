@@ -38,3 +38,11 @@ not, and it is registered `eval_only` — bought to referee two heads on unancho
 labels, and spent the moment it enters a training split. The pin is asserted on
 the **location**, so a later batch that re-renders a pinned place under a fresh
 identifier cannot spend it by not naming it.
+
+**The source corpus is complete here, and a fourth tier was never collectable.**
+All 2,810 verdicts of the five batches are in these rows, checked on 2026-08-18 by
+rebuilding each one and looking its key up. Two earlier sheets on this same scale —
+1,500 verdicts across a pilot and a scale sweep — did not come, and cannot: their row
+manifests were never tracked and their identifiers are positional, so a re-derivation
+would bind each verdict to a plausible picture rather than to its own. The whole-tree
+accounting is in [`../labels/README.md`](../labels/README.md).

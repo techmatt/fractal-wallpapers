@@ -83,3 +83,29 @@ Two caveats travel with the rows and do not block anything. Rates are quoted
 across three render regimes, because that corpus was collected across three; and
 the two correction pages' labels are ceilings, because they were cast against a
 head's own suggestion.
+
+## The source is exhausted
+
+Audited row by row on 2026-08-18, across all four scales and the whole source tree
+rather than the corpora the importers already knew about. **Every human label over
+there that can reach a store here is in one** — 12,637 location rows folding to the
+11,303 above, 4,795 in `data/smooth_render/`, 2,810 in `data/strange_render/`, each
+verified by rebuilding the row and looking its key up here rather than by trusting a
+batch name. Nothing was importable and nothing was added. There is no further
+migration to run, and a future one would find the same three numbers.
+
+What is left there is left for a reason, and neither pile is waiting on effort:
+
+* **Orphaned, and dropped.** 1,879 verdicts whose join is gone — two render-mode
+  batches whose row manifests were never tracked, and three ranker sheets whose
+  tile-to-location manifests were disposable. Plus 6,600 candidate tiers over 1,100
+  palette-preference passes, which is the whole story of
+  [`../palette_choice/README.md`](../palette_choice/README.md). A verdict whose
+  picture nobody can find again is not a label, and re-deriving one from a seeded
+  sampler with positional identifiers would attach it to a *plausible* picture,
+  which is worse than not having it.
+* **Unmappable, and Matt's to call.** 808 verdicts on scales no head here has: 448
+  accept/reject/leak classes on rectangles inside a frame, 224 ratings of colormaps
+  in the abstract, 135 same-or-distinct judgements on *pairs* of locations, and one
+  on a nucleus. The first and third still carry live joins; what they lack is a
+  question this project asks.
