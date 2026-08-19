@@ -111,6 +111,14 @@ arrival order: a page led with whichever partition the attempt plan interleaved
 first. Floors are untouched by this. The junk floor still acts at intake and an
 acting release bar still refuses a seat; rank only orders what survived them.
 
+**Where a run's clock goes.** Profiled serially over a real run: the release pass is
+the run, and painting is the release pass. A full-resolution row is ~90% engine, and
+inside the engine 97% is painting — resampling is 2.6% and process start, PNG encode
+and the write together are 0.3%, so encode and file I/O are not worth counting here.
+An attempt is 2.49 s, half of it the thirty-two candidate recolors (36.6 ms each, one
+engine process apiece, each re-reading the same 3.7 MB field). At the shipped shape
+that is roughly 80% release, 17% attempts, and everything else in the noise.
+
 **A run is sized by a clock as well as by `-n`, and the gate is prospective.** At
 six pictures the size of a run is `-n`; at sixty it is the wall clock, because one
 release row measured between sixteen seconds and three and a half minutes turns
