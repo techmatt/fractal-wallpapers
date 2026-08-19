@@ -1998,7 +1998,7 @@ def build_parser() -> argparse.ArgumentParser:
         description=(
             "One root per location a human scored a keeper, on the parameter planes. Not a "
             "tracked file: the seed set is a query over the label store, re-derived whenever "
-            "it is asked for, and a harvest draws it live with `--root-channel proven_label`. "
+            "it is asked for, and a harvest draws it live with `--root-channel proven`. "
             "Emitting one is for reading it, diffing it, or passing it as --seeds."
         ),
     )
@@ -2015,8 +2015,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     proving.add_argument(
         "--out",
-        default="artifacts/proven_label_seeds.jsonl",
-        help="where --write puts the seed file (default: artifacts/proven_label_seeds.jsonl)",
+        default="artifacts/proven_seeds.jsonl",
+        help="where --write puts the seed file (default: artifacts/proven_seeds.jsonl)",
     )
     proving.add_argument("--write", action="store_true", help="write the seed file")
     proving.add_argument(

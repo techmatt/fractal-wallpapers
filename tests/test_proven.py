@@ -224,7 +224,7 @@ def test_a_plane_with_proven_roots_has_a_channel_without_any_seed_file(
     assert refill.starved(queues, batch=0) == ["mandelbrot"]
     deferred = refill.deferred(queues)
     assert "mandelbrot" not in deferred
-    assert "proven_label" in deferred["multibrot3"]["reason"], "the plane with no roots says so"
+    assert "proven" in deferred["multibrot3"]["reason"], "the plane with no roots says so"
 
 
 def test_a_draw_roots_the_walk_at_a_labelled_place_and_says_which_channel(
@@ -316,20 +316,18 @@ def test_the_summary_says_the_channel_was_wired_and_at_what_floor(tmp_path, monk
 
 
 def test_a_harvest_reaches_the_channel_by_name() -> None:
-    """The whole point of registering it: `--root-channel proven_label` and the
+    """The whole point of registering it: `--root-channel proven` and the
     run holds the channel, with no seed file built by hand anywhere."""
     from fractal_wallpapers import cli
 
     parse = cli.build_parser().parse_args
     assert parse(["harvest"]).root_channels is None
-    assert parse(["harvest", "--root-channel", "proven_label"]).root_channels == ["proven_label"]
+    assert parse(["harvest", "--root-channel", "proven"]).root_channels == ["proven"]
 
     off = cli.build_proven_channel(parse(["harvest"]), ["mandelbrot"])
     assert off is None, "off by default: adopting a self-fed channel is a run's decision"
 
-    live = cli.build_proven_channel(
-        parse(["harvest", "--root-channel", "proven_label"]), ["mandelbrot"]
-    )
+    live = cli.build_proven_channel(parse(["harvest", "--root-channel", "proven"]), ["mandelbrot"])
     assert live.partitions == ("mandelbrot",), "the run's own partition list, met with the planes"
     assert live.summary()["tier_floor"] == proven.TIER_FLOOR
     assert live.seeds("mandelbrot"), "the tracked corpus holds mandelbrot keepers"
@@ -338,7 +336,10 @@ def test_a_harvest_reaches_the_channel_by_name() -> None:
 def test_a_channel_name_nobody_registered_is_refused_at_the_parser() -> None:
     from fractal_wallpapers import cli
 
-    for name in ("nucleus_grid", "twins", "proven"):
+    # `proven_label` is in the list because it is the name this channel shipped
+    # under for one commit: a retired name has to stop being accepted, or a run
+    # script that was never updated keeps working and nobody learns the new one.
+    for name in ("nucleus_grid", "twins", "proven_label"):
         with pytest.raises(SystemExit):
             cli.build_parser().parse_args(["harvest", "--root-channel", name])
 

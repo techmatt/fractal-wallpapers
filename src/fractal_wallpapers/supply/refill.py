@@ -89,9 +89,9 @@ NO_TWIN_CHANNEL = (
 NO_SEED_FILE = (
     "the parameter planes have no sampler: an unscreened draw over the higher degrees "
     "measured zero good locations in 144, so roots come from the tracked plane seed pool, "
-    "an explicit --seeds file, the proven-label channel, or what the reframing operators "
+    "an explicit --seeds file, the proven channel, or what the reframing operators "
     "reach. This run has none of them — derive the pool with `fractal-wallpapers "
-    "derive-plane-seeds --write`, or add `--root-channel proven_label`."
+    "derive-plane-seeds --write`, or add `--root-channel proven`."
 )
 
 

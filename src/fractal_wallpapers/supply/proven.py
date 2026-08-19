@@ -79,7 +79,7 @@ from fractal_wallpapers.supply.partitions import PARAMETER_PLANES, partition_of_
 SCHEMA = 1
 
 #: What this channel is called wherever a root's provenance is read back.
-CHANNEL = "proven_label"
+CHANNEL = "proven"
 
 #: The label class a location has to reach to become a root. The currency's
 #: lowest paid class rather than a number of this module's own: a class the
