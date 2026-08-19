@@ -102,6 +102,33 @@ sheets cut for the same judge cannot overwrite each other (see [`export_control.
 against its sheet; until then the store is untouched. Drops written before sheets carried
 their own name are called `<head>.json`, and re-ingesting one needs an explicit `--labels`.
 
+## What cutting a sheet costs, and why the number moves so much
+
+A location unit is **two renders at 1280×720 ss2**, and that is the whole bill —
+scoring the cut page afterwards is a minute whatever the page holds. Build it in the
+background and estimate before committing, because the per-unit cost is not one
+number and picking the wrong one is off by an order of magnitude:
+
+| sheet | units | mean maxiter | s/unit |
+|---|---|---|---|
+| a degree-2 mandelbrot offer, all above the junk floor | 152 | 28,075 | **6.8** |
+| run2's plane admissions, 1e-3 to 1e-9 | 172 | 24,777 | 7.4 |
+| run9's plane channel at 1e-6 and deeper, gates *not* applied | 164 | 31,955 | **53.5** |
+
+**Maxiter barely predicts it; what the pixels do predicts it.** All three rows sit
+within 30% on maxiter and span 8× on cost. A row that escapes early is cheap however
+high the cap; a row the walk refused for `interior_cap` iterates nearly every sample
+to that cap, and a sheet cut over *candidates* rather than admissions is full of them.
+Degree costs too — degree 2 is the cheap corner, and the expensive sheet above was 64
+of 96 multibrot4.
+
+Estimating one of these off the harvest's own steering view is the trap: that view is
+640×360 ss2, so the pixel scaling is ×4 for the geometry and ×2 for the pair, and
+applying it to the deep sheet above underestimated by **6.9×** — the steering views it
+was measured on were shallow, gate-passing stock. Scale off a *built sheet* of similar
+material instead, and when the material is deep or ungated, budget an hour per
+hundred rows.
+
 ## One generator, two row sources
 
 This project asks a person two questions, about two different objects — *is this
