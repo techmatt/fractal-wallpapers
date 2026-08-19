@@ -67,7 +67,21 @@ through the head 11%; everything Python does around them is under 1%. A
 135-active-minute production harvest agrees — 6 974 views for 6 096 s, three
 quarters of its own active clock, with none of them reused. Anything that changes
 what a steering view costs moves the harvest's throughput and almost nothing else
-does.
+does. A third production harvest agrees at 58.7% of a whole run's clean wall clock,
+harvest and curation together.
+
+**`--score-workers` is not that change.** The engine's own thread pool already
+saturates a twelve-core machine on a single view, so fanning views out over worker
+processes re-slices the same silicon rather than adding any. Measured on an idle
+machine over the same 96 real views, wall seconds against `--score-workers 1`: two
+workers **0.88x**, four **1.01x**, six **1.02x** — and at four the same 93 s of work
+reports 348 task-seconds, a 3.74x inflation that cancels the fan-out exactly. Two is
+worse than one because `ENGINE_THREADS_PER_WORKER = 4` twice over *under*-subscribes
+the machine. Serve a harvest at one worker: same throughput, no pool spawned per
+batch, and a wall clock that needs only one number to account for. `curation.release`
+fans out for a different reason and does earn it — half a release row is
+single-threaded Python that leaves cores a sibling engine can take, worth 3.19x over
+four workers on the same machine.
 
 **A slot is not a minute.** The quota allocates the clock and hands out node
 slots, so the slot demand is the minute demand divided by what a slot has been
