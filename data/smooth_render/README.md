@@ -38,3 +38,10 @@ not, and it is registered `eval_only` — bought to referee two heads on unancho
 labels, and spent the moment it enters a training split. The pin is asserted on
 the **location**, so a later batch that re-renders a pinned place under a fresh
 identifier cannot spend it by not naming it.
+
+**The source corpus is complete here.** All 4,795 verdicts it holds are in these
+rows, checked on 2026-08-18 by rebuilding each one and looking its key up — not by
+counting batches. Its eighth batch is absent on purpose: 364 renders were built for
+it and nobody ever judged them, so there is no verdict there to miss. The whole-tree
+accounting, including what stayed behind and why, is in
+[`../labels/README.md`](../labels/README.md).

@@ -18,10 +18,19 @@ This head is **not trained on human labels, and there are none here to train it
 on.** The other three judges learned from thousands of verdicts a person cast;
 the corpus that taught this one's ability — which of these colourings of this
 place looks best — is a set of per-query tiered judgements that lives in the
-source project and did not come across. So the head is **distilled from that
-project's pretrained palette-preference head**: the teacher scores pictures made
-*here*, by this engine through this colormap library, and the student is trained
-to reproduce its whole score vector rather than only its winner.
+source project. So the head is **distilled from that project's pretrained
+palette-preference head**: the teacher scores pictures made *here*, by this engine
+through this colormap library, and the student is trained to reproduce its whole
+score vector rather than only its winner.
+
+**Those judgements are orphaned there, so distillation is not a shortcut past a
+corpus somebody could go and fetch.** 6,600 candidate tiers over 1,100 confirmed
+passes survive, and every one of them is keyed by a candidate identifier alone: the
+location, the map and the coloring parameters each identifier named lived only in a
+records directory that was never tracked and is gone. The verdicts are readable and
+unattributable, which is the same condition every other orphan in this project is
+in, and it is why the story above is the whole story. Audited 2026-08-18; the
+tree-wide accounting is in [`../labels/README.md`](../labels/README.md).
 
 What that buys is regenerability. `rows/` is the training run's entire input, in
 text, seeded, in the history: a checkpoint is a fact about one run, and this is
