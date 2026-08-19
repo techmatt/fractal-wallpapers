@@ -168,6 +168,19 @@ class Limits:
     #: Five, matched to the measured four-to-five rung gap between where a plane
     #: root starts and the widths labelled plane material lives at. `0` is the
     #: ungraced walk exactly.
+    #:
+    #: **Five is matched to material at 1e-4/1e-5, and a later reading moved the
+    #: target.** Labelled deep admissions put the keeper rate on the *width* axis,
+    #: not the rung axis — .432 at 1e-5 against .714/.833/1.000 at 1e-7/1e-8/1e-9 —
+    #: and the seed pool's typical root starts at 1e-2, which [`Policy.zoom`]
+    #: narrows about 0.37 decades a rung. Reaching 1e-6 is therefore ~11 rungs, not
+    #: five, and at five the candidate population falls off a cliff exactly where
+    #: grace ends: 1,304 survivors at rung 6 against 132 at rung 7 over two runs.
+    #: A production run at eleven removed that cliff, reached rung 13, and doubled
+    #: the share of plane candidates at 1e-6 or deeper (1.5% -> 3.1%) — for half the
+    #: shallow throughput, because eleven ungated rungs spend steering views on
+    #: nodes that never clear and maxiter climbs with depth (13,140 at rung 1 to
+    #: 31,628 at rung 13). The number is a trade, not a constant; this is its price.
     plane_grace_rungs: int = 5
 
 
