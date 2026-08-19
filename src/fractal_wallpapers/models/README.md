@@ -32,6 +32,44 @@ it against its own pre-registered bar. Its model, transform and loss are in
 set and not a tier on an ordinal scale — but it ships through the same `ship`,
 supplying only its own agreement statistic.
 
+## Two picture caches, and only one of them is addressed by its recipe
+
+The **finished-render** cache (`renders`) and the location head's **deploy view**
+(`location_view`) both name a file by `renders.job_name` — a sha256 of the whole
+engine spec. Resolution and supersample are fields of that spec, so a view
+rendered at another geometry gets its own file and three regimes can share one
+directory without colliding.
+
+The **tile** cache does not work that way. A tile is
+`<out_root>/<location_id>/t<NN>_<palette>_s<scale>_sh<shift>_<level>_q<q>.jpg`,
+and neither `recipe.tile` nor `recipe.field_supersample` appears anywhere in it.
+Two builds that differ only in geometry write **the same names**, and because the
+build skips a location whose tiles are all present, the second one renders
+nothing, reports success, and records the geometry it did not use. The manifest
+row does carry `field.supersample` and `tile_size` — the regime is *recorded*,
+it is simply not *addressed*.
+
+So a tile corpus at a second geometry is not a build step. It needs the identity
+to carry the geometry, or an `out_root`, `manifest` and build record per regime —
+a decision, not a flag.
+
+## Budgeting a tile build
+
+Cost tracks what the pixels do, not how many rows there are. Measured on the
+2026-08-19 top-up, per location, all 32 tiles, one field pass:
+
+| label | s/location |
+|---|---|
+| 1 | 23.4 |
+| 2 | 2.2 |
+| 3 | 1.8 |
+| 4 | 0.6 |
+
+Nearly all of it is the field, not the tiles: a location labelled 1 is usually
+interior-heavy and every interior sample iterates to the cap. Estimate a build
+from a **stratified** pilot — the corpus-wide mean rate under-projected this
+top-up by 4.2×.
+
 Each stage writes a record the next one reads rather than being called from
 inside it, so a training run can be re-scored and a score can be re-judged
 without any of it happening again.

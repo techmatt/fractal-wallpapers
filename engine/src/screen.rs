@@ -37,6 +37,22 @@ use crate::colormap::srgb8_to_oklab;
 /// source project's walks, a candidate above this is junk with no exceptions
 /// worth the render, so the cap is exact rather than approximate: moving it is a
 /// change to what the corpus is guaranteed to exclude.
+///
+/// **The value is calibrated on the source project's walks, and the label side
+/// now disagrees with it.** Measured against 306 human verdicts, the cliff is at
+/// **0.10**, not 0.30: every row at interior ≥ 0.10 was scored 1, without
+/// exception, and the highest-interior keeper sits at 0.096. The sheet screen
+/// that reads the same quantity was set to **0.12** on that evidence — zero
+/// measured cost, with headroom above the highest observed keeper.
+///
+/// So 0.30 is not wrong, it is *loose*: it still excludes only junk, which is
+/// all it ever promised, but it excludes almost none of the junk it could. At
+/// this value the rule fires on 1 row in 306.
+///
+/// The value here is **deliberately unchanged**. Tightening it is a run-design
+/// decision — it changes what a walk spends its time on and what reaches the
+/// corpus at all — and it belongs to whoever makes that decision, not to the
+/// measurement that motivates it.
 pub const INTERIOR_CAP: f64 = 0.30;
 
 /// Middle-90% spread of the escape times, below which a frame is flat.
