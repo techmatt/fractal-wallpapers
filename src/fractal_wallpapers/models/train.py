@@ -450,24 +450,33 @@ def train(
     best_metric, best_state, best_epoch, history = float("-inf"), None, -1, []
     start = 0
     if resume.is_file():
-        saved = torch.load(resume, map_location=where, weights_only=False)
-        model.load_state_dict(saved["model"])
-        optimizer.load_state_dict(saved["optimizer"])
-        schedule.load_state_dict(saved["schedule"])
-        best_metric, best_epoch = saved["best_metric"], saved["best_epoch"]
-        best_state, history = saved["best_state"], saved["history"]
-        start = saved["epoch"] + 1
-        torch.set_rng_state(saved["torch_rng"])
-        if where == "cuda" and saved.get("cuda_rng") is not None:
-            torch.cuda.set_rng_state_all(saved["cuda_rng"])
-        numpy.random.set_state(saved["numpy_rng"])
-        log(f"resumed at epoch {start} (best {best_metric:.4f} at epoch {best_epoch})")
+        # Onto the CPU, not onto the training device. A snapshot holds two kinds
+        # of tensor: weights, which `load_state_dict` places wherever they have
+        # to go, and **random-number state**, which is a CPU byte tensor and is
+        # rejected outright if it arrives on the GPU. Mapping the whole file at
+        # the device therefore loads fine and then fails at `set_rng_state` —
+        # which only ever happens on a run that was killed, so it went unseen
+        # until one was.
+        saved = torch.load(resume, map_location="cpu", weights_only=False)
         if saved.get("selection_objective", chosen_by) != chosen_by:
             raise ValueError(
                 f"{resume} was written by a run selecting on "
                 f"{saved.get('selection_objective')!r} and this one selects on {chosen_by!r}. "
                 "The best-so-far in it is on the other scale; delete it or match it."
             )
+        model.load_state_dict(saved["model"])
+        optimizer.load_state_dict(saved["optimizer"])
+        schedule.load_state_dict(saved["schedule"])
+        best_metric, best_epoch = saved["best_metric"], saved["best_epoch"]
+        best_state, history = saved["best_state"], saved["history"]
+        start = saved["epoch"] + 1
+        torch.set_rng_state(saved["torch_rng"].cpu().to(torch.uint8))
+        if where == "cuda" and saved.get("cuda_rng") is not None:
+            torch.cuda.set_rng_state_all(
+                [state.cpu().to(torch.uint8) for state in saved["cuda_rng"]]
+            )
+        numpy.random.set_state(saved["numpy_rng"])
+        log(f"resumed at epoch {start} (best {best_metric:.4f} at epoch {best_epoch})")
 
     began = time.time()
     for epoch in range(start, recipe["epochs"]):

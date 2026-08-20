@@ -589,16 +589,20 @@ def run(
     best_metric, best_state, best_epoch, history = float("inf"), None, -1, []
     start = 0
     if resume.is_file():
-        saved = torch.load(resume, map_location=where, weights_only=False)
+        # Onto the CPU, for the reason `train.train` spells out: random-number
+        # state is a CPU byte tensor and is rejected if it arrives on the GPU.
+        saved = torch.load(resume, map_location="cpu", weights_only=False)
         model.load_state_dict(saved["model"])
         optimizer.load_state_dict(saved["optimizer"])
         schedule.load_state_dict(saved["schedule"])
         best_metric, best_epoch = saved["best_metric"], saved["best_epoch"]
         best_state, history = saved["best_state"], saved["history"]
         start = saved["epoch"] + 1
-        torch.set_rng_state(saved["torch_rng"])
+        torch.set_rng_state(saved["torch_rng"].cpu().to(torch.uint8))
         if where == "cuda" and saved.get("cuda_rng") is not None:
-            torch.cuda.set_rng_state_all(saved["cuda_rng"])
+            torch.cuda.set_rng_state_all(
+                [state.cpu().to(torch.uint8) for state in saved["cuda_rng"]]
+            )
         numpy.random.set_state(saved["numpy_rng"])
         log(f"resumed at epoch {start} (best {best_metric:.4f} at epoch {best_epoch})")
 
