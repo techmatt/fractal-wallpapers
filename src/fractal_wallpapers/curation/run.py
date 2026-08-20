@@ -93,7 +93,7 @@ from fractal_wallpapers.curation import (
 from fractal_wallpapers.curation import (
     budget as budget_module,
 )
-from fractal_wallpapers.paths import under
+from fractal_wallpapers.paths import tracked_name, under
 
 #: The share of a release's slots the strange judge fills. Half, which is a
 #: policy about what a release looks like and not a measurement — the two judges
@@ -932,15 +932,20 @@ def _record(**k) -> dict:
         "release": k["release_record"],
         "cuts": cuts,
         "config": config,
+        # Named through `tracked_name`, like every other path this record
+        # carries: the summary is tracked, and a summary that spelled out one
+        # machine's drive letter would say nothing to the machine that reads it
+        # next. The run directory and its sheet are under the regenerable tree,
+        # so they are named `artifacts/<rest>` and survive the tree moving tier.
         "records": {
             "durable": records.is_durable(),
-            "root": str(records.root()),
-            "gate": f"{gate_path} (+{gate_new})",
-            "release": f"{release_path} (+{release_new})",
-            "population": str(population_path),
+            "root": tracked_name(records.root()),
+            "gate": f"{tracked_name(gate_path)} (+{gate_new})",
+            "release": f"{tracked_name(release_path)} (+{release_new})",
+            "population": tracked_name(population_path),
         },
-        "sheet": str(page),
-        "run_dir": str(directory),
+        "sheet": tracked_name(page),
+        "run_dir": tracked_name(directory),
     }
     records.write_run(run, summary)
     k["log"](f"[records] sheet {page}")

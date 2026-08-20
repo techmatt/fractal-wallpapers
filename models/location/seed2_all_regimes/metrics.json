@@ -585,7 +585,7 @@
     }
   ],
   "checkpoints": {
-    "best": "C:\\Code\\fractal-wallpapers\\models\\location\\seed2_all_regimes\\head_best.pt",
-    "last": "C:\\Code\\fractal-wallpapers\\models\\location\\seed2_all_regimes\\head_last.pt"
+    "best": "models/location/seed2_all_regimes/head_best.pt",
+    "last": "models/location/seed2_all_regimes/head_last.pt"
   }
 }

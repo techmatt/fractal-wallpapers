@@ -357,7 +357,12 @@ def run(root: Path) -> dict:
         ),
         "pool": members,
         "of_source_pool": len(order),
-        "source": str(Path(root) / POOL),
+        # Named the way the docstring above names it, and the way every colormap
+        # this repository holds names its own origin: by the source project and
+        # the file inside it. `root` is a build-era argument pointing at another
+        # checkout, so its absolute spelling is one machine's disk and nothing a
+        # reader of this record could ever resolve.
+        "source": f"the source project's {POOL.as_posix()}",
     }
     write(rows, document)
     from collections import Counter

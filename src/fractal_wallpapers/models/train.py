@@ -61,7 +61,7 @@ from fractal_wallpapers import storage
 from fractal_wallpapers.labeling import pins
 from fractal_wallpapers.models import dataset, head, metrics
 from fractal_wallpapers.models import tiles as tile_module
-from fractal_wallpapers.paths import repo_root
+from fractal_wallpapers.paths import repo_root, tracked_name
 
 #: The schema every record here carries.
 SCHEMA = 1
@@ -645,9 +645,13 @@ def train(
         "selection_slice": selection_record,
         "sampled_mass": mass,
         "history": history,
+        # Tracked-record spelling, because `metrics.json` is tracked and its
+        # checkpoints are not: the weights arrive from a release on the machine
+        # that reads this, and a drive letter here would name a disk that machine
+        # has never seen.
         "checkpoints": {
-            "best": str(checkpoint_path(name, "best", run)),
-            "last": str(checkpoint_path(name, "last", run)),
+            "best": tracked_name(checkpoint_path(name, "best", run)),
+            "last": tracked_name(checkpoint_path(name, "last", run)),
         },
     }
     config_path(name, run).write_text(

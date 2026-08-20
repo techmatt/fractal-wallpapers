@@ -58,3 +58,14 @@ every row of a manifest the engine wrote — a million of them — taking one `T
 snapshot for the whole file so the tier of `artifacts/tiles` is decided once
 rather than stat-ed on two disks a million times.
 `tests/test_storage_tiers.py` is the guard over all of it.
+
+**Every tracked record goes out through `tracked_name`, including the ones that
+name a file the tree does not hold.** A summary's `run_dir`, a metrics record's
+checkpoints, a price table's source runs: all of them are read back on a machine
+that is not the one that wrote them, so none of them may carry a drive letter.
+`tests/test_history_purity.py::test_no_absolute_paths_in_tracked_records` walks
+every tracked `.json` and `.jsonl` and fails on one, with a single exemption —
+the `prereg` key of a head's `acceptance.json`, which names a pre-registration by
+absolute path and is left alone deliberately. A path that leaves the checkout
+entirely, like the extraction source's colormap pool, is named by *what* it is
+rather than where it sat: `the source project's data/palettes/pool_colormaps.json`.

@@ -704,5 +704,5 @@
     "Pale Verdigris, Copper Heart"
   ],
   "of_source_pool": 987,
-  "source": "C:\\Code\\fractal-maker\\data\\palettes\\pool_colormaps.json"
+  "source": "the source project's data/palettes/pool_colormaps.json"
 }

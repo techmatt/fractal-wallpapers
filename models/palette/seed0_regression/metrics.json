@@ -504,7 +504,7 @@
     }
   ],
   "checkpoints": {
-    "best": "C:\\Code\\fractal-wallpapers\\models\\palette\\seed0_regression\\best.pt",
-    "last": "C:\\Code\\fractal-wallpapers\\models\\palette\\seed0_regression\\last.pt"
+    "best": "models/palette/seed0_regression/best.pt",
+    "last": "models/palette/seed0_regression/last.pt"
   }
 }

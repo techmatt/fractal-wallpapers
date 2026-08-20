@@ -779,7 +779,9 @@ def derive_prices(args: argparse.Namespace) -> int:
             print(f"{summary} carries no cost block - nothing to derive a price table from")
             return 1
         blocks.append(cost)
-        sources.append({"name": run_dir.name, "path": str(run_dir)})
+        # The table this derives is tracked, so the run it was derived from is
+        # named as a tracked record names a place under the regenerable tree.
+        sources.append({"name": run_dir.name, "path": tracked_name(run_dir)})
 
     try:
         table = price_module.derive(blocks, sources, ALL_PARTITIONS)

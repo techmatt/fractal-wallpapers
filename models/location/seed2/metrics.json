@@ -457,7 +457,7 @@
     }
   ],
   "checkpoints": {
-    "best": "C:\\Code\\fractal-wallpapers\\models\\location\\head_best.pt",
-    "last": "C:\\Code\\fractal-wallpapers\\models\\location\\head_last.pt"
+    "best": "models/location/head_best.pt",
+    "last": "models/location/head_last.pt"
   }
 }

@@ -22,7 +22,7 @@
     "source_runs": [
       {
         "name": "harvest_run2",
-        "path": "C:\\Code\\fractal-wallpapers\\artifacts\\harvest_run2"
+        "path": "artifacts/harvest_run2"
       }
     ],
     "minutes": {
