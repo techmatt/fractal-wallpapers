@@ -238,23 +238,17 @@ def _claim(directory: Path) -> Path:
 
 
 def validation_loss(labels, probabilities, classes: int) -> float:
-    """The selection objective: cross-entropy of each cutpoint's own probability.
+    """The selection objective, under the name this head's records call it by.
 
-    Scored on the **unconditional** probabilities, which are what the interface
-    exposes and what every consumer reads. A proper scoring rule, so it is
-    minimized only by a head that is both well ordered and correctly scaled —
-    which is the whole reason it replaced a rank statistic here.
+    It is [`metrics.cutpoint_cross_entropy`] and nothing else — a proper scoring
+    rule over the unconditional probabilities, which are what the interface
+    exposes and what every consumer reads. Kept as a name here because every
+    config and metrics record this trainer has written calls it the validation
+    loss, and moved to `metrics` because the location head's regime-robust
+    retrain is judged on the same statistic and two implementations of it would
+    be two answers.
     """
-    import numpy
-
-    total = 0.0
-    for index in range(classes - 1):
-        truth = (numpy.asarray(labels) >= index + 2).astype(float)
-        predicted = numpy.clip(probabilities[:, index], 1e-7, 1.0 - 1e-7)
-        total += float(
-            -(truth * numpy.log(predicted) + (1.0 - truth) * numpy.log(1.0 - predicted)).mean()
-        )
-    return total / (classes - 1)
+    return metrics.cutpoint_cross_entropy(labels, probabilities, classes)
 
 
 class TrainingError(RuntimeError):

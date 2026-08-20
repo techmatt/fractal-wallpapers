@@ -85,6 +85,34 @@ RECIPE = {
     "loss": "CORN ordinal, K-1 conditional-subset tasks",
     "sampler": "w_class[1/sqrt] x w_group[1/size] x w_source[beta], in that order",
     "selection": "max average precision at the first cutpoint, over the selection slice",
+    "selection_objective": "ap_ge2",
+    # The geometry the tiles are drawn at. One regime is the shipped recipe; a
+    # run handed more sees every label row once per regime an epoch, and is told
+    # nothing about which one it is looking at.
+    "regimes": ["640x360ss2"],
+}
+
+#: The two objectives an epoch has been chosen on here, and what each one is.
+#:
+#: `ap_ge2` is the shipped head's, carried from the source project. It is a rank
+#: statistic, so it is invariant to any monotone rescaling of the scores — it
+#: cannot see a head that keeps the order and collapses the scale, which is
+#: exactly the failure a floor walks through.
+#:
+#: `cutpoint_cross_entropy` is the repository's proper scoring rule, already the
+#: selection objective of every head here that reads its own probabilities. A
+#: run judged on that rule selects on it too, so selection is not a second,
+#: unstated difference between the head being judged and the bar judging it.
+SELECTION_OBJECTIVES = {
+    "ap_ge2": (
+        "max average precision at the first cutpoint, over the selection slice, at the "
+        "canonical regime"
+    ),
+    "cutpoint_cross_entropy": (
+        "min the cutpoint cross-entropy over the selection slice, at the canonical regime: "
+        "a proper scoring rule, so it sees the scale a floor is a point on and not only the "
+        "order"
+    ),
 }
 
 
@@ -238,13 +266,27 @@ def set_seed(seed: int) -> None:
     torch.cuda.manual_seed_all(seed)
 
 
-def population(name: str = "location") -> tuple[list, dict]:
-    """The locations, joined to their tiles, with the selection slice assigned."""
+def population(name: str = "location", regimes: tuple = ()) -> tuple[list, dict]:
+    """The locations, joined to their tiles, with the selection slice assigned.
+
+    `regimes` names the *other* geometries to join alongside the canonical one.
+    Each is read from its own manifest and each has to cover the whole
+    population: a mix is only comparable row by row if every regime holds every
+    row, and `dataset.join` refuses rather than quietly training on the overlap.
+    """
     rows = tile_module.read_locations()
     grouped = tile_module.tiles_by_location(tile_module.read_manifest())
-    locations = dataset.join(rows, grouped)
+    others = {}
+    for regime in regimes:
+        if regime == tile_module.CANONICAL_REGIME:
+            continue
+        others[regime.tag] = tile_module.tiles_by_location(tile_module.read_manifest(regime=regime))
+    locations = dataset.join(rows, grouped, others)
     partial = [
-        identifier for identifier, tiles in grouped.items() if any(t.get("partial") for t in tiles)
+        identifier
+        for source in (grouped, *others.values())
+        for identifier, tiles in source.items()
+        if any(t.get("partial") for t in tiles)
     ]
     if partial:
         raise ValueError(
@@ -287,9 +329,17 @@ def train(
     epochs: int | None = None,
     seed: int | None = None,
     run: str | None = None,
+    regimes: tuple | None = None,
+    selection: str | None = None,
     log=say,
 ) -> dict:
-    """Train one head and write its checkpoints, its config and its metrics."""
+    """Train one head and write its checkpoints, its config and its metrics.
+
+    `regimes` is the geometries the tiles are drawn at, canonical first; more
+    than one makes an epoch that many passes long and hands the head no way to
+    tell them apart. `selection` names which objective chooses the epoch — see
+    [`SELECTION_OBJECTIVES`].
+    """
     import numpy
     import torch
     from torch.utils.data import DataLoader
@@ -299,11 +349,25 @@ def train(
         recipe["epochs"] = int(epochs)
     if seed is not None:
         recipe["seed"] = int(seed)
+    drawn = tuple(regimes) if regimes else (tile_module.CANONICAL_REGIME,)
+    if drawn[0] != tile_module.CANONICAL_REGIME:
+        raise ValueError(
+            f"the canonical regime has to come first, not {drawn[0]}. It is the one the "
+            "selection slice, the deploy view and every score file are read at, and a list "
+            "that starts elsewhere would silently move all three."
+        )
+    tags = tuple(regime.tag for regime in drawn)
+    recipe["regimes"] = [f"{r.tile[0]}x{r.tile[1]}ss{r.supersample}" for r in drawn]
+    chosen_by = selection or recipe["selection_objective"]
+    if chosen_by not in SELECTION_OBJECTIVES:
+        raise ValueError(f"{chosen_by!r} is not an objective an epoch is chosen on here")
+    recipe["selection_objective"] = chosen_by
+    recipe["selection"] = SELECTION_OBJECTIVES[chosen_by]
     classes = int(recipe["classes"])
 
     where = device_of(device)
     set_seed(int(recipe["seed"]))
-    locations, selection_record = population(name)
+    locations, selection_record = population(name, drawn)
     pin_report = assert_the_pin_holds(locations)
     by_side = dataset.sides(locations)
     training, choosing, holdout = (
@@ -315,6 +379,7 @@ def train(
         raise ValueError("the selection slice is empty; there is nothing to choose an epoch on")
 
     log(f"device {where}  torch {torch.__version__}  seed {recipe['seed']}")
+    log(f"regimes {recipe['regimes']}  selection {chosen_by}")
     log(
         f"locations {len(locations)}: train {len(training)} {dataset.histogram(training)}, "
         f"selection {len(choosing)} {dataset.histogram(choosing)}, "
@@ -355,8 +420,8 @@ def train(
     deploy_transform = head.Transform(
         data_config["mean"], data_config["std"], data_config["interpolation"], train=False
     )
-    examples = dataset.training_set(training, train_transform, seed=recipe["seed"])
-    draw, mass = dataset.sampler(training, beta=recipe["beta_biased"])
+    examples = dataset.training_set(training, train_transform, seed=recipe["seed"], regimes=tags)
+    draw, mass = dataset.sampler(training, beta=recipe["beta_biased"], regimes=len(tags))
     log(f"sampled mass {json.dumps(mass['sampled_mass'])}")
     loader = DataLoader(
         examples,
@@ -368,14 +433,21 @@ def train(
         drop_last=False,
     )
 
-    choosing_paths = [location.canonical() for location in choosing]
+    # Selection reads the canonical regime and only it: the epoch is chosen on
+    # the population and the geometry the incumbent chose its own on, so that
+    # selection is a controlled variable rather than a second difference. The
+    # other regimes are read too and written into the history — reported, never
+    # minimized over.
+    choosing_paths = {tag: [location.canonical(tag) for location in choosing] for tag in tags}
     choosing_labels = numpy.array([location.score for location in choosing])
 
     directory = head_dir(name, run)
     directory.mkdir(parents=True, exist_ok=True)
     resume = directory / "resume.pt"
 
-    best_metric, best_state, best_epoch, history = -1.0, None, -1, []
+    # Negative infinity rather than -1: the objective is maximized whichever way
+    # round it is oriented, and a negated cross-entropy starts well below -1.
+    best_metric, best_state, best_epoch, history = float("-inf"), None, -1, []
     start = 0
     if resume.is_file():
         saved = torch.load(resume, map_location=where, weights_only=False)
@@ -390,6 +462,12 @@ def train(
             torch.cuda.set_rng_state_all(saved["cuda_rng"])
         numpy.random.set_state(saved["numpy_rng"])
         log(f"resumed at epoch {start} (best {best_metric:.4f} at epoch {best_epoch})")
+        if saved.get("selection_objective", chosen_by) != chosen_by:
+            raise ValueError(
+                f"{resume} was written by a run selecting on "
+                f"{saved.get('selection_objective')!r} and this one selects on {chosen_by!r}. "
+                "The best-so-far in it is on the other scale; delete it or match it."
+            )
 
     began = time.time()
     for epoch in range(start, recipe["epochs"]):
@@ -412,25 +490,35 @@ def train(
         if any(not torch.isfinite(parameter).all() for parameter in model.parameters()):
             raise RuntimeError(f"the head went non-finite at epoch {epoch}")
 
-        probabilities = score(model, choosing_paths, deploy_transform, where, classes, recipe)
-        objective = metrics.average_precision(
+        probabilities = score(model, choosing_paths[""], deploy_transform, where, classes, recipe)
+        precision = metrics.average_precision(
             (choosing_labels >= 2).astype(int), probabilities[:, 0]
         )
+        entropy = metrics.cutpoint_cross_entropy(choosing_labels, probabilities, classes)
         record = {
             "epoch": epoch,
             "loss": running / max(seen, 1),
             "seconds": round(time.time() - clock, 1),
-            "selection_ap_ge2": objective,
+            "selection_ap_ge2": precision,
+            "selection_cutpoint_cross_entropy": entropy,
         }
         for index in range(classes - 1):
             label = head.cutpoint_label(index)
             record[f"selection_auc_{label}"] = metrics.auc(
                 (choosing_labels >= index + 2).astype(int), probabilities[:, index]
             )
+        # Reported, not selected on. A per-regime read of the same slice says
+        # whether the mix is landing; the epoch is still chosen at the canonical
+        # regime, and nothing here is a cross-regime consistency statistic.
+        for tag in tags[1:]:
+            elsewhere = score(model, choosing_paths[tag], deploy_transform, where, classes, recipe)
+            record[f"selection_cutpoint_cross_entropy{tag}"] = metrics.cutpoint_cross_entropy(
+                choosing_labels, elsewhere, classes
+            )
         history.append(record)
         log(
             f"epoch {epoch:2d}  loss {record['loss']:.4f}  "
-            f"AP>=2 {shown(objective)}  "
+            f"AP>=2 {shown(precision)}  xent {shown(entropy)}  "
             + "  ".join(
                 f"AUC>={index + 2} {shown(record[f'selection_auc_{head.cutpoint_label(index)}'])}"
                 for index in range(classes - 1)
@@ -438,6 +526,10 @@ def train(
             + f"  ({record['seconds']}s)"
         )
 
+        # One sign, so "better" is a comparison against the best so far however
+        # the objective is oriented — the proper scoring rule is minimized and
+        # the rank statistic is maximized.
+        objective = precision if chosen_by == "ap_ge2" else (None if entropy is None else -entropy)
         if objective is not None and objective > best_metric:
             best_metric, best_epoch = objective, epoch
             best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
@@ -452,6 +544,7 @@ def train(
                 "best_metric": best_metric,
                 "best_epoch": best_epoch,
                 "best_state": best_state,
+                "selection_objective": chosen_by,
                 "history": history,
                 "torch_rng": torch.get_rng_state(),
                 "cuda_rng": torch.cuda.get_rng_state_all() if where == "cuda" else None,
@@ -494,7 +587,12 @@ def train(
         "device": where,
         "wall_seconds": round(time.time() - began, 1),
         "best_epoch": best_epoch,
-        "best_selection_ap_ge2": best_metric,
+        "selection_objective": chosen_by,
+        "best_selection_objective": best_metric,
+        "best_selection_ap_ge2": next(
+            (row["selection_ap_ge2"] for row in history if row["epoch"] == best_epoch), None
+        ),
+        "regimes": recipe["regimes"],
         "locations": {
             "total": len(locations),
             "train": len(training),
