@@ -172,6 +172,16 @@ Stopping is an outcome: the summary says `budget_stopped`, which is neither
 `completed` nor `crashed`, so a short release is attributable to the clock rather
 than mistaken for thin supply.
 
+**A production night is three legs, and the wall budget is what the first two
+leave.** Harvest, then `curate score` over the harvest it just wrote, then `curate
+run` — separate invocations, so a failure in one does not take the finished work of
+the ones before it. `--wall-budget` is the curation's alone, not the night's, so it
+is computed at launch rather than written down: `total − harvest spent − reserve`,
+where the reserve is what the readout and the write-up need after the last picture
+lands. A night capped at six hours with a three-hour harvest therefore hands the
+curation a little under three, and the curation is the leg that will stop early —
+`-n` binds it long before the clock does.
+
 **An interrupted run is continued, not restarted.** `--resume` skips what the run
 already finished, off the run's own candidate log and the pictures on disk. Its
 plan comes from the sidecar it wrote at entry rather than from the command line, so
