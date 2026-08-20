@@ -440,6 +440,11 @@ class Harvest:
             # not name the judge would leave a ledger nobody could attribute.
             "scorer": self.walk.scorer.name,
             "scoring": self.walk.scoring_record(),
+            # What the run asserted about the picture that judge was handed, and
+            # the one line that re-asks it on this run's own survivors. The second
+            # is a report: nothing above it reads the number.
+            "identity": self.walk.identity,
+            "gate_flips": self.walk.gate_flips(),
             "quota": self.quota.summary(),
             "refill": (
                 None

@@ -371,9 +371,10 @@ class FixedScorer:
         del candidate
         return self.value
 
-    def read(self, candidates: list[dict]):
+    def read(self, candidates: list[dict], pictures=None):
         from fractal_wallpapers.discovery.scoring import Reading
 
+        del pictures
         error = None if self.value is not None else "no view was rendered for this candidate"
         return [Reading(self.value, None, error) for _ in candidates]
 

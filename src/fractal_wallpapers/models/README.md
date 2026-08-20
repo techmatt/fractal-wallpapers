@@ -69,6 +69,15 @@ fractal-wallpapers tiles build --supersample 1                # 640x360 ss1
 fractal-wallpapers tiles build --tile 384x216 --supersample 1 # 384x216 ss1
 ```
 
+**384x216 ss1 is the node regime**, and it is not a study any more: it is the
+frame a walk's `expand` draws every gate survivor at, so a steered harvest scores
+that picture directly instead of rendering a second one at the deploy geometry.
+`tiles.NODE_REGIME` is the name, and `discovery.identity` is what refuses a run
+whose settings would make the two different pictures — including a check that the
+iteration cap this manifest recorded is still the cap the engine gives that width.
+Keep the `384x216ss1` manifest on the hot tier for that reason: it is read, in
+prefix, at the start of every scored run.
+
 Completeness per regime is the join precondition, not the exit code: every stored
 row joins, 32 tiles each, no manifest row whose file is absent, nothing stamped
 `partial`.
@@ -133,11 +142,13 @@ store holds, renders each at all three regimes and reads all four runs over
 every picture. It writes `artifacts/regime_flips/{draw,reads}.jsonl` and nothing
 tracked; `flip-read` writes the verdict. Two facts about running it:
 
-* **The canonical leg costs nothing.** Every drawn location's canonical view is
-  already in `artifacts/location_views` from the sidecar's own scoring pass, and
-  the digest that names it carries resolution and supersample — so the arm that
-  has to correspond to production reads production's own files, and only the two
-  cheap regimes render.
+* **The canonical leg costs nothing — for the stock that has one.** A drawn
+  location scored at the deploy geometry already has its canonical view in
+  `artifacts/location_views` from the sidecar's own pass, and the digest that
+  names it carries resolution and supersample, so that arm reads production's own
+  files. A row a walk scored at the node regime has no deploy-geometry picture at
+  all and renders one here; the sidecar says which kind a row is, and the name
+  check only applies to the first.
 * **`--limit` prices the cheapest stratum, not the draw.** The draw is written
   cell by cell from the smallest cell upward, so a prefix is one stratum of thin,
   high-scoring material. Take a budget on a spread across the whole draw.

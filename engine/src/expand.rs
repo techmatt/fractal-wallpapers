@@ -70,6 +70,15 @@ use crate::viewport::Viewport;
 /// much per candidate, which is the entire argument for the stage existing.
 const PROBE_WIDTH: u32 = 128;
 
+/// The field sampling every frame in an expansion is drawn at.
+///
+/// One sample per output pixel, everywhere: the parent field, the probe and the
+/// gate render alike. A walk draws tens of thousands of these and none of them is
+/// a picture anybody keeps, so supersampling them would be paying deploy quality
+/// for steering material. It is a constant rather than a setting because the gate
+/// render is scored through a head trained at exactly this sampling.
+const NODE_SUPERSAMPLE: u32 = 1;
+
 /// Default width of the node field the policy and the later gates read.
 ///
 /// Wide enough that the focus finder's scales are a sensible fraction of the
@@ -251,6 +260,16 @@ pub struct Dead {
 pub struct ExpandReport {
     pub schema: u32,
     pub nodes: usize,
+    /// The geometry every picture in this report was drawn at, and the field
+    /// sampling behind it — the same two names a tile build's recipe uses.
+    ///
+    /// Stated rather than assumed. The walk scores the gate render through a head
+    /// trained on tiles, which is only the same question if the two are the same
+    /// picture, and the frame size is one of the things that would make them two.
+    /// The reader gets it from the engine that drew them instead of re-deriving
+    /// the aspect rule on its own side.
+    pub tile: [u32; 2],
+    pub field_supersample: u32,
     pub candidates: Vec<Candidate>,
     pub dead: Vec<Dead>,
     pub seconds: f64,
@@ -339,7 +358,7 @@ pub fn run(spec: ExpandSpec) -> Result<ExpandReport, String> {
             width: decimal(&node.width, "node.width")?,
             out_width: node_width,
             out_height: node_height,
-            supersample: 1,
+            supersample: NODE_SUPERSAMPLE,
         };
         if !parent.width.is_finite() || parent.width <= 0.0 {
             return Err(format!("node {}: width must be positive", node.node_id));
@@ -421,7 +440,7 @@ pub fn run(spec: ExpandSpec) -> Result<ExpandReport, String> {
                 width: child_width,
                 out_width: PROBE_WIDTH,
                 out_height: probe_height,
-                supersample: 1,
+                supersample: NODE_SUPERSAMPLE,
             };
             let probed = field::render_field(&probe, &family, cap, FieldSpec::Smooth);
             let probe_interior = Escape::of(&probed.fields[0].values).interior_fraction;
@@ -437,7 +456,7 @@ pub fn run(spec: ExpandSpec) -> Result<ExpandReport, String> {
                 width: child_width,
                 out_width: node_width,
                 out_height: node_height,
-                supersample: 1,
+                supersample: NODE_SUPERSAMPLE,
             };
             let rendered = render(&view, &family, cap, &colormap);
             // The cap again, on the frame the row will actually record.
@@ -514,6 +533,8 @@ pub fn run(spec: ExpandSpec) -> Result<ExpandReport, String> {
     Ok(ExpandReport {
         schema: 1,
         nodes: spec.nodes.len(),
+        tile: [node_width, node_height],
+        field_supersample: NODE_SUPERSAMPLE,
         candidates,
         dead,
         seconds: started.elapsed().as_secs_f64(),
@@ -619,6 +640,30 @@ mod tests {
             assert!(candidate.width.parse::<f64>().unwrap() < 3.0);
             assert_eq!(candidate.image.is_some(), candidate.fate == "survived");
         }
+    }
+
+    /// The report says what geometry it drew at, because the reader scores those
+    /// pictures through a head trained at one geometry and cannot check that from
+    /// the pictures themselves.
+    #[test]
+    fn the_report_states_the_regime_every_picture_was_drawn_at() {
+        let text = spec_text(&node(1, ("-0.5", "0"), "3.0", 1), "");
+        let report = run(ExpandSpec::parse(&text).unwrap()).unwrap();
+        assert_eq!(report.tile, [NODE_WIDTH, 216]);
+        assert_eq!(report.field_supersample, 1);
+
+        let wider = spec_text(
+            &node(1, ("-0.5", "0"), "3.0", 1),
+            r#","policy":{"candidates":2,"node_width":640,"branch_weights":[0.7,0.1,0.2],
+                "placement":[0.25,0.4,0.35],"focus_spread":0.12,"zoom":[0.35,0.5],
+                "sigmas":[8,10,12,14,16]}"#,
+        );
+        let report = run(ExpandSpec::parse(&wider).unwrap()).unwrap();
+        assert_eq!(
+            report.tile,
+            [640, 360],
+            "the height follows the frame's own aspect"
+        );
     }
 
     /// Reproducibility is the property the whole record rests on: the same node

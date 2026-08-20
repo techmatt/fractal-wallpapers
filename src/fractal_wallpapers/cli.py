@@ -376,8 +376,9 @@ def scoring_flags(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
         "--score-workers",
         type=int,
         default=scoring.DEFAULT_WORKERS,
-        help=f"worker processes rendering the views the head reads "
-        f"(default: {scoring.DEFAULT_WORKERS}; 1 renders in this process)",
+        help=f"worker processes rendering views the head reads that nobody has drawn "
+        f"(default: {scoring.DEFAULT_WORKERS}; 1 renders in this process). A walk draws "
+        f"none — it scores the gate render — so this reaches a re-score alone",
     )
     parser.add_argument("--device", default="auto", help="cuda, cpu, or auto")
     parser.add_argument(
@@ -538,13 +539,24 @@ def build_scorer(args: argparse.Namespace, log=print):
     ways is a scorer that can differ between the run that fills a ledger and the
     run that continues it — and the ledger's `scorer` field would then name two
     things under one word.
+
+    It reads at the **node regime**, which is the frame `expand` already draws
+    every gate survivor at: the head is handed the picture the walk made rather
+    than a second one of the same place. Whether that is legitimate is checked at
+    the run's start, not here — see `discovery.identity`.
     """
     from fractal_wallpapers.discovery import scoring
+    from fractal_wallpapers.models import tiles as tile_module
 
     if args.no_scoring:
         return None
     try:
-        return scoring.LocationScorer(workers=args.score_workers, device=args.device, log=log)
+        return scoring.LocationScorer(
+            workers=args.score_workers,
+            device=args.device,
+            regime=tile_module.NODE_REGIME,
+            log=log,
+        )
     except Exception as refusal:  # noqa: BLE001 — an unshipped head is a refusal, not a crash
         raise SystemExit(
             f"the location head cannot be loaded, so nothing can score what this run finds: "
@@ -1885,7 +1897,13 @@ def build_parser() -> argparse.ArgumentParser:
         help="expansions any one root may pay for, its reframings included",
     )
     search.add_argument("--candidates", type=int, default=4, help="candidates drawn per node")
-    search.add_argument("--node-width", type=int, default=384, help="node render width in pixels")
+    search.add_argument(
+        "--node-width",
+        type=int,
+        default=384,
+        help="node render width in pixels. A scored run refuses anything but the node "
+        "regime's own width: the head reads that frame as a tile",
+    )
     search.add_argument(
         "--probe",
         type=float,
@@ -1903,7 +1921,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="also enumerate neighbouring nuclei (the expensive operator; off by default)",
     )
     search.add_argument(
-        "--colormap", default="twilight_shifted", help="colormap for the steering thumbnails"
+        "--colormap",
+        default="twilight_shifted",
+        help="colormap the gate renders are drawn through. A scored run refuses any map "
+        "but the tile pool's floor palette: the head reads the gate render as a tile",
     )
     search.add_argument(
         "--out-dir",
@@ -1947,7 +1968,13 @@ def build_parser() -> argparse.ArgumentParser:
         help="expansions any one root may pay for, its reframings included",
     )
     production.add_argument("--candidates", type=int, default=4, help="candidates drawn per node")
-    production.add_argument("--node-width", type=int, default=384, help="node render width")
+    production.add_argument(
+        "--node-width",
+        type=int,
+        default=384,
+        help="node render width in pixels. A scored run refuses anything but the node "
+        "regime's own width: the head reads that frame as a tile",
+    )
     production.add_argument(
         "--partition",
         action="append",
@@ -2019,7 +2046,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="where earlier runs' ledgers live (default: artifacts)",
     )
     production.add_argument(
-        "--colormap", default="twilight_shifted", help="colormap for the steering thumbnails"
+        "--colormap",
+        default="twilight_shifted",
+        help="colormap the gate renders are drawn through. A scored run refuses any map "
+        "but the tile pool's floor palette: the head reads the gate render as a tile",
     )
     production.add_argument(
         "--out-dir",
@@ -3423,9 +3453,11 @@ def curate_commands(subcommands) -> None:
             "score",
             help="read the harvest ledgers through the location head",
             description=(
-                "Renders each gate-surviving location's canonical view — the same picture a "
-                "deployed judge is handed — and scores it. Resumable in both halves: a view "
-                "already on disk is not re-rendered."
+                "Reads each gate-surviving location through the head, at the regime its own "
+                "ledger row names: a walk's gate render where the row's recorded digest still "
+                "describes it, the deploy view already on disk for the standing stock. No "
+                "deploy-geometry render is ever demanded for a row that was not scored at one. "
+                "Resumable in both halves: a picture already on disk is not re-made."
             ),
         )
     )
@@ -3665,9 +3697,17 @@ def location_arguments(draw: argparse.ArgumentParser) -> None:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    from fractal_wallpapers.discovery.identity import IdentityBroken
+
     args = build_parser().parse_args(argv)
     try:
         return args.handler(args)
+    except IdentityBroken as refusal:
+        # Also here rather than in one command: both `walk` and `harvest` build
+        # the walk that raises it, the message names the flag to change, and a
+        # traceback would bury an instruction under a stack.
+        print(refusal)
+        return 1
     except StorageRefusal as refusal:
         # Handled here and nowhere else. Every other refusal in this file is
         # about one command's arguments and is caught by that command; these are

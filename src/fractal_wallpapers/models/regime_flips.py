@@ -95,8 +95,9 @@ BOOTSTRAP_SEED = 0
 WORST_FAMILY = regime_acceptance.WORST_FAMILY
 
 #: What a row of the draw carries out of the sidecar: everything a view is made
-#: from, plus the picture the sidecar's own score was read off.
-DRAWN_FIELDS = ("key", "partition", "family", "viewport", "maxiter", "view")
+#: from, plus the picture the sidecar's own score was read off and the regime that
+#: picture was drawn at — a sidecar holds rows read at two of them now.
+DRAWN_FIELDS = ("key", "partition", "family", "viewport", "maxiter", "view", "regime")
 
 #: The field on a stored score row the strata are cut on.
 STOCK_FIELD = "p_ge3"
@@ -467,8 +468,7 @@ def preregister(head: str = HEAD) -> dict:
 def _render(rows: list[dict], regime: tile_module.Regime, workers: int, log) -> tuple[list, dict]:
     """`(paths, tally)` — every drawn location's view at one regime.
 
-    The regime is imposed by rebinding the deploy view's own geometry before any
-    recipe is resolved, which works because a recipe is resolved **in the
+    The regime is a parameter of the recipe, and the recipe is resolved **in the
     parent**: a render worker is handed a finished recipe and a finished output
     path, so it cannot decide what picture it is making. The digest that names a
     view already carries resolution and supersample, so two regimes cannot
@@ -479,51 +479,45 @@ def _render(rows: list[dict], regime: tile_module.Regime, workers: int, log) -> 
 
     directory = view_dir(regime)
     directory.mkdir(parents=True, exist_ok=True)
-    before = (location_view.RESOLUTION, location_view.SUPERSAMPLE)
-    location_view.RESOLUTION = tuple(regime.tile)
-    location_view.SUPERSAMPLE = int(regime.supersample)
-    try:
-        colormap = location_view.canonical_map()
-        cyclic = location_view.cyclic_maps()
-        paths = [location_view.view_path(row, colormap, cyclic, directory) for row in rows]
-        if regime == tile_module.CANONICAL_REGIME:
-            _check_canonical_names(rows, paths)
+    colormap = location_view.canonical_map()
+    cyclic = location_view.cyclic_maps()
+    paths = [location_view.view_path(row, colormap, cyclic, directory, regime) for row in rows]
+    if regime == tile_module.CANONICAL_REGIME:
+        _check_canonical_names(rows, paths)
 
-        def task_for(index: int):
-            return discovery_scoring.ViewTask(
-                location_view.view_row(rows[index], colormap, cyclic), str(paths[index])
-            )
+    def task_for(index: int):
+        return discovery_scoring.ViewTask(
+            location_view.view_row(rows[index], colormap, cyclic, regime), str(paths[index])
+        )
 
-        wanted = [index for index, path in enumerate(paths) if not path.is_file()]
-        started = time.monotonic()
-        results = discovery_scoring.render_views([task_for(i) for i in wanted], workers, log)
-        seconds = sum(result.seconds for result in results)
-        failed = [index for index, result in zip(wanted, results, strict=True) if not result.ok]
-        if failed:
-            # Under a loaded machine the pooled engine occasionally dies with no
-            # message, and a flip rate over whichever rows survived that is a
-            # flip rate measured on a population the load chose.
-            log(f"[flips] retrying {len(failed)} failed view(s) alone in the parent")
-            retried = discovery_scoring.render_views([task_for(i) for i in failed], 1, log)
-            seconds += sum(result.seconds for result in retried)
-            failed = [index for index, result in zip(failed, retried, strict=True) if not result.ok]
-        if failed:
-            raise FlipError(
-                f"{len(failed)} of {len(rows)} views would not render at "
-                f"{regime_acceptance.spelled(regime)}. A population the engine chose is not "
-                "the population the bar declared."
-            )
-        return paths, {
-            "regime": regime_acceptance.spelled(regime),
-            "directory": str(directory),
-            "locations": len(rows),
-            "rendered": len(wanted),
-            "reused": len(rows) - len(wanted),
-            "engine_seconds": round(seconds, 1),
-            "wall_seconds": round(time.monotonic() - started, 1),
-        }
-    finally:
-        location_view.RESOLUTION, location_view.SUPERSAMPLE = before
+    wanted = [index for index, path in enumerate(paths) if not path.is_file()]
+    started = time.monotonic()
+    results = discovery_scoring.render_views([task_for(i) for i in wanted], workers, log)
+    seconds = sum(result.seconds for result in results)
+    failed = [index for index, result in zip(wanted, results, strict=True) if not result.ok]
+    if failed:
+        # Under a loaded machine the pooled engine occasionally dies with no
+        # message, and a flip rate over whichever rows survived that is a
+        # flip rate measured on a population the load chose.
+        log(f"[flips] retrying {len(failed)} failed view(s) alone in the parent")
+        retried = discovery_scoring.render_views([task_for(i) for i in failed], 1, log)
+        seconds += sum(result.seconds for result in retried)
+        failed = [index for index, result in zip(failed, retried, strict=True) if not result.ok]
+    if failed:
+        raise FlipError(
+            f"{len(failed)} of {len(rows)} views would not render at "
+            f"{regime_acceptance.spelled(regime)}. A population the engine chose is not "
+            "the population the bar declared."
+        )
+    return paths, {
+        "regime": regime_acceptance.spelled(regime),
+        "directory": str(directory),
+        "locations": len(rows),
+        "rendered": len(wanted),
+        "reused": len(rows) - len(wanted),
+        "engine_seconds": round(seconds, 1),
+        "wall_seconds": round(time.monotonic() - started, 1),
+    }
 
 
 def _check_canonical_names(rows: list[dict], paths: list[Path]) -> None:
@@ -534,10 +528,18 @@ def _check_canonical_names(rows: list[dict], paths: list[Path]) -> None:
     from the one the strata were cut on, and every flip rate here would be
     against a baseline that no longer exists.
     """
+    canonical = tile_module.CANONICAL_REGIME.spelled
     odd = [
         row["key"]
         for row, path in zip(rows, paths, strict=True)
-        if row.get("view") and path.name != row["view"]
+        # Only rows the sidecar scored at the deploy geometry name a picture this
+        # arm would also make. A row scored at the node regime names the walk's
+        # own gate render, which is a different regime's file and a different
+        # name by construction — comparing the two would be reading the check
+        # backwards.
+        if row.get("view")
+        and (row.get("regime") or canonical) == canonical
+        and path.name != row["view"]
     ]
     if odd:
         raise FlipError(

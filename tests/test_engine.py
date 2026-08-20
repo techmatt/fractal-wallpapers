@@ -158,3 +158,31 @@ def test_a_rejected_spec_surfaces_the_engine_s_complaint() -> None:
                 "output": "unreachable.png",
             }
         )
+
+
+# --------------------------------------------------------------------------- #
+# The cap door.
+# --------------------------------------------------------------------------- #
+@needs_engine
+def test_the_cap_policy_is_asked_and_never_restated_on_this_side() -> None:
+    """The cap decides what counts as interior, so it is a rendering parameter and
+    the engine owns it — the same arrangement `home-view` has, and for the same
+    reason: two halves that each held a copy would agree until one of them moved.
+
+    Nothing is asserted about the *values* here. What is pinned is that the door
+    exists, answers in order, and behaves like the policy it fronts: deeper is a
+    higher cap, and the far ends clamp.
+    """
+    widths = ["3.0", "0.75", "1e-9"]
+    caps = engine.maxiter_for(widths)
+    assert len(caps) == len(widths)
+    assert caps == sorted(caps), "the cap grows with the zoom"
+    assert engine.maxiter_for([]) == [], "an empty question costs no subprocess"
+    assert engine.maxiter_for(["1e-40"]) == engine.maxiter_for(["1e-60"]), "the ceiling clamps"
+
+
+@needs_engine
+def test_a_width_that_is_not_a_number_is_refused_rather_than_defaulted() -> None:
+    """A cap silently fallen back to would be a picture nobody asked for."""
+    with pytest.raises(RuntimeError, match="widths"):
+        engine.maxiter_for(["wide"])

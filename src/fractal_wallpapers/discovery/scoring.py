@@ -5,9 +5,9 @@ next — and to *admit* — which survivors are worth recording as finds. Both a
 questions about pictures, and for a long time nothing in this repository could
 answer them, so the seam was built and the answer was null.
 
-The answer is no longer null. [`LocationScorer`] renders each survivor's
-canonical view and reads it through the shipped location head, and the walk
-writes what the head said onto the ledger row. That closes a loop the first
+The answer is no longer null. [`LocationScorer`] reads each survivor's own view
+through the shipped location head, and the walk writes what the head said onto
+the ledger row. That closes a loop the first
 production run left open: the machine leg of the standing deficit reads each
 row's own `score`, so a harvest under the null scorer moved the books by exactly
 zero — twenty-two thousand rows, every one `unclassed`, and a second run would
@@ -27,13 +27,32 @@ Three properties of the seam are worth stating.
   which weights the two ten to one. A seam that carried only the scalar would
   make every machine-classed find a 3 forever.
 
-## Scoring is the expensive half, and fanning it out does not pay
+## A walk scores the picture it already made
 
-A canonical view costs about half a second of engine, against a harvest that
-finds locations several times faster, so the obvious move is to render the views
-in worker **processes** on the release pass's pattern. That pool is built here,
-it is held to the serial path by [`parity`], and its default is **one worker**,
-because the measurement says the fan-out loses:
+The head reads a *regime* — a frame size and a field sampling — and the corpus is
+cached at three of them. A walk's `expand` already draws every gate survivor at
+[`fractal_wallpapers.models.tiles.NODE_REGIME`], 384×216 at one sample per pixel,
+and that frame is byte-identical to the same location's tile at that regime. So
+the walk hands its gate renders to [`read`] and no view is drawn for scoring at
+all. What that removed was not a rounding error: the deploy-geometry steering
+view was 58.7% of a production run's clean wall, 8,810 s of one three-hour leg,
+and nothing but the scorer ever consumed its pixels.
+
+A scorer therefore carries the regime it reads at, and a reading says which one
+it was read at, because the ledgers will hold both kinds side by side for as long
+as the old ones are bound. The four settings that make the identity true are
+checked before a run starts — see [`fractal_wallpapers.discovery.identity`] —
+rather than assumed here.
+
+## The renders that are still made, and why fanning them out does not pay
+
+Nothing renders on the walk's path any more, but two callers still ask this
+module for pictures that do not exist: curation's re-score of an old ledger,
+whose rows were scored at the deploy geometry, and the cross-regime studies. A
+deploy-geometry view costs about half a second of engine, so the obvious move is
+to render them in worker **processes** on the release pass's pattern. That pool
+is built here, it is held to the serial path by [`parity`], and its default is
+**one worker**, because the measurement says the fan-out loses:
 
 ```text
 36 views, 12 logical CPUs           views/s
@@ -68,9 +87,9 @@ worth being able to re-run. Three properties hold whichever arm runs:
   would pay seconds of start-up to do a job that is pure engine, and the head
   reads a batch of pictures far faster on one device than on four.
 
-Views are addressed by the digest of their own recipe and shared with curation's
-re-score, so a location scored during a harvest is not rendered a second time
-when the intake reads it again.
+Views are addressed by the digest of their own recipe — geometry included — so
+two regimes of one location are two files, and a picture handed in from somewhere
+else is checkable against the recipe it claims to be.
 """
 
 from __future__ import annotations
@@ -126,12 +145,22 @@ class Reading:
     named fields are the two the walk spends, and a *tier* is not derivable from
     either of them alone. The labeling rig decodes one, so the whole vector
     travels rather than being read a second way out of a second call.
+
+    `regime` and `view` say what the reading was read *off*: the geometry, and
+    the digest of the whole recipe that picture was made from. Provenance and not
+    semantics — the scale is one across regimes, which is what the retrain bought
+    — but a ledger union that holds rows scored at two geometries should never
+    have to guess which is which, and the digest is what lets a later reader check
+    that a persisted picture is still the one the recipe describes. Both are
+    `None` where there was no picture to read.
     """
 
     score: float | None = None
     great: float | None = None
     error: str | None = None
     probabilities: tuple = ()
+    regime: str | None = None
+    view: str | None = None
 
 
 #: The reading a scorer with nothing to say hands back.
@@ -151,12 +180,17 @@ class Scorer(Protocol):
         rig orders a sheet through it; the walk uses [`read`].
         """
 
-    def read(self, candidates: list[dict]) -> list[Reading]:
+    def read(self, candidates: list[dict], pictures=None) -> list[Reading]:
         """One reading per candidate, in the order they were given.
 
         The batch door, because the expensive part of an opinion is a render and
         renders fan out. A scorer that has nothing to say returns a list of
         [`NO_OPINION`] and costs nothing.
+
+        `pictures` offers a picture per candidate that already exists — a walk's
+        own gate render — and `None` in a slot means the scorer must find or make
+        one itself. It is an *offer*: a scorer is free to ignore it, and one that
+        reads a different regime from the offered picture must.
         """
 
     def admits(self, candidate: dict, score: float | None) -> bool:
@@ -192,7 +226,8 @@ class NullScorer:
         del candidate
         return None
 
-    def read(self, candidates: list[dict]) -> list[Reading]:
+    def read(self, candidates: list[dict], pictures=None) -> list[Reading]:
+        del pictures
         return [NO_OPINION for _ in candidates]
 
     def admits(self, candidate: dict, score: float | None) -> bool:
@@ -331,9 +366,16 @@ class LocationScorer:
     constructor: a walk whose frontier is empty, or a run that stalls before its
     first expansion, should not pay for a model it never asks anything.
 
-    The views live in one cache shared with curation's re-score, because a view is
-    addressed by the digest of its own recipe: the same location scored twice by
-    two stages is one file and one render.
+    `regime` is which of the head's three trained geometries this scorer reads at,
+    and `None` is the deploy one. A walk builds it at
+    [`fractal_wallpapers.models.tiles.NODE_REGIME`], where the picture is the gate
+    render `expand` already wrote and nothing is drawn for scoring at all; the
+    re-score of a ledger whose rows were read at the deploy geometry builds it
+    there and renders what is missing.
+
+    Views are addressed by the digest of their own recipe, geometry included, so
+    the same location scored twice at one regime is one file and one render, and
+    two regimes of it never collide.
     """
 
     def __init__(
@@ -343,9 +385,11 @@ class LocationScorer:
         workers: int = DEFAULT_WORKERS,
         device: str = "auto",
         batch_size: int = 64,
+        regime=None,
         log=print,
     ):
-        self.directory = Path(directory) if directory is not None else view_dir()
+        self.regime = regime
+        self.directory = Path(directory) if directory is not None else view_dir(regime)
         self.workers = max(1, int(workers))
         self.device = device
         self.batch_size = int(batch_size)
@@ -353,7 +397,18 @@ class LocationScorer:
         self.colormap = location_view.canonical_map()
         self.cyclic = location_view.cyclic_maps()
         self._head = None
-        self.tally = {"read": 0, "rendered": 0, "reused": 0, "failed": 0, "render_seconds": 0.0}
+        # Four ways a batch's pictures were come by, and they are worth telling
+        # apart: `gate` is a picture the caller already had — a walk's own gate
+        # render, which is the whole reason a steered run draws nothing to score
+        # — against `reused`, a cache hit, and `rendered`, an engine call.
+        self.tally = {
+            "read": 0,
+            "gate": 0,
+            "rendered": 0,
+            "reused": 0,
+            "failed": 0,
+            "render_seconds": 0.0,
+        }
         # Everything that can refuse is resolved **here**, not on the first batch:
         # the shipped artifact, its hash, and the stack that reads it. A harvest
         # is an unattended six-hour program, and a refusal it discovers an hour in
@@ -386,6 +441,18 @@ class LocationScorer:
         """The judge a ledger row names: the head, and the artifact it was."""
         return f"location:{self._stamp[:12]}"
 
+    @property
+    def regime_name(self) -> str:
+        """The geometry this scorer reads at, spelled out.
+
+        Spelled even at the deploy regime, where the elision would be an empty
+        string: this is what a record carries, and a record that said nothing
+        would be indistinguishable from one written before the field existed.
+        """
+        from fractal_wallpapers.models import tiles as tile_module
+
+        return (self.regime or tile_module.CANONICAL_REGIME).spelled
+
     def stamp(self) -> str:
         return self._stamp
 
@@ -404,29 +471,65 @@ class LocationScorer:
 
     # ------------------------------------------------------------- the seam
 
+    def at(self, regime, directory: Path) -> LocationScorer:
+        """The same judge, reading another regime, into a directory of its own.
+
+        One head, two geometries: the point of asking is whether a verdict moves
+        with the picture, so anything else about the scorer has to be held still —
+        the artifact, the device, the batch size. Serial, because there is never
+        enough of this to fan out and the fan-out loses anyway.
+        """
+        return LocationScorer(
+            directory=directory,
+            workers=1,
+            device=self.device,
+            batch_size=self.batch_size,
+            regime=regime,
+            log=self.log,
+        )
+
     def score(self, candidate: dict) -> float | None:
         """One candidate's `P(≥3)`. The batch door is [`read`]; this is the
         single-candidate one the protocol keeps."""
         return self.read([candidate])[0].score
 
-    def read(self, candidates: list[dict]) -> list[Reading]:
-        """Render every candidate's canonical view and read the batch through the head."""
+    def read(self, candidates: list[dict], pictures=None) -> list[Reading]:
+        """Read this batch through the head, rendering only what nobody has drawn.
+
+        A picture offered in `pictures` is taken as it is — that is the walk's own
+        gate render, which at the node regime *is* this recipe's picture — and
+        anything else is found in the cache under its digest or rendered there.
+        """
         candidates = list(candidates)
         if not candidates:
             return []
+        offered = list(pictures) if pictures is not None else [None] * len(candidates)
         wanted, tasks = [], []
-        pictures: list[Path | None] = []
+        made: list[Path | None] = []
+        names: list[str] = []
         errors: list[str | None] = []
-        for candidate in candidates:
-            path = location_view.view_path(candidate, self.colormap, self.cyclic, self.directory)
-            pictures.append(path)
+        for candidate, given in zip(candidates, offered, strict=True):
+            names.append(
+                location_view.view_name(candidate, self.colormap, self.cyclic, self.regime)
+            )
             errors.append(None)
+            if given is not None and Path(given).is_file():
+                self.tally["gate"] += 1
+                made.append(Path(given))
+                continue
+            path = location_view.view_path(
+                candidate, self.colormap, self.cyclic, self.directory, self.regime
+            )
+            made.append(path)
             if path.is_file():
                 self.tally["reused"] += 1
                 continue
-            wanted.append(len(pictures) - 1)
+            wanted.append(len(made) - 1)
             tasks.append(
-                ViewTask(location_view.view_row(candidate, self.colormap, self.cyclic), str(path))
+                ViewTask(
+                    location_view.view_row(candidate, self.colormap, self.cyclic, self.regime),
+                    str(path),
+                )
             )
 
         for index, result in zip(wanted, render_views(tasks, self.workers, self.log), strict=True):
@@ -435,12 +538,12 @@ class LocationScorer:
                 self.tally["rendered"] += 1
             else:
                 self.tally["failed"] += 1
-                pictures[index] = None
+                made[index] = None
                 errors[index] = result.error
 
-        return self._readings(pictures, errors)
+        return self._readings(made, errors, names)
 
-    def _readings(self, pictures, errors) -> list[Reading]:
+    def _readings(self, pictures, errors, names=None) -> list[Reading]:
         """The head over every view that exists, put back in the given order."""
         from fractal_wallpapers.models import scoring as scoring_module
         from fractal_wallpapers.models import train
@@ -484,6 +587,8 @@ class LocationScorer:
                 float(probability[2]) if classes > 3 else None,
                 None,
                 tuple(float(value) for value in probability),
+                self.regime_name,
+                None if names is None else names[index],
             )
             self.tally["read"] += 1
         return out
@@ -521,17 +626,28 @@ class LocationScorer:
             "head_sha256": self.stamp(),
             "workers": self.workers,
             "engine_threads": engine_threads_for(self.workers),
-            "view": location_view.summary(self.colormap),
+            "regime": self.regime_name,
+            "view": location_view.summary(self.colormap, self.regime),
             "view_dir": str(self.directory),
             **{k: (round(v, 1) if isinstance(v, float) else v) for k, v in self.tally.items()},
         }
 
 
-def view_dir() -> Path:
-    """Where the pictures the location head is read on live. Ignored, re-derivable."""
+def view_dir(regime=None) -> Path:
+    """Where the pictures the location head is read on live. Ignored, re-derivable.
+
+    The deploy regime keeps `location_views`, which is the cache a walk filled and
+    the sidecar, the flip study and the restatement all read. It **stops growing**
+    now that a walk scores its own gate renders, and stays what it became: the
+    read-only record of every location scored at the deploy geometry. Anything
+    else gets its own tree, so nothing new lands in that one.
+    """
+    from fractal_wallpapers.models import tiles as tile_module
     from fractal_wallpapers.paths import under
 
-    return under("location_views")
+    if regime is None or regime == tile_module.CANONICAL_REGIME:
+        return under("location_views")
+    return under("node_views", regime.spelled)
 
 
 # --------------------------------------------------------------------------- #
@@ -571,7 +687,9 @@ def parity(candidates: list[dict], workers: int, directory: Path, log=print) -> 
                 for reading, path in zip(
                     readings,
                     [
-                        location_view.view_path(row, scorer.colormap, scorer.cyclic, where)
+                        location_view.view_path(
+                            row, scorer.colormap, scorer.cyclic, where, scorer.regime
+                        )
                         for row in candidates
                     ],
                     strict=True,

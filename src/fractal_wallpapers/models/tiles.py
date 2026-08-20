@@ -96,6 +96,16 @@ class Regime:
             raise ValueError(f"{self} is not a geometry anything can be rendered at")
 
     @property
+    def spelled(self) -> str:
+        """A regime as a person writes it: the full form, before the elision.
+
+        What a *record* carries, and what a refusal names, because the canonical
+        regime's name segment is empty and an empty string is not a thing a
+        reader can be shown.
+        """
+        return f"{self.tile[0]}x{self.tile[1]}ss{self.supersample}"
+
+    @property
     def tag(self) -> str:
         """What this regime writes into a name — empty at the canonical one.
 
@@ -105,19 +115,30 @@ class Regime:
         """
         if self == CANONICAL_REGIME:
             return ""
-        return f"_{self.tile[0]}x{self.tile[1]}ss{self.supersample}"
+        return f"_{self.spelled}"
 
 
 #: What the shipped tile corpus is made at, and the deploy view's own geometry
 #: (see `location_view`). It is the regime whose name segment is empty.
 CANONICAL_REGIME = Regime()
 
+#: What a walk's own gate render is: the frame `expand` draws a node's children
+#: at, one field sample per pixel.
+#:
+#: Named here rather than in the walk because it is a *tile* regime — the corpus
+#: is cached at it and the shipped head was trained over it — and that is the
+#: whole reason a walk may score the picture it already made instead of drawing a
+#: second one. The identity is enforced at a run's start
+#: ([`fractal_wallpapers.discovery.identity`]), not assumed.
+NODE_REGIME = Regime((384, 216), 1)
+
 #: The regimes the corpus is cached at, canonical first. Two of them drop the
-#: supersample, which is what a walk scoring its own node field would be reading;
-#: one of those also drops the frame. Written down once because the trainer, the
-#: scorer and the cross-regime read all have to name the same three, and three
-#: literals in three modules is how a fourth one gets built and forgotten.
-BUILT_REGIMES = (CANONICAL_REGIME, Regime((640, 360), 1), Regime((384, 216), 1))
+#: supersample, which is what a walk scoring its own node field is reading; one of
+#: those also drops the frame, and is [`NODE_REGIME`]. Written down once because
+#: the trainer, the scorer and the cross-regime read all have to name the same
+#: three, and three literals in three modules is how a fourth one gets built and
+#: forgotten.
+BUILT_REGIMES = (CANONICAL_REGIME, Regime((640, 360), 1), NODE_REGIME)
 
 
 def regime_of(tag: str) -> Regime:
@@ -375,6 +396,47 @@ def read_manifest(
         return [rehomed(row) for row in rows]
 
 
+def recorded_caps(
+    regime: Regime = CANONICAL_REGIME, locations: int = 20, path: Path | None = None
+) -> list[dict]:
+    """`[{location_id, width, maxiter}]` — the cap a build recorded, for a prefix.
+
+    The cap decides what counts as interior, so a picture drawn at another one is
+    another picture. This is how a reader asks what cap the corpus a head trained
+    on was actually drawn at: off the build's own manifest, per location, as it
+    was written.
+
+    **A prefix, and streamed.** The manifest is three hundred megabytes and may be
+    on the slow tier, so a caller that only wants to check a policy against it must
+    not have to read the whole thing. A prefix is a fair sample because the plan is
+    shuffled — the same property that lets `--limit` be a measurement rather than a
+    warm-up — and the tiles of one location are contiguous, so the first `locations`
+    distinct ids are the first `locations` of the plan.
+    """
+    path = manifest_path(regime) if path is None else Path(path)
+    if not path.is_file():
+        raise FileNotFoundError(path)
+    out: list[dict] = []
+    with path.open(encoding="utf-8") as handle:
+        for line in handle:
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            identifier = int(row["location_id"])
+            if out and out[-1]["location_id"] == identifier:
+                continue
+            if len(out) >= max(1, int(locations)):
+                break
+            out.append(
+                {
+                    "location_id": identifier,
+                    "width": str(row["location"]["width"]),
+                    "maxiter": int(row["maxiter"]),
+                }
+            )
+    return out
+
+
 def tiles_by_location(rows: list[dict]) -> dict[int, list[dict]]:
     """Group manifest rows by location, each location's tiles in slot order."""
     grouped: dict[int, list[dict]] = {}
@@ -416,6 +478,7 @@ __all__ = [
     "BUILT_REGIMES",
     "CANONICAL_REGIME",
     "CANONICAL_SLOT",
+    "NODE_REGIME",
     "PLAN_SEED",
     "SCHEMA",
     "SEED_TAG",
@@ -436,6 +499,7 @@ __all__ = [
     "regime_of",
     "read_locations",
     "read_manifest",
+    "recorded_caps",
     "spec",
     "tile_dir",
     "tiles_by_location",

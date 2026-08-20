@@ -14,6 +14,7 @@ nucleus    Newton on a nucleus, the atom instrument, the canonical key
 operators  reframing a found view onto the atoms around it
 ledger     one JSONL record, one schema, a fate on every row
 scoring    the seam a trained head arrives through
+identity   why the gate render is the picture that head was trained on
 ```
 
 Nothing here judges a picture. The gates are geometry — how much of the frame is
@@ -24,7 +25,7 @@ implementation behind it. A walk that runs on the null scorer is a complete walk
 it admits what survives the gates, and its ledger is what the first head gets
 trained on, which is the only order the two can be built in.
 
-Two things are worth reading before changing anything here.
+What follows is what to read before changing anything here.
 
 **Reframing operators are triggered, never a source.** They apply to a place the
 walk already found and admitted, and they inherit both its provenance and its
@@ -40,15 +41,37 @@ which agreed with the engine until the engine's Phoenix row moved: after that a
 phoenix root framed 66% of its own set with both lobes cut, and nothing in either
 half could have noticed.
 
-**A rung's clock is the steering view, and the rest of it is the focus finder.**
-Measured on a real julia leg — release engine, 23 nodes, 90 gate survivors, one
-score worker, an idle machine: 19.4 s rendering the 90 steering views (640x360
-ss2, the picture the location head reads) against 7.7 s in `expand`, which is
-every node render, every 128-px probe and every proposal. Inside `expand` the
-escape-time iteration is the *smaller* half: the focus finder — twenty smoothing
-passes over the node field, no iteration in it at all — was 47% of expansion
-before it was read once per node instead of once per draw, and is the first place
-to look when a walk is slower than its views explain.
+**A walk scores the picture it already made, and no longer renders a second
+one.** `expand` draws every gate survivor at 384x216, one field sample per pixel,
+and that frame is byte-identical to the same location's cached tile at the same
+regime — one of the three the shipped location head was trained over. So the head
+is handed the gate render. What that removed was the *dominant* line of a run's
+clock: the deploy-geometry steering view was 8,810 s of one three-hour production
+leg, 58.7% of the whole run's clean wall, and nothing but the scorer ever read its
+pixels.
+
+**The identity is enforced, not coincidental.** It rests on four settings, none of
+which announces itself when it moves: the run's `--colormap` is the tile pool's
+floor palette, that map is cyclic (the tile path mirrors a map that does not wrap
+and the node path never mirrors), `--node-width` is the node regime's frame, and
+the engine's iteration cap still matches the cap the tile corpus recorded. All
+four are checked before a run writes its first row, and each refuses with the flag
+to change; the engine also states the geometry it drew every batch at, and a
+report that disagrees ends the run. The cap is *asked* through
+`fractal-engine maxiter` rather than restated here, for the same reason the home
+table is.
+
+**With the views gone, the rest of a rung's clock is the focus finder.** Inside
+`expand` the escape-time iteration is the *smaller* half: the focus finder —
+twenty smoothing passes over the node field, no iteration in it at all — was 47%
+of expansion before it was read once per node instead of once per draw, and is now
+the first place to look when a walk is slow.
+
+**Once a run, the claim is measured rather than only checked.** A seeded sample of
+about a hundred survivors is scored a second time at the deploy geometry and the
+two verdicts are compared at the three acting gates. The count lands in the run
+summary as one line and **nothing acts on it** — the pre-registered bars in
+`models/regime_flips.py` are where a decision about this head gets made.
 
 **Every candidate is recorded, with the gate that refused it.** A walk that
 logged only its survivors could never afterwards tell "the gates were too tight"

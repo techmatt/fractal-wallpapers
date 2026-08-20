@@ -40,6 +40,7 @@ __all__ = [
     "engine_path",
     "expand",
     "home_view",
+    "maxiter_for",
     "modes",
     "pixel_is_z0",
     "production_modes",
@@ -242,6 +243,11 @@ def expand(spec: dict) -> dict:
     it or a thumbnail if none did — so the walk's own code never renders, never
     measures a field, and never has to agree with the engine about what a gate
     means.
+
+    The report also states the geometry every one of those pictures was drawn at
+    — `tile` and `field_supersample`, the tile build's own two names — because
+    the walk scores the gate render through a head trained at one geometry and
+    could not check that from the picture itself.
     """
     return run("expand", spec)
 
@@ -283,6 +289,25 @@ def _home_view(key: str) -> str:
     can hold safely.
     """
     return json.dumps(run("home-view", {"schema": 1, "family": json.loads(key)}))
+
+
+def maxiter_for(widths) -> list[int]:
+    """The iteration cap the engine's policy gives each plane width.
+
+    A door for the same reason [`home_view`] is one: the cap is a *rendering*
+    parameter — it decides what counts as interior — and the engine owns the
+    policy. Python holds no copy, so "the walk's gate render was drawn at the cap
+    the training corpus was built at" is a question one side answers and the
+    other checks, rather than two sides agreeing until one of them moves.
+
+    Widths go over the wire as the decimal strings a viewport is written in, so
+    what is asked about is the string a record holds rather than a re-formatted
+    view of it.
+    """
+    widths = [str(width) for width in widths]
+    if not widths:
+        return []
+    return list(run("maxiter", {"schema": 1, "widths": widths})["caps"])
 
 
 #: The family kinds whose pixel is `z₀` — the dynamical planes. Every other kind

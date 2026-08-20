@@ -6,6 +6,23 @@ exactly one question plus the supply arithmetic that question implies. It does
 not decide how many pictures to make ([`budget`]), it does not choose a palette
 ([`colorize`]), and it does not select a release ([`selection`]).
 
+## A row is re-scored at the regime it was scored at
+
+The head reads three trained geometries and the scale is one across them, but the
+*picture* is not: a location scored at 640×360 ss2 and the same location scored at
+384×216 ss1 are two files. A walk now scores its own gate render, which is the
+node regime, and says so on every row it writes — so this module reads a row at
+the regime the row names, and never demands a deploy-geometry render for a row
+that was never scored at one. A new run's rows cost the head and nothing else:
+the picture is the one `expand` already wrote, reused where its recorded digest
+still matches the recipe and re-drawn at 384×216 ss1 (about 0.09 s) where it does
+not.
+
+Old stock is untouched. Its rows carry no regime, they were read at the deploy
+geometry, and their pictures are the ones already in `location_views` — which is
+now a read-only record rather than a growing cache, because nothing renders into
+it any more.
+
 ## The order is read at the moment it is used, and nothing is frozen
 
 A ledger row now records the head's verdict at the moment the walk found the
@@ -85,6 +102,7 @@ comes with it is arithmetic rather than judgement:
 from __future__ import annotations
 
 import json
+from collections import Counter
 from pathlib import Path
 
 from fractal_wallpapers.curation import binding, floors
@@ -121,16 +139,16 @@ def scores_path() -> Path:
     return store_dir() / "supply_scores.jsonl"
 
 
-def view_dir() -> Path:
+def view_dir(regime=None) -> Path:
     """Where the pictures the head is scored on live.
 
-    Not under curation's own store: the walk renders the same pictures, under the
-    same recipe and the same digest, and two caches of one file is one render
-    paid for twice.
+    Not under curation's own store: a picture is addressed by the digest of its
+    own recipe and the walk makes the same ones, so two caches of one file is one
+    render paid for twice.
     """
     from fractal_wallpapers.discovery import scoring as discovery_scoring
 
-    return discovery_scoring.view_dir()
+    return discovery_scoring.view_dir(regime)
 
 
 # --------------------------------------------------------------------------- #
@@ -157,29 +175,87 @@ def canonical_map() -> str:
         raise IntakeError(str(refusal)) from refusal
 
 
-def view_row(row: dict, colormap: str, cyclic: set[str]) -> dict:
+def view_row(row: dict, colormap: str, cyclic: set[str], regime=None) -> dict:
     """One ledger row as the render-cache row its picture is made from."""
-    return location_view.view_row(row, colormap, cyclic)
+    return location_view.view_row(row, colormap, cyclic, regime)
 
 
-def view_name(row: dict, colormap: str, cyclic: set[str]) -> str:
+def view_name(row: dict, colormap: str, cyclic: set[str], regime=None) -> str:
     """The file name of one location's view: a digest of the whole recipe."""
-    return location_view.view_name(row, colormap, cyclic)
+    return location_view.view_name(row, colormap, cyclic, regime)
+
+
+# --------------------------------------------------------------------------- #
+# Which picture a row is read off.
+# --------------------------------------------------------------------------- #
+#: How a row's picture was come by, as the tally counts them. `gate` is the walk's
+#: own render, reused where the row's recorded digest still describes it; `cached`
+#: is a view already in the regime's cache; `rendered` is one this pass drew.
+GATE, CACHED, RENDERED = "gate", "cached", "rendered"
+
+
+def regime_of(row: dict):
+    """The regime a ledger row's score was read at, or `None` for the deploy one.
+
+    `None` is the honest answer for every row written before a walk said, which is
+    all of the standing stock: those were scored at the deploy geometry and their
+    pictures are the ones already in the shared cache.
+    """
+    from fractal_wallpapers.models import tiles as tile_module
+
+    stated = row.get("score_regime")
+    if not stated:
+        return None
+    try:
+        return tile_module.regime_of(str(stated))
+    except ValueError as bad:
+        raise IntakeError(
+            f"a ledger row states scoring regime {stated!r}, which is not a regime: {bad}"
+        ) from bad
+
+
+def gate_render(row: dict, colormap: str, cyclic: set[str], regime) -> Path | None:
+    """The walk's own picture of this row, where it is still the recipe's picture.
+
+    Three things have to hold, and any of them failing means re-rendering rather
+    than refusing: the row names an image, the digest it recorded still matches
+    what the recipe produces today, and the file is where the run that wrote it
+    left it. The digest is the load-bearing one — it is what tells a gate render
+    apart from a frame that sits at the same coordinates and was drawn some other
+    way, and it is why a recipe that moves costs a re-render instead of putting the
+    wrong picture in front of the head.
+    """
+    from fractal_wallpapers.discovery import walk as walk_module
+    from fractal_wallpapers.paths import rehome
+
+    name, recorded, ledger = row.get("image"), row.get("score_view"), row.get("_ledger")
+    if not (name and recorded and ledger):
+        return None
+    if view_name(row, colormap, cyclic, regime) != recorded:
+        return None
+    where = rehome(ledger) or Path(ledger)
+    picture = walk_module.views_dir(where.parent) / name
+    return picture if picture.is_file() else None
 
 
 # --------------------------------------------------------------------------- #
 # The read: what the location head says about the supply.
 # --------------------------------------------------------------------------- #
 def score(paths=None, device: str = "auto", limit: int | None = None, log=print) -> dict:
-    """Render every bound location's canonical view and score it.
+    """Read every bound location through the head, at the regime its row names.
 
-    Idempotent and resumable in both halves: a view already on disk is not
-    re-rendered, and the sidecar is **upserted per ledger** rather than rewritten
+    Idempotent and resumable in both halves: a picture already on disk is not
+    re-made, and the sidecar is **upserted per ledger** rather than rewritten
     whole. Scoring one binding replaces that binding's rows and leaves every other
     ledger's alone, so two ledgers scored in two invocations hold their union and
     a re-score of one is not a deletion of the other. Written whole, this stage
     made scoping a run a destructive act: narrowing to one harvest's ledger took
     the sidecar from 12,580 rows to 6,907 and said nothing.
+
+    **No deploy-geometry render is ever demanded for a row that was not scored at
+    one.** A new run's rows are node-regime rows and their picture is the gate
+    render the walk already wrote; only a row whose recipe has moved out from
+    under its recorded digest costs an engine call, and that one is 384×216 ss1.
 
     A `limit` pass is explicitly a prefix, so it upserts the locations it looked
     at and clears nothing — deleting the rows it declined to re-score would be a
@@ -198,17 +274,17 @@ def score(paths=None, device: str = "auto", limit: int | None = None, log=print)
 
     colormap = canonical_map()
     cyclic = _cyclic_maps()
-    directory = view_dir()
-    directory.mkdir(parents=True, exist_ok=True)
 
-    made = 0
-    pictures = []
+    tally: dict[str, int] = {}
+    pictures: list[Path] = []
+    regimes: list[str] = []
     for index, row in enumerate(rows, start=1):
-        output, fresh = location_view.render_view(row, colormap, cyclic, directory)
-        made += int(fresh)
-        if fresh and made % 25 == 0:
-            log(f"{index}/{len(rows)} views rendered ({made} new)")
-        pictures.append(output)
+        picture, how, spelled = _picture_for(row, colormap, cyclic)
+        tally[how] = tally.get(how, 0) + 1
+        pictures.append(picture)
+        regimes.append(spelled)
+        if how == RENDERED and tally[RENDERED] % 25 == 0:
+            log(f"{index}/{len(rows)} read ({tally[RENDERED]} views rendered)")
 
     model, config, where = scoring.load(ship.shipped_path("location"), device)
     log(f"scoring {len(pictures)} locations through the shipped location head on {where}")
@@ -219,7 +295,9 @@ def score(paths=None, device: str = "auto", limit: int | None = None, log=print)
 
     stamp = floors.live_stamp("location")
     minted = []
-    for row, picture, probability in zip(rows, pictures, probabilities, strict=True):
+    for row, picture, spelled, probability in zip(
+        rows, pictures, regimes, probabilities, strict=True
+    ):
         record = {
             "schema": SCHEMA,
             "head": "location",
@@ -231,7 +309,11 @@ def score(paths=None, device: str = "auto", limit: int | None = None, log=print)
             "family": row["family"],
             "viewport": row["viewport"],
             "maxiter": row.get("maxiter"),
+            # The picture, and the geometry it was drawn at. A reader that joined
+            # on the name alone would be assuming every row is a deploy-geometry
+            # one, which stopped being true the day a walk scored its own frames.
             "view": picture.name,
+            "regime": spelled,
         }
         for index in range(classes - 1):
             record[f"p_ge{index + 2}"] = float(probability[index])
@@ -248,13 +330,39 @@ def score(paths=None, device: str = "auto", limit: int | None = None, log=print)
         "head": "location",
         "head_sha256": stamp,
         "gate_survivors": len(rows),
-        "views_rendered": made,
-        "views_reused": len(rows) - made,
+        # Three ways a picture was come by, not two: the walk's own gate render,
+        # a view already cached at that regime, and one this pass drew.
+        "pictures": {name: tally.get(name, 0) for name in (GATE, CACHED, RENDERED)},
+        "views_rendered": tally.get(RENDERED, 0),
+        "views_reused": len(rows) - tally.get(RENDERED, 0),
+        "by_regime": dict(sorted(Counter(regimes).items())),
         "view": location_view.summary(colormap),
         "union": diagnostics,
         "sidecar": upsert,
         "wrote": str(path),
     }
+
+
+def _picture_for(row: dict, colormap: str, cyclic: set[str]) -> tuple[Path, str, str]:
+    """`(picture, how, regime)` — the picture this row's score is read off.
+
+    The regime is the row's own. A row that names none was scored at the deploy
+    geometry and reads its cached view there; a row that names the node regime
+    reads the gate render the walk already made, and pays an engine call only when
+    that picture is gone or is no longer what the recipe describes.
+    """
+    from fractal_wallpapers.models import tiles as tile_module
+
+    regime = regime_of(row)
+    spelled = (regime or tile_module.CANONICAL_REGIME).spelled
+    if regime is not None:
+        picture = gate_render(row, colormap, cyclic, regime)
+        if picture is not None:
+            return picture, GATE, spelled
+    directory = view_dir(regime)
+    directory.mkdir(parents=True, exist_ok=True)
+    picture, fresh = location_view.render_view(row, colormap, cyclic, directory, regime)
+    return picture, (RENDERED if fresh else CACHED), spelled
 
 
 def _upsert_scores(minted: list[dict], scoped) -> tuple[Path, dict]:
@@ -493,6 +601,9 @@ def slots(partitions, n: int, guarantees=(), caps: dict | None = None) -> dict:
 
 
 __all__ = [
+    "CACHED",
+    "GATE",
+    "RENDERED",
     "SCHEMA",
     "VIEW_CURVE",
     "VIEW_MODE",
@@ -502,10 +613,12 @@ __all__ = [
     "canonical_map",
     "emit_caps",
     "funnel_line",
+    "gate_render",
     "gate_survivors",
     "guaranteed",
     "rank_key",
     "ranked",
+    "regime_of",
     "read_scores",
     "score",
     "scores_path",

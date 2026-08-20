@@ -104,6 +104,18 @@ must later either believe or delete, and deleting is how a head flip once took a
 intake from about fourteen hundred locations to sixteen. Here a flip is a
 re-score, and a stale score costs *rank quality* rather than a row.
 
+**A row is re-scored at the regime it was scored at.** The head reads three
+trained geometries and one scale acts across all of them, but the *picture* is not
+one picture: a walk now scores its own 384x216 ss1 gate render and stamps the
+regime and the recipe's digest onto every row it writes. `curate score` reads each
+row at the regime the row names — the walk's own picture where the digest still
+describes it, a 384x216 ss1 re-render (about 0.09 s) where it does not — and
+**never demands a deploy-geometry render for a row that was never scored at one**.
+The standing stock is untouched: its rows name no regime, they were read at the
+deploy geometry, and their pictures are the ones already in
+`artifacts/location_views`, which is now a read-only record rather than a growing
+cache.
+
 **The release budgets the colorize, never the other way round.** A judge's attempt
 budget is a multiple of the slots it is asked to fill, and when the two cannot
 both be afforded they scale down together. Volume that falls out of a spread over

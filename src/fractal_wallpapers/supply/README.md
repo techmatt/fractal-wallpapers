@@ -72,28 +72,30 @@ saturates at the intent, so a floored partition's claim is the same at the first
 batch and the three hundredth. Unspent floor time is carried in minutes, and
 comes due at batch twenty at a 5% floor — whatever a batch costs.
 
-**A harvest's clock is mostly the steering view, not the walk.** Profiled over
-three real batches: rendering the location head's canonical view at 640×360 ss2 is
-56% of a batch's seconds, the engine's own expansion rung 33%, and reading the batch
-through the head 11%; everything Python does around them is under 1%. A
-135-active-minute production harvest agrees — 6 974 views for 6 096 s, three
-quarters of its own active clock, with none of them reused. Anything that changes
-what a steering view costs moves the harvest's throughput and almost nothing else
-does. A third production harvest agrees at 58.7% of a whole run's clean wall clock,
-harvest and curation together.
+**A harvest's clock used to be mostly the steering view, and that line is gone.**
+The head reads its verdict off the gate render `expand` already wrote, which is
+byte-identical to the same location's tile at the node regime, so a harvest draws
+no picture for scoring at all. What that removed is the line every earlier profile
+here named first: rendering the deploy-geometry view was 56% of a batch's seconds
+over three profiled batches, three quarters of a 135-active-minute harvest's active
+clock (6,974 views, 6,096 s, none reused), and **58.7% of a whole production run's
+clean wall** — 8,810 s of run9's harvest leg. A harvest's clock is now the engine's
+own expansion rung and almost nothing else, and inside that rung the first place to
+look is the focus finder rather than the escape-time iteration.
 
-**`--score-workers` is not that change.** The engine's own thread pool already
-saturates a twelve-core machine on a single view, so fanning views out over worker
-processes re-slices the same silicon rather than adding any. Measured on an idle
-machine over the same 96 real views, wall seconds against `--score-workers 1`: two
-workers **0.88x**, four **1.01x**, six **1.02x** — and at four the same 93 s of work
-reports 348 task-seconds, a 3.74x inflation that cancels the fan-out exactly. Two is
-worse than one because `ENGINE_THREADS_PER_WORKER = 4` twice over *under*-subscribes
-the machine. Serve a harvest at one worker: same throughput, no pool spawned per
-batch, and a wall clock that needs only one number to account for. `curation.release`
-fans out for a different reason and does earn it — half a release row is
-single-threaded Python that leaves cores a sibling engine can take, worth 3.19x over
-four workers on the same machine.
+**`--score-workers` is a flag with almost nothing left to do.** It never paid even
+when there were views to fan out: the engine's own thread pool already saturates a
+twelve-core machine on a single view, so worker processes re-slice the same silicon
+rather than adding any. Measured on an idle machine over the same 96 real views,
+wall seconds against `--score-workers 1`: two workers **0.88x**, four **1.01x**, six
+**1.02x** — and at four the same 93 s of work reports 348 task-seconds, a 3.74x
+inflation that cancels the fan-out exactly. run9 paid that penalty for real at four
+workers: 1.73 s/view wall against 0.969 s/view serial. The flag stays because
+curation's re-score of an old ledger still renders, and because a claim that
+concurrency does not pay is worth being able to re-run. `curation.release` fans out
+for a different reason and does earn it — half a release row is single-threaded
+Python that leaves cores a sibling engine can take, worth 3.19x over four workers on
+the same machine.
 
 **A slot is not a minute.** The quota allocates the clock and hands out node
 slots, so the slot demand is the minute demand divided by what a slot has been
