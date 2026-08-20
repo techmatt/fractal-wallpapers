@@ -34,7 +34,7 @@ import json
 from pathlib import Path
 
 from fractal_wallpapers.discovery import ledger as ledger_module
-from fractal_wallpapers.paths import artifacts_root, tracked_name
+from fractal_wallpapers.paths import Tiers, tracked_name
 from fractal_wallpapers.supply import currency as money
 from fractal_wallpapers.supply.location import key_of_row
 
@@ -42,25 +42,40 @@ from fractal_wallpapers.supply.location import key_of_row
 LEDGER_NAME = "walk.jsonl"
 
 
-def ledger_root() -> Path:
-    """Where run directories accumulate."""
-    return artifacts_root()
+def ledger_dirs() -> list[Path]:
+    """Every run directory, on whichever tier it currently sits.
+
+    A walk's run directory is a top-level name of the regenerable tree, so it is
+    also the unit the storage tiers move: some are hot, some are archived, and
+    the union has to be the same population either way. Asking `Tiers` for the
+    names rather than globbing one root is what makes that true — and it is what
+    makes the union's answer independent of what anybody archived this week,
+    which is the whole point of archiving being reversible.
+    """
+    tiers = Tiers.current()
+    return [tiers.unit(name) for name in tiers.names()]
 
 
 def ledger_paths(root: Path | None = None, exclude: Path | None = None) -> list[Path]:
-    """Every walk ledger under `root`, minus one — usually this run's own.
+    """Every walk ledger under the tree, minus one — usually this run's own.
+
+    `root` narrows the search to one directory, for a caller that has one; the
+    default searches both tiers.
 
     `exclude` is resolved before comparison, because the caller's path came from a
     run directory and ours came from a directory walk: two spellings of one file
     is how a run ends up seeded with its own finds.
     """
-    root = ledger_root() if root is None else Path(root)
-    if not root.is_dir():
-        return []
+    roots = ledger_dirs() if root is None else [Path(root)]
     own = Path(exclude).resolve() if exclude is not None else None
-    return [
-        path for path in sorted(root.rglob(LEDGER_NAME)) if own is None or path.resolve() != own
-    ]
+    found = [path for here in roots if here.is_dir() for path in here.rglob(LEDGER_NAME)]
+    # Sorted by the *tracked* name, not by the absolute path. That name does not
+    # change when a run directory is archived, and the order here is not
+    # cosmetic: the union credits a location to the first ledger that admits it,
+    # so sorting by drive letter would re-attribute half the supply the day
+    # something moved tiers.
+    found.sort(key=tracked_name)
+    return [path for path in found if own is None or path.resolve() != own]
 
 
 def rows(path: Path, kind: str | None = None):
@@ -185,8 +200,8 @@ __all__ = [
     "admitted",
     "admitted_union",
     "is_admitted",
+    "ledger_dirs",
     "ledger_paths",
-    "ledger_root",
     "passes_gates",
     "rows",
 ]

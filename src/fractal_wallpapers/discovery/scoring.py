@@ -529,9 +529,9 @@ class LocationScorer:
 
 def view_dir() -> Path:
     """Where the pictures the location head is read on live. Ignored, re-derivable."""
-    from fractal_wallpapers.paths import artifacts_root
+    from fractal_wallpapers.paths import under
 
-    return artifacts_root() / "location_views"
+    return under("location_views")
 
 
 # --------------------------------------------------------------------------- #

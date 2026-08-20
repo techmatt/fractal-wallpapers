@@ -69,6 +69,7 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
+from fractal_wallpapers import storage
 from fractal_wallpapers.labeling import finished
 from fractal_wallpapers.labeling import registry as registry_module
 from fractal_wallpapers.models import dataset, head, metrics, renders, train
@@ -489,11 +490,17 @@ def run(
     run_name: str | None = None,
     log=train.say,
 ) -> dict:
-    """Train one finished-render judge, and write its checkpoints and records."""
+    """Train one finished-render judge, and write its checkpoints and records.
+
+    Refuses before it imports torch if the render cache is archived — see
+    [`fractal_wallpapers.storage.require_hot`] for why a slow read is worth a
+    refusal rather than a warning.
+    """
     import numpy
     import torch
 
     head_name = finished.head_of(head_name)
+    storage.require_hot(renders.cache_dir(head_name), what=f"training the {head_name} judge")
     recipe = recipe_for(head_name)
     if epochs is not None:
         recipe["epochs"] = int(epochs)

@@ -72,11 +72,13 @@ def test_a_relative_output_lands_under_the_repository() -> None:
     """Never the shell's cwd — and, for the ignored tree, never the wrong disk.
 
     `artifacts/` is a setting, so this default follows the tree wherever it has
-    been put rather than resolving under the checkout unconditionally.
+    been put rather than resolving under the checkout unconditionally. Output is
+    hot by definition, so the top-level name of a picture nothing has made yet
+    resolves to the tier writes land on.
     """
     resolved = cli.resolve_output("artifacts/render.png")
     assert resolved.is_absolute()
-    assert resolved.parent == paths.artifacts_root()
+    assert resolved.parent == paths.hot_root()
 
     other = cli.resolve_output("data/anchors.jsonl")
     assert other == cli.repo_root() / "data" / "anchors.jsonl"
