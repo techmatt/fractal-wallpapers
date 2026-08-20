@@ -97,6 +97,12 @@ Two files, two names, in one directory on purpose: the alternative is a candidat
 living somewhere a reader has to be told about, which is how the wrong weights
 get served.
 
+Adopting one is [`promote`], and it **copies** rather than re-casting: a `torch`
+archive carries its own file name inside itself, and `torch.save` is not
+byte-reproducible run to run in any case, so re-halving the judged checkpoint
+under the shipped name produces a different sha — a file no pre-registered read
+has ever seen. The bytes that were judged are the bytes that ship.
+
 ## The release itself is not this step's job
 
 `fetch-weights` downloads by tag and asset name and verifies the sha256 before
@@ -607,6 +613,88 @@ def entry(name: str = "location", tag: str = TAG, run: str | None = None) -> dic
     }
 
 
+def write_manifest(name: str, row: dict) -> dict:
+    """Put one head's row into the tracked manifest, and keep the file sorted.
+
+    Sorted, so the order of a tracked file is a fact about the heads rather than
+    about which one happened to be staged last.
+    """
+    manifest = json.loads(manifest_path().read_text(encoding="utf-8"))
+    manifest["heads"] = dict(sorted({**manifest.get("heads", {}), name: row}.items()))
+    manifest_path().write_text(
+        json.dumps(manifest, indent=2) + "\n", encoding="utf-8", newline="\n"
+    )
+    return manifest
+
+
+def promote(name: str, tag: str, run: str | None = None) -> dict:
+    """Adopt the staged candidate as this head's shipped artifact: **a copy**.
+
+    Not a re-cast, and the difference is not a shortcut. A torch archive carries
+    its own file name inside itself, so halving one checkpoint into two names
+    gives two different files — and `torch.save` is not byte-reproducible across
+    runs even into the same name: re-casting the *retired* head's own checkpoint
+    here produced `f1bb53c2…` where the manifest had recorded `4b60deb9…`.
+
+    Both facts point the same way. The artifact a pre-registered read judged is a
+    specific sequence of bytes, and the only way to serve exactly what was judged
+    is to move those bytes rather than to make new ones that ought to be the
+    same. So this copies, re-hashes what landed, and refuses unless the copy is
+    the file the candidate record names.
+
+    A corollary worth saying out loud: a retired artifact is **not** recoverable
+    from its checkpoint. Its weights are; its hash is not. What holds the retired
+    bytes is the release asset that was published under the old tag, which is why
+    the old manifest row lives on in git history rather than being edited away.
+
+    Neither argument has a default. A flip names the head it is flipping and the
+    release the asset will live in, and a promotion that quietly reused the last
+    tag would publish one release's bytes under another's name.
+    """
+    import shutil
+
+    candidate = candidate_path(name)
+    if not candidate.is_file():
+        raise ValueError(f"{candidate} is not on this machine: there is nothing to promote.")
+    record_path = candidate_record_path(name)
+    if not record_path.is_file():
+        raise ValueError(
+            f"{record_path} is missing, so nothing says what {candidate.name} is or which "
+            f"read judged it. A candidate nobody recorded is not a candidate."
+        )
+    record = json.loads(record_path.read_text(encoding="utf-8"))
+    digest = sha256_of(candidate)
+    if digest != record["sha256"]:
+        raise ValueError(
+            f"{candidate.name} hashes to {digest[:12]} and {record_path.name} records "
+            f"{record['sha256'][:12]}. The file on disk is not the one that was judged."
+        )
+
+    shipped = shipped_path(name)
+    shipped.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(candidate, shipped)
+    landed = sha256_of(shipped)
+    if landed != digest:
+        raise ValueError(
+            f"{shipped.name} hashes to {landed[:12]} after the copy and the candidate is "
+            f"{digest[:12]}. The copy did not land whole; nothing has been written to the "
+            f"manifest."
+        )
+
+    row = entry(name, tag, run or record.get("run"))
+    write_manifest(name, row)
+    return {
+        "head": name,
+        "promoted": {"from": candidate.name, "to": shipped.name, "sha256": landed},
+        "manifest_entry": row,
+        "manifest": str(manifest_path()),
+        "next": (
+            f"create the GitHub release {tag} and upload {row['asset']}; "
+            "`fractal-wallpapers fetch-weights` will verify the sha256 on the way down"
+        ),
+    }
+
+
 def stage(
     name: str = "location",
     which: str = "best",
@@ -629,14 +717,7 @@ def stage(
         )
 
     row = entry(name, tag, run)
-    manifest = json.loads(manifest_path().read_text(encoding="utf-8"))
-    heads = {**manifest.get("heads", {}), name: row}
-    # Sorted, so the order of a tracked file is a fact about the heads rather
-    # than about which one happened to be staged last.
-    manifest["heads"] = dict(sorted(heads.items()))
-    manifest_path().write_text(
-        json.dumps(manifest, indent=2) + "\n", encoding="utf-8", newline="\n"
-    )
+    write_manifest(name, row)
     return {
         "head": name,
         "conversion": conversion,

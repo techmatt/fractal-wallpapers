@@ -1,0 +1,68 @@
+{
+  "schema": 1,
+  "head": "location",
+  "date": "2026-08-20",
+  "flipped": {
+    "retired": {
+      "sha256": "4b60deb935314cf73c53d78946c9910a265f878ab7dc36680f6ec1a581b030d3",
+      "run": "seed0",
+      "tag": "weights-v1",
+      "keeps": "its heights, as this record's prior, and its reads of the reference pool as the shares those heights were restated to hold. Its bytes are the asset published under its own tag and nothing else: a re-cast of its checkpoint reproduces the weights but not the hash"
+    },
+    "serving": {
+      "sha256": "f8f805119a0ff9612b2076f0edafdb4125f0330b3fd48ace71336f93664851ba",
+      "run": "seed0_all_regimes",
+      "asset": "location.fp16.pt",
+      "tag": "weights-v2"
+    }
+  },
+  "judged_by": [
+    {
+      "record": "models/location/regime_acceptance.json",
+      "population": "the evaluation split",
+      "verdict": "FAIL"
+    },
+    {
+      "record": "models/location/flip_acceptance.json",
+      "population": "production stock, at the acting gates",
+      "verdict": "PASS"
+    }
+  ],
+  "priced_by": "models/location/restatement.json",
+  "cuts": {
+    "junk floor": {
+      "value": 0.1,
+      "prior": 0.2,
+      "restated_against": "f8f805119a0ff9612b2076f0edafdb4125f0330b3fd48ace71336f93664851ba",
+      "restated_on": "2026-08-20",
+      "reference_pool": "the 28,072-location curation sidecar (artifacts/curation/supply_scores.jsonl), every row read through the canonical 640x360ss2 view its own stored score was taken off",
+      "share": 0.5408235964662297,
+      "prior_share": 0.5400755200911941
+    },
+    "good floor": {
+      "value": 0.385,
+      "prior": 0.5,
+      "restated_against": "f8f805119a0ff9612b2076f0edafdb4125f0330b3fd48ace71336f93664851ba",
+      "restated_on": "2026-08-20",
+      "reference_pool": "the 28,072-location curation sidecar (artifacts/curation/supply_scores.jsonl), every row read through the canonical 640x360ss2 view its own stored score was taken off",
+      "share": 0.375071245369051,
+      "prior_share": 0.3743231689940154
+    },
+    "great cut": {
+      "value": 0.105,
+      "prior": 0.5,
+      "restated_against": "f8f805119a0ff9612b2076f0edafdb4125f0330b3fd48ace71336f93664851ba",
+      "restated_on": "2026-08-20",
+      "reference_pool": "the 28,072-location curation sidecar (artifacts/curation/supply_scores.jsonl), every row read through the canonical 640x360ss2 view its own stored score was taken off",
+      "share": 0.10907666001709888,
+      "prior_share": 0.10807922485038472
+    }
+  },
+  "half_precision_agreement": {
+    "rule": "at most 1% of rows change their decoded tier",
+    "changed": 3,
+    "share": 0.0029940119760479044,
+    "held": true
+  },
+  "candidate_record": "models/location/candidate.json"
+}

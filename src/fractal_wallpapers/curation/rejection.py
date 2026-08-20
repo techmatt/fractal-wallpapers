@@ -75,7 +75,7 @@ def below_acting_bar(rows) -> list[tuple[dict, floors.Bar]]:
         if head is None or score is None:
             continue
         bar = floors.release_bar(head)
-        if bar is not None and not bar.seats(score):
+        if bar is not None and not bar.acts(score):
             out.append((row, bar))
     return out
 

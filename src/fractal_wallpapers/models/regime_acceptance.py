@@ -72,7 +72,7 @@ SCHEMA = 1
 HEAD = "location"
 
 #: The shipped runs the candidate is measured against, and the one that serves.
-#: `fetch-weights` resolves `location.fp16.pt` from `seed0`; the other two exist
+#: `location.fp16.pt` was `seed0` while this bar was read; the other two exist
 #: and are reported, because a difference smaller than the incumbent's own seed
 #: spread is not a difference about the candidate.
 INCUMBENT_RUNS = ("seed0", "seed1", "seed2")

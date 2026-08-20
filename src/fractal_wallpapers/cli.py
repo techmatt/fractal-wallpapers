@@ -2971,6 +2971,40 @@ def flip_read(args: argparse.Namespace) -> int:
 STAGING_READS = {"split": "regime_acceptance", "stock": "regime_flips"}
 
 
+def regime_restate(args: argparse.Namespace) -> int:
+    """Restate every cut the candidate's scale moves, against a fixed pool."""
+    from fractal_wallpapers.models import adoption
+
+    path = adoption.restatement_path(args.head)
+    if path.is_file() and not args.force:
+        print(f"{path} already exists, and the population it was measured against is the")
+        print("shipped head's read of the sidecar — which a re-score replaces. Re-measuring")
+        print("after a flip restates the candidate against itself.")
+        return 1
+    try:
+        record = adoption.restate(head=args.head, device=args.device)
+    except adoption.AdoptionError as refusal:
+        print(refusal)
+        return 1
+    write_tracked_json(path, record)
+    print(json.dumps(record, indent=2))
+    return 0
+
+
+def regime_adopt(args: argparse.Namespace) -> int:
+    """Flip the shipped head to the staged candidate, at the restated cuts."""
+    from fractal_wallpapers.models import adoption
+
+    try:
+        record = adoption.adopt(head=args.head, tag=args.tag or adoption.TAG)
+    except adoption.AdoptionError as refusal:
+        print(refusal)
+        return 1
+    write_tracked_json(adoption.adoption_path(args.head), record)
+    print(json.dumps(record, indent=2))
+    return 0
+
+
 def regime_stage(args: argparse.Namespace) -> int:
     """Halve, verify and hash the winning seed — beside the shipped head."""
     import importlib
@@ -3014,8 +3048,10 @@ def regime_commands(subcommands) -> None:
             "stage the winner beside the shipped head. There are two bars and two "
             "populations: the first is read on the evaluation split, where most rows agree "
             "trivially, and the flip- steps re-ask the same question on production stock at "
-            "the gates the supply engine acts on. Nothing here adopts anything: a location "
-            "retrain moves the scale every floor is calibrated against."
+            "the gates the supply engine acts on. Adopting the winner is the last two "
+            "steps and is priced rather than assumed: a location retrain moves the scale "
+            "every floor is calibrated against, so `restate` measures where those floors "
+            "land on the new scale and `adopt` flips what serves."
         ),
     )
     steps = studying.add_subparsers(dest="step", required=True)
@@ -3143,6 +3179,44 @@ def regime_commands(subcommands) -> None:
         )
     )
     judging_flips.set_defaults(handler=flip_read)
+
+    restating = with_head(
+        steps.add_parser(
+            "restate",
+            help="restate every cut the candidate's scale moves, before anything flips",
+            description=(
+                "The junk floor, the good floor and the great cut are points on the shipped "
+                "head's probability scale and say nothing on another head's. Each is "
+                "restated as the candidate score passing the SAME FRACTION of a fixed "
+                "reference pool — the whole curation sidecar, read through the pictures its "
+                "own scores were taken off. Refuses once the flip has happened: the "
+                "fractions are the retired head's reads, and a re-score replaces them."
+            ),
+        )
+    )
+    restating.add_argument("--device", default="auto")
+    restating.add_argument(
+        "--force", action="store_true", help="overwrite a restatement nothing has flipped against"
+    )
+    restating.set_defaults(handler=regime_restate)
+
+    adopting = with_head(
+        steps.add_parser(
+            "adopt",
+            help="flip the shipped head to the staged candidate, at the restated cuts",
+            description=(
+                "Ships the candidate under the head's own asset name and checks that what "
+                "landed is the artifact the two bars judged. Refuses unless the restatement "
+                "is already recorded AND the modules that own the cuts already declare it — "
+                "which is the refusal the cuts themselves would make on their first call, "
+                "taken one step earlier."
+            ),
+        )
+    )
+    adopting.add_argument(
+        "--tag", default=None, help="the release tag to name (default: the head's next one)"
+    )
+    adopting.set_defaults(handler=regime_adopt)
 
 
 def coloring_commands(subcommands) -> None:

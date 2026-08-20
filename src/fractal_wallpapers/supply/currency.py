@@ -33,17 +33,106 @@ from contributing zero and is counted as one.
 
 from __future__ import annotations
 
+from fractal_wallpapers.cuts import Bar, Restatement
+
 #: What one find of each class is worth. A class 4 is the unit.
 CLASS_WEIGHT = {4: 1.0, 3: 0.1}
 
-#: A scored frame is a keeper at or above this. The one policy cut on the run
-#: side: it decides what a walk *keeps*, so moving it moves the supply.
-GOOD_FLOOR = 0.50
+#: The pool both cuts below were volume-matched over at the 2026-08-20 location
+#: flip. The same population `curation.floors` restated the junk floor against,
+#: because three cuts on one head's scale restated over three different pools
+#: would be three different claims about what a flip cost.
+REFERENCE_POOL = (
+    "the 28,072-location curation sidecar (artifacts/curation/supply_scores.jsonl), "
+    "every row read through the canonical 640x360ss2 view its own stored score was "
+    "taken off"
+)
 
-#: A keeper is *great* at or above this on the probability of the top class. A
-#: different kind of number from the floor — a head's own natural rank cutpoint,
-#: never calibrated per family — and it decides only what a frame is called.
-GREAT_CUT = 0.50
+#: **The keeper floor**, and the reading that put it here. The one policy cut on
+#: the run side: it decides what a walk *keeps*, so moving it moves the supply.
+#:
+#: It stood at `0.50` for the whole life of the retired head — the midpoint of a
+#: probability, chosen as a height rather than measured. The regime-robust
+#: retrain moved every probability under it, so the number was restated the only
+#: way a supply cut can be restated without a fresh labelling: by holding the
+#: **volume** fixed. What "worth keeping" means was not re-derived and is not
+#: claimed to have been; what was held is how much of the standing supply the cut
+#: keeps.
+GOOD_FLOOR_RESTATED = Restatement(
+    value=0.385,
+    head_sha256="f8f805119a0ff9612b2076f0edafdb4125f0330b3fd48ace71336f93664851ba",
+    method=(
+        "volume matched on a fixed reference pool. The retired head's 0.50 passed 10,508 of "
+        "28,072 canonical reads (37.43%); this is the candidate score that passes that same "
+        "count — the 10,508th largest candidate read, 0.387151 — rounded DOWN to the next "
+        "0.005, because a floor rounded up removes supply the cut it restates did not. "
+        "Realized 10,529 passing (37.51%). NOT a calibration: no label was read here."
+    ),
+    reference_pool=REFERENCE_POOL,
+    date="2026-08-20",
+)
+
+#: A scored frame is a keeper at or above this.
+GOOD_FLOOR = GOOD_FLOOR_RESTATED.value
+
+#: **The great cut**, on the probability of the top class, and it decides only
+#: what a frame is *called* — a class 4 against a class 3, which the currency
+#: weights ten to one.
+#:
+#: This one used to be a different kind of number from the floor: the head's own
+#: natural rank cutpoint, 0.50, the midpoint of a scale, never calibrated per
+#: family. It cannot be that any more and still be the same cut. The retrained
+#: head puts far less mass at the top class, so its midpoint calls almost nothing
+#: a 4, and a currency whose class-4 count collapsed at a head flip would have
+#: re-priced every partition's deficit without a single new judgement. So it is
+#: volume-matched like the two floors, and it has stopped claiming to be a
+#: natural cutpoint: it is the height at which this head calls as many frames
+#: great as the last one did. Still never per-family.
+GREAT_CUT_RESTATED = Restatement(
+    value=0.105,
+    head_sha256="f8f805119a0ff9612b2076f0edafdb4125f0330b3fd48ace71336f93664851ba",
+    method=(
+        "volume matched on a fixed reference pool. The retired head's 0.50 on P(>=4) called "
+        "3,034 of 28,072 canonical reads great (10.81%); this is the candidate score that "
+        "calls that same count great — the 3,034th largest candidate P(>=4), 0.107595 — "
+        "rounded DOWN to the next 0.005. Realized 3,062 (10.91%). The absolute height is low "
+        "because the retrained head's top-class mass is low; it is a rank statement about "
+        "this head and not a claim that these frames are 0.105-probable fours."
+    ),
+    reference_pool=REFERENCE_POOL,
+    date="2026-08-20",
+)
+
+#: A keeper is *great* at or above this on the probability of the top class.
+GREAT_CUT = GREAT_CUT_RESTATED.value
+
+
+def good_floor_cut() -> Bar:
+    """The keeper floor as the acting cut it is, stamped with the head it was read on.
+
+    Built at call time and stamped with the sha the height was **measured** on
+    rather than with whatever is shipped now, so the next location flip refuses
+    here on its first call instead of admitting a different share of the supply
+    under the same float.
+    """
+    return Bar(
+        name="good_floor",
+        value=float(GOOD_FLOOR_RESTATED.value),
+        head="location",
+        stamp=GOOD_FLOOR_RESTATED.head_sha256,
+        basis=f"the keeper cut of the supply engine's currency: {GOOD_FLOOR_RESTATED}",
+    )
+
+
+def great_cut() -> Bar:
+    """The great cut, stamped the same way and for the same reason."""
+    return Bar(
+        name="great_cut",
+        value=float(GREAT_CUT_RESTATED.value),
+        head="location",
+        stamp=GREAT_CUT_RESTATED.head_sha256,
+        basis=f"what separates a class 4 from a class 3 in the currency: {GREAT_CUT_RESTATED}",
+    )
 
 
 def passes_good_floor(score) -> bool:
@@ -54,7 +143,7 @@ def passes_good_floor(score) -> bool:
     class, which is what makes moving the floor a one-line change instead of a
     re-score of every ledger ever written.
     """
-    return score is not None and float(score) >= GOOD_FLOOR
+    return good_floor_cut().acts(score)
 
 
 def good_class(score, great=None) -> int | None:
@@ -70,7 +159,7 @@ def good_class(score, great=None) -> int | None:
     """
     if not passes_good_floor(score):
         return None
-    return 4 if (great is not None and float(great) >= GREAT_CUT) else 3
+    return 4 if (great is not None and great_cut().acts(great)) else 3
 
 
 def units_of(cls) -> float:
@@ -86,9 +175,14 @@ def currency_of(counts: dict) -> float:
 __all__ = [
     "CLASS_WEIGHT",
     "GOOD_FLOOR",
+    "GOOD_FLOOR_RESTATED",
     "GREAT_CUT",
+    "GREAT_CUT_RESTATED",
+    "REFERENCE_POOL",
     "currency_of",
     "good_class",
+    "good_floor_cut",
+    "great_cut",
     "passes_good_floor",
     "units_of",
 ]

@@ -171,7 +171,7 @@ def select(
                 break
             group = entry["group"]
             skipped = None
-            if bar is not None and not bar.seats(entry["score"]):
+            if bar is not None and not bar.acts(entry["score"]):
                 # Below the bar is not "beaten by a better row": it is not
                 # eligible for a slot at all, and the pool is score-ordered, so
                 # nothing under it is either. Logged one row each anyway, because

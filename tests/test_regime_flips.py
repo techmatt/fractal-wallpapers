@@ -46,6 +46,23 @@ def stock(count: int, partition: str = "mandelbrot", offset: int = 0) -> list[di
     return rows
 
 
+#: A read that clears every acting gate, and one that clears none of them.
+#:
+#: These used to be 0.9 and 0.1, and 0.1 stopped being "below every gate" on
+#: 2026-08-20, when the location flip restated the junk floor to 0.100. A test
+#: that writes a probability meaning *this side of the cut* has to sit far enough
+#: outside the cuts that a restatement cannot land between it and them —
+#: `test_the_two_reads_this_file_is_written_in_sit_outside_every_gate` is what
+#: keeps that true rather than the comment.
+ABOVE, BELOW = 0.99, 0.0
+
+
+def test_the_two_reads_this_file_is_written_in_sit_outside_every_gate() -> None:
+    """Every fixture below means "passes" or "fails" — at all three cuts at once."""
+    for gate in regime_flips.gates():
+        assert BELOW < gate["edge"] <= ABOVE, f"{gate['gate']} has moved between the two"
+
+
 def read_row(key: str, partition: str, reads: dict, band: int = 0) -> dict:
     return {
         "schema": regime_flips.SCHEMA,
@@ -150,9 +167,13 @@ def test_a_flip_is_symmetric_and_pools_as_three_decisions_a_location(tmp_path) -
     names = [regime_flips.regime_acceptance.spelled(r) for r in tile_module.BUILT_REGIMES]
     rows = []
     # Turns off at both cheap regimes, at all three gates.
-    rows.append(read_row("a", "mandelbrot", {"seed0": flat(0.9, 0.1), **candidates(0.9, 0.9)}))
+    rows.append(
+        read_row("a", "mandelbrot", {"seed0": flat(ABOVE, BELOW), **candidates(ABOVE, ABOVE)})
+    )
     # Turns on at both cheap regimes, at all three gates.
-    rows.append(read_row("b", "mandelbrot", {"seed0": flat(0.1, 0.9), **candidates(0.1, 0.1)}))
+    rows.append(
+        read_row("b", "mandelbrot", {"seed0": flat(BELOW, ABOVE), **candidates(BELOW, BELOW)})
+    )
     path = tmp_path / "reads.jsonl"
     path.write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8", newline="\n")
     read = regime_flips.read_reads(path)
@@ -171,7 +192,9 @@ def test_a_rehearsal_cannot_be_judged_as_if_it_were_the_study(tmp_path, monkeypa
     monkeypatch.setattr(regime_flips, "prereg_path", lambda head=regime_flips.HEAD: prereg)
     reads = tmp_path / "reads.jsonl"
     reads.write_text(
-        json.dumps(read_row("a", "mandelbrot", {"seed0": flat(0.9, 0.1), **candidates(0.9, 0.9)}))
+        json.dumps(
+            read_row("a", "mandelbrot", {"seed0": flat(ABOVE, BELOW), **candidates(ABOVE, ABOVE)})
+        )
         + "\n",
         encoding="utf-8",
         newline="\n",
@@ -192,9 +215,9 @@ def test_the_read_gates_on_both_arms_and_names_the_cell_that_failed(tmp_path, mo
     for index in range(40):
         # The incumbent flips at every gate on the first thirty; the candidate on
         # none of them. A clean improvement everywhere.
-        incumbent = flat(0.9, 0.1) if index < 30 else flat(0.9, 0.9)
+        incumbent = flat(ABOVE, BELOW) if index < 30 else flat(ABOVE, ABOVE)
         rows.append(
-            read_row(f"row{index}", "mandelbrot", {"seed0": incumbent, **candidates(0.9, 0.9)})
+            read_row(f"row{index}", "mandelbrot", {"seed0": incumbent, **candidates(ABOVE, ABOVE)})
         )
     reads = tmp_path / "reads.jsonl"
     reads.write_text(
@@ -211,12 +234,12 @@ def test_the_read_gates_on_both_arms_and_names_the_cell_that_failed(tmp_path, mo
     # Now hand the candidate the flips instead. Same numbers, other direction.
     flipped = []
     for index in range(40):
-        cheap = 0.1 if index < 30 else 0.9
+        cheap = BELOW if index < 30 else ABOVE
         flipped.append(
             read_row(
                 f"row{index}",
                 "mandelbrot",
-                {"seed0": flat(0.9, 0.9), **candidates(0.9, cheap)},
+                {"seed0": flat(ABOVE, ABOVE), **candidates(0.9, cheap)},
             )
         )
     reads.write_text(

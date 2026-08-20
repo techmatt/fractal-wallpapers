@@ -1,0 +1,93 @@
+{
+  "schema": 1,
+  "head": "location",
+  "date": "2026-08-20",
+  "priced": "the flip of the shipped location head to the regime-robust candidate",
+  "incumbent": {
+    "artifact": "location.fp16.pt",
+    "sha256": "4b60deb935314cf73c53d78946c9910a265f878ab7dc36680f6ec1a581b030d3"
+  },
+  "candidate": {
+    "artifact": "location.candidate.fp16.pt",
+    "sha256": "f8f805119a0ff9612b2076f0edafdb4125f0330b3fd48ace71336f93664851ba",
+    "run": "seed0_all_regimes",
+    "record": "models/location/candidate.json"
+  },
+  "judged_by": [
+    {
+      "record": "models/location/regime_acceptance.json",
+      "population": "the evaluation split",
+      "verdict": "FAIL"
+    },
+    {
+      "record": "models/location/flip_acceptance.json",
+      "population": "production stock, at the acting gates",
+      "verdict": "PASS"
+    }
+  ],
+  "reference_pool": {
+    "population": "every location the curation sidecar holds an opinion about",
+    "path": "artifacts/curation/supply_scores.jsonl",
+    "locations": 28072,
+    "scored_by": "4b60deb935314cf73c53d78946c9910a265f878ab7dc36680f6ec1a581b030d3",
+    "by_ledger": {
+      "artifacts/harvest_run2/walk.jsonl": 12580,
+      "artifacts/harvest_run3/walk.jsonl": 6757,
+      "artifacts/harvest_run9/walk.jsonl": 5212,
+      "artifacts/mandelbrot_sourcing/walk.jsonl": 3523
+    },
+    "views": "the canonical 640x360ss2 view each row's own score was read off"
+  },
+  "rounding": {
+    "step": 0.005,
+    "direction": "down"
+  },
+  "holds_fixed": "volume: the share of this pool each cut passes, not what the cut means",
+  "cuts": {
+    "junk floor": {
+      "prior": 0.2,
+      "incumbent_passing": 15161,
+      "incumbent_share": 0.5400755200911941,
+      "crossing": 0.10058004806006737,
+      "value": 0.1,
+      "realized_passing": 15182,
+      "realized_share": 0.5408235964662297,
+      "share_delta": 0.0007480763750356226,
+      "field": "p_ge3",
+      "reads": "P(>=3) >= 0.2",
+      "decides": "whether the intake spends colorize compute, and whether a walk stands here",
+      "declared_in": "curation.floors.JUNK_FLOOR",
+      "method": "volume matched against the incumbent on a fixed reference pool. The prior cut P(>=3) >= 0.2 passed 15161 of 28072 (54.01%) of the pool's canonical reads under 4b60deb93531; this is the candidate score passing that same count \u2014 the 15161th largest candidate read, 0.100580 \u2014 rounded DOWN to the next 0.005 because a floor rounded up removes supply the cut it restates did not. Realized 15182 passing (54.08%). NOT a calibration: no label was read, and nothing here re-measures where a keeper starts on the new scale."
+    },
+    "good floor": {
+      "prior": 0.5,
+      "incumbent_passing": 10508,
+      "incumbent_share": 0.3743231689940154,
+      "crossing": 0.38715105208659495,
+      "value": 0.385,
+      "realized_passing": 10529,
+      "realized_share": 0.375071245369051,
+      "share_delta": 0.0007480763750356226,
+      "field": "p_ge3",
+      "reads": "P(>=3) >= 0.5",
+      "decides": "whether a find is booked as a keeper",
+      "declared_in": "supply.currency.GOOD_FLOOR",
+      "method": "volume matched against the incumbent on a fixed reference pool. The prior cut P(>=3) >= 0.5 passed 10508 of 28072 (37.43%) of the pool's canonical reads under 4b60deb93531; this is the candidate score passing that same count \u2014 the 10508th largest candidate read, 0.387151 \u2014 rounded DOWN to the next 0.005 because a floor rounded up removes supply the cut it restates did not. Realized 10529 passing (37.51%). NOT a calibration: no label was read, and nothing here re-measures where a keeper starts on the new scale."
+    },
+    "great cut": {
+      "prior": 0.5,
+      "incumbent_passing": 3034,
+      "incumbent_share": 0.10807922485038472,
+      "crossing": 0.10759491677621355,
+      "value": 0.105,
+      "realized_passing": 3062,
+      "realized_share": 0.10907666001709888,
+      "share_delta": 0.0009974351667141636,
+      "field": "p_ge4",
+      "reads": "P(>=4) >= 0.5",
+      "decides": "whether a keeper is a 4, which the currency weights ten to one",
+      "declared_in": "supply.currency.GREAT_CUT",
+      "method": "volume matched against the incumbent on a fixed reference pool. The prior cut P(>=4) >= 0.5 passed 3034 of 28072 (10.81%) of the pool's canonical reads under 4b60deb93531; this is the candidate score passing that same count \u2014 the 3034th largest candidate read, 0.107595 \u2014 rounded DOWN to the next 0.005 because a floor rounded up removes supply the cut it restates did not. Realized 3062 passing (10.91%). NOT a calibration: no label was read, and nothing here re-measures where a keeper starts on the new scale."
+    }
+  }
+}

@@ -111,7 +111,9 @@ def gates() -> tuple[dict, ...]:
 
     A gate is not restated here. `curation.floors` owns the junk floor and
     `supply.currency` owns the other two, and a bar that typed the numbers again
-    would be a fourth opinion about where they are.
+    would be a fourth opinion about where they are. Each row says which of them
+    owns it, because a head flip has to restate all three and the restatement
+    reads this list rather than assembling a fourth.
     """
     from fractal_wallpapers.curation import floors
     from fractal_wallpapers.supply import currency
@@ -123,6 +125,7 @@ def gates() -> tuple[dict, ...]:
             "edge": floors.JUNK_FLOOR,
             "reads": f"P(>=3) >= {floors.JUNK_FLOOR}",
             "decides": "whether the intake spends colorize compute, and whether a walk stands here",
+            "owner": "curation.floors.JUNK_FLOOR",
         },
         {
             "gate": "good floor",
@@ -130,6 +133,7 @@ def gates() -> tuple[dict, ...]:
             "edge": currency.GOOD_FLOOR,
             "reads": f"P(>=3) >= {currency.GOOD_FLOOR}",
             "decides": "whether a find is booked as a keeper",
+            "owner": "supply.currency.GOOD_FLOOR",
         },
         {
             "gate": "great cut",
@@ -137,6 +141,7 @@ def gates() -> tuple[dict, ...]:
             "edge": currency.GREAT_CUT,
             "reads": f"P(>=4) >= {currency.GREAT_CUT}",
             "decides": "whether a keeper is a 4, which the currency weights ten to one",
+            "owner": "supply.currency.GREAT_CUT",
         },
     )
 

@@ -6,7 +6,7 @@ import json
 
 import pytest
 
-from fractal_wallpapers.curation import intake
+from fractal_wallpapers.curation import floors, intake
 from fractal_wallpapers.discovery import ledger as ledger_module
 from fractal_wallpapers.supply.location import key_of_row
 
@@ -114,9 +114,12 @@ def test_a_partition_s_line_names_its_own_scored_denominator(ledger) -> None:
 
 def test_the_guarantee_triggers_on_the_good_floor_not_the_junk_floor(ledger) -> None:
     survivors, _ = intake.gate_survivors([ledger])
-    scores = scores_for(survivors, [0.4, 0.9, 0.05])
+    # Read off the two floors rather than typed: the heights move at a head flip
+    # and a literal that used to sit between them silently stops testing anything.
+    between = (floors.JUNK_FLOOR + floors.GOOD_FLOOR) / 2
+    scores = scores_for(survivors, [between, 0.99, 0.0])
     _, diagnostics = intake.ranked([ledger], scores)
-    # 0.4 clears the junk floor but not the good one; 0.9 clears both.
+    assert floors.passes_junk_floor(between) and not floors.passes_good_floor(between)
     assert diagnostics["good_by_partition"] == {"mandelbrot": 1}
     assert intake.guaranteed(diagnostics) == ["mandelbrot"]
 
