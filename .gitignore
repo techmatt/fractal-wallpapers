@@ -1,6 +1,7 @@
 scratch/
 artifacts/
 /labels/
+/local.toml
 models/**/*.pt
 target/
 __pycache__/

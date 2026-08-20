@@ -104,6 +104,7 @@ from fractal_wallpapers.discovery import ledger as ledger_module
 from fractal_wallpapers.discovery import nucleus, operators, pools
 from fractal_wallpapers.discovery.ledger import Ledger
 from fractal_wallpapers.discovery.scoring import NullScorer, Scorer
+from fractal_wallpapers.paths import tracked_name
 
 #: The priority an unscored node carries. Scores are compared only against each
 #: other, so the level is arbitrary and only the fact that it is shared matters.
@@ -942,7 +943,7 @@ class Walk:
             "scoring": self.scoring_record(),
             "probe": self.governor.tally(),
             "counts": dict(sorted(self.tally.items())),
-            "ledger": str(self.ledger.path),
+            "ledger": tracked_name(self.ledger.path),
         }
         self.ledger.write("summary", **summary)
         self.ledger.close()

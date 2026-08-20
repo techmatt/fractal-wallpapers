@@ -56,7 +56,7 @@ from pathlib import Path
 
 from fractal_wallpapers import engine
 from fractal_wallpapers.labeling import finished
-from fractal_wallpapers.paths import colormap_dir, repo_root
+from fractal_wallpapers.paths import artifacts_root, colormap_dir
 
 #: The schema every plan and manifest row carries.
 SCHEMA = 1
@@ -72,7 +72,7 @@ NAME_LENGTH = 16
 
 def cache_dir(head: str) -> Path:
     """Where one judge's pictures live. Ignored, and regenerable from the rows."""
-    return repo_root() / "artifacts" / "renders" / finished.head_of(head)
+    return artifacts_root() / "renders" / finished.head_of(head)
 
 
 def crop_dir(head: str) -> Path:

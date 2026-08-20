@@ -144,7 +144,10 @@ def test_one_location_in_two_ledgers_is_counted_once(tmp_path) -> None:
     machine = census.machine_stock(ALL_PARTITIONS, ledger_paths=[first, second])
     assert machine.n_admitted == 1
     assert machine.union["location_overlaps"] == 1
-    assert machine.union["overlap_sample"] == [f"{first} vs {second}"]
+    # Ledgers are named through `paths.tracked_name`, so one outside the tree is
+    # named with forward slashes rather than this platform's separator. These two
+    # are under `tmp_path`, which is neither the checkout nor the artifacts root.
+    assert machine.union["overlap_sample"] == [f"{first.as_posix()} vs {second.as_posix()}"]
     assert machine.union["same_ledger_repeats"] == 0
 
 

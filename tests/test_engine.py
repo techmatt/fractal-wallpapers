@@ -12,7 +12,7 @@ import json
 
 import pytest
 
-from fractal_wallpapers import cli, engine
+from fractal_wallpapers import cli, engine, paths
 from fractal_wallpapers.paths import anchors_file
 
 try:
@@ -69,9 +69,17 @@ def test_a_julia_render_without_its_constant_is_refused() -> None:
 
 
 def test_a_relative_output_lands_under_the_repository() -> None:
+    """Never the shell's cwd — and, for the ignored tree, never the wrong disk.
+
+    `artifacts/` is a setting, so this default follows the tree wherever it has
+    been put rather than resolving under the checkout unconditionally.
+    """
     resolved = cli.resolve_output("artifacts/render.png")
     assert resolved.is_absolute()
-    assert resolved.parent == cli.repo_root() / "artifacts"
+    assert resolved.parent == paths.artifacts_root()
+
+    other = cli.resolve_output("data/anchors.jsonl")
+    assert other == cli.repo_root() / "data" / "anchors.jsonl"
 
 
 @needs_engine

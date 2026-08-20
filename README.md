@@ -34,6 +34,34 @@ Fetch the trained judges before anything that scores:
 
 To hand a built sheet to a labeler, see [the labeling rig](src/fractal_wallpapers/labeling/README.md#serving-a-sheet-to-label).
 
+### Putting the regenerable tree on another disk
+
+Everything a run can always make again — tile caches, location views, render
+caches, the pictures a study looked at — lands under `artifacts/`, which grows to
+a hundred gigabytes or so. Everything that matters lives in the checkout instead:
+records, labels, weights, code. So the artifacts root is a setting, and moving
+the tree to another drive is one untracked file at the repository root:
+
+```toml
+# local.toml — gitignored, one machine's own business
+artifacts_root = "D:/SomeDisk/fractal-wallpapers/artifacts"
+```
+
+`FRACTAL_WALLPAPERS_ARTIFACTS_ROOT` in the environment overrides the file, for a
+one-off invocation. Set neither — which is what CI and a fresh clone do — and the
+tree is `artifacts/` under the checkout, exactly as before.
+
+**A configured root that is not there is refused, not worked around.** If the
+setting names an external disk that is unplugged, every command that needs the
+tree stops and says so. It does not fall back to the checkout: an empty tree
+there would read as a cache nobody had built yet, and the next build would spend
+hours filling the wrong drive.
+
+Records keep naming files under the tree as `artifacts/...` wherever the tree
+actually is, and are resolved back through `paths.rehome` when they are read — so
+a manifest, a ledger name or an acceptance record means the same thing on either
+disk. See [the package README](src/fractal_wallpapers/README.md).
+
 ## Where things are documented
 
 **Every directory explains itself, next to the code it explains.** There is no

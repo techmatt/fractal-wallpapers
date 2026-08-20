@@ -74,6 +74,7 @@ from pathlib import Path
 
 from fractal_wallpapers.discovery import ledger as ledger_module
 from fractal_wallpapers.discovery.walk import NEUTRAL_PRIOR, Walk, family_key
+from fractal_wallpapers.paths import tracked_name
 from fractal_wallpapers.supply import saturation as saturation_module
 from fractal_wallpapers.supply.location import key_of_row
 from fractal_wallpapers.supply.partitions import ALL_PARTITIONS, partition_of_family
@@ -432,7 +433,7 @@ class Harvest:
                 "roots": self.walk.next_root_id - 1,
                 "counts": dict(sorted(self.walk.tally.items())),
                 "probe": self.walk.governor.tally(),
-                "ledger": str(self.walk.ledger.path),
+                "ledger": tracked_name(self.walk.ledger.path),
             },
             # Which judge wrote the scores on this run's rows, and what its
             # renders cost. The census reads those scores, so a summary that did
