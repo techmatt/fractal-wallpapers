@@ -14,8 +14,8 @@
   },
   "why": "regime-robust location head: halves decision flips against its own canonical read at both cheaper regimes, on 4,000 production-stock locations, at every gate.",
   "judged_by": "models/location/flip_acceptance.json",
-  "adopted": false,
-  "not_in": "weights.json. Nothing resolves this file: `fetch-weights` reads the manifest, and the shipped location.fp16.pt is untouched",
+  "adopted": true,
+  "not_in": "nothing. This candidate was adopted: its bytes are now location.fp16.pt in the manifest under weights-v2, and location.candidate.fp16.pt has been removed rather than left as a second copy of the shipped head.",
   "conversion": {
     "source": "models/location/seed0_all_regimes/head_best.pt",
     "artifact": "models/location/location.candidate.fp16.pt",
@@ -77,5 +77,7 @@
       "of": 3006
     },
     "held": true
-  }
+  },
+  "adopted_on": "2026-08-20",
+  "priced_by": "models/location/restatement.json"
 }

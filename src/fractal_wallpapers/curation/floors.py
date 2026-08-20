@@ -40,6 +40,23 @@ quality* of the old rows instead of deleting them.
   number under a second name is exactly the six-site restatement this module was
   written to end, so it is re-exported and never restated.
 
+## Both of them, and the great cut beside them, are now restatements
+
+The junk floor was described here for most of a year as the one cut a head flip
+could leave alone — coarse, semantic, nothing measured behind it. The 2026-08-20
+location flip retired that idea. A head that reads *lower* everywhere keeps the
+sentence "the judge is confident this is junk" true at a **different volume**:
+0.20 on the retrained head would have removed a far larger share of the standing
+supply than 0.20 on the retired one, and a cut whose volume moves at a flip is a
+policy change nobody voted for. Semantic is not scale-free.
+
+So all three location cuts are [`Restatement`]s now, each measured the same way —
+the candidate score passing the same fraction of one fixed reference pool as the
+retired head's cut passed — and each stamped with the artifact it was measured
+on, so the *next* flip refuses at the first comparison. What that method fixes is
+volume and nothing else: no label was read, and where a keeper starts on the new
+scale is still the open question it was.
+
 ## The render heads: one bar acts now, the other still only annotates
 
 A render head's floor would be its own production gate — the score above which a
@@ -68,10 +85,13 @@ the sha of the head it was read against, how it was read, and when. It is still
 a `>=3` bar. The head now emits a `P(>=4)` and that cutpoint gates nothing: a four
 is a class the release path prefers where it finds one, not a second floor.
 
-That split is why there are two types here. An [`Advisory`] is computed, recorded,
-and structurally unable to remove a row — no `gate()`, no `seats()`, no `acts`
-flag beside it. A [`Bar`] is the other thing, named as the other thing, and
-[`release_cut`] hands out whichever one a head actually has.
+That split is why there are two types, and they live in [`fractal_wallpapers.cuts`]
+rather than here: three of the four acting cuts sit on the location head's scale
+and two of those belong to the supply engine, so a class imported from this module
+would make `supply` depend on `curation`. The numbers stay here; the kinds are
+shared. An [`Advisory`] is computed, recorded, and structurally unable to remove a
+row — no `gate()`, no `acts()` beside it. A [`Bar`] is the other thing, named as
+the other thing, and [`release_cut`] hands out whichever one a head actually has.
 
 Both carry the sha256 of the shipped head they read. That is this repository's
 head version: a head is a file with a hash, the manifest names it, and a cut whose
@@ -89,22 +109,62 @@ a flip. Nobody had to remember to restate this one; the check would have said so
 
 from __future__ import annotations
 
-import json
-from dataclasses import dataclass
+from fractal_wallpapers.cuts import (
+    Advisory,
+    Bar,
+    Cut,
+    HeadStampMismatch,
+    Restatement,
+    live_stamp,
+)
+from fractal_wallpapers.supply.currency import GOOD_FLOOR, GREAT_CUT
 
-from fractal_wallpapers.supply.currency import GOOD_FLOOR
+#: The reference pool all three location cuts were volume-matched over, named once
+#: because three restatements that spelled it three ways would be three claims.
+LOCATION_POOL = (
+    "the 28,072-location curation sidecar (artifacts/curation/supply_scores.jsonl), "
+    "every row read through the canonical 640x360ss2 view its own stored score was "
+    "taken off"
+)
 
-#: **The one enforcing cut curation owns.** On the location head's `P(≥3)`:
-#: below this, a candidate does not get a colorize at intake, and the walk does
-#: not expand from it.
+#: **The junk floor**, and the reading that put it here.
 #:
-#: Coarse on purpose, and read as a *semantic* statement rather than an operating
-#: point — "the judging head is confident this is junk" — which is what makes it
-#: the one cut a head flip can leave alone, and what lets two stages this far
-#: apart share it. Its cost is named rather than hidden: the exact volume it
-#: removes drifts a little at each flip. Contrast the good floor, which is a
-#: single-head cut and would have to be restated.
-JUNK_FLOOR = 0.20
+#: On the location head's `P(≥3)`, at **two** sites: at intake it says *do not
+#: spend colorize compute on this*, and in the walk it says *do not stand on
+#: this*. One number, one meaning — "the judging head is confident this is junk".
+#:
+#: It used to be `0.20` on the retired head, and it used to be described as the
+#: one cut a head flip could leave alone: coarse, semantic, no evaluation behind
+#: it. That was wrong in the only way that matters. The regime-robust retrain
+#: moved the whole `P(≥3)` scale down, and 0.20 on the new head removes a
+#: different — much larger — share of the standing supply than 0.20 on the old
+#: one did. A cut whose *volume* moves is not a cut a flip left alone; it is a
+#: policy change nobody voted for. So this one is restated with the other two,
+#: and it is still coarse and still not an operating point: what the measurement
+#: fixes is how much material it removes, and nothing else.
+JUNK_FLOOR_RESTATED = Restatement(
+    value=0.100,
+    head_sha256="f8f805119a0ff9612b2076f0edafdb4125f0330b3fd48ace71336f93664851ba",
+    method=(
+        "volume matched on a fixed reference pool. The retired head's 0.20 passed 15,161 of "
+        "28,072 canonical reads (54.01%); this is the candidate score that passes that same "
+        "count — the 15,161st largest candidate read, 0.100580 — rounded DOWN to the next "
+        "0.005, because a floor rounded up removes supply the cut it restates did not. "
+        "Realized 15,182 passing (54.08%). NOT a calibration: no label was read here and "
+        "nothing re-measured where junk ends on the new scale."
+    ),
+    reference_pool=LOCATION_POOL,
+    date="2026-08-20",
+)
+
+#: The height itself, for every reader that only wants the number.
+JUNK_FLOOR = JUNK_FLOOR_RESTATED.value
+
+#: Why the junk floor sits where it does, carried onto every row it stamps.
+JUNK_FLOOR_BASIS = (
+    "the confidently-junk end of the location head's own scale, restated by volume at the "
+    f"2026-08-20 head flip and never per-partition: {JUNK_FLOOR_RESTATED}"
+)
 
 #: A partition emits at most `floor(passing supply / this)` pictures. The rule is
 #: *show me one only if there were four to choose from*, and its whole point is
@@ -128,149 +188,6 @@ CLUSTER_CAP = 2
 #: emit cap has `4·slots ≤ 4·floor(supply/4) ≤ supply`, so the two rules agree
 #: exactly when they should. Moving either alone is a real change and reads as one.
 ATTEMPT_MULTIPLIER = 4
-
-
-class HeadStampMismatch(RuntimeError):
-    """An advisory was asked to annotate against a head that is no longer live."""
-
-
-@dataclass(frozen=True)
-class Cut:
-    """A threshold on one head's probability scale, and the artifact it reads.
-
-    The shared half of the two things below: the number, whose scale it lives on,
-    the stamp that pins that scale, and the tri-state comparison. What a cut is
-    *allowed to do* with that comparison is the subclass's whole content, and it
-    is a type rather than a flag on purpose — a switch nobody may flip is an
-    invitation, and a class that cannot be asked the question is not.
-    """
-
-    #: The name a record writes.
-    name: str
-    #: The threshold, on `head`'s own probability scale.
-    value: float
-    #: Which head produced the score this is compared against.
-    head: str
-    #: The sha256 of the shipped artifact this value was set against.
-    stamp: str
-    #: One line: where this number came from.
-    basis: str
-
-    def check(self) -> None:
-        """Raise unless the live shipped head is the one this value was set against."""
-        live = live_stamp(self.head)
-        if live != self.stamp:
-            raise HeadStampMismatch(
-                f"the {self.name!r} cut ({self.value}) was set against "
-                f"{self.head} sha256 {self.stamp[:12]}, but the live artifact is "
-                f"{live[:12]}. {self.value} is a point on the first head's probability scale "
-                f"and says nothing on the second's — re-state the cut against the live "
-                f"head and move the stamp, or restore the head the record names. Refusing to "
-                f"compare."
-            )
-
-    def clears(self, score) -> bool | None:
-        """`score >= value`, after the stamp check. `None` when there is no score.
-
-        Tri-state on purpose. A render that failed is a decision with a reason and
-        no score; recording it as `False` would make a crash indistinguishable
-        from a bad wallpaper.
-        """
-        self.check()
-        return None if score is None else float(score) >= self.value
-
-
-@dataclass(frozen=True)
-class Advisory(Cut):
-    """A cut that is computed, recorded, and never allowed to remove a row.
-
-    An advisory **cannot** cut: there is no `gate()` here, no `seats()` and no
-    `acts` flag beside it. A head whose cut acts gets a [`Bar`] instead, which is
-    a different class with a different method, so the difference is visible at
-    every call site rather than hidden in a boolean.
-    """
-
-    def annotates(self, score) -> bool | None:
-        """What [`Cut.clears`] says, under the name that says it removes nothing."""
-        return self.clears(score)
-
-    def __str__(self) -> str:
-        return f"{self.name} {self.value:g} ({self.head} {self.stamp[:12]}, advisory)"
-
-
-@dataclass(frozen=True)
-class Bar(Cut):
-    """A cut that ACTS: a row below it does not take a release slot.
-
-    The only one of these is the strange head's, and it exists by Matt's review
-    verdict of 2026-08-17 rather than by a measurement — see the module docstring.
-    Its `basis` says so, and it says so on every row it stamps, because a bar that
-    reads like a measured operating point is exactly the frozen verdict this
-    module was written to avoid.
-    """
-
-    def seats(self, score) -> bool:
-        """Whether a row scoring this may take a slot.
-
-        Strict where [`Cut.clears`] is tri-state, and that is the whole difference
-        between recording a comparison and acting on one: a row with no score has
-        nothing to seat it on, so it is not seated. The record keeps the third
-        state; the seating decision cannot have one.
-        """
-        return self.clears(score) is True
-
-    def __str__(self) -> str:
-        return f"{self.name} {self.value:g} ({self.head} {self.stamp[:12]}, ACTING)"
-
-
-@dataclass(frozen=True)
-class Restatement:
-    """A bar's height, and the reading that put it there.
-
-    A [`Bar`]'s `value` is a float and a float is unreadable on its own: 0.50 and
-    0.685 are the same kind of thing only if you already know which head's scale
-    each was measured on. So the height a bar is declared at is not a bare number
-    in this module — it is this, and it travels with the sha of the head it was
-    read against, the method that read it, and the day it was read.
-
-    The sha is the load-bearing field. [`release_cut`] stamps the bar with it
-    rather than with whatever is shipped right now, so a head flip makes every
-    seating decision refuse until somebody restates the number, instead of quietly
-    comparing this head's probabilities against the last head's cutpoint.
-    """
-
-    #: The threshold, on the scale of the head named below and no other.
-    value: float
-    #: The sha256 of the artifact this height was measured against.
-    head_sha256: str
-    #: How it was measured, in enough detail to be re-run.
-    method: str
-    #: When, ISO. A restatement is an event; a bar with no date is a bar nobody
-    #: can place against the retrains around it.
-    date: str
-
-    def __str__(self) -> str:
-        return f"{self.value:g} on {self.head_sha256[:12]}, restated {self.date} — {self.method}"
-
-
-def live_stamp(head: str) -> str:
-    """The sha256 of the head that is shipped right now, read at call time.
-
-    Call time rather than import time, so a test can move the manifest and see
-    the refusal, and so a long run that outlives a re-ship reads the re-ship
-    rather than its own start-up snapshot.
-    """
-    from fractal_wallpapers.models import ship
-
-    manifest = json.loads(ship.manifest_path().read_text(encoding="utf-8"))
-    entry = (manifest.get("heads") or {}).get(head)
-    if not entry or not entry.get("sha256"):
-        raise HeadStampMismatch(
-            f"no shipped artifact is recorded for {head!r}, so nothing can say which "
-            f"probability scale a cut on it would live on. Ship the head first."
-        )
-    return str(entry["sha256"])
-
 
 #: Where a render head's advisory sits: the natural rank cutpoint of a CORN
 #: probability, which is the midpoint of the scale and not an operating point.
@@ -298,6 +215,7 @@ STRANGE_RELEASE_BAR = Restatement(
         "and the roundings go up because a bar is a floor. STILL A >=3 BAR: the head's fourth "
         "class is preferred where it appears and gates nothing."
     ),
+    reference_pool="all 3,085 labeled strange_render pictures, over 850 places",
     date="2026-08-17",
 )
 
@@ -359,7 +277,7 @@ def release_advisory(head: str) -> Advisory:
 
     Only the heads with no acting bar have one. Asking for an advisory on a head
     whose cut acts is a category error rather than a weaker reading of it, so it
-    refuses: a caller that got an object with no `seats` back would go on to seat
+    refuses: a caller that got an object with no `acts` back would go on to seat
     a row the bar had rejected.
     """
     if head in ACTING_RELEASE_BARS:
@@ -380,6 +298,23 @@ def release_advisory(head: str) -> Advisory:
     )
 
 
+def junk_floor_cut() -> Bar:
+    """The junk floor as the acting cut it is, stamped with the head it was read on.
+
+    Built at call time and stamped with [`JUNK_FLOOR_RESTATED`]'s sha rather than
+    with whatever is shipped now — the same rule the release bar follows, and for
+    the same reason: the next location flip must refuse here on its first call
+    instead of spending a colorize budget against a scale nobody restated.
+    """
+    return Bar(
+        name="junk_floor",
+        value=float(JUNK_FLOOR_RESTATED.value),
+        head="location",
+        stamp=JUNK_FLOOR_RESTATED.head_sha256,
+        basis=JUNK_FLOOR_BASIS,
+    )
+
+
 def passes_junk_floor(score) -> bool:
     """THE intake comparison. A missing score reads as not passing.
 
@@ -387,7 +322,7 @@ def passes_junk_floor(score) -> bool:
     floor is one: an unscored candidate has no verdict to spend compute on, and
     that has to be decided in one place rather than three.
     """
-    return score is not None and float(score) >= JUNK_FLOOR
+    return junk_floor_cut().acts(score)
 
 
 def passes_good_floor(score) -> bool:
@@ -395,8 +330,8 @@ def passes_good_floor(score) -> bool:
 
     Deliberately the good floor and not the junk floor. The guarantee asks *does
     this partition have anything worth keeping*, where intake only asks *is this
-    not obvious junk*; a guarantee triggered at 0.20 would seat a partition whose
-    whole supply the run itself would not call good.
+    not obvious junk*; a guarantee triggered at the junk floor would seat a
+    partition whose whole supply the run itself would not call good.
     """
     from fractal_wallpapers.supply import currency
 
@@ -410,18 +345,39 @@ def emit_cap(passing: int) -> int:
 
 def summary() -> dict:
     """Every cut, what it is on, and whether it acts. For a run's own banner."""
+    from fractal_wallpapers.supply import currency
+
     return {
         "acting": {
             "junk_floor": {
                 "value": JUNK_FLOOR,
                 "head": "location",
+                "restated_against": JUNK_FLOOR_RESTATED.head_sha256,
+                "restated_on": JUNK_FLOOR_RESTATED.date,
+                "reference_pool": JUNK_FLOOR_RESTATED.reference_pool,
+                "method": JUNK_FLOOR_RESTATED.method,
                 "where": "intake, the colorize draw; and the walk's expansion tier",
             },
             "good_floor": {
                 "value": GOOD_FLOOR,
                 "head": "location",
+                "restated_against": currency.GOOD_FLOOR_RESTATED.head_sha256,
+                "restated_on": currency.GOOD_FLOOR_RESTATED.date,
+                "reference_pool": currency.GOOD_FLOOR_RESTATED.reference_pool,
+                "method": currency.GOOD_FLOOR_RESTATED.method,
                 "where": "the slot guarantee's trigger; and the walk's booking tier",
                 "owner": "supply.currency.GOOD_FLOOR — re-exported, never restated",
+            },
+            "great_cut": {
+                "value": GREAT_CUT,
+                "head": "location",
+                "restated_against": currency.GREAT_CUT_RESTATED.head_sha256,
+                "restated_on": currency.GREAT_CUT_RESTATED.date,
+                "reference_pool": currency.GREAT_CUT_RESTATED.reference_pool,
+                "method": currency.GREAT_CUT_RESTATED.method,
+                "where": "the currency: a keeper at or above it is a class 4, weighted ten "
+                "to one against a class 3",
+                "owner": "supply.currency.GREAT_CUT — re-exported, never restated",
             },
             **{
                 f"{head}_release_bar": {
@@ -454,7 +410,11 @@ __all__ = [
     "ATTEMPT_MULTIPLIER",
     "CLUSTER_CAP",
     "GOOD_FLOOR",
+    "GREAT_CUT",
     "JUNK_FLOOR",
+    "JUNK_FLOOR_BASIS",
+    "JUNK_FLOOR_RESTATED",
+    "LOCATION_POOL",
     "RELEASE_ADVISORY",
     "STRANGE_BAR_BASIS",
     "STRANGE_RELEASE_BAR",
@@ -465,6 +425,7 @@ __all__ = [
     "HeadStampMismatch",
     "Restatement",
     "emit_cap",
+    "junk_floor_cut",
     "live_stamp",
     "passes_good_floor",
     "passes_junk_floor",

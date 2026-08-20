@@ -56,11 +56,29 @@ batch did *not* rescue is the calibrated level: the head corrected downward on
 The score is therefore a rank and never a height, and the only cuts placed on it
 are floors.
 
-**Two cuts act; everything else annotates.** `floors` owns every threshold. The
-junk floor removes a row at intake, on the location head's scale, saying no more
-than *do not spend colorize compute on this*. The **strange head's release bar**
-removes one at selection: a strange row below 0.685 is not seated, and a strange
-slot with nothing above it goes unfilled.
+**That validation measured the retired head's ranks.** It was read through
+`4b60deb9…` in 2026-08-19, and the head serving since 2026-08-20 is a different
+one that agrees with it at ρ = 0.891 over the standing supply. Reading the offer
+best-first is still what this module does; whether the *candidate's* ranks decay
+with quality as cleanly is **unmeasured**, and it stays unmeasured until a
+decision needs it — a second 150-row body is a labelling batch, not a check.
+
+**Two cuts act here; everything else annotates.** `floors` owns every threshold.
+The junk floor removes a row at intake, on the location head's scale, saying no
+more than *do not spend colorize compute on this*. The **strange head's release
+bar** removes one at selection: a strange row below 0.685 is not seated, and a
+strange slot with nothing above it goes unfilled.
+
+Both are [`Restatement`]s now, and so are the supply engine's two — the good floor
+and the great cut, which sit on the same location scale and are owned by
+`supply.currency`. A height is declared with the sha of the artifact it was
+measured on, the cut is stamped with **that** sha rather than with whatever is
+live, and a head flip therefore refuses at the first comparison instead of
+quietly deciding on a scale that no longer exists. The junk floor was the last
+holdout — described for most of a year as the one cut a flip could leave alone,
+because it is coarse and semantic rather than calibrated. It was not: at the
+2026-08-20 flip, 0.20 on the new head would have removed 2,086 more locations
+from the colorize pool than 0.20 on the old one. Semantic is not scale-free.
 
 Both render judges shipped as advisories — computed, written onto every record,
 never allowed to drop a candidate — because neither had a measured release gate

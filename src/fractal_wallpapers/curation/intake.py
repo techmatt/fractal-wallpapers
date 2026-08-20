@@ -41,8 +41,14 @@ tier 4, seven held — a tier-4 read is close to uninformative on this material.
 the score is used as a *rank* and never as a quantity: no cut here is placed by
 asking what probability means "good enough", and the two that exist are floors
 rather than operating points. Floors still act — the junk floor at intake, on
-this same head's scale, and it is a semantic statement at the confidently-junk
-end rather than a calibrated one (see [`floors`]).
+this same head's scale (see [`floors`]).
+
+**That measurement was taken on the head that has since retired.** The ρ = 0.582
+body was read through `4b60deb9…`; the head serving since 2026-08-20 agrees with
+it at ρ = 0.891 over this sidecar, which is close enough to keep ranking on and
+far enough that the number is not transferable. The candidate's own
+rank-within-offer quality is **unmeasured** and is to be re-measured only when a
+decision turns on it.
 
 ## The ledgers are bound, not defaulted
 

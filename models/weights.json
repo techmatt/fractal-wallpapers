@@ -2,13 +2,13 @@
   "schema": 1,
   "heads": {
     "location": {
-      "tag": "weights-v1",
+      "tag": "weights-v2",
       "asset": "location.fp16.pt",
-      "sha256": "4b60deb935314cf73c53d78946c9910a265f878ab7dc36680f6ec1a581b030d3",
-      "bytes": 17156858,
+      "sha256": "f8f805119a0ff9612b2076f0edafdb4125f0330b3fd48ace71336f93664851ba",
+      "bytes": 17163794,
       "precision": "fp16",
-      "run": "seed0",
-      "source_commit": "3dc28cc68ca53e850f05d54ee2c72a3cbb6dfb2b",
+      "run": "seed0_all_regimes",
+      "source_commit": "801e41e9b0d2d947cd3845c7678ac6aa5bbd961a",
       "provenance": {
         "supervision": "human verdicts",
         "corpus": "data/labels"

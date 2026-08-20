@@ -64,15 +64,15 @@ def test_an_advisory_is_tri_state_so_a_crash_is_not_a_bad_wallpaper(tmp_path, mo
 
 
 def test_an_advisory_cannot_remove_a_row() -> None:
-    """There is no gate() here, no seats() and no acts flag beside it, deliberately.
+    """There is no gate() here and no acts() beside it, deliberately.
 
     A head whose cut acts gets a Bar, which is a different class with a different
     method, so the difference is visible at the call site and not hidden in a
     boolean somebody can set.
     """
     assert not hasattr(floors.Advisory, "gate")
-    assert not hasattr(floors.Advisory, "seats")
-    assert "acts" not in floors.Advisory.__dataclass_fields__
+    assert not hasattr(floors.Advisory, "acts")
+    assert "acts" in dir(floors.Bar)
 
 
 def test_an_unshipped_head_has_no_scale_for_a_cut_to_live_on(tmp_path, monkeypatch) -> None:
@@ -90,6 +90,7 @@ def test_the_summary_says_which_cuts_act() -> None:
     assert set(summary["acting"]) == {
         "junk_floor",
         "good_floor",
+        "great_cut",
         *(f"{head}_release_bar" for head in floors.ACTING_RELEASE_BARS),
     }
     assert summary["advisory"]
@@ -146,6 +147,7 @@ def test_a_restated_bar_carries_the_scale_the_method_and_the_day() -> None:
     assert 0.0 < restated.value < 1.0
     assert len(restated.head_sha256) == 64
     assert "isotonic" in restated.method.lower()
+    assert restated.reference_pool
     assert restated.date.count("-") == 2
     assert str(restated).startswith(f"{restated.value:g} on {restated.head_sha256[:12]}")
 
@@ -166,7 +168,7 @@ def test_a_head_flip_refuses_every_seating_decision_until_the_bar_is_restated(
     manifest.write_text(json.dumps({"schema": 1, "heads": {budget.STRANGE: {"sha256": "def"}}}))
     monkeypatch.setattr(ship, "manifest_path", lambda: manifest)
     with pytest.raises(floors.HeadStampMismatch, match="re-state the cut"):
-        floors.release_cut(budget.STRANGE).seats(0.99)
+        floors.release_cut(budget.STRANGE).acts(0.99)
 
 
 def test_a_bar_seats_nothing_without_a_score_while_the_record_keeps_the_third_state(
@@ -180,9 +182,9 @@ def test_a_bar_seats_nothing_without_a_score_while_the_record_keeps_the_third_st
     monkeypatch.setattr(ship, "manifest_path", lambda: manifest)
     bar = floors.Bar("h_release", 0.5, "h", "abc", "for a test")
     assert bar.clears(None) is None
-    assert bar.seats(None) is False
-    assert bar.seats(0.4999) is False
-    assert bar.seats(0.5) is True
+    assert bar.acts(None) is False
+    assert bar.acts(0.4999) is False
+    assert bar.acts(0.5) is True
 
 
 def test_a_bar_refuses_to_seat_against_a_head_it_was_not_set_against(tmp_path, monkeypatch) -> None:
@@ -193,8 +195,77 @@ def test_a_bar_refuses_to_seat_against_a_head_it_was_not_set_against(tmp_path, m
 
     monkeypatch.setattr(ship, "manifest_path", lambda: manifest)
     bar = floors.Bar("h_release", 0.5, "h", "abc", "for a test")
-    assert bar.seats(0.9) is True
+    assert bar.acts(0.9) is True
 
     manifest.write_text(json.dumps({"schema": 1, "heads": {"h": {"sha256": "def"}}}))
     with pytest.raises(floors.HeadStampMismatch):
-        bar.seats(0.9)
+        bar.acts(0.9)
+
+
+# --------------------------------------------------------------------------- #
+# The three cuts on the location head's scale.
+# --------------------------------------------------------------------------- #
+def test_every_location_cut_is_a_restatement_against_the_head_that_serves() -> None:
+    """The check that would have caught the flip, taken as an assertion.
+
+    Three cuts sit on this head's probability scale and they are owned by two
+    modules. All three must name the artifact that is shipped right now, or the
+    supply engine is deciding against a scale nobody restated — and the failure
+    is silent, because the comparison still returns a bool.
+    """
+    live = floors.live_stamp("location")
+    for name, restated in (
+        ("junk floor", floors.JUNK_FLOOR_RESTATED),
+        ("good floor", currency.GOOD_FLOOR_RESTATED),
+        ("great cut", currency.GREAT_CUT_RESTATED),
+    ):
+        assert restated.head_sha256 == live, f"the {name} was restated against another head"
+        assert restated.reference_pool, f"the {name} names no population"
+        assert restated.method, f"the {name} says nothing about how it was read"
+
+
+def test_the_three_location_cuts_were_read_over_one_pool() -> None:
+    """Three volume matches over three populations would be three claims."""
+    pools = {
+        floors.JUNK_FLOOR_RESTATED.reference_pool,
+        currency.GOOD_FLOOR_RESTATED.reference_pool,
+        currency.GREAT_CUT_RESTATED.reference_pool,
+    }
+    assert len(pools) == 1
+    assert floors.LOCATION_POOL == currency.REFERENCE_POOL
+
+
+def test_the_junk_floor_refuses_after_a_location_flip(tmp_path, monkeypatch) -> None:
+    """The whole point of stamping the junk floor, which used to be a bare float.
+
+    It was described for most of a year as the one cut a head flip could leave
+    alone. A flip moves the *volume* it removes even where the sentence it stands
+    for is unchanged, so it refuses like every other acting cut.
+    """
+    manifest = tmp_path / "weights.json"
+    manifest.write_text(json.dumps({"schema": 1, "heads": {"location": {"sha256": "def"}}}))
+    from fractal_wallpapers.models import ship
+
+    monkeypatch.setattr(ship, "manifest_path", lambda: manifest)
+    with pytest.raises(floors.HeadStampMismatch, match="re-state the cut"):
+        floors.passes_junk_floor(0.9)
+    with pytest.raises(floors.HeadStampMismatch, match="re-state the cut"):
+        currency.passes_good_floor(0.9)
+    with pytest.raises(floors.HeadStampMismatch, match="re-state the cut"):
+        currency.good_class(0.9, 0.9)
+
+
+def test_the_great_cut_no_longer_has_to_sit_above_the_good_floor() -> None:
+    """Volume-matched independently, the two stopped being nested — say so.
+
+    They were both 0.50 on an ordinal head, so clearing the great cut implied
+    clearing the good floor and a class 4 was exactly the great-cut count. After
+    the 2026-08-20 restatement the great cut sits below the good floor, and 200
+    of the sidecar's rows clear one without the other. `good_class` reads the
+    floor first, so the currency is unaffected — but a reader who assumed the
+    nesting would count class 4s wrong.
+    """
+    assert currency.GREAT_CUT < currency.GOOD_FLOOR
+    assert currency.good_class(0.30, 0.20) is None, "the floor decides first, always"
+    assert currency.good_class(0.40, 0.20) == 4
+    assert currency.good_class(0.40, 0.05) == 3

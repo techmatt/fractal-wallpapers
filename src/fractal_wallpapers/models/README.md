@@ -15,7 +15,9 @@ own pre-registered bar. They share `head` (the ordinal model, the CORN loss and
 the reading of its cutpoints as unconditional probabilities), `metrics`, and
 `ship` — the fp16 cast, the re-read, the agreement check and the hash are the
 same for every head, so they are written once and a four-field record says where
-each head's pieces are.
+each head's pieces are. `adoption` is the step after the last one: replacing a
+shipped head moves the scale every cut on it is a point on, so it restates those
+cuts against a fixed pool before it moves the artifact.
 
 The fourth, the **palette** head, is the one that is not trained from human
 labels — there are none here to train it on — so it has two stages the others do
@@ -181,6 +183,39 @@ that same draw: junk floor 57.85% → 48.62%, good floor 36.75% → 32.80%, grea
 9.80% → 5.55% — and across the candidate band the junk floor ranges 44.07% to
 63.50%. Every floor is calibrated against the shipped head's scale, so adoption
 means restating them from a measurement, never from one seed's number.
+
+## Adopting a head: `regime restate`, then `regime adopt`
+
+Those two steps are the priced flip, and they run in that order once. `restate`
+measures where each acting cut lands on the candidate's scale by **volume**: the
+score that passes the same fraction of one fixed reference pool as the retired
+head's cut passed. The pool is the whole curation sidecar — 28,072 locations, read
+through the canonical views their own stored scores were taken off — so the
+measurement costs the head and not the engine (219 s serially on one GPU; the
+renders were already cached). `adopt` promotes the candidate's bytes under the
+shipped asset name, checks the hash against the record the bars judged, retires
+the candidate file and writes `adoption.json`.
+
+The 2026-08-20 location flip moved all three cuts, and they were **not** the same
+kind of number before it. Junk floor 0.20 → 0.100, good floor 0.50 → 0.385, great
+cut 0.50 → 0.105.
+
+**A restatement holds volume, not rows.** At the restated heights the pool passes
+15,182 / 10,529 / 3,062 against the retired head's 15,161 / 10,508 / 3,034 — the
+fractions by construction — but 13.5%, 14.6% and 9.9% of the pool changes side at
+the three cuts, and the two heads' rank agreement over the pool is ρ = 0.891 on
+`P(≥3)`. The judgement moved; the amount of material did not.
+
+**Two facts about artifacts that a flip is the only place to learn.** A `torch`
+archive carries its own file name inside itself, so halving one checkpoint into
+`<head>.candidate.fp16.pt` and into `<head>.fp16.pt` gives two different files —
+and `torch.save` is not byte-reproducible run to run even into the same name: a
+re-cast of the retired head's own checkpoint here hashed `f1bb53c2…` where the
+manifest recorded `4b60deb9…`. So `ship.promote` **copies** the judged bytes
+rather than re-making them, and a retired artifact's hash is not recoverable from
+its checkpoint — what holds those bytes is the release asset published under the
+old tag, which is why the old manifest row is left in git history rather than
+edited away.
 
 ## Running a band that takes hours
 
