@@ -102,6 +102,25 @@ def test_the_machine_stock_discount_is_a_flag_on_both_readers() -> None:
     assert parse(["harvest", "--discount", "0"]).discount == 0.0
 
 
+def test_a_tile_build_names_the_regime_it_is_aimed_at() -> None:
+    """The default is the canonical regime and it is the one that elides, so a
+    build that says nothing writes the names the shipped corpus already has."""
+    from fractal_wallpapers.models import tiles as tile_module
+
+    parse = cli.build_parser().parse_args
+    args = parse(["tiles", "build"])
+    assert args.handler is cli.tiles_build
+    assert cli.tile_regime(args) == tile_module.CANONICAL_REGIME
+    assert cli.tile_regime(args).tag == ""
+
+    ss1 = cli.tile_regime(parse(["tiles", "build", "--tile", "384x216", "--supersample", "1"]))
+    assert ss1 == tile_module.Regime(tile=(384, 216), supersample=1)
+    assert ss1.tag == "_384x216ss1"
+
+    with pytest.raises(SystemExit):
+        cli.tile_regime(parse(["tiles", "build", "--tile", "384"]))
+
+
 def test_the_labeling_rig_is_seven_steps_under_one_subcommand() -> None:
     """Register, cut, list, serve, ingest, show, split — the order they happen in,
     and every one of them a step somebody runs twice."""

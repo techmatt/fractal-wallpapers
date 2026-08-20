@@ -32,7 +32,7 @@ it against its own pre-registered bar. Its model, transform and loss are in
 set and not a tier on an ordinal scale — but it ships through the same `ship`,
 supplying only its own agreement statistic.
 
-## Two picture caches, and only one of them is addressed by its recipe
+## Both picture caches are addressed by their recipe
 
 The **finished-render** cache (`renders`) and the location head's **deploy view**
 (`location_view`) both name a file by `renders.job_name` — a sha256 of the whole
@@ -40,35 +40,80 @@ engine spec. Resolution and supersample are fields of that spec, so a view
 rendered at another geometry gets its own file and three regimes can share one
 directory without colliding.
 
-The **tile** cache does not work that way. A tile is
-`<out_root>/<location_id>/t<NN>_<palette>_s<scale>_sh<shift>_<level>_q<q>.jpg`,
-and neither `recipe.tile` nor `recipe.field_supersample` appears anywhere in it.
-Two builds that differ only in geometry write **the same names**, and because the
-build skips a location whose tiles are all present, the second one renders
-nothing, reports success, and records the geometry it did not use. The manifest
-row does carry `field.supersample` and `tile_size` — the regime is *recorded*,
-it is simply not *addressed*.
+The **tile** cache says the same thing in a readable name rather than a digest. A
+tile is
 
-So a tile corpus at a second geometry is not a build step. It needs the identity
-to carry the geometry, or an `out_root`, `manifest` and build record per regime —
-a decision, not a flag.
+```text
+<out_root>/<location_id>/t<NN>_<palette>_s<scale>_sh<shift>_<level>_q<q><regime>.jpg
+```
+
+where `<regime>` is `_<w>x<h>ss<n>` — the tile size and the field supersample, the
+two parts of the recipe a build chooses and every tile in it shares. The
+**canonical regime elides**: at 640×360 supersample 2 the segment is empty, which
+is the same convention `job_name` follows when a spec omits a field at its settled
+default. That is what let this land on a corpus that already existed — re-running
+the canonical build over the 379,616 cached tiles wrote 0 and skipped 379,616, and
+regenerated a byte-identical manifest.
+
+Each regime also gets its own `manifest<regime>.jsonl`, `build<regime>.json` and
+`build<regime>.log`, because a manifest is rewritten whole by every build and the
+join precondition is checked against exactly that file. The plan is *not* per
+regime: one population behind every regime is what makes the caches comparable row
+by row.
+
+```
+fractal-wallpapers tiles build                                # canonical, 640x360 ss2
+fractal-wallpapers tiles build --supersample 1                # 640x360 ss1
+fractal-wallpapers tiles build --tile 384x216 --supersample 1 # 384x216 ss1
+```
+
+Completeness per regime is the join precondition, not the exit code: every stored
+row joins, 32 tiles each, no manifest row whose file is absent, nothing stamped
+`partial`.
 
 ## Budgeting a tile build
 
-Cost tracks what the pixels do, not how many rows there are. Measured on the
-2026-08-19 top-up, per location, all 32 tiles, one field pass:
+Cost tracks what the pixels do, not how many rows there are, and the rate is a
+property of the *population* a build covers rather than of the class label. Two
+measurements, both per location, all 32 tiles, one field pass:
 
-| label | s/location |
-|---|---|
-| 1 | 23.4 |
-| 2 | 2.2 |
-| 3 | 1.8 |
-| 4 | 0.6 |
+| label | s/location — 2026-08-19 top-up, 488 fresh rows, 640×360 ss2 | s/location — whole corpus, 640×360 ss1 |
+|---|---|---|
+| 1 | 23.4 | 0.72 |
+| 2 | 2.2 | 0.42 |
+| 3 | 1.8 | 0.31 |
+| 4 | 0.6 | 0.27 |
 
-Nearly all of it is the field, not the tiles: a location labelled 1 is usually
-interior-heavy and every interior sample iterates to the cap. Estimate a build
-from a **stratified** pilot — the corpus-wide mean rate under-projected this
-top-up by 4.2×.
+The two columns are not the same measurement scaled. Dropping the supersample from
+2 to 1 cuts the field's samples fourfold; the rest of the 33× gap in class 1 is
+that the top-up's rows were four deep-plane ingests, where an interior-heavy
+location iterates to a very high cap, and the corpus's other 5,000 class-1 rows do
+not. **Take a rate from the population you are about to build, not from the last
+build's table**, and take it *stratified* with enough rows per class: class 1
+carries the long tail, and it is the only class where the sample size shows.
+
+| pilot | projected | actual | error |
+|---|---|---|---|
+| corpus-wide mean (2026-08-19 top-up) | 558 s | 2,044 s | 3.7× low |
+| 3 per class (640×360 ss1, whole corpus) | 3,842 s | 6,304 s | 1.6× low |
+| 25 per class (640×360 ss1, whole corpus) | 6,263 s | 6,304 s | 0.7% low |
+
+Nearly all of it is the field at ss2; at ss1 the two halves are comparable — the
+whole-corpus build spent 4,153 s in the field against 2,130 s in the tiles,
+because the tile side is the same 32 JPEGs however the field was sampled.
+
+Disk, measured over the three built regimes (379,616 tiles each):
+
+| regime | KiB/tile | GiB |
+|---|---|---|
+| 640×360 ss2 | 68.9 | 24.95 |
+| 640×360 ss1 | 74.3 | 26.89 |
+| 384×216 ss1 | 30.5 | 11.04 |
+
+Dropping the supersample makes the cache **bigger** at the same output size:
+point-sampled tiles carry high-frequency aliasing that JPEG spends bits on. Size
+does not track pixel count either — 384×216 is 36% of the pixels but 41% of the
+bytes, because a smaller frame is not a smoother one.
 
 Each stage writes a record the next one reads rather than being called from
 inside it, so a training run can be re-scored and a score can be re-judged

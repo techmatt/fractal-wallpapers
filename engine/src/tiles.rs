@@ -38,9 +38,14 @@
 //! **exactly** — the extension, the scale band and the shift cap are one decision
 //! with nothing to spare, and moving any of the three moves the other two.
 //!
-//! **The field's supersampling is pinned at 2, and the two antialiasing levels
-//! are a *mode* rather than a factor.** With one field there is no per-tile
-//! supersample left to name. The filtered arm is exact in kind — Lanczos-3 in
+//! **The field's supersampling is one number for the whole build, and the two
+//! antialiasing levels are a *mode* rather than a factor.** With one field there
+//! is no per-tile supersample left to name. The canonical build sets it to 2; a
+//! build that sets it to anything else, or renders a tile at another size, is a
+//! different **regime** and says so in every file name it writes — see
+//! [`regime_tag`], without which two regimes would share one cache and the
+//! second would skip-as-present over the first one's pictures.
+//! The filtered arm is exact in kind — Lanczos-3 in
 //! linear light, the same kernel a whole-frame render uses, at a ratio the random
 //! scale makes non-integer. The point-sampled arm cannot be exact: an even
 //! supersampled grid holds no sample at a pixel centre, so the honest stand-in
@@ -94,7 +99,10 @@ pub struct TilesSpec {
     pub schema: u32,
     /// JSONL: one location per line, as [`PlanRow`].
     pub locations: PathBuf,
-    /// Tiles land at `<out_root>/<location_id>/t<NN>_<palette>_<level>_q<q>.jpg`.
+    /// Tiles land at
+    /// `<out_root>/<location_id>/t<NN>_<palette>_s<scale>_sh<shift>_<level>_q<q><regime>.jpg`,
+    /// where `<regime>` is `_<w>x<h>ss<n>` and empty at the canonical regime. See
+    /// [`regime_tag`]: it is what lets two geometries share one `out_root`.
     pub out_root: PathBuf,
     /// Where the record of what was written goes, one line per tile.
     pub manifest: PathBuf,
@@ -475,6 +483,29 @@ fn tag_seed(tag: &str) -> u64 {
     hash
 }
 
+/// The regime segment of a tile's name: the geometry the picture was made at.
+///
+/// A tile differs from another tile of the same location, slot, palette and
+/// framing when it is drawn at a different **regime** — a different tile size or
+/// a different field supersample — and until this was in the name those two were
+/// one file. The build skips a location whose tiles are all present, so aiming a
+/// second regime at the first one's cache rendered nothing and exited 0 with a
+/// record claiming a geometry that is not what is on disk.
+///
+/// The canonical regime elides, exactly as `job_name`'s spec omits a field at its
+/// settled default: every name written before this segment existed is still the
+/// name that regime writes, byte for byte, so the corpus does not move.
+fn regime_tag(recipe: &Recipe) -> String {
+    if recipe.tile == default_tile() && recipe.field_supersample == default_field_supersample() {
+        String::new()
+    } else {
+        format!(
+            "_{}x{}ss{}",
+            recipe.tile[0], recipe.tile[1], recipe.field_supersample
+        )
+    }
+}
+
 /// The floor's slot → palette expansion: `twilight_shifted:2 blue_orange:2`
 /// reserves slots 0 and 1 for the first and slots 2 and 3 for the second.
 fn floor_slots(recipe: &Recipe) -> Vec<&str> {
@@ -489,6 +520,7 @@ fn floor_slots(recipe: &Recipe) -> Vec<&str> {
 fn plan_tiles(recipe: &Recipe, geom: &FieldGeom, row: &PlanRow, tag: &str) -> Vec<Tile> {
     let seed = location_seed(tag, row.location_id);
     let floor = floor_slots(recipe);
+    let regime = regime_tag(recipe);
     let [quality_lo, quality_hi] = recipe.quality;
     (0..recipe.tiles)
         .map(|index| {
@@ -522,9 +554,10 @@ fn plan_tiles(recipe: &Recipe, geom: &FieldGeom, row: &PlanRow, tag: &str) -> Ve
             };
             // The tile index leads the name. Under an independent draw two free
             // slots may land on the same palette at the same rounded framing, so
-            // uniqueness is structural rather than left to the draw.
+            // uniqueness is structural rather than left to the draw. The regime
+            // trails it, and is empty at the canonical one.
             let name = format!(
-                "t{index:02}_{palette}_s{:.4}_sh{:.4}_{}_q{quality}.jpg",
+                "t{index:02}_{palette}_s{:.4}_sh{:.4}_{}_q{quality}{regime}.jpg",
                 geometry.scale,
                 geometry.shift_frac,
                 level.name()
@@ -1171,6 +1204,71 @@ mod tests {
             (0..once.len()).any(|slot| once[slot].output != other[slot].output),
             "a fresh tag must reshuffle the fan-out"
         );
+    }
+
+    /// The canonical regime's names are the names that existed before the regime
+    /// segment did. Written out against the literal legacy form rather than
+    /// against `regime_tag` itself, because a test that asks the same function
+    /// the code asks would pass on any convention it happened to adopt.
+    #[test]
+    fn the_canonical_regime_writes_the_name_it_always_wrote() {
+        let recipe = recipe();
+        assert_eq!(recipe.tile, [640, 360]);
+        assert_eq!(recipe.field_supersample, 2);
+        let geom = FieldGeom::build(&recipe, 3.0);
+        let row = PlanRow {
+            schema: 1,
+            location_id: 4242,
+            family: FamilySpec::Mandelbrot,
+            viewport: Default::default(),
+            maxiter: Some(1000),
+        };
+        for tile in plan_tiles(&recipe, &geom, &row, "location-tiles-v1") {
+            let legacy = format!(
+                "t{:02}_{}_s{:.4}_sh{:.4}_{}_q{}.jpg",
+                tile.index,
+                tile.palette,
+                tile.geometry.scale,
+                tile.geometry.shift_frac,
+                tile.level.name(),
+                tile.quality
+            );
+            assert_eq!(tile.output, Path::new("4242").join(&legacy));
+        }
+    }
+
+    /// Three regimes, three sets of names. Before the regime segment existed
+    /// these were the same thirty-two files, so an ss1 build aimed at the ss2
+    /// cache skipped every one of them and exited 0 over pictures that were ss2.
+    #[test]
+    fn a_second_regime_cannot_land_on_the_first_ones_files() {
+        let row = PlanRow {
+            schema: 1,
+            location_id: 4242,
+            family: FamilySpec::Mandelbrot,
+            viewport: Default::default(),
+            maxiter: Some(1000),
+        };
+        let regimes = [([640u32, 360u32], 2u32), ([640, 360], 1), ([384, 216], 1)];
+        let mut all: Vec<PathBuf> = Vec::new();
+        for (tile, supersample) in regimes {
+            let recipe = Recipe {
+                tile,
+                field_supersample: supersample,
+                ..recipe()
+            };
+            let geom = FieldGeom::build(&recipe, 3.0);
+            all.extend(
+                plan_tiles(&recipe, &geom, &row, "location-tiles-v1")
+                    .into_iter()
+                    .map(|tile| tile.output),
+            );
+        }
+        let total = all.len();
+        assert_eq!(total, 3 * 32);
+        all.sort();
+        all.dedup();
+        assert_eq!(all.len(), total, "two regimes share a file name");
     }
 
     /// Adding an axis must not reshuffle the others, which is what the disjoint
