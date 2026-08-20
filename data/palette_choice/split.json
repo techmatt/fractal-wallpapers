@@ -83,7 +83,7 @@
   "held_out_pin": {
     "pinned": 450,
     "added": 290,
-    "path": "C:\\Code\\fractal-wallpapers\\data\\palette_choice\\held_out.jsonl"
+    "path": "data/palette_choice/held_out.jsonl"
   },
   "held_out_from": "the vendored production candidate sets, whose locations are the instrument this head is judged on and may never be taught, and the location store's own evaluation pin"
 }

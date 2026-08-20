@@ -586,7 +586,7 @@
     }
   ],
   "checkpoints": {
-    "best": "C:\\Code\\fractal-wallpapers\\models\\strange_render\\four_class_seed2\\best.pt",
-    "last": "C:\\Code\\fractal-wallpapers\\models\\strange_render\\four_class_seed2\\last.pt"
+    "best": "models/strange_render/four_class_seed2/best.pt",
+    "last": "models/strange_render/four_class_seed2/last.pt"
   }
 }

@@ -344,11 +344,11 @@
   },
   "records": {
     "durable": true,
-    "root": "C:\\Code\\fractal-wallpapers\\data\\curation",
-    "gate": "C:\\Code\\fractal-wallpapers\\data\\curation\\gate.jsonl (+0)",
-    "release": "C:\\Code\\fractal-wallpapers\\data\\curation\\release.jsonl (+0)",
-    "population": "C:\\Code\\fractal-wallpapers\\data\\curation\\runs.jsonl"
+    "root": "data/curation",
+    "gate": "data/curation/gate.jsonl (+0)",
+    "release": "data/curation/release.jsonl (+0)",
+    "population": "data/curation/runs.jsonl"
   },
-  "sheet": "C:\\Code\\fractal-wallpapers\\artifacts\\curation\\runs\\run8h\\release_sheet_run8h.html",
-  "run_dir": "C:\\Code\\fractal-wallpapers\\artifacts\\curation\\runs\\run8h"
+  "sheet": "artifacts/curation/runs/run8h/release_sheet_run8h.html",
+  "run_dir": "artifacts/curation/runs/run8h"
 }

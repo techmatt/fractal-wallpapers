@@ -87,6 +87,7 @@ from pathlib import Path
 
 from fractal_wallpapers import storage
 from fractal_wallpapers.models import palette_corpus, palette_head, train
+from fractal_wallpapers.paths import tracked_name
 
 #: The schema every record here carries.
 SCHEMA = 1
@@ -574,9 +575,11 @@ def run(
         },
         "sets": {"train": len(training), "holdout": len(holdout)},
         "history": history,
+        # Tracked-record spelling; see [`train`] for why a checkpoint path in
+        # a tracked record never carries a drive letter.
         "checkpoints": {
-            "best": str(checkpoint_path("best", run_name)),
-            "last": str(checkpoint_path("last", run_name)),
+            "best": tracked_name(checkpoint_path("best", run_name)),
+            "last": tracked_name(checkpoint_path("last", run_name)),
         },
     }
     config_path(run_name).write_text(

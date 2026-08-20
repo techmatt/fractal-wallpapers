@@ -82,7 +82,7 @@ from fractal_wallpapers import engine
 from fractal_wallpapers.labeling import pins, store
 from fractal_wallpapers.models import palette_sets, renders
 from fractal_wallpapers.palettes import space
-from fractal_wallpapers.paths import under
+from fractal_wallpapers.paths import tracked_name, under
 from fractal_wallpapers.supply import partitions
 from fractal_wallpapers.supply.location import location_key
 
@@ -223,7 +223,7 @@ def pin_holdout(set_rows: list[dict]) -> dict:
     with path.open("a", encoding="utf-8", newline="\n") as handle:
         for row in rows:
             handle.write(json.dumps(row, ensure_ascii=False) + "\n")
-    return {"pinned": len(known), "added": len(rows), "path": str(path)}
+    return {"pinned": len(known), "added": len(rows), "path": tracked_name(path)}
 
 
 def supply() -> list[dict]:

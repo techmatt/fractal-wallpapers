@@ -7,6 +7,8 @@ starts empty and adding to it should feel like a decision, not a fix.
 
 from __future__ import annotations
 
+import functools
+import json
 import re
 import subprocess
 from pathlib import Path
@@ -50,6 +52,19 @@ BINARY_SUFFIXES = frozenset(
         ".ico",
     }
 )
+
+# The tracked *records* are held to the same rule as source, for a sharper
+# reason: a record is data a later machine reads back. `artifacts/tiles/...` is a
+# name every clone can resolve through `paths.rehome`, on whichever tier the
+# subtree sits; one machine's drive letter is a name only that machine could ever
+# have used. `paths.tracked_name` is the one function that writes the spelling.
+RECORD_SUFFIXES = (".json", ".jsonl")
+
+# Exempt by KEY, not by file, so the exception cannot widen without being seen: a
+# head's acceptance record names the pre-registration it was read against with an
+# absolute path. A known wart, deliberately left — every other path in the same
+# file is still held to the rule.
+RECORD_EXEMPT_KEYS = frozenset({"prereg"})
 
 # Deliberately empty. Every entry here is a permanent exception to the rule above.
 ALLOWLIST: frozenset[str] = frozenset()
@@ -114,6 +129,74 @@ def test_the_size_exemption_does_not_exempt_a_blob() -> None:
         assert not [name for name in exempt if Path(name).suffix.lower() in BINARY_SUFFIXES], (
             f"{prefix} holds a binary-by-nature file"
         )
+
+
+def _named_strings(document, key: str | None = None):
+    """Every string in a parsed record, paired with the key it hangs off.
+
+    A list carries its parent's key down, so `ledgers[0]` is reported as
+    `ledgers` — the exemption is about what a field *means*, and an element of a
+    list means what the list does.
+    """
+    if isinstance(document, dict):
+        for name, value in document.items():
+            yield from _named_strings(value, name)
+    elif isinstance(document, list):
+        for value in document:
+            yield from _named_strings(value, key)
+    elif isinstance(document, str):
+        yield key, document
+
+
+@functools.cache
+def absolute_paths_in_records() -> tuple[tuple[str, str | None, str], ...]:
+    """`(file, key, value)` for every absolute path a tracked record carries.
+
+    The tracked records run to ninety-odd megabytes, nearly all of it the palette
+    corpus and the colormap library, so the pattern screens the raw text and only
+    a file it hits is parsed.
+    """
+    found = []
+    for name in tracked_files():
+        if not name.endswith(RECORD_SUFFIXES):
+            continue
+        path = REPO_ROOT / name
+        if not path.is_file():
+            continue
+        text = path.read_text(encoding="utf-8")
+        if not ABSOLUTE_PATH_PATTERN.search(text):
+            continue
+        lines = text.splitlines() if name.endswith(".jsonl") else [text]
+        for line in lines:
+            if not line.strip():
+                continue
+            for key, value in _named_strings(json.loads(line)):
+                if ABSOLUTE_PATH_PATTERN.search(value):
+                    found.append((name, key, value))
+    return tuple(found)
+
+
+def test_no_absolute_paths_in_tracked_records() -> None:
+    offenders = [
+        f"{name}: {key} = {value}"
+        for name, key, value in absolute_paths_in_records()
+        if key not in RECORD_EXEMPT_KEYS
+    ]
+    assert not offenders, f"absolute paths in tracked records: {offenders}"
+
+
+def test_the_record_exemption_is_not_dead() -> None:
+    """An exception nobody needs any more is a rule nobody reads.
+
+    The same reasoning as the size exemption above: the moment the acceptance
+    records name their pre-registration the way everything else names a file,
+    this fails and `RECORD_EXEMPT_KEYS` goes away with it.
+    """
+    exempted = {key for _, key, _ in absolute_paths_in_records() if key in RECORD_EXEMPT_KEYS}
+    assert exempted == RECORD_EXEMPT_KEYS, (
+        f"RECORD_EXEMPT_KEYS exempts {sorted(RECORD_EXEMPT_KEYS - exempted)}, which no tracked "
+        "record needs any more"
+    )
 
 
 def test_no_absolute_paths_in_source() -> None:

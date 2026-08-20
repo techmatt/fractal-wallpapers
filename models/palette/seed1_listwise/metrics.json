@@ -504,7 +504,7 @@
     }
   ],
   "checkpoints": {
-    "best": "C:\\Code\\fractal-wallpapers\\models\\palette\\seed1_listwise\\best.pt",
-    "last": "C:\\Code\\fractal-wallpapers\\models\\palette\\seed1_listwise\\last.pt"
+    "best": "models/palette/seed1_listwise/best.pt",
+    "last": "models/palette/seed1_listwise/last.pt"
   }
 }

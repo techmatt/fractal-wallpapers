@@ -643,11 +643,11 @@
   },
   "records": {
     "durable": true,
-    "root": "C:\\Code\\fractal-wallpapers\\data\\curation",
-    "gate": "C:\\Code\\fractal-wallpapers\\data\\curation\\gate\\run3 (+0)",
-    "release": "C:\\Code\\fractal-wallpapers\\data\\curation\\release\\run3 (+0)",
-    "population": "C:\\Code\\fractal-wallpapers\\data\\curation\\runs.jsonl"
+    "root": "data/curation",
+    "gate": "data/curation/gate/run3 (+0)",
+    "release": "data/curation/release/run3 (+0)",
+    "population": "data/curation/runs.jsonl"
   },
-  "sheet": "C:\\Code\\fractal-wallpapers\\artifacts\\curation\\runs\\run3\\release_sheet_run3.html",
-  "run_dir": "C:\\Code\\fractal-wallpapers\\artifacts\\curation\\runs\\run3"
+  "sheet": "artifacts/curation/runs/run3/release_sheet_run3.html",
+  "run_dir": "artifacts/curation/runs/run3"
 }
