@@ -71,6 +71,61 @@ Completeness per regime is the join precondition, not the exit code: every store
 row joins, 32 tiles each, no manifest row whose file is absent, nothing stamped
 `partial`.
 
+## Training and reading a head across regimes
+
+A training example is a `(location, regime)` pair. `head train` takes a
+repeatable `--regime`, and every regime named adds one pass over the whole
+population to each epoch:
+
+```
+fractal-wallpapers head train --run seed0_all_regimes --seed 0     --regime 640x360ss2 --regime 640x360ss1 --regime 384x216ss1     --selection cutpoint_cross_entropy
+```
+
+Three things about that command are the whole design.
+
+**The canonical regime has to be among them, and comes first.** It is what the
+selection slice, the deploy view and the unsuffixed score file are read at, so a
+list that starts elsewhere would silently move all three.
+
+**A row's tiles at two regimes are one draw.** The slot is drawn per location per
+epoch and shared across the regimes, so what the head sees is one picture at
+several geometries — the augmentation is drawn per example, because two views
+cropped and flipped identically would teach it that the crop is the invariant.
+`dataset.join` refuses a regime short of a row rather than intersecting quietly.
+
+**The head is told nothing.** No regime input, no conditioning. One score scale
+across regimes is the deliverable, and a head that could see the geometry would
+be free to keep a scale per geometry.
+
+`--selection` names the objective the epoch is chosen on, over the training-side
+selection slice at the canonical regime. `ap_ge2` is the shipped head's, carried
+from the source project; `cutpoint_cross_entropy` is the repository's proper
+scoring rule and the one every other head here selects on.
+
+Reading is per regime too — `head score --regime 384x216ss1` writes
+`scores_384x216ss1.jsonl` beside the canonical `scores.jsonl`, the same elision
+the tile cache uses:
+
+```
+fractal-wallpapers head score --run seed0_all_regimes --regime 640x360ss1
+fractal-wallpapers regime preregister      # the bar, before the candidate exists
+fractal-wallpapers regime accept           # the band, against the bar
+fractal-wallpapers regime stage            # the winner, beside the shipped head
+```
+
+**A score file's `group` is a fact about the manifest that was current when it
+was written.** Group ids are assigned over the whole scored store, so an ingest
+renumbers them — 943 of the location head's 1,002 evaluation rows changed group
+id between two builds whose clustering was identical at 530 groups. Any read
+that resamples clusters has to score every arm against *one* manifest, or its
+interval is drawn over a partition nobody holds.
+
+`regime stage` writes `location.candidate.fp16.pt` and a tracked `candidate.json`
+and deliberately does **not** touch `weights.json`. `fetch-weights` resolves the
+manifest, so a candidate is invisible to every serving path until someone adopts
+it — which for the location head means restating the floors its scale is
+calibrated against, and is a separate decision.
+
 ## Budgeting a tile build
 
 Cost tracks what the pixels do, not how many rows there are, and the rate is a
