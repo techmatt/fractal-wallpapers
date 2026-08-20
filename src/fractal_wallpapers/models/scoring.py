@@ -16,6 +16,13 @@ labels exactly that way.
 different questions — one is "is this a wallpaper", the other is "is this worth
 releasing" — and the supply engine's ten-fold weighting reads the second one
 directly. A file that only carried the summed rank score would answer neither.
+
+**A read is at one regime**, and the file says which. The deploy view is the
+canonical tile at the canonical geometry, and that read keeps the name it has;
+any other regime writes `scores<regime>.jsonl` beside it, the same elision the
+tile cache and its manifest use. Two regimes in one file would be a population
+scored twice with no column saying which reading is which — and the whole point
+of reading a head at two geometries is to compare them row by row.
 """
 
 from __future__ import annotations
@@ -31,9 +38,18 @@ from fractal_wallpapers.models import tiles as tile_module
 SCHEMA = 1
 
 
-def scores_path(name: str = "location", run: str | None = None) -> Path:
-    """Where one run's read of the evaluation side is kept, tracked."""
-    return train.head_dir(name, run) / "scores.jsonl"
+def scores_path(
+    name: str = "location",
+    run: str | None = None,
+    regime: tile_module.Regime = tile_module.CANONICAL_REGIME,
+) -> Path:
+    """Where one run's read of the evaluation side is kept, tracked.
+
+    Per regime, because a regime is a different picture of the same place and
+    two of them in one file is a column nobody wrote. The canonical regime
+    elides, so the deploy read keeps the name every existing record names.
+    """
+    return train.head_dir(name, run) / f"scores{regime.tag}.jsonl"
 
 
 def _relative(path: str) -> str:
@@ -87,9 +103,16 @@ def run(
     side: str = pins.EVAL,
     device: str = "auto",
     into: str | None = None,
+    regime: tile_module.Regime = tile_module.CANONICAL_REGIME,
     log=train.say,
 ) -> dict:
-    """Score one side of the build through a checkpoint, and write the rows."""
+    """Score one side of the build through a checkpoint, and write the rows.
+
+    `regime` is the geometry the pictures are read at. The head is handed no
+    hint of which one it is: a score that means the same thing at two geometries
+    is the property being measured, so telling it would be measuring something
+    else.
+    """
     import numpy
 
     checkpoint = train.checkpoint_path(name, which, into)
@@ -97,7 +120,7 @@ def run(
     transform = transform_of(config)
 
     rows = tile_module.read_locations()
-    grouped = tile_module.tiles_by_location(tile_module.read_manifest())
+    grouped = tile_module.tiles_by_location(tile_module.read_manifest(regime=regime))
     locations = dataset.join(rows, grouped)
     dataset.assign_selection(locations)
     by_id = {int(row["location_id"]): row for row in rows}
@@ -111,14 +134,17 @@ def run(
     ]
     if not wanted:
         raise ValueError(f"no locations on side {side!r}")
-    log(f"scoring {len(wanted)} locations on the {side} side through {checkpoint.name}")
+    log(
+        f"scoring {len(wanted)} locations on the {side} side through {checkpoint.name} "
+        f"at {regime.tile[0]}x{regime.tile[1]}ss{regime.supersample}"
+    )
 
     paths = [location.canonical() for location in wanted]
     probabilities = train.score(
         model, paths, transform, where, int(config["classes"]), {"batch_size": 64}
     )
 
-    path = scores_path(name, into)
+    path = scores_path(name, into, regime)
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="\n") as handle:
         for location, probability in zip(wanted, probabilities, strict=True):
@@ -128,6 +154,7 @@ def run(
                 "head": name,
                 "run": into,
                 "checkpoint": which,
+                "regime": f"{regime.tile[0]}x{regime.tile[1]}ss{regime.supersample}",
                 "location_id": location.location_id,
                 "family": source["family"],
                 "viewport": source["viewport"],
@@ -149,14 +176,20 @@ def run(
         "checkpoint": str(checkpoint),
         "which": which,
         "side": side,
+        "regime": f"{regime.tile[0]}x{regime.tile[1]}ss{regime.supersample}",
         "locations": len(wanted),
         "wrote": str(path),
     }
 
 
-def read(path: Path | None = None, name: str = "location", run: str | None = None) -> list[dict]:
-    """One run's scores, schema-checked."""
-    path = scores_path(name, run) if path is None else Path(path)
+def read(
+    path: Path | None = None,
+    name: str = "location",
+    run: str | None = None,
+    regime: tile_module.Regime = tile_module.CANONICAL_REGIME,
+) -> list[dict]:
+    """One run's scores at one regime, schema-checked."""
+    path = scores_path(name, run, regime) if path is None else Path(path)
     rows = []
     for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
         if not line.strip():

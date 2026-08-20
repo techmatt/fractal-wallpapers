@@ -1389,12 +1389,56 @@ def palette_ship(args: argparse.Namespace) -> int:
     return 0
 
 
+def one_regime(named: str):
+    """One regime, by the name its files carry."""
+    from fractal_wallpapers.models import tiles as tile_module
+
+    try:
+        return tile_module.regime_of(named)
+    except ValueError as unparsed:
+        raise SystemExit(str(unparsed)) from None
+
+
+def head_regimes(args: argparse.Namespace) -> tuple:
+    """The regimes a `head` subcommand was aimed at, canonical first.
+
+    Named as they appear in the files a build wrote — `640x360ss1` — with the
+    canonical one spelled out in full rather than by the empty segment it elides
+    to in a name. No flag means the canonical regime alone, which is what the
+    shipped head trains and scores at.
+    """
+    from fractal_wallpapers.models import tiles as tile_module
+
+    stated = list(args.regime or [])
+    if not stated:
+        return (tile_module.CANONICAL_REGIME,)
+    try:
+        drawn = tuple(dict.fromkeys(tile_module.regime_of(name) for name in stated))
+    except ValueError as unparsed:
+        raise SystemExit(str(unparsed)) from None
+    if tile_module.CANONICAL_REGIME not in drawn:
+        raise SystemExit(
+            "the canonical regime has to be one of them: the selection slice, the deploy "
+            "view and every score file are read at it. Add --regime 640x360ss2."
+        )
+    return (
+        tile_module.CANONICAL_REGIME,
+        *(regime for regime in drawn if regime != tile_module.CANONICAL_REGIME),
+    )
+
+
 def head_train(args: argparse.Namespace) -> int:
     """Train one head on the built tiles."""
     from fractal_wallpapers.models import train
 
     record = train.train(
-        name=args.head, device=args.device, epochs=args.epochs, seed=args.seed, run=args.run
+        name=args.head,
+        device=args.device,
+        epochs=args.epochs,
+        seed=args.seed,
+        run=args.run,
+        regimes=head_regimes(args),
+        selection=args.selection,
     )
     print(json.dumps({key: record[key] for key in record if key != "history"}, indent=2))
     return 0
@@ -1412,6 +1456,7 @@ def head_score(args: argparse.Namespace) -> int:
                 side=args.side,
                 device=args.device,
                 into=args.run,
+                regime=one_regime(args.regime),
             ),
             indent=2,
         )
@@ -2106,6 +2151,7 @@ def build_parser() -> argparse.ArgumentParser:
     tile_commands(subcommands)
     render_commands(subcommands)
     head_commands(subcommands)
+    regime_commands(subcommands)
     palette_commands(subcommands)
     coloring_commands(subcommands)
     curate_commands(subcommands)
@@ -2768,6 +2814,22 @@ def head_commands(subcommands) -> None:
     training.add_argument("--epochs", type=int, help="override the recipe's epoch count")
     training.add_argument("--seed", type=int, help="override the recipe's seed")
     training.add_argument(
+        "--regime",
+        action="append",
+        metavar="WxHssN",
+        help="a geometry to draw the tiles at, e.g. 640x360ss1 (repeatable). Every regime "
+        "given adds a pass over the whole population to each epoch — the same label row, "
+        "the same slot, a different geometry — and the head is told nothing about which "
+        "one it is looking at. The canonical 640x360ss2 must be among them; omit the flag "
+        "for it alone, which is the shipped recipe",
+    )
+    training.add_argument(
+        "--selection",
+        choices=["ap_ge2", "cutpoint_cross_entropy"],
+        help="which objective chooses the epoch, over the training-side selection slice at "
+        "the canonical regime (default: the recipe's own)",
+    )
+    training.add_argument(
         "--run",
         help="name this run, so its checkpoint and records land in their own directory. "
         "What a seed band is made of; omit for the head's one run",
@@ -2789,6 +2851,13 @@ def head_commands(subcommands) -> None:
     reading.add_argument("--side", default="eval", choices=["eval", "train"])
     reading.add_argument("--device", default="auto")
     reading.add_argument("--run", help="the named training run to score (default: the head's own)")
+    reading.add_argument(
+        "--regime",
+        default="640x360ss2",
+        metavar="WxHssN",
+        help="the geometry to read the pictures at (default: 640x360ss2, the deploy view). "
+        "Anything else writes scores<regime>.jsonl beside the canonical read",
+    )
     reading.set_defaults(handler=head_score)
 
     judging_step = with_head(
@@ -2830,6 +2899,129 @@ def head_commands(subcommands) -> None:
         "--force", action="store_true", help="ship a head whose acceptance read failed"
     )
     shipping.set_defaults(handler=head_ship)
+
+
+def regime_preregister(args: argparse.Namespace) -> int:
+    """Write the bar for the cross-regime study, before the candidate exists."""
+    from fractal_wallpapers.models import regime_acceptance
+
+    path = regime_acceptance.prereg_path(args.head)
+    if path.is_file() and not args.force:
+        print(f"{path} already exists. A bar rewritten after the numbers are in is not a bar;")
+        print("amend it in place — the record carries an append-only list for that.")
+        return 1
+    bar = regime_acceptance.preregister(args.head)
+    write_tracked_json(path, bar)
+    print(json.dumps(bar, indent=2))
+    return 0
+
+
+def regime_accept(args: argparse.Namespace) -> int:
+    """Read the candidate band against the pre-registered cross-regime bar."""
+    from fractal_wallpapers.models import regime_acceptance
+
+    report = regime_acceptance.read(args.head)
+    write_tracked_json(regime_acceptance.acceptance_path(args.head), report)
+    print(json.dumps(report, indent=2))
+    return 0 if report["verdict"] != "FAIL" else 1
+
+
+def regime_stage(args: argparse.Namespace) -> int:
+    """Halve, verify and hash the winning seed — beside the shipped head."""
+    from fractal_wallpapers.models import regime_acceptance, ship
+
+    verdict_path = regime_acceptance.acceptance_path(args.head)
+    if not verdict_path.is_file():
+        print(f"{verdict_path} is missing: nothing has judged this candidate yet.")
+        print("Run `fractal-wallpapers regime accept` first.")
+        return 1
+    judged = json.loads(verdict_path.read_text(encoding="utf-8"))
+    if judged["verdict"] == "FAIL" and not args.force:
+        print(f"the cross-regime read says {judged['verdict']}. Staging a candidate that")
+        print("failed its own pre-registered bar needs --force and a sentence about why.")
+        return 1
+    record = ship.stage_candidate(
+        name=args.head,
+        which=args.which,
+        run=args.run or judged["staged"]["seed"],
+        device=args.device,
+        why=args.why,
+        verdict=verdict_path,
+    )
+    print(json.dumps({key: record[key] for key in record if key != "agreement"}, indent=2))
+    return 0
+
+
+def regime_commands(subcommands) -> None:
+    """One head, three regimes: the bar, the read against it, the candidate."""
+    studying = subcommands.add_parser(
+        "regime",
+        help="judge a location head's agreement with itself across rendering regimes",
+        description=(
+            "The shipped location head learned one geometry and is only honest there: read "
+            "at a cheaper regime its scores fall, worst on multibrot3, far enough to cross "
+            "the floors the supply engine acts on. These three steps write the bar for a "
+            "head trained over every cached regime at once, read a seed band against it, "
+            "and stage the winner beside the shipped head. Nothing here adopts anything: a "
+            "location retrain moves the scale every floor is calibrated against."
+        ),
+    )
+    steps = studying.add_subparsers(dest="step", required=True)
+
+    def with_head(parser):
+        parser.add_argument("--head", default="location", help="which judge (default: location)")
+        return parser
+
+    registering = with_head(
+        steps.add_parser(
+            "preregister",
+            help="write the bar, before there is a candidate to judge against it",
+            description=(
+                "Two arms: the candidate must not be significantly worse than the shipped "
+                "head at the canonical regime on the repository's proper scoring rule, and "
+                "all four cross-regime consistency slices must significantly improve. "
+                "Refuses to overwrite an existing bar — amendments are appended to it."
+            ),
+        )
+    )
+    registering.add_argument(
+        "--force", action="store_true", help="overwrite a bar no candidate has been judged against"
+    )
+    registering.set_defaults(handler=regime_preregister)
+
+    judging = with_head(
+        steps.add_parser(
+            "accept",
+            help="read the candidate band against the pre-registered bar",
+            description=(
+                "Every arm is a paired cluster bootstrap over the evaluation side, read on "
+                "the MEDIAN seed of the band by that arm's own statistic. Exits non-zero "
+                "on FAIL."
+            ),
+        )
+    )
+    judging.set_defaults(handler=regime_accept)
+
+    staging = with_head(
+        steps.add_parser(
+            "stage",
+            help="halve, verify and hash the winning seed as a candidate artifact",
+            description=(
+                "The same cast, re-read, agreement check and hash a shipment gets, into "
+                "<head>.candidate.fp16.pt beside the shipped artifact. It does NOT write "
+                "the weights manifest, so no serving path resolves it: adopting a candidate "
+                "is a separate decision with a separate price."
+            ),
+        )
+    )
+    staging.add_argument("--which", default="best", choices=["best", "last"])
+    staging.add_argument("--device", default="auto")
+    staging.add_argument(
+        "--run", help="the run to stage (default: the seed the bar's selection rule chose)"
+    )
+    staging.add_argument("--why", default="", help="one sentence: what this candidate is for")
+    staging.add_argument("--force", action="store_true", help="stage a candidate whose read failed")
+    staging.set_defaults(handler=regime_stage)
 
 
 def coloring_commands(subcommands) -> None:

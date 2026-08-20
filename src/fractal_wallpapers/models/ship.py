@@ -82,6 +82,21 @@ it* — and neither is recoverable from the bytes. So a row carries both:
   distilled one names that teacher by hash — because "approximately equivalent
   to its teacher" is a claim that means nothing without saying which teacher.
 
+## A candidate is staged, not shipped
+
+A head can be trained, judged and worth keeping without being adopted — a
+location retrain moves the scale every floor in the supply engine is calibrated
+against, so *whether* to adopt one is a separate decision with a separate price.
+[`stage_candidate`] does everything staging does — the cast, the re-read, the
+agreement check, the hash — and then stops. It writes `<head>.candidate.fp16.pt`
+beside the shipped artifact and a tracked record saying what that file is, and it
+does **not** touch the weights manifest. `fetch-weights` reads the manifest, so a
+candidate is invisible to every serving path until someone writes it in.
+
+Two files, two names, in one directory on purpose: the alternative is a candidate
+living somewhere a reader has to be told about, which is how the wrong weights
+get served.
+
 ## The release itself is not this step's job
 
 `fetch-weights` downloads by tag and asset name and verifies the sha256 before
@@ -342,6 +357,22 @@ def shipped_path(name: str = "location", run: str | None = None) -> Path:
     return shipment_for(name).directory(name) / f"{name}.fp16.pt"
 
 
+def candidate_path(name: str = "location") -> Path:
+    """A staged candidate: beside the shipped artifact, and never mistaken for it.
+
+    The shipped name is the one a release asset carries and the one
+    `fetch-weights` resolves. This one says `candidate` in the middle of it, so a
+    directory listing answers "which of these is serving" without anyone having
+    to remember.
+    """
+    return shipment_for(name).directory(name) / f"{name}.candidate.fp16.pt"
+
+
+def candidate_record_path(name: str = "location") -> Path:
+    """What the staged candidate is, tracked beside the untracked weights."""
+    return shipment_for(name).directory(name) / "candidate.json"
+
+
 def sha256_of(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -363,8 +394,17 @@ def halve(state: dict) -> dict:
     }
 
 
-def convert(name: str = "location", which: str = "best", run: str | None = None) -> dict:
-    """Write the half-precision artifact and prove it re-reads."""
+def convert(
+    name: str = "location",
+    which: str = "best",
+    run: str | None = None,
+    into: Path | None = None,
+) -> dict:
+    """Write the half-precision artifact and prove it re-reads.
+
+    `into` names the file, for a staged candidate that must not land on the
+    shipped one. Omitted, it is the shipped artifact.
+    """
     import torch
 
     source = shipment_for(name).checkpoint(name, which, run)
@@ -377,7 +417,7 @@ def convert(name: str = "location", which: str = "best", run: str | None = None)
     )
     halved = halve(saved["state_dict"])
 
-    destination = shipped_path(name)
+    destination = shipped_path(name) if into is None else Path(into)
     destination.parent.mkdir(parents=True, exist_ok=True)
     torch.save({"state_dict": halved, "config": config}, destination)
 
@@ -406,9 +446,17 @@ def convert(name: str = "location", which: str = "best", run: str | None = None)
 
 
 def agreement(
-    name: str = "location", which: str = "best", device: str = "auto", run: str | None = None
+    name: str = "location",
+    which: str = "best",
+    device: str = "auto",
+    run: str | None = None,
+    into: Path | None = None,
 ) -> dict:
-    """Score this head's own evaluation side both ways and compare."""
+    """Score this head's own evaluation side both ways and compare.
+
+    `into` names the halved artifact to read back, for a candidate staged beside
+    the shipped one.
+    """
     import numpy
 
     kind = shipment_for(name)
@@ -422,7 +470,7 @@ def agreement(
     before = train.score(full, paths, transform, where, classes, {"batch_size": 64})
     del full
 
-    halved, _, _ = kind.load(shipped_path(name), device)
+    halved, _, _ = kind.load(shipped_path(name) if into is None else Path(into), device)
     after = train.score(halved, paths, transform, where, classes, {"batch_size": 64})
 
     cutpoints, ordering_held = {}, True
@@ -602,6 +650,61 @@ def stage(
     }
 
 
+def stage_candidate(
+    name: str = "location",
+    which: str = "best",
+    run: str | None = None,
+    device: str = "auto",
+    why: str = "",
+    verdict: Path | None = None,
+) -> dict:
+    """Halve, verify and hash a candidate — and write nothing the servers read.
+
+    The same three checks a shipment gets, because a candidate nobody verified is
+    a candidate nobody can adopt without redoing the work. What it does not do is
+    write the weights manifest: adoption is a decision, and a step that could
+    make it by accident is a step that eventually will.
+    """
+    conversion = convert(name, which, run, into=candidate_path(name))
+    agreed = agreement(name, which, device, run, into=candidate_path(name))
+    if not agreed["held"]:
+        candidate_path(name).unlink(missing_ok=True)
+        raise ValueError(
+            "the half-precision candidate does not agree with the full-precision one: the "
+            f"order held={agreed['ordering']['held']} and "
+            f"{agreed['decisions']['changed']} of its decisions changed "
+            f"({agreed['decisions']['share']:.1%}). The artifact has been removed rather "
+            "than hashed."
+        )
+
+    artifact = candidate_path(name)
+    record = {
+        "schema": SCHEMA,
+        "head": name,
+        "artifact": artifact.name,
+        "sha256": sha256_of(artifact),
+        "bytes": artifact.stat().st_size,
+        "precision": "fp16",
+        "run": run or "its own",
+        "checkpoint": which,
+        "source_commit": source_commit(),
+        "provenance": provenance(name),
+        "why": why,
+        "judged_by": None if verdict is None else str(verdict),
+        "adopted": False,
+        "not_in": (
+            f"{manifest_path().name}. Nothing resolves this file: `fetch-weights` reads the "
+            f"manifest, and the shipped {shipped_path(name).name} is untouched"
+        ),
+        "conversion": conversion,
+        "agreement": agreed,
+    }
+    candidate_record_path(name).write_text(
+        json.dumps(record, indent=2) + "\n", encoding="utf-8", newline="\n"
+    )
+    return record
+
+
 __all__ = [
     "AUC_TOLERANCE",
     "DECISION_TOLERANCE",
@@ -613,6 +716,8 @@ __all__ = [
     "TAG",
     "Shipment",
     "agreement",
+    "candidate_path",
+    "candidate_record_path",
     "convert",
     "entry",
     "halve",
@@ -623,4 +728,5 @@ __all__ = [
     "shipped_path",
     "source_commit",
     "stage",
+    "stage_candidate",
 ]

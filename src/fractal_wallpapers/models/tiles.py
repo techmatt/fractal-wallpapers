@@ -112,6 +112,33 @@ class Regime:
 #: (see `location_view`). It is the regime whose name segment is empty.
 CANONICAL_REGIME = Regime()
 
+#: The regimes the corpus is cached at, canonical first. Two of them drop the
+#: supersample, which is what a walk scoring its own node field would be reading;
+#: one of those also drops the frame. Written down once because the trainer, the
+#: scorer and the cross-regime read all have to name the same three, and three
+#: literals in three modules is how a fourth one gets built and forgotten.
+BUILT_REGIMES = (CANONICAL_REGIME, Regime((640, 360), 1), Regime((384, 216), 1))
+
+
+def regime_of(tag: str) -> Regime:
+    """A regime from the segment its files carry: `<w>x<h>ss<n>`.
+
+    The canonical regime elides to an empty segment in a *name*, which is not
+    something a person can type, so it is also spelled out in full here — the
+    same string, before the elision. Both round-trip through `Regime.tag`.
+    """
+    stated = tag.strip().lstrip("_").lower()
+    if stated in ("", "canonical"):
+        return CANONICAL_REGIME
+    frame, _, supersample = stated.partition("ss")
+    width, _, height = frame.partition("x")
+    if not (width.isdigit() and height.isdigit() and supersample.isdigit()):
+        raise ValueError(
+            f"{tag!r} is not a regime. One is written <w>x<h>ss<n> — the tile size and the "
+            f"field supersample — as it appears in every file the build wrote."
+        )
+    return Regime(tile=(int(width), int(height)), supersample=int(supersample))
+
 
 def tile_dir() -> Path:
     """Where a build's records and pictures go. Rebuildable, so never tracked."""
@@ -370,6 +397,7 @@ def canonical_of(tiles: list[dict]) -> dict:
 
 
 __all__ = [
+    "BUILT_REGIMES",
     "CANONICAL_REGIME",
     "CANONICAL_SLOT",
     "PLAN_SEED",
@@ -389,6 +417,7 @@ __all__ = [
     "plan",
     "plan_path",
     "pool_path",
+    "regime_of",
     "read_locations",
     "read_manifest",
     "spec",

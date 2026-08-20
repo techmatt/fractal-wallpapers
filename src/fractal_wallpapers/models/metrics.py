@@ -1,16 +1,23 @@
 """The numbers a judge is read in, and the interval around them.
 
-Two of them are about a population of pictures with a label on each — AUC and
-average precision — and two are about **one candidate set read twice**, which is
-the shape the palette head is judged in: a rank correlation and a count of
-discordant pairs. All four are here rather than beside their heads, because a
-second implementation of any of them would be a second answer.
+Three of them are about a population of pictures with a label on each — AUC,
+average precision and the cutpoint cross-entropy — and two are about **one set
+read twice**, which is the shape the palette head is judged in and the shape a
+head read at two rendering regimes is judged in: a rank correlation and a count
+of discordant pairs. All of them are here rather than beside their heads, because
+a second implementation of any of them would be a second answer.
 
 **AUC** — the probability that a randomly chosen good location scores above a
 randomly chosen bad one. It is the number to quote when what matters is the
 *order*: a queue is worked from the top, and how well the head sorts is the whole
 question. It is also insensitive to the base rate, which is what makes it
 comparable across populations that hold different amounts of good material.
+
+**The cutpoint cross-entropy** — the one *proper* scoring rule here, and the only
+statistic in the module where lower is better. It is the number to quote when
+what matters is the **probability** rather than the order: a floor is a point on
+`P(≥3)` and a head that keeps the order while collapsing the scale walks straight
+through it. See [`cutpoint_cross_entropy`].
 
 **Average precision** — the area under precision against recall. It is the number
 to quote when what matters is the *top* of the order, and it moves with the base
@@ -82,6 +89,31 @@ def average_precision(labels, scores) -> float | None:
     cumulative = numpy.cumsum(hits)
     precision = cumulative / numpy.arange(1, len(hits) + 1)
     return float((precision * hits).sum() / hits.sum())
+
+
+def cutpoint_cross_entropy(labels, probabilities, classes: int) -> float:
+    """The proper scoring rule: cross-entropy of each cutpoint's own probability.
+
+    Scored on the **unconditional** probabilities, which are what an ordinal
+    head's interface exposes and what every consumer reads. Averaged over the
+    cutpoints, so a rare top cutpoint is not drowned by the common bottom one.
+
+    Proper, so it is minimized only by a head that is both well ordered *and*
+    correctly scaled — which is why it replaced a rank statistic as the selection
+    objective of every head here that reads its own probabilities. A rank
+    statistic is invariant to any monotone rescaling, so it cannot tell a head
+    that keeps the order while collapsing the scale from one that does neither.
+
+    **Lower is better**, unlike every other statistic in this module.
+    """
+    total = 0.0
+    for index in range(classes - 1):
+        truth = (numpy.asarray(labels) >= index + 2).astype(float)
+        predicted = numpy.clip(numpy.asarray(probabilities)[:, index], 1e-7, 1.0 - 1e-7)
+        total += float(
+            -(truth * numpy.log(predicted) + (1.0 - truth) * numpy.log(1.0 - predicted)).mean()
+        )
+    return total / (classes - 1)
 
 
 def spearman(first, second) -> float | None:
@@ -200,6 +232,7 @@ __all__ = [
     "auc",
     "average_precision",
     "bootstrap",
+    "cutpoint_cross_entropy",
     "discordant_pairs",
     "paired_delta",
     "spearman",

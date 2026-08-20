@@ -31,6 +31,19 @@ ratio *inside* a class — the source down-weight cannot be laundered back out
 through the class balance. The realized mass per cell is reported, so that claim
 is a number rather than an argument.
 
+## A regime is an axis of the example, not a field of the head
+
+A location's tiles exist at more than one **regime** — a tile size and a field
+supersample (see [`fractal_wallpapers.models.tiles.Regime`]). The same slot at two
+regimes is the same draw of the same place: same palette, same framing, same
+reconstruction, same quality, different geometry. So a training example is a
+`(location, regime)` pair, and a run told to use three regimes sees every label
+row three times an epoch — three tiles, one label, one row.
+
+The head is handed no regime input and no conditioning. That is the whole point:
+one score scale across regimes is the deliverable, and a head that could see which
+geometry it was looking at would be free to keep a different scale for each.
+
 ## The split has three sides, and only two of them are the split
 
 `train` and `eval` come from the label store's shipped pin and are not decided
@@ -75,34 +88,65 @@ class Location:
     group: int
     batch: str
     biased: bool
-    #: Tile manifest rows, in slot order. Slot 0 is the canonical view.
+    #: Tile manifest rows at the canonical regime, in slot order. Slot 0 is the
+    #: canonical view.
     tiles: list = field(default_factory=list)
+    #: The same slots at every other regime this join covered, keyed by the
+    #: regime's tag. The canonical regime's tag is the empty string and its rows
+    #: are `tiles` above, so a single-regime join leaves this empty.
+    regimes: dict = field(default_factory=dict)
 
-    def path(self, slot: int) -> str:
-        return self.tiles[slot]["path"]
+    def at(self, regime: str = "") -> list:
+        """This location's tiles at one regime, in slot order."""
+        return self.tiles if regime == "" else self.regimes[regime]
 
-    def canonical(self) -> str:
-        """The deploy view: the picture this location is scored through."""
+    def path(self, slot: int, regime: str = "") -> str:
+        return self.at(regime)[slot]["path"]
+
+    def canonical(self, regime: str = "") -> str:
+        """The deploy view: the picture this location is scored through.
+
+        At a regime other than the canonical one it is the same slot rendered at
+        that geometry — the same place, framed and colored the same way, sampled
+        differently. That is exactly the pair a cross-regime reading compares.
+        """
         from fractal_wallpapers.models import tiles as tile_module
 
-        return tile_module.canonical_of(self.tiles)["path"]
+        return tile_module.canonical_of(self.at(regime))["path"]
 
 
-def join(locations: list[dict], tiles_by_location: dict[int, list[dict]]) -> list[Location]:
+def join(
+    locations: list[dict],
+    tiles_by_location: dict[int, list[dict]],
+    others: dict[str, dict[int, list[dict]]] | None = None,
+) -> list[Location]:
     """Join the trainer's manifest to the tiles that were built for it.
 
     Refuses a location whose tiles are missing rather than dropping it. A build
     that silently covers a prefix trains a head on a prefix, and the head reports
     the numbers of a whole corpus.
+
+    `others` maps a regime's tag to that regime's grouped manifest, and every
+    regime in it has to cover every location the canonical one does — with the
+    same number of slots. A regime short of a location is not a smaller corpus
+    either: it is a mix whose composition nobody wrote down.
     """
     out = []
     absent = []
+    short: dict[str, list[int]] = {}
     for row in locations:
         identifier = int(row["location_id"])
         tiles = tiles_by_location.get(identifier)
         if not tiles:
             absent.append(identifier)
             continue
+        elsewhere = {}
+        for tag, grouped in (others or {}).items():
+            theirs = grouped.get(identifier)
+            if not theirs or len(theirs) != len(tiles):
+                short.setdefault(tag, []).append(identifier)
+                continue
+            elsewhere[tag] = theirs
         out.append(
             Location(
                 location_id=identifier,
@@ -113,6 +157,7 @@ def join(locations: list[dict], tiles_by_location: dict[int, list[dict]]) -> lis
                 batch=row["batch"],
                 biased=bool(row["biased"]),
                 tiles=tiles,
+                regimes=elsewhere,
             )
         )
     if absent:
@@ -120,6 +165,14 @@ def join(locations: list[dict], tiles_by_location: dict[int, list[dict]]) -> lis
             f"{len(absent)} of {len(locations)} locations have no tiles, e.g. {absent[:5]}. "
             "Finish the build before training on it — a partial corpus is not a smaller "
             "corpus, it is a different one."
+        )
+    if short:
+        first = sorted(short)[0]
+        raise ValueError(
+            f"regime {first!r} covers {len(locations) - len(short[first])} of "
+            f"{len(locations)} locations at the canonical regime's slot count, e.g. "
+            f"{short[first][:5]}. A regime mix is only comparable row by row if every "
+            "regime holds every row."
         )
     return out
 
@@ -211,19 +264,42 @@ def weights(locations: list[Location], beta: float = BETA_BIASED) -> tuple:
     return torch.tensor(raw, dtype=torch.double), table
 
 
-def sampler(locations: list[Location], beta: float = BETA_BIASED) -> tuple:
-    """A `WeightedRandomSampler` over the locations, and its mass table."""
+def sampler(locations: list[Location], beta: float = BETA_BIASED, regimes: int = 1) -> tuple:
+    """A `WeightedRandomSampler` over the examples, and its mass table.
+
+    With more than one regime the index space is the `(location, regime)` pairs
+    [`TileDraw`] indexes — the location's weight repeated once per regime, and an
+    epoch that many times longer. Every location is repeated the *same* number of
+    times, so the realized mass per class × source cell is unchanged and the
+    table below still describes the mix.
+    """
+    import numpy
+    import torch
     from torch.utils.data import WeightedRandomSampler
 
     tensor, table = weights(locations, beta)
+    if regimes > 1:
+        tensor = torch.tensor(numpy.tile(tensor.numpy(), regimes), dtype=torch.double)
+    table["regimes"] = regimes
     return (
-        WeightedRandomSampler(tensor, num_samples=len(locations), replacement=True),
+        WeightedRandomSampler(tensor, num_samples=len(locations) * regimes, replacement=True),
         table,
     )
 
 
 class TileDraw:
-    """The dataset a training epoch iterates: one tile per location, redrawn.
+    """The dataset a training epoch iterates: one tile per example, redrawn.
+
+    An example is a `(location, regime)` pair, laid out so that index `i` is
+    location `i % len(locations)` at regime `i // len(locations)` — the same
+    layout [`sampler`] tiles its weights in. With one regime that is the plain
+    per-location index it has always been.
+
+    **The slot is drawn per location, not per example**, so a row's three tiles
+    are the same draw at three geometries rather than three unrelated pictures.
+    The augmentation is drawn per example, because two views of one picture that
+    were cropped and flipped identically would be teaching the head that the
+    crop is the invariant.
 
     A module-level class rather than one built inside [`training_set`], and that
     is not a style preference. The loader's workers are separate *processes* on
@@ -233,38 +309,56 @@ class TileDraw:
     corpus has been joined.
     """
 
-    def __init__(self, locations: list[Location], transform, seed: int = 0):
+    def __init__(
+        self,
+        locations: list[Location],
+        transform,
+        seed: int = 0,
+        regimes: tuple[str, ...] = ("",),
+    ):
         self.locations = locations
         self.transform = transform
         self.seed = seed
+        self.regimes = tuple(regimes)
         self.epoch = 0
 
     def set_epoch(self, epoch: int) -> None:
         self.epoch = int(epoch)
 
     def __len__(self) -> int:
-        return len(self.locations)
+        return len(self.locations) * len(self.regimes)
 
     def __getitem__(self, index: int):
         from PIL import Image
 
-        location = self.locations[index]
-        # Reproducible per (seed, epoch, index) and varying with the epoch, so
+        which = index % len(self.locations)
+        regime = self.regimes[index // len(self.locations)]
+        location = self.locations[which]
+        # Reproducible per (seed, epoch, location) and varying with the epoch, so
         # the thirty-two tiles are actually exercised rather than one of them
-        # being memorized forty times.
+        # being memorized forty times — and shared across the regimes, so the
+        # example a row contributes at each of them is the same picture.
+        slot = random.Random(
+            (self.seed * 2_654_435_761 + self.epoch * 1_000_003 + which) & 0xFFFF_FFFF_FFFF
+        ).randrange(len(location.tiles))
         draw = random.Random(
             (self.seed * 2_654_435_761 + self.epoch * 1_000_003 + index) & 0xFFFF_FFFF_FFFF
         )
-        path = location.path(draw.randrange(len(location.tiles)))
+        path = location.path(slot, regime)
         with Image.open(path) as opened:
             opened.load()
             image = opened.convert("RGB")
-        return self.transform(image, draw), location.score, index
+        return self.transform(image, draw), location.score, which
 
 
-def training_set(locations: list[Location], transform, seed: int = 0) -> TileDraw:
-    """One epoch's worth of examples: a location each, a tile drawn per epoch."""
-    return TileDraw(locations, transform, seed)
+def training_set(
+    locations: list[Location],
+    transform,
+    seed: int = 0,
+    regimes: tuple[str, ...] = ("",),
+) -> TileDraw:
+    """One epoch's worth of examples: every location once per regime."""
+    return TileDraw(locations, transform, seed, regimes)
 
 
 def histogram(locations: list[Location]) -> dict:

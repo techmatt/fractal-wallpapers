@@ -1,0 +1,111 @@
+{
+  "schema": 1,
+  "head": "location",
+  "study": "one head, three regimes",
+  "question": "Does a location head trained over all three cached regimes at once keep the incumbent's judgement at the canonical regime, while agreeing with itself far better at the two cheaper ones?",
+  "regimes": {
+    "canonical": "640x360ss2",
+    "cheaper": [
+      "640x360ss1",
+      "384x216ss1"
+    ],
+    "identity": "every regime is addressed by its own tile names, manifest and build record; the draw axes of all 379,616 (location, slot) pairs are identical across the three, so a row is the same picture at three geometries"
+  },
+  "population": {
+    "rule": "the evaluation side of this repository's shipped split, every location read through its canonical tile at the regime being read",
+    "side": "eval",
+    "why_not_train": "a training row saw all three regimes, so its cross-regime agreement is a measure of what the head was shown rather than of what it learned"
+  },
+  "runs": {
+    "incumbent": [
+      "seed0",
+      "seed1",
+      "seed2"
+    ],
+    "shipped": "seed0",
+    "candidate": [
+      "seed0_all_regimes",
+      "seed1_all_regimes",
+      "seed2_all_regimes"
+    ],
+    "checkpoint": "best",
+    "precision": "full precision on both sides. The shipped artifact is seed0's fp16 cast and reproduces its scores to 1.6e-06, which is far below anything read here"
+  },
+  "training": {
+    "mix": "every location label row at all three regimes \u2014 three tiles, one label, one row",
+    "conditioning": "none. The head is handed no regime input and no regime embedding: one score scale across regimes is the deliverable, and a head that could see the geometry would be free to keep a scale per geometry",
+    "split": "the existing location-grouped split, unchanged; a row's three tiles share its side",
+    "augmentation": "the shipped recipe's, unchanged. The three regimes are real pictures, not a jitter",
+    "seeds": [
+      "seed0_all_regimes",
+      "seed1_all_regimes",
+      "seed2_all_regimes"
+    ],
+    "epoch_is_three_times_as_long": "the epoch count, batch size, learning rates and schedule are the inherited recipe's, unchanged, and an epoch is now one pass per regime \u2014 so the candidate takes three times the gradient steps the incumbent did. That is what 'three tiles, one row' costs; shortening the schedule to match the step count would have been a re-tune of a recipe this project does not re-tune. Declared, not discovered"
+  },
+  "selection": {
+    "rule": "epoch and seed are chosen on the training-side selection slice, at the canonical regime, under the cutpoint cross-entropy",
+    "population": "the incumbent's own selection slice: seed 0, 10% of the training-side groups, taken whole",
+    "never": "consistency. No cross-regime statistic enters the choice of an epoch or of the staged seed \u2014 a candidate selected on the arm that gates it would be measuring its own selection",
+    "staged_seed": "the seed with the lowest selection-slice cutpoint cross-entropy at its own best epoch. Chosen on the training side, so the evaluation side pays for nothing",
+    "differs_from_the_incumbent": "the incumbent chose its epoch by maximizing average precision at the first cutpoint. That is a rank statistic and arm (a) below is a proper scoring rule, so a candidate selected on average precision would be judged on a statistic it never optimized. The population and the slice are the incumbent's; the objective is the one this bar gates on. Declared, and it is generous to the candidate on arm (a)"
+  },
+  "statistics": {
+    "overall": "the cutpoint cross-entropy of the unconditional probabilities against the human label at each cutpoint, averaged over the cutpoints. A proper scoring rule, and the established selection objective of every head here that reads its own probabilities. LOWER IS BETTER",
+    "consistency": "Spearman rho between a head's own p_ge3 at an ss1 regime and its own p_ge3 at 640x360ss2, paired per location over the slice. HIGHER IS BETTER",
+    "interval": "a 95 percent paired cluster bootstrap, 5000 draws at seed 0, resampling whole neighbourhood groups. Both heads are scored on the same resampled rows",
+    "band": "each arm is read on the MEDIAN candidate seed by that arm's own statistic, with all three reported. The median, not the best"
+  },
+  "arms": {
+    "overall": {
+      "gated": true,
+      "regime": "640x360ss2",
+      "against": "seed0",
+      "rule": "the candidate is not significantly worse than the shipped incumbent. PASS when the lower bound of the paired interval on (candidate - incumbent) is at or below zero; FAIL when it is above",
+      "margin": "none. The prompt's rule is a plain significance test, and a margin would be a second decision nobody wrote down",
+      "reported": "the same read against the incumbent's other two seeds, and every cutpoint's AUC. Neither gates"
+    },
+    "consistency": {
+      "gated": true,
+      "slices": [
+        {
+          "regime": "640x360ss1",
+          "family": "all",
+          "key": "640x360ss1|all"
+        },
+        {
+          "regime": "640x360ss1",
+          "family": "multibrot3",
+          "key": "640x360ss1|multibrot3"
+        },
+        {
+          "regime": "384x216ss1",
+          "family": "all",
+          "key": "384x216ss1|all"
+        },
+        {
+          "regime": "384x216ss1",
+          "family": "multibrot3",
+          "key": "384x216ss1|multibrot3"
+        }
+      ],
+      "rule": "ALL FOUR slices must significantly improve and none may worsen. A slice IMPROVED when the lower bound of the paired interval on (candidate rho - incumbent rho) is above zero, WORSENED when the upper bound is below zero, NOT_RESOLVED otherwise. The arm passes only if all four are IMPROVED",
+      "against": "seed0",
+      "recomputed": "the incumbent's rho is measured on these same rows, not carried from the 500-row production sample that motivated this work"
+    }
+  },
+  "verdicts": {
+    "PASS": "both gated arms pass",
+    "FAIL": "either gated arm fails"
+  },
+  "adoption": "NOT part of this bar. A passing candidate is staged beside the shipped head and nothing in the serving path moves: a location retrain shifts the score scale every floor is calibrated against, and restating those floors is a separate, priced decision",
+  "declared": [
+    "The incumbent is the SHIPPED run and the arms gate against it alone. Its other two seeds are read the same way and reported, so a reader can see whether a difference is larger than the incumbent's own seed spread, but a head that does not serve is not the thing being replaced.",
+    "The multibrot3 slice is thin and one-sided: 71 evaluation locations in 24 groups, 68 of them labelled 1. Its rho is therefore measured almost entirely in the head's low tail and its interval will be wide. It is gated anyway, because it is the slice the whole retrain is about \u2014 but a NOT_RESOLVED there is a statement about 24 clusters, not about the head.",
+    "Selection uses a different objective from the incumbent's, on the incumbent's own slice and population. See `selection.differs_from_the_incumbent`: it is generous to the candidate on the overall arm and is declared rather than discovered.",
+    "This is a same-input comparison, unlike the incumbent's own acceptance bar: both heads are read through the same tiles of the same locations, so what is left is the two heads.",
+    "The candidate takes three times the gradient steps the incumbent did, because its epoch is three passes long and the schedule is the inherited one. See `training.epoch_is_three_times_as_long`.",
+    "Adjacent-category label noise at these boundaries is larger than the differences the overall arm can resolve. Only the pre-declared test is read; small boundary deltas are reported and are not findings."
+  ],
+  "amendments": []
+}
