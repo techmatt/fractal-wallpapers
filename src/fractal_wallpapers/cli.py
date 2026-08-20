@@ -2926,24 +2926,73 @@ def regime_accept(args: argparse.Namespace) -> int:
     return 0 if report["verdict"] != "FAIL" else 1
 
 
+def flip_preregister(args: argparse.Namespace) -> int:
+    """Write the second bar — flips on production stock — before any row is scored."""
+    from fractal_wallpapers.models import regime_flips
+
+    path = regime_flips.prereg_path(args.head)
+    if path.is_file() and not args.force:
+        print(f"{path} already exists. A bar rewritten after the numbers are in is not a bar;")
+        print("amend it in place — the record carries an append-only list for that.")
+        return 1
+    bar = regime_flips.preregister(args.head)
+    write_tracked_json(path, bar)
+    print(json.dumps(bar, indent=2))
+    return 0
+
+
+def flip_score(args: argparse.Namespace) -> int:
+    """Draw the stock, render it at every regime, and read every run over it."""
+    from fractal_wallpapers.models import regime_flips
+
+    report = regime_flips.score(
+        head=args.head,
+        limit=args.limit,
+        workers=args.workers,
+        device=args.device,
+    )
+    print(json.dumps(report, indent=2))
+    return 0
+
+
+def flip_read(args: argparse.Namespace) -> int:
+    """Read the band against the second bar."""
+    from fractal_wallpapers.models import regime_flips
+
+    report = regime_flips.read(args.head)
+    write_tracked_json(regime_flips.acceptance_path(args.head), report)
+    print(json.dumps(report, indent=2))
+    return 0 if report["verdict"] != "FAIL" else 1
+
+
+#: Which pre-registered read authorizes a staging, by the population it was made
+#: on. Two bars judge this candidate and they are not interchangeable: one is the
+#: evaluation split, the other is production stock.
+STAGING_READS = {"split": "regime_acceptance", "stock": "regime_flips"}
+
+
 def regime_stage(args: argparse.Namespace) -> int:
     """Halve, verify and hash the winning seed — beside the shipped head."""
-    from fractal_wallpapers.models import regime_acceptance, ship
+    import importlib
 
-    verdict_path = regime_acceptance.acceptance_path(args.head)
+    from fractal_wallpapers.models import ship
+
+    judge = importlib.import_module(f"fractal_wallpapers.models.{STAGING_READS[args.read]}")
+    verdict_path = judge.acceptance_path(args.head)
     if not verdict_path.is_file():
-        print(f"{verdict_path} is missing: nothing has judged this candidate yet.")
-        print("Run `fractal-wallpapers regime accept` first.")
+        print(f"{verdict_path} is missing: nothing has judged this candidate on the")
+        print(f"{args.read} population yet. Run the read that writes it first.")
         return 1
     judged = json.loads(verdict_path.read_text(encoding="utf-8"))
     if judged["verdict"] == "FAIL" and not args.force:
-        print(f"the cross-regime read says {judged['verdict']}. Staging a candidate that")
+        print(f"the {args.read} read says {judged['verdict']}. Staging a candidate that")
         print("failed its own pre-registered bar needs --force and a sentence about why.")
         return 1
+    chosen = judged["staged"]["seed"] if "staged" in judged else judged["gated_on"]
     record = ship.stage_candidate(
         name=args.head,
         which=args.which,
-        run=args.run or judged["staged"]["seed"],
+        run=args.run or chosen,
         device=args.device,
         why=args.why,
         verdict=verdict_path,
@@ -2960,10 +3009,13 @@ def regime_commands(subcommands) -> None:
         description=(
             "The shipped location head learned one geometry and is only honest there: read "
             "at a cheaper regime its scores fall, worst on multibrot3, far enough to cross "
-            "the floors the supply engine acts on. These three steps write the bar for a "
-            "head trained over every cached regime at once, read a seed band against it, "
-            "and stage the winner beside the shipped head. Nothing here adopts anything: a "
-            "location retrain moves the scale every floor is calibrated against."
+            "the floors the supply engine acts on. These steps write a bar for a head "
+            "trained over every cached regime at once, read a seed band against it, and "
+            "stage the winner beside the shipped head. There are two bars and two "
+            "populations: the first is read on the evaluation split, where most rows agree "
+            "trivially, and the flip- steps re-ask the same question on production stock at "
+            "the gates the supply engine acts on. Nothing here adopts anything: a location "
+            "retrain moves the scale every floor is calibrated against."
         ),
     )
     steps = studying.add_subparsers(dest="step", required=True)
@@ -3020,8 +3072,72 @@ def regime_commands(subcommands) -> None:
         "--run", help="the run to stage (default: the seed the bar's selection rule chose)"
     )
     staging.add_argument("--why", default="", help="one sentence: what this candidate is for")
+    staging.add_argument(
+        "--read",
+        default="split",
+        choices=sorted(STAGING_READS),
+        help=(
+            "which pre-registered read authorizes this staging, by the population it was "
+            "made on: the evaluation split, or production stock (default: split)"
+        ),
+    )
     staging.add_argument("--force", action="store_true", help="stage a candidate whose read failed")
     staging.set_defaults(handler=regime_stage)
+
+    registering_flips = with_head(
+        steps.add_parser(
+            "flip-preregister",
+            help="write the second bar: decision flips on production stock",
+            description=(
+                "The first bar was read on the evaluation split, where 78% of rows read "
+                "below P(>=3)=0.05 at every geometry and agree trivially — three of its "
+                "four slices could not clear zero. This one re-asks the consistency "
+                "question on the population the motivating numbers came from, at the gates "
+                "the supply engine actually acts on. Refuses to overwrite an existing bar."
+            ),
+        )
+    )
+    registering_flips.add_argument(
+        "--force", action="store_true", help="overwrite a bar no candidate has been judged against"
+    )
+    registering_flips.set_defaults(handler=flip_preregister)
+
+    reading = with_head(
+        steps.add_parser(
+            "flip-score",
+            help="draw the stock, render it at every regime, and read every run over it",
+            description=(
+                "The draw is the bar's: its size and its seed come out of the "
+                "pre-registration, and every location the label store holds is excluded. "
+                "Renders are reused, so a re-run costs the engine nothing it already paid."
+            ),
+        )
+    )
+    reading.add_argument(
+        "--limit",
+        type=int,
+        help=(
+            "read a prefix of the draw. The rehearsal a render budget is estimated from: "
+            "it writes no verdict and the read refuses a population smaller than the bar's"
+        ),
+    )
+    reading.add_argument(
+        "--workers", type=int, default=6, help="render worker processes (default: 6)"
+    )
+    reading.add_argument("--device", default="auto")
+    reading.set_defaults(handler=flip_score)
+
+    judging_flips = with_head(
+        steps.add_parser(
+            "flip-read",
+            help="read the band against the second bar",
+            description=(
+                "A paired bootstrap over LOCATIONS — stock has no neighbourhood groups — on "
+                "the seed the training-side selection rule froze. Exits non-zero on FAIL."
+            ),
+        )
+    )
+    judging_flips.set_defaults(handler=flip_read)
 
 
 def coloring_commands(subcommands) -> None:

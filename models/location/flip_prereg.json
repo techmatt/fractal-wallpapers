@@ -1,0 +1,138 @@
+{
+  "schema": 1,
+  "head": "location",
+  "study": "decision flips on production stock",
+  "question": "On the population the motivating numbers came from, does the regime-robust candidate cross the acting gates less often than the shipped head does when it reads the same location at a cheaper geometry?",
+  "why_a_second_bar": "the first one was read on the evaluation split, where 78% of rows sit below P(>=3)=0.05 at every geometry and agree trivially. Three of its four slices could not clear zero. This one is read where the score is contested",
+  "population": {
+    "rule": "a fresh seeded draw over the curation sidecar, stratified over partition x the incumbent's own stored canonical score band",
+    "source": "artifacts/curation/supply_scores.jsonl",
+    "bands": [
+      [
+        0.0,
+        0.05
+      ],
+      [
+        0.05,
+        0.2
+      ],
+      [
+        0.2,
+        0.5
+      ],
+      [
+        0.5,
+        0.8
+      ],
+      [
+        0.8,
+        1.01
+      ]
+    ],
+    "size": 4000,
+    "seed": 0,
+    "excluded": "every location the label store holds, on the project's own location identity. The candidate trained on those at all three regimes and could have memorized their cross-regime agreement",
+    "score_conditioned": "yes, and deliberately: the strata are a model's scores. No label is made here. If a row of this draw is ever labelled it is TRAIN-side material by the registry's own rule, because a draw ordered by a head's score is what eval-eligibility refuses",
+    "power": {
+      "model": "paired difference of two pooled flip rates, worst-case: every gate of a location flips together, and the two heads' flips are independent",
+      "assumed_incumbent_pooled_flip_rate": 0.015,
+      "assumed_reduction": 0.4,
+      "difference": 0.006,
+      "half_width_at_this_size": 0.004800999895855029,
+      "resolves": true,
+      "size": 4000,
+      "note": "1-2% per gate is what the first bar measured on evaluation rows, and a 40% reduction is less than the halving it reported. The stratified production sample this draw follows measured 3-14% per gate, where the same test is far easier; the smaller assumption is the one the size is chosen against"
+    }
+  },
+  "regimes": {
+    "canonical": "640x360ss2",
+    "cheaper": [
+      "640x360ss1",
+      "384x216ss1"
+    ],
+    "rendered": "each drawn location at all three regimes, at the tile geometry the caches were built at, through the canonical view recipe. The canonical arm reads the shared deploy cache, which holds the very pictures the sidecar's own scores were read off"
+  },
+  "runs": {
+    "incumbent": "seed0",
+    "candidate": [
+      "seed0_all_regimes",
+      "seed1_all_regimes",
+      "seed2_all_regimes"
+    ],
+    "gated_candidate": "seed0_all_regimes",
+    "checkpoint": "best",
+    "precision": "full precision on both sides, as the first bar declared",
+    "why_this_seed": "the staged pick by the frozen training-side selection rule. Not the median of the band and not its best: a second read that re-picked a seed would be choosing the winner on the arm that gates it"
+  },
+  "measure": {
+    "unit": "one location, one head, one gate",
+    "flip": "the head's own read at a cheaper regime lands on the other side of a gate from its own read at the canonical regime. Both readings are the same head on the same location; nothing here compares a head to a label",
+    "gates": [
+      {
+        "gate": "junk floor",
+        "reads": "P(>=3) >= 0.2",
+        "decides": "whether the intake spends colorize compute, and whether a walk stands here"
+      },
+      {
+        "gate": "good floor",
+        "reads": "P(>=3) >= 0.5",
+        "decides": "whether a find is booked as a keeper"
+      },
+      {
+        "gate": "great cut",
+        "reads": "P(>=4) >= 0.5",
+        "decides": "whether a keeper is a 4, which the currency weights ten to one"
+      }
+    ],
+    "pooled": "a head's pooled flip rate at a regime is its flipped decisions divided by three times the locations read"
+  },
+  "statistics": {
+    "interval": "a 95 percent paired bootstrap, 5000 draws at seed 0, resampling LOCATIONS. Both heads are read on the same resampled rows",
+    "why_locations": "the split's neighbourhood groups do not exist over stock: these rows come from walk ledgers, not from a labelled corpus. Overlapping frames of one hot spot are therefore counted as separate evidence, which is declared rather than discovered",
+    "direction": "LOWER IS BETTER, at every cell here"
+  },
+  "arms": {
+    "primary": {
+      "gated": true,
+      "rule": "the pooled-over-gates flip rate of the gated candidate is significantly LOWER than the incumbent's at EACH of the two cheaper regimes. A regime passes when the upper bound of the paired interval on (candidate - incumbent) is below zero. BOTH must pass",
+      "regimes": [
+        "640x360ss1",
+        "384x216ss1"
+      ]
+    },
+    "guard": {
+      "gated": true,
+      "rule": "none of the six regime x gate cells is significantly WORSE. A cell fails when the lower bound of the paired interval on (candidate - incumbent) is above zero",
+      "cells": [
+        "640x360ss1|junk floor",
+        "640x360ss1|good floor",
+        "640x360ss1|great cut",
+        "384x216ss1|junk floor",
+        "384x216ss1|good floor",
+        "384x216ss1|great cut"
+      ]
+    }
+  },
+  "reported_not_gated": [
+    "the pooled flip rate of the multibrot3 partition alone, per regime",
+    "all three candidate seeds' numbers at every cell \u2014 the band",
+    "the raw Spearman rho of each head's own P(>=3) at a cheaper regime against its own at the canonical one, for continuity with the two earlier reads",
+    "which direction the flips go, which the first read found nearly one-sided"
+  ],
+  "verdicts": {
+    "PASS": "both cheaper regimes improve on the primary arm and no guard cell worsens",
+    "FAIL": "anything else"
+  },
+  "outcome": {
+    "PASS": "seed0_all_regimes is staged as the candidate artifact beside the shipped head. The serving path is untouched: a location retrain moves the scale every floor is calibrated against, and restating those floors is a separate, priced decision",
+    "FAIL": "nothing is staged, and the record says which cell"
+  },
+  "declared": [
+    "This bar gates on a seed chosen elsewhere, unlike the first one, which read the median of the band. That is not a relaxation: the staged pick was frozen on the training side before this population existed, and reading the median here would let a second bar re-choose what the first one's selection rule already named.",
+    "The population is model-score-conditioned by construction and can never measure anything about human labels. It measures a head against itself, which is the only claim made here.",
+    "A flip is symmetric: a decision that turns on at the cheaper regime counts the same as one that turns off. The first read found the movement almost entirely one-directional, and the direction is reported rather than gated, because a gate that counted one direction only would reward a head that scores nothing.",
+    "Locations, not groups, are the resampling unit \u2014 see statistics.why_locations.",
+    "Nothing is trained, tuned or selected here. The band and its checkpoints are the ones the first bar already read."
+  ],
+  "amendments": []
+}
