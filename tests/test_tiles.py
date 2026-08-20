@@ -1,6 +1,6 @@
-"""The training tiles: the population, the ids, and the picture at slot zero.
+"""The training tiles: the population, the ids, the regime, and slot zero.
 
-The last two tests build real tiles through the real engine, because everything
+The last four tests build real tiles through the real engine, because everything
 above them can be true of a build that never rendered anything. They are sized to
 a couple of seconds.
 """
@@ -16,6 +16,11 @@ from fractal_wallpapers.labeling import pins
 from fractal_wallpapers.models import tiles as tile_module
 from fractal_wallpapers.paths import colormap_dir
 from fractal_wallpapers.supply.location import location_key
+
+#: The tile name as it was written before the name carried a regime. A literal,
+#: not a call into the code under test: the corpus on disk is named this way and
+#: the point of the test below is that the canonical regime still writes it.
+LEGACY_NAME = "t{index:02d}_{palette}_s{scale:.4f}_sh{shift:.4f}_{level}_q{quality}.jpg"
 
 MANDELBROT = {"kind": "mandelbrot"}
 JULIA = {"kind": "julia", "degree": 2, "c": ["-0.4", "0.6"]}
@@ -175,6 +180,110 @@ def test_a_build_writes_every_tile_of_every_location(tmp_path) -> None:
     )
     assert again["tiles_written"] == 0
     assert again["locations_skipped"] == 2
+
+
+def write_one_location(tmp_path, family=MANDELBROT, identifier=7):
+    plan = tmp_path / "plan.jsonl"
+    plan.write_text(
+        json.dumps({"schema": 1, "location_id": identifier, "family": family, "viewport": VIEW})
+        + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    return plan
+
+
+def regime_spec(plan, tmp_path, regime, tiles=4):
+    """A tiles spec at one regime, through the module's own spec shape."""
+    pool = tile_module.palette_pool()
+    return {
+        "schema": 1,
+        "locations": str(plan),
+        "out_root": str(tmp_path / "cache"),
+        "manifest": str(tmp_path / f"manifest{regime.tag}.jsonl"),
+        "colormap_dir": str(colormap_dir()),
+        "seed_tag": "a-test",
+        "recipe": {
+            "tiles": tiles,
+            "tile": list(regime.tile),
+            "field_supersample": regime.supersample,
+            "palette_pool": pool["draw"],
+            "floor_palette": [[name, count] for name, count in pool["floor"]],
+        },
+    }
+
+
+def test_only_the_canonical_regime_elides() -> None:
+    assert tile_module.CANONICAL_REGIME.tag == ""
+    assert tile_module.Regime(tile=(640, 360), supersample=2).tag == ""
+    assert tile_module.Regime(tile=(640, 360), supersample=1).tag == "_640x360ss1"
+    assert tile_module.Regime(tile=(384, 216), supersample=1).tag == "_384x216ss1"
+    assert tile_module.manifest_path() == tile_module.tile_dir() / "manifest.jsonl"
+    ss1 = tile_module.Regime(tile=(384, 216), supersample=1)
+    assert tile_module.manifest_path(ss1).name == "manifest_384x216ss1.jsonl"
+    assert tile_module.build_record_path(ss1).name == "build_384x216ss1.json"
+
+
+def test_the_spec_states_the_geometry_it_used_to_leave_to_the_engine() -> None:
+    """A build that did not say which regime it wanted got the default silently,
+    and the record it wrote could not be told apart from one that asked."""
+    canonical = tile_module.spec()["recipe"]
+    assert canonical["tile"] == [640, 360]
+    assert canonical["field_supersample"] == 2
+    small = tile_module.spec(regime=tile_module.Regime(tile=(384, 216), supersample=1))
+    assert small["recipe"]["tile"] == [384, 216]
+    assert small["recipe"]["field_supersample"] == 1
+    assert small["manifest"].endswith("manifest_384x216ss1.jsonl")
+
+
+@needs_engine
+def test_the_canonical_regime_writes_the_names_the_corpus_already_has(tmp_path) -> None:
+    """Every tile of the shipped cache is named without a regime segment. If the
+    canonical regime stopped writing that name, 380,000 files would be orphaned
+    and the next build would render the corpus again from nothing."""
+    plan = write_one_location(tmp_path)
+    engine.tiles(regime_spec(plan, tmp_path, tile_module.CANONICAL_REGIME))
+    rows = tile_module.read_manifest(tmp_path / "manifest.jsonl", keep=None)
+    assert len(rows) == 4
+    for row in rows:
+        legacy = LEGACY_NAME.format(
+            index=row["tile"],
+            palette=row["palette"],
+            scale=row["scale"],
+            shift=row["shift_frac"],
+            level=row["level"],
+            quality=row["quality"],
+        )
+        assert row["path"].endswith(f"/7/{legacy}"), row["path"]
+
+
+@needs_engine
+def test_a_second_regime_cannot_skip_over_the_first_ones_pictures(tmp_path) -> None:
+    """The planted red: run this against a build whose names carry no regime and
+    the ss1 leg reports 4 skipped and 0 written, exits 0, and records a geometry
+    that is not what is on disk. That silent no-op is what the regime segment
+    makes impossible."""
+    plan = write_one_location(tmp_path)
+    ss1 = tile_module.Regime(tile=(640, 360), supersample=1)
+    engine.tiles(regime_spec(plan, tmp_path, tile_module.CANONICAL_REGIME))
+    report = engine.tiles(regime_spec(plan, tmp_path, ss1))
+
+    assert report["tiles_written"] == 4, "an ss1 build skipped over ss2 pictures"
+    assert report["tiles_skipped"] == 0
+    assert report["locations_skipped"] == 0
+    assert report["recipe"]["field_supersample"] == 1
+
+    ss2_paths = {r["path"] for r in tile_module.read_manifest(tmp_path / "manifest.jsonl")}
+    ss1_paths = {
+        r["path"] for r in tile_module.read_manifest(tmp_path / "manifest_640x360ss1.jsonl")
+    }
+    assert not (ss2_paths & ss1_paths), "two regimes wrote the same file"
+    assert all("_640x360ss1.jpg" in path for path in ss1_paths)
+
+    # And the second regime is itself resumable: its own names are present now.
+    again = engine.tiles(regime_spec(plan, tmp_path, ss1))
+    assert again["tiles_written"] == 0
+    assert again["locations_skipped"] == 1
 
 
 @needs_engine

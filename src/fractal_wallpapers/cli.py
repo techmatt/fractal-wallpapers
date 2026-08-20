@@ -1045,12 +1045,23 @@ def tiles_plan(args: argparse.Namespace) -> int:
     return 0
 
 
+def tile_regime(args: argparse.Namespace):
+    """The regime a `tiles` subcommand was aimed at, from its two flags."""
+    from fractal_wallpapers.models import tiles as tile_module
+
+    size = str(args.tile).lower().split("x")
+    if len(size) != 2 or not all(part.isdigit() for part in size):
+        raise SystemExit(f"--tile takes WIDTHxHEIGHT, not {args.tile!r}")
+    return tile_module.Regime(tile=(int(size[0]), int(size[1])), supersample=int(args.supersample))
+
+
 def tiles_build(args: argparse.Namespace) -> int:
     """Render every tile of the plan, one iteration pass per location."""
     from fractal_wallpapers.models import tiles as tile_module
 
-    log = tile_module.tile_dir() / "build.log"
-    report = tile_module.build(limit=args.limit, log=log)
+    regime = tile_regime(args)
+    log = tile_module.build_log_path(regime)
+    report = tile_module.build(limit=args.limit, log=log, regime=regime)
     record = {
         "schema": tile_module.SCHEMA,
         "plan": str(tile_module.plan_path()),
@@ -1058,7 +1069,7 @@ def tiles_build(args: argparse.Namespace) -> int:
         "log": str(log),
         "report": report,
     }
-    tile_module.build_record_path().write_text(
+    tile_module.build_record_path(regime).write_text(
         json.dumps(record, indent=2) + "\n", encoding="utf-8", newline="\n"
     )
     summary = {key: value for key, value in report.items() if key != "recipe"}
@@ -2362,17 +2373,34 @@ def tile_commands(subcommands) -> None:
 
     building = steps.add_parser(
         "build",
-        help="render every tile of the plan",
+        help="render every tile of the plan, at one regime",
         description=(
             "Resumable by construction: a location whose tiles are all on disk is skipped "
             "before its field is iterated, so a killed run continues rather than restarting. "
-            "Progress goes to artifacts/tiles/build.log as it runs."
+            "A build is aimed at a regime — a tile size and a field supersample — which is "
+            "written into every file name it makes, so two regimes share one cache without "
+            "either skipping over the other's pictures. The canonical 640x360 at supersample "
+            "2 writes the bare names; anything else adds its own segment, and its manifest, "
+            "build record and log take the same segment. Progress goes to "
+            "artifacts/tiles/build<regime>.log as it runs."
         ),
     )
     building.add_argument(
         "--limit",
         type=int,
         help="stop after this many locations; every row it writes is stamped partial",
+    )
+    building.add_argument(
+        "--tile",
+        default="640x360",
+        metavar="WIDTHxHEIGHT",
+        help="one tile's output size (default: 640x360)",
+    )
+    building.add_argument(
+        "--supersample",
+        type=int,
+        default=2,
+        help="field samples per output pixel per axis (default: 2)",
     )
     building.set_defaults(handler=tiles_build)
 

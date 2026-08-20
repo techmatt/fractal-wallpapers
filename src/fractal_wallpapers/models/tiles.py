@@ -26,6 +26,19 @@ end and project the whole build from it. A seeded shuffle makes every prefix a
 fair sample of the whole, which is what lets `--limit` be a measurement rather
 than a warm-up.
 
+## A tile's name carries the geometry it was made at
+
+A build is aimed at a **regime**: a tile size and a field supersample. Two regimes
+are two different pictures of the same location under the same draw, so they are
+two different files — the regime is in every tile's name, and in the name of the
+manifest and the build record that describe it.
+
+The canonical regime elides. It writes exactly the names it wrote before it had
+anything to elide, so the corpus already on disk does not move — the same
+convention `renders.job_name` follows, where a spec that omits a field at its
+settled default digests to the name it always had. Everything else states
+`<w>x<h>ss<n>` and gets its own file.
+
 ## Two files, written together
 
 `plan.jsonl` is what the engine reads: a location, its frame, nothing else.
@@ -41,6 +54,7 @@ from __future__ import annotations
 import hashlib
 import json
 import random
+from dataclasses import dataclass
 from pathlib import Path
 
 from fractal_wallpapers import engine
@@ -63,13 +77,54 @@ SEED_TAG = "location-tiles-v1"
 PLAN_SEED = 0
 
 
+@dataclass(frozen=True)
+class Regime:
+    """The geometry a build renders at: one tile's size, and the field's sampling.
+
+    Everything else about a tile — its palette, its framing, its reconstruction,
+    its quality — is drawn per tile from the seed. These two are not drawn: they
+    belong to the build, they apply to every tile in it, and they are what makes
+    two otherwise identical draws two different pictures.
+    """
+
+    tile: tuple[int, int] = (640, 360)
+    supersample: int = 2
+
+    def __post_init__(self) -> None:
+        width, height = self.tile
+        if width < 1 or height < 1 or self.supersample < 1:
+            raise ValueError(f"{self} is not a geometry anything can be rendered at")
+
+    @property
+    def tag(self) -> str:
+        """What this regime writes into a name — empty at the canonical one.
+
+        The engine spells the same string into every tile it writes; this is the
+        Python side of it, for the records that describe the build. Elided at the
+        canonical regime so the corpus on disk keeps the names it has.
+        """
+        if self == CANONICAL_REGIME:
+            return ""
+        return f"_{self.tile[0]}x{self.tile[1]}ss{self.supersample}"
+
+
+#: What the shipped tile corpus is made at, and the deploy view's own geometry
+#: (see `location_view`). It is the regime whose name segment is empty.
+CANONICAL_REGIME = Regime()
+
+
 def tile_dir() -> Path:
     """Where a build's records and pictures go. Rebuildable, so never tracked."""
     return repo_root() / "artifacts" / "tiles"
 
 
 def plan_path() -> Path:
-    """The engine's input: one location per line."""
+    """The engine's input: one location per line.
+
+    Not per regime: the population is the same locations however they are drawn,
+    and one plan behind every regime is what makes the caches comparable row by
+    row.
+    """
     return tile_dir() / "plan.jsonl"
 
 
@@ -78,19 +133,29 @@ def locations_path() -> Path:
     return tile_dir() / "locations.jsonl"
 
 
-def manifest_path() -> Path:
-    """The engine's output: one line per tile written."""
-    return tile_dir() / "manifest.jsonl"
+def manifest_path(regime: Regime = CANONICAL_REGIME) -> Path:
+    """The engine's output: one line per tile written, per regime.
+
+    A manifest is rewritten whole by every build, so one file for two regimes is
+    one regime's record overwritten by the other's — and the join precondition is
+    checked against exactly this file.
+    """
+    return tile_dir() / f"manifest{regime.tag}.jsonl"
 
 
 def cache_root() -> Path:
-    """Where the tiles themselves land."""
+    """Where the tiles land. Shared: the names are what keep the regimes apart."""
     return tile_dir() / "cache"
 
 
-def build_record_path() -> Path:
+def build_record_path(regime: Regime = CANONICAL_REGIME) -> Path:
     """What the build was: the population, the realized recipe, the clock."""
-    return tile_dir() / "build.json"
+    return tile_dir() / f"build{regime.tag}.json"
+
+
+def build_log_path(regime: Regime = CANONICAL_REGIME) -> Path:
+    """Where the engine's progress goes while a build of this regime runs."""
+    return tile_dir() / f"build{regime.tag}.log"
 
 
 def pool_path() -> Path:
@@ -202,22 +267,26 @@ def read_locations(path: Path | None = None) -> list[dict]:
     return rows
 
 
-def spec(limit: int | None = None) -> dict:
+def spec(limit: int | None = None, regime: Regime = CANONICAL_REGIME) -> dict:
     """The build spec the engine reads.
 
-    States the population and the palette axis and nothing else: every geometric
-    constant of the recipe is the engine's own default, so this cannot drift
-    away from what the tiles were actually made with.
+    States the population, the palette axis, and the regime. Every *other*
+    geometric constant of the recipe — the extension, the scale band, the shift
+    cap — is the engine's own default, so it cannot drift away from what the
+    tiles were made with. The regime is stated because it is the one part of the
+    geometry a caller chooses, and it is what the tile names carry.
     """
     pool = palette_pool()
     return {
         "schema": SCHEMA,
         "locations": str(plan_path()),
         "out_root": str(cache_root()),
-        "manifest": str(manifest_path()),
+        "manifest": str(manifest_path(regime)),
         "colormap_dir": str(colormap_dir()),
         "seed_tag": SEED_TAG,
         "recipe": {
+            "tile": list(regime.tile),
+            "field_supersample": regime.supersample,
             "palette_pool": pool["draw"],
             "floor_palette": [[name, count] for name, count in pool["floor"]],
         },
@@ -225,9 +294,13 @@ def spec(limit: int | None = None) -> dict:
     }
 
 
-def build(limit: int | None = None, log: Path | None = None) -> dict:
-    """Run the engine over the plan and return its report."""
-    return engine.tiles(spec(limit), log=log)
+def build(
+    limit: int | None = None,
+    log: Path | None = None,
+    regime: Regime = CANONICAL_REGIME,
+) -> dict:
+    """Run the engine over the plan at one regime and return its report."""
+    return engine.tiles(spec(limit, regime), log=log)
 
 
 #: What a reader of the manifest actually uses: which location a tile belongs to,
@@ -238,7 +311,9 @@ def build(limit: int | None = None, log: Path | None = None) -> dict:
 TRAINING_FIELDS = ("location_id", "tile", "path", "level", "scale", "shift_frac", "partial")
 
 
-def read_manifest(path: Path | None = None, keep=TRAINING_FIELDS) -> list[dict]:
+def read_manifest(
+    path: Path | None = None, keep=TRAINING_FIELDS, regime: Regime = CANONICAL_REGIME
+) -> list[dict]:
     """Every tile row of a build, narrowed to the fields a reader uses.
 
     Read whole rather than streamed, because the trainer needs every row grouped
@@ -246,8 +321,10 @@ def read_manifest(path: Path | None = None, keep=TRAINING_FIELDS) -> list[dict]:
     the corpus-wide manifest is a third of a million rows and keeping all
     eighteen fields of each is most of a gigabyte of dictionaries for the seven
     that get read. `keep=None` returns the rows entire.
+
+    `regime` says which build's manifest, and is ignored when `path` is given.
     """
-    path = manifest_path() if path is None else Path(path)
+    path = manifest_path(regime) if path is None else Path(path)
     with path.open(encoding="utf-8") as handle:
         rows = (json.loads(line) for line in handle if line.strip())
         if keep is None:
@@ -293,12 +370,15 @@ def canonical_of(tiles: list[dict]) -> dict:
 
 
 __all__ = [
+    "CANONICAL_REGIME",
     "CANONICAL_SLOT",
     "PLAN_SEED",
     "SCHEMA",
     "SEED_TAG",
     "TRAINING_FIELDS",
+    "Regime",
     "build",
+    "build_log_path",
     "build_record_path",
     "cache_root",
     "canonical_of",
