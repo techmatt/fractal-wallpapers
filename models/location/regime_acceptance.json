@@ -1,0 +1,241 @@
+{
+  "schema": 1,
+  "head": "location",
+  "prereg": "C:\\Code\\fractal-wallpapers\\models\\location\\regime_prereg.json",
+  "prereg_question": "Does a location head trained over all three cached regimes at once keep the incumbent's judgement at the canonical regime, while agreeing with itself far better at the two cheaper ones?",
+  "runs": {
+    "incumbent": [
+      "seed0",
+      "seed1",
+      "seed2"
+    ],
+    "candidate": [
+      "seed0_all_regimes",
+      "seed1_all_regimes",
+      "seed2_all_regimes"
+    ]
+  },
+  "regimes": [
+    "640x360ss2",
+    "640x360ss1",
+    "384x216ss1"
+  ],
+  "population": {
+    "locations": 1002,
+    "side": "eval"
+  },
+  "overall": {
+    "statistic": "cutpoint cross-entropy against the human label, lower is better",
+    "regime": "640x360ss2",
+    "locations": 1002,
+    "clusters": 530,
+    "band": {
+      "seed0_all_regimes": 0.3697729061331853,
+      "seed1_all_regimes": 0.33365295873685447,
+      "seed2_all_regimes": 0.3735767566166526
+    },
+    "incumbent_band": {
+      "seed0": 0.36656841347547026,
+      "seed1": 0.3286334452213255,
+      "seed2": 0.3233537564255355
+    },
+    "judged_on": "seed0_all_regimes",
+    "against": {
+      "seed0": {
+        "ours": 0.3697729061331853,
+        "theirs": 0.36656841347547026,
+        "delta": 0.0032044926577150523,
+        "ci": [
+          -0.04397410749529713,
+          0.048245064821379434
+        ],
+        "clusters": 530,
+        "gated": true,
+        "verdict": "PASS"
+      },
+      "seed1": {
+        "ours": 0.3697729061331853,
+        "theirs": 0.3286334452213255,
+        "delta": 0.041139460911859826,
+        "ci": [
+          0.013605803695867611,
+          0.07380554786088953
+        ],
+        "clusters": 530,
+        "gated": false,
+        "verdict": "FAIL"
+      },
+      "seed2": {
+        "ours": 0.3697729061331853,
+        "theirs": 0.3233537564255355,
+        "delta": 0.04641914970764982,
+        "ci": [
+          0.01847818736779724,
+          0.07752527907567529
+        ],
+        "clusters": 530,
+        "gated": false,
+        "verdict": "FAIL"
+      }
+    },
+    "auc_reported_only": {
+      "ge2": {
+        "positives": 370,
+        "candidate": {
+          "seed0_all_regimes": 0.8693764967499145,
+          "seed1_all_regimes": 0.8572955867259665,
+          "seed2_all_regimes": 0.8660665412247691
+        },
+        "incumbent": {
+          "seed0": 0.8590660280533698,
+          "seed1": 0.8408826548067054,
+          "seed2": 0.8596091344509066
+        }
+      },
+      "ge3": {
+        "positives": 103,
+        "candidate": {
+          "seed0_all_regimes": 0.9267902847824444,
+          "seed1_all_regimes": 0.9346199120921844,
+          "seed2_all_regimes": 0.936315431385466
+        },
+        "incumbent": {
+          "seed0": 0.9347819043813514,
+          "seed1": 0.9233668477380477,
+          "seed2": 0.9376113696988023
+        }
+      },
+      "ge4": {
+        "positives": 22,
+        "candidate": {
+          "seed0_all_regimes": 0.9560296846011131,
+          "seed1_all_regimes": 0.9524118738404452,
+          "seed2_all_regimes": 0.9468460111317254
+        },
+        "incumbent": {
+          "seed0": 0.961595547309833,
+          "seed1": 0.951530612244898,
+          "seed2": 0.9608534322820037
+        }
+      }
+    },
+    "verdict": "PASS"
+  },
+  "consistency": {
+    "statistic": "Spearman rho of a head's own p_ge3 at an ss1 regime against its own at 640x360ss2, paired per location",
+    "slices": {
+      "640x360ss1|all": {
+        "regime": "640x360ss1",
+        "family": "all",
+        "locations": 1002,
+        "clusters": 530,
+        "band": {
+          "seed0_all_regimes": 0.9961656605101219,
+          "seed1_all_regimes": 0.984872590585696,
+          "seed2_all_regimes": 0.9930107080885152
+        },
+        "incumbent_band": {
+          "seed0": 0.9903541031800894,
+          "seed1": 0.9931364233390418,
+          "seed2": 0.9866990525609834
+        },
+        "judged_on": "seed2_all_regimes",
+        "delta": 0.002656604908425786,
+        "ci": [
+          -8.345862703601488e-05,
+          0.0058433741995105445
+        ],
+        "verdict": "NOT_RESOLVED"
+      },
+      "640x360ss1|multibrot3": {
+        "regime": "640x360ss1",
+        "family": "multibrot3",
+        "locations": 71,
+        "clusters": 24,
+        "band": {
+          "seed0_all_regimes": 0.9908760665709216,
+          "seed1_all_regimes": 0.9930248155600269,
+          "seed2_all_regimes": 0.9923863826932752
+        },
+        "incumbent_band": {
+          "seed0": 0.9535479151426481,
+          "seed1": 0.9578040444542283,
+          "seed2": 0.8934607645875251
+        },
+        "judged_on": "seed2_all_regimes",
+        "delta": 0.03883846755062703,
+        "ci": [
+          -0.03360680801711557,
+          0.0884339569900576
+        ],
+        "verdict": "NOT_RESOLVED"
+      },
+      "384x216ss1|all": {
+        "regime": "384x216ss1",
+        "family": "all",
+        "locations": 1002,
+        "clusters": 530,
+        "band": {
+          "seed0_all_regimes": 0.9935291173613332,
+          "seed1_all_regimes": 0.9758682753624254,
+          "seed2_all_regimes": 0.9865606469031953
+        },
+        "incumbent_band": {
+          "seed0": 0.9783739446267011,
+          "seed1": 0.9879543822916723,
+          "seed2": 0.9737297506613201
+        },
+        "judged_on": "seed2_all_regimes",
+        "delta": 0.008186702276494207,
+        "ci": [
+          0.0023606172029402685,
+          0.015452597618624511
+        ],
+        "verdict": "IMPROVED"
+      },
+      "384x216ss1|multibrot3": {
+        "regime": "384x216ss1",
+        "family": "multibrot3",
+        "locations": 71,
+        "clusters": 24,
+        "band": {
+          "seed0_all_regimes": 0.9853203538662291,
+          "seed1_all_regimes": 0.9758551307847082,
+          "seed2_all_regimes": 0.986214992453463
+        },
+        "incumbent_band": {
+          "seed0": 0.9635698610095099,
+          "seed1": 0.949366698188161,
+          "seed2": 0.7733400402414486
+        },
+        "judged_on": "seed0_all_regimes",
+        "delta": 0.02175049285671915,
+        "ci": [
+          -0.007828111981619711,
+          0.11576193948171207
+        ],
+        "verdict": "NOT_RESOLVED"
+      }
+    },
+    "verdict": "FAIL"
+  },
+  "staged": {
+    "rule": "lowest selection-slice cutpoint cross-entropy at its own best epoch",
+    "band": {
+      "seed0_all_regimes": {
+        "best_epoch": 25,
+        "selection_cutpoint_cross_entropy": 0.29664198691842963
+      },
+      "seed1_all_regimes": {
+        "best_epoch": 14,
+        "selection_cutpoint_cross_entropy": 0.30786334888939076
+      },
+      "seed2_all_regimes": {
+        "best_epoch": 38,
+        "selection_cutpoint_cross_entropy": 0.29787907133785335
+      }
+    },
+    "seed": "seed0_all_regimes"
+  },
+  "verdict": "FAIL"
+}

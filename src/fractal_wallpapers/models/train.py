@@ -33,6 +33,16 @@ Every epoch writes an atomic snapshot of the model, the optimizer, the schedule,
 the best-so-far and the random state. A relaunch continues from the next epoch,
 so a kill costs one epoch rather than the run. A clean finish deletes it.
 
+## One trainer per directory, and it is taken rather than assumed
+
+[`claim`] is written here and every trainer in this project uses it — including,
+now, this one. It did not, and the failure it exists to stop happened: two
+processes trained one run directory at once, took turns writing `resume.pt` and
+one checkpoint, and left a record nobody could attribute. The artifacts survived
+the audit — a snapshot is read once at startup and replaced atomically, so two
+trajectories cannot mix mid-run — but "it turned out fine" is not what a lock is
+for, and the module that owns the lock was the one not holding it.
+
 ## Two checkpoints
 
 `best` is the epoch the selection slice chose. `last` is where the schedule
@@ -230,7 +240,10 @@ def claim(directory: Path) -> Path:
     behaving strangely rather than two behaving normally.
 
     Written once and used by every trainer here, because a second copy of this
-    would be a second answer to whether a directory is free.
+    would be a second answer to whether a directory is free. **Every trainer has
+    to actually call it** — this module owned the lock and did not take it, and
+    two processes duly trained one run directory at once. A launcher that can be
+    started twice eventually is.
     """
     import os
 
@@ -443,6 +456,7 @@ def train(
 
     directory = head_dir(name, run)
     directory.mkdir(parents=True, exist_ok=True)
+    lock = claim(directory)
     resume = directory / "resume.pt"
 
     # Negative infinity rather than -1: the objective is maximized whichever way
@@ -588,6 +602,7 @@ def train(
     torch.save({"state_dict": last_state, "config": config}, checkpoint_path(name, "last", run))
     if resume.is_file():
         resume.unlink()
+    lock.unlink(missing_ok=True)
 
     record = {
         "schema": SCHEMA,

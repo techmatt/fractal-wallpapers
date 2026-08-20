@@ -33,6 +33,17 @@ twice; resampling locations rather than groups would report an interval two to
 three times too narrow, because six frames of one hot spot are not six pieces of
 evidence. See [`fractal_wallpapers.models.metrics`].
 
+## A rho is a property of the population as much as of the head
+
+Read what this bar produced before writing another one. The evaluation split is
+63% label-1 and **78% of its rows read below `P(≥3) = 0.05` at the canonical
+regime** — zero at every geometry, agreeing trivially — so an all-family rank
+correlation over the whole split starts at 0.99 and has almost nowhere to go. The
+same statistic on the production sample that motivated this work, stratified over
+partition × score band, read 0.963. Neither is wrong and they are not comparable.
+A cross-regime claim has to say which rows it was measured on, and a bar meant to
+resolve one should be written against rows where the score is contested.
+
 ## The band is what is judged; the staged pick is chosen somewhere else
 
 Three seeds are trained. Each arm is read on the **median** seed by that arm's own
