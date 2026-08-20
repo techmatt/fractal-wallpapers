@@ -85,6 +85,7 @@ import json
 import time
 from pathlib import Path
 
+from fractal_wallpapers import storage
 from fractal_wallpapers.models import palette_corpus, palette_head, train
 
 #: The schema every record here carries.
@@ -418,9 +419,15 @@ def run(
     listwise: float | None = None,
     log=train.say,
 ) -> dict:
-    """Train one palette head, and write its checkpoints and records."""
+    """Train one palette head, and write its checkpoints and records.
+
+    Refuses before it imports torch if the distillation corpus is archived — see
+    [`fractal_wallpapers.storage.require_hot`] for why a slow read is worth a
+    refusal rather than a warning.
+    """
     import torch
 
+    storage.require_hot(palette_corpus.cache_dir(), what="training the palette head")
     recipe = dict(RECIPE)
     if epochs is not None:
         recipe["epochs"] = int(epochs)

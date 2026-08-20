@@ -61,7 +61,7 @@ from fractal_wallpapers import engine
 from fractal_wallpapers.labeling import groups as group_module
 from fractal_wallpapers.labeling import pins, store
 from fractal_wallpapers.labeling import registry as registry_module
-from fractal_wallpapers.paths import artifacts_root, colormap_dir, rehome, repo_root
+from fractal_wallpapers.paths import Tiers, colormap_dir, rehome, repo_root, under
 from fractal_wallpapers.supply.location import key_of_row
 from fractal_wallpapers.supply.partitions import partition_of_row
 
@@ -142,7 +142,7 @@ def regime_of(tag: str) -> Regime:
 
 def tile_dir() -> Path:
     """Where a build's records and pictures go. Rebuildable, so never tracked."""
-    return artifacts_root() / "tiles"
+    return under("tiles")
 
 
 def plan_path() -> Path:
@@ -353,17 +353,19 @@ def read_manifest(
 
     Every row's `path` is re-homed on the way out. The engine writes each tile's
     location as it saw it, which is an absolute path under whatever root that
-    build was handed; a manifest read after the tree moved to another disk would
-    otherwise name a million files that are not there. Re-homing here rather than
-    at each reader is the same choice `canonical_of` makes one function down:
-    there is one way to read this file, so there is one place to fix it. The root
-    is resolved once for the whole manifest, not once per row.
+    build was handed; a manifest read after the tree moved to another disk — or
+    after this subtree was archived to the slow one — would otherwise name a
+    million files that are not there. Re-homing here rather than at each reader
+    is the same choice `canonical_of` makes one function down: there is one way
+    to read this file, so there is one place to fix it. One `Tiers` snapshot
+    serves the whole manifest, so the tier of `artifacts/tiles` is decided once
+    rather than stat-ed on two disks a million times.
     """
     path = manifest_path(regime) if path is None else Path(path)
-    root = artifacts_root()
+    tiers = Tiers.current()
 
     def rehomed(row: dict) -> dict:
-        where = None if "path" not in row else rehome(row["path"], root)
+        where = None if "path" not in row else rehome(row["path"], tiers)
         return row if where is None else {**row, "path": where.as_posix()}
 
     with path.open(encoding="utf-8") as handle:

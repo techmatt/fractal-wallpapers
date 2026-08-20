@@ -82,7 +82,7 @@ from fractal_wallpapers import engine
 from fractal_wallpapers.labeling import pins, store
 from fractal_wallpapers.models import palette_sets, renders
 from fractal_wallpapers.palettes import space
-from fractal_wallpapers.paths import artifacts_root
+from fractal_wallpapers.paths import under
 from fractal_wallpapers.supply import partitions
 from fractal_wallpapers.supply.location import location_key
 
@@ -135,7 +135,7 @@ class CorpusError(RuntimeError):
 
 def cache_dir() -> Path:
     """Where the candidate pictures live. Ignored, and regenerable from the rows."""
-    return artifacts_root() / "palette"
+    return under("palette")
 
 
 def crop_dir() -> Path:

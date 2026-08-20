@@ -93,7 +93,7 @@ from fractal_wallpapers.curation import (
 from fractal_wallpapers.curation import (
     budget as budget_module,
 )
-from fractal_wallpapers.paths import artifacts_root
+from fractal_wallpapers.paths import under
 
 #: The share of a release's slots the strange judge fills. Half, which is a
 #: policy about what a release looks like and not a measurement — the two judges
@@ -127,7 +127,7 @@ class RunRefused(RuntimeError):
 
 def run_dir(run: str) -> Path:
     """Where a run's pictures and caches live. Ignored, and regenerable."""
-    return artifacts_root() / "curation" / "runs" / str(run)
+    return under("curation", "runs", str(run))
 
 
 def curate(

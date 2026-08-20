@@ -14,10 +14,10 @@ import urllib.request
 from collections.abc import Sequence
 from pathlib import Path
 
-from fractal_wallpapers import engine
+from fractal_wallpapers import engine, paths
 from fractal_wallpapers.labeling.finished import HEADS as FINISHED_HEADS
 from fractal_wallpapers.paths import (
-    ArtifactsRootMissing,
+    StorageRefusal,
     colormap_dir,
     rehome,
     repo_root,
@@ -137,14 +137,33 @@ def resolve_output(out: str) -> Path:
     `artifacts/` tree instead of scattering PNGs wherever the caller stood.
 
     "The ignored tree" is a setting, so a relative path that names it resolves
-    against the artifacts root rather than the checkout — a default of
-    `artifacts/walk` follows the tree to whichever disk it is on, and every other
-    relative path still means a place inside the repository.
+    through the tiers rather than against the checkout — a default of
+    `artifacts/walk` follows its subtree to whichever disk that subtree is on,
+    and every other relative path still means a place inside the repository.
+
+    Writes land hot, which for a name nothing holds yet is what the resolution
+    already says. The case worth refusing is a name that resolves to the
+    *archive*: writing there would put new output behind a seek-bound disk and
+    leave one subtree spread across both tiers, which is the state the whole
+    mechanism exists to keep out of. Restoring first is the answer, so this says
+    so rather than doing either.
     """
     path = Path(out)
     if path.is_absolute():
         return path
-    return rehome(path) or repo_root() / path
+    resolved = rehome(path)
+    if resolved is None:
+        return repo_root() / path
+    archive = paths.archive_root()
+    if archive is not None and archive in resolved.parents:
+        subtree = resolved.relative_to(archive).parts[0]
+        raise StorageRefusal(
+            f"{display_path(resolved)} is on the archive tier, and output does not get "
+            f"written there: it would land behind slow storage and split that subtree "
+            f"across both tiers. Bring it back first — "
+            f"`fractal-wallpapers storage restore {subtree}` — or name somewhere else."
+        )
+    return resolved
 
 
 def display_path(path: Path) -> str:
@@ -2169,6 +2188,7 @@ def build_parser() -> argparse.ArgumentParser:
     palette_commands(subcommands)
     coloring_commands(subcommands)
     curate_commands(subcommands)
+    storage_commands(subcommands)
 
     bringing = subcommands.add_parser(
         "import-labels",
@@ -3233,6 +3253,118 @@ def regime_commands(subcommands) -> None:
     adopting.set_defaults(handler=regime_adopt)
 
 
+def storage_archive(args: argparse.Namespace) -> int:
+    """Move a finished subtree to slow bulk storage."""
+    from fractal_wallpapers import storage
+    from fractal_wallpapers.paths import ARCHIVE
+
+    print(json.dumps(storage.move(args.subtree, to=ARCHIVE), indent=2))
+    return 0
+
+
+def storage_restore(args: argparse.Namespace) -> int:
+    """Bring an archived subtree back to where work happens."""
+    from fractal_wallpapers import storage
+    from fractal_wallpapers.paths import HOT
+
+    print(json.dumps(storage.move(args.subtree, to=HOT), indent=2))
+    return 0
+
+
+def storage_status(args: argparse.Namespace) -> int:
+    """One screen: every subtree, its tier, its size."""
+    from fractal_wallpapers import storage
+
+    report = storage.status(sizes=not args.no_sizes)
+    print(f"hot     {report['hot']}")
+    archive = report["archive"] or "(none configured)"
+    print(f"archive {archive}{'' if report['archive_reachable'] else '   NOT REACHABLE'}")
+    if report["archive"] and not report["archive_reachable"]:
+        print("        Only the hot tier is listed below; archived subtrees are not shown.")
+    print()
+    totals: dict[str, list[int]] = {}
+    for row in report["units"]:
+        if row["tier"] == "BOTH":
+            print(f"{row['name']:<28} BOTH TIERS — {row['collision']}")
+            continue
+        counted = totals.setdefault(row["tier"], [0, 0])
+        counted[0] += row.get("files", 0)
+        counted[1] += row.get("bytes", 0)
+        size = (
+            ""
+            if args.no_sizes
+            else f"{row['files']:>10,} files  {storage.bytes_said_plainly(row['bytes']):>12}"
+        )
+        print(f"{row['name']:<28} {row['tier']:<8}{size}")
+    if not args.no_sizes:
+        print()
+        for tier, (files, size) in sorted(totals.items()):
+            print(f"{tier:<28} {'':<8}{files:>10,} files  {storage.bytes_said_plainly(size):>12}")
+    return 0
+
+
+def storage_commands(subcommands) -> None:
+    """The two tiers: what is where, and moving a subtree between them."""
+    storing = subcommands.add_parser(
+        "storage",
+        help="the hot and archive tiers: what is where, and moving a subtree between them",
+        description=(
+            "The regenerable tree lives on two disks. Work happens hot, on the fast one, "
+            "and every write lands there; a subtree nothing is using archives to the slow "
+            "one and reads through from there until it is restored. A subtree is in exactly "
+            "one tier at a time, and which one is simply where its files are — there is no "
+            "registry to fall out of step. Every move copies, verifies, and only then "
+            "deletes the source."
+        ),
+    )
+    steps = storing.add_subparsers(dest="step", required=True)
+
+    def with_subtree(parser):
+        parser.add_argument(
+            "subtree",
+            help="a top-level name of the artifacts tree, as `storage status` lists it",
+        )
+        return parser
+
+    archiving = with_subtree(
+        steps.add_parser(
+            "archive",
+            help="move a finished subtree to slow bulk storage",
+            description=(
+                "For a subtree nothing is actively reading. It stays readable — every name "
+                "under it resolves through to the archive — but a random small-file read "
+                "pattern over it is an order of magnitude slower, which is why the trainers "
+                "refuse to run against one."
+            ),
+        )
+    )
+    archiving.set_defaults(handler=storage_archive)
+
+    restoring = with_subtree(
+        steps.add_parser(
+            "restore",
+            help="bring an archived subtree back to where work happens",
+            description=(
+                "The step before a retrain. Measured against a USB hard drive this is tens "
+                "of minutes for a large cache, and it says so with an estimate before it "
+                "starts rather than after."
+            ),
+        )
+    )
+    restoring.set_defaults(handler=storage_restore)
+
+    showing = steps.add_parser(
+        "status",
+        help="every subtree, its tier and its size",
+    )
+    showing.add_argument(
+        "--no-sizes",
+        action="store_true",
+        help="tiers only. Walking a million files for their sizes is minutes on the archive",
+    )
+    showing.set_defaults(handler=storage_status)
+
+
 def coloring_commands(subcommands) -> None:
     """The tone band, and the operator that projects onto it."""
     colouring = subcommands.add_parser(
@@ -3536,14 +3668,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
         return args.handler(args)
-    except ArtifactsRootMissing as refusal:
+    except StorageRefusal as refusal:
         # Handled here and nowhere else. Every other refusal in this file is
-        # about one command's arguments and is caught by that command; this one
-        # is about the machine, and any subcommand that touches the regenerable
-        # tree can raise it. Caught rather than left to a traceback because the
-        # message is an instruction — plug the disk in — and an operator reading
-        # a stack trace to find it would be reading it past the part that says
-        # nothing fell back.
+        # about one command's arguments and is caught by that command; these are
+        # about the machine — an unplugged disk, a subtree on the wrong tier, one
+        # name in both tiers — and any subcommand that touches the regenerable
+        # tree can raise one. Caught rather than left to a traceback because each
+        # message is an instruction, and an operator reading a stack trace to
+        # find it would be reading it past the part that says nothing fell back.
         print(refusal)
         return 1
 

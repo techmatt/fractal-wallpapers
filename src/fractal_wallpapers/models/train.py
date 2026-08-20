@@ -57,6 +57,7 @@ import random
 import time
 from pathlib import Path
 
+from fractal_wallpapers import storage
 from fractal_wallpapers.labeling import pins
 from fractal_wallpapers.models import dataset, head, metrics
 from fractal_wallpapers.models import tiles as tile_module
@@ -352,10 +353,18 @@ def train(
     than one makes an epoch that many passes long and hands the head no way to
     tell them apart. `selection` names which objective chooses the epoch — see
     [`SELECTION_OBJECTIVES`].
+
+    Refuses before it imports torch if the tile corpus is on archive storage.
+    Restoring first is the rule, and it lives here rather than in anybody's
+    memory: an epoch reading a third of a million tiles off a USB hard drive is
+    the better part of an hour of pure seeking, and nothing about a job that
+    looks like it is running says so.
     """
     import numpy
     import torch
     from torch.utils.data import DataLoader
+
+    storage.require_hot(tile_module.tile_dir(), what="training the location head")
 
     recipe = dict(RECIPE)
     if epochs is not None:

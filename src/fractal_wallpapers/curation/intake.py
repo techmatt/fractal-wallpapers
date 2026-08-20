@@ -89,7 +89,7 @@ from pathlib import Path
 
 from fractal_wallpapers.curation import binding, floors
 from fractal_wallpapers.models import location_view
-from fractal_wallpapers.paths import artifacts_root
+from fractal_wallpapers.paths import under
 from fractal_wallpapers.supply import apportion, ledgers, release_mix
 from fractal_wallpapers.supply.location import key_of_row
 from fractal_wallpapers.supply.partitions import partition_of_row
@@ -113,7 +113,7 @@ class IntakeError(RuntimeError):
 
 def store_dir() -> Path:
     """Where curation keeps what it derives from the ledgers. Ignored, re-derivable."""
-    return artifacts_root() / "curation"
+    return under("curation")
 
 
 def scores_path() -> Path:

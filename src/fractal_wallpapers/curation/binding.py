@@ -27,7 +27,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from fractal_wallpapers.paths import rehome, repo_root, tracked_name
+from fractal_wallpapers.paths import ARTIFACTS_NAME, rehome, repo_root, tracked_name
 from fractal_wallpapers.supply import ledgers
 
 
@@ -96,7 +96,7 @@ def resolve(declared=None, harvests=None, root: Path | None = None) -> list[Path
 
     found = ledgers.ledger_paths(root)
     if not found:
-        where = ledgers.ledger_root() if root is None else Path(root)
+        where = Path(root) if root is not None else f"the {ARTIFACTS_NAME} tree, either tier"
         raise Unbound(
             f"no walk ledger under {where}, so there is no supply to curate. Run "
             f"`fractal-wallpapers harvest` first."

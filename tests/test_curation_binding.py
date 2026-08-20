@@ -13,6 +13,7 @@ import json
 
 import pytest
 
+from fractal_wallpapers import paths
 from fractal_wallpapers.curation import binding, intake
 from fractal_wallpapers.discovery import ledger as ledger_module
 from fractal_wallpapers.supply import ledgers as ledger_reader
@@ -44,7 +45,11 @@ def artifacts(tmp_path, monkeypatch):
     """An `artifacts/` tree of the test's own, with nothing harvested into it yet."""
     root = tmp_path / "artifacts"
     root.mkdir()
-    monkeypatch.setattr(ledger_reader, "ledger_root", lambda: root)
+    monkeypatch.setenv(paths.HOT_ROOT_VARIABLE, str(root))
+    # Set to nothing, not merely unset: unset defers to this machine's own
+    # `local.toml`, and a real archive beside a tmp_path hot tier would put every
+    # run directory on the real disk into this test's ledger walk.
+    monkeypatch.setenv(paths.ARCHIVE_ROOT_VARIABLE, "")
     return root
 
 
