@@ -193,3 +193,124 @@ def test_a_score_file_is_per_regime_and_the_canonical_one_keeps_its_name() -> No
     assert canonical.name == "scores.jsonl"
     assert cheap.name == "scores_640x360ss1.jsonl"
     assert canonical.parent == cheap.parent
+
+
+def _score_rows(directory, run, regime, ids, labels, groups, families, probabilities) -> None:
+    """A score file of the shape `scoring.run` writes, for the read to consume."""
+    from fractal_wallpapers.models import scoring
+
+    path = directory / f"scores{regime.tag}.jsonl"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8", newline="\n") as handle:
+        for index, identifier in enumerate(ids):
+            row = {
+                "schema": scoring.SCHEMA,
+                "head": "location",
+                "run": run,
+                "checkpoint": "best",
+                "regime": regime_acceptance.spelled(regime),
+                "location_id": identifier,
+                "score": labels[index],
+                "side": "eval",
+                "partition": families[index],
+                "group": groups[index],
+                "batch": "a_batch",
+                "p_ge2": probabilities[index][0],
+                "p_ge3": probabilities[index][1],
+                "p_ge4": probabilities[index][2],
+            }
+            handle.write(json.dumps(row) + "\n")
+
+
+def test_the_read_runs_end_to_end_and_gates_on_both_arms(tmp_path, monkeypatch) -> None:
+    """A candidate that is the incumbent's equal at the canonical regime and
+    keeps its order at the cheap ones passes; the incumbent, whose cheap-regime
+    scores are shuffled, is what it is measured against."""
+    import random as stdlib_random
+
+    import numpy
+
+    monkeypatch.setattr(regime_acceptance.train, "repo_root", lambda: tmp_path)
+    monkeypatch.setattr(regime_acceptance, "DRAWS", 200)
+
+    draw = stdlib_random.Random(0)
+    count = 300
+    ids = list(range(count))
+    families = ["mandelbrot" if index % 4 else regime_acceptance.WORST_FAMILY for index in ids]
+    groups = [index // 3 for index in ids]
+    labels = [1 + (index % 4) for index in ids]
+    truth = [draw.random() for _ in ids]
+
+    def probabilities(values):
+        return [[min(0.999, v + 0.2), v, max(0.001, v - 0.2)] for v in values]
+
+    for run in regime_acceptance.INCUMBENT_RUNS:
+        directory = tmp_path / "models" / "location" / run
+        for regime in tile_module.BUILT_REGIMES:
+            # The incumbent keeps its order at the canonical regime and loses a
+            # great deal of it anywhere else — the symptom this study exists for.
+            noise = 0.0 if regime.tag == "" else 0.35
+            values = [min(0.999, max(0.001, v + draw.uniform(-noise, noise))) for v in truth]
+            _score_rows(
+                directory, run, regime, ids, labels, groups, families, probabilities(values)
+            )
+
+    for run in regime_acceptance.CANDIDATE_RUNS:
+        directory = tmp_path / "models" / "location" / run
+        for regime in tile_module.BUILT_REGIMES:
+            values = [min(0.999, max(0.001, v + draw.uniform(-0.01, 0.01))) for v in truth]
+            _score_rows(
+                directory, run, regime, ids, labels, groups, families, probabilities(values)
+            )
+        (directory / "metrics.json").write_text(
+            json.dumps(
+                {
+                    "best_epoch": 3,
+                    "selection_objective": "cutpoint_cross_entropy",
+                    "best_selection_objective": -0.3,
+                }
+            ),
+            encoding="utf-8",
+        )
+
+    bar = regime_acceptance.preregister()
+    regime_acceptance.prereg_path().parent.mkdir(parents=True, exist_ok=True)
+    regime_acceptance.prereg_path().write_text(json.dumps(bar), encoding="utf-8")
+
+    report = regime_acceptance.read()
+    assert report["population"]["locations"] == count
+    assert set(report["consistency"]["slices"]) == {
+        entry["key"] for entry in bar["arms"]["consistency"]["slices"]
+    }
+    assert report["consistency"]["verdict"] == "PASS"
+    assert all(entry["verdict"] == "IMPROVED" for entry in report["consistency"]["slices"].values())
+    # The judged seed is the median of the band, never an endpoint chosen for
+    # being the best.
+    for entry in report["consistency"]["slices"].values():
+        ordered = sorted(entry["band"], key=lambda run: -entry["band"][run])
+        assert entry["judged_on"] == ordered[1]
+    assert report["overall"]["verdict"] in ("PASS", "FAIL")
+    assert numpy.isfinite(report["overall"]["against"]["seed0"]["ci"][0])
+
+
+def test_a_read_refuses_a_quiet_intersection(tmp_path, monkeypatch) -> None:
+    """Two heads compared on different rows are not compared."""
+    monkeypatch.setattr(regime_acceptance.train, "repo_root", lambda: tmp_path)
+    for run in (*regime_acceptance.INCUMBENT_RUNS, *regime_acceptance.CANDIDATE_RUNS):
+        ids = list(range(10 if run == regime_acceptance.SHIPPED_RUN else 12))
+        for regime in tile_module.BUILT_REGIMES:
+            _score_rows(
+                tmp_path / "models" / "location" / run,
+                run,
+                regime,
+                ids,
+                [1] * len(ids),
+                list(range(len(ids))),
+                ["mandelbrot"] * len(ids),
+                [[0.5, 0.4, 0.3]] * len(ids),
+            )
+    with pytest.raises(ValueError, match="do not cover the same locations"):
+        regime_acceptance.aligned(
+            (*regime_acceptance.INCUMBENT_RUNS, *regime_acceptance.CANDIDATE_RUNS),
+            tile_module.BUILT_REGIMES,
+        )
