@@ -1,0 +1,81 @@
+{
+  "schema": 1,
+  "head": "location",
+  "artifact": "location.candidate.fp16.pt",
+  "sha256": "f8f805119a0ff9612b2076f0edafdb4125f0330b3fd48ace71336f93664851ba",
+  "bytes": 17163794,
+  "precision": "fp16",
+  "run": "seed0_all_regimes",
+  "checkpoint": "best",
+  "source_commit": "8d90d9c8d13c0e8a4790d14875ec95f270917759",
+  "provenance": {
+    "supervision": "human verdicts",
+    "corpus": "data/labels"
+  },
+  "why": "regime-robust location head: halves decision flips against its own canonical read at both cheaper regimes, on 4,000 production-stock locations, at every gate.",
+  "judged_by": "models/location/flip_acceptance.json",
+  "adopted": false,
+  "not_in": "weights.json. Nothing resolves this file: `fetch-weights` reads the manifest, and the shipped location.fp16.pt is untouched",
+  "conversion": {
+    "source": "models/location/seed0_all_regimes/head_best.pt",
+    "artifact": "models/location/location.candidate.fp16.pt",
+    "tensors": 464,
+    "floating_tensors": 387,
+    "bytes": {
+      "fp32": 34170362,
+      "fp16": 17163794
+    },
+    "reread": "bit-identical"
+  },
+  "agreement": {
+    "pictures": 1002,
+    "ordering": {
+      "cutpoints": {
+        "ge2": {
+          "fp32": 0.8693764967499145,
+          "fp16": 0.8693850496065686,
+          "moved": 8.552856654131524e-06,
+          "one_swap_is": 4.276428327061238e-06,
+          "swaps": 2.0000000000021156,
+          "bound": 0.001,
+          "verdict": "PASS"
+        },
+        "ge3": {
+          "fp32": 0.9267902847824444,
+          "fp16": 0.9267254878667776,
+          "moved": 6.479691566685375e-05,
+          "one_swap_is": 1.0799485944469044e-05,
+          "swaps": 6.000000000003657,
+          "bound": 0.001,
+          "verdict": "PASS"
+        },
+        "ge4": {
+          "fp32": 0.9560296846011131,
+          "fp16": 0.9558905380333952,
+          "moved": 0.00013914656771796263,
+          "one_swap_is": 4.6382189239332094e-05,
+          "swaps": 2.9999999999992744,
+          "bound": 0.001,
+          "verdict": "PASS"
+        }
+      },
+      "rule": "at most 8 adjacent rank swaps at any cutpoint, or 0.001 of AUC, whichever is larger",
+      "held": true
+    },
+    "decisions": {
+      "rule": "at most 1% of rows change their decoded tier",
+      "changed": 3,
+      "share": 0.0029940119760479044,
+      "held": true
+    },
+    "row_moves": {
+      "reported_only": "a moved probability is not a changed answer; the decisions above are what this used to be a proxy for",
+      "median": 4.7366509083221284e-07,
+      "p99": 0.0069985902598332095,
+      "worst": 0.016497447789792563,
+      "over_a_point": 7,
+      "of": 3006
+    },
+    "held": true
+  }
+}

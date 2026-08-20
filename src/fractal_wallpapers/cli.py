@@ -3122,7 +3122,12 @@ def regime_commands(subcommands) -> None:
         ),
     )
     reading.add_argument(
-        "--workers", type=int, default=6, help="render worker processes (default: 6)"
+        "--workers",
+        type=int,
+        help=(
+            "render worker processes (default: the scorer's own, which is one — a single "
+            "view already spends the whole machine, and every fan-out arm measures slower)"
+        ),
     )
     reading.add_argument("--device", default="auto")
     reading.set_defaults(handler=flip_score)

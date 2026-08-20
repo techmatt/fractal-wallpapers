@@ -1,0 +1,294 @@
+{
+  "schema": 1,
+  "head": "location",
+  "prereg": "models/location/flip_prereg.json",
+  "prereg_question": "On the population the motivating numbers came from, does the regime-robust candidate cross the acting gates less often than the shipped head does when it reads the same location at a cheaper geometry?",
+  "population": {
+    "locations": 4000,
+    "side": "production stock, none of it in the label store",
+    "seed": 0
+  },
+  "runs": {
+    "incumbent": "seed0",
+    "candidate": [
+      "seed0_all_regimes",
+      "seed1_all_regimes",
+      "seed2_all_regimes"
+    ]
+  },
+  "gated_on": "seed0_all_regimes",
+  "gates": [
+    {
+      "gate": "junk floor",
+      "reads": "P(>=3) >= 0.2"
+    },
+    {
+      "gate": "good floor",
+      "reads": "P(>=3) >= 0.5"
+    },
+    {
+      "gate": "great cut",
+      "reads": "P(>=4) >= 0.5"
+    }
+  ],
+  "primary": {
+    "640x360ss1": {
+      "candidate": 0.03058333333333333,
+      "incumbent": 0.05958333333333333,
+      "delta": -0.028999999999999998,
+      "ci": [
+        -0.03375,
+        -0.02424791666666669
+      ],
+      "verdict": "IMPROVED",
+      "band": {
+        "seed0_all_regimes": 0.03058333333333333,
+        "seed1_all_regimes": 0.03191666666666666,
+        "seed2_all_regimes": 0.024833333333333332
+      },
+      "gated_on": "seed0_all_regimes"
+    },
+    "384x216ss1": {
+      "candidate": 0.04558333333333333,
+      "incumbent": 0.10358333333333332,
+      "delta": -0.05799999999999999,
+      "ci": [
+        -0.06433333333333331,
+        -0.05158333333333333
+      ],
+      "verdict": "IMPROVED",
+      "band": {
+        "seed0_all_regimes": 0.04558333333333333,
+        "seed1_all_regimes": 0.05208333333333333,
+        "seed2_all_regimes": 0.035
+      },
+      "gated_on": "seed0_all_regimes"
+    }
+  },
+  "guard": {
+    "640x360ss1|junk floor": {
+      "candidate": 0.042,
+      "incumbent": 0.0825,
+      "delta": -0.0405,
+      "ci": [
+        -0.051,
+        -0.0305
+      ],
+      "verdict": "IMPROVED",
+      "band": {
+        "seed0_all_regimes": 0.042,
+        "seed1_all_regimes": 0.038,
+        "seed2_all_regimes": 0.03825
+      },
+      "direction": {
+        "seed0": {
+          "turned_off": 292,
+          "turned_on": 38
+        },
+        "seed0_all_regimes": {
+          "turned_off": 106,
+          "turned_on": 62
+        }
+      }
+    },
+    "640x360ss1|good floor": {
+      "candidate": 0.039,
+      "incumbent": 0.0705,
+      "delta": -0.03149999999999999,
+      "ci": [
+        -0.04075,
+        -0.02225
+      ],
+      "verdict": "IMPROVED",
+      "band": {
+        "seed0_all_regimes": 0.039,
+        "seed1_all_regimes": 0.0465,
+        "seed2_all_regimes": 0.028
+      },
+      "direction": {
+        "seed0": {
+          "turned_off": 244,
+          "turned_on": 38
+        },
+        "seed0_all_regimes": {
+          "turned_off": 105,
+          "turned_on": 51
+        }
+      }
+    },
+    "640x360ss1|great cut": {
+      "candidate": 0.01075,
+      "incumbent": 0.02575,
+      "delta": -0.015,
+      "ci": [
+        -0.020749999999999998,
+        -0.009250000000000001
+      ],
+      "verdict": "IMPROVED",
+      "band": {
+        "seed0_all_regimes": 0.01075,
+        "seed1_all_regimes": 0.01125,
+        "seed2_all_regimes": 0.00825
+      },
+      "direction": {
+        "seed0": {
+          "turned_off": 84,
+          "turned_on": 19
+        },
+        "seed0_all_regimes": {
+          "turned_off": 29,
+          "turned_on": 14
+        }
+      }
+    },
+    "384x216ss1|junk floor": {
+      "candidate": 0.06525,
+      "incumbent": 0.1445,
+      "delta": -0.07924999999999999,
+      "ci": [
+        -0.0915,
+        -0.06699999999999999
+      ],
+      "verdict": "IMPROVED",
+      "band": {
+        "seed0_all_regimes": 0.06525,
+        "seed1_all_regimes": 0.06525,
+        "seed2_all_regimes": 0.05
+      },
+      "direction": {
+        "seed0": {
+          "turned_off": 548,
+          "turned_on": 30
+        },
+        "seed0_all_regimes": {
+          "turned_off": 208,
+          "turned_on": 53
+        }
+      }
+    },
+    "384x216ss1|good floor": {
+      "candidate": 0.05575,
+      "incumbent": 0.12225,
+      "delta": -0.0665,
+      "ci": [
+        -0.07800000000000001,
+        -0.055249999999999994
+      ],
+      "verdict": "IMPROVED",
+      "band": {
+        "seed0_all_regimes": 0.05575,
+        "seed1_all_regimes": 0.074,
+        "seed2_all_regimes": 0.04225
+      },
+      "direction": {
+        "seed0": {
+          "turned_off": 456,
+          "turned_on": 33
+        },
+        "seed0_all_regimes": {
+          "turned_off": 178,
+          "turned_on": 45
+        }
+      }
+    },
+    "384x216ss1|great cut": {
+      "candidate": 0.01575,
+      "incumbent": 0.044,
+      "delta": -0.028249999999999997,
+      "ci": [
+        -0.035500000000000004,
+        -0.021
+      ],
+      "verdict": "IMPROVED",
+      "band": {
+        "seed0_all_regimes": 0.01575,
+        "seed1_all_regimes": 0.017,
+        "seed2_all_regimes": 0.01275
+      },
+      "direction": {
+        "seed0": {
+          "turned_off": 149,
+          "turned_on": 27
+        },
+        "seed0_all_regimes": {
+          "turned_off": 45,
+          "turned_on": 18
+        }
+      }
+    }
+  },
+  "reported_not_gated": {
+    "worst_family": {
+      "partition": "multibrot3",
+      "locations": 422,
+      "pooled": {
+        "640x360ss1": {
+          "seed0": 0.12401263823064772,
+          "seed0_all_regimes": 0.04028436018957346,
+          "seed1_all_regimes": 0.04660347551342812,
+          "seed2_all_regimes": 0.02843601895734597
+        },
+        "384x216ss1": {
+          "seed0": 0.17930489731437596,
+          "seed0_all_regimes": 0.05924170616113744,
+          "seed1_all_regimes": 0.08135860979462874,
+          "seed2_all_regimes": 0.033965244865718794
+        }
+      }
+    },
+    "spearman": {
+      "640x360ss1": {
+        "seed0": 0.970630738347665,
+        "seed0_all_regimes": 0.99029104014319,
+        "seed1_all_regimes": 0.9865453739715859,
+        "seed2_all_regimes": 0.9913892736493296
+      },
+      "384x216ss1": {
+        "seed0": 0.9196847788503082,
+        "seed0_all_regimes": 0.9791696745731047,
+        "seed1_all_regimes": 0.9704610299038143,
+        "seed2_all_regimes": 0.9836462666028917
+      }
+    },
+    "canonical_gate_pass_rates": {
+      "junk floor": {
+        "seed0": 0.5785,
+        "seed0_all_regimes": 0.48625,
+        "seed1_all_regimes": 0.635,
+        "seed2_all_regimes": 0.44075
+      },
+      "good floor": {
+        "seed0": 0.3675,
+        "seed0_all_regimes": 0.328,
+        "seed1_all_regimes": 0.43575,
+        "seed2_all_regimes": 0.30175
+      },
+      "great cut": {
+        "seed0": 0.098,
+        "seed0_all_regimes": 0.0555,
+        "seed1_all_regimes": 0.0445,
+        "seed2_all_regimes": 0.055
+      }
+    },
+    "by_band": {
+      "0": 842,
+      "1": 844,
+      "2": 843,
+      "3": 765,
+      "4": 706
+    },
+    "by_partition": {
+      "julia:mandelbrot": 469,
+      "julia:multibrot3": 466,
+      "julia:multibrot4": 466,
+      "julia:multibrot5": 467,
+      "mandelbrot": 467,
+      "multibrot3": 422,
+      "multibrot4": 403,
+      "multibrot5": 370,
+      "phoenix": 470
+    }
+  },
+  "failed_cells": [],
+  "verdict": "PASS"
+}

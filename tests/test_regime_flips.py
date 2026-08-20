@@ -12,6 +12,7 @@ the study.
 from __future__ import annotations
 
 import json
+import re
 
 import pytest
 
@@ -19,6 +20,10 @@ from fractal_wallpapers.models import regime_flips
 from fractal_wallpapers.models import tiles as tile_module
 
 pytest.importorskip("numpy")
+
+#: A drive letter or a home directory, the two ways a record names one machine.
+#: The lookbehind keeps a URL scheme from reading as a drive letter.
+ABSOLUTE_PATH = re.compile(r"(?<![A-Za-z0-9_])[A-Za-z]:[\/]|/(?:home|Users|mnt)/")
 
 
 def stock(count: int, partition: str = "mandelbrot", offset: int = 0) -> list[dict]:
@@ -227,6 +232,32 @@ def test_the_canonical_arm_reads_the_picture_the_sidecar_scored() -> None:
     rows = [{"key": "a", "view": "beef.jpg"}]
     with pytest.raises(regime_flips.FlipError, match="two different pictures"):
         regime_flips._check_canonical_names(rows, [tile_module.cache_root() / "cafe.jpg"])
+
+
+def test_no_record_this_study_writes_names_a_machine() -> None:
+    """A verdict git keeps must not say `C:` — it means nothing on the next machine.
+
+    Scoped to the records this study writes, and it fails on the file rather than
+    on the code, because the bug was a value written by a run, not a literal.
+    Thirty-one older tracked records carry one; that is a migration and a
+    decision, and this guard deliberately does not pretend to be it.
+    """
+    from fractal_wallpapers.models import regime_acceptance, ship
+
+    written = (
+        regime_flips.acceptance_path(),
+        regime_acceptance.acceptance_path(),
+        ship.candidate_record_path(),
+    )
+    offenders = [
+        path.name
+        for path in written
+        if path.is_file() and ABSOLUTE_PATH.search(path.read_text(encoding="utf-8"))
+    ]
+    assert not offenders, (
+        f"{offenders} name an absolute path. Write one through "
+        f"`fractal_wallpapers.paths.tracked_name`."
+    )
 
 
 def test_the_two_bars_write_different_records() -> None:

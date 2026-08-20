@@ -124,7 +124,7 @@ from pathlib import Path
 
 from fractal_wallpapers.models import head, metrics, scoring, train
 from fractal_wallpapers.models.roster import HEADS
-from fractal_wallpapers.paths import repo_root
+from fractal_wallpapers.paths import repo_root, tracked_name
 
 #: The schema of the weights manifest.
 SCHEMA = 1
@@ -436,8 +436,8 @@ def convert(
 
     floating = sum(1 for tensor in saved["state_dict"].values() if tensor.is_floating_point())
     return {
-        "source": str(source),
-        "artifact": str(destination),
+        "source": tracked_name(source),
+        "artifact": tracked_name(destination),
         "tensors": len(halved),
         "floating_tensors": floating,
         "bytes": {"fp32": source.stat().st_size, "fp16": destination.stat().st_size},
@@ -690,7 +690,7 @@ def stage_candidate(
         "source_commit": source_commit(),
         "provenance": provenance(name),
         "why": why,
-        "judged_by": None if verdict is None else str(verdict),
+        "judged_by": None if verdict is None else tracked_name(verdict),
         "adopted": False,
         "not_in": (
             f"{manifest_path().name}. Nothing resolves this file: `fetch-weights` reads the "

@@ -35,6 +35,22 @@ def colormap_dir() -> Path:
     return repo_root() / "data" / "palettes"
 
 
+def tracked_name(path) -> str:
+    """A path as a **tracked** record may carry it: relative, forward slashes.
+
+    A record git keeps that names one machine's drive letter and home directory
+    means nothing on the machine that reads it next — and every acceptance
+    record here names the bar it was read against. A path outside the checkout
+    is left as it is, spelled with forward slashes, because rewriting it would
+    be inventing a location rather than recording one.
+    """
+    path = Path(path)
+    try:
+        return path.resolve().relative_to(repo_root().resolve()).as_posix()
+    except ValueError:
+        return path.as_posix()
+
+
 def writing_path(output: Path) -> Path:
     """Where a file is built before it becomes the file at `output`."""
     output = Path(output)
