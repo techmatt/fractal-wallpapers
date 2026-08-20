@@ -33,6 +33,7 @@ from pathlib import Path
 from fractal_wallpapers.labeling import pins
 from fractal_wallpapers.models import dataset, head, train
 from fractal_wallpapers.models import tiles as tile_module
+from fractal_wallpapers.paths import tracked_name
 
 #: The schema every score row carries.
 SCHEMA = 1
@@ -50,20 +51,6 @@ def scores_path(
     elides, so the deploy read keeps the name every existing record names.
     """
     return train.head_dir(name, run) / f"scores{regime.tag}.jsonl"
-
-
-def _relative(path: str) -> str:
-    """A tile path as a tracked record may carry it: relative, forward slashes.
-
-    The score file is tracked, and a tracked file that names one machine's drive
-    letter and home directory means nothing on the machine that reads it next.
-    """
-    from fractal_wallpapers.paths import repo_root
-
-    try:
-        return Path(path).resolve().relative_to(repo_root().resolve()).as_posix()
-    except ValueError:
-        return Path(path).as_posix()
 
 
 def load(path: Path, device: str = "auto"):
@@ -163,7 +150,7 @@ def run(
                 "partition": location.partition,
                 "group": location.group,
                 "batch": location.batch,
-                "canonical_tile": _relative(tile_module.canonical_of(location.tiles)["path"]),
+                "canonical_tile": tracked_name(tile_module.canonical_of(location.tiles)["path"]),
             }
             for index in range(int(config["classes"]) - 1):
                 row[f"p_{head.cutpoint_label(index)}"] = float(probability[index])

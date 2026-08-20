@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "head": "location",
-  "prereg": "C:\\Code\\fractal-wallpapers\\models\\location\\regime_prereg.json",
+  "prereg": "models/location/regime_prereg.json",
   "prereg_question": "Does a location head trained over all three cached regimes at once keep the incumbent's judgement at the canonical regime, while agreeing with itself far better at the two cheaper ones?",
   "runs": {
     "incumbent": [

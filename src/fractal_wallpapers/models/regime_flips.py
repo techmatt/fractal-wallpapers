@@ -57,7 +57,7 @@ from pathlib import Path
 
 from fractal_wallpapers.models import metrics, regime_acceptance, train
 from fractal_wallpapers.models import tiles as tile_module
-from fractal_wallpapers.paths import repo_root
+from fractal_wallpapers.paths import repo_root, tracked_name
 
 #: The schema every record here carries.
 SCHEMA = 1
@@ -568,7 +568,7 @@ def _read_through(run: str, paths_by_regime: dict, head: str, device: str, log) 
 def score(
     head: str = HEAD,
     limit: int | None = None,
-    workers: int = 6,
+    workers: int | None = None,
     device: str = "auto",
     log=train.say,
 ) -> dict:
@@ -577,10 +577,21 @@ def score(
     `limit` renders and reads a prefix of the declared draw and writes nothing
     tracked — the rehearsal the render budget is estimated from. It is a
     measurement of the engine, not a smaller study: the bar's population is the
-    whole draw and the verdict refuses anything else.
+    whole draw and the verdict refuses anything else. Note that the draw is
+    written cell by cell, so a *prefix* is one stratum and prices the engine on
+    the cheapest material there is; a spread across the whole draw is what a
+    budget should be taken on.
+
+    `workers` defaults to the scorer's own, which is **one**. The fan-out loses
+    at this regime the same way it loses at the canonical one — 60 uncached views
+    at 640x360ss1 render at 2.45/s serially, 2.27/s at three workers and 2.14/s
+    at six, and the engine-seconds inflate six-fold under contention while the
+    wall clock gets worse. See [`fractal_wallpapers.discovery.scoring`].
     """
+    from fractal_wallpapers.discovery import scoring as discovery_scoring
     from fractal_wallpapers.models import head as head_module
 
+    workers = discovery_scoring.DEFAULT_WORKERS if workers is None else int(workers)
     bar = json.loads(prereg_path(head).read_text(encoding="utf-8"))
     stock, census = eligible(head)
     drawn = draw(stock, bar["population"]["size"], bar["population"]["seed"])
@@ -838,7 +849,7 @@ def read(head: str = HEAD, path: Path | None = None) -> dict:
     return {
         "schema": SCHEMA,
         "head": head,
-        "prereg": str(prereg_path(head)),
+        "prereg": tracked_name(prereg_path(head)),
         "prereg_question": bar["question"],
         "population": {
             "locations": len(rows),

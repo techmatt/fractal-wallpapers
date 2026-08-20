@@ -18,6 +18,16 @@ the canonical regime and a `scores_<w>x<h>ss<n>.jsonl` for every other one. The
 incumbent's three runs carry the same per-regime files, because a paired
 comparison needs both heads read on the same rows at the same geometries.
 
+`flip_prereg.json` and `flip_acceptance.json` are the **second** bar of that same
+study, on a different population. The first is read on the evaluation split,
+where 78% of rows read below `P(≥3) = 0.05` at every geometry and agree
+trivially; this one re-asks the question on production stock — a seeded draw over
+the curation sidecar, stratified over partition × the incumbent's own canonical
+score band, with every location this store holds excluded — and counts decision
+flips at the junk floor, the good floor and the great cut rather than a rank
+correlation. Its draw and its reads are re-derivable and live under
+`artifacts/regime_flips/`.
+
 `candidate.json` describes `location.candidate.fp16.pt`: a staged candidate,
 verified exactly the way a shipment is and **absent from `models/weights.json`**
 on purpose. Nothing resolves it. Adopting a location head moves the score scale

@@ -63,6 +63,7 @@ from pathlib import Path
 
 from fractal_wallpapers.models import metrics, scoring, train
 from fractal_wallpapers.models import tiles as tile_module
+from fractal_wallpapers.paths import tracked_name
 
 #: The schema every record here carries.
 SCHEMA = 1
@@ -572,7 +573,7 @@ def read(head: str = HEAD) -> dict:
     return {
         "schema": SCHEMA,
         "head": head,
-        "prereg": str(prereg_path(head)),
+        "prereg": tracked_name(prereg_path(head)),
         "prereg_question": bar["question"],
         "runs": {"incumbent": list(INCUMBENT_RUNS), "candidate": list(CANDIDATE_RUNS)},
         "regimes": [spelled(regime) for regime in regimes],

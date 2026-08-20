@@ -113,6 +113,39 @@ fractal-wallpapers regime accept           # the band, against the bar
 fractal-wallpapers regime stage            # the winner, beside the shipped head
 ```
 
+**Two bars, two populations, and `--read` says which one authorized a staging.**
+The steps above are read on the evaluation split. The `flip-` steps re-ask the
+same question on production stock, at the gates the supply engine acts on:
+
+```
+fractal-wallpapers regime flip-preregister            # the second bar
+fractal-wallpapers regime flip-score --limit 90       # rehearse the render leg
+fractal-wallpapers regime flip-score                  # the whole draw
+fractal-wallpapers regime flip-read                   # the band, against it
+fractal-wallpapers regime stage --read stock          # if that one passed
+```
+
+`flip-score` draws 4,000 sidecar locations, seeded and stratified over partition
+× the incumbent's stored canonical score band, excludes every location the label
+store holds, renders each at all three regimes and reads all four runs over
+every picture. It writes `artifacts/regime_flips/{draw,reads}.jsonl` and nothing
+tracked; `flip-read` writes the verdict. Two facts about running it:
+
+* **The canonical leg costs nothing.** Every drawn location's canonical view is
+  already in `artifacts/location_views` from the sidecar's own scoring pass, and
+  the digest that names it carries resolution and supersample — so the arm that
+  has to correspond to production reads production's own files, and only the two
+  cheap regimes render.
+* **`--limit` prices the cheapest stratum, not the draw.** The draw is written
+  cell by cell from the smallest cell upward, so a prefix is one stratum of thin,
+  high-scoring material. Take a budget on a spread across the whole draw.
+
+Fan-out loses here the same way it loses in `discovery.scoring`, now measured at
+a second regime: 60 uncached views at 640×360ss1 render at **2.45/s serially**,
+2.27/s at three workers and 2.14/s at six, and the engine-seconds inflate
+six-fold under contention while the wall clock gets worse. One worker is the
+default and `--workers` is how the measurement gets re-taken.
+
 **A score file's `group` is a fact about the manifest that was current when it
 was written.** Group ids are assigned over the whole scored store, so an ingest
 renumbers them — 943 of the location head's 1,002 evaluation rows changed group
@@ -135,6 +168,19 @@ the work — stratified over partition × score band — read 0.963. Neither num
 wrong and they are not comparable: a rho is a property of the population as much
 as of the head. Say which rows a cross-regime claim was measured on, and prefer
 the ones a floor is actually decided on.
+
+The second bar did exactly that and resolved every cell it gated. On 4,000 stock
+locations the shipped head's pooled flip rate is 5.96% at 640×360ss1 and 10.36%
+at 384×216ss1; the regime-robust candidate's are 3.06% and 4.56%, and all six
+regime × gate cells improved. **The bias, not the noise, is what moved**: at the
+incumbent's 384×216 junk floor 548 decisions turn off at the cheaper regime
+against 30 that turn on, and the candidate's are 208 against 53.
+
+**A retrained location head is not a drop-in.** Canonical-regime pass rates on
+that same draw: junk floor 57.85% → 48.62%, good floor 36.75% → 32.80%, great cut
+9.80% → 5.55% — and across the candidate band the junk floor ranges 44.07% to
+63.50%. Every floor is calibrated against the shipped head's scale, so adoption
+means restating them from a measurement, never from one seed's number.
 
 ## Running a band that takes hours
 
