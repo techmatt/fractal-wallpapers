@@ -108,8 +108,12 @@ def acceptance_path(head: str = HEAD) -> Path:
 
 
 def spelled(regime: tile_module.Regime) -> str:
-    """A regime as a person writes it: the full form, before the elision."""
-    return f"{regime.tile[0]}x{regime.tile[1]}ss{regime.supersample}"
+    """A regime as a person writes it: the full form, before the elision.
+
+    The regime owns its own spelling; this is the name this module's records
+    already reach it by.
+    """
+    return regime.spelled
 
 
 def slices() -> list[dict]:

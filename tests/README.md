@@ -3,7 +3,7 @@
 The test suite, including the guard that keeps this history text-only and small.
 
 ```
-python -m pytest                                    # ~50s, 1538 tests
+python -m pytest                                    # ~70s, 1647 tests
 cargo test --manifest-path engine/Cargo.toml        # ~7s warm, ~28s cold
 ```
 

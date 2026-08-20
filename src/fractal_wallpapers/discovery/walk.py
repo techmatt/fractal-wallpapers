@@ -88,7 +88,26 @@ Every candidate the engine reports is built first, the survivors are read
 reported them, in one pass, by this process. That is what lets the scorer fan its
 renders out across worker processes without the ledger's order becoming a
 function of which worker finished first, and it is why [`_record`] is three loops
-rather than one.
+rather than one. It matters less than it did — nothing is rendered for scoring
+any more — but the order is a property of the record and stays a property of the
+record.
+
+## The picture the scorer is handed is the gate render
+
+`expand` draws every gate survivor at 384×216, one field sample per pixel, and
+that frame is byte-identical to the same location's cached tile at the same
+regime — one of the three the shipped head was trained over. So the walk offers
+the scorer the picture it already made, and the deploy-geometry steering view is
+gone: it was 58.7% of a production run's clean wall and nothing but the scorer
+ever read its pixels. The four settings that make the identity true are checked
+before the run's first row is written, in
+[`fractal_wallpapers.discovery.identity`], and every scored row records the
+regime and the recipe digest its score was read off.
+
+Once a run, a small seeded sample of survivors is scored a **second** time at the
+deploy geometry and the two verdicts are compared at the three acting gates. That
+line is reported and nothing acts on it: it is standing insurance on the live
+candidate population, priced at about a minute of a multi-hour leg.
 """
 
 from __future__ import annotations
@@ -100,8 +119,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from fractal_wallpapers import engine
+from fractal_wallpapers.discovery import identity, nucleus, operators, pools
 from fractal_wallpapers.discovery import ledger as ledger_module
-from fractal_wallpapers.discovery import nucleus, operators, pools
 from fractal_wallpapers.discovery.ledger import Ledger
 from fractal_wallpapers.discovery.scoring import NullScorer, Scorer
 from fractal_wallpapers.paths import tracked_name
@@ -179,7 +198,7 @@ class Limits:
     #: grace ends: 1,304 survivors at rung 6 against 132 at rung 7 over two runs.
     #: A production run at eleven removed that cliff, reached rung 13, and doubled
     #: the share of plane candidates at 1e-6 or deeper (1.5% -> 3.1%) — for half the
-    #: shallow throughput, because eleven ungated rungs spend steering views on
+    #: shallow throughput, because eleven ungated rungs spend gate renders on
     #: nodes that never clear and maxiter climbs with depth (13,140 at rung 1 to
     #: 31,628 at rung 13). The number is a trade, not a constant; this is its price.
     plane_grace_rungs: int = 5
@@ -286,6 +305,13 @@ class Walk:
         self.scorer = scorer or NullScorer()
         self.colormap = colormap
 
+        # Before the header, because this is the claim the run's scores rest on:
+        # a walk that scores its own gate renders is asserting they are the tiles
+        # the head was trained on, and a refusal discovered later is a refusal
+        # discovered with a ledger already written.
+        self.identity = self._enforce_identity()
+        self.flip_sample = identity.Sample(seed=self.seed)
+
         self.rng = random.Random(self.seed)
         self.governor = operators.ProbeGovernor(self.limits.probe_probability, self.rng)
         self.frontier: list[dict] = []
@@ -309,6 +335,7 @@ class Walk:
             seed=self.seed,
             scorer=self.scorer.name,
             scoring=self.scoring_record(),
+            identity=self.identity,
             colormap=self.colormap,
             limits=vars(self.limits),
             policy=self.policy.wire(),
@@ -327,6 +354,26 @@ class Walk:
         scorer with nothing to declare."""
         summary = getattr(self.scorer, "summary", None)
         return summary() if callable(summary) else None
+
+    def _enforce_identity(self) -> dict | None:
+        """Refuse unless the gate render is the picture this scorer's head reads.
+
+        The claim is made only by a scorer that reads the **node regime**, which
+        is the regime `expand` draws in. `None` for every other scorer — the null
+        one, and any that reads some other geometry — because none of those says
+        anything about what the engine drew: they render their own pictures, and a
+        check about a frame nobody is going to score would refuse for nothing.
+        """
+        from fractal_wallpapers.models import tiles as tile_module
+
+        if getattr(self.scorer, "regime", None) != tile_module.NODE_REGIME:
+            return None
+        return identity.enforce(self.colormap, self.policy.node_width, tile_module.NODE_REGIME)
+
+    def gate_flips(self) -> dict | None:
+        """The per-run sanity line: this run's sample, read again at the deploy
+        geometry. Reported, never acted on."""
+        return identity.dual_score(self.flip_sample, self.scorer, self.out_dir / "flip_sample")
 
     # ------------------------------------------------------------------ roots
 
@@ -617,7 +664,7 @@ class Walk:
                         }
                         for node in nodes
                     ],
-                    "out_dir": str(self.out_dir / "views"),
+                    "out_dir": str(self.views_dir()),
                     "colormap": self.colormap,
                     "colormap_dir": str(engine.colormap_dir()),
                     "gates": self.gates.wire(),
@@ -629,6 +676,43 @@ class Walk:
             survivors.extend(kept)
             candidates.extend(seen)
         return {"survivors": survivors, "candidates": candidates}
+
+    def views_dir(self) -> Path:
+        """Where the engine writes this run's gate renders."""
+        return views_dir(self.out_dir)
+
+    def _gate_renders(self, rows: list[dict]) -> list[Path | None] | None:
+        """The picture the engine already made of each of these survivors.
+
+        `None` — no offer at all — unless this run *asserted* the identity, which
+        is the same thing as the scorer reading the node regime and the four
+        settings having held. A judge that reads some other geometry is handed
+        nothing: the gate render is a real picture of the right place at the wrong
+        size, which is exactly the kind of wrong answer that looks right.
+        """
+        if self.identity is None:
+            return None
+        directory = self.views_dir()
+        return [None if not row.get("image") else directory / row["image"] for row in rows]
+
+    def _check_regime(self, report: dict) -> None:
+        """Refuse a report drawn at a geometry this run's scorer does not read.
+
+        The run-start check pins the settings; this pins the *outcome*, off the
+        engine's own statement of what it drew. It costs a comparison per engine
+        call and it is the only thing standing between "the head reads the gate
+        render" and a silent frame-size change making that sentence false.
+        """
+        regime = self.identity and self.identity.get("regime")
+        if regime is None:
+            return
+        drew = f"{report['tile'][0]}x{report['tile'][1]}ss{report['field_supersample']}"
+        if drew != regime:
+            raise identity.IdentityBroken(
+                f"the engine drew this batch at {drew}, but this run scores gate renders as "
+                f"{regime} tiles. The picture the head would be handed is not the one it was "
+                f"trained on, and nothing about the score it returned would look wrong."
+            )
 
     def _candidate(self, row: dict, parent: dict, family: dict) -> dict:
         """One engine candidate as the ledger row it will become, score fields blank.
@@ -670,16 +754,26 @@ class Walk:
             "score": None,
             "score_great": None,
             "score_error": None,
+            # Which picture the verdict was read off: the geometry, and the digest
+            # of the whole recipe. Provenance, not semantics — one scale acts
+            # across regimes — but a union that holds ledgers scored at two
+            # geometries must never have to guess which a row is, and the digest
+            # is how a later reader checks a persisted picture is still this one.
+            # Both stay `null` where nothing had an opinion.
+            "score_regime": None,
+            "score_view": None,
         }
 
     def _record(self, report: dict, by_id: dict, family: dict) -> tuple[list[dict], list[dict]]:
         """Score the batch, then write every candidate the engine reported, in order.
 
         Three passes, and the middle one is the reason: the scorer is handed
-        every survivor at once so its renders can fan out, and nothing is written
-        until it has answered for all of them. A per-candidate score inside the
-        write loop would fix the ledger's order to the order the renders finished.
+        every survivor at once, together with the gate render the engine already
+        made of each, and nothing is written until it has answered for all of
+        them. A per-candidate score inside the write loop would fix the ledger's
+        order to the order the readings finished.
         """
+        self._check_regime(report)
         candidates = [
             self._candidate(row, by_id[row["node_id"]], family) for row in report["candidates"]
         ]
@@ -694,13 +788,18 @@ class Walk:
             for index, candidate in enumerate(candidates)
             if candidate["fate"] == ledger_module.SURVIVED
         ]
-        readings = self.scorer.read([candidates[index] for index in standing])
+        standing_rows = [candidates[index] for index in standing]
+        readings = self.scorer.read(standing_rows, pictures=self._gate_renders(standing_rows))
         for index, reading in zip(standing, readings, strict=True):
             candidates[index]["score"] = reading.score
             candidates[index]["score_great"] = reading.great
             candidates[index]["score_error"] = reading.error
+            candidates[index]["score_regime"] = reading.regime
+            candidates[index]["score_view"] = reading.view
             if reading.error is not None:
                 self._count("score_failed")
+            else:
+                self.flip_sample.offer(candidates[index])
 
         survivors: list[dict] = []
         recorded: list[dict] = []
@@ -941,6 +1040,8 @@ class Walk:
             "frontier": len(self.frontier),
             "scorer": self.scorer.name,
             "scoring": self.scoring_record(),
+            "identity": self.identity,
+            "gate_flips": self.gate_flips(),
             "probe": self.governor.tally(),
             "counts": dict(sorted(self.tally.items())),
             "ledger": tracked_name(self.ledger.path),
@@ -948,6 +1049,18 @@ class Walk:
         self.ledger.write("summary", **summary)
         self.ledger.close()
         return summary
+
+
+def views_dir(out_dir) -> Path:
+    """Where a run keeps its gate renders, given the run's directory.
+
+    One spelling, and three readers now: the engine is told to write them here,
+    the walk's own scorer is told to find them here, and curation's re-score
+    reaches a finished run's the same way — from the run directory its ledger
+    sits in. A second copy of `/ "views"` is how a re-score silently starts
+    re-rendering pictures that were already on disk.
+    """
+    return Path(out_dir) / "views"
 
 
 def is_plane_root(source: str, family: dict) -> bool:
@@ -985,4 +1098,5 @@ __all__ = [
     "family_key",
     "is_plane_root",
     "nucleus",
+    "views_dir",
 ]

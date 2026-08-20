@@ -57,12 +57,14 @@ class Stub:
         self.readings = list(readings)
         self.admit_floor = admit_floor
         self.batches: list[int] = []
+        self.offered: list = []
 
     def score(self, candidate):
         return self.read([candidate])[0].score
 
-    def read(self, candidates):
+    def read(self, candidates, pictures=None):
         self.batches.append(len(candidates))
+        self.offered.append(list(pictures) if pictures is not None else None)
         out = [
             self.readings[index] if index < len(self.readings) else scoring.NO_OPINION
             for index in range(len(candidates))

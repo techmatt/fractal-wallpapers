@@ -185,15 +185,20 @@ def score(tmp_path, monkeypatch):
     from fractal_wallpapers.models import scoring, ship, train
 
     monkeypatch.setattr(intake, "store_dir", lambda: tmp_path / "curation")
-    monkeypatch.setattr(intake, "view_dir", lambda: tmp_path / "views")
+    monkeypatch.setattr(intake, "view_dir", lambda regime=None: tmp_path / "views")
     monkeypatch.setattr(intake.floors, "live_stamp", lambda head: "a-stamp")
     monkeypatch.setattr(intake.location_view, "canonical_map", lambda: "twilight_shifted")
     monkeypatch.setattr(intake.location_view, "cyclic_maps", lambda: set())
-    monkeypatch.setattr(intake.location_view, "summary", lambda colormap: {"map": colormap})
+    monkeypatch.setattr(
+        intake.location_view, "summary", lambda colormap, regime=None: {"map": colormap}
+    )
     monkeypatch.setattr(
         intake.location_view,
         "render_view",
-        lambda row, colormap, cyclic, directory: (directory / f"{row['node_id']}.jpg", False),
+        lambda row, colormap, cyclic, directory, regime=None: (
+            directory / f"{row['node_id']}.jpg",
+            False,
+        ),
     )
     monkeypatch.setattr(ship, "shipped_path", lambda head: tmp_path / "head.pt")
     monkeypatch.setattr(scoring, "load", lambda path, device: (None, {"classes": 4}, "cpu"))
@@ -247,3 +252,93 @@ def test_a_limited_pass_upserts_what_it_looked_at_and_clears_nothing(tmp_path, s
     report = score([ledger], limit=1)
     assert report["sidecar"]["scoped_ledgers"] == []
     assert len(intake.read_scores()) == 2
+
+
+# --------------------------------------------------------------------------- #
+# The regime a row is re-scored at.
+#
+# A walk scores its own gate render now, so the sidecar reads a row at the regime
+# the row names — and never demands a deploy-geometry render for a row that was
+# never scored at one.
+# --------------------------------------------------------------------------- #
+
+
+def node_row(tmp_path, image="node7_c1.jpg", digest=None, made=True) -> dict:
+    """One node-regime ledger row, with the gate render its run left behind."""
+    from fractal_wallpapers.models import location_view
+    from fractal_wallpapers.models import tiles as tile_module
+
+    row = candidate("-0.5")
+    row["_ledger"] = str(tmp_path / "run" / "walk.jsonl")
+    row["image"] = image
+    row["score_regime"] = tile_module.NODE_REGIME.spelled
+    row["score_view"] = digest or location_view.view_name(
+        row, "twilight_shifted", set(), tile_module.NODE_REGIME
+    )
+    if made:
+        picture = tmp_path / "run" / "views" / image
+        picture.parent.mkdir(parents=True, exist_ok=True)
+        picture.write_bytes(b"a finished picture")
+    return row
+
+
+def test_a_row_scored_at_the_node_regime_reads_the_picture_the_walk_already_made(
+    tmp_path,
+) -> None:
+    """The whole saving: the second render per survivor is gone, and the re-score
+    does not quietly put it back."""
+    from fractal_wallpapers.models import tiles as tile_module
+
+    row = node_row(tmp_path)
+    found = intake.gate_render(row, "twilight_shifted", set(), tile_module.NODE_REGIME)
+    assert found == tmp_path / "run" / "views" / "node7_c1.jpg"
+
+
+def test_a_recipe_that_moved_costs_a_re_render_rather_than_the_wrong_picture(tmp_path) -> None:
+    """The digest is what tells a gate render apart from a frame that sits at the
+    same coordinates and was drawn some other way."""
+    from fractal_wallpapers.models import tiles as tile_module
+
+    stale = node_row(tmp_path, digest="0000000000000000")
+    assert intake.gate_render(stale, "twilight_shifted", set(), tile_module.NODE_REGIME) is None
+
+
+def test_a_gate_render_the_run_no_longer_has_costs_a_re_render(tmp_path) -> None:
+    from fractal_wallpapers.models import tiles as tile_module
+
+    gone = node_row(tmp_path, made=False)
+    assert intake.gate_render(gone, "twilight_shifted", set(), tile_module.NODE_REGIME) is None
+
+
+def test_a_row_that_names_no_regime_is_read_at_the_deploy_one(tmp_path) -> None:
+    """Every row of the standing stock predates a walk saying, and every one of
+    them was scored at the deploy geometry off a picture already on disk."""
+    assert intake.regime_of(candidate("-0.5")) is None
+    assert intake.regime_of(node_row(tmp_path)) is not None
+
+
+def test_a_row_that_names_something_that_is_not_a_regime_refuses(tmp_path) -> None:
+    row = node_row(tmp_path)
+    row["score_regime"] = "enormous"
+    with pytest.raises(intake.IntakeError):
+        intake.regime_of(row)
+
+
+def test_a_node_regime_row_is_scored_without_one_engine_call(tmp_path, score, monkeypatch) -> None:
+    """The claim `curate score` makes about a new run's ledger, end to end: no
+    deploy-geometry render is ever demanded, and the picture is the walk's own."""
+    row = node_row(tmp_path)
+    ledger = tmp_path / "run" / "walk.jsonl"
+    ledger.write_text(json.dumps(row) + "\n", encoding="utf-8")
+
+    drew = []
+    monkeypatch.setattr(
+        intake.location_view,
+        "render_view",
+        lambda *a, **k: drew.append(a) or (tmp_path / "never.jpg", True),
+    )
+    report = score([ledger])
+    assert drew == [], "a row whose picture already exists cost an engine call"
+    assert report["pictures"] == {"gate": 1, "cached": 0, "rendered": 0}
+    assert report["by_regime"] == {"384x216ss1": 1}
+    assert next(iter(intake.read_scores().values()))["regime"] == "384x216ss1"

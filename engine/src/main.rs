@@ -7,6 +7,7 @@
 //! fractal-engine expand     [spec.json]   # walk nodes → one rung each, gated
 //! fractal-engine tiles      [spec.json]   # one field per location → many crops
 //! fractal-engine home-view  [spec.json]   # a family → where it is framed by default
+//! fractal-engine maxiter    [spec.json]   # plane widths → the iteration cap policy
 //! fractal-engine modes                    # what the named colorings are
 //! ```
 //!
@@ -30,7 +31,7 @@ use fractal_engine::{
     coloring::{self, Coloring, Palette},
     colormap::Colormap,
     dump, expand, family, field, mode, resample, spec,
-    spec::{Location, RecolorSpec, RenderSpec},
+    spec::{Location, MaxiterSpec, RecolorSpec, RenderSpec},
     tiles,
 };
 
@@ -182,6 +183,7 @@ fn run(args: Vec<String>) -> Result<(), String> {
         Some("expand") => expand_nodes(argument),
         Some("tiles") => build_tiles(argument),
         Some("home-view") => home_view(argument),
+        Some("maxiter") => maxiter_caps(argument),
         Some("modes") => print(
             &mode::CATALOG
                 .iter()
@@ -210,6 +212,7 @@ usage: fractal-engine render     [SPEC.json]
        fractal-engine expand     [SPEC.json]
        fractal-engine tiles      [SPEC.json]
        fractal-engine home-view  [SPEC.json]
+       fractal-engine maxiter    [SPEC.json]
        fractal-engine modes
 
 render      Render one location through one coloring to a PNG.
@@ -224,6 +227,10 @@ tiles       Turn a plan of locations into training tiles: one iteration pass
 home-view   Where a family is framed when nothing says otherwise, with the
             measured set and the rule the frame was derived by. Takes a spec
             that is a schema and a family, and renders nothing.
+maxiter     The iteration cap the policy gives each of a list of plane widths.
+            The cap decides what counts as interior, so it is part of what a
+            picture *is*; this is how the other half of the project checks that
+            two renders of one location were drawn at the same one.
 modes       List the named colorings, as JSON.
 
 The spec is read from SPEC.json, or from stdin when no path is given. A JSON
@@ -338,6 +345,24 @@ fn dump_field(spec_path: Option<&str>) -> Result<(), String> {
 fn expand_nodes(spec_path: Option<&str>) -> Result<(), String> {
     let spec = expand::ExpandSpec::parse(&read_spec(spec_path)?)?;
     print(&expand::run(spec)?)
+}
+
+/// What the cap policy gives a list of widths, printed as one JSON object.
+#[derive(Serialize)]
+struct MaxiterReport {
+    schema: u32,
+    widths: Vec<String>,
+    caps: Vec<u32>,
+}
+
+fn maxiter_caps(spec_path: Option<&str>) -> Result<(), String> {
+    let spec = MaxiterSpec::parse(&read_spec(spec_path)?)?;
+    let caps = spec.caps()?;
+    print(&MaxiterReport {
+        schema: 1,
+        widths: spec.widths,
+        caps,
+    })
 }
 
 /// The one exception in the home table, stated where a caller will read it.

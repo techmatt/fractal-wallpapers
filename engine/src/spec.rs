@@ -172,6 +172,43 @@ impl HomeViewSpec {
     }
 }
 
+/// A question about the iteration cap, and nothing else.
+///
+/// The cap is a *policy* — `maxiter::for_width` — and it decides what counts as
+/// interior, so two pictures drawn at two caps are two different pictures. Two
+/// halves of this project have to agree that a location was drawn at the same
+/// cap in both: the training tiles record theirs, and a walk's gate render is
+/// only the picture the head trained on if the cap the engine applies today is
+/// still the one the corpus was built at. Asking is the door to that check, for
+/// the same reason `home-view` is the door to the framing table — Python holds
+/// no copy of either.
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct MaxiterSpec {
+    pub schema: u32,
+    /// Plane widths, as the decimal strings a viewport is written in.
+    pub widths: Vec<String>,
+}
+
+impl MaxiterSpec {
+    /// Read a maxiter spec from JSON text.
+    pub fn parse(text: &str) -> Result<MaxiterSpec, String> {
+        let spec: MaxiterSpec = serde_json::from_str(text).map_err(|e| format!("spec: {e}"))?;
+        if spec.schema != 1 {
+            return Err(format!("spec has schema {}, expected 1", spec.schema));
+        }
+        Ok(spec)
+    }
+
+    /// The cap for each width, in the order they were given.
+    pub fn caps(&self) -> Result<Vec<u32>, String> {
+        self.widths
+            .iter()
+            .map(|width| Ok(maxiter::for_width(decimal(width, "widths")?)))
+            .collect()
+    }
+}
+
 /// Where to look. Anything omitted falls back to the family's home view.
 #[derive(Debug, Default, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -791,6 +828,31 @@ mod tests {
                 }
             );
         }
+    }
+
+    /// The cap door exists so the other half of the project can check that two
+    /// renders of one location were drawn at the same cap. It has to be the very
+    /// same policy the renders use, not a restatement of it.
+    #[test]
+    fn the_cap_door_answers_with_the_policy_itself() {
+        let text = r#"{"schema":1,"widths":["3.0","0.75","1e-40"]}"#;
+        let spec = MaxiterSpec::parse(text).unwrap();
+        assert_eq!(
+            spec.caps().unwrap(),
+            vec![
+                maxiter::for_width(3.0),
+                maxiter::for_width(0.75),
+                maxiter::for_width(1e-40),
+            ]
+        );
+    }
+
+    #[test]
+    fn a_width_the_cap_door_cannot_read_is_refused_rather_than_defaulted() {
+        let spec = MaxiterSpec::parse(r#"{"schema":1,"widths":["wide"]}"#).unwrap();
+        assert!(spec.caps().unwrap_err().contains("widths"));
+        let bad = MaxiterSpec::parse(r#"{"schema":2,"widths":[]}"#);
+        assert!(bad.unwrap_err().contains("schema"));
     }
 
     #[test]
