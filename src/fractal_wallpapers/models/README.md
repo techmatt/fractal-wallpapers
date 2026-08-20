@@ -126,6 +126,61 @@ manifest, so a candidate is invisible to every serving path until someone adopts
 it — which for the location head means restating the floors its scale is
 calibrated against, and is a separate decision.
 
+**A consistency measurement needs a population where the score is contested.**
+The evaluation split is 63% label-1 and 78% of its rows read below `P(≥3) = 0.05`
+at the canonical regime; those rows agree at every geometry because they are zero
+everywhere, so an all-family rank correlation over the whole split sits at 0.99
+and can barely move. The same statistic on the 500 production rows that motivated
+the work — stratified over partition × score band — read 0.963. Neither number is
+wrong and they are not comparable: a rho is a property of the population as much
+as of the head. Say which rows a cross-regime claim was measured on, and prefer
+the ones a floor is actually decided on.
+
+## Running a band that takes hours
+
+Three seeds over three regimes is six hours of GPU. Three things go wrong at that
+length, and all three have now gone wrong here, so they are written down rather
+than rediscovered.
+
+**One trainer per directory, and the directory says so.** Every trainer takes
+`train.claim` — an exclusive `training.lock` beside the checkpoints, released only
+after the run is written down. Without it two processes do not collide loudly:
+they interleave their logs, take turns overwriting one checkpoint, and leave a
+record that belongs to neither. If a launcher can be started twice — a shell
+script that survived a kill, a watchdog re-armed by hand — assume it was.
+
+**The tell is in the arithmetic, not in the log.** A log can be *overwritten* by a
+concurrent writer holding a truncating handle, so it will happily show one clean
+run. What cannot be faked is that `wall_seconds` in `metrics.json` must be at
+least the sum of `history[*].seconds`. When it is far less, a second process
+wrote that record. When epoch times jump — 172 s to 293 s here — something else
+is on the GPU.
+
+**Auditing a run whose provenance is in doubt** does not need the log at all.
+Re-score the *selection slice* through `head_best.pt` and compare against what
+that run's `metrics.json` says its best epoch scored. Agreement to ~1e-8 proves
+the checkpoint and the record are the same trajectory, whoever wrote them; a
+snapshot is read once at startup and replaced atomically, so two trajectories
+cannot mix mid-run.
+
+**A long run gets killed, so resuming has to work — and it is the one path that
+only runs after something already went wrong.** `torch.load(resume,
+map_location=<device>)` maps *every* tensor onto the GPU, including the
+random-number state, which is a CPU byte tensor and is refused there. The file
+loads and the run dies several lines later at `set_rng_state`, which reads as a
+corrupt snapshot rather than as a wrong argument. Snapshots load onto the CPU.
+`tests/test_training_resume.py` pins it, planted red where there is a device.
+
+**A stalled run looks alive.** On Windows a loader with `num_workers > 0` and
+`persistent_workers=False` respawns its workers every epoch — forty times in a
+forty-epoch run — and one of those spawns can deadlock: the process stays up, the
+GPU falls to a few percent, the workers vanish and the log stops. `nvidia-smi`
+plus the log's mtime tells them apart in one look. Do not raise
+`persistent_workers`: the workers hold their own copy of the dataset and would
+never see `set_epoch`, so every epoch would redraw epoch zero's tiles. Watch the
+log instead and relaunch on silence — with a working resume that costs the epoch
+in flight. `scratch/regime_band_watchdog.sh` is the shape.
+
 ## Budgeting a tile build
 
 Cost tracks what the pixels do, not how many rows there are, and the rate is a

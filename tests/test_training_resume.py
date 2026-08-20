@@ -44,3 +44,31 @@ def test_a_snapshot_mapped_onto_the_training_device_is_refused(tmp_path) -> None
     saved = torch.load(path, map_location="cuda", weights_only=False)
     with pytest.raises(TypeError, match="ByteTensor"):
         torch.set_rng_state(saved["torch_rng"])
+
+
+def test_a_second_trainer_is_refused_the_directory(tmp_path, monkeypatch) -> None:
+    """Two trainers in one directory take turns overwriting one checkpoint and
+    produce a run whose numbers belong to neither. The lock is written in
+    `train` and every trainer here uses it — this pins that the one that owns it
+    takes it, which for a long time it did not."""
+    from fractal_wallpapers.models import train
+
+    train.claim(tmp_path)
+    with pytest.raises(RuntimeError, match="already has"):
+        train.claim(tmp_path)
+
+
+def test_the_location_trainer_takes_the_lock_and_gives_it_back() -> None:
+    """Taken at the top of the run and released only after the checkpoints are
+    written, so a crash leaves it behind and says so rather than letting the
+    next run in on top of a half-written one."""
+    import inspect
+
+    from fractal_wallpapers.models import train
+
+    body = inspect.getsource(train.train)
+    assert "lock = claim(directory)" in body
+    taken = body.index("lock = claim(directory)")
+    saved = body.index('checkpoint_path(name, "last", run)')
+    released = body.index("lock.unlink(")
+    assert taken < saved < released, "the lock is released before the run is written down"
