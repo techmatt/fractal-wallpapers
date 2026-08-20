@@ -1,6 +1,6 @@
 The Rust renderer: it makes every pixel this project ever shows.
 
-One binary, six subcommands, one JSON object in and one file out:
+One binary, eight subcommands, one JSON object in and one file out:
 
 ```
 cargo build --release --manifest-path engine/Cargo.toml
@@ -17,6 +17,8 @@ recolor     a dumped field → a PNG, without iterating anything
 expand      walk nodes → one rung each, gated, with a thumbnail per survivor
 home-view   a family → where it is framed by default, and how that was derived
 modes       the named colorings, as JSON
+tiles       a plan of locations → training tiles, and a record of what was written
+maxiter     widths → the iteration cap the depth policy gives each one
 ```
 
 The pipeline runs `spec → family → iterate → field → coloring → resample`, one
@@ -60,6 +62,29 @@ gaps *are* open decisions rather than omissions: `biomorph`, which would change
 what `n` means and so what every cached render means, and perturbation-based deep
 zoom, which is the one genuinely large thing this engine lacks (`iterate.rs`
 carries the TODO).
+
+Until it arrives, `Viewport::is_resolvable_in_f64` refuses a view whose *output
+pixel* is 1e-13 or smaller — at the release presentation, width 2.56e-10. That
+constant is insurance and it is early. The wall it stands in for is relative, not
+absolute: adjacent sample centres are `center + across * width`, so they tie when
+the spacing falls under one `f64` ulp *at the centre's own magnitude*. Bisected at
+2560×1440 ss4, the first tie is at width 2.84e-13 for a centre near 0.23, 1.42e-13
+near 0.081, 2.27e-12 at |c| = 1 — **2.0 to 3.3 decades below the refusal**, and
+still ≈1.75 decades below it in the worst case anywhere on the set. Measured
+alongside: the deepest location any ledger holds (1.0165e-9) renders at release
+geometry with **zero** tied sample centres per row, and the tie rate in its dumped
+field scales exactly ×4 with a 4× finer grid — which is the `f32` dump's own
+storage granularity, the same law the shallow control four decades above the wall
+obeys. Nothing about the current floor is a precision limit. See
+`scratch/measure_deep_probe_report.md`.
+
+What deep zoom would cost, observed on the maker's perturbation backend at the S1
+anchor with this repo's own cap policy: a walk node (384×216 ss1) is 0.31 s at
+fw 1e-12, 2.75 s at 1e-15, 1.02 s at 1e-18 — cost tracks how much of the frame is
+deep-iterating material, not depth, so budget ~3 s worst case. A *release* frame
+(2560×1440 ss4) at fw 1e-15 is **~1 800 s** with no series approximation, which is
+`curation.pacing.HUNG_CEILING[RELEASE]` exactly. Descending is cheap; presenting
+what is found is not.
 
 A render given no viewport comes home to its family's own frame, a table in
 `src/family.rs` — and so does a walk root, which reads that table through
