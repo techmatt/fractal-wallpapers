@@ -133,9 +133,14 @@ def test_the_plan_records_the_binding_and_a_resume_reads_it_back(tmp_path) -> No
     """Which ledgers a run drew from is part of its shape, not a flag per stage:
     a resume that re-derived it could continue a run against another supply."""
     ledger = a_ledger(tmp_path)
-    assert shape_of(tmp_path, n=4, ledgers=[ledger])["ledgers"] == [str(ledger.resolve())]
+    # `binding.label` is `paths.tracked_name`, so a ledger outside both the
+    # checkout and the artifacts tree — as this one is — is named with forward
+    # slashes rather than this platform's separator. A run plan is a record, and
+    # no record here carries a backslash.
+    named = ledger.resolve().as_posix()
+    assert shape_of(tmp_path, n=4, ledgers=[ledger])["ledgers"] == [named]
     resumed = shape_of(tmp_path, resume=True, ledgers=None)
-    assert resumed["ledgers"] == [str(ledger.resolve())]
+    assert resumed["ledgers"] == [named]
 
 
 def test_a_binding_spelled_differently_is_the_same_binding(tmp_path) -> None:
@@ -144,7 +149,8 @@ def test_a_binding_spelled_differently_is_the_same_binding(tmp_path) -> None:
     ledger = a_ledger(tmp_path)
     shape_of(tmp_path, n=4, ledgers=[ledger])
     other = ledger.parent / "." / ledger.name
-    assert shape_of(tmp_path, resume=True, ledgers=[other])["ledgers"] == [str(ledger.resolve())]
+    resumed = shape_of(tmp_path, resume=True, ledgers=[other])
+    assert resumed["ledgers"] == [ledger.resolve().as_posix()]
 
 
 def test_a_run_bound_to_another_supply_cannot_resume_this_one(tmp_path) -> None:

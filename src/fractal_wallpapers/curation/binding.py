@@ -27,7 +27,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from fractal_wallpapers.paths import repo_root
+from fractal_wallpapers.paths import rehome, repo_root, tracked_name
 from fractal_wallpapers.supply import ledgers
 
 
@@ -38,15 +38,16 @@ class Unbound(RuntimeError):
 def label(path: Path) -> str:
     """A ledger's name as a record carries it: repository-relative where it can be.
 
-    The same spelling [`fractal_wallpapers.supply.ledgers.admitted_union`] stamps
-    onto every row it returns, so a binding and the rows it produced name their
-    ledgers identically and the join is a string comparison.
+    [`fractal_wallpapers.paths.tracked_name`], not a private copy of it. The same
+    spelling [`fractal_wallpapers.supply.ledgers.admitted_union`] stamps onto
+    every row it returns, so a binding and the rows it produced name their
+    ledgers identically and the join is a string comparison — and that promise
+    only survives while there is one function making the spelling. A ledger under
+    the artifacts tree is therefore named `artifacts/<rest>` on whichever disk the
+    tree lives on, which is what lets a run planned before the tree moved be
+    resumed after it.
     """
-    path = Path(path)
-    try:
-        return str(path.resolve().relative_to(repo_root()).as_posix())
-    except ValueError:
-        return str(path)
+    return tracked_name(path)
 
 
 def anchored(path) -> Path:
@@ -54,10 +55,13 @@ def anchored(path) -> Path:
 
     The same rule the command line's `--out` follows, and the reason a binding can
     be *recorded* as a repository-relative label and read back by a resume that
-    started in another directory.
+    started in another directory — including one recorded as `artifacts/...`,
+    which resolves against the artifacts root rather than the checkout.
     """
     path = Path(path)
-    return path if path.is_absolute() else repo_root() / path
+    if path.is_absolute():
+        return path
+    return rehome(path) or repo_root() / path
 
 
 def of_harvest(directory) -> Path:

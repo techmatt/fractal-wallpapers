@@ -16,7 +16,13 @@ from pathlib import Path
 
 from fractal_wallpapers import engine
 from fractal_wallpapers.labeling.finished import HEADS as FINISHED_HEADS
-from fractal_wallpapers.paths import colormap_dir, repo_root
+from fractal_wallpapers.paths import (
+    ArtifactsRootMissing,
+    colormap_dir,
+    rehome,
+    repo_root,
+    tracked_name,
+)
 
 WEIGHTS_MANIFEST = Path("models") / "weights.json"
 RELEASE_URL = "https://github.com/techmatt/fractal-wallpapers/releases/download/{tag}/{asset}"
@@ -129,9 +135,16 @@ def resolve_output(out: str) -> Path:
     A relative `--out` means the same place whichever directory the command was
     run from, which is what keeps the default landing in the ignored
     `artifacts/` tree instead of scattering PNGs wherever the caller stood.
+
+    "The ignored tree" is a setting, so a relative path that names it resolves
+    against the artifacts root rather than the checkout — a default of
+    `artifacts/walk` follows the tree to whichever disk it is on, and every other
+    relative path still means a place inside the repository.
     """
     path = Path(out)
-    return path if path.is_absolute() else repo_root() / path
+    if path.is_absolute():
+        return path
+    return rehome(path) or repo_root() / path
 
 
 def display_path(path: Path) -> str:
@@ -139,13 +152,14 @@ def display_path(path: Path) -> str:
 
     Printed paths are for a person to read and retype, and `artifacts/walk` is
     both shorter and more portable than the absolute path this process resolved
-    it to. Anything outside the repository is printed whole, because shortening
-    it would be a lie about where it is.
+    it to. Anything outside the repository — or outside the artifacts tree — is
+    printed whole, because shortening it would be a lie about where it is.
+
+    This is `tracked_name`'s question asked out loud instead of into a record,
+    and it is that function rather than a second copy of it: the two would
+    disagree the first time one of them learned something.
     """
-    try:
-        return Path(path).relative_to(repo_root()).as_posix()
-    except ValueError:
-        return str(path)
+    return tracked_name(path)
 
 
 def write_tracked_json(path: Path, document: dict) -> Path:
@@ -3520,7 +3534,18 @@ def location_arguments(draw: argparse.ArgumentParser) -> None:
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    return args.handler(args)
+    try:
+        return args.handler(args)
+    except ArtifactsRootMissing as refusal:
+        # Handled here and nowhere else. Every other refusal in this file is
+        # about one command's arguments and is caught by that command; this one
+        # is about the machine, and any subcommand that touches the regenerable
+        # tree can raise it. Caught rather than left to a traceback because the
+        # message is an instruction — plug the disk in — and an operator reading
+        # a stack trace to find it would be reading it past the part that says
+        # nothing fell back.
+        print(refusal)
+        return 1
 
 
 if __name__ == "__main__":

@@ -57,7 +57,7 @@ from pathlib import Path
 
 from fractal_wallpapers.models import metrics, regime_acceptance, train
 from fractal_wallpapers.models import tiles as tile_module
-from fractal_wallpapers.paths import repo_root, tracked_name
+from fractal_wallpapers.paths import artifacts_root, tracked_name
 
 #: The schema every record here carries.
 SCHEMA = 1
@@ -158,7 +158,7 @@ def acceptance_path(head: str = HEAD) -> Path:
 
 def study_dir() -> Path:
     """Where the draw, its pictures and its reads live. Ignored, re-derivable."""
-    return repo_root() / "artifacts" / "regime_flips"
+    return artifacts_root() / "regime_flips"
 
 
 def draw_path() -> Path:

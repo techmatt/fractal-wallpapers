@@ -34,7 +34,7 @@ import json
 from pathlib import Path
 
 from fractal_wallpapers.discovery import ledger as ledger_module
-from fractal_wallpapers.paths import repo_root
+from fractal_wallpapers.paths import artifacts_root, tracked_name
 from fractal_wallpapers.supply import currency as money
 from fractal_wallpapers.supply.location import key_of_row
 
@@ -44,7 +44,7 @@ LEDGER_NAME = "walk.jsonl"
 
 def ledger_root() -> Path:
     """Where run directories accumulate."""
-    return repo_root() / "artifacts"
+    return artifacts_root()
 
 
 def ledger_paths(root: Path | None = None, exclude: Path | None = None) -> list[Path]:
@@ -130,7 +130,6 @@ def admitted_union(paths=None, admit=None) -> tuple[list[dict], dict]:
     which is a statement about which ledgers overlap.
     """
     paths = ledger_paths() if paths is None else [Path(p) for p in paths]
-    root = repo_root()
     seen: dict = {}
     kept: list[dict] = []
     overlaps: list[str] = []
@@ -138,10 +137,13 @@ def admitted_union(paths=None, admit=None) -> tuple[list[dict], dict]:
     per_ledger: dict = {}
     unkeyed = 0
     for path in paths:
-        try:
-            label = str(Path(path).resolve().relative_to(root).as_posix())
-        except ValueError:
-            label = str(path)
+        # `tracked_name`, not a second spelling of it: this label is the key
+        # curation's sidecar keeps a scored row under, so it has to survive the
+        # artifacts tree being moved to another disk. A private
+        # `relative_to(repo_root())` here did not — it turned every ledger's name
+        # into an absolute path the moment the tree left the checkout, which
+        # would have made every stored row unmatchable and quietly un-replaced.
+        label = tracked_name(path)
         taken = 0
         for row in admitted(path, admit):
             key = key_of_row(row)
