@@ -149,6 +149,15 @@ shrinks whenever the pass rate falls below one over the branching factor. The
 middle tier carries its own fate (`expandable`), so it reaches the frontier and
 no book in the project can see it.
 
+**A lineage may be capped on what it books, and off by default it is not.**
+`Limits.lineage_admissions` is the ceiling on admissions from one root; past it
+the lineage stops expanding and its standing frontier nodes are evicted at the
+crossing, recorded as a `lineage_capped` row. It is `None` here and set by the
+[deep run mode](../deep/README.md), where the measurement that motivated it was
+taken: 741 admissions off 15 of 48 roots, 85 on one, and a finished gallery that
+was largely one composition. Nothing is retro-refused when it fires — the rows a
+capped lineage already wrote keep the fates they earned.
+
 **A parameter-plane root starts above its own material, so its first rungs are
 ungated.** Labelled class-3/4 plane locations sit at width 1e-4 to 1e-5, four or
 five rungs below where a plane seed root begins, and the head scores the shallow

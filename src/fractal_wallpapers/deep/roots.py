@@ -47,6 +47,18 @@ decades of room the same lineage never got to use.
 They are taken at their own recorded frame and deduplicated by
 [`fractal_wallpapers.discovery.nucleus.key_from_strings`] where the family has a
 nucleus at all, so a place four walks found is one seat.
+
+## Sourcing happens more than once, so what a round took has to outlive it
+
+A budgeted run seats to a projection and seats **again** when its frontier
+empties with budget left ([`fractal_wallpapers.deep.run`]). Both channels
+deduplicate, and both used to do it in sets that lived for one call — so a
+second round would descend from anchors the first had spent, arrive back at
+nuclei the run is already standing on, and offer the ledger rows it already
+took. [`Standing`] is that memory, carried by the run and handed to every round:
+the anchor queues, the two channels' seen-sets, and the family x band cells the
+Newton channel is filling. A caller with one round to run passes nothing and
+gets the one-shot behaviour exactly.
 """
 
 from __future__ import annotations
@@ -54,6 +66,7 @@ from __future__ import annotations
 import json
 import math
 import random
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -160,12 +173,83 @@ class Sourcing:
     def count(self, name: str, amount: int = 1) -> None:
         self.counts[name] = self.counts.get(name, 0) + amount
 
+    def absorb(self, other: Sourcing) -> Sourcing:
+        """Fold a second call to the same channel into this record.
+
+        [`sourced`] asks the Newton channel twice when the continuation channel
+        runs out of ledger to spend — its supply is finite in a way the other's
+        is not — and two records of one channel in one round is two answers to
+        what that channel did.
+        """
+        self.seats.extend(other.seats)
+        self.ladders.extend(other.ladders)
+        for name, amount in other.counts.items():
+            self.count(name, amount)
+        for name, amount in other.cells.items():
+            self.cells[name] = self.cells.get(name, 0) + amount
+        return self
+
     def record(self) -> dict:
         return {
             "seats": len(self.seats),
             "counts": dict(sorted(self.counts.items())),
             "cells": dict(sorted(self.cells.items())),
             "ladders": self.ladders,
+        }
+
+
+@dataclass
+class Standing:
+    """What a run has already seated, carried between its sourcing rounds.
+
+    One object rather than five arguments, because the five are one fact: they
+    are only ever read and written together, and a round handed four of them is
+    a round that quietly re-seats along whichever axis was left out.
+
+    A run that sources once may ignore this entirely — every entry point builds
+    an empty one when it is not given one, and an empty one reproduces the
+    single-round behaviour exactly.
+    """
+
+    #: Anchors not yet spent, per family, deepest first. Built on first use so
+    #: the plane-seed file is read once a run rather than once a round, and
+    #: **consumed**: an anchor a stalled ladder spent is gone, which is what
+    #: stops a second round paying to prove the same descent does not arrive.
+    anchor_queues: dict[str, list[dict]] | None = None
+    #: Reflection keys of the nuclei the Newton channel is already standing on.
+    seated: set[str] = field(default_factory=set)
+    #: Place keys the continuation channel has already taken.
+    places: set[str] = field(default_factory=set)
+    #: `ledger|root_id` lineages the continuation channel has already taken.
+    lineages: set[str] = field(default_factory=set)
+    #: `family|band` cells and how many seats each holds, across every round —
+    #: so a second round fills the cells the first one *left* least full rather
+    #: than starting its own round-robin from zero.
+    filled: dict[str, int] = field(default_factory=dict)
+    #: Sourcing rounds this run has run.
+    rounds: int = 0
+
+    def anchors(self, limit_per_family: int) -> dict[str, list[dict]]:
+        """The per-family anchor queues, read once and consumed thereafter."""
+        if self.anchor_queues is None:
+            queues: dict[str, list[dict]] = {}
+            for anchor in anchors(limit_per_family):
+                queues.setdefault(json.dumps(anchor["family"], sort_keys=True), []).append(anchor)
+            self.anchor_queues = queues
+        return self.anchor_queues
+
+    def anchors_left(self) -> int:
+        """Anchors no ladder has spent yet — the Newton channel's own supply."""
+        return sum(len(queue) for queue in (self.anchor_queues or {}).values())
+
+    def record(self) -> dict:
+        return {
+            "rounds": self.rounds,
+            "anchors_left": self.anchors_left(),
+            "newton_seated": len(self.seated),
+            "continuation_places": len(self.places),
+            "continuation_lineages": len(self.lineages),
+            "cells": dict(sorted(self.filled.items())),
         }
 
 
@@ -357,6 +441,8 @@ def newton_seats(
     probes: int = STEP_PROBES,
     width: float = depth.MIN_WIDTH,
     descents_per_seat: int = DESCENTS_PER_SEAT,
+    standing: Standing | None = None,
+    clock=None,
     log=print,
 ) -> Sourcing:
     """Track ∂M down from tracked plane-seed atoms, spread over family × band.
@@ -374,32 +460,43 @@ def newton_seats(
     so a descent aimed at `upper` that lands in `middle` is credited to the cell
     it landed in — the alternative is to throw away a seat for being deeper than
     it was asked to be.
+
+    `standing` carries the anchors, the seated nuclei and the cell fills across a
+    run's sourcing rounds; `clock` is a wall-clock leg to spend descents against
+    — anything with `may_start()` (falsy to go ahead) and `observe(seconds)`,
+    which is what [`fractal_wallpapers.curation.pacing.Leg`] is. It **gates and
+    measures and does not kill**: a descent is arbitrary-precision arithmetic in
+    this process with no subprocess to take down, and [`MAX_STEPS`] and
+    [`STEP_PROBES`] are what bound one from the inside.
     """
     out = Sourcing()
-    pool = anchors(anchors_per_family)
-    out.count("anchors", len(pool))
-    queues: dict[str, list[dict]] = {}
-    for anchor in pool:
-        queues.setdefault(json.dumps(anchor["family"], sort_keys=True), []).append(anchor)
+    standing = Standing() if standing is None else standing
+    queues = standing.anchors(anchors_per_family)
 
     cells = [(family, band) for family in queues for band in depth.BAND_NAMES]
     order = {cell: index for index, cell in enumerate(cells)}
-    filled = {cell: 0 for cell in cells}
     spent = {cell: 0 for cell in cells}
     for cell in cells:
+        standing.filled.setdefault(f"{cell[0]}|{cell[1]}", 0)
         out.cells[f"{cell[0]}|{cell[1]}"] = 0
     quota = max(1, math.ceil(int(seats) / max(1, len(cells))))
     budget = max(1, int(descents_per_seat) * quota)
-    seated: set[str] = set()
+    seated = standing.seated
 
     while len(out.seats) < int(seats):
         open_cells = [cell for cell in cells if queues[cell[0]] and spent[cell] < budget]
         if not open_cells:
             break
-        cell = min(open_cells, key=lambda cell: (filled[cell], order[cell]))
+        if clock is not None and clock.may_start() is not None:
+            out.count("newton:out_of_clock")
+            break
+        cell = min(
+            open_cells, key=lambda cell: (standing.filled[f"{cell[0]}|{cell[1]}"], order[cell])
+        )
         family_key, aimed = cell
         anchor = queues[family_key].pop(0)
         spent[cell] += 1
+        started = time.monotonic()
         center, why, ladder = descend(
             anchor,
             rng,
@@ -408,6 +505,8 @@ def newton_seats(
             width=width,
             size_ceiling=depth.band_ceiling(aimed),
         )
+        if clock is not None:
+            clock.observe(time.monotonic() - started)
         out.ladders.append(
             {
                 "anchor": anchor["id"],
@@ -443,10 +542,10 @@ def newton_seats(
         out.count("newton:seated")
         seat = _newton_seat(anchor, center, aimed)
         out.seats.append(seat)
-        landed = (family_key, seat.band if seat.band in depth.BAND_NAMES else aimed)
-        filled[landed] = filled.get(landed, 0) + 1
-        out.cells[f"{landed[0]}|{landed[1]}"] = out.cells.get(f"{landed[0]}|{landed[1]}", 0) + 1
-        out.count(f"newton:landed:{landed[1]}")
+        landed = f"{family_key}|{seat.band if seat.band in depth.BAND_NAMES else aimed}"
+        standing.filled[landed] = standing.filled.get(landed, 0) + 1
+        out.cells[landed] = out.cells.get(landed, 0) + 1
+        out.count(f"newton:landed:{landed.rsplit('|', 1)[1]}")
         log(
             f"[deep] seat {center.key} period {center.period} size {center.size:.3e} "
             f"money shot {center.money_shot:.3e} band {seat.band} (aimed {aimed}, "
@@ -487,6 +586,7 @@ def continuation_seats(
     paths=None,
     exclude: Path | None = None,
     width_max: float = CONTINUABLE_WIDTH,
+    standing: Standing | None = None,
     log=print,
 ) -> Sourcing:
     """Seats from places earlier ledgers already admitted at the shallow floor.
@@ -505,8 +605,16 @@ def continuation_seats(
     can aim a ladder at a band; this one takes what a walk already admitted, so
     the band it lands in is a fact about the row rather than a choice, and it is
     recorded rather than steered.
+
+    **This channel's supply is finite and small.** Every ledger this project has
+    written holds about fifteen hundred rows at or below the shallow floor and
+    fifty-odd distinct lineages between them, so a run asking for more seats than
+    that gets what there is — and [`sourced`] sends the shortfall back to the
+    Newton channel, whose own supply is the plane-seed pool and is two orders of
+    magnitude larger.
     """
     out = Sourcing()
+    standing = Standing() if standing is None else standing
     rows: list[dict] = []
     available = (
         ledger_module.ledger_paths(exclude=exclude) if paths is None else [Path(p) for p in paths]
@@ -525,8 +633,8 @@ def continuation_seats(
             rows.append({**row, "_width": width, "_ledger": path})
     out.count("deep_ledger_rows", len(rows))
 
-    seen: set[str] = set()
-    lineages: set[str] = set()
+    seen = standing.places
+    lineages = standing.lineages
     rows.sort(key=lambda row: (row["_width"], -(row.get("score") or -1.0)))
     queues: dict[str, list[dict]] = {}
     for row in rows:
@@ -645,6 +753,8 @@ def sourced(
     anchors_per_family: int = 8,
     paths=None,
     exclude: Path | None = None,
+    standing: Standing | None = None,
+    clock=None,
     log=print,
 ) -> tuple[list[Seat], dict]:
     """Both channels, to a seat cap. Returns the seats and what each channel did.
@@ -653,19 +763,53 @@ def sourced(
     other is allowed to, in the same call, because a seat cap is a budget and an
     unfilled half of it is budget thrown away. Which channel actually filled it
     is on every seat and in the record.
+
+    **The fallback runs both ways, and it did not use to.** Newton was asked
+    first and the continuation channel was handed the remainder, so a run whose
+    continuation supply ran dry simply came up short — invisible at eight seats,
+    and the binding constraint at a hundred and eighty, because that channel's
+    supply is fifty-odd lineages of finished ledger and the Newton channel's is
+    nineteen hundred tracked anchors. So a shortfall goes back to Newton, in the
+    same call, against the same [`Standing`].
+
+    `standing` is the run's memory across sourcing rounds and `clock` a wall-clock
+    leg to spend descents against; both default to a fresh, unbudgeted round.
     """
     seats = int(seats)
+    standing = Standing() if standing is None else standing
+    standing.rounds += 1
     want = max(0, min(seats, int(round(seats * float(newton_share)))))
-    newton = newton_seats(want, rng, anchors_per_family=anchors_per_family, log=log)
-    carried = continuation_seats(seats - len(newton.seats), paths=paths, exclude=exclude, log=log)
-    standing = [*newton.seats, *carried.seats]
-    standing = standing[:seats]
-    return standing, {
+    newton = newton_seats(
+        want,
+        rng,
+        anchors_per_family=anchors_per_family,
+        standing=standing,
+        clock=clock,
+        log=log,
+    )
+    carried = continuation_seats(
+        seats - len(newton.seats), paths=paths, exclude=exclude, standing=standing, log=log
+    )
+    short = seats - len(newton.seats) - len(carried.seats)
+    if short > 0:
+        newton.absorb(
+            newton_seats(
+                short,
+                rng,
+                anchors_per_family=anchors_per_family,
+                standing=standing,
+                clock=clock,
+                log=log,
+            )
+        )
+    taken = [*newton.seats, *carried.seats][:seats]
+    return taken, {
         NEWTON: newton.record(),
         CONTINUATION: carried.record(),
+        "standing": standing.record(),
         "seated": {
-            NEWTON: sum(1 for seat in standing if seat.channel == NEWTON),
-            CONTINUATION: sum(1 for seat in standing if seat.channel == CONTINUATION),
+            NEWTON: sum(1 for seat in taken if seat.channel == NEWTON),
+            CONTINUATION: sum(1 for seat in taken if seat.channel == CONTINUATION),
         },
     }
 

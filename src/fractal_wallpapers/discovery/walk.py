@@ -12,7 +12,7 @@ seeds ──▶ frontier ──▶ batch ──▶ engine expand ──▶ candi
              └────────── survivors, and reframings ◀─────┘
 ```
 
-Four decisions shape the loop, and none of them is about pictures.
+Five decisions shape the loop, and none of them is about pictures.
 
 **The batch is chosen by priority, and priority is score plus a draw.** A
 survivor's priority is its score plus a Gumbel draw plus a small depth term.
@@ -28,6 +28,13 @@ the head deserves more of a say.
 A root spawns children faster than it drains, so nodes belonging to a capped root
 accumulate; leave them on the frontier and they eventually *are* the frontier,
 the batch is all dead weight, and throughput goes to zero.
+
+**An optional per-lineage admission cap, for the same reason one level up.** The
+expansion cap bounds what a root may *spend*; [`Limits.lineage_admissions`] bounds
+what it may *book*. A fertile lineage sits at the top of a priority queue by
+construction — it got there by admitting — so without a ceiling it takes the walk
+with it, and the finished gallery is one composition. Off by default and on for a
+deep run; nothing is retro-refused when it fires, expansion simply stops.
 
 **Two reserved floors, both of available, and neither may stall the batch.**
 Reframings hold a floor because nothing has been trained on the views they
@@ -202,6 +209,20 @@ class Limits:
     #: nodes that never clear and maxiter climbs with depth (13,140 at rung 1 to
     #: 31,628 at rung 13). The number is a trade, not a constant; this is its price.
     plane_grace_rungs: int = 5
+    #: Admissions any one root's lineage may book before the walk stops expanding
+    #: it, or `None` for no cap at all — which is the shallow walk, unchanged.
+    #:
+    #: **Diminishing returns are a supply-time problem, not a selection-time one.**
+    #: A gallery can spread itself over lineages after the fact, and `deep_run1`'s
+    #: had to; what it cannot do is get back the walk time that went into the
+    #: lineage it then had to thin. That run put 741 admissions on 15 of its 48
+    #: roots and 85 of them on one, and the finished floor gallery was largely one
+    #: composition in a hundred and sixty palettes. Past the cap the lineage stops
+    #: expanding and the batch slots flow to cells nothing has saturated.
+    #:
+    #: `None` and not `0`: zero is a real answer to "how many admissions may a
+    #: lineage book" and it is not this one.
+    lineage_admissions: int | None = None
 
 
 @dataclass
@@ -331,6 +352,13 @@ class Walk:
         self.governor = operators.ProbeGovernor(self.limits.probe_probability, self.rng)
         self.frontier: list[dict] = []
         self.expansions: dict[int, int] = {}
+        #: Admissions booked per root — the lineage cap's counter, and a table
+        #: worth having whether or not a cap is set: "741 admissions off 15 of 48
+        #: roots" is a sentence about a finished run that nothing else records.
+        self.admitted: dict[int, int] = {}
+        #: Roots the cap has closed. Kept so the crossing is recorded once rather
+        #: than on every further admission the same lineage tries to book.
+        self.saturated: set[int] = set()
         #: Roots the expansion grace applies below. Kept by root id rather than
         #: re-derived from a node, because a reframing's node carries its own
         #: family and framing but inherits the root — and it is the root's
@@ -544,6 +572,72 @@ class Walk:
             for node in self.frontier
             if self.expansions.get(node["root_id"], 0) < self.limits.root_expansions
         ]
+
+    # ----------------------------------------------------------- lineage cap
+
+    def lineage_full(self, root_id: int) -> bool:
+        """Whether this root's lineage has booked every admission it may expand from.
+
+        Read *after* the admission that reaches the cap is counted, so the row
+        that reaches it is the first one the lineage does not walk from. The
+        alternative — expanding the row that reached the cap — is a lineage
+        descending from its own ceiling.
+
+        **The cap bounds expansion, and a run may finish over it.** Two nodes of
+        one lineage can be in the same batch: the first closes the lineage, the
+        second was popped before that happened and its candidates are already
+        drawn, so they are booked. Recording them is not a choice — refusing a
+        row after the fact is exactly the retro-refusal this project does not do —
+        and nothing is lost by it, because the overshoot is in the count and not
+        in the walk time. What the cap actually buys is that no further batch
+        slot goes to the lineage, and that is true from the crossing.
+        """
+        cap = self.limits.lineage_admissions
+        return cap is not None and self.admitted.get(int(root_id), 0) >= int(cap)
+
+    def _book_admission(self, root_id: int) -> None:
+        """Count one admission against its lineage, and close the lineage at the cap.
+
+        Closing evicts the lineage's standing frontier nodes *here*, at the
+        crossing, rather than at the next `pop_batch`. The frontier is a priority
+        queue that a saturated lineage sits at the top of — it got there by being
+        the lineage that admits — so leaving its nodes in place until the next
+        take is exactly the batch the cap exists to reclaim.
+
+        **Nothing is retro-refused.** Every row this lineage already wrote keeps
+        the fate it earned, admissions included. What stops is expansion.
+        """
+        root_id = int(root_id)
+        self.admitted[root_id] = self.admitted.get(root_id, 0) + 1
+        if not self.lineage_full(root_id) or root_id in self.saturated:
+            return
+        self.saturated.add(root_id)
+        standing = len(self.frontier)
+        self.frontier = [node for node in self.frontier if node["root_id"] != root_id]
+        evicted = standing - len(self.frontier)
+        self._count("lineage_capped")
+        self._count("lineage_capped:evicted", evicted)
+        self.ledger.write(
+            "lineage_capped",
+            run_seed=self.seed,
+            batch=self.batch_index,
+            root_id=root_id,
+            admissions=self.admitted[root_id],
+            cap=self.limits.lineage_admissions,
+            evicted=evicted,
+        )
+
+    def lineages(self) -> dict:
+        """Admissions per root, and what the cap cost — for the run's summary."""
+        counts = sorted(self.admitted.values(), reverse=True)
+        return {
+            "cap": self.limits.lineage_admissions,
+            "roots_admitting": len(counts),
+            "admissions": sum(counts),
+            "largest": counts[0] if counts else 0,
+            "capped": sorted(self.saturated),
+            "by_root": {str(root): count for root, count in sorted(self.admitted.items())},
+        }
 
     def pop_batch(self, *, pool: list[dict] | None = None, size: int | None = None) -> list[dict]:
         """The next batch: two reserved floors, then plain priority order.
@@ -881,6 +975,17 @@ class Walk:
                 candidate["cleared_junk"] = True
                 self._rung_counts(rung, cleared=True, grace=grace)
                 self._count("tier:admitted")
+                self._book_admission(row["root_id"])
+
+            if self.lineage_full(row["root_id"]):
+                # The lineage has booked its cap. The row keeps its fate and goes
+                # on the record with no node behind it — which is the same shape
+                # a refused row has, and means "not expanded from" everywhere it
+                # is read. Expandable rows of a saturated lineage stop too: the
+                # cap closes a lineage, not a tier of it.
+                self._count("lineage_capped:not_expanded")
+                recorded.append(self.ledger.write("candidate", node_id=None, **candidate))
+                continue
 
             node = self._node(
                 family=family,
@@ -1073,6 +1178,7 @@ class Walk:
             "scoring": self.scoring_record(),
             "identity": self.identity,
             "gate_flips": self.gate_flips(),
+            "lineages": self.lineages(),
             "probe": self.governor.tally(),
             "counts": dict(sorted(self.tally.items())),
             "ledger": tracked_name(self.ledger.path),
