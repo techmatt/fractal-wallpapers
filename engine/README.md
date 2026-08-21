@@ -104,6 +104,42 @@ grid — which is the `f32` dump's own storage granularity, the same law the
 shallow control four decades above the wall obeys. See
 `scratch/measure_deep_probe_report.md`.
 
+**The refusal guards the coordinates, and there is a second wall above it that it
+does not guard.** A sample coordinate can be perfectly distinct from its
+neighbour and the *orbit* run from it still be decided by rounding: `f64` carries
+about 1e-16, the dynamics stretch that by the Lyapunov growth of a few thousand
+iterations, and what comes back is not the value at that point.
+`julia_deep_eyetest`'s second addendum measured it — same starting `f64`
+coordinate, orbit re-run at 50 digits, and the share of sampled points whose
+escape count disagrees:
+
+```text
+case                 deg   wrong >=1% from   engine refuses   at 1e-11
+julia (off-set)        2             1e-11            1e-13       6.3%
+multibrot3 walk node   3              1e-9            1e-13       8.0%
+mandelbrot walk node   2              1e-5            1e-13      22.0%
+multibrot4 walk node   4              1e-5            1e-13      14.5%
+julia (off-set)        5              1e-5            1e-13      26.8%
+```
+
+Three things it is worth knowing before reading a deep frame. **It is almost
+never visible**: only the degree-5 julia shows anything, as a mosaic of
+bit-identical neighbours, and *supersampling makes that one worse* — 66.6% of
+adjacent samples identical at ss1 rising to 95.6% at ss8, because a finer grid
+brings coordinates closer together and closeness is what the orbit cannot keep.
+**Degree is not the whole story**: a degree-2 mandelbrot node on a period-198
+nucleus crosses at the same rung as the degree-5 julia, because what costs is how
+long the orbits linger near the boundary. **And two `f64` implementations of the
+same iteration already disagree** — `cpow`'s repeated multiplication against
+Python's repeated squaring — by a whole iteration or more on 12.2% of samples at
+degree 4 and 20.4% at degree 5, worst 411 and 205. At degrees 2 and 3 the
+multiplication orders coincide and they agree to `1e-5`, which is what that test
+looks like when rounding is not deciding the answer.
+
+Nothing in the engine changed on the strength of this. It is a measurement of
+where a floor would have to go, not a floor; see
+`scratch/julia_deep_eyetest_addendum2_report.md` for the per-case evidence.
+
 What deep zoom would cost, observed on the maker's perturbation backend at the S1
 anchor with this repo's own cap policy: a walk node (384×216 ss1) is 0.31 s at
 fw 1e-12, 2.75 s at 1e-15, 1.02 s at 1e-18 — cost tracks how much of the frame is
