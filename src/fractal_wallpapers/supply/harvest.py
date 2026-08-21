@@ -75,17 +75,23 @@ from pathlib import Path
 from fractal_wallpapers.discovery import ledger as ledger_module
 from fractal_wallpapers.discovery.walk import NEUTRAL_PRIOR, Walk, family_key
 from fractal_wallpapers.paths import tracked_name
+from fractal_wallpapers.supply import novelty as novelty_module
 from fractal_wallpapers.supply import saturation as saturation_module
 from fractal_wallpapers.supply.location import key_of_row
 from fractal_wallpapers.supply.partitions import ALL_PARTITIONS, partition_of_family
 from fractal_wallpapers.supply.quota import Quota
 from fractal_wallpapers.supply.refill import Refill
 
-#: The checkpoint's schema. **3** because the walk's plane roots joined it: a
-#: session resumed from a schema-2 checkpoint would carry the grace for the roots
-#: it drew and not for the roots the earlier session drew, which is two policies
-#: under one run seed. Refused rather than defaulted.
-STATE_SCHEMA = 3
+#: The checkpoint's schema. **4** because the exploration share joined it: the
+#: share is a *priced* quantity and the roots it is spent on are classified once,
+#: so a session resumed from a schema-3 checkpoint would reopen at the start
+#: share, throw away every batch of evidence the first session bought, and
+#: re-classify from a root table it does not have. Refused rather than defaulted.
+#:
+#: **3** was the walk's plane roots, for the same shape of reason: a session that
+#: rebuilt them would carry the grace for the roots it drew and not for the roots
+#: the earlier session drew, which is two policies under one run seed.
+STATE_SCHEMA = 4
 
 
 class ReconcileError(SystemExit):
@@ -124,6 +130,17 @@ class Tally:
     units: float = 0.0
     saturation_seen: int = 0
     saturation_discounted: int = 0
+    #: What each claim on the batch bought, keyed by channel — the exploration
+    #: share against the deficit-priced contest. Counted here rather than derived
+    #: from the ledger afterwards because the reconcile is written in these
+    #: buckets and a column nothing balances is a column nobody can trust.
+    by_channel: dict = field(default_factory=dict)
+
+    def channel(self, name: str) -> dict:
+        return self.by_channel.setdefault(
+            name,
+            {"slots": 0, "found": 0, "admitted": 0, "distinct": 0, "expandable": 0, "refused": 0},
+        )
 
     def feed(self) -> int:
         """Nodes this run pushed onto the frontier from its own expansions."""
@@ -149,6 +166,7 @@ class Tally:
             "currency": round(self.units, 4),
             "saturation_seen": self.saturation_seen,
             "saturation_discounted": self.saturation_discounted,
+            "by_channel": {k: dict(v) for k, v in sorted(self.by_channel.items())},
         }
 
 
@@ -165,6 +183,8 @@ class Harvest:
         refill: Refill | None = None,
         memory: saturation_module.VisitedIndex | None = None,
         saturation_strength: float = saturation_module.STRENGTH,
+        discount_k: float = novelty_module.DISCOUNT_K,
+        discount_floor: float = novelty_module.DISCOUNT_FLOOR,
         partitions=ALL_PARTITIONS,
     ):
         self.walk = walk
@@ -174,6 +194,12 @@ class Harvest:
         self.refill = refill
         self.memory = memory
         self.saturation_strength = float(saturation_strength)
+        # The lineage discount's two parameters. Run-command arguments and never
+        # stored on a row: the discount is a price this run put on its own
+        # repetition, and a fate recorded under it would be a verdict the next
+        # run could not restate.
+        self.discount_k = float(discount_k)
+        self.discount_floor = float(discount_floor)
         self.partitions = list(partitions)
         self.run_dir = Path(walk.out_dir)
         self.tally = Tally()
@@ -183,6 +209,13 @@ class Harvest:
         self._partition_cache: dict = {}
 
     # ------------------------------------------------------------- the shape
+
+    @property
+    def exploration(self):
+        """The protected exploration share, or `None`. It lives on the quota —
+        the object that divides the batch's slots — and is read from here so the
+        loop has one answer rather than a second copy of the same object."""
+        return self.quota.exploration
 
     def partition_of(self, node: dict) -> str:
         """The partition a frontier node belongs to, cached on its family identity.
@@ -201,12 +234,44 @@ class Harvest:
     def queues(self) -> dict:
         """Frontier nodes per partition — the servability the quota reads, and the
         quantity a low-water mark has to be measured in."""
+        return self.scan()[0]
+
+    def scan(self) -> tuple[dict, dict]:
+        """`(queues, novel queues)` — the frontier counted once, twice over.
+
+        The second is the stock the exploration share can be spent on: nodes whose
+        root's lineage no ledger has ever booked an admission from. Counted in the
+        same pass because the frontier is four thousand nodes at its cap and the
+        quota asks both questions about the same instant — two walks could
+        disagree about a node the eviction dropped between them.
+        """
         self.walk.evict_capped()
         counts = dict.fromkeys(self.partitions, 0)
+        novel = dict.fromkeys(self.partitions, 0)
         for node in self.walk.frontier:
             partition = self.partition_of(node)
             counts[partition] = counts.get(partition, 0) + 1
-        return counts
+            if self.exploration is not None and self.is_novel(node):
+                novel[partition] = novel.get(partition, 0) + 1
+        return counts, novel
+
+    def is_novel(self, node: dict) -> bool:
+        """Whether this node's lineage is one the exploration share protects."""
+        root_id = int(node["root_id"])
+        return self.exploration.member(root_id, self.walk.roots.get(root_id))
+
+    def contest_key(self, node: dict) -> float:
+        """The contest's ranking number: the node's priority with its score term
+        discounted by what its lineage has already booked **this run**.
+
+        Evaluated here rather than written into the node, because `n` moves after
+        the node is pushed and the Gumbel draw must not be re-rolled. Under the
+        null scorer every score term is the neutral prior and this returns the
+        priority unchanged, which is the honest state and not a disabled lever.
+        """
+        booked = self.walk.admitted.get(int(node["root_id"]), 0)
+        discount = novelty_module.lineage_discount(booked, self.discount_k, self.discount_floor)
+        return node["priority"] + (discount - 1.0) * node.get("score_term", NEUTRAL_PRIOR)
 
     def mean_batch_minutes(self) -> float:
         return self.active_minutes / self.tally.batches if self.tally.batches else 0.0
@@ -230,24 +295,27 @@ class Harvest:
 
     def run_batch(self) -> dict:
         """Serve one batch. Returns what it did, or `None` for nothing servable."""
-        queues = self.queues()
+        queues, novel = self.scan()
         refilled = {}
         if self.refill is not None:
             refilled = self.refill.run(queues, self.batch, self.active_minutes * 60.0)
             if refilled.get("roots"):
-                queues = self.queues()
+                queues, novel = self.scan()
 
-        slots, trace = self.quota.slots(queues, self.batch_size)
-        served = {p: n for p, n in slots.items() if n > 0}
+        share_slots, slots, trace = self.quota.slots(queues, self.batch_size, novel)
+        served = {p: share_slots.get(p, 0) + slots.get(p, 0) for p in queues}
+        served = {p: n for p, n in served.items() if n > 0}
         if not served:
             return {"served": {}, "stalled": True, "queues": queues}
 
         self.walk.batch_index = self.batch
         minutes_total = 0.0
         per_partition = {}
+        spent: dict = {}
         for partition in sorted(served):
-            nodes = [node for node in self.walk.frontier if self.partition_of(node) == partition]
-            taken = self.walk.pop_batch(pool=nodes, size=served[partition])
+            taken, channels = self._take(
+                partition, share_slots.get(partition, 0), slots.get(partition, 0)
+            )
             if not taken:
                 continue
             started = time.monotonic()
@@ -256,11 +324,16 @@ class Harvest:
             self.walk.trigger_reframings(report["survivors"])
             minutes = (time.monotonic() - started) / 60.0
             minutes_total += minutes
-            counted = self._account(partition, report, minutes, len(taken))
+            counted = self._account(partition, report, minutes, len(taken), channels)
+            for name, row in counted["by_channel"].items():
+                into = spent.setdefault(name, {"slots": 0, "admissions": 0})
+                into["slots"] += row["slots"]
+                into["admissions"] += row["distinct"]
             per_partition[partition] = {"nodes": len(taken), "minutes": round(minutes, 4)} | counted
 
         self.active_minutes += minutes_total
         sample = self.quota.close_batch(minutes_total)
+        priced = self._price_share(spent)
         self.walk.prune()
         self.tally.batches += 1
         self.quota.log_batch(self.batch, sample)
@@ -270,10 +343,60 @@ class Harvest:
             "served": per_partition,
             "minutes": round(minutes_total, 4),
             "refill": refilled,
-            "trace": trace,
+            "trace": trace | ({} if priced is None else {"share_priced": priced}),
         }
 
-    def _account(self, partition: str, report: dict, minutes: float, nodes: int) -> dict:
+    def _take(self, partition: str, share: int, contest: int) -> tuple[list, dict]:
+        """One partition's nodes, taken under the two claims in order.
+
+        The share draws first, from its own members only and ranked by the plain
+        priority — the head ranks inside the share and nothing else does. The
+        contest then draws from whatever is left, ranked by the discounted key.
+        Taking the share first is what makes it protected: `pop_batch` removes what
+        it takes from the frontier, so the second draw cannot re-take a share node
+        and the two counts add up to the slots the quota handed out.
+
+        Returns the batch and a `node_id -> channel` map, which is how an
+        admission is attributed afterwards to the claim that paid for it.
+        """
+        channels: dict = {}
+        taken: list = []
+        if share > 0 and self.exploration is not None:
+            pool = [
+                node
+                for node in self.walk.frontier
+                if self.partition_of(node) == partition and self.is_novel(node)
+            ]
+            for node in self.walk.pop_batch(pool=pool, size=share):
+                node["channel"] = novelty_module.SHARE
+                channels[node["node_id"]] = novelty_module.SHARE
+                taken.append(node)
+        if contest > 0:
+            pool = [node for node in self.walk.frontier if self.partition_of(node) == partition]
+            for node in self.walk.pop_batch(pool=pool, size=contest, key=self.contest_key):
+                node["channel"] = novelty_module.CONTEST
+                channels[node["node_id"]] = novelty_module.CONTEST
+                taken.append(node)
+        return taken, channels
+
+    def _price_share(self, spent: dict) -> dict | None:
+        """Close the exploration share's own window on the batch just served.
+
+        Priced on **distinct** admissions, which is the same number the deficit is
+        fed with: a channel scored on raw admissions would price itself at about
+        twice what it bought, and the two channels do not duplicate at the same
+        rate — the share is by construction ground nobody has walked.
+        """
+        if self.exploration is None:
+            return None
+        return self.exploration.settle(
+            spent.get(novelty_module.SHARE) or {"slots": 0, "admissions": 0},
+            spent.get(novelty_module.CONTEST) or {"slots": 0, "admissions": 0},
+        )
+
+    def _account(
+        self, partition: str, report: dict, minutes: float, nodes: int, channels: dict
+    ) -> dict:
         """Charge the minutes, count the fates, credit the distinct finds, and
         prove the batch's books balance.
 
@@ -282,6 +405,26 @@ class Harvest:
         the admitted *plus* the expandable, and only the admitted are supply.
         """
         candidates = report["candidates"]
+        # Which claim paid for each candidate's parent. A row whose parent is not
+        # in the map came from a node this batch did not take, which cannot
+        # happen — so it is counted under the contest and would show up as a
+        # channel column that does not add to the batch's slots.
+        channel_of = {
+            row.get("parent_node_id"): channels.get(
+                row.get("parent_node_id"), novelty_module.CONTEST
+            )
+            for row in candidates
+        }
+        per_channel: dict = {}
+        for name in set(channels.values()):
+            per_channel[name] = {
+                "slots": sum(1 for v in channels.values() if v == name),
+                "found": 0,
+                "admitted": 0,
+                "distinct": 0,
+                "expandable": 0,
+                "refused": 0,
+            }
         fates = Counter(row["fate"] for row in candidates)
         unknown = set(fates) - set(ledger_module.FATES)
         if unknown:
@@ -299,6 +442,19 @@ class Harvest:
                 f"frontier."
             )
 
+        for row in candidates:
+            name = channel_of.get(row.get("parent_node_id"))
+            bucket = per_channel.get(name)
+            if bucket is None:
+                continue
+            bucket["found"] += 1
+            if row["fate"] == ledger_module.SURVIVED:
+                bucket["admitted"] += 1
+            elif row["fate"] == ledger_module.EXPANDABLE:
+                bucket["expandable"] += 1
+            else:
+                bucket["refused"] += 1
+
         distinct = duplicate = 0
         units = 0.0
         for row in candidates:
@@ -314,6 +470,9 @@ class Harvest:
             if key is not None:
                 self.seen.add(key)
             distinct += 1
+            bucket = per_channel.get(channel_of.get(row.get("parent_node_id")))
+            if bucket is not None:
+                bucket["distinct"] += 1
             units += self.quota.credit(partition, row.get("score"), row.get("score_great"))
             # A booked location may be another partition's supply: the twin
             # channel derives a Julia parameter from an admitted parameter-plane
@@ -346,7 +505,12 @@ class Harvest:
         for fate, n in fates.items():
             if fate not in (ledger_module.SURVIVED, ledger_module.EXPANDABLE):
                 self.tally.refused[fate] += n
+        for name, row in per_channel.items():
+            into = self.tally.channel(name)
+            for field_name, value in row.items():
+                into[field_name] += value
         return {
+            "by_channel": per_channel,
             "found": len(candidates),
             "admitted": admitted,
             "expandable": expandable,
@@ -446,6 +610,27 @@ class Harvest:
             "identity": self.walk.identity,
             "gate_flips": self.walk.gate_flips(),
             "quota": self.quota.summary(),
+            # The two novelty levers, side by side with what they cost and bought.
+            # Both are reported whether or not they are on: a run that turned one
+            # off and a run that never had it are different runs, and a readout
+            # that omits the row cannot say which this was.
+            "exploration": (
+                {"status": "off"}
+                if self.exploration is None
+                else self.exploration.summary() | {"bought": self._channel_report()}
+            ),
+            "lineage_discount": {
+                "status": "off" if self.discount_k <= 0 else "on",
+                "k": self.discount_k,
+                "floor": self.discount_floor,
+                "note": (
+                    "no scorer is wired in, so every score term is the neutral prior and the "
+                    "discount cannot reorder anything"
+                    if self.walk.scorer.name == "null"
+                    else None
+                ),
+            },
+            "lineages": self.walk.lineages(),
             "refill": (
                 None
                 if self.refill is None
@@ -470,6 +655,19 @@ class Harvest:
                 }
             ),
         }
+
+    def _channel_report(self) -> dict:
+        """What each claim on the batch spent and returned, off the run's own
+        tally rather than off the share's pricing accumulators — the second are
+        smoothed and are evidence, not a count."""
+        rows = {}
+        for name in (novelty_module.SHARE, novelty_module.CONTEST):
+            row = dict(self.tally.channel(name))
+            row["distinct_per_slot"] = (
+                round(row["distinct"] / row["slots"], 4) if row["slots"] else None
+            )
+            rows[name] = row
+        return rows
 
     # ------------------------------------------------------------- the state
 
@@ -498,6 +696,7 @@ class Harvest:
                 "units": self.tally.units,
                 "saturation_seen": self.tally.saturation_seen,
                 "saturation_discounted": self.tally.saturation_discounted,
+                "by_channel": self.tally.by_channel,
             },
             "walk": {
                 "frontier": self.walk.frontier,
@@ -510,6 +709,13 @@ class Harvest:
                 # root the first session drew, and the ledger would carry two
                 # policies under one run seed.
                 "plane_roots": sorted(self.walk.plane_roots),
+                # What each root is. A resumed session classifies the frontier's
+                # lineages against the cross-run index, and a node minted in the
+                # first session names a root this process never drew — so without
+                # this the share would quietly stop protecting half its members.
+                "roots": {str(k): v for k, v in self.walk.roots.items()},
+                "admitted": {str(k): v for k, v in self.walk.admitted.items()},
+                "saturated": sorted(self.walk.saturated),
                 "counts": self.walk.tally,
                 "rng": _rng_state(self.walk.rng),
             },
@@ -562,6 +768,7 @@ class Harvest:
             units=float(saved.get("units", 0.0)),
             saturation_seen=int(saved.get("saturation_seen", 0)),
             saturation_discounted=int(saved.get("saturation_discounted", 0)),
+            by_channel={k: dict(v) for k, v in (saved.get("by_channel") or {}).items()},
         )
         walk_state = state.get("walk") or {}
         self.walk.frontier = list(walk_state.get("frontier") or [])
@@ -574,6 +781,9 @@ class Harvest:
             (row[0], row[1]) for row in (walk_state.get("visited_reframings") or [])
         }
         self.walk.plane_roots = {int(root) for root in (walk_state.get("plane_roots") or [])}
+        self.walk.roots = {int(k): v for k, v in (walk_state.get("roots") or {}).items()}
+        self.walk.admitted = {int(k): int(v) for k, v in (walk_state.get("admitted") or {}).items()}
+        self.walk.saturated = {int(root) for root in (walk_state.get("saturated") or [])}
         self.walk.tally = dict(walk_state.get("counts") or {})
         if walk_state.get("rng"):
             self.walk.rng.setstate(_rng_from_state(walk_state["rng"]))

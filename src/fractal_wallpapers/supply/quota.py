@@ -45,6 +45,7 @@ from fractal_wallpapers.supply.allocation import (
     FloorLedger,
     allocate,
     batch_slots,
+    exploration_slots,
     fold_dynamical_intent,
 )
 from fractal_wallpapers.supply.partitions import ALL_PARTITIONS
@@ -77,11 +78,18 @@ class Quota:
         ratios: dict | None = None,
         external: set | None = None,
         twin_route_gain: float = TWIN_ROUTE_GAIN,
+        exploration=None,
     ):
         self.partitions = list(partitions)
         self.run_dir = Path(run_dir) if run_dir is not None else None
         self.floor = float(floor)
         self.twin_route_gain = float(twin_route_gain)
+        #: The protected exploration share, or `None` for a run that allocates
+        #: the whole post-floor batch by deficit. Held here rather than in the
+        #: harvest loop because it is a claim on the batch's slots, and the
+        #: object that divides those is the only one that can enforce an order
+        #: between three claims.
+        self.exploration = exploration
         # Resolved ONCE at construction from the shipped table and passed to every
         # allocation. The flag is a property of the policy, not of the run, so
         # re-reading it per batch would let a mid-run edit move an allocation the
@@ -155,8 +163,19 @@ class Quota:
             for p in self.partitions
         }
 
-    def slots(self, queues: dict, n_slots: int) -> tuple[dict, dict]:
-        """How the next batch's node slots divide between partitions."""
+    def slots(self, queues: dict, n_slots: int, novel_queues: dict | None = None) -> tuple:
+        """`(share_slots, contest_slots, trace)` — how the next batch divides.
+
+        Three claims in the ruled order: the floor's claimants are guaranteed
+        first, the exploration share takes its fraction of what is left, and the
+        contest takes the remainder. The two slot dicts are returned apart rather
+        than summed because the channel a node was taken under decides how it is
+        ranked, whether the lineage discount prices it, and which column its
+        admissions land in — and a caller handed one total could not tell.
+
+        With no exploration wired in the share is empty and the contest sees the
+        whole batch, which is the allocation this module always made.
+        """
         allocation = self.allocation()
         self._allocation = allocation
         effective = fold_dynamical_intent(
@@ -165,18 +184,41 @@ class Quota:
         self._effective = effective
         self._servable = {p for p, n in queues.items() if n > 0 and p not in self.cost.capped}
         claimants = self.floor_ledger.claimants(self._servable, self.realized.minutes)
+
+        guaranteed = [p for p in claimants if p in self._servable][: int(n_slots)]
+        post_floor = max(0, int(n_slots) - len(guaranteed))
+        share, share_trace = self._share_slots(
+            effective, queues, novel_queues, guaranteed, post_floor
+        )
+        taken = sum(share.values())
+        # What the contest may still seat. The share's nodes are gone from the
+        # queue it reads, so a partition cannot be allocated the same node twice.
+        remaining = {p: max(0, int(n) - share.get(p, 0)) for p, n in queues.items()}
         slots, trace = batch_slots(
             effective,
             self.realized.minutes,
-            queues,
-            n_slots,
+            remaining,
+            int(n_slots) - taken,
             claimants=claimants,
             capped=self.cost.capped,
             minutes_per_slot=self.minutes_per_slot(),
         )
+        if self.exploration is not None:
+            # The realized share is measured against **post-floor** slots, which
+            # is what the fraction is a fraction of. A guaranteed claimant's one
+            # slot was never on offer to the share and is taken back out here, or
+            # a run whose floor is busy would report the share missing its own
+            # target for slots it was never allowed to bid on.
+            pinned = set(guaranteed)
+            for partition in self.partitions:
+                offered = share.get(partition, 0) + slots.get(partition, 0)
+                if partition in pinned:
+                    offered -= 1
+                self.exploration.note_offer(partition, max(0, offered), share.get(partition, 0))
         debts = self.floor_ledger.debts(self.realized.minutes)
         self._trace = {
             **trace,
+            "share": share_trace | {"slots": {p: n for p, n in sorted(share.items()) if n}},
             "slots": {p: n for p, n in sorted(slots.items()) if n},
             "intended": {p: round(allocation.share.get(p, 0.0), 4) for p in self.partitions},
             "effective": {p: round(effective.get(p, 0.0), 4) for p in self.partitions},
@@ -185,7 +227,37 @@ class Quota:
             "price": {p: round(v, 4) for p, v in sorted(self.cost.prices().items())},
             "queues": {p: int(queues.get(p, 0)) for p in self.partitions},
         }
-        return slots, self._trace
+        return share, slots, self._trace
+
+    def _share_slots(
+        self, effective: dict, queues: dict, novel_queues: dict | None, guaranteed, post_floor: int
+    ) -> tuple[dict, dict]:
+        """The exploration share's slots, and what decided them.
+
+        The per-partition cap is the partition's stock of novel-lineage nodes,
+        less one node in any partition the floor has guaranteed: the guarantee is
+        a claim on a *node*, not only on a slot, and a share that emptied the
+        queue would honour the count and starve the partition anyway.
+        """
+        if self.exploration is None or not novel_queues:
+            return dict.fromkeys(self.partitions, 0), {"status": "off"}
+        pinned = set(guaranteed)
+        caps = {}
+        for partition in self.partitions:
+            available = int(novel_queues.get(partition, 0))
+            if partition in self.cost.capped:
+                available = 0
+            if partition in pinned:
+                available = min(available, max(0, int(queues.get(partition, 0)) - 1))
+            caps[partition] = max(0, available)
+        wanted = self.exploration.split(post_floor)
+        slots, trace = exploration_slots(effective, caps, wanted)
+        return slots, {
+            "status": "on",
+            "share": round(self.exploration.share, 4),
+            "post_floor_slots": int(post_floor),
+            **trace,
+        }
 
     def effective_intent(self) -> dict:
         """The time-weighted mean of the vector the batches acted on."""
@@ -343,6 +415,7 @@ class Quota:
             "deficit": self.deficit,
             "cost": self.cost.state(),
             "floor_ledger": self.floor_ledger.state(),
+            "exploration": None if self.exploration is None else self.exploration.state(),
             "realized": {
                 "minutes": self.realized.minutes,
                 "by_bucket": self.realized.by_bucket,
@@ -378,6 +451,8 @@ class Quota:
             )
         self.cost.load_state(state.get("cost") or {})
         self.floor_ledger.load_state(state.get("floor_ledger") or {})
+        if self.exploration is not None and state.get("exploration"):
+            self.exploration.load_state(state["exploration"])
         self._effective_total.update(
             {p: float(v) for p, v in (state.get("effective_total") or {}).items()}
         )
@@ -408,6 +483,9 @@ class Quota:
             "mix": self.mix_report(),
             "floor_versus_deficit": self.floor_versus_deficit(),
             "unspent_floor": self.unspent_floor(),
+            "exploration": (
+                {"status": "off"} if self.exploration is None else self.exploration.summary()
+            ),
             "trace": None if self.trace_path() is None else str(self.trace_path()),
         }
 

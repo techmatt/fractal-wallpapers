@@ -111,7 +111,7 @@ def test_the_realized_mix_converges_on_the_intent_whatever_a_partition_costs() -
     served = [p for p in ALL_PARTITIONS if p != CLASSIC_PHOENIX]
     queues = dict.fromkeys(served, 50)
     for _ in range(400):
-        slots, _ = held.slots(queues, 8)
+        _, slots, _ = held.slots(queues, 8)
         spent = 0.0
         for partition, n in slots.items():
             if n:
@@ -137,7 +137,7 @@ def test_a_partition_that_finds_nothing_at_all_is_capped_out_of_service() -> Non
     served = [p for p in ALL_PARTITIONS if p != CLASSIC_PHOENIX]
     queues = dict.fromkeys(served, 50)
     for _ in range(200):
-        slots, _ = held.slots(queues, 8)
+        _, slots, _ = held.slots(queues, 8)
         spent = 0.0
         for partition, n in slots.items():
             if n:
@@ -145,7 +145,7 @@ def test_a_partition_that_finds_nothing_at_all_is_capped_out_of_service() -> Non
                 spent += float(n)
         held.close_batch(spent)
     assert held.cost.capped == set(served)
-    assert held.slots(queues, 8)[0] == dict.fromkeys(served, 0)
+    assert held.slots(queues, 8)[1] == dict.fromkeys(served, 0)
 
 
 def test_the_floor_is_held_over_a_run_and_not_merely_allocated() -> None:
@@ -156,7 +156,7 @@ def test_the_floor_is_held_over_a_run_and_not_merely_allocated() -> None:
     served = [p for p in ALL_PARTITIONS if p != CLASSIC_PHOENIX]
     queues = dict.fromkeys(served, 50)
     for _ in range(100):
-        slots, _ = held.slots(queues, 4)
+        _, slots, _ = held.slots(queues, 4)
         spent = 0.0
         for partition, n in slots.items():
             if n:
@@ -174,7 +174,7 @@ def test_an_externally_supplied_partition_is_never_served_and_keeps_its_books() 
     every tally key stay, because they are statements about labels and stay true."""
     held = quota({"mandelbrot": 30.0})
     queues = dict.fromkeys(ALL_PARTITIONS, 50)
-    slots, _ = held.slots(queues, 8)
+    _, slots, _ = held.slots(queues, 8)
     assert slots[CLASSIC_PHOENIX] == 0
     assert held.ratios[CLASSIC_PHOENIX] == pytest.approx(0.2)
     assert held.target[CLASSIC_PHOENIX] == pytest.approx(2.0)
@@ -187,7 +187,7 @@ def test_a_capped_partition_keeps_its_intent_and_loses_its_slots() -> None:
     quietly redistributing."""
     held = quota()
     held.cost.capped.add("phoenix")
-    slots, trace = held.slots(dict.fromkeys(ALL_PARTITIONS, 20), 8)
+    _, slots, trace = held.slots(dict.fromkeys(ALL_PARTITIONS, 20), 8)
     assert slots["phoenix"] == 0
     assert trace["capped"] == ["phoenix"]
     assert trace["intended"]["phoenix"] > 0.0
@@ -251,7 +251,7 @@ def test_a_fate_the_ledger_never_declared_ends_the_run(tmp_path) -> None:
     run = harvest(tmp_path)
     report = {"candidates": [candidate("mystery_gate")], "survivors": []}
     with pytest.raises(ReconcileError, match="declared fates"):
-        run._account("mandelbrot", report, 1.0, 1)
+        run._account("mandelbrot", report, 1.0, 1, {})
 
 
 def test_a_survivor_that_never_reached_the_frontier_ends_the_run(tmp_path) -> None:
@@ -260,7 +260,7 @@ def test_a_survivor_that_never_reached_the_frontier_ends_the_run(tmp_path) -> No
     run = harvest(tmp_path)
     report = {"candidates": [candidate(ledger_module.SURVIVED, node_id=7)], "survivors": []}
     with pytest.raises(ReconcileError, match="reached the frontier"):
-        run._account("mandelbrot", report, 1.0, 1)
+        run._account("mandelbrot", report, 1.0, 1, {})
 
 
 def test_the_frontier_is_fed_by_more_than_the_books_count(tmp_path) -> None:
@@ -274,7 +274,7 @@ def test_the_frontier_is_fed_by_more_than_the_books_count(tmp_path) -> None:
         candidate(ledger_module.NOT_ADMITTED, re="0.4", score=0.01),
         candidate("flat"),
     ]
-    counted = run._account("mandelbrot", {"candidates": rows, "survivors": rows[:3]}, 1.0, 2)
+    counted = run._account("mandelbrot", {"candidates": rows, "survivors": rows[:3]}, 1.0, 2, {})
     assert counted["admitted"] == 1
     assert counted["expandable"] == 2
     assert counted["distinct"] == 1, "only the admitted row is supply"
@@ -296,8 +296,9 @@ def test_admissions_are_counted_as_distinct_locations(tmp_path) -> None:
         candidate(ledger_module.SURVIVED, node_id=3, re="0.2"),
         candidate("flat"),
     ]
-    counted = run._account("mandelbrot", {"candidates": rows, "survivors": rows[:3]}, 1.0, 2)
+    counted = run._account("mandelbrot", {"candidates": rows, "survivors": rows[:3]}, 1.0, 2, {})
     assert counted == {
+        "by_channel": {},
         "found": 4,
         "admitted": 3,
         "expandable": 0,
@@ -313,7 +314,7 @@ def test_the_books_balance_across_every_named_bucket(tmp_path) -> None:
     rows = [candidate(fate) for fate in ("flat", "interior_cap", "occupancy_floor")]
     rows.append(candidate(ledger_module.SURVIVED, node_id=1))
     rows.append(candidate(ledger_module.EXPANDABLE, node_id=2, re="0.9"))
-    counted = run._account("phoenix", {"candidates": rows, "survivors": rows[-2:]}, 1.0, 1)
+    counted = run._account("phoenix", {"candidates": rows, "survivors": rows[-2:]}, 1.0, 1, {})
     assert counted["found"] == (
         counted["admitted"] + counted["expandable"] + sum(run.tally.refused.values())
     )

@@ -336,6 +336,17 @@ def test_a_walk_with_no_cap_is_the_walk_it_always_was(tmp_path) -> None:
         "admissions": 5,
         "largest": 5,
         "capped": [],
+        # The monotony measure rides along: the headline is not the measure, and
+        # a run that admits over two hundred lineages and one that admits the
+        # same number over six report the same `admissions`.
+        "distribution": {
+            "lineages_admitting": 1,
+            "admissions": 5,
+            "max": 5,
+            "median": 5.0,
+            "top5": [5],
+            "top5_share": 1.0,
+        },
         "by_root": {"1": 5},
     }
 

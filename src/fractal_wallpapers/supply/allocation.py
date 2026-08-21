@@ -76,6 +76,26 @@ broken:
 
 [`FloorLedger.unspent`] reports which, per partition, beside the servable minutes
 that separate "the rule declined to serve it" from "nothing could".
+
+## Three claims on a batch, in a ruled order
+
+```text
+1  floor      the carry's claimants, guaranteed their slot
+2  share      the protected exploration fraction of what is left
+3  contest    the deficit-priced rule over the remainder
+```
+
+The order is the whole of the rule and it is one-directional: nothing below may
+eat what is above it. The floor is the re-entry path for a mispriced partition —
+the only service that can revise a price that stopped the service — so a share
+that could consume a starved partition's slot would re-open the one-way lockout
+this module exists to close. [`exploration_slots`] therefore divides only the
+*post-floor* remainder, and its per-partition cap leaves a claimant a node to be
+guaranteed with.
+
+The share's membership and its self-pricing live in
+[`fractal_wallpapers.supply.novelty`]; what is here is only where it sits in the
+order, because that is a fact about the allocation and not about novelty.
 """
 
 from __future__ import annotations
@@ -403,6 +423,41 @@ def share_gaps(intended: dict, realized: dict, servable) -> dict:
     return gaps
 
 
+def exploration_slots(intended: dict, novel_queues: dict, n_slots: int) -> tuple[dict, dict]:
+    """`(slots, trace)` — the protected exploration share, over the partitions that
+    have a novel-lineage node to spend it on.
+
+    **Apportioned by the run's own intent, not by where the novelty happens to
+    be.** The share protects novelty; it does not re-decide the mix. Weighting it
+    by each partition's stock of novel nodes would let one partition's fresh
+    supply quietly move the release ratios the whole allocator exists to hold, and
+    the realized-versus-intended report would show a miss with no named cause. So
+    the weights are the same effective intent the contest reads, restricted to the
+    partitions that can actually seat a share slot.
+
+    A partition with intent zero and novel nodes still cannot be seated here — it
+    is externally supplied or capped, and the share is not a way around either.
+    Where no partition carries intent at all, the share falls back to spreading
+    over whoever has the nodes, which is what a cold allocation already does one
+    level up.
+    """
+    seatable = {p: int(n) for p, n in novel_queues.items() if int(n) > 0}
+    if n_slots <= 0 or not seatable:
+        return dict.fromkeys(novel_queues, 0), {"weight_source": "none", "wanted": max(0, n_slots)}
+    weights = {p: max(0.0, float(intended.get(p, 0.0))) for p in seatable}
+    source = "intent"
+    if sum(weights.values()) <= 0.0:
+        weights = {p: float(n) for p, n in seatable.items()}
+        source = "available"
+    allocated = allocate_slots(weights, n_slots, caps=seatable)
+    slots = {p: int(allocated.get(p, 0)) for p in novel_queues}
+    return slots, {
+        "weight_source": source,
+        "wanted": int(n_slots),
+        "novel_queues": {p: int(n) for p, n in sorted(novel_queues.items()) if n},
+    }
+
+
 def batch_slots(
     intended: dict,
     realized: dict,
@@ -479,6 +534,7 @@ __all__ = [
     "FloorLedger",
     "allocate",
     "batch_slots",
+    "exploration_slots",
     "fold_dynamical_intent",
     "share_gaps",
 ]
