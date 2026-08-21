@@ -335,6 +335,73 @@ def test_a_reframing_inherits_the_root_it_was_triggered_from(tmp_path) -> None:
 
 
 @needs_engine
+def test_a_reframing_names_the_node_it_pushed(tmp_path) -> None:
+    """A chain through a reframing is a lookup, not a reconstruction.
+
+    Without `pushed_node_id` a reader has only the operator's viewport, and
+    following it to what the walk did next means matching that frame against
+    every later row's parent geometrically. The id is written where the node is
+    made, so it resolves to a child that names this firing's node as its parent
+    and carries this firing's operator as its origin.
+    """
+    run = walk(
+        tmp_path,
+        limits=Limits(batch=4, batches=3, probe_probability=1.0),
+        policy=Policy(candidates=2, node_width=128),
+        reframings=Reframings(enabled=True, lateral=False),
+    )
+    seeds = tmp_path / "seeds.jsonl"
+    seeds.write_text(
+        "\n".join(
+            json.dumps(
+                {
+                    "schema": 1,
+                    "family": {"kind": "mandelbrot"},
+                    "viewport": {"center_re": re_, "center_im": im, "width": width},
+                }
+            )
+            for re_, im, width in (
+                ("-0.7453", "0.1127", "0.2"),
+                ("0.2929", "0.0149", "0.1"),
+                ("-0.748", "0.263", "0.06"),
+            )
+        ),
+        encoding="utf-8",
+    )
+    run.seed_from_file(seeds)
+    run.run()
+
+    rows = ledger_module.read(run.ledger.path)
+    reframings = [row for row in rows if row["kind"] == "reframing"]
+    assert reframings, "the probe fired but nothing was recorded"
+    for row in reframings:
+        assert "pushed_node_id" in row
+        # Absent is not the same fact as null: `used` is what says a firing put
+        # nothing on the frontier, and the id follows it exactly.
+        assert (row["pushed_node_id"] is not None) == row["used"]
+
+    used = [row for row in reframings if row["used"]]
+    assert used, "no reframing pushed a node, so the id resolved to nothing"
+    # A pushed node reaches the record when it is expanded: its candidates name
+    # it as their parent, and they carry the operator that made it.
+    children = {}
+    for row in rows:
+        if row["kind"] == "candidate":
+            children.setdefault(row["parent_node_id"], []).append(row)
+    resolved = 0
+    for row in used:
+        found = children.get(row["pushed_node_id"])
+        if not found:
+            continue
+        resolved += 1
+        for child in found:
+            assert child["origin"] == row["operator"]
+            assert child["root_id"] == row["root_id"]
+            assert child["atom_key"] == row["atom_key"]
+    assert resolved, "no pushed node was expanded, so nothing resolved"
+
+
+@needs_engine
 def test_a_walk_with_no_roots_does_nothing_rather_than_inventing_some(tmp_path) -> None:
     run = walk(tmp_path, limits=Limits(batch=2, batches=2))
     assert run.run()["batches"] == 0

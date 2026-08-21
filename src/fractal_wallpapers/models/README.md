@@ -288,9 +288,12 @@ edited away.
 
 ## Running a band that takes hours
 
-Three seeds over three regimes is six hours of GPU. Three things go wrong at that
-length, and all three have now gone wrong here, so they are written down rather
-than rediscovered.
+Three seeds over three regimes is **eight and a half hours of GPU** — 30,391 s of
+epoch time across the band's three records. Six hours is what the three
+`wall_seconds` add up to, and two of those three cover only the epochs since a
+relaunch, which is the whole of the next-but-one paragraph. Three things go wrong
+at that length, and all three have now gone wrong here, so they are written down
+rather than rediscovered.
 
 **One trainer per directory, and the directory says so.** Every trainer takes
 `train.claim` — an exclusive `training.lock` beside the checkpoints, released only
@@ -299,19 +302,29 @@ they interleave their logs, take turns overwriting one checkpoint, and leave a
 record that belongs to neither. If a launcher can be started twice — a shell
 script that survived a kill, a watchdog re-armed by hand — assume it was.
 
-**The tell is in the arithmetic, not in the log.** A log can be *overwritten* by a
-concurrent writer holding a truncating handle, so it will happily show one clean
-run. What cannot be faked is that `wall_seconds` in `metrics.json` must be at
-least the sum of `history[*].seconds`. When it is far less, a second process
-wrote that record. When epoch times jump — 172 s to 293 s here — something else
-is on the GPU.
+**The arithmetic is a weaker tell than it looks, and here is exactly how weak.**
+A log can be *overwritten* by a concurrent writer holding a truncating handle, so
+it will happily show one clean run. The arithmetic was supposed to be what cannot
+be faked: `wall_seconds` at least the sum of `history[*].seconds`, and far less
+than it means a second process. **It does not mean that.** The clock starts after
+the resume snapshot loads and `history` is restored *from* that snapshot, so a run
+killed at epoch nine and relaunched records forty epochs and a wall that only ever
+covered thirty-one — and nothing is wrong with it. Two of this band's three
+records read that way, and both are relaunches. What the arithmetic *can* prove is
+the case where not even the final epoch fits inside the wall: no resume explains
+that. `models.audit.serial_time` is the reading, and every record written since
+carries `segments` — one entry per launch, each naming its epochs and its own wall
+— which makes the strict check exact instead of a guess. When epoch times jump —
+172 s to 293 s here — something else is on the GPU.
 
-**Auditing a run whose provenance is in doubt** does not need the log at all.
-Re-score the *selection slice* through `head_best.pt` and compare against what
-that run's `metrics.json` says its best epoch scored. Agreement to ~1e-8 proves
-the checkpoint and the record are the same trajectory, whoever wrote them; a
-snapshot is read once at startup and replaced atomically, so two trajectories
-cannot mix mid-run.
+**Auditing a run whose provenance is in doubt** does not need the log or the clock
+at all. `fractal-wallpapers head audit --run <run>` re-scores the *selection
+slice* through `head_best.pt` and compares against what that run's `metrics.json`
+says its best epoch scored, writing `audit.json` beside the record — because a
+procedure whose only trace is a commit message is one nobody reading the run
+directory will find. Agreement to ~1e-8 proves the checkpoint and the record are
+the same trajectory, whoever wrote them; a snapshot is read once at startup and
+replaced atomically, so two trajectories cannot mix mid-run.
 
 **A long run gets killed, so resuming has to work — and it is the one path that
 only runs after something already went wrong.** `torch.load(resume,

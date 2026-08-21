@@ -79,6 +79,21 @@ survival-by-rung table:
 A row where `grace` is true and `cleared_junk` is false is one the grace stood
 on. A depth-aware floor, if the cliff turns out to be the wrong shape, is fitted
 from these and nothing else.
+
+## A reframing says which node it pushed
+
+A `reframing` row's `node_id` is the node the operator was fired *from*. What it
+put on the frontier is `pushed_node_id` — the id of the child, or `null` where
+the firing produced none. Written because the alternative is reconstruction: with
+only the viewport to go on, a reader chaining through a reframing has to match
+that frame against every later row's parent geometrically, and the website's
+figure maker doing exactly that recovered 283 of 1,965 and dropped 123.
+
+**Readers treat it as optional and the schema does not move.** A ledger written
+before the field existed carries rows without it, those runs are not re-written,
+and a reader that requires it would refuse a record that is not wrong. Absent
+means *this ledger predates the field*, never *no node was pushed* — `used` is
+what says that.
 """
 
 from __future__ import annotations

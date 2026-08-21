@@ -1136,7 +1136,7 @@ class Walk:
 
         pushed = 0
         for row in found:
-            used, why = False, ""
+            used, why, child = False, "", None
             if row.available:
                 identity = (row.key, row.framing)
                 if identity in self.visited_reframings:
@@ -1147,7 +1147,7 @@ class Walk:
                     why = "already_visited"
                 else:
                     self.visited_reframings.add(identity)
-                    self._node(
+                    child = self._node(
                         family=node["family"],
                         view={
                             "center_re": row.center_re,
@@ -1166,6 +1166,14 @@ class Walk:
                 run_seed=self.seed,
                 batch=self.batch_index,
                 node_id=node["node_id"],
+                # The node this firing put on the frontier, or `null` where it
+                # put none there. Without it a chain through a reframing is a
+                # geometric reconstruction — match the row's viewport against
+                # every later row's parent frame — which is what the website's
+                # figure maker had to do, recovering 283 of 1,965 and dropping
+                # 123. It is a lookup now. Old ledgers keep their schema and do
+                # not carry it, so a reader treats it as optional and falls back.
+                pushed_node_id=child["node_id"] if child is not None else None,
                 root_id=node["root_id"],
                 operator=row.operator,
                 available=row.available,

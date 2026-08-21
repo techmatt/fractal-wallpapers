@@ -1853,6 +1853,16 @@ def head_score(args: argparse.Namespace) -> int:
     return 0
 
 
+def head_audit(args: argparse.Namespace) -> int:
+    """Read a run's clock against its own epochs, then re-score to settle it."""
+    from fractal_wallpapers.models import audit
+
+    report = audit.run(name=args.head, run_name=args.run, which=args.which, device=args.device)
+    write_tracked_json(audit.audit_path(args.head, args.run), report)
+    print(json.dumps(report, indent=2))
+    return 0 if report["verdict"] == "REPRODUCED" else 1
+
+
 def head_preregister(args: argparse.Namespace) -> int:
     """Write the bar, before the head that will be judged against it exists."""
     from fractal_wallpapers.models import acceptance
@@ -3484,6 +3494,26 @@ def head_commands(subcommands) -> None:
         "Anything else writes scores<regime>.jsonl beside the canonical read",
     )
     reading.set_defaults(handler=head_score)
+
+    auditing = with_head(
+        steps.add_parser(
+            "audit",
+            help="prove a run's record and its checkpoint are one trajectory",
+            description=(
+                "Two readings, and only the second settles anything. The clock reading "
+                "compares wall_seconds against the sum of the epoch seconds and says what "
+                "that can prove — which is less than it looks, because the wall starts "
+                "after a resume loads and the history does not. The re-score reads the "
+                "run's own selection slice back through its checkpoint and reproduces the "
+                "record's best epoch, which needs no log and no clock. Writes audit.json "
+                "beside the record."
+            ),
+        )
+    )
+    auditing.add_argument("--which", default="best", choices=["best", "last"])
+    auditing.add_argument("--device", default="auto")
+    auditing.add_argument("--run", help="the named training run to audit (default: the head's own)")
+    auditing.set_defaults(handler=head_audit)
 
     judging_step = with_head(
         steps.add_parser(

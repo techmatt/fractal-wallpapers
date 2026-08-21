@@ -185,3 +185,23 @@ def test_the_partition_rule_names_every_partition() -> None:
     that omits one and a table that reports it empty are different statements."""
     assert acceptance.MIN_POSITIVES >= 10
     assert len(ALL_PARTITIONS) == 10
+
+
+def test_an_archived_extraction_source_refuses_by_name(tmp_path, monkeypatch) -> None:
+    """The source project's artifacts move to the archive tier and stop
+    resolving beside the checkout. That is not a broken repository — the
+    yardstick is vendored and every read of the bar runs against it — so the
+    refusal has to say which folder went and that nothing downstream needs it,
+    rather than surfacing a missing-file error for a path nobody has seen."""
+    monkeypatch.setattr(
+        "fractal_wallpapers.paths.repo_root", lambda: tmp_path / "elsewhere" / "checkout"
+    )
+    with pytest.raises(acceptance.ExtractionSourceGone) as refusal:
+        acceptance.extraction_source()
+    said = str(refusal.value)
+    assert acceptance.INCUMBENT_MANIFEST.parts[0] in said
+    assert "archive tier" in said
+    assert "vendored" in said
+    # And it is a FileNotFoundError still, so a caller that only knew the old
+    # failure keeps catching it.
+    assert isinstance(refusal.value, FileNotFoundError)
