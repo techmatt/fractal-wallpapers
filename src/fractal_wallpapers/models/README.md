@@ -4,7 +4,21 @@ One vertical per head, in the order it runs. For the **location** head, which
 judges a place before any colour is applied: `tiles` builds the pictures,
 `head` and `dataset` say what a training example is, `train` runs the loop,
 `scoring` reads a checkpoint over a population, `acceptance` judges the result
-against a bar written down beforehand.
+against a bar written down beforehand. `location_scoring` is the door beside
+`scoring`: the shipped head over a list of places somebody named rather than over
+a built corpus, which is what `fractal-wallpapers score-locations` runs.
+
+**A score row has to say what produced it.** `location` names a slot, not a
+model: the head in it gets retrained and re-shipped, and the floors that read it
+are restated at the flip — `GOOD_FLOOR` and `JUNK_FLOOR` both were, on one day. So
+every row `location_scoring` writes carries the sha256 of the shipped artifact it
+was read through and the regime it was read at, the same two facts a
+`cuts.Restatement` pins. A figure that prints a score against a floor and cannot
+name the head it was scored under goes quietly stale.
+
+```
+fractal-wallpapers score-locations --manifest rows.jsonl --out scores.jsonl
+```
 
 For the two **finished-render** judges, which answer the question after it —
 does this particular colouring of a place work — the same five stages exist

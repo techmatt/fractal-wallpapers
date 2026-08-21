@@ -577,3 +577,77 @@ def test_the_gates_travel_to_the_engine_as_the_engine_names_them() -> None:
     }
     assert set(wire["band"]) == {"spread_min", "escape_median_min"}
     assert wire["min_width"] == 1e-9
+
+
+@needs_engine
+def test_a_run_that_reports_its_foci_descends_into_exactly_the_same_places(tmp_path) -> None:
+    """The focus set is a reading of the parent frame that the engine takes
+    whether or not anybody asked for it, and taking it consumes nothing from the
+    node's random stream. So the switch decides what is *recorded* and not what
+    is computed — and a ledger written with it on carries the same candidates,
+    in the same order, as one written without."""
+
+    def rows(directory, report_foci):
+        run = Walk(
+            out_dir=directory,
+            seed=99,
+            limits=Limits(batch=2, batches=1, root_expansions=4),
+            scorer=NullScorer(),
+            report_foci=report_foci,
+        )
+        run.add_root(
+            {"kind": "julia", "degree": 2, "c": ["-0.4", "0.6"]},
+            VIEW,
+            source="test",
+            provenance={},
+        )
+        run.run()
+        return ledger_module.read(directory / "walk.jsonl")
+
+    quiet = rows(tmp_path / "quiet", False)
+    loud = rows(tmp_path / "loud", True)
+
+    assert not [row for row in quiet if row["kind"] == "foci"]
+    assert [row for row in quiet if row["kind"] == "candidate"] == [
+        row for row in loud if row["kind"] == "candidate"
+    ]
+    # The header carries the switch, because a run's configuration is what its
+    # rows have to be read against — and that is the only row that differs.
+    assert quiet[0]["report_foci"] is False
+    assert loud[0]["report_foci"] is True
+
+
+@needs_engine
+def test_a_focus_row_carries_the_whole_thing_the_proposal_was_aiming_at(tmp_path) -> None:
+    """Position, which blurring scales found it, how alone it stands and how far
+    the nearest kept neighbour is. `ExpandReport` kept only the chosen target's
+    score, so the peaks a rung did *not* aim at — the subject of the figure — were
+    computed and thrown away."""
+    run = Walk(
+        out_dir=tmp_path / "walk",
+        seed=99,
+        limits=Limits(batch=2, batches=1, root_expansions=4),
+        scorer=NullScorer(),
+        report_foci=True,
+    )
+    family = {"kind": "julia", "degree": 2, "c": ["-0.4", "0.6"]}
+    run.add_root(family, VIEW, source="test", provenance={})
+    run.run()
+
+    found = [
+        row for row in ledger_module.read(tmp_path / "walk" / "walk.jsonl") if row["kind"] == "foci"
+    ]
+    assert found, "a node was expanded, so a frame was read"
+    for row in found:
+        # A row carries its full identity, not a reference to one.
+        assert row["family"] == family
+        assert set(row["viewport"]) == {"center_re", "center_im", "width"}
+        assert row["tile"] == [384, 216]
+        assert row["found"] >= len(row["kept"]), "thinning never adds one"
+        for focus in row["kept"]:
+            assert focus["sigmas"], "a focus was detected at some scale"
+            assert set(focus["sigmas"]) <= set(Policy().sigmas)
+            assert focus["score"] > 0
+            assert focus["center_re"] and focus["center_im"]
+            if focus["spacing"] is not None:
+                assert focus["spacing"] > row["spread_radius"]

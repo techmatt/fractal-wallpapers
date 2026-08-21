@@ -19,7 +19,7 @@ seen nothing below `1.8e-10` and one held-out row below `1e-9`, so its scale dow
 here is an extrapolation — and the answer to that is to *record* what it says
 about every candidate, at every fate, and let a later reading decide whether the
 extrapolation held. A floor invented for this mode would be a second, unmeasured
-opinion sitting on top of an unmeasured one.
+opinion stacked on top of an unmeasured one.
 
 ## The reframing operators are off, and the reason is a number
 

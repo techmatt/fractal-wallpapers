@@ -1,6 +1,6 @@
 The Rust renderer: it makes every pixel this project ever shows.
 
-One binary, eight subcommands, one JSON object in and one file out:
+One binary, nine subcommands, one JSON object in and one file out:
 
 ```
 cargo build --release --manifest-path engine/Cargo.toml
@@ -15,11 +15,25 @@ render      a location and a coloring → a PNG
 dump-field  the same, stopping at the raw scalar field (+ a record of it)
 recolor     a dumped field → a PNG, without iterating anything
 expand      walk nodes → one rung each, gated, with a thumbnail per survivor
+screen      frames you name → what each structural gate read, and its verdict
 home-view   a family → where it is framed by default, and how that was derived
 modes       the named colorings, as JSON
 tiles       a plan of locations → training tiles, and a record of what was written
 maxiter     widths → the iteration cap the depth policy gives each one
 ```
+
+`expand` and `screen` are the same filter behind two doors. `src/screen.rs` owns
+one `Battery` — the interior cap on a 128-pixel probe, the cap again on the node
+render, the escape band, the occupancy floor, in that order — and both
+subcommands spend it. `expand` *proposes* the frames it screens; `screen` is
+handed them. A crate test screens an expansion's own candidates by name and
+asserts every fate comes back the same, so the two cannot drift into being two
+filters wearing one name.
+
+`expand` will also report each node's kept focus set, behind `report_foci`. Off
+by default and byte-identical off: the set is a reading of the parent frame that
+every rung takes anyway and it consumes nothing from the node's random stream, so
+the switch decides what is *reported*, never what is drawn.
 
 The pipeline runs `spec → family → iterate → field → coloring → resample`, one
 module per stage; `src/lib.rs` says what each does and why the seam between the
