@@ -74,6 +74,52 @@ def test_a_seat_is_deep_by_construction_and_not_by_how_far_a_walk_descended() ->
         assert framing * high <= depth.SHALLOW_MIN_WIDTH
 
 
+def test_the_bands_tile_the_window_and_nothing_outside_it_is_in_one() -> None:
+    bands = depth.bands()
+    assert [name for name, _low, _high in bands] == list(depth.BAND_NAMES)
+    # Edge to edge with no gap and no overlap, floor to the shallow floor.
+    assert bands[0][1] == depth.MIN_WIDTH
+    assert bands[-1][2] == depth.SHALLOW_MIN_WIDTH
+    for lower, upper in zip(bands, bands[1:], strict=False):
+        assert lower[2] == pytest.approx(upper[1])
+        assert depth.band_of(lower[2]) == upper[0]
+    # A frame the shallow walk could reach and one under this mode's floor are
+    # both outside every band rather than folded into the nearest one — the deep
+    # mode draws the first (a seat's widest root framing is forty atom sizes) and
+    # a count of the bands has to be a count of the deep frames.
+    assert depth.band_of(depth.SHALLOW_MIN_WIDTH) is None
+    assert depth.band_of(depth.MIN_WIDTH * 0.9) is None
+    assert depth.band_of(depth.MIN_WIDTH) == depth.BAND_NAMES[0]
+
+
+def test_a_band_ceiling_is_the_atom_whose_money_shot_lands_on_that_band_s_top() -> None:
+    for name, _low, high in depth.bands():
+        size = depth.band_ceiling(name)
+        assert depth.money_shot(size) == pytest.approx(high)
+        # The widest band's ceiling is the whole window's, so aiming at it is the
+        # same as not aiming — which is what makes the ceiling a narrowing of one
+        # rule rather than a second one.
+        if name == depth.BAND_NAMES[-1]:
+            assert size == pytest.approx(depth.SEAT_SIZES[1])
+
+
+def test_a_seat_carries_the_band_of_the_frame_it_is_for() -> None:
+    # Framings are widest first, so the band is read off the money shot and not
+    # off the neighbourhood view above it.
+    seat = roots.Seat(
+        channel=roots.NEWTON,
+        family={"kind": "mandelbrot"},
+        center=None,
+        framings=[
+            {"center_re": "0", "center_im": "0", "width": "4e-10"},
+            {"center_re": "0", "center_im": "0", "width": "4e-11"},
+        ],
+        provenance={},
+    )
+    assert seat.band == "floor"
+    assert seat.record()["band"] == "floor"
+
+
 # --------------------------------------------------------------------------- #
 # The `f64` wall: the mirror, against the engine that owns it.
 # --------------------------------------------------------------------------- #

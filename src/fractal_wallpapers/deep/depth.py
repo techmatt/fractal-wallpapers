@@ -87,6 +87,51 @@ BAND_FLOOR = 2.0
 #: them the walk reaches by rung.
 ROOT_FRAMINGS = (BAND_TOP, MONEY_SHOT)
 
+#: The names of the depth bands this mode's material is read in, deepest first.
+#:
+#: Three, over the two decades between [`MIN_WIDTH`] and [`SHALLOW_MIN_WIDTH`],
+#: equal in log width. They exist because *a global rank does not reproduce the
+#: window*: whichever way the scores happen to lean, one band ends up standing
+#: for the whole mode, and the shakedown's own release is the measurement —
+#: ranked by render score, its deepest release landed at `4.4x` this floor while
+#: the mode's subject is the floor decade itself. A band is the unit a quota is
+#: written in, and it is also the unit a *reading* is written in: an admission
+#: rate quoted over the window says nothing about where in the window it holds.
+BAND_NAMES = ("floor", "middle", "upper")
+
+
+def bands() -> tuple[tuple[str, float, float], ...]:
+    """`(name, low, high)` per band, deepest first — the window in equal log thirds."""
+    ratio = (SHALLOW_MIN_WIDTH / MIN_WIDTH) ** (1.0 / len(BAND_NAMES))
+    edges = [MIN_WIDTH * ratio**index for index in range(len(BAND_NAMES) + 1)]
+    edges[-1] = SHALLOW_MIN_WIDTH
+    return tuple((name, edges[index], edges[index + 1]) for index, name in enumerate(BAND_NAMES))
+
+
+def band_of(width: float) -> str | None:
+    """Which band a frame of this width sits in, or `None` if it is not deep.
+
+    A frame above the shallow floor is material the ordinary walk can already
+    reach — this mode draws such frames, because a seat's widest root framing is
+    forty atom sizes — and one below this mode's floor should not exist at all.
+    Both answer `None` rather than being folded into the nearest band, so a
+    count of the bands is a count of the deep frames and nothing else.
+    """
+    width = float(width)
+    for name, low, high in bands():
+        if low <= width < high:
+            return name
+    return None
+
+
+def band_ceiling(name: str) -> float:
+    """The largest atom whose money shot lands in this band, for a ladder to aim at."""
+    for band_name, _low, high in bands():
+        if band_name == name:
+            return high / MONEY_SHOT
+    raise KeyError(name)
+
+
 #: Representable numbers a sample step must span before the engine refuses.
 #:
 #: A mirror of `engine/src/viewport.rs`'s `RESOLUTION_ULPS`, and the only copy of
@@ -202,6 +247,7 @@ def deepest_releasable_width(center_re, center_im) -> float:
 
 __all__ = [
     "BAND_FLOOR",
+    "BAND_NAMES",
     "BAND_TOP",
     "MIN_WIDTH",
     "MONEY_SHOT",
@@ -212,6 +258,9 @@ __all__ = [
     "SEAT_SIZES",
     "SHALLOW_MIN_WIDTH",
     "band",
+    "band_ceiling",
+    "band_of",
+    "bands",
     "deepest_releasable_width",
     "money_shot",
     "releasable",
