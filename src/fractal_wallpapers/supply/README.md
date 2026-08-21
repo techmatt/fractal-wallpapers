@@ -33,7 +33,7 @@ serve     divide the batch's slots by how far each partition is below its intent
 credit    what the batch found, deduplicated, back into the price and the stock
 ```
 
-Eight things are worth reading before changing anything here.
+What follows is worth reading before changing anything here.
 
 **A Julia twin's supply is manufactured by serving its parent.** The allocator
 has always folded a twin's demand into its parameter plane on the ground that
@@ -118,6 +118,25 @@ scored hour over the four parameter planes measured **1.13× wall per active
 minute**, so an hour of `--minutes` is a bit over an hour of machine. Size a leg on
 that ratio; `--minutes` alone will under-book the clock, and the tail lands after
 the last batch rather than inside it.
+
+**A run told one partition allocates its whole clock there.** `--partition` is
+repeatable and defaults to every registered one; naming one keeps the books for
+that partition alone, and its census, its price and its refill census all cover
+it alone. That is a different object from a full run with a thin mix, and the
+summary says which it was.
+
+**Every batch reconciles, and a batch that does not balance ends the run.** Three
+identities have to close: every candidate the engine reported was written with a
+fate this project knows, everything that reached the frontier was either admitted
+or expandable, and every admission is either a new location or one the run
+already had. `ReconcileError` is a `SystemExit`, so the failure is a non-zero exit
+rather than a line in a log — a long unattended run that silently loses
+candidates is the one failure a summary cannot show afterwards, because the
+missing rows are missing from both sides. The checkpoint (`harvest.STATE_SCHEMA`)
+is written at the batch boundary *after* the reconcile, so every state a run can
+resume from is one whose identities closed; what it holds is the frontier, the
+counters, the quota's realized tallies and price accumulators, the floor ledger's
+accrual and the random state.
 
 **`--minutes` is also the only backstop a harvest has** — there is no
 `--wall-budget` here, that flag belongs to `curate run`. It is a hard one: the loop

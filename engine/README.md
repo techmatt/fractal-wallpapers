@@ -30,6 +30,13 @@ handed them. A crate test screens an expansion's own candidates by name and
 asserts every fate comes back the same, so the two cannot drift into being two
 filters wearing one name.
 
+Both readings a rung takes of its parent frame — the scale-space focus set and
+the detail-weighted centroid — are pure functions of that frame, so `foci::Frame`
+takes each on the first draw that wants it and every later draw off the same node
+reads it. The randomness is untouched, because none of the cached work ever
+consumed the node's stream. What that is worth is measured on the Python side:
+see [the discovery package](../src/fractal_wallpapers/discovery/README.md).
+
 `expand` will also report each node's kept focus set, behind `report_foci`. Off
 by default and byte-identical off: the set is a reading of the parent frame that
 every rung takes anyway and it consumes nothing from the node's random stream, so
@@ -65,7 +72,67 @@ parameter-plane form.
 A field meant to be *looked at* rather than named stays out of the catalog
 entirely. There is one: `discrete`, the integer escape count, which is what the
 smooth count replaced and is in the crate so the article can show the two side by
-side. `fractal-wallpapers render --discrete [CYCLE]` draws it.
+side. `fractal-wallpapers render --discrete [CYCLE]` draws it. A **teaching field
+has no business having a name**, so the guard is not "no mode is called
+discrete": `no_catalogued_mode_reads_a_teaching_field` walks every field every
+catalogued mode reads, both halves of a composite included, because the second
+way in is the one nobody would look for. The two readings really are one escape,
+and the smooth one refines the other — `the_smooth_count_lands_inside_the_step_the_orbit_left_on`
+pins `floor(smooth) == iteration` over five families and 3,600 pixels each, which
+is what makes the discrete render the *floor* of the smooth one rather than
+something merely similar to it.
+
+**A new field of a coloring must `skip_serializing_if` its default.** The render
+cache and the location head's deploy view both name a file by
+`renders.job_name`, a sha256 of the whole spec that goes over the wire, so a key
+that appeared unconditionally would rename every picture the corpora were built
+from. `Composite::texture_gamma`, `Direct::merge_order` and the itinerary field's
+`start` are all written that way, and each says so where it is declared.
+
+## The one family that only draws pictures
+
+`fractional_multibrot` is `z ← z^d + c` at a **non-integer** `d`, on the
+principal branch — `exp(d · Log z)` with `Arg z ∈ (−π, π]`, written out in
+`cpowf` rather than delegated so the branch cut is a line somebody can point at.
+The cut is on the negative real axis, so the picture carries a **seam** along
+every ray where an iterate crosses it. That seam is not an artifact to be
+smoothed away: it is what a fractional degree *is* on a single-valued branch, and
+it is the subject of the figure this family exists to draw. A different branch
+moves it and does not remove it.
+
+It is **render-only**, and that is a guarantee about what cannot happen rather
+than a gap. A written `render` or `dump-field` spec reaches it; seven other doors
+turn it away by name — the supply engine's partition registry, the render cache's
+plane question, every `--family` choice on the command line, the home-view table,
+`expand`, `screen` and `tiles`. `Family::is_render_only` is the single question
+all of them ask, so adding a door cannot quietly add a way in, and
+`spec::render_only_refusal` is the one message they share.
+`location.key_of_row` is the one that answers `None` instead of raising, and its
+caller counts unjoinable rows, which is the loudest failure short of an
+exception. `tests/test_fractional_degree.py` is the whole guarantee in one file.
+
+Three consequences fall out of render-only:
+
+* **`Family::home_view()` returns an `Option`, and this is the `None`.** A row in
+  the framing table is a claim that a family is worth looking at unprompted,
+  which is the one thing this family is not — so a spec for one says where it is
+  framed or is refused.
+* **The degree range is a statement about what has been eyeballed, not about
+  where the arithmetic breaks.** `LOWEST_FRACTIONAL_DEGREE` is `1.8` and the
+  ceiling is `5.0`, the same kind of claim `check_degree` makes about the
+  integers. `iterate::BAILOUT` is `2^16` and a multibrot's escape radius
+  `2^(1/(d−1))` stays inside it all the way down to `d = 1 + 1/16`;
+  `the_bailout_covers_the_lowest_degree` pins that gap, so the floor can be
+  lowered by looking at pictures rather than by touching the loop. The range
+  reaches below 2 deliberately — `z^1.8 + c` is a set of its own and not an
+  interpolation between two named ones.
+* **A whole number is refused.** `degree: "3.0"` is the multibrot family's, read
+  the same way `multibrot` refuses degree 2 because that set is the Mandelbrot
+  set: one picture gets one name, and one cache identity.
+
+No integer-degree render pays for any of this. `cpow` is repeated multiplication
+over degrees 2 through 5 — faster than a polar round trip and exact where one is
+not — and `cpowf` is reached only by this family.
 
 **One capability is deliberately absent and is not debt: normal-map shading** —
 lighting a render by the surface normal of a distance estimate, with an azimuth

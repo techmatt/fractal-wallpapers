@@ -42,8 +42,12 @@ These were decided once, at the first commit, because each is expensive to rever
   label *and* the complete render parameters in the same row — so a labeled example
   is never split across files. Every random draw is seeded, and the seed is recorded.
 - **Git history stays text.** `tests/test_history_purity.py` fails the build if a
-  tracked file is binary-by-nature or exceeds 1 MiB. Its allowlist starts empty;
-  adding to it is a decision, not a fix.
+  tracked file is binary-by-nature or exceeds 1 MiB. It keeps two allowlists and
+  they are not interchangeable: `ALLOWLIST` excuses a file from both rules and is
+  empty, `LARGE_TEXT_ALLOWLIST` excuses a *prefix* from the size rule alone and
+  still holds it to being text. The only entry is `data/palette_choice/rows/`,
+  the palette head's distillation corpus, on Matt's call. Adding to either is a
+  decision, not a fix.
 - **`.gitignore` keeps its shape**: `scratch/` and `artifacts/` (runtime output),
   `models/**/*.pt` (fetched weights, living beside their tracked metadata), and
   toolchain noise. Do not interleave tracked and ignored content beyond that — a
@@ -56,7 +60,19 @@ These were decided once, at the first commit, because each is expensive to rever
   endings to LF. A repo-wide reformat should never become possible.
 - **Cross-platform by construction**: `pathlib` only, no absolute paths in tracked
   code. Windows-specific process handling (job objects, priority classes) lives in
-  `src/fractal_wallpapers/process_control.py` and nowhere else.
+  `src/fractal_wallpapers/process_control.py` and nowhere else. A batch subcommand
+  takes a **manifest file**, never hundreds of paths as arguments — a Windows
+  command line overflows long before the batch does. Anything writing a tracked
+  text file opens it `newline="\n"`: `.gitattributes` normalizes what git
+  stores, and this is what stops a Windows run dirtying every line of a file it
+  rewrote.
+- **The base install stays torch-free on the `fetch-weights` path.** `pip install
+  -e .` buys the engine, the walk, the supply engine and the labeling rig; the
+  `models` extra is two gigabytes of CUDA wheels a clone that only renders should
+  never pay for. `fetch-weights --check` has to run on that install, so its whole
+  import graph is stdlib — which is why `models/roster.py` exists apart from
+  `ship`. `tests/test_base_install.py` proves it in a subprocess with those
+  imports refused, because every machine that runs the suite has torch.
 
 ## Checks to run before committing
 

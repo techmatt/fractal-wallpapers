@@ -7,11 +7,13 @@ verdicts on **places** — is this worth rendering — one row per location.
 does this colouring of that place work — one row per picture, because a place
 appears in them many times at many recipes and the verdicts differ.
 
-None of them is where a labeling page writes. A page saves to `labels/<head>.json`
-at the repository root — an untracked **drop**, one file per head — and
-`fractal-wallpapers label ingest` resolves what is in it against the sheet that
-was labeled and appends rows here. Nothing under that drop is tracked: a verdict
-that only exists there is a verdict no store has resolved yet.
+None of them is where a labeling page writes. A page saves to an untracked
+**drop** under `labels/` at the repository root, named for both the head and the
+sheet, and `fractal-wallpapers label ingest` resolves what is in it against that
+sheet and appends rows here. Nothing under the drop is tracked: a verdict that
+only exists there is a verdict no store has resolved yet. The naming convention
+and why it is both halves is
+[the labeling rig's](../src/fractal_wallpapers/labeling/README.md#one-ingest-two-stores).
 
 `palette_choice/` is the fourth head's material and the only one here that no
 human wrote: the palette head is distilled from a pretrained teacher, and what is

@@ -264,7 +264,18 @@ moves only when the head is retrained — so the corpus was free to grow a tier 
 incumbent could not see, which is exactly what the retrain to four then had to
 learn from and what a capped store could never have collected. A training pass
 whose recipe cannot express a verdict in its population refuses rather than
-mis-fitting its top cutpoint.
+mis-fitting its top cutpoint (`finished_train.refuse_inexpressible`) — a 4 handed
+to a three-class CORN head is a rank with no task to carry it, so the failure is
+a silently mis-fitted top cutpoint rather than a crash.
+
+Two pins hold that decoupling in place and neither of them is the store's scale.
+A config beside a checkpoint has to agree with **that checkpoint's own output
+width** — `classes - 1` cutpoints in the weights — because a head emitting two
+cutpoints while its config claims three is one every reader of its scores
+misreads. And a run's config is deliberately **not** re-checked against today's
+`finished_train.RECIPES`: a config says what *that* run trained under, so a
+retrain that widens the recipe leaves the superseded run readable exactly as it
+was, instead of destroying the baseline it is measured against.
 
 ## The order is the design
 
@@ -276,7 +287,17 @@ append-only: a verdict that changes is a new row, and the canonical reader
 resolves latest-wins.
 
 The split is drawn over location groups and shipped as data rather than computed
-on demand, so a holdout does not move when the corpus grows. What is on the
+on demand, so a holdout does not move when the corpus grows. A **group** is a
+connected component of "these two would leak into each other", and `groups.py`
+calls two locations neighbours only when all three of these hold: the same plane
+*exactly* — same partition, same degree, every identifying constant but the seed
+`c` equal digit for digit; their `c` within `C_TOLERANCE`; and their frames
+overlapping, widths within `NEIGHBOR_SCALE` and centers within `NEIGHBOR_SHIFT`
+of the smaller width. The non-`c` axes are exact because a family swept at one
+fixed viewport — phoenix's five-hundred-row `p`/`z₋₁` sweep is the case that
+forced it — otherwise folds hundreds of different fractals into one group, and
+an under-grouped holdout costs the instrument where an over-grouped one only
+costs granularity. What is on the
 evaluation side is pinned there on its `c`-inclusive coordinate — a re-render
 under a fresh identifier is the same place and cannot spend the instrument.
 

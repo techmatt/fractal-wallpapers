@@ -17,6 +17,14 @@ axis its rows already arrive in blocks of; split on both, the largest file is
 `palette_scoring.read()` is the reader over the whole tree and hands the rows back
 in `set` order, which is the order the single file had.
 
+**Anything joining those rows to the pictures aligns them by set NAME, never by
+position.** The candidate pictures are laid out in the vendored record's order
+and the scores come back out of a tree of shards, and two files agreeing on an
+order is not something either of them promises. `ship`'s half-precision read is
+the case that matters: each set's candidates are sliced out of one flat score
+vector, so a set missing a row would shift every later set onto its neighbour's
+scores. It refuses on the first missing set and names it rather than slicing.
+
 ## What it is
 
 A single tower that reads one finished picture and emits one scalar utility. Its

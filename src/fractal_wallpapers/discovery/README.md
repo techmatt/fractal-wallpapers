@@ -63,7 +63,10 @@ and 11.6 ms per solve — so the solve counts alone reproduce the same shares.
 is a decision rather than a default.** A quarter of the active clock buys views
 of a kind nothing has been trained on, which is what the frontier's reserved
 operator slot exists to make; `--no-neighborhood` is the per-run opt-out and
-there is no cheaper operator that produces the same material.
+there is no cheaper operator that produces the same material. `--neighborhood`
+and `--no-neighborhood` are one **tri-state** and both default to saying nothing:
+the shipped default lives on `walk.Reframings`, so a flag nobody passed cannot
+overrule it and moving the default is one edit rather than two.
 
 **What the table paid for that was pure waste has been removed.** The parent atom
 — which atom is this view on — is a deterministic function of the view, and all
@@ -115,11 +118,17 @@ pixels.
 
 **The identity is enforced, not coincidental.** It rests on four settings, none of
 which announces itself when it moves: the run's `--colormap` is the tile pool's
-floor palette, that map is cyclic (the tile path mirrors a map that does not wrap
-and the node path never mirrors), `--node-width` is the node regime's frame, and
-the engine's iteration cap still matches the cap the tile corpus recorded. All
-four are checked before a run writes its first row, and each refuses with the flag
-to change; the engine also states the geometry it drew every batch at, and a
+floor palette, that map is **cyclic**, `--node-width` is the node regime's frame,
+and the engine's iteration cap still matches the cap the tile corpus recorded.
+The cyclic requirement is about the *deploy view* rather than the tile: the tile
+build and the walk's own `expand` both load a colormap unbaked, so neither ever
+folds one, but `location_view` bakes `mirror` into any map that does not wrap —
+so a non-cyclic walk colormap would leave the head's node-regime picture and its
+deploy-geometry picture of one place two different pictures. It is refused rather
+than folded.
+
+All four are checked before a run writes its first row, and each refuses with the
+flag to change; the engine also states the geometry it drew every batch at, and a
 report that disagrees ends the run. The cap is *asked* through
 `fractal-engine maxiter` rather than restated here, for the same reason the home
 table is.
@@ -138,7 +147,20 @@ summary as one line and **nothing acts on it** — the pre-registered bars in
 
 **Every candidate is recorded, with the gate that refused it.** A walk that
 logged only its survivors could never afterwards tell "the gates were too tight"
-from "there was nothing there", and both look like a low yield.
+from "there was nothing there", and both look like a low yield. A gate survivor
+then carries one of three **fates**, and the ledger's word for each is the word
+the books use: `admitted` is on the frontier *and* in the books, `expandable` is
+on the frontier and in no book, `not_admitted` is neither — recorded, and not
+walked from. A row also records the regime and the picture its score was read
+off (`score_regime`, `score_view`), because the head reads three geometries and a
+score that cannot say which one it came from is a number about nothing.
+
+**The pictures a score was read off are two trees, and only one of them still
+grows.** `artifacts/location_views/` is the deploy geometry — the cache walks
+filled before they scored their own gate renders, and what the sidecar, the flip
+study and the restatement all read. It is now a read-only record. Every other
+regime writes to `artifacts/node_views/<regime>/` instead, so nothing new can
+land in the frozen one.
 
 **Standing on a place and booking it are two decisions, at two heights.** The
 scorer is asked twice about every gate survivor: *may the walk continue from

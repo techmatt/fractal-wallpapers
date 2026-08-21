@@ -48,6 +48,37 @@ it against its own pre-registered bar. Its model, transform and loss are in
 set and not a tier on an ordinal scale — but it ships through the same `ship`,
 supplying only its own agreement statistic.
 
+**The render cache is a precondition, and it answers off the corpus.** `renders
+plan` lays the jobs out and `renders build` makes them, but `renders.missing` —
+which is what says whether a trainer may start — is derived from the **store's
+own verdicts** rather than from the written plan. Those two answer different
+questions: a plan is a record of what a build was asked for, the store grows with
+every ingest of a labeling session, and a plan that predates those rows reports a
+full cache while the trainer refuses. `renders verify` re-derives a seeded sample
+and compares, and `renders ship` will not stage anything until `renders accept`
+has written a verdict — a `FAIL` needs `--force` and a sentence about why.
+
+**Every score file holds UNCONDITIONAL `P(≥k)`.** CORN trains cutpoint `k`
+conditionally — given the row cleared the cutpoint below — so the answer a floor
+is a point on is the *running product* of those sigmoids, which is what
+`head.probabilities` returns and what every `p_ge*` column of every `scores.jsonl`
+here carries. Reading the raw sigmoids instead cost the location head seven
+points of AUC at its release cutpoint, measured, and the product reading is used
+on both sides of every comparison in this repository.
+
+**A bar is appended to, never edited.** `prereg.json` carries an `amendments`
+list and `finished_acceptance.amended(bar, arm)` folds it over the arm as
+written — the original stays byte-identical and every amendment sits beside it
+with the day and the reason, so both what a read *was* held to and what it was
+originally going to be held to are recoverable. The **ordering** arm is the one
+this must never move, and nothing does. The amendment that exists closed a
+different kind of gap: the interface arm asserted the number of cutpoints a
+checkpoint emits as a literal, so a head widened to four classes failed it for
+being the shape it was authorised to be. `finished_acceptance.cutpoints_of` now
+reads it off `finished_train.RECIPES` instead, because those two *are* one
+number — a `K`-class CORN head has `K-1` conditional subtasks and writes `K-1`
+columns.
+
 ## Both picture caches are addressed by their recipe
 
 The **finished-render** cache (`renders`) and the location head's **deploy view**
@@ -211,7 +242,20 @@ means restating them from a measurement, never from one seed's number.
 
 ## Adopting a head: `regime restate`, then `regime adopt`
 
-Those two steps are the priced flip, and they run in that order once. `restate`
+Those two steps are the priced flip, and they run in that order once — **between
+two refusals**, and the second one had to be found. The obvious refusal is after
+the artifact moves: the pool then holds the candidate's own reads and the
+fractions being matched against no longer exist. The other is a run taken while
+the *code* already carries the new heights and the artifact has not moved, which
+is exactly the window the natural order of this work opens — measure, type the
+numbers in, flip. A restatement taken there matches the candidate against itself,
+reports a tidy volume match, and means nothing, so `restate` reads what the
+owning modules declare and refuses when any cut is stamped against something
+other than the live head. It is caught in the command rather than in a report,
+because every number it would produce looks exactly like a number that was
+measured.
+
+`restate`
 measures where each acting cut lands on the candidate's scale by **volume**: the
 score that passes the same fraction of one fixed reference pool as the retired
 head's cut passed. The pool is the whole curation sidecar — 28,072 locations, read
