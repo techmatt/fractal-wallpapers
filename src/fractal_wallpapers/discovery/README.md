@@ -34,6 +34,41 @@ budget. Every source that enumerated minibrots from first principles was measure
 and found dead; what a minibrot is good for is being a *marker* of a dense
 neighbourhood, at a scale the search can compute before rendering anything.
 
+**What the probe costs, measured.** A harvest charges `expand` and
+`trigger_reframings` as one number, so the ledger cannot break the operators out.
+Replaying every firing of a one-active-hour scored run against the four parameter
+planes — 1,379 firings at the default `--probe 0.25` — prices them:
+
+```text
+                       s/firing   median      p90   share of active clock   s/admission
+expand_neighborhood       0.623    0.074     1.87                   23.9%          2.93
+lateral_to_sibling        0.204    0.068     0.54                    7.8%         56.15
+snap_to_nucleus           0.101    0.046     0.19                    3.9%          0.96
+untriggered descent           —        —        —                   64.5%          0.81
+```
+
+Three things that table settles. **The probe is a third of a harvest's active
+clock** at the default firing rate, and neighborhood alone is a quarter of it.
+**The cost is a tail, not a level** — neighborhood's median firing is 0.074 s and
+its worst was 8.2 s, so a mean is the only honest summary. And **the operators buy
+admissions at three to four times what ordinary descent pays**, which is the trade
+the reserved floor exists to justify rather than to hide: what they produce is
+material nothing has been trained on.
+
+There is no need to take the timer's word for it. Each operator's cost divided by
+the `newton_solves` its own ledger rows recorded lands on one constant — 8.6, 10.7
+and 11.6 ms per solve — so the solve counts alone reproduce the same shares.
+`lateral_to_sibling` is the outlier worth acting on: it re-solves for a parent atom
+the snap in the same firing already found, 69% of its firings never reach a sibling
+at all, and it returned five admissions for 7.8% of the clock.
+
+**Do not try to price this with a short A/B leg.** Batch-to-batch variance in
+expansion cost runs ±23% over runs of dozens of batches, so a three-batch run with
+the operator off and one with it on differ by less than the noise — measured, they
+came out 0.511 against 0.520 active minutes, where the effect being looked for was
+a tenth of that. Cost is also flat-to-falling in trigger depth, so a short leg is
+not cheap for the reason it looks like it should be.
+
 **Where a root starts is not decided here.** A root given no view comes home to
 its family's frame, and that frame is the engine's — `fractal-engine home-view`,
 read through `engine.home_view`. This package holds no framing literal, and the
@@ -157,7 +192,10 @@ its position in pixels and in the plane, the blurring scales that detected it, i
 isolation, and the distance to the nearest kept neighbour. Off by default and
 **every candidate row is byte-identical either way** — the reading consumes
 nothing from the node's random stream, so a run with it on descends into exactly
-the same places. It costs about one row per four candidate rows.
+the same places. It costs about one row per four candidate rows — measured over a
+one-hour scored harvest, 2,219 `foci` rows against 8,876 candidates, which is that
+ratio to two figures. Those rows carried 28,878 peaks found and 13,663 kept, about
+six kept per row.
 
 ```
 fractal-wallpapers walk --family julia --roots 20 --batches 8
