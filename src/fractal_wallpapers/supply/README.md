@@ -56,6 +56,13 @@ this morning is a root this afternoon. It is off unless a run names it, and it i
 interleaved rather than substituted: a channel fed by this project's own past
 output cannot open new ground, and it runs out at the rate the store grows.
 
+That leg was one plane. Re-measured across all four parameter planes over a scored
+active hour, the gap is wider rather than narrower: **135 proven roots returned
+3,228 of the run's 3,303 admissions, and 61 never-walked pool roots returned 75**.
+130 of the 135 produced at least one admission; 14 of the 61 did; the four
+`home_view` roots produced none. The margin holds at every degree, and it is
+largest at degree 2, where the pool's seven roots returned nothing at all.
+
 **The mix is decided where the batch is popped.** Weighting the *root draw* by
 family cannot enforce a mix: anything that only changes what enters the frontier
 is diluted by whatever multiplies fastest inside it. In the source project an
@@ -100,6 +107,24 @@ the same machine.
 **A slot is not a minute.** The quota allocates the clock and hands out node
 slots, so the slot demand is the minute demand divided by what a slot has been
 costing in that partition. Being cheap buys more turns, not more time.
+
+**An active minute is not a wall minute either, and `--minutes` counts the first
+kind.** What is charged is `expand` plus `trigger_reframings`, per partition, per
+batch. Three things are outside it: the start-up before the first batch — the
+head onto the device, the proven derivation, the saturation index, the twin
+channel, about a minute together — the per-batch refill, and the closing gate-flip
+re-score, which is a fixed tail of a minute or two whatever the run's length. A
+scored hour over the four parameter planes measured **1.13× wall per active
+minute**, so an hour of `--minutes` is a bit over an hour of machine. Size a leg on
+that ratio; `--minutes` alone will under-book the clock, and the tail lands after
+the last batch rather than inside it.
+
+**`--minutes` is also the only backstop a harvest has** — there is no
+`--wall-budget` here, that flag belongs to `curate run`. It is a hard one: the loop
+refuses to *start* a batch when the spent minutes plus the running mean batch would
+overrun, so an over-run is bounded by nothing at all rather than by one batch. Pair
+it with `--batches` sized off a short observed leg and whichever is tighter stops
+the run; the summary says which one did.
 
 ```
 fractal-wallpapers census
