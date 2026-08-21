@@ -75,7 +75,11 @@ as a field, replacing the picture's own structure with a lighting model's. The
 gaps *are* open decisions rather than omissions: `biomorph`, which would change
 what `n` means and so what every cached render means, and perturbation-based deep
 zoom, which is the one genuinely large thing this engine lacks (`iterate.rs`
-carries the TODO).
+carries the TODO). **Deep zoom has two revival conditions, not one.** The obvious
+one is the door below the coordinate wall. The second is *correctness above it*:
+the escape counts this engine returns are already measurably wrong at depths it
+draws today (below), and a low-precision delta against a high-precision reference
+orbit is the fix for that as much as it is the key to the next four decades.
 
 Until it arrives, `Viewport::is_resolvable_in_f64` is what says how deep `f64`
 goes — and it asks the question the arithmetic actually poses. A sample coordinate
@@ -104,11 +108,15 @@ grid — which is the `f32` dump's own storage granularity, the same law the
 shallow control four decades above the wall obeys. See
 `scratch/measure_deep_probe_report.md`.
 
-**The refusal guards the coordinates, and there is a second wall above it that it
-does not guard.** A sample coordinate can be perfectly distinct from its
-neighbour and the *orbit* run from it still be decided by rounding: `f64` carries
-about 1e-16, the dynamics stretch that by the Lyapunov growth of a few thousand
-iterations, and what comes back is not the value at that point.
+**The refusal guards COORDINATE REPRESENTABILITY and nothing else.** That is the
+whole of its contract: it says two neighbouring sample centres are still two
+numbers, and it says nothing whatever about the escape count computed from
+either. There is a second wall above it — call it the *fidelity* wall — and the
+engine does not guard it, cannot cheaply detect it, and does not claim to. A
+sample coordinate can be perfectly distinct from its neighbour and the *orbit*
+run from it still be decided by rounding: `f64` carries about 1e-16, the dynamics
+stretch that by the Lyapunov growth of a few thousand iterations, and what comes
+back is not the value at that point.
 `julia_deep_eyetest`'s second addendum measured it — same starting `f64`
 coordinate, orbit re-run at 50 digits, and the share of sampled points whose
 escape count disagrees:
@@ -122,23 +130,37 @@ multibrot4 walk node   4              1e-5            1e-13      14.5%
 julia (off-set)        5              1e-5            1e-13      26.8%
 ```
 
-Three things it is worth knowing before reading a deep frame. **It is almost
-never visible**: only the degree-5 julia shows anything, as a mosaic of
-bit-identical neighbours, and *supersampling makes that one worse* — 66.6% of
-adjacent samples identical at ss1 rising to 95.6% at ss8, because a finer grid
-brings coordinates closer together and closeness is what the orbit cannot keep.
-**Degree is not the whole story**: a degree-2 mandelbrot node on a period-198
-nucleus crosses at the same rung as the degree-5 julia, because what costs is how
-long the orbits linger near the boundary. **And two `f64` implementations of the
-same iteration already disagree** — `cpow`'s repeated multiplication against
-Python's repeated squaring — by a whole iteration or more on 12.2% of samples at
-degree 4 and 20.4% at degree 5, worst 411 and 205. At degrees 2 and 3 the
-multiplication orders coincide and they agree to `1e-5`, which is what that test
-looks like when rounding is not deciding the answer.
+**The fidelity wall is case-dependent and sits between about `1e-4` and `1e-10`,
+two to eight decades above the refusal.** Where a case lands on that spread is
+decided by how long its orbits linger near the boundary, not by its degree: the
+degree-2 mandelbrot node above sits on a **period-198** nucleus and is already
+**2.3% wrong at `1e-5`**, crossing at the same rung as the degree-5 julia.
 
-Nothing in the engine changed on the strength of this. It is a measurement of
-where a floor would have to go, not a floor; see
-`scratch/julia_deep_eyetest_addendum2_report.md` for the per-case evidence.
+**It is almost never visible.** Only the degree-5 julia shows anything, as a
+mosaic of bit-identical neighbours, and *supersampling makes that one worse* —
+66.6% of adjacent samples identical at ss1 rising to 95.6% at ss8, because a
+finer grid brings coordinates closer together and closeness is what the orbit
+cannot keep. The other four are wrong by more and read as ordinary deep
+pictures.
+
+**This engine's `z^d` is the canonical identity of this project's output.**
+`cpow` builds it by repeated multiplication; Python's repeated squaring is the
+same arithmetic in a different order, and at degrees 4 and 5 the two `f64`
+implementations differ by a whole iteration or more on **12.2%** and **20.4%** of
+samples, worst 411 and 205. At degrees 2 and 3 the orders coincide and they
+agree to `1e-5`, which is what that test looks like when rounding is not deciding
+the answer. So **cross-implementation agreement is not expected at degree ≥ 4**
+and is not a bug report: below the fidelity wall the evaluation order *is* the
+definition, and a render is reproducible against this engine rather than against
+the mathematics.
+
+Nothing in the engine changed on the strength of this — the refusal is unmoved
+and no fidelity check was added, because detecting one costs a second orbit at
+higher precision per sample. What changed is downstream: the deep run mode reads
+its floor as an **aesthetic** one and caps degree 5 a decade early, where wrong
+turns into visibly flat. See
+`scratch/julia_deep_eyetest_addendum2_report.md` for the per-case evidence and
+`../src/fractal_wallpapers/deep/README.md` for the contract.
 
 What deep zoom would cost, observed on the maker's perturbation backend at the S1
 anchor with this repo's own cap policy: a walk node (384×216 ss1) is 0.31 s at

@@ -36,6 +36,15 @@ exists only to say *where* a nucleus is — a center travels as decimal strings 
 is re-parsed to `f64` at every render, which is exactly what the shallow path
 already does with a shallower string.
 
+**The shelf that kernel sits on now has two ways off it, not one.** The first is
+the door below the coordinate wall, where two neighbouring sample centres are
+the same `f64` and no arithmetic in this repository can draw anything at all. The second is *correctness at
+depths already being drawn* — the escape counts up here are measurably wrong
+(below), and a low-precision delta against a high-precision reference orbit is
+the fix for that as much as it is the key to the next four decades. So a future
+run that wants deep frames to be **right** rather than merely reproducible is a
+reason to build it, on its own, without wanting a single extra decade of depth.
+
 **Depth comes from which atom, not from how far a walk descended.** A seat is a
 nucleus whose own framing band already lands below the shallow floor, so the
 first frame this mode draws is one the shallow walk cannot reach. The alternative
@@ -60,6 +69,45 @@ of a few rather than decades. That is why `depth.releasable` is a check every
 seat passes before anything is rendered, rather than a sentence in a comment: a
 seat whose money shot fails it would produce finds that are refused at the last
 step of the run that made them.
+
+**And the floor is an *aesthetic* floor, because there is a third wall above
+both of those and this mode does not clear it.** A sample coordinate can be
+perfectly distinct from its neighbour and the orbit run from it still be decided
+by rounding: `f64` carries about `1e-16`, a few thousand iterations of a
+stretching map spend it, and what comes back is not the value at that point.
+`julia_deep_eyetest`'s second addendum re-ran orbits at 50 digits against the
+engine's own `f64` and found the three planes `deep_run1` walked wrong on
+**8.0%, 14.5% and 22.0%** of sampled points at their deepest kept frames, by up
+to 669 iterations — and the onset is case-dependent, from `1e-4` on a
+period-198 mandelbrot node to `1e-10` on a benign degree-2 julia.
+
+**The contract this mode ships under is therefore about pictures and not about
+escape counts.** Deep smooth output below the fidelity wall is
+deterministic — the same spec renders the same image every time — and partly
+*fictional* in its finest texture, and it is judged as art, by the same heads on
+the same pictures as everything else. Escape-count correctness is not claimed
+and is not the thing being sold. What is *not* acceptable is a picture that
+looks like arithmetic, which is what the degree-5 cap below is for.
+
+**Degree 5 stops a decade early: `depth.DEGREE_MIN_WIDTH` puts its floor at
+`1e-10`.** It is the one plane where being wrong is visible. Its neighbouring
+orbits do not scatter, they collapse onto one value, and at `1e-11` two thirds
+of horizontally adjacent samples come back bit-identical — a mosaic of flat
+cells rather than fine texture. **Supersampling makes it worse**: 66.6% identical
+at ss1, 95.6% at ss8, because a finer grid puts the coordinates closer together
+and closeness is exactly what the orbit cannot keep apart. The other three
+planes keep `1e-11`; their errors are larger and invisible. The floor is wired
+per degree in `depth.min_width`, so it reaches the seat window
+(`depth.seat_sizes`), the bands a plane is offered (`depth.open_bands` — degree
+5 loses the `floor` band outright) and the walk's own rung gate, which is how a
+seat admitted above the floor is stopped from descending through it.
+
+**Standing check on any future deep release.** Render the winner at *eval* and at
+*release* geometry and eyeball the pair before shipping it. In the amplified
+regime the texture is grid-dependent — supersampling makes the degree-5 collapse
+worse rather than better, and the same is true in principle of any case near its
+own onset — so a frame that passed at 1920×1080 ss2 is not evidence about the
+same frame at 2560×1440 ss4. This is a two-picture eye check, not a metric.
 
 **Judging is the shipped head, at its existing floors, on record-and-rank.** No
 deep-specific gate, no deep-specific calibration, no deep labels. The location
@@ -207,6 +255,17 @@ full-palette ramp or a few clean bands. Anything that screens julia frames for
 emptiness has to read the field's span, not the picture — and the span has to be
 taken over the samples that *escaped*, because an interior sample is a NaN and a
 plain min/max over a black frame says nothing at all.
+
+**Descending at a julia's center is a shallow maneuver, and no choice of `c`
+changes that.** The ceiling is about `1e-5` whatever the parameter is: at every
+tested `c`, from nuclei of large atoms to parameters `1e-22` from ∂M, the frame
+degenerates into one of two dead things — an interior basin (a black body, no
+sample escapes) or a `RAMP`, a frame of exterior that lies wholly inside one
+escape band and reads, often to the digit, as the critical point's own escape count.
+**Deep julia supply is viable only off-axis, at a point that is on the julia
+set**, which orbit-guided inverse iteration puts there cheaply. That is measured
+knowledge and not a plan: no julia seeder is built, and this mode is still the
+four parameter planes.
 
 **Choosing `c` near ∂M does not buy the descent depth either.** The obvious
 rescue for the maneuver above — pick a `c` hard against the boundary of its own

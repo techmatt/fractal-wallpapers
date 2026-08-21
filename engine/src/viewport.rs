@@ -111,6 +111,22 @@ impl Viewport {
     /// width `2.56e-10` while adjacent sample centers first collide between
     /// `1.42e-13` and `2.27e-12`. Nothing below it was ever drawn wrong; a great
     /// deal above the real wall was simply refused.
+    ///
+    /// **What this guards is COORDINATE REPRESENTABILITY, and nothing else.** A
+    /// true answer here says two neighbouring sample centers are still two
+    /// numbers. It says nothing about the escape count computed from either,
+    /// and there is a second wall — the *fidelity* wall — two to eight decades
+    /// above this one that it does not guard and cannot cheaply detect: `f64`
+    /// carries about `1e-16`, a few thousand iterations of a stretching map
+    /// spend it, and the count that comes back is not the value at that point.
+    /// Measured against 50-digit orbits from the same starting `f64`
+    /// coordinate, escape counts pass 1% disagreement anywhere from `1e-4` to
+    /// `1e-10` depending on the case — worst where the orbits linger near the
+    /// boundary, which is a property of the center and not of the degree: a
+    /// degree-2 mandelbrot node on a period-198 nucleus is 2.3% wrong at
+    /// `1e-5`. Callers wanting depth policy read
+    /// `fractal_wallpapers.deep.depth`, whose floor is an aesthetic one; this
+    /// refusal is not it.
     pub fn is_resolvable_in_f64(&self) -> bool {
         self.resolution_ulps() >= RESOLUTION_ULPS
     }
