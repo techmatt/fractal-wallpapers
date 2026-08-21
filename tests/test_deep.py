@@ -92,6 +92,67 @@ def test_the_bands_tile_the_window_and_nothing_outside_it_is_in_one() -> None:
     assert depth.band_of(depth.MIN_WIDTH) == depth.BAND_NAMES[0]
 
 
+def test_degree_five_stops_a_decade_early_and_no_other_plane_moves() -> None:
+    """The aesthetic floor, pinned.
+
+    Every plane's escape counts are already wrong at `1e-11`; degree 5 is the
+    one where being wrong is *visible*, as a mosaic of bit-identical neighbours
+    that supersampling makes worse. `julia_deep_eyetest`'s second addendum put
+    the onset at `1e-11` and this floor on the rung above it.
+    """
+    assert depth.DEGREE_MIN_WIDTH == {5: 1e-10}
+    assert depth.min_width(5) == 1e-10
+    assert depth.min_width() == depth.MIN_WIDTH
+    for degree in (2, 3, 4):
+        assert depth.min_width(degree) == depth.MIN_WIDTH
+        assert depth.seat_sizes(degree) == depth.SEAT_SIZES
+    # The window is the same inequality, read at the plane's own floor: the
+    # smallest atom degree 5 may be seated on is ten times the general one.
+    low_five, high_five = depth.seat_sizes(5)
+    assert depth.band(low_five)[1] == pytest.approx(depth.min_width(5))
+    assert high_five == depth.SEAT_SIZES[1]
+    assert low_five == pytest.approx(depth.SEAT_SIZES[0] * 10.0)
+    assert not depth.seats_this_size(depth.SEAT_SIZES[0], 5)
+    assert depth.seats_this_size(depth.SEAT_SIZES[0], 4)
+
+
+def test_a_plane_is_offered_only_the_bands_its_own_floor_reaches() -> None:
+    # A cell no ladder on that plane can ever fill is not a slow cell — it is
+    # `DESCENTS_PER_SEAT` real descents spent proving what the floor said.
+    assert depth.open_bands() == depth.BAND_NAMES
+    assert depth.open_bands(2) == depth.BAND_NAMES
+    assert depth.open_bands(5) == depth.BAND_NAMES[1:]
+    # `middle` survives because it straddles the degree-5 floor: its top is
+    # above `1e-10` and a seat can land there.
+    _name, low, high = depth.bands()[1]
+    assert low < depth.min_width(5) < high
+
+
+def test_the_deep_walk_carries_the_degree_five_floor_down_every_rung() -> None:
+    """A seat admitted above a plane's floor must not walk itself through it.
+
+    The engine takes one floor per call and an expansion is already one call per
+    distinct family, so the two meet at `Gates.for_family` — and a walk with no
+    per-degree floors wires the payload it always did.
+    """
+    deep_gates = deep_run.gates()
+    assert deep_gates.min_width_by_degree == {5: 1e-10}
+    assert deep_gates.for_family({"kind": "mandelbrot"}).min_width == depth.MIN_WIDTH
+    assert deep_gates.for_family({"kind": "multibrot", "degree": 4}).min_width == depth.MIN_WIDTH
+    five = deep_gates.for_family({"kind": "multibrot", "degree": 5})
+    assert five.min_width == 1e-10
+    assert five.wire()["min_width"] == 1e-10
+    # A julia has no multibrot degree, so it takes the mode's general floor.
+    assert deep_gates.for_family({"kind": "julia", "degree": 5}).min_width == depth.MIN_WIDTH
+    # The engine's `Gates` denies unknown fields, so the per-degree map travels
+    # in the header and never in a payload.
+    plain = walk_module.Gates()
+    assert plain.for_family({"kind": "multibrot", "degree": 5}) is plain
+    assert plain.record() == plain.wire()
+    assert "min_width_by_degree" not in deep_gates.wire()
+    assert deep_gates.record()["min_width_by_degree"] == {"5": 1e-10}
+
+
 def test_a_band_ceiling_is_the_atom_whose_money_shot_lands_on_that_band_s_top() -> None:
     for name, _low, high in depth.bands():
         size = depth.band_ceiling(name)

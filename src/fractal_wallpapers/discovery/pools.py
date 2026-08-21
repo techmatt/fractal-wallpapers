@@ -12,6 +12,17 @@ of percent of the viable near-boundary parameters. The pool is what a
 three-stage screen left after drawing that shell, screening for viability, and
 ranking on boundary proximity with the interior-lake channel required to fire.
 
+**Boundary proximity is a quality screen and the labels say so.** A census of
+every julia parameter the label store holds — 1,506 distinct `c`, cached
+alongside `julia_deep_eyetest`'s records — puts 1,471 of them outside `M`, 890
+within `1e-6` of ∂M and 301 within `1e-9`: the supply this pool feeds is already
+almost all near-boundary. The 35 that are *inside* `M` are the reading. **24 of
+them top out at a human score of 1**, against 11–23% of the exterior ones
+scoring a 4. An interior `c` has an attracting cycle, every orbit falls into it,
+and the julia set is a plain basin boundary with nothing composed inside it — so
+this screen is not a proxy for something else and a channel that lets interior
+parameters through is spending renders on 1s.
+
 **For the parameter-plane families there is deliberately no draw at all.** An
 unscreened shell draw over the higher multibrot degrees measured zero good
 locations out of a hundred and forty-four — not a low rate, a zero — so this

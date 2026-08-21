@@ -280,6 +280,12 @@ def anchors(limit_per_family: int = 8, path: Path | None = None) -> list[dict]:
     return out
 
 
+def _degree_of_key(family_key: str) -> int | None:
+    """The multibrot degree of a family written as its own JSON key."""
+    family = json.loads(family_key)
+    return operators.degree_of(family.get("kind"), int(family.get("degree", 2)))
+
+
 def _child_periods(parent_period: int) -> int:
     """The period ceiling one ladder step above a parent of this period."""
     return min(PERIOD_CAP, max(24, int(math.ceil(PERIOD_HEADROOM * int(parent_period)))))
@@ -315,11 +321,12 @@ def step(
 
     `size_ceiling` is what the ladder is *aiming* at — the top of one depth band
     rather than the top of the whole window — and it moves only the line between
-    "arrived" and "one more rung". The floor stays [`depth.SEAT_SIZES`]'s own:
-    an atom below the band being aimed at is a seat in a deeper one, and
-    throwing it away would spend a descent to arrive at nothing.
+    "arrived" and "one more rung". The floor stays [`depth.seat_sizes`]'s own,
+    at the parent's own degree: an atom below the band being aimed at is a seat
+    in a deeper one, and throwing it away would spend a descent to arrive at
+    nothing.
     """
-    low, window_top = depth.SEAT_SIZES
+    low, window_top = depth.seat_sizes(parent.degree)
     high = window_top if size_ceiling is None else min(float(size_ceiling), window_top)
     ceiling = _child_periods(parent.period)
     found: dict[str, centers.DeepCenter] = {}
@@ -387,10 +394,10 @@ def descend(
     a window, so a rung that lands below the band aimed at still arrives — that
     is a seat in a deeper band, which is a seat.
     """
-    ceiling = depth.SEAT_SIZES[1] if size_ceiling is None else float(size_ceiling)
     degree = operators.degree_of(anchor["family"]["kind"], int(anchor["family"].get("degree", 2)))
     if degree is None:
         return None, "no_nucleus_on_this_plane", []
+    ceiling = depth.seat_sizes(degree)[1] if size_ceiling is None else float(size_ceiling)
     view = anchor["viewport"]
     seed = mp.mpc(mp.mpf(view["center_re"]), mp.mpf(view["center_im"]))
     period = anchor["provenance"].get("period")
@@ -403,7 +410,7 @@ def descend(
     ladder.append({"step": 0, "period": current.period, "size": current.size})
 
     for index in range(1, int(max_steps) + 1):
-        if depth.seats_this_size(current.size) and current.size <= ceiling:
+        if depth.seats_this_size(current.size, degree) and current.size <= ceiling:
             return current, "", ladder
         child, why, tally = step(current, rng, probes=probes, width=width, size_ceiling=ceiling)
         if child is None:
@@ -417,7 +424,7 @@ def descend(
             }
         )
         current = child
-    if depth.seats_this_size(current.size) and current.size <= ceiling:
+    if depth.seats_this_size(current.size, degree) and current.size <= ceiling:
         return current, "", ladder
     return None, "ladder_did_not_reach_the_window", ladder
 
@@ -461,6 +468,12 @@ def newton_seats(
     it landed in — the alternative is to throw away a seat for being deeper than
     it was asked to be.
 
+    **A plane gets only the bands its own floor reaches.**
+    [`depth.open_bands`] answers that, and today it takes the `floor` band away
+    from degree 5 alone. A cell that cannot be filled is not a cell that fills
+    slowly: it is [`DESCENTS_PER_SEAT`] real ladders spent proving what the
+    floor already said.
+
     `standing` carries the anchors, the seated nuclei and the cell fills across a
     run's sourcing rounds; `clock` is a wall-clock leg to spend descents against
     — anything with `may_start()` (falsy to go ahead) and `observe(seconds)`,
@@ -473,7 +486,9 @@ def newton_seats(
     standing = Standing() if standing is None else standing
     queues = standing.anchors(anchors_per_family)
 
-    cells = [(family, band) for family in queues for band in depth.BAND_NAMES]
+    cells = [
+        (family, band) for family in queues for band in depth.open_bands(_degree_of_key(family))
+    ]
     order = {cell: index for index, cell in enumerate(cells)}
     spent = {cell: 0 for cell in cells}
     for cell in cells:
@@ -665,7 +680,10 @@ def continuation_seats(
         seen.add(key)
         lineages.add(lineage)
         view = row["viewport"]
-        if not depth.releasable(view["center_re"], view["center_im"], depth.MIN_WIDTH):
+        floor = depth.min_width(
+            operators.degree_of(row["family"].get("kind"), int(row["family"].get("degree", 2)))
+        )
+        if not depth.releasable(view["center_re"], view["center_im"], floor):
             out.count("continuation:floor_not_releasable_in_f64")
             continue
         out.count("continuation:seated")

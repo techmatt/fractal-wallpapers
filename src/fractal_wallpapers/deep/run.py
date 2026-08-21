@@ -236,14 +236,20 @@ def walk_limits(limits: Limits, *, batches: int | None = None) -> walk_module.Li
 
 
 def gates() -> walk_module.Gates:
-    """The structural gates, at this mode's floor and otherwise untouched.
+    """The structural gates, at this mode's floors and otherwise untouched.
 
     One field differs from the shallow walk's and it is the floor. The interior
     cap, the occupancy floor and the escape band are the same numbers the corpus
     and the head were built against — a deep frame is a frame, and a gate
     re-tuned for depth would be a second unmeasured opinion under the first.
+
+    *Floors*, plural, because degree 5 stops a decade early
+    ([`depth.DEGREE_MIN_WIDTH`]) and the walk descends by rung: a seat admitted
+    above that plane's floor would otherwise walk itself straight through it.
     """
-    return walk_module.Gates(min_width=depth.MIN_WIDTH)
+    return walk_module.Gates(
+        min_width=depth.MIN_WIDTH, min_width_by_degree=dict(depth.DEGREE_MIN_WIDTH)
+    )
 
 
 def run_clock(wall_budget: float | None = None) -> pacing.Clock:
@@ -333,6 +339,9 @@ class Deep:
         self.walk.ledger.write(
             "deep_run",
             min_width=depth.MIN_WIDTH,
+            degree_min_width={
+                str(degree): floor for degree, floor in sorted(depth.DEGREE_MIN_WIDTH.items())
+            },
             shallow_min_width=depth.SHALLOW_MIN_WIDTH,
             seat_sizes=list(depth.SEAT_SIZES),
             band=[depth.BAND_TOP, depth.BAND_FLOOR],

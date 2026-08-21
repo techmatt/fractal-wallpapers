@@ -122,7 +122,7 @@ from __future__ import annotations
 import json
 import math
 import random
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 from fractal_wallpapers import engine
@@ -259,8 +259,34 @@ class Gates:
     spread_min: float = 20.0
     escape_median_min: float = 3.0
     min_width: float = 1e-9
+    #: Floors that replace [`min_width`] on one plane, by multibrot degree.
+    #:
+    #: Empty here and empty for every shallow walk: this walk's floor already
+    #: sits above every floor any plane asks for, so nothing it could hold
+    #: would bind. It exists because a *deep* walk's floor is not one number —
+    #: [`fractal_wallpapers.deep.depth.DEGREE_MIN_WIDTH`] raises it a decade on
+    #: degree 5 — and the engine takes one number per call. An expansion is
+    #: already one call per distinct family, so [`for_family`] is where the two
+    #: meet and nothing above it has to know.
+    min_width_by_degree: dict[int, float] = field(default_factory=dict)
+
+    def for_family(self, family: dict) -> Gates:
+        """These gates as the plane of this family takes them.
+
+        `self` unchanged where the plane asks for nothing, so a walk with no
+        per-degree floors wires byte-identical payloads to the ones it always
+        did.
+        """
+        if not self.min_width_by_degree:
+            return self
+        degree = operators.degree_of(family.get("kind"), int(family.get("degree", 2)))
+        floor = self.min_width_by_degree.get(degree)
+        if floor is None or floor <= self.min_width:
+            return self
+        return replace(self, min_width=float(floor))
 
     def wire(self) -> dict:
+        """The payload the engine takes: one floor, for one family."""
         return {
             "interior_cap": self.interior_cap,
             "occupancy_floor": self.occupancy_floor,
@@ -271,6 +297,16 @@ class Gates:
             },
             "min_width": self.min_width,
         }
+
+    def record(self) -> dict:
+        """What a run's header says these gates were — the wire and the floors
+        it varies by plane, which the wire has no room for."""
+        wire = self.wire()
+        if self.min_width_by_degree:
+            wire["min_width_by_degree"] = {
+                str(degree): floor for degree, floor in sorted(self.min_width_by_degree.items())
+            }
+        return wire
 
 
 @dataclass
@@ -382,7 +418,7 @@ class Walk:
             colormap=self.colormap,
             limits=vars(self.limits),
             policy=self.policy.wire(),
-            gates=self.gates.wire(),
+            gates=self.gates.record(),
             report_foci=self.report_foci,
             reframings={
                 "enabled": self.reframings.enabled,
@@ -777,7 +813,7 @@ class Walk:
                     "out_dir": str(self.views_dir()),
                     "colormap": self.colormap,
                     "colormap_dir": str(engine.colormap_dir()),
-                    "gates": self.gates.wire(),
+                    "gates": self.gates.for_family(nodes[0]["family"]).wire(),
                     "policy": self.policy.wire(),
                     "report_foci": self.report_foci,
                 }

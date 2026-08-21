@@ -3,9 +3,10 @@
 Three questions have one answer each, and all three are answered here so that no
 other module in the deep mode holds a number about depth.
 
-* **How deep may a frame go?** [`MIN_WIDTH`], and it is a policy — two decades
+* **How deep may a frame go?** [`min_width`], and it is a policy — two decades
   below the shallow walk's floor, chosen against a measured wall rather than
-  against the shallow floor's own provenance.
+  against the shallow floor's own provenance, and raised one decade on the one
+  plane whose arithmetic gives out visibly ([`DEGREE_MIN_WIDTH`]).
 * **How is a nucleus framed?** The band, in atom sizes: [`BAND_TOP`] down to
   [`BAND_FLOOR`], with the money shot at [`MONEY_SHOT`]. That law is the whole
   of the harvest's geometry.
@@ -29,6 +30,21 @@ score and the release are all `f64` end to end, and the arbitrary precision in
 [`fractal_wallpapers.deep.centers`] exists only to *localize* a center, never to
 render one.
 
+## And there is a third wall, above both, that this floor is aesthetic against
+
+The coordinate wall is not where `f64` stops being *right*. A sample coordinate
+can be perfectly distinct from its neighbour and the orbit run from it still be
+decided by rounding — `julia_deep_eyetest`'s second addendum re-ran orbits at 50
+digits and found escape counts wrong on 8–27% of sampled points at this floor,
+on every plane this mode walks, with the onset anywhere from `1e-4` to `1e-10`
+depending on the case. **The floor here does not chase that**, because on four
+of the five measured cases none of it is visible: the picture is deterministic,
+reproducible, and partly fictional in its finest texture, and it is judged as
+art. The exception is degree 5, where wrong turns into *flat* — neighbouring
+orbits collapse onto one value and the frame comes back a mosaic — and that is
+what [`DEGREE_MIN_WIDTH`] raises the floor against. `deep/README.md` states the
+contract; this module holds the number.
+
 ## The band is a framing law, not a search
 
 A nucleus sits inside its own atom, which is interior and therefore black, so
@@ -50,8 +66,8 @@ import struct
 
 from fractal_wallpapers.discovery import walk as walk_module
 
-#: The deepest frame this mode will draw. Two decades below the shallow walk's
-#: own floor.
+#: The deepest frame this mode will draw where a plane asks for nothing wider.
+#: Two decades below the shallow walk's own floor.
 #:
 #: The basis is measured, not inherited. `measure_deep_probe` bisected for the
 #: width at which adjacent sample centers first round together at a finished
@@ -60,6 +76,38 @@ from fractal_wallpapers.discovery import walk as walk_module
 #: `1e-11` is above all of it — but only by a factor of a few at the large-`|c|`
 #: end, which is why [`releasable`] is a per-seat check and not a comment.
 MIN_WIDTH = 1e-11
+
+#: Floors that replace [`MIN_WIDTH`] on one plane, by multibrot degree.
+#:
+#: **Degree 5 stops a decade early, and the reason is the only visible failure
+#: this mode has.** Every plane's escape counts are already partly wrong at
+#: `1e-11` — measured against 50-digit orbits at 8.0%, 14.5% and 22.0% of
+#: sampled points on the three planes `deep_run1` walked — and none of that
+#: shows in a picture. Degree 5 fails differently: its neighbouring orbits do
+#: not scatter, they *collapse*, and at `1e-11` two thirds of horizontally
+#: adjacent samples come back bit-identical, which reads as a mosaic of flat
+#: cells. Supersampling makes it worse rather than better (66.6% at ss1 rising
+#: to 95.6% at ss8), because a finer grid puts the coordinates closer together
+#: and closeness is exactly what the orbit cannot keep apart.
+#:
+#: `1e-10` is the rung above the onset, from the ladder in
+#: `julia_deep_eyetest`'s second addendum. It is a floor on *plateau collapse*
+#: and not on correctness: correctness is gone above it too, and the mode's
+#: answer to that is the aesthetic contract in `deep/README.md`.
+DEGREE_MIN_WIDTH = {5: 1e-10}
+
+
+def min_width(degree: int | None = None) -> float:
+    """The deepest frame this mode will draw on a plane of this degree.
+
+    `None` is the mode's general floor — the answer where the question is asked
+    about the window rather than about a plane. Every place that decides whether
+    a *seat* exists asks with a degree.
+    """
+    if degree is None:
+        return MIN_WIDTH
+    return DEGREE_MIN_WIDTH.get(int(degree), MIN_WIDTH)
+
 
 #: The shallow walk's floor, read from the walk rather than restated.
 #:
@@ -161,15 +209,35 @@ def money_shot(size: float) -> float:
     return MONEY_SHOT * float(size)
 
 
-#: The atom sizes a seat may have: its money shot below the shallow floor, its
-#: band floor above this mode's own. One inequality, stated once.
+#: The atom sizes a seat may have where a plane asks for nothing wider: its
+#: money shot below the shallow floor, its band floor above this mode's own. One
+#: inequality, stated once — and [`seat_sizes`] is that same inequality read at a
+#: plane's own floor.
 SEAT_SIZES = (MIN_WIDTH / BAND_FLOOR, SHALLOW_MIN_WIDTH / MONEY_SHOT)
 
 
-def seats_this_size(size: float) -> bool:
-    """Whether an atom of this size is one this mode is for."""
-    low, high = SEAT_SIZES
+def seat_sizes(degree: int | None = None) -> tuple[float, float]:
+    """The atom sizes a seat on a plane of this degree may have."""
+    return (min_width(degree) / BAND_FLOOR, SHALLOW_MIN_WIDTH / MONEY_SHOT)
+
+
+def seats_this_size(size: float, degree: int | None = None) -> bool:
+    """Whether an atom of this size is one this mode is for, on this plane."""
+    low, high = seat_sizes(degree)
     return math.isfinite(size) and low <= float(size) <= high
+
+
+def open_bands(degree: int | None = None) -> tuple[str, ...]:
+    """The depth bands a plane of this degree can be seated in, deepest first.
+
+    A band lying wholly under a plane's own floor is not a thin cell to be aimed
+    at and missed — it is a cell no descent on that plane can ever fill, and a
+    sourcing round that keeps offering it spends real Newton descents on
+    nothing. Degree 5 loses the `floor` band outright and keeps the part of
+    `middle` above `1e-10`; every other plane keeps all three.
+    """
+    floor = min_width(degree)
+    return tuple(name for name, _low, high in bands() if high > floor)
 
 
 def ulp(value: float) -> float:
@@ -249,6 +317,7 @@ __all__ = [
     "BAND_FLOOR",
     "BAND_NAMES",
     "BAND_TOP",
+    "DEGREE_MIN_WIDTH",
     "MIN_WIDTH",
     "MONEY_SHOT",
     "RELEASE_RESOLUTION",
@@ -262,9 +331,12 @@ __all__ = [
     "band_of",
     "bands",
     "deepest_releasable_width",
+    "min_width",
     "money_shot",
+    "open_bands",
     "releasable",
     "resolution_ulps",
+    "seat_sizes",
     "seats_this_size",
     "ulp",
 ]
