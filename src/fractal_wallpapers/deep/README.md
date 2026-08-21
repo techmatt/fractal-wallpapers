@@ -73,6 +73,31 @@ not by batches or rungs, because the cost of this mode is dominated by producing
 a place to stand. `--seats` is the flag; everything else divides the work at one
 of them.
 
+**Seats spread over family x band, because rank hides this mode's own subject.**
+The window is read in three equal-log **depth bands** — `depth.BAND_NAMES`, from
+`floor` at `1e-11` to `upper` at the shallow floor — and the seats fill the cells
+of family x band round-robin, least full first. The reason is a measurement, not
+a taste: a global rank does not reproduce the window. `deep_v0`'s release ranked
+by render score and its deepest picture landed at `4.4x` this mode's floor, and
+seats taken in anchor order fill from whichever family the plane-seed grid
+solved most of — so seats, quotas and galleries are all written per cell, and
+the floor decade, which is the decade this mode exists for, is a cell rather
+than a tail. A Newton descent is *aimed* at its cell by the size ceiling it
+hands the ladder, and aim is not arrival — a ladder that lands deeper than it was
+asked to is credited to the band it landed in rather than thrown away. The
+continuation channel cannot aim, since the band a row sits in is a fact about the
+ledger that admitted it, so it spreads over the four planes and keeps its own
+depth-first rank inside one.
+
+**What a leg of this mode costs, measured.** `deep_run1` (32 seats, 60 batches, an
+idle machine): **sourcing ~12 s a seat** — and a ladder that stalls costs what one
+that arrives does, so the price is per *descent*, not per seat — **a walk batch of
+eight nodes 4.3 s median and 16.5 s worst** against the 900 s ceiling, and a
+finished 1920x1080 ss2 frame **5.8-12.5 s** of render plus about four seconds of
+colorize. That medium geometry is a seventh of a release frame's samples and is
+what an evaluation gallery is drawn at; the release figures below are still the
+only ones the release ceiling may be read against.
+
 **A deep release is a different cost class and gets its own ceilings.**
 Curation's hung-unit backstop only ever raises itself off units a run has
 *finished*, so a class whose first row dies at the ceiling never teaches the run

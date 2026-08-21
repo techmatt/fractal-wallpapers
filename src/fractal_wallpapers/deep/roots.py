@@ -121,9 +121,20 @@ class Seat:
     framings: list[dict]
     provenance: dict
 
+    @property
+    def band(self) -> str | None:
+        """The depth band this seat's own deepest framing lands in.
+
+        The framings are widest first, so this is the money shot on a Newton
+        seat and the admitted frame itself on a continuation one — the frame the
+        seat is *for*, rather than the neighbourhood view above it.
+        """
+        return depth.band_of(float(self.framings[-1]["width"]))
+
     def record(self) -> dict:
         return {
             "channel": self.channel,
+            "band": self.band,
             "family": self.family,
             "center": None if self.center is None else self.center.record(),
             "framings": self.framings,
@@ -138,6 +149,13 @@ class Sourcing:
     seats: list[Seat] = field(default_factory=list)
     counts: dict[str, int] = field(default_factory=dict)
     ladders: list[dict] = field(default_factory=list)
+    #: How a channel that spreads itself divided the seats, in its own cells:
+    #: `"family|band"` for the Newton channel, which aims at a band, and
+    #: `"family|offered"` / `"family|seated"` for the continuation channel, which
+    #: spreads over the planes and takes whatever band a ledger row already sits
+    #: in. One field rather than two because the question a reader asks of both
+    #: is the same one — did this channel cover the planes, or fill from one.
+    cells: dict[str, int] = field(default_factory=dict)
 
     def count(self, name: str, amount: int = 1) -> None:
         self.counts[name] = self.counts.get(name, 0) + amount
@@ -146,6 +164,7 @@ class Sourcing:
         return {
             "seats": len(self.seats),
             "counts": dict(sorted(self.counts.items())),
+            "cells": dict(sorted(self.cells.items())),
             "ladders": self.ladders,
         }
 
@@ -199,6 +218,7 @@ def step(
     *,
     probes: int = STEP_PROBES,
     width: float = depth.MIN_WIDTH,
+    size_ceiling: float | None = None,
 ) -> tuple[centers.DeepCenter | None, str, dict]:
     """One rung down the atom ladder: `(child, why-not, tally)`.
 
@@ -208,8 +228,15 @@ def step(
     preferred; failing that, the smallest atom still *above* the window is the
     next rung, because a step past the window cannot be walked back — the atom
     below it is real and this mode has no frame for it.
+
+    `size_ceiling` is what the ladder is *aiming* at — the top of one depth band
+    rather than the top of the whole window — and it moves only the line between
+    "arrived" and "one more rung". The floor stays [`depth.SEAT_SIZES`]'s own:
+    an atom below the band being aimed at is a seat in a deeper one, and
+    throwing it away would spend a descent to arrive at nothing.
     """
-    low, high = depth.SEAT_SIZES
+    low, window_top = depth.SEAT_SIZES
+    high = window_top if size_ceiling is None else min(float(size_ceiling), window_top)
     ceiling = _child_periods(parent.period)
     found: dict[str, centers.DeepCenter] = {}
     tally: dict[str, int] = {}
@@ -262,6 +289,7 @@ def descend(
     max_steps: int = MAX_STEPS,
     probes: int = STEP_PROBES,
     width: float = depth.MIN_WIDTH,
+    size_ceiling: float | None = None,
 ) -> tuple[centers.DeepCenter | None, str, list[dict]]:
     """Track ∂M from a plane-seed atom to one this mode can frame.
 
@@ -269,7 +297,13 @@ def descend(
     not the descent arrived, because "it stopped at period 214 with nothing
     smaller in the disc" and "the anchor never solved at all" are different
     facts about this channel and only one of them is a reason to stop using it.
+
+    `size_ceiling` aims the descent at one depth band: the ladder takes another
+    rung while the atom it is standing on is *above* it. It is a ceiling and not
+    a window, so a rung that lands below the band aimed at still arrives — that
+    is a seat in a deeper band, which is a seat.
     """
+    ceiling = depth.SEAT_SIZES[1] if size_ceiling is None else float(size_ceiling)
     degree = operators.degree_of(anchor["family"]["kind"], int(anchor["family"].get("degree", 2)))
     if degree is None:
         return None, "no_nucleus_on_this_plane", []
@@ -285,9 +319,9 @@ def descend(
     ladder.append({"step": 0, "period": current.period, "size": current.size})
 
     for index in range(1, int(max_steps) + 1):
-        if depth.seats_this_size(current.size):
+        if depth.seats_this_size(current.size) and current.size <= ceiling:
             return current, "", ladder
-        child, why, tally = step(current, rng, probes=probes, width=width)
+        child, why, tally = step(current, rng, probes=probes, width=width, size_ceiling=ceiling)
         if child is None:
             return None, f"ladder_stalled:{why}", ladder
         ladder.append(
@@ -299,9 +333,19 @@ def descend(
             }
         )
         current = child
-    if depth.seats_this_size(current.size):
+    if depth.seats_this_size(current.size) and current.size <= ceiling:
         return current, "", ladder
     return None, "ladder_did_not_reach_the_window", ladder
+
+
+#: Descents one seat may cost before the cell aiming them is closed.
+#:
+#: A ladder is the expensive half of sourcing and most anchors do not arrive, so
+#: a cell nothing can fill — a family with no atom of that size within reach of
+#: its anchors — would otherwise spend the whole leg proving it. Four is the
+#: shakedown's own yield with room: seven of twelve mandelbrot anchors arrived
+#: there, against a floor band nobody had aimed at yet.
+DESCENTS_PER_SEAT = 4
 
 
 def newton_seats(
@@ -312,21 +356,63 @@ def newton_seats(
     max_steps: int = MAX_STEPS,
     probes: int = STEP_PROBES,
     width: float = depth.MIN_WIDTH,
+    descents_per_seat: int = DESCENTS_PER_SEAT,
     log=print,
 ) -> Sourcing:
-    """Track ∂M down from tracked plane-seed atoms until `seats` are standing."""
+    """Track ∂M down from tracked plane-seed atoms, spread over family × band.
+
+    **Spread, not ranked.** Filling the seats in anchor order fills them off
+    whichever family the plane-seed grid solved most of and off whatever band
+    the first arriving ladder happened to land in — and the bands are not
+    interchangeable: the head's scores rise with width, so a run seated from the
+    top of the window reports on material the shallow walk could already reach.
+    So the cells of family × [`depth.BAND_NAMES`] are filled round-robin, least
+    full first, and each descent is *aimed* at its cell's band by the size
+    ceiling it hands the ladder.
+
+    Aim is not arrival. A ceiling only says where the ladder stops taking rungs,
+    so a descent aimed at `upper` that lands in `middle` is credited to the cell
+    it landed in — the alternative is to throw away a seat for being deeper than
+    it was asked to be.
+    """
     out = Sourcing()
     pool = anchors(anchors_per_family)
     out.count("anchors", len(pool))
-    seated: set[str] = set()
+    queues: dict[str, list[dict]] = {}
     for anchor in pool:
-        if len(out.seats) >= int(seats):
+        queues.setdefault(json.dumps(anchor["family"], sort_keys=True), []).append(anchor)
+
+    cells = [(family, band) for family in queues for band in depth.BAND_NAMES]
+    order = {cell: index for index, cell in enumerate(cells)}
+    filled = {cell: 0 for cell in cells}
+    spent = {cell: 0 for cell in cells}
+    for cell in cells:
+        out.cells[f"{cell[0]}|{cell[1]}"] = 0
+    quota = max(1, math.ceil(int(seats) / max(1, len(cells))))
+    budget = max(1, int(descents_per_seat) * quota)
+    seated: set[str] = set()
+
+    while len(out.seats) < int(seats):
+        open_cells = [cell for cell in cells if queues[cell[0]] and spent[cell] < budget]
+        if not open_cells:
             break
-        center, why, ladder = descend(anchor, rng, max_steps=max_steps, probes=probes, width=width)
+        cell = min(open_cells, key=lambda cell: (filled[cell], order[cell]))
+        family_key, aimed = cell
+        anchor = queues[family_key].pop(0)
+        spent[cell] += 1
+        center, why, ladder = descend(
+            anchor,
+            rng,
+            max_steps=max_steps,
+            probes=probes,
+            width=width,
+            size_ceiling=depth.band_ceiling(aimed),
+        )
         out.ladders.append(
             {
                 "anchor": anchor["id"],
                 "family": anchor["family"],
+                "aimed": aimed,
                 "arrived": center is not None,
                 "reason": why,
                 "rungs": ladder,
@@ -334,7 +420,7 @@ def newton_seats(
         )
         if center is None:
             out.count(f"newton:{why.split(':')[0]}")
-            log(f"[deep] anchor {anchor['id']}: {why}")
+            log(f"[deep] anchor {anchor['id']} aimed {aimed}: {why}")
             continue
         if not depth.releasable(center.center_re, center.center_im, center.money_shot):
             out.count("newton:not_releasable_in_f64")
@@ -355,15 +441,21 @@ def newton_seats(
             continue
         seated.add(center.reflection_key)
         out.count("newton:seated")
-        out.seats.append(_newton_seat(anchor, center))
+        seat = _newton_seat(anchor, center, aimed)
+        out.seats.append(seat)
+        landed = (family_key, seat.band if seat.band in depth.BAND_NAMES else aimed)
+        filled[landed] = filled.get(landed, 0) + 1
+        out.cells[f"{landed[0]}|{landed[1]}"] = out.cells.get(f"{landed[0]}|{landed[1]}", 0) + 1
+        out.count(f"newton:landed:{landed[1]}")
         log(
             f"[deep] seat {center.key} period {center.period} size {center.size:.3e} "
-            f"money shot {center.money_shot:.3e} ({len(ladder) - 1} ladder step(s))"
+            f"money shot {center.money_shot:.3e} band {seat.band} (aimed {aimed}, "
+            f"{len(ladder) - 1} ladder step(s))"
         )
     return out
 
 
-def _newton_seat(anchor: dict, center: centers.DeepCenter) -> Seat:
+def _newton_seat(anchor: dict, center: centers.DeepCenter, aimed: str | None = None) -> Seat:
     return Seat(
         channel=NEWTON,
         family=anchor["family"],
@@ -375,6 +467,7 @@ def _newton_seat(anchor: dict, center: centers.DeepCenter) -> Seat:
             "nucleus_key": center.key,
             "period": center.period,
             "framings": list(depth.ROOT_FRAMINGS),
+            "aimed_band": aimed,
         },
     )
 
@@ -403,6 +496,15 @@ def continuation_seats(
     lineage worth two more decades of it. A row with no score at all — the null
     scorer's rows, which is most of one early harvest — ranks last rather than
     being dropped, because "nothing looked at this" is not "this is bad".
+
+    **Spread over the planes, ranked inside one.** That rank is a rank over
+    *ledgers*, and a ledger is whatever the last run harvested: taken straight it
+    seats every deep row of one harvest before it looks at a plane that harvest
+    happened not to visit. So the families take turns and each one offers its own
+    best remaining row. The Newton channel spreads over family × band because it
+    can aim a ladder at a band; this one takes what a walk already admitted, so
+    the band it lands in is a fact about the row rather than a choice, and it is
+    recorded rather than steered.
     """
     out = Sourcing()
     rows: list[dict] = []
@@ -426,9 +528,19 @@ def continuation_seats(
     seen: set[str] = set()
     lineages: set[str] = set()
     rows.sort(key=lambda row: (row["_width"], -(row.get("score") or -1.0)))
+    queues: dict[str, list[dict]] = {}
     for row in rows:
-        if len(out.seats) >= int(seats):
-            break
+        queues.setdefault(json.dumps(row["family"], sort_keys=True), []).append(row)
+    families = sorted(queues)
+    for family in families:
+        out.cells.setdefault(f"{family}|offered", len(queues[family]))
+    turn = 0
+    while len(out.seats) < int(seats) and any(queues[family] for family in families):
+        family = families[turn % len(families)]
+        turn += 1
+        if not queues[family]:
+            continue
+        row = queues[family].pop(0)
         key = _place_key(row)
         lineage = f"{tracked_name(row['_ledger'])}|{row.get('root_id')}"
         if key in seen or lineage in lineages:
@@ -449,6 +561,9 @@ def continuation_seats(
             out.count("continuation:floor_not_releasable_in_f64")
             continue
         out.count("continuation:seated")
+        out.cells[f"{json.dumps(row['family'], sort_keys=True)}|seated"] = (
+            out.cells.get(f"{json.dumps(row['family'], sort_keys=True)}|seated", 0) + 1
+        )
         out.seats.append(
             Seat(
                 channel=CONTINUATION,
@@ -558,6 +673,7 @@ def sourced(
 __all__ = [
     "CONTINUABLE_WIDTH",
     "CONTINUATION",
+    "DESCENTS_PER_SEAT",
     "MAX_STEPS",
     "NEWTON",
     "PERIOD_CAP",
