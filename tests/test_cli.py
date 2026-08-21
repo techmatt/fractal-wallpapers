@@ -7,6 +7,7 @@ import json
 import pytest
 
 from fractal_wallpapers import cli
+from fractal_wallpapers.discovery import boundary
 
 
 def test_every_runnable_thing_is_a_subcommand() -> None:
@@ -321,3 +322,96 @@ def test_a_sheet_says_its_judge_its_batch_and_its_size() -> None:
     said = cli.sheet_identity({"head": "location", "batch": "twin_top_slices"}, 96)
     assert "location" in said and "twin_top_slices" in said and "96 units" in said
     assert "(no batch)" in cli.sheet_identity({"head": "location"}, 3), "a batch is not required"
+
+
+def test_a_location_record_is_renderable_without_retyping_its_constants() -> None:
+    """Every ledger row, label row and release record is a {family, viewport,
+    render} object, and `render` could take none of it: every constant was a
+    flag. That is why the one caller outside this repository that had to redraw a
+    row bypassed the engine seam and shelled the binary."""
+    parse = cli.build_parser().parse_args
+    assert parse(["render"]).location is None
+    assert parse(["render", "--location", "row.json"]).location == "row.json"
+    assert parse(["render", "--manifest", "rows.jsonl"]).manifest == "rows.jsonl"
+    assert parse(["render", "--manifest", "rows.jsonl"]).handler is cli.render
+
+
+def test_a_record_and_a_flag_cannot_both_describe_one_render() -> None:
+    """A record already says everything the flags say, so a command given both
+    has been told two different things about one picture. Neither is chosen —
+    quietly ignoring a typed --width produces a picture nobody can tell from the
+    one they asked for."""
+    parse = cli.build_parser().parse_args
+    assert cli.refuse_two_descriptions(parse(["render"])) is None
+    assert cli.refuse_two_descriptions(parse(["render", "--location", "row.json"])) is None
+    assert cli.refuse_two_descriptions(parse(["render", "--width", "0.5"])) is None
+
+    complaint = cli.refuse_two_descriptions(
+        parse(["render", "--location", "r.json", "--width", "1"])
+    )
+    assert "--width" in (complaint or "")
+    complaint = cli.refuse_two_descriptions(
+        parse(["render", "--manifest", "r.jsonl", "--supersample", "4"])
+    )
+    assert "--supersample" in (complaint or "")
+    both = cli.refuse_two_descriptions(parse(["render", "--location", "a", "--manifest", "b"]))
+    assert "one of them" in (both or "")
+
+
+def test_the_flag_defaults_a_render_compares_against_are_the_ones_argparse_holds() -> None:
+    """The comparison is against a dict carried on the namespace, because argparse
+    fills a default in and does not remember that it did. This is what keeps that
+    dict from being a second, drifting copy of the parser's own defaults."""
+    args = cli.build_parser().parse_args(["render"])
+    for flag, default in args.flag_defaults.items():
+        assert getattr(args, flag) == default, flag
+    assert "width" in args.flag_defaults and "colormap" in args.flag_defaults
+    assert "location" not in args.flag_defaults, "not one of the flags that spells a location out"
+
+
+def test_the_structural_gates_are_reachable_without_proposing_anything() -> None:
+    """They lived only inside `expand`, which proposes children rather than
+    judging a frame you name — so the one filter the article spends a figure on
+    could not be pointed at a picture."""
+    parse = cli.build_parser().parse_args
+    assert parse(["screen", "--location", "row.json"]).handler is cli.screen
+    assert parse(["screen", "--manifest", "rows.jsonl"]).manifest == "rows.jsonl"
+    assert parse(["screen", "--location", "row.json"]).node_width == 384
+    with pytest.raises(SystemExit):
+        parse(["screen"])
+    with pytest.raises(SystemExit):
+        parse(["screen", "--location", "a", "--manifest", "b"])
+
+
+def test_the_boundary_draw_is_a_named_seeded_subcommand() -> None:
+    """The prose claims more than a hundred such draws and nothing here could
+    make one: the flat-draw label batch is the *record* of a draw made in another
+    project, not a generator. A record of a draw cannot be re-run."""
+    parse = cli.build_parser().parse_args
+    args = parse(["sample-boundary"])
+    assert args.handler is cli.sample_boundary
+    assert args.seed == 0, "seeded, and the seed is recorded"
+    assert args.family == "mandelbrot"
+    assert (args.width_low, args.width_high) == (boundary.WIDTH_LOW, boundary.WIDTH_HIGH)
+    assert parse(["sample-boundary", "--seed", "7"]).seed == 7
+
+
+def test_a_list_of_locations_can_be_scored_without_a_ledger() -> None:
+    """`curate score` reads a ledger and `score-parity` reads a ledger; nothing
+    read a list. Any panel that wants to print P(>=3) under a picture needs one."""
+    parse = cli.build_parser().parse_args
+    args = parse(["score-locations", "--manifest", "rows.jsonl"])
+    assert args.handler is cli.score_locations
+    assert args.regime == "640x360ss2", "the deploy view"
+    with pytest.raises(SystemExit):
+        parse(["score-locations"])
+
+
+def test_the_focus_report_is_off_on_both_commands_that_walk() -> None:
+    """Production output is what it always was unless somebody asks. And it has to
+    be on both: a flag on `walk` that `harvest` cannot reach is a demo."""
+    parse = cli.build_parser().parse_args
+    assert parse(["walk"]).foci is False
+    assert parse(["harvest"]).foci is False
+    assert parse(["walk", "--foci"]).foci is True
+    assert parse(["harvest", "--foci"]).foci is True

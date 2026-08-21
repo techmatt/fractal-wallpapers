@@ -277,8 +277,55 @@ def refuse_impossible_location(args: argparse.Namespace) -> str | None:
     return None
 
 
+def refuse_two_descriptions(args: argparse.Namespace) -> str | None:
+    """Say why a record and a flag both describe this render, or `None`.
+
+    A location record already says every one of the things the flags say, so a
+    command handed one *and* a flag has been told two different things about one
+    picture. Which one to believe is not a question with a defensible answer, so
+    neither is chosen.
+
+    What was typed is recovered by comparing against what argparse would have
+    filled in, because argparse itself does not remember the difference — see
+    [`location_arguments`], which stashes the defaults it set.
+    """
+    if not (args.location or args.manifest):
+        return None
+    typed = sorted(
+        flag for flag, default in args.flag_defaults.items() if getattr(args, flag) != default
+    )
+    if typed:
+        given = "--location" if args.location else "--manifest"
+        return (
+            f"{given} and {', '.join('--' + flag.replace('_', '-') for flag in typed)} both say "
+            f"what to render. A record already carries all of it — drop the flags, or edit "
+            f"the record."
+        )
+    if args.location and args.manifest:
+        return "--location names one location and --manifest names many: give one of them"
+    return None
+
+
 def render(args: argparse.Namespace) -> int:
     """Render one image and print the engine's report."""
+    from fractal_wallpapers import locations
+
+    complaint = refuse_two_descriptions(args)
+    if complaint is not None:
+        print(complaint)
+        return 1
+    if args.manifest:
+        return render_manifest(args)
+    if args.location:
+        try:
+            row = locations.read_one(resolve_output(args.location))
+        except locations.LocationError as refusal:
+            print(refusal)
+            return 1
+        spec = locations.spec_of(row, resolve_output(args.out))
+        print(json.dumps(engine.render_report(spec), indent=2))
+        return 0
+
     complaint = refuse_impossible_location(args)
     if complaint is not None:
         print(complaint)
@@ -312,6 +359,181 @@ def recolor(args: argparse.Namespace) -> int:
     if args.transform is not None:
         spec["transform"] = args.transform
     print(json.dumps(engine.recolor(spec), indent=2))
+    return 0
+
+
+def render_manifest(args: argparse.Namespace) -> int:
+    """Render every location in a manifest, and record what was drawn."""
+    from fractal_wallpapers import locations
+
+    rows = locations.read(resolve_output(args.manifest))
+    if args.limit is not None:
+        rows = rows[: max(0, args.limit)]
+    directory = resolve_output(args.out_dir)
+    directory.mkdir(parents=True, exist_ok=True)
+
+    record = directory / "renders.jsonl"
+    made, reused = 0, 0
+    with record.open("w", encoding="utf-8", newline="\n") as handle:
+        for index, row in enumerate(rows):
+            output = directory / f"{index:05d}_{locations.name_of(row)}.png"
+            if args.resume and output.is_file():
+                reused += 1
+                report = None
+            else:
+                report = engine.render_report(locations.spec_of(row, output))
+                made += 1
+            handle.write(
+                json.dumps(
+                    {
+                        "schema": locations.SCHEMA,
+                        "index": index,
+                        **row,
+                        "output": tracked_name(output),
+                        "report": report,
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n"
+            )
+            print(f"[render] {index + 1}/{len(rows)} {output.name}")
+    print(
+        json.dumps(
+            {
+                "locations": len(rows),
+                "rendered": made,
+                "already_there": reused,
+                "out_dir": str(directory),
+                "record": str(record),
+            },
+            indent=2,
+        )
+    )
+    return 0
+
+
+def screen(args: argparse.Namespace) -> int:
+    """Run the structural gates over locations somebody named, and say what each said."""
+    from fractal_wallpapers import locations
+
+    try:
+        rows = (
+            locations.read(resolve_output(args.manifest))
+            if args.manifest
+            else [locations.read_one(resolve_output(args.location))]
+        )
+    except locations.LocationError as refusal:
+        print(refusal)
+        return 1
+    if args.limit is not None:
+        rows = rows[: max(0, args.limit)]
+
+    directory = resolve_output(args.out_dir) if args.out_dir else None
+    if directory is not None:
+        directory.mkdir(parents=True, exist_ok=True)
+    spec: dict = {
+        "schema": 1,
+        "frames": [locations.frame_of(row) for row in rows],
+        "colormap": args.colormap,
+        "colormap_dir": str(engine.colormap_dir()),
+        "node_width": args.node_width,
+        "occupancy": not args.waive_occupancy,
+    }
+    if directory is not None:
+        spec["out_dir"] = str(directory)
+    report = engine.screen(spec)
+
+    # One frame prints its verdicts; a batch prints the tally and writes the
+    # rows, because a hundred screenings scrolling past is not a report.
+    if args.manifest is None:
+        print(json.dumps({**report, "frames": report["frames"]}, indent=2))
+        return 0 if report["frames"][0]["passed"] else 1
+
+    out = resolve_output(args.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    fates: dict[str, int] = {}
+    with out.open("w", encoding="utf-8", newline="\n") as handle:
+        for row, screened in zip(rows, report["frames"], strict=True):
+            fates[screened["fate"]] = fates.get(screened["fate"], 0) + 1
+            handle.write(
+                json.dumps({"schema": locations.SCHEMA, **row, **screened}, ensure_ascii=False)
+                + "\n"
+            )
+    passed = sum(1 for frame in report["frames"] if frame["passed"])
+    print(
+        json.dumps(
+            {
+                "locations": len(rows),
+                "passed": passed,
+                "refused": len(rows) - passed,
+                "fates": dict(sorted(fates.items())),
+                "tile": report["tile"],
+                "field_supersample": report["field_supersample"],
+                "battery": report["battery"],
+                "seconds": round(report["seconds"], 1),
+                "wrote": str(out),
+            },
+            indent=2,
+        )
+    )
+    return 0
+
+
+def sample_boundary(args: argparse.Namespace) -> int:
+    """Draw frames at random and keep the ones every structural gate passed."""
+    from fractal_wallpapers.discovery import boundary
+
+    family: dict = {"kind": args.family}
+    if args.family in ("multibrot", "julia"):
+        family["degree"] = args.degree
+    if args.family == "julia":
+        if args.c is None:
+            print("--c is required for a julia draw: it is half of the location's identity")
+            return 1
+        family["c"] = args.c
+
+    try:
+        report = boundary.sample(
+            family,
+            seed=args.seed,
+            keep=args.keep,
+            attempts=args.attempts,
+            band=(args.width_low, args.width_high),
+            out_dir=resolve_output(args.out_dir),
+            colormap=args.colormap,
+            images=not args.no_images,
+        )
+    except boundary.BoundaryError as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps(report, indent=2))
+    return 0 if report["kept"] >= args.keep else 1
+
+
+def score_locations(args: argparse.Namespace) -> int:
+    """Score a list of locations through the shipped location head."""
+    from fractal_wallpapers import locations
+    from fractal_wallpapers.models import location_scoring
+    from fractal_wallpapers.models import tiles as tile_module
+
+    try:
+        rows = locations.read(resolve_output(args.manifest))
+    except locations.LocationError as refusal:
+        print(refusal)
+        return 1
+    if args.limit is not None:
+        rows = rows[: max(0, args.limit)]
+
+    regime = tile_module.regime_of(args.regime)
+    report = location_scoring.score(
+        rows,
+        out=resolve_output(args.out),
+        regime=None if regime == tile_module.CANONICAL_REGIME else regime,
+        device=args.device,
+        workers=args.score_workers,
+        views=resolve_output(args.views) if args.views else None,
+    )
+    print(json.dumps(report, indent=2))
     return 0
 
 
@@ -395,6 +617,13 @@ def plane_seed_default(name: str):
     from fractal_wallpapers.discovery import plane_seeds
 
     return getattr(plane_seeds, name)
+
+
+def boundary_default(name: str):
+    """One of the boundary draw's constants, for a help string that cannot drift."""
+    from fractal_wallpapers.discovery import boundary
+
+    return getattr(boundary, name)
 
 
 def proven_default(name: str):
@@ -592,6 +821,7 @@ def walk(args: argparse.Namespace) -> int:
             neighborhood=args.neighborhood,
         ),
         colormap=args.colormap,
+        report_foci=args.foci,
     )
 
     if args.seeds:
@@ -635,6 +865,7 @@ def harvest(args: argparse.Namespace) -> int:
         reframings=Reframings(neighborhood=args.neighborhood),
         colormap=args.colormap,
         scorer=build_scorer(args),
+        report_foci=args.foci,
     )
     # A run told which partitions to keep books for keeps them for those alone:
     # the census, the allocation, the refill census and the served mix all read
@@ -1871,11 +2102,147 @@ def build_parser() -> argparse.ArgumentParser:
     )
     location_arguments(draw)
     draw.add_argument(
+        "--location",
+        metavar="FILE",
+        help="a location record to render instead of spelling one out: the "
+        "{family, viewport, render} object a ledger row, a label row and a release "
+        "record all already carry",
+    )
+    draw.add_argument(
+        "--manifest",
+        metavar="FILE",
+        help="a JSONL of location records to render, one picture per row, into --out-dir. "
+        "A file rather than a list of paths, because a batch is hundreds of rows and a "
+        "Windows command line is not",
+    )
+    draw.add_argument(
         "--out",
         default=str(Path("artifacts") / "render.png"),
         help="output PNG path (default: artifacts/render.png)",
     )
+    draw.add_argument(
+        "--out-dir",
+        default=str(Path("artifacts") / "renders"),
+        help="where a --manifest run's pictures go (default: artifacts/renders). Each is "
+        "named by its row and a digest of its own recipe, and renders.jsonl beside them "
+        "is the join back to the records",
+    )
+    draw.add_argument("--limit", type=int, help="render only the first N rows of a manifest")
+    draw.add_argument(
+        "--resume",
+        action="store_true",
+        help="skip a row whose picture is already on disk",
+    )
     draw.set_defaults(handler=render)
+
+    screening = subcommands.add_parser(
+        "screen",
+        help="put a location through the structural gates and report every verdict",
+        description=(
+            "The gates a walk refuses candidates at — the interior cap, the escape band, "
+            "the occupancy floor — run over a frame you name rather than one the walk "
+            "proposed. Every gate that ran reports what it read and what it read that "
+            "against; the ones a refusal came before report nothing, because they did not "
+            "run. Nothing here is a second copy of the filter: it is the same battery the "
+            "walk spends, at the geometry the walk spends it at. With --location the "
+            "exit code is the verdict: 0 if the frame passed, 1 if a gate refused it. "
+            "With --manifest it is 0 whenever the batch ran, because a refusal is a row "
+            "in the output rather than a failure of the command."
+        ),
+    )
+    naming = screening.add_mutually_exclusive_group(required=True)
+    naming.add_argument("--location", metavar="FILE", help="one location record to screen")
+    naming.add_argument("--manifest", metavar="FILE", help="a JSONL of location records to screen")
+    screening.add_argument(
+        "--out",
+        default=str(Path("artifacts") / "screen" / "screened.jsonl"),
+        help="where a --manifest run's verdicts go (default: artifacts/screen/screened.jsonl)",
+    )
+    screening.add_argument(
+        "--out-dir",
+        help="also write the frame each gate read, as a JPEG per location. A frame the "
+        "interior cap refused has none: it never got past the 128-pixel probe",
+    )
+    screening.add_argument("--limit", type=int, help="screen only the first N rows")
+    screening.add_argument(
+        "--node-width",
+        type=int,
+        default=384,
+        help="width of the frame the gates read (default: 384, the node regime's own)",
+    )
+    screening.add_argument(
+        "--colormap",
+        default="twilight_shifted",
+        help="colormap the frame is shaded through before its detail is measured",
+    )
+    screening.add_argument(
+        "--waive-occupancy",
+        action="store_true",
+        help="do not run the occupancy floor. What a walk does at its FIRST RUNG, where "
+        "the gate over-fires on a root frame still resolving structure the tighter child "
+        "has not entered yet - so a first-rung ledger candidate passed a battery of two "
+        "gates and screening it against three reports a refusal its run never made",
+    )
+    screening.set_defaults(handler=screen)
+
+    drawing = subcommands.add_parser(
+        "sample-boundary",
+        help="draw frames at random and keep the ones the structural gates pass",
+        description=(
+            "Deep inside a set nothing escapes and far outside everything does, so a frame "
+            "that clears all three structural gates is straddling the boundary — there is "
+            "no other way to clear them. That makes an unscreened uniform draw plus the "
+            "gates a boundary sampler, and this is it: seeded, so a number reproduces the "
+            "frames; recording every attempt and not only the keepers, because the yield "
+            "is the measurement. Writes draws.jsonl (the record) and kept.jsonl (a plain "
+            "location manifest of the survivors)."
+        ),
+    )
+    drawing.add_argument(
+        "--family",
+        choices=["mandelbrot", "multibrot", "julia", "phoenix"],
+        default="mandelbrot",
+        help="which family to draw over (default: mandelbrot)",
+    )
+    drawing.add_argument("--degree", type=int, default=2, help="exponent d, for multibrot/julia")
+    drawing.add_argument(
+        "--c", nargs=2, metavar=("RE", "IM"), help="fixed constant c: required for julia"
+    )
+    drawing.add_argument("--seed", type=int, default=0, help="draw seed (default: 0)")
+    drawing.add_argument("--keep", type=int, default=12, help="survivors to stop at (default: 12)")
+    drawing.add_argument(
+        "--attempts",
+        type=int,
+        default=4000,
+        help="attempts to stop at whether or not --keep was reached (default: 4000). A draw "
+        "that ends here measured a rarity and says so",
+    )
+    drawing.add_argument(
+        "--width-low",
+        type=float,
+        default=boundary_default("WIDTH_LOW"),
+        help=f"narrow end of the log-uniform width band (default: {boundary_default('WIDTH_LOW')})",
+    )
+    drawing.add_argument(
+        "--width-high",
+        type=float,
+        default=boundary_default("WIDTH_HIGH"),
+        help=f"wide end of the band (default: {boundary_default('WIDTH_HIGH')})",
+    )
+    drawing.add_argument(
+        "--colormap",
+        default="twilight_shifted",
+        help="colormap the frame is shaded through before its detail is measured",
+    )
+    drawing.add_argument(
+        "--out-dir",
+        default=str(Path("artifacts") / "boundary"),
+        help="where the record, the manifest and the frames go (default: artifacts/boundary)",
+    )
+    drawing.add_argument(
+        "--no-images", action="store_true", help="record the verdicts and keep no pictures"
+    )
+    drawing.set_defaults(handler=sample_boundary)
 
     dump = subcommands.add_parser(
         "dump-field",
@@ -1983,6 +2350,15 @@ def build_parser() -> argparse.ArgumentParser:
         "--out-dir",
         default=str(Path("artifacts") / "walk"),
         help="where the ledger and thumbnails go (default: artifacts/walk)",
+    )
+    search.add_argument(
+        "--foci",
+        action="store_true",
+        help="record each expanded node's kept focus set beside its candidates: where the "
+        "peaks were, which blurring scales found each one, how alone it stands and how far "
+        "the nearest kept neighbour is. Off by default, and a run without it writes the "
+        "ledger it always wrote - the set is read either way and this decides only whether "
+        "it is kept",
     )
     grace_flag(search)
     scoring_flags(search)
@@ -2109,6 +2485,15 @@ def build_parser() -> argparse.ArgumentParser:
         default=str(Path("artifacts") / "harvest"),
         help="the run directory (default: artifacts/harvest)",
     )
+    production.add_argument(
+        "--foci",
+        action="store_true",
+        help="record each expanded node's kept focus set beside its candidates: where the "
+        "peaks were, which blurring scales found each one, how alone it stands and how far "
+        "the nearest kept neighbour is. Off by default, and a run without it writes the "
+        "ledger it always wrote - the set is read either way and this decides only whether "
+        "it is kept",
+    )
     grace_flag(production)
     scoring_flags(production)
     production.set_defaults(handler=harvest)
@@ -2133,6 +2518,46 @@ def build_parser() -> argparse.ArgumentParser:
     )
     scoring_flags(checking)
     checking.set_defaults(handler=score_parity)
+
+    reading_locations = subcommands.add_parser(
+        "score-locations",
+        help="score a list of locations through the shipped location head",
+        description=(
+            "Everything else that scores locations reads a ledger. This reads a JSONL of "
+            "location records and writes one score row apiece — the row a panel that wants "
+            "to print P(>=3) under a picture needs. Every row names the sha256 of the "
+            "artifact that produced it and the regime it was read at, because heads are "
+            "re-shipped and the floors that read them are restated at the flip: a score "
+            "that cannot say what produced it goes quietly stale."
+        ),
+    )
+    reading_locations.add_argument(
+        "--manifest", required=True, metavar="FILE", help="JSONL of location records"
+    )
+    reading_locations.add_argument(
+        "--out",
+        default=str(Path("artifacts") / "location_scores.jsonl"),
+        help="where the score rows go (default: artifacts/location_scores.jsonl)",
+    )
+    reading_locations.add_argument("--limit", type=int, help="score only the first N rows")
+    reading_locations.add_argument(
+        "--regime",
+        default="640x360ss2",
+        metavar="WxHssN",
+        help="the geometry to read the pictures at (default: 640x360ss2, the deploy view)",
+    )
+    reading_locations.add_argument(
+        "--views", help="where the rendered views are cached (default: the regime's own tree)"
+    )
+    reading_locations.add_argument(
+        "--score-workers",
+        type=int,
+        default=1,
+        help="worker processes rendering the views the head reads (default: 1, which "
+        "renders in this process; one render already spends the whole machine)",
+    )
+    reading_locations.add_argument("--device", default="auto", help="cuda, cpu, or auto")
+    reading_locations.set_defaults(handler=score_locations)
 
     seeding = subcommands.add_parser(
         "derive-plane-seeds",
@@ -3859,6 +4284,19 @@ def location_arguments(draw: argparse.ArgumentParser) -> None:
         "--maxiter",
         type=int,
         help="iteration cap; omit to let the depth-aware policy choose",
+    )
+    # What every one of those flags means when nobody passes it, carried onto the
+    # namespace. argparse fills a default in and does not remember that it did,
+    # so a command handed a whole location record has no other way to tell a flag
+    # that was typed from one that was not — and quietly ignoring a typed --width
+    # because a record was also given is exactly the kind of picture nobody can
+    # tell from the one they asked for.
+    draw.set_defaults(
+        flag_defaults={
+            action.dest: action.default
+            for action in draw._actions
+            if action.dest not in ("help", "handler")
+        }
     )
 
 

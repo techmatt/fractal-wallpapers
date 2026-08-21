@@ -69,3 +69,36 @@ the `prereg` key of a head's `acceptance.json`, which names a pre-registration b
 absolute path and is left alone deliberately. A path that leaves the checkout
 entirely, like the extraction source's colormap pool, is named by *what* it is
 rather than where it sat: `the source project's data/palettes/pool_colormaps.json`.
+
+
+## One shape for a place, and one reader for it
+
+Every record here writes a location the same way — `family` with all its
+constants, `viewport` as three decimal strings, `render` saying at what size and
+through which coloring. A label row, a walk ledger's candidate and a release
+decision are all that shape. **`locations.py` is the only thing that reads it**,
+and everything that takes a manifest goes through it: `render --location` and
+`render --manifest`, `screen`, `score-locations`, and the boundary draw's own
+output.
+
+It takes all three spellings, because all three are already on disk:
+
+```text
+{"family": ..., "viewport": ..., "render": {...}}    a label row
+{"family": ..., "viewport": ..., "maxiter": 13140}   a walk ledger's candidate
+{"location": {"family": ..., "viewport": ...}, ...}  a release decision row
+```
+
+A ledger row keeps its cap at the top level because it records a *frame the gates
+measured*, not a picture, and has no render block to put one in. Family and
+viewport are the identity and are required; everything else defaults to what the
+flag nobody passed would have meant, so a two-key record is a legal record.
+`maxiter` is the one field with a third answer — absent means "the depth-aware
+policy decides", which is not any particular number, so it stays absent.
+
+**Batch forms take a manifest file, never a list of paths.** Hundreds of
+locations overflow a Windows command line, and the manifest is a record of what
+the batch was over. Pictures in a batch are named `<row>_<digest>.png`, the digest
+being of everything the engine was told — so a batch is resumable and two records
+that would draw one picture name one file. `renders.jsonl` beside them is the join
+back to the records.

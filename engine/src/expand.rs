@@ -50,40 +50,14 @@ use std::time::Instant;
 use num_complex::Complex;
 use serde::{Deserialize, Serialize};
 
-use crate::coloring::{self, Transform};
 use crate::colormap::Colormap;
-use crate::family::Family;
-use crate::field::{self, FieldSpec};
-use crate::foci::{self, Branch, Placement, Policy};
+use crate::foci::{self, Branch, Focus, Placement, Policy};
 use crate::maxiter;
 use crate::resample;
 use crate::rng::{self, Rng};
-use crate::screen::{self, Band, Escape};
+use crate::screen::{self, Band, Battery, Escape, NODE_SUPERSAMPLE, NODE_WIDTH, node_height};
 use crate::spec::{FamilySpec, decimal, default_colormap_dir, to_decimal_string};
 use crate::viewport::Viewport;
-
-/// Width of the cheap first-stage probe, in pixels.
-///
-/// Interior fraction is scale-robust — a frame that is 40% set at 128 pixels is
-/// 40% set at 4000 — so the gate that rejects the most candidates can be
-/// answered on a thumbnail. Everything past this stage costs about ten times as
-/// much per candidate, which is the entire argument for the stage existing.
-const PROBE_WIDTH: u32 = 128;
-
-/// The field sampling every frame in an expansion is drawn at.
-///
-/// One sample per output pixel, everywhere: the parent field, the probe and the
-/// gate render alike. A walk draws tens of thousands of these and none of them is
-/// a picture anybody keeps, so supersampling them would be paying deploy quality
-/// for steering material. It is a constant rather than a setting because the gate
-/// render is scored through a head trained at exactly this sampling.
-const NODE_SUPERSAMPLE: u32 = 1;
-
-/// Default width of the node field the policy and the later gates read.
-///
-/// Wide enough that the focus finder's scales are a sensible fraction of the
-/// frame, narrow enough to render a few thousand times an hour.
-const NODE_WIDTH: u32 = 384;
 
 /// A batch of rungs to expand.
 #[derive(Debug, Deserialize)]
@@ -106,6 +80,16 @@ pub struct ExpandSpec {
     pub gates: Gates,
     #[serde(default)]
     pub policy: PolicySpec,
+    /// Whether the report carries each node's kept focus set.
+    ///
+    /// **Off, and a production report is byte-identical without it.** The focus
+    /// set is a reading of the parent frame and is already taken — the flag
+    /// decides whether it is *reported*, not whether it is computed, so a run
+    /// with it on draws the same candidates from the same stream as a run with
+    /// it off. It is off because a walk writes tens of thousands of these rungs
+    /// and nothing in the walk reads a focus it did not aim at.
+    #[serde(default)]
+    pub report_foci: bool,
 }
 
 /// One frontier node: a place the walk has reached, and how it got there.
@@ -149,6 +133,17 @@ pub struct Gates {
     /// this comment used to claim — an arithmetic that compared a *width*
     /// against a *spacing*. A deep descent passes its own value here.
     pub min_width: f64,
+}
+
+impl Gates {
+    /// The three thresholds, as the battery that reads them takes them.
+    pub fn battery(&self) -> Battery {
+        Battery {
+            interior_cap: self.interior_cap,
+            occupancy_floor: self.occupancy_floor,
+            band: self.band,
+        }
+    }
 }
 
 impl Default for Gates {
@@ -251,6 +246,58 @@ pub struct Candidate {
     pub image: Option<String>,
 }
 
+/// One kept focus of a node's parent frame, as the report carries it.
+///
+/// The whole subject of a proposal is the set this describes: peaks of the
+/// smoothed escape field that survived at one or more blurring scales, ranked by
+/// how alone each stands, and thinned so two of them are never the same place.
+/// Everything here is *reported* — the sampling weight is `score` and it is
+/// exactly what it was before this row existed.
+#[derive(Debug, Serialize)]
+pub struct ReportedFocus {
+    /// Where the peak is in the parent frame, in field pixels: column and row,
+    /// row 0 at the top. The frame's own geometry is [`ExpandReport::tile`].
+    pub x: f64,
+    pub y: f64,
+    /// The same point in the plane, as the decimal strings a location is written
+    /// in — so a focus can be framed and rendered without re-deriving the pixel
+    /// mapping on the reader's side.
+    pub center_re: String,
+    pub center_im: String,
+    /// Peak height in standard deviations above its scale's exterior mean.
+    pub peak: f64,
+    /// Peak over the local field mean at twice the scale: how alone it stands.
+    pub isolation: f64,
+    /// `peak × isolation` — the weight the foci branch samples by.
+    pub score: f64,
+    /// The blurring scales that detected this peak, in field pixels. The
+    /// per-sigma survival, spelled out rather than counted.
+    pub sigmas: Vec<f64>,
+    /// Distance in field pixels to the nearest other kept focus, or `null` when
+    /// this is the only one. Every value here is above the spread radius by
+    /// construction — that is what the thinning did — and this is what says by
+    /// how much.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub spacing: Option<f64>,
+}
+
+/// One node's focus set: what the finder found, and what survived the thinning.
+#[derive(Debug, Serialize)]
+pub struct NodeFoci {
+    pub node_id: u64,
+    pub root_id: u64,
+    /// The depth of the *parent* frame these were read off, not of its children.
+    pub depth: u32,
+    /// Maxima the finder returned, before any were dropped for landing on top of
+    /// a better one. The difference between this and `kept.len()` is the whole
+    /// cost of the spread rule.
+    pub found: usize,
+    /// Minimum separation between kept foci, in field pixels: the policy's
+    /// `focus_spread` against this frame's width.
+    pub spread_radius: f64,
+    pub kept: Vec<ReportedFocus>,
+}
+
 /// A node that produced no survivor, and the constraint that bound.
 #[derive(Debug, Serialize)]
 pub struct Dead {
@@ -278,6 +325,11 @@ pub struct ExpandReport {
     pub field_supersample: u32,
     pub candidates: Vec<Candidate>,
     pub dead: Vec<Dead>,
+    /// Each node's kept focus set, present only when the spec asked for it. A
+    /// node that never reached a parent render — one the width floor stopped —
+    /// contributes no entry, because it has no frame to have read foci off.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub foci: Option<Vec<NodeFoci>>,
     pub seconds: f64,
 }
 
@@ -304,34 +356,6 @@ impl ExpandSpec {
     }
 }
 
-/// A frame rendered once, kept in all three of the forms the gates want.
-struct Rendered {
-    field: Vec<f32>,
-    pixels: Vec<u8>,
-    escape: Escape,
-}
-
-/// Render one frame and reduce it, once, for everything downstream.
-fn render(view: &Viewport, family: &Family, cap: u32, colormap: &Colormap) -> Rendered {
-    let sampled = field::render_field(view, family, cap, FieldSpec::Smooth);
-    let field = sampled.fields[0].values.clone();
-    let linear = coloring::colorize(&sampled.fields[0], Transform::Linear, colormap);
-    let pixels = resample::downsample(
-        &linear,
-        view.sample_width() as usize,
-        view.sample_height() as usize,
-        view.out_width as usize,
-        view.out_height as usize,
-        view.supersample,
-    );
-    let escape = Escape::of(&field);
-    Rendered {
-        field,
-        pixels,
-        escape,
-    }
-}
-
 /// Expand every node in `spec` by one rung.
 pub fn run(spec: ExpandSpec) -> Result<ExpandReport, String> {
     let started = Instant::now();
@@ -343,15 +367,15 @@ pub fn run(spec: ExpandSpec) -> Result<ExpandReport, String> {
     let colormap = Colormap::load(&spec.colormap_dir, &spec.colormap)?;
     let policy = spec.policy.policy();
     let gates = spec.gates;
+    let battery = gates.battery();
 
     let node_width = spec.policy.node_width;
-    let node_height = ((node_width as f64 * 9.0 / 16.0).round() as u32).max(1);
-    let probe_height =
-        ((PROBE_WIDTH as f64 * node_height as f64 / node_width as f64).round() as u32).max(1);
+    let node_height = node_height(node_width);
     let [zoom_low, zoom_high] = spec.policy.zoom;
 
     let mut candidates = Vec::new();
     let mut dead = Vec::new();
+    let mut reported_foci: Vec<NodeFoci> = Vec::new();
 
     for node in &spec.nodes {
         let mut rng = Rng(rng::sub_seed(spec.seed, node.node_id));
@@ -386,7 +410,7 @@ pub fn run(spec: ExpandSpec) -> Result<ExpandReport, String> {
         }
         let child_height = child_width * node_height as f64 / node_width as f64;
 
-        let parent_field = render(
+        let parent_field = screen::render_frame(
             &parent,
             &family,
             maxiter::for_width(parent.width),
@@ -440,23 +464,11 @@ pub fn run(spec: ExpandSpec) -> Result<ExpandReport, String> {
                 image,
             };
 
-            // Stage 1 — the cheap interior cap.
-            let probe = Viewport {
-                center,
-                width: child_width,
-                out_width: PROBE_WIDTH,
-                out_height: probe_height,
-                supersample: NODE_SUPERSAMPLE,
-            };
-            let probed = field::render_field(&probe, &family, cap, FieldSpec::Smooth);
-            let probe_interior = Escape::of(&probed.fields[0].values).interior_fraction;
-            if gates.interior_cap > 0.0 && probe_interior >= gates.interior_cap {
-                refused_by = Some(bind(refused_by, "interior_cap"));
-                candidates.push(row("interior_cap", probe_interior, None, None, None));
-                continue;
-            }
-
-            // Stage 2 — the node render, and the two gates that read it.
+            // The gates themselves, in the order they cost money. The
+            // battery is `screen`'s and not this module's, so the `screen`
+            // subcommand and a walk cannot come to different verdicts about one
+            // frame — which is a real risk once two callers exist, and the
+            // reason the battery moved rather than being copied.
             let view = Viewport {
                 center,
                 width: child_width,
@@ -464,65 +476,57 @@ pub fn run(spec: ExpandSpec) -> Result<ExpandReport, String> {
                 out_height: node_height,
                 supersample: NODE_SUPERSAMPLE,
             };
-            let rendered = render(&view, &family, cap, &colormap);
-            // The cap again, on the frame the row will actually record.
-            //
-            // Interior fraction is scale-robust but not scale-*identical*, so a
-            // candidate that read 0.299 on the 128-pixel probe can read 0.301
-            // here — and the cap is a guarantee the rest of the pipeline is
-            // built on, not a filter that is usually right. Re-checking costs
-            // nothing, because the number is already in hand.
-            if gates.interior_cap > 0.0 && rendered.escape.interior_fraction >= gates.interior_cap {
-                refused_by = Some(bind(refused_by, "interior_cap"));
+            let screening = battery.screen(&view, &family, cap, &colormap, occupancy_here);
+            let escape = screening.framed.as_ref().map(|framed| framed.escape);
+            if !screening.passed() {
+                refused_by = Some(bind(refused_by, screening.fate));
                 candidates.push(row(
-                    "interior_cap",
-                    rendered.escape.interior_fraction,
-                    Some(rendered.escape),
-                    None,
-                    None,
-                ));
-                continue;
-            }
-            if let Some(clause) = gates.band.refusal(&rendered.escape) {
-                refused_by = Some(bind(refused_by, clause));
-                candidates.push(row(
-                    clause,
-                    rendered.escape.interior_fraction,
-                    Some(rendered.escape),
-                    None,
-                    None,
-                ));
-                continue;
-            }
-            let occupancy =
-                screen::occupancy(&rendered.pixels, node_width as usize, node_height as usize);
-            if occupancy_here && occupancy < gates.occupancy_floor {
-                refused_by = Some(bind(refused_by, "occupancy_floor"));
-                candidates.push(row(
-                    "occupancy_floor",
-                    rendered.escape.interior_fraction,
-                    Some(rendered.escape),
-                    Some(occupancy),
+                    screening.fate,
+                    screening.interior_fraction(),
+                    escape,
+                    screening.occupancy,
                     None,
                 ));
                 continue;
             }
 
+            let framed = screening.framed.expect("a survivor has a node render");
             let name = format!("node{}_c{}.jpg", node.node_id, index);
             resample::write_image(
                 &spec.out_dir.join(&name),
-                &rendered.pixels,
+                &framed.pixels,
                 node_width,
                 node_height,
             )?;
             survivors += 1;
             candidates.push(row(
                 "survived",
-                rendered.escape.interior_fraction,
-                Some(rendered.escape),
-                Some(occupancy),
+                framed.escape.interior_fraction,
+                Some(framed.escape),
+                screening.occupancy,
                 Some(name),
             ));
+        }
+
+        // After the draws, so the focus set is whatever the draws already
+        // caused to be taken — and taken here where it was not, which costs a
+        // reading and consumes nothing from the node's stream. That is what
+        // makes a report with this on carry the same candidates as one without.
+        if spec.report_foci {
+            let spread_radius = policy.focus_spread * parent.out_width as f64;
+            let found = frame.focus_count(&policy);
+            let kept = frame.kept_foci(&policy);
+            reported_foci.push(NodeFoci {
+                node_id: node.node_id,
+                root_id: node.root_id,
+                depth: node.depth,
+                found,
+                spread_radius,
+                kept: kept
+                    .iter()
+                    .map(|focus| reported(focus, kept, &parent, &policy.sigmas))
+                    .collect(),
+            });
         }
 
         if survivors == 0 {
@@ -543,8 +547,30 @@ pub fn run(spec: ExpandSpec) -> Result<ExpandReport, String> {
         field_supersample: NODE_SUPERSAMPLE,
         candidates,
         dead,
+        foci: spec.report_foci.then_some(reported_foci),
         seconds: started.elapsed().as_secs_f64(),
     })
+}
+
+/// One kept focus as the report carries it, spacing and sigmas resolved.
+fn reported(focus: &Focus, kept: &[Focus], view: &Viewport, sigmas: &[f64]) -> ReportedFocus {
+    let point = foci::pixel_to_point(view, focus.x, focus.y);
+    let spacing = kept
+        .iter()
+        .filter(|other| !std::ptr::eq(*other, focus))
+        .map(|other| ((other.x - focus.x).powi(2) + (other.y - focus.y).powi(2)).sqrt())
+        .fold(f64::INFINITY, f64::min);
+    ReportedFocus {
+        x: focus.x,
+        y: focus.y,
+        center_re: to_decimal_string(point.re),
+        center_im: to_decimal_string(point.im),
+        peak: focus.peak,
+        isolation: focus.isolation,
+        score: focus.score,
+        sigmas: focus.detected_at(sigmas),
+        spacing: spacing.is_finite().then_some(spacing),
+    }
 }
 
 /// The binding constraint on a node, when every candidate was refused.
@@ -739,5 +765,65 @@ mod tests {
                 .iter()
                 .all(|c| c.fate == "interior_cap" && c.escape.is_none())
         );
+    }
+
+    /// The whole promise of the flag: a run that reports its foci draws the same
+    /// candidates as one that does not. The focus set is a reading of the parent
+    /// frame and consumes nothing from the node's stream, so turning the report
+    /// on may add a key and may not move a single coordinate.
+    #[test]
+    fn reporting_the_foci_leaves_every_candidate_exactly_where_it_was() {
+        let node = node(4, ("-0.75", "0.1"), "0.4", 2);
+        let quiet = run(ExpandSpec::parse(&spec_text(&node, "")).unwrap()).unwrap();
+        let loud =
+            run(ExpandSpec::parse(&spec_text(&node, r#","report_foci":true"#)).unwrap()).unwrap();
+
+        assert!(quiet.foci.is_none(), "off by default");
+        assert!(loud.foci.is_some());
+        let strip = |report: &ExpandReport| {
+            let mut value = serde_json::to_value(report).unwrap();
+            let object = value.as_object_mut().unwrap();
+            object.remove("foci");
+            object.remove("seconds");
+            value
+        };
+        assert_eq!(strip(&quiet), strip(&loud));
+    }
+
+    /// What the report says about a focus is what the finder actually decided:
+    /// which blurring scales saw it, how alone it stands, and how far the
+    /// nearest kept neighbour is — which the spread rule guarantees is at least
+    /// the radius it thinned at.
+    #[test]
+    fn a_reported_focus_carries_the_scales_that_found_it_and_its_spacing() {
+        let report = run(ExpandSpec::parse(&spec_text(
+            &node(4, ("-0.75", "0.1"), "0.4", 2),
+            r#","report_foci":true"#,
+        ))
+        .unwrap())
+        .unwrap();
+        let nodes = report.foci.unwrap();
+        assert_eq!(nodes.len(), 1);
+        let found = &nodes[0];
+        assert_eq!(found.node_id, 4);
+        assert_eq!(found.depth, 2, "the parent's depth, not its children's");
+        assert!(found.found >= found.kept.len(), "thinning never adds one");
+        assert!(!found.kept.is_empty(), "this frame has structure in it");
+
+        let sigmas = PolicySpec::default().sigmas;
+        for focus in &found.kept {
+            assert!(!focus.sigmas.is_empty(), "a focus was detected somewhere");
+            for sigma in &focus.sigmas {
+                assert!(sigmas.contains(sigma), "{sigma} is not a scale we swept");
+            }
+            assert!(focus.score > 0.0);
+            assert_eq!(focus.score, focus.peak.max(0.0) * focus.isolation.max(0.0));
+            if let Some(spacing) = focus.spacing {
+                assert!(
+                    spacing > found.spread_radius,
+                    "{spacing} is inside the radius the spread rule thinned at"
+                );
+            }
+        }
     }
 }

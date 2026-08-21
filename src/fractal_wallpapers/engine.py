@@ -48,6 +48,7 @@ __all__ = [
     "render",
     "render_report",
     "run",
+    "screen",
     "tiles",
 ]
 
@@ -250,6 +251,21 @@ def expand(spec: dict) -> dict:
     could not check that from the picture itself.
     """
     return run("expand", spec)
+
+
+def screen(spec: dict) -> dict:
+    """Put frames somebody named through the structural gates.
+
+    The same battery `expand` runs, at the same geometry, over locations a caller
+    hands over rather than ones the engine proposed. What comes back is per gate:
+    what it read, what it read that against, and which way it went — so "why was
+    this frame refused" is a question with an answer instead of an inference from
+    a fate.
+
+    A batch here is heterogeneous where an expansion's is not: there is no shared
+    random stream for a family to be part of, so every frame carries its own.
+    """
+    return run("screen", spec)
 
 
 def tiles(spec: dict, log: Path | None = None) -> dict:

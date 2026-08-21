@@ -15,6 +15,7 @@ operators  reframing a found view onto the atoms around it
 ledger     one JSONL record, one schema, a fate on every row
 scoring    the seam a trained head arrives through
 identity   why the gate render is the picture that head was trained on
+boundary   a seeded uniform draw, screened by those same gates
 ```
 
 Nothing here judges a picture. The gates are geometry — how much of the frame is
@@ -105,6 +106,58 @@ produced by high-precision Newton rather than seeds, so its first frame is
 already below this floor. It is a separate mode because reaching depth by
 lowering this one spends the whole budget on the space between atoms, which is
 the finding that parked the idea in the first place.
+
+**The gates are reachable without proposing anything.** `expand` runs the
+structural battery on frames *it* drew, so for a long time the only way to ask
+what the filter made of a frame somebody named was to go looking for it in a
+ledger. `fractal-wallpapers screen` points the same battery at a location record
+and reports, per gate, what it read and what it read that against — and the ones a
+refusal came before report nothing, because they did not run. It is not a second
+copy: `screen.rs` owns one `Battery` and both callers spend it, held to that by
+`a_named_frame_gets_the_same_fate_the_walk_gave_it` in the crate.
+
+Checked against the live `harvest_run9` ledger: of 40 candidates whose recorded
+fate is a gate, `screen` reproduced **40**. The 20 rows carrying a *scorer* fate
+(`expandable`, `not_admitted`) passed every gate by definition and come back
+`survived` — except six, which are first-rung candidates. **A walk waives the
+occupancy floor at its first rung**, where it over-fires on a root frame still
+resolving structure the tighter child has not entered yet, so screening one
+against three gates reports a refusal its run never made. `--waive-occupancy` is
+that waiver, and with it all 20 come back `survived`.
+
+```
+fractal-wallpapers screen --location row.json
+fractal-wallpapers screen --manifest rows.jsonl --out-dir artifacts/screen/frames
+fractal-wallpapers screen --manifest first_rung.jsonl --waive-occupancy
+```
+
+**A random draw plus those gates is a boundary sampler.** A frame that clears all
+three is not mostly set, not far exterior and has its detail spread over it —
+which is what being on the boundary *is*, so there is nothing else to find it
+with. `sample-boundary` draws uniformly inside a family's home frame at a
+log-uniform width, screens each draw, and records every attempt with the gate that
+refused it. Measured over the c-plane at widths 1e-3 to 1e-1: **1.4% of uniform
+draws clear every gate** — 13 survivors in 832 attempts, 31 seconds — and the
+refusals are 81% `flat`, 17% `interior_cap`, under 1% `occupancy_floor`.
+
+It writes two files, because one could not be both: `draws.jsonl` is the record
+(a run header, one row per attempt, a summary) and `kept.jsonl` is a plain
+location manifest that feeds straight into `render --manifest` or
+`score-locations`.
+
+```
+fractal-wallpapers sample-boundary --keep 12 --attempts 1024 --seed 1
+```
+
+**A node's foci are recorded only if asked.** The focus set — the peaks of the
+smoothed escape field a rung is aiming at — is read once per node either way, and
+`ExpandReport` kept only the chosen target's score. `--foci`, on both `walk` and
+`harvest`, adds one `foci` ledger row per expanded node carrying every kept peak:
+its position in pixels and in the plane, the blurring scales that detected it, its
+isolation, and the distance to the nearest kept neighbour. Off by default and
+**every candidate row is byte-identical either way** — the reading consumes
+nothing from the node's random stream, so a run with it on descends into exactly
+the same places. It costs about one row per four candidate rows.
 
 ```
 fractal-wallpapers walk --family julia --roots 20 --batches 8

@@ -295,6 +295,7 @@ class Walk:
         reframings: Reframings | None = None,
         scorer: Scorer | None = None,
         colormap: str = "twilight_shifted",
+        report_foci: bool = False,
     ):
         self.out_dir = Path(out_dir)
         self.seed = int(seed)
@@ -304,6 +305,14 @@ class Walk:
         self.reframings = reframings or Reframings()
         self.scorer = scorer or NullScorer()
         self.colormap = colormap
+        #: Whether the ledger keeps each expanded node's focus set beside its
+        #: candidates. **Off, and a run with it off writes the ledger it always
+        #: wrote.** The set is a reading of the parent frame that the engine
+        #: takes either way, so this decides what is *recorded*, not what is
+        #: computed — a run with it on descends into exactly the same places.
+        #: On, it costs one row per expanded node, which against four candidate
+        #: rows apiece is a ledger about a quarter larger.
+        self.report_foci = bool(report_foci)
 
         # Before the header, because this is the claim the run's scores rest on:
         # a walk that scores its own gate renders is asserting they are the tiles
@@ -340,6 +349,7 @@ class Walk:
             limits=vars(self.limits),
             policy=self.policy.wire(),
             gates=self.gates.wire(),
+            report_foci=self.report_foci,
             reframings={
                 "enabled": self.reframings.enabled,
                 "snap": self.reframings.snap,
@@ -669,6 +679,7 @@ class Walk:
                     "colormap_dir": str(engine.colormap_dir()),
                     "gates": self.gates.wire(),
                     "policy": self.policy.wire(),
+                    "report_foci": self.report_foci,
                 }
             )
             by_id = {node["node_id"]: node for node in nodes}
@@ -774,6 +785,26 @@ class Walk:
         order to the order the readings finished.
         """
         self._check_regime(report)
+        # Before the candidates, because that is the order they happened in: the
+        # focus set is a reading of the parent frame and the candidates are draws
+        # against it. A reader walking the ledger forward sees what a rung was
+        # aiming at before it sees where it landed.
+        for found in report.get("foci") or []:
+            parent = by_id[found["node_id"]]
+            self.ledger.write(
+                "foci",
+                node_id=found["node_id"],
+                root_id=found["root_id"],
+                depth=found["depth"],
+                family=family,
+                viewport=ledger_module.viewport(
+                    parent["center_re"], parent["center_im"], parent["width"]
+                ),
+                tile=report["tile"],
+                found=found["found"],
+                spread_radius=found["spread_radius"],
+                kept=found["kept"],
+            )
         candidates = [
             self._candidate(row, by_id[row["node_id"]], family) for row in report["candidates"]
         ]

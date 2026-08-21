@@ -108,8 +108,29 @@ pub struct Focus {
     pub isolation: f64,
     /// How many scales detected it. Reported, never used as the sampling weight.
     pub scales: u32,
+    /// *Which* scales detected it, one bit per entry of the sigma list, low bit
+    /// first. A bitmask rather than a list because a [`Focus`] is `Copy` and is
+    /// copied per draw; [`Focus::detected_at`] spells it back out against the
+    /// sigmas it was found with. `scales` is this many bits set.
+    pub detected: u32,
     /// `peak × isolation`: the weight it is sampled by.
     pub score: f64,
+}
+
+impl Focus {
+    /// The blurring scales that detected this peak, in field pixels.
+    ///
+    /// The per-sigma survival as a reader wants it: the sigma values themselves,
+    /// in the order the finder swept them, rather than a mask nobody outside this
+    /// module can decode.
+    pub fn detected_at(&self, sigmas: &[f64]) -> Vec<f64> {
+        sigmas
+            .iter()
+            .enumerate()
+            .filter(|(index, _)| *index < 32 && self.detected & (1 << index) != 0)
+            .map(|(_, sigma)| *sigma)
+            .collect()
+    }
 }
 
 /// The proposal policy's weights.
@@ -182,6 +203,10 @@ pub struct Frame<'a> {
     pixels: &'a [u8],
     /// The spread focus set, taken on the first foci draw.
     foci: Option<Vec<Focus>>,
+    /// How many maxima the finder returned before the spread rule thinned them.
+    /// Kept beside the set because the difference between the two is the whole
+    /// cost of that rule, and it is not recoverable from the survivors.
+    found: usize,
     /// The detail-weighted centroid, taken on the first density draw.
     density: Option<Complex<f64>>,
 }
@@ -194,8 +219,25 @@ impl<'a> Frame<'a> {
             field,
             pixels,
             foci: None,
+            found: 0,
             density: None,
         }
+    }
+
+    /// This frame's kept foci, taking them if no draw has yet.
+    ///
+    /// The door a reporter comes in by. Asking costs a reading of the parent
+    /// field and consumes **nothing** from the node's random stream — which is
+    /// what lets a run that reports its foci draw the same candidates as one
+    /// that does not.
+    pub fn kept_foci(&mut self, policy: &Policy) -> &[Focus] {
+        self.foci(policy)
+    }
+
+    /// How many maxima the finder returned before the spread rule thinned them.
+    pub fn focus_count(&mut self, policy: &Policy) -> usize {
+        self.foci(policy);
+        self.found
     }
 
     /// Draw the next target on this frame.
@@ -237,6 +279,7 @@ impl<'a> Frame<'a> {
     fn foci(&mut self, policy: &Policy) -> &[Focus] {
         if self.foci.is_none() {
             let found = find_foci(self.view, self.field, &policy.sigmas);
+            self.found = found.len();
             self.foci = Some(spread_out(
                 &found,
                 policy.focus_spread * self.view.out_width as f64,
@@ -521,6 +564,7 @@ pub fn find_foci(view: &Viewport, field: &[f32], sigmas: &[f64]) -> Vec<Focus> {
                     merged[at].1.push(detection.scale);
                 }
                 merged[at].0.scales = merged[at].1.len() as u32;
+                merged[at].0.detected |= scale_bit(detection.scale);
                 if detection.isolation > merged[at].0.isolation {
                     merged[at].0.isolation = detection.isolation;
                 }
@@ -532,6 +576,7 @@ pub fn find_foci(view: &Viewport, field: &[f32], sigmas: &[f64]) -> Vec<Focus> {
                     peak: detection.peak.max(0.0),
                     isolation: detection.isolation,
                     scales: 1,
+                    detected: scale_bit(detection.scale),
                     score: 0.0,
                 },
                 vec![detection.scale],
@@ -554,6 +599,16 @@ pub fn find_foci(view: &Viewport, field: &[f32], sigmas: &[f64]) -> Vec<Focus> {
     });
     foci.truncate(TOP_FOCI);
     foci
+}
+
+/// The bit one sigma of the sweep occupies in [`Focus::detected`].
+///
+/// Sigma lists past 32 entries are not a thing this policy takes — five is the
+/// default and the widest ever run is a handful — so a scale beyond the mask
+/// simply does not set a bit rather than the mask growing a heap allocation for
+/// a case nobody has.
+fn scale_bit(scale: usize) -> u32 {
+    if scale < 32 { 1 << scale } else { 0 }
 }
 
 /// A Gaussian, approximated by three box passes — which is what the central
@@ -792,6 +847,7 @@ mod tests {
             peak: score,
             isolation: 1.0,
             scales: 1,
+            detected: 1,
             score,
         };
         let crowded = [focus(0.0, 9.0), focus(1.0, 8.0), focus(50.0, 7.0)];

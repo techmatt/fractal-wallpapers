@@ -383,7 +383,7 @@ def _newton_seat(anchor: dict, center: centers.DeepCenter) -> Seat:
 # The continuation channel.
 # --------------------------------------------------------------------------- #
 #: The width at or below which a ledger row is a *deep admission* worth
-#: continuing from. The shallow floor itself: a row sitting on it is a lineage
+#: continuing from. The shallow floor itself: a row resting on it is a lineage
 #: the floor stopped, not one the material stopped.
 CONTINUABLE_WIDTH = depth.SHALLOW_MIN_WIDTH * 1.5
 

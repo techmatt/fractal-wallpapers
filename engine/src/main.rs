@@ -5,6 +5,7 @@
 //! fractal-engine dump-field [spec.json]   # the same, stopping at the raw field
 //! fractal-engine recolor    [spec.json]   # a dumped field → a PNG, no iteration
 //! fractal-engine expand     [spec.json]   # walk nodes → one rung each, gated
+//! fractal-engine screen     [spec.json]   # named frames → what each gate said
 //! fractal-engine tiles      [spec.json]   # one field per location → many crops
 //! fractal-engine home-view  [spec.json]   # a family → where it is framed by default
 //! fractal-engine maxiter    [spec.json]   # plane widths → the iteration cap policy
@@ -30,7 +31,7 @@ use serde::Serialize;
 use fractal_engine::{
     coloring::{self, Coloring, Palette},
     colormap::Colormap,
-    dump, expand, family, field, mode, resample, spec,
+    dump, expand, family, field, mode, resample, screen, spec,
     spec::{Location, MaxiterSpec, RecolorSpec, RenderSpec},
     tiles,
 };
@@ -181,6 +182,7 @@ fn run(args: Vec<String>) -> Result<(), String> {
         Some("dump-field") => dump_field(argument),
         Some("recolor") => recolor(argument),
         Some("expand") => expand_nodes(argument),
+        Some("screen") => screen_frames(argument),
         Some("tiles") => build_tiles(argument),
         Some("home-view") => home_view(argument),
         Some("maxiter") => maxiter_caps(argument),
@@ -210,6 +212,7 @@ usage: fractal-engine render     [SPEC.json]
        fractal-engine dump-field [SPEC.json]
        fractal-engine recolor    [SPEC.json]
        fractal-engine expand     [SPEC.json]
+       fractal-engine screen     [SPEC.json]
        fractal-engine tiles      [SPEC.json]
        fractal-engine home-view  [SPEC.json]
        fractal-engine maxiter    [SPEC.json]
@@ -222,6 +225,9 @@ recolor     Color a dumped field again, without iterating anything.
 expand      Take one rung of a walk from each of a batch of nodes: draw
             candidate next frames, gate them, and report every one with its
             fate and a thumbnail of the survivors.
+screen      Run the same structural gates over frames somebody named, and
+            report what each gate read and which way it went. Proposes
+            nothing: this is expand's filter without expand's search.
 tiles       Turn a plan of locations into training tiles: one iteration pass
             per location, and every tile a colored crop of it.
 home-view   Where a family is framed when nothing says otherwise, with the
@@ -345,6 +351,11 @@ fn dump_field(spec_path: Option<&str>) -> Result<(), String> {
 fn expand_nodes(spec_path: Option<&str>) -> Result<(), String> {
     let spec = expand::ExpandSpec::parse(&read_spec(spec_path)?)?;
     print(&expand::run(spec)?)
+}
+
+fn screen_frames(spec_path: Option<&str>) -> Result<(), String> {
+    let spec = screen::ScreenSpec::parse(&read_spec(spec_path)?)?;
+    print(&screen::run(spec)?)
 }
 
 /// What the cap policy gives a list of widths, printed as one JSON object.
