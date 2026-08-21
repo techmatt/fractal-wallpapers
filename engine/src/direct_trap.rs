@@ -228,7 +228,15 @@ impl Painter {
 
     /// One orbit's worth of compositing. Returns the pixel and whether the orbit
     /// escaped.
-    fn trace(
+    ///
+    /// Public so that a caller can choose its own row range: [`Painter::paint`]
+    /// takes a whole viewport, and a band of one cannot be asked for by shrinking
+    /// the viewport — the sample coordinates are formed from the frame's own
+    /// height, so a band viewport would land on almost the same numbers and draw a
+    /// seam. The site's wasm explorer paints a band per worker and needs this; the
+    /// row loop it writes carries no picture decision, which is why the door is
+    /// here and not a second `paint`.
+    pub fn trace(
         &self,
         family: &Family,
         pixel: Complex<f64>,
