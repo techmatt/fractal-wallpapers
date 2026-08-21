@@ -1089,8 +1089,14 @@ pub fn shade(
 /// pair being discarded. That is what keeps a smooth base + trap texture from
 /// blacking out the interior: the smooth field says nothing there, the trap
 /// field does, and the picture should show what is known rather than nothing.
+///
+/// Public for the same reason [`shade`] is: a caller that already holds the
+/// fields — the site's wasm explorer computes them a band at a time in a worker
+/// and colors the assembled pair on the main thread — needs the coloring without
+/// the iteration in front of it. [`paint`] is still the whole answer for anything
+/// that has a viewport rather than a pair of fields.
 #[allow(clippy::too_many_arguments)]
-fn composite(
+pub fn composite(
     base: &Field,
     texture: &Field,
     base_transform: Transform,
@@ -1157,7 +1163,9 @@ fn composite(
 ///   texture does have a value. A composite falls back to the texture alone
 ///   because the two are peers; here the texture is a perturbation *of* the base
 ///   and there is nothing to perturb, so the honest answer is the set's own black.
-fn modulate(
+///
+/// Public on the same terms as [`composite`]: the fields, then the color.
+pub fn modulate(
     base: &Field,
     texture: &field::Exact,
     base_transform: Transform,
