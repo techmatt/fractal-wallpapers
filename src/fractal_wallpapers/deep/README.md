@@ -99,8 +99,10 @@ and closeness is exactly what the orbit cannot keep apart. The other three
 planes keep `1e-11`; their errors are larger and invisible. The floor is wired
 per degree in `depth.min_width`, so it reaches the seat window
 (`depth.seat_sizes`), the bands a plane is offered (`depth.open_bands` — degree
-5 loses the `floor` band outright) and the walk's own rung gate, which is how a
-seat admitted above the floor is stopped from descending through it.
+5 loses the `floor` band outright) and the walk's own rung gate — `walk.Gates.for_family`
+reads the per-degree floor off the family it is handed, which is how a seat
+admitted above the floor is stopped from descending through it, and is why a
+walk with no per-degree floors still wires byte-identical payloads.
 
 **Standing check on any future deep release.** Render the winner at *eval* and at
 *release* geometry and eyeball the pair before shipping it. In the amplified
@@ -162,6 +164,19 @@ don't-start-what-cannot-finish, against the same clock the batches are.
 
 `--no-reseat` turns the continuation off; both it and `--reseat` default to
 saying nothing, so the shipped default lives on `Limits` and not on a flag.
+
+**What a second round must not re-buy is one object, not five arguments.**
+`roots.Standing` carries every axis a round has already spent: the per-family
+**anchor queues**, built on first use so the plane-seed file is read once a run
+and *consumed*, so an anchor a stalled ladder spent is gone and no later round
+pays to prove the same descent does not arrive; the reflection keys the Newton
+channel is already standing on; the place keys and the `ledger|root_id` lineages
+the continuation channel has already taken; and the `family|band` **cell fills**
+across every round, so a second round fills the cells the first one left least
+full instead of restarting its own round-robin. They are only ever read and
+written together, and a round handed four of them is a round that quietly
+re-seats along the axis left out. A single-round run ignores it: every entry
+point builds an empty one, and an empty one reproduces the old behaviour exactly.
 
 **A lineage is capped at 24 admissions, because monotony is a supply problem.**
 `deep_run1` put 741 admissions on 15 of its 48 roots and 85 on one, and the 162

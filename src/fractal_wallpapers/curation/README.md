@@ -32,7 +32,25 @@ fractal-wallpapers curate run --resume v1                          # carry on wh
 fractal-wallpapers curate reject --run v1 --rejector matt_review --date 2026-08-17
 ```
 
-Eight things here are worth reading before changing anything.
+Everything a run makes at full size is **2560x1440 supersample 4** —
+`run.RELEASE_RESOLUTION` and `run.RELEASE_SUPERSAMPLE`, one geometry for every
+partition, every mode and every head, so nothing about a release row's cost or
+its bytes depends on which slot it took, and `checks` re-derives against those
+same two constants.
+
+What follows is worth reading before changing anything.
+
+**A candidate set is a neighbourhood and the pick is made on one field.** The
+thirty-two maps are `palettes.space.neighbourhood(anchor, pool, 32)` — the
+nearest maps to a drawn anchor in a fixed Oklab metric over the gradient as the
+renderer spends it — so the head is asked the fine distinction it was distilled
+to make rather than an obvious one, and the set is a pure function of the tracked
+library and the anchor. Anchors are drawn **without replacement across a run**,
+which is the cheap spread rule: two locations in one release do not come out of
+the same region of palette space. Every candidate is a *recolor of one dumped
+smooth field* — one iteration pass per location instead of thirty-two, and the
+pictures the head reads are the smooth renders it was distilled on. The chosen
+map then colours whatever mode the attempt actually draws.
 
 **A run is bound to its ledgers, and nothing defaults to all of them.** `--ledger`
 names them; `--harvest` names the run that wrote them and takes its `walk.jsonl`.
@@ -70,8 +88,15 @@ bar** removes one at selection: a strange row below 0.685 is not seated, and a
 strange slot with nothing above it goes unfilled.
 
 Both are [`Restatement`]s now, and so are the supply engine's two — the good floor
-and the great cut, which sit on the same location scale and are owned by
-`supply.currency`. A height is declared with the sha of the artifact it was
+and the great cut, which sit on the same location head and are owned by
+`supply.currency`. Those two are **not nested**, because they are cuts on two
+different cutpoints of it: the good floor reads `P(≥3)` and the great cut reads
+`P(≥4)`, so a frame can clear one and fail the other. `currency.good_class` reads
+the floor **first** and answers `None` below it — a frame the run would not keep
+has no verdict about how unkeepable it is — and only then asks the great cut
+whether the keeper is a 4 or a 3.
+
+A height is declared with the sha of the artifact it was
 measured on, the cut is stamped with **that** sha rather than with whatever is
 live, and a head flip therefore refuses at the first comparison instead of
 quietly deciding on a scale that no longer exists. The junk floor was the last
@@ -98,7 +123,11 @@ a flag, so which kind a head has is visible at every call site.
 **Nothing is frozen into a row.** Scores are read at the moment they are used, out
 of a sidecar this stage owns — upserted per ledger, so scoring one binding
 replaces that binding's rows and leaves every other ledger's alone; the walk
-ledgers themselves are never rewritten. A
+ledgers themselves are never rewritten. The *read* back is the other way round —
+`ranked` looks the sidecar up **unscoped**, because the binding decides which
+places are on offer and a score is a statement about a place, so a location this
+binding offers that some other invocation already scored keeps its number instead
+of arriving unscored and dying at the floor. A
 verdict stamped into a ledger on the day it was minted is a verdict the pipeline
 must later either believe or delete, and deleting is how a head flip once took an
 intake from about fourteen hundred locations to sixteen. Here a flip is a
@@ -123,6 +152,15 @@ render styles gives the one smooth coloring a sixteenth of the attempts however
 many smooth slots the release wanted — a release starved by an allocation rule
 that had no opinion about the release.
 
+**The funnel is printed with three denominators, not one.** `found` is every gate
+survivor the binding holds, `scored` is how many of those the sidecar has an
+opinion about, and `passing`/`good` are counted over `scored` and never over
+`found`. The junk floor is the only cut intake applies — the survivors above it
+are the whole offer, and everything else here annotates. The first production
+run printed "22,751 found, 1,245 above the junk floor", which put every gate
+survivor in a denominator only the scored prefix could reach, and reported a
+fifth of the real rate.
+
 **Nothing is padded, backfilled or redistributed.** A judge that cannot fill its
 quota under the caps ships fewer and says so with the three numbers that make the
 shortfall attributable. A slot a thin partition could not use is not handed to a
@@ -136,8 +174,12 @@ unfilled, per head and per partition, with the reason each shortfall bound on.
 **A release can be wrong, and taking a row back adds to the record.** `rejection`
 stamps a released row with who rejected it, when, and against which bar and
 artifact; `verdict` stays `released`, the scores are untouched, nothing is
-deleted. `records.served` — released minus rejected — is what every listing,
-every check and the sheet read, so a row leaves service everywhere at once. The
+deleted. `records.served` is what every listing, every check and the sheet read, so a row
+leaves service everywhere at once — and it is three conditions rather than one:
+released, not rejected, **and** with a release picture to serve. The third is not
+redundant with the first. A set defined on the verdict alone would be one schema
+change away from serving a link to nothing, which is exactly what the
+[record store](../../../data/curation/README.md) records happening. The
 sheet keeps it on the page under its own heading, because a review page that
 disagreed with its own records would be the one thing a review page may not be.
 `curate reject` applies today's acting bars to a run released before they acted,
@@ -193,6 +235,12 @@ where the reserve is what the readout and the write-up need after the last pictu
 lands. A night capped at six hours with a three-hour harvest therefore hands the
 curation a little under three, and the curation is the leg that will stop early —
 `-n` binds it long before the clock does.
+
+**A run name is claimed once.** A `curate run` whose name already has a
+`run_plan.json` refuses: continuing an interrupted run is `--resume`, and it is a
+decision rather than a default. A `--resume` that contradicts the stored plan
+refuses too, and names both shapes, because a second plan's attempts written into
+the first plan's log is not a thing a later reader can unpick.
 
 **An interrupted run is continued, not restarted.** `--resume` skips what the run
 already finished, off the run's own candidate log and the pictures on disk. Its

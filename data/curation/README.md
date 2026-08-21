@@ -35,9 +35,22 @@ touched it, which kind of slot it took, and the autolevel stamp of the render th
 decision was taken on — on one line. A row keyed on an identifier whose meaning
 lives in another file is orphaned the day that file moves.
 
+**There are two autolevel stamps per released row, and only one of them is here.**
+The stamp on the row is the one from the render the *decision* was taken on, at
+candidate geometry. The release render is a second pass and gets its own stamp,
+written by the parent — never by a worker — to
+`artifacts/curation/runs/<run>/release/autolevel_stamps.jsonl`, and that is the
+one `curate replay` rebuilds a shipped picture from. A row's stamp does not
+describe the wallpaper; the sidecar's does.
+
 **Passed-over rows are here too**, and that is the half that is easy to skip. A
 record of what shipped can count what passed and never learn what it passed out
 of, which is the shape of every question about a release worth asking later.
+
+**A release verdict is one of three, and they are not two.** `run.release_verdict`
+reads a slot and a picture: a row that took no slot is `passed_over`, a row that
+took one and has a full-resolution picture is `released`, and a row that took one
+and has no picture is `killed` — its render died under it.
 
 **A row that took a slot and has no picture is not a released row.** The release
 verdict answers one question — is there a wallpaper at the end of this row — so a
@@ -57,7 +70,10 @@ released minus rejected, and every listing reads that rather than the raw
 verdict. `run2`'s eleven below-bar strange rows are here on exactly those terms.
 
 Rows upsert by key and the key carries the run id, so a re-run replaces its own
-rows byte for byte and a second run adds rows without touching the first. A
+rows byte for byte and a second run adds rows without touching the first.
+`runs/<run>.json` is the exception: it is written **whole** rather than upserted,
+so a resume replaces it outright and the interrupted attempt's own wall-clock
+record does not survive. What a resumed run reports is the resumed leg. A
 rehearsal must not write here at all — `curate run --ephemeral` redirects the
 whole store under `scratch/`, because a sixty-row smoke's decisions are
 indistinguishable in an accumulated file from a real release's.

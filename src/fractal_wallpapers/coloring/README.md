@@ -47,6 +47,16 @@ pixels. What the operator really costs is the *second render*: on the release ro
 profiled so far it acted on 42% of them, and an acting row pays a full second pass at
 release size.
 
+**Which colorings a run may draw is a function, not a rule each site remembers.**
+The engine's catalog tiers every named mode, and this side reads that tiering at
+call time through `engine.production_modes()` — so a mode cannot be production on
+one side of the boundary and niche on the other. `curation.colorize.modes_for`
+is the **only** place a mode is drawn: the niche exclusion lives there rather
+than at each of its callers, and the paying head decides the roster (the smooth
+judge owns the one smooth coloring, the strange judge owns every other production
+mode). What the tiers are and which mode sits in each is
+[the engine's](../../../engine/README.md).
+
 **The direct-trap family is excluded by kind**, at the site that decides rather
 than by a test buried in the measurement. A direct trap is a thin bright figure
 over a flat ground, so its tone statistics describe the ground; a new direct mode

@@ -13,7 +13,12 @@ builds one for itself.
   an untracked `local.toml` at the repository root, or
   `FRACTAL_WALLPAPERS_HOT_ROOT` / `FRACTAL_WALLPAPERS_ARCHIVE_ROOT` in the
   environment. Hot defaults to `artifacts/` inside the checkout, which is what CI
-  and a fresh clone get; archive defaults to nothing at all.
+  and a fresh clone get; archive defaults to nothing at all. The single key this
+  pair replaced — `artifacts_root`, and `FRACTAL_WALLPAPERS_ARTIFACTS_ROOT` — is
+  **refused rather than ignored**: a machine still spelling it meant to put the
+  tree somewhere, and reading nothing would send its next build to the checkout,
+  which is the silent fallback `ArtifactsRootMissing` exists to prevent arriving
+  through the settings file instead of through an unplugged disk.
 
 A top-level name of the tree is in exactly one tier, and its tier is where its
 files are — no registry, so nothing to drift. Everything asks through one funnel:
@@ -70,6 +75,13 @@ absolute path and is left alone deliberately. A path that leaves the checkout
 entirely, like the extraction source's colormap pool, is named by *what* it is
 rather than where it sat: `the source project's data/palettes/pool_colormaps.json`.
 
+The read-only extraction source is the one thing outside the checkout that code
+still has to *open*, and it is addressed **relative to this checkout** rather
+than by an absolute path: `models.acceptance.beside(relative)` is
+`repo_root().parent / relative`, so a sibling clone is found wherever the pair
+was put and is simply absent afterwards. That absence is the reason the numbers
+it reads are vendored — a bar has to stay re-readable without that repository.
+
 
 ## One shape for a place, and one reader for it
 
@@ -96,9 +108,9 @@ flag nobody passed would have meant, so a two-key record is a legal record.
 `maxiter` is the one field with a third answer — absent means "the depth-aware
 policy decides", which is not any particular number, so it stays absent.
 
-**Batch forms take a manifest file, never a list of paths.** Hundreds of
-locations overflow a Windows command line, and the manifest is a record of what
-the batch was over. Pictures in a batch are named `<row>_<digest>.png`, the digest
+**Batch forms take a manifest file, never a list of paths** — the repository-wide
+rule, stated in [`CLAUDE.md`](../../CLAUDE.md); here the manifest is also the
+record of what the batch was over. Pictures in a batch are named `<row>_<digest>.png`, the digest
 being of everything the engine was told — so a batch is resumable and two records
 that would draw one picture name one file. `renders.jsonl` beside them is the join
 back to the records.
