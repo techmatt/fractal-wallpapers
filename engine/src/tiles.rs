@@ -853,11 +853,12 @@ pub fn run(spec: TilesSpec) -> Result<TilesReport, String> {
         let view = geom.view(resolved.center);
         if !view.is_resolvable_in_f64() {
             return Err(format!(
-                "location {}: the extended field samples {:.3e} apart, at the limit of f64 — \
-                 neighbouring subpixels would round to the same coordinate and the tiles would \
-                 be pictures of the arithmetic",
+                "location {}: the extended field samples {:.3e} apart, which is {:.2} of a \
+                 unit of last place at these coordinates — neighbouring subpixels would \
+                 round to the same number and the tiles would be pictures of the arithmetic",
                 row.location_id,
-                view.pixel_size()
+                view.sample_spacing(),
+                view.resolution_ulps()
             ));
         }
         last_geom = Some(geom);

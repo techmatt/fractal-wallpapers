@@ -320,9 +320,13 @@ impl RenderSpec {
         };
         if !view.is_resolvable_in_f64() {
             return Err(format!(
-                "pixel size {:.3e} is at the limit of f64: neighbouring pixels would round to \
-                 the same coordinate. This engine renders shallow views only.",
-                view.pixel_size()
+                "the samples of this view are {:.3e} apart, which is {:.2} of a unit of last \
+                 place at coordinates of magnitude {:.3}: neighbouring samples would round to \
+                 the same number and the picture would be of the arithmetic. This engine has \
+                 no path below f64.",
+                view.sample_spacing(),
+                view.resolution_ulps(),
+                view.center.norm(),
             ));
         }
 

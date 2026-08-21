@@ -63,19 +63,31 @@ what `n` means and so what every cached render means, and perturbation-based dee
 zoom, which is the one genuinely large thing this engine lacks (`iterate.rs`
 carries the TODO).
 
-Until it arrives, `Viewport::is_resolvable_in_f64` refuses a view whose *output
-pixel* is 1e-13 or smaller — at the release presentation, width 2.56e-10. That
-constant is insurance and it is early. The wall it stands in for is relative, not
-absolute: adjacent sample centres are `center + across * width`, so they tie when
-the spacing falls under one `f64` ulp *at the centre's own magnitude*. Bisected at
-2560×1440 ss4, the first tie is at width 2.84e-13 for a centre near 0.23, 1.42e-13
-near 0.081, 2.27e-12 at |c| = 1 — **2.0 to 3.3 decades below the refusal**, and
-still ≈1.75 decades below it in the worst case anywhere on the set. Measured
-alongside: the deepest location any ledger holds (1.0165e-9) renders at release
-geometry with **zero** tied sample centres per row, and the tie rate in its dumped
-field scales exactly ×4 with a 4× finer grid — which is the `f32` dump's own
-storage granularity, the same law the shallow control four decades above the wall
-obeys. Nothing about the current floor is a precision limit. See
+Until it arrives, `Viewport::is_resolvable_in_f64` is what says how deep `f64`
+goes — and it asks the question the arithmetic actually poses. A sample coordinate
+is formed as `center + across * width`, so two neighbouring sample centres tie
+when the step between them falls under one `f64` unit of last place *at the
+magnitude of that sum*. The refusal reads exactly that: `sample_spacing()`
+against `RESOLUTION_ULPS` (4) ulps of the frame's own reach.
+
+**It used to be `pixel_size() > 1e-13`, which was wrong twice.** A relative limit
+enforced as an absolute constant, and read off the *output* pixel, so a
+supersampled render was judged on a grid four times coarser than the one it
+samples. Bisected at 2560x1440 ss4, the first tie is at width 2.84e-13 for a
+centre near 0.23, 1.42e-13 near 0.081, 2.27e-12 at |c| = 1 — against a refusal at
+2.56e-10, so **2.0 to 3.3 decades of headroom nothing was using**. Nothing that
+used to be drawn is refused now; a great deal that was refused for the wrong
+reason is drawn, which is what
+[the deep run mode](../src/fractal_wallpapers/deep/README.md) descends into. The
+new rule is held to the measurement by `viewport.rs`'s own tests, which bisect for
+the tie and require the refusal to sit a *constant* multiple above it at four
+magnitudes — a rule that were secretly absolute shows a headroom that moves.
+
+Measured alongside, before any of that changed: the deepest location any ledger
+holds (1.0165e-9) renders at release geometry with **zero** tied sample centres
+per row, and the tie rate in its dumped field scales exactly x4 with a 4x finer
+grid — which is the `f32` dump's own storage granularity, the same law the
+shallow control four decades above the wall obeys. See
 `scratch/measure_deep_probe_report.md`.
 
 What deep zoom would cost, observed on the maker's perturbation backend at the S1

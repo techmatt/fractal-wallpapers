@@ -142,6 +142,7 @@ def curate(
     device: str = "auto",
     skip_release: bool = False,
     wall_budget: float | None = None,
+    ceilings: dict | None = None,
     resume: bool = False,
     log=print,
 ) -> dict:
@@ -150,8 +151,14 @@ def curate(
     The shape parameters are `None` for "whatever this run's shape already is" —
     the defaults on a fresh run, the sidecar's own values on a resumed one — so
     that a resume cannot re-plan a run by omitting a flag.
+
+    `ceilings` is not one of them. It says how long a unit may take before it is
+    killed, which is *execution* rather than shape — the same kind of fact as the
+    worker count and the wall budget — so a resume may legitimately carry a
+    different set. [`fractal_wallpapers.deep.run.HUNG_CEILING`] is the one other
+    set that exists, and the clock records whichever was used.
     """
-    clock = pacing.Clock(wall_budget)
+    clock = pacing.Clock(wall_budget, ceilings=ceilings)
     directory = run_dir(run)
     directory.mkdir(parents=True, exist_ok=True)
     shape = _shape(

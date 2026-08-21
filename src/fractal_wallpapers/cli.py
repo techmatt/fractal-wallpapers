@@ -694,6 +694,55 @@ def harvest(args: argparse.Namespace) -> int:
     return 0
 
 
+def deep_roots(args: argparse.Namespace) -> int:
+    """Fill the seats and print them, standing on none of them."""
+    import random
+
+    from fractal_wallpapers.deep import roots as roots_module
+
+    seats, sourcing = roots_module.sourced(
+        args.seats,
+        random.Random(args.seed),
+        newton_share=args.newton_share,
+        anchors_per_family=args.anchors,
+    )
+    if args.out:
+        path = resolve_output(args.out)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("w", encoding="utf-8", newline="\n") as handle:
+            for seat in seats:
+                handle.write(json.dumps(seat.record(), ensure_ascii=False) + "\n")
+        print(f"{len(seats)} seat(s) -> {display_path(path)}")
+    print(json.dumps({"seats": [seat.record() for seat in seats], "sourcing": sourcing}, indent=2))
+    return 0 if seats else 1
+
+
+def deep_walk(args: argparse.Namespace) -> int:
+    """Source the seats, stand on them, and record everything that is seen."""
+    from fractal_wallpapers.deep import run as deep_module
+
+    run = deep_module.Deep(
+        out_dir=resolve_output(args.out_dir),
+        seed=args.seed,
+        limits=deep_module.Limits(
+            seats=args.seats,
+            newton_share=args.newton_share,
+            anchors_per_family=args.anchors,
+            batch=args.batch,
+            batches=args.batches,
+            root_expansions=args.root_expansions,
+        ),
+        scorer=build_scorer(args),
+        colormap=args.colormap,
+        node_width=args.node_width,
+    )
+    if not run.source():
+        print("no seats: neither channel produced a nucleus this mode can frame")
+        return 1
+    print(json.dumps(run.run(), indent=2))
+    return 0
+
+
 def census(args: argparse.Namespace) -> int:
     """Print the standing deficit and the allocation it implies, running nothing.
 
@@ -1688,6 +1737,7 @@ def curate_run(args: argparse.Namespace) -> int:
     """Make a release: colorize, select, render at full resolution, record it all."""
     from fractal_wallpapers.curation import binding, intake, records
     from fractal_wallpapers.curation import run as run_module
+    from fractal_wallpapers.deep import run as deep_run
 
     try:
         summary = run_module.curate(
@@ -1702,6 +1752,7 @@ def curate_run(args: argparse.Namespace) -> int:
             device=args.device,
             skip_release=args.skip_release,
             wall_budget=args.wall_budget,
+            ceilings=deep_run.HUNG_CEILING if args.deep else None,
             resume=bool(args.resume),
         )
     except (
@@ -2220,6 +2271,7 @@ def build_parser() -> argparse.ArgumentParser:
     palette_commands(subcommands)
     coloring_commands(subcommands)
     curate_commands(subcommands)
+    deep_commands(subcommands)
     storage_commands(subcommands)
 
     bringing = subcommands.add_parser(
@@ -3335,6 +3387,110 @@ def storage_status(args: argparse.Namespace) -> int:
     return 0
 
 
+def deep_commands(subcommands) -> None:
+    """`deep roots` and `deep walk`: the run mode for the release-stock tail."""
+    from fractal_wallpapers.deep import depth
+    from fractal_wallpapers.deep import run as deep_module
+
+    diving = subcommands.add_parser(
+        "deep",
+        help="the deep run mode: source, score and record below the shallow walk's floor",
+        description=(
+            f"A separate sourcing mode for the tail the ordinary walk cannot reach. Its "
+            f"floor is {depth.MIN_WIDTH:.0e} against the shallow walk's "
+            f"{depth.SHALLOW_MIN_WIDTH:.0e}, and depth comes from WHICH ATOM it stands on "
+            f"rather than from how far it descended: a seat is a nucleus whose own framing "
+            f"band already lands below the shallow floor. Pure f64 end to end - there is no "
+            f"perturbation kernel here - so a seat is refused up front unless f64 still "
+            f"resolves its money shot at release geometry. Release the ledger it writes "
+            f"with `curate run --deep --harvest <out-dir>`, which swaps in this mode's own "
+            f"hung-unit ceilings."
+        ),
+    )
+    steps = diving.add_subparsers(dest="step", required=True)
+
+    def seat_flags(parser):
+        parser.add_argument(
+            "--seats",
+            type=int,
+            default=deep_module.Limits().seats,
+            help="nuclei this run stands on. THE budget lever of this mode",
+        )
+        parser.add_argument(
+            "--newton-share",
+            type=float,
+            default=deep_module.Limits().newton_share,
+            help="share of the seats the Newton channel is asked for first; whatever it "
+            "cannot fill the continuation channel does, in the same call",
+        )
+        parser.add_argument(
+            "--anchors",
+            type=int,
+            default=deep_module.Limits().anchors_per_family,
+            help="plane-seed atoms per family a Newton ladder may start from, deepest first",
+        )
+        parser.add_argument("--seed", type=int, default=0, help="run seed (default: 0)")
+        return parser
+
+    sourcing = seat_flags(
+        steps.add_parser(
+            "roots",
+            help="fill the seats and print them, standing on none of them",
+            description=(
+                "Both channels. `newton` tracks the boundary down from a tracked plane-seed "
+                "atom, one Newton solve per rung at the precision the atom itself asks for, "
+                "until an atom's band lands in this mode's window; `continuation` takes "
+                "places earlier ledgers already admitted at the shallow floor. Every miss "
+                "is counted with the reason, and every ladder is printed whether or not it "
+                "arrived."
+            ),
+        )
+    )
+    sourcing.add_argument("--out", help="also write one seat per line to this JSONL file")
+    sourcing.set_defaults(handler=deep_roots)
+
+    walking = seat_flags(
+        steps.add_parser(
+            "walk",
+            help="source the seats, stand on them, and record every fate",
+            description=(
+                "The shipped location head judges, at its own existing floors, with no "
+                "deep-specific gate and no deep-specific calibration - it has seen nothing "
+                "below 1.8e-10, so what this run buys is the record of what it said, at "
+                "every fate, about material two decades below where it was trained."
+            ),
+        )
+    )
+    walking.add_argument(
+        "--batch", type=int, default=deep_module.Limits().batch, help="nodes expanded per batch"
+    )
+    walking.add_argument(
+        "--batches", type=int, default=deep_module.Limits().batches, help="batches to run"
+    )
+    walking.add_argument(
+        "--root-expansions",
+        type=int,
+        default=deep_module.Limits().root_expansions,
+        help="expansions any one seat's roots may pay for",
+    )
+    walking.add_argument(
+        "--node-width",
+        type=int,
+        default=384,
+        help="node render width in pixels; a scored run refuses any other",
+    )
+    walking.add_argument(
+        "--colormap", default="twilight_shifted", help="colormap the gate renders are drawn through"
+    )
+    walking.add_argument(
+        "--out-dir",
+        default=str(Path("artifacts") / "deep"),
+        help="where the ledger and thumbnails go (default: artifacts/deep)",
+    )
+    scoring_flags(walking)
+    walking.set_defaults(handler=deep_walk)
+
+
 def storage_commands(subcommands) -> None:
     """The two tiers: what is where, and moving a subtree between them."""
     storing = subcommands.add_parser(
@@ -3549,6 +3705,14 @@ def curate_commands(subcommands) -> None:
         action="store_true",
         help="reuse the full-resolution pictures already on disk instead of rendering "
         "(with --resume: the pictures are this run's own, from before it was interrupted)",
+    )
+    running.add_argument(
+        "--deep",
+        action="store_true",
+        help="hold this run to the deep mode's hung-unit ceilings instead of the shallow "
+        "ones. A deep release frame was measured at 607s against a shallow one's 16-452s, "
+        "and the backstop only ever raises itself off units a run has FINISHED - so a "
+        "deep row killed at the shallow ceiling never teaches the run that its class is slow",
     )
     running.set_defaults(handler=curate_run)
 

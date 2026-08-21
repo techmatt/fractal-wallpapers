@@ -141,11 +141,13 @@ pub struct Gates {
     pub band: Band,
     /// Frame width below which a rung is not taken.
     ///
-    /// Not a performance limit — a correctness one. Below about `1e-13` of the
-    /// coordinates' magnitude two neighbouring pixels round to the same `f64`
-    /// and the render is a picture of floating-point spacing. This floor sits
-    /// four decades above that, which leaves a wallpaper-fidelity render of the
-    /// same location hundreds of units of last place per sample.
+    /// **A policy, not the `f64` wall.** The wall is
+    /// [`crate::viewport::Viewport::is_resolvable_in_f64`] and it is relative to
+    /// the coordinates' own magnitude: at a finished wallpaper's geometry it
+    /// falls between `2e-12` and `9e-12` over the c-plane. So [`MIN_WIDTH`] is
+    /// two to three decades of headroom above it, and not the "four decades"
+    /// this comment used to claim — an arithmetic that compared a *width*
+    /// against a *spacing*. A deep descent passes its own value here.
     pub min_width: f64,
 }
 
@@ -161,7 +163,11 @@ impl Default for Gates {
     }
 }
 
-/// The `f64`-reliable floor on a walk's frame width.
+/// The floor on a shallow walk's frame width.
+///
+/// Bring-up insurance that stayed: it keeps a walk inside the regime this
+/// engine's `f64` arithmetic was measured in, well above where the arithmetic
+/// actually fails. The deep run mode sets its own.
 pub const MIN_WIDTH: f64 = 1e-9;
 
 /// How the policy is configured for this batch.
