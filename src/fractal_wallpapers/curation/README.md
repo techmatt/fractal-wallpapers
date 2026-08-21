@@ -172,6 +172,18 @@ Stopping is an outcome: the summary says `budget_stopped`, which is neither
 `completed` nor `crashed`, so a short release is attributable to the clock rather
 than mistaken for thin supply.
 
+**A deep release is a different cost class, and `--deep` is what says so.** The
+hung-unit backstop (`pacing.HUNG_CEILING`) is a fixed ceiling per leg, sized
+against a shallow release row's measured 16-452 s and raised only by units a run
+has *finished* — so a class whose first row dies at the ceiling never teaches the
+run that the class is slow. Two 2560x1440 ss4 frames from
+[the deep run mode](../deep/README.md) were measured at **531 s and 607 s**, at
+widths `8.07e-10` and `7.07e-11` and iteration caps near 46 000. `curate run
+--deep` swaps in `deep.run.HUNG_CEILING` (colorize 1200 s, release 2400 s) for
+the whole run; the clock records which set each leg was held to, so a summary
+says it rather than implying it. It is an *execution* flag, like `--workers`: it
+is not part of a run's shape and a resume may carry a different one.
+
 **A production night is three legs, and the wall budget is what the first two
 leave.** Harvest, then `curate score` over the harvest it just wrote, then `curate
 run` — separate invocations, so a failure in one does not take the finished work of

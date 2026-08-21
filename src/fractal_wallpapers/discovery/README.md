@@ -97,6 +97,15 @@ altogether, and every gate survivor under a plane root records its rung and its
 raw junk-floor verdict — which is the survival-by-rung table a depth-aware floor
 would have to be shaped from.
 
+**Below `min_width` is another mode, not a lower floor here.** The walk's
+`1e-9` stays where it is. What is under it —
+[the deep run mode](../deep/README.md) — reuses this package's engine door,
+gates, ledger and scorer, and changes only where it stands: its roots are nuclei
+produced by high-precision Newton rather than seeds, so its first frame is
+already below this floor. It is a separate mode because reaching depth by
+lowering this one spends the whole budget on the space between atoms, which is
+the finding that parked the idea in the first place.
+
 ```
 fractal-wallpapers walk --family julia --roots 20 --batches 8
 fractal-wallpapers walk --seeds my_locations.jsonl --neighborhood

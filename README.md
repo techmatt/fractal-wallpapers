@@ -108,7 +108,7 @@ where the thing it describes cannot move away from it.
 ```
 engine/                     the Rust renderer: the spec it reads, what it makes
 src/                        the Python side, one README per package —
-  fractal_wallpapers/         coloring, curation, discovery, labeling,
+  fractal_wallpapers/         coloring, curation, deep, discovery, labeling,
                               models, palettes, supply
 data/                       the records: one README per store, plus what a row means
 models/                     the trained judges, one README per head
