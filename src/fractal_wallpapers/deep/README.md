@@ -204,4 +204,36 @@ finding a center were measured and one works:
 **And a dead julia frame does not look dead.** The coloring stretches whatever
 range it is handed, so a field that is constant to five decimals arrives as a
 full-palette ramp or a few clean bands. Anything that screens julia frames for
-emptiness has to read the field's span, not the picture.
+emptiness has to read the field's span, not the picture — and the span has to be
+taken over the samples that *escaped*, because an interior sample is a NaN and a
+plain min/max over a black frame says nothing at all.
+
+**Choosing `c` near ∂M does not buy the descent depth either.** The obvious
+rescue for the maneuver above — pick a `c` hard against the boundary of its own
+parameter set, so that `z = 0` lands in the julia set rather than in an interior
+basin — was measured over fifteen parameters at four widths, descending at the
+critical point. **Nothing reached `1e-8`.** Grouped by distance to ∂M, rows still
+spanning more than one escape count:
+
+```text
+group                       ∂M gap          1e-3  1e-5  1e-8  1e-11
+nuclei of large atoms       1.6e-2..2.8e-2   0/3   0/3   0/3   0/3
+labeled julia c             2.7e-20..7.3e-4  2/6   1/6   0/6   0/6
+deep walk frames on a plane 1.5e-22..7.8e-12 2/3   2/3   0/3   0/3
+nuclei of the deepest atoms 1.6e-12..3.8e-10 1/3   0/3   0/3   0/3
+```
+
+Two things fall out of that table. **The critical orbit's fate beats the
+distance.** A minibrot nucleus is ten decades nearer ∂M than a large atom's and
+behaves like it, not like a near-boundary parameter, because a nucleus is
+superattracting and `z = 0` is the middle of a black basin at every width.
+**And a frame that has fallen off the set sits at the critical point's own escape
+count** — often to the digit, `3139.02` across a frame whose critical orbit
+escapes at 3139. That is the number to read when asking how deep an origin
+descent got, and it is why proximity to ∂M measured in the *parameter* plane does
+not predict how far `z = 0` is from the julia set in the *dynamical* one.
+
+**Budget note: a black frame is the expensive one.** Every pixel of an
+interior-basin frame runs to the cap, so a `1e-11` frame at eval geometry costs
+60–75 s against 0.2 s for a live one. A deep julia sweep is priced by how many of
+its frames are interior, not by how many it draws.
