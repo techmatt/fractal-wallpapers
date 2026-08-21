@@ -147,6 +147,61 @@ def test_a_lateral_step_lands_on_a_different_atom_at_a_comparable_scale() -> Non
     }, reasons
 
 
+#: A view that has no parent atom at all: the nucleus its center sits on is
+#: outside the frame, which is the single most common firing on a real run.
+NO_PARENT = view("-0.1592", "1.0317", "1e-9")
+
+
+def test_a_snap_that_missed_is_an_answer_the_disc_operators_can_read() -> None:
+    """The parent-atom solve is deterministic in the view, so re-running it
+    behind a snap that just failed buys the same refusal at full price. 954 of
+    1,379 firings on the run this was priced from were exactly that."""
+    snapped = operators.snap_to_nucleus(NO_PARENT, degree=2)
+    assert not any(row.available for row in snapped)
+    shared = operators.parent_atom_from_snap(snapped)
+    assert shared.resolved and shared.record is None
+    assert shared.refusal == "no_parent_atom:nucleus_outside_frame"
+
+    solo = operators.lateral_to_sibling(NO_PARENT, random.Random(0), degree=2)
+    told = operators.lateral_to_sibling(
+        NO_PARENT, random.Random(0), degree=2, parent=operators.parent_atom_from_snap(snapped)
+    )
+    assert (solo.available, solo.reason) == (told.available, told.reason)
+    assert solo.newton_solves > 0, "solving it alone costs what it costs"
+    assert told.newton_solves == 0, "reading the snap's answer costs nothing"
+
+
+def test_a_snap_that_hit_hands_the_atom_over_rather_than_the_solve() -> None:
+    snapped = operators.snap_to_nucleus(ON_AN_ATOM, degree=2)
+    shared = operators.parent_atom_from_snap(snapped)
+    assert shared.record is not None and shared.record["key"] == snapped[0].key
+    assert shared.charge() == 0, "the snap's own row was already charged for it"
+
+
+def test_the_firing_s_solve_is_charged_once_however_many_operators_read_it() -> None:
+    """The shared slot is filled in by whoever needs it first — with no snap in
+    the firing that is the lateral step, and the enumeration behind it reads it
+    for nothing rather than paying a second time."""
+    shared = operators.ParentAtom()
+    assert not shared.resolved
+
+    sibling = operators.lateral_to_sibling(NO_PARENT, random.Random(0), degree=2, parent=shared)
+    assert shared.resolved and shared.record is None
+    assert sibling.newton_solves > 0
+
+    rows = operators.expand_neighborhood(NO_PARENT, random.Random(0), degree=2, parent=shared)
+    assert rows[0].reason == sibling.reason
+    assert sum(row.newton_solves for row in rows) == 0
+
+
+def test_a_snap_that_found_an_atom_and_refused_its_frame_settles_nothing() -> None:
+    """A framing refusal is a verdict on a frame, not on the atom, so the disc
+    operators are left to solve for their own rather than handed a false miss."""
+    snapped = operators.snap_to_nucleus(ON_AN_ATOM, degree=2, framings=[1e-9])
+    assert not any(row.available for row in snapped)
+    assert operators.parent_atom_from_snap(snapped).resolved is False
+
+
 def test_the_neighbourhood_enumeration_always_returns_a_named_answer() -> None:
     """An exhausted disc is one unavailable row with a reason, never an empty
     list — because "nothing is there" and "it kept handing back the parent" are

@@ -58,9 +58,36 @@ material nothing has been trained on.
 There is no need to take the timer's word for it. Each operator's cost divided by
 the `newton_solves` its own ledger rows recorded lands on one constant — 8.6, 10.7
 and 11.6 ms per solve — so the solve counts alone reproduce the same shares.
-`lateral_to_sibling` is the outlier worth acting on: it re-solves for a parent atom
-the snap in the same firing already found, 69% of its firings never reach a sibling
-at all, and it returned five admissions for 7.8% of the clock.
+
+**Neighborhood is on in production at that price, and the table is the reason it
+is a decision rather than a default.** A quarter of the active clock buys views
+of a kind nothing has been trained on, which is what the frontier's reserved
+operator slot exists to make; `--no-neighborhood` is the per-run opt-out and
+there is no cheaper operator that produces the same material.
+
+**What the table paid for that was pure waste has been removed.** The parent atom
+— which atom is this view on — is a deterministic function of the view, and all
+three operators start from it, but each disc operator used to solve for its own.
+Behind a snap that *missed*, which was 954 of the 1,379 firings, both then paid a
+full Newton pass to be told the same "no". One firing now resolves it once
+(`operators.ParentAtom`) and the rest read it, refusal included. Replayed over the
+same 240 firings, before against after, with the proposals compared row for row:
+
+```text
+                       s/firing          median firing        Newton solves
+lateral_to_sibling     0.231 -> 0.142    0.072 s -> 30 us      4,841 -> 3,371
+expand_neighborhood    0.734 -> 0.646    0.084 s ->  1 us     17,824 -> 16,354
+whole firing           1.078 -> 0.899   (-16.6%)
+```
+
+**Zero proposal differences over the whole replay** — same rows, same order, same
+refusals, same atoms. Read the ratios, not the levels: this replay times both arms
+interleaved and draws its probe seeds per operator, so its "before" column sits
+above the priced table's own figures for the same work. Scaled onto the priced
+run, the three operators fall from 35.5% of the active clock to about 29.6%, and
+`lateral_to_sibling` from 7.8% to 4.8%. The median firing is where to look: a
+no-parent firing used to cost each disc operator a full solve pass and now costs
+neither anything at all.
 
 **Do not try to price this with a short A/B leg.** Batch-to-batch variance in
 expansion cost runs ±23% over runs of dozens of batches, so a three-batch run with
@@ -199,6 +226,6 @@ six kept per row.
 
 ```
 fractal-wallpapers walk --family julia --roots 20 --batches 8
-fractal-wallpapers walk --seeds my_locations.jsonl --neighborhood
+fractal-wallpapers walk --seeds my_locations.jsonl --no-neighborhood
 fractal-wallpapers walk --seeds my_locations.jsonl --plane-grace-rungs 0
 ```

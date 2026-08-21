@@ -259,9 +259,15 @@ class Reframings:
     enabled: bool = True
     snap: bool = True
     lateral: bool = True
-    #: Off by default: the neighbourhood enumeration is the expensive one, and
-    #: it pushes several nodes per fired probe rather than one.
-    neighborhood: bool = False
+    #: On, at the priced cost. The neighbourhood enumeration is the expensive
+    #: operator — `scratch/demo_neighborhood_run_report.md` replayed 1,379
+    #: firings and put it at **23.9% of a harvest's active clock** at the default
+    #: `probe_probability`, buying admissions at 3.6x what ordinary descent pays.
+    #: That tax is accepted deliberately: what it frames is material nothing has
+    #: been trained on, which is what the frontier's reserved operator slot is
+    #: for, and a cheaper operator cannot make it. Turn it off per run rather
+    #: than here.
+    neighborhood: bool = True
     #: How many of a neighbourhood enumeration's finds to propose.
     #:
     #: The operator returns them in *enumeration* order, which is not a quality
@@ -957,21 +963,15 @@ class Walk:
             "width": node["width"],
         }
         found: list[operators.Reframing] = []
-        parent_atom: dict | None = None
+        # One firing, one answer to "which atom is this view on?". Whoever needs
+        # it first pays for it and the rest read it — the miss included, which is
+        # the majority case and was two thirds of the disc operators' bill.
+        parent_atom = operators.ParentAtom()
 
         if self.reframings.snap:
             rows = operators.snap_to_nucleus(view, degree=degree, framings=self.reframings.framings)
             found.extend(rows)
-            for row in rows:
-                if row.available:
-                    parent_atom = {
-                        "key": row.key,
-                        "center_re": row.center_re,
-                        "center_im": row.center_im,
-                        "period": row.period,
-                        "window_scale": row.window_scale,
-                    }
-                    break
+            parent_atom = operators.parent_atom_from_snap(rows)
 
         if self.reframings.lateral:
             found.append(
