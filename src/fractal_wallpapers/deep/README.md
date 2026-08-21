@@ -9,14 +9,23 @@ so that nothing about the shallow pipeline moves while the question is open.
 depth      how deep this mode goes, the band a nucleus is framed in, the f64 wall
 centers    Newton on a nucleus at the precision that nucleus asks for
 roots      the two channels a seat comes from: newton, and continuation
+budget     what a seat costs, and how many of them a wall budget buys
 run        one deep run: seats in, a ledger out, and the ceilings it is held to
 ```
 
 ```
 fractal-wallpapers deep roots --seats 8 --out scratch/seats.jsonl
 fractal-wallpapers deep walk  --seats 8 --batches 12 --out-dir artifacts/deep
+fractal-wallpapers deep walk  --wall-budget 28800 --out-dir artifacts/deep2
 fractal-wallpapers curate run --deep --harvest artifacts/deep --run deep1 -n 2
 ```
+
+**A production leg is launched with `--wall-budget`, not with `--seats`.** The
+flag takes seconds and covers the whole piece of work — this command *and* the
+evaluation gallery that reads it. Eight hours buys about **184 seats** where
+`deep_run1` took 32 by hand and spent a quarter of its clock. `--seats` and
+`--batches` still exist and still win when they are passed; left alone, they are
+what the budget fills.
 
 What follows is what to read before changing anything here.
 
@@ -72,6 +81,53 @@ triggered move.
 not by batches or rungs, because the cost of this mode is dominated by producing
 a place to stand. `--seats` is the flag; everything else divides the work at one
 of them.
+
+**And a lever nobody can read is a lever set wrong.** `deep_run1` was given eight
+hours, was seated at 32 by hand from conservative estimates, and spent **2h10m**
+— the frontier emptied at 470 of 2000 node slots with three quarters of the
+budget untouched. So `deep/budget.py` prices a seat off that run's own record
+and `--wall-budget` divides:
+
+```text
+sourcing   379 s / 32 seats             11.8 s a seat
+walk       290 s / 470 nodes x 14.7      9.1 s a seat
+gallery    254 / 741 x 12.8 s x 23.2   102   s a seat
+                                       -----
+                                       123   s a seat
+```
+
+At eight hours, less a 15% margin for the estimate being `n = 1` and a flat 30
+minutes for the staging and the checks that do not scale, that is **22,680 s of
+usable budget and 184 seats** — 5.75x what was seated by hand. The gallery is two
+thirds of it and is reserved rather than assumed: this command draws no finished
+frame, and a walk that spends to the last second is a walk nobody has time to
+look at. `--no-gallery-reserve` is the walk-only run, and it is a different piece
+of work rather than a saving.
+
+**The frontier emptying is not the end of the run.** With budget left beyond the
+margin the run **sources again into itself** — same ledger, same artifacts root,
+same `roots.Standing`, filling the family x band cells the earlier rounds left
+least full. That is within-run continuation and not a follow-up run: the
+no-back-to-back rule governs launching runs, and a run topping up its own seats
+mid-flight is simply a correctly sized one. Every round is still gated on
+don't-start-what-cannot-finish, against the same clock the batches are.
+
+`--no-reseat` turns the continuation off; both it and `--reseat` default to
+saying nothing, so the shipped default lives on `Limits` and not on a flag.
+
+**A lineage is capped at 24 admissions, because monotony is a supply problem.**
+`deep_run1` put 741 admissions on 15 of its 48 roots and 85 on one, and the 162
+frames of its floor gallery were largely one composition in 162 palettes. A
+gallery can spread itself over lineages after the fact — that one had to, mid-leg
+— but it cannot get back the walk time that went into the lineage it then
+thinned. So the cap acts at supply time: past it the lineage stops expanding and
+its standing frontier nodes are evicted at the crossing, which is recorded as its
+own `lineage_capped` row. Twenty-four is half again the equal share of that run's
+own admissions over its own roots. **Record-and-rank still governs**: capped is
+not deleted, every row keeps the fate it earned, and nothing is retro-refused —
+which is also why a lineage can finish a run slightly over its cap, from nodes
+already in flight when it closed. The overshoot is in the count; the batch slots
+stop at the crossing. `--lineage-cap 0` turns it off.
 
 **Seats spread over family x band, because rank hides this mode's own subject.**
 The window is read in three equal-log **depth bands** — `depth.BAND_NAMES`, from

@@ -943,9 +943,10 @@ def deep_roots(args: argparse.Namespace) -> int:
     import random
 
     from fractal_wallpapers.deep import roots as roots_module
+    from fractal_wallpapers.deep import run as deep_module
 
     seats, sourcing = roots_module.sourced(
-        args.seats,
+        deep_module.DEFAULT_SEATS if args.seats is None else args.seats,
         random.Random(args.seed),
         newton_share=args.newton_share,
         anchors_per_family=args.anchors,
@@ -965,26 +966,74 @@ def deep_walk(args: argparse.Namespace) -> int:
     """Source the seats, stand on them, and record everything that is seen."""
     from fractal_wallpapers.deep import run as deep_module
 
+    limits = deep_module.Limits(
+        # `seats` and `batches` stay `None` unless a flag said otherwise, which
+        # is what lets the wall budget size them. A default filled in here would
+        # out-rank the projection with a number nobody chose.
+        seats=args.seats,
+        newton_share=args.newton_share,
+        anchors_per_family=deep_anchor_pool(args),
+        batch=args.batch,
+        batches=args.batches,
+        root_expansions=args.root_expansions,
+        lineage_admissions=args.lineage_cap if args.lineage_cap > 0 else None,
+    )
+    if args.reseat is not None:
+        limits.reseat = bool(args.reseat)
     run = deep_module.Deep(
         out_dir=resolve_output(args.out_dir),
         seed=args.seed,
-        limits=deep_module.Limits(
-            seats=args.seats,
-            newton_share=args.newton_share,
-            anchors_per_family=args.anchors,
-            batch=args.batch,
-            batches=args.batches,
-            root_expansions=args.root_expansions,
-        ),
+        limits=limits,
+        wall_budget=args.wall_budget,
+        gallery_reserve=not args.no_gallery_reserve,
         scorer=build_scorer(args),
         colormap=args.colormap,
         node_width=args.node_width,
     )
+    if run.projection is not None:
+        print(json.dumps({"projection": run.projection.record()}, indent=2))
+        if run.seats_wanted < 1:
+            print(
+                f"the budget affords no seat: {args.wall_budget:.0f}s leaves "
+                f"{run.projection.room:.0f}s usable against {run.projection.per_seat:.0f}s a seat"
+            )
+            return 1
     if not run.source():
         print("no seats: neither channel produced a nucleus this mode can frame")
         return 1
     print(json.dumps(run.run(), indent=2))
     return 0
+
+
+def deep_anchor_pool(args: argparse.Namespace) -> int:
+    """Anchors per family the Newton channel may draw on for this whole run.
+
+    `--anchors` is a floor rather than the answer when a budget is in play. The
+    flag's default is eight, which is 32 anchors over the four parameter planes;
+    a projection at eight hours asks for a few hundred descents and would run the
+    queues dry in its first round. So a budgeted run raises the pool to what its
+    own projection needs, at `deep_run1`'s measured arrival rate, and the flag
+    still wins whenever it is set higher.
+    """
+    import math
+
+    from fractal_wallpapers.deep import budget as budget_module
+    from fractal_wallpapers.deep import roots as roots_module
+    from fractal_wallpapers.deep import run as deep_module
+
+    if args.wall_budget is None:
+        return args.anchors
+    seats = args.seats
+    if seats is None:
+        seats = budget_module.project(args.wall_budget, gallery=not args.no_gallery_reserve).seats
+    # One anchor a family is a count of the families the tracked pool solved, read
+    # rather than written down: the day a fifth parameter plane is seeded, the
+    # pool this asks for divides by five without anything here being edited.
+    families = max(1, len(roots_module.anchors(1)))
+    wanted = math.ceil(
+        max(0, int(seats)) * float(args.newton_share) * roots_module.DESCENTS_PER_SEAT / families
+    )
+    return max(args.anchors, wanted, deep_module.DEFAULT_SEATS)
 
 
 def census(args: argparse.Namespace) -> int:
@@ -3871,8 +3920,10 @@ def deep_commands(subcommands) -> None:
         parser.add_argument(
             "--seats",
             type=int,
-            default=deep_module.Limits().seats,
-            help="nuclei this run stands on. THE budget lever of this mode",
+            default=None,
+            help=f"nuclei this run stands on. THE budget lever of this mode. Left unset it "
+            f"is sized from --wall-budget where there is one, and is "
+            f"{deep_module.DEFAULT_SEATS} where there is not",
         )
         parser.add_argument(
             "--newton-share",
@@ -3923,13 +3974,58 @@ def deep_commands(subcommands) -> None:
         "--batch", type=int, default=deep_module.Limits().batch, help="nodes expanded per batch"
     )
     walking.add_argument(
-        "--batches", type=int, default=deep_module.Limits().batches, help="batches to run"
+        "--batches",
+        type=int,
+        default=None,
+        help=f"batches to run. Left unset it is sized from the seats - a generous ceiling, "
+        f"since the frontier empties long before it binds - and is {deep_module.DEFAULT_BATCHES} "
+        f"for an unbudgeted run",
     )
     walking.add_argument(
         "--root-expansions",
         type=int,
         default=deep_module.Limits().root_expansions,
         help="expansions any one seat's roots may pay for",
+    )
+    walking.add_argument(
+        "--wall-budget",
+        type=float,
+        metavar="SECONDS",
+        help="size the seating against this, and stop cleanly rather than start a batch that "
+        "would overrun it. Covers this run AND the evaluation gallery that follows it: a "
+        "seat is priced sourcing + walk + gallery off deep_run1's measurements, so eight "
+        "hours buys about 184 seats where that run took 32 and spent a quarter of its clock",
+    )
+    walking.add_argument(
+        "--no-gallery-reserve",
+        action="store_true",
+        help="a WALK-ONLY run: price a seat at sourcing and walk alone and let the budget "
+        "buy far more of them. Not a saving - a run that takes this and then draws a "
+        "gallery anyway has no budget for one",
+    )
+    reseating = walking.add_mutually_exclusive_group()
+    reseating.add_argument(
+        "--reseat",
+        dest="reseat",
+        action="store_true",
+        default=None,
+        help="source again into the same run when the frontier empties with budget left "
+        "(on by default, and inert without --wall-budget)",
+    )
+    reseating.add_argument(
+        "--no-reseat",
+        dest="reseat",
+        action="store_false",
+        help="stop when the frontier empties, whatever the budget has left",
+    )
+    walking.add_argument(
+        "--lineage-cap",
+        type=int,
+        default=deep_module.LINEAGE_ADMISSIONS,
+        help=f"admissions any one lineage may book before the walk stops expanding it "
+        f"(default: {deep_module.LINEAGE_ADMISSIONS}; 0 turns the cap off). deep_run1 put "
+        f"741 admissions on 15 of its 48 roots and 85 on one, and its floor gallery was "
+        f"largely one composition. Nothing is retro-refused: expansion stops, fates stand",
     )
     walking.add_argument(
         "--node-width",
