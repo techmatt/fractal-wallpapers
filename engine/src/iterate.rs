@@ -396,6 +396,18 @@ impl Orbit {
 // TODO(perf): the source project reached deep zoom by iterating a low-precision
 // delta against one high-precision reference orbit, rebasing when the delta grew
 // past the reference. That belongs here when deep zoom does.
+/// **Always inlined, and it is worth about four times the field time.**
+///
+/// This loop collapses to the bare recurrence only when the compiler can see the
+/// family and the [`Wants`] at the *call site*: the eleven channel checks below
+/// fold away, the match over the families becomes one multiply, and the `Orbit`
+/// stops being built. The inliner's own cost model refuses a function this long
+/// across a crate boundary, and refusing it measured 6.3 s against 1.5 s on a
+/// 1280×720 frame of the site explorer's wasm build, where the family and the
+/// mode arrive from a JSON spec and the call site is the only place they are
+/// constant. Inside this crate `field::gather` calls it exactly once, so the
+/// attribute costs one copy of a loop that was already going to be inlined.
+#[inline(always)]
 pub fn run(family: &Family, pixel: Complex<f64>, maxiter: u32, wants: &Wants) -> Orbit {
     let bailout_sq = BAILOUT * BAILOUT;
     let (mut z, mut z_prev, c) = family.seed(pixel);

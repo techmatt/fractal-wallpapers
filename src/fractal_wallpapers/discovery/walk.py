@@ -392,6 +392,13 @@ class Walk:
         #: worth having whether or not a cap is set: "741 admissions off 15 of 48
         #: roots" is a sentence about a finished run that nothing else records.
         self.admitted: dict[int, int] = {}
+        #: What each root *is* — its family, its frame and the channel it came
+        #: from. A node carries only the root's id, so anything asking a question
+        #: about the lineage rather than about the node has nowhere else to look;
+        #: the supply engine's cross-run novelty test is the caller, and it must
+        #: get the same answer for a root drawn in an earlier session, which is
+        #: why this is checkpointed rather than rebuilt.
+        self.roots: dict[int, dict] = {}
         #: Roots the cap has closed. Kept so the crossing is recorded once rather
         #: than on every further admission the same lineage tries to book.
         self.saturated: set[int] = set()
@@ -483,6 +490,11 @@ class Walk:
             origin=ROOT_ORIGIN,
             parent_node_id=None,
         )
+        self.roots[root_id] = {
+            "family": family,
+            "viewport": ledger_module.viewport(**view),
+            "source": source,
+        }
         self.ledger.write(
             "root",
             root_id=root_id,
@@ -572,6 +584,12 @@ class Walk:
             "depth": int(depth),
             "origin": origin,
             "priority": self._priority(None, depth),
+            # The score half of the priority, kept apart from the draw. A
+            # ranking that wants to re-price this node — the contest's lineage
+            # discount does, against a count that moves after the node is
+            # pushed — has to multiply the term the head set and leave the
+            # exploration draw alone, and it cannot recover either from the sum.
+            "score_term": NEUTRAL_PRIOR,
             **extra,
         }
         self.frontier.append(node)
@@ -664,7 +682,13 @@ class Walk:
         )
 
     def lineages(self) -> dict:
-        """Admissions per root, and what the cap cost — for the run's summary."""
+        """Admissions per root, and what the cap cost — for the run's summary.
+
+        The distribution rides along because the headline is not the measure:
+        five hundred admissions over two hundred lineages and five hundred over
+        six are the same number and are not the same run, and the second is the
+        one whose gallery is a single composition.
+        """
         counts = sorted(self.admitted.values(), reverse=True)
         return {
             "cap": self.limits.lineage_admissions,
@@ -672,10 +696,13 @@ class Walk:
             "admissions": sum(counts),
             "largest": counts[0] if counts else 0,
             "capped": sorted(self.saturated),
+            "distribution": lineage_distribution(self.admitted),
             "by_root": {str(root): count for root, count in sorted(self.admitted.items())},
         }
 
-    def pop_batch(self, *, pool: list[dict] | None = None, size: int | None = None) -> list[dict]:
+    def pop_batch(
+        self, *, pool: list[dict] | None = None, size: int | None = None, key=None
+    ) -> list[dict]:
         """The next batch: two reserved floors, then plain priority order.
 
         `pool` narrows the candidates to a subset of the frontier and `size` to a
@@ -683,6 +710,13 @@ class Walk:
         supply engine, which divides a batch between partitions and then asks each
         partition for its own share — and both default to the plain walk's
         behaviour, which is the whole frontier and a whole batch.
+
+        `key` replaces the ranking number, highest first, and defaults to the
+        node's own stored priority. It exists because a node's priority is drawn
+        once and never re-drawn — which is right for the Gumbel and wrong for a
+        term that depends on what the run has booked *since* — so a caller that
+        prices the queue against a running count ranks with a function here rather
+        than by writing over what the head and the draw already decided.
 
         **Both reserved floors are shares of whatever size is asked for**, so a
         two-slot take reserves a fraction of two slots rather than the whole-batch
@@ -697,7 +731,8 @@ class Walk:
             # authority on which nodes exist.
             standing = {node["node_id"] for node in self.frontier}
             chosen_from = [node for node in pool if node["node_id"] in standing]
-        live = sorted(chosen_from, key=lambda node: -node["priority"])
+        rank = key if key is not None else (lambda node: node["priority"])
+        live = sorted(chosen_from, key=lambda node: -rank(node))
 
         size = min(self.limits.batch if size is None else int(size), len(live))
         if size <= 0:
@@ -887,6 +922,11 @@ class Walk:
             "image": row.get("image"),
             "origin": parent["origin"],
             "atom_key": parent.get("atom_key"),
+            # Which claim on the batch bought this node's expansion — the
+            # exploration share or the deficit-priced contest. `null` for every
+            # walk that is not a harvest, and absent from every ledger written
+            # before the share existed, so a reader treats it as optional.
+            "channel": parent.get("channel"),
             "fate": row["fate"],
             "scorer": self.scorer.name,
             # The three the survival-by-rung table is built from. `plane_rung` is
@@ -1037,6 +1077,9 @@ class Walk:
                 atom_key=parent.get("atom_key"),
             )
             node["priority"] = self._priority(candidate["score"], row["depth"])
+            node["score_term"] = (
+                NEUTRAL_PRIOR if candidate["score"] is None else float(candidate["score"])
+            )
             recorded.append(self.ledger.write("candidate", node_id=node["node_id"], **candidate))
             survivors.append(node)
 
@@ -1244,6 +1287,32 @@ def views_dir(out_dir) -> Path:
     return Path(out_dir) / "views"
 
 
+def lineage_distribution(admitted: dict) -> dict:
+    """How a run's admissions spread over its lineages — the monotony measure.
+
+    `max`, `median` and the top five, because those three say between them
+    whether a finished gallery will be one composition in a hundred palettes.
+    `deep_run1` would have reported a max of 85 against a median of 2.
+    """
+    counts = sorted((int(v) for v in admitted.values()), reverse=True)
+    total = sum(counts)
+    middle = len(counts) // 2
+    if not counts:
+        median = None
+    elif len(counts) % 2:
+        median = float(counts[middle])
+    else:
+        median = (counts[middle - 1] + counts[middle]) / 2.0
+    return {
+        "lineages_admitting": len(counts),
+        "admissions": total,
+        "max": counts[0] if counts else 0,
+        "median": median,
+        "top5": counts[:5],
+        "top5_share": round(sum(counts[:5]) / total, 4) if total else None,
+    }
+
+
 def is_plane_root(source: str, family: dict) -> bool:
     """Whether a root is one of the parameter-plane ones the grace applies below.
 
@@ -1278,6 +1347,7 @@ __all__ = [
     "Walk",
     "family_key",
     "is_plane_root",
+    "lineage_distribution",
     "nucleus",
     "views_dir",
 ]

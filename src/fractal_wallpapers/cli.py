@@ -633,6 +633,13 @@ def proven_default(name: str):
     return getattr(proven, name)
 
 
+def novelty_default(name: str):
+    """One of the novelty levers' constants, for a help string that cannot drift."""
+    from fractal_wallpapers.supply import novelty
+
+    return getattr(novelty, name)
+
+
 def ledger_flags(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     """The two ways an invocation declares which ledgers it is bound to.
 
@@ -854,7 +861,7 @@ def walk(args: argparse.Namespace) -> int:
 def harvest(args: argparse.Namespace) -> int:
     """Run the production loop: keep finding material where it is scarcest."""
     from fractal_wallpapers.discovery.walk import Limits, Policy, Walk
-    from fractal_wallpapers.supply import ledgers, release_mix, saturation, twins
+    from fractal_wallpapers.supply import autopsy, ledgers, novelty, release_mix, saturation, twins
     from fractal_wallpapers.supply.census import stock_census
     from fractal_wallpapers.supply.harvest import Budget, Harvest
     from fractal_wallpapers.supply.partitions import ALL_PARTITIONS
@@ -867,6 +874,9 @@ def harvest(args: argparse.Namespace) -> int:
         batch=args.batch,
         root_expansions=args.root_expansions,
         plane_grace_rungs=args.plane_grace_rungs,
+        # `None` and not `0`: zero is a real answer to "how many admissions may a
+        # lineage book" and it is not the one the flag's zero means.
+        lineage_admissions=args.lineage_cap if args.lineage_cap > 0 else None,
     )
     if args.probe is not None:
         limits.probe_probability = args.probe
@@ -885,6 +895,19 @@ def harvest(args: argparse.Namespace) -> int:
     # this list, so naming one partition is how a leg spends a whole clock there
     # rather than steering toward it and hoping.
     partitions = list(args.partition or ALL_PARTITIONS)
+    # The protected exploration share, and the cross-run record of which lineages
+    # have ever produced that decides who is in it. Built off the same ledger root
+    # the saturation memory reads, minus this run's own file.
+    exploration = (
+        None
+        if args.no_exploration
+        else novelty.Exploration(
+            lineages=novelty.build(root=resolve_output(args.ledgers), exclude=walk_run.ledger.path),
+            floor=args.exploration_floor,
+            start=args.exploration_start,
+            ema=args.exploration_ema,
+        )
+    )
     quota = Quota(
         partitions,
         run_dir,
@@ -892,6 +915,7 @@ def harvest(args: argparse.Namespace) -> int:
         prices_config=load_table(Path(args.prices) if args.prices else None),
         census=stock_census(partitions, discount=args.discount),
         external=release_mix.externally_supplied(partitions),
+        exploration=exploration,
     )
     # Primed before the first batch, off the same two legs of admitted stock the
     # census reads, and extended by whatever this run books. Its ledger is the
@@ -930,11 +954,17 @@ def harvest(args: argparse.Namespace) -> int:
         refill=refill,
         memory=memory,
         saturation_strength=0.0 if args.no_saturation else saturation.STRENGTH,
+        discount_k=args.lineage_discount,
+        discount_floor=args.lineage_discount_floor,
         partitions=partitions,
     )
     if run.resume():
         print(f"resumed at batch {run.batch} ({run.active_minutes:.2f} active minutes spent)")
-    print(json.dumps(run.run(), indent=2))
+    summary = run.run()
+    sheet = autopsy.write(run_dir, summary)
+    if sheet is not None:
+        print(f"channel autopsy -> {display_path(sheet)}")
+    print(json.dumps(summary, indent=2))
     return 0
 
 
@@ -2540,6 +2570,56 @@ def build_parser() -> argparse.ArgumentParser:
         type=float,
         default=0.25,
         help="share of the loop's clock refills may spend (default: 0.25)",
+    )
+    production.add_argument(
+        "--lineage-cap",
+        type=int,
+        default=0,
+        help="admissions any one lineage may book before the walk stops expanding it "
+        "(default: 0, no cap). The hard stop that stands above the soft discount below",
+    )
+    production.add_argument(
+        "--lineage-discount",
+        type=float,
+        default=novelty_default("DISCOUNT_K"),
+        help=f"how fast a lineage's contest credit decays with what it has already booked "
+        f"this run: credit x= max(floor, 1/(1+k*n)) (default: "
+        f"{novelty_default('DISCOUNT_K')}; 0 turns the discount off). In the contest only - "
+        f"the exploration share is never priced",
+    )
+    production.add_argument(
+        "--lineage-discount-floor",
+        type=float,
+        default=novelty_default("DISCOUNT_FLOOR"),
+        help=f"the floor that discount never falls below "
+        f"(default: {novelty_default('DISCOUNT_FLOOR')})",
+    )
+    production.add_argument(
+        "--exploration-floor",
+        type=float,
+        default=novelty_default("SHARE_FLOOR"),
+        help=f"share of the post-floor slots reserved for lineages no run has ever booked "
+        f"an admission from, which the share never falls below "
+        f"(default: {novelty_default('SHARE_FLOOR')})",
+    )
+    production.add_argument(
+        "--exploration-start",
+        type=float,
+        default=novelty_default("SHARE_START"),
+        help=f"what that share opens at before it has priced itself "
+        f"(default: {novelty_default('SHARE_START')})",
+    )
+    production.add_argument(
+        "--exploration-ema",
+        type=float,
+        default=novelty_default("SHARE_EMA"),
+        help=f"per-served-batch smoothing weight for the share's self-pricing "
+        f"(default: {novelty_default('SHARE_EMA')})",
+    )
+    production.add_argument(
+        "--no-exploration",
+        action="store_true",
+        help="allocate the whole post-floor batch by deficit; no protected share",
     )
     production.add_argument(
         "--no-saturation",
