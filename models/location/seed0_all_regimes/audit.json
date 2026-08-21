@@ -1,0 +1,73 @@
+{
+  "schema": 1,
+  "head": "location",
+  "run": "seed0_all_regimes",
+  "record": "models/location/seed0_all_regimes/metrics.json",
+  "clock": {
+    "wall_seconds": 5398.5,
+    "epoch_seconds": 6899.0,
+    "epochs": 40,
+    "segments_recorded": false,
+    "reading": "resumed",
+    "covers": [
+      9,
+      39
+    ],
+    "uncovered_epochs": 9,
+    "says": "the wall of 5398.5s covers epochs 9-39 and no more, so the 9 epoch(s) before them were run by an earlier segment. The clock starts after the snapshot loads and the history is restored from it, so a relaunch reads exactly like this \u2014 and so would a second writer. The arithmetic cannot separate them; a re-score can"
+  },
+  "reproduction": {
+    "checkpoint": "models/location/seed0_all_regimes/head_best.pt",
+    "which": "best",
+    "device": "cuda",
+    "best_epoch": 25,
+    "selection_locations": 1087,
+    "regimes": [
+      "640x360ss2",
+      "640x360ss1",
+      "384x216ss1"
+    ],
+    "statistics": {
+      "selection_ap_ge2": {
+        "recorded": 0.9456297764471896,
+        "re_scored": 0.9456297764471896,
+        "delta": 0.0
+      },
+      "selection_auc_ge2": {
+        "recorded": 0.9352009843576862,
+        "re_scored": 0.9352009843576862,
+        "delta": 0.0
+      },
+      "selection_auc_ge3": {
+        "recorded": 0.9320558565701952,
+        "re_scored": 0.9320558565701952,
+        "delta": 0.0
+      },
+      "selection_auc_ge4": {
+        "recorded": 0.9318849612679192,
+        "re_scored": 0.9318849612679192,
+        "delta": 0.0
+      },
+      "selection_cutpoint_cross_entropy": {
+        "recorded": 0.29664198691842963,
+        "re_scored": 0.29664198691842963,
+        "delta": 0.0
+      },
+      "selection_cutpoint_cross_entropy_384x216ss1": {
+        "recorded": 0.291853519233443,
+        "re_scored": 0.291853519233443,
+        "delta": 0.0
+      },
+      "selection_cutpoint_cross_entropy_640x360ss1": {
+        "recorded": 0.296175963173575,
+        "re_scored": 0.296175963173575,
+        "delta": 0.0
+      }
+    },
+    "not_compared": [],
+    "largest_absolute_delta": 0.0,
+    "tolerance": 1e-08,
+    "agrees": true
+  },
+  "verdict": "REPRODUCED"
+}

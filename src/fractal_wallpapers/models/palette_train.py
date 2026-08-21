@@ -196,7 +196,8 @@ INHERITANCE = {
             "it is a coin toss: at the first attempt it cut seed 2 off at epoch 12 on a "
             "lucky epoch-4 reading of 2.82, while the two seeds that survived reached 1.52. "
             "The epoch is chosen on the held-out loss either way, so patience was only ever "
-            "saving time, and a full run of this head is three minutes.",
+            "saving time, and a full run of this head is about thirty-five minutes: the "
+            "four runs on the record read 2,100.6 s to 2,363.4 s of wall.",
         },
         {
             "key": "batch delivery",
@@ -561,6 +562,17 @@ def run(
         "run": run_name,
         "device": where,
         "wall_seconds": round(time.time() - began, 1),
+        # One segment always: this trainer has no resume, so its clock covers
+        # every epoch it wrote. Recorded in the same shape the resumable
+        # trainers use, so one reader checks every head's record the strict way.
+        # See [`fractal_wallpapers.models.audit`].
+        "segments": [
+            {
+                "from_epoch": 0,
+                "through_epoch": recipe["epochs"] - 1,
+                "wall_seconds": round(time.time() - began, 1),
+            }
+        ],
         "best_epoch": best_epoch,
         "best_holdout_loss": best_metric,
         "selection_metric": "held-out distillation loss (minimized)",

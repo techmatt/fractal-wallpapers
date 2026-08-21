@@ -595,7 +595,11 @@ def run(
     resume = directory / "resume.pt"
 
     best_metric, best_state, best_epoch, history = float("inf"), None, -1, []
-    start = 0
+    # One entry per launch, for the reason [`train.train`] spells out: the wall
+    # clock starts after the snapshot loads and `history` is restored from it, so
+    # a resumed run's `wall_seconds` covers a suffix of its own epochs. See
+    # [`fractal_wallpapers.models.audit`].
+    segments, start = [], 0
     if resume.is_file():
         # Onto the CPU, for the reason `train.train` spells out: random-number
         # state is a CPU byte tensor and is rejected if it arrives on the GPU.
@@ -605,6 +609,7 @@ def run(
         schedule.load_state_dict(saved["schedule"])
         best_metric, best_epoch = saved["best_metric"], saved["best_epoch"]
         best_state, history = saved["best_state"], saved["history"]
+        segments = list(saved.get("segments") or [])
         start = saved["epoch"] + 1
         torch.set_rng_state(saved["torch_rng"].cpu().to(torch.uint8))
         if where == "cuda" and saved.get("cuda_rng") is not None:
@@ -615,6 +620,20 @@ def run(
         log(f"resumed at epoch {start} (best {best_metric:.4f} at epoch {best_epoch})")
 
     began = time.time()
+
+    def launched(through: int) -> list[dict]:
+        """Every segment of this run, this launch's own included, up to `through`."""
+        if through < start:
+            return list(segments)
+        return [
+            *segments,
+            {
+                "from_epoch": start,
+                "through_epoch": through,
+                "wall_seconds": round(time.time() - began, 1),
+            },
+        ]
+
     for epoch in range(start, recipe["epochs"]):
         examples.set_epoch(epoch)
         model.train()
@@ -678,6 +697,7 @@ def run(
                 "best_epoch": best_epoch,
                 "best_state": best_state,
                 "history": history,
+                "segments": launched(epoch),
                 "torch_rng": torch.get_rng_state(),
                 "cuda_rng": torch.cuda.get_rng_state_all() if where == "cuda" else None,
                 "numpy_rng": numpy.random.get_state(),
@@ -719,7 +739,9 @@ def run(
         "head": head_name,
         "run": run_name,
         "device": where,
+        # This launch's clock; `segments` beside it is the whole run.
         "wall_seconds": round(time.time() - began, 1),
+        "segments": launched(recipe["epochs"] - 1),
         "best_epoch": best_epoch,
         "best_selection_objective": best_metric,
         "selection_metric": "validation loss (minimized)",

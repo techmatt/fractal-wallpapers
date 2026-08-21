@@ -99,6 +99,40 @@ def beside(relative: Path) -> Path:
     return repo_root().parent / relative
 
 
+class ExtractionSourceGone(FileNotFoundError):
+    """The source project's files are not beside this checkout any more."""
+
+
+def extraction_source(name: str = "location") -> tuple[Path, Path]:
+    """The two files the bar was first extracted from, refusing if either is gone.
+
+    `fractal-maker-artifacts` moved to the **archive tier** — bulk storage the
+    working disk does not carry — and it takes [`INCUMBENT_MANIFEST`] with it. A
+    reader who hits that gets a missing-file error naming a path nobody has seen
+    since, so the refusal is taken here and says what actually happened.
+
+    Nothing but writing the bar reads these. Every *read* of the bar runs against
+    the vendored yardstick, which is tracked, which is the whole reason it was
+    vendored.
+    """
+    scores, manifest = beside(INCUMBENT_SCORES), beside(INCUMBENT_MANIFEST)
+    missing = [path for path in (scores, manifest) if not path.is_file()]
+    if missing:
+        raise ExtractionSourceGone(
+            f"the bar's extraction source is not beside this checkout: "
+            f"{', '.join(str(path) for path in missing)}. "
+            f"{INCUMBENT_MANIFEST.parts[0]} lives on the archive tier now, and the source "
+            f"project is a sibling during the build era and absent afterwards. Nothing is "
+            f"broken by that: the yardstick is already vendored at "
+            f"{yardstick_path(name)}, and every read of the bar runs against that copy "
+            f"rather than against either file here. Re-extracting is the only thing that "
+            f"needs them, and a bar a head has already been judged against is not "
+            f"re-written. If it genuinely is, restore the archive and hand `extract` the "
+            f"two paths."
+        )
+    return scores, manifest
+
+
 #: How the incumbent's family vocabulary maps onto this project's. Its names
 #: fold the degree into the family word; here the degree is its own field, and
 #: the partition is derived from the pair.
@@ -310,9 +344,10 @@ def preregister(name: str = "location", classes: int = head.CLASSES) -> dict:
     """Build the bar. Run before training; the file it writes is the bar."""
     import numpy
 
+    scores, manifest = extraction_source(name)
     rows = [row for row in tile_module.read_locations() if row["side"] == "eval"]
     rows.sort(key=lambda row: row["location_id"])
-    control = extract()
+    control = extract(scores, manifest)
     covered = [row for row in rows if row["location_id"] in control]
     if len(covered) != len(rows):
         raise ValueError(
@@ -714,6 +749,7 @@ def _clean_subset(covered, control, ours, labels, classes: int) -> dict:
 
 __all__ = [
     "DRAWS",
+    "ExtractionSourceGone",
     "beside",
     "INCUMBENT_ARMS",
     "MATERIAL_FLOOR",
@@ -722,6 +758,7 @@ __all__ = [
     "SCHEMA",
     "acceptance_path",
     "extract",
+    "extraction_source",
     "incumbent",
     "margin_of",
     "prereg_path",

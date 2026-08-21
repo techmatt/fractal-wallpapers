@@ -471,7 +471,14 @@ def train(
     # Negative infinity rather than -1: the objective is maximized whichever way
     # round it is oriented, and a negated cross-entropy starts well below -1.
     best_metric, best_state, best_epoch, history = float("-inf"), None, -1, []
-    start = 0
+    # One entry per launch. `wall_seconds` below is the clock of *this* launch —
+    # it starts after the snapshot loads, while `history` is restored from the
+    # snapshot — so on a resumed run it covers a suffix of the epochs and the
+    # bare inequality "wall ≥ Σ epoch seconds" is false for a record nothing is
+    # wrong with. Carrying the segments makes the check exact instead of
+    # guessing, and it is carried through the snapshot so a second relaunch does
+    # not forget the first. See [`fractal_wallpapers.models.audit`].
+    segments, start = [], 0
     if resume.is_file():
         # Onto the CPU, not onto the training device. A snapshot holds two kinds
         # of tensor: weights, which `load_state_dict` places wherever they have
@@ -492,6 +499,7 @@ def train(
         schedule.load_state_dict(saved["schedule"])
         best_metric, best_epoch = saved["best_metric"], saved["best_epoch"]
         best_state, history = saved["best_state"], saved["history"]
+        segments = list(saved.get("segments") or [])
         start = saved["epoch"] + 1
         torch.set_rng_state(saved["torch_rng"].cpu().to(torch.uint8))
         if where == "cuda" and saved.get("cuda_rng") is not None:
@@ -502,6 +510,24 @@ def train(
         log(f"resumed at epoch {start} (best {best_metric:.4f} at epoch {best_epoch})")
 
     began = time.time()
+
+    def launched(through: int) -> list[dict]:
+        """Every segment of this run, this launch's own included, up to `through`.
+
+        A relaunch of an already-finished run adds nothing: a segment that ran no
+        epoch is not a launch the record has anything to say about.
+        """
+        if through < start:
+            return list(segments)
+        return [
+            *segments,
+            {
+                "from_epoch": start,
+                "through_epoch": through,
+                "wall_seconds": round(time.time() - began, 1),
+            },
+        ]
+
     for epoch in range(start, recipe["epochs"]):
         examples.set_epoch(epoch)
         model.train()
@@ -578,6 +604,7 @@ def train(
                 "best_state": best_state,
                 "selection_objective": chosen_by,
                 "history": history,
+                "segments": launched(epoch),
                 "torch_rng": torch.get_rng_state(),
                 "cuda_rng": torch.cuda.get_rng_state_all() if where == "cuda" else None,
                 "numpy_rng": numpy.random.get_state(),
@@ -618,7 +645,11 @@ def train(
         "head": name,
         "run": run,
         "device": where,
+        # This launch's clock, which is what it has always been. On a resumed run
+        # it covers a suffix of `history` — `segments` beside it is the whole
+        # story, and it is the field a reader checks against.
         "wall_seconds": round(time.time() - began, 1),
+        "segments": launched(recipe["epochs"] - 1),
         "best_epoch": best_epoch,
         "selection_objective": chosen_by,
         "best_selection_objective": best_metric,

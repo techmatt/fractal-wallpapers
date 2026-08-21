@@ -13,9 +13,11 @@ each of which can be moved independently and none of which announces itself:
 
 * the walk's `--colormap` is the tile pool's **floor palette**, which is the map
   every canonical tile is drawn through;
-* that map is **cyclic**, because the tile and view paths bake `mirror` into the
-  palette for a map that does not wrap and the node path never mirrors — so a
-  non-cyclic walk is a different picture, refused rather than folded;
+* that map is **cyclic**, because `location_view` folds a map that does not wrap
+  and `mirror` is part of the digest a view is named by, while the gate render
+  and the tile build both bake the map as written — so on a non-cyclic map the
+  gate render is filed under a folded picture's name and is not that picture.
+  Refused rather than folded;
 * the node frame is the node regime's frame, which `--node-width` can move;
 * the iteration cap the engine gives a width is still the one the tile corpus
   was **recorded** at. The cap decides what counts as interior, so a corpus built
@@ -96,10 +98,13 @@ def enforce(colormap: str, node_width: int, regime, log=print) -> dict:
 
     if colormap not in location_view.cyclic_maps():
         raise IdentityBroken(
-            f"{colormap!r} is not a cyclic map. The tile and view paths mirror the palette of "
-            f"a map that does not wrap, and the node path never mirrors, so the gate render "
-            f"and the tile would be two different pictures of one place. A non-cyclic walk "
-            f"that scores its own gate renders is Matt's ruling to make, not a fallback."
+            f"{colormap!r} is not a cyclic map. `location_view` folds a map that does not "
+            f"wrap — that is the seam fix, and `mirror` is in the digest a view is named by "
+            f"— while the walk's gate render and the tile build both bake the map as "
+            f"written. So on a non-cyclic map the gate render handed to the scorer is not "
+            f"the picture the name it is filed under promises, and the head is asked about "
+            f"an unfolded frame under a folded frame's identity. A non-cyclic walk that "
+            f"scores its own gate renders is Matt's ruling to make, not a fallback."
         )
 
     if int(node_width) != int(regime.tile[0]):

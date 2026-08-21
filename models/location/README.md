@@ -18,6 +18,19 @@ the canonical regime and a `scores_<w>x<h>ss<n>.jsonl` for every other one. The
 incumbent's three runs carry the same per-regime files, because a paired
 comparison needs both heads read on the same rows at the same geometries.
 
+`audit.json` in a run directory is that run's provenance, and it exists because
+the shipped head's own record fails the arithmetic the repository documents:
+`seed0_all_regimes` records 5,398.5 s of wall against 6,899.0 s of epochs. That is
+a **relaunch**, not a second writer — the clock starts after the resume snapshot
+loads and the history is restored from it, so the wall covers epochs 9–39 and no
+more. The arithmetic cannot tell a relaunch from a concurrent writer, so the
+question is settled the way the procedure always said: re-score the selection
+slice through `head_best.pt`. All seven statistics of the record's own best epoch
+reproduce **exactly** — delta 0.0, against a tolerance of 1e-8 — over 1,087
+selection locations at all three regimes. `fractal-wallpapers head audit` is the
+command; `seed1`'s record carries no `wall_seconds` at all, which is a third
+reading and not a pass.
+
 `flip_prereg.json` and `flip_acceptance.json` are the **second** bar of that same
 study, on a different population. The first is read on the evaluation split,
 where 78% of rows read below `P(≥3) = 0.05` at every geometry and agree
