@@ -177,3 +177,31 @@ in scope and has no deep supply on either channel**: a Julia viewport is a point
 of the *z*-plane and has no nucleus for Newton to solve, and no ledger in this
 project holds a Julia admission anywhere near the shallow floor for the
 continuation channel to carry. In practice v0 is the four parameter planes.
+
+**A deep julia center has to be *on the julia set*, and there is a cheap way to
+put it there.** `julia_deep_eyetest` measured what happens without one. Holding a
+labeled julia location's center and narrowing the frame collapses: over six
+julias and four widths, **22 of 24 frames come back with the engine's field
+constant to a fraction of an iteration**, two thirds of them already dead at
+`1e-3` and all of them by `1e-8`. This is not the `f64` wall — at `1e-11` the
+sample step still spans 70 ulps or more — it is that a julia set has measure zero
+in the *z*-plane, so a center that is not on it is in the open exterior, whose
+escape-time bands thin toward the set faster than the frame narrows. Two ways of
+finding a center were measured and one works:
+
+* **Bisecting escape-time level sets does not get there.** The point it converges
+  on, whose orbit survives 100 iterations, still sits `~1e-7` from the set,
+  because the derivative product along an orbit that lingers near the set grows
+  about a decade every nine iterations rather than doubling. Its frames are a
+  smooth ramp by `1e-7`.
+* **Orbit-guided inverse iteration does.** `z ← (z − c)^(1/d)` contracts, so it
+  reaches the set from anywhere; steering which of the `d` branches it takes by
+  the forward orbit of the place you meant carries the destination as well. Sixty
+  steps each way, one retry loop for the case where the orbit passes near the
+  critical point and the branch choice goes ambiguous. Every frame it produced at
+  `1e-11` is live and **passes `depth.releasable` at full release geometry**.
+
+**And a dead julia frame does not look dead.** The coloring stretches whatever
+range it is handed, so a field that is constant to five decimals arrives as a
+full-palette ramp or a few clean bands. Anything that screens julia frames for
+emptiness has to read the field's span, not the picture.
