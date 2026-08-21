@@ -794,9 +794,25 @@ def build_scorer(args: argparse.Namespace, log=print):
         ) from refusal
 
 
+def reframings_from(args: argparse.Namespace, *, enabled: bool = True):
+    """Which reframing operators a run fires, defaults left alone unless told.
+
+    `--neighborhood` and `--no-neighborhood` both default to `None` so that a
+    run says nothing about the operator unless it was asked to: the shipped
+    default lives on [`Reframings`], not here, and a flag no one passed must not
+    quietly overrule it.
+    """
+    from fractal_wallpapers.discovery.walk import Reframings
+
+    reframings = Reframings(enabled=enabled)
+    if getattr(args, "neighborhood", None) is not None:
+        reframings.neighborhood = bool(args.neighborhood)
+    return reframings
+
+
 def walk(args: argparse.Namespace) -> int:
     """Run one discovery walk and print what it found."""
-    from fractal_wallpapers.discovery.walk import Gates, Limits, Policy, Reframings, Walk
+    from fractal_wallpapers.discovery.walk import Gates, Limits, Policy, Walk
 
     complaint = refuse_impossible_walk(args)
     if complaint is not None:
@@ -816,10 +832,7 @@ def walk(args: argparse.Namespace) -> int:
         ),
         policy=Policy(candidates=args.candidates, node_width=args.node_width),
         gates=Gates(),
-        reframings=Reframings(
-            enabled=not args.no_reframings,
-            neighborhood=args.neighborhood,
-        ),
+        reframings=reframings_from(args, enabled=not args.no_reframings),
         colormap=args.colormap,
         report_foci=args.foci,
     )
@@ -840,7 +853,7 @@ def walk(args: argparse.Namespace) -> int:
 
 def harvest(args: argparse.Namespace) -> int:
     """Run the production loop: keep finding material where it is scarcest."""
-    from fractal_wallpapers.discovery.walk import Limits, Policy, Reframings, Walk
+    from fractal_wallpapers.discovery.walk import Limits, Policy, Walk
     from fractal_wallpapers.supply import ledgers, release_mix, saturation, twins
     from fractal_wallpapers.supply.census import stock_census
     from fractal_wallpapers.supply.harvest import Budget, Harvest
@@ -862,7 +875,7 @@ def harvest(args: argparse.Namespace) -> int:
         seed=args.seed,
         limits=limits,
         policy=Policy(candidates=args.candidates, node_width=args.node_width),
-        reframings=Reframings(neighborhood=args.neighborhood),
+        reframings=reframings_from(args),
         colormap=args.colormap,
         scorer=build_scorer(args),
         report_foci=args.foci,
@@ -2335,10 +2348,20 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="expand only what the walk descends into; fire no reframing operators",
     )
-    search.add_argument(
+    neighborhood = search.add_mutually_exclusive_group()
+    neighborhood.add_argument(
         "--neighborhood",
+        dest="neighborhood",
         action="store_true",
-        help="also enumerate neighbouring nuclei (the expensive operator; off by default)",
+        default=None,
+        help="enumerate neighbouring nuclei (on by default; the expensive operator)",
+    )
+    neighborhood.add_argument(
+        "--no-neighborhood",
+        dest="neighborhood",
+        action="store_false",
+        help="fire only the snap and the lateral step, and pay neither the "
+        "neighbourhood enumeration's clock nor its frontier",
     )
     search.add_argument(
         "--colormap",
@@ -2419,10 +2442,20 @@ def build_parser() -> argparse.ArgumentParser:
         help="probability the reframing probe fires on an admission (default: "
         f"{WalkLimits.probe_probability})",
     )
-    production.add_argument(
+    harvest_neighborhood = production.add_mutually_exclusive_group()
+    harvest_neighborhood.add_argument(
         "--neighborhood",
+        dest="neighborhood",
         action="store_true",
-        help="also enumerate neighbouring nuclei (the expensive operator; off by default)",
+        default=None,
+        help="enumerate neighbouring nuclei (on by default; the expensive operator)",
+    )
+    harvest_neighborhood.add_argument(
+        "--no-neighborhood",
+        dest="neighborhood",
+        action="store_false",
+        help="fire only the snap and the lateral step, and pay neither the "
+        "neighbourhood enumeration's clock nor its frontier",
     )
     production.add_argument(
         "--floor",

@@ -83,9 +83,24 @@ def test_the_reframing_channel_is_reachable_from_the_production_loop() -> None:
     could not reach the channel. Both, or the flag on `walk` is a demo."""
     parse = cli.build_parser().parse_args
     assert parse(["harvest"]).probe is None
-    assert parse(["harvest"]).neighborhood is False
     assert parse(["harvest", "--probe", "1.0"]).probe == 1.0
     assert parse(["harvest", "--neighborhood"]).neighborhood is True
+    assert parse(["walk", "--neighborhood"]).neighborhood is True
+
+
+def test_an_unpassed_operator_flag_says_nothing_rather_than_no() -> None:
+    """The shipped default is on [`Reframings`], and `store_true` would have
+    every run silently overrule it with a `False` nobody typed. Both commands
+    default to `None` and carry an explicit opt-out instead."""
+    from fractal_wallpapers.discovery.walk import Reframings
+
+    parse = cli.build_parser().parse_args
+    for command in ("harvest", "walk"):
+        assert parse([command]).neighborhood is None
+        assert parse([command, "--no-neighborhood"]).neighborhood is False
+        assert cli.reframings_from(parse([command])).neighborhood is Reframings().neighborhood
+        assert cli.reframings_from(parse([command, "--no-neighborhood"])).neighborhood is False
+        assert cli.reframings_from(parse([command, "--neighborhood"])).neighborhood is True
 
 
 def test_a_derivation_does_not_overwrite_a_shipped_table_unasked() -> None:

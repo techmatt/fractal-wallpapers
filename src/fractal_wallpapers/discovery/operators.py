@@ -131,6 +131,41 @@ NEIGHBOUR_SCALE_UP_DECADES = 1.0
 
 
 @dataclass
+class ParentAtom:
+    """One firing's answer to "which atom is this view on?", solved once.
+
+    All three operators start from that atom, and it is a deterministic function
+    of the view — so a second operator that solves for it again after the first
+    already asked pays full price for an answer it was handed. **Carrying the
+    refusal matters more than carrying the hit**: on the run this was priced
+    from, 954 of 1,379 firings had no parent atom at all, and both disc
+    operators re-derived that same "no" behind the snap that had just found it.
+
+    Three states, and the empty one is why the default is meaningful: a `record`
+    is a hit, a `refusal` is a settled miss, and neither is *unresolved* — the
+    first operator that needs the answer fills it in and every later one reads
+    it. The solves are charged to whoever paid for them, exactly once, by
+    [`charge`] emptying the field as it hands them over.
+    """
+
+    #: The atom, as the disc operators want it. `None` when there is none.
+    record: dict | None = None
+    #: Why not, when not — already prefixed `no_parent_atom:`.
+    refusal: str = ""
+    #: Newton solves spent resolving it and not yet charged to any row.
+    solves: int = 0
+
+    @property
+    def resolved(self) -> bool:
+        return self.record is not None or bool(self.refusal)
+
+    def charge(self) -> int:
+        """Take the uncharged solves. A second reader takes nothing."""
+        owed, self.solves = self.solves, 0
+        return owed
+
+
+@dataclass
 class Reframing:
     """One operator application. `available = False` is the normal outcome."""
 
@@ -335,25 +370,56 @@ def _period_ceiling(parent_period: int) -> int:
     return min(PERIOD_CAP, max(24, int(PERIOD_HEADROOM * int(parent_period))))
 
 
-def _parent_atom(view: dict, degree: int, parent: dict | None):
-    """The atom a neighbourhood is measured around: given, or solved for."""
-    if parent is not None:
+def _atom_of(row: Reframing) -> dict:
+    """The part of an available snap the disc operators measure a disc from."""
+    return {
+        "key": row.key,
+        "center_re": row.center_re,
+        "center_im": row.center_im,
+        "period": row.period,
+        "window_scale": row.window_scale,
+    }
+
+
+def parent_atom_from_snap(rows: list[Reframing]) -> ParentAtom:
+    """The firing's parent atom, read off a [`snap_to_nucleus`] that already ran.
+
+    The snap solves for exactly this atom on its way to a framing, so its rows
+    already hold the answer — hit or miss — and the solves are already charged
+    to the snap's own row, which is why nothing is owed here.
+
+    A snap that found an atom and refused only the *frame* of it has said
+    nothing about the atom, so that comes back unresolved rather than as a miss.
+    """
+    for row in rows:
+        if row.available:
+            return ParentAtom(record=_atom_of(row))
+    if any(row.extra.get("period") is not None for row in rows):
+        return ParentAtom()
+    return ParentAtom(refusal="no_parent_atom:" + rows[0].reason) if rows else ParentAtom()
+
+
+def _parent_atom(view: dict, degree: int, parent):
+    """The atom a neighbourhood is measured around: given, shared, or solved for.
+
+    `parent` is a [`ParentAtom`] — the firing's shared slot, which this fills in
+    if nobody has yet — or a bare atom dict a caller already holds, or `None`.
+    Returns `(atom, solves_to_charge, refusal)`.
+    """
+    if parent is not None and not isinstance(parent, ParentAtom):
         return parent, 0, ""
-    rows = snap_to_nucleus(view, degree=degree, framings=[None])
-    snap = rows[0]
-    if not snap.available:
-        return None, snap.newton_solves, "no_parent_atom:" + snap.reason
-    return (
-        {
-            "key": snap.key,
-            "center_re": snap.center_re,
-            "center_im": snap.center_im,
-            "period": snap.period,
-            "window_scale": snap.window_scale,
-        },
-        snap.newton_solves,
-        "",
-    )
+    shared = parent if isinstance(parent, ParentAtom) else ParentAtom()
+    if not shared.resolved:
+        snap = snap_to_nucleus(view, degree=degree, framings=[None])[0]
+        shared.solves = snap.newton_solves
+        if snap.available:
+            shared.record = _atom_of(snap)
+        else:
+            shared.refusal = "no_parent_atom:" + snap.reason
+    charged = shared.charge()
+    if shared.record is None:
+        return None, charged, shared.refusal
+    return shared.record, charged, ""
 
 
 def lateral_to_sibling(
@@ -362,16 +428,17 @@ def lateral_to_sibling(
     *,
     degree: int = 2,
     framing: float | None = None,
-    parent: dict | None = None,
+    parent: ParentAtom | dict | None = None,
     max_width: float = MAX_WIDTH,
 ) -> Reframing:
     """Step to a nearby nucleus at comparable scale.
 
-    Needs a parent atom first — pass one from a snap that already fired at this
-    node, or the call solves for its own. "Comparable scale" is enforced: a
-    candidate whose window scale differs from the parent's by more than a decade
-    is not a sibling, it is a different rung of the same neighbourhood, and
-    [`expand_neighborhood`] is the operator that wants those.
+    Needs a parent atom first — pass the firing's [`ParentAtom`], so a snap that
+    already answered here is not asked again, or the call solves for its own.
+    "Comparable scale" is enforced: a candidate whose window scale differs from
+    the parent's by more than a decade is not a sibling, it is a different rung
+    of the same neighbourhood, and [`expand_neighborhood`] is the operator that
+    wants those.
     """
     nuc.set_precision()
     width = float(view["width"])
@@ -442,7 +509,7 @@ def expand_neighborhood(
     *,
     degree: int = 2,
     framings=FRAMINGS,
-    parent: dict | None = None,
+    parent: ParentAtom | dict | None = None,
     found_max: int = NEIGHBOURS_FOUND,
     probe_max: int = NEIGHBOUR_PROBES,
     max_width: float = MAX_WIDTH,
