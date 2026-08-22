@@ -39,11 +39,11 @@ that had no opinion about the release.
 
 They were, until the strange judge started drawing two modes per location. Level
 2 and level 3 above are about **locations** — how far into a partition's ranked
-offer the budget reaches — and levels 1 and the emitted plan are about
+offer the budget reaches — and levels 1 and the planned attempts are about
 **attempts**. The multiplication happens once, in [`MODES_PER_LOCATION`], and the
 supply bound is converted rather than raised: a head drawing two modes reaches
-exactly as deep into the offer as one drawing one, which is what leaves the emit
-cap's `4·slots ≤ supply` arithmetic saying what it always said.
+exactly as deep into the offer as one drawing one, which is what leaves the
+release cap's `4·slots ≤ supply` arithmetic saying what it always said.
 
 ## The order of the plan is itself a decision
 
@@ -289,7 +289,7 @@ def plan(
         # The supply bound is in **locations**, converted to attempts: the second
         # mode a location is tried in reaches no further into the offer, so a head
         # that draws two modes short-fills at exactly the same depth as one that
-        # draws one. That is what keeps the emit cap's arithmetic intact.
+        # draws one. That is what keeps the release cap's arithmetic intact.
         take = {p: min(int(k), len(supply.get(p, ())) * modes) for p, k in per_partition.items()}
         short[head] = {p: per_partition[p] - t for p, t in take.items() if per_partition[p] > t}
         for partition, count in sorted(take.items()):

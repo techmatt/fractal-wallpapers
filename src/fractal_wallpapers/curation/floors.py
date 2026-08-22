@@ -91,17 +91,23 @@ The measurement that set 0.685 was a paragraph of prose in a `method` string for
 five days: `grep -rn isotonic` reached one assertion in the suite and nothing
 else, so the one cut in this project that removes a finished picture was the one
 nobody could re-derive. It is a command now —
-`fractal-wallpapers head floor <head>` — and running it on the strange head
-**reproduces 0.685**: crossing 0.680898 against the 0.6809 the method states,
-which is 0.685 rounded up on the 0.005 grid it was rounded on.
+`fractal-wallpapers head floor --head <head>` — and running it on the strange
+head **reproduces 0.685**: crossing 0.680898 against the 0.6809 the method
+states, which is 0.685 rounded up on the 0.005 grid it was rounded on.
 
-The same command on the smooth head produced [`SMOOTH_RELEASE_FLOOR`], 0.381, and
+The same command on the smooth head produced [`SMOOTH_RELEASE_FLOOR`], 0.385, and
 that one **does not act**. [`ACTING_RELEASE_BARS`] is still the single place that
 answers whether a head gates, and the smooth head's cut is still the advisory;
 what the measurement adds is that the advisory's 0.50 can now be read against a
-number somebody measured — the head stops disagreeing with its labelers at 0.381,
+number somebody measured — the head stops disagreeing with its labelers at 0.385,
 not at the midpoint of its own scale. Promoting it is a decision of the kind Matt
 took for the strange head, off a sheet rather than off a curve.
+
+**Both measured floors are on one 0.005 grid** (Matt's ruling, 2026-08-22). The
+smooth fit was recorded at 0.381 for a day — the same crossing rounded up at three
+places — and two floors reported on two grids is a comparison that says nothing.
+The crossing did not move and no curve was re-fitted; only which of the record's
+two roundings the declared height reads.
 
 That split is why there are two types, and they live in [`fractal_wallpapers.cuts`]
 rather than here: three of the four acting cuts sit on the location head's scale
@@ -184,8 +190,8 @@ JUNK_FLOOR_BASIS = (
     f"2026-08-20 head flip and never per-partition: {JUNK_FLOOR_RESTATED}"
 )
 
-#: A partition emits at most `floor(passing supply / this)` pictures. The rule is
-#: *show me one only if there were four to choose from*, and its whole point is
+#: A partition releases at most `floor(passing supply / this)` pictures. The rule
+#: is *show me one only if there were four to choose from*, and its whole point is
 #: the zero: a partition with three floor-passing candidates ships nothing rather
 #: than shipping its own least-bad row, and the run says so in one line.
 THIN_SUPPLY_DIVISOR = 4
@@ -222,7 +228,7 @@ CLUSTER_CAP = 1
 #: The same coarse four as [`THIN_SUPPLY_DIVISOR`], and the two meeting is not a
 #: coincidence worth collapsing: they are about different populations — locations
 #: reached against candidates available — and a partition whose slots respect its
-#: emit cap has `4·slots ≤ 4·floor(supply/4) ≤ supply`, so the two rules agree
+#: release cap has `4·slots ≤ 4·floor(supply/4) ≤ supply`, so the two rules agree
 #: exactly when they should. Moving either alone is a real change and reads as one.
 ATTEMPT_MULTIPLIER = 4
 
@@ -263,7 +269,14 @@ STRANGE_RELEASE_BAR = Restatement(
 #: midpoint of a probability scale and answers "would this head call the picture a
 #: wallpaper", where this answers "above what score does this head stop disagreeing
 #: with the people who judged it". Those are different questions and they have
-#: different answers — 0.50 against 0.381.
+#: different answers — 0.50 against 0.385.
+#:
+#: **On the 0.005 grid, which is now the only grid.** The fit crossed at 0.380325
+#: and was recorded at 0.381, the crossing rounded up at three places; the strange
+#: bar beside it was rounded up on 0.005. Matt ruled the two onto one grid on
+#: 2026-08-22, which moves this height to 0.385 and leaves 0.685 where it was.
+#: That is a rounding and not a re-fit: the crossing, the corpus, the bootstrap
+#: and the head sha below are the fit's, untouched.
 #:
 #: **It is recorded and not wired.** Nothing reads it at selection; the smooth
 #: head's cut is still [`release_advisory`], and promoting it is a decision of the
@@ -271,22 +284,24 @@ STRANGE_RELEASE_BAR = Restatement(
 #: a curve. What this buys now is that the question "would a floor at this height
 #: have bought anything" is answerable off the accumulating record.
 #:
-#: Re-derive it with `fractal-wallpapers head floor smooth_render`, which is the
-#: command that produced it — the strange bar's own crossover lived as prose for
-#: five days and could not be checked by anybody.
+#: Re-derive it with `fractal-wallpapers head floor --head smooth_render`, which
+#: is the command that produced it — the strange bar's own crossover lived as
+#: prose for five days and could not be checked by anybody.
 SMOOTH_RELEASE_FLOOR = Restatement(
-    value=0.381,
+    value=0.385,
     head_sha256="c0ac536d0979713a0bcf198eb81a5a080a97bc4376b4124dc6c589b69b7767ef",
     method=(
-        "the labels-derived crossover, by `head floor smooth_render`. Isotonic regression "
-        "(pool-adjacent-violators, ties pooled, non-decreasing) of P(the human said >=3) "
-        "against this head's own P(>=3), over all 4,930 labeled smooth_render pictures scored "
-        "through the shipped artifact; the crossing is the LOWEST score whose fitted agreement "
-        "reaches a half, and the floor is that crossing rounded UP. Crossing 0.380325, 95% "
-        "cluster bootstrap over places [0.377, 0.576]. Rounded up to three places, which is "
-        "0.381; on the 0.005 grid the strange bar was rounded on it is 0.385. 1,995 of the "
-        "4,930 are keepers (40.5%). ADVISORY: this height gates nothing, and 162 of the 525 "
-        "smooth rows in the pool (30.9%) sit below it."
+        "the labels-derived crossover, by `head floor --head smooth_render`. Isotonic "
+        "regression (pool-adjacent-violators, ties pooled, non-decreasing) of P(the human "
+        "said >=3) against this head's own P(>=3), over all 4,930 labeled smooth_render "
+        "pictures scored through the shipped artifact; the crossing is the LOWEST score whose "
+        "fitted agreement reaches a half, and the floor is that crossing rounded UP. Crossing "
+        "0.380325, 95% cluster bootstrap over places [0.377, 0.576]. Rounded up on the 0.005 "
+        "grid the strange bar was rounded on, which is 0.385 (0.381 at three places, which is "
+        "how this was recorded for one day before both floors were ruled onto one grid). "
+        "1,995 of the 4,930 are keepers (40.5%). ADVISORY: this height gates nothing, and 162 "
+        "of the 525 smooth rows in the pool (30.9%) sit below it — the same 162 the 0.381 "
+        "rounding named, because no row scores between the two."
     ),
     reference_pool="all 4,930 labeled smooth_render pictures, over 1,828 places",
     date="2026-08-22",
@@ -303,8 +318,9 @@ SMOOTH_RELEASE_FLOOR = Restatement(
 ACTING_RELEASE_BARS = {"strange_render": STRANGE_RELEASE_BAR}
 
 #: Every release floor that has been **measured**, acting or not. The fit that
-#: produced each one is `head floor <head>`, and the record it wrote is
-#: `models/<head>/release_floor.json`.
+#: produced each one is `head floor --head <head>`, and the record it wrote is
+#: `models/<head>/release_floor.json`. Both heights are the record's
+#: `rounded_up_to_0_005`: one grid, so the two are comparable.
 MEASURED_RELEASE_FLOORS = {
     "strange_render": STRANGE_RELEASE_BAR,
     "smooth_render": SMOOTH_RELEASE_FLOOR,
@@ -423,7 +439,7 @@ def passes_good_floor(score) -> bool:
     return currency.passes_good_floor(score)
 
 
-def emit_cap(passing: int) -> int:
+def release_cap(passing: int) -> int:
     """The most a partition may release: `floor(passing supply / THIN_SUPPLY_DIVISOR)`."""
     return max(0, int(passing)) // THIN_SUPPLY_DIVISOR
 
@@ -541,7 +557,7 @@ __all__ = [
     "Cut",
     "HeadStampMismatch",
     "Restatement",
-    "emit_cap",
+    "release_cap",
     "junk_floor_cut",
     "live_stamp",
     "passes_good_floor",

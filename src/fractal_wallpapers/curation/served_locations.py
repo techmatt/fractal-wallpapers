@@ -25,8 +25,9 @@ accumulated pool at once. One wallpaper per location is still enforced, and it i
 enforced where the population to enforce it over actually exists.
 
 So this index is read by the collection-level passes — `curate repeats`,
-`curate retire-repeats`, the rejection path — and by the global selection that
-decides what ships. Nothing in `curate run` reads it.
+`curate retire-repeats`, the rejection path — and by the **gallery pass**
+(`curate gallery`), the selection that decides what ships. Nothing in
+`curate run` reads it.
 
 ## "Same location" is the grouping this repository already had
 
@@ -100,7 +101,7 @@ def build(exclude_run: str | None = None, under=None) -> ServedLocations:
 
     `exclude_run` drops one run's own rows, for a caller asking what the index
     would be *without* a given run in it — what the collection looked like before
-    it, or what a global pass would decide if that run's seats were not already
+    it, or what a gallery pass would decide if that run's seats were not already
     taken. A name nothing has released under passes harmlessly.
 
     `under` names a record store other than the tracked one. It is not how a run

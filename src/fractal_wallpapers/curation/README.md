@@ -36,11 +36,15 @@ fractal-wallpapers curate run --resume v1                          # carry on wh
 fractal-wallpapers curate reject --run v1 --rejector matt_review --date 2026-08-17
 ```
 
-## A run accumulates; the collection is chosen later
+## A run accumulates; the gallery pass chooses
 
-The two halves used to be one command, and Matt split them on 2026-08-22. **A run
-is the pool phase.** It reads the offer, colorizes, records every candidate it
-made and every verdict on it, and keeps a **diagnostic** release of ten pictures —
+The two halves used to be one command, and Matt split them on 2026-08-22. The two
+phases have names: **the pool phase** is `curate run`, and **the GALLERY PASS** is
+`curate gallery` — one global selection over everything the pool holds, re-runnable,
+each pass a record, the previous gallery superseded rather than deleted.
+
+**A run is the pool phase.** It reads the offer, colorizes, records every candidate
+it made and every verdict on it, and keeps a **diagnostic** release of ten pictures —
 enough to see that the path works, that the heads are reading the material and
 that the palette pass is not producing one look. It does not try to decide what is
 worth shipping: that is a judgement over the whole accumulated pool, and one
@@ -202,7 +206,7 @@ replacement (`colorize.modes_drawn_for`, seeded off the location and the head so
 a resume re-derives the pair). run10 seated 15 of 40 strange slots with 115
 candidates below the acting bar and seven of nine partitions short, off one
 uniformly drawn mode a location. The second draw reaches no further into the
-offer, so the emit cap's arithmetic is untouched and the location rule sees the
+offer, so the release cap's arithmetic is untouched and the location rule sees the
 same places; what it buys is a second reading of each, at ~2.4 s. An 80-slot
 release is 480 attempts, not 320.
 

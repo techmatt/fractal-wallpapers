@@ -139,7 +139,8 @@ RELEASED, KILLED, PASSED_OVER = "released", "killed", "passed_over"
 #: pictures now — enough to see that the path works and that the heads are
 #: reading the material sensibly, and not a claim about what is worth shipping,
 #: which is a decision over the whole accumulated pool rather than over one run's
-#: fraction of it. The global pass writes [`GALLERY`].
+#: fraction of it. The **gallery pass** — `curate gallery`, the second phase —
+#: writes [`GALLERY`].
 #:
 #: `gallery` was taken until 2026-08-22 by `deep.budget`, which used it for the
 #: **evaluation** frames a deep walk books; that is what those frames are and

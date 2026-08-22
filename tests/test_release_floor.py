@@ -253,14 +253,15 @@ def test_the_committed_records_agree_with_the_heights_in_floors() -> None:
         record = json.loads(path.read_text(encoding="utf-8"))
         assert record["head"] == head
         assert record["head_sha256"] == restated.head_sha256
-        # One of the two roundings has to be the declared height. Which one is a
-        # per-head fact: the strange bar was set on the 0.005 grid before the
-        # command existed, and it is not moved by the command finding it again.
-        assert restated.value in {record["rounded_up_3_places"], record["rounded_up_to_0_005"]}
+        # The declared height is the 0.005 rounding, for every head. The strange
+        # bar was set on that grid before the command existed; the smooth floor
+        # was ruled onto it on 2026-08-22 so the two can be read against each
+        # other. A floor that reads the three-place rounding is on its own grid.
+        assert restated.value == record["rounded_up_to_0_005"], head
 
 
 def test_the_strange_bar_reproduces_and_is_not_moved_by_the_refit() -> None:
-    """`head floor strange_render` re-derived 0.680898 against the 0.6809 its own
+    """`head floor --head strange_render` re-derived 0.680898 against the 0.6809 its own
     method states. On the 0.005 grid that is the standing 0.685, so the bar stays
     exactly where the 2026-08-17 ruling put it."""
     import json
@@ -281,12 +282,12 @@ def test_the_smooth_floor_is_recorded_and_does_not_gate() -> None:
     `ACTING_RELEASE_BARS` is the single place that says which a head has."""
     from fractal_wallpapers.curation import floors
 
-    assert floors.SMOOTH_RELEASE_FLOOR.value == 0.381
+    assert floors.SMOOTH_RELEASE_FLOOR.value == 0.385
     assert "smooth_render" not in floors.ACTING_RELEASE_BARS
     assert "smooth_render" in floors.MEASURED_RELEASE_FLOORS
     assert floors.release_bar("smooth_render") is None
     assert floors.release_cut("smooth_render").value == floors.RELEASE_ADVISORY
 
     banner = floors.summary()["advisory"]
-    assert banner["measured_but_not_acting"]["smooth_render"]["value"] == 0.381
+    assert banner["measured_but_not_acting"]["smooth_render"]["value"] == 0.385
     assert "strange_render" not in banner["measured_but_not_acting"]

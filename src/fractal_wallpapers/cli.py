@@ -770,7 +770,7 @@ def derive_plane_seeds(args: argparse.Namespace) -> int:
 
 
 def derive_proven_seeds(args: argparse.Namespace) -> int:
-    """Emit the proven-label seed set, and say how it compares to a file."""
+    """Print the proven-label seed set, and say how it compares to a file."""
     from fractal_wallpapers.supply import proven
 
     derived = proven.derive(
@@ -2344,7 +2344,7 @@ def curate_plan(args: argparse.Namespace) -> int:
                 "cuts": floors.summary(modes),
                 "supply": supply,
                 "lines": intake.supply_lines(supply),
-                "emit_caps": intake.emit_caps(offer),
+                "release_caps": intake.release_caps(offer),
                 "guaranteed": claims,
                 "budget": record,
                 "attempts": [
@@ -3156,7 +3156,7 @@ def build_parser() -> argparse.ArgumentParser:
             "One root per location a human scored a keeper, on the parameter planes. Not a "
             "tracked file: the seed set is a query over the label store, re-derived whenever "
             "it is asked for, and a harvest draws it live with `--root-channel proven`. "
-            "Emitting one is for reading it, diffing it, or passing it as --seeds."
+            "Printing one is for reading it, diffing it, or passing it as --seeds."
         ),
     )
     proving.add_argument(
@@ -4136,7 +4136,8 @@ def head_commands(subcommands) -> None:
         ),
     )
     flooring.add_argument(
-        "head",
+        "--head",
+        required=True,
         choices=sorted(FINISHED_HEADS),
         help="which finished-render judge to fit",
     )

@@ -31,9 +31,9 @@ def test_an_unscored_candidate_passes_neither_floor() -> None:
 def test_the_thin_supply_cap_is_the_zero() -> None:
     """A partition with three floor-passing candidates ships nothing, not its
     own least-bad row."""
-    assert floors.emit_cap(3) == 0
-    assert floors.emit_cap(4) == 1
-    assert floors.emit_cap(31) == 7
+    assert floors.release_cap(3) == 0
+    assert floors.release_cap(4) == 1
+    assert floors.release_cap(31) == 7
 
 
 def test_an_advisory_refuses_to_annotate_against_a_head_it_was_not_set_against(

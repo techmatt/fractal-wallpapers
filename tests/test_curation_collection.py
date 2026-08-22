@@ -98,7 +98,7 @@ def test_one_wallpaper_per_location_still_acts_inside_the_run() -> None:
 
 
 def test_the_selection_still_takes_a_served_index_for_the_pass_that_has_one() -> None:
-    """The argument stays on `select`: the global pass over the pool is exactly
+    """The argument stays on `select`: the gallery pass over the pool is exactly
     the caller with the population to decide coverage with."""
     pool = selection.entries([attempt(0, budget.SMOOTH, 0.99, FRAME)])
     picked, _, fills = selection.select(pool, {"mandelbrot": 1}, served={pool[0]["group"]})

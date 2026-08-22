@@ -73,10 +73,14 @@ KEEPER_TIER = 3
 #: wrong about this material more often than it is right.
 CROSSING = 0.5
 
-#: How many places the crossing is rounded to, and the grid the historical
-#: strange bar was rounded on. Both reported, neither preferred silently.
+#: How many places the crossing is rounded to, and the grid a declared floor sits
+#: on. Both reported, neither preferred silently — but as of 2026-08-22 both
+#: standing heights in `curation.floors` read the grid, by Matt's ruling that two
+#: floors on two grids cannot be compared. The three-place rounding stays in the
+#: record because it is what the crossing rounds to and a reader should be able
+#: to see the difference the grid makes.
 PLACES = 3
-LEGACY_GRID = 0.005
+FLOOR_GRID = 0.005
 
 #: Resamples in the cluster bootstrap, and its seed. Clustered **on the place**
 #: rather than on the picture: one location appears in the corpus many times at
@@ -150,7 +154,7 @@ def round_up(value: float, places: int = PLACES) -> float:
     return stepped / scale
 
 
-def round_up_to_grid(value: float, grid: float = LEGACY_GRID) -> float:
+def round_up_to_grid(value: float, grid: float = FLOOR_GRID) -> float:
     """`value` rounded up to the next multiple of `grid`, to three places."""
     steps = int(value / grid)
     if steps * grid < value:
@@ -300,7 +304,7 @@ def fit(reading: dict, at: float = CROSSING, resamples: int = BOOTSTRAP) -> dict
         # Both roundings, because the number this is compared against was rounded
         # on the coarser grid and a comparison across two grids says nothing.
         "rounded_up_3_places": round_up(where, PLACES),
-        "rounded_up_to_0_005": round_up_to_grid(where, LEGACY_GRID),
+        "rounded_up_to_0_005": round_up_to_grid(where, FLOOR_GRID),
         "at": at,
         "keeper_tier": KEEPER_TIER,
         "interval_95": bootstrap(points, resamples),
@@ -361,7 +365,7 @@ __all__ = [
     "BOOTSTRAP",
     "CROSSING",
     "KEEPER_TIER",
-    "LEGACY_GRID",
+    "FLOOR_GRID",
     "PLACES",
     "SCHEMA",
     "FloorFitError",
