@@ -173,8 +173,16 @@ def chosen(rows: list[dict], partition: str) -> dict[str, dict]:
     return {name: median_row(filed[name]) for name in DECISIONS}
 
 
-def frame_row(decision: str, row: dict, picture: Path, made: bool) -> dict:
-    """One frame's provenance: which row, what the person said, what the head read."""
+def frame_row(decision: str, row: dict, picture: Path, made: bool, view: dict) -> dict:
+    """One frame's provenance: which row, what the person said, what the head read.
+
+    `view` is the recipe the picture was drawn through, and it is on **every** row
+    rather than in a header. A frame is a claim about a place read at one geometry
+    through one map, and a sidecar whose rows named the place but not the reading
+    would be four rows nobody could rebuild without knowing which command wrote
+    them — the same reason every other record in this project carries its whole
+    join on one line.
+    """
     from fractal_wallpapers.paths import tracked_name
 
     return {
@@ -192,6 +200,7 @@ def frame_row(decision: str, row: dict, picture: Path, made: bool) -> dict:
         "viewport": row["viewport"],
         "picture": tracked_name(picture),
         "rendered": made,
+        "view": dict(view),
     }
 
 
@@ -213,6 +222,7 @@ def draw(
     directory.mkdir(parents=True, exist_ok=True)
     colormap = location_view.canonical_map()
     cyclic = location_view.cyclic_maps()
+    view = location_view.summary(colormap)
 
     # The view cache is addressed by the digest of its own recipe and the figure's
     # frames are named for the outcome they show. Both, rather than one renamed
@@ -230,7 +240,7 @@ def draw(
         drawn, made = location_view.render_view(place, colormap, cyclic, views)
         picture = directory / f"{index}_{decision}.jpg"
         picture.write_bytes(drawn.read_bytes())
-        records.append(frame_row(decision, row, picture, made))
+        records.append(frame_row(decision, row, picture, made, view))
 
     sidecar = directory / SIDECAR
     sidecar.write_text(
@@ -244,7 +254,7 @@ def draw(
         "run": run,
         "directory": str(directory),
         "sidecar": str(sidecar),
-        "view": location_view.summary(colormap),
+        "view": view,
         "heights": heights(),
         "frames": records,
     }
