@@ -70,7 +70,11 @@ HEADS = (SMOOTH, STRANGE)
 
 
 #: How many modes a head tries each location it is given, and therefore how many
-#: colorize attempts one location costs it.
+#: colorize attempts one location costs it. **The default**, and a run may be
+#: asked for another: it is a parameter of [`plan`] and part of a run's recorded
+#: shape, in the same way [`curation.run.STRANGE_SHARE`] is, so a resumed run
+#: takes the table it was planned with rather than whatever the module says
+#: today.
 #:
 #: **The strange judge gets two.** Its roster is every production mode the engine
 #: knows and it drew *one* of them per location, uniformly; run10 seated 15 of its
@@ -81,7 +85,29 @@ HEADS = (SMOOTH, STRANGE)
 #:
 #: The smooth judge stays at one because its roster *is* one: the smooth coloring
 #: is the only mode it owns, and a second draw would re-render the same picture.
+#: That is why the command line spells the knob `--strange-modes` and not a table:
+#: one of the two entries is a fact about the engine rather than a choice.
 MODES_PER_LOCATION = {SMOOTH: 1, STRANGE: 2}
+
+
+def modes_of(modes: dict | None = None) -> dict:
+    """The mode table to plan with: the caller's, or [`MODES_PER_LOCATION`].
+
+    One resolver rather than a `None` check at each of the four sites that need
+    it, because a table applied at three of four sites is a plan whose attempt
+    count and whose supply bound disagree — and that disagreement shows up as a
+    short-fill nobody can attribute.
+    """
+    if modes is None:
+        return dict(MODES_PER_LOCATION)
+    out = {head: max(1, int(modes.get(head, MODES_PER_LOCATION[head]))) for head in HEADS}
+    if out[SMOOTH] != 1:
+        raise ValueError(
+            f"the smooth judge owns one coloring, so drawing {out[SMOOTH]} modes at a "
+            f"location would render the same picture {out[SMOOTH]} times. Only the strange "
+            f"judge has a roster to draw from."
+        )
+    return out
 
 
 @dataclass(frozen=True)
@@ -136,7 +162,9 @@ def scale_to_budget(want: dict, budget: int) -> dict:
     return out
 
 
-def head_attempts(slots: dict, budget: int | None, multiplier: int | None = None) -> tuple:
+def head_attempts(
+    slots: dict, budget: int | None, multiplier: int | None = None, modes: dict | None = None
+) -> tuple:
     """`(attempts, record)` — the per-head budget, sized against release need.
 
     `budget` of `None` means uncapped, which is the honest default: the multiple
@@ -146,14 +174,15 @@ def head_attempts(slots: dict, budget: int | None, multiplier: int | None = None
     facts and only the second one explains a short-fill.
     """
     multiplier = floors.ATTEMPT_MULTIPLIER if multiplier is None else int(multiplier)
-    want = {
-        head: max(0, multiplier * int(slots.get(head, 0)) * MODES_PER_LOCATION[head])
-        for head in HEADS
-    }
+    modes = modes_of(modes)
+    want = {head: max(0, multiplier * int(slots.get(head, 0)) * modes[head]) for head in HEADS}
     granted = want if budget is None else scale_to_budget(want, budget)
     return granted, {
         "attempt_multiplier": multiplier,
-        "modes_per_location": dict(MODES_PER_LOCATION),
+        # The table this plan was made with, not the module default: a run asked
+        # for a different draw and a run that took the default are different runs,
+        # and the record has to say which.
+        "modes_per_location": dict(modes),
         "attempt_budget": budget,
         "head_slots": {head: int(slots.get(head, 0)) for head in HEADS},
         "head_want": want,
@@ -226,6 +255,7 @@ def plan(
     budget: int | None = None,
     guarantees=(),
     multiplier: int | None = None,
+    modes: dict | None = None,
 ) -> tuple[list[Attempt], dict]:
     """`(attempts, record)` — the whole plan, and the record that explains it.
 
@@ -241,7 +271,8 @@ def plan(
     """
     supply = {p: list(rows) for p, rows in offer.items() if rows}
     slots = head_slots(n, strange_share)
-    granted, record = head_attempts(slots, budget, multiplier)
+    per_location = modes_of(modes)
+    granted, record = head_attempts(slots, budget, multiplier, per_location)
     claims = [p for p in sorted(set(guarantees or ())) if p in supply]
     owed, unplaced = assign_guarantees(claims, slots)
 
@@ -250,7 +281,7 @@ def plan(
     cells: dict = {}
     seated: dict = {}
     for head in HEADS:
-        modes = MODES_PER_LOCATION[head]
+        modes = per_location[head]
         mine = {p for p, h in owed.items() if h == head}
         seated[head] = intake_slots(supply, slots[head], mine)
         per_partition = partition_attempts(seated[head], granted[head], multiplier, modes)
@@ -270,7 +301,7 @@ def plan(
     out: list[Attempt] = []
     for cell in order:
         head, partition = cell
-        modes = MODES_PER_LOCATION[head]
+        modes = per_location[head]
         index = cursor[cell]
         cursor[cell] = index + 1
         # The cell's attempts run through its locations `modes` at a time, so a
@@ -368,6 +399,7 @@ def fill_lines(record: dict, realized_fills: dict) -> list[str]:
 
 __all__ = [
     "HEADS",
+    "MODES_PER_LOCATION",
     "SMOOTH",
     "STRANGE",
     "Attempt",
@@ -376,6 +408,7 @@ __all__ = [
     "head_attempts",
     "head_slots",
     "intake_slots",
+    "modes_of",
     "partition_attempts",
     "plan",
     "realized",

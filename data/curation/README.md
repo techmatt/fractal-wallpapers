@@ -98,6 +98,24 @@ difference is a listing serving a thumbnail as a wallpaper: `run3` released 39
 rows, made 37 pictures and shipped two such links. What a release *serves* asks
 for the picture as well as the verdict.
 
+**Which collection a picture is in is a field, not a fourth verdict.** The three
+verdicts answer "is there a wallpaper at the end of this row" and the rejection
+block answers "was it taken back"; *which collection it is in* is a third
+question, orthogonal to both, so every release row carries `collection`:
+`diagnostic` for what a run keeps, `gallery` for what the collection ships. A run
+writes `diagnostic` on every row it makes — a run releases ten pictures to look
+at, and choosing what is worth shipping is a decision over the whole accumulated
+pool rather than over one night's slice of it.
+
+**All 1,050 rows here were backfilled to `diagnostic` on 2026-08-22**, in the
+commit that added the field. That is a rewrite of recorded data, which this store
+otherwise never does, and it is defensible for one reason: every row here was
+written by a run, nothing had ever been chosen against a pool, and the
+alternative was a `null` that a later reader would have had to guess at. The
+rewrite touched that one field on every row and nothing else. `gallery` is free
+for it because the deep run's `gallery_frames_per_admission` was renamed the same
+day to what those frames are — evaluation frames.
+
 **A verdict taken after the run is added, never written over.** A released row a
 later review takes back keeps `verdict: released` — that is what the run decided
 and it stays true, and a store that edited it would delete the evidence the

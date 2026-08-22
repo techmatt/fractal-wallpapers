@@ -912,25 +912,36 @@ def harvest_minutes(args: argparse.Namespace):
     from fractal_wallpapers import schedule
 
     if args.finish_by is None:
-        if args.release_slots is not None:
-            print("--release-slots is read only with --finish-by; ignoring it")
         minutes = DEFAULT_HARVEST_MINUTES if args.minutes is None else args.minutes
         return minutes, None
-    if args.release_slots is None:
-        raise schedule.Unschedulable(
-            "--finish-by reserves the release leg from the ceiling it will be asked for, so "
-            "it needs --release-slots N. There is no default: a reservation guessed at is the "
-            "one term of this arithmetic nothing downstream can check."
-        )
     derived = schedule.plan(
         args.finish_by,
         args.release_slots,
+        curation_attempts(args),
         renders_views=harvest_draws_views(args),
         release_workers=args.release_workers,
     )
     for line in derived.lines():
         print(f"[plan] {line}")
     return derived.active_minutes, derived
+
+
+def curation_attempts(args: argparse.Namespace) -> int:
+    """Colorize attempts the curation leg this night reserves for will actually plan.
+
+    Derived through `curation.budget` rather than restated here, and derived from
+    the shape the night will run the curation at — the release ceiling, the
+    strange share, the modes each head draws. The reservation used to be `4n`
+    times this module's own copies of those three, which was a restatement of
+    curation's arithmetic and was pinned to it by the suite; it stopped being
+    pinnable the moment the mode table became a parameter of a run.
+    """
+    from fractal_wallpapers.curation import budget
+
+    modes = None if args.strange_modes is None else {budget.STRANGE: args.strange_modes}
+    slots = budget.head_slots(args.release_slots, args.strange_share)
+    wanted, _ = budget.head_attempts(slots, None, modes=budget.modes_of(modes))
+    return sum(wanted.values())
 
 
 def harvest_draws_views(args: argparse.Namespace) -> bool:
@@ -1124,7 +1135,7 @@ def deep_walk(args: argparse.Namespace) -> int:
         seed=args.seed,
         limits=limits,
         wall_budget=args.wall_budget,
-        gallery_reserve=not args.no_gallery_reserve,
+        evaluation_reserve=not args.no_evaluation_reserve,
         scorer=build_scorer(args),
         colormap=args.colormap,
         node_width=args.node_width,
@@ -1164,7 +1175,9 @@ def deep_anchor_pool(args: argparse.Namespace) -> int:
         return args.anchors
     seats = args.seats
     if seats is None:
-        seats = budget_module.project(args.wall_budget, gallery=not args.no_gallery_reserve).seats
+        seats = budget_module.project(
+            args.wall_budget, evaluation=not args.no_evaluation_reserve
+        ).seats
     # One anchor a family is a count of the families the tracked pool solved, read
     # rather than written down: the day a fifth parameter plane is seeded, the
     # pool this asks for divides by five without anything here being edited.
@@ -2249,6 +2262,20 @@ def curate_ledgers(args: argparse.Namespace) -> int:
     return 0
 
 
+def drawn_modes(args: argparse.Namespace):
+    """The mode table this invocation asks for, or `None` for curation's own.
+
+    Only the strange judge's count is on the command line: the smooth judge owns
+    one coloring, so a second draw at a location would render the same picture,
+    and a table with a knob for it would be a knob nobody may turn.
+    """
+    from fractal_wallpapers.curation import budget
+
+    if args.strange_modes is None:
+        return None
+    return {budget.SMOOTH: 1, budget.STRANGE: args.strange_modes}
+
+
 def curate_plan(args: argparse.Namespace) -> int:
     """Print the offer and the budget it implies, making no picture."""
     from fractal_wallpapers.curation import binding, budget, floors, intake
@@ -2259,13 +2286,19 @@ def curate_plan(args: argparse.Namespace) -> int:
         print(refusal)
         return 1
     claims = intake.guaranteed(supply)
+    modes = budget.modes_of(drawn_modes(args))
     plan, record = budget.plan(
-        offer, args.n, args.strange_share, budget=args.attempts, guarantees=claims
+        offer,
+        args.n,
+        args.strange_share,
+        budget=args.attempts,
+        guarantees=claims,
+        modes=modes,
     )
     print(
         json.dumps(
             {
-                "cuts": floors.summary(),
+                "cuts": floors.summary(modes),
                 "supply": supply,
                 "lines": intake.supply_lines(supply),
                 "emit_caps": intake.emit_caps(offer),
@@ -2293,6 +2326,7 @@ def curate_run(args: argparse.Namespace) -> int:
             n=args.n,
             seed=args.seed,
             strange_share=args.strange_share,
+            modes=drawn_modes(args),
             attempts=args.attempts,
             workers=args.workers,
             ephemeral=args.ephemeral,
@@ -2428,6 +2462,7 @@ def modes(args: argparse.Namespace) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
+    from fractal_wallpapers.curation import run as curation_run
     from fractal_wallpapers.discovery.walk import Limits as WalkLimits
     from fractal_wallpapers.supply.partitions import ALL_PARTITIONS
 
@@ -2774,8 +2809,26 @@ def build_parser() -> argparse.ArgumentParser:
     production.add_argument(
         "--release-slots",
         type=int,
-        help="the release ceiling the curation leg will be asked for. Read only with "
-        "--finish-by, which reserves this many pictures at the measured rate",
+        default=curation_run.DEFAULT_N,
+        help=f"the release ceiling the curation leg will be asked for (default: "
+        f"{curation_run.DEFAULT_N}, the diagnostic release a run keeps). Read only with "
+        f"--finish-by, which reserves this many pictures at the measured rate",
+    )
+    production.add_argument(
+        "--strange-share",
+        type=float,
+        default=curation_run.STRANGE_SHARE,
+        help=f"the share of those slots the strange judge will fill (default: "
+        f"{curation_run.STRANGE_SHARE:g}). Read only with --finish-by: it is one of the "
+        f"three terms that turn a release ceiling into a colorize attempt count, and the "
+        f"reservation has to be for the night that will actually be run",
+    )
+    production.add_argument(
+        "--strange-modes",
+        type=int,
+        default=None,
+        help="modes the strange judge will draw at each location (default: curation's own). "
+        "Read only with --finish-by, for the same reason as --strange-share",
     )
     production.add_argument(
         "--release-workers",
@@ -4529,16 +4582,16 @@ def deep_commands(subcommands) -> None:
         type=float,
         metavar="SECONDS",
         help="size the seating against this, and stop cleanly rather than start a batch that "
-        "would overrun it. Covers this run AND the evaluation gallery that follows it: a "
-        "seat is priced sourcing + walk + gallery off deep_run1's measurements, so eight "
+        "would overrun it. Covers this run AND the evaluation frames that follow it: a "
+        "seat is priced sourcing + walk + evaluation off deep_run1's measurements, so eight "
         "hours buys about 184 seats where that run took 32 and spent a quarter of its clock",
     )
     walking.add_argument(
-        "--no-gallery-reserve",
+        "--no-evaluation-reserve",
         action="store_true",
         help="a WALK-ONLY run: price a seat at sourcing and walk alone and let the budget "
         "buy far more of them. Not a saving - a run that takes this and then draws a "
-        "gallery anyway has no budget for one",
+        "frames anyway has no budget for them",
     )
     reseating = walking.add_mutually_exclusive_group()
     reseating.add_argument(
@@ -4561,7 +4614,7 @@ def deep_commands(subcommands) -> None:
         default=deep_module.LINEAGE_ADMISSIONS,
         help=f"admissions any one lineage may book before the walk stops expanding it "
         f"(default: {deep_module.LINEAGE_ADMISSIONS}; 0 turns the cap off). deep_run1 put "
-        f"741 admissions on 15 of its 48 roots and 85 on one, and its floor gallery was "
+        f"741 admissions on 15 of its 48 roots and 85 on one, and its floor frames were "
         f"largely one composition. Nothing is retro-refused: expansion stops, fates stand",
     )
     walking.add_argument(
@@ -4682,6 +4735,9 @@ def coloring_commands(subcommands) -> None:
 
 def curate_commands(subcommands) -> None:
     """The last stage: harvest supply in, released wallpapers out."""
+    from fractal_wallpapers.curation import budget as budget_module
+    from fractal_wallpapers.curation import run as run_module
+
     curating = subcommands.add_parser(
         "curate",
         help="make a release: score the supply, colorize, select, render at full size",
@@ -4766,14 +4822,27 @@ def curate_commands(subcommands) -> None:
         parser.add_argument(
             "-n",
             type=int,
-            default=6 if defaults else None,
-            help="release slots to fill (default: 6, or the resumed run's own)",
+            default=run_module.DEFAULT_N if defaults else None,
+            help=f"release slots to fill (default: {run_module.DEFAULT_N}, or the resumed "
+            f"run's own). A run's release is a DIAGNOSTIC — enough pictures to see that the "
+            f"path works — and not a claim about what is worth shipping, which is a decision "
+            f"over the whole accumulated pool",
         )
         parser.add_argument(
             "--strange-share",
             type=float,
-            default=0.5 if defaults else None,
-            help="share of the slots the strange judge fills (default: 0.5)",
+            default=run_module.STRANGE_SHARE if defaults else None,
+            help=f"share of the slots the strange judge fills "
+            f"(default: {run_module.STRANGE_SHARE:g})",
+        )
+        parser.add_argument(
+            "--strange-modes",
+            type=int,
+            default=None,
+            help=f"modes the strange judge draws at each location it pays for "
+            f"(default: {budget_module.MODES_PER_LOCATION[budget_module.STRANGE]}). The "
+            f"smooth judge always draws one: the smooth coloring is the only mode it owns "
+            f"and a second draw would render the same picture",
         )
         parser.add_argument(
             "--attempts", type=int, help="cap the total colorize attempts; omit for the multiple"

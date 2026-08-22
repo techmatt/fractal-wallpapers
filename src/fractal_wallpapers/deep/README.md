@@ -22,7 +22,7 @@ fractal-wallpapers curate run --deep --harvest artifacts/deep --run deep1 -n 2
 
 **A production leg is launched with `--wall-budget`, not with `--seats`.** The
 flag takes seconds and covers the whole piece of work — this command *and* the
-evaluation gallery that reads it. Eight hours buys about **184 seats** where
+evaluation frames that read it. Eight hours buys about **184 seats** where
 `deep_run1` took 32 by hand and spent a quarter of its clock. `--seats` and
 `--batches` still exist and still win when they are passed; left alone, they are
 what the budget fills.
@@ -141,18 +141,23 @@ and `--wall-budget` divides:
 ```text
 sourcing   379 s / 32 seats             11.8 s a seat
 walk       290 s / 470 nodes x 14.7      9.1 s a seat
-gallery    254 / 741 x 12.8 s x 23.2   102   s a seat
+evaluation 254 / 741 x 12.8 s x 23.2   102   s a seat
                                        -----
                                        123   s a seat
 ```
 
 At eight hours, less a 15% margin for the estimate being `n = 1` and a flat 30
 minutes for the staging and the checks that do not scale, that is **22,680 s of
-usable budget and 184 seats** — 5.75x what was seated by hand. The gallery is two
-thirds of it and is reserved rather than assumed: this command draws no finished
-frame, and a walk that spends to the last second is a walk nobody has time to
-look at. `--no-gallery-reserve` is the walk-only run, and it is a different piece
-of work rather than a saving.
+usable budget and 184 seats** — 5.75x what was seated by hand. The evaluation
+frames are two thirds of it and are reserved rather than assumed: this command
+draws no finished frame, and a walk that spends to the last second is a walk
+nobody has time to look at. `--no-evaluation-reserve` is the walk-only run, and it
+is a different piece of work rather than a saving.
+
+They were the *gallery* until 2026-08-22 and they are not one: a gallery is a set
+of pictures somebody chose to look at, and these are the frames a deep run books
+so that it can be read at all. The word belongs to curation now, where it names
+the collection a released picture is in.
 
 **The frontier emptying is not the end of the run.** With budget left beyond the
 margin the run **sources again into itself** — same ledger, same artifacts root,
@@ -180,9 +185,9 @@ point builds an empty one, and an empty one reproduces the old behaviour exactly
 
 **A lineage is capped at 24 admissions, because monotony is a supply problem.**
 `deep_run1` put 741 admissions on 15 of its 48 roots and 85 on one, and the 162
-frames of its floor gallery were largely one composition in 162 palettes. A
-gallery can spread itself over lineages after the fact — that one had to, mid-leg
-— but it cannot get back the walk time that went into the lineage it then
+frames of its floor set were largely one composition in 162 palettes. An
+evaluation pass can spread itself over lineages after the fact — that one had to,
+mid-leg — but it cannot get back the walk time that went into the lineage it then
 thinned. So the cap acts at supply time: past it the lineage stops expanding and
 its standing frontier nodes are evicted at the crossing, which is recorded as its
 own `lineage_capped` row. Twenty-four is half again the equal share of that run's
@@ -214,7 +219,7 @@ that arrives does, so the price is per *descent*, not per seat — **a walk batc
 eight nodes 4.3 s median and 16.5 s worst** against the 900 s ceiling, and a
 finished 1920x1080 ss2 frame **5.8-12.5 s** of render plus about four seconds of
 colorize. That medium geometry is a seventh of a release frame's samples and is
-what an evaluation gallery is drawn at; the release figures below are still the
+what the evaluation frames are drawn at; the release figures below are still the
 only ones the release ceiling may be read against.
 
 **A deep release is a different cost class and gets its own ceilings.**

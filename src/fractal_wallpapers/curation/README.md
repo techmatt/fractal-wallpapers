@@ -8,6 +8,7 @@ wallpapers and a durable account of why those and not the others.
 
 ```
 binding    which ledgers this curation reads, declared once and never guessed
+durability the supply sidecar's manifest, its copy, and the guard over a run
 floors     every number that removes a picture, in one file
 intake     the ranked offer, best first per partition
 budget     how many pictures to make, and for which judge
@@ -25,13 +26,51 @@ run        the wiring, and nothing else
 
 ```
 fractal-wallpapers curate score --harvest artifacts/harvest_run3   # through the location head
-fractal-wallpapers curate plan --harvest artifacts/harvest_run3 -n 6   # making nothing
-fractal-wallpapers curate run --run v1 --harvest artifacts/harvest_run3 -n 6
-fractal-wallpapers curate run --run v1 --ledger artifacts/harvest_run3/walk.jsonl -n 60 \
+fractal-wallpapers curate sidecar save                             # the supply, made durable
+fractal-wallpapers curate plan --harvest artifacts/harvest_run3    # making nothing
+fractal-wallpapers curate run --run v1 --harvest artifacts/harvest_run3
+fractal-wallpapers curate run --run v1 --ledger artifacts/harvest_run3/walk.jsonl \
     --wall-budget 28800                                            # eight hours, or less
 fractal-wallpapers curate run --resume v1                          # carry on where it stopped
 fractal-wallpapers curate reject --run v1 --rejector matt_review --date 2026-08-17
 ```
+
+## A run accumulates; the collection is chosen later
+
+The two halves used to be one command, and Matt split them on 2026-08-22. **A run
+is the pool phase.** It reads the offer, colorizes, records every candidate it
+made and every verdict on it, and keeps a **diagnostic** release of ten pictures —
+enough to see that the path works, that the heads are reading the material and
+that the palette pass is not producing one look. It does not try to decide what is
+worth shipping: that is a judgement over the whole accumulated pool, and one
+night's attempts are a few hundred rows of it.
+
+Three things follow, and all three are in this stage now:
+
+* **A run never refuses a place because an earlier run released it.** `curate run`
+  used to build the served index and veto every candidate whose place the
+  collection already had — one run's seats deciding the next run's coverage, out
+  of the fraction of the pool it happened to hold. One wallpaper per location
+  still acts *inside* a run, through the counter both heads share, and
+  `served_locations` is now read only by the collection-level passes.
+* **Every release row says which collection it is in.** `records.DIAGNOSTIC` for a
+  run's own, `records.GALLERY` for what the collection ships. A field and not a
+  fourth verdict: the three verdicts answer whether there is a wallpaper at the
+  end of the row, and this answers which set it belongs to.
+* **Nothing released so far is the collection's.** All 1,050 rows on record are
+  `diagnostic`, backfilled in the same commit, because none of them was ever
+  chosen against a pool.
+
+**The mode table and the strange share are parameters, not constants.**
+`--strange-modes` and `--strange-share` are part of a run's recorded shape, so a
+resumed run takes the table it was planned with; the defaults are
+`budget.MODES_PER_LOCATION` and `run.STRANGE_SHARE` — **0.6** from 2026-08-22, on
+Matt's call, because the strange judge is the one with a seventeen-mode roster and
+an acting bar to get past while the smooth judge has one coloring and an advisory.
+A night's `--finish-by` reservation now asks `curation.budget` what that shape
+will actually plan, instead of restating the attempt multiplier, the share and the
+mode count in `schedule` — three copies that were correct only while all three of
+the originals were fixed.
 
 Everything a run makes at full size is **2560x1440 supersample 4** —
 `run.RELEASE_RESOLUTION` and `run.RELEASE_SUPERSAMPLE`, one geometry for every

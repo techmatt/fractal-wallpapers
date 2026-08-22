@@ -362,15 +362,20 @@ def emit_cap(passing: int) -> int:
     return max(0, int(passing)) // THIN_SUPPLY_DIVISOR
 
 
-def _modes_per_location() -> dict:
-    """`curation.budget`'s own table, read rather than restated."""
+def _modes_per_location(modes: dict | None = None) -> dict:
+    """The mode table in force, resolved by `curation.budget` rather than restated."""
     from fractal_wallpapers.curation import budget
 
-    return budget.MODES_PER_LOCATION
+    return budget.modes_of(modes)
 
 
-def summary() -> dict:
-    """Every cut, what it is on, and whether it acts. For a run's own banner."""
+def summary(modes: dict | None = None) -> dict:
+    """Every cut, what it is on, and whether it acts. For a run's own banner.
+
+    `modes` is the table this run was planned with, where it is not the default.
+    A banner that printed the module's table beside a run planned on another one
+    would be describing a run that did not happen.
+    """
     from fractal_wallpapers.supply import currency
 
     return {
@@ -431,7 +436,7 @@ def summary() -> dict:
             # the offer a slot reaches, the other how many pictures each of those
             # locations is worth making, and a run record that carried only their
             # product could not say which of the two had moved.
-            "modes_per_location": dict(_modes_per_location()),
+            "modes_per_location": dict(_modes_per_location(modes)),
         },
     }
 

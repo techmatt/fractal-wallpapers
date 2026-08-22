@@ -13,6 +13,21 @@ ruled on 2026-08-22 that they were:
 So the rule is now **one released wallpaper per location, collection-wide** —
 not in one run, not across runs, not in two modes or two palettes.
 
+## A run does not read this, and that is the split between the two phases
+
+It did, until 2026-08-22. A `curate run` built this index and refused every
+candidate whose place an earlier run had released, which made one run's seats a
+veto on the next run's coverage — a global decision taken by whichever run
+happened to go first, out of the fraction of the pool it had in front of it. The
+two phases are separate now: a run **accumulates** candidates and keeps a small
+diagnostic release, and what the collection ships is chosen later over the whole
+accumulated pool at once. One wallpaper per location is still enforced, and it is
+enforced where the population to enforce it over actually exists.
+
+So this index is read by the collection-level passes — `curate repeats`,
+`curate retire-repeats`, the rejection path — and by the global selection that
+decides what ships. Nothing in `curate run` reads it.
+
 ## "Same location" is the grouping this repository already had
 
 `labeling.groups.assign`: same plane digit for digit, seed `c` within
@@ -83,10 +98,10 @@ class ServedLocations:
 def build(exclude_run: str | None = None, under=None) -> ServedLocations:
     """Read the tracked release records into an index of served locations.
 
-    `exclude_run` drops one run's own rows, which is what a **resume** needs: a
-    run continuing itself must not be blocked by the wallpapers it already
-    released, or its second half would refuse every seat its first half took.
-    A fresh run has nothing under its own name and passes it harmlessly.
+    `exclude_run` drops one run's own rows, for a caller asking what the index
+    would be *without* a given run in it — what the collection looked like before
+    it, or what a global pass would decide if that run's seats were not already
+    taken. A name nothing has released under passes harmlessly.
 
     `under` names a record store other than the tracked one. It is not how a run
     calls this — a run's index is the collection's and the collection is tracked

@@ -69,6 +69,22 @@ Unlike a rejection, this is not a verdict added after the fact by a person: it i
 what the run itself decided, written by the run, and a re-run that makes the
 picture flips the row back through the same upsert.
 
+## Which collection a picture is in is a field, not a fourth verdict
+
+`released` / `killed` / `passed_over` answer one question — is there a wallpaper
+at the end of this row — and [`rejection`] answers a second, whether it was taken
+back afterwards. *Which collection it is in* is a third question, orthogonal to
+both, so it is [`DIAGNOSTIC`] or [`GALLERY`] in a field of its own. A fourth
+verdict would have made the first question unanswerable without knowing which
+collection the reader meant.
+
+A `curate run` writes `diagnostic` on every release row. That is the shape of the
+two phases: a run accumulates candidates and keeps ten pictures to look at, and
+what the collection ships is chosen later over the whole accumulated pool at
+once. Every row written before 2026-08-22 was a run's, so all 1,050 of them are
+`diagnostic` — a one-time backfill, recorded in `data/curation/README.md`,
+because nothing released so far was chosen against a pool.
+
 ## A verdict taken after the run is added to the row, never written over it
 
 A release can be wrong, and it is a person who finds out. When that happens the
@@ -111,6 +127,29 @@ RELEASE = "release"
 #: gate decision was taken on, which is a 640x360 thumbnail of a wallpaper that
 #: does not exist.
 RELEASED, KILLED, PASSED_OVER = "released", "killed", "passed_over"
+
+#: **Which collection a picture is in**, which is a different question from
+#: whether there is a picture at all. The three verdicts above answer "is there a
+#: wallpaper at the end of this row" and [`rejection`] answers "was it taken back
+#: afterwards"; neither of them says whether the wallpaper is one a run kept to
+#: look at or one the collection ships. So this is its own field rather than a
+#: fourth verdict.
+#:
+#: A run writes [`DIAGNOSTIC`] on every release row it makes. A run releases ten
+#: pictures now — enough to see that the path works and that the heads are
+#: reading the material sensibly, and not a claim about what is worth shipping,
+#: which is a decision over the whole accumulated pool rather than over one run's
+#: fraction of it. The global pass writes [`GALLERY`].
+#:
+#: `gallery` was taken until 2026-08-22 by `deep.budget`, which used it for the
+#: **evaluation** frames a deep walk books; that is what those frames are and
+#: they are named that now, so the word is free for the thing a reader would
+#: guess it meant.
+DIAGNOSTIC, GALLERY = "diagnostic", "gallery"
+
+#: Every collection a release row can be in. A row with `None` is a row written
+#: before the field existed, and there are none of those left.
+COLLECTIONS = (DIAGNOSTIC, GALLERY)
 
 #: What a killed row says for itself, in the same one-spelling discipline as
 #: [`REASONS`]. Not a member of that mapping: those are the ways a candidate loses
@@ -243,11 +282,18 @@ def decision(
     slot_source: str | None = None,
     group: str | None = None,
     picture: str | None = None,
+    collection: str | None = None,
 ) -> dict:
     """One decision, carrying the whole join it was taken on.
 
     `verdict`      at the gate, `kept` or `dropped`; at the release, one of
                    [`RELEASED`], [`KILLED`] or [`PASSED_OVER`].
+    `collection`   which collection this picture is in — [`DIAGNOSTIC`] for a
+                   run's own release, [`GALLERY`] for what the collection ships.
+                   Orthogonal to the verdict and to the rejection, which is why
+                   it is a field of its own. `None` on every gate row: a gate
+                   decision is about whether a candidate is worth scoring, and
+                   nothing about it is in a collection.
     `slot_source`  which kind of slot a released row took — `guarantee` or `mix`.
                    `None` on every gate row and every passed-over row: a row that
                    took no slot has no slot provenance, and defaulting it to
@@ -264,6 +310,10 @@ def decision(
         "stage": stage,
         "candidate": candidate,
         "verdict": verdict,
+        # Which collection, beside whether there is a picture. Two questions, two
+        # fields: a fourth verdict would have made "is there a wallpaper here"
+        # unanswerable without knowing which collection was meant.
+        "collection": collection,
         "reason": reason,
         "slot_source": slot_source,
         "group": group,

@@ -63,7 +63,7 @@ picked by hand from conservative estimates, and the frontier emptied at 470 of
 that stopped early; it is a run that was sized wrong before it started.
 
 So `--wall-budget` sizes the seating. [`fractal_wallpapers.deep.budget`] prices a
-seat off that run's own record — sourcing, walk and the evaluation gallery that
+seat off that run's own record — sourcing, walk and the evaluation frames that
 follows — and the run seats as many as the budget buys after two margins. **And
 when the frontier empties with budget still left, the run sources again into the
 same run**: same ledger, same artifacts root, same [`roots.Standing`], seating
@@ -80,8 +80,9 @@ not the one that discovers it could not.
 ## A lineage is capped, because monotony is a supply problem
 
 `deep_run1` put 741 admissions on 15 of its 48 roots and 85 of them on one, and
-the 162 frames of its floor gallery were largely one composition in 162 palettes.
-A gallery can spread itself over lineages after the fact — that one had to — but
+the 162 frames of its floor set were largely one composition in 162 palettes.
+An evaluation pass can spread itself over lineages after the fact — that one had
+to — but
 it cannot get back the walk time that went into the lineage it then thinned. So
 the cap acts at supply time: [`LINEAGE_ADMISSIONS`] admissions per root, after
 which the lineage stops expanding and its standing frontier nodes are evicted.
@@ -294,10 +295,10 @@ class Deep:
     #: What a seat costs, for the projection. Defaults to `deep_run1`'s measured
     #: table; a run with its own numbers may hand them in.
     costs: budget_module.Costs = field(default_factory=budget_module.Costs)
-    #: Whether the budget reserves the evaluation gallery's share of the clock.
+    #: Whether the budget reserves the evaluation frames' share of the clock.
     #: On: this run draws no finished frame, and a walk that spends to the last
     #: second is a walk nobody has time to look at. Off is a **walk-only** run.
-    gallery_reserve: bool = True
+    evaluation_reserve: bool = True
     scorer: object | None = None
     colormap: str = "twilight_shifted"
     node_width: int = 384
@@ -378,7 +379,7 @@ class Deep:
             costs=self.costs,
             spent=spent,
             admitted=admitted,
-            gallery=self.gallery_reserve,
+            evaluation=self.evaluation_reserve,
         )
 
     def _admitted(self) -> int:
@@ -396,7 +397,7 @@ class Deep:
         return max(DEFAULT_BATCHES, int(math.ceil(nodes / max(1, self.limits.batch))))
 
     def _reserve(self) -> None:
-        """Take the gallery's share off what this run's own legs may spend.
+        """Take the evaluation frames' share off what this run's own legs may spend.
 
         Every admission on the books promises the pass that follows this one a
         share of a frame, so the clock's budget falls as the run admits. Priced
@@ -408,7 +409,7 @@ class Deep:
         if self.projection is None:
             return
         self.clock.budget = budget_module.spendable(
-            self.projection.usable, self._admitted(), self.costs, gallery=self.gallery_reserve
+            self.projection.usable, self._admitted(), self.costs, evaluation=self.evaluation_reserve
         )
 
     # ------------------------------------------------------------------ seats
