@@ -19,6 +19,8 @@ refill       what to do about a partition whose queue has run dry
 twins        Julia parameters derived from the parent plane's admissions
 proven       parameter-plane roots at every location a human scored a keeper
 saturation   cross-run memory, straight off the ledgers
+novelty      the two levers against monotony: the discount and the share
+autopsy      what each claim on the batch bought, in pictures
 tau_h        how good a cheap look must be before a real one is paid for
 harvest      the production loop, and everything that keeps it honest
 ```
@@ -31,6 +33,15 @@ price     what a unit of currency costs there, measured as the run goes
 allocate  intended share of the clock ∝ deficit ÷ price, with a floor everyone gets
 serve     divide the batch's slots by how far each partition is below its intent
 credit    what the batch found, deduplicated, back into the price and the stock
+```
+
+A batch's slots are claimed in a **ruled order**, and it is one-directional —
+nothing below may eat what is above it:
+
+```
+1  floor      the carry's claimants, guaranteed their slot
+2  share      the protected exploration fraction of what is left
+3  contest    the deficit-priced rule over the remainder, lineage-discounted
 ```
 
 What follows is worth reading before changing anything here.
@@ -104,6 +115,27 @@ for a different reason and does earn it — half a release row is single-threade
 Python that leaves cores a sibling engine can take, worth 3.19x over four workers on
 the same machine.
 
+**Four levers stand between a long run and one composition, and they act at
+different heights.** The walk's per-root expansion cap bounds what a root may
+*spend*; the per-lineage admission cap (`--lineage-cap`, off by default in a
+harvest and on for a deep run) bounds what it may *book*, and is the hard stop.
+Under it are two soft ones in `novelty`, both run-command parameters and neither
+stored on a row. The **lineage discount** multiplies a lineage's expected credit
+by `max(f, 1/(1+k·n))` where `n` is that lineage's admissions *this run* — in the
+contest only, evaluated at the pop rather than baked into the priority, because
+`n` moves after a node is pushed and the Gumbel must not be re-rolled. The
+**exploration share** reserves a fraction of the post-floor slots for roots whose
+neighbourhood *no ledger* has ever booked an admission from, and prices that
+fraction against its own admission rate. Inside the share the head ranks and only
+the junk floor kills; the discount never reaches it.
+
+**A run's `--ledgers` names one root, and the two cross-run indexes are only as
+wide as it.** Both `saturation` and `novelty` read the tree that flag points at,
+so the shipped default of `artifacts` indexes the *hot* tier alone — a checkout
+whose production runs have been archived builds both memories out of whatever
+happens to be local. Naming the archive root explicitly is how a run gets the
+whole history, and it costs one pass per index over every ledger there.
+
 **A slot is not a minute.** The quota allocates the clock and hands out node
 slots, so the slot demand is the minute demand divided by what a slot has been
 costing in that partition. Being cheap buys more turns, not more time.
@@ -148,6 +180,8 @@ the run; the summary says which one did.
 ```
 fractal-wallpapers census
 fractal-wallpapers harvest --minutes 90 --batch 8
+fractal-wallpapers harvest --exploration-floor 0.25 --exploration-start 0.45
+fractal-wallpapers harvest --no-exploration --lineage-discount 0   # neither lever
 fractal-wallpapers harvest --partition mandelbrot --root-channel proven
 fractal-wallpapers derive-proven-seeds --partition mandelbrot --write   # to read it
 fractal-wallpapers harvest --partition mandelbrot --seeds seeds.jsonl   # one leg, one book

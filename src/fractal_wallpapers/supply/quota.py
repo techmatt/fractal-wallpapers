@@ -24,6 +24,13 @@ serves whichever servable partition is furthest below its intent. That is a quot
 enforced at the population level, and it is the run's headline number rather than
 a hope.
 
+**Three claims on the batch, in a ruled order.** The floor's claimants are
+guaranteed first, the exploration share takes a protected fraction of what is
+left, and the deficit-priced contest takes the remainder. The order lives here
+because nothing else holds all three at once, and it is one-directional: a share
+that could take a starved partition's slot would re-open the one-way lockout the
+floor exists to close.
+
 **Re-allocated every batch**, because the prices move. The censused deficit does
 not — human labels do not arrive mid-run — but the allocation is cheap and a
 vector cached at launch is a run steering on a price it has already disproved.
@@ -306,6 +313,18 @@ class Quota:
 
     def note_candidates(self, partition: str, n: int) -> None:
         self.realized.candidates[partition] = self.realized.candidates.get(partition, 0) + int(n)
+
+    def note_share_pricing(self, priced: dict | None) -> None:
+        """Carry the share's own re-pricing into the batch that caused it.
+
+        The trace is written after the batch is served and the share is priced in
+        between, so without this the file would hold the share the batch was
+        *allocated* under and never the step that moved it — and "did the
+        self-pricing move at all" would have to be inferred from a difference
+        between consecutive rows rather than read.
+        """
+        if priced is not None:
+            self._trace["share_priced"] = priced
 
     def note_admission(self, partition: str, n: int = 1) -> None:
         self.realized.admitted[partition] = self.realized.admitted.get(partition, 0) + int(n)

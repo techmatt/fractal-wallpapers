@@ -28,11 +28,13 @@ refill       what to do about a partition whose queue has run dry
 twins        Julia parameters derived from the parent plane's admissions
 proven       parameter-plane roots at every location a human scored a keeper
 saturation   cross-run memory, straight off the ledgers
+novelty      the two levers against monotony: the discount and the share
+autopsy      what each claim on the batch bought, in pictures
 tau_h        how good a cheap look must be before a real one is paid for
 harvest      the production loop, and everything that keeps it honest
 ```
 
-Three ideas run through all of it, and each one is a mistake somebody made first.
+Four ideas run through all of it, and each one is a mistake somebody made first.
 
 **The mix is decided where the batch is popped.** Anything that only changes what
 *enters* the frontier is diluted by whatever multiplies fastest inside it.
@@ -43,6 +45,12 @@ what actually happened drifts, and nothing pulls it back.
 **An entitlement that does not accumulate is not an entitlement.** A claim
 re-offered every batch and lost every batch is worth exactly nothing, however
 often it is granted.
+
+**An allocator indifferent to repetition buys one composition.** Scarcity says
+where to look and says nothing about whether what comes back is the same picture,
+so a batch's slots are claimed in a ruled order — floor, then a protected share
+for ground no run has walked, then the deficit-priced contest, discounted by what
+each lineage has already given this run.
 """
 
 from __future__ import annotations

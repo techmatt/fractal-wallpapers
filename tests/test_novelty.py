@@ -61,11 +61,14 @@ def candidate_row(root_id: int, family: dict, viewport: dict, score, fate="survi
     }
 
 
-def quota(deficits: dict | None = None, exploration=None, partitions=ALL_PARTITIONS) -> Quota:
+def quota(
+    deficits: dict | None = None, exploration=None, partitions=ALL_PARTITIONS, run_dir=None
+) -> Quota:
     """A quota with a stated stock and no ledgers behind it."""
     deficits = deficits or {}
     return Quota(
         partitions,
+        run_dir,
         census=Census(
             counts={},
             currency={p: float(deficits.get(p, 0.0)) for p in partitions},
@@ -395,4 +398,130 @@ def test_only_the_junk_floor_kills_a_share_candidate() -> None:
     assert not LocationScorer.expandable(scorer, {}, floors.JUNK_FLOOR / 2.0)
     assert not LocationScorer.expandable(scorer, {}, None), (
         "a candidate with no score has a failed render behind it, not a low opinion"
+    )
+
+
+# --------------------------------------------------------------- end to end
+
+
+def engine_is_built() -> bool:
+    from fractal_wallpapers import engine
+
+    try:
+        engine.engine_path()
+    except FileNotFoundError:
+        return False
+    return True
+
+
+needs_engine = pytest.mark.skipif(
+    not engine_is_built(),
+    reason="the engine is not built: cargo build --release --manifest-path engine/Cargo.toml",
+)
+
+
+@needs_engine
+def test_a_smoke_harvest_divides_its_batches_between_the_two_channels(tmp_path) -> None:
+    """Small and seeded, through the real engine: the share draws, the contest
+    draws, the columns add to the slots, and every row says which paid for it."""
+    from fractal_wallpapers.discovery.walk import Limits, Policy, Walk
+    from fractal_wallpapers.supply import autopsy
+    from fractal_wallpapers.supply.harvest import Budget, Harvest
+    from fractal_wallpapers.supply.refill import Refill
+
+    walk = Walk(
+        out_dir=tmp_path / "run",
+        seed=20260821,
+        limits=Limits(batch=4, root_expansions=3),
+        policy=Policy(candidates=2, node_width=96),
+    )
+    exploration = novelty.Exploration(lineages=novelty.build(root=tmp_path / "nothing"))
+    run = Harvest(
+        walk,
+        quota(run_dir=tmp_path / "run", exploration=exploration),
+        budget=Budget(minutes=0.0, batches=3),
+        batch_size=4,
+        refill=Refill(walk, low_water=2, per_draw=2),
+    )
+    summary = run.run()
+
+    channels = summary["tally"]["by_channel"]
+    assert channels["share"]["slots"] > 0, "no ledger behind this run, so every root is novel"
+    assert channels["contest"]["slots"] > 0
+    assert sum(row["slots"] for row in channels.values()) == summary["tally"]["expanded"]
+    assert sum(row["found"] for row in channels.values()) == summary["tally"]["found"]
+    assert (
+        sum(row["distinct"] for row in channels.values())
+        == (summary["tally"]["distinct_admissions"])
+    )
+
+    stamped = {
+        row.get("channel")
+        for row in ledger_module.read(tmp_path / "run" / "walk.jsonl")
+        if row["kind"] == "candidate"
+    }
+    assert stamped <= {"share", "contest"} and stamped, "every candidate names its channel"
+
+    realized = summary["exploration"]["realized"]
+    assert realized["floor"] == novelty.SHARE_FLOOR
+    assert realized["start"] == novelty.SHARE_START
+    assert realized["overall"]["realized"] >= 0.0
+
+    sheet = autopsy.write(tmp_path / "run", summary)
+    assert sheet is not None and sheet.is_file()
+    page = sheet.read_text(encoding="utf-8")
+    assert "share · admitted" in page and "contest · refused" in page
+
+
+@needs_engine
+def test_a_resumed_run_keeps_the_share_it_paid_for(tmp_path) -> None:
+    """The share is a priced quantity and membership is classified once, so a
+    session that reopened at the start value would throw away what it bought."""
+    from fractal_wallpapers.discovery.walk import Limits, Policy, Walk
+    from fractal_wallpapers.supply.harvest import Budget, Harvest
+    from fractal_wallpapers.supply.refill import Refill
+
+    def build(batches: int) -> Harvest:
+        walk = Walk(
+            out_dir=tmp_path / "run",
+            seed=20260821,
+            limits=Limits(batch=4, root_expansions=3),
+            policy=Policy(candidates=2, node_width=96),
+        )
+        exploration = novelty.Exploration(lineages=novelty.build(root=tmp_path / "nothing"))
+        return Harvest(
+            walk,
+            quota(run_dir=tmp_path / "run", exploration=exploration),
+            budget=Budget(minutes=0.0, batches=batches),
+            batch_size=4,
+            refill=Refill(walk, low_water=2, per_draw=2),
+        )
+
+    first = build(2)
+    first.run()
+    priced = first.exploration.share
+    members = dict(first.exploration.members)
+    assert members, "the first session classified its roots"
+
+    second = build(4)
+    assert second.resume() is True
+    assert second.exploration.share == pytest.approx(priced)
+    assert second.exploration.members == members
+    assert second.walk.roots, "and the roots those verdicts were read off came back"
+    assert second.tally.by_channel == first.tally.by_channel
+
+
+def test_the_batch_trace_records_the_step_that_moved_the_share() -> None:
+    """ "Did the self-pricing move at all" has to be a read, not a difference
+    between consecutive rows."""
+    exploration = novelty.Exploration(floor=0.25, start=0.5, ema=0.5)
+    held = quota({"mandelbrot": 100.0}, exploration=exploration)
+    held.slots(dict.fromkeys(ALL_PARTITIONS, 20), 8, dict.fromkeys(ALL_PARTITIONS, 20))
+    held.note_share_pricing(
+        exploration.settle({"slots": 4, "admissions": 4}, {"slots": 4, "admissions": 0})
+    )
+    assert held._trace["share_priced"]["share"] > 0.5
+    assert held._trace["share_priced"]["ratio"] > 1.0
+    assert held._trace["share"]["share"] == pytest.approx(0.5), (
+        "the row still says the share the batch was allocated under"
     )
