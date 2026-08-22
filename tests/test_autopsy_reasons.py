@@ -48,11 +48,27 @@ def test_a_row_below_the_junk_floor_says_the_floor_killed_it() -> None:
     assert said == autopsy.JUNK_FLOOR
 
 
-def test_a_structural_refusal_adds_nothing_because_the_fate_already_says_it() -> None:
-    """`interior_cap` is on the card already. Restating it as a reason would be
-    the page talking to itself."""
+def test_a_structural_refusal_says_what_its_gate_is_about() -> None:
+    """The `fate` line names the gate; the reason says what the gate is. These are
+    most of any run's refusals, and they used to be the cards with nothing on
+    them — which made the reject half of the page unreadable to anybody who did
+    not already know the pipeline."""
     reasons = autopsy.Reasons(facts(), {0: trace(0)}, OFF)
-    assert reasons.of({**node(0, 5), "fate": "interior_cap"}) is None
+    assert reasons.of({**node(0, 5), "fate": "interior_cap"}) == autopsy.GATES["interior_cap"]
+
+
+def test_every_declared_gate_has_a_sentence_and_an_unknown_one_says_so() -> None:
+    """A fate added to the ledger and not here must leave a card that admits it
+    rather than a card that quietly drops the line."""
+    from fractal_wallpapers.discovery import ledger as ledger_module
+
+    structural = set(ledger_module.FATES) - set(ledger_module.SCORED)
+    assert structural == set(autopsy.GATES)
+
+    reasons = autopsy.Reasons(facts(), {0: trace(0)}, OFF)
+    unknown = reasons.of({**node(0, 5), "fate": "a_gate_invented_tomorrow"})
+    assert "a_gate_invented_tomorrow" in unknown
+    # And an admitted row still has no refusal to explain.
     assert reasons.of({**node(0, 5), "fate": ledger_module.SURVIVED}) is None
 
 

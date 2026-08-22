@@ -120,7 +120,7 @@ KILLED_REASON = "the release render was killed at its deadline and no picture wa
 #: something other than its own score. One spelling, here, because the sheet
 #: re-derives the sections of a run it did not make by reading these back.
 REASONS = {
-    "cluster_cap": "a third picture of a look already taken twice",
+    "location_served": "the collection has already released a wallpaper of this location",
     "below_bar": "below the acting release bar for this head",
 }
 
@@ -167,9 +167,14 @@ def partition_file(partition: str | None) -> str:
     return f"{str(partition or 'unpartitioned').replace(':', '_')}.jsonl"
 
 
-def decisions_dir(stage: str, run: str | None = None) -> Path:
-    """`<stage>`, holding every run's decisions, or `<stage>/<run>` for one run's."""
-    where = root() / str(stage)
+def decisions_dir(stage: str, run: str | None = None, under: Path | None = None) -> Path:
+    """`<stage>`, holding every run's decisions, or `<stage>/<run>` for one run's.
+
+    `under` names a root other than this process's, and there is one caller: the
+    served-location index, which is a fact about the *collection* and so reads the
+    tracked store even inside a rehearsal that redirected everything else.
+    """
+    where = (root() if under is None else Path(under)) / str(stage)
     return where if run is None else where / str(run)
 
 
@@ -556,7 +561,7 @@ def _rows_of(path: Path) -> list[dict]:
     ]
 
 
-def read_decisions(stage: str, run: str | None = None) -> list[dict]:
+def read_decisions(stage: str, run: str | None = None, under: Path | None = None) -> list[dict]:
     """Every recorded decision at `stage`, optionally for one run.
 
     **This is the unified reader, and it is the only thing a consumer needs.** The
@@ -569,7 +574,7 @@ def read_decisions(stage: str, run: str | None = None) -> list[dict]:
     The read side exists because a record nothing can get at without parsing by
     hand is a record nobody will read.
     """
-    directory = decisions_dir(stage, run)
+    directory = decisions_dir(stage, run, under)
     if not directory.is_dir():
         return []
     rows = [

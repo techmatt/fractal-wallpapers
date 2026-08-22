@@ -5,7 +5,20 @@ gate/<run>/<partition>.jsonl     one row per colorize attempt: kept, or dropped
 release/<run>/<partition>.jsonl  one row per scored candidate: released, or passed over
 runs.jsonl                       one row per run: the funnel, the cuts, the configuration
 runs/<run>.json                  that run's own summary, whole
+bar_exceptions.jsonl             rows a ruling keeps in service below an acting bar
 ```
+
+**`bar_exceptions.jsonl` is the one file here a person writes.** Everything else
+is a run's own account of itself; this is a verdict about four rows of it. The
+retroactive bar pass (`curate reject`) is a *rule* read live against today's cuts,
+so it finds the same rows every time it is asked — and four run8h strange rows
+below the 0.685 bar stay served on Matt's ruling. One row per excused release row,
+keyed on that row's own `run|stage|candidate`, carrying the bar it sits under, the
+score, who ruled and when and why. Per row and never per run or per head: an
+exception naming a run would excuse rows that run has not made yet, and one naming
+a head would retire the bar by the back door. It is read from the checkout rather
+than from the record root, so a rehearsal that redirects the store under `scratch/`
+does not stop the ruling applying.
 
 **The two decision stores are trees, a file per run per partition, and one reader
 over all of them.** `records.read_decisions(stage)` hands back the whole store in

@@ -94,7 +94,14 @@ from fractal_wallpapers.supply.partitions import ALL_PARTITIONS, partition_of_fa
 from fractal_wallpapers.supply.quota import Quota
 from fractal_wallpapers.supply.refill import Refill
 
-#: The checkpoint's schema. **4** because the exploration share joined it: the
+#: The checkpoint's schema. **5** because the readout's per-partition books
+#: joined it — the share-against-contest split, its head-score histograms and the
+#: saturation activations, all per partition. A session resumed from a schema-4
+#: checkpoint would reopen those at zero and report medians and activation counts
+#: covering the second session alone, with nothing on the page saying so. That is
+#: the same silence every bump below was taken for.
+#:
+#: **4** was the exploration share: the
 #: share is a *priced* quantity and the roots it is spent on are classified once,
 #: so a session resumed from a schema-3 checkpoint would reopen at the start
 #: share, throw away every batch of evidence the first session bought, and
@@ -103,7 +110,51 @@ from fractal_wallpapers.supply.refill import Refill
 #: **3** was the walk's plane roots, for the same shape of reason: a session that
 #: rebuilt them would carry the grace for the roots it drew and not for the roots
 #: the earlier session drew, which is two policies under one run seed.
-STATE_SCHEMA = 4
+STATE_SCHEMA = 5
+
+
+#: Bins the head-score histogram divides `P(>=3)` into. A hundred, so the median
+#: it answers is good to half a hundredth — which is a readout's precision and
+#: not a cut's, and this is only ever read by a readout.
+#:
+#: A histogram rather than the scores themselves because this is checkpointed at
+#: every batch boundary: a six-hour leg admits tens of thousands of locations, and
+#: rewriting that list a thousand times is a real cost for a number nobody needs
+#: to more than two decimal places.
+SCORE_BINS = 100
+
+
+def score_bin(score) -> int | None:
+    """Which bin one head score falls in, or `None` for a row with no score."""
+    if score is None:
+        return None
+    return min(SCORE_BINS - 1, max(0, int(float(score) * SCORE_BINS)))
+
+
+def median_of(histogram) -> float | None:
+    """The median of a bin-counted distribution, as the crossing bin's midpoint."""
+    counts = list(histogram or [])
+    total = sum(counts)
+    if not total:
+        return None
+    seen, half = 0, total / 2.0
+    for index, count in enumerate(counts):
+        seen += count
+        if seen >= half:
+            return round((index + 0.5) / SCORE_BINS, 4)
+    return None
+
+
+def _channel_cell() -> dict:
+    return {
+        "slots": 0,
+        "found": 0,
+        "admitted": 0,
+        "distinct": 0,
+        "expandable": 0,
+        "refused": 0,
+        "scores": [0] * SCORE_BINS,
+    }
 
 
 class ReconcileError(SystemExit):
@@ -147,12 +198,31 @@ class Tally:
     #: from the ledger afterwards because the reconcile is written in these
     #: buckets and a column nothing balances is a column nobody can trust.
     by_channel: dict = field(default_factory=dict)
+    #: The same split **per partition**, with a head-score histogram on each cell.
+    #: The run-wide row above cannot answer the question the share was added for
+    #: — a share that returns its admissions out of one partition is a share that
+    #: has not spread — and the medians are what separate "more finds" from
+    #: "better finds".
+    by_partition: dict = field(default_factory=dict)
+    #: Saturation activations per partition: how many survivors the cross-run
+    #: memory looked at, and how many it actually discounted. The run-wide pair
+    #: above says whether the lever fired at all; this says where.
+    saturation_by_partition: dict = field(default_factory=dict)
+    #: Where a batch's charged minutes went. `expand` is the engine and the head;
+    #: `reframe` is the operator suite the survivors trigger — the neighbourhood
+    #: enumeration among them, which is the expensive one. Both are inside
+    #: `--minutes` and only their sum was ever recorded.
+    expand_minutes: float = 0.0
+    reframe_minutes: float = 0.0
 
     def channel(self, name: str) -> dict:
-        return self.by_channel.setdefault(
-            name,
-            {"slots": 0, "found": 0, "admitted": 0, "distinct": 0, "expandable": 0, "refused": 0},
-        )
+        return self.by_channel.setdefault(name, _channel_cell())
+
+    def cell(self, partition: str, name: str) -> dict:
+        return self.by_partition.setdefault(partition, {}).setdefault(name, _channel_cell())
+
+    def saturation(self, partition: str) -> dict:
+        return self.saturation_by_partition.setdefault(partition, {"seen": 0, "discounted": 0})
 
     def feed(self) -> int:
         """Nodes this run pushed onto the frontier from its own expansions."""
@@ -178,8 +248,43 @@ class Tally:
             "currency": round(self.units, 4),
             "saturation_seen": self.saturation_seen,
             "saturation_discounted": self.saturation_discounted,
-            "by_channel": {k: dict(v) for k, v in sorted(self.by_channel.items())},
+            "by_channel": {k: _channel_report(v) for k, v in sorted(self.by_channel.items())},
+            # Per partition, and the histogram is folded to its median on the way
+            # out: the bins are a checkpoint's business and the summary is a
+            # readout's, and a hundred-column row per cell is a page nobody reads.
+            "by_partition": {
+                partition: {name: _channel_report(cell) for name, cell in sorted(channels.items())}
+                for partition, channels in sorted(self.by_partition.items())
+            },
+            "saturation_by_partition": {
+                partition: dict(cell)
+                for partition, cell in sorted(self.saturation_by_partition.items())
+            },
+            "minutes": {
+                "expand": round(self.expand_minutes, 4),
+                "reframe": round(self.reframe_minutes, 4),
+                "reframe_share": (
+                    round(self.reframe_minutes / (self.expand_minutes + self.reframe_minutes), 4)
+                    if (self.expand_minutes + self.reframe_minutes) > 0
+                    else None
+                ),
+            },
         }
+
+
+def _channel_report(cell: dict) -> dict:
+    """One channel cell as a summary reads it: the counts, and the median score.
+
+    The distinct admissions are what the median is over, because they are what
+    the deficit is fed with — a channel scored on everything it found would be
+    reporting the gate's opinion of its candidates rather than its own supply.
+    """
+    row = {key: value for key, value in cell.items() if key != "scores"}
+    row["distinct_per_slot"] = (
+        round(row["distinct"] / row["slots"], 4) if row.get("slots") else None
+    )
+    row["median_head_score"] = median_of(cell.get("scores"))
+    return row
 
 
 class Harvest:
@@ -198,6 +303,7 @@ class Harvest:
         discount_k: float = novelty_module.DISCOUNT_K,
         discount_floor: float = novelty_module.DISCOUNT_FLOOR,
         partitions=ALL_PARTITIONS,
+        finish_by: dict | None = None,
     ):
         self.walk = walk
         self.quota = quota
@@ -213,6 +319,12 @@ class Harvest:
         self.discount_k = float(discount_k)
         self.discount_floor = float(discount_floor)
         self.partitions = list(partitions)
+        # The wall-clock plan `--finish-by` derived this run's budget from, or
+        # `None` for a run whose minutes were named outright. Carried whole into
+        # the summary rather than reduced to the number it produced: a night that
+        # lands late is attributable to the term that was reserved wrong, and the
+        # terms are the only part of that a later reader cannot reconstruct.
+        self.finish_by = finish_by
         self.run_dir = Path(walk.out_dir)
         self.tally = Tally()
         self.active_minutes = 0.0
@@ -332,9 +444,18 @@ class Harvest:
                 continue
             started = time.monotonic()
             report = self.walk.expand(taken)
-            self._apply_memory(report)
+            self._apply_memory(partition, report)
+            expanded_at = time.monotonic()
             self.walk.trigger_reframings(report["survivors"])
-            minutes = (time.monotonic() - started) / 60.0
+            finished_at = time.monotonic()
+            # Both halves are charged — an operator's clock is this run's clock —
+            # but only their sum was ever recorded, and the neighbourhood
+            # enumeration is the expensive operator this project has. Split here,
+            # where the two calls are, rather than derived afterwards from a
+            # ledger that does not carry seconds.
+            self.tally.expand_minutes += (expanded_at - started) / 60.0
+            self.tally.reframe_minutes += (finished_at - expanded_at) / 60.0
+            minutes = (finished_at - started) / 60.0
             minutes_total += minutes
             counted = self._account(partition, report, minutes, len(taken), channels)
             for name, row in counted["by_channel"].items():
@@ -430,14 +551,8 @@ class Harvest:
         }
         per_channel: dict = {}
         for name in set(channels.values()):
-            per_channel[name] = {
-                "slots": sum(1 for v in channels.values() if v == name),
-                "found": 0,
-                "admitted": 0,
-                "distinct": 0,
-                "expandable": 0,
-                "refused": 0,
-            }
+            per_channel[name] = _channel_cell()
+            per_channel[name]["slots"] = sum(1 for v in channels.values() if v == name)
         fates = Counter(row["fate"] for row in candidates)
         unknown = set(fates) - set(ledger_module.FATES)
         if unknown:
@@ -486,6 +601,13 @@ class Harvest:
             bucket = per_channel.get(channel_of.get(row.get("parent_node_id")))
             if bucket is not None:
                 bucket["distinct"] += 1
+                # The head's read of this admission, into the channel's histogram.
+                # Only distinct admissions, because those are what the deficit is
+                # fed with and the median has to be about the same population the
+                # counts beside it are.
+                index = score_bin(row.get("score"))
+                if index is not None:
+                    bucket["scores"][index] += 1
             units += self.quota.credit(partition, row.get("score"), row.get("score_great"))
             # A booked location may be another partition's supply: the twin
             # channel derives a Julia parameter from an admitted parameter-plane
@@ -519,11 +641,18 @@ class Harvest:
             if fate not in (ledger_module.SURVIVED, ledger_module.EXPANDABLE):
                 self.tally.refused[fate] += n
         for name, row in per_channel.items():
-            into = self.tally.channel(name)
-            for field_name, value in row.items():
-                into[field_name] += value
+            for into in (self.tally.channel(name), self.tally.cell(partition, name)):
+                for field_name, value in row.items():
+                    if field_name == "scores":
+                        for index, count in enumerate(value):
+                            into["scores"][index] += count
+                    else:
+                        into[field_name] += value
         return {
-            "by_channel": per_channel,
+            "by_channel": {
+                name: {k: v for k, v in row.items() if k != "scores"}
+                for name, row in per_channel.items()
+            },
             "found": len(candidates),
             "admitted": admitted,
             "expandable": expandable,
@@ -532,7 +661,7 @@ class Harvest:
             "currency": round(units, 4),
         }
 
-    def _apply_memory(self, report: dict) -> None:
+    def _apply_memory(self, partition: str, report: dict) -> None:
         """Discount a survivor whose neighbourhood earlier runs already walked.
 
         Applied to ordinary descent only — the population a scorer has an opinion
@@ -561,9 +690,11 @@ class Harvest:
                 node["center_im"],
             )
             self.tally.saturation_seen += 1
+            self.tally.saturation(partition)["seen"] += 1
             if density <= 0:
                 continue
             self.tally.saturation_discounted += 1
+            self.tally.saturation(partition)["discounted"] += 1
             discount = saturation_module.discount(density, self.saturation_strength)
             score = row.get("score")
             term = NEUTRAL_PRIOR if score is None else float(score)
@@ -602,6 +733,7 @@ class Harvest:
             "batches": self.tally.batches,
             "active_minutes": round(self.active_minutes, 3),
             "budget_minutes": self.budget.minutes,
+            "finish_by": self.finish_by,
             "tally": self.tally.as_dict(),
             "queues": queues,
             "frontier": len(self.walk.frontier),
@@ -610,6 +742,11 @@ class Harvest:
                 "roots": self.walk.next_root_id - 1,
                 "counts": dict(sorted(self.walk.tally.items())),
                 "probe": self.walk.governor.tally(),
+                # What each reframing operator fired and what it cost. The
+                # per-operator availability and refusal counts are in `counts`
+                # above (`reframing:<operator>:<available|reason>`); this is the
+                # price beside them, which nothing recorded before.
+                "operators": self._operator_report(),
                 "ledger": tracked_name(self.walk.ledger.path),
             },
             # Which judge wrote the scores on this run's rows, and what its
@@ -669,18 +806,37 @@ class Harvest:
             ),
         }
 
+    def _operator_report(self) -> dict:
+        """Firings, seconds, and the share of the run's charged clock each took.
+
+        Against `reframe_minutes` rather than against the whole leg, because the
+        question an operator is switched off to answer is what it costs relative
+        to the other operators and to the expansion it is triggered by — and both
+        are here.
+        """
+        total = (self.tally.expand_minutes + self.tally.reframe_minutes) * 60.0
+        rows = {}
+        for name, cell in sorted(self.walk.operator_seconds.items()):
+            rows[name] = {
+                "firings": cell["firings"],
+                "seconds": round(cell["seconds"], 3),
+                "seconds_per_firing": (
+                    round(cell["seconds"] / cell["firings"], 4) if cell["firings"] else None
+                ),
+                "share_of_charged_clock": (
+                    round(cell["seconds"] / total, 4) if total > 0 else None
+                ),
+            }
+        return rows
+
     def _channel_report(self) -> dict:
         """What each claim on the batch spent and returned, off the run's own
         tally rather than off the share's pricing accumulators — the second are
         smoothed and are evidence, not a count."""
-        rows = {}
-        for name in (novelty_module.SHARE, novelty_module.CONTEST):
-            row = dict(self.tally.channel(name))
-            row["distinct_per_slot"] = (
-                round(row["distinct"] / row["slots"], 4) if row["slots"] else None
-            )
-            rows[name] = row
-        return rows
+        return {
+            name: _channel_report(self.tally.channel(name))
+            for name in (novelty_module.SHARE, novelty_module.CONTEST)
+        }
 
     # ------------------------------------------------------------- the state
 
@@ -710,6 +866,10 @@ class Harvest:
                 "saturation_seen": self.tally.saturation_seen,
                 "saturation_discounted": self.tally.saturation_discounted,
                 "by_channel": self.tally.by_channel,
+                "by_partition": self.tally.by_partition,
+                "saturation_by_partition": self.tally.saturation_by_partition,
+                "expand_minutes": self.tally.expand_minutes,
+                "reframe_minutes": self.tally.reframe_minutes,
             },
             "walk": {
                 "frontier": self.walk.frontier,
@@ -782,6 +942,16 @@ class Harvest:
             saturation_seen=int(saved.get("saturation_seen", 0)),
             saturation_discounted=int(saved.get("saturation_discounted", 0)),
             by_channel={k: dict(v) for k, v in (saved.get("by_channel") or {}).items()},
+            by_partition={
+                partition: {name: dict(cell) for name, cell in channels.items()}
+                for partition, channels in (saved.get("by_partition") or {}).items()
+            },
+            saturation_by_partition={
+                partition: dict(cell)
+                for partition, cell in (saved.get("saturation_by_partition") or {}).items()
+            },
+            expand_minutes=float(saved.get("expand_minutes", 0.0)),
+            reframe_minutes=float(saved.get("reframe_minutes", 0.0)),
         )
         walk_state = state.get("walk") or {}
         self.walk.frontier = list(walk_state.get("frontier") or [])

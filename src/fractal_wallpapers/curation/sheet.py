@@ -257,9 +257,9 @@ def build(
         ]
     if skipped:
         lines += [
-            f"<h2>Removed by the look cap ({len(skipped)})</h2>",
-            "<p class='lede'>Good enough to take a slot, but a third picture of a look the "
-            "release had already taken twice.</p>",
+            f"<h2>Already in the collection ({len(skipped)})</h2>",
+            "<p class='lede'>Good enough to take a slot, but a second wallpaper of a place "
+            "the collection has already released one of.</p>",
             "<div class='grid'>" + "".join(_card(row, directory) for row in skipped) + "</div>",
         ]
     output = Path(output)
@@ -279,7 +279,7 @@ def from_records(run: str, rows: list[dict], summary: dict, directory: Path, out
 
     THE one place a sheet's sections are decided, used by the run that makes the
     records and by anything that later changes them. Everything it needs is on the
-    rows — the served set, what a review took back, what the look cap removed —
+    rows — the served set, what a review took back, what the location rule removed —
     which is exactly the property the records were written to have.
 
     Deterministic in the rows it is given, so redrawing an unchanged run rewrites
@@ -289,7 +289,7 @@ def from_records(run: str, rows: list[dict], summary: dict, directory: Path, out
 
     served = records.served(rows)
     rejected = records.score_rank(row for row in rows if records.is_rejected(row))
-    capped = records.REASONS["cluster_cap"]
+    capped = records.REASONS["location_served"]
     # Score rank within partition, not raw score across the page. The near-miss
     # section is a *prefix* of this list, and the two judges do not share a scale
     # — sorting both heads' probabilities together handed the whole section to

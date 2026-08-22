@@ -1,9 +1,9 @@
 """The wall clock a long run is held to, and what it may still start.
 
 A run sized only by `-n` is sized by nothing at all once the numbers get real: a
-release row measured between sixteen seconds and three and a half minutes turns
-"twenty rows" into an answer between six minutes and an hour, and the only way to
-find out which is to wait. `--wall-budget` is the other half of the sizing — the
+release row measured between fifteen seconds and eighteen minutes turns "twenty
+rows" into an answer between five minutes and six hours, and the only way to find
+out which is to wait. `--wall-budget` is the other half of the sizing — the
 run promises to be finished by a certain time — and this module is what makes the
 promise true.
 
@@ -93,15 +93,33 @@ DEFAULT_MARGIN = 30.0
 #: The hard backstop: what a unit of a leg may take before it is killed, whatever
 #: this run has or has not measured. Per leg, because the legs are two orders of
 #: magnitude apart — a colorize unit is tens of seconds at 640x360 and a release
-#: render was measured between 16 and 452 seconds at 2560x1440 supersampled — and
-#: a single number is either a licence for one or a false kill for the other.
+#: render is [`RELEASE_DISTRIBUTION`] at 2560x1440 supersampled — and a single
+#: number is either a licence for one or a false kill for the other.
 #:
 #: This is the number a unit is actually held to almost always. It is deliberately
-#: many times the longest unit either leg has ever produced: the cost of setting
+#: several times the longest unit either leg has ever produced: the cost of setting
 #: it high is that one genuinely hung unit takes this long to die, and the cost of
 #: setting it low is a healthy unit killed for being slow, which is a lost picture
 #: and a record that reads as a release.
-HUNG_CEILING = {COLORIZE: 600.0, RELEASE: 1800.0}
+#:
+#: **The release ceiling was restated on 2026-08-21**, and the restatement is the
+#: reason this constant carries its distribution rather than a remembered range.
+#: 1800 s was set when the longest release row on record was 452 s — four times
+#: the observed maximum, which is the height this is meant to sit at. run2 has
+#: since produced a 1084.6 s row that *finished*, which left the ceiling at 1.66x
+#: the maximum: close enough that the next tail row is a killed wallpaper. At
+#: 2400 s it is 2.2x, and it is now the same number the deep mode declares — the
+#: two release classes have converged, and the shallow tail is the reason.
+HUNG_CEILING = {COLORIZE: 600.0, RELEASE: 2400.0}
+
+#: The shallow release row distribution every number here is sized against, read
+#: off the five tracked runs' own `release/timing.jsonl` rather than remembered.
+#:
+#: 155 finished rows across `release_v1`, `run8h`, `run2`, `run3` and `run9`:
+#: **14.9 s to 1084.6 s, median 87.8 s**, at 2560x1440 supersample 4. Quoted in
+#: one place because the range moved once already and three docstrings said the
+#: old one.
+RELEASE_DISTRIBUTION = "14.9-1084.6 s, median 87.8 s over 155 tracked rows"
 
 #: What a leg not named above is held to.
 DEFAULT_HUNG_CEILING = 1800.0
@@ -123,11 +141,11 @@ HUNG_MULTIPLE = 4.0
 
 #: How much room, after the margin, a unit needs before this run will risk one of
 #: a class it has never measured. Per leg like the margin, and for a stronger
-#: reason: a candidate colorize is seconds at 640×360 and a release render was
-#: measured between 16 and 196 seconds at 2560×1440 supersampled, so one number
-#: for both is either most of a colorize budget or a rounding error on a release.
-#: A few times the class's own typical unit — enough that anything near typical
-#: finishes, not so much that a run declines work it could have done.
+#: reason: a candidate colorize is seconds at 640×360 and a release render is
+#: [`RELEASE_DISTRIBUTION`] at 2560×1440 supersampled, so one number for both is
+#: either most of a colorize budget or a rounding error on a release. Well under
+#: the class's own median — enough that a typical unit finishes, not so much that
+#: a run declines work it could have done.
 UNMEASURED_MINIMUM = {COLORIZE: 10.0, RELEASE: 60.0}
 
 #: What a leg not named above needs.
@@ -388,6 +406,7 @@ __all__ = [
     "HUNG_CEILING",
     "HUNG_MULTIPLE",
     "RELEASE",
+    "RELEASE_DISTRIBUTION",
     "TEARDOWN_MARGIN",
     "UNMEASURED_MINIMUM",
     "Clock",

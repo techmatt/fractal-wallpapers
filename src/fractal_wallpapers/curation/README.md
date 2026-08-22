@@ -12,7 +12,8 @@ floors     every number that removes a picture, in one file
 intake     the ranked offer, best first per partition
 budget     how many pictures to make, and for which judge
 colorize   a candidate set of maps, the head's pick, a render, a verdict
-selection  top-N per judge, under the slot, supply and look caps — and the bar
+selection  top-N per judge, under the slot and supply caps, the location rule
+           — and the bar
 release    the selected rows again at full size, workers rendering
 pacing     the wall clock: what may still start, and what is killed
 records    what the run decided, and out of what population
@@ -171,6 +172,29 @@ passing one, so a partition the bar empties holds its slot and leaves it unfille
 rather than exporting it. Every run reports planned against seated against
 unfilled, per head and per partition, with the reason each shortfall bound on.
 
+**One wallpaper per location, collection-wide** (Matt, 2026-08-22). A location is
+never released twice — not in one run, not across runs, not in two modes or two
+palettes. "Same location" is the near-duplicate group `labeling.groups.assign`
+already defines, and `floors.CLUSTER_CAP` is now **1** over that grouping with the
+whole collection as its scope. `curation.served_locations` reads the tracked
+release records into an index of served places at run start;
+`selection.grouped` groups the index and *both heads'* candidates in one call,
+because a group id is a position in a connected-components labelling and tags
+from two calls are unrelated — which is also what makes the cap apply to the
+union of the two heads' seats rather than to each of them. A refused candidate is
+logged `location_served` with a `cause` of `prior_run` or `this_run`, and the run
+summary counts both. **Higher-ranked keeps**: the pool is score-ordered, so the
+refused row is always the weaker reading. A resume excludes its own run from the
+index or its second half would refuse every seat its first half took.
+
+Read against run9, which had the old rule: 48 seats become **27** — 14 refused as
+places an earlier run had served, 7 as a second seat inside run9. Both heads still
+attempt every location, so what the second attempt buys is the better reading
+rather than a second wallpaper; sizing the attempt plan against that has not been
+taken. `fractal-wallpapers curate repeats` is the report-only read of the rule
+against what the collection already holds — the rule acts at selection and cannot
+reach backwards. Perceptual similarity is a different question and is not this.
+
 **A release can be wrong, and taking a row back adds to the record.** `rejection`
 stamps a released row with who rejected it, when, and against which bar and
 artifact; `verdict` stays `released`, the scores are untouched, nothing is
@@ -184,6 +208,17 @@ sheet keeps it on the page under its own heading, because a review page that
 disagreed with its own records would be the one thing a review page may not be.
 `curate reject` applies today's acting bars to a run released before they acted,
 which is a rule rather than a list, and re-running it rewrites the same bytes.
+
+**A ruling that keeps a row in service is a tracked record, or it is not a
+ruling.** That rule is live and idempotent, so it finds the same rows every time
+it is asked — which is why an *unwritten* exception is dangerous rather than
+merely undocumented. Four run8h strange rows sit below the 0.685 bar and stay
+served on Matt's reading of the sheet; `data/curation/bar_exceptions.jsonl` names
+them one by one, with the bar, the score, who ruled and when, and
+`rejection.below_acting_bar` passes over exactly those keys. It is per *row*: an
+exception naming a run would go on excusing rows that run has not made yet, and
+one naming a head would retire the bar by the back door. A pass names what it
+excused in its report.
 
 **Serving order is score rank within the partition, on each head's own scale.**
 `records.score_rank` ranks every `(partition, head)` pool separately and then
@@ -205,8 +240,8 @@ that is roughly 80% release, 17% attempts, and everything else in the noise.
 
 **A run is sized by a clock as well as by `-n`, and the gate is prospective.** At
 six pictures the size of a run is `-n`; at sixty it is the wall clock, because one
-release row measured between sixteen seconds and three and a half minutes turns
-"twenty rows" into an answer between six minutes and an hour. `--wall-budget` is
+release row measured between 14.9 s and 1084.6 s turns "twenty rows" into an
+answer between five minutes and six hours. `--wall-budget` is
 checked *before* each unit — `elapsed + estimate + margin > budget` and it does not
 start — off an estimate formed from this run's own finished units, with a hard kill
 deadline covering the first unit of a class, which by construction has no estimate.
@@ -216,8 +251,9 @@ than mistaken for thin supply.
 
 **A deep release is a different cost class, and `--deep` is what says so.** The
 hung-unit backstop (`pacing.HUNG_CEILING`) is a fixed ceiling per leg, sized
-against a shallow release row's measured 16-452 s and raised only by units a run
-has *finished* — so a class whose first row dies at the ceiling never teaches the
+against the shallow release row distribution (`pacing.RELEASE_DISTRIBUTION`:
+14.9-1084.6 s, median 87.8 s over the 155 tracked rows) and raised only by units a
+run has *finished* — so a class whose first row dies at the ceiling never teaches the
 run that the class is slow. Two 2560x1440 ss4 frames from
 [the deep run mode](../deep/README.md) were measured at **531 s and 607 s**, at
 widths `8.07e-10` and `7.07e-11` and iteration caps near 46 000. `curate run
@@ -232,7 +268,10 @@ run` — separate invocations, so a failure in one does not take the finished wo
 the ones before it. `--wall-budget` is the curation's alone, not the night's, so it
 is computed at launch rather than written down: `total − harvest spent − reserve`,
 where the reserve is what the readout and the write-up need after the last picture
-lands. A night capped at six hours with a three-hour harvest therefore hands the
+lands. The other direction is `harvest --finish-by HH:MM --release-slots N`, which
+reserves this leg's release pass out of the night's span and hands the harvest what
+is left — see [the supply engine](../supply/README.md) for
+every term it subtracts. A night capped at six hours with a three-hour harvest therefore hands the
 curation a little under three, and the curation is the leg that will stop early —
 `-n` binds it long before the clock does.
 

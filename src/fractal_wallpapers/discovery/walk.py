@@ -122,6 +122,7 @@ from __future__ import annotations
 import json
 import math
 import random
+import time
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 
@@ -412,6 +413,11 @@ class Walk:
         self.next_root_id = 1
         self.batch_index = 0
         self.tally: dict[str, int] = {}
+        #: Firings and seconds per reframing operator. Priced separately from the
+        #: expansion because the operators are not equally priced: the
+        #: neighbourhood enumeration is the expensive one this project has, and
+        #: it is on by default in production.
+        self.operator_seconds: dict[str, dict] = {}
         self.ledger = Ledger(self.out_dir / "walk.jsonl")
         # The header goes first, before any root exists: a run's configuration is
         # what its rows have to be read against, and a record whose first line is
@@ -771,6 +777,19 @@ class Walk:
         for node in batch:
             self.expansions[node["root_id"]] = self.expansions.get(node["root_id"], 0) + 1
         return batch
+
+    def _charge(self, operator: str, seconds: float) -> None:
+        """Second and firing, per reframing operator.
+
+        The operators are not equally priced and only the neighbourhood
+        enumeration's cost has ever been measured — out of band, on a replay,
+        and written into a scratch report that is now gone. Charged here so the
+        run that pays for it is the run that reports it, which is the only
+        version of this number a later reader can check.
+        """
+        cell = self.operator_seconds.setdefault(operator, {"firings": 0, "seconds": 0.0})
+        cell["firings"] += 1
+        cell["seconds"] += float(seconds)
 
     def _count(self, name: str, amount: int = 1) -> None:
         self.tally[name] = self.tally.get(name, 0) + amount
@@ -1153,16 +1172,20 @@ class Walk:
         parent_atom = operators.ParentAtom()
 
         if self.reframings.snap:
+            started = time.monotonic()
             rows = operators.snap_to_nucleus(view, degree=degree, framings=self.reframings.framings)
+            self._charge("snap_to_nucleus", time.monotonic() - started)
             found.extend(rows)
             parent_atom = operators.parent_atom_from_snap(rows)
 
         if self.reframings.lateral:
-            found.append(
-                operators.lateral_to_sibling(view, self.rng, degree=degree, parent=parent_atom)
-            )
+            started = time.monotonic()
+            row = operators.lateral_to_sibling(view, self.rng, degree=degree, parent=parent_atom)
+            self._charge("lateral_to_sibling", time.monotonic() - started)
+            found.append(row)
 
         if self.reframings.neighborhood:
+            started = time.monotonic()
             rows = operators.expand_neighborhood(
                 view,
                 self.rng,
@@ -1170,6 +1193,7 @@ class Walk:
                 framings=self.reframings.framings,
                 parent=parent_atom,
             )
+            self._charge("expand_neighborhood", time.monotonic() - started)
             keep = self.reframings.neighborhood_proposals
             available = [row for row in rows if row.available]
             ranks = sorted({row.extra.get("found_rank", 0) for row in available})[:keep]

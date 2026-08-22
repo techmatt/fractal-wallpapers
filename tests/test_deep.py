@@ -383,10 +383,30 @@ def test_a_ladder_will_not_start_where_there_is_no_nucleus_to_start_from() -> No
 # The clock.
 # --------------------------------------------------------------------------- #
 def test_the_deep_ceilings_are_stated_rather_than_inherited() -> None:
-    for leg in (pacing.COLORIZE, pacing.RELEASE):
-        assert deep_run.HUNG_CEILING[leg] > pacing.HUNG_CEILING[leg]
+    """Declared, and never read off the shallow ones — not even where they agree.
+
+    The colorize legs are still two classes apart. The release legs met at 2400 s
+    on 2026-08-21, from opposite directions: four times a measured deep frame,
+    and twice the shallow tail run2 pushed to 1084.6 s. Equal is fine; inherited
+    is not, and the assertion is on the declaration rather than on the ordering
+    precisely because the ordering stopped being strict.
+    """
+    assert deep_run.HUNG_CEILING[pacing.COLORIZE] > pacing.HUNG_CEILING[pacing.COLORIZE]
+    assert deep_run.HUNG_CEILING[pacing.RELEASE] >= pacing.HUNG_CEILING[pacing.RELEASE]
+    assert deep_run.HUNG_CEILING is not pacing.HUNG_CEILING
     # And the shallow ones are not moved by the deep mode existing.
-    assert pacing.HUNG_CEILING == {pacing.COLORIZE: 600.0, pacing.RELEASE: 1800.0}
+    assert pacing.HUNG_CEILING == {pacing.COLORIZE: 600.0, pacing.RELEASE: 2400.0}
+
+
+def test_the_shallow_release_ceiling_clears_twice_the_tracked_tail() -> None:
+    """The height the restatement was made to restore, pinned as a rule.
+
+    1800 s was four times the observed maximum when it was set and 1.66x it by
+    run2, which is how a backstop stops being one without anybody editing it.
+    """
+    longest = 1084.6  # run2, and it FINISHED — see pacing.RELEASE_DISTRIBUTION
+    assert pacing.HUNG_CEILING[pacing.RELEASE] >= 2 * longest
+    assert "1084.6" in pacing.RELEASE_DISTRIBUTION
 
 
 def test_a_deep_curation_clock_carries_them_onto_its_legs() -> None:

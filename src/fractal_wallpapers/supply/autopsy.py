@@ -82,6 +82,29 @@ OUTBID_RANK = "outbid on node rank — its partition was served and it was never
 DISCOUNTED = "discounted lineage — its root had already booked, so the contest priced it down"
 UNSPENT = "the run ended before its partition was served again"
 
+#: What each **structural** gate refused a candidate for, in one sentence apiece.
+#: These used to say nothing at all on the card, on the reasoning that the `fate`
+#: line already named the gate — which is true and is not the same as telling a
+#: reader what the gate is. They are the majority of any run's refusals, so the
+#: page's whole reject half was the half with no explanation on it.
+GATES = {
+    "interior_cap": "interior-capped — too much of the frame is the set's interior",
+    "instant_escape": (
+        "instant escape — the whole frame leaves at once: far exterior, nothing in it"
+    ),
+    "flat": "flat — no variety in the escape times, so the frame is one wash of colour",
+    "occupancy_floor": (
+        "below the occupancy floor — the detail is real but confined to a corner and "
+        "most of the frame is empty"
+    ),
+}
+
+#: What a card with a fate this file has never heard of says. A gate added to the
+#: ledger and not to [`GATES`] leaves a card that names the gate and admits it
+#: cannot explain it, which is a page saying what it knows rather than a page
+#: silently dropping a column.
+UNNAMED_GATE = "refused by the {fate} gate, which this page has no sentence for"
+
 
 def _buckets(path: Path) -> tuple[dict, Counter, dict]:
     """`(pictured rows, every row, run facts)` — candidates keyed `(channel, verdict)`.
@@ -143,14 +166,20 @@ def _traces(run_dir: Path) -> dict:
 class Reasons:
     """Why one refused card is refused, derived and never guessed.
 
-    A refused row is one of two things, and the ledger already says which:
+    A refused row is one of three things, and the ledger already says which:
 
+    * a **structural gate** refused it before the scorer saw it — [`GATES`] says
+      which gate and what the gate is about. These are most of any run's
+      refusals and they used to be the ones with nothing written on them.
     * **`not_admitted`** — the scorer put it below the junk floor. It never
       reached the frontier, so no allocation ever had the chance to pass it over.
     * **`expandable`** — it cleared the junk floor, joined the frontier and did
       not clear the good floor. That is why it is not in the books; the second
       half of the question is why the run never came back to it, and *that* is
       what the quota's batch trace answers.
+
+    **Every refused card carries one.** A card that could say nothing was a card
+    a reader had to already know the pipeline to read.
 
     The second half has four possible answers and every one is read off the trace
     of the batches the node actually sat through: its partition was **capped**
@@ -171,13 +200,19 @@ class Reasons:
         self.discounting = (summary.get("lineage_discount") or {}).get("status") == "on"
 
     def of(self, row: dict) -> str | None:
+        """The sentence a refused card carries. `None` only for a row that was
+        not refused at all — an admitted row has no refusal to explain, and this
+        is asked about the refused half of the page."""
         fate = row.get("fate")
+        if fate == ledger_module.SURVIVED:
+            return None
         if fate == ledger_module.NOT_ADMITTED:
             return JUNK_FLOOR
         if fate != ledger_module.EXPANDABLE:
-            # A structural gate refused it, and the fate on the card already names
-            # which one. There is nothing here to add.
-            return None
+            # A structural gate refused it. The `fate` line on the card names the
+            # gate; this says what the gate is, which is the half a reader who
+            # does not already know the pipeline needs.
+            return GATES.get(str(fate), UNNAMED_GATE.format(fate=fate))
         if row.get("node_id") in self.expanded:
             return GOOD_FLOOR
         passed_over = self._passed_over(row)

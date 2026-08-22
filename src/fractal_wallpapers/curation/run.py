@@ -7,7 +7,8 @@ reads:
 intake     the union of every walk, ranked best-first per partition
 budget     how many pictures to make, and for which judge
 colorize   a palette candidate set, the head's pick, a render, a verdict
-selection  top-N per judge under the slot, supply and look caps
+selection  top-N per judge under the slot and supply caps, the bar, and the
+           one-wallpaper-per-location rule
 release    the selected rows again at full resolution, workers rendering
 ```
 
@@ -88,6 +89,7 @@ from fractal_wallpapers.curation import (
     records,
     release,
     selection,
+    served_locations,
     sheet,
 )
 from fractal_wallpapers.curation import (
@@ -215,7 +217,17 @@ def curate(
             log(f"[budget] {line}")
 
         # --- selection --------------------------------------------------- #
-        selected, log_rows, split = _select(scored, n, strange_share, caps, claims, log)
+        # Built here rather than inside the selection so a **resume** can exclude
+        # this run's own released rows: a run continuing itself must not be
+        # refused every seat its first half took.
+        served = served_locations.build(exclude_run=run)
+        log(
+            f"[select] {len(served)} location(s) already served by the collection "
+            f"({', '.join(f'{r} {n}' for r, n in served.summary()['by_run'].items()) or 'none'})"
+        )
+        selected, log_rows, split, group_of = _select(
+            scored, n, strange_share, caps, claims, log, served
+        )
 
         # --- release ----------------------------------------------------- #
         released, release_record = _release(
@@ -234,6 +246,7 @@ def curate(
             selected=selected,
             released=released,
             log_rows=log_rows,
+            group_of=group_of,
             split=split,
             supply=supply,
             budget_record=budget_record,
@@ -522,8 +535,8 @@ def _intact_field(path: Path) -> bool:
     return path.stat().st_size == int(samples[0]) * int(samples[1]) * 4
 
 
-def _select(scored, n, strange_share, caps, claims, log):
-    """Two disjoint judge passes, one look counter across both, one bar on one head.
+def _select(scored, n, strange_share, caps, claims, log, served=None):
+    """Two disjoint judge passes, one location counter across both and across runs.
 
     The allocation is solved over the partitions that have a *scored* candidate,
     not over the ones that have a candidate clearing the bar. That is deliberate
@@ -531,10 +544,17 @@ def _select(scored, n, strange_share, caps, claims, log):
     bar rejects holds its slot and leaves it unfilled, because handing the slot to
     a partition that had plenty is padding one level up from the padding this bar
     exists to end.
+
+    `served` is the collection's index of places already released
+    ([`served_locations.build`]). Both heads' candidates and the index are grouped
+    in **one** call, which is what makes the tags comparable across the two passes
+    — they were not before, and the shared counter under them was sharing a
+    dictionary rather than a rule.
     """
     slots = budget_module.head_slots(n, strange_share)
     by_head = {head: [row for row in scored if row["head"] == head] for head in budget_module.HEADS}
-    entries = {head: selection.entries(rows) for head, rows in by_head.items()}
+    served = served_locations.ServedLocations() if served is None else served
+    entries, already = selection.grouped(by_head, served.locations)
     owed, unplaced = budget_module.assign_guarantees(
         [p for p in claims if any(e["partition"] == p for v in entries.values() for e in v)],
         slots,
@@ -555,6 +575,7 @@ def _select(scored, n, strange_share, caps, claims, log):
             used,
             guarantees=mine,
             bar=bar,
+            served=already,
         )
         for row in rows:
             row["head"] = head
@@ -587,8 +608,23 @@ def _select(scored, n, strange_share, caps, claims, log):
         },
         "partition_slots": allocations,
         "emit_caps": dict(caps),
-        "cluster_cap": floors.CLUSTER_CAP,
-        "cluster_cap_skips": sum(1 for row in log_rows if row.get("skipped") == "cluster_cap"),
+        "wallpapers_per_location": floors.CLUSTER_CAP,
+        # What the one-wallpaper-per-location rule refused, split by which side of
+        # it the candidate fell on. A run that lost twenty seats to places earlier
+        # runs already hold and a run that lost twenty to its own two heads
+        # bidding for one place are different runs, and the sum alone says neither.
+        "location_served_skips": sum(
+            1 for row in log_rows if row.get("skipped") == selection.LOCATION_SERVED
+        ),
+        "location_served_by_cause": {
+            cause: sum(
+                1
+                for row in log_rows
+                if row.get("skipped") == selection.LOCATION_SERVED and row.get("cause") == cause
+            )
+            for cause in ("prior_run", "this_run")
+        },
+        "served_index": served.summary(),
         "below_bar_skips": sum(1 for row in log_rows if row.get("skipped") == "below_bar"),
         # Planned against seated against unfilled, per head and per partition.
         # A short release is attributable at a glance or it is read as thin
@@ -626,8 +662,9 @@ def _select(scored, n, strange_share, caps, claims, log):
                 f"(eligible {split['head_eligible'][head]})"
                 for head in budget_module.HEADS
             )
-            + f". Shipping fewer rather than filling past a slot, supply, look or bar cut "
-            f"({split['cluster_cap_skips']} look-cap skips, "
+            + f". Shipping fewer rather than filling past a slot cap, a supply cap, the "
+            f"one-wallpaper-per-location rule or the bar "
+            f"({split['location_served_skips']} already in the collection, "
             f"{split['below_bar_skips']} below the bar)."
         )
     log(
@@ -635,7 +672,8 @@ def _select(scored, n, strange_share, caps, claims, log):
         + ", ".join(f"{head} {split['head_selected'][head]}" for head in budget_module.HEADS)
         + f"; {split['guarantee']['slots_taken']} guarantee slot(s)"
     )
-    return selected, log_rows, split
+    group_of = {entry["id"]: entry["group"] for pool in entries.values() for entry in pool}
+    return selected, log_rows, split, group_of
 
 
 def _release(selected, by_key, directory, workers, skip, log, leg=None):
@@ -792,7 +830,11 @@ def _record(**k) -> dict:
     directory = k["directory"]
     released = dict(k["released"])
     chosen = {entry["id"] for entry in selected}
-    group_of = {entry["id"]: entry["group"] for entry in selection.entries(scored)}
+    # The grouping the selection actually used, handed down rather than taken
+    # again: a second `assign` over a different population is a different
+    # labelling, and a record whose group tag disagreed with the seat it explains
+    # would be the one field here nothing could check.
+    group_of = k["group_of"]
     source = {row["id"]: row.get("slot_source") for row in k["log_rows"] if row.get("picked")}
     # Every way a row lost a slot to something other than its own rank, in the
     # one spelling the sheet reads back when it rebuilds a run it did not make.
@@ -911,7 +953,7 @@ def _record(**k) -> dict:
             "scored": len(scored),
             "attempts": len(rows),
             "released": len(released),
-            "look cap": floors.CLUSTER_CAP,
+            "wallpapers per location": floors.CLUSTER_CAP,
             "junk floor": floors.JUNK_FLOOR,
             "good floor": floors.GOOD_FLOOR,
             "seed": k["seed"],
