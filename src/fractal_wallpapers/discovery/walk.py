@@ -418,7 +418,7 @@ class Walk:
         #: neighbourhood enumeration is the expensive one this project has, and
         #: it is on by default in production.
         self.operator_seconds: dict[str, dict] = {}
-        self.ledger = Ledger(self.out_dir / "walk.jsonl")
+        self.ledger = Ledger(self.out_dir / ledger_module.LEDGER_NAME)
         # The header goes first, before any root exists: a run's configuration is
         # what its rows have to be read against, and a record whose first line is
         # already data is one that can be read wrongly before it can be read at all.

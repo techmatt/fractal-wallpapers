@@ -113,13 +113,20 @@ DEFAULT_MARGIN = 30.0
 HUNG_CEILING = {COLORIZE: 600.0, RELEASE: 2400.0}
 
 #: The shallow release row distribution every number here is sized against, read
-#: off the five tracked runs' own `release/timing.jsonl` rather than remembered.
+#: off the six tracked runs' own `release/timing.jsonl` rather than remembered.
 #:
-#: 155 finished rows across `release_v1`, `run8h`, `run2`, `run3` and `run9`:
-#: **14.9 s to 1084.6 s, median 87.8 s**, at 2560x1440 supersample 4. Quoted in
-#: one place because the range moved once already and three docstrings said the
-#: old one.
-RELEASE_DISTRIBUTION = "14.9-1084.6 s, median 87.8 s over 155 tracked rows"
+#: 204 finished rows across `release_v1`, `run8h`, `run2`, `run3`, `run9` and
+#: `run10`: **14.9 s to 1084.6 s, median 69.1 s**, at 2560x1440 supersample 4.
+#: Quoted in one place because the range moved twice already and three docstrings
+#: said the first one.
+#:
+#: run10 moved the median and not the ends, which is the shape reading predicts of
+#: the change that caused it: its release leg ran with `artifacts/curation` on
+#: NVMe instead of the archive, so the body of the distribution lost its I/O
+#: (per-row median 92.0 -> 51.2 s) while its own longest row went the other way,
+#: 463.6 -> 591.9 s, because the tail is compute-bound and was never waiting on a
+#: disk.
+RELEASE_DISTRIBUTION = "14.9-1084.6 s, median 69.1 s over 204 tracked rows"
 
 #: What a leg not named above is held to.
 DEFAULT_HUNG_CEILING = 1800.0

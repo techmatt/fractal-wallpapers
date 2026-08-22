@@ -86,6 +86,7 @@ re-running a curation silently un-rejects rows a person rejected by hand.
 from __future__ import annotations
 
 import json
+from datetime import datetime
 from pathlib import Path
 
 from fractal_wallpapers.paths import repo_root
@@ -546,11 +547,83 @@ def write_population(run: str, row: dict) -> tuple[Path, int, int]:
 
 
 def write_run(run: str, record: dict) -> Path:
-    """The run's own summary, one file, whole. Not upserted: a re-run replaces it."""
+    """The run's own summary, one file, whole. Not upserted: a re-run replaces it.
+
+    Stamped with the wall-clock time it was written, which is the one fact a run
+    record could not previously supply about itself. A later run derives its
+    release reservation from *the most recent* tracked run ([`latest_release_leg`])
+    and this store had no clock at all — so "most recent" was the file system's
+    opinion, which a fresh clone resets to the minute it was checked out. Local
+    time, unqualified: it is read only to order this store's own files against
+    each other.
+    """
     path = sinks(run)["run_record"]
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8", newline="\n")
+    stamped = {**record, "finished": datetime.now().isoformat(timespec="seconds")}
+    path.write_text(json.dumps(stamped, indent=2) + "\n", encoding="utf-8", newline="\n")
     return path
+
+
+def run_records() -> list[Path]:
+    """Every tracked run summary, oldest first.
+
+    Ordered by the `finished` stamp [`write_run`] puts on a record. A record
+    written before that stamp existed sorts **before every stamped one**, whatever
+    its modification time says, and the unstamped ones are ordered among
+    themselves by mtime. That is not a tie-break dodge: the stamp started being
+    written at a known moment, so "has no stamp" *is* the statement "older than
+    anything that has one" — and a fresh clone, where every file's mtime is the
+    checkout, would otherwise put the oldest run on record at the front of the
+    queue and derive tonight's reservation off it.
+    """
+    directory = root() / "runs"
+    if not directory.is_dir():
+        return []
+    return sorted(directory.glob("*.json"), key=_finished_at)
+
+
+def _finished_at(path: Path) -> tuple[int, float]:
+    """`(stamped, when)` — the sort key [`run_records`] orders on."""
+    try:
+        stamp = json.loads(path.read_text(encoding="utf-8")).get("finished")
+    except (OSError, ValueError):
+        stamp = None
+    if stamp:
+        try:
+            return 1, datetime.fromisoformat(str(stamp)).timestamp()
+        except ValueError:
+            pass
+    return 0, path.stat().st_mtime
+
+
+def latest_release_leg() -> dict | None:
+    """The most recent tracked run's release pass: `{run, seconds, rows, workers}`.
+
+    What a later night's release reservation is derived from, and `None` where no
+    tracked run has finished a release row — a fresh clone, and the one state in
+    which a written-down rate is the only rate there is.
+
+    Read newest first, and the first run that actually rendered wins: a run that
+    stopped before its release leg measured nothing, and skipping it is not the
+    same as having no measurement. The three fields travel together because the
+    rate means nothing without the worker count it was measured at.
+    """
+    for path in reversed(run_records()):
+        try:
+            record = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        leg = record.get("release") or {}
+        rows, seconds, workers = leg.get("rows"), leg.get("seconds"), leg.get("workers")
+        if not rows or not seconds or not workers:
+            continue
+        return {
+            "run": record.get("run") or path.stem,
+            "seconds": float(seconds),
+            "rows": int(rows),
+            "workers": int(workers),
+        }
+    return None
 
 
 def _rows_of(path: Path) -> list[dict]:
@@ -603,11 +676,13 @@ __all__ = [
     "partition_file",
     "default_root",
     "is_durable",
+    "latest_release_leg",
     "is_rejected",
     "population",
     "read_decisions",
     "rejection",
     "root",
+    "run_records",
     "scratch_root",
     "score_rank",
     "served",

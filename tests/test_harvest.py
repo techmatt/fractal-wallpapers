@@ -15,6 +15,7 @@ import pytest
 from fractal_wallpapers import engine
 from fractal_wallpapers.discovery import ledger as ledger_module
 from fractal_wallpapers.discovery.walk import Limits, Policy, Walk
+from fractal_wallpapers.supply import refill as refill_module
 from fractal_wallpapers.supply.census import Census, MachineStock
 from fractal_wallpapers.supply.harvest import Budget, Harvest, ReconcileError
 from fractal_wallpapers.supply.partitions import ALL_PARTITIONS, CLASSIC_PHOENIX
@@ -372,6 +373,20 @@ def test_a_smoke_harvest_serves_more_than_one_partition_and_balances(tmp_path) -
     # rather than the old standing claim that no such channel could exist.
     assert "no twin channel is wired into this run" in deferred["julia:multibrot3"]["reason"]
     assert summary["refill"]["twins"] is None
+
+    # And the same facts are sayable *before* a batch runs. run10 opened with
+    # three julia pools already walked out, so --exploration-start had nothing to
+    # buy in them and their realized share was zero — knowable at launch, first
+    # read the following morning.
+    state = run.refill.pool_state()
+    assert set(state) == set(run.refill.partitions)
+    assert state[CLASSIC_PHOENIX]["reason"] == refill_module.EXTERNALLY_SUPPLIED
+    assert state["julia:multibrot3"]["reason"] == deferred["julia:multibrot3"]["reason"]
+    served_pool = state["julia:mandelbrot"]
+    assert served_pool["reason"] is None and served_pool["pool"] > 0
+    lines = run.refill.pool_lines()
+    assert len(lines) == len(state)
+    assert any("entries left" in line for line in lines)
 
 
 @needs_engine

@@ -17,9 +17,10 @@ contest  refused
 
 **The pictures already exist.** `expand` draws every gate survivor at the node
 regime and the run keeps them under `views/`, so this page costs a thumbnail
-resize per sampled row and draws nothing. A refused row's picture is there for
-the same reason an admitted one's is: the walk records and ranks, and a refusal
-with no picture is a verdict nobody can disagree with.
+resize per sampled row and draws nothing. A row the *scorer* refused has its
+picture for the same reason an admitted one does — the walk records and ranks,
+and a refusal with no picture is a verdict nobody can disagree with. A row a
+structural gate refused has none, because the engine stopped before drawing it.
 
 **The sample is seeded off the run's own seed**, so the page is a function of the
 run and re-writing it gives the same rows. A sample rather than everything
@@ -30,11 +31,21 @@ all of them in it is a page nobody opens.
 it is copied out of the repository to be read, and a page pointing at files under
 an ignored tree arrives empty.
 
-**The grids are over the *pictured* population and the header says so.** The
-engine draws a frame for every gate survivor and for nothing else, so a candidate
-a structural gate refused has no picture to show — it is the majority of any
-run's rejects, and a page that silently dropped it would report a reject rate
-several times lower than the run's. Each heading carries both counts.
+**Every fate class in the run gets cards, pictured or not.** The engine draws a
+frame for every gate survivor and for nothing else, so a candidate a structural
+gate refused has no picture to show. The page used to sample the *pictured* rows
+alone, and the arithmetic of that is worth stating: run10's 48 cards drew 24
+`survived`, 18 `expandable` and 6 `not_admitted`, and **not one** of the 13,962
+`flat`, `interior_cap` or `occupancy_floor` refusals — because those rows were
+never in the draw. The [`GATES`] sentences shipped and no card could carry one.
+
+So the sample is **stratified by fate** ([`stratify`]): every class present in a
+grid gets cards in proportion to how much of that grid it is, with a floor of
+[`CARDS_PER_FATE`] so a rare gate is still visible. A card whose row has no
+picture says so and carries its sentence, which is the half of the page that was
+missing. Each heading still carries both counts, because "31,000 rows, 24,000 of
+them pictured" is the shape of the run's refusals and reading it off the grid
+would give the wrong number.
 
 A row that carries no `channel` came from a walk that had no channels — every
 ledger written before the exploration share existed — and the page says so
@@ -54,8 +65,18 @@ from fractal_wallpapers.discovery.walk import views_dir
 from fractal_wallpapers.supply import novelty
 
 #: Rows sampled per grid. Enough that one composition repeated is obvious at a
-#: glance, few enough that the page stays a couple of megabytes.
+#: glance, few enough that the page stays a couple of megabytes. Spread over the
+#: fate classes present rather than drawn from the grid at large, so a grid with
+#: five classes in it comes out somewhat larger than this — see [`stratify`].
 SAMPLE = 12
+
+#: The fewest cards a fate class present in a grid gets, whatever its share. Two
+#: rather than one: a single card is an anecdote, and a reader cannot tell a gate
+#: that refuses one composition from one that refuses everything by looking at one
+#: picture of it. run10's rarest refusal class is 606 rows in 30,947 — a
+#: proportional draw of twelve gives it none, and it is a fifth of a percent of
+#: the page to give it two.
+CARDS_PER_FATE = 2
 
 #: The long edge of an embedded thumbnail. A gate render is 384 wide; this is
 #: half of it, which is where a texture is still readable and a grid of four
@@ -107,7 +128,11 @@ UNNAMED_GATE = "refused by the {fate} gate, which this page has no sentence for"
 
 
 def _buckets(path: Path) -> tuple[dict, Counter, dict]:
-    """`(pictured rows, every row, run facts)` — candidates keyed `(channel, verdict)`.
+    """`(rows, totals, run facts)` — every candidate keyed `(channel, verdict)`.
+
+    Every candidate, pictured or not: the structural refusals have no picture and
+    they are the majority of a run's rejects, so a reader that kept only the
+    pictured ones was the reason no [`GATES`] sentence ever reached a card.
 
     `verdict` is `admitted` or `refused`, and the middle tier goes with the
     refusals: `expandable` is a row the walk stood on and did not book, which is
@@ -139,9 +164,33 @@ def _buckets(path: Path) -> tuple[dict, Counter, dict]:
             if admitted:
                 root, batch = row.get("root_id"), int(row.get("batch") or 0)
                 booked[root] = min(batch, booked.get(root, batch))
-            if row.get("image"):
-                rows.setdefault((channel, verdict), []).append(row)
+            rows.setdefault((channel, verdict), []).append(row)
     return rows, totals, {"expanded": expanded, "booked": booked}
+
+
+def stratify(rows: list[dict], draw: random.Random, sample: int = SAMPLE) -> list[dict]:
+    """A seeded sample of `rows` with every fate class in it represented.
+
+    Proportional, with a floor: a class gets its share of `sample` rounded to the
+    nearest card, never fewer than [`CARDS_PER_FATE`], and never more rows than it
+    has. The floor is what makes the total exceed `sample` on a grid with several
+    classes, and that is the trade taken deliberately — a page of twelve cards
+    that cannot show one of five refusal reasons is smaller and says less.
+
+    Classes come out largest first so the grid reads as the run's own shape, and
+    ties break on the fate name so the page is a function of the run rather than
+    of dictionary order.
+    """
+    by_fate: dict = {}
+    for row in rows:
+        by_fate.setdefault(str(row.get("fate")), []).append(row)
+    whole = len(rows)
+    out: list[dict] = []
+    for _fate, found in sorted(by_fate.items(), key=lambda item: (-len(item[1]), item[0])):
+        share = round(sample * len(found) / whole) if whole else 0
+        want = min(len(found), max(CARDS_PER_FATE, share))
+        out.extend(found if want >= len(found) else draw.sample(found, want))
+    return out
 
 
 def _traces(run_dir: Path) -> dict:
@@ -253,8 +302,12 @@ def _slots_in(trace: dict, partition: str) -> int:
 def _card(row: dict, directory: Path, reason: str | None = None) -> str:
     from fractal_wallpapers.curation.sheet import thumbnail
 
-    picture = directory / row["image"]
-    source = thumbnail(picture, THUMBNAIL_WIDTH) if picture.is_file() else ""
+    # A structurally refused row has no picture at all — the engine draws a frame
+    # for a gate survivor and for nothing else — and those rows are most of what
+    # this page now samples. The card says so and carries its sentence, which is
+    # the whole of what the gate half of the page has to say.
+    picture = directory / row["image"] if row.get("image") else None
+    source = thumbnail(picture, THUMBNAIL_WIDTH) if picture and picture.is_file() else ""
     viewport = row.get("viewport") or {}
     family = row.get("family") or {}
     score = row.get("score")
@@ -289,9 +342,9 @@ td, th { padding: .2rem .8rem .2rem 0; text-align: left; }
 
 def write(run_dir: Path, summary: dict, sample: int = SAMPLE) -> Path | None:
     """Write the run's channel autopsy. Returns the path, or `None` for a run
-    whose ledger holds no pictured candidate at all."""
+    whose ledger holds no candidate at all."""
     run_dir = Path(run_dir)
-    ledger_path = run_dir / "walk.jsonl"
+    ledger_path = run_dir / ledger_module.LEDGER_NAME
     if not ledger_path.is_file():
         return None
     rows, totals, facts = _buckets(ledger_path)
@@ -312,17 +365,15 @@ def write(run_dir: Path, summary: dict, sample: int = SAMPLE) -> Path | None:
         for verdict in ("admitted", "refused"):
             found = rows.get((channel, verdict)) or []
             whole = totals.get((channel, verdict), 0)
+            pictured = sum(1 for row in found if row.get("image"))
             parts.append(
                 f"<h2>{html.escape(channel)} · {verdict} — {whole} row(s), "
-                f"{len(found)} of them pictured</h2>"
+                f"{pictured} of them pictured</h2>"
             )
             if not found:
-                parts.append(
-                    "<p class='empty'>nothing pictured here: the engine draws a frame for a "
-                    "gate survivor and for nothing else</p>"
-                )
+                parts.append("<p class='empty'>this channel refused nothing here</p>")
                 continue
-            taken = found if len(found) <= sample else draw.sample(found, sample)
+            taken = stratify(found, draw, sample)
             parts.append(
                 "<div class='grid'>"
                 + "".join(
@@ -353,6 +404,7 @@ def _bought_table(summary: dict) -> str:
 
 __all__ = [
     "CAPPED",
+    "CARDS_PER_FATE",
     "DISCOUNTED",
     "GOOD_FLOOR",
     "JUNK_FLOOR",
@@ -365,5 +417,6 @@ __all__ = [
     "TRACE_NAME",
     "UNSPENT",
     "Reasons",
+    "stratify",
     "write",
 ]
