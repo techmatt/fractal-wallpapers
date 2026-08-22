@@ -90,7 +90,6 @@ from fractal_wallpapers.curation import (
     records,
     release,
     selection,
-    served_locations,
     sheet,
 )
 from fractal_wallpapers.curation import (
@@ -98,16 +97,31 @@ from fractal_wallpapers.curation import (
 )
 from fractal_wallpapers.paths import tracked_name, under
 
-#: The share of a release's slots the strange judge fills. Half, which is a
-#: policy about what a release looks like and not a measurement — the two judges
-#: cover disjoint sets of colorings and neither is the point of the project on
-#: its own.
-STRANGE_SHARE = 0.5
+#: The share of a release's slots the strange judge fills, and the default the
+#: whole path reads. A policy about what a release looks like rather than a
+#: measurement — the two judges cover disjoint sets of colorings and neither is
+#: the point of the project on its own.
+#:
+#: **Six tenths from 2026-08-22**, on Matt's call, and it was a half before. The
+#: strange judge is the one with a roster to explore: seventeen production modes
+#: against the smooth coloring's one, two mode draws per location against one,
+#: and an acting bar that leaves its slots unfilled where the smooth head's
+#: advisory seats everything. Tilting the mix towards it buys attempts on the
+#: side of the material where a draw can still surprise the pool.
+STRANGE_SHARE = 0.6
 
 #: The shape of a run, when the caller did not say. Here rather than on the
 #: command line because a resumed run takes its shape from its own sidecar, and
 #: two sets of defaults is how the sidecar and the flag come to disagree.
-DEFAULT_N = 6
+#:
+#: **Ten**, and ten is a diagnostic rather than a release. A run keeps enough
+#: pictures to see that the path works, that the heads are reading the material,
+#: and that the palette pass is not producing one look — and it does not try to
+#: decide what is worth shipping, which is a judgement over the whole accumulated
+#: pool and not over the fraction of it one night made. run10 asked for eighty
+#: and the eighty it seated were the best of its own 320 attempts, which is a
+#: different and much weaker claim than the best of the pool.
+DEFAULT_N = 10
 DEFAULT_SEED = 0
 
 #: What a release picture is rendered at.
@@ -121,7 +135,7 @@ PLAN_SCHEMA = 1
 #: and read back rather than re-derived on a resume: everything else — workers,
 #: device, the wall budget — changes how the same plan is executed and may
 #: legitimately differ between the interrupted run and the one continuing it.
-SHAPE = ("n", "seed", "strange_share", "attempts", "ledgers", "ephemeral")
+SHAPE = ("n", "seed", "strange_share", "modes", "attempts", "ledgers", "ephemeral")
 
 
 class RunRefused(RuntimeError):
@@ -138,6 +152,7 @@ def curate(
     n: int | None = None,
     seed: int | None = None,
     strange_share: float | None = None,
+    modes: dict | None = None,
     attempts: int | None = None,
     workers: int = release.DEFAULT_WORKERS,
     ephemeral: bool = False,
@@ -177,6 +192,7 @@ def curate(
             "n": n,
             "seed": seed,
             "strange_share": strange_share,
+            "modes": None if modes is None else budget_module.modes_of(modes),
             "attempts": attempts,
             "ledgers": ledgers,
             "ephemeral": ephemeral or None,
@@ -185,6 +201,9 @@ def curate(
     )
     n, seed, strange_share = shape["n"], shape["seed"], shape["strange_share"]
     attempts, ledgers = shape["attempts"], shape["ledgers"]
+    # `.get`, not `[]`: a run planned before the mode table was a shape parameter
+    # has no key here, and it was planned on the default.
+    modes = budget_module.modes_of(shape.get("modes"))
     log(f"[intake] bound to {len(ledgers)} ledger(s): {', '.join(ledgers)}")
 
     if shape["ephemeral"]:
@@ -210,7 +229,7 @@ def curate(
 
         # --- budget ------------------------------------------------------ #
         plan, budget_record = budget_module.plan(
-            offer, n, strange_share, budget=attempts, guarantees=claims
+            offer, n, strange_share, budget=attempts, guarantees=claims, modes=modes
         )
         for line in budget_module.fill_lines(budget_record, {}):
             log(f"[budget] {line}")
@@ -223,17 +242,14 @@ def curate(
             log(f"[budget] {line}")
 
         # --- selection --------------------------------------------------- #
-        # Built here rather than inside the selection so a **resume** can exclude
-        # this run's own released rows: a run continuing itself must not be
-        # refused every seat its first half took.
-        served = served_locations.build(exclude_run=run)
-        log(
-            f"[select] {len(served)} location(s) already served by the collection "
-            f"({', '.join(f'{r} {n}' for r, n in served.summary()['by_run'].items()) or 'none'})"
-        )
-        selected, log_rows, split, group_of = _select(
-            scored, n, strange_share, caps, claims, log, served
-        )
+        # No collection index is read here. A run is the POOL phase: it accumulates
+        # candidates and keeps a small diagnostic release, and what the collection
+        # ships is decided later over the whole pool at once. A run that refused a
+        # place because an earlier run released it was letting one run's seats
+        # decide another run's *coverage*, which is a global question no single
+        # run has the population to answer. One wallpaper per location still acts
+        # inside this run, through the shared counter in [`selection.select`].
+        selected, log_rows, split, group_of = _select(scored, n, strange_share, caps, claims, log)
 
         # --- release ----------------------------------------------------- #
         released, release_record = _release(
@@ -263,6 +279,7 @@ def curate(
             n=n,
             seed=seed,
             strange_share=strange_share,
+            modes=modes,
             seconds=clock.elapsed(),
             outcome=state["outcome"],
             wall=clock.record(),
@@ -329,6 +346,7 @@ def _shape(directory: Path, run: str, resume: bool, given: dict, log) -> dict:
         "strange_share": (
             STRANGE_SHARE if given["strange_share"] is None else float(given["strange_share"])
         ),
+        "modes": budget_module.modes_of(given["modes"]),
         "attempts": None if given["attempts"] is None else int(given["attempts"]),
         # Never `None`: a run declares its supply at its entry, and the one case
         # resolution settles without being told — the only ledger there is — is
@@ -541,8 +559,8 @@ def _intact_field(path: Path) -> bool:
     return path.stat().st_size == int(samples[0]) * int(samples[1]) * 4
 
 
-def _select(scored, n, strange_share, caps, claims, log, served=None):
-    """Two disjoint judge passes, one location counter across both and across runs.
+def _select(scored, n, strange_share, caps, claims, log):
+    """Two disjoint judge passes, one location counter across both of them.
 
     The allocation is solved over the partitions that have a *scored* candidate,
     not over the ones that have a candidate clearing the bar. That is deliberate
@@ -551,16 +569,16 @@ def _select(scored, n, strange_share, caps, claims, log, served=None):
     a partition that had plenty is padding one level up from the padding this bar
     exists to end.
 
-    `served` is the collection's index of places already released
-    ([`served_locations.build`]). Both heads' candidates and the index are grouped
-    in **one** call, which is what makes the tags comparable across the two passes
-    — they were not before, and the shared counter under them was sharing a
-    dictionary rather than a rule.
+    **Within the run and not across runs.** Both heads' candidates are grouped in
+    **one** call, which is what makes the tags comparable across the two passes —
+    they were not before, and the shared counter under them was sharing a
+    dictionary rather than a rule. What is deliberately not read is the
+    collection: a run is the pool phase, and which places the collection ships is
+    a decision over the whole pool rather than a veto one run casts on the next.
     """
     slots = budget_module.head_slots(n, strange_share)
     by_head = {head: [row for row in scored if row["head"] == head] for head in budget_module.HEADS}
-    served = served_locations.ServedLocations() if served is None else served
-    entries, already = selection.grouped(by_head, served.locations)
+    entries, _collection = selection.grouped(by_head)
     owed, unplaced = budget_module.assign_guarantees(
         [p for p in claims if any(e["partition"] == p for v in entries.values() for e in v)],
         slots,
@@ -581,7 +599,6 @@ def _select(scored, n, strange_share, caps, claims, log, served=None):
             used,
             guarantees=mine,
             bar=bar,
-            served=already,
         )
         for row in rows:
             row["head"] = head
@@ -615,10 +632,12 @@ def _select(scored, n, strange_share, caps, claims, log, served=None):
         "partition_slots": allocations,
         "emit_caps": dict(caps),
         "wallpapers_per_location": floors.CLUSTER_CAP,
-        # What the one-wallpaper-per-location rule refused, split by which side of
-        # it the candidate fell on. A run that lost twenty seats to places earlier
-        # runs already hold and a run that lost twenty to its own two heads
-        # bidding for one place are different runs, and the sum alone says neither.
+        # What the one-wallpaper-per-location rule refused inside this run: the
+        # two heads bidding for one place, and the higher-ranked seat keeping it.
+        # `prior_run` is not a cause a run can produce any more — the collection
+        # is not read here — and it stays in the tally at zero rather than being
+        # dropped, so a readout comparing this run to run10 is comparing the same
+        # two numbers.
         "location_served_skips": sum(
             1 for row in log_rows if row.get("skipped") == selection.LOCATION_SERVED
         ),
@@ -630,7 +649,6 @@ def _select(scored, n, strange_share, caps, claims, log, served=None):
             )
             for cause in ("prior_run", "this_run")
         },
-        "served_index": served.summary(),
         "below_bar_skips": sum(1 for row in log_rows if row.get("skipped") == "below_bar"),
         # Planned against seated against unfilled, per head and per partition.
         # A short release is attributable at a glance or it is read as thin
@@ -670,7 +688,7 @@ def _select(scored, n, strange_share, caps, claims, log, served=None):
             )
             + f". Shipping fewer rather than filling past a slot cap, a supply cap, the "
             f"one-wallpaper-per-location rule or the bar "
-            f"({split['location_served_skips']} already in the collection, "
+            f"({split['location_served_skips']} a place this run had already seated, "
             f"{split['below_bar_skips']} below the bar)."
         )
     log(
@@ -881,6 +899,11 @@ def _record(**k) -> dict:
             stage=records.RELEASE,
             candidate=identifier,
             verdict=verdict,
+            # Every row a run releases is diagnostic. What the collection ships is
+            # chosen over the whole accumulated pool, not out of one run's slice
+            # of it, and a run that stamped its own pictures as the collection's
+            # would be making that call with the wrong population in front of it.
+            collection=records.DIAGNOSTIC,
             row=row,
             reason=killed or why.get(identifier),
             slot_source=source.get(identifier),
@@ -919,10 +942,11 @@ def _record(**k) -> dict:
         "released": len(released),
         "requested": k["n"],
     }
-    cuts = floors.summary()
+    cuts = floors.summary(k["modes"])
     config = {
         "seed": k["seed"],
         "strange_share": k["strange_share"],
+        "modes_per_location": dict(k["modes"]),
         "candidates_per_set": colorize.CANDIDATES,
         "colorize_geometry": {
             "resolution": list(colorize.RESOLUTION),

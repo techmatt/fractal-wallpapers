@@ -41,9 +41,9 @@ def test_an_eight_hour_budget_buys_a_seat_count_rather_than_a_guess() -> None:
     plan = budget.project(EIGHT_HOURS)
     costs = budget.Costs()
     # The three legs and nothing else: a seat is what it costs to source, to
-    # walk and to draw the gallery frames its admissions earn.
+    # walk and to draw the evaluation frames its admissions earn.
     assert plan.per_seat == pytest.approx(
-        costs.sourcing_per_seat + costs.walk_per_seat + costs.gallery_per_seat
+        costs.sourcing_per_seat + costs.walk_per_seat + costs.evaluation_per_seat
     )
     assert plan.seats == int(plan.room // plan.per_seat)
     # The whole point of the change, as a number: the same budget `deep_run1`
@@ -52,11 +52,11 @@ def test_an_eight_hour_budget_buys_a_seat_count_rather_than_a_guess() -> None:
     assert plan.record()["nodes"] > 2000
 
 
-def test_the_gallery_is_most_of_a_seat_and_a_walk_only_run_says_so_out_loud() -> None:
+def test_the_evaluation_frames_are_most_of_a_seat_and_a_walk_only_run_says_so() -> None:
     costs = budget.Costs()
-    assert costs.gallery_per_seat > costs.sourcing_per_seat + costs.walk_per_seat
-    walking = budget.project(EIGHT_HOURS, gallery=False)
-    watching = budget.project(EIGHT_HOURS, gallery=True)
+    assert costs.evaluation_per_seat > costs.sourcing_per_seat + costs.walk_per_seat
+    walking = budget.project(EIGHT_HOURS, evaluation=False)
+    watching = budget.project(EIGHT_HOURS, evaluation=True)
     # Not a saving — a different piece of work. The walk-only run buys far more
     # seats because it has promised nobody a picture of what they found.
     assert walking.seats > 5 * watching.seats
@@ -84,7 +84,7 @@ def test_one_projection_answers_the_start_and_the_middle_of_a_run() -> None:
     costs = budget.Costs()
     start = budget.project(EIGHT_HOURS, costs=costs)
     middle = budget.project(EIGHT_HOURS, costs=costs, spent=3600.0, admitted=400)
-    assert middle.committed == pytest.approx(3600.0 + 400 * costs.gallery_per_admission)
+    assert middle.committed == pytest.approx(3600.0 + 400 * costs.evaluation_per_admission)
     assert middle.room == pytest.approx(start.room - middle.committed)
     assert middle.seats < start.seats
     # And a run that has spent everything is offered nothing rather than a
@@ -97,10 +97,10 @@ def test_every_admission_takes_its_own_frame_off_what_the_walk_may_still_spend()
     room = budget.usable(EIGHT_HOURS)
     assert budget.spendable(room, 0, costs) == pytest.approx(room)
     assert budget.spendable(room, 100, costs) == pytest.approx(
-        room - 100 * costs.gallery_per_admission
+        room - 100 * costs.evaluation_per_admission
     )
     # A walk-only run promised nobody a frame and keeps the whole room.
-    assert budget.spendable(room, 100, costs, gallery=False) == pytest.approx(room)
+    assert budget.spendable(room, 100, costs, evaluation=False) == pytest.approx(room)
     # And the reserve cannot drive the walk's budget below zero.
     assert budget.spendable(room, 10**9, costs) == 0.0
 
@@ -529,7 +529,7 @@ def test_the_two_behaviours_are_configurable_and_default_on_for_a_deep_run() -> 
     assert plain.reseat is None, "an unpassed flag must say nothing, not no"
     assert plain.lineage_cap == deep_run.LINEAGE_ADMISSIONS
     assert plain.wall_budget is None
-    assert plain.no_gallery_reserve is False
+    assert plain.no_evaluation_reserve is False
     assert parse(["deep", "walk", "--no-reseat"]).reseat is False
     assert parse(["deep", "walk", "--reseat"]).reseat is True
     assert parse(["deep", "walk", "--lineage-cap", "0"]).lineage_cap == 0

@@ -304,8 +304,10 @@ def test_a_run_is_either_started_or_resumed_and_never_both() -> None:
 
 
 def test_a_run_s_shape_defaults_to_the_run_s_own_and_a_plan_s_to_a_number() -> None:
-    """`curate run` cannot tell a flag that defaulted to 6 from one that asked for
-    6, so it does not default at all — the run's own plan answers instead."""
+    """`curate run` cannot tell a flag that defaulted to ten from one that asked
+    for ten, so it does not default at all — the run's own plan answers instead."""
+    from fractal_wallpapers.curation import run as run_module
+
     parse = cli.build_parser().parse_args
     running = parse(["curate", "run", "--run", "v1"])
     assert (running.n, running.seed, running.strange_share, running.wall_budget) == (
@@ -314,9 +316,27 @@ def test_a_run_s_shape_defaults_to_the_run_s_own_and_a_plan_s_to_a_number() -> N
         None,
         None,
     )
+    assert running.strange_modes is None
     planning = parse(["curate", "plan"])
-    assert (planning.n, planning.strange_share) == (6, 0.5)
+    assert (planning.n, planning.strange_share) == (
+        run_module.DEFAULT_N,
+        run_module.STRANGE_SHARE,
+    )
     assert parse(["curate", "run", "--run", "v1", "--wall-budget", "900"]).wall_budget == 900.0
+
+
+def test_a_runs_release_is_a_diagnostic_ten_and_the_strange_share_is_six_tenths() -> None:
+    """Matt's call of 2026-08-22, and both halves are decisions rather than
+    tuning. Ten is enough pictures to see that the path works and is not a claim
+    about what is worth shipping; six tenths tilts the mix towards the judge with
+    a seventeen-mode roster and an acting bar to get past."""
+    from fractal_wallpapers.curation import run as run_module
+
+    assert run_module.DEFAULT_N == 10
+    assert run_module.STRANGE_SHARE == 0.6
+    # And the night's reservation names the same release, so a harvest that
+    # reserves the leg and the run that spends it agree without being told.
+    assert cli.build_parser().parse_args(["harvest"]).release_slots == run_module.DEFAULT_N
 
 
 def test_a_harvest_names_its_minutes_or_derives_them_and_never_both() -> None:
@@ -331,15 +351,25 @@ def test_a_harvest_names_its_minutes_or_derives_them_and_never_both() -> None:
         parse(["harvest", "--minutes", "90", "--finish-by", "07:00"])
 
 
-def test_a_derived_plan_will_not_reserve_a_release_leg_nobody_sized() -> None:
-    """The release reservation is the largest term in the derivation and there is
-    no honest default for it, so `--finish-by` without `--release-slots` refuses
-    rather than reserving a number nothing downstream can check."""
-    from fractal_wallpapers import schedule
+def test_a_derived_plan_reserves_the_release_the_run_will_actually_ask_for() -> None:
+    """`--release-slots` had no default while a release was a number somebody
+    chose per night. A run keeps a diagnostic ten now, so the reservation's
+    default is that ten — and the colorize term beside it is derived from the
+    night's own shape through `curation.budget` rather than from a constant."""
+    from fractal_wallpapers.curation import run as run_module
 
     parse = cli.build_parser().parse_args
-    with pytest.raises(schedule.Unschedulable):
-        cli.harvest_minutes(parse(["harvest", "--finish-by", "07:00"]))
+    minutes, plan = cli.harvest_minutes(parse(["harvest", "--finish-by", "07:00"]))
+    assert plan.release_slots == run_module.DEFAULT_N
+    assert plan.attempts == cli.curation_attempts(parse(["harvest"]))
+
+    # A night that will draw a third strange mode reserves the colorize leg for
+    # one, which no copy of the mode table in `schedule` could have done.
+    _, wider = cli.harvest_minutes(
+        parse(["harvest", "--finish-by", "07:00", "--strange-modes", "3"])
+    )
+    assert wider.attempts > plan.attempts
+    assert wider.curation > plan.curation
 
     minutes, plan = cli.harvest_minutes(parse(["harvest"]))
     assert (minutes, plan) == (cli.DEFAULT_HARVEST_MINUTES, None)

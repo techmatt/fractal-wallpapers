@@ -20,27 +20,32 @@ Thirty-two seats, an idle machine, the shipped location head:
 ```text
 sourcing   379 s / 32 seats             11.8 s   a stalled ladder costs what a seated one does
 walk       290 s / 470 nodes             0.62 s  x 14.7 nodes a seat  =  9.1 s
-gallery    254 frames / 741 admissions   0.34    x 12.8 s a frame x 23.2 a seat  =  102 s
+evaluation 254 frames / 741 admissions   0.34    x 12.8 s a frame x 23.2 a seat  =  102 s
                                                                         ------
                                                                         123 s a seat
 ```
 
-**The gallery is two thirds of it and it is not optional.** `deep walk` does not
-draw a finished frame — the gallery is the pass that follows it — but a run that
-spends its whole budget walking is a run with no time left to look at what it
-found, and `deep_run1` spent 61 of its 130 minutes there. So the reserve is
-taken out of the budget before the seats are counted, and a walk-only run says
-so explicitly rather than getting the room by accident.
+**The evaluation frames are two thirds of it and they are not optional.** `deep
+walk` does not draw a finished frame — the evaluation pass is what follows it —
+but a run that spends its whole budget walking is a run with no time left to look
+at what it found, and `deep_run1` spent 61 of its 130 minutes there. So the
+reserve is taken out of the budget before the seats are counted, and a walk-only
+run says so explicitly rather than getting the room by accident.
+
+These frames were called the *gallery* until 2026-08-22. They are not one: a
+gallery is a set of pictures somebody chose to look at, and these are the frames
+a deep run books so it can be evaluated at all. The word now belongs to
+`curation.records.GALLERY`, which is the collection a picture is in.
 
 ## The reserve is priced off admissions, because admissions are measured
 
 Seats are what a run buys; **admissions are what it makes**, and the ratio
 between them is the one number here a run can check against itself as it goes.
-So the gallery's share of the clock is `admissions x`
-[`Costs.gallery_per_admission`], recomputed from the run's own tally at every
-batch. A run whose seats turn out to be barren hands the walk back the room its
-gallery is not going to need; one whose seats are fertile stops sooner, with the
-frames it promised still payable.
+So the evaluation pass's share of the clock is `admissions x`
+[`Costs.evaluation_per_admission`], recomputed from the run's own tally at every
+batch. A run whose seats turn out to be barren hands the walk back the room the
+frames it will not draw were holding; one whose seats are fertile stops sooner,
+with the frames it promised still payable.
 
 ## Two margins, because two different things go wrong
 
@@ -93,12 +98,12 @@ class Costs:
     seconds_per_node: float = 0.62
     #: Admissions one seat books — 741 over 32.
     admissions_per_seat: float = 23.2
-    #: Gallery frames drawn per admission — 254 of 741. Below one because a
-    #: gallery is a *selection*: a quota per family x band cell, then rank.
-    gallery_frames_per_admission: float = 0.343
-    #: Seconds a gallery frame costs at evaluation geometry — 1920x1080 ss2,
+    #: Evaluation frames drawn per admission — 254 of 741. Below one because the
+    #: pass is a *selection*: a quota per family x band cell, then rank.
+    evaluation_frames_per_admission: float = 0.343
+    #: Seconds an evaluation frame costs at evaluation geometry — 1920x1080 ss2,
     #: median 12.8 s of the 5.4-28.0 s measured, colorize included.
-    seconds_per_gallery_frame: float = 12.8
+    seconds_per_evaluation_frame: float = 12.8
 
     @property
     def walk_per_seat(self) -> float:
@@ -106,24 +111,25 @@ class Costs:
         return self.nodes_per_seat * self.seconds_per_node
 
     @property
-    def gallery_per_admission(self) -> float:
-        """Gallery seconds one admission books — the reserve's unit."""
-        return self.gallery_frames_per_admission * self.seconds_per_gallery_frame
+    def evaluation_per_admission(self) -> float:
+        """Evaluation seconds one admission books — the reserve's unit."""
+        return self.evaluation_frames_per_admission * self.seconds_per_evaluation_frame
 
     @property
-    def gallery_per_seat(self) -> float:
-        """Gallery seconds one seat is expected to book, through its admissions."""
-        return self.admissions_per_seat * self.gallery_per_admission
+    def evaluation_per_seat(self) -> float:
+        """Evaluation seconds one seat is expected to book, through its admissions."""
+        return self.admissions_per_seat * self.evaluation_per_admission
 
-    def per_seat(self, *, gallery: bool = True) -> float:
-        """What one seat costs end to end, the gallery included unless told not to.
+    def per_seat(self, *, evaluation: bool = True) -> float:
+        """What one seat costs end to end, the evaluation frames included unless
+        told not to.
 
-        `gallery=False` is a **walk-only** run: the ledger and nothing else. It
-        is not a saving — it is a different piece of work, and a run that takes
-        it and then draws a gallery anyway has no budget for one.
+        `evaluation=False` is a **walk-only** run: the ledger and nothing else. It
+        is not a saving — it is a different piece of work, and a run that takes it
+        and then draws its frames anyway has no budget for them.
         """
         legs = self.sourcing_per_seat + self.walk_per_seat
-        return legs + self.gallery_per_seat if gallery else legs
+        return legs + self.evaluation_per_seat if evaluation else legs
 
     def record(self) -> dict:
         return {
@@ -131,10 +137,10 @@ class Costs:
             "nodes_per_seat": self.nodes_per_seat,
             "seconds_per_node": self.seconds_per_node,
             "admissions_per_seat": self.admissions_per_seat,
-            "gallery_frames_per_admission": self.gallery_frames_per_admission,
-            "seconds_per_gallery_frame": self.seconds_per_gallery_frame,
+            "evaluation_frames_per_admission": self.evaluation_frames_per_admission,
+            "seconds_per_evaluation_frame": self.seconds_per_evaluation_frame,
             "walk_per_seat": round(self.walk_per_seat, 2),
-            "gallery_per_admission": round(self.gallery_per_admission, 2),
+            "evaluation_per_admission": round(self.evaluation_per_admission, 2),
             "per_seat": round(self.per_seat(), 2),
         }
 
@@ -149,16 +155,16 @@ def usable(
     return max(0.0, float(budget) * (1.0 - float(margin_share)) - float(fixed_reserve))
 
 
-def spendable(room: float, admitted: int, costs: Costs, *, gallery: bool = True) -> float:
-    """What the run's own two legs may spend, the gallery's share taken out.
+def spendable(room: float, admitted: int, costs: Costs, *, evaluation: bool = True) -> float:
+    """What the run's own two legs may spend, the evaluation share taken out.
 
     The one line that keeps a walk from eating the pass that reads it: the room
     the sourcing and walk legs are held to is the usable budget less what the
-    admissions already on the books have promised the gallery.
+    admissions already on the books have promised the evaluation frames.
     """
-    if not gallery:
+    if not evaluation:
         return max(0.0, float(room))
-    return max(0.0, float(room) - max(0, int(admitted)) * costs.gallery_per_admission)
+    return max(0.0, float(room) - max(0, int(admitted)) * costs.evaluation_per_admission)
 
 
 @dataclass(frozen=True)
@@ -175,12 +181,12 @@ class Projection:
     committed: float
     room: float
     seats: int
-    gallery: bool
+    evaluation: bool
     costs: Costs = field(default_factory=Costs)
 
     @property
     def per_seat(self) -> float:
-        return self.costs.per_seat(gallery=self.gallery)
+        return self.costs.per_seat(evaluation=self.evaluation)
 
     def record(self) -> dict:
         return {
@@ -191,7 +197,7 @@ class Projection:
             "per_seat": round(self.per_seat, 2),
             "seats": self.seats,
             "nodes": round(self.seats * self.costs.nodes_per_seat),
-            "gallery_reserved": self.gallery,
+            "evaluation_reserved": self.evaluation,
             "margin_share": MARGIN_SHARE,
             "fixed_reserve": FIXED_RESERVE,
             "costs": self.costs.record(),
@@ -204,7 +210,7 @@ def project(
     costs: Costs | None = None,
     spent: float = 0.0,
     admitted: int = 0,
-    gallery: bool = True,
+    evaluation: bool = True,
     margin_share: float = MARGIN_SHARE,
     fixed_reserve: float = FIXED_RESERVE,
 ) -> Projection:
@@ -219,17 +225,17 @@ def project(
     costs = costs or Costs()
     total = usable(budget, margin_share=margin_share, fixed_reserve=fixed_reserve)
     committed = max(0.0, float(spent)) + (
-        max(0, int(admitted)) * costs.gallery_per_admission if gallery else 0.0
+        max(0, int(admitted)) * costs.evaluation_per_admission if evaluation else 0.0
     )
     room = max(0.0, total - committed)
-    per_seat = costs.per_seat(gallery=gallery)
+    per_seat = costs.per_seat(evaluation=evaluation)
     return Projection(
         budget=float(budget),
         usable=total,
         committed=committed,
         room=room,
         seats=int(room // per_seat) if per_seat > 0 else 0,
-        gallery=gallery,
+        evaluation=evaluation,
         costs=costs,
     )
 

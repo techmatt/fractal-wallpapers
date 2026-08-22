@@ -220,10 +220,21 @@ builders each `rglob`ed the archive for `walk.jsonl`, which is 734.6 s a pass on
 tree that is mostly `tiles/`. They now share one list, found by looking each
 ledger up at `<run directory>/walk.jsonl` — see `ledgers.ledger_paths`.
 
-`--release-slots` has no default and is required with `--finish-by`: the release
-reservation is the largest term and a guessed one is the only part of this
-arithmetic nothing downstream can check. **It derives and does not pace** — the
-active-minute budget is still the only backstop, and the margin is real money.
+`--release-slots` defaults to the **ten** a run keeps as its diagnostic release
+(`curation.run.DEFAULT_N`), so the reservation and the run it reserves for name
+the same release without being told twice. It had no default while a release was
+a number somebody chose per night; a run does not choose one any more.
+
+The colorize term beside it is derived rather than restated. It is
+`curation.budget`'s own answer for the shape the night will run — the release
+ceiling, `--strange-share`, `--strange-modes` — asked through the same functions
+the run will spend, because `schedule` used to keep copies of the attempt
+multiplier, the strange share and the modes each head draws, and those were
+correct only while all three were constants of the project. The mode table is a
+parameter of a run now.
+
+**It derives and does not pace** — the active-minute budget is still the only
+backstop, and the margin is real money.
 
 **The launch prints what each channel can still reach**, one line per partition:
 the pool's size, what has been drawn, or the reason no draw can serve it. run10
@@ -241,8 +252,9 @@ the run; the summary says which one did.
 ```
 fractal-wallpapers census
 fractal-wallpapers harvest --minutes 90 --batch 8
-fractal-wallpapers harvest --finish-by 07:00 --release-slots 80   # derives --minutes
-fractal-wallpapers harvest --finish-by 07:00 --release-slots 80 --release-workers 8
+fractal-wallpapers harvest --finish-by 07:00                      # derives --minutes
+fractal-wallpapers harvest --finish-by 07:00 --release-slots 20 --release-workers 8
+fractal-wallpapers harvest --finish-by 07:00 --strange-modes 3    # reserve for that night
 fractal-wallpapers harvest --exploration-floor 0.25 --exploration-start 0.45
 fractal-wallpapers harvest --no-exploration --lineage-discount 0   # neither lever
 fractal-wallpapers harvest --partition mandelbrot --root-channel proven

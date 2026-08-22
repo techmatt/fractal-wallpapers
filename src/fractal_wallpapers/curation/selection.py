@@ -50,12 +50,20 @@ tuning decision:
 
 * [`floors.CLUSTER_CAP`] is **1**. Two colorings of one frame are two wallpapers
   of one place, and a collection is a set of places.
-* the scope is every run that has ever released, not this one. A candidate whose
-  group already holds a served wallpaper is refused `location_served`, whether
-  that wallpaper came from an earlier run ([`served_locations`]) or from a
-  higher-ranked seat in this run. **Higher-ranked keeps**: the pool is score
-  ordered and the counter is checked as each seat is taken, so the row that is
-  refused is always the weaker of the two on its own head's scale.
+* the scope is the collection and not one run. A candidate whose group already
+  holds a served wallpaper is refused `location_served`, whether that wallpaper
+  came from `served` — the index of what the collection has already released — or
+  from a higher-ranked seat in this pass. **Higher-ranked keeps**: the pool is
+  score ordered and the counter is checked as each seat is taken, so the row that
+  is refused is always the weaker of the two on its own head's scale.
+
+`served` is an argument rather than something this module reads, and who passes
+it is the split between curation's two phases. A **run** does not: it is the pool
+phase, it accumulates candidates and keeps a small diagnostic release, and a run
+that refused a place because an earlier run released it was casting one run's
+seats as a veto on the next run's coverage. The global pass over the accumulated
+pool passes it, because that is the pass with the population to decide coverage
+with.
 
 **One grouping over everything, computed once** ([`grouped`]). A group id is a
 position in a connected-components labelling and means nothing outside the call

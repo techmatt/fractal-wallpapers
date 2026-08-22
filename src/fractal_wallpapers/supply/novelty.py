@@ -4,7 +4,7 @@ share of the batch that never has to be worth anything.
 A harvest's allocator is very good at spending the clock where supply is
 scarcest, and completely indifferent to whether the supply it buys there is *the
 same picture*. `deep_run1` put 741 admissions on 15 of its 48 roots and 85 on one,
-and the finished gallery was largely one composition. The walk's per-lineage cap
+and the finished frames were largely one composition. The walk's per-lineage cap
 is the hard stop against that; these two are the soft ones, and they act on the
 allocator rather than on the walk.
 

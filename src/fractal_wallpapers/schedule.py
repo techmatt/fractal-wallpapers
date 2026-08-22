@@ -103,25 +103,6 @@ RELEASE_WORKERS = 4
 #: At 80 slots it is about twenty minutes.
 CURATION_SECONDS_PER_ATTEMPT = 2.57
 
-#: Locations a release slot buys a colorize of. A copy of `curation.floors`'
-#: `ATTEMPT_MULTIPLIER`, held here so this module stays import-free of curation
-#: — and pinned against it by the suite, because two spellings of one number is
-#: exactly what that module exists to end.
-LOCATIONS_PER_SLOT = 4
-
-#: Colorize attempts each of those locations costs, per head. The strange judge
-#: tries every location it is given in **two** modes and the smooth judge in one,
-#: so the attempt count is not the location count and the reservation has to know
-#: the split. A copy of `curation.budget.MODES_PER_LOCATION`, pinned by the suite
-#: for the same reason as the line above.
-MODES_PER_STRANGE_LOCATION = 2
-
-#: The share of the release's slots the strange judge fills, which is what turns
-#: locations into attempts. A copy of `curation.run.STRANGE_SHARE`, pinned by the
-#: suite. A night that will run `curate run --strange-share` at something else
-#: says so at plan time; nothing here guesses.
-STRANGE_SHARE = 0.5
-
 #: What one row of the closing re-score costs: the read, the head, and the
 #: sidecar upsert that rewrites the whole standing file. run10's leg — 282 s over
 #: the 39,554 gate survivors its own ledger held.
@@ -250,21 +231,6 @@ def release_rate(workers: int = RELEASE_WORKERS) -> tuple[float, str]:
     )
 
 
-def release_attempts(release_slots: int, strange_share: float = STRANGE_SHARE) -> int:
-    """Colorize attempts a release of `release_slots` slots costs.
-
-    Locations first and modes second, because that is the order curation budgets
-    in: each slot buys [`LOCATIONS_PER_SLOT`] locations, and the strange judge
-    tries each of the locations it pays for in [`MODES_PER_STRANGE_LOCATION`]
-    modes. Rounding follows `curation.budget.head_slots` so the two agree about
-    an odd `n`.
-    """
-    slots = max(0, int(release_slots))
-    strange = max(0, min(slots, int(round(slots * float(strange_share)))))
-    smooth = slots - strange
-    return LOCATIONS_PER_SLOT * (smooth + strange * MODES_PER_STRANGE_LOCATION)
-
-
 def rescore_seconds(active_minutes: float) -> float:
     """What the closing re-score costs a harvest that walks `active_minutes`.
 
@@ -357,17 +323,26 @@ class Plan:
 def plan(
     finish_by: str,
     release_slots: int,
+    attempts: int,
     now: datetime | None = None,
     *,
     renders_views: bool = False,
     release_workers: int = RELEASE_WORKERS,
-    strange_share: float = STRANGE_SHARE,
     rate: tuple[float, str] | None = None,
     curation_rate: float = CURATION_SECONDS_PER_ATTEMPT,
     ledger_load: float = LEDGER_LOAD_SECONDS,
     margin: float = MARGIN_SECONDS,
 ) -> Plan:
     """The harvest's active-minute budget, derived from when the night must end.
+
+    `attempts` is the colorize count the curation leg will actually plan, handed
+    in rather than derived here. It used to be `4n` scaled by this module's own
+    copies of the attempt multiplier, the strange share and the modes each head
+    draws — three numbers restated from curation, pinned by the suite, and pinned
+    to the wrong thing the moment the mode table became a **parameter** of a run
+    rather than a constant of the project. A reservation for a night that will run
+    `--strange-modes 3` has to be the reservation for that night. The caller
+    computes it once, through `curation.budget`, and hands it here.
 
     Refuses rather than returning a small number when the reservations do not fit
     inside the span: a harvest handed four minutes is not a short harvest, it is
@@ -388,7 +363,7 @@ def plan(
     rate_seconds, rate_source = release_rate(workers) if rate is None else rate
 
     release = slots * float(rate_seconds)
-    attempts = release_attempts(slots, strange_share)
+    attempts = max(0, int(attempts))
     curation = attempts * float(curation_rate)
     fixed = span - release - curation - ledger_load - margin
     per_wall_second = (
@@ -433,19 +408,15 @@ __all__ = [
     "CLOSING_RESCORE_SECONDS_PER_ROW",
     "CURATION_SECONDS_PER_ATTEMPT",
     "LEDGER_LOAD_SECONDS",
-    "LOCATIONS_PER_SLOT",
     "MARGIN_SECONDS",
-    "MODES_PER_STRANGE_LOCATION",
     "RELEASE_SECONDS_PER_PICTURE",
     "RELEASE_WORKERS",
-    "STRANGE_SHARE",
     "SUPPLY_ROWS_PER_ACTIVE_MINUTE",
     "Plan",
     "Unschedulable",
     "active_to_wall",
     "next_at",
     "plan",
-    "release_attempts",
     "release_rate",
     "rescore_seconds",
 ]

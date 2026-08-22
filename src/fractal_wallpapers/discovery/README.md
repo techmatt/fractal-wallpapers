@@ -176,7 +176,7 @@ no book in the project can see it.
 the lineage stops expanding and its standing frontier nodes are evicted at the
 crossing, recorded as a `lineage_capped` row. It is `None` here and set by the
 [deep run mode](../deep/README.md), where the measurement that motivated it was
-taken: 741 admissions off 15 of 48 roots, 85 on one, and a finished gallery that
+taken: 741 admissions off 15 of 48 roots, 85 on one, and a finished frame set that
 was largely one composition. Nothing is retro-refused when it fires — the rows a
 capped lineage already wrote keep the fates they earned.
 

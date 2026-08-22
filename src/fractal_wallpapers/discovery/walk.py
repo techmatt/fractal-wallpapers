@@ -33,7 +33,7 @@ the batch is all dead weight, and throughput goes to zero.
 expansion cap bounds what a root may *spend*; [`Limits.lineage_admissions`] bounds
 what it may *book*. A fertile lineage sits at the top of a priority queue by
 construction — it got there by admitting — so without a ceiling it takes the walk
-with it, and the finished gallery is one composition. Off by default and on for a
+with it, and the finished frame set is one composition. Off by default and on for a
 deep run; nothing is retro-refused when it fires, expansion simply stops.
 
 **Two reserved floors, both of available, and neither may stall the batch.**
@@ -214,10 +214,10 @@ class Limits:
     #: it, or `None` for no cap at all — which is the shallow walk, unchanged.
     #:
     #: **Diminishing returns are a supply-time problem, not a selection-time one.**
-    #: A gallery can spread itself over lineages after the fact, and `deep_run1`'s
+    #: A later pass can spread itself over lineages after the fact, and `deep_run1`'s
     #: had to; what it cannot do is get back the walk time that went into the
     #: lineage it then had to thin. That run put 741 admissions on 15 of its 48
-    #: roots and 85 of them on one, and the finished floor gallery was largely one
+    #: roots and 85 of them on one, and the finished floor frames were largely one
     #: composition in a hundred and sixty palettes. Past the cap the lineage stops
     #: expanding and the batch slots flow to cells nothing has saturated.
     #:
@@ -693,7 +693,7 @@ class Walk:
         The distribution rides along because the headline is not the measure:
         five hundred admissions over two hundred lineages and five hundred over
         six are the same number and are not the same run, and the second is the
-        one whose gallery is a single composition.
+        one whose finished frames are a single composition.
         """
         counts = sorted(self.admitted.values(), reverse=True)
         return {
@@ -1315,7 +1315,7 @@ def lineage_distribution(admitted: dict) -> dict:
     """How a run's admissions spread over its lineages — the monotony measure.
 
     `max`, `median` and the top five, because those three say between them
-    whether a finished gallery will be one composition in a hundred palettes.
+    whether a finished frame set will be one composition in a hundred palettes.
     `deep_run1` would have reported a max of 85 against a median of 2.
     """
     counts = sorted((int(v) for v in admitted.values()), reverse=True)
