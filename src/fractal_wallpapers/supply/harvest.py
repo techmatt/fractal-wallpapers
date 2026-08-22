@@ -7,14 +7,17 @@ seconds.
 
 ```text
 per batch:  refill anything starved
-            ask the quota how the batch's slots divide between partitions
-            take each partition's slots off its own queue, expand, score, reframe
+            ask the quota how the batch's slots divide between partitions,
+              in the ruled order: floor claims, exploration share, contest
+            take each partition's slots off its own queue in that order,
+              expand, score, reframe
             charge the minutes, credit the finds, close the price window
+              and the share's own
             reconcile what was found against what was written
             checkpoint
 ```
 
-Four things this loop does that a walk does not.
+Five things this loop does that a walk does not.
 
 **The batch is divided between partitions by the quota**, not by priority alone.
 Priority decides which of *one partition's* nodes to expand; the quota decides how
@@ -39,6 +42,15 @@ junk floor and booking at the good floor, so a batch pushes `admitted +
 expandable` nodes and credits only `admitted`. The ratio of the first to the
 nodes expanded is the run's growth rate, it is in every summary, and below one
 the walk is dying however healthy the admission count looks.
+
+**A batch is taken in two draws, and which one paid is recorded.** The
+exploration share draws first, from lineages no ledger has ever booked from,
+ranked by the plain priority — inside the share the head ranks and only the junk
+floor kills. The contest draws the rest, ranked by a key that discounts a
+lineage by what it has already booked *this run*. `pop_batch` removes what it
+takes, so the two draws cannot overlap and the columns add to the slots the quota
+handed out; the channel travels onto every candidate row, which is what lets the
+autopsy show the two populations side by side afterwards.
 
 **Admissions are counted as distinct locations**, and that is not bookkeeping
 pedantry: a raw count of what a scorer waved through runs about twice what the
@@ -334,6 +346,7 @@ class Harvest:
         self.active_minutes += minutes_total
         sample = self.quota.close_batch(minutes_total)
         priced = self._price_share(spent)
+        self.quota.note_share_pricing(priced)
         self.walk.prune()
         self.tally.batches += 1
         self.quota.log_batch(self.batch, sample)
@@ -343,7 +356,7 @@ class Harvest:
             "served": per_partition,
             "minutes": round(minutes_total, 4),
             "refill": refilled,
-            "trace": trace | ({} if priced is None else {"share_priced": priced}),
+            "trace": trace,
         }
 
     def _take(self, partition: str, share: int, contest: int) -> tuple[list, dict]:
