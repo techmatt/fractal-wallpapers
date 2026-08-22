@@ -8,9 +8,11 @@ wallpapers and a durable account of why those and not the others.
 
 ```
 binding    which ledgers this curation reads, declared once and never guessed
-durability the supply sidecar's manifest, its copy, and the guard over a run
+durability a file kept on two disks under a tracked manifest, and the run guard
 rescore    the accumulated pool, read again through the heads shipped now
 floors     every number that removes a picture, in one file
+neutral    the one picture a location is EMBEDDED from, and its frozen recipe
+embeddings one DINOv2 vector per admitted location, keyed and kept forever
 intake     the ranked offer, best first per partition
 budget     how many pictures to make, and for which judge
 colorize   a candidate set of maps, the head's pick, a render, a verdict
@@ -28,6 +30,9 @@ run        the wiring, and nothing else
 ```
 fractal-wallpapers curate score --harvest artifacts/harvest_run3   # through the location head
 fractal-wallpapers curate sidecar save                             # the supply, made durable
+fractal-wallpapers curate embed                                    # a vector per admitted location
+fractal-wallpapers curate embeddings save                          # the vectors, made durable
+fractal-wallpapers curate neighbours -k 3 --sample 10              # does near mean alike?
 fractal-wallpapers curate plan --harvest artifacts/harvest_run3    # making nothing
 fractal-wallpapers curate run --run v1 --harvest artifacts/harvest_run3
 fractal-wallpapers curate run --run v1 --ledger artifacts/harvest_run3/walk.jsonl \
@@ -65,6 +70,33 @@ Three things follow, and all three are in this stage now:
 * **Nothing released so far is the collection's.** All 1,050 rows on record are
   `diagnostic`, backfilled in the same commit, because none of them was ever
   chosen against a pool.
+
+## The gallery pass needs a distance, so every admitted location has a vector
+
+The gallery pass picks by **quality-weighted farthest point with a hard radius**,
+which needs to know how far apart two locations look. `curate embed` is what
+answers that: for every location the location judge admits over the junk floor
+(**24,779** today), one **neutral render** through one fixed cyclic map at one
+fixed small geometry, and the unit vector a frozen DINOv2 reads off it.
+
+* **Locations, never candidates.** A candidate is a location already coloured,
+  and the gallery pass chooses the colouring afterwards. Palette diversity is the
+  neighbourhood draw's job upstream.
+* **Frozen choices, and a stamp that makes a thaw visible.** `twilight_shifted`,
+  448x252 at one sample per pixel, `smooth`, linear, no mirror; DINOv2 ViT-S/14
+  at 384 dimensions, L2-normalized, stored `float16`. `neutral.stamp()` digests
+  all of it, the manifest records the digest, every row carries it, and a leg
+  that would append a second provenance refuses.
+* **Incremental and idempotent.** The keys already stored are subtracted before
+  anything is drawn, so a later harvest's admissions are a second run of the same
+  command and a killed leg resumes on the rows and pictures it left behind.
+* **One writer.** The leg takes `artifacts/curation/embedding.lock` through
+  `models.train.claim`. Two of these appending to one JSONL interleave
+  half-written rows into it; that is measured, not hypothetical.
+* **The vectors are durable, the JPEGs are not.** `curate embeddings
+  save|check|restore`, the same three verbs `curate sidecar` has. The pictures
+  regenerate from the store's own rows — every row carries its family, viewport
+  and maxiter — so they are counted in the manifest and not copied.
 
 **The mode table and the strange share are parameters, not constants.**
 `--strange-modes` and `--strange-share` are part of a run's recorded shape, so a

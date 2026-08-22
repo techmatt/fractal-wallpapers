@@ -7,10 +7,11 @@ runs.jsonl                       one row per run: the funnel, the cuts, the conf
 runs/<run>.json                  that run's own summary, whole
 bar_exceptions.jsonl             rows a ruling keeps in service below an acting bar
 supply_scores.manifest.json      what the untracked supply sidecar is, so a loss shows
+neutral_embeddings.manifest.json what the untracked embedding store is, and under what
 ledger_provenance.json           which walk ledger each released row was drawn from
 ```
 
-**Two of these describe files that are not here.** `supply_scores.manifest.json`
+**Three of these describe files that are not here.** `supply_scores.manifest.json`
 names `artifacts/curation/supply_scores.jsonl` — the location head's read of the
 standing supply, and the one thing under the regenerable tree that this checkout
 cannot regenerate, because the ledgers it reads are under that tree too. It is
@@ -21,6 +22,21 @@ live on both tiers. `curate sidecar save|check|restore` writes, reads and
 restores it, and `curate run` refuses to start when the live file is missing or
 holds fewer rows than the manifest records. The module is
 [`curation.durability`](../../src/fractal_wallpapers/curation/durability.py).
+
+`neutral_embeddings.manifest.json` is the same arrangement over
+`artifacts/curation/neutral_embeddings.jsonl`: one 384-dimensional DINOv2 vector
+per admitted location, which is what the gallery pass measures distance with.
+Tens of megabytes, appended to every time a harvest adds admissions, and it costs
+a pass of the encoder over the whole population to make again. What is tracked is
+the row count, the byte count, the sha256, the per-partition split, the count and
+size of the neutral JPEGs, and — the column the sidecar's manifest has no
+equivalent of — the **frozen choices** every vector was made under, with their
+digest. Change the colormap, the geometry, the mode or the encoder and every
+stored vector becomes a reading of a picture that no longer exists, while a
+cosine between two of them is still a number between -1 and 1; the digest is what
+makes that visible. `curate embed` fills the store, `curate embeddings
+save|check|restore` keeps it. The JPEGs are not copied: every row carries the
+family, viewport and maxiter its own picture re-renders from.
 
 `ledger_provenance.json` is the other half of the same question: what the
 collection's 1,050 released rows were drawn from. Eight walk ledgers, and on
@@ -167,6 +183,8 @@ the untracked `artifacts/curation/runs/<run>/`.
 
 ```
 fractal-wallpapers curate score
+fractal-wallpapers curate embed
+fractal-wallpapers curate embeddings save
 fractal-wallpapers curate plan -n 6
 fractal-wallpapers curate run --run <name> -n 6
 fractal-wallpapers curate reject --run <name> --rejector <who> --date <when>

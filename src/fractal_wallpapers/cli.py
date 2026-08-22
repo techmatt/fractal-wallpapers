@@ -2262,7 +2262,7 @@ def curate_sidecar(args: argparse.Namespace) -> int:
     }[args.what]
     try:
         report = doing()
-    except durability.SidecarLost as refusal:
+    except durability.DurableLost as refusal:
         print(refusal)
         return 1
     print(json.dumps(report, indent=2))
@@ -2270,6 +2270,92 @@ def curate_sidecar(args: argparse.Namespace) -> int:
     # exit code worth reading. A short or missing sidecar is a build failure.
     if args.what == "check" and report.get("verdict") in {"short", "missing"}:
         return 1
+    return 0
+
+
+def curate_embed(args: argparse.Namespace) -> int:
+    """Embed every admitted location the neutral-render store does not hold yet."""
+    from fractal_wallpapers.curation import embeddings, neutral
+
+    try:
+        report = embeddings.build(
+            limit=args.limit,
+            device=args.device,
+            sample=args.sample,
+            seed=args.seed,
+            unit_seconds=args.unit_seconds,
+        )
+    except (embeddings.StoreRefused, neutral.NeutralError) as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps(report, indent=2))
+    # A store short of its population is a gallery pass that silently cannot
+    # choose the locations it is missing, so the count is the exit code.
+    return 0 if report["complete"] else 1
+
+
+def curate_embeddings(args: argparse.Namespace) -> int:
+    """Record, check or restore the embedding store against its tracked manifest."""
+    from fractal_wallpapers.curation import durability, embeddings
+
+    which = embeddings.store()
+    doing = {
+        "save": lambda: durability.save(which),
+        "check": lambda: durability.check(which),
+        "restore": lambda: durability.restore(which, force=args.force),
+    }[args.what]
+    try:
+        report = doing()
+    except durability.DurableLost as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps(report, indent=2))
+    if args.what == "check" and report.get("verdict") in {"short", "missing"}:
+        return 1
+    return 0
+
+
+def curate_neighbours(args: argparse.Namespace) -> int:
+    """The cheap sanity read: nearest neighbours by cosine, with their pictures."""
+    from fractal_wallpapers.curation import embeddings
+
+    try:
+        report = embeddings.neighbours(k=args.k, sample=args.sample, seed=args.seed)
+    except embeddings.StoreRefused as refusal:
+        print(refusal)
+        return 1
+    print(f"{report['rows']:,} embedded locations; pictures under {report['pictures']}")
+    spread = report["background"]
+    print(
+        f"background cosine over {spread['pairs']:,} random pairs: "
+        f"min {spread['min']:.3f}, p01 {spread['p01']:.3f}, median {spread['median']:.3f}, "
+        f"p99 {spread['p99']:.3f}, max {spread['max']:.3f}"
+    )
+    for cell in report["sample"]:
+        print(f"\n{cell['partition']:<18} {cell['picture']}  {cell['key']}")
+        for near in cell["nearest"]:
+            print(
+                f"  {near['cosine']:.4f}  {near['partition']:<18} {near['picture']}  {near['key']}"
+            )
+    return 0
+
+
+def curate_reach(args: argparse.Namespace) -> int:
+    """Which judged locations the gallery pass cannot select, and why."""
+    from fractal_wallpapers.curation import embeddings
+
+    pool = embeddings.judged_pool()
+    report = embeddings.unreachable(pool)
+    print(
+        f"{report['judged']} judged locations; {report['admitted']} are in the admitted "
+        f"population the gallery pass selects over"
+    )
+    for cause in ("below_the_junk_floor", "absent_from_the_sidecar"):
+        cell = report[cause]
+        print(f"{cell['count']:>5}  {cause.replace('_', ' ')}")
+        if args.keys:
+            for key in cell["keys"]:
+                print(f"       {pool.get(key, '?'):<18} {key}")
     return 0
 
 
@@ -2382,7 +2468,7 @@ def curate_run(args: argparse.Namespace) -> int:
         )
     except (
         binding.Unbound,
-        durability.SidecarLost,
+        durability.DurableLost,
         intake.IntakeError,
         records.NotIsolated,
         run_module.RunRefused,
@@ -4812,6 +4898,7 @@ def coloring_commands(subcommands) -> None:
 def curate_commands(subcommands) -> None:
     """The last stage: harvest supply in, released wallpapers out."""
     from fractal_wallpapers.curation import budget as budget_module
+    from fractal_wallpapers.curation import embeddings as embeddings_module
     from fractal_wallpapers.curation import run as run_module
 
     curating = subcommands.add_parser(
@@ -4872,6 +4959,109 @@ def curate_commands(subcommands) -> None:
         "manifest records. Those rows are a harvest nobody has saved yet",
     )
     sidecar.set_defaults(handler=curate_sidecar)
+
+    embedding_step = steps.add_parser(
+        "embed",
+        help="one DINOv2 vector per admitted location, from a neutral render",
+        description=(
+            "The gallery pass picks locations by how far apart they look, so every location "
+            "the judge admits over the junk floor needs one picture that says nothing about "
+            "a coloring nobody has chosen yet: the NEUTRAL RENDER, this location's smooth "
+            "field through one fixed cyclic map at one fixed small geometry. A frozen DINOv2 "
+            "reads a unit vector off it and the vector is kept forever, keyed by the exact "
+            "location key. Incremental and idempotent: what is already stored is subtracted "
+            "before anything is drawn, so a later harvest's admissions are a second run of "
+            "this. Exits non-zero when the store does not cover the admitted population."
+        ),
+    )
+    embedding_step.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
+    embedding_step.add_argument(
+        "--sample",
+        type=int,
+        help="embed a stratified draw of this many outstanding locations rather than all of "
+        "them, spread over the partitions in proportion to their supply. The pilot",
+    )
+    embedding_step.add_argument(
+        "--limit", type=int, help="stop after this many locations; a prefix, not a sample"
+    )
+    embedding_step.add_argument(
+        "--seed",
+        type=int,
+        default=embeddings_module.SAMPLE_SEED,
+        help=f"the seed --sample draws under (default: {embeddings_module.SAMPLE_SEED})",
+    )
+    embedding_step.add_argument(
+        "--unit-seconds",
+        type=float,
+        default=embeddings_module.UNIT_SECONDS,
+        help=f"kill one neutral render that runs past this and carry on "
+        f"(default: {embeddings_module.UNIT_SECONDS:g})",
+    )
+    embedding_step.set_defaults(handler=curate_embed)
+
+    embedding_store = steps.add_parser(
+        "embeddings",
+        help="the embedding store's durability: record it, check it, restore it",
+        description=(
+            "The vectors cost a pass of the encoder over every admitted location and their "
+            "input lives under the regenerable tree, so the store gets what the supply "
+            "sidecar gets: a copy on the archive tier, a tracked manifest carrying the row "
+            "count, the bytes, the sha256 and the frozen choices every vector was made "
+            "under, and a restore that counts before it believes. The neutral JPEGs are not "
+            "copied: every row carries the join its own picture re-renders from."
+        ),
+    )
+    embedding_store.add_argument(
+        "what",
+        choices=["check", "save", "restore"],
+        help="check the live store against the manifest, save a fresh copy and manifest, "
+        "or restore the copy",
+    )
+    embedding_store.add_argument(
+        "--force",
+        action="store_true",
+        help="with `restore`: overwrite a live store that holds MORE rows than the manifest "
+        "records. Those rows are admissions nobody has saved yet",
+    )
+    embedding_store.set_defaults(handler=curate_embeddings)
+
+    neighbouring = steps.add_parser(
+        "neighbours",
+        help="nearest neighbours by cosine in the embedding store, with their pictures",
+        description=(
+            "The sanity read, and it does not settle anything by itself: it names the "
+            "neutral JPEGs of a few random locations and of whatever the store says is "
+            "nearest to each, so a person can open them and see whether near means alike."
+        ),
+    )
+    neighbouring.add_argument("-k", type=int, default=3, help="neighbours per row (default: 3)")
+    neighbouring.add_argument("--sample", type=int, default=10, help="rows to read (default: 10)")
+    neighbouring.add_argument(
+        "--seed",
+        type=int,
+        default=embeddings_module.SAMPLE_SEED,
+        help=f"the seed the rows are drawn under (default: {embeddings_module.SAMPLE_SEED})",
+    )
+    neighbouring.set_defaults(handler=curate_neighbours)
+
+    reaching = steps.add_parser(
+        "reach",
+        help="which judged locations the gallery pass cannot select, and why",
+        description=(
+            "The gallery pass selects over the ADMITTED population — every location the "
+            "location judge puts over the junk floor — and the accumulated pool is a "
+            "different set. A judged location outside the admitted one cannot be chosen, "
+            "however good the wallpaper somebody already made of it, and there are two ways "
+            "for that to happen: today's head reads it below the junk floor, which is a "
+            "judgement, or the supply sidecar has no row for it at all, which is not a "
+            "judgement about anything. The second is a location whose ledger was never "
+            "scored into the sidecar."
+        ),
+    )
+    reaching.add_argument(
+        "--keys", action="store_true", help="print every location key, not only the counts"
+    )
+    reaching.set_defaults(handler=curate_reach)
 
     naming_ledgers = steps.add_parser(
         "ledgers",
