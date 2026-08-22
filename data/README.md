@@ -25,4 +25,9 @@ that does not announce itself is the kind of thing a reader takes for evidence.
 hand and are the ones a render chooses from; the rest arrived with the
 finished-render corpora and with the palette head's vendored candidate sets,
 because a row — or a recorded decision — naming a map nobody holds is about a
-picture nobody can rebuild.
+picture nobody can rebuild. Three files in there are not maps and are named
+`.jsonl`/`.md`/`.py` so no reader globbing `*.json` mistakes them for one:
+`provenance.jsonl` says how the authored and extracted maps were made,
+`clusters.jsonl` groups the library for a figure, and `generator_prompt.md` with
+`validate_palettes.py` are the brief the authored maps were written against and
+the checker a reader runs on their own output.

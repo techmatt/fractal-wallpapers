@@ -401,3 +401,32 @@ the tuple of head names and nothing else, stdlib-only on purpose, because
 `fetch-weights --check` runs on the base install and has to know which heads a
 complete release carries. `ship` imports the roster from there. Any other module
 here that a base install can import is an accident, not a second exception.
+
+## What a score becomes, and the figure of it
+
+`decisions` is the one place the four outcomes a location head's reading lands in
+are spelled: **refused** below the junk floor, **expandable** below the keeper
+floor, **find** above it, **exceptional** once `P(≥4)` clears the great cut. It
+composes `curation.floors.passes_junk_floor`, `supply.currency.passes_good_floor`
+and `supply.currency.good_class` rather than restating any of them, so moving a
+height still moves it in one place.
+
+```
+fractal-wallpapers figures judges-score-to-decision --coverage
+fractal-wallpapers figures judges-score-to-decision --family julia:multibrot3
+```
+
+The figure it draws is four frames, one per outcome, from **held-out
+human-labeled rows** of one family — the shipped head's own tracked read of the
+evaluation side, resolved through `models/weights.json`'s `run`. Each frame is
+that location's canonical view, rendered rather than copied out of a tile cache
+so a fresh clone can redraw it; the engine's `maxiter` policy reproduces the tile
+build's cap exactly, so the picture is the one the head read. Inside an outcome
+the pick is the **median by `P(≥3)`**, ties broken by the row key — a typical
+member rather than a cherry-picked one, and the same four every run. The sidecar
+`frames.jsonl` carries every frame's row key, the person's class and the head's
+own probabilities: the human label is shown and never used to choose the frame.
+
+`--coverage` prints how every partition's held-out rows spread across the four
+and draws nothing, which is how a family is chosen. `julia:multibrot3` is the
+default because it is the only one whose spread is healthy in all four buckets.

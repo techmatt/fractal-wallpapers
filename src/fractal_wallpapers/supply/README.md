@@ -20,7 +20,7 @@ twins        Julia parameters derived from the parent plane's admissions
 proven       parameter-plane roots at every location a human scored a keeper
 saturation   cross-run memory, straight off the ledgers
 novelty      the two levers against monotony: the discount and the share
-autopsy      what each claim on the batch bought, in pictures
+autopsy      what each claim on the batch bought, in pictures — and why each refusal was one
 tau_h        how good a cheap look must be before a real one is paid for
 harvest      the production loop, and everything that keeps it honest
 ```
@@ -188,3 +188,15 @@ fractal-wallpapers harvest --partition mandelbrot --seeds seeds.jsonl   # one le
 fractal-wallpapers derive-prices --run artifacts/harvest --regularize --write
 fractal-wallpapers derive-tau-h --write
 ```
+
+## Reading a run afterwards: `quota.jsonl` beside the ledger
+
+Every batch appends one line to `<run>/quota.jsonl` — the intent, the vector it
+was folded to, the floor's debts, the prices, the queues, and how many slots each
+partition took under each channel. It is what makes a spent slot attributable
+without re-deriving the rule that spent it, and the **channel autopsy reads it**:
+a refused card names the floor that kept the row out of the books and, for a node
+that reached the frontier and was never expanded, why the run never came back to
+it — capped, outbid on partition, outbid on node rank, discounted lineage, or the
+run stopped first. Each of those is read off the trace of the batches that node
+actually sat through; a run with no trace file gets the floor half and no more.
