@@ -26,13 +26,21 @@ manufactures the twin's supply. It hands over the same seed object the tracked
 pool does, through the same cursor and the same low-water mark; the only
 difference is that its list grows during the run.
 
-**A parameter plane can also be seeded from what a human already liked.** The
-proven channel — [`fractal_wallpapers.supply.proven`] — derives a root from every
+**Any partition can also be seeded from what a human already liked.** The proven
+channel — [`fractal_wallpapers.supply.proven`] — derives a root from every
 location the label store holds a keeper verdict on, and hands it over through the
 same cursor and the same low-water mark as everything else. It is *interleaved*
-with the plane's own pool rather than replacing it: a channel fed by the project's
-own past output cannot open new ground, so crowding the pool out would leave the
-run nowhere new to look. Off unless a run asks for it by name.
+with the partition's own pool rather than replacing it: a channel fed by the
+project's own past output cannot open new ground, so crowding the pool out would
+leave the run nowhere new to look. Off unless a run asks for it by name.
+
+**That is what makes a queue hold two shapes of entry.** A pool hands over a
+*parameter* — a `c`, or a phoenix `(c, p, z₋₁)` — and a root built from one comes
+up at the family's home view, because a parameter has no frame in it. The proven
+channel hands over a *location*, and a root built from one comes up at the frame
+the human scored. Both land in the same queue behind the same cursor, so the
+place they are told apart is [`Refill._root_of`], once, on the entry's shape: a
+branch per partition would be the same question asked five times.
 
 **A partition with no channel is deferred, with a reason, not silently skipped.**
 A starved partition absent from both the refill list and the run record is
@@ -145,10 +153,6 @@ class Refill:
         self.deferred_draws = 0
         self.last_refill: dict = {}
         self.cursor: dict = {}
-        self._channels: dict = {
-            "julia:mandelbrot": ("julia_c_pool", None),
-            "phoenix": ("phoenix_seed_pool", None),
-        }
         self._pools: dict = {}
         # The tracked pool is the default channel for the parameter planes, not a
         # fallback nobody reaches: a run that had to be handed a seed file to
@@ -168,12 +172,20 @@ class Refill:
         return pools.read_seed_file(self._seeds)
 
     def _pool(self, partition: str) -> list:
-        """The entries this partition's channel can still hand over."""
+        """The entries this partition's channel can still hand over.
+
+        One queue however many channels feed it, because the cursor is per
+        partition: two cursors served in whatever order a queue drains would
+        decide the mix between the channels by accident.
+        """
         # The twin channel's list is never cached: it grows as the run books
         # parent-plane admissions, and a snapshot of it would freeze a channel
-        # whose whole point is that serving the parent fills it.
+        # whose whole point is that serving the parent fills it. The interleave
+        # is re-made with it and that is safe under the cursor — `interleave`
+        # only ever appends when the pool side grows, so everything already
+        # drawn stays where it was.
         if self._is_twin(partition):
-            return self.twins.seeds(partition)
+            return self._with_proven(partition, self.twins.seeds(partition))
         if partition in self._pools:
             return self._pools[partition]
         if partition == "julia:mandelbrot":
@@ -186,13 +198,20 @@ class Refill:
                 if self._seeds is not None
                 else []
             )
-            # Interleaved rather than prepended: the proven channel feeds on this
-            # project's own past output, so a queue that spent itself on proven
-            # roots first would reach new ground only after it ran out.
-            if self._is_proven(partition):
-                rows = self.proven.pool(partition, rows)
+        rows = self._with_proven(partition, rows)
         self._pools[partition] = rows
         return rows
+
+    def _with_proven(self, partition: str, rows: list) -> list:
+        """`rows` with this partition's proven roots interleaved through them.
+
+        Interleaved rather than prepended: the proven channel feeds on this
+        project's own past output, so a queue that spent itself on proven roots
+        first would reach new ground only after it ran out.
+        """
+        if not self._is_proven(partition):
+            return rows
+        return self.proven.pool(partition, rows)
 
     def _is_twin(self, partition: str) -> bool:
         """Whether the twin channel is this partition's channel.
@@ -206,21 +225,29 @@ class Refill:
     def _is_proven(self, partition: str) -> bool:
         """Whether the proven channel holds roots for this partition.
 
-        It serves the parameter planes only, so this never competes with a
-        tracked `c`-pool — the planes are the side with no sampler at all.
+        It serves every partition but `phoenix:classic`, so on the dynamical
+        side it shares a queue with a `c`-pool rather than standing in for a
+        missing sampler. It does not compete with one: a pool row is a
+        parameter and starts at the home view, a proven row is a whole place,
+        and the interleave is what keeps either from crowding the other out.
         """
         return self.proven is not None and partition in self.proven.partitions
 
     def has_channel(self, partition: str) -> bool:
-        """Whether any draw could serve this partition at all."""
+        """Whether any draw could serve this partition at all.
+
+        The refusal of the pinned classic phoenix is first and unconditional:
+        no channel in the walk feeds one parameter point, and it must not
+        acquire one by being swept up in a list that grew.
+        """
         if partition in self.external or partition in DEFERRAL:
+            return False
+        if partition == "phoenix:classic":
             return False
         if partition in ("julia:mandelbrot", "phoenix"):
             return True
         if is_dynamical(partition):
-            return self._is_twin(partition)
-        if partition == "phoenix:classic":
-            return False
+            return self._is_twin(partition) or self._is_proven(partition)
         return self._seeds is not None or self._is_proven(partition)
 
     def remaining(self, partition: str) -> int:
@@ -245,7 +272,7 @@ class Refill:
         return out
 
     def pool_state(self) -> dict:
-        """`{partition: {channel, pool, drawn, remaining, reason}}` before a batch runs.
+        """`{partition: {channel, pool, proven, drawn, remaining, reason}}` before a batch.
 
         A channel's *reach*, stated at launch instead of inferred from a readout.
         run10 opened with 39, 46 and 52 derived parameters in its three julia
@@ -259,6 +286,12 @@ class Refill:
         give it, so the two never disagree about why: this is asked at batch zero
         with every queue empty, which is exactly the state that makes `deferred`'s
         reasons the ones that apply.
+
+        `pool` is the whole interleaved queue and `proven` is how much of it came
+        from the label store. Both, because on a partition fed by two channels
+        "entries left" alone cannot say what is left: a dynamical queue that has
+        run out of `c` and a dynamical queue that has run out of labelled places
+        exhaust in different ways and are fixed by different things.
         """
         empty = dict.fromkeys(self.partitions, 0)
         reasons = self.deferred(empty)
@@ -273,6 +306,7 @@ class Refill:
             out[partition] = {
                 "channel": servable,
                 "pool": pool,
+                "proven": len(self.proven.seeds(partition)) if self._is_proven(partition) else 0,
                 "drawn": drawn,
                 "remaining": max(0, pool - drawn),
                 "reason": reason,
@@ -284,9 +318,10 @@ class Refill:
         out = []
         for partition, state in sorted(self.pool_state().items()):
             if state["reason"] is None:
-                out.append(
-                    f"pool {partition}: {state['remaining']} of {state['pool']} entries left"
-                )
+                line = f"pool {partition}: {state['remaining']} of {state['pool']} entries left"
+                if state["proven"]:
+                    line += f", {state['proven']} of them proven roots"
+                out.append(line)
             else:
                 out.append(f"pool {partition}: {state['reason']}")
         return out
@@ -306,12 +341,16 @@ class Refill:
                 reason = DEFERRAL[partition]
             elif self._is_twin(partition):
                 reason = self.twins.starvation(partition, drawn=self.cursor.get(partition, 0))
+            elif self.has_channel(partition):
+                # Asked before the missing-channel sentences, because a twin with
+                # proven roots and no twin channel has a channel: what it ran out
+                # of is labelled places, and "no twin channel is wired in" would
+                # name the wrong thing to go and fix.
+                reason = "the channel's pool is exhausted: every entry has been walked"
             elif is_dynamical(partition) and partition != "julia:mandelbrot":
                 reason = NO_TWIN_CHANNEL.format(plane=parameter_plane_of(partition))
-            elif not self.has_channel(partition):
-                reason = NO_SEED_FILE
             else:
-                reason = "the channel's pool is exhausted: every entry has been walked"
+                reason = NO_SEED_FILE
             out[partition] = {
                 "queue": queues.get(partition, 0),
                 "low_water": self.low_water,
@@ -361,69 +400,107 @@ class Refill:
         taken = rows[start : start + self.per_draw]
         self.cursor[partition] = start + len(taken)
         for index, entry in enumerate(taken, start=start):
-            if partition == "julia:mandelbrot":
-                self.walk.add_root(
-                    entry.family(2),
-                    source="julia_c_pool",
-                    provenance={"seed_id": entry.id, "channel": entry.channel, "refill": True},
-                )
-            elif self._is_twin(partition):
-                # The same seed object and the same call the degree-2 channel
-                # makes, at the degree its parent plane carries. That is what
-                # keeps this one channel more rather than a second mechanism.
-                plane = self.twins.plane_of(partition)
-                self.walk.add_root(
-                    entry.family(self.twins.degree_of(partition)),
-                    source="twin_channel",
-                    provenance={
-                        "seed_id": entry.id,
-                        "channel": entry.channel,
-                        "parent_plane": plane,
-                        "refill": True,
-                    },
-                )
-            elif partition == "phoenix":
-                self.walk.add_root(
-                    entry.family(),
-                    source="phoenix_seed_pool",
-                    provenance={"seed_id": entry.id, "branch": entry.branch, "refill": True},
-                )
-            else:
-                view = entry.get("viewport")
-                # The row's own channel, carried onto the root. A plane queue can
-                # hold two channels at once, and attributing a find afterwards
-                # should be a join on a field rather than a guess at an id prefix.
-                channel = (entry.get("provenance") or {}).get("channel")
-                self.walk.add_root(
-                    entry["family"],
-                    (
-                        {
-                            "center_re": str(view["center_re"]),
-                            "center_im": str(view["center_im"]),
-                            "width": str(view["width"]),
-                        }
-                        if view
-                        else None
-                    ),
-                    # One source for the whole plane channel, and the grace below
-                    # a plane root is what it decides: a proven root is still a
-                    # parameter-plane root handed over at a frame nobody walked.
-                    source="seed_file",
-                    provenance={
-                        "seed_id": entry.get("id", f"row{index:04d}"),
-                        "channel": channel,
-                        # Named only for a row that actually came out of one: a
-                        # proven root is derived, and a file name beside it is a
-                        # provenance field that reads true and is not.
-                        "file": (
-                            self._seeds.name
-                            if self._seeds and channel != proven_channel.CHANNEL
-                            else None
-                        ),
-                        "refill": True,
-                    },
-                )
+            root = self._root_of(partition, entry, index)
+            self.walk.add_root(
+                root["family"],
+                root["viewport"],
+                source=root["source"],
+                provenance=root["provenance"],
+            )
         return len(taken)
+
+    def _root_of(self, partition: str, entry, index: int) -> dict:
+        """One queue entry as the root it becomes: family, view, source, provenance.
+
+        **The dispatch is on the entry's shape, not on its partition**, and that
+        is the whole of it. A queue holds two kinds of entry: a pool's typed
+        seed, which is a *parameter* and comes up at the family's home frame, and
+        a row, which is a whole *location* and comes up at the frame it carries.
+        Both reach every served partition now that the proven channel does, so a
+        branch per partition would answer the same question five times over and
+        the five answers would drift.
+        """
+        if isinstance(entry, dict):
+            return self._root_of_row(entry, index)
+        if isinstance(entry, pools.JuliaSeed) and self._is_twin(partition):
+            # The same seed object and the same call the degree-2 channel makes,
+            # at the degree its parent plane carries. That is what keeps this one
+            # channel more rather than a second mechanism.
+            return {
+                "family": entry.family(self.twins.degree_of(partition)),
+                "viewport": None,
+                "source": "twin_channel",
+                "provenance": {
+                    "seed_id": entry.id,
+                    "channel": entry.channel,
+                    "parent_plane": self.twins.plane_of(partition),
+                    "refill": True,
+                },
+            }
+        if isinstance(entry, pools.JuliaSeed) and partition == "julia:mandelbrot":
+            return {
+                "family": entry.family(2),
+                "viewport": None,
+                "source": "julia_c_pool",
+                "provenance": {"seed_id": entry.id, "channel": entry.channel, "refill": True},
+            }
+        if isinstance(entry, pools.PhoenixSeed) and partition == "phoenix":
+            return {
+                "family": entry.family(),
+                "viewport": None,
+                "source": "phoenix_seed_pool",
+                "provenance": {"seed_id": entry.id, "branch": entry.branch, "refill": True},
+            }
+        raise TypeError(
+            f"{partition} handed the refill a {type(entry).__name__}, and no channel this "
+            f"partition has builds a root out of one. A queue entry is either a row — a "
+            f"location, carrying its own viewport — or the typed seed of that partition's "
+            f"own pool."
+        )
+
+    def _root_of_row(self, entry: dict, index: int) -> dict:
+        """A `{family, viewport}` row as a root: a seed file's, or the proven channel's.
+
+        The one door a root enters at a *place* rather than at a home view, which
+        is what the proven channel is worth on a dynamical partition: a `c`-pool
+        can express a parameter and nothing else.
+        """
+        view = entry.get("viewport")
+        # The row's own channel, carried onto the root. A queue can hold two
+        # channels at once, and attributing a find afterwards should be a join on
+        # a field rather than a guess at an id prefix.
+        channel = (entry.get("provenance") or {}).get("channel")
+        return {
+            "family": entry["family"],
+            "viewport": (
+                {
+                    "center_re": str(view["center_re"]),
+                    "center_im": str(view["center_im"]),
+                    "width": str(view["width"]),
+                }
+                if view
+                else None
+            ),
+            # One source for every row, and the grace below a plane root is what
+            # it decides — but the source is only half of that predicate. The
+            # other half is the family, and `operators.degree_of` is `None` for
+            # julia and for phoenix, so a dynamical row comes through this same
+            # door and is not graced. That is the right answer rather than an
+            # oversight: the grace pays for the descent out of a home frame
+            # nobody chose, and a row did not start at one.
+            "source": "seed_file",
+            "provenance": {
+                "seed_id": entry.get("id", f"row{index:04d}"),
+                "channel": channel,
+                # Named only for a row that actually came out of one: a proven
+                # root is derived, and a file name beside it is a provenance
+                # field that reads true and is not.
+                "file": (
+                    self._seeds.name if self._seeds and channel != proven_channel.CHANNEL else None
+                ),
+                "refill": True,
+            },
+        }
 
     def note_admission(self, partition: str, row: dict) -> None:
         """One location the run just booked, offered to whatever channel it feeds.

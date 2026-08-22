@@ -14,6 +14,7 @@ import json
 import pytest
 
 from fractal_wallpapers.discovery import ledger as ledger_module
+from fractal_wallpapers.discovery import pools
 from fractal_wallpapers.discovery.walk import Limits, Walk
 from fractal_wallpapers.supply import proven
 from fractal_wallpapers.supply import refill as refill_module
@@ -23,6 +24,9 @@ from fractal_wallpapers.supply.refill import Refill
 MANDELBROT = {"kind": "mandelbrot"}
 MULTIBROT3 = {"kind": "multibrot", "degree": 3}
 JULIA = {"kind": "julia", "degree": 2, "c": ["-0.4", "0.6"]}
+PHOENIX = {"kind": "phoenix", "c": ["0.4", "0.1"], "p": ["-0.3", "0.0"], "z_prev": ["0.0", "0.0"]}
+#: The pinned Ushiki point, written the way a record that names nothing is read.
+CLASSIC = {"kind": "phoenix"}
 
 
 def view(re: str, im: str = "0.2", width: str = "0.001") -> dict:
@@ -64,11 +68,9 @@ def test_the_same_store_derives_the_same_bytes_whatever_order_it_is_read_in() ->
     again = proven.derive(rows=list(reversed(rows)))
     assert proven.render(once["rows"]) == proven.render(again["rows"])
     assert once["record"]["rows"] == 3
-    assert once["record"]["partitions"] == {
+    assert once["record"]["partitions"] == dict.fromkeys(proven.SERVED, 0) | {
         "mandelbrot": 2,
         "multibrot3": 1,
-        "multibrot4": 0,
-        "multibrot5": 0,
     }
 
 
@@ -124,19 +126,28 @@ def test_a_rule_label_is_not_a_proven_root() -> None:
     assert [row["viewport"]["center_re"] for row in derived] == ["0.2"]
 
 
-def test_the_dynamical_families_are_not_this_channels_job() -> None:
-    """They have screened `c`-pools; the planes are the side with no sampler."""
-    rows = corpus(label(JULIA, 4, "0.1"), label(MANDELBROT, 4, "0.2"))
+def test_the_dynamical_partitions_are_served_and_the_pinned_phoenix_is_not() -> None:
+    """The planes are served because they have no sampler; the dynamical families
+    are served because theirs cannot express a frame. `phoenix:classic` is one
+    pinned parameter point another leg fills, and it is in no channel at all."""
+    rows = corpus(
+        label(JULIA, 4, "0.1"),
+        label(PHOENIX, 4, "0.2"),
+        label(CLASSIC, 4, "0.3"),
+        label(MANDELBROT, 4, "0.4"),
+    )
     record = proven.derive(rows=rows)["record"]
-    assert record["rows"] == 1
-    assert set(record["partitions"]) == set(PARAMETER_PLANES)
+    assert record["rows"] == 3
+    assert CLASSIC_PHOENIX not in record["partitions"]
+    assert set(record["partitions"]) == set(proven.SERVED)
+    assert set(PARAMETER_PLANES) < set(proven.SERVED)
+    assert record["partitions"]["julia:mandelbrot"] == 1
+    assert record["partitions"]["phoenix"] == 1
 
 
 def test_a_derived_row_is_a_seed_file_row() -> None:
     """So an emitted set can be passed straight back as `--seeds`, and so the
-    refill's existing plane branch can draw it without a second shape."""
-    from fractal_wallpapers.discovery import pools
-
+    refill's existing row branch can draw it without a second shape."""
     row = proven.derive(rows=corpus(label(MANDELBROT, 4, "0.1")))["rows"][0]
     assert row["schema"] == proven.SCHEMA
     assert row["provenance"]["channel"] == proven.CHANNEL
@@ -298,6 +309,101 @@ def test_a_seed_file_and_the_proven_channel_share_one_queue(tmp_path) -> None:
     ], "two proven per pool root, and the pool is not crowded out"
 
 
+def test_a_proven_dynamical_root_starts_at_the_labelled_frame_not_the_home_view(
+    tmp_path, monkeypatch
+) -> None:
+    """The whole of what this channel is worth on a dynamical partition. A
+    `c`-pool row is a *parameter*, so every root it hands over comes up at the
+    home view — the whole plane at width 3.0 — and the walk descends from there.
+    A label row carries the frame the human was looking at."""
+    # The tracked `c`-pool out of the way, so what a draw hands over is this
+    # channel's and the queue is not two entries deep in parameters first.
+    monkeypatch.setattr(pools, "julia_pool", lambda *a, **k: [])
+    walk = Walk(out_dir=tmp_path / "run", seed=1, limits=Limits(batch=2))
+    refill = Refill(
+        walk,
+        low_water=2,
+        per_draw=2,
+        partitions=["julia:mandelbrot"],
+        seeds=None,
+        proven=channel(corpus(label(JULIA, 4, "-0.4"))),
+    )
+    assert refill.has_channel("julia:mandelbrot") is True
+    assert refill.run({"julia:mandelbrot": 0}, batch=0, loop_seconds=1.0)["roots"] == 1
+
+    root = next(row for row in ledger_module.read(walk.ledger.path) if row["kind"] == "root")
+    assert root["family"] == JULIA
+    assert root["viewport"] == {"center_re": "-0.4", "center_im": "0.2", "width": "0.001"}
+    assert root["provenance"]["channel"] == proven.CHANNEL
+    assert root["source"] == "seed_file", "one source for every row-shaped entry"
+    # And no expansion grace: the source is half of that predicate and the family
+    # is the other half, which is `None` for a dynamical one.
+    assert root["plane_root"] is False
+
+
+def test_one_queue_holds_a_parameter_and_a_place_and_tells_them_apart_by_shape(
+    tmp_path,
+) -> None:
+    """The mismatch this channel's reach created, resolved once. Both entries
+    reach the same partition through the same cursor: the pool's typed seed,
+    which has no frame in it, and the row, which is a whole location."""
+    walk = Walk(out_dir=tmp_path / "run", seed=1, limits=Limits(batch=2))
+    refill = Refill(walk, partitions=["julia:mandelbrot"], seeds=None, proven=None)
+
+    seed = pools.JuliaSeed(id="c0007", c=("-0.75", "0.11"), channel="near_boundary")
+    parameter = refill._root_of("julia:mandelbrot", seed, 0)
+    assert parameter["viewport"] is None, "a parameter comes up at the family's home view"
+    assert parameter["source"] == "julia_c_pool"
+    assert parameter["family"] == {"kind": "julia", "degree": 2, "c": ["-0.75", "0.11"]}
+
+    row = proven.derive(rows=corpus(label(JULIA, 4, "-0.4")))["rows"][0]
+    place = refill._root_of("julia:mandelbrot", row, 1)
+    assert place["viewport"] == row["viewport"], "a location comes up at its own frame"
+    assert place["source"] == "seed_file"
+    assert place["provenance"]["file"] is None, "derived, not out of a file"
+
+    with pytest.raises(TypeError, match="julia:mandelbrot"):
+        refill._root_of("julia:mandelbrot", object(), 2)
+
+
+def test_the_pinned_classic_phoenix_is_still_refused_a_channel(tmp_path) -> None:
+    """It has no pool, no proven roots and no twin, and another leg of the
+    project fills it. A list that grew must not sweep it up."""
+    walk = Walk(out_dir=tmp_path / "run", seed=1, limits=Limits(batch=2))
+    live = proven.build(rows=corpus(label(CLASSIC, 4, "0.3")), partitions=[CLASSIC_PHOENIX])
+    assert live.partitions == (), "no served partition, so no queue"
+
+    refill = Refill(
+        walk,
+        low_water=2,
+        partitions=[CLASSIC_PHOENIX, "phoenix"],
+        seeds=None,
+        proven=proven.build(rows=corpus(label(CLASSIC, 4, "0.3"), label(PHOENIX, 4, "0.4"))),
+    )
+    assert refill.has_channel(CLASSIC_PHOENIX) is False
+    assert refill.has_channel("phoenix") is True
+    assert refill.starved(dict.fromkeys([CLASSIC_PHOENIX, "phoenix"], 0), batch=0) == ["phoenix"]
+
+
+def test_the_census_says_how_much_of_a_queue_came_from_the_label_store(
+    tmp_path, monkeypatch
+) -> None:
+    """A dynamical queue out of `c` and a dynamical queue out of labelled places
+    exhaust in different ways, and "entries left" alone cannot tell them apart."""
+    monkeypatch.setattr(pools, "julia_pool", lambda *a, **k: [])
+    walk = Walk(out_dir=tmp_path / "run", seed=1, limits=Limits(batch=2))
+    refill = Refill(
+        walk,
+        low_water=2,
+        partitions=["julia:mandelbrot"],
+        seeds=None,
+        proven=channel(corpus(label(JULIA, 4, "-0.4"), label(JULIA, 3, "-0.41"))),
+    )
+    state = refill.pool_state()["julia:mandelbrot"]
+    assert (state["pool"], state["proven"], state["reason"]) == (2, 2, None)
+    assert "2 of them proven roots" in refill.pool_lines()[0]
+
+
 def test_the_summary_says_the_channel_was_wired_and_at_what_floor(tmp_path, monkeypatch) -> None:
     _walk, refill = refill_of(tmp_path, channel(), monkeypatch)
     summary = refill.summary()["proven"]
@@ -342,6 +448,20 @@ def test_a_channel_name_nobody_registered_is_refused_at_the_parser() -> None:
     for name in ("nucleus_grid", "twins", "proven_label"):
         with pytest.raises(SystemExit):
             cli.build_parser().parse_args(["harvest", "--root-channel", name])
+
+
+def test_a_partition_the_channel_does_not_serve_is_refused_at_the_parser() -> None:
+    """`derive` filters on the list it is handed, so a subcommand that passed one
+    through unchecked would print a seed set for the pinned classic phoenix — a
+    file no harvest can consume, reading exactly like one it can."""
+    from fractal_wallpapers import cli
+
+    with pytest.raises(SystemExit):
+        cli.build_parser().parse_args(["derive-proven-seeds", "--partition", CLASSIC_PHOENIX])
+    parsed = cli.build_parser().parse_args(
+        ["derive-proven-seeds", "--partition", "julia:mandelbrot"]
+    )
+    assert parsed.partition == ["julia:mandelbrot"]
 
 
 def test_the_subcommand_emits_the_set_and_compares_it(tmp_path, capsys) -> None:

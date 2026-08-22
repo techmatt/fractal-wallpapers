@@ -3111,9 +3111,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="append",
         dest="root_channels",
         choices=[proven_default("CHANNEL")],
-        help=f"draw parameter-plane roots from this channel as well as the plane pool; "
+        help=f"draw roots from this channel as well as the partition's own pool; "
         f"repeatable. {proven_default('CHANNEL')!r} roots the walk at every location a human "
-        f"has scored a keeper, interleaved with the pool rather than replacing it",
+        f"has scored a keeper, interleaved with the pool rather than replacing it — on the "
+        f"dynamical partitions at the labelled viewport, which is a frame their `c`-pools "
+        f"cannot express",
     )
     production.add_argument(
         "--ledgers",
@@ -3239,10 +3241,11 @@ def build_parser() -> argparse.ArgumentParser:
         "derive-proven-seeds",
         help="build the proven-label seed set from the label store",
         description=(
-            "One root per location a human scored a keeper, on the parameter planes. Not a "
-            "tracked file: the seed set is a query over the label store, re-derived whenever "
-            "it is asked for, and a harvest draws it live with `--root-channel proven`. "
-            "Printing one is for reading it, diffing it, or passing it as --seeds."
+            "One root per location a human scored a keeper, on every partition but the "
+            "pinned classic phoenix. Not a tracked file: the seed set is a query over the "
+            "label store, re-derived whenever it is asked for, and a harvest draws it live "
+            "with `--root-channel proven`. Printing one is for reading it, diffing it, or "
+            "passing it as --seeds."
         ),
     )
     proving.add_argument(
@@ -3254,7 +3257,12 @@ def build_parser() -> argparse.ArgumentParser:
     proving.add_argument(
         "--partition",
         action="append",
-        help="derive for this partition alone; repeatable (default: the parameter planes)",
+        # Refused at the parser, the way an unregistered channel name is. Without
+        # this the subcommand will happily print a seed set for a partition the
+        # channel does not serve, and a file no harvest can consume reads exactly
+        # like one it can.
+        choices=list(proven_default("SERVED")),
+        help="derive for this partition alone; repeatable (default: every served partition)",
     )
     proving.add_argument(
         "--out",
