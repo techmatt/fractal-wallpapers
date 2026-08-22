@@ -2208,6 +2208,47 @@ def curate_score(args: argparse.Namespace) -> int:
     return 0
 
 
+def curate_sidecar(args: argparse.Namespace) -> int:
+    """Record, check or restore the supply sidecar against its tracked manifest."""
+    from fractal_wallpapers.curation import durability
+
+    doing = {
+        "save": lambda: durability.save(),
+        "check": lambda: durability.check(),
+        "restore": lambda: durability.restore(force=args.force),
+    }[args.what]
+    try:
+        report = doing()
+    except durability.SidecarLost as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps(report, indent=2))
+    # `check` is the one that answers a yes/no question, so it is the one with an
+    # exit code worth reading. A short or missing sidecar is a build failure.
+    if args.what == "check" and report.get("verdict") in {"short", "missing"}:
+        return 1
+    return 0
+
+
+def curate_ledgers(args: argparse.Namespace) -> int:
+    """Which walk ledger each released row names, and whether it still resolves."""
+    from fractal_wallpapers.curation import durability
+
+    report = durability.pool_ledgers()
+    for cell in report["ledgers"]:
+        where = f"{cell['tier']} tier" if cell["resolves"] else "NOT FOUND"
+        print(f"{cell['rows']:>6}  {cell['ledger']:<44}  {where}  {','.join(cell['runs'])}")
+    print(
+        f"{report['pool_rows']:,} released rows name {report['ledgers_named']} ledger(s); "
+        f"{report['ledgers_absent']} do not resolve, holding "
+        f"{report['rows_on_absent_ledgers']:,} row(s)"
+    )
+    if args.write:
+        write_tracked_json(durability.provenance_path(), report)
+        print(f"wrote {display_path(durability.provenance_path())}")
+    return 0
+
+
 def curate_plan(args: argparse.Namespace) -> int:
     """Print the offer and the budget it implies, making no picture."""
     from fractal_wallpapers.curation import binding, budget, floors, intake
@@ -2242,7 +2283,7 @@ def curate_plan(args: argparse.Namespace) -> int:
 
 def curate_run(args: argparse.Namespace) -> int:
     """Make a release: colorize, select, render at full resolution, record it all."""
-    from fractal_wallpapers.curation import binding, intake, records
+    from fractal_wallpapers.curation import binding, durability, intake, records
     from fractal_wallpapers.curation import run as run_module
     from fractal_wallpapers.deep import run as deep_run
 
@@ -2264,6 +2305,7 @@ def curate_run(args: argparse.Namespace) -> int:
         )
     except (
         binding.Unbound,
+        durability.SidecarLost,
         intake.IntakeError,
         records.NotIsolated,
         run_module.RunRefused,
@@ -4671,6 +4713,51 @@ def curate_commands(subcommands) -> None:
     reading.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
     reading.add_argument("--limit", type=int, help="score only this many locations")
     reading.set_defaults(handler=curate_score)
+
+    sidecar = steps.add_parser(
+        "sidecar",
+        help="the supply sidecar's durability: record it, check it, restore it",
+        description=(
+            "artifacts/curation/supply_scores.jsonl is the head's read of the standing "
+            "supply and the one file under the regenerable tree that the checkout cannot "
+            "regenerate — the ledgers it reads are under that tree too. It is too big and "
+            "too churny to track, so what the history keeps is a manifest: the row count, "
+            "the byte count, the sha256 and the per-ledger split. `save` writes a copy to "
+            "the archive tier and records it; `check` reads the live file against the "
+            "manifest; `restore` brings the copy back, counted before it is believed."
+        ),
+    )
+    sidecar.add_argument(
+        "what",
+        choices=["check", "save", "restore"],
+        help="check the live file against the manifest, save a fresh copy and manifest, "
+        "or restore the copy",
+    )
+    sidecar.add_argument(
+        "--force",
+        action="store_true",
+        help="with `restore`: overwrite a live sidecar that holds MORE rows than the "
+        "manifest records. Those rows are a harvest nobody has saved yet",
+    )
+    sidecar.set_defaults(handler=curate_sidecar)
+
+    naming_ledgers = steps.add_parser(
+        "ledgers",
+        help="which walk ledger each released row names, and whether it still resolves",
+        description=(
+            "Provenance, not a repair. A released row carries its whole join and re-renders "
+            "from itself, so a row whose ledger has gone is still a wallpaper somebody can "
+            "rebuild — what it cannot be is re-OFFERED, because an intake starts from "
+            "ledgers. Resolution goes through the same tier funnel every reader uses, so a "
+            "ledger that has merely been archived reads as present."
+        ),
+    )
+    naming_ledgers.add_argument(
+        "--write",
+        action="store_true",
+        help="write the tracked provenance record as well as printing it",
+    )
+    naming_ledgers.set_defaults(handler=curate_ledgers)
 
     def with_shape(parser, defaults=True):
         # A run takes `None` where `plan` takes a number: a resumed run reads its

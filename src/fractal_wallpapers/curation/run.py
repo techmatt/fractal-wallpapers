@@ -83,6 +83,7 @@ from pathlib import Path
 from fractal_wallpapers.curation import (
     binding,
     colorize,
+    durability,
     floors,
     intake,
     pacing,
@@ -160,6 +161,11 @@ def curate(
     different set. [`fractal_wallpapers.deep.run.HUNG_CEILING`] is the one other
     set that exists, and the clock records whichever was used.
     """
+    # Before the run directory, before the plan, before a head is loaded: the
+    # supply sidecar is the one input here that no later step could recover, and
+    # a run that started without it would print a funnel over a supply that had
+    # silently shrunk. See [`durability.guard`].
+    durability.guard(log)
     clock = pacing.Clock(wall_budget, ceilings=ceilings)
     directory = run_dir(run)
     directory.mkdir(parents=True, exist_ok=True)
