@@ -107,6 +107,14 @@ which agreed with the engine until the engine's Phoenix row moved: after that a
 phoenix root framed 66% of its own set with both lobes cut, and nothing in either
 half could have noticed.
 
+**A seed pool cannot ask for anywhere else.** `JuliaSeed` carries a `c` and
+`PhoenixSeed` a `(c, p, z₋₁)`; both are *parameters*, so every dynamical root
+either pool hands over comes home — the whole plane at width 3.0, the classic
+Ushiki extent at 5.0 — and the walk descends to anything worth seeing from
+there. The one dynamical supply that names a frame is
+[`fractal_wallpapers.supply.proven`], which hands over the viewport a human
+scored and reaches `add_root`'s `view` with it.
+
 **A walk scores the picture it already made, and no longer renders a second
 one.** `expand` draws every gate survivor at 384x216, one field sample per pixel,
 and that frame is byte-identical to the same location's cached tile at the same

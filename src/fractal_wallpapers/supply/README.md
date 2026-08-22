@@ -17,7 +17,7 @@ allocation   the floor, the water-filling, and the floor's carry
 quota        the object a run holds; the only thing that decides the mix
 refill       what to do about a partition whose queue has run dry
 twins        Julia parameters derived from the parent plane's admissions
-proven       parameter-plane roots at every location a human scored a keeper
+proven       roots at every location a human scored a keeper, at the frame they scored
 saturation   cross-run memory, straight off the ledgers
 novelty      the two levers against monotony: the discount and the share
 autopsy      what each claim on the batch bought, in pictures — and why each refusal was one
@@ -73,6 +73,27 @@ active hour, the gap is wider rather than narrower: **135 proven roots returned
 130 of the 135 produced at least one admission; 14 of the 61 did; the four
 `home_view` roots produced none. The margin holds at every degree, and it is
 largest at degree 2, where the pool's seven roots returned nothing at all.
+
+**On the dynamical partitions the channel buys a frame, not a sampler.** Julia
+and Phoenix have pools; a pool row is a *parameter*, so every root either one
+hands over comes up at the family's home view and the walk descends from there.
+A label row carries the frame the human scored. Measured over 30 active minutes
+across `julia:mandelbrot`, the three twins and `phoenix`, proven roots on:
+
+```
+              served   admissions   per root   booked >=1   already walked on entry
+proven          252         7,315       29.0    249 / 252              95 / 252
+twin             74         1,079       14.6     62 /  74              68 /  74
+pool             50           551       11.0     21 /  50              47 /  50
+```
+
+Cost came out at **0.19–0.22 s/admission**, against 0.26–0.38 for the same five
+partitions on run10 with the channel off. The margin is widest where the pool is
+weakest: **2 of 29 phoenix `c`-pool roots booked anything at all**, against 57 of
+59 proven ones. And the entry column is the surprise in the other direction — a
+home-view root is the same point every prior run rooted at, so 90%+ of pool and
+twin roots enter already saturated, where a labelled frame enters clean about two
+times in three. Run the leg with `--partition <dynamical> --root-channel proven`.
 
 **The mix is decided where the batch is popped.** Weighting the *root draw* by
 family cannot enforce a mix: anything that only changes what enters the frontier
@@ -237,10 +258,14 @@ parameter of a run now.
 backstop, and the margin is real money.
 
 **The launch prints what each channel can still reach**, one line per partition:
-the pool's size, what has been drawn, or the reason no draw can serve it. run10
-opened with 39, 46 and 52 derived parameters in its three julia twins against 413
-to 507 in each parameter plane; all of the small ones ran dry inside the night and
-the readout is where that surfaced, the following morning.
+the pool's size, how much of it the label store put there, what has been drawn, or
+the reason no draw can serve it. run10 opened with 39, 46 and 52 derived parameters
+in its three julia twins against 413 to 507 in each parameter plane; all of the
+small ones ran dry inside the night and the readout is where that surfaced, the
+following morning. The proven count is beside the pool count because a queue two
+channels deep exhausts two ways — `pool julia:mandelbrot: 1036 of 1036 entries
+left, 827 of them proven roots` — and running out of `c` and running out of
+labelled places are fixed by different things.
 
 **`--minutes` is also the only backstop a harvest has** — there is no
 `--wall-budget` here, that flag belongs to `curate run`. It is a hard one: the loop
@@ -258,6 +283,7 @@ fractal-wallpapers harvest --finish-by 07:00 --strange-modes 3    # reserve for 
 fractal-wallpapers harvest --exploration-floor 0.25 --exploration-start 0.45
 fractal-wallpapers harvest --no-exploration --lineage-discount 0   # neither lever
 fractal-wallpapers harvest --partition mandelbrot --root-channel proven
+fractal-wallpapers harvest --partition phoenix --root-channel proven      # at labelled frames
 fractal-wallpapers derive-proven-seeds --partition mandelbrot --write   # to read it
 fractal-wallpapers harvest --partition mandelbrot --seeds seeds.jsonl   # one leg, one book
 fractal-wallpapers derive-prices --run artifacts/harvest --regularize --write

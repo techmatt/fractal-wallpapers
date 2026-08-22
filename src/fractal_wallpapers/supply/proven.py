@@ -19,13 +19,33 @@ and it hands back one row per location with the latest verdict on it.
 
 ```text
 the label store, resolved            one row per location, latest verdict wins
-        │  score >= TIER_FLOOR, cast by a human, on a parameter plane
+        │  score >= TIER_FLOOR, cast by a human, on a served partition
         ▼
     one seed row per location         id, family, viewport, tier, label batch
         │  best tier first; inside a tier, ordered by a digest of the location
         ▼
-    a refill channel per plane        interleaved RATIO:1 with that plane's pool
+    a channel per partition           interleaved RATIO:1 with that partition's pool
 ```
+
+## The dynamical partitions are served too, and for a different reason
+
+The planes were the side with no sampler, and that is why this channel was built.
+The Julia and Phoenix partitions have the opposite problem: they have pools, and
+a pool row is a **parameter**, not a place. `JuliaSeed` carries a `c` and
+`PhoenixSeed` carries `(c, p, z₋₁)`; neither carries a viewport, so every root
+either channel hands over starts at the family's home view — the whole plane, at
+width 3.0 for julia and 5.0 for phoenix — and the walk has to descend to anything
+worth seeing from there.
+
+A label row carries the frame the human was looking at. All 1,708 qualifying
+dynamical rows in the store have a complete one, with a median width of 6.6e-1 for
+`julia:mandelbrot` down to 8.7e-2 for `phoenix`. So on these partitions the
+channel is not making up for a missing sampler; it is handing the walk a *place*
+where the pool can only hand it a parameter, and one seed can be proven at several
+frames without the `c`-spacing floor having anything to say about it.
+
+`phoenix:classic` is out, as it is out of every channel: it is one pinned
+parameter point filled by another leg of the project entirely.
 
 ## Why the order is a digest and not a shuffle
 
@@ -73,7 +93,11 @@ from pathlib import Path
 
 from fractal_wallpapers.supply import currency as money
 from fractal_wallpapers.supply.location import key_of_row
-from fractal_wallpapers.supply.partitions import PARAMETER_PLANES, partition_of_family
+from fractal_wallpapers.supply.partitions import (
+    DYNAMICAL_PLANES,
+    PARAMETER_PLANES,
+    partition_of_family,
+)
 
 #: The schema every derived seed row carries, from the first row.
 SCHEMA = 1
@@ -93,11 +117,16 @@ TIER_FLOOR = min(money.CLASS_WEIGHT)
 #: would leave the run with no way to find anywhere a human has not been.
 RATIO = 2
 
-#: The partitions this channel serves. The parameter planes, and only them: the
-#: dynamical families have screened `c`-pools of their own, and a plane is the
-#: side with no sampler at all. A pool's entries are also of one shape per
-#: partition, and the interleave below relies on that.
-SERVED = PARAMETER_PLANES
+#: The partitions this channel serves: every one that has a queue of its own to
+#: interleave with. That is all of them but `phoenix:classic`, which has no
+#: channel at all and is filled from outside the walk.
+#:
+#: The two halves are served for different reasons — the planes have no sampler,
+#: the dynamical families have a sampler that cannot express a viewport — and one
+#: consequence is shared: a partition's queue now holds **two shapes of entry**,
+#: a pool's typed seed and a proven row, and the refill resolves that once rather
+#: than per partition.
+SERVED = (*PARAMETER_PLANES, *DYNAMICAL_PLANES, "phoenix")
 
 #: Characters of the location digest an id carries. 48 bits over a corpus of a
 #: few thousand locations; the digest is the sort key as well, so a collision
@@ -216,6 +245,15 @@ def interleave(proven: list, other: list, ratio: int = RATIO) -> list:
     is the right shape here rather than a limitation: what the interleave buys is
     that neither channel can be crowded out by the other, and two cursors served
     in whatever order a queue drains would decide that by accident.
+
+    The two sides need not be the same kind of object, and on the dynamical
+    partitions they are not: `other` holds typed seeds and `proven` holds rows.
+    Nothing here reads either, so the mismatch is the refill's to resolve, once —
+    and it does, at the door where an entry becomes a root.
+
+    Only ever appends when `other` grows, which is what lets the twin channel's
+    list keep growing under a cursor: a queue re-made with one more parent
+    admission in it is the old queue with one more entry at the end.
     """
     step = max(1, int(ratio))
     out: list = []
@@ -341,8 +379,9 @@ def build(
     """The channel a harvest holds, derived from the label store as it stands.
 
     `partitions` may be a run's whole partition list; what this channel serves is
-    that list's intersection with the planes, because a run naming one partition
-    should get the channel for that one and not for every plane in the registry.
+    that list's intersection with [`SERVED`], because a run naming one partition
+    should get the channel for that one and not for every partition in the
+    registry.
     """
     served = tuple(p for p in partitions if p in SERVED)
     derived = derive(tier_floor=tier_floor, partitions=served, label_paths=label_paths, rows=rows)
