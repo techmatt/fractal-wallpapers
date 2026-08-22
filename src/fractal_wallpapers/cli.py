@@ -16,6 +16,8 @@ from pathlib import Path
 
 from fractal_wallpapers import engine, paths
 from fractal_wallpapers.labeling.finished import HEADS as FINISHED_HEADS
+from fractal_wallpapers.palettes import clusters as palette_clusters
+from fractal_wallpapers.palettes import strip as palette_strip
 from fractal_wallpapers.paths import (
     StorageRefusal,
     colormap_dir,
@@ -346,11 +348,36 @@ def dump_field(args: argparse.Namespace) -> int:
     return 0
 
 
+def dumped_colormap(field: Path) -> str | None:
+    """The map a dumped field was drawn alongside, read off its own record.
+
+    `None` where the record cannot be read: a recolor that could not find out
+    which map it is about must not guess a fold for it.
+    """
+    record = Path(field).with_suffix(".json")
+    if not record.is_file():
+        return None
+    try:
+        return json.loads(record.read_text(encoding="utf-8")).get("colormap")
+    except (OSError, ValueError):
+        return None
+
+
 def recolor(args: argparse.Namespace) -> int:
-    """Color a dumped field through another colormap, without re-iterating."""
+    """Color a dumped field through another colormap, without re-iterating.
+
+    **The fold is decided here, not left off.** A recolor that sent no palette
+    block got the engine's default — an unfolded bake — so a sequential map came
+    out through its seam, which is not the picture any other caller in this
+    project makes of it. The default is the pipeline's own rule, `mirror = the
+    map is not cyclic`, owned by `palette_sets.recipe_for`; `--no-mirror` asks
+    for the unfolded ramp, which is a real picture too — it is what a fold-free
+    render like the tile floor's second reservation shows.
+    """
+    field = resolve_output(args.field)
     spec: dict[str, object] = {
         "schema": 1,
-        "field": str(resolve_output(args.field)),
+        "field": str(field),
         "colormap_dir": str(colormap_dir()),
         "output": str(resolve_output(args.out)),
     }
@@ -358,6 +385,15 @@ def recolor(args: argparse.Namespace) -> int:
         spec["colormap"] = args.colormap
     if args.transform is not None:
         spec["transform"] = args.transform
+
+    from fractal_wallpapers.labeling import finished
+    from fractal_wallpapers.palettes import strip
+
+    name = args.colormap or dumped_colormap(field)
+    if name is not None:
+        spec["palette"] = finished.recipe(mirror=strip.mirror_for(name, args.mirror))
+    elif args.mirror is not None:
+        spec["palette"] = finished.recipe(mirror=bool(args.mirror))
     print(json.dumps(engine.recolor(spec), indent=2))
     return 0
 
@@ -1650,6 +1686,71 @@ def judge_ship(args: argparse.Namespace) -> int:
     return 0
 
 
+def figure_score_to_decision(args: argparse.Namespace) -> int:
+    """Draw one frame per outcome the judges' ladder has, plus their provenance."""
+    from fractal_wallpapers.models import decisions
+
+    try:
+        if args.coverage:
+            spread = decisions.coverage(decisions.held_out(args.head, args.run))
+            print(json.dumps(spread, indent=2))
+            return 0
+        report = decisions.draw(
+            args.family, resolve_output(args.out_dir) if args.out_dir else None, args.head, args.run
+        )
+    except decisions.DecisionError as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps(report, indent=2, ensure_ascii=False))
+    return 0
+
+
+def palettes_provenance(args: argparse.Namespace) -> int:
+    """Rebuild the record of how the made maps were made."""
+    from fractal_wallpapers.palettes import provenance
+
+    try:
+        report = provenance.run(Path(args.source), Path(args.images) if args.images else None)
+    except provenance.ProvenanceError as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps(report, indent=2, ensure_ascii=False))
+    return 0
+
+
+def palettes_clusters(args: argparse.Namespace) -> int:
+    """Regroup the library and rewrite the tracked clustering."""
+    try:
+        report = palette_clusters.run(count=args.clusters)
+    except palette_clusters.ClusterError as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps(report, indent=2))
+    return 0
+
+
+def palettes_strip(args: argparse.Namespace) -> int:
+    """Draw one map's gradient, or every map a manifest names."""
+    if args.name is not None:
+        output = resolve_output(args.out or Path("artifacts") / "figures" / f"{args.name}.png")
+        names, outputs = [args.name], [output]
+    else:
+        directory = resolve_output(args.out_dir)
+        names = palette_strip.names_from(resolve_output(args.manifest))
+        outputs = [directory / f"{name}.png" for name in names]
+
+    drawn = []
+    for name, output in zip(names, outputs, strict=True):
+        try:
+            drawn.append(palette_strip.draw(name, output, args.width, args.height, args.mirror))
+        except palette_strip.StripError as refusal:
+            print(refusal)
+            return 1
+        print(f"[strip] {name} -> {tracked_name(output)}")
+    print(json.dumps({"strips": len(drawn), "drawn": drawn}, indent=2))
+    return 0
+
+
 def palette_extract(args: argparse.Namespace) -> int:
     """Vendor the real candidate sets a production colorize run recorded."""
     from fractal_wallpapers.models import palette_sets
@@ -2380,6 +2481,15 @@ def build_parser() -> argparse.ArgumentParser:
         help="curve applied to the normalized field (default: the one the dump recorded)",
     )
     again.add_argument(
+        "--mirror",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help=(
+            "fold the map as an out-and-back. Default: the pipeline's rule — folded "
+            "unless the map is cyclic. --no-mirror draws the unfolded ramp"
+        ),
+    )
+    again.add_argument(
         "--out",
         default=str(Path("artifacts") / "recolored.png"),
         help="output PNG path (default: artifacts/recolored.png)",
@@ -2866,6 +2976,8 @@ def build_parser() -> argparse.ArgumentParser:
     head_commands(subcommands)
     regime_commands(subcommands)
     palette_commands(subcommands)
+    library_commands(subcommands)
+    figure_commands(subcommands)
     coloring_commands(subcommands)
     curate_commands(subcommands)
     deep_commands(subcommands)
@@ -3316,6 +3428,139 @@ def render_commands(subcommands) -> None:
         "--force", action="store_true", help="ship a judge whose acceptance read failed"
     )
     shipping.set_defaults(handler=judge_ship)
+
+
+def figure_commands(subcommands) -> None:
+    """The figures the article needs that only this repository can draw."""
+    group = subcommands.add_parser(
+        "figures",
+        help="draw a figure the article needs from this repository's own records",
+        description=(
+            "A figure here is a command rather than a saved picture: it is drawn from the "
+            "tracked records and the shipped weights, so it can be redrawn when either "
+            "moves. The pictures land under artifacts/, which is regenerable by definition."
+        ),
+    )
+    steps = group.add_subparsers(dest="step", required=True)
+
+    ladder = steps.add_parser(
+        "judges-score-to-decision",
+        help="one frame per outcome: refused, expandable, find, exceptional",
+        description=(
+            "Four held-out human-labeled locations of one family, one for each outcome the "
+            "head's score lands in, each rendered as the canonical view the head read. The "
+            "sidecar carries every frame's row key, the person's class and the head's own "
+            "probabilities — the human label is shown, never used to choose the frame."
+        ),
+    )
+    ladder.add_argument(
+        "--family",
+        default="julia:multibrot3",
+        help="the partition to draw from (default: julia:multibrot3)",
+    )
+    ladder.add_argument("--head", default="location", help="which judge's ladder")
+    ladder.add_argument("--run", help="a training run other than the shipped one")
+    ladder.add_argument(
+        "--coverage",
+        action="store_true",
+        help="print how every family's held-out rows spread across the four, and draw nothing",
+    )
+    ladder.add_argument(
+        "--out-dir",
+        help="where the frames land (default: artifacts/figures/judges_score_to_decision)",
+    )
+    ladder.set_defaults(handler=figure_score_to_decision)
+
+
+def library_commands(subcommands) -> None:
+    """The colormap library itself: where its maps came from, how they group, what they look like.
+
+    Kept apart from `palette`, which is the *head* that chooses between maps.
+    These three are about the maps: nothing here loads a model and nothing here
+    reads a label.
+    """
+    group = subcommands.add_parser(
+        "palettes",
+        help="the colormap library: provenance, clusters, and a map's gradient as a strip",
+        description=(
+            "The maps themselves, not the head that picks between them. `provenance` "
+            "rebuilds the record of how the made maps were made, `clusters` regroups the "
+            "library, and `strip` draws one map's gradient the way a render spends it."
+        ),
+    )
+    steps = group.add_subparsers(dest="step", required=True)
+
+    recovering = steps.add_parser(
+        "provenance",
+        help="rebuild the record of how the authored and extracted maps were made",
+        description=(
+            "Reads the generator's batch archive and the source project's pooled library, "
+            "matches by name, and writes one row per made map beside the colormaps. An "
+            "unmatched name on either side is reported, never guessed at."
+        ),
+    )
+    recovering.add_argument("--source", required=True, help="the source project's root")
+    recovering.add_argument(
+        "--images",
+        help=(
+            "directory of the pictures the extracted maps were read from, so a row can "
+            "name the file rather than the stem"
+        ),
+    )
+    recovering.set_defaults(handler=palettes_provenance)
+
+    grouping = steps.add_parser(
+        "clusters",
+        help="regroup the library and rewrite the tracked clustering",
+        description=(
+            "Ward's linkage over palette space, cut at sixteen, each cluster shown by its "
+            "five most central maps. A pure function of the tracked library, which is what "
+            "lets a test hold the committed file to this command's own output."
+        ),
+    )
+    grouping.add_argument(
+        "--clusters",
+        type=int,
+        default=palette_clusters.CLUSTERS,
+        help=f"how many groups to cut the tree into (default: {palette_clusters.CLUSTERS})",
+    )
+    grouping.set_defaults(handler=palettes_clusters)
+
+    drawing = steps.add_parser(
+        "strip",
+        help="draw one map's gradient as the renderer spends it",
+        description=(
+            "A horizontal ramp, colored by the engine through the same bake a wallpaper "
+            "gets — folded where the map is sequential, unless told otherwise. Nothing "
+            "here interpolates a colour: a second densifier is how two pictures of one "
+            "map come to disagree."
+        ),
+    )
+    named = drawing.add_mutually_exclusive_group(required=True)
+    named.add_argument("--name", help="one colormap")
+    named.add_argument(
+        "--manifest",
+        help="a file of colormap names, one to a line — `#` starts a comment",
+    )
+    drawing.add_argument(
+        "--width", type=int, default=palette_strip.WIDTH, help="strip width in pixels"
+    )
+    drawing.add_argument(
+        "--height", type=int, default=palette_strip.HEIGHT, help="strip height in pixels"
+    )
+    drawing.add_argument(
+        "--mirror",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="override the fold. Default: folded unless the map is cyclic",
+    )
+    drawing.add_argument("--out", help="output PNG path, for --name")
+    drawing.add_argument(
+        "--out-dir",
+        default=str(Path("artifacts") / "figures" / "palette_strips"),
+        help="where a manifest's strips land (default: artifacts/figures/palette_strips)",
+    )
+    drawing.set_defaults(handler=palettes_strip)
 
 
 def palette_commands(subcommands) -> None:

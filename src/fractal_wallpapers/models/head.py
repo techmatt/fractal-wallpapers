@@ -34,17 +34,28 @@ score would leave it nothing to weight with.
 
 `deploy` is a bare deterministic resize and normalize. `training` wraps that
 *same* resize in augmentation and nothing else — so the geometry a head learns on
-and the geometry it is scored on cannot drift apart. What the augmentation may
-touch is bounded by one rule: **the palette is part of the label.** A person
-judging these pictures is partly judging their color, so hue and saturation are
-never jittered. Brightness and contrast move by three percent, flips are free
-(the set is symmetric about the real axis and a flipped fractal is a fractal),
-and the JPEG quality is re-drawn — which is a real deployment variable rather
-than a trick.
+and the geometry it is scored on cannot drift apart. **Hue and saturation are
+never jittered**, and the two kinds of head here get there for different reasons
+— one rule stated once would be wrong about half of them:
 
-The finished-render judges take that rule further and turn the last three off
-entirely: for them the *coloring* is what is being judged, not the place, and a
-brightness jitter is a small edit to the very thing the verdict is about. Their
+* For the **render judges**, the palette is *part of the label*. A person judging
+  a finished wallpaper is partly judging its colour, so a hue that moved would
+  move the answer with it and the pair would no longer be an example of anything.
+* For the **location judge**, colour is not what is being judged at all, and it
+  is already varied for real: a training tile draws its map from the tracked pool
+  in `data/tiles/palette_pool.json` and the slot is redrawn every epoch, while at
+  deploy the head reads slot zero — `twilight_shifted` — and only ever that. A
+  synthetic hue jitter would duplicate an axis the corpus already spans with real
+  colormaps, and would spend it on colours nothing in this project renders.
+
+Brightness and contrast move by three percent, flips are free (the set is
+symmetric about the real axis and a flipped fractal is a fractal), and the JPEG
+quality is re-drawn — which is a real deployment variable rather than a trick.
+
+The finished-render judges carry their half of that further and turn the last
+three off entirely: for them the *coloring* is what is being judged, not the
+place, and a brightness jitter is a small edit to the very thing the verdict is
+about. Their
 recipes say so, so the knobs are parameters here rather than constants — a zero
 brightness and an absent JPEG jitter mean the stage is skipped, not run at
 strength zero.

@@ -65,16 +65,41 @@ THUMBNAIL_WIDTH = 192
 #: The file a run's autopsy lands at, beside its summary.
 SHEET_NAME = "channel_autopsy.html"
 
+#: The batch trace the quota writes as it goes, beside the ledger. It is what
+#: turns "this node was never expanded" into a reason: it says, per batch, which
+#: partitions were capped, which were guaranteed and how many slots each took.
+TRACE_NAME = "quota.jsonl"
 
-def _buckets(path: Path) -> tuple[dict, Counter]:
-    """`(pictured rows, every row)` — candidates keyed `(channel, verdict)`.
+#: What a refused card can say about itself. Each is a fact somewhere in the run
+#: data — the row's own fate, or the batch trace of the batches it sat through —
+#: and a card that fits none of them says nothing rather than guessing.
+JUNK_FLOOR = "floor-killed — below the junk floor, so the walk never stood on it"
+GOOD_FLOOR = "below the good floor — the walk expanded it and it booked nothing"
+NEVER_EXPANDED = "below the good floor — it joined the frontier and was never expanded"
+CAPPED = "capped — its partition was priced out of every batch after it"
+OUTBID_PARTITION = "outbid on partition — its partition took no slot after it joined the frontier"
+OUTBID_RANK = "outbid on node rank — its partition was served and it was never the pick"
+DISCOUNTED = "discounted lineage — its root had already booked, so the contest priced it down"
+UNSPENT = "the run ended before its partition was served again"
+
+
+def _buckets(path: Path) -> tuple[dict, Counter, dict]:
+    """`(pictured rows, every row, run facts)` — candidates keyed `(channel, verdict)`.
 
     `verdict` is `admitted` or `refused`, and the middle tier goes with the
     refusals: `expandable` is a row the walk stood on and did not book, which is
     what "refused" means to the books this page is about.
+
+    The third return is what [`Reasons`] needs and what only a pass over the whole
+    ledger can supply: which nodes were ever expanded, and which batch each root's
+    lineage first booked in. Collected here rather than in a second read because a
+    production ledger is tens of thousands of rows and this page is not worth two
+    passes over one.
     """
     rows: dict = {}
     totals: Counter = Counter()
+    expanded: set = set()
+    booked: dict = {}
     with Path(path).open(encoding="utf-8") as handle:
         for line in handle:
             line = line.strip()
@@ -84,14 +109,113 @@ def _buckets(path: Path) -> tuple[dict, Counter]:
             if row.get("kind") != "candidate":
                 continue
             channel = row.get("channel") or "unchanneled"
-            verdict = "admitted" if row.get("fate") == ledger_module.SURVIVED else "refused"
+            admitted = row.get("fate") == ledger_module.SURVIVED
+            verdict = "admitted" if admitted else "refused"
             totals[(channel, verdict)] += 1
+            expanded.add(row.get("parent_node_id"))
+            if admitted:
+                root, batch = row.get("root_id"), int(row.get("batch") or 0)
+                booked[root] = min(batch, booked.get(root, batch))
             if row.get("image"):
                 rows.setdefault((channel, verdict), []).append(row)
-    return rows, totals
+    return rows, totals, {"expanded": expanded, "booked": booked}
 
 
-def _card(row: dict, directory: Path) -> str:
+def _traces(run_dir: Path) -> dict:
+    """`{batch: trace}` — what the quota decided, batch by batch.
+
+    Absent for a run written before the quota kept one, which is a real state:
+    the page then says what the row itself says and no more.
+    """
+    path = Path(run_dir) / TRACE_NAME
+    if not path.is_file():
+        return {}
+    out = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or not line.endswith("}"):
+            continue
+        row = json.loads(line)
+        out[int(row["batch"])] = row
+    return out
+
+
+class Reasons:
+    """Why one refused card is refused, derived and never guessed.
+
+    A refused row is one of two things, and the ledger already says which:
+
+    * **`not_admitted`** — the scorer put it below the junk floor. It never
+      reached the frontier, so no allocation ever had the chance to pass it over.
+    * **`expandable`** — it cleared the junk floor, joined the frontier and did
+      not clear the good floor. That is why it is not in the books; the second
+      half of the question is why the run never came back to it, and *that* is
+      what the quota's batch trace answers.
+
+    The second half has four possible answers and every one is read off the trace
+    of the batches the node actually sat through: its partition was **capped**
+    for all of them, it took **no slot** in any of them, its lineage had booked
+    and the contest **discounted** it, or its partition was served and it simply
+    ranked below what was taken. A node still on the frontier when the run
+    stopped is none of those and says so.
+
+    A row whose family belongs to no registered partition, and a run with no
+    trace at all, get the floor half and nothing more.
+    """
+
+    def __init__(self, facts: dict, traces: dict, summary: dict):
+        self.expanded = facts["expanded"]
+        self.booked = facts["booked"]
+        self.traces = traces
+        self.last = max(traces) if traces else None
+        self.discounting = (summary.get("lineage_discount") or {}).get("status") == "on"
+
+    def of(self, row: dict) -> str | None:
+        fate = row.get("fate")
+        if fate == ledger_module.NOT_ADMITTED:
+            return JUNK_FLOOR
+        if fate != ledger_module.EXPANDABLE:
+            # A structural gate refused it, and the fate on the card already names
+            # which one. There is nothing here to add.
+            return None
+        if row.get("node_id") in self.expanded:
+            return GOOD_FLOOR
+        passed_over = self._passed_over(row)
+        return f"{NEVER_EXPANDED}; {passed_over}" if passed_over else NEVER_EXPANDED
+
+    def _passed_over(self, row: dict) -> str | None:
+        """Why the run never expanded a node it had put on the frontier."""
+        from fractal_wallpapers.supply import partitions
+
+        if not self.traces:
+            return None
+        try:
+            partition = partitions.partition_of_row(row)
+        except partitions.UnregisteredPartition:
+            return None
+        after = [
+            trace for batch, trace in self.traces.items() if batch > int(row.get("batch") or 0)
+        ]
+        if not after:
+            return UNSPENT
+        if all(partition in (trace.get("capped") or []) for trace in after):
+            return CAPPED
+        if not any(_slots_in(trace, partition) for trace in after):
+            return OUTBID_PARTITION
+        first = self.booked.get(row.get("root_id"))
+        if self.discounting and first is not None and self.last is not None and first < self.last:
+            return DISCOUNTED
+        return OUTBID_RANK
+
+
+def _slots_in(trace: dict, partition: str) -> int:
+    """How many nodes one partition was handed in one batch, both channels."""
+    contest = (trace.get("slots") or {}).get(partition, 0)
+    share = ((trace.get("share") or {}).get("slots") or {}).get(partition, 0)
+    return int(contest) + int(share)
+
+
+def _card(row: dict, directory: Path, reason: str | None = None) -> str:
     from fractal_wallpapers.curation.sheet import thumbnail
 
     picture = directory / row["image"]
@@ -107,6 +231,8 @@ def _card(row: dict, directory: Path) -> str:
         f"fate {row.get('fate')} · P(&ge;3) {'—' if score is None else f'{float(score):.4f}'}",
     ]
     body = "".join(f"<div>{html.escape(line, quote=False)}</div>" for line in lines)
+    if reason:
+        body += f"<div class='why'>{html.escape(reason, quote=False)}</div>"
     image = f"<img src='{source}' alt=''>" if source else "<div class='missing'>no picture</div>"
     return f"<figure>{image}<figcaption>{body}</figcaption></figure>"
 
@@ -118,6 +244,7 @@ h1 { font-size: 1.2rem; } h2 { font-size: 1rem; margin-top: 2rem; color: #9fd3ff
 figure { margin: 0; background: #1d2027; padding: .5rem; border-radius: 4px; }
 img { width: 100%; display: block; border-radius: 2px; }
 figcaption { font-size: 11px; color: #a9adb8; margin-top: .4rem; word-break: break-all; }
+.why { color: #ffc9a3; margin-top: .35rem; word-break: normal; }
 .missing { color: #6d7280; padding: 2rem 0; text-align: center; }
 .empty { color: #6d7280; }
 table { border-collapse: collapse; margin: 1rem 0; }
@@ -132,10 +259,11 @@ def write(run_dir: Path, summary: dict, sample: int = SAMPLE) -> Path | None:
     ledger_path = run_dir / "walk.jsonl"
     if not ledger_path.is_file():
         return None
-    rows, totals = _buckets(ledger_path)
+    rows, totals, facts = _buckets(ledger_path)
     if not totals:
         return None
     directory = views_dir(run_dir)
+    reasons = Reasons(facts, _traces(run_dir), summary)
     draw = random.Random(int((summary.get("walk") or {}).get("seed", 0)))
 
     parts = [
@@ -161,7 +289,12 @@ def write(run_dir: Path, summary: dict, sample: int = SAMPLE) -> Path | None:
                 continue
             taken = found if len(found) <= sample else draw.sample(found, sample)
             parts.append(
-                "<div class='grid'>" + "".join(_card(row, directory) for row in taken) + "</div>"
+                "<div class='grid'>"
+                + "".join(
+                    _card(row, directory, reasons.of(row) if verdict == "refused" else None)
+                    for row in taken
+                )
+                + "</div>"
             )
     path = run_dir / SHEET_NAME
     path.write_text("\n".join(parts) + "\n", encoding="utf-8", newline="\n")
@@ -183,4 +316,19 @@ def _bought_table(summary: dict) -> str:
     return f"<table>{header}{body}</table>"
 
 
-__all__ = ["SAMPLE", "SHEET_NAME", "THUMBNAIL_WIDTH", "write"]
+__all__ = [
+    "CAPPED",
+    "DISCOUNTED",
+    "GOOD_FLOOR",
+    "JUNK_FLOOR",
+    "NEVER_EXPANDED",
+    "OUTBID_PARTITION",
+    "OUTBID_RANK",
+    "SAMPLE",
+    "SHEET_NAME",
+    "THUMBNAIL_WIDTH",
+    "TRACE_NAME",
+    "UNSPENT",
+    "Reasons",
+    "write",
+]
