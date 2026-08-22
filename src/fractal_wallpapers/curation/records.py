@@ -314,7 +314,15 @@ def decision(
 # --------------------------------------------------------------------------- #
 # What a run serves, once a review has been over it.
 # --------------------------------------------------------------------------- #
-def rejection(*, rejector: str, date: str, reason: str, note: str, bar: dict | None) -> dict:
+def rejection(
+    *,
+    rejector: str,
+    date: str,
+    reason: str,
+    note: str,
+    bar: dict | None,
+    survivor: str | None = None,
+) -> dict:
     """The block a post-run review adds to a released row it is taking back.
 
     `rejector` is who — a person or the named review that stands for one — and
@@ -322,14 +330,24 @@ def rejection(*, rejector: str, date: str, reason: str, note: str, bar: dict | N
     indistinguishable from a bug in the release path. `bar` is the cut the row
     failed, carried whole so the rejection can be restated against the same
     artifact after the head moves.
+
+    `survivor` is the key of the row that kept what this one lost, and it is
+    present only on a rejection that is a *comparison* rather than a measurement.
+    A row taken back for failing a bar carries the bar it failed and needs nothing
+    else; a row taken back because one wallpaper per location means another row
+    holds this place is unreadable without naming that row, and a reader left to
+    re-derive it would be re-deriving it against a collection that has moved.
     """
-    return {
+    block = {
         "rejector": str(rejector),
         "date": str(date),
         "reason": str(reason),
         "note": str(note),
         "bar": bar,
     }
+    if survivor is not None:
+        block["survivor"] = str(survivor)
+    return block
 
 
 def is_rejected(row: dict) -> bool:

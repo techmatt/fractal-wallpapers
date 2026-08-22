@@ -141,6 +141,11 @@ def _facts(row: dict) -> list[str]:
             f"REJECTED by {taken.get('rejector')} on {taken.get('date')}: {taken.get('reason')}"
             " — recorded, not deleted; this row is no longer served"
         )
+        # A rejection that is a comparison names the row it lost to. Without it
+        # the page states that this wallpaper is no longer served and gives no
+        # way to see that the place still is.
+        if taken.get("survivor"):
+            facts.append(f"the wallpaper that keeps this location: {taken['survivor']}")
     if row.get("reason"):
         facts.append(f"reason: {row['reason']}")
     return facts

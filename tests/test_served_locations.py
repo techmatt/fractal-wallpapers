@@ -172,6 +172,149 @@ def test_the_cap_is_one_and_the_rule_is_read_off_it() -> None:
 
 
 # --------------------------------------------------------------------------- #
+# The rule applied backwards: retiring what the collection already held twice.
+# --------------------------------------------------------------------------- #
+def scored_row(candidate: str, viewport: dict, run: str, score: float, head: str) -> dict:
+    row = served_row(candidate, viewport, run=run)
+    return {**row, "scores": {**row["scores"], "head": head, "p_ge3": score}}
+
+
+def a_run_finished(run: str, when: str) -> None:
+    """A run record carrying nothing but the stamp the run order is read off."""
+    path = records.sinks(run)["run_record"]
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps({"schema": 1, "run": run, "finished": when}), encoding="utf-8", newline="\n"
+    )
+
+
+def test_retiring_leaves_one_wallpaper_per_location_and_keeps_the_best_reading(tmp_path) -> None:
+    records.use(tmp_path)
+    try:
+        records.write_decisions(
+            records.RELEASE,
+            "earlier",
+            [
+                scored_row("0000", FRAME, "earlier", 0.62, "strange_render"),
+                scored_row("0001", FRAME, "earlier", 0.94, "smooth_render"),
+                scored_row("0002", ELSEWHERE, "earlier", 0.71, "smooth_render"),
+            ],
+        )
+        report = rejection.retire_repeats(rejector="Matt", date="2026-08-22", log=lambda _: None)
+
+        assert report["retired"] == ["earlier|release|0000"]
+        assert report["served_before"] == 3
+        assert report["served_after"] == 2
+        assert report["groups_remaining"] == 0
+        assert served_locations.repeats(under=tmp_path) == []
+
+        rows = {row["key"]: row for row in records.read_decisions(records.RELEASE, "earlier")}
+        taken = rows["earlier|release|0000"]["rejected"]
+        assert taken["reason"] == selection.LOCATION_SERVED
+        assert taken["survivor"] == "earlier|release|0001"
+        assert taken["bar"] is None
+        # The run's own verdict is what the run decided, and it stays true.
+        assert taken["rejector"] == "Matt" and taken["date"] == "2026-08-22"
+        assert rows["earlier|release|0000"]["verdict"] == records.RELEASED
+        assert rows["earlier|release|0000"]["scores"]["p_ge3"] == 0.62
+        assert rows["earlier|release|0001"]["rejected"] is None
+    finally:
+        records.use(None)
+
+
+def test_a_tie_on_the_score_goes_to_the_later_run(tmp_path) -> None:
+    """Two saturated readings of one place is the one comparison the score cannot
+    settle, and the collection has exactly one of them."""
+    records.use(tmp_path)
+    try:
+        a_run_finished("earlier", "2026-08-01T00:00:00")
+        a_run_finished("later", "2026-08-20T00:00:00")
+        records.write_decisions(
+            records.RELEASE, "earlier", [scored_row("0000", FRAME, "earlier", 1.0, "smooth_render")]
+        )
+        records.write_decisions(
+            records.RELEASE, "later", [scored_row("0000", FRAME, "later", 1.0, "smooth_render")]
+        )
+        report = rejection.retire_repeats(rejector="Matt", date="2026-08-22", log=lambda _: None)
+        assert report["retired"] == ["earlier|release|0000"]
+        assert report["groups"][0]["survivor"]["key"] == "later|release|0000"
+    finally:
+        records.use(None)
+
+
+def test_a_dry_run_names_the_same_rows_and_writes_nothing(tmp_path) -> None:
+    records.use(tmp_path)
+    try:
+        rows = [
+            scored_row("0000", FRAME, "earlier", 0.62, "strange_render"),
+            scored_row("0001", FRAME, "earlier", 0.94, "smooth_render"),
+        ]
+        records.write_decisions(records.RELEASE, "earlier", rows)
+        where = records.decisions_path(records.RELEASE, "earlier", "mandelbrot")
+        before = where.read_bytes()
+
+        report = rejection.retire_repeats(
+            rejector="Matt", date="2026-08-22", dry_run=True, log=lambda _: None
+        )
+        assert report["retired"] == ["earlier|release|0000"]
+        assert report["groups_remaining"] is None
+        assert report["records"] == {}
+        assert where.read_bytes() == before
+    finally:
+        records.use(None)
+
+
+def test_a_second_pass_has_nothing_to_do(tmp_path) -> None:
+    """Not by re-deriving the same answer: a retired row leaves the served set, so
+    the group the second pass reads is holding one wallpaper."""
+    records.use(tmp_path)
+    try:
+        records.write_decisions(
+            records.RELEASE,
+            "earlier",
+            [
+                scored_row("0000", FRAME, "earlier", 0.62, "strange_render"),
+                scored_row("0001", FRAME, "earlier", 0.94, "smooth_render"),
+            ],
+        )
+        rejection.retire_repeats(rejector="Matt", date="2026-08-22", log=lambda _: None)
+        where = records.decisions_path(records.RELEASE, "earlier", "mandelbrot")
+        settled = where.read_bytes()
+
+        again = rejection.retire_repeats(
+            rejector="Somebody else", date="2027-01-01", log=lambda _: None
+        )
+        assert again["retired"] == []
+        assert again["groups"] == []
+        assert where.read_bytes() == settled
+    finally:
+        records.use(None)
+
+
+def test_the_collection_holds_one_wallpaper_per_location() -> None:
+    """The tracked store, after the retirement. This is the rule's whole claim, and
+    the only place it can be checked is against the collection itself."""
+    assert served_locations.repeats() == []
+
+
+def test_every_location_served_rejection_names_a_survivor_that_is_still_served() -> None:
+    """A retirement is a comparison between two rows, and one pointing at a row
+    that is itself no longer served would have retired both pictures of a place."""
+    rows = records.read_decisions(records.RELEASE)
+    served = {str(row["key"]) for row in records.served(rows)}
+    retired = [
+        row
+        for row in rows
+        if (row.get("rejected") or {}).get("reason") == selection.LOCATION_SERVED
+    ]
+    assert retired
+    for row in retired:
+        survivor = row["rejected"]["survivor"]
+        assert survivor in served
+        assert survivor != row["key"]
+
+
+# --------------------------------------------------------------------------- #
 # The other direction: a ruling that keeps a row in service.
 # --------------------------------------------------------------------------- #
 def test_the_tracked_ruling_holds_the_four_run8h_rows_in_service() -> None:
