@@ -241,7 +241,48 @@ def gate_render(row: dict, colormap: str, cyclic: set[str], regime) -> Path | No
 # --------------------------------------------------------------------------- #
 # The read: what the location head says about the supply.
 # --------------------------------------------------------------------------- #
-def score(paths=None, device: str = "auto", limit: int | None = None, log=print) -> dict:
+def read_keys(path) -> set[str]:
+    """The location keys a **key manifest** names, as the sidecar spells them.
+
+    A JSONL record like every other in this project — one object a line, an
+    integer `schema`, and a `key` holding the location key exactly as
+    [`_key_text`] writes it. A manifest and not a repeated flag because a
+    Windows command line overflows long before a list of locations does, and
+    because the thing that produces one — `curate reach --write` — is a command
+    whose whole output is a list of places.
+    """
+    path = Path(path)
+    if not path.is_file():
+        raise IntakeError(
+            f"{path} is not there, so there is no set of locations to score. "
+            f"`fractal-wallpapers curate reach --write {path}` writes one."
+        )
+    keys = set()
+    for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        if row.get("schema") != SCHEMA:
+            raise IntakeError(f"{path}:{number}: schema {row.get('schema')!r}, expected {SCHEMA}")
+        keys.add(str(row["key"]))
+    return keys
+
+
+def key_manifest(rows) -> list[dict]:
+    """`rows` as a key manifest [`read_keys`] can read back."""
+    return [
+        {"schema": SCHEMA, "key": str(row["key"]), "partition": str(row.get("partition") or "")}
+        for row in rows
+    ]
+
+
+def score(
+    paths=None,
+    device: str = "auto",
+    limit: int | None = None,
+    keys=None,
+    log=print,
+) -> dict:
     """Read every bound location through the head, at the regime its row names.
 
     Idempotent and resumable in both halves: a picture already on disk is not
@@ -259,11 +300,23 @@ def score(paths=None, device: str = "auto", limit: int | None = None, log=print)
 
     A `limit` pass is explicitly a prefix, so it upserts the locations it looked
     at and clears nothing — deleting the rows it declined to re-score would be a
-    partial pass silently truncating a complete one.
+    partial pass silently truncating a complete one. `keys` is the same rule from
+    the other side: a **named set** of locations off a key manifest, upserted
+    without clearing anything the binding also holds.
+
+    `keys` exists because "score the ledgers those rows name" and "score those
+    rows" are different amounts of work by four orders of magnitude. The three
+    ledgers the gallery pass's 68 unreached locations sit on hold 22,898 gate
+    survivors between them, 16,315 of which have no cached deploy view — about
+    13 hours of 640x360 ss2 engine time to score standing stock nothing has
+    asked for. The 68 themselves are cached and cost a single batch.
     """
     from fractal_wallpapers.models import scoring, ship, train
 
     rows, diagnostics = gate_survivors(paths)
+    if keys is not None:
+        wanted = {str(key) for key in keys}
+        rows = [row for row in rows if _key_text(row) in wanted]
     if limit is not None:
         rows = rows[:limit]
     if not rows:
@@ -322,7 +375,9 @@ def score(paths=None, device: str = "auto", limit: int | None = None, log=print)
     # The ledgers this invocation is answerable for, named exactly as the union
     # stamps them onto a row — including one that contributed nothing, whose
     # stale rows are still this pass's to clear.
-    scoped = frozenset(diagnostics["per_ledger"]) if limit is None else frozenset()
+    scoped = (
+        frozenset(diagnostics["per_ledger"]) if (limit is None and keys is None) else frozenset()
+    )
     path, upsert = _upsert_scores(minted, scoped)
 
     return {
@@ -616,7 +671,9 @@ __all__ = [
     "gate_render",
     "gate_survivors",
     "guaranteed",
+    "key_manifest",
     "rank_key",
+    "read_keys",
     "ranked",
     "regime_of",
     "read_scores",

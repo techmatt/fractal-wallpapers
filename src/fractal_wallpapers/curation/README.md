@@ -18,6 +18,7 @@ budget     how many pictures to make, and for which judge
 colorize   a candidate set of maps, the head's pick, a render, a verdict
 selection  top-N per judge, under the slot and supply caps, the location rule
            — and the bar
+gallery    the second phase: one pass over the whole pool for what ships
 release    the selected rows again at full size, workers rendering
 pacing     the wall clock: what may still start, and what is killed
 records    what the run decided, and out of what population
@@ -39,6 +40,9 @@ fractal-wallpapers curate run --run v1 --ledger artifacts/harvest_run3/walk.json
     --wall-budget 28800                                            # eight hours, or less
 fractal-wallpapers curate run --resume v1                          # carry on where it stopped
 fractal-wallpapers curate reject --run v1 --rejector matt_review --date 2026-08-17
+fractal-wallpapers curate reach --write scratch/unreached_keys.jsonl   # the gap, as a manifest
+fractal-wallpapers curate score --ledger <l> --key-file scratch/unreached_keys.jsonl
+fractal-wallpapers curate gallery --n 50                               # THE gallery pass
 ```
 
 ## A run accumulates; the gallery pass chooses
@@ -70,6 +74,91 @@ Three things follow, and all three are in this stage now:
 * **Nothing released so far is the collection's.** All 1,050 rows on record are
   `diagnostic`, backfilled in the same commit, because none of them was ever
   chosen against a pool.
+
+## `curate gallery` — the seven steps, and the two knobs that are by eye
+
+One command, and **not a run type**: no ledger binding, no pacing clock, no
+harvest state, because a selection over an accumulated pool has none of those.
+Each invocation is a **pass** with its own id, its own record in
+`data/curation/gallery/`, and its own slice of the pool's decision store.
+
+```
+1  slots per partition   release_mix over a POOL-WIDE denominator (24,843 admitted
+                         locations, not one binding's offer); release_caps and the
+                         guarantee re-derived over it. The thin-supply cap is
+                         thousands wide at that denominator and binds nothing —
+                         computed and reported anyway, so a pass and a run are
+                         comparable.
+2  head split            per PARTITION, by --strange-share (0.6). The heads are
+                         dealt across a partition's picks by largest deficit, so
+                         neither judge gets the whole top of a partition.
+3  the distance          artifacts/curation/neutral_embeddings.jsonl, refused
+                         unless `curate embeddings check` says it is whole
+4  the locations         quality-weighted farthest point under a HARD RADIUS
+5  the attempts          m locations near each chosen point, judged small
+6  the seats             both measured floors ACT; P(>=4), P(>=3) tiebreak
+7  the pictures          2560x1440 ss4 for the winners, and only for them
+```
+
+**The draw is `gain = distance x location P(>=4) ** gamma`,** where `distance` is
+cosine distance to the *nearest* already-chosen point. The first pick of a
+partition is its strongest location, with nothing to be far from. `--radius`
+(0.07) is a hard constraint under all of it: nothing that close to a chosen point
+may be chosen, whatever its quality. `--quality-weight` is `gamma` and defaults to
+**1** — a plain product, so a location half as far and twice as good is worth the
+same; `0` is pure farthest point, which spends slots on the most isolated places
+in the pool whatever the judge says. Not k-means, which follows density: this
+pool's density records where the walk spent its budget, so a neighbourhood
+somebody visited a thousand times would take a thousand times the slots.
+
+Both numbers are by eye, and every pass prints the instrument that calibrates
+them: a **retro table** of the nearest chosen pairs, per partition and overall,
+with their distances, plus a second contact sheet showing what the radius refused
+next to each chosen point at its neutral render. If two rows of the retro table
+read as one picture, the radius is too small.
+
+**Both measured floors act here, and only one of them acts at a run's release.**
+`floors.gallery_floor` is that seam and it is the one place in this project where
+a head's cut reads differently at two sites: `ACTING_RELEASE_BARS` still answers
+*does this head gate a run's release* and the smooth head's answer there is still
+no, while the pass reads `MEASURED_RELEASE_FLOORS` on both heads — strange 0.685,
+smooth 0.385. The two questions are different. A run's release is ten diagnostic
+pictures out of one night, and a bar there decides how much of that night is worth
+looking at; the pass decides what the collection ships out of everything, and a
+slot it cannot fill above a measured floor is a fact about the pool. **Unfilled
+beats padded**: an empty slot is output with its binding reason named, because it
+is the signal for where to label or walk next.
+
+**The pass has a colorize leg, and every chosen point gets both heads' attempts.**
+`--attempts m,smooth,strange` (3,2,6) buys, for each chosen point, the top `m`
+locations in its own radius by `P(>=4)`, each under `smooth` attempts on distinct
+palette anchors and `strange` attempts on distinct modes — 24 attempts a slot,
+about a minute. The attempts are **pool rows**, stamped with the pass id, so the
+pool grows by every one of them; the plan is taken over the *union* of every
+slot's locations, because two overlapping neighbourhoods asking for one location
+would otherwise render the same pictures twice (the mode draw is seeded off the
+location and the head). The 31 palette candidates that lost are deleted after the
+verdict — the row keeps the whole candidate set by name and the head's score for
+each, which is what a later reader needs. `--no-attempts` skips the leg and is a
+**dev affordance only**: without it the pass is bound to whatever fraction of the
+admitted population some run happened to colour, which today is 475 locations out
+of 24,843.
+
+**One wallpaper per location acts inside the pass and the served index is not
+read.** A run is excused from the index because it has the wrong population; the
+pass has exactly the right one and is excused for a different reason — a pass
+chooses the whole gallery at once and **supersedes** the previous one, so a pass
+that refused every place the last pass shipped could not re-choose its own
+gallery, and one that refused every place a run's diagnostic release sits on would
+hand the collection's best locations to the ten pictures a night kept to prove its
+path worked.
+
+**The pass's pictures live in the run tree** (`artifacts/curation/runs/<pass>/`),
+deliberately: `curation.rescore` finds any pool row's candidate render at
+`runs/<run>/pictures/<candidate>.jpg` off the row's own `run` field, and a pass
+that stored its pictures elsewhere would be a pass whose rows the next re-score
+refuses to read. Both contact sheets are written to `scratch/`, self-contained
+with their thumbnails embedded.
 
 ## The gallery pass needs a distance, so every admitted location has a vector
 
@@ -209,6 +298,28 @@ verdict stamped into a ledger on the day it was minted is a verdict the pipeline
 must later either believe or delete, and deleting is how a head flip once took an
 intake from about fourteen hundred locations to sixteen. Here a flip is a
 re-score, and a stale score costs *rank quality* rather than a row.
+
+**Closing a reach gap costs what the gap is, not what the ledger is.** `curate
+reach` names the judged locations the pass cannot select, and it separates two
+causes: *below the junk floor* is a judgement, and *absent from the sidecar* is a
+place whose ledger was never scored. `curate reach --write <path>` writes the
+second set as a **key manifest** — JSONL, one `{schema, key, partition}` a line —
+and `curate score --key-file <path>` scores exactly those rows out of the bound
+ledgers. Like `--limit`, it is a partial pass: it upserts what it looked at and
+clears nothing, because deleting the rows it declined to score would be a partial
+pass silently truncating a complete one.
+
+That distinction is worth about thirteen hours. On 2026-08-22 the 68 unreached
+locations sat on three old ledgers (`harvest`, `walk_demo`, `walk_j`) holding
+22,898 gate survivors between them, **16,315 of which have no cached deploy view**
+— measured at **2.89 s each** on the hot tier, engine-bound rather than
+disk-bound. Scoring the ledgers whole is that leg, and because `location_views` is
+on the archive tier it also writes about 3 GB of new files into a tree this README
+calls a read-only record. The 68 themselves were all cached and cost one batch:
+68 scored, 64 of them above the junk floor, 64 embedded in 8.5 s, and `curate
+reach` went from 68 absent to **0**. Whether to score those ledgers whole — which
+would widen the pool the gallery selects over by tens of thousands of locations —
+is Matt's call and has not been taken.
 
 **A row is re-scored at the regime it was scored at.** The head reads three
 trained geometries and one scale acts across all of them, but the *picture* is not

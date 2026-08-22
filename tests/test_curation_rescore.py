@@ -44,6 +44,16 @@ def test_the_picture_is_the_candidate_render_and_not_the_release_png() -> None:
     assert where.parent.name == "pictures"
 
 
+def test_a_gallery_seat_reads_the_picture_of_the_run_that_made_it() -> None:
+    """A pass records its own decision about an earlier run's candidate, under its
+    own id. The picture is still that run's, and `source` is what says so."""
+    row = released("gallery1", "run9_0007", "smooth_render")
+    row["source"] = {"run": "run9", "candidate": "0007", "key": "run9|release|0007"}
+    where = rescore.picture_of(row)
+    assert where.name == "0007.jpg"
+    assert where.parent == run_module.run_dir("run9") / rescore.PICTURES
+
+
 def test_a_row_naming_no_head_refuses_rather_than_being_guessed_at(tmp_path) -> None:
     """A candidate belongs to the judge whose slots paid for it. Reading a strange
     picture through the smooth head produces a number about material that head has

@@ -363,6 +363,59 @@ def release_cut(head: str) -> Advisory | Bar:
     return release_advisory(head)
 
 
+#: Why every measured floor acts in the **gallery pass**, whatever it does at a
+#: run's release. Carried onto every gallery floor, beside the height's own
+#: [`Restatement`], because the two halves have different provenance: where the
+#: number sits is the isotonic crossover, and THAT it acts here is Matt's
+#: 2026-08-22 ruling about what the second phase is for.
+GALLERY_FLOOR_BASIS = (
+    "an ACTING floor in the gallery pass by Matt's ruling of 2026-08-22. The pass chooses "
+    "what the collection SHIPS out of the whole accumulated pool, where a run keeps ten "
+    "pictures to prove its own path works — so a height the head's own labelers measured "
+    "acts on the shipping decision even where it only annotates the diagnostic one. "
+    "Unfilled beats padded: a slot with nothing above the floor is output empty, and an "
+    "empty slot is the signal for where to label or walk next."
+)
+
+
+def gallery_floor(head: str) -> Bar:
+    """The floor a candidate must clear to take a **gallery slot** on this head.
+
+    Every measured release floor acts here — [`MEASURED_RELEASE_FLOORS`], which is
+    both of them — and that is the one place in this project where a head's cut
+    reads differently at two sites. [`ACTING_RELEASE_BARS`] still answers the
+    question it has always answered, *does this head gate a run's release*, and
+    the smooth head's answer there is still no.
+
+    The two questions are different. A run's release is ten diagnostic pictures
+    out of one night's attempts and a bar there decides how much of one run's own
+    work is worth looking at; the gallery pass decides what the collection ships,
+    out of everything the pool holds, and a slot it cannot fill above a measured
+    floor is a fact about the pool rather than a slot to pad. So the pass reads
+    the measured height on both heads, and a head with no measured floor at all is
+    refused rather than given the advisory's midpoint — an advisory is a number
+    nobody set as an operating point, and seating a wallpaper against one would be
+    a gate nobody could defend.
+    """
+    if head not in MEASURED_RELEASE_FLOORS:
+        raise ValueError(
+            f"no release floor has been measured for {head!r}, so the gallery pass has "
+            f"nothing to seat its slots against. `fractal-wallpapers head floor --head "
+            f"{head}` is the fit that measures one; until it has been run and the height "
+            f"declared in MEASURED_RELEASE_FLOORS, this head cannot fill a gallery slot."
+        )
+    restated = MEASURED_RELEASE_FLOORS[head]
+    return Bar(
+        name=f"{head}_gallery",
+        value=float(restated.value),
+        head=head,
+        # The head the height was MEASURED on, like every other bar: a flip must
+        # refuse here before the pass spends a full-size render on the wrong scale.
+        stamp=restated.head_sha256,
+        basis=f"{GALLERY_FLOOR_BASIS} WHERE it sits is a measurement: {restated}",
+    )
+
+
 def release_bar(head: str) -> Bar | None:
     """The acting bar this head is gated on, or `None` where nothing gates it.
 
@@ -541,6 +594,7 @@ __all__ = [
     "ATTEMPT_MULTIPLIER",
     "MEASURED_RELEASE_FLOORS",
     "CLUSTER_CAP",
+    "GALLERY_FLOOR_BASIS",
     "GOOD_FLOOR",
     "GREAT_CUT",
     "JUNK_FLOOR",
@@ -558,6 +612,7 @@ __all__ = [
     "HeadStampMismatch",
     "Restatement",
     "release_cap",
+    "gallery_floor",
     "junk_floor_cut",
     "live_stamp",
     "passes_good_floor",

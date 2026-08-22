@@ -414,7 +414,7 @@ def _colorize(directory: Path, plan, by_key, seed, device, resume, clock, log):
     and the four numbers the seam is reconciled from.
     """
     candidate_log = directory / "candidates.jsonl"
-    done = _completed(candidate_log, log)
+    done = completed_attempts(candidate_log, log)
     if resume:
         log(f"[resume] {len(done)} of {len(plan)} attempt(s) already recorded")
         _discard_partials(directory, len(plan), done, log)
@@ -445,7 +445,7 @@ def _colorize(directory: Path, plan, by_key, seed, device, resume, clock, log):
             unit.ok = row.get("p_ge3") is not None
         row["timed_out"] = unit.expired
         rows.append(row)
-        _append(candidate_log, row)
+        append_attempt(candidate_log, row)
         counts["made" if unit.ok else "failed"] += 1
         counts["killed"] += int(unit.expired)
         verdict = (
@@ -465,13 +465,13 @@ def _colorize(directory: Path, plan, by_key, seed, device, resume, clock, log):
     return rows, counts
 
 
-def _append(path: Path, row: dict) -> None:
+def append_attempt(path: Path, row: dict) -> None:
     """One candidate row onto the log. The one write that makes an attempt done."""
     with path.open("a", encoding="utf-8", newline="\n") as handle:
         handle.write(json.dumps(row, ensure_ascii=False) + "\n")
 
 
-def _completed(path: Path, log) -> dict:
+def completed_attempts(path: Path, log) -> dict:
     """Attempts already made, by index, with a torn tail dropped and the file repaired.
 
     A run killed mid-append leaves a partial last line, and a log left in that
@@ -954,7 +954,7 @@ def _record(**k) -> dict:
         },
         "release_geometry": k["release_record"]["geometry"],
         "autolevel": {"switch": "on" if _autolevel_on() else "off"},
-        "heads": _head_stamps(),
+        "heads": head_stamps(),
     }
 
     gate_path, _, gate_new = records.write_decisions(records.GATE, run, gate_rows)
@@ -1057,7 +1057,7 @@ def _autolevel_on() -> bool:
     return autolevel.enabled()
 
 
-def _head_stamps() -> dict:
+def head_stamps() -> dict:
     """Which artifact each judge in this run actually was."""
     out = {}
     for head in ("location", "palette", *budget_module.HEADS):
@@ -1078,6 +1078,9 @@ __all__ = [
     "SHAPE",
     "STRANGE_SHARE",
     "RunRefused",
+    "append_attempt",
+    "completed_attempts",
     "curate",
+    "head_stamps",
     "run_dir",
 ]

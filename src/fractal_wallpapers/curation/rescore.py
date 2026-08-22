@@ -59,8 +59,19 @@ def picture_of(row: dict):
     the release PNG on a released row, the candidate JPEG on a passed-over one
     and `None` on a killed one. One geometry for every row or the readings are
     not comparable.
+
+    **`source` wins where a row has one.** A gallery pass records its own decision
+    about a candidate an earlier run made, under its own pass id and its own
+    candidate id — two decisions about one picture — and the picture is still the
+    earlier run's. Without this the pass's seats would resolve to a render nobody
+    ever made, and this whole pass would refuse over rows that are perfectly
+    readable. A row with no `source` is every row written before passes existed,
+    and its candidate is its own.
     """
-    return run_module.run_dir(row["run"]) / PICTURES / f"{row['candidate']}.jpg"
+    source = row.get("source") or {}
+    run = str(source.get("run") or row["run"])
+    candidate = str(source.get("candidate") or row["candidate"])
+    return run_module.run_dir(run) / PICTURES / f"{candidate}.jpg"
 
 
 def scoring_artifact(run: str) -> dict:

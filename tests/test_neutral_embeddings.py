@@ -329,7 +329,10 @@ def test_the_manifest_carries_the_count_the_hash_and_the_frozen_choices(store) -
     assert record["pictures"]["directory"].endswith("neutral")
     assert json.loads(manifest.read_text(encoding="utf-8")) == record
     assert copy.is_file()
-    assert "\r\n" not in manifest.read_text(encoding="utf-8", newline="")
+    # Bytes, not text: `Path.read_text(newline=...)` is 3.13 and up while this
+    # suite runs on 3.11+, so on the pinned interpreter this raised instead of
+    # failing the CRLF it was written to catch.
+    assert b"\r\n" not in manifest.read_bytes()
 
 
 def test_the_copy_does_not_share_the_name_the_tiers_arbitrate(store) -> None:
