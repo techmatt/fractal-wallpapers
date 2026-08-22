@@ -153,6 +153,19 @@ render styles gives the one smooth coloring a sixteenth of the attempts however
 many smooth slots the release wanted — a release starved by an allocation rule
 that had no opinion about the release.
 
+**Attempts and locations stopped being the same count.** `floors.ATTEMPT_MULTIPLIER`
+is 4 *locations* a slot: how far into a partition's ranked offer a head reaches.
+`budget.MODES_PER_LOCATION` is how many colorize attempts each of those locations
+costs — 1 for the smooth judge, whose roster is the one smooth coloring, and **2
+for the strange judge**, which draws two different modes per location without
+replacement (`colorize.modes_drawn_for`, seeded off the location and the head so
+a resume re-derives the pair). run10 seated 15 of 40 strange slots with 115
+candidates below the acting bar and seven of nine partitions short, off one
+uniformly drawn mode a location. The second draw reaches no further into the
+offer, so the emit cap's arithmetic is untouched and the location rule sees the
+same places; what it buys is a second reading of each, at ~2.4 s. An 80-slot
+release is 480 attempts, not 320.
+
 **The funnel is printed with three denominators, not one.** `found` is every gate
 survivor the binding holds, `scored` is how many of those the sidecar has an
 opinion about, and `passing`/`good` are counted over `scored` and never over
@@ -190,8 +203,9 @@ index or its second half would refuse every seat its first half took.
 Read against run9, which had the old rule: 48 seats become **27** — 14 refused as
 places an earlier run had served, 7 as a second seat inside run9. Both heads still
 attempt every location, so what the second attempt buys is the better reading
-rather than a second wallpaper; sizing the attempt plan against that has not been
-taken. `fractal-wallpapers curate repeats` is the report-only read of the rule
+rather than a second wallpaper — and the strange judge now makes two of its own
+per location for the same reason, which is the one place the attempt plan has been
+sized against this rule. `fractal-wallpapers curate repeats` is the report-only read of the rule
 against what the collection already holds — the rule acts at selection and cannot
 reach backwards. Perceptual similarity is a different question and is not this.
 
@@ -235,12 +249,15 @@ the run, and painting is the release pass. A full-resolution row is ~90% engine,
 inside the engine 97% is painting — resampling is 2.6% and process start, PNG encode
 and the write together are 0.3%, so encode and file I/O are not worth counting here.
 An attempt is 2.49 s, half of it the thirty-two candidate recolors (36.6 ms each, one
-engine process apiece, each re-reading the same 3.7 MB field). At the shipped shape
-that is roughly 80% release, 17% attempts, and everything else in the noise.
+engine process apiece, each re-reading the same 3.7 MB field) — run10 came in at
+2.42 over 320 of them. At the shipped shape that used to be roughly 80% release,
+17% attempts; the second strange mode a location moves it, and run10's own legs
+re-priced come to about 22.8 min of release against 19.4 of attempts.
 
 **A run is sized by a clock as well as by `-n`, and the gate is prospective.** At
 six pictures the size of a run is `-n`; at sixty it is the wall clock, because one
-release row measured between 14.9 s and 1084.6 s turns "twenty rows" into an
+release row measured between 14.9 s and 1084.6 s (median 69.1 over 204 tracked
+rows) turns "twenty rows" into an
 answer between five minutes and six hours. `--wall-budget` is
 checked *before* each unit — `elapsed + estimate + margin > budget` and it does not
 start — off an estimate formed from this run's own finished units, with a hard kill
@@ -252,7 +269,7 @@ than mistaken for thin supply.
 **A deep release is a different cost class, and `--deep` is what says so.** The
 hung-unit backstop (`pacing.HUNG_CEILING`) is a fixed ceiling per leg, sized
 against the shallow release row distribution (`pacing.RELEASE_DISTRIBUTION`:
-14.9-1084.6 s, median 87.8 s over the 155 tracked rows) and raised only by units a
+14.9-1084.6 s, median 69.1 s over the 204 tracked rows) and raised only by units a
 run has *finished* — so a class whose first row dies at the ceiling never teaches the
 run that the class is slow. Two 2560x1440 ss4 frames from
 [the deep run mode](../deep/README.md) were measured at **531 s and 607 s**, at

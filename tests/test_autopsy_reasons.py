@@ -8,6 +8,8 @@ knows and no more.
 
 from __future__ import annotations
 
+from collections import Counter
+
 from fractal_wallpapers.discovery import ledger as ledger_module
 from fractal_wallpapers.supply import autopsy
 
@@ -137,3 +139,63 @@ def test_a_family_outside_the_partition_registry_gets_no_slot_reason() -> None:
     reasons = autopsy.Reasons(facts(), {0: trace(0), 1: trace(1)}, OFF)
     stranger = {**node(0, 7), "family": {"kind": "fractional_multibrot", "degree": "2.5"}}
     assert reasons.of(stranger) == autopsy.NEVER_EXPANDED
+
+
+# --------------------------------------------------------------------------- #
+# The sample the reasons are shown on. Stratified by fate, because the page's
+# whole gate half was invisible until it was: run10's 48 cards drew 24 survived,
+# 18 expandable and 6 not_admitted, and none of the 13,962 structural refusals —
+# those rows have no picture and the sampler only ever drew pictured ones.
+# --------------------------------------------------------------------------- #
+def refusals(**counts) -> list[dict]:
+    """A refused population with a given fate mix, in ledger order."""
+    out = []
+    for fate, many in counts.items():
+        for index in range(many):
+            row = node(0, index, fate=fate)
+            # The gates refuse before the engine draws anything, which is exactly
+            # why those rows were never in the old sample.
+            if fate not in (ledger_module.EXPANDABLE, ledger_module.NOT_ADMITTED):
+                row["image"] = None
+            out.append(row)
+    return out
+
+
+def test_every_fate_class_in_a_grid_gets_cards() -> None:
+    """In proportion, with a floor. A gate that is a fifth of a percent of the
+    refusals still has to be visible: the sentences shipped for those gates and no
+    card could carry one."""
+    import random
+
+    population = refusals(expandable=16331, interior_cap=6880, not_admitted=6270, flat=606)
+    taken = autopsy.stratify(population, random.Random(0))
+    fates = Counter(row["fate"] for row in taken)
+    assert set(fates) == {"expandable", "interior_cap", "not_admitted", "flat"}
+    assert fates["flat"] == autopsy.CARDS_PER_FATE
+    assert fates["expandable"] > fates["interior_cap"] >= fates["not_admitted"]
+
+
+def test_a_class_smaller_than_its_floor_is_shown_whole_rather_than_padded() -> None:
+    import random
+
+    taken = autopsy.stratify(refusals(expandable=40, flat=1), random.Random(0))
+    assert Counter(row["fate"] for row in taken)["flat"] == 1
+
+
+def test_the_sample_is_a_function_of_the_run_and_not_of_the_draw_order() -> None:
+    """The page is re-writable: run it again against the same records and it is
+    the same page."""
+    import random
+
+    population = refusals(expandable=200, interior_cap=90, flat=12)
+    once = autopsy.stratify(population, random.Random(20260821))
+    twice = autopsy.stratify(population, random.Random(20260821))
+    assert [row["node_id"] for row in once] == [row["node_id"] for row in twice]
+
+
+def test_an_unpictured_refusal_still_carries_its_gate_sentence() -> None:
+    """Which is the point of sampling it: the card has no picture to show and the
+    sentence is the whole of what it has to say."""
+    reasons = autopsy.Reasons(facts(), {}, OFF)
+    for fate, sentence in autopsy.GATES.items():
+        assert reasons.of(node(0, 1, fate=fate)) == sentence

@@ -94,6 +94,11 @@ NO_SEED_FILE = (
     "derive-plane-seeds --write`, or add `--root-channel proven`."
 )
 
+#: Why an externally-supplied partition has no pool. It is not starvation and it
+#: is not a missing channel: another leg of the project fills it, so the refill
+#: has nothing to say about it and says that rather than reporting an empty pool.
+EXTERNALLY_SUPPLIED = "externally supplied: another leg fills this partition, no draw is made"
+
 
 def _tracked_plane_pool() -> Path | None:
     """The shipped parameter-plane pool, or `None` on a clone that has not derived it."""
@@ -237,6 +242,53 @@ class Refill:
             if self.remaining(partition) <= 0:
                 continue
             out.append(partition)
+        return out
+
+    def pool_state(self) -> dict:
+        """`{partition: {channel, pool, drawn, remaining, reason}}` before a batch runs.
+
+        A channel's *reach*, stated at launch instead of inferred from a readout.
+        run10 opened with 39, 46 and 52 derived parameters in its three julia
+        twins and 209 and 96 in the two tracked `c`-pools, against 413 to 507 in
+        each parameter plane. All five of the small ones ran dry inside the night,
+        the exploration share had nothing left to buy in those partitions, and the
+        first anybody read of it was the readout. Nothing was wrong with the
+        allocation; the numbers that predicted it were simply never printed.
+
+        A partition no draw can serve carries the same sentence [`deferred`] would
+        give it, so the two never disagree about why: this is asked at batch zero
+        with every queue empty, which is exactly the state that makes `deferred`'s
+        reasons the ones that apply.
+        """
+        empty = dict.fromkeys(self.partitions, 0)
+        reasons = self.deferred(empty)
+        out = {}
+        for partition in self.partitions:
+            servable = self.has_channel(partition)
+            pool = len(self._pool(partition)) if servable else 0
+            drawn = self.cursor.get(partition, 0)
+            reason = (reasons.get(partition) or {}).get("reason")
+            if reason is None and partition in self.external:
+                reason = EXTERNALLY_SUPPLIED
+            out[partition] = {
+                "channel": servable,
+                "pool": pool,
+                "drawn": drawn,
+                "remaining": max(0, pool - drawn),
+                "reason": reason,
+            }
+        return out
+
+    def pool_lines(self) -> list[str]:
+        """[`pool_state`] as the lines a launch prints, one per partition."""
+        out = []
+        for partition, state in sorted(self.pool_state().items()):
+            if state["reason"] is None:
+                out.append(
+                    f"pool {partition}: {state['remaining']} of {state['pool']} entries left"
+                )
+            else:
+                out.append(f"pool {partition}: {state['reason']}")
         return out
 
     def deferred(self, queues: dict) -> dict:
@@ -412,6 +464,7 @@ __all__ = [
     "COOLDOWN",
     "DEFERRAL",
     "LOW_WATER",
+    "EXTERNALLY_SUPPLIED",
     "NO_SEED_FILE",
     "NO_TWIN_CHANNEL",
     "SHARE",

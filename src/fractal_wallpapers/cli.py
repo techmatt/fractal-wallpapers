@@ -15,6 +15,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from fractal_wallpapers import engine, paths
+from fractal_wallpapers import schedule as schedule_module
 from fractal_wallpapers.labeling.finished import HEADS as FINISHED_HEADS
 from fractal_wallpapers.palettes import clusters as palette_clusters
 from fractal_wallpapers.palettes import strip as palette_strip
@@ -921,10 +922,43 @@ def harvest_minutes(args: argparse.Namespace):
             "it needs --release-slots N. There is no default: a reservation guessed at is the "
             "one term of this arithmetic nothing downstream can check."
         )
-    derived = schedule.plan(args.finish_by, args.release_slots)
+    derived = schedule.plan(
+        args.finish_by,
+        args.release_slots,
+        renders_views=harvest_draws_views(args),
+        release_workers=args.release_workers,
+    )
     for line in derived.lines():
         print(f"[plan] {line}")
     return derived.active_minutes, derived
+
+
+def harvest_draws_views(args: argparse.Namespace) -> bool:
+    """Whether this run will render views for its judge, or score the gate renders.
+
+    The one thing that decides it is whether the walk's own gate render *is* the
+    picture the head reads — `discovery.identity`'s claim, asked here of the same
+    four settings the walk will assert it on a moment later. A run that fails that
+    claim is refused when the walk is built, so answering `True` for it costs
+    nothing and guessing the other way would silently pick the cheap ratio for a
+    night that draws a view per survivor.
+
+    A run with no scorer at all draws nothing either, and gets the same answer as
+    one that scores what it drew: the ratio is about views rendered, not about
+    whether anything was judged.
+    """
+    from fractal_wallpapers.discovery import identity
+    from fractal_wallpapers.models import tiles as tile_module
+
+    if args.no_scoring:
+        return False
+    try:
+        identity.enforce(
+            args.colormap, args.node_width, tile_module.NODE_REGIME, log=lambda *_: None
+        )
+    except identity.IdentityBroken:
+        return True
+    return False
 
 
 def harvest(args: argparse.Namespace) -> int:
@@ -965,6 +999,13 @@ def harvest(args: argparse.Namespace) -> int:
     # this list, so naming one partition is how a leg spends a whole clock there
     # rather than steering toward it and hoping.
     partitions = list(args.partition or ALL_PARTITIONS)
+    # Found once, read by three builders. Each of them used to look the ledgers up
+    # for itself, which on an archive root is the same directory walk three times
+    # over — the whole of what `schedule.LEDGER_LOAD_SECONDS` had grown to reserve.
+    ledger_files = ledgers.ledger_paths(
+        root=resolve_output(args.ledgers), exclude=walk_run.ledger.path
+    )
+    print(f"[plan] ledgers: {len(ledger_files)} under {display_path(resolve_output(args.ledgers))}")
     # The protected exploration share, and the cross-run record of which lineages
     # have ever produced that decides who is in it. Built off the same ledger root
     # the saturation memory reads, minus this run's own file.
@@ -972,7 +1013,7 @@ def harvest(args: argparse.Namespace) -> int:
         None
         if args.no_exploration
         else novelty.Exploration(
-            lineages=novelty.build(root=resolve_output(args.ledgers), exclude=walk_run.ledger.path),
+            lineages=novelty.build(paths=ledger_files),
             floor=args.exploration_floor,
             start=args.exploration_start,
             ema=args.exploration_ema,
@@ -992,14 +1033,7 @@ def harvest(args: argparse.Namespace) -> int:
     # walk's, so what the channel accepted and what the c-spacing floor refused
     # land in the run's own record rather than only in a summary.
     twin_channel = (
-        None
-        if args.no_twins
-        else twins.build(
-            ledger=walk_run.ledger,
-            ledger_paths=ledgers.ledger_paths(
-                root=resolve_output(args.ledgers), exclude=walk_run.ledger.path
-            ),
-        )
+        None if args.no_twins else twins.build(ledger=walk_run.ledger, ledger_paths=ledger_files)
     )
     refill = Refill(
         walk_run,
@@ -1012,11 +1046,7 @@ def harvest(args: argparse.Namespace) -> int:
         twins=twin_channel,
         proven=build_proven_channel(args, partitions),
     )
-    memory = (
-        None
-        if args.no_saturation
-        else saturation.build(exclude=walk_run.ledger.path, root=resolve_output(args.ledgers))
-    )
+    memory = None if args.no_saturation else saturation.build(paths=ledger_files)
     run = Harvest(
         walk_run,
         quota,
@@ -1029,6 +1059,14 @@ def harvest(args: argparse.Namespace) -> int:
         partitions=partitions,
         finish_by=None if derived is None else derived.record(),
     )
+    # Before the first batch, not in the readout. run10 opened with 39, 46 and 52
+    # derived parameters in its three julia twins and 209 and 96 in the two
+    # tracked `c`-pools, against 413 to 507 a parameter plane; all five ran dry
+    # and the readout is where that surfaced, the following morning. What the
+    # share can reach is a fact about the pools at launch, and it was readable
+    # then.
+    for line in refill.pool_lines():
+        print(f"[plan] {line}")
     if run.resume():
         print(f"resumed at batch {run.batch} ({run.active_minutes:.2f} active minutes spent)")
     summary = run.run()
@@ -2675,6 +2713,15 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         help="the release ceiling the curation leg will be asked for. Read only with "
         "--finish-by, which reserves this many pictures at the measured rate",
+    )
+    production.add_argument(
+        "--release-workers",
+        type=int,
+        default=schedule_module.RELEASE_WORKERS,
+        help=f"worker processes the release leg will run at, which is what the reserved "
+        f"rate is scaled to (default: {schedule_module.RELEASE_WORKERS}, the count every "
+        f"release on record was measured at). Read only with --finish-by; it reserves "
+        f"the clock, it does not pass anything to `curate run`",
     )
     production.add_argument(
         "--batches", type=int, help="stop after this many batches, whatever the clock says"

@@ -42,11 +42,13 @@ operator; it has it in the right place.
 Curation's hung-unit backstop only ever *raises* itself off units a run has
 finished, so a class whose first row dies at the ceiling never teaches the run
 that the class is slow. A deep release render was measured at **607 s** against a
-shallow release's 16–452 s, which is inside the shallow `1800 s` ceiling — but
-only by a factor of three, on the shallowest deep frame this mode produces. So
-the ceilings here are declared, not inherited, and a run's own measurements may
-only raise them: the same rule shallow has, applied to a distribution shallow has
-never seen.
+shallow release's own distribution — `curation.pacing.RELEASE_DISTRIBUTION`,
+which was 16–452 s when this was written and is 14.9–1084.6 s over 204 rows now.
+Both ends moved, and in the direction that matters here: 607 s is no longer
+outside the shallow range at all, and the shallow ceiling it sits inside is
+`2400 s` rather than `1800`. So the ceilings here are declared, not inherited,
+and a run's own measurements may only raise them: the same rule shallow has,
+applied to a distribution shallow has never seen.
 
 There is a third leg the shallow path does not have one for. A deep `expand` call
 runs at an iteration cap near fifty thousand, and a hung one would take the

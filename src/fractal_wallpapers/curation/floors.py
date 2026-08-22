@@ -191,13 +191,19 @@ THIN_SUPPLY_DIVISOR = 4
 #: makes the same attempts and seats the better reading of each place.
 CLUSTER_CAP = 1
 
-#: Colorize attempts per release slot. A head's attempt budget is this times the
-#: slots it is asked to fill, so the two heads are sized against release need and
-#: never against each other.
+#: **Locations** a release slot buys a colorize of. A head's budget reaches this
+#: many locations into its partitions' ranked offers per slot it is asked to fill,
+#: so the two heads are sized against release need and never against each other.
+#:
+#: Locations and not attempts, since `curation.budget.MODES_PER_LOCATION` made the
+#: two different counts: the strange judge tries each of the locations it pays for
+#: in two modes, so it spends twice the attempts without reaching one row deeper.
+#: That distinction is the whole reason this stayed at four when the strange
+#: attempt count doubled.
 #:
 #: The same coarse four as [`THIN_SUPPLY_DIVISOR`], and the two meeting is not a
-#: coincidence worth collapsing: they are about different populations — attempts
-#: spent against candidates available — and a partition whose slots respect its
+#: coincidence worth collapsing: they are about different populations — locations
+#: reached against candidates available — and a partition whose slots respect its
 #: emit cap has `4·slots ≤ 4·floor(supply/4) ≤ supply`, so the two rules agree
 #: exactly when they should. Moving either alone is a real change and reads as one.
 ATTEMPT_MULTIPLIER = 4
@@ -356,6 +362,13 @@ def emit_cap(passing: int) -> int:
     return max(0, int(passing)) // THIN_SUPPLY_DIVISOR
 
 
+def _modes_per_location() -> dict:
+    """`curation.budget`'s own table, read rather than restated."""
+    from fractal_wallpapers.curation import budget
+
+    return budget.MODES_PER_LOCATION
+
+
 def summary() -> dict:
     """Every cut, what it is on, and whether it acts. For a run's own banner."""
     from fractal_wallpapers.supply import currency
@@ -414,6 +427,11 @@ def summary() -> dict:
             "thin_supply_divisor": THIN_SUPPLY_DIVISOR,
             "wallpapers_per_location": CLUSTER_CAP,
             "attempt_multiplier": ATTEMPT_MULTIPLIER,
+            # Beside the multiplier and not folded into it: one says how far into
+            # the offer a slot reaches, the other how many pictures each of those
+            # locations is worth making, and a run record that carried only their
+            # product could not say which of the two had moved.
+            "modes_per_location": dict(_modes_per_location()),
         },
     }
 

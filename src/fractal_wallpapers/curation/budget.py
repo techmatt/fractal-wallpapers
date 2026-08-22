@@ -17,7 +17,8 @@ that had no opinion about the release.
 
 ## Three levels, in order
 
-1. **Head first.** `attempts = multiplier × that head's slots`. When the total
+1. **Head first.** `attempts = multiplier × that head's slots × the modes it tries
+   each location in` ([`MODES_PER_LOCATION`]). When the total
    budget cannot cover both at full multiple, **both scale down proportionally** —
    never one head starved to keep the other whole, which is the same failure one
    level up. Proportionally and not evenly: an even split levels the head with the
@@ -33,6 +34,16 @@ that had no opinion about the release.
    first. A partition with fewer floor-passing locations than attempts short-fills
    and **says so**, which is the whole reason planned is recorded beside realized:
    a thin release is then attributable to supply or to budget at a glance.
+
+## Attempts and locations are not the same count any more
+
+They were, until the strange judge started drawing two modes per location. Level
+2 and level 3 above are about **locations** — how far into a partition's ranked
+offer the budget reaches — and levels 1 and the emitted plan are about
+**attempts**. The multiplication happens once, in [`MODES_PER_LOCATION`], and the
+supply bound is converted rather than raised: a head drawing two modes reaches
+exactly as deep into the offer as one drawing one, which is what leaves the emit
+cap's `4·slots ≤ supply` arithmetic saying what it always said.
 
 ## The order of the plan is itself a decision
 
@@ -58,6 +69,21 @@ SMOOTH, STRANGE = "smooth_render", "strange_render"
 HEADS = (SMOOTH, STRANGE)
 
 
+#: How many modes a head tries each location it is given, and therefore how many
+#: colorize attempts one location costs it.
+#:
+#: **The strange judge gets two.** Its roster is every production mode the engine
+#: knows and it drew *one* of them per location, uniformly; run10 seated 15 of its
+#: 40 slots and 115 candidates fell below its acting bar, seven of nine partitions
+#: short. That is one draw from a wide roster deciding a location's whole chance,
+#: and a second draw — of a **different** mode, [`modes_drawn`] — is the cheapest
+#: thing that widens it: ~2.4 s an attempt, no new location, no move of the bar.
+#:
+#: The smooth judge stays at one because its roster *is* one: the smooth coloring
+#: is the only mode it owns, and a second draw would re-render the same picture.
+MODES_PER_LOCATION = {SMOOTH: 1, STRANGE: 2}
+
+
 @dataclass(frozen=True)
 class Attempt:
     """One planned colorize: a location, and the head whose slots paid for it.
@@ -67,12 +93,22 @@ class Attempt:
     not fix the mode. `rank` is the location's position in its partition's ranked
     offer, carried so the realized log can say how deep the budget reached
     without re-deriving the ranking.
+
+    `modes_drawn` and `mode_index` are this attempt's place in its *location's*
+    draw: how many modes the location is tried in, and which of them this is. The
+    pair travels on the attempt rather than being counted at the colorizer,
+    because that is what lets the modes be drawn without replacement from the
+    location alone — two attempts of one location draw one sample of size two
+    and take an element each, so neither has to know what the other got, and a
+    resumed run re-derives the same pair.
     """
 
     head: str
     partition: str
     key: str
     rank: int
+    modes_drawn: int = 1
+    mode_index: int = 0
 
 
 def head_slots(n: int, strange_share: float) -> dict:
@@ -110,10 +146,14 @@ def head_attempts(slots: dict, budget: int | None, multiplier: int | None = None
     facts and only the second one explains a short-fill.
     """
     multiplier = floors.ATTEMPT_MULTIPLIER if multiplier is None else int(multiplier)
-    want = {head: max(0, multiplier * int(slots.get(head, 0))) for head in HEADS}
+    want = {
+        head: max(0, multiplier * int(slots.get(head, 0)) * MODES_PER_LOCATION[head])
+        for head in HEADS
+    }
     granted = want if budget is None else scale_to_budget(want, budget)
     return granted, {
         "attempt_multiplier": multiplier,
+        "modes_per_location": dict(MODES_PER_LOCATION),
         "attempt_budget": budget,
         "head_slots": {head: int(slots.get(head, 0)) for head in HEADS},
         "head_want": want,
@@ -149,7 +189,9 @@ def assign_guarantees(guarantees, slots: dict) -> tuple[dict, list[str]]:
     return owed, unplaced
 
 
-def partition_attempts(seated: dict, budget: int, multiplier: int | None = None) -> dict:
+def partition_attempts(
+    seated: dict, budget: int, multiplier: int | None = None, modes: int = 1
+) -> dict:
     """`{partition: attempts}` — the multiple of each partition's **seated** slots.
 
     Off the seated slots and not off the mix, and the two are not the same thing
@@ -165,7 +207,8 @@ def partition_attempts(seated: dict, budget: int, multiplier: int | None = None)
     no slot has none.
     """
     multiplier = floors.ATTEMPT_MULTIPLIER if multiplier is None else int(multiplier)
-    want = {p: max(0, multiplier * int(k)) for p, k in sorted(seated.items())}
+    modes = max(1, int(modes))
+    want = {p: max(0, multiplier * int(k) * modes) for p, k in sorted(seated.items())}
     total = sum(want.values())
     budget = max(0, int(budget))
     if total <= budget:
@@ -207,11 +250,16 @@ def plan(
     cells: dict = {}
     seated: dict = {}
     for head in HEADS:
+        modes = MODES_PER_LOCATION[head]
         mine = {p for p, h in owed.items() if h == head}
         seated[head] = intake_slots(supply, slots[head], mine)
-        per_partition = partition_attempts(seated[head], granted[head], multiplier)
+        per_partition = partition_attempts(seated[head], granted[head], multiplier, modes)
         planned[head] = {p: int(k) for p, k in sorted(per_partition.items())}
-        take = {p: min(int(k), len(supply.get(p, ()))) for p, k in per_partition.items()}
+        # The supply bound is in **locations**, converted to attempts: the second
+        # mode a location is tried in reaches no further into the offer, so a head
+        # that draws two modes short-fills at exactly the same depth as one that
+        # draws one. That is what keeps the emit cap's arithmetic intact.
+        take = {p: min(int(k), len(supply.get(p, ())) * modes) for p, k in per_partition.items()}
         short[head] = {p: per_partition[p] - t for p, t in take.items() if per_partition[p] > t}
         for partition, count in sorted(take.items()):
             if count > 0:
@@ -222,14 +270,20 @@ def plan(
     out: list[Attempt] = []
     for cell in order:
         head, partition = cell
+        modes = MODES_PER_LOCATION[head]
         index = cursor[cell]
         cursor[cell] = index + 1
+        # The cell's attempts run through its locations `modes` at a time, so a
+        # truncated cell loses whole locations from the end rather than leaving a
+        # trail of half-tried ones.
         out.append(
             Attempt(
                 head=head,
                 partition=partition,
-                key=supply[partition][index]["key"],
-                rank=index,
+                key=supply[partition][index // modes]["key"],
+                rank=index // modes,
+                modes_drawn=modes,
+                mode_index=index % modes,
             )
         )
 

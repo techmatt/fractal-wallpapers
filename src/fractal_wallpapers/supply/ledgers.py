@@ -38,8 +38,10 @@ from fractal_wallpapers.paths import Tiers, tracked_name
 from fractal_wallpapers.supply import currency as money
 from fractal_wallpapers.supply.location import key_of_row
 
-#: The file every walk writes its record to.
-LEDGER_NAME = "walk.jsonl"
+#: The file every walk writes its record to. Re-exported from the writer rather
+#: than restated: this reader looks the file up by name at a fixed depth, so the
+#: two modules agreeing about the name is the whole of why it is found.
+LEDGER_NAME = ledger_module.LEDGER_NAME
 
 
 def ledger_dirs() -> list[Path]:
@@ -65,10 +67,20 @@ def ledger_paths(root: Path | None = None, exclude: Path | None = None) -> list[
     `exclude` is resolved before comparison, because the caller's path came from a
     run directory and ours came from a directory walk: two spellings of one file
     is how a run ends up seeded with its own finds.
+
+    **Looked up, never searched for.** A walk's run directory is a top-level name
+    of the regenerable tree and its ledger is [`LEDGER_NAME`] directly inside it
+    ([`ledger_dirs`], and [`ledger.Ledger`] refuses to write anywhere else), so
+    finding every ledger is one `stat` per run directory. It used to be an
+    `rglob` per root, which on a tree that is overwhelmingly `views/`, `fields/`
+    and `tiles/` walked a hundred gigabytes of cache to find thirty-two small
+    text files: **734.6 s** over run10's own tiers, 728 of them inside `tiles/`
+    alone, against **0.08 s** here — and the harvest paid it three times before
+    its first batch, which is the whole of what `schedule.LEDGER_LOAD_SECONDS`
+    had grown to reserve.
     """
-    roots = ledger_dirs() if root is None else [Path(root)]
     own = Path(exclude).resolve() if exclude is not None else None
-    found = [path for here in roots if here.is_dir() for path in here.rglob(LEDGER_NAME)]
+    found = [path for here in _ledger_homes(root) if (path := here / LEDGER_NAME).is_file()]
     # Sorted by the *tracked* name, not by the absolute path. That name does not
     # change when a run directory is archived, and the order here is not
     # cosmetic: the union credits a location to the first ledger that admits it,
@@ -76,6 +88,23 @@ def ledger_paths(root: Path | None = None, exclude: Path | None = None) -> list[
     # something moved tiers.
     found.sort(key=tracked_name)
     return [path for path in found if own is None or path.resolve() != own]
+
+
+def _ledger_homes(root: Path | None) -> list[Path]:
+    """Every directory a walk ledger may sit directly inside.
+
+    With no `root` that is the run directories themselves. With one it is the
+    directory named *and* its immediate children, because the one caller that
+    passes a root passes either a single run directory (`--harvest`) or a whole
+    artifacts tree (`--ledgers`), and both spellings have to mean the same set of
+    ledgers as the default does.
+    """
+    if root is None:
+        return ledger_dirs()
+    root = Path(root)
+    if not root.is_dir():
+        return []
+    return [root, *sorted(entry for entry in root.iterdir() if entry.is_dir())]
 
 
 def rows(path: Path, kind: str | None = None):

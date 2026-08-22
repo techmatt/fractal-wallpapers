@@ -145,11 +145,14 @@ kind.** What is charged is `expand` plus `trigger_reframings`, per partition, pe
 batch. Three things are outside it: the start-up before the first batch — the
 head onto the device, the proven derivation, the saturation index, the twin
 channel, about a minute together — the per-batch refill, and the closing gate-flip
-re-score, which is a fixed tail of a minute or two whatever the run's length. A
-scored hour over the four parameter planes measured **1.13× wall per active
-minute**, so an hour of `--minutes` is a bit over an hour of machine. Size a leg on
-that ratio; `--minutes` alone will under-book the clock, and the tail lands after
-the last batch rather than inside it.
+re-score, and the closing `curate score` over what the run found. The ratio has
+**two measured values and the run's own config picks one**: a scored hour over the
+four parameter planes that *drew its own views* measured **1.13× wall per active
+minute**, and run10 — which scored the gate renders the walk had already made, so
+`scoring.rendered` stayed at zero all night — measured **1.013×**. Reserving 1.13
+for a night of the second kind cost run10 36 active minutes. Size a leg on the
+ratio that matches how the night scores; `--minutes` alone will under-book the
+clock either way, and the tail lands after the last batch rather than inside it.
 
 **A run told one partition allocates its whole clock there.** `--partition` is
 repeatable and defaults to every registered one; naming one keeps the books for
@@ -172,17 +175,42 @@ accrual and the random state.
 
 **`--finish-by HH:MM` derives `--minutes` from the time the night has to end.**
 The span to the next `HH:MM`, less what has to happen after the harvest — the
-release leg at `--release-slots` x the measured 41.9 s a finished picture costs at
-4 workers, the ~2 min closing `curate score`, the 2m40 archive ledger load and a
-20-minute margin — and then divided by the 1.13x above, because `--minutes` is
-active time and the span is wall. `fractal_wallpapers/schedule.py` owns every
-term, prints the derivation at startup and writes it into `summary.json` as
-`finish_by`, so a night that lands late is attributable to the term that was
-reserved wrong. It refuses rather than returning a small number when the
-reservations do not fit. `--release-slots` has no default and is required with it:
-the release reservation is the largest term and a guessed one is the only part of
-this arithmetic nothing downstream can check. **It derives and does not pace** —
-the active-minute budget is still the only backstop, and the margin is real money.
+release leg at `--release-slots` x wall-per-picture, the rest of `curate run` at
+2.57 s an attempt, the closing `curate score`, the ledger load and a 20-minute
+margin — and then divided by the ratio above, because `--minutes` is active time
+and the span is wall. `fractal_wallpapers/schedule.py` owns every term, prints the
+derivation at startup and writes it into `summary.json` as `finish_by`, so a night
+that lands late is attributable to the term that was reserved wrong.
+
+Two of those terms are **read rather than written down**, because run10 landed 84
+minutes inside its finish-by on terms that had each stopped being true:
+
+* the **release rate** comes off the most recent tracked run's own release leg
+  (`data/curation/runs/<run>.json`, `release.seconds / release.rows` at
+  `release.workers`, scaled to `--release-workers`). It halved — 41.9 s to 24.9 —
+  the night `artifacts/curation` came off the archive and back onto NVMe. The
+  written-down 41.9 is the fallback for a clone with no release on record, and the
+  plan prints which of the two it used;
+* the **closing re-score** scales with what the harvest will find, since it
+  re-reads the run's own gate survivors: 7.13 ms a row at 124.7 rows an active
+  minute. That dependence is circular and `schedule.plan` solves it rather than
+  iterating.
+
+The **ledger load** is 2 min and used to be 11. It was never a load: three
+builders each `rglob`ed the archive for `walk.jsonl`, which is 734.6 s a pass on a
+tree that is mostly `tiles/`. They now share one list, found by looking each
+ledger up at `<run directory>/walk.jsonl` — see `ledgers.ledger_paths`.
+
+`--release-slots` has no default and is required with `--finish-by`: the release
+reservation is the largest term and a guessed one is the only part of this
+arithmetic nothing downstream can check. **It derives and does not pace** — the
+active-minute budget is still the only backstop, and the margin is real money.
+
+**The launch prints what each channel can still reach**, one line per partition:
+the pool's size, what has been drawn, or the reason no draw can serve it. run10
+opened with 39, 46 and 52 derived parameters in its three julia twins against 413
+to 507 in each parameter plane; all of the small ones ran dry inside the night and
+the readout is where that surfaced, the following morning.
 
 **`--minutes` is also the only backstop a harvest has** — there is no
 `--wall-budget` here, that flag belongs to `curate run`. It is a hard one: the loop
@@ -195,6 +223,7 @@ the run; the summary says which one did.
 fractal-wallpapers census
 fractal-wallpapers harvest --minutes 90 --batch 8
 fractal-wallpapers harvest --finish-by 07:00 --release-slots 80   # derives --minutes
+fractal-wallpapers harvest --finish-by 07:00 --release-slots 80 --release-workers 8
 fractal-wallpapers harvest --exploration-floor 0.25 --exploration-start 0.45
 fractal-wallpapers harvest --no-exploration --lineage-discount 0   # neither lever
 fractal-wallpapers harvest --partition mandelbrot --root-channel proven
@@ -242,3 +271,13 @@ that reached the frontier and was never expanded, why the run never came back to
 it — capped, outbid on partition, outbid on node rank, discounted lineage, or the
 run stopped first. Each of those is read off the trace of the batches that node
 actually sat through; a run with no trace file gets the floor half and no more.
+
+**The sample is stratified by fate**, in proportion with a floor of two cards a
+class, and it covers unpictured rows. run10's page drew 48 cards and not one of
+them was a structural refusal, though `flat`, `interior_cap` and `occupancy_floor`
+were 13,962 of that run's rejects: the engine draws a frame for a gate survivor
+and for nothing else, and the sampler only drew rows that had a picture. The
+sentences for those gates had shipped and no card could carry one. Re-run against
+run10's records the page is 54 cards with six `interior_cap`, four `flat` and four
+`occupancy_floor` among them, each saying what its gate is and that it has no
+picture to show.

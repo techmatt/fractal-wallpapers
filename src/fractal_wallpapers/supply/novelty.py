@@ -225,6 +225,7 @@ def build(
     root: Path | None = None,
     exclude: Path | None = None,
     admit=None,
+    paths=None,
 ) -> NovelLineages:
     """The cross-run record of which lineages have ever produced, off the ledgers.
 
@@ -233,8 +234,11 @@ def build(
     produced. A ledger whose rows name a root it never wrote a `root` row for
     contributes nothing for that root and is not an error — the ledger is
     append-only and a killed run can end anywhere.
+
+    `paths` hands in the ledger list a caller has already found, so the three
+    builders a harvest starts with share one answer instead of asking three times.
     """
-    paths = ledgers.ledger_paths(root, exclude)
+    paths = ledgers.ledger_paths(root, exclude) if paths is None else list(paths)
     found = NovelLineages(saturation.VisitedIndex(radius))
     found.ledgers = len(paths)
     predicate = ledgers.is_admitted if admit is None else admit

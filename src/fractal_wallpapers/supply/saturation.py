@@ -219,13 +219,23 @@ class VisitedIndex:
         }
 
 
-def build(radius: float = RADIUS, root: Path | None = None, exclude: Path | None = None):
+def build(
+    radius: float = RADIUS,
+    root: Path | None = None,
+    exclude: Path | None = None,
+    paths=None,
+):
     """The cross-run memory, straight off the committed ledgers.
 
     Every recorded candidate is a visit — survivors and refusals alike — for the
     reason in the module docstring: a place that was checked was visited.
+
+    `paths` hands in the ledger list a caller has already found. Three builders
+    run off the same list before a harvest's first batch, and each one looking it
+    up again is three answers to a question with one answer — and, on an archive
+    root, three directory walks nobody needed.
     """
-    paths = ledgers.ledger_paths(root, exclude)
+    paths = ledgers.ledger_paths(root, exclude) if paths is None else list(paths)
     index = VisitedIndex(radius)
     index.sources = [str(path) for path in paths]
     for path in paths:

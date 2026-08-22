@@ -99,7 +99,7 @@ what says that.
 from __future__ import annotations
 
 import json
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 #: The schema every row in this file carries, from the first row.
@@ -153,11 +153,46 @@ NODE_CAUSES = (
 )
 
 
+#: What a walk's record is called, wherever one is written. The supply union
+#: looks a ledger up at `<run directory>/<this>` rather than searching for it, so
+#: this name and [`refuse_a_nested_run_directory`] are two halves of one rule.
+LEDGER_NAME = "walk.jsonl"
+
+
+def refuse_a_nested_run_directory(path: Path) -> None:
+    """Refuse a ledger written deeper than one level under the regenerable tree.
+
+    A walk's run directory is a *top-level name* of that tree: it is the unit the
+    storage tiers move, and it is why `supply.ledgers` can find every ledger with
+    one `stat` per run directory instead of walking a hundred gigabytes of cache.
+    Nothing enforced it until now, and the failure it leaves is the quiet kind —
+    a run under `artifacts/studies/tonight/` writes a perfectly good ledger that
+    no later census, saturation memory or novelty pool ever reads, and the supply
+    it found simply is not there.
+
+    Silent about a path outside the tree, which is every test's `tmp_path` and
+    every one-off somewhere else: this is a rule about the tree's own shape.
+    """
+    from fractal_wallpapers.paths import ARTIFACTS_NAME, tracked_name
+
+    parts = PurePosixPath(tracked_name(Path(path).parent)).parts
+    if len(parts) > 2 and parts[0] == ARTIFACTS_NAME:
+        raise ValueError(
+            f"a walk's run directory has to be a top-level name of the regenerable tree, and "
+            f"{'/'.join(parts)} is {len(parts) - 1} levels down. The supply union looks each "
+            f"ledger up at <run directory>/{LEDGER_NAME}, so a ledger written here would be "
+            f"invisible to every census, saturation memory and novelty pool afterwards — the "
+            f"run would work and its supply would not exist. Use "
+            f"--out-dir {ARTIFACTS_NAME}/{'_'.join(parts[1:])} instead."
+        )
+
+
 class Ledger:
     """An append-only JSONL record of one walk."""
 
     def __init__(self, path: Path):
         self.path = Path(path)
+        refuse_a_nested_run_directory(self.path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._handle = self.path.open("a", encoding="utf-8", newline="\n")
         self.counts: dict[str, int] = {}

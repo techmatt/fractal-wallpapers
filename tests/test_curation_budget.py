@@ -21,18 +21,38 @@ def test_the_head_split_is_the_one_the_selection_spends() -> None:
 
 
 def test_attempts_are_the_multiple_of_a_heads_own_slots() -> None:
+    """Slots x locations x the modes that head tries each location in."""
     granted, record = budget.head_attempts({SMOOTH: 3, STRANGE: 1}, None)
-    assert granted == {SMOOTH: 12, STRANGE: 4}
+    assert granted == {SMOOTH: 12, STRANGE: 8}
     assert record["scaled_to_budget"] is False
+    assert record["modes_per_location"] == budget.MODES_PER_LOCATION
+
+
+def test_the_strange_head_tries_a_location_twice_and_the_smooth_head_once() -> None:
+    """115 of run10's strange candidates fell below the acting bar off one
+    uniformly-drawn mode a location. The second draw is a mix change and not a bar
+    change: it reaches no further into the offer, it buys a second reading of the
+    same place."""
+    supply = offer(**{"mandelbrot": 40})
+    plan, record = budget.plan(supply, 2, 0.5)
+    for head in budget.HEADS:
+        mine = [a for a in plan if a.head == head]
+        locations = {a.key for a in mine}
+        assert len(mine) == len(locations) * budget.MODES_PER_LOCATION[head]
+        assert {a.mode_index for a in mine} == set(range(budget.MODES_PER_LOCATION[head]))
+    # Both heads reach exactly as deep into the ranked offer as the multiplier says.
+    assert record["seated_slots"][STRANGE]["mandelbrot"] == 1
+    assert len({a.key for a in plan if a.head == STRANGE}) == floors.ATTEMPT_MULTIPLIER
 
 
 def test_a_tight_budget_scales_both_heads_proportionally_never_one() -> None:
     """An even split would level the head with the larger need down to the other —
     the mirror of the failure this module exists to fix."""
-    granted, record = budget.head_attempts({SMOOTH: 5, STRANGE: 10}, 24)
+    granted, record = budget.head_attempts({SMOOTH: 5, STRANGE: 10}, 25)
     assert record["scaled_to_budget"] is True
-    assert sum(granted.values()) == 24
-    assert granted == {SMOOTH: 8, STRANGE: 16}
+    assert sum(granted.values()) == 25
+    # Wanted 20 and 80; a fifth of each, to the nearest attempt.
+    assert granted == {SMOOTH: 5, STRANGE: 20}
 
 
 def test_attempts_are_budgeted_off_the_seated_slots_not_the_bare_mix() -> None:
@@ -53,6 +73,7 @@ def test_attempts_are_budgeted_off_the_seated_slots_not_the_bare_mix() -> None:
 def test_a_partition_seated_nothing_is_budgeted_nothing() -> None:
     seated = {"mandelbrot": 2, "phoenix": 0}
     assert budget.partition_attempts(seated, 100) == {"mandelbrot": 8, "phoenix": 0}
+    assert budget.partition_attempts(seated, 100, modes=2) == {"mandelbrot": 16, "phoenix": 0}
 
 
 def test_a_thin_partition_short_fills_and_says_so() -> None:
@@ -70,7 +91,12 @@ def test_every_prefix_of_the_plan_is_near_proportional() -> None:
     assert record["prefix_deviation"] <= 1.0
     half = plan[: len(plan) // 2]
     heads = {head: sum(1 for a in half if a.head == head) for head in budget.HEADS}
-    assert abs(heads[SMOOTH] - heads[STRANGE]) <= 2
+    # Against the *planned* mix, which is no longer one attempt each: the strange
+    # judge is planned twice the attempts of the smooth one for the same slots, so
+    # a balanced half-prefix would be the failure rather than the property.
+    planned = record["head_attempts"]
+    for head in budget.HEADS:
+        assert abs(heads[head] - planned[head] / 2) <= 2
 
 
 def test_a_locations_rank_is_carried_so_the_log_says_how_deep_the_budget_reached() -> None:

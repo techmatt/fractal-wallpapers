@@ -121,6 +121,34 @@ def modes_for(head: str) -> list[str]:
     return [name for name in names if name != SMOOTH_MODE]
 
 
+def modes_drawn_for(plan, seed) -> list[str]:
+    """The modes one location is tried in by the head that is paying for it.
+
+    Drawn **without replacement, per location** rather than per attempt: the
+    strange judge takes two draws at a location and a second draw that could
+    repeat the first buys the same picture twice. So the sample is taken once,
+    off the location and the head, and each attempt takes its own element — which
+    is what lets the two attempts stay independent of each other and of the order
+    they run in, and lets a resumed run re-derive the same pair.
+
+    A head planned more modes than it owns is refused rather than served a
+    repeat. It cannot happen with the shipped roster — the smooth judge is asked
+    for one and the strange judge owns every other production mode — and a
+    silently duplicated draw would be the one outcome that spends the attempt and
+    buys nothing, which is precisely what a second draw exists to avoid.
+    """
+    roster = modes_for(plan.head)
+    wanted = max(1, int(plan.modes_drawn))
+    if wanted > len(roster):
+        raise ColorizeError(
+            f"{plan.head} is planned {wanted} mode(s) a location and owns {len(roster)}: "
+            f"{sorted(roster)}. The draws are without replacement, so there is no honest "
+            f"answer here — either the head's roster shrank or curation.budget's "
+            f"MODES_PER_LOCATION asks for more than the engine has."
+        )
+    return random.Random((seed, plan.head, plan.key).__str__()).sample(roster, wanted)
+
+
 def kind_of(mode: str) -> str:
     """A mode's coloring kind — `field`, `composite` or `direct`."""
     from fractal_wallpapers.models import renders
@@ -405,7 +433,6 @@ class Colorizer:
         A failure is a recorded row with a reason and **no score**, never a zero:
         a crash and a bad wallpaper must not be the same number.
         """
-        draw = random.Random((self.seed, index, plan.key).__str__())
         names = candidate_set(anchor, self.pool)
         record = {
             "schema": intake.SCHEMA,
@@ -414,6 +441,12 @@ class Colorizer:
             "partition": plan.partition,
             "key": plan.key,
             "rank": plan.rank,
+            # Which of this location's mode draws this attempt is. On the row
+            # because the readout's question about the second draw is whether it
+            # seated anything the first one would not have, and that cannot be
+            # asked of a log where the two attempts are indistinguishable.
+            "mode_index": plan.mode_index,
+            "modes_drawn": plan.modes_drawn,
             "family": row["family"],
             "viewport": row["viewport"],
             "maxiter": row.get("maxiter"),
@@ -433,7 +466,7 @@ class Colorizer:
             # first one, and a killed attempt would take the whole run down.
             # Uniform over the paying head's roster, by Matt's call for the first
             # long run: steering this draw is a future lever, not an unmade decision.
-            mode = draw.choice(modes_for(plan.head))
+            mode = modes_drawn_for(plan, self.seed)[plan.mode_index]
             record.update({"mode": mode, "mode_kind": kind_of(mode)})
             colormap, scores = self.pick_palette(row, names)
             picture = self.directory / "pictures" / f"{index:04d}.jpg"
@@ -517,6 +550,7 @@ __all__ = [
     "candidate_set",
     "field_of",
     "kind_of",
+    "modes_drawn_for",
     "modes_for",
     "pool",
     "recolored",
