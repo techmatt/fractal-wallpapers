@@ -2070,6 +2070,36 @@ def head_score(args: argparse.Namespace) -> int:
     return 0
 
 
+def head_floor(args: argparse.Namespace) -> int:
+    """Fit one finished-render head's release floor off its own labels."""
+    from fractal_wallpapers.curation import floors
+    from fractal_wallpapers.models import release_floor
+
+    try:
+        record = release_floor.run(args.head, device=args.device, resamples=args.bootstrap)
+    except (release_floor.FloorFitError, floors.HeadStampMismatch, FileNotFoundError) as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps(record, indent=2))
+    # A measurement, never a move: `curation.floors` is the only owner of a height
+    # that acts, and putting this one there is somebody's decision.
+    standing = floors.ACTING_RELEASE_BARS.get(args.head)
+    if standing is not None:
+        held = record["rounded_up_to_0_005"] == standing.value
+        print(
+            f"standing bar {standing.value:g} vs this fit "
+            f"{record['rounded_up_to_0_005']:g} on the 0.005 grid "
+            f"({record['rounded_up_3_places']:g} at three places): "
+            f"{'REPRODUCED' if held else 'DOES NOT REPRODUCE'}"
+        )
+        return 0 if held else 1
+    print(
+        f"no acting bar on {args.head}. This is a reading, and wiring it into a "
+        f"selection is a separate decision."
+    )
+    return 0
+
+
 def head_audit(args: argparse.Namespace) -> int:
     """Read a run's clock against its own epochs, then re-score to settle it."""
     from fractal_wallpapers.models import audit
@@ -2259,6 +2289,19 @@ def curate_ledgers(args: argparse.Namespace) -> int:
     if args.write:
         write_tracked_json(durability.provenance_path(), report)
         print(f"wrote {display_path(durability.provenance_path())}")
+    return 0
+
+
+def curate_rescore(args: argparse.Namespace) -> int:
+    """Read every candidate the pool holds through today's finished-render heads."""
+    from fractal_wallpapers.curation import floors, rescore
+
+    try:
+        report = rescore.run(device=args.device)
+    except (rescore.RescoreError, floors.HeadStampMismatch) as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps(report, indent=2))
     return 0
 
 
@@ -3972,6 +4015,8 @@ def palette_commands(subcommands) -> None:
 
 def head_commands(subcommands) -> None:
     """A judge, end to end: pre-register the bar, train, score, judge, ship."""
+    from fractal_wallpapers.models import release_floor as release_floor_module
+
     judging = subcommands.add_parser(
         "head",
         help="a judge end to end: preregister, train, score, accept, ship",
@@ -4074,6 +4119,36 @@ def head_commands(subcommands) -> None:
     auditing.add_argument("--device", default="auto")
     auditing.add_argument("--run", help="the named training run to audit (default: the head's own)")
     auditing.set_defaults(handler=head_audit)
+
+    flooring = steps.add_parser(
+        "floor",
+        help="fit a finished-render head's release floor off its own labels",
+        description=(
+            "Score every labeled picture of this head's corpus through the SHIPPED "
+            "artifact, fit P(the human said >=3) against the head's own P(>=3) as a "
+            "monotone curve, and read the lowest score whose fitted agreement reaches a "
+            "half. The floor is that crossing rounded UP. Writes the value with the head "
+            "sha, the row count, a place-clustered bootstrap interval and a hash of both "
+            "inputs — and changes no cut: `curation.floors` owns every height that acts, "
+            "and moving one there is a decision somebody takes after reading this. Where "
+            "the head already has an acting bar this is a TEST of it, and exits non-zero "
+            "when the re-fit does not reproduce the standing number."
+        ),
+    )
+    flooring.add_argument(
+        "head",
+        choices=sorted(FINISHED_HEADS),
+        help="which finished-render judge to fit",
+    )
+    flooring.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
+    flooring.add_argument(
+        "--bootstrap",
+        type=int,
+        default=release_floor_module.BOOTSTRAP,
+        help=f"resamples in the place-clustered interval "
+        f"(default: {release_floor_module.BOOTSTRAP}; 0 to skip it)",
+    )
+    flooring.set_defaults(handler=head_floor)
 
     judging_step = with_head(
         steps.add_parser(
@@ -4814,6 +4889,22 @@ def curate_commands(subcommands) -> None:
         help="write the tracked provenance record as well as printing it",
     )
     naming_ledgers.set_defaults(handler=curate_ledgers)
+
+    rereading = steps.add_parser(
+        "rescore",
+        help="read every candidate the pool holds through today's finished-render heads",
+        description=(
+            "Not `score`, which reads LOCATIONS through the location head over the walk "
+            "ledgers. This reads the accumulated pool's own candidate renders — "
+            "pictures/NNNN.jpg, 640x360, the picture each gate decision was taken on — "
+            "through whichever finished-render head owns each row, at the artifact shipped "
+            "now. The run's own scores are left exactly as they are, as that night's "
+            "provenance; the reading lands in a `scores_current` block carrying the head "
+            "sha. Rows judged by a retired head gain the cutpoints it never had."
+        ),
+    )
+    rereading.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
+    rereading.set_defaults(handler=curate_rescore)
 
     def with_shape(parser, defaults=True):
         # A run takes `None` where `plan` takes a number: a resumed run reads its
