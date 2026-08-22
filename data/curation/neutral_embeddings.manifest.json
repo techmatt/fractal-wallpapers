@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "path": "artifacts/curation/neutral_embeddings.jsonl",
+  "copy": "artifacts/curation_backup/neutral_embeddings.jsonl",
+  "rows": 24779,
+  "bytes": 43272093,
+  "sha256": "00115aaaf775258ad8b06930b93186f8cc9bceee87dcead194c0cfb6ed57c4ad",
+  "stamp": "bf03db95ce61",
+  "choices": {
+    "colormap": "twilight_shifted",
+    "resolution": [
+      448,
+      252
+    ],
+    "supersample": 1,
+    "mode": "smooth",
+    "curve": "linear",
+    "mirror": false
+  },
+  "rows_by_partition": {
+    "julia:mandelbrot": 3708,
+    "julia:multibrot3": 4639,
+    "julia:multibrot4": 3929,
+    "julia:multibrot5": 3817,
+    "mandelbrot": 3614,
+    "multibrot3": 1252,
+    "multibrot4": 1016,
+    "multibrot5": 1651,
+    "phoenix": 1153
+  },
+  "pictures": {
+    "directory": "artifacts/curation/neutral",
+    "files": 24779,
+    "bytes": 2321174710,
+    "regenerable": "yes, from this store's own rows: every row carries the family, the viewport and the maxiter its neutral render is made from. About a tenth of a second each, so they are counted here and not copied."
+  },
+  "recorded": "2026-08-22",
+  "why_not_tracked": "one kilobyte of vector per location over twenty-five thousand locations, which is tens of megabytes against a 1 MiB per-file history guard, and it grows by an append every time a harvest adds admissions. The manifest is what the history keeps: the row count, the bytes, the sha256, the frozen choices every vector was made under, and the population it was counted against."
+}

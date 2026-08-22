@@ -132,7 +132,7 @@ def test_restore_refuses_a_copy_that_is_not_what_the_manifest_says(sidecar) -> N
     write_rows(copy, 3)
     live.unlink()
 
-    with pytest.raises(durability.SidecarLost, match="Nothing was written"):
+    with pytest.raises(durability.DurableLost, match="Nothing was written"):
         durability.restore(log=lambda *_: None)
     assert not live.exists()
 
@@ -147,7 +147,7 @@ def test_restore_refuses_to_overwrite_a_live_file_that_is_ahead_of_the_manifest(
     durability.save(log=lambda *_: None)
     write_rows(live, 60)
 
-    with pytest.raises(durability.SidecarLost, match="AHEAD"):
+    with pytest.raises(durability.DurableLost, match="AHEAD"):
         durability.restore(log=lambda *_: None)
     assert durability.count_rows(live) == 60
 
@@ -181,11 +181,11 @@ def test_the_guard_refuses_a_missing_or_shortened_sidecar_and_names_the_way_back
     assert durability.guard(log=lambda *_: None)["verdict"] == "ok"
 
     write_rows(live, 49)
-    with pytest.raises(durability.SidecarLost, match="curate sidecar restore"):
+    with pytest.raises(durability.DurableLost, match="curate sidecar restore"):
         durability.guard(log=lambda *_: None)
 
     live.unlink()
-    with pytest.raises(durability.SidecarLost, match="curate sidecar restore"):
+    with pytest.raises(durability.DurableLost, match="curate sidecar restore"):
         durability.guard(log=lambda *_: None)
 
 
@@ -205,12 +205,12 @@ def test_a_run_asks_the_guard_before_it_writes_a_plan(tmp_path, monkeypatch) -> 
     from fractal_wallpapers.curation import run as run_module
 
     def refuse(log=print):
-        raise durability.SidecarLost("gone")
+        raise durability.DurableLost("gone")
 
     monkeypatch.setattr(run_module.durability, "guard", refuse)
     monkeypatch.setattr(run_module, "run_dir", lambda run: tmp_path / "runs" / run)
 
-    with pytest.raises(durability.SidecarLost):
+    with pytest.raises(durability.DurableLost):
         run_module.curate(run="never", log=lambda *_: None)
     assert not (tmp_path / "runs").exists()
 

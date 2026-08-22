@@ -1,4 +1,4 @@
-"""Keeping the supply sidecar, which is the one thing here nothing else holds.
+"""Keeping the files under `artifacts/` that the checkout cannot regenerate.
 
 [`curation.intake`] writes `artifacts/curation/supply_scores.jsonl`: one row per
 location the location head has an opinion about, upserted per ledger, tens of
@@ -13,6 +13,21 @@ So it gets what a tracked file gets for free, and it gets it explicitly: a secon
 copy on the other disk, a manifest in the history saying how many rows and which
 bytes that copy is, a restore that counts before it believes, and a refusal at
 the top of `curate run` when the live file has gone missing or gone short.
+
+## One implementation, two files, and there will be more
+
+The sidecar was the first of these and for a while it was the only one, so this
+module was written around it. It is not the only one now:
+`curation.embeddings` keeps the neutral-render vectors the same way, for the
+same reason — a JSONL under `artifacts/` that costs a GPU leg to make again. So
+the three verbs take a [`Durable`], which is the whole of what save, check and
+restore need to know about a file: where it lives, where its copy goes, which
+tracked manifest describes it, and the commands to name in a refusal. The
+sidecar is [`sidecar`], one such value, and the zero-argument calls still mean
+it.
+
+What is NOT generic is [`guard`]: a run refuses over the supply and nothing
+else.
 
 ## Why it is archived under a manifest rather than tracked
 
@@ -53,6 +68,8 @@ import hashlib
 import json
 import shutil
 from collections import Counter
+from collections.abc import Callable
+from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
 
@@ -74,8 +91,34 @@ SIDECAR_NAME = "supply_scores.jsonl"
 CHUNK = 1 << 20
 
 
-class SidecarLost(RuntimeError):
-    """The supply sidecar is missing, or is shorter than the manifest recorded."""
+class DurableLost(RuntimeError):
+    """A durable file is missing, or is shorter than its manifest recorded."""
+
+
+@dataclass(frozen=True)
+class Durable:
+    """One file kept on two disks under a tracked manifest, and what to say about it.
+
+    The whole of what [`save`], [`check`] and [`restore`] need to know. The three
+    command strings are here rather than formatted at the raise site because a
+    refusal that cannot tell the reader which command to run is a refusal they
+    have to come back and ask about, and the commands differ per file.
+
+    `facts` is how a file adds its own columns to its manifest — the sidecar's
+    per-ledger split, the embedding store's fixed choices. It is handed the live
+    path and returns a dict merged into the record; a file with nothing to add
+    leaves it alone.
+    """
+
+    name: str
+    live: Path
+    copy: Path
+    manifest: Path
+    why_not_tracked: str
+    save_command: str
+    restore_command: str
+    rebuild_command: str
+    facts: Callable[[Path], dict] = field(default=lambda _: {})
 
 
 def manifest_path() -> Path:
@@ -154,46 +197,67 @@ def _head_of(path: Path) -> dict:
     return {"head": "location", "head_sha256": None, "head_sha256_counts": dict(stamps)}
 
 
+def sidecar() -> Durable:
+    """The supply sidecar as a [`Durable`]. What a zero-argument call here means."""
+    return Durable(
+        name="the supply sidecar",
+        live=sidecar_path(),
+        copy=backup_path(),
+        manifest=manifest_path(),
+        why_not_tracked=(
+            "tens of megabytes against a 1 MiB per-file history guard, and rewritten whole "
+            "on every `curate score` because the sidecar upserts per ledger — so tracking it "
+            "would add a fresh full-size blob to the history every harvest night. The "
+            "manifest is what the history keeps; the bytes live on both tiers."
+        ),
+        save_command="fractal-wallpapers curate sidecar save",
+        restore_command="fractal-wallpapers curate sidecar restore",
+        rebuild_command="fractal-wallpapers curate score",
+        facts=lambda path: {**_head_of(path), "rows_by_ledger": _by_ledger(path)},
+    )
+
+
 # --------------------------------------------------------------------------- #
 # The manifest.
 # --------------------------------------------------------------------------- #
-def read_manifest() -> dict | None:
-    """The manifest, or `None` where nothing has recorded the sidecar yet."""
-    path = manifest_path()
+def read_manifest(durable: Durable | None = None) -> dict | None:
+    """The manifest, or `None` where nothing has recorded this file yet."""
+    path = (sidecar() if durable is None else durable).manifest
     if not path.is_file():
         return None
     record = json.loads(path.read_text(encoding="utf-8"))
     if record.get("schema") != SCHEMA:
-        raise SidecarLost(f"{path}: schema {record.get('schema')!r}, expected {SCHEMA}")
+        raise DurableLost(f"{path}: schema {record.get('schema')!r}, expected {SCHEMA}")
     return record
 
 
-def write_manifest(record: dict) -> Path:
+def write_manifest(record: dict, durable: Durable | None = None) -> Path:
     """Write the manifest as tracked text. LF, because this file is in the history."""
-    path = manifest_path()
+    path = (sidecar() if durable is None else durable).manifest
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8", newline="\n")
     return path
 
 
-def save(when: str | None = None, log=print) -> dict:
-    """Copy the sidecar to the durable tier, and record what was copied.
+def save(durable: Durable | None = None, when: str | None = None, log=print) -> dict:
+    """Copy the file to the durable tier, and record what was copied.
 
     The copy and the manifest are written by one command because they are one
     claim. A manifest naming a count no copy has is worse than no manifest at
     all, because the restore path would believe it.
     """
-    live = sidecar_path()
+    durable = sidecar() if durable is None else durable
+    live = durable.live
     if not live.is_file():
-        raise SidecarLost(
+        raise DurableLost(
             f"{live} is not there, so there is nothing to make durable. Run "
-            f"`fractal-wallpapers curate score` to build it, or "
-            f"`fractal-wallpapers curate sidecar restore` if a copy already exists."
+            f"`{durable.rebuild_command}` to build it, or "
+            f"`{durable.restore_command}` if a copy already exists."
         )
     reading = measure(live)
     log(f"live   {tracked_name(live)}: {reading['rows']:,} rows, {reading['bytes']:,} bytes")
 
-    copy = backup_path()
+    copy = durable.copy
     copy.parent.mkdir(parents=True, exist_ok=True)
     writing = copy.with_suffix(copy.suffix + ".writing")
     shutil.copyfile(live, writing)
@@ -201,7 +265,7 @@ def save(when: str | None = None, log=print) -> dict:
     written = measure(copy)
     if written != reading:
         copy.unlink(missing_ok=True)
-        raise SidecarLost(
+        raise DurableLost(
             f"the copy at {copy} came out {written} against the live file's {reading}. "
             f"It has been removed rather than left there to be restored from."
         )
@@ -217,23 +281,17 @@ def save(when: str | None = None, log=print) -> dict:
         "path": tracked_name(live),
         "copy": tracked_name(copy),
         **reading,
-        **_head_of(live),
-        "rows_by_ledger": _by_ledger(live),
+        **durable.facts(live),
         "recorded": str(date.today()) if when is None else str(when),
-        "why_not_tracked": (
-            "tens of megabytes against a 1 MiB per-file history guard, and rewritten whole "
-            "on every `curate score` because the sidecar upserts per ledger — so tracking it "
-            "would add a fresh full-size blob to the history every harvest night. The "
-            "manifest is what the history keeps; the bytes live on both tiers."
-        ),
+        "why_not_tracked": durable.why_not_tracked,
     }
-    path = write_manifest(record)
+    path = write_manifest(record, durable)
     log(f"wrote  {tracked_name(path)}")
     return record
 
 
-def check(log=print) -> dict:
-    """Read the live sidecar against the manifest, and name the disagreement.
+def check(durable: Durable | None = None, log=print) -> dict:
+    """Read the live file against its manifest, and name the disagreement.
 
     Five verdicts, and they are not two. `ok` is byte-identical. `grown` is the
     ordinary state between a harvest and the next [`save`] — more rows than the
@@ -241,16 +299,17 @@ def check(log=print) -> dict:
     the same count over different bytes. `short` and `missing` are the two this
     whole module exists for.
     """
-    record = read_manifest()
-    live = sidecar_path()
+    durable = sidecar() if durable is None else durable
+    record = read_manifest(durable)
+    live = durable.live
     out: dict = {
-        "manifest": tracked_name(manifest_path()),
+        "manifest": tracked_name(durable.manifest),
         "path": tracked_name(live),
         "recorded": None if record is None else record.get("rows"),
     }
     if record is None:
         out["verdict"] = "unrecorded"
-        log("no manifest: nothing has recorded this sidecar yet")
+        log(f"no manifest: nothing has recorded {durable.name} yet")
         return out
     if not live.is_file():
         out.update({"verdict": "missing", "rows": 0})
@@ -271,14 +330,14 @@ def check(log=print) -> dict:
         f"{reading['bytes']:,} bytes, manifest {record['rows']:,} rows / "
         f"{record['bytes']:,} bytes"
     )
-    copy = rehome(record["copy"]) or backup_path()
+    copy = rehome(record["copy"]) or durable.copy
     out["copy"] = tracked_name(copy)
     out["copy_present"] = copy.is_file()
     log(f"{'copy':>10}  {out['copy']}: {'present' if out['copy_present'] else 'ABSENT'}")
     return out
 
 
-def restore(force: bool = False, log=print) -> dict:
+def restore(durable: Durable | None = None, force: bool = False, log=print) -> dict:
     """Bring the durable copy back, counted against the manifest before it is believed.
 
     Two refusals, and they are the same rule from opposite sides: nothing is
@@ -286,36 +345,37 @@ def restore(force: bool = False, log=print) -> dict:
     nothing overwrites a live file that is **ahead** of the manifest, because
     that file is a scored harvest nobody has recorded yet.
     """
-    record = read_manifest()
+    durable = sidecar() if durable is None else durable
+    record = read_manifest(durable)
     if record is None:
-        raise SidecarLost(
-            f"{tracked_name(manifest_path())} is not there, so there is no count to restore "
+        raise DurableLost(
+            f"{tracked_name(durable.manifest)} is not there, so there is no count to restore "
             f"against. A copy nothing can verify is not a restore path."
         )
-    copy = rehome(record["copy"]) or backup_path()
+    copy = rehome(record["copy"]) or durable.copy
     if not copy.is_file():
-        raise SidecarLost(
+        raise DurableLost(
             f"the manifest names a copy at {record['copy']} and it resolves to {copy}, where "
             f"there is no file. If that is an external disk, plug it in."
         )
     reading = measure(copy)
     if reading["rows"] != int(record["rows"]) or reading["sha256"] != record["sha256"]:
-        raise SidecarLost(
+        raise DurableLost(
             f"the copy at {copy} reads {reading['rows']:,} rows / sha "
             f"{reading['sha256'][:12]} against the manifest's {record['rows']:,} rows / "
             f"{str(record['sha256'])[:12]}. Nothing was written."
         )
     log(f"copy verified: {reading['rows']:,} rows, sha {reading['sha256'][:12]}")
 
-    live = sidecar_path()
+    live = durable.live
     if live.is_file():
         here = count_rows(live)
         if here > int(record["rows"]) and not force:
-            raise SidecarLost(
+            raise DurableLost(
                 f"{tracked_name(live)} holds {here:,} rows and the manifest records "
                 f"{record['rows']:,}. The live file is AHEAD of the copy — it is a harvest "
-                f"nobody has run `curate sidecar save` over — and restoring would delete "
-                f"those rows. Save it first, or pass --force if it is known to be wrong."
+                f"nobody has run `{durable.save_command}` over — and restoring would "
+                f"delete those rows. Save it first, or pass --force if it is known to be wrong."
             )
     live.parent.mkdir(parents=True, exist_ok=True)
     writing = live.with_suffix(live.suffix + ".writing")
@@ -323,7 +383,7 @@ def restore(force: bool = False, log=print) -> dict:
     writing.replace(live)
     back = measure(live)
     if back != reading:
-        raise SidecarLost(f"the restored file reads {back} against the copy's {reading}.")
+        raise DurableLost(f"the restored file reads {back} against the copy's {reading}.")
     log(f"restored {tracked_name(live)}: {back['rows']:,} rows")
     return {"restored": tracked_name(live), "from": tracked_name(copy), **back}
 
@@ -343,13 +403,13 @@ def guard(log=print) -> dict:
     sidecar has nothing to be short *of*, and a guard that refused there would
     refuse every fresh clone's first run.
     """
-    record = read_manifest()
+    record = read_manifest(sidecar())
     if record is None:
         return {"verdict": "unrecorded"}
     live = sidecar_path()
     recorded = int(record["rows"])
     if not live.is_file():
-        raise SidecarLost(
+        raise DurableLost(
             f"the supply sidecar is missing: {tracked_name(live)} is not there, and the "
             f"manifest records {recorded:,} rows of standing supply at "
             f"{str(record['sha256'])[:12]}. It is not regenerable from the checkout — the "
@@ -360,7 +420,7 @@ def guard(log=print) -> dict:
         )
     rows = count_rows(live)
     if rows < recorded:
-        raise SidecarLost(
+        raise DurableLost(
             f"the supply sidecar has lost rows: {tracked_name(live)} holds {rows:,} and the "
             f"manifest records {recorded:,}. A run started here would be offered a supply "
             f"{recorded - rows:,} locations smaller than the one on record, and would say "
@@ -447,7 +507,8 @@ __all__ = [
     "BACKUP_UNIT",
     "SCHEMA",
     "SIDECAR_NAME",
-    "SidecarLost",
+    "Durable",
+    "DurableLost",
     "backup_path",
     "check",
     "count_rows",
@@ -459,6 +520,7 @@ __all__ = [
     "read_manifest",
     "restore",
     "save",
+    "sidecar",
     "sidecar_path",
     "write_manifest",
 ]

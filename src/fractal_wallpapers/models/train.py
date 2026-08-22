@@ -231,8 +231,8 @@ def shown(value) -> str:
     return "n/a" if value is None else f"{value:.4f}"
 
 
-def claim(directory: Path) -> Path:
-    """Take the run directory, or refuse because something else already has it.
+def claim(directory: Path, name: str = "training.lock") -> Path:
+    """Take the directory, or refuse because something else already has it.
 
     Two trainers in one directory do not collide loudly — they interleave their
     logs, take turns overwriting one checkpoint, and produce a run whose numbers
@@ -240,22 +240,27 @@ def claim(directory: Path) -> Path:
     resume write, tens of minutes in, and by then the log reads like one run
     behaving strangely rather than two behaving normally.
 
-    Written once and used by every trainer here, because a second copy of this
-    would be a second answer to whether a directory is free. **Every trainer has
-    to actually call it** — this module owned the lock and did not take it, and
-    two processes duly trained one run directory at once. A launcher that can be
-    started twice eventually is.
+    Written once and used by everything here that a second process must not be
+    inside, because a second copy of this would be a second answer to whether a
+    directory is free. **Every caller has to actually call it** — this module
+    owned the lock and did not take it, and two processes duly trained one run
+    directory at once. A launcher that can be started twice eventually is; the
+    embedding leg proved the same thing again on 2026-08-22, two appenders
+    interleaving half-written rows into one JSONL.
+
+    `name` is what the lock is called, so a caller that is not a trainer does not
+    leave a `training.lock` behind for somebody to puzzle over.
     """
     import os
 
-    lock = directory / "training.lock"
+    lock = directory / name
     try:
         handle = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
     except FileExistsError:
         raise RuntimeError(
-            f"{lock} exists, so another run already has {directory.name}. Two trainers in "
-            f"one directory take turns overwriting one checkpoint and produce a run whose "
-            f"numbers belong to neither. If nothing is running, delete it."
+            f"{lock} exists, so another process already has {directory.name}. Two writers in "
+            f"one directory interleave their work and produce a result that belongs to "
+            f"neither. If nothing is running, delete it."
         ) from None
     with os.fdopen(handle, "w", encoding="utf-8") as writer:
         writer.write(str(os.getpid()))

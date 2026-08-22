@@ -48,6 +48,18 @@ it against its own pre-registered bar. Its model, transform and loss are in
 set and not a tier on an ordinal scale — but it ships through the same `ship`,
 supplying only its own agreement statistic.
 
+**`embedding` is the one model here that is not a judge, and never trains.**
+DINOv2 ViT-S/14 through timm, frozen, classifier head removed, read for the one
+question *are these two pictures alike*: the gallery pass picks locations by how
+far apart they look, and `curation.embeddings` keeps one 384-dimensional unit
+vector per admitted location. Nothing here reads a label, nothing is shipped
+through `ship`, and there is no bar to pre-register — the vector says nothing
+about whether a wallpaper is good. What this repository decides is the picture
+handed to it, which is `curation.neutral`'s, and the patch size is why that
+picture is 448x252: DINOv2 tiles its input into 14-pixel patches, so the frame
+goes in whole rather than through whichever resize the transform happened to
+carry.
+
 **The render cache is a precondition, and it answers off the corpus.** `renders
 plan` lays the jobs out and `renders build` makes them, but `renders.missing` —
 which is what says whether a trainer may start — is derived from the **store's
