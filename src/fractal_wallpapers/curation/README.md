@@ -275,6 +275,16 @@ every term it subtracts. A night capped at six hours with a three-hour harvest t
 curation a little under three, and the curation is the leg that will stop early —
 `-n` binds it long before the clock does.
 
+**Restore `artifacts/curation` before the night starts.** Both halves of this
+stage live in it — `supply_scores.jsonl`, which every intake ranks against, and
+`runs/<run>/release/`, where every full-resolution picture is written — so a night
+launched with the subtree archived reads its supply and writes its pictures
+seek-bound on a USB disk. `fractal-wallpapers storage restore curation` is the
+pre-flight, and it is cheap next to what it saves: 895 directories, 28,112 files
+and 6.01 GiB, measured at **2.8 min cold** (28–37 MiB/s across the bulk leg, 170
+files/s) and 70 s over a warm source. `storage status --no-sizes` says which tier
+it is on without walking the archive to answer.
+
 **A run name is claimed once.** A `curate run` whose name already has a
 `run_plan.json` refuses: continuing an interrupted run is `--resume`, and it is a
 decision rather than a default. A `--resume` that contradicts the stored plan

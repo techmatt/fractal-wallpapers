@@ -212,6 +212,28 @@ def copy_tree(source: Path, destination: Path, files: list[Path], log=None) -> t
     return written, max(time.perf_counter() - started, 1e-6)
 
 
+def mirror_empty_directories(source: Path, destination: Path) -> int:
+    """Make every directory of `source` at `destination`. Returns how many were missing.
+
+    `copy_tree` makes the parents of the files it copies and nothing else, so a
+    directory holding no files — a run that never released, and there are three
+    of those in `curation` — never arrives. `weigh` counts *directories*, so the
+    structural check then refuses a copy in which every file is present, and
+    refuses it after paying for the whole copy.
+
+    Kept out of `copy_tree` on purpose: the probe that forecasts the copy is a
+    `copy_tree` of sixty-four files, and a walk of the source's whole directory
+    tree inside it would be timed as if it were part of copying them.
+    """
+    made = 0
+    for here, _, _ in os.walk(source):
+        where = destination / Path(here).relative_to(source)
+        if not where.is_dir():
+            made += 1
+        where.mkdir(parents=True, exist_ok=True)
+    return made
+
+
 def manifest_rows_resolve(destination: Path, unit: str, tiers: Tiers, log=print) -> dict:
     """Every path a manifest under this subtree names, resolved and checked.
 
@@ -381,6 +403,7 @@ def move(unit: str, *, to: str, log=print) -> dict:
     already = set(draw)
     rest = [path for path in files if path not in already]
     written, copied_in = copy_tree(source, destination, rest, log=log)
+    mirror_empty_directories(source, destination)
     written += probed_bytes
     copied_in += probed_in
     log(
@@ -486,6 +509,7 @@ __all__ = [
     "StorageError",
     "bytes_said_plainly",
     "duration_said_plainly",
+    "mirror_empty_directories",
     "move",
     "require_hot",
     "status",
