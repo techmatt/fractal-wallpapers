@@ -116,6 +116,23 @@ rewrite touched that one field on every row and nothing else. `gallery` is free
 for it because the deep run's `gallery_frames_per_admission` was renamed the same
 day to what those frames are — evaluation frames.
 
+**A row carries two readings of its own picture, and only one of them is a
+decision.** `scores` is what the run read on the night it decided, on the artifact
+that was shipped then — that is the provenance and nothing overwrites it. Two of
+the six runs were judged by a strange head that has since been replaced, so their
+`P(≥3)` is a point on a scale that no longer exists and they have no `P(≥4)` at
+all. `curate rescore` reads every candidate render again through the head shipped
+now and puts the result in a **`scores_current`** block carrying that head's
+sha256. Every cut in curation still reads `scores.p_ge3`; a comparison across runs
+reads the other one.
+
+Read on 2026-08-22 against `smooth_render c0ac536d` and `strange_render a011188b`:
+the 925 rows already on those artifacts came back to within 6.8e-06 — identity, as
+it should be, the residue being half-precision and batching. The 125 rows on the
+retired three-class `79201d0c` moved: median `P(≥3)` 0.000 to 0.041, twelve rows
+above the 0.685 strange bar became ten, and all 125 gained the fourth cutpoint
+that head never had.
+
 **A verdict taken after the run is added, never written over.** A released row a
 later review takes back keeps `verdict: released` — that is what the run decided
 and it stays true, and a store that edited it would delete the evidence the

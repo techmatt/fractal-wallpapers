@@ -9,6 +9,7 @@ wallpapers and a durable account of why those and not the others.
 ```
 binding    which ledgers this curation reads, declared once and never guessed
 durability the supply sidecar's manifest, its copy, and the guard over a run
+rescore    the accumulated pool, read again through the heads shipped now
 floors     every number that removes a picture, in one file
 intake     the ranked offer, best first per partition
 budget     how many pictures to make, and for which judge

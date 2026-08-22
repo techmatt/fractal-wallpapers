@@ -85,6 +85,24 @@ the sha of the head it was read against, how it was read, and when. It is still
 a `>=3` bar. The head now emits a `P(>=4)` and that cutpoint gates nothing: a four
 is a class the release path prefers where it finds one, not a second floor.
 
+## Measured is not the same as acting, and there are now two of each
+
+The measurement that set 0.685 was a paragraph of prose in a `method` string for
+five days: `grep -rn isotonic` reached one assertion in the suite and nothing
+else, so the one cut in this project that removes a finished picture was the one
+nobody could re-derive. It is a command now —
+`fractal-wallpapers head floor <head>` — and running it on the strange head
+**reproduces 0.685**: crossing 0.680898 against the 0.6809 the method states,
+which is 0.685 rounded up on the 0.005 grid it was rounded on.
+
+The same command on the smooth head produced [`SMOOTH_RELEASE_FLOOR`], 0.381, and
+that one **does not act**. [`ACTING_RELEASE_BARS`] is still the single place that
+answers whether a head gates, and the smooth head's cut is still the advisory;
+what the measurement adds is that the advisory's 0.50 can now be read against a
+number somebody measured — the head stops disagreeing with its labelers at 0.381,
+not at the midpoint of its own scale. Promoting it is a decision of the kind Matt
+took for the strange head, off a sheet rather than off a curve.
+
 That split is why there are two types, and they live in [`fractal_wallpapers.cuts`]
 rather than here: three of the four acting cuts sit on the location head's scale
 and two of those belong to the supply engine, so a class imported from this module
@@ -238,11 +256,59 @@ STRANGE_RELEASE_BAR = Restatement(
     date="2026-08-17",
 )
 
+#: **The smooth head's measured release floor**, which does not act.
+#:
+#: The same fit as the bar above, on the other head's own corpus, and it is here
+#: for the reason the advisory beside it is not enough: `RELEASE_ADVISORY` is the
+#: midpoint of a probability scale and answers "would this head call the picture a
+#: wallpaper", where this answers "above what score does this head stop disagreeing
+#: with the people who judged it". Those are different questions and they have
+#: different answers — 0.50 against 0.381.
+#:
+#: **It is recorded and not wired.** Nothing reads it at selection; the smooth
+#: head's cut is still [`release_advisory`], and promoting it is a decision of the
+#: kind Matt took for the strange head on 2026-08-17, off a sheet rather than off
+#: a curve. What this buys now is that the question "would a floor at this height
+#: have bought anything" is answerable off the accumulating record.
+#:
+#: Re-derive it with `fractal-wallpapers head floor smooth_render`, which is the
+#: command that produced it — the strange bar's own crossover lived as prose for
+#: five days and could not be checked by anybody.
+SMOOTH_RELEASE_FLOOR = Restatement(
+    value=0.381,
+    head_sha256="c0ac536d0979713a0bcf198eb81a5a080a97bc4376b4124dc6c589b69b7767ef",
+    method=(
+        "the labels-derived crossover, by `head floor smooth_render`. Isotonic regression "
+        "(pool-adjacent-violators, ties pooled, non-decreasing) of P(the human said >=3) "
+        "against this head's own P(>=3), over all 4,930 labeled smooth_render pictures scored "
+        "through the shipped artifact; the crossing is the LOWEST score whose fitted agreement "
+        "reaches a half, and the floor is that crossing rounded UP. Crossing 0.380325, 95% "
+        "cluster bootstrap over places [0.377, 0.576]. Rounded up to three places, which is "
+        "0.381; on the 0.005 grid the strange bar was rounded on it is 0.385. 1,995 of the "
+        "4,930 are keepers (40.5%). ADVISORY: this height gates nothing, and 162 of the 525 "
+        "smooth rows in the pool (30.9%) sit below it."
+    ),
+    reference_pool="all 4,930 labeled smooth_render pictures, over 1,828 places",
+    date="2026-08-22",
+)
+
 #: Which render heads' release cut ACTS, and at what height. Everything not in
 #: here gets an [`Advisory`]. Spelled out rather than imported from `budget.HEADS`
 #: only because that module already imports this one; the suite checks the
 #: spelling against it.
+#:
+#: [`SMOOTH_RELEASE_FLOOR`] is deliberately not in here. A measured height and an
+#: acting one are different things, and this mapping is the single place that
+#: answers whether a head gates.
 ACTING_RELEASE_BARS = {"strange_render": STRANGE_RELEASE_BAR}
+
+#: Every release floor that has been **measured**, acting or not. The fit that
+#: produced each one is `head floor <head>`, and the record it wrote is
+#: `models/<head>/release_floor.json`.
+MEASURED_RELEASE_FLOORS = {
+    "strange_render": STRANGE_RELEASE_BAR,
+    "smooth_render": SMOOTH_RELEASE_FLOOR,
+}
 
 #: Why the one acting bar acts, and what its height now rests on. Carried onto
 #: every row it stamps: the two halves have different provenance and a row that
@@ -427,6 +493,19 @@ def summary(modes: dict | None = None) -> dict:
         "advisory": {
             "render heads with no acting bar": RELEASE_ADVISORY,
             "acting instead": sorted(ACTING_RELEASE_BARS),
+            # A height somebody measured is not a height that acts, and the two
+            # sit side by side here so a reader cannot mistake one for the other.
+            "measured_but_not_acting": {
+                head: {
+                    "value": restated.value,
+                    "restated_against": restated.head_sha256,
+                    "restated_on": restated.date,
+                    "reference_pool": restated.reference_pool,
+                    "method": restated.method,
+                }
+                for head, restated in sorted(MEASURED_RELEASE_FLOORS.items())
+                if head not in ACTING_RELEASE_BARS
+            },
         },
         "caps": {
             "thin_supply_divisor": THIN_SUPPLY_DIVISOR,
@@ -444,6 +523,7 @@ def summary(modes: dict | None = None) -> dict:
 __all__ = [
     "ACTING_RELEASE_BARS",
     "ATTEMPT_MULTIPLIER",
+    "MEASURED_RELEASE_FLOORS",
     "CLUSTER_CAP",
     "GOOD_FLOOR",
     "GREAT_CUT",
@@ -452,6 +532,7 @@ __all__ = [
     "JUNK_FLOOR_RESTATED",
     "LOCATION_POOL",
     "RELEASE_ADVISORY",
+    "SMOOTH_RELEASE_FLOOR",
     "STRANGE_BAR_BASIS",
     "STRANGE_RELEASE_BAR",
     "THIN_SUPPLY_DIVISOR",
