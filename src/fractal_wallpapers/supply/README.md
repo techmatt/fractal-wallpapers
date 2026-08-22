@@ -170,6 +170,20 @@ resume from is one whose identities closed; what it holds is the frontier, the
 counters, the quota's realized tallies and price accumulators, the floor ledger's
 accrual and the random state.
 
+**`--finish-by HH:MM` derives `--minutes` from the time the night has to end.**
+The span to the next `HH:MM`, less what has to happen after the harvest — the
+release leg at `--release-slots` x the measured 41.9 s a finished picture costs at
+4 workers, the ~2 min closing `curate score`, the 2m40 archive ledger load and a
+20-minute margin — and then divided by the 1.13x above, because `--minutes` is
+active time and the span is wall. `fractal_wallpapers/schedule.py` owns every
+term, prints the derivation at startup and writes it into `summary.json` as
+`finish_by`, so a night that lands late is attributable to the term that was
+reserved wrong. It refuses rather than returning a small number when the
+reservations do not fit. `--release-slots` has no default and is required with it:
+the release reservation is the largest term and a guessed one is the only part of
+this arithmetic nothing downstream can check. **It derives and does not pace** —
+the active-minute budget is still the only backstop, and the margin is real money.
+
 **`--minutes` is also the only backstop a harvest has** — there is no
 `--wall-budget` here, that flag belongs to `curate run`. It is a hard one: the loop
 refuses to *start* a batch when the spent minutes plus the running mean batch would
@@ -180,6 +194,7 @@ the run; the summary says which one did.
 ```
 fractal-wallpapers census
 fractal-wallpapers harvest --minutes 90 --batch 8
+fractal-wallpapers harvest --finish-by 07:00 --release-slots 80   # derives --minutes
 fractal-wallpapers harvest --exploration-floor 0.25 --exploration-start 0.45
 fractal-wallpapers harvest --no-exploration --lineage-discount 0   # neither lever
 fractal-wallpapers harvest --partition mandelbrot --root-channel proven
@@ -188,6 +203,33 @@ fractal-wallpapers harvest --partition mandelbrot --seeds seeds.jsonl   # one le
 fractal-wallpapers derive-prices --run artifacts/harvest --regularize --write
 fractal-wallpapers derive-tau-h --write
 ```
+
+## What a run writes for a readout to price it with
+
+`summary.json` carries, beside the run-wide books:
+
+* `tally.by_partition` — the exploration share against the deficit-priced contest
+  **per partition**, each cell with its slots, finds, distinct admissions and the
+  **median head score** of those admissions. The medians come off a 100-bin
+  histogram rather than the scores themselves, because the cells are checkpointed
+  at every batch boundary; `harvest.SCORE_BINS` is the resolution and it is a
+  readout's, not a cut's.
+* `tally.saturation_by_partition` — seen against discounted, per partition. The
+  run-wide pair says whether the cross-run memory fired; this says where.
+* `tally.minutes` — the charged clock split into `expand` and `reframe`. Both are
+  inside `--minutes` and only their sum was recorded before.
+* `walk.operators` — firings, seconds, seconds per firing and share of the charged
+  clock, **per reframing operator**. The neighbourhood enumeration is the
+  expensive one and is on by default in production; this is the first time a run
+  prices it out of its own record instead of out of a replay. The availability and
+  refusal counts sit beside it in `walk.counts` as
+  `reframing:<operator>:<available|reason>`.
+* `quota.floor_versus_deficit.per_partition` and `quota.unspent_floor.per_partition`
+  are two different questions and are already two blocks: the first is how many
+  realized minutes each bucket bought, the second is whether the floor's promise
+  was kept — `spent`, `unspent` or `starved`, with `starved` listed separately at
+  `quota.unspent_floor.starved`. A partition whose floor never bound anything and
+  one nothing could feed are not the same silence.
 
 ## Reading a run afterwards: `quota.jsonl` beside the ledger
 

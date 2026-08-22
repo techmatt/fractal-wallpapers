@@ -34,6 +34,12 @@ RELEASE_URL = "https://github.com/techmatt/fractal-wallpapers/releases/download/
 #: written here too so the spec a command built says what it rendered.
 DEFAULT_MODE = "smooth"
 
+#: The harvest's active-minute budget when neither `--minutes` nor `--finish-by`
+#: says otherwise. Here rather than as the flag's `default=` because the two
+#: flags are exclusive and `--minutes 0` is a real answer: a default filled in by
+#: argparse could not be told from a caller who asked for it.
+DEFAULT_HARVEST_MINUTES = 10.0
+
 __all__ = ["build_parser", "main", "repo_root"]
 
 
@@ -894,6 +900,33 @@ def walk(args: argparse.Namespace) -> int:
     return 0
 
 
+def harvest_minutes(args: argparse.Namespace):
+    """`(minutes, plan)` — the active-minute budget this leg is held to, and why.
+
+    `--finish-by` is a *derivation* of `--minutes` rather than a second budget:
+    the loop still stops on active minutes and nothing here paces it. What the
+    plan buys is that the number was arrived at from a time somebody named, on
+    the record, in terms a readout can subtract afterwards.
+    """
+    from fractal_wallpapers import schedule
+
+    if args.finish_by is None:
+        if args.release_slots is not None:
+            print("--release-slots is read only with --finish-by; ignoring it")
+        minutes = DEFAULT_HARVEST_MINUTES if args.minutes is None else args.minutes
+        return minutes, None
+    if args.release_slots is None:
+        raise schedule.Unschedulable(
+            "--finish-by reserves the release leg from the ceiling it will be asked for, so "
+            "it needs --release-slots N. There is no default: a reservation guessed at is the "
+            "one term of this arithmetic nothing downstream can check."
+        )
+    derived = schedule.plan(args.finish_by, args.release_slots)
+    for line in derived.lines():
+        print(f"[plan] {line}")
+    return derived.active_minutes, derived
+
+
 def harvest(args: argparse.Namespace) -> int:
     """Run the production loop: keep finding material where it is scarcest."""
     from fractal_wallpapers.discovery.walk import Limits, Policy, Walk
@@ -905,6 +938,7 @@ def harvest(args: argparse.Namespace) -> int:
     from fractal_wallpapers.supply.quota import Quota
     from fractal_wallpapers.supply.refill import Refill
 
+    minutes, derived = harvest_minutes(args)
     run_dir = resolve_output(args.out_dir)
     limits = Limits(
         batch=args.batch,
@@ -986,13 +1020,14 @@ def harvest(args: argparse.Namespace) -> int:
     run = Harvest(
         walk_run,
         quota,
-        budget=Budget(minutes=args.minutes, batches=args.batches),
+        budget=Budget(minutes=minutes, batches=args.batches),
         refill=refill,
         memory=memory,
         saturation_strength=0.0 if args.no_saturation else saturation.STRENGTH,
         discount_k=args.lineage_discount,
         discount_floor=args.lineage_discount_floor,
         partitions=partitions,
+        finish_by=None if derived is None else derived.record(),
     )
     if run.resume():
         print(f"resumed at batch {run.batch} ({run.active_minutes:.2f} active minutes spent)")
@@ -2221,6 +2256,27 @@ def curate_reject(args: argparse.Namespace) -> int:
     return 0
 
 
+def curate_repeats(args: argparse.Namespace) -> int:
+    """List every location the collection has served more than one wallpaper of.
+
+    Report only. The one-wallpaper-per-location rule acts at selection from
+    2026-08-22 and cannot reach backwards: these are the pairs the collection
+    accumulated while the rule was per-run and at two, and which of each group
+    survives is a decision for a person at a sheet.
+    """
+    from fractal_wallpapers.curation import served_locations
+
+    index = served_locations.build()
+    rows = served_locations.repeats(index)
+    extra = sum(len(cell["served"]) - 1 for cell in rows)
+    print(
+        f"{index.summary()['served_rows']} served wallpaper(s), {len(rows)} location(s) "
+        f"holding more than one, {extra} wallpaper(s) over the one-per-location rule"
+    )
+    print(json.dumps(rows, indent=2))
+    return 0
+
+
 def curate_parity(args: argparse.Namespace) -> int:
     """Render a real release plan both ways and compare the bytes."""
     from fractal_wallpapers.curation import checks, records
@@ -2598,11 +2654,27 @@ def build_parser() -> argparse.ArgumentParser:
     )
     production.add_argument("--seed", type=int, default=0, help="run seed (default: 0)")
     production.add_argument("--batch", type=int, default=8, help="node slots per batch")
-    production.add_argument(
+    harvest_clock = production.add_mutually_exclusive_group()
+    harvest_clock.add_argument(
         "--minutes",
         type=float,
-        default=10.0,
-        help="active-minute budget across every session of this run (default: 10; 0 for none)",
+        default=None,
+        help=f"active-minute budget across every session of this run "
+        f"(default: {DEFAULT_HARVEST_MINUTES:g}; 0 for none)",
+    )
+    harvest_clock.add_argument(
+        "--finish-by",
+        metavar="HH:MM",
+        help="derive --minutes from a wall-clock finish time instead of naming it: the "
+        "span to the next HH:MM, less the release leg (--release-slots), the closing "
+        "re-score, the ledger load and a margin, converted from wall to ACTIVE minutes. "
+        "The derived plan is printed at startup and written into the run summary",
+    )
+    production.add_argument(
+        "--release-slots",
+        type=int,
+        help="the release ceiling the curation leg will be asked for. Read only with "
+        "--finish-by, which reserves this many pictures at the measured rate",
     )
     production.add_argument(
         "--batches", type=int, help="stop after this many batches, whatever the clock says"
@@ -4571,7 +4643,8 @@ def curate_commands(subcommands) -> None:
                 description=(
                     "Full resolution is the expensive part — measure one before asking for "
                     "many. Nothing is padded or backfilled: a judge that cannot fill its "
-                    "quota under the slot, supply and look caps ships fewer, and says so. "
+                    "quota under the slot and supply caps, the acting bar, and the "
+                    "one-wallpaper-per-location rule ships fewer, and says so. "
                     "A long run wants --wall-budget: it stops cleanly at the last unit it "
                     "can afford rather than finding out afterwards, and --resume continues "
                     "an interrupted one from what it finished."
@@ -4619,9 +4692,10 @@ def curate_commands(subcommands) -> None:
         "--deep",
         action="store_true",
         help="hold this run to the deep mode's hung-unit ceilings instead of the shallow "
-        "ones. A deep release frame was measured at 607s against a shallow one's 16-452s, "
-        "and the backstop only ever raises itself off units a run has FINISHED - so a "
-        "deep row killed at the shallow ceiling never teaches the run that its class is slow",
+        "ones. A deep release frame was measured at 607s against a shallow distribution "
+        "whose median is 87.8s, and the backstop only ever raises itself off units a run "
+        "has FINISHED - so a deep row killed at the shallow colorize ceiling never teaches "
+        "the run that its class is slow",
     )
     running.set_defaults(handler=curate_run)
 
@@ -4654,6 +4728,19 @@ def curate_commands(subcommands) -> None:
         "--ephemeral", action="store_true", help="read the run's ephemeral record store"
     )
     rejecting.set_defaults(handler=curate_reject)
+
+    repeating = steps.add_parser(
+        "repeats",
+        help="list every location the collection has served more than one wallpaper of",
+        description=(
+            "A location is released once, collection-wide (curation.floors.CLUSTER_CAP). "
+            "That rule acts at selection and cannot reach backwards, so this is the read of "
+            "it against what the collection already holds: every near-duplicate group with "
+            "more than one served wallpaper in it, with both heads' scores. It decides "
+            "nothing, rejects nothing and writes nothing."
+        ),
+    )
+    repeating.set_defaults(handler=curate_repeats)
 
     checking = steps.add_parser(
         "parity",

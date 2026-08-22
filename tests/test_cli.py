@@ -319,6 +319,42 @@ def test_a_run_s_shape_defaults_to_the_run_s_own_and_a_plan_s_to_a_number() -> N
     assert parse(["curate", "run", "--run", "v1", "--wall-budget", "900"]).wall_budget == 900.0
 
 
+def test_a_harvest_names_its_minutes_or_derives_them_and_never_both() -> None:
+    """`--finish-by` is a derivation of `--minutes`, so asking for both is asking
+    the same question twice with two answers."""
+    parse = cli.build_parser().parse_args
+    assert parse(["harvest"]).minutes is None
+    assert parse(["harvest"]).finish_by is None
+    assert parse(["harvest", "--minutes", "90"]).minutes == 90.0
+    assert parse(["harvest", "--finish-by", "07:00"]).finish_by == "07:00"
+    with pytest.raises(SystemExit):
+        parse(["harvest", "--minutes", "90", "--finish-by", "07:00"])
+
+
+def test_a_derived_plan_will_not_reserve_a_release_leg_nobody_sized() -> None:
+    """The release reservation is the largest term in the derivation and there is
+    no honest default for it, so `--finish-by` without `--release-slots` refuses
+    rather than reserving a number nothing downstream can check."""
+    from fractal_wallpapers import schedule
+
+    parse = cli.build_parser().parse_args
+    with pytest.raises(schedule.Unschedulable):
+        cli.harvest_minutes(parse(["harvest", "--finish-by", "07:00"]))
+
+    minutes, plan = cli.harvest_minutes(parse(["harvest"]))
+    assert (minutes, plan) == (cli.DEFAULT_HARVEST_MINUTES, None)
+
+    minutes, plan = cli.harvest_minutes(parse(["harvest", "--minutes", "0"]))
+    assert (minutes, plan) == (0.0, None)
+
+    minutes, plan = cli.harvest_minutes(
+        parse(["harvest", "--finish-by", "07:00", "--release-slots", "80"])
+    )
+    assert plan is not None
+    assert minutes == plan.active_minutes
+    assert plan.record()["release_slots"] == 80
+
+
 def test_finding_a_sheet_to_serve_is_a_command() -> None:
     """A sheet's directory name is whoever-cut-it's choice and need not be the
     batch inside it, so the mapping lived only in each manifest and finding a

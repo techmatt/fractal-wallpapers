@@ -32,16 +32,17 @@ def test_the_thin_supply_cap_binds_below_the_slot_budget() -> None:
     assert len(picked) == 1
 
 
-def test_the_look_cap_holds_across_both_judge_passes() -> None:
-    """Two disjoint passes over the same locations must not each take two of a look."""
+def test_one_location_takes_one_seat_across_both_judge_passes() -> None:
+    """Two disjoint passes over the same locations seat one wallpaper between them."""
     used: dict = {}
-    first = [entry(f"s{i}", "mandelbrot", "one_look", 0.9) for i in range(3)]
-    second = [entry(f"t{i}", "mandelbrot", "one_look", 0.9) for i in range(3)]
+    first = [entry(f"s{i}", "mandelbrot", "one_place", 0.9) for i in range(3)]
+    second = [entry(f"t{i}", "mandelbrot", "one_place", 0.9) for i in range(3)]
     picked_a, *_ = selection.select(first, {"mandelbrot": 3}, used=used)
     picked_b, log_b, _ = selection.select(second, {"mandelbrot": 3}, used=used)
-    assert len(picked_a) == floors.CLUSTER_CAP
+    assert len(picked_a) == floors.CLUSTER_CAP == 1
     assert picked_b == []
-    assert all(row["skipped"] == "cluster_cap" for row in log_b)
+    assert all(row["skipped"] == selection.LOCATION_SERVED for row in log_b)
+    assert all(row["cause"] == "this_run" for row in log_b)
 
 
 def test_the_guarantee_floors_the_budget_at_one_over_the_supply_cap() -> None:
@@ -65,16 +66,16 @@ def test_only_the_first_pick_of_an_owed_partition_is_a_guarantee_slot() -> None:
     assert sources == ["guarantee", "mix", "mix"]
 
 
-def test_the_look_cap_outranks_the_guarantee() -> None:
-    """The guarantee buys a slot and the right to spend it, not a third picture of
-    a look the release has already taken twice."""
-    used = {"one_look": floors.CLUSTER_CAP}
-    pool = [entry("a", "phoenix:classic", "one_look", 0.99)]
+def test_the_location_rule_outranks_the_guarantee() -> None:
+    """The guarantee buys a slot and the right to spend it, not a second picture of
+    a place the collection has already released one of."""
+    used = {"one_place": floors.CLUSTER_CAP}
+    pool = [entry("a", "phoenix:classic", "one_place", 0.99)]
     picked, log, _ = selection.select(
         pool, {"phoenix:classic": 1}, used=used, guarantees=["phoenix:classic"]
     )
     assert picked == []
-    assert log[0]["skipped"] == "cluster_cap"
+    assert log[0]["skipped"] == selection.LOCATION_SERVED
 
 
 def test_a_failed_render_is_not_eligible_and_is_not_read_as_a_zero() -> None:
@@ -128,8 +129,79 @@ def test_a_row_the_grouping_cannot_place_gets_its_own_look() -> None:
 
 
 def test_the_log_carries_a_reason_for_every_row_it_did_not_pick() -> None:
-    used = {"one_look": floors.CLUSTER_CAP}
-    pool = [entry("a", "mandelbrot", "one_look", 0.9), entry("b", "mandelbrot", "g2", 0.8)]
+    used = {"one_place": floors.CLUSTER_CAP}
+    pool = [entry("a", "mandelbrot", "one_place", 0.9), entry("b", "mandelbrot", "g2", 0.8)]
     picked, log, _ = selection.select(pool, {"mandelbrot": 1}, used=used)
     assert [e["id"] for e in picked] == ["b"]
-    assert {row["id"]: row["skipped"] for row in log} == {"a": "cluster_cap", "b": None}
+    assert {row["id"]: row["skipped"] for row in log} == {
+        "a": selection.LOCATION_SERVED,
+        "b": None,
+    }
+
+
+# --------------------------------------------------------------------------- #
+# One wallpaper per location, collection-wide (Matt, 2026-08-22).
+# --------------------------------------------------------------------------- #
+def test_a_place_an_earlier_run_served_is_refused_and_says_which_side() -> None:
+    """The cross-run half: nothing in this run has taken the seat, and it is still
+    refused, because the collection already holds a wallpaper of the place."""
+    pool = [entry("a", "mandelbrot", "g1", 0.99), entry("b", "mandelbrot", "g2", 0.98)]
+    picked, log, fills = selection.select(pool, {"mandelbrot": 2}, served={"g1"})
+    assert [e["id"] for e in picked] == ["b"]
+    refused = next(row for row in log if row["id"] == "a")
+    assert (refused["skipped"], refused["cause"]) == (selection.LOCATION_SERVED, "prior_run")
+    assert fills["mandelbrot"]["location_served"] == 1
+
+
+def test_the_higher_ranked_seat_keeps_the_place_and_the_weaker_one_is_refused() -> None:
+    """Score order decides, so the row refused is always the weaker reading."""
+    pool = [entry("strong", "mandelbrot", "g1", 0.99), entry("weak", "mandelbrot", "g1", 0.10)]
+    picked, log, _ = selection.select(pool, {"mandelbrot": 2})
+    assert [e["id"] for e in picked] == ["strong"]
+    assert next(row for row in log if row["id"] == "weak")["cause"] == "this_run"
+
+
+def test_one_grouping_over_both_heads_makes_their_tags_comparable() -> None:
+    """Grouped separately, `group#0` in one pass and `group#0` in the other are
+    unrelated labels — and the counter under them is then sharing a dictionary
+    rather than a rule."""
+    here = {"kind": "mandelbrot"}
+    frame = {"center_re": "-0.5", "center_im": "0", "width": "0.4"}
+    elsewhere = {"center_re": "0.28", "center_im": "0.01", "width": "0.001"}
+
+    def row(attempt: int, score: float, viewport: dict) -> dict:
+        return {
+            "attempt": attempt,
+            "partition": "mandelbrot",
+            "p_ge3": score,
+            "family": here,
+            "viewport": viewport,
+        }
+
+    smooth = [row(0, 0.9, elsewhere)]
+    strange = [row(1, 0.8, frame)]
+    apart = {
+        head: [e["group"] for e in selection.entries(rows)]
+        for head, rows in (("smooth", smooth), ("strange", strange))
+    }
+    assert apart["smooth"] == apart["strange"]  # the collision this rule cannot tolerate
+    together, served = selection.grouped({"smooth": smooth, "strange": strange})
+    assert together["smooth"][0]["group"] != together["strange"][0]["group"]
+    assert served == set()
+
+
+def test_the_served_index_comes_back_as_tags_in_the_candidates_own_grouping() -> None:
+    here = {"kind": "mandelbrot"}
+    frame = {"center_re": "-0.5", "center_im": "0", "width": "0.4"}
+    served = [{"family": here, "viewport": frame}]
+    rows = [
+        {
+            "attempt": 0,
+            "partition": "mandelbrot",
+            "p_ge3": 0.9,
+            "family": here,
+            "viewport": frame,
+        }
+    ]
+    entries_by_head, already = selection.grouped({"smooth": rows}, served)
+    assert entries_by_head["smooth"][0]["group"] in already

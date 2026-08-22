@@ -118,18 +118,21 @@ SOURCING, WALK = "sourcing", "walk"
 
 #: What a unit of each curation leg may take in a deep run before it is killed.
 #:
-#: **Declared, never inherited.** `pacing.HUNG_CEILING` is sized against the
-#: shallow release distribution — 16 s to 452 s measured, backstopped at 1800 s —
-#: and a deep release is a different class: 607 s for one 2560x1440 ss4 frame at
-#: width 7.07e-11 and an iteration cap of 46,365, on an idle machine. That is
-#: three times the shallow maximum before this mode has drawn anything near its
-#: own floor, where the cap is higher and more of the frame runs to it.
+#: **Declared, never inherited**, and the two release ceilings have since met at
+#: one number without becoming one declaration. This mode's is four times the
+#: measured deep render: 607 s for one 2560x1440 ss4 frame at width 7.07e-11 and
+#: an iteration cap of 46,365, on an idle machine, before this mode has drawn
+#: anything near its own floor where the cap is higher and more of the frame runs
+#: to it. `pacing.HUNG_CEILING`'s release leg arrived at the same 2400 s from the
+#: other side — twice the shallow tail (`pacing.RELEASE_DISTRIBUTION`), which run2
+#: took to 1084.6 s. Same height, two measurements, and a change to either must
+#: not silently move the other: a deep frame and a shallow one are still different
+#: classes and the day one of these moves is the day that matters.
 #:
-#: So: four times the measured deep render for the release leg, and the shallow
-#: multiple carried onto the colorize leg's own measurement. The cost of setting
-#: these high is that one genuinely hung unit takes this long to die; the cost of
-#: setting them low is a finished deep picture killed at the wire, with a record
-#: that reads as a release.
+#: The colorize leg keeps the shallow multiple carried onto its own measurement.
+#: The cost of setting these high is that one genuinely hung unit takes this long
+#: to die; the cost of setting them low is a finished deep picture killed at the
+#: wire, with a record that reads as a release.
 HUNG_CEILING = {pacing.COLORIZE: 1200.0, pacing.RELEASE: 2400.0}
 
 #: What one batch of the [`WALK`] leg may take before it is killed.

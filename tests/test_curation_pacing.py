@@ -183,8 +183,11 @@ def test_a_truly_hung_unit_still_dies() -> None:
     """Conservative is not unbounded: the backstop is a ceiling, not a suggestion.
 
     Every unit of run3's release leg is bounded, from the first — which had nothing
-    measured at all — to the last, by which point the leg's longest healthy row has
-    pushed the deadline a little above the ceiling on its own.
+    measured at all — to the last. Since the 2026-08-21 restatement the whole of
+    that leg sits under the ceiling: 4x its longest row is 1806.4 s against a
+    2400 s backstop, so the measurement never raises the deadline and the ceiling
+    is what every row was actually held to. A leg whose own tail exceeds it still
+    raises it, which is the property this file's other tests pin.
     """
     paced, _ = clock()
     leg = paced.leg(pacing.RELEASE)
@@ -193,7 +196,12 @@ def test_a_truly_hung_unit_still_dies() -> None:
     for seconds in RUN3_RELEASE_SECONDS:
         leg.observe(seconds)
         assert ceiling <= leg.timeout() <= 2 * ceiling
-    assert leg.timeout() == pytest.approx(pacing.HUNG_MULTIPLE * max(RUN3_RELEASE_SECONDS))
+    raised = pacing.HUNG_MULTIPLE * max(RUN3_RELEASE_SECONDS)
+    assert raised < ceiling
+    assert leg.timeout() == pytest.approx(ceiling)
+    # And the raise is still live above it: one row from the tracked tail does it.
+    leg.observe(1084.6)
+    assert leg.timeout() == pytest.approx(pacing.HUNG_MULTIPLE * 1084.6)
 
 
 def test_the_margin_is_per_leg_and_not_once_for_the_run() -> None:

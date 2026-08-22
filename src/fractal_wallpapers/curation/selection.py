@@ -1,15 +1,15 @@
 """Which candidates take the release's slots. One rule, three caps, and one bar.
 
 Top-N by the judge's own score, per partition, under three limits: the partition's
-slot allocation, the thin-supply emit cap, and at most [`floors.CLUSTER_CAP`]
-picks from one near-duplicate group per run. Nothing else discounts a candidate.
+slot allocation, the thin-supply emit cap, and **one wallpaper per location for
+the whole collection**. Nothing else discounts a candidate.
 
 ## The bar, where a head has one, is a floor under all three
 
 A head with an acting release bar ([`floors.release_bar`]) offers only the rows
 that clear it. The three caps are ceilings on how many a partition may seat; the
 bar is the one thing here that says a particular row may not be seated *at all*,
-and it outranks the guarantee for the same reason the look cap does — the
+and it outranks the guarantee for the same reason the location rule does — the
 guarantee buys a slot and the right to spend it, not the right to spend it on
 something the head calls a failure.
 
@@ -31,7 +31,7 @@ caller runs it twice; the head budget is decided outside, by [`budget`].
 
 ## The diversity rule is the near-duplicate grouping this repository already has
 
-"No more than two of one look" needs a definition of *one look*, and there is a
+"One wallpaper per location" needs a definition of *one location*, and there is a
 shipped one: `labeling.groups`, the connected components of "these two frames
 would leak into each other" — same plane exactly, seed constants within a
 tolerance, overlapping frames. It is the rule the train/evaluation split is drawn
@@ -43,15 +43,36 @@ model, a second cache and a second thing to keep in step with a checkpoint; the
 grouping this repository ships needs neither, is exact, and is already the
 authority on what two pictures being the same picture means here.
 
-**One counter across both passes.** The cap is per *run*: two disjoint head passes
-over the same locations would otherwise each be free to take two pictures of one
-look, and a release of four could be two looks.
+## The cap is one, and its scope is the collection
 
-## The cluster cap outranks the guarantee
+Both halves were widened on 2026-08-22 by Matt's ruling, and neither half was a
+tuning decision:
 
-A guaranteed partition whose only candidates sit in groups the run has already
-filled ships nothing and short-fills. The guarantee buys a slot and the right to
-spend it, not a second picture of a look already taken.
+* [`floors.CLUSTER_CAP`] is **1**. Two colorings of one frame are two wallpapers
+  of one place, and a collection is a set of places.
+* the scope is every run that has ever released, not this one. A candidate whose
+  group already holds a served wallpaper is refused `location_served`, whether
+  that wallpaper came from an earlier run ([`served_locations`]) or from a
+  higher-ranked seat in this run. **Higher-ranked keeps**: the pool is score
+  ordered and the counter is checked as each seat is taken, so the row that is
+  refused is always the weaker of the two on its own head's scale.
+
+**One grouping over everything, computed once** ([`grouped`]). A group id is a
+position in a connected-components labelling and means nothing outside the call
+that made it, so the two heads' pools and the served index have to be grouped
+*together* or their tags are not comparable — which is also what makes the cap
+apply to the union of the two heads' seats rather than to each of them.
+
+Both heads still attempt every location; the second seat for one is now always
+refused, so what the second attempt buys is the better of the two heads' readings
+rather than a second wallpaper. Sizing the attempt plan against that is a separate
+question and has not been taken.
+
+## The rule outranks the guarantee
+
+A guaranteed partition whose only candidates are places the collection already has
+ships nothing and short-fills. The guarantee buys a slot and the right to spend it,
+not a second picture of a place already taken.
 """
 
 from __future__ import annotations
@@ -64,10 +85,17 @@ from fractal_wallpapers.curation import floors
 #: by naming only the binding one.
 UNFILLED_REASONS = {
     "below_bar": "no remaining candidate cleared the head's acting release bar",
-    "cluster_cap": "every remaining candidate was a third picture of a look already taken",
+    "location_served": "every remaining candidate was a place the collection has already served",
     "no_candidates": "the partition ran out of scored candidates",
     "supply_cap": "the thin-supply cap: fewer than four passing candidates per slot",
 }
+
+#: The one refusal slug for the one-wallpaper-per-location rule, whichever side
+#: of it a candidate fell on. The `cause` beside it on the log row separates a
+#: place an earlier run served from a place this run just seated — the same
+#: refusal for a person reading a sheet, two different facts for a readout asking
+#: what the ruling cost.
+LOCATION_SERVED = "location_served"
 
 
 def groups_of(rows: list[dict]) -> list:
@@ -90,15 +118,26 @@ def groups_of(rows: list[dict]) -> list:
     return out
 
 
-def entries(rows: list[dict]) -> list[dict]:
-    """Candidate rows as the selector reads them: id, partition, group, score.
+def scored_rows(rows: list[dict]) -> list[dict]:
+    """The rows a selector may look at.
 
     Only rows that were actually scored are eligible. A failed render is a
     recorded row with a reason and no score, and a selector that read its absent
     score as a zero would rank a crash against a wallpaper.
     """
-    scored = [row for row in rows if row.get("p_ge3") is not None]
-    tags = groups_of(scored)
+    return [row for row in rows if row.get("p_ge3") is not None]
+
+
+def entries(rows: list[dict], tags: list | None = None) -> list[dict]:
+    """Candidate rows as the selector reads them: id, partition, group, score.
+
+    `tags` is the grouping's answer for these rows when it was taken over a wider
+    population — see [`grouped`], which is how the run calls this. Omitting it
+    groups these rows alone, which is right for a caller that has only these and
+    wrong for anything comparing tags across two calls.
+    """
+    scored = scored_rows(rows)
+    tags = groups_of(scored) if tags is None else list(tags)
     return [
         {
             "id": f"{row['attempt']:04d}",
@@ -111,6 +150,35 @@ def entries(rows: list[dict]) -> list[dict]:
     ]
 
 
+def grouped(by_head: dict, served=()) -> tuple[dict, set]:
+    """`(entries per head, the tags already holding a served wallpaper)`.
+
+    **One grouping over everything**, which is the only way the tags mean the
+    same thing in three places that have to agree: the smooth pass, the strange
+    pass, and the collection's served index. A group id is a position in a
+    connected-components labelling — group ids from two calls are unrelated — so
+    a run that grouped each head separately and then shared a counter between
+    them was sharing a dictionary and not a rule.
+
+    The served locations go in first and their tags come back out as the refusal
+    set. They are grouped *with* the candidates rather than tested against them
+    pairwise because a group is a connected component: a candidate can reach a
+    served location through an intermediate neither of them neighbours, and a
+    pairwise test would seat it.
+    """
+    served = list(served)
+    scored = {head: scored_rows(rows) for head, rows in by_head.items()}
+    order = sorted(scored)
+    tags = groups_of(served + [row for head in order for row in scored[head]])
+    already = set(tags[: len(served)])
+    out, at = {}, len(served)
+    for head in order:
+        count = len(scored[head])
+        out[head] = entries(scored[head], tags[at : at + count])
+        at += count
+    return out, already
+
+
 def select(
     candidates: list[dict],
     slots: dict,
@@ -119,6 +187,7 @@ def select(
     cluster_cap: int = floors.CLUSTER_CAP,
     guarantees=(),
     bar=None,
+    served=(),
 ) -> tuple[list[dict], list[dict], dict]:
     """`(selected, log, fills)` — top-N per partition under the caps and the bar.
 
@@ -128,8 +197,13 @@ def select(
     `caps`        `{partition: n}`, the thin-supply cap. A partition absent is
                   **uncapped**, which is the honest default for a caller with no
                   supply census; the driver always passes one.
-    `used`        a `{group: count}` carried **across** calls, so the cap is per
-                  run rather than per pass. Mutated in place.
+    `used`        a `{group: count}` carried **across** calls, so the cap covers
+                  the union of both heads' seats rather than each pass on its
+                  own. Mutated in place.
+    `served`      the group tags the collection has already released a wallpaper
+                  of, from [`grouped`]. A candidate in one is refused
+                  [`LOCATION_SERVED`] with cause `prior_run`; the same refusal
+                  with cause `this_run` is `used` reaching `cluster_cap`.
     `guarantees`  the partitions this pass owes a guaranteed slot. Two effects,
                   both on the first pick only: the budget floors at one, which is
                   the guarantee overriding the thin-supply cap; and that pick's
@@ -148,6 +222,7 @@ def select(
     """
     used = {} if used is None else used
     caps = {} if caps is None else caps
+    served = set(served)
     owed = set(guarantees)
     by_partition: dict[str, list[dict]] = {}
     for entry in candidates:
@@ -170,7 +245,7 @@ def select(
             if taken >= budget:
                 break
             group = entry["group"]
-            skipped = None
+            skipped, cause = None, None
             if bar is not None and not bar.acts(entry["score"]):
                 # Below the bar is not "beaten by a better row": it is not
                 # eligible for a slot at all, and the pool is score-ordered, so
@@ -178,8 +253,14 @@ def select(
                 # the record of what a bar removed is the only way to ask later
                 # what it bought.
                 skipped, below = "below_bar", below + 1
+            elif group in served:
+                # An earlier run already released this place. Checked before the
+                # counter so the cause is the true one: a candidate refused here
+                # would also have been refused by the counter the moment a seat
+                # was taken, and reporting that would hide the ruling's real cost.
+                skipped, cause, capped = LOCATION_SERVED, "prior_run", capped + 1
             elif used.get(group, 0) >= cluster_cap:
-                skipped, capped = "cluster_cap", capped + 1
+                skipped, cause, capped = LOCATION_SERVED, "this_run", capped + 1
             if skipped is not None:
                 log.append(
                     {
@@ -190,6 +271,7 @@ def select(
                         "score": round(float(entry["score"]), 6),
                         "picked": False,
                         "skipped": skipped,
+                        "cause": cause,
                     }
                 )
                 continue
@@ -204,6 +286,7 @@ def select(
                     "score": round(float(entry["score"]), 6),
                     "picked": True,
                     "skipped": None,
+                    "cause": None,
                     "slots": allotted,
                     "supply_cap": int(caps[partition]) if partition in caps else None,
                     # Per-slot provenance. The guarantee is one slot, so it is the
@@ -239,7 +322,7 @@ def _fill(allotted: int, budget: int, eligible: int, taken: int, below: int, cap
     reason = None
     if unfilled:
         if taken < budget:
-            reason = "below_bar" if below else "cluster_cap" if capped else "no_candidates"
+            reason = "below_bar" if below else LOCATION_SERVED if capped else "no_candidates"
         else:
             reason = "supply_cap"
     return {
@@ -249,10 +332,18 @@ def _fill(allotted: int, budget: int, eligible: int, taken: int, below: int, cap
         "seated": taken,
         "unfilled": unfilled,
         "below_bar": below,
-        "cluster_cap": capped,
+        "location_served": capped,
         "reason": reason,
         "why": UNFILLED_REASONS[reason] if reason else None,
     }
 
 
-__all__ = ["UNFILLED_REASONS", "entries", "groups_of", "select"]
+__all__ = [
+    "LOCATION_SERVED",
+    "UNFILLED_REASONS",
+    "entries",
+    "grouped",
+    "groups_of",
+    "scored_rows",
+    "select",
+]

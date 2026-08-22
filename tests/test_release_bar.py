@@ -113,11 +113,11 @@ def test_an_ungated_head_picks_exactly_as_it_did_before_any_head_gated(bar) -> N
 
 def test_an_unfilled_slot_records_the_binding_reason() -> None:
     """Every reason a slot goes unfilled has a sentence, and it is named on the row."""
-    capped = {"one_look": floors.CLUSTER_CAP}
-    pool = [entry("a", "mandelbrot", "one_look", 0.9)]
+    capped = {"one_place": floors.CLUSTER_CAP}
+    pool = [entry("a", "mandelbrot", "one_place", 0.9)]
     _, _, fills = selection.select(pool, {"mandelbrot": 2}, used=capped)
-    assert fills["mandelbrot"]["reason"] == "cluster_cap"
-    assert fills["mandelbrot"]["why"] == selection.UNFILLED_REASONS["cluster_cap"]
+    assert fills["mandelbrot"]["reason"] == selection.LOCATION_SERVED
+    assert fills["mandelbrot"]["why"] == selection.UNFILLED_REASONS[selection.LOCATION_SERVED]
 
     _, _, thin = selection.select(pool, {"mandelbrot": 2}, caps={"mandelbrot": 1})
     assert thin["mandelbrot"]["reason"] == "supply_cap"
@@ -152,7 +152,7 @@ def test_the_run_reports_planned_against_seated_against_unfilled_per_head() -> N
         scored(2, budget.STRANGE, 0.01, "-0.75"),
         scored(3, budget.STRANGE, 0.02, "0.10"),
     ]
-    selected, _, split = run_module._select(
+    selected, _, split, _groups = run_module._select(
         rows, n=4, strange_share=0.5, caps={"mandelbrot": 99}, claims=[], log=lambda *_: None
     )
     assert [entry["row"]["head"] for entry in selected] == [budget.SMOOTH] * 2

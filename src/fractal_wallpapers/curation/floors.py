@@ -172,11 +172,24 @@ JUNK_FLOOR_BASIS = (
 #: than shipping its own least-bad row, and the run says so in one line.
 THIN_SUPPLY_DIVISOR = 4
 
-#: At most this many release picks from one near-duplicate group, per run. A cap,
-#: not a quota — a group with one strong row still ships one. This is the whole
-#: of the diversity rule, and it is deliberately something a person can read off
-#: a sheet ("no more than two of one look") rather than a marginal-gain number.
-CLUSTER_CAP = 2
+#: At most this many release wallpapers from one near-duplicate group, **for the
+#: whole collection**. This is the whole of the diversity rule, and it is
+#: deliberately something a person can read off a sheet ("one wallpaper per
+#: place") rather than a marginal-gain number.
+#:
+#: It was 2, and per *run*, and Matt ruled on 2026-08-22 that both halves were
+#: wrong. Two colorings of one frame are two wallpapers of one place, and a
+#: collection is a set of places; a location released in run2 was free to be
+#: released again in run9, and 32 of the 130 served wallpapers are second and
+#: third pictures of somewhere the collection already had. The scope half lives
+#: in [`curation.served_locations`] because it needs the tracked release records;
+#: this number is the count, and the two are read together at selection.
+#:
+#: Read against a run9 that had it: 48 seats become 27 — 14 refused as places an
+#: earlier run had served, 7 as a second seat inside run9 itself. That is what
+#: the rule costs, and it is a cost in seats rather than in pictures: the run
+#: makes the same attempts and seats the better reading of each place.
+CLUSTER_CAP = 1
 
 #: Colorize attempts per release slot. A head's attempt budget is this times the
 #: slots it is asked to fill, so the two heads are sized against release need and
@@ -399,7 +412,7 @@ def summary() -> dict:
         },
         "caps": {
             "thin_supply_divisor": THIN_SUPPLY_DIVISOR,
-            "cluster_cap": CLUSTER_CAP,
+            "wallpapers_per_location": CLUSTER_CAP,
             "attempt_multiplier": ATTEMPT_MULTIPLIER,
         },
     }

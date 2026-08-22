@@ -28,6 +28,22 @@ byte for byte.
 Only heads whose cut **acts** are considered. A smooth row below the smooth
 advisory is not touched by this and must not be: the advisory annotates, and the
 below-advisory smooth rows belong to a mix-ratio decision nobody has taken.
+
+## A ruling that keeps a row in service is written down, or it is not a ruling
+
+The rule above is idempotent and it is live: it reads the bar at the moment it
+runs, so it will find the same rows again every time it is asked. That is what
+makes an *unwritten* exception dangerous rather than merely undocumented — four
+run8h rows sit below the strange bar and stay served on Matt's reading of the
+sheet, and until 2026-08-22 nothing encoded that. The next `curate reject --run
+run8h` would have taken them out of service, correctly by the rule and against
+the decision, with no line anywhere saying a decision had been made.
+
+So [`exceptions`] is a tracked record — keys, the ruling's date, who took it and
+why — and [`below_acting_bar`] passes over the rows it names. It is deliberately
+per *row* and not per run or per head: an exception that named a run would go on
+excusing rows that run has not made yet, and one that named a head would be the
+bar being retired by the back door.
 """
 
 from __future__ import annotations
@@ -37,11 +53,45 @@ from pathlib import Path
 
 from fractal_wallpapers.curation import floors, records, sheet
 from fractal_wallpapers.curation import run as run_module
+from fractal_wallpapers.paths import repo_root
 
 #: The slug a retroactive bar rejection records. One value, because there is one
 #: rule here; a rejection taken for any other cause is a different verdict and
 #: would want its own.
 BELOW_ACTING_BAR = "below_acting_bar"
+
+#: The tracked rulings that keep a named row in service below an acting bar.
+#: One row per excused release row, carrying the key it excuses, the bar it sits
+#: under, the score, and who ruled it when and why.
+EXCEPTIONS_NAME = "bar_exceptions.jsonl"
+
+
+def exceptions_path() -> Path:
+    """Where the rulings live. Tracked, and never the ephemeral record root.
+
+    Deliberately not under [`records.root()`]: a rehearsal redirects the whole
+    record store under `scratch/`, and a ruling that moved with it would stop
+    applying exactly when a rehearsal was checking whether it did.
+    """
+    return repo_root() / "data" / "curation" / EXCEPTIONS_NAME
+
+
+def exceptions() -> dict:
+    """`{key: ruling}` for every row a ruling keeps in service. Empty is normal.
+
+    Keyed on the release record's own `run|stage|candidate`, so an exception
+    cannot drift onto a different row than the one it was written for, and a run
+    renamed loses its exceptions loudly rather than silently excusing a stranger.
+    """
+    path = exceptions_path()
+    if not path.is_file():
+        return {}
+    out = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if line.strip():
+            row = json.loads(line)
+            out[str(row["key"])] = row
+    return out
 
 
 class RejectionRefused(RuntimeError):
@@ -67,12 +117,19 @@ def below_acting_bar(rows) -> list[tuple[dict, floors.Bar]]:
     seats nothing without a score, but it also never seated this row, and
     inventing a rejection for a record that predates the scoring would be a
     verdict nobody took.
+
+    Rows named in [`exceptions`] are not here either. They still fail the bar and
+    the record still says so; what the ruling settles is whether failing it takes
+    them out of service, and that is a decision rather than a comparison.
     """
+    excused = exceptions()
     out = []
     for row in records.served(rows):
         head = (row.get("scores") or {}).get("head")
         score = (row.get("scores") or {}).get("p_ge3")
         if head is None or score is None:
+            continue
+        if str(row.get("key")) in excused:
             continue
         bar = floors.release_bar(head)
         if bar is not None and not bar.acts(score):
@@ -126,12 +183,24 @@ def apply(
             f"< {bar.value:g} — rejected by {rejector} ({date})"
         )
 
+    excused = [
+        row["candidate"] for row in records.served(rows) if str(row.get("key")) in exceptions()
+    ]
+    if excused:
+        log(
+            f"[reject] {len(excused)} row(s) held in service by a tracked ruling: "
+            + ", ".join(sorted(excused))
+        )
     report = {
         "run": run,
         "rejector": rejector,
         "date": date,
         "dry_run": bool(dry_run),
         "release_rows": len(rows),
+        # Named, not just counted. A pass that quietly skipped four rows and a
+        # pass that had nothing to skip print the same line otherwise, and which
+        # one this was is the only thing anybody reads this report to find out.
+        "excused_by_ruling": sorted(excused),
         "newly_rejected": [row["candidate"] for row in stamped],
         "rejected_total": sum(1 for row in rows if records.is_rejected(row)) + len(stamped),
         "served": len(records.served(rows)) - len(stamped),
@@ -190,7 +259,7 @@ def _summary(run: str, rows) -> dict:
         "attempts": stored.get("attempts_made", "?"),
         "released": len(records.served(rows)),
         "rejected after review": rejected,
-        "look cap": floors.CLUSTER_CAP,
+        "wallpapers per location": floors.CLUSTER_CAP,
         "junk floor": floors.JUNK_FLOOR,
         "good floor": floors.GOOD_FLOOR,
     }
@@ -218,9 +287,12 @@ def _by_head(rows, newly: set) -> dict:
 
 __all__ = [
     "BELOW_ACTING_BAR",
+    "EXCEPTIONS_NAME",
     "RejectionRefused",
     "apply",
     "below_acting_bar",
+    "exceptions",
+    "exceptions_path",
     "note_for",
     "redraw",
 ]
