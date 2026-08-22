@@ -21,9 +21,9 @@ def write_log(path, rows) -> None:
 def test_the_candidate_log_says_which_attempts_are_done(tmp_path) -> None:
     path = tmp_path / "candidates.jsonl"
     write_log(path, [{"attempt": 0, "p_ge3": 0.5}, {"attempt": 2, "p_ge3": None}])
-    done = run_module._completed(path, lambda _m: None)
+    done = run_module.completed_attempts(path, lambda _m: None)
     assert sorted(done) == [0, 2]
-    assert run_module._completed(tmp_path / "nothing.jsonl", lambda _m: None) == {}
+    assert run_module.completed_attempts(tmp_path / "nothing.jsonl", lambda _m: None) == {}
 
 
 def test_a_torn_last_row_is_dropped_and_the_log_repaired(tmp_path) -> None:
@@ -36,20 +36,20 @@ def test_a_torn_last_row_is_dropped_and_the_log_repaired(tmp_path) -> None:
         newline="\n",
     )
     said, log = log_lines()
-    done = run_module._completed(path, log)
+    done = run_module.completed_attempts(path, log)
     assert sorted(done) == [0]
     assert any("repairing" in line for line in said)
 
-    run_module._append(path, {"attempt": 1, "p_ge3": 0.1})
-    assert sorted(run_module._completed(path, lambda _m: None)) == [0, 1]
+    run_module.append_attempt(path, {"attempt": 1, "p_ge3": 0.1})
+    assert sorted(run_module.completed_attempts(path, lambda _m: None)) == [0, 1]
 
 
 def test_a_log_without_its_final_newline_is_repaired_before_anything_appends(tmp_path) -> None:
     path = tmp_path / "candidates.jsonl"
     path.write_text(json.dumps({"attempt": 0}), encoding="utf-8", newline="\n")
-    run_module._completed(path, lambda _m: None)
-    run_module._append(path, {"attempt": 1})
-    assert sorted(run_module._completed(path, lambda _m: None)) == [0, 1]
+    run_module.completed_attempts(path, lambda _m: None)
+    run_module.append_attempt(path, {"attempt": 1})
+    assert sorted(run_module.completed_attempts(path, lambda _m: None)) == [0, 1]
 
 
 def test_a_dumped_field_is_intact_only_at_the_size_its_own_record_states(tmp_path) -> None:

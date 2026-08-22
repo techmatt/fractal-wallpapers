@@ -5,6 +5,7 @@ gate/<run>/<partition>.jsonl     one row per colorize attempt: kept, or dropped
 release/<run>/<partition>.jsonl  one row per scored candidate: released, or passed over
 runs.jsonl                       one row per run: the funnel, the cuts, the configuration
 runs/<run>.json                  that run's own summary, whole
+gallery/<pass>.json              one gallery pass: its slots, its seats and its retro table
 bar_exceptions.jsonl             rows a ruling keeps in service below an acting bar
 supply_scores.manifest.json      what the untracked supply sidecar is, so a loss shows
 neutral_embeddings.manifest.json what the untracked embedding store is, and under what
@@ -47,6 +48,21 @@ is the ability to be *offered* to another run, since an intake starts from
 ledgers. Regenerate it with `curate ledgers --write`, which resolves through the
 same tier funnel every reader uses — looking on the hot tier alone reports seven
 of the eight as lost.
+
+**A gallery pass writes into two of these and not into the other two.** Its
+attempts are pool rows like any run's, so they land in `gate/<pass>/` and
+`release/<pass>/` under the pass id — the pool is one store, and a second one
+would be a second answer to what the pool holds. Its *summary* does not go in
+`runs/` or `runs.jsonl`: a pass books no clock and measures no release rate that
+a later night's reservation should be derived from, so it keeps `gallery/`. A
+released row a pass writes carries `collection: "gallery"` where a run's carries
+`"diagnostic"`, and it carries a `slot` block naming which of the pass's slots it
+took, the chosen point that slot was hung on, and how far that point sat from the
+nearest other point the pass chose. A seated row that came out of an earlier run
+is written **again** under the pass's own candidate id (`<run>_<candidate>`) with
+a `source` block naming the row it came from — not a duplicate, but the second of
+two decisions about one picture: a run deciding what to keep, and the pass
+deciding what to ship.
 
 **`bar_exceptions.jsonl` is the one file here a person writes.** Everything else
 is a run's own account of itself; this is a verdict about four rows of it. The

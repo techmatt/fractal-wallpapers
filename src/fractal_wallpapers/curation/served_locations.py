@@ -25,9 +25,18 @@ accumulated pool at once. One wallpaper per location is still enforced, and it i
 enforced where the population to enforce it over actually exists.
 
 So this index is read by the collection-level passes — `curate repeats`,
-`curate retire-repeats`, the rejection path — and by the **gallery pass**
-(`curate gallery`), the selection that decides what ships. Nothing in
-`curate run` reads it.
+`curate retire-repeats`, the rejection path. Nothing in `curate run` reads it.
+
+**The gallery pass does not read it either, and that is not the same exemption.**
+A run is excused because it has the wrong population; `curate gallery` has
+exactly the right one and is excused because of what a *pass* is. Each pass
+chooses the whole gallery at once and **supersedes** the previous one rather than
+adding to it, so a pass that refused every place the last pass shipped could not
+re-choose its own gallery — and a pass that refused every place a run's
+diagnostic release happens to sit on would be handing the collection's best
+locations to the ten pictures a night kept to prove its path worked. One
+wallpaper per location is enforced inside the pass, over the pass's own seats,
+which is the population the gallery is.
 
 ## "Same location" is the grouping this repository already had
 
