@@ -114,13 +114,25 @@ number and picking the wrong one is off by an order of magnitude:
 | a degree-2 mandelbrot offer, all above the junk floor | 152 | 28,075 | **6.8** |
 | run2's plane admissions, 1e-3 to 1e-9 | 172 | 24,777 | 7.4 |
 | run9's plane channel at 1e-6 and deeper, gates *not* applied | 164 | 31,955 | **53.5** |
+| run10's refusals and unattempted admissions, screened | 200 | 11,927 | **3.1** |
 
-**Maxiter barely predicts it; what the pixels do predicts it.** All three rows sit
+**Maxiter barely predicts it; what the pixels do predicts it.** The first three rows sit
 within 30% on maxiter and span 8× on cost. A row that escapes early is cheap however
 high the cap; a row the walk refused for `interior_cap` iterates nearly every sample
 to that cap, and a sheet cut over *candidates* rather than admissions is full of them.
 Degree costs too — degree 2 is the cheap corner, and the expensive sheet above was 64
 of 96 multibrot4.
+
+**The last row is the same claim from the cheap end, and it is the one a cost estimate
+gets wrong in the other direction.** It is a *candidate* sheet — judge refusals, gate
+refusals, admissions nobody colorized — and it is the cheapest sheet on this page, at
+half the maxiter and a mean interior fraction of 0.0029. The interior screen is why:
+what makes a candidate sheet expensive is the interior-heavy rows, and the screen takes
+every one of those off the page before a pixel is drawn. Scaled instead off a release
+leg by field samples — a 2560×1440 ss4 row is 8× a location unit's two 1280×720 ss2
+renders — the same sheet estimated at 8.75 s/unit and came in at 3.1, so **the sample
+count is an upper bound and not a prediction**; a release row spends time on a palette
+pass a sheet has no equivalent of, and its material is admissions rather than refusals.
 
 Estimating one of these off the harvest's own steering view is the trap: that view is
 640×360 ss2, so the pixel scaling is ×4 for the geometry and ×2 for the pair, and
@@ -153,6 +165,13 @@ sittings' 1s and not one row a person scored 2 or better, at two renders saved e
 * **It is not the walk's gate.** `discovery.walk.Gates.interior_cap` is 0.30 and decides
   where a walk may stand. This is a build-time decision about a page. Neither moves the other,
   and the sheet rule does not change a walk's gates or caps.
+* **One consequence of those two numbers is worth knowing before planning a sheet.** The walk
+  refuses at 0.30 and the screen answers at 0.12, so **a location the walk refused for
+  `interior_cap` can never be served** — every such row is above the gate and therefore above
+  the screen, by construction and not by luck. On run10 that is 11,762 of the run's 13,962
+  structural refusals: a page cut over what the gates threw out can hold the other two gates
+  and nothing from that one, so its share has to be drawn from `flat` and `occupancy_floor`
+  or the sheet comes back a third short.
 
 ## One generator, two row sources
 

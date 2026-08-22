@@ -136,6 +136,25 @@ whose production runs have been archived builds both memories out of whatever
 happens to be local. Naming the archive root explicitly is how a run gets the
 whole history, and it costs one pass per index over every ledger there.
 
+**A finished run's saturation verdict is re-derivable, exactly, and that is what
+makes "novel" a readable property of a frame afterwards.** The index is a pure
+function of the ledger set and the radius, so rebuilding it from the run's own
+`--ledgers` root with the run's own ledger excluded — `saturation.build(paths=
+ledgers.ledger_paths(root, exclude))` — and asking `VisitedIndex.density` about
+each candidate's centre reproduces what the run decided. Rebuilt against run10 it
+comes back at 65,022 visits over 26 ledgers in 420 identity buckets, and its
+`seen`/`discounted` split lands on `tally.saturation_by_partition` row for row.
+
+Two things that reproduction settles. **`saturation.seen` is the frontier feed,
+not the candidate count** — `_apply_memory` asks only about survivors, so a
+`not_admitted` row and every structural refusal carry no run-time verdict at all
+and have to be queried after the fact, with the same index, to be classed either
+way. And on run10 **not one admission on any parameter plane sat on undiscounted
+ground**: 0 of 1,313 `survived` rows across mandelbrot and multibrot3/4/5, against
+1,419 of 3,966 on the dynamical planes and phoenix. A draw conditioned on novelty gets
+nothing from the four planes at this point in their history, and that is the
+readout's 100% discount rate seen from the other side.
+
 **A slot is not a minute.** The quota allocates the clock and hands out node
 slots, so the slot demand is the minute demand divided by what a slot has been
 costing in that partition. Being cheap buys more turns, not more time.
