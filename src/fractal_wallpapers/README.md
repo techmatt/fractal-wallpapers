@@ -41,7 +41,11 @@ for why each refuses rather than falls back.
 `storage.py` is the only thing that changes any of those answers: `move` copies a
 subtree to the other tier, verifies it three ways and only then deletes the
 source, `status` says where everything is, and `require_hot` is the refusal the
-trainers make when their cache is on slow storage.
+trainers make when their cache is on slow storage. A move copies *files*, and a
+directory holding none is copied by `mirror_empty_directories` rather than by the
+copy — the structural check counts directories, so a run that never released
+would otherwise fail a verification in which every file was present, after paying
+for the whole copy.
 
 Because the tree moves and subtrees change tier, a record that names a file under
 it is written and read through one pair of functions:

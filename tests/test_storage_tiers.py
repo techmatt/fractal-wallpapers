@@ -373,6 +373,31 @@ def test_a_round_trip_moves_the_bytes_and_nothing_else(tiered):
         assert (hot / "renders" / name).read_bytes() == body
 
 
+def test_a_directory_holding_no_files_survives_the_move(tiered):
+    """An empty directory is part of the subtree, and the verification counts it.
+
+    The copy makes the parents of the files it copies, so a directory holding no
+    files — a curation run that never released, and `curation` had three — arrived
+    at neither tier. `weigh` compares directories, so the structural check refused
+    a copy in which every single file was present, and refused it after paying for
+    six gigabytes of it.
+    """
+    hot, archive = tiered
+    a_subtree(hot, "runs")
+    (hot / "runs" / "never_released" / "release").mkdir(parents=True)
+    (hot / "runs" / "empty_all_the_way" / "down" / "here").mkdir(parents=True)
+
+    out = storage.move("runs", to=paths.ARCHIVE, log=lambda _: None)
+    assert out["moved"]
+    assert (archive / "runs" / "never_released" / "release").is_dir()
+    assert (archive / "runs" / "empty_all_the_way" / "down" / "here").is_dir()
+
+    back = storage.move("runs", to=paths.HOT, log=lambda _: None)
+    assert back["moved"]
+    assert (hot / "runs" / "never_released" / "release").is_dir()
+    assert (hot / "runs" / "empty_all_the_way" / "down" / "here").is_dir()
+
+
 def test_a_move_that_does_not_verify_deletes_nothing(tiered, monkeypatch):
     """Copy, verify, delete — in that order, so a bad copy costs nothing."""
     hot, archive = tiered
