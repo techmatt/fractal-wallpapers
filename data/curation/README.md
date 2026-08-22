@@ -82,6 +82,18 @@ bar and artifact it failed. Scores are untouched. What a release *serves* is
 released minus rejected, and every listing reads that rather than the raw
 verdict. `run2`'s eleven below-bar strange rows are here on exactly those terms.
 
+**A rejection can be a comparison instead of a measurement, and then it names the
+row it lost to.** One wallpaper per location acts at selection from 2026-08-22 and
+cannot reach backwards, so `curate retire-repeats` applied it once to the
+collection that predates it: 27 locations were holding 59 wallpapers between them,
+each kept the highest `P(>=3)` on its own head's scale, and the other **32** rows
+carry a `rejected` block with `reason: location_served`, `bar: null` and a
+`survivor` field holding the key of the wallpaper that kept the place. 185 served
+became 153. A retired row is a second picture of a place the collection has, not a
+bad picture — which is why no bar is read here and why the survivor is on the row:
+a reader re-deriving it later would be re-deriving it against a collection that
+has moved.
+
 Rows upsert by key and the key carries the run id, so a re-run replaces its own
 rows byte for byte and a second run adds rows without touching the first.
 `runs/<run>.json` is the exception: it is written **whole** rather than upserted,
@@ -99,4 +111,6 @@ fractal-wallpapers curate score
 fractal-wallpapers curate plan -n 6
 fractal-wallpapers curate run --run <name> -n 6
 fractal-wallpapers curate reject --run <name> --rejector <who> --date <when>
+fractal-wallpapers curate repeats
+fractal-wallpapers curate retire-repeats --rejector <who> --date <when> --dry-run
 ```

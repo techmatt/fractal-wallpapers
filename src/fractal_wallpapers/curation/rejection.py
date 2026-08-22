@@ -44,6 +44,29 @@ why — and [`below_acting_bar`] passes over the rows it names. It is deliberate
 per *row* and not per run or per head: an exception that named a run would go on
 excusing rows that run has not made yet, and one that named a head would be the
 bar being retired by the back door.
+
+## The second rule that takes a row back is a comparison, not a measurement
+
+One wallpaper per location acts at selection from 2026-08-22 and cannot reach
+backwards, so the collection it began on was already holding second and third
+pictures of places it had. [`retire_repeats`] applies the rule to what is
+already there: each near-duplicate group keeps its best reading and the rest are
+stamped `location_served`.
+
+It is a *separate* pass from [`apply`] and deliberately not a mode of it. `apply`
+reads the bars live, and every row it would touch is a row whose score fails a
+cut — including the four run8h rows a ruling holds in service, which it must go
+on excusing. This rule compares two rows to each other and does not read a bar at
+all, so a row can be perfectly good and still lose its place to a better reading
+of the same place. The two answer different questions and a row can be taken back
+by either.
+
+The bar ruling does not carry over, and it is not being reversed when it does not.
+A ruling says a named row stays in service *below the bar*; whether the collection
+holds two pictures of that row's location is not a question it was asked. Where a
+retirement lands on an excused row the pass names it in the report rather than
+skipping it — the alternative is a location rule with a silent exception list it
+never agreed to.
 """
 
 from __future__ import annotations
@@ -51,7 +74,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from fractal_wallpapers.curation import floors, records, sheet
+from fractal_wallpapers.curation import floors, records, selection, served_locations, sheet
 from fractal_wallpapers.curation import run as run_module
 from fractal_wallpapers.paths import repo_root
 
@@ -59,6 +82,11 @@ from fractal_wallpapers.paths import repo_root
 #: rule here; a rejection taken for any other cause is a different verdict and
 #: would want its own.
 BELOW_ACTING_BAR = "below_acting_bar"
+
+#: The slug a retirement under the one-wallpaper-per-location rule records. The
+#: same spelling [`selection`] refuses a live candidate with, because a person
+#: reading a refused candidate and a retired wallpaper is reading one rule.
+LOCATION_SERVED = selection.LOCATION_SERVED
 
 #: The tracked rulings that keep a named row in service below an acting bar.
 #: One row per excused release row, carrying the key it excuses, the bar it sits
@@ -220,6 +248,199 @@ def apply(
     return report
 
 
+def _run_order() -> dict:
+    """Each run's place in the store's own ordering of run age, oldest first.
+
+    [`records.run_records`] is the ordering this project already trusts for "which
+    run is more recent" — the `finished` stamp where a record has one, and older
+    than everything stamped where it does not. A run with no record at all is not
+    in here, and [`_best_first`] reads a missing run as older than every recorded
+    one rather than inventing a position for it.
+    """
+    return {path.stem: place for place, path in enumerate(records.run_records())}
+
+
+def _best_first(order: dict):
+    """Rank one location's wallpapers: the survivor first, then what it beat.
+
+    The score is `P(>=3)` **on the row's own head's scale, uncompared**. The two
+    finished-render judges are calibrated separately and a cross-scale adjustment
+    would be a number nobody has measured; Matt's ruling is that at this size —
+    twenty-seven groups, one of them a tie — it does not change which pictures the
+    collection keeps, and an invented conversion factor would.
+
+    Ties go to the **later run**, which is the reading taken against the more
+    recent supply and the more recent heads. A row with no score at all sorts
+    last: it is not a zero, and the only way it survives is by being alone, which
+    is the one case where nothing was compared.
+    """
+
+    def rank(entry: dict) -> tuple:
+        score = entry.get("p_ge3")
+        return (
+            score is None,
+            -float(score or 0.0),
+            -order.get(str(entry.get("run")), -1),
+            str(entry.get("key")),
+        )
+
+    return rank
+
+
+def _reading(entry: dict) -> str:
+    """One row's score as this pass prints it, or the absence of one."""
+    score = entry.get("p_ge3")
+    return "no score" if score is None else f"P(>=3) {float(score):.4f}"
+
+
+def location_note(survivor: dict) -> str:
+    """The sentence a retired row carries: which row keeps this place, and how it read."""
+    return (
+        f"The collection releases one wallpaper per location and this location is served by "
+        f"{survivor.get('key')} — {survivor.get('head')} {_reading(survivor)}, the highest "
+        f"reading of this place on its own head's scale. This row was seated when the look cap "
+        f"was two pictures per run, which let one place be released twice inside a run and "
+        f"again by the next one. It is a second picture of a place the collection has, not a "
+        f"bad picture: the verdict and the scores are untouched and nothing is deleted."
+    )
+
+
+def retire_repeats(
+    rejector: str,
+    date: str,
+    dry_run: bool = False,
+    log=print,
+) -> dict:
+    """Bring the collection to one wallpaper per location, keeping the best of each.
+
+    The rule acts at selection from 2026-08-22 and cannot reach backwards, so this
+    is it applied once to what the collection already held. Every near-duplicate
+    group with more than one served wallpaper keeps the row [`_best_first`] ranks
+    first, and the rest are stamped `location_served` carrying the survivor's key,
+    so the comparison is legible from the row alone.
+
+    Reads and writes **one store** — this process's — because it rewrites the rows
+    it read. [`served_locations.build`] defaults to the tracked store on purpose,
+    which is right for a run asking what the collection holds and wrong here: an
+    index over the tracked store feeding writes into a redirected one would stamp
+    rows that store does not have.
+
+    Idempotent, and not by re-deriving the same answer: a retired row leaves the
+    served set, so a second pass finds every group holding one wallpaper and has
+    nothing to do. One pass is enough for the same reason — dropping rows can only
+    split a connected component, never merge two — so every group is left with
+    exactly its survivor.
+    """
+    index = served_locations.build(under=records.root())
+    cells = served_locations.repeats(index)
+    order = _run_order()
+    excused = exceptions()
+
+    groups: list[dict] = []
+    retired: dict[str, tuple[dict, dict]] = {}
+    for cell in cells:
+        ranked = sorted(cell["served"], key=_best_first(order))
+        survivor, losers = ranked[0], ranked[1:]
+        groups.append(
+            {
+                "group": cell["group"],
+                "partition": cell["partition"],
+                "runs": cell["runs"],
+                "survivor": survivor,
+                "retired": losers,
+            }
+        )
+        log(
+            f"[retire] {cell['group']} {cell['partition']}: keeping {survivor['key']} "
+            f"({survivor['head']} {_reading(survivor)}) over "
+            + ", ".join(f"{entry['key']} ({entry['head']} {_reading(entry)})" for entry in losers)
+        )
+        for entry in losers:
+            retired[str(entry["key"])] = (entry, survivor)
+
+    per_run: dict[str, list[str]] = {}
+    for key, (entry, _) in retired.items():
+        per_run.setdefault(str(entry["run"]), []).append(key)
+
+    # Named rather than counted, and not skipped. A ruling that holds a row in
+    # service settles whether failing a bar takes it out, which is not the
+    # question this rule asks — but a row leaving service under a second rule
+    # while a tracked ruling names it is exactly what somebody has to be told
+    # about rather than left to find.
+    ruled = sorted(key for key in retired if key in excused)
+    if ruled:
+        log(
+            f"[retire] {len(ruled)} retired row(s) named by a tracked bar ruling, which settled "
+            f"a different question and is not reversed here: " + ", ".join(ruled)
+        )
+
+    written: dict[str, str] = {}
+    sheets: dict[str, str] = {}
+    for run in sorted(per_run):
+        rows = records.read_decisions(records.RELEASE, run)
+        by_key = {str(row.get("key")): row for row in rows}
+        stamped = []
+        for key in sorted(per_run[run]):
+            row = by_key.get(key)
+            if row is None:
+                raise RejectionRefused(
+                    f"{key!r} is in the served index and not in run {run!r}'s release records "
+                    f"under {records.root()}. The index and the records have come apart, and "
+                    f"stamping a row this pass cannot see would leave its group uncut."
+                )
+            _, survivor = retired[key]
+            stamped.append(
+                {
+                    **row,
+                    "rejected": records.rejection(
+                        rejector=rejector,
+                        date=date,
+                        reason=LOCATION_SERVED,
+                        note=location_note(survivor),
+                        bar=None,
+                        survivor=str(survivor["key"]),
+                    ),
+                }
+            )
+        if dry_run:
+            continue
+        path, _, _ = records.write_decisions(records.RELEASE, run, stamped)
+        written[run] = str(path)
+        sheets[run] = str(redraw(run, log=log))
+
+    remaining = None
+    if not dry_run:
+        remaining = served_locations.repeats(served_locations.build(under=records.root()))
+
+    report = {
+        "rejector": str(rejector),
+        "date": str(date),
+        "dry_run": bool(dry_run),
+        "rule": {"reason": LOCATION_SERVED, "wallpapers_per_location": floors.CLUSTER_CAP},
+        "served_before": len(index),
+        "served_after": len(index) - len(retired),
+        "groups": groups,
+        "retired": sorted(retired),
+        "by_run": {run: len(keys) for run, keys in sorted(per_run.items())},
+        "held_in_service_by_a_ruling": ruled,
+        "groups_remaining": None if remaining is None else len(remaining),
+        "records": written,
+        "sheets": sheets,
+    }
+    if dry_run:
+        log(
+            f"[retire] --dry-run: {len(retired)} wallpaper(s) over {len(groups)} location(s) "
+            f"would be retired, nothing written"
+        )
+        return report
+    log(
+        f"[retire] {len(retired)} retired across {len(groups)} location(s); "
+        f"{report['served_after']} served, {len(remaining or [])} location(s) still holding "
+        f"more than one"
+    )
+    return report
+
+
 def redraw(run: str, log=print) -> Path:
     """Redraw a run's release sheet off its records as they now stand.
 
@@ -288,11 +509,14 @@ def _by_head(rows, newly: set) -> dict:
 __all__ = [
     "BELOW_ACTING_BAR",
     "EXCEPTIONS_NAME",
+    "LOCATION_SERVED",
     "RejectionRefused",
     "apply",
     "below_acting_bar",
     "exceptions",
     "exceptions_path",
+    "location_note",
     "note_for",
     "redraw",
+    "retire_repeats",
 ]

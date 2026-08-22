@@ -2299,8 +2299,8 @@ def curate_repeats(args: argparse.Namespace) -> int:
 
     Report only. The one-wallpaper-per-location rule acts at selection from
     2026-08-22 and cannot reach backwards: these are the pairs the collection
-    accumulated while the rule was per-run and at two, and which of each group
-    survives is a decision for a person at a sheet.
+    accumulated while the rule was per-run and at two. `retire-repeats` is what
+    settles them, and this is the read to take before and after it.
     """
     from fractal_wallpapers.curation import served_locations
 
@@ -2313,6 +2313,27 @@ def curate_repeats(args: argparse.Namespace) -> int:
     )
     print(json.dumps(rows, indent=2))
     return 0
+
+
+def curate_retire_repeats(args: argparse.Namespace) -> int:
+    """Retire every wallpaper past the best one at a location, collection-wide."""
+    from fractal_wallpapers.curation import records, rejection
+
+    if args.ephemeral:
+        records.use(records.scratch_root("retire_repeats"))
+    try:
+        report = rejection.retire_repeats(
+            rejector=args.rejector, date=args.date, dry_run=args.dry_run
+        )
+    except rejection.RejectionRefused as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps(report, indent=2))
+    # The pass exists to leave the collection one-per-location. A run of it that
+    # wrote rejections and left a group standing has done half a decision, and
+    # saying so in the exit code is what stops the next step reading the report
+    # as the rule being settled.
+    return 0 if report["groups_remaining"] in (0, None) else 1
 
 
 def curate_parity(args: argparse.Namespace) -> int:
@@ -4784,10 +4805,41 @@ def curate_commands(subcommands) -> None:
             "That rule acts at selection and cannot reach backwards, so this is the read of "
             "it against what the collection already holds: every near-duplicate group with "
             "more than one served wallpaper in it, with both heads' scores. It decides "
-            "nothing, rejects nothing and writes nothing."
+            "nothing, rejects nothing and writes nothing — `retire-repeats` is the pass "
+            "that acts on what this lists."
         ),
     )
     repeating.set_defaults(handler=curate_repeats)
+
+    retiring = steps.add_parser(
+        "retire-repeats",
+        help="retire every wallpaper past the best one at a location",
+        description=(
+            "One wallpaper per location acts at selection and cannot reach backwards, so "
+            "this applies it once to the collection that predates it. Each near-duplicate "
+            "group keeps the highest P(>=3) on its own head's scale — ties to the later run "
+            "— and every other wallpaper of that place is stamped rejected with the reason "
+            "`location_served` and the survivor's key on the row. Nothing is deleted, no "
+            "score is touched, and no bar is read: a retired row is a second picture of a "
+            "place, not a bad picture. Run `repeats` first to read what it will do."
+        ),
+    )
+    retiring.add_argument(
+        "--rejector",
+        required=True,
+        help="who is taking these rows back — a person, or the named review standing for one. "
+        "An unattributed retraction cannot be told from a bug in the release path",
+    )
+    retiring.add_argument(
+        "--date", required=True, metavar="YYYY-MM-DD", help="the date of the review verdict"
+    )
+    retiring.add_argument(
+        "--dry-run", action="store_true", help="print what would be retired and write nothing"
+    )
+    retiring.add_argument(
+        "--ephemeral", action="store_true", help="read and write an ephemeral record store"
+    )
+    retiring.set_defaults(handler=curate_retire_repeats)
 
     checking = steps.add_parser(
         "parity",

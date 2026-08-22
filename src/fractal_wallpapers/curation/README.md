@@ -206,8 +206,24 @@ attempt every location, so what the second attempt buys is the better reading
 rather than a second wallpaper — and the strange judge now makes two of its own
 per location for the same reason, which is the one place the attempt plan has been
 sized against this rule. `fractal-wallpapers curate repeats` is the report-only read of the rule
-against what the collection already holds — the rule acts at selection and cannot
-reach backwards. Perceptual similarity is a different question and is not this.
+against what the collection already holds. Perceptual similarity is a different
+question and is not this.
+
+**The rule was applied backwards once, and that is a second way a row leaves
+service.** The rule acts at selection and cannot reach backwards, so the
+collection it began on was still holding 27 locations twice or more.
+`curate retire-repeats` (Matt, 2026-08-22) keeps the highest `P(>=3)` of each
+group **on its own head's scale, uncompared** — the two finished-render judges are
+calibrated separately and a cross-scale adjustment would be a number nobody has
+measured — with ties to the later run, and stamps the other 32 rows
+`location_served` with the survivor's key on the row. 185 served became **153**,
+zero locations hold more than one, and `tests/test_served_locations.py` pins both.
+It is a separate pass from `curate reject` and not a mode of it: that one reads
+the bars live and must go on excusing the four ruled run8h rows, while this one
+reads no bar at all and can retire a perfectly good picture for being the second
+one of a place. One of the four ruled rows was retired by it — the ruling settled
+whether failing a bar takes a row out of service, which is not the question the
+location rule asks — and a pass names any such row rather than skipping it.
 
 **A release can be wrong, and taking a row back adds to the record.** `rejection`
 stamps a released row with who rejected it, when, and against which bar and
