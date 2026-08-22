@@ -1,7 +1,7 @@
 """Which candidates take the release's slots. One rule, three caps, and one bar.
 
 Top-N by the judge's own score, per partition, under three limits: the partition's
-slot allocation, the thin-supply emit cap, and **one wallpaper per location for
+slot allocation, the thin-supply release cap, and **one wallpaper per location for
 the whole collection**. Nothing else discounts a candidate.
 
 ## The bar, where a head has one, is a floor under all three
@@ -61,9 +61,9 @@ tuning decision:
 it is the split between curation's two phases. A **run** does not: it is the pool
 phase, it accumulates candidates and keeps a small diagnostic release, and a run
 that refused a place because an earlier run released it was casting one run's
-seats as a veto on the next run's coverage. The global pass over the accumulated
-pool passes it, because that is the pass with the population to decide coverage
-with.
+seats as a veto on the next run's coverage. The **gallery pass** over the
+accumulated pool passes it, because that is the pass with the population to
+decide coverage with.
 
 **One grouping over everything, computed once** ([`grouped`]). A group id is a
 position in a connected-components labelling and means nothing outside the call

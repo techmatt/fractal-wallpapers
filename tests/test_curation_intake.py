@@ -142,11 +142,11 @@ def test_a_guarantee_is_a_floor_and_not_a_bonus() -> None:
     assert named == bare
 
 
-def test_the_emit_caps_come_off_the_offers_own_size(ledger) -> None:
+def test_the_release_caps_come_off_the_offers_own_size(ledger) -> None:
     survivors, _ = intake.gate_survivors([ledger])
     scores = scores_for(survivors, [0.4, 0.9, 0.9])
     offer, _ = intake.ranked([ledger], scores)
-    assert intake.emit_caps(offer) == {"julia:mandelbrot": 0, "mandelbrot": 0}
+    assert intake.release_caps(offer) == {"julia:mandelbrot": 0, "mandelbrot": 0}
 
 
 def test_the_canonical_view_is_the_deploy_map(ledger) -> None:

@@ -91,7 +91,7 @@ while meaning the other is how a population and its denominator come apart.
 The junk floor acts, here, at the one site that draws the colorize pool. What
 comes with it is arithmetic rather than judgement:
 
-* [`emit_cap`] — a partition may release at most a quarter of its floor-passing
+* [`release_cap`] — a partition may release at most a quarter of its floor-passing
   supply, so a thin partition ships nothing rather than its own least-bad row;
 * [`slots`] — the release mix apportioned into whole slots, with a guaranteed
   floor of one for any partition that has something worth keeping. Both go
@@ -541,7 +541,7 @@ def funnel_line(diagnostics: dict) -> str:
 
 
 def supply_lines(diagnostics: dict) -> list[str]:
-    """One line per partition the union saw, including the ones that emit nothing.
+    """One line per partition the union saw, including the ones that release nothing.
 
     A partition that vanishes from a readout because its supply died is the exact
     failure this line exists to make visible, so it gets a line with a zero on it
@@ -559,7 +559,7 @@ def supply_lines(diagnostics: dict) -> list[str]:
             f"{partition}: {found.get(partition, 0)} found, {scored.get(partition, 0)} scored, "
             f"{n_pass} of those above the junk floor, {n_good} above the good floor"
         )
-        if not floors.emit_cap(n_pass):
+        if not floors.release_cap(n_pass):
             line += (
                 " -> releases 1 (slot guarantee), then 0 (thin supply)"
                 if n_good
@@ -569,9 +569,9 @@ def supply_lines(diagnostics: dict) -> list[str]:
     return out
 
 
-def emit_caps(offer: dict) -> dict:
+def release_caps(offer: dict) -> dict:
     """`{partition: cap}` — the thin-supply cap over each partition's ranked offer."""
-    return {partition: floors.emit_cap(len(rows)) for partition, rows in sorted(offer.items())}
+    return {partition: floors.release_cap(len(rows)) for partition, rows in sorted(offer.items())}
 
 
 def guaranteed(diagnostics: dict) -> list[str]:
@@ -611,7 +611,7 @@ __all__ = [
     "VIEW_SUPERSAMPLE",
     "IntakeError",
     "canonical_map",
-    "emit_caps",
+    "release_caps",
     "funnel_line",
     "gate_render",
     "gate_survivors",

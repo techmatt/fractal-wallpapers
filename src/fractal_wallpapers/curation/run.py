@@ -222,7 +222,7 @@ def curate(
         for line in intake.supply_lines(supply):
             log(f"[intake] {line}")
         claims = intake.guaranteed(supply)
-        caps = intake.emit_caps(offer)
+        caps = intake.release_caps(offer)
         log(f"[intake] {intake.funnel_line(supply)}")
         log(f"[intake] {len(claims)} partition(s) owed a guaranteed slot")
         by_key = {row["key"]: row for rows in offer.values() for row in rows}
@@ -630,7 +630,7 @@ def _select(scored, n, strange_share, caps, claims, log):
             for head in budget_module.HEADS
         },
         "partition_slots": allocations,
-        "emit_caps": dict(caps),
+        "release_caps": dict(caps),
         "wallpapers_per_location": floors.CLUSTER_CAP,
         # What the one-wallpaper-per-location rule refused inside this run: the
         # two heads bidding for one place, and the higher-ranked seat keeping it.
