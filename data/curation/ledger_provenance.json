@@ -1,0 +1,93 @@
+{
+  "schema": 1,
+  "note": "which walk ledger each released row was drawn from, and whether that ledger still reads. A row whose ledger is gone still re-renders from its own join and still counts in every rate; what it cannot be is offered to another run. `tier` is a snapshot of where the file was on `read`, not a property of the ledger.",
+  "read": "2026-08-22",
+  "pool_rows": 1050,
+  "ledgers_named": 8,
+  "ledgers_absent": 0,
+  "rows_on_absent_ledgers": 0,
+  "ledgers": [
+    {
+      "ledger": "artifacts/harvest/walk.jsonl",
+      "rows": 112,
+      "runs": [
+        "run8h"
+      ],
+      "resolves": true,
+      "at": "artifacts/harvest/walk.jsonl",
+      "tier": "archive"
+    },
+    {
+      "ledger": "artifacts/harvest_run10/walk.jsonl",
+      "rows": 320,
+      "runs": [
+        "run10"
+      ],
+      "resolves": true,
+      "at": "artifacts/harvest_run10/walk.jsonl",
+      "tier": "hot"
+    },
+    {
+      "ledger": "artifacts/harvest_run2/walk.jsonl",
+      "rows": 238,
+      "runs": [
+        "run2",
+        "run9"
+      ],
+      "resolves": true,
+      "at": "artifacts/harvest_run2/walk.jsonl",
+      "tier": "archive"
+    },
+    {
+      "ledger": "artifacts/harvest_run3/walk.jsonl",
+      "rows": 268,
+      "runs": [
+        "run3",
+        "run9"
+      ],
+      "resolves": true,
+      "at": "artifacts/harvest_run3/walk.jsonl",
+      "tier": "archive"
+    },
+    {
+      "ledger": "artifacts/harvest_run9/walk.jsonl",
+      "rows": 32,
+      "runs": [
+        "run9"
+      ],
+      "resolves": true,
+      "at": "artifacts/harvest_run9/walk.jsonl",
+      "tier": "archive"
+    },
+    {
+      "ledger": "artifacts/mandelbrot_sourcing/walk.jsonl",
+      "rows": 56,
+      "runs": [
+        "run9"
+      ],
+      "resolves": true,
+      "at": "artifacts/mandelbrot_sourcing/walk.jsonl",
+      "tier": "archive"
+    },
+    {
+      "ledger": "artifacts/walk_demo/walk.jsonl",
+      "rows": 16,
+      "runs": [
+        "release_v1"
+      ],
+      "resolves": true,
+      "at": "artifacts/walk_demo/walk.jsonl",
+      "tier": "archive"
+    },
+    {
+      "ledger": "artifacts/walk_j/walk.jsonl",
+      "rows": 8,
+      "runs": [
+        "release_v1"
+      ],
+      "resolves": true,
+      "at": "artifacts/walk_j/walk.jsonl",
+      "tier": "archive"
+    }
+  ]
+}

@@ -6,7 +6,31 @@ release/<run>/<partition>.jsonl  one row per scored candidate: released, or pass
 runs.jsonl                       one row per run: the funnel, the cuts, the configuration
 runs/<run>.json                  that run's own summary, whole
 bar_exceptions.jsonl             rows a ruling keeps in service below an acting bar
+supply_scores.manifest.json      what the untracked supply sidecar is, so a loss shows
+ledger_provenance.json           which walk ledger each released row was drawn from
 ```
+
+**Two of these describe files that are not here.** `supply_scores.manifest.json`
+names `artifacts/curation/supply_scores.jsonl` — the location head's read of the
+standing supply, and the one thing under the regenerable tree that this checkout
+cannot regenerate, because the ledgers it reads are under that tree too. It is
+tens of megabytes and it is rewritten whole on every `curate score`, so tracking
+it would put a fresh full-size blob in the history every harvest night; what is
+tracked is its row count, byte count, sha256 and per-ledger split, and the bytes
+live on both tiers. `curate sidecar save|check|restore` writes, reads and
+restores it, and `curate run` refuses to start when the live file is missing or
+holds fewer rows than the manifest records. The module is
+[`curation.durability`](../../src/fractal_wallpapers/curation/durability.py).
+
+`ledger_provenance.json` is the other half of the same question: what the
+collection's 1,050 released rows were drawn from. Eight walk ledgers, and on
+2026-08-22 **all eight still read** — one hot, seven on the archive tier. It is
+provenance rather than a repair, and a snapshot rather than a property: a row
+whose ledger went would still re-render from its own join, and what it would lose
+is the ability to be *offered* to another run, since an intake starts from
+ledgers. Regenerate it with `curate ledgers --write`, which resolves through the
+same tier funnel every reader uses — looking on the hot tier alone reports seven
+of the eight as lost.
 
 **`bar_exceptions.jsonl` is the one file here a person writes.** Everything else
 is a run's own account of itself; this is a verdict about four rows of it. The

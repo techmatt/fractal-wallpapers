@@ -318,6 +318,31 @@ and 6.01 GiB, measured at **2.8 min cold** (28–37 MiB/s across the bulk leg, 1
 files/s) and 70 s over a warm source. `storage status --no-sizes` says which tier
 it is on without walking the archive to answer.
 
+**The supply sidecar is the one input a run cannot recover from, so it is kept
+twice and counted before every run.** `artifacts/curation/supply_scores.jsonl` is
+the location head's read of the standing supply — 67,586 rows as of 2026-08-22 —
+and it is not regenerable from the checkout, because `curate score` rebuilds it
+from the walk ledgers and those are under the regenerable tree too.
+[`durability`](durability.py) owns what follows from that: a copy on the archive
+tier under its own top-level name (`artifacts/curation_backup/`, a *copy* rather
+than a `storage archive` move, which is why it cannot share the `curation` name
+the tiers arbitrate), a tracked manifest at
+`data/curation/supply_scores.manifest.json` carrying rows, bytes, sha256 and the
+per-ledger split, and a guard at the top of `curate run` that refuses when the
+live file is missing or shorter than the manifest records. The pre-flight is one
+line:
+
+```
+fractal-wallpapers curate sidecar check      # live file against the manifest
+fractal-wallpapers curate sidecar save       # after a harvest: fresh copy + manifest
+fractal-wallpapers curate sidecar restore    # bring the copy back, count-verified
+```
+
+`save` after every `curate score` and before the release leg. `check` reports
+`grown` between a harvest and the next `save`, which is the ordinary state and not
+a fault; `short` and `missing` are the two it exists to catch, and they exit
+non-zero.
+
 **A run name is claimed once.** A `curate run` whose name already has a
 `run_plan.json` refuses: continuing an interrupted run is `--resume`, and it is a
 decision rather than a default. A `--resume` that contradicts the stored plan
