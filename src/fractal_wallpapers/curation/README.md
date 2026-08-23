@@ -716,6 +716,7 @@ meaning on the very rows this reads.
 fractal-wallpapers curate colors                     # all four stages
 fractal-wallpapers curate colors --stage library     # one stage
 fractal-wallpapers curate colors --sheets            # + the two glance sheets
+fractal-wallpapers curate colors --frequency         # + the swatch frequency sheet
 ```
 
 ```
@@ -724,7 +725,19 @@ artifacts/curation/colors/rows.jsonl           one row per map, candidate render
 data/curation/colors/census.manifest.json      tracked: rows, bytes, sha256, population
 scratch/color_census_by_swatch.html            the pool by dominant swatch, sampled
 scratch/color_census_sparse.html               the sparsest cells, drawn whole
+scratch/swatch_frequency.csv                   all 52 swatches by dominance, with carriage
+scratch/swatch_frequency.html                  the same rows with the colours filled in
 ```
+
+**The frequency sheet** ([`swatch_frequency`](swatch_frequency.py)) is the census's
+four tables collapsed onto one page for somebody about to author a colormap: every
+swatch, ordered by how often it is the *dominant* colour of a judged render, beside
+its four notations, whether sRGB clipped its chroma, and how many maps carry it at
+10% of their ramp — over the whole library and over the pool. It computes no new
+number; it joins stage 1 to stage 3 and orders the result, so every cell is
+checkable against the readout. `--frequency` reads the **merged** artifact, so it is
+correct after a partial run. Two files because a csv cannot fill a cell with a
+colour, and a name beside three coordinates does not tell an eye what is missing.
 
 **A partial run merges.** `--stage library` recomputes a quarter of the census and
 carries the other three stages whole, rows included, rather than deleting them —
@@ -743,10 +756,19 @@ judge's score is calibrated against its own training prior, so a stored number f
 a retired checkpoint is not on the same scale as a committed floor. Everything
 score-free — which colours the pool's renders *are* — runs over the whole pool
 (4,642 renders). Everything floor-referenced runs only over rows whose
-`scores_current` stamp is the very artifact that head's floor was measured on, and
-a row whose stamps disagree is **refused, not counted**. Today that is 582 smooth
-and 606 strange rows out of 4,784, because the gallery-pass attempt rows have never
-been re-scored; `curate rescore` widens it and the next census picks that up.
+`scores_current` stamp is the very artifact that kind's floor was measured on, and
+a row whose stamps disagree is **refused, not counted**.
+
+Since the 2026-08-23 flip re-read the whole pool onto one artifact, that is 1,423
+smooth and 3,219 strange — every one of the 4,642 renders, so the two halves now
+coincide. **That is the state the restriction was written to dissolve into, not a
+sign that it stopped biting**: the next head flip empties this half again until
+`curate rescore` has run. The restriction is on the *scale* and never on the store,
+so both stores are read; the floor half deduplicates by picture the way the
+score-free half does, because 127 pictures are named by a row in each store. Both
+halves resolve a row to its picture through the whole pool, so a pass over a pass
+reaches the run that really rendered the frame — a single hop lands one row on a
+path nobody ever wrote, and that row used to be reported as absent from disk.
 
 The two claims this stage makes that a test cannot settle are settled by commands
 against a real plan — `curate parity`, that a concurrently rendered release is

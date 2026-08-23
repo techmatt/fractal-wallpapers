@@ -400,17 +400,27 @@ def survival(log=print) -> tuple[dict, list[dict]]:
     Two halves on two populations, and they are never pooled — see the module
     docstring. The score-free half is every distinct candidate render the pool
     holds; the floor half is the rows carrying a score from the artifact each
-    head's floor was measured on.
+    kind's floor was measured on. With the whole pool re-read onto one artifact
+    the two halves coincide, which is the state the restriction was written to
+    dissolve into rather than a sign that it stopped biting.
+
+    Both halves resolve a row to its picture through the **whole pool**, so a
+    pass over a pass is followed to the run that really rendered the frame. That
+    chain is two links long for one row in the pool and a single hop lands it on
+    a path nobody ever wrote; [`rescore.picture_of`] says so, and reading it
+    without the index is how this stage used to report a render as absent.
     """
     from fractal_wallpapers.curation import floors, rescore
 
     read_picture = _reader()
+    pool_rows = _pool_rows()
+    index = {str(row.get("key")): row for row in pool_rows if row.get("key")}
     seen: dict[str, dict] = {}
-    for row in _pool_rows():
+    for row in pool_rows:
         if ((row.get("scores") or {}).get("p_ge3")) is None:
             continue
         try:
-            picture = rescore.picture_of(row)
+            picture = rescore.picture_of(row, index)
         except (KeyError, TypeError):
             continue
         seen.setdefault(str(picture), row)
@@ -437,13 +447,13 @@ def survival(log=print) -> tuple[dict, list[dict]]:
         )
     log(f"[survival] {len(rows)} candidate renders censused; {absent} named but not on disk")
 
-    scored = _floor_referenced(log=log)
-    by_head = {}
-    for head, cells in scored.items():
-        floor = floors.gallery_floor(head)
+    scored = _floor_referenced(pool_rows, index, log=log)
+    by_kind = {}
+    for kind, cells in scored.items():
+        floor = floors.gallery_floor(kind)
         graded = []
         for cell in cells:
-            read = read_picture(str(rescore.picture_of(cell["row"])))
+            read = read_picture(cell["picture"])
             if read is None:
                 continue
             graded.append(
@@ -454,7 +464,7 @@ def survival(log=print) -> tuple[dict, list[dict]]:
                     "clears": cell["score"] >= floor.value,
                 }
             )
-        by_head[head] = {
+        by_kind[kind] = {
             "floor": floor.value,
             "floor_name": floor.name,
             "head_sha256": floor.stamp,
@@ -464,8 +474,8 @@ def survival(log=print) -> tuple[dict, list[dict]]:
             "by_family": _survival_table(graded, family=True),
         }
         log(
-            f"[survival] {head}: n={len(graded)} floor={floor.value} "
-            f"clears={by_head[head]['clears']}"
+            f"[survival] {kind}: n={len(graded)} floor={floor.value} "
+            f"clears={by_kind[kind]['clears']}"
         )
 
     return {
@@ -477,52 +487,71 @@ def survival(log=print) -> tuple[dict, list[dict]]:
             "metrics": thresholded([row["shares"] for row in rows]),
             "note": "score-free: every distinct candidate render the pool holds, both stores",
         },
-        "floor_referenced": by_head,
+        "floor_referenced": by_kind,
         "raise_only": _raise_only(scored, read_picture, log=log),
         "confound": (
             "colour is not independent of geometry or of mode here: a map is chosen for a "
-            "location by a head that saw the location, and the strange judge owns every "
+            "location by a head that saw the location, and the strange kind owns every "
             "mode but smooth. A colour's survival rate carries its material's survival "
             "rate with it, and nothing in this stage separates them"
         ),
         "restriction": (
             f"floor-referenced cells read only rows whose score stamp is the artifact the "
-            f"floor was measured on; {sum(len(cells) for cells in scored.values())} of the "
-            f"{len(_pool_rows())} pool rows qualify. Re-scoring the pool widens this"
+            f"floor was measured on, one row per picture, over both stores; "
+            f"{sum(len(cells) for cells in scored.values())} pictures out of "
+            f"{len(pool_rows)} pool rows qualify. A row on a retired scale is refused "
+            f"rather than counted, so a head flip empties this half until `curate rescore` "
+            f"has re-read the pool"
         ),
     }, rows
 
 
-def _floor_referenced(log=print) -> dict:
-    """The rows a floor may legitimately be read against, per head, refusing a scale mix.
+def _floor_referenced(pool_rows: list[dict], index: dict, log=print) -> dict:
+    """The rows a floor may legitimately be read against, per KIND, refusing a scale mix.
 
     A row qualifies when it carries `scores_current` **and** that reading's own
-    head stamp is the artifact this head's floor was measured on. The stamp is
+    head stamp is the artifact this kind's floor was measured on. The stamp is
     checked rather than assumed: a row from a different checkpoint carries a
     number on a different calibration, and a floor applied across that boundary
-    is not a verdict about anything.
-    """
-    from fractal_wallpapers.curation import floors, records
+    is not a verdict about anything. [`records.live_reading`] is deliberately not
+    what reads the score here — its fallback to `scores` is the very scale mix
+    this refuses, and a fallback is the wrong shape for a question whose answer
+    has to be *no row* rather than *the old number*.
 
-    wanted = {}
-    for head in ("smooth_render", "strange_render"):
-        wanted[head] = floors.gallery_floor(head).stamp
-    out: dict[str, list[dict]] = {head: [] for head in wanted}
+    Read over the **whole pool**, both stores, because the restriction this owns
+    is the scale and never the store: a gallery-pass attempt is exactly what a
+    gallery floor is a cut on, and it was only ever absent from here because
+    those rows carried no current score at all. Deduplicated by picture the way
+    the score-free half is — a hundred and some pictures are named by a row in
+    each store, and counting one twice weights it double in its cell.
+    """
+    from fractal_wallpapers.curation import budget, floors, records, rescore
+
+    wanted = {kind: floors.gallery_floor(kind).stamp for kind in budget.KINDS}
+    out: dict[str, list[dict]] = {kind: [] for kind in wanted}
+    seen: set[str] = set()
     mismatched = 0
-    for row in records.read_decisions(records.RELEASE):
+    for row in pool_rows:
         current = row.get("scores_current") or {}
-        head = (row.get("scores") or {}).get("head")
+        kind = records.kind_of(row)
         score = current.get("p_ge3")
-        if head not in wanted or score is None:
+        if kind not in wanted or score is None:
             continue
-        if current.get("head_sha256") != wanted[head]:
+        if current.get("head_sha256") != wanted[kind]:
             mismatched += 1
             continue
-        out[head].append({"row": row, "score": float(score)})
+        try:
+            picture = str(rescore.picture_of(row, index))
+        except (KeyError, TypeError):
+            continue
+        if picture in seen:
+            continue
+        seen.add(picture)
+        out[kind].append({"row": row, "score": float(score), "picture": picture})
     if mismatched:
         raise CensusError(
             f"{mismatched} row(s) carry a current score from an artifact that is not the one "
-            f"their head's floor was measured on. A floor read across that boundary is not a "
+            f"their kind's floor was measured on. A floor read across that boundary is not a "
             f"floor-pass verdict. Re-run `fractal-wallpapers curate rescore` before censusing."
         )
     log("[survival] floor-referenced rows: " + ", ".join(f"{k}={len(v)}" for k, v in out.items()))
@@ -562,15 +591,15 @@ def _raise_only(scored: dict, read_picture, log=print) -> dict:
     colour the way the keeps are? Reported at hue-family granularity because the
     reject pile is small and fifty-two cells over it is noise wearing a number.
     """
-    from fractal_wallpapers.curation import floors, rescore
+    from fractal_wallpapers.curation import budget, floors
 
-    head = "smooth_render"
-    floor = floors.gallery_floor(head).value
+    kind = budget.SMOOTH
+    floor = floors.gallery_floor(kind).value
     graded = []
-    for cell in scored.get(head, []):
+    for cell in scored.get(kind, []):
         if (cell["row"].get("location") or {}).get("partition") != "mandelbrot":
             continue
-        read = read_picture(str(rescore.picture_of(cell["row"])))
+        read = read_picture(cell["picture"])
         if read is None:
             continue
         graded.append(
@@ -583,7 +612,7 @@ def _raise_only(scored: dict, read_picture, log=print) -> dict:
         f"keeps={len(keeps)} rejects={len(rejects)}"
     )
     return {
-        "head": head,
+        "head": kind,
         "partition": "mandelbrot",
         "floor": floor,
         "n": len(graded),
