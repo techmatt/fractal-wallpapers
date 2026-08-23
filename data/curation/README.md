@@ -68,7 +68,8 @@ deciding what to ship.
 is a run's own account of itself; this is a verdict about four rows of it. The
 retroactive bar pass (`curate reject`) is a *rule* read live against today's cuts,
 so it finds the same rows every time it is asked — and four run8h strange rows
-below the 0.685 bar stay served on Matt's ruling. One row per excused release row,
+below the bar (0.685 when they were ruled on, 0.620 since the 2026-08-23 head
+flip) stay served on Matt's ruling. One row per excused release row,
 keyed on that row's own `run|stage|candidate`, carrying the bar it sits under, the
 score, who ruled and when and why. Per row and never per run or per head: an
 exception naming a run would excuse rows that run has not made yet, and one naming
@@ -155,8 +156,11 @@ the six runs were judged by a strange head that has since been replaced, so thei
 `P(≥3)` is a point on a scale that no longer exists and they have no `P(≥4)` at
 all. `curate rescore` reads every candidate render again through the head shipped
 now and puts the result in a **`scores_current`** block carrying that head's
-sha256. Every cut in curation still reads `scores.p_ge3`; a comparison across runs
-reads the other one.
+sha256. Every cut in curation reads the **live** block — `records.live_reading`,
+which is `scores_current` where a row has one — because a cut is a point on the
+scale the shipped judge emits and `scores` is a point on whatever was shipped that
+night. While one artifact stood behind both those were the same number; the
+2026-08-23 head flip is what made them differ.
 
 Read on 2026-08-22 against `smooth_render c0ac536d` and `strange_render a011188b`:
 the 925 rows already on those artifacts came back to within 6.8e-06 — identity, as
@@ -164,6 +168,13 @@ it should be, the residue being half-precision and batching. The 125 rows on the
 retired three-class `79201d0c` moved: median `P(≥3)` 0.000 to 0.041, twelve rows
 above the 0.685 strange bar became ten, and all 125 gained the fourth cutpoint
 that head never had.
+
+**Re-read again on 2026-08-23** against the one `render` judge that replaced both,
+`b2e225a9`: all 4,784 pool rows, none of them already on that artifact, so
+every row moved. That pass also cleared the 3,592-row gallery-store backlog the
+colour census flagged. The block now carries `judge` — the head that produced the
+numbers — beside `head`, which stays the row's KIND because that is what picks a
+floor and a slot.
 
 **A verdict taken after the run is added, never written over.** A released row a
 later review takes back keeps `verdict: released` — that is what the run decided

@@ -33,30 +33,17 @@
         }
       }
     },
-    "smooth_render": {
-      "tag": "weights-v1",
-      "asset": "smooth_render.fp16.pt",
-      "sha256": "c0ac536d0979713a0bcf198eb81a5a080a97bc4376b4124dc6c589b69b7767ef",
-      "bytes": 17162990,
+    "render": {
+      "tag": "weights-v3",
+      "asset": "render.fp16.pt",
+      "sha256": "b2e225a929ef5e53b1d9b0521539184453039e351272b7cfdc192e0cd3abfd78",
+      "bytes": 5133550,
       "precision": "fp16",
-      "run": "its own",
-      "source_commit": "e3b2604b98ee29296edc70de9c54d666ae719df3",
+      "run": "small_backbone_seed0",
+      "source_commit": "f9cc0fcb0e700f3a71f41bba535aadaf1da905a1",
       "provenance": {
         "supervision": "human verdicts",
-        "corpus": "data/smooth_render"
-      }
-    },
-    "strange_render": {
-      "tag": "weights-v2",
-      "asset": "strange_render.fp16.pt",
-      "sha256": "a011188bbcaaeef49421146e31b7eb411db57044d653c2e0986d5040d32e35de",
-      "bytes": 5137022,
-      "precision": "fp16",
-      "run": "four_class_seed0",
-      "source_commit": "11c59070bdd2e352a138b3d7de0e891cfe844042",
-      "provenance": {
-        "supervision": "human verdicts",
-        "corpus": "data/strange_render"
+        "corpus": "data/smooth_render + data/strange_render"
       }
     }
   }

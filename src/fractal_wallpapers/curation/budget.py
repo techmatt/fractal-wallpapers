@@ -62,15 +62,21 @@ from dataclasses import dataclass
 from fractal_wallpapers.curation import floors
 from fractal_wallpapers.supply import apportion
 
-#: The two finished-render judges, in the spelling every record uses. Declared
-#: here because this module allocates *between* them, and a misspelled head is a
+#: The two KINDS of finished render, in the spelling every record uses. Declared
+#: here because this module allocates *between* them, and a misspelled kind is a
 #: budget that silently goes nowhere.
+#:
+#: **They are kinds, not heads, since 2026-08-23** — one judge answers for both.
+#: The spelling did not change with the name, and that is deliberate: these
+#: strings key the two label stores, which did not merge and are not renamed, and
+#: every record already written spells them this way. What changed is what they
+#: select: a floor, a slot and a mode roster, and no longer a model.
 SMOOTH, STRANGE = "smooth_render", "strange_render"
-HEADS = (SMOOTH, STRANGE)
+KINDS = (SMOOTH, STRANGE)
 
 
-#: How many modes a head tries each location it is given, and therefore how many
-#: colorize attempts one location costs it. **The default**, and a run may be
+#: How many modes each kind tries at a location it is given, and therefore how
+#: many colorize attempts one location costs it. **The default**, and a run may be
 #: asked for another: it is a parameter of [`plan`] and part of a run's recorded
 #: shape, in the same way [`curation.run.STRANGE_SHARE`] is, so a resumed run
 #: takes the table it was planned with rather than whatever the module says
@@ -100,7 +106,7 @@ def modes_of(modes: dict | None = None) -> dict:
     """
     if modes is None:
         return dict(MODES_PER_LOCATION)
-    out = {head: max(1, int(modes.get(head, MODES_PER_LOCATION[head]))) for head in HEADS}
+    out = {head: max(1, int(modes.get(head, MODES_PER_LOCATION[head]))) for head in KINDS}
     if out[SMOOTH] != 1:
         raise ValueError(
             f"the smooth judge owns one coloring, so drawing {out[SMOOTH]} modes at a "
@@ -175,7 +181,7 @@ def head_attempts(
     """
     multiplier = floors.ATTEMPT_MULTIPLIER if multiplier is None else int(multiplier)
     modes = modes_of(modes)
-    want = {head: max(0, multiplier * int(slots.get(head, 0)) * modes[head]) for head in HEADS}
+    want = {head: max(0, multiplier * int(slots.get(head, 0)) * modes[head]) for head in KINDS}
     granted = want if budget is None else scale_to_budget(want, budget)
     return granted, {
         "attempt_multiplier": multiplier,
@@ -184,7 +190,7 @@ def head_attempts(
         # and the record has to say which.
         "modes_per_location": dict(modes),
         "attempt_budget": budget,
-        "head_slots": {head: int(slots.get(head, 0)) for head in HEADS},
+        "head_slots": {head: int(slots.get(head, 0)) for head in KINDS},
         "head_want": want,
         "scaled_to_budget": granted != want,
     }
@@ -206,9 +212,9 @@ def assign_guarantees(guarantees, slots: dict) -> tuple[dict, list[str]]:
     """
     owed: dict[str, str] = {}
     unplaced: list[str] = []
-    placed = dict.fromkeys(HEADS, 0)
+    placed = dict.fromkeys(KINDS, 0)
     for partition in sorted(set(guarantees)):
-        room = [head for head in HEADS if placed[head] < int(slots.get(head, 0))]
+        room = [head for head in KINDS if placed[head] < int(slots.get(head, 0))]
         if not room:
             unplaced.append(partition)
             continue
@@ -280,7 +286,7 @@ def plan(
     short: dict = {}
     cells: dict = {}
     seated: dict = {}
-    for head in HEADS:
+    for head in KINDS:
         modes = per_location[head]
         mine = {p for p, h in owed.items() if h == head}
         seated[head] = intake_slots(supply, slots[head], mine)
@@ -320,13 +326,13 @@ def plan(
 
     record.update(
         {
-            "head_attempts": {head: int(granted[head]) for head in HEADS},
+            "head_attempts": {head: int(granted[head]) for head in KINDS},
             # The slot projection the attempts were sized against, and the
             # guarantee behind it: "this partition got four attempts" and "it got
             # four because it is guaranteed a slot the mix would not have given
             # it" are different facts, and only the second explains the plan.
             "seated_slots": {
-                head: {p: int(k) for p, k in sorted(seated[head].items()) if k} for head in HEADS
+                head: {p: int(k) for p, k in sorted(seated[head].items()) if k} for head in KINDS
             },
             "guaranteed": list(claims),
             "guarantee_head": dict(sorted(owed.items())),
@@ -365,7 +371,7 @@ def realized(rows, partition_of=None) -> dict:
     plan's own docstring gives: a record that reports its own execution outlives
     what it records.
     """
-    out: dict = {head: {} for head in HEADS}
+    out: dict = {head: {} for head in KINDS}
     for row in rows:
         head = row.get("head")
         partition = partition_of(row) if partition_of else row.get("partition")
@@ -380,7 +386,7 @@ def fill_lines(record: dict, realized_fills: dict) -> list[str]:
     supply or a failed render, and neither with a thin release is a bug.
     """
     lines = []
-    for head in HEADS:
+    for head in KINDS:
         want = (record.get("head_want") or {}).get(head, 0)
         granted = (record.get("head_attempts") or {}).get(head, 0)
         planned = (record.get("planned_by_partition") or {}).get(head, {})
@@ -398,7 +404,7 @@ def fill_lines(record: dict, realized_fills: dict) -> list[str]:
 
 
 __all__ = [
-    "HEADS",
+    "KINDS",
     "MODES_PER_LOCATION",
     "SMOOTH",
     "STRANGE",

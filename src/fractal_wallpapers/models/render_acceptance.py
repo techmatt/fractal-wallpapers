@@ -71,7 +71,7 @@ import json
 import shutil
 from pathlib import Path
 
-from fractal_wallpapers.models import finished_scoring, joint_render, metrics, renders
+from fractal_wallpapers.models import finished_scoring, metrics, render_train, renders
 from fractal_wallpapers.paths import repo_root
 
 #: The schema every record here carries.
@@ -185,7 +185,7 @@ REFUSED: dict[str, str] = {
 #: silently skipped.
 ABLATIONS: dict[str, tuple[str, ...]] = {
     kind: tuple(f"{kind.split('_')[0]}_only_seed{index}" for index in range(3))
-    for kind in joint_render.KINDS
+    for kind in render_train.KINDS
 }
 
 
@@ -196,7 +196,7 @@ ABLATIONS: dict[str, tuple[str, ...]] = {
 #: pooled batch while the split arm took a mean **per kind** and summed them, the
 #: rarer kind's head would carry an effective weight of `n_pooled / n_kind` — about
 #: 2.6x for strange — and the two arms would differ in learning rate rather than
-#: in architecture. `tests/test_joint_render.py` proves they do not: both arms
+#: in architecture. `tests/test_render_train.py` proves they do not: both arms
 #: reach one `corn_loss` over the whole batch through the same line, and every
 #: row's weight is `1 / (tasks * pooled subset size)` whatever kind it is.
 LOSS_PARITY = {
@@ -223,7 +223,7 @@ LOSS_PARITY = {
 }
 
 
-class JointComparisonError(RuntimeError):
+class ComparisonError(RuntimeError):
     """The bar cannot be built, or the candidate cannot be read against it."""
 
 
@@ -238,19 +238,19 @@ def _suffix(candidate: str) -> str:
     return "" if candidate == "medium" else f"_{candidate}"
 
 
-def bar_path(candidate: str = joint_render.CURRENT) -> Path:
+def bar_path(candidate: str = render_train.CURRENT) -> Path:
     """The bar, as a file. Written before any score existed; never rewritten."""
-    return joint_render.head_dir() / f"bar{_suffix(candidate)}.json"
+    return render_train.head_dir() / f"bar{_suffix(candidate)}.json"
 
 
-def comparison_path(candidate: str = joint_render.CURRENT) -> Path:
+def comparison_path(candidate: str = render_train.CURRENT) -> Path:
     """What the bar says about the candidate band."""
-    return joint_render.head_dir() / f"comparison{_suffix(candidate)}.json"
+    return render_train.head_dir() / f"comparison{_suffix(candidate)}.json"
 
 
-def bar(candidate: str = joint_render.CURRENT) -> dict:
+def bar(candidate: str = render_train.CURRENT) -> dict:
     """Everything a verdict rests on, spelled out before a number exists."""
-    entry = joint_render.CANDIDATES[candidate]
+    entry = render_train.CANDIDATES[candidate]
     return {
         "schema": SCHEMA,
         "study": "one render judge over both kinds",
@@ -333,7 +333,7 @@ def bar(candidate: str = joint_render.CURRENT) -> dict:
     }
 
 
-def write_bar(candidate: str = joint_render.CURRENT, *, force: bool = False) -> Path:
+def write_bar(candidate: str = render_train.CURRENT, *, force: bool = False) -> Path:
     """Ship one candidate's bar to its file. Refuses to overwrite one that exists.
 
     `force` is keyword-only, and that is not decoration. It read positionally
@@ -345,7 +345,7 @@ def write_bar(candidate: str = joint_render.CURRENT, *, force: bool = False) -> 
     """
     path = bar_path(candidate)
     if path.is_file() and not force:
-        raise JointComparisonError(
+        raise ComparisonError(
             f"{path} already exists. A bar rewritten after the numbers are in is not a bar."
         )
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -357,7 +357,7 @@ def _incumbent_rows(kind: str, run: str | None) -> dict[str, dict]:
     """One incumbent run's committed read of its own sheet, keyed by picture."""
     path = finished_scoring.scores_path(kind, run)
     if not path.is_file():
-        raise JointComparisonError(
+        raise ComparisonError(
             f"{path} is missing: incumbent run {run!r} has no committed read of the {kind} "
             f"sheet. Every arm here is paired row by row."
         )
@@ -365,13 +365,13 @@ def _incumbent_rows(kind: str, run: str | None) -> dict[str, dict]:
 
 
 def _candidate_rows(kind: str, run: str) -> dict[str, dict]:
-    path = joint_render.scores_path(kind, run)
+    path = render_train.scores_path(kind, run)
     if not path.is_file():
-        raise JointComparisonError(
+        raise ComparisonError(
             f"{path} is missing: candidate run {run!r} has not read the {kind} sheet. "
             f"Run `fractal-wallpapers joint score --run {run}`."
         )
-    return {row["name"]: row for row in joint_render.read(kind, run)}
+    return {row["name"]: row for row in render_train.read(kind, run)}
 
 
 def aligned(kind: str, candidate_runs: list[str], ablation_runs: list[str] | None = None) -> dict:
@@ -392,7 +392,7 @@ def aligned(kind: str, candidate_runs: list[str], ablation_runs: list[str] | Non
     shared = set.intersection(*(set(rows) for rows in reads.values()))
     odd = {key: len(rows) for key, rows in reads.items() if len(rows) != len(shared)}
     if odd:
-        raise JointComparisonError(
+        raise ComparisonError(
             f"the {kind} reads do not cover the same pictures: {len(shared)} are in all of "
             f"them and {odd} differ. A paired comparison on a quiet intersection is a "
             f"comparison nobody can name the population of."
@@ -404,12 +404,12 @@ def aligned(kind: str, candidate_runs: list[str], ablation_runs: list[str] | Non
         if labels is None:
             labels = theirs
         elif not numpy.array_equal(labels, theirs):
-            raise JointComparisonError(
+            raise ComparisonError(
                 f"the {kind} reads disagree about the sheet's own labels ({key} differs). "
                 f"Re-score every run against the store as it stands now."
             )
     template = reads[f"candidate:{candidate_runs[0]}"]
-    clusters = joint_render.cluster_of([template[name] for name in names])
+    clusters = render_train.cluster_of([template[name] for name in names])
     return {
         "kind": kind,
         "names": names,
@@ -458,7 +458,7 @@ def _median_run(values: dict, direction: str) -> str:
         (run for run in values if values[run] is not None), key=lambda run: sign * values[run]
     )
     if not ordered:
-        raise JointComparisonError("no run produced this statistic, so no band can be read")
+        raise ComparisonError("no run produced this statistic, so no band can be read")
     return ordered[len(ordered) // 2]
 
 
@@ -776,7 +776,7 @@ def _variant_split(contexts: dict, name: str, runs: list[str], bands: dict) -> d
     the candidate it varies has not been scored — a variant read against nothing
     is a number with no comparison in it.
     """
-    against = joint_render.VARIANTS[name]["against"]
+    against = render_train.VARIANTS[name]["against"]
     theirs = bands.get(against)
     if not theirs:
         return {"against": against, "unreadable": f"the {against} band is not scored here"}
@@ -840,7 +840,7 @@ def _multiplicity(arms: list[dict], candidate_runs: list[str]) -> dict:
     }
 
 
-def read(runs: list[str] | None = None, candidate: str = joint_render.CURRENT) -> dict:
+def read(runs: list[str] | None = None, candidate: str = render_train.CURRENT) -> dict:
     """The whole read: every arm, every seed, and what the bar says about them.
 
     `candidate` names which registered design is being gated. Each has its own
@@ -851,32 +851,32 @@ def read(runs: list[str] | None = None, candidate: str = joint_render.CURRENT) -
 
     path = bar_path(candidate)
     if not path.is_file():
-        raise JointComparisonError(
+        raise ComparisonError(
             f"{path} is missing. The bar comes from the file and nothing here may invent one."
         )
     declared = json.loads(path.read_text(encoding="utf-8"))
-    candidate_runs = list(runs or joint_render.CANDIDATES[candidate]["runs"])
+    candidate_runs = list(runs or render_train.CANDIDATES[candidate]["runs"])
 
     present = {
-        kind: [run for run in ABLATIONS[kind] if joint_render.scores_path(kind, run).is_file()]
-        for kind in joint_render.KINDS
+        kind: [run for run in ABLATIONS[kind] if render_train.scores_path(kind, run).is_file()]
+        for kind in render_train.KINDS
     }
     variants = {
         name: [
             run
             for run in entry["runs"]
-            if all(joint_render.scores_path(kind, run).is_file() for kind in joint_render.KINDS)
+            if all(render_train.scores_path(kind, run).is_file() for kind in render_train.KINDS)
         ]
-        for name, entry in joint_render.VARIANTS.items()
+        for name, entry in render_train.VARIANTS.items()
     }
     every = [run for runs in variants.values() for run in runs]
     variants_of = {
         name: [
             run
             for run in entry["runs"]
-            if all(joint_render.scores_path(kind, run).is_file() for kind in joint_render.KINDS)
+            if all(render_train.scores_path(kind, run).is_file() for kind in render_train.KINDS)
         ]
-        for name, entry in joint_render.CANDIDATES.items()
+        for name, entry in render_train.CANDIDATES.items()
     }
     contexts = {
         kind: aligned(
@@ -884,14 +884,14 @@ def read(runs: list[str] | None = None, candidate: str = joint_render.CURRENT) -
             sorted({*candidate_runs, *every, *(r for v in variants_of.values() for r in v)}),
             present[kind],
         )
-        for kind in joint_render.KINDS
+        for kind in render_train.KINDS
     }
     arms = [_arm(arm, contexts[arm["kind"]], candidate_runs) for arm in ARMS]
     ablations = {
-        "runs": {kind: present[kind] for kind in joint_render.KINDS},
+        "runs": {kind: present[kind] for kind in render_train.KINDS},
         "absent": {
             kind: [run for run in ABLATIONS[kind] if run not in present[kind]]
-            for kind in joint_render.KINDS
+            for kind in render_train.KINDS
         },
         "what_it_is": (
             "one kind's share of exactly the pooled split, at exactly the candidate's "
@@ -926,13 +926,13 @@ def read(runs: list[str] | None = None, candidate: str = joint_render.CURRENT) -
 
     return {
         "schema": SCHEMA,
-        "head": joint_render.HEAD,
+        "head": render_train.HEAD,
         "candidate": candidate,
         # `.get` rather than `[]`: the first candidate's bar was registered before
         # this study had a second one to distinguish it from, and a bar is never
         # rewritten to suit a later reader. Its fields are filled from the roster.
-        "candidate_is": declared.get("candidate_is", joint_render.CANDIDATES[candidate]["what"]),
-        "backbone": declared.get("backbone", joint_render.CANDIDATES[candidate]["backbone"]),
+        "candidate_is": declared.get("candidate_is", render_train.CANDIDATES[candidate]["what"]),
+        "backbone": declared.get("backbone", render_train.CANDIDATES[candidate]["backbone"]),
         "bar": {"rule": declared["rule"], "significance": declared["significance"]},
         "candidate_runs": candidate_runs,
         "populations": populations,
@@ -946,7 +946,7 @@ def read(runs: list[str] | None = None, candidate: str = joint_render.CURRENT) -
                 "(the order). The same fit the release floors are placed by, so a gap that "
                 "lives in the scale term is a gap adoption re-derives anyway"
             ),
-            "read_on": {kind: band_run_of[kind] for kind in joint_render.KINDS},
+            "read_on": {kind: band_run_of[kind] for kind in render_train.KINDS},
             "cutpoints": {
                 kind: decomposition(
                     contexts[kind],
@@ -955,7 +955,7 @@ def read(runs: list[str] | None = None, candidate: str = joint_render.CURRENT) -
                         "incumbent": f"incumbent:{INCUMBENTS[kind]['shipped']}",
                     },
                 )
-                for kind in joint_render.KINDS
+                for kind in render_train.KINDS
             },
         },
         "against_the_corpus_matched_ablation": ablations,
@@ -971,16 +971,16 @@ def read(runs: list[str] | None = None, candidate: str = joint_render.CURRENT) -
                 name: {
                     "runs": runs,
                     "seeds": len(runs),
-                    "what": joint_render.VARIANTS[name]["what"],
+                    "what": render_train.VARIANTS[name]["what"],
                     "arms": [_arm(arm, contexts[arm["kind"]], runs) for arm in ARMS],
-                    "against": joint_render.VARIANTS[name]["against"],
+                    "against": render_train.VARIANTS[name]["against"],
                     "scale_or_order": _variant_split(contexts, name, runs, variants_of),
                 }
                 for name, runs in variants.items()
                 if runs
             },
             "absent": {
-                name: [run for run in joint_render.VARIANTS[name]["runs"] if run not in runs]
+                name: [run for run in render_train.VARIANTS[name]["runs"] if run not in runs]
                 for name, runs in variants.items()
             },
         },
@@ -1020,7 +1020,7 @@ def disagreements(
     run: str | None = None,
     per_kind: int = 6,
     out_dir: str | None = None,
-    candidate: str = joint_render.CURRENT,
+    candidate: str = render_train.CURRENT,
 ) -> dict:
     """Copy out the sheet rows the candidate and the incumbent read most differently.
 
@@ -1031,9 +1031,9 @@ def disagreements(
     """
     destination = Path(out_dir) if out_dir else repo_root() / "scratch" / "joint_disagreements"
     written = {}
-    for kind in joint_render.KINDS:
+    for kind in render_train.KINDS:
         arm = next(a for a in ARMS if a["kind"] == kind and a["statistic"] == "auc" and a["gated"])
-        candidate_runs = [run] if run else list(joint_render.CANDIDATES[candidate]["runs"])
+        candidate_runs = [run] if run else list(render_train.CANDIDATES[candidate]["runs"])
         context = aligned(kind, candidate_runs)
         chosen = run or _median_run(
             {
@@ -1109,7 +1109,7 @@ __all__ = [
     "INCUMBENTS",
     "REFUSED",
     "SCHEMA",
-    "JointComparisonError",
+    "ComparisonError",
     "ablation_arm",
     "aligned",
     "bar",

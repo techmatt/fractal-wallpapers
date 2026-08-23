@@ -577,7 +577,7 @@ def _select(scored, n, strange_share, caps, claims, log):
     a decision over the whole pool rather than a veto one run casts on the next.
     """
     slots = budget_module.head_slots(n, strange_share)
-    by_head = {head: [row for row in scored if row["head"] == head] for head in budget_module.HEADS}
+    by_head = {head: [row for row in scored if row["head"] == head] for head in budget_module.KINDS}
     entries, _collection = selection.grouped(by_head)
     owed, unplaced = budget_module.assign_guarantees(
         [p for p in claims if any(e["partition"] == p for v in entries.values() for e in v)],
@@ -586,7 +586,7 @@ def _select(scored, n, strange_share, caps, claims, log):
 
     used: dict = {}
     selected, log_rows, allocations, fill = [], [], {}, {}
-    for head in budget_module.HEADS:
+    for head in budget_module.KINDS:
         present = {entry["partition"] for entry in entries[head]}
         mine = {p for p, h in owed.items() if h == head and p in present}
         allocation = intake.slots(present, slots[head], mine, caps=None)
@@ -627,7 +627,7 @@ def _select(scored, n, strange_share, caps, claims, log):
         "head_eligible": {head: len(v) for head, v in entries.items()},
         "head_selected": {
             head: sum(1 for entry in selected if entry["row"]["head"] == head)
-            for head in budget_module.HEADS
+            for head in budget_module.KINDS
         },
         "partition_slots": allocations,
         "release_caps": dict(caps),
@@ -662,7 +662,7 @@ def _select(scored, n, strange_share, caps, claims, log):
         },
         "short_by": max(0, n - len(selected)),
     }
-    for head in budget_module.HEADS:
+    for head in budget_module.KINDS:
         cells = fill[head]
         bar = cells["bar"]
         line = (
@@ -684,7 +684,7 @@ def _select(scored, n, strange_share, caps, claims, log):
             + ", ".join(
                 f"{head} {split['head_selected'][head]}/{slots[head]} "
                 f"(eligible {split['head_eligible'][head]})"
-                for head in budget_module.HEADS
+                for head in budget_module.KINDS
             )
             + f". Shipping fewer rather than filling past a slot cap, a supply cap, the "
             f"one-wallpaper-per-location rule or the bar "
@@ -693,7 +693,7 @@ def _select(scored, n, strange_share, caps, claims, log):
         )
     log(
         f"[select] {len(selected)} selected: "
-        + ", ".join(f"{head} {split['head_selected'][head]}" for head in budget_module.HEADS)
+        + ", ".join(f"{head} {split['head_selected'][head]}" for head in budget_module.KINDS)
         + f"; {split['guarantee']['slots_taken']} guarantee slot(s)"
     )
     group_of = {entry["id"]: entry["group"] for pool in entries.values() for entry in pool}
@@ -1060,7 +1060,7 @@ def _autolevel_on() -> bool:
 def head_stamps() -> dict:
     """Which artifact each judge in this run actually was."""
     out = {}
-    for head in ("location", "palette", *budget_module.HEADS):
+    for head in ("location", "palette", floors.SCORING_HEAD):
         try:
             out[head] = floors.live_stamp(head)[:16]
         except floors.HeadStampMismatch as missing:

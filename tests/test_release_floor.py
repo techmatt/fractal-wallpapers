@@ -89,7 +89,8 @@ def test_a_curve_that_never_reaches_a_half_has_no_crossing() -> None:
 
 def test_a_corpus_that_places_no_floor_refuses_rather_than_inventing_one() -> None:
     reading = {
-        "head": "strange_render",
+        "head": "render",
+        "kind": "strange_render",
         "head_sha256": "a" * 64,
         "classes": 4,
         "rows": [
@@ -160,10 +161,11 @@ def test_the_bootstrap_is_seeded_and_repeats() -> None:
 # --------------------------------------------------------------------------- #
 # The record, and what it has to carry to be re-derivable.
 # --------------------------------------------------------------------------- #
-def separable(head: str = "strange_render") -> dict:
-    """A reading whose head agrees with its labels above 0.5 and not below."""
+def separable(kind: str = "strange_render") -> dict:
+    """A reading whose judge agrees with its labels above 0.5 and not below."""
     return {
-        "head": head,
+        "head": "render",
+        "kind": kind,
         "head_sha256": "b" * 64,
         "classes": 4,
         "rows": [
@@ -246,24 +248,28 @@ def test_the_committed_records_agree_with_the_heights_in_floors() -> None:
 
     from fractal_wallpapers.curation import floors
 
-    for head, restated in floors.MEASURED_RELEASE_FLOORS.items():
-        path = release_floor.record_path(head)
+    for kind, restated in floors.MEASURED_RELEASE_FLOORS.items():
+        path = release_floor.record_path(kind)
         if not path.is_file():
-            pytest.skip(f"{head} has not been fitted in this checkout")
+            pytest.skip(f"{kind} has not been fitted in this checkout")
         record = json.loads(path.read_text(encoding="utf-8"))
-        assert record["head"] == head
+        # The corpus is the KIND's and the scale is the one judge's. Both are on
+        # the record because since 2026-08-23 they are different names.
+        assert record["kind"] == kind
+        assert record["head"] == floors.SCORING_HEAD
         assert record["head_sha256"] == restated.head_sha256
         # The declared height is the 0.005 rounding, for every head. The strange
         # bar was set on that grid before the command existed; the smooth floor
         # was ruled onto it on 2026-08-22 so the two can be read against each
         # other. A floor that reads the three-place rounding is on its own grid.
-        assert restated.value == record["rounded_up_to_0_005"], head
+        assert restated.value == record["rounded_up_to_0_005"], kind
 
 
-def test_the_strange_bar_reproduces_and_is_not_moved_by_the_refit() -> None:
-    """`head floor --head strange_render` re-derived 0.680898 against the 0.6809 its own
-    method states. On the 0.005 grid that is the standing 0.685, so the bar stays
-    exactly where the 2026-08-17 ruling put it."""
+def test_the_strange_bar_reproduces_on_the_scale_it_is_stamped_with() -> None:
+    """The bar was re-fitted on the render judge when the two judges became one:
+    0.618078 on the new scale, 0.620 on the 0.005 grid, against 0.6809/0.685 on
+    the retired one. THAT it acts is unchanged and is the 2026-08-17 ruling; the
+    height moved because the scale did, which is what a re-fit is for."""
     import json
 
     from fractal_wallpapers.curation import floors
@@ -272,9 +278,10 @@ def test_the_strange_bar_reproduces_and_is_not_moved_by_the_refit() -> None:
     if not path.is_file():
         pytest.skip("the strange head has not been fitted in this checkout")
     record = json.loads(path.read_text(encoding="utf-8"))
-    assert record["rounded_up_to_0_005"] == floors.STRANGE_RELEASE_BAR.value == 0.685
-    assert "0.6809" in floors.STRANGE_RELEASE_BAR.method
-    assert abs(record["crossing"] - 0.6809) < 0.0005
+    assert record["rounded_up_to_0_005"] == floors.STRANGE_RELEASE_BAR.value == 0.620
+    assert "0.618078" in floors.STRANGE_RELEASE_BAR.method
+    assert abs(record["crossing"] - 0.618078) < 0.0005
+    assert floors.STRANGE_RELEASE_BAR.head_sha256 == record["head_sha256"]
 
 
 def test_the_smooth_floor_is_recorded_and_does_not_gate() -> None:
@@ -282,12 +289,12 @@ def test_the_smooth_floor_is_recorded_and_does_not_gate() -> None:
     `ACTING_RELEASE_BARS` is the single place that says which a head has."""
     from fractal_wallpapers.curation import floors
 
-    assert floors.SMOOTH_RELEASE_FLOOR.value == 0.385
+    assert floors.SMOOTH_RELEASE_FLOOR.value == 0.530
     assert "smooth_render" not in floors.ACTING_RELEASE_BARS
     assert "smooth_render" in floors.MEASURED_RELEASE_FLOORS
     assert floors.release_bar("smooth_render") is None
     assert floors.release_cut("smooth_render").value == floors.RELEASE_ADVISORY
 
     banner = floors.summary()["advisory"]
-    assert banner["measured_but_not_acting"]["smooth_render"]["value"] == 0.385
+    assert banner["measured_but_not_acting"]["smooth_render"]["value"] == 0.530
     assert "strange_render" not in banner["measured_but_not_acting"]

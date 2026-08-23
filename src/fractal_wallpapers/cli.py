@@ -1715,9 +1715,30 @@ def judge_preregister(args: argparse.Namespace) -> int:
 
 
 def judge_train(args: argparse.Namespace) -> int:
-    """Train one finished-render judge on the render cache."""
-    from fractal_wallpapers.models import finished_train
+    """Train the finished-render judge on the render cache.
 
+    `render` is the shipped judge and trains over both label stores pooled; the
+    two superseded per-kind judges still train from here, because a superseded
+    run has to stay reproducible for as long as its records are readable.
+    """
+    from fractal_wallpapers.models import finished_train, render_train
+
+    if args.head == render_train.HEAD:
+        try:
+            record = render_train.run(
+                device=args.device,
+                epochs=args.epochs,
+                seed=args.seed,
+                run_name=args.run,
+                only=args.only,
+                per_kind=args.two_head,
+                backbone=args.backbone,
+            )
+        except render_train.TrainingError as refusal:
+            print(refusal)
+            return 1
+        print(json.dumps({k: v for k, v in record.items() if k != "history"}, indent=2))
+        return 0
     try:
         record = finished_train.run(
             args.head,
@@ -1734,9 +1755,29 @@ def judge_train(args: argparse.Namespace) -> int:
 
 
 def judge_score(args: argparse.Namespace) -> int:
-    """Score one side of a judge's corpus through a trained checkpoint."""
-    from fractal_wallpapers.models import finished_scoring
+    """Score a side of the judge's corpus through a trained checkpoint.
 
+    `render` reads BOTH label stores, because one judge answers for both kinds and
+    its blind sheets are one per kind. `--kind` narrows it to one of them.
+    """
+    from fractal_wallpapers.models import finished_scoring, render_train
+
+    if args.head == render_train.HEAD:
+        kinds = [args.kind] if args.kind else list(render_train.KINDS)
+        try:
+            for kind in kinds:
+                print(
+                    json.dumps(
+                        render_train.score(
+                            kind, which=args.which, device=args.device, run_name=args.run
+                        ),
+                        indent=2,
+                    )
+                )
+        except render_train.TrainingError as refusal:
+            print(refusal)
+            return 1
+        return 0
     print(
         json.dumps(
             finished_scoring.run(
@@ -1753,8 +1794,27 @@ def judge_score(args: argparse.Namespace) -> int:
 
 
 def judge_accept(args: argparse.Namespace) -> int:
-    """Read a trained judge against its pre-registered bar."""
-    from fractal_wallpapers.models import finished_acceptance
+    """Read a trained judge against its pre-registered bar.
+
+    `render` is read against the non-inferiority bar its own band was registered
+    under, which is a different document from the two superseded heads' — see
+    [`fractal_wallpapers.models.render_acceptance`].
+    """
+    from fractal_wallpapers.models import finished_acceptance, render_train
+
+    if args.head == render_train.HEAD:
+        from fractal_wallpapers.models import render_acceptance
+
+        try:
+            report = render_acceptance.read(runs=args.run or None)
+        except render_acceptance.ComparisonError as refusal:
+            print(refusal)
+            return 1
+        path = render_acceptance.comparison_path()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8", newline="\n")
+        print(json.dumps(report, indent=2))
+        return 0 if report["verdict"] != "FAIL" else 1
 
     try:
         report = finished_acceptance.read(args.head, runs=args.run or None)
@@ -1769,14 +1829,26 @@ def judge_accept(args: argparse.Namespace) -> int:
 
 def judge_ship(args: argparse.Namespace) -> int:
     """Stage a judge's half-precision artifact and its manifest entry."""
-    from fractal_wallpapers.models import finished_acceptance, ship
+    from fractal_wallpapers.models import finished_acceptance, render_train, ship
 
-    verdict_path = finished_acceptance.acceptance_path(args.head)
+    if args.head == render_train.HEAD:
+        from fractal_wallpapers.models import render_acceptance
+
+        verdict_path = render_acceptance.comparison_path()
+        reading = "band_only_verdict"
+    else:
+        verdict_path = finished_acceptance.acceptance_path(args.head)
+        reading = "verdict"
     if not verdict_path.is_file():
         print(f"{verdict_path} is missing: nothing has judged this head yet.")
         print("Run `fractal-wallpapers renders accept` first.")
         return 1
-    verdict = json.loads(verdict_path.read_text(encoding="utf-8"))["verdict"]
+    report = json.loads(verdict_path.read_text(encoding="utf-8"))
+    # The render judge is read BAND-ONLY, by Matt's standing ruling of 2026-08-23:
+    # the per-seed conjunction runs one test per gated arm per seed and its
+    # false-alarm size was never pre-stated, so it does not gate. The record
+    # carries both readings and this is the one that ships.
+    verdict = report.get("multiplicity", {}).get(reading, report["verdict"])
     if verdict == "FAIL" and not args.force:
         print(f"the acceptance read says {verdict}. Shipping a head that failed its own")
         print("pre-registered bar needs --force and a sentence about why.")
@@ -1793,73 +1865,15 @@ def judge_ship(args: argparse.Namespace) -> int:
     return 0
 
 
-def joint_train(args: argparse.Namespace) -> int:
-    """Train the joint render candidate at one seed."""
-    from fractal_wallpapers.models import joint_render
+def judge_disagreements(args: argparse.Namespace) -> int:
+    """Copy out the sheet rows the judge and a superseded head read most differently."""
+    from fractal_wallpapers.models import render_acceptance
 
     try:
-        record = joint_render.run(
-            device=args.device,
-            epochs=args.epochs,
-            seed=args.seed,
-            run_name=args.run,
-            only=args.only,
-            per_kind=args.two_head,
-            backbone=args.backbone,
-        )
-    except joint_render.JointError as refusal:
-        print(refusal)
-        return 1
-    print(json.dumps({key: record[key] for key in record if key != "history"}, indent=2))
-    return 0
-
-
-def joint_score(args: argparse.Namespace) -> int:
-    """Read one kind's blind sheet through the joint candidate."""
-    from fractal_wallpapers.models import joint_render
-
-    kinds = [args.kind] if args.kind else list(joint_render.KINDS)
-    try:
-        for kind in kinds:
-            print(
-                json.dumps(
-                    joint_render.score(
-                        kind, which=args.which, device=args.device, run_name=args.run
-                    ),
-                    indent=2,
-                )
-            )
-    except joint_render.JointError as refusal:
-        print(refusal)
-        return 1
-    return 0
-
-
-def joint_compare(args: argparse.Namespace) -> int:
-    """Read the candidate band against the two incumbents, on the pre-declared bar."""
-    from fractal_wallpapers.models import joint_acceptance
-
-    try:
-        report = joint_acceptance.read(runs=args.run or None)
-    except joint_acceptance.JointComparisonError as refusal:
-        print(refusal)
-        return 1
-    path = joint_acceptance.comparison_path()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8", newline="\n")
-    print(json.dumps(report, indent=2))
-    return 0 if report["verdict"] != "FAIL" else 1
-
-
-def joint_disagreements(args: argparse.Namespace) -> int:
-    """Draw the rows the candidate and the incumbent disagree most about."""
-    from fractal_wallpapers.models import joint_acceptance
-
-    try:
-        report = joint_acceptance.disagreements(
+        report = render_acceptance.disagreements(
             run=args.run, per_kind=args.per_kind, out_dir=args.out_dir
         )
-    except joint_acceptance.JointComparisonError as refusal:
+    except render_acceptance.ComparisonError as refusal:
         print(refusal)
         return 1
     print(json.dumps(report, indent=2))
@@ -2177,18 +2191,30 @@ def head_floor(args: argparse.Namespace) -> int:
     print(json.dumps(record, indent=2))
     # A measurement, never a move: `curation.floors` is the only owner of a height
     # that acts, and putting this one there is somebody's decision.
-    standing = floors.ACTING_RELEASE_BARS.get(args.head)
+    # Every MEASURED height is held to reproducing, not only the acting one. A
+    # floor that is recorded and does not re-fit is a number nobody can check,
+    # and whether it happens to gate today is a different question from whether
+    # it is still true.
+    standing = floors.MEASURED_RELEASE_FLOORS.get(args.head)
     if standing is not None:
+        acting = args.head in floors.ACTING_RELEASE_BARS
         held = record["rounded_up_to_0_005"] == standing.value
         print(
-            f"standing bar {standing.value:g} vs this fit "
-            f"{record['rounded_up_to_0_005']:g} on the 0.005 grid "
+            f"standing {'bar' if acting else 'floor (advisory)'} {standing.value:g} vs this "
+            f"fit {record['rounded_up_to_0_005']:g} on the 0.005 grid "
             f"({record['rounded_up_3_places']:g} at three places): "
             f"{'REPRODUCED' if held else 'DOES NOT REPRODUCE'}"
         )
+        if held and standing.head_sha256 != record["head_sha256"]:
+            print(
+                f"but the standing height is stamped {standing.head_sha256[:12]} and this "
+                f"fit read {record['head_sha256'][:12]}: the height is right and the stamp "
+                f"is stale. Restate it."
+            )
+            return 1
         return 0 if held else 1
     print(
-        f"no acting bar on {args.head}. This is a reading, and wiring it into a "
+        f"no measured floor on {args.head}. This is a reading, and wiring it into a "
         f"selection is a separate decision."
     )
     return 0
@@ -3711,7 +3737,6 @@ def build_parser() -> argparse.ArgumentParser:
     tile_commands(subcommands)
     render_commands(subcommands)
     head_commands(subcommands)
-    joint_commands(subcommands)
     regime_commands(subcommands)
     palette_commands(subcommands)
     library_commands(subcommands)
@@ -4109,6 +4134,24 @@ def render_commands(subcommands) -> None:
     training.add_argument("--epochs", type=int, help="override the recipe's epoch count")
     training.add_argument("--seed", type=int, help="override the recipe's seed")
     training.add_argument(
+        "--only",
+        help="render only: train the ABLATION instead — one kind's share of exactly the "
+        "pooled split, under exactly this recipe. The arm that separates pooling from what "
+        "pooling changed alongside it",
+    )
+    training.add_argument(
+        "--two-head",
+        action="store_true",
+        help="render only: one backbone, TWO last layers — one ordinal head per kind. Shares "
+        "every representation and lets the kinds keep two scales, at the cost of having to "
+        "be told which kind it is reading",
+    )
+    training.add_argument(
+        "--backbone",
+        help="render only: train at a backbone other than the recipe's pinned one. The one "
+        "value a joint judge cannot inherit, so the choice is worth being able to re-ask",
+    )
+    training.add_argument(
         "--run",
         help="name this run, so its checkpoint and records land in their own directory. "
         "What a seed band is made of; omit for the judge's one run",
@@ -4124,6 +4167,10 @@ def render_commands(subcommands) -> None:
         ),
     )
     reading.add_argument("--head", required=True, help="which judge")
+    reading.add_argument(
+        "--kind",
+        help="render only: read one label store's sheet rather than both",
+    )
     reading.add_argument("--which", default="best", choices=["best", "last"])
     reading.add_argument("--side", default="eval", choices=["eval", "train"])
     reading.add_argument("--device", default="auto")
@@ -4167,109 +4214,22 @@ def render_commands(subcommands) -> None:
     )
     shipping.set_defaults(handler=judge_ship)
 
-
-def joint_commands(subcommands) -> None:
-    """The joint render candidate: one judge over both kinds, measured against two.
-
-    A study, not a pipeline. Nothing here writes into a shipped head's directory,
-    moves a floor or touches what serves; the candidate trains into `models/
-    joint_render/`, which is on no roster and in no release manifest.
-    """
-    studying = subcommands.add_parser(
-        "joint",
-        help="train one render judge over both kinds and read it against the two shipped ones",
-        description=(
-            "The smooth and strange judges answer one question in two halves, under recipes "
-            "that differ in a single behavioural key. These steps train one head on the "
-            "pooled stores and ask whether it judges each kind as well as that kind's own "
-            "head does — a non-inferiority read, because the declared benefit is simplicity "
-            "rather than a number. The candidate trains on the INTERSECTION of the two "
-            "training sides, so both blind sheets stay clean; that is stricter than what "
-            "either incumbent faced. Nothing here adopts anything."
-        ),
-    )
-    steps = studying.add_subparsers(dest="step", required=True)
-
-    training = steps.add_parser(
-        "train",
-        help="train the candidate at one seed",
-        description=(
-            "One epoch is one pass over the pooled pictures of both stores. The head is "
-            "handed no kind: the picture is the input, and one scale over one population is "
-            "the deliverable. The epoch is chosen on a seeded slice of the pooled training "
-            "side under the incumbents' own selection objective."
-        ),
-    )
-    training.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
-    training.add_argument("--epochs", type=int, help="override the recipe's epoch count")
-    training.add_argument("--seed", type=int, help="override the recipe's seed")
-    training.add_argument(
-        "--run", help="name this run, so its checkpoint and records land in their own directory"
-    )
-    training.add_argument(
-        "--only",
-        help="train the ABLATION instead: one kind's share of exactly the pooled split, "
-        "under exactly this recipe. The arm that separates pooling from what pooling "
-        "changed alongside it",
-    )
-    training.add_argument(
-        "--two-head",
-        action="store_true",
-        help="one backbone, TWO last layers — one ordinal head per kind. Shares every "
-        "representation and lets the two kinds keep two scales, at the cost of having to "
-        "be told which kind it is reading",
-    )
-    training.add_argument(
-        "--backbone",
-        help="train at a backbone other than the recipe's pinned one. The one value a joint "
-        "head cannot inherit, so the choice is worth being able to re-ask",
-    )
-    training.set_defaults(handler=joint_train)
-
-    reading = steps.add_parser(
-        "score",
-        help="read one kind's blind sheet through the candidate (default: both)",
-        description=(
-            "Writes the same row shape a finished-render judge's own read writes, so the "
-            "candidate's read and the incumbent's line up field for field."
-        ),
-    )
-    reading.add_argument("--kind", help="one of the two stores; omit to read both sheets")
-    reading.add_argument("--which", default="best", choices=["best", "last"])
-    reading.add_argument("--device", default="auto")
-    reading.add_argument("--run", help="the named training run to score")
-    reading.set_defaults(handler=joint_score)
-
-    comparing = steps.add_parser(
-        "compare",
-        help="read the candidate band against the two incumbents",
-        description=(
-            "Every arm is a 95% paired cluster bootstrap over whole neighbourhood groups, "
-            "with both heads scored on the same resampled rows. The bar is "
-            "non-inferiority: no arm may be significantly worse, per seed and on the band. "
-            "Nothing is required to be better."
-        ),
-    )
-    comparing.add_argument(
-        "--run", action="append", help="a candidate run to read (repeatable; default: the band)"
-    )
-    comparing.set_defaults(handler=joint_compare)
-
     drawing = steps.add_parser(
         "disagreements",
-        help="copy out the sheet rows the candidate and the incumbent read most differently",
+        help="copy out the sheet rows the judge and a superseded head read most differently",
         description=(
-            "Admissions and rejects, per kind: the rows where the candidate's probability at "
-            "that sheet's own boundary sits furthest above the incumbent's, and the rows "
-            "where it sits furthest below. Lands in scratch/, which is disposable."
+            "Admissions and rejects, per kind: the rows where the shipped judge's "
+            "probability at that sheet's own boundary sits furthest above the superseded "
+            "head's, and the rows where it sits furthest below. Lands in scratch/, which is "
+            "disposable."
         ),
     )
-    drawing.add_argument("--run", help="the candidate run to read (default: the band's median)")
+    drawing.add_argument("--run", help="the training run to read (default: the band's median)")
     drawing.add_argument(
         "--per-kind", type=int, default=6, help="rows per direction per kind (default: 6)"
     )
     drawing.add_argument("--out-dir", help="where the pictures land (default: scratch/)")
-    drawing.set_defaults(handler=joint_disagreements)
+    drawing.set_defaults(handler=judge_disagreements)
 
 
 def figure_commands(subcommands) -> None:

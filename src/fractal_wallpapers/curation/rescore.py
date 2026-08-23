@@ -66,7 +66,7 @@ class RescoreError(RuntimeError):
     """The pool cannot be read, or cannot be scored."""
 
 
-def picture_of(row: dict):
+def picture_of(row: dict, pool: dict | None = None):
     """The candidate render one release row was decided on.
 
     Off the run and the candidate id rather than off `row["picture"]`, which is
@@ -74,14 +74,29 @@ def picture_of(row: dict):
     and `None` on a killed one. One geometry for every row or the readings are
     not comparable.
 
-    **`source` wins where a row has one.** A gallery pass records its own decision
-    about a candidate an earlier run made, under its own pass id and its own
-    candidate id — two decisions about one picture — and the picture is still the
-    earlier run's. Without this the pass's seats would resolve to a render nobody
-    ever made, and this whole pass would refuse over rows that are perfectly
-    readable. A row with no `source` is every row written before passes existed,
-    and its candidate is its own.
+    **`source` wins where a row has one, and it is followed all the way down.** A
+    gallery pass records its own decision about a candidate an earlier run made,
+    under its own pass id and its own candidate id — two decisions about one
+    picture — and the picture is still the earlier run's. A row with no `source`
+    is every row written before passes existed, and its candidate is its own.
+
+    A **pass over a pass** makes that chain two links long, and following only the
+    first one resolves to a render nobody ever made. One row in the pool is
+    already like this — a gallery2 seat of a gallery1 seat of a run9 candidate —
+    and a single hop lands on `gallery1/pictures/run9_0008.jpg`, which has never
+    existed, while the picture sits in `run9/pictures/0008.jpg`. So `pool` is
+    threaded in and the chain is walked to its end; without it the walk is one
+    hop, which is what every caller before passes-over-passes needed.
     """
+    seen: set[str] = set()
+    while True:
+        source = row.get("source") or {}
+        key = str(source.get("key") or "")
+        nxt = (pool or {}).get(key)
+        if nxt is None or key in seen:
+            break
+        seen.add(key)
+        row = nxt
     source = row.get("source") or {}
     run = str(source.get("run") or row["run"])
     candidate = str(source.get("candidate") or row["candidate"])
@@ -112,7 +127,7 @@ def run(device: str = "auto", log=print) -> dict:
     writes the same bytes.
     """
     from fractal_wallpapers.curation import floors, gallery_store
-    from fractal_wallpapers.models import finished_scoring, scoring, ship, train
+    from fractal_wallpapers.models import render_train, scoring, ship, train
 
     rows = [
         row
@@ -122,17 +137,22 @@ def run(device: str = "auto", log=print) -> dict:
     if not rows:
         raise RescoreError("the pool holds no scored row, so there is nothing to read.")
 
-    by_head: dict[str, list[dict]] = {}
+    # A row's own `scores.head` is the name the run that made it wrote down, and
+    # since the two per-kind judges became one that value names the KIND rather
+    # than the judge. It is still required — the floors are per kind and the
+    # selection accounting is per kind — but it no longer chooses a model.
+    by_kind: dict[str, list[dict]] = {}
     for row in rows:
-        head = (row.get("scores") or {}).get("head")
-        if not head:
+        kind = (row.get("scores") or {}).get("head")
+        if not kind:
             raise RescoreError(
-                f"release row {row['key']!r} names no head, so nothing can say which judge "
-                f"should read its picture."
+                f"release row {row['key']!r} names no kind, so nothing can say which floor "
+                f"its reading would be measured against."
             )
-        by_head.setdefault(head, []).append(row)
+        by_kind.setdefault(kind, []).append(row)
 
-    absent = [row["key"] for row in rows if not picture_of(row).is_file()]
+    pool = {row["key"]: row for row in rows}
+    absent = [row["key"] for row in rows if not picture_of(row, pool).is_file()]
     if absent:
         raise RescoreError(
             f"{len(absent)} of the pool's {len(rows)} candidate renders are not on disk "
@@ -140,29 +160,37 @@ def run(device: str = "auto", log=print) -> dict:
             f"check `storage status` before deciding they are gone."
         )
 
+    # ONE judge, loaded once, reading everything. It used to be one model per
+    # kind and the loop is kept only so the report can still say how much of the
+    # pool is of each kind.
+    judge = floors.SCORING_HEAD
+    stamp = floors.live_stamp(judge)
+    model, config, where = render_train.load_checkpoint(ship.shipped_path(judge), device)
+    classes = int(config["classes"])
+
     read: dict[str, dict] = {}
-    per_head = {}
-    for head in sorted(by_head):
-        mine = by_head[head]
-        stamp = floors.live_stamp(head)
-        log(f"[rescore] {len(mine)} {head} candidate(s) through {stamp[:12]}")
-        model, config, where = finished_scoring.load(ship.shipped_path(head), device)
-        classes = int(config["classes"])
+    per_kind = {}
+    for kind in sorted(by_kind):
+        mine = by_kind[kind]
+        log(f"[rescore] {len(mine)} {kind} candidate(s) through {judge} {stamp[:12]}")
         probabilities = train.score(
             model,
-            [picture_of(row) for row in mine],
+            [picture_of(row, pool) for row in mine],
             scoring.transform_of(config),
             where,
             classes,
             {"batch_size": 64},
         )
         for row, probability in zip(mine, probabilities, strict=True):
-            block = {"head": head, "head_sha256": stamp}
+            # `head` stays the KIND, because every consumer of this block reads it
+            # to pick a floor and a slot, and both of those are still per kind.
+            # `judge` and `head_sha256` are the scale it was read on.
+            block = {"head": kind, "judge": judge, "head_sha256": stamp}
             for index in range(classes - 1):
                 block[f"p_ge{index + 2}"] = float(probability[index])
             block["rank_score"] = float(sum(probability))
             read[row["key"]] = block
-        per_head[head] = {"rows": len(mine), "head_sha256": stamp, "classes": classes}
+        per_kind[kind] = {"rows": len(mine), "judge": judge, "head_sha256": stamp}
 
     shift = _shift(rows, read)
     wrote = _write(rows, read, log)
@@ -170,10 +198,19 @@ def run(device: str = "auto", log=print) -> dict:
         "schema": records.SCHEMA,
         "block": BLOCK,
         "pool_rows": len(rows),
-        "heads": per_head,
+        "judge": floors_scoring_head(),
+        "kinds": per_kind,
         "shift": shift,
         "wrote": wrote,
     }
+
+
+def floors_scoring_head() -> str:
+    """The one judge the whole pool is read through. Named through `floors` so
+    there is a single owner of which head a curation number lives on."""
+    from fractal_wallpapers.curation import floors
+
+    return floors.SCORING_HEAD
 
 
 def _shift(rows: list[dict], read: dict) -> dict:
@@ -190,15 +227,15 @@ def _shift(rows: list[dict], read: dict) -> dict:
     same: list[float] = []
     moved: dict[str, dict] = {}
     for row in rows:
-        head = row["scores"]["head"]
+        kind = row["scores"]["head"]
         stamps.setdefault(row["run"], scoring_artifact(row["run"]))
-        was = str(stamps[row["run"]].get(head) or "")
+        was = str(stamps[row["run"]].get(kind) or "")
         now = read[row["key"]]["head_sha256"]
         before, after = row["scores"].get("p_ge3"), read[row["key"]]["p_ge3"]
         if was and now.startswith(was) and before is not None:
             same.append(abs(float(after) - float(before)))
         else:
-            cell = moved.setdefault(f"{head} {was or 'unrecorded'}", {"rows": 0, "gained_p_ge4": 0})
+            cell = moved.setdefault(f"{kind} {was or 'unrecorded'}", {"rows": 0, "gained_p_ge4": 0})
             cell["rows"] += 1
             cell["gained_p_ge4"] += int(
                 row["scores"].get("p_ge4") is None and read[row["key"]].get("p_ge4") is not None

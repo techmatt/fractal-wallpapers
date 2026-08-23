@@ -246,20 +246,25 @@ RELEASE_ADVISORY = 0.50
 #: way a release bar can honestly be restated, off the verdicts a person actually
 #: cast, and it landed well above where policy had left it.
 STRANGE_RELEASE_BAR = Restatement(
-    value=0.685,
-    head_sha256="a011188bbcaaeef49421146e31b7eb411db57044d653c2e0986d5040d32e35de",
+    value=0.620,
+    head_sha256="b2e225a929ef5e53b1d9b0521539184453039e351272b7cfdc192e0cd3abfd78",
     method=(
-        "the labels-derived crossover. Isotonic regression of P(the human said >=3) against "
-        "this head's own P(>=3), over all 3,085 labeled strange_render pictures scored through "
-        "the staged artifact, ties pooled, non-decreasing; the crossing is the LOWEST score "
-        "whose fitted agreement reaches a half, and the bar is that crossing rounded up to the "
-        "next 0.005. Crossing 0.6809, 95% cluster bootstrap over places [0.540, 0.776]; the "
-        "held-out selection slice crosses at 0.6987 on its own. Declared before it was read, "
-        "and the roundings go up because a bar is a floor. STILL A >=3 BAR: the head's fourth "
-        "class is preferred where it appears and gates nothing."
+        "the labels-derived crossover, re-fitted on the SHIPPED RENDER judge by "
+        "`head floor --head strange_render`. Isotonic regression of P(the human said >=3) "
+        "against the judge's own P(>=3), over all 3,085 labeled strange_render pictures, "
+        "ties pooled, non-decreasing; the crossing is the LOWEST score whose fitted "
+        "agreement reaches a half, and the bar is that crossing rounded up to the next "
+        "0.005. Crossing 0.618078, 95% cluster bootstrap over places [0.507, 0.808]. "
+        "713 of the 3,085 are keepers (23.1%). STILL A >=3 BAR: the judge's fourth class is "
+        "preferred where it appears and gates nothing. THAT the cut acts is unchanged and "
+        "is Matt's review verdict of 2026-08-17; only the height moved, because the scale "
+        "did."
     ),
-    reference_pool="all 3,085 labeled strange_render pictures, over 850 places",
-    date="2026-08-17",
+    reference_pool=(
+        "all 3,085 labeled strange_render pictures, over 850 places, read through the "
+        "shipped render artifact"
+    ),
+    date="2026-08-23",
 )
 
 #: **The smooth head's measured release floor**, which does not act.
@@ -288,33 +293,39 @@ STRANGE_RELEASE_BAR = Restatement(
 #: is the command that produced it — the strange bar's own crossover lived as
 #: prose for five days and could not be checked by anybody.
 SMOOTH_RELEASE_FLOOR = Restatement(
-    value=0.385,
-    head_sha256="c0ac536d0979713a0bcf198eb81a5a080a97bc4376b4124dc6c589b69b7767ef",
+    value=0.530,
+    head_sha256="b2e225a929ef5e53b1d9b0521539184453039e351272b7cfdc192e0cd3abfd78",
     method=(
-        "the labels-derived crossover, by `head floor --head smooth_render`. Isotonic "
-        "regression (pool-adjacent-violators, ties pooled, non-decreasing) of P(the human "
-        "said >=3) against this head's own P(>=3), over all 4,930 labeled smooth_render "
-        "pictures scored through the shipped artifact; the crossing is the LOWEST score whose "
-        "fitted agreement reaches a half, and the floor is that crossing rounded UP. Crossing "
-        "0.380325, 95% cluster bootstrap over places [0.377, 0.576]. Rounded up on the 0.005 "
-        "grid the strange bar was rounded on, which is 0.385 (0.381 at three places, which is "
-        "how this was recorded for one day before both floors were ruled onto one grid). "
-        "1,995 of the 4,930 are keepers (40.5%). ADVISORY: this height gates nothing, and 162 "
-        "of the 525 smooth rows in the pool (30.9%) sit below it — the same 162 the 0.381 "
-        "rounding named, because no row scores between the two."
+        "the labels-derived crossover, re-fitted on the SHIPPED RENDER judge by "
+        "`head floor --head smooth_render`. Isotonic regression (pool-adjacent-violators, "
+        "ties pooled, non-decreasing) of P(the human said >=3) against the judge's own "
+        "P(>=3), over all 4,930 labeled smooth_render pictures; the crossing is the LOWEST "
+        "score whose fitted agreement reaches a half, and the floor is that crossing "
+        "rounded UP on the 0.005 grid both heights sit on. Crossing 0.527937, 95% cluster "
+        "bootstrap over places [0.496, 0.591]. 1,995 of the 4,930 are keepers (40.5%). "
+        "ADVISORY: this height still gates nothing."
     ),
-    reference_pool="all 4,930 labeled smooth_render pictures, over 1,828 places",
-    date="2026-08-22",
+    reference_pool=(
+        "all 4,930 labeled smooth_render pictures, over 1,828 places, read through the "
+        "shipped render artifact"
+    ),
+    date="2026-08-23",
 )
 
 #: Which render heads' release cut ACTS, and at what height. Everything not in
-#: here gets an [`Advisory`]. Spelled out rather than imported from `budget.HEADS`
+#: here gets an [`Advisory`]. Spelled out rather than imported from `budget.KINDS`
 #: only because that module already imports this one; the suite checks the
 #: spelling against it.
 #:
 #: [`SMOOTH_RELEASE_FLOOR`] is deliberately not in here. A measured height and an
 #: acting one are different things, and this mapping is the single place that
 #: answers whether a head gates.
+#: THE head every cut in this module is a point on. One judge answers for both
+#: kinds since 2026-08-23, so the kind a floor is *for* and the head a floor is
+#: *on* are different names and both are needed: `MEASURED_RELEASE_FLOORS` is
+#: keyed by kind, and every stamp on this page is this head's.
+SCORING_HEAD = "render"
+
 ACTING_RELEASE_BARS = {"strange_render": STRANGE_RELEASE_BAR}
 
 #: Every release floor that has been **measured**, acting or not. The fit that
@@ -339,11 +350,16 @@ STRANGE_BAR_BASIS = (
 
 
 def release_cut(head: str) -> Advisory | Bar:
-    """The release cut on a finished-render head's score — whichever kind it has.
+    """The release cut on one KIND of finished render — whichever kind of cut it has.
 
     THE dispatcher, and the reason a caller never decides for itself whether a
-    head gates: [`ACTING_RELEASE_BARS`] is the one place that answers it, and
+    kind gates: [`ACTING_RELEASE_BARS`] is the one place that answers it, and
     every other site reads the answer off the returned type.
+
+    `head` here names the **kind** — it is the value a row's own `scores.head`
+    carries, which is a store name and not a judge since the two judges became
+    one. The cut it returns is stamped with [`SCORING_HEAD`], because a threshold
+    is a point on the probabilities some particular artifact emits.
 
     Built at call time so its stamp is the live artifact's, which is the whole
     point of the stamp: a cut object cached at import would carry the hash of
@@ -354,7 +370,7 @@ def release_cut(head: str) -> Advisory | Bar:
         return Bar(
             name=f"{head}_release",
             value=float(restated.value),
-            head=head,
+            head=SCORING_HEAD,
             # The head the height was MEASURED on, not the one that happens to be
             # shipped. That is what makes the stamp check bite on a flip.
             stamp=restated.head_sha256,
@@ -408,7 +424,7 @@ def gallery_floor(head: str) -> Bar:
     return Bar(
         name=f"{head}_gallery",
         value=float(restated.value),
-        head=head,
+        head=SCORING_HEAD,
         # The head the height was MEASURED on, like every other bar: a flip must
         # refuse here before the pass spends a full-size render on the wrong scale.
         stamp=restated.head_sha256,
@@ -443,8 +459,8 @@ def release_advisory(head: str) -> Advisory:
     return Advisory(
         name=f"{head}_release",
         value=RELEASE_ADVISORY,
-        head=head,
-        stamp=live_stamp(head),
+        head=SCORING_HEAD,
+        stamp=live_stamp(SCORING_HEAD),
         basis="the natural rank cutpoint of this head's own P(>=3) — not an operating point "
         "and no evaluation derived it. No release gate has been measured for this head, and "
         "an advisory that pretended to be one would be a bar nobody could defend. It "
@@ -591,6 +607,7 @@ def summary(modes: dict | None = None) -> dict:
 
 __all__ = [
     "ACTING_RELEASE_BARS",
+    "SCORING_HEAD",
     "ATTEMPT_MULTIPLIER",
     "MEASURED_RELEASE_FLOORS",
     "CLUSTER_CAP",

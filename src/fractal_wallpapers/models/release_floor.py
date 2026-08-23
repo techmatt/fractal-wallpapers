@@ -60,7 +60,7 @@ import random
 from pathlib import Path
 
 from fractal_wallpapers.labeling import finished
-from fractal_wallpapers.paths import repo_root, tracked_name
+from fractal_wallpapers.paths import tracked_name
 
 #: The schema the record carries.
 SCHEMA = 1
@@ -201,9 +201,18 @@ def bootstrap(
 # --------------------------------------------------------------------------- #
 # Reading the head over its own corpus.
 # --------------------------------------------------------------------------- #
-def record_path(head: str) -> Path:
-    """Where one head's fitted floor is written. Tracked, beside the head's metadata."""
-    return repo_root() / "models" / finished.head_of(head) / "release_floor.json"
+def record_path(kind: str) -> Path:
+    """Where one kind's fitted floor is written, beside the head that produced it.
+
+    **Keyed by the kind, filed under the head.** The corpus is a kind's — one
+    store, one population of pictures — and the scale is the judge's, because a
+    floor is a point on the probabilities a particular artifact emits. Since the
+    two per-kind judges became one, those are no longer the same name, so the file
+    says both: `models/render/release_floor_<kind>.json`.
+    """
+    from fractal_wallpapers.models import render_train
+
+    return render_train.head_dir() / f"release_floor_{finished.head_of(kind)}.json"
 
 
 def digest_of(text: str) -> str:
@@ -228,7 +237,7 @@ def read(head: str, device: str = "auto", log=print) -> dict:
     what makes the head sha on the record the sha a `Restatement` can carry.
     """
     from fractal_wallpapers.curation import floors
-    from fractal_wallpapers.models import finished_scoring, renders, ship, train
+    from fractal_wallpapers.models import renders, ship, train
 
     head = finished.head_of(head)
     resolution = finished.resolved(head)
@@ -248,9 +257,17 @@ def read(head: str, device: str = "auto", log=print) -> dict:
             f"repository makes, not the ones the corpus was labeled on somewhere else."
         )
 
-    stamp = floors.live_stamp(head)
+    # The corpus is the kind's; the SCALE is the shipped judge's. One judge
+    # answers for both kinds now, so these two names differ and the fit has to
+    # keep them apart — a floor measured against the wrong artifact is a number
+    # on a scale nothing emits.
+    from fractal_wallpapers.models import render_train
+
+    stamp = floors.live_stamp(floors.SCORING_HEAD)
     log(f"scoring {len(pictures)} labeled {head} pictures through {stamp[:12]}")
-    model, config, where = finished_scoring.load(ship.shipped_path(head), device)
+    model, config, where = render_train.load_checkpoint(
+        ship.shipped_path(floors.SCORING_HEAD), device
+    )
     classes = int(config["classes"])
     from fractal_wallpapers.models import scoring
 
@@ -269,7 +286,8 @@ def read(head: str, device: str = "auto", log=print) -> dict:
             cell[f"p_ge{index + 2}"] = float(probability[index])
         read_rows.append(cell)
     return {
-        "head": head,
+        "kind": head,
+        "head": floors.SCORING_HEAD,
         "head_sha256": stamp,
         "classes": classes,
         "where": where,
@@ -284,20 +302,22 @@ def fit(reading: dict, at: float = CROSSING, resamples: int = BOOTSTRAP) -> dict
     Returns rather than writes. The value here is a *reading*, and putting it into
     `curation.floors` is a decision somebody takes after looking at it.
     """
-    head, stamp = reading["head"], reading["head_sha256"]
+    head, kind, stamp = reading["head"], reading["kind"], reading["head_sha256"]
     rows = reading["rows"]
     points = [(row["p_ge3"], float(row["label"] >= KEEPER_TIER), row["place"]) for row in rows]
     curve = isotonic([(score, outcome) for score, outcome, _ in points])
     where = crossing(curve, at)
     if where is None:
         raise FloorFitError(
-            f"the {head} head's fitted agreement never reaches {at:g} anywhere on its scale, "
+            f"the {head} head's fitted agreement on the {kind} corpus never reaches {at:g} "
+            f"anywhere on its scale, "
             f"so this corpus places no floor. The highest fitted value is {curve[-1][1]:.4f}."
         )
     keepers = sum(1 for _, outcome, _ in points if outcome)
     return {
         "schema": SCHEMA,
         "head": head,
+        "kind": kind,
         "head_sha256": stamp,
         "value": round_up(where, PLACES),
         "crossing": round(where, 6),
@@ -330,14 +350,15 @@ def fit(reading: dict, at: float = CROSSING, resamples: int = BOOTSTRAP) -> dict
         "method": (
             f"the labels-derived crossover. Isotonic regression (pool-adjacent-violators, ties "
             f"pooled, non-decreasing) of P(the human said >={KEEPER_TIER}) against this head's "
-            f"own P(>=3), over all {len(rows)} labeled {head} pictures scored through the "
-            f"shipped artifact; the crossing is the LOWEST score whose fitted agreement reaches "
+            f"own P(>=3), over all {len(rows)} labeled {kind} pictures scored through the "
+            f"shipped {head} artifact; the crossing is the LOWEST score whose fitted agreement "
+            f"reaches "
             f"{at:g}, and the floor is that crossing rounded UP. Rounded up because a floor "
             f"rounded down admits material the fit did not vouch for."
         ),
         "reference_pool": (
-            f"all {len(rows)} labeled {head} pictures, over "
-            f"{len({row['place'] for row in rows})} places"
+            f"all {len(rows)} labeled {kind} pictures, over "
+            f"{len({row['place'] for row in rows})} places, read through the shipped {head}"
         ),
     }
 
@@ -348,7 +369,7 @@ def key_of(row: dict) -> str:
 
 def write(record: dict) -> Path:
     """Write the record as tracked text, LF, beside the head's other metadata."""
-    path = record_path(record["head"])
+    path = record_path(record["kind"])
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8", newline="\n")
     return path

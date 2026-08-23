@@ -12,7 +12,7 @@ head, one store boundary and one release artifact.
 **Nothing here adopts anything.** The shipped heads, their floors, the acceptance
 records and every wire in the supply and curation paths are untouched. This
 trains a candidate into its own directory and scores it on the two blind sheets;
-[`fractal_wallpapers.models.joint_acceptance`] reads it against the bar. What
+[`fractal_wallpapers.models.render_acceptance`] reads it against the bar. What
 adoption would cost is written down in the report and done nowhere.
 
 ## The split rule is stricter than either incumbent faced
@@ -69,8 +69,8 @@ from fractal_wallpapers.paths import repo_root, tracked_name
 #: The schema every record here carries.
 SCHEMA = 1
 
-#: The name the candidate's directory, records and CLI group are spelled with.
-HEAD = "joint_render"
+#: THE head. One judge over both kinds, and the name a release carries it under.
+HEAD = "render"
 
 #: The two kinds it pools, in the order every table here reports them.
 KINDS: tuple[str, ...] = ("smooth_render", "strange_render")
@@ -240,8 +240,8 @@ INHERITANCE = {
 }
 
 
-class JointError(RuntimeError):
-    """A candidate that cannot be trained or scored on what is here."""
+class TrainingError(RuntimeError):
+    """A judge that cannot be trained or scored on what is here."""
 
 
 def head_dir(run: str | None = None) -> Path:
@@ -347,7 +347,7 @@ def population(only: str | None = None) -> tuple[list[Picture], dict]:
             )
         per_kind[kind] = counted
     if absent:
-        raise JointError(
+        raise TrainingError(
             f"{len(absent)} judged pictures are not in a render cache (e.g. {absent[:3]}). "
             f"Build both before training: a head trained on the subset that happened to be "
             f"on disk is a head nobody can reproduce."
@@ -355,7 +355,7 @@ def population(only: str | None = None) -> tuple[list[Picture], dict]:
 
     beyond = sorted({picture.score for picture in pictures if picture.score > RECIPE["classes"]})
     if beyond:
-        raise JointError(
+        raise TrainingError(
             f"the pooled corpus holds verdicts at tier(s) {beyond} and this recipe trains "
             f"{RECIPE['classes']} classes."
         )
@@ -423,7 +423,7 @@ def cluster_of(rows: list[dict]) -> list[int]:
     """
     grouping = groups.assign(rows)
     if grouping.n_unplaced:
-        raise JointError(
+        raise TrainingError(
             f"{grouping.n_unplaced} score rows carry no location identity, so they cannot be "
             f"grouped. A paired interval over rows that were not clustered is a decoration."
         )
@@ -532,6 +532,27 @@ def score_through(model, paths, kinds, transform, where: str, classes: int, reci
     return head.probabilities(out)
 
 
+def load_checkpoint(path, device: str = "auto"):
+    """Rebuild the judge from a checkpoint FILE. What `ship` and the servers use.
+
+    Same rule as [`load`] and for the same reason — the classifier width comes off
+    the config's `per_kind`, not off `classes` — but addressed by path, because a
+    shipped artifact does not live in a run directory.
+    """
+    import torch
+
+    where = train.device_of(device)
+    saved = torch.load(path, map_location="cpu", weights_only=False)
+    config = saved["config"]
+    model = head.build(
+        num_classes=classifier_width(int(config["classes"]), bool(config.get("per_kind"))),
+        backbone=config["backbone"],
+        pretrained=False,
+    )
+    model.load_state_dict({key: value.float() for key, value in saved["state_dict"].items()})
+    return model.to(where).eval(), config, where
+
+
 def load(which: str = "best", run_name: str | None = None, device: str = "auto"):
     """Rebuild a candidate from its checkpoint. The config in the file decides how.
 
@@ -599,14 +620,14 @@ def run(
     training, choosing = by_side["train"], by_side[SELECTION]
     holdout, dropped = by_side["eval"], by_side[EXCLUDED]
     if not choosing:
-        raise JointError("the selection slice is empty; there is nothing to choose an epoch on")
+        raise TrainingError("the selection slice is empty; there is nothing to choose an epoch on")
 
     # The check run on the split that was BUILT, over BOTH pins: a pass that
     # never consulted either one still dies here.
     forbidden = {repr(place) for place in pinned_everywhere()}
     trespassing = [p for p in training + choosing if p.place in forbidden]
     if trespassing:
-        raise JointError(
+        raise TrainingError(
             f"{len(trespassing)} training pictures sit on a location pinned to one of the two "
             f"evaluation sheets (e.g. batch {trespassing[0].batch!r}). Both instruments have "
             f"to stay clean for this comparison — fix the split, never the pin."
@@ -683,7 +704,7 @@ def run(
     try:
         lock = train.claim(directory)
     except RuntimeError as taken:
-        raise JointError(str(taken)) from None
+        raise TrainingError(str(taken)) from None
     resume = directory / "resume.pt"
 
     best_metric, best_state, best_epoch, history = float("inf"), None, -1, []
@@ -737,7 +758,7 @@ def run(
         schedule.step()
 
         if any(not torch.isfinite(parameter).all() for parameter in model.parameters()):
-            raise JointError(f"the head went non-finite at epoch {epoch}")
+            raise TrainingError(f"the head went non-finite at epoch {epoch}")
 
         probabilities = (
             score_through(
@@ -912,14 +933,14 @@ def score(
     own = set(finished.pinned(kind))
     rows = [row for row in finished.resolved(kind).scored() if finished.place_of(row) in own]
     if not rows:
-        raise JointError(f"the {kind} store pins no location, so there is no sheet to read")
+        raise TrainingError(f"the {kind} store pins no location, so there is no sheet to read")
 
     names = [renders.job_name({**row, "_head": kind}) for row in rows]
     crops = renders.crop_dir(kind)
     paths = [crops / f"{name}.jpg" for name in names]
     absent = [name for name, path in zip(names, paths, strict=True) if not path.is_file()]
     if absent:
-        raise JointError(
+        raise TrainingError(
             f"{len(absent)} pictures of the {kind} sheet are not in the render cache "
             f"(e.g. {absent[:3]}). Build it before scoring."
         )
@@ -981,7 +1002,7 @@ def read(kind: str, run: str | None = None, path: Path | None = None) -> list[di
             continue
         row = json.loads(line)
         if row.get("schema") != SCHEMA:
-            raise JointError(f"{path}:{number}: schema {row.get('schema')!r}, expected {SCHEMA}")
+            raise TrainingError(f"{path}:{number}: schema {row.get('schema')!r}, expected {SCHEMA}")
         rows.append(row)
     return rows
 
@@ -1002,7 +1023,7 @@ __all__ = [
     "TWO_HEAD_RUNS",
     "VARIANTS",
     "VARIANT_RUNS",
-    "JointError",
+    "TrainingError",
     "Picture",
     "KindCrops",
     "checkpoint_path",
@@ -1013,6 +1034,7 @@ __all__ = [
     "head_dir",
     "metrics_path",
     "load",
+    "load_checkpoint",
     "of_kind",
     "pinned_everywhere",
     "population",

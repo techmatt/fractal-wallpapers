@@ -143,6 +143,10 @@ TAG = "weights-v1"
 #: the part someone reading the release needs in order to know what they have.
 SUPERVISION = {
     "location": ("human verdicts", "data/labels"),
+    # One judge, two corpora. The stores did not merge when the heads did — a
+    # store is a corpus and those are still two populations, judged per kind —
+    # so the provenance names both rather than inventing a third path.
+    "render": ("human verdicts", "data/smooth_render + data/strange_render"),
     "smooth_render": ("human verdicts", "data/smooth_render"),
     "strange_render": ("human verdicts", "data/strange_render"),
     "palette": ("distilled from a pretrained teacher", "data/palette_choice"),
@@ -241,6 +245,30 @@ def _finished_evaluation(name: str, which: str, run: str | None):
     return paths, numpy.array([row["score"] for row in rows])
 
 
+def _render_evaluation(name: str, which: str, run: str | None):
+    """BOTH blind sheets, concatenated. One judge, two pinned instruments.
+
+    The agreement check asks whether the halved artifact still orders what the
+    full-precision one ordered, so the population it asks over has to be
+    everything the judge is read on — and for this head that is two sheets, one
+    per kind, over two render caches.
+    """
+    import numpy
+
+    from fractal_wallpapers.labeling import finished
+    from fractal_wallpapers.models import render_train, renders
+
+    del name, which, run
+    paths, labels = [], []
+    for kind in render_train.KINDS:
+        pinned = set(finished.pinned(kind))
+        rows = [row for row in finished.resolved(kind).scored() if finished.place_of(row) in pinned]
+        crops = renders.crop_dir(kind)
+        paths += [crops / f"{renders.job_name({**row, '_head': kind})}.jpg" for row in rows]
+        labels += [row["score"] for row in rows]
+    return paths, numpy.array(labels)
+
+
 def _palette_agreement(name: str, which: str, device: str, run: str | None) -> dict:
     """The half-precision read for the palette head, in the units it is judged in.
 
@@ -325,6 +353,18 @@ def shipment_for(name: str) -> Shipment:
             load=palette_scoring.load,
             evaluation=None,
             agree=_palette_agreement,
+        )
+    if name == "render":
+        from fractal_wallpapers.models import render_train
+
+        # Its own loader, not `finished_scoring.load`: that one builds a
+        # classifier as wide as `classes` says, and the two-headed variant's is
+        # wider. The config carries `per_kind` and that is what decides.
+        return Shipment(
+            checkpoint=lambda _name, which, run: render_train.checkpoint_path(which, run),
+            directory=lambda _name, run=None: render_train.head_dir(run),
+            load=lambda path, device: render_train.load_checkpoint(path, device),
+            evaluation=_render_evaluation,
         )
     if name in finished.HEADS:
         from fractal_wallpapers.models import finished_scoring, finished_train
@@ -417,6 +457,13 @@ def convert(
     saved = torch.load(source, map_location="cpu", weights_only=False)
     config = dict(saved["config"])
     config["precision"] = "fp16"
+    # The artifact declares which head it IS, under the name the roster carries.
+    # A run's own checkpoint keeps whatever its trainer wrote — that is the run's
+    # record and is never re-read against a later name — but a shipped file is
+    # not a run record: it is the thing a release hands a clone, and a clone
+    # resolves it by roster name. `render` shipped from runs trained while its
+    # module was still called `joint_render`, and the file said so.
+    config["head"] = name
     config["dequantize_at_load"] = (
         "every floating tensor is stored as fp16 and widened to fp32 on load; the head runs "
         "in full precision and only the file is halved"

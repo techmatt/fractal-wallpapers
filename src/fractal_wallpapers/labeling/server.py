@@ -42,7 +42,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from fractal_wallpapers.models.roster import HEADS
+from fractal_wallpapers.labeling import finished
 
 PAGE = Path(__file__).with_name("page.html")
 
@@ -60,12 +60,24 @@ PORT_SCAN = 20
 SAVE_PREFIX = "/labels/"
 
 
+#: Every name a drop may be saved under: one per label store. `location` is the
+#: location corpus, and the two finished-render names are the two stores rather
+#: than two judges — see [`target_of_save`].
+DROPS: tuple[str, ...] = ("location", *finished.HEADS)
+
+
 def target_of_save(path: str) -> tuple[str, str] | None:
     """The `(head, sheet)` a save request names, or `None` if it names no head.
 
     `labels/<head>.<sheet>.json`, and `labels/<head>.json` for a page cut before
     a drop carried its sheet. The head is the part before the first dot because
     no head name holds one and no sheet name may.
+
+    **Checked against the label STORES, not the model roster.** A save names the
+    corpus a verdict lands in, and the two finished-render stores kept their names
+    when the two judges they were named after became one — so a rig that validated
+    against the roster would have started refusing `strange_render.json`, which is
+    still exactly where a strange verdict goes.
     """
     relative = urlsplit(path).path
     if not relative.startswith(SAVE_PREFIX):
@@ -74,7 +86,7 @@ def target_of_save(path: str) -> tuple[str, str] | None:
     if not name.endswith(".json"):
         return None
     head, _, sheet = name[: -len(".json")].partition(".")
-    if head not in HEADS or "." in sheet:
+    if head not in DROPS or "." in sheet:
         return None
     return head, sheet
 

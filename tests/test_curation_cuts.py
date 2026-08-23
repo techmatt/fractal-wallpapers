@@ -101,7 +101,7 @@ def test_the_one_acting_release_bar_is_the_strange_head_and_it_is_a_real_head() 
     from fractal_wallpapers.curation import budget
 
     assert set(floors.ACTING_RELEASE_BARS) == {budget.STRANGE}
-    assert set(floors.ACTING_RELEASE_BARS) < set(budget.HEADS)
+    assert set(floors.ACTING_RELEASE_BARS) < set(budget.KINDS)
     assert floors.ACTING_RELEASE_BARS[budget.STRANGE] is floors.STRANGE_RELEASE_BAR
 
 
@@ -135,7 +135,12 @@ def test_the_acting_bar_is_stamped_with_the_head_its_height_was_measured_on() ->
 
     cut = floors.release_cut(budget.STRANGE)
     assert cut.stamp == floors.STRANGE_RELEASE_BAR.head_sha256
-    assert cut.stamp == floors.live_stamp(budget.STRANGE), (
+    # The cut is NAMED for the kind and STAMPED with the judge. One judge answers
+    # for both kinds since 2026-08-23, so those are two different names and the
+    # stamp has to follow the one that emits the probabilities.
+    assert cut.head == floors.SCORING_HEAD
+    assert cut.name.startswith(budget.STRANGE)
+    assert cut.stamp == floors.live_stamp(floors.SCORING_HEAD), (
         "the shipped head is not the one this bar was restated against — restate it"
     )
 
@@ -165,7 +170,9 @@ def test_a_head_flip_refuses_every_seating_decision_until_the_bar_is_restated(
     from fractal_wallpapers.models import ship
 
     manifest = tmp_path / "weights.json"
-    manifest.write_text(json.dumps({"schema": 1, "heads": {budget.STRANGE: {"sha256": "def"}}}))
+    manifest.write_text(
+        json.dumps({"schema": 1, "heads": {floors.SCORING_HEAD: {"sha256": "def"}}})
+    )
     monkeypatch.setattr(ship, "manifest_path", lambda: manifest)
     with pytest.raises(floors.HeadStampMismatch, match="re-state the cut"):
         floors.release_cut(budget.STRANGE).acts(0.99)

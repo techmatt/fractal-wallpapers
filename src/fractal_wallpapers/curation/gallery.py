@@ -523,7 +523,7 @@ def head_order(split: dict) -> list[str]:
     partition.
     """
     return apportion.sequence_by_deficit(
-        {head: int(split.get(head, 0)) for head in budget_module.HEADS}, sum(split.values())
+        {head: int(split.get(head, 0)) for head in budget_module.KINDS}, sum(split.values())
     )
 
 
@@ -1225,7 +1225,9 @@ def candidate_of_attempt(row: dict, pass_id: str) -> dict:
         "source": {"run": pass_id, "candidate": f"{row['attempt']:04d}", "key": None},
         "scores_current": {
             "head": row.get("head"),
-            "head_sha256": floors.live_stamp(row["head"]) if row.get("head") else None,
+            # The KIND is `row["head"]`; the SCALE is the one judge's, so the
+            # stamp is read off that and not off the kind.
+            "head_sha256": floors.live_stamp(floors.SCORING_HEAD) if row.get("head") else None,
             "p_ge2": row.get("p_ge2"),
             "p_ge3": row.get("p_ge3"),
             "p_ge4": row.get("p_ge4"),
@@ -1280,7 +1282,7 @@ def seat(slots: list, candidates: list, log=print) -> dict:
             candidate
         )
 
-    floor_of = {head: floors.gallery_floor(head) for head in budget_module.HEADS}
+    floor_of = {head: floors.gallery_floor(head) for head in budget_module.KINDS}
     used: dict[str, int] = {}
     order = sorted(range(len(slots)), key=lambda i: _seat_order(slots, i))
     for slot in slots:
@@ -1482,7 +1484,7 @@ def pool_rows(pass_id: str) -> list[dict]:
         if row.get("run") == pass_id or records.is_rejected(row):
             continue
         candidate = candidate_of_pool_row(row)
-        if candidate.get("p_ge3") is None or candidate.get("head") not in budget_module.HEADS:
+        if candidate.get("p_ge3") is None or candidate.get("head") not in budget_module.KINDS:
             continue
         # An earlier pass's winner is in both stores — once as the attempt that
         # was made and once as the seat it took — and the two rows carry the same

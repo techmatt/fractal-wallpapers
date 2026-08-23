@@ -1,5 +1,18 @@
 """The bar each finished-render judge has to clear, written before it exists.
 
+## Both judges this reads are SUPERSEDED, and the file stays anyway
+
+`smooth_render` and `strange_render` were replaced on 2026-08-23 by one judge over
+both kinds — see [`fractal_wallpapers.models.render_acceptance`], which carries the
+non-inferiority bar the live one was adopted on. Nothing here gates anything now.
+
+It is kept, unedited, because a superseded head's acceptance record is the
+evidence of what was decided and on what: the two `prereg.json` files were
+written before either head existed and the two `acceptance.json` files say what
+those bars returned. Re-pointing this module at the live judge would overwrite
+that history with a reading it was never about. The names below are the two LABEL
+STORES, which did not merge and are not renamed.
+
 ## Why the file comes first
 
 A bar chosen after the numbers are in is not a bar. So the pre-registration is

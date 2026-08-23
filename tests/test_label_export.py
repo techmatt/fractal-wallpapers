@@ -20,8 +20,7 @@ from pathlib import Path
 
 import pytest
 
-from fractal_wallpapers.labeling import intake, server, sheets, store
-from fractal_wallpapers.models.roster import HEADS
+from fractal_wallpapers.labeling import finished, intake, server, sheets, store
 
 PAGE = Path(server.PAGE).read_text(encoding="utf-8")
 CONTROL = Path(server.CONTROL).read_text(encoding="utf-8")
@@ -92,10 +91,15 @@ def put(base: str, path: str, payload) -> tuple[int, str]:
 # --------------------------------------------------------------------------- #
 # The name.
 # --------------------------------------------------------------------------- #
-def test_every_sheet_names_a_head_on_the_roster() -> None:
-    """The export's name comes off the manifest, so it cannot be generic."""
-    assert sheets.LOCATION_HEAD in HEADS
-    assert all(head in HEADS for head in sheets.FINISHED_RUBRIC)
+def test_every_sheet_names_a_drop_the_rig_will_accept() -> None:
+    """The export's name comes off the manifest, so it cannot be generic — and it
+    names a label STORE. The two finished-render stores kept their names when the
+    two judges became one, so the rig checks drops rather than the model roster:
+    validating against the roster would refuse `strange_render.json`, which is
+    still exactly where a strange verdict goes."""
+    assert sheets.LOCATION_HEAD in server.DROPS
+    assert all(head in server.DROPS for head in sheets.FINISHED_RUBRIC)
+    assert set(server.DROPS) == {"location", *finished.HEADS}
 
 
 def test_the_page_takes_its_export_name_from_the_head_and_the_sheet() -> None:
@@ -162,7 +166,7 @@ def test_the_page_and_the_control_are_served_by_the_rig(rig) -> None:
             assert expected in answer.read().decode("utf-8"), path
 
 
-def test_a_head_name_is_read_off_the_roster(tmp_path) -> None:
+def test_a_drop_name_is_read_off_the_stores(tmp_path) -> None:
     assert server.target_of_save("/labels/strange_render.json") == ("strange_render", "")
     assert server.target_of_save("/labels/location.plane_deep.json") == ("location", "plane_deep")
     assert server.target_of_save("/labels/labels.json") is None

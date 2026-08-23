@@ -338,12 +338,29 @@ def test_the_tracked_ruling_holds_the_four_run8h_rows_in_service() -> None:
     for key, ruling in excused.items():
         assert ruling["run"] == "run8h"
         assert ruling["head"] == "strange_render"
-        assert ruling["p_ge3"] < floors.STRANGE_RELEASE_BAR.value
+        # Against the bar the RULING was written against, not today's. Both the
+        # score and the bar on this row are frozen provenance on the retired
+        # judge's scale; the standing height is a point on the live judge's, and
+        # comparing the two is the scale error the ruling itself is evidence of.
+        assert ruling["p_ge3"] < ruling["bar"]["value"]
+        assert ruling["bar"]["head_sha256"] != floors.STRANGE_RELEASE_BAR.head_sha256
         assert ruling["ruled_by"] and ruling["date"] and ruling["reason"]
         assert key.endswith(ruling["candidate"])
 
+    # The exception is keyed on the ROW, so it holds whatever the live scale says
+    # about these four today — the property that makes a ruling survive a head
+    # flip instead of quietly expiring with one. None of the four is ever offered
+    # back to the rejection pass.
     rows = records.read_decisions(records.RELEASE, "run8h")
-    assert [row["candidate"] for row, _ in rejection.below_acting_bar(rows)] == []
+    offered = {row["candidate"] for row, _ in rejection.below_acting_bar(rows)}
+    assert not offered & {ruling["candidate"] for ruling in excused.values()}
+
+    # What the rule finds BESIDES them is not this ruling's business and is not
+    # asserted to be empty. The 2026-08-23 head flip moved the whole scale, and
+    # rows this run released above the retired judge's bar can sit below the live
+    # one — `run8h|0032` reads 0.9999946 retired and 0.4987 on the render judge.
+    # Taking those back is a curation pass somebody runs, not a fact about the
+    # four rows Matt ruled on.
 
 
 def test_an_unexcused_row_below_the_bar_is_still_taken_back(tmp_path) -> None:
