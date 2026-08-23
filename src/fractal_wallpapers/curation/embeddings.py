@@ -234,16 +234,21 @@ def _supply() -> list[dict]:
 def judged_pool() -> dict:
     """`{location key: partition}` for every location the accumulated pool judged.
 
-    The 475 places curation has actually made a candidate of. They are not the
+    Every place curation has actually made a candidate of. They are not the
     population this store is counted against — that is [`admitted`] — and the two
     are worth reading together for one reason: a judged location the store cannot
     hold is a place the gallery pass cannot select, however good the wallpaper
     somebody already made of it. See [`unreachable`].
+
+    **Both stores**, because the pool is in two places. A run's candidates are
+    release rows; a gallery pass's attempts are rows in
+    [`curation.gallery_store`], under `artifacts/` rather than in the history, and
+    a pass makes more of them in one night than every run has made in total.
     """
-    from fractal_wallpapers.curation import records
+    from fractal_wallpapers.curation import gallery_store, records
 
     pool: dict[str, str] = {}
-    for row in records.read_decisions(records.RELEASE):
+    for row in [*records.read_decisions(records.RELEASE), *gallery_store.read()]:
         location = row.get("location") or {}
         pool.setdefault(str(location.get("key")), str(location.get("partition")))
     return pool

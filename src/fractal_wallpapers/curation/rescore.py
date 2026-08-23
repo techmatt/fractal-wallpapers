@@ -32,6 +32,20 @@ of both kinds, so the pass loads both heads — and each row is scored by one.
 `pictures/NNNN.jpg`, 640x360, the render the gate decision was taken on. Not the
 release PNG: only 153 rows have one, and a floor read at one geometry and applied
 at another is two different measurements wearing one number.
+
+## The pool is in two stores, and both are read and both are written back
+
+A run's candidates are release rows in the tracked store. A **gallery pass's**
+attempts are rows in [`curation.gallery_store`], under `artifacts/` with a
+tracked manifest, and one pass makes more of them than every run has made in
+total. A re-score that read only the tracked store would leave the larger half of
+the pool carrying a retired head's numbers — and `gallery.pool_candidates` reads
+`scores_current` where a row has one, so the next pass would rank a re-scored run
+row against a stale pass row on two different scales. That is the failure this
+project has already made once, and it is the reason this pass exists at all.
+
+A row with **no score** is skipped rather than read: a failed render is a decision
+with a reason and no number, and it has no picture to read either.
 """
 
 from __future__ import annotations
@@ -97,12 +111,16 @@ def run(device: str = "auto", log=print) -> dict:
     Idempotent: a second pass over an unchanged pool through unchanged heads
     writes the same bytes.
     """
-    from fractal_wallpapers.curation import floors
+    from fractal_wallpapers.curation import floors, gallery_store
     from fractal_wallpapers.models import finished_scoring, scoring, ship, train
 
-    rows = records.read_decisions(records.RELEASE)
+    rows = [
+        row
+        for row in [*records.read_decisions(records.RELEASE), *gallery_store.read()]
+        if (row.get("scores") or {}).get("p_ge3") is not None
+    ]
     if not rows:
-        raise RescoreError("the release store holds no row, so there is no pool to read.")
+        raise RescoreError("the pool holds no scored row, so there is nothing to read.")
 
     by_head: dict[str, list[dict]] = {}
     for row in rows:
@@ -197,20 +215,34 @@ def _shift(rows: list[dict], read: dict) -> dict:
 
 
 def _write(rows: list[dict], read: dict, log) -> dict:
-    """Put the block on every row and write each run's directory back.
+    """Put the block on every row and write it back to the store it came from.
 
-    Through the store's own upsert, so the key order and the file layout stay the
+    Through each store's own upsert, so the key order and the file layout stay the
     store's — and so a rejection block a person added survives, which `_carry`
     guarantees and a hand-rolled rewrite would not.
+
+    **Routed by stage**, which is what says which store a row lives in: a release
+    row is a decision about a slot and belongs to the tracked store, and a gate row
+    is a pass's attempt and belongs to that pass's own. A pass whose store was
+    rewritten has its manifest saved again in the same call, because a store the
+    manifest no longer describes reads as `changed` to every later check.
     """
-    by_run: dict[str, list[dict]] = {}
+    from fractal_wallpapers.curation import gallery_store
+
+    by_run: dict[tuple, list[dict]] = {}
     for row in rows:
-        by_run.setdefault(row["run"], []).append({**row, BLOCK: read[row["key"]]})
+        stage = str(row.get("stage") or records.RELEASE)
+        by_run.setdefault((stage, row["run"]), []).append({**row, BLOCK: read[row["key"]]})
     out = {}
-    for name in sorted(by_run):
-        _, total, new = records.write_decisions(records.RELEASE, name, by_run[name])
-        out[name] = total
-        log(f"[rescore] {name}: {total} row(s) written, {new} new")
+    for stage, name in sorted(by_run):
+        mine = by_run[(stage, name)]
+        if stage == records.GATE:
+            _, total, new = gallery_store.write(name, mine)
+            gallery_store.save(name, log=lambda line: log(f"[rescore] {line}"))
+        else:
+            _, total, new = records.write_decisions(records.RELEASE, name, mine)
+        out[f"{name}/{stage}"] = total
+        log(f"[rescore] {name} {stage}: {total} row(s) written, {new} new")
     return out
 
 
