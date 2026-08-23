@@ -1793,6 +1793,79 @@ def judge_ship(args: argparse.Namespace) -> int:
     return 0
 
 
+def joint_train(args: argparse.Namespace) -> int:
+    """Train the joint render candidate at one seed."""
+    from fractal_wallpapers.models import joint_render
+
+    try:
+        record = joint_render.run(
+            device=args.device,
+            epochs=args.epochs,
+            seed=args.seed,
+            run_name=args.run,
+            only=args.only,
+            per_kind=args.two_head,
+            backbone=args.backbone,
+        )
+    except joint_render.JointError as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps({key: record[key] for key in record if key != "history"}, indent=2))
+    return 0
+
+
+def joint_score(args: argparse.Namespace) -> int:
+    """Read one kind's blind sheet through the joint candidate."""
+    from fractal_wallpapers.models import joint_render
+
+    kinds = [args.kind] if args.kind else list(joint_render.KINDS)
+    try:
+        for kind in kinds:
+            print(
+                json.dumps(
+                    joint_render.score(
+                        kind, which=args.which, device=args.device, run_name=args.run
+                    ),
+                    indent=2,
+                )
+            )
+    except joint_render.JointError as refusal:
+        print(refusal)
+        return 1
+    return 0
+
+
+def joint_compare(args: argparse.Namespace) -> int:
+    """Read the candidate band against the two incumbents, on the pre-declared bar."""
+    from fractal_wallpapers.models import joint_acceptance
+
+    try:
+        report = joint_acceptance.read(runs=args.run or None)
+    except joint_acceptance.JointComparisonError as refusal:
+        print(refusal)
+        return 1
+    path = joint_acceptance.comparison_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8", newline="\n")
+    print(json.dumps(report, indent=2))
+    return 0 if report["verdict"] != "FAIL" else 1
+
+
+def joint_disagreements(args: argparse.Namespace) -> int:
+    """Draw the rows the candidate and the incumbent disagree most about."""
+    from fractal_wallpapers.models import joint_acceptance
+
+    try:
+        report = joint_acceptance.disagreements(
+            run=args.run, per_kind=args.per_kind, out_dir=args.out_dir
+        )
+    except joint_acceptance.JointComparisonError as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps(report, indent=2))
+    return 0
+
+
 def figure_score_to_decision(args: argparse.Namespace) -> int:
     """Draw one frame per outcome the judges' ladder has, plus their provenance."""
     from fractal_wallpapers.models import decisions
@@ -3569,6 +3642,7 @@ def build_parser() -> argparse.ArgumentParser:
     tile_commands(subcommands)
     render_commands(subcommands)
     head_commands(subcommands)
+    joint_commands(subcommands)
     regime_commands(subcommands)
     palette_commands(subcommands)
     library_commands(subcommands)
@@ -4023,6 +4097,110 @@ def render_commands(subcommands) -> None:
         "--force", action="store_true", help="ship a judge whose acceptance read failed"
     )
     shipping.set_defaults(handler=judge_ship)
+
+
+def joint_commands(subcommands) -> None:
+    """The joint render candidate: one judge over both kinds, measured against two.
+
+    A study, not a pipeline. Nothing here writes into a shipped head's directory,
+    moves a floor or touches what serves; the candidate trains into `models/
+    joint_render/`, which is on no roster and in no release manifest.
+    """
+    studying = subcommands.add_parser(
+        "joint",
+        help="train one render judge over both kinds and read it against the two shipped ones",
+        description=(
+            "The smooth and strange judges answer one question in two halves, under recipes "
+            "that differ in a single behavioural key. These steps train one head on the "
+            "pooled stores and ask whether it judges each kind as well as that kind's own "
+            "head does — a non-inferiority read, because the declared benefit is simplicity "
+            "rather than a number. The candidate trains on the INTERSECTION of the two "
+            "training sides, so both blind sheets stay clean; that is stricter than what "
+            "either incumbent faced. Nothing here adopts anything."
+        ),
+    )
+    steps = studying.add_subparsers(dest="step", required=True)
+
+    training = steps.add_parser(
+        "train",
+        help="train the candidate at one seed",
+        description=(
+            "One epoch is one pass over the pooled pictures of both stores. The head is "
+            "handed no kind: the picture is the input, and one scale over one population is "
+            "the deliverable. The epoch is chosen on a seeded slice of the pooled training "
+            "side under the incumbents' own selection objective."
+        ),
+    )
+    training.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
+    training.add_argument("--epochs", type=int, help="override the recipe's epoch count")
+    training.add_argument("--seed", type=int, help="override the recipe's seed")
+    training.add_argument(
+        "--run", help="name this run, so its checkpoint and records land in their own directory"
+    )
+    training.add_argument(
+        "--only",
+        help="train the ABLATION instead: one kind's share of exactly the pooled split, "
+        "under exactly this recipe. The arm that separates pooling from what pooling "
+        "changed alongside it",
+    )
+    training.add_argument(
+        "--two-head",
+        action="store_true",
+        help="one backbone, TWO last layers — one ordinal head per kind. Shares every "
+        "representation and lets the two kinds keep two scales, at the cost of having to "
+        "be told which kind it is reading",
+    )
+    training.add_argument(
+        "--backbone",
+        help="train at a backbone other than the recipe's pinned one. The one value a joint "
+        "head cannot inherit, so the choice is worth being able to re-ask",
+    )
+    training.set_defaults(handler=joint_train)
+
+    reading = steps.add_parser(
+        "score",
+        help="read one kind's blind sheet through the candidate (default: both)",
+        description=(
+            "Writes the same row shape a finished-render judge's own read writes, so the "
+            "candidate's read and the incumbent's line up field for field."
+        ),
+    )
+    reading.add_argument("--kind", help="one of the two stores; omit to read both sheets")
+    reading.add_argument("--which", default="best", choices=["best", "last"])
+    reading.add_argument("--device", default="auto")
+    reading.add_argument("--run", help="the named training run to score")
+    reading.set_defaults(handler=joint_score)
+
+    comparing = steps.add_parser(
+        "compare",
+        help="read the candidate band against the two incumbents",
+        description=(
+            "Every arm is a 95% paired cluster bootstrap over whole neighbourhood groups, "
+            "with both heads scored on the same resampled rows. The bar is "
+            "non-inferiority: no arm may be significantly worse, per seed and on the band. "
+            "Nothing is required to be better."
+        ),
+    )
+    comparing.add_argument(
+        "--run", action="append", help="a candidate run to read (repeatable; default: the band)"
+    )
+    comparing.set_defaults(handler=joint_compare)
+
+    drawing = steps.add_parser(
+        "disagreements",
+        help="copy out the sheet rows the candidate and the incumbent read most differently",
+        description=(
+            "Admissions and rejects, per kind: the rows where the candidate's probability at "
+            "that sheet's own boundary sits furthest above the incumbent's, and the rows "
+            "where it sits furthest below. Lands in scratch/, which is disposable."
+        ),
+    )
+    drawing.add_argument("--run", help="the candidate run to read (default: the band's median)")
+    drawing.add_argument(
+        "--per-kind", type=int, default=6, help="rows per direction per kind (default: 6)"
+    )
+    drawing.add_argument("--out-dir", help="where the pictures land (default: scratch/)")
+    drawing.set_defaults(handler=joint_disagreements)
 
 
 def figure_commands(subcommands) -> None:

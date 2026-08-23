@@ -1,0 +1,135 @@
+{
+  "schema": 1,
+  "head": "joint_render",
+  "run": "strange_only_seed0",
+  "only": "strange_render",
+  "pretrained": true,
+  "geometry": "stretch",
+  "epochs": 40,
+  "batch_size": 32,
+  "backbone_lr": 0.0002,
+  "head_lr": 0.001,
+  "weight_decay": 0.05,
+  "drop_rate": 0.2,
+  "drop_path_rate": 0.1,
+  "grad_clip": 1.0,
+  "seed": 0,
+  "workers": 4,
+  "amp": "off",
+  "border_crop": 0.05,
+  "augmentation": "geometric only \u2014 border crop and both flips. No colour, no JPEG jitter",
+  "class_balance": "sqrt",
+  "source_dims": [
+    1280,
+    720
+  ],
+  "target_dims": [
+    384,
+    224
+  ],
+  "loss": "CORN ordinal, K-1 conditional-subset tasks",
+  "sampler": "w_class[1/sqrt] x w_place[1/pictures at this place], in that order",
+  "selection": "min validation loss over the selection slice, through the deploy transform: the mean cross-entropy of the unconditional probability at each cutpoint against that cutpoint's own truth. A proper scoring rule, so it sees the scale and not only the order",
+  "classes": 4,
+  "backbone": "mobilenetv4_conv_medium.e250_r384_in12k",
+  "selection_cutpoint": 3,
+  "conditioning": "none \u2014 the picture is the input, and the head is told no kind",
+  "kinds": [
+    "strange_render"
+  ],
+  "mean": [
+    0.485,
+    0.456,
+    0.406
+  ],
+  "std": [
+    0.229,
+    0.224,
+    0.225
+  ],
+  "interpolation": "bicubic",
+  "best_epoch": 19,
+  "inherited": {
+    "identical_to_both_incumbents": [
+      "amp",
+      "augmentation",
+      "backbone_lr",
+      "batch_size",
+      "border_crop",
+      "class_balance",
+      "classes",
+      "drop_path_rate",
+      "drop_rate",
+      "epochs",
+      "geometry",
+      "grad_clip",
+      "head_lr",
+      "loss",
+      "pretrained",
+      "sampler",
+      "selection",
+      "selection_cutpoint",
+      "source_dims",
+      "target_dims",
+      "weight_decay"
+    ],
+    "chosen": [
+      {
+        "key": "backbone",
+        "was": "medium for smooth renders, small for strange \u2014 the one behavioural key the two incumbent recipes disagree about",
+        "now": "the medium, for both",
+        "why": "one head has one backbone, so this value cannot be inherited and had to be picked. Capacity is chosen against corpus size and the pooled training side is larger than either constituent, so the backbone already proven on the larger of the two is the one that carries over. PINNED, not tuned: nothing here searches over it, and a candidate that failed at this backbone is not evidence about the other."
+      },
+      {
+        "key": "split",
+        "was": "each store's own eval-only pin, and nothing else",
+        "now": "the INTERSECTION of the two training sides \u2014 a location pinned in either store is out of training, whichever store the row came from",
+        "why": "a joint head is read on both blind sheets, so both instruments have to stay clean. It is stricter than what either incumbent faced and it costs the candidate rows the smooth incumbent legitimately trained on. Conservative against the candidate, on purpose."
+      },
+      {
+        "key": "selection_population",
+        "was": "a seeded 10% slice of each head's own training side, drawn over places",
+        "now": "the same rule at the same share and seed, over the POOLED training side's places",
+        "why": "the objective and the drawing rule are controlled variables; the population follows the head. A place carrying both kinds sits whole on one side, so no location straddles the boundary in either kind."
+      }
+    ]
+  },
+  "renders": {
+    "seed": 0,
+    "jpeg_quality": 90
+  },
+  "split": {
+    "only": "strange_render",
+    "rule": "the intersection of the two training sides: a location pinned in either store may not train, whichever store its row came from",
+    "pinned_locations": {
+      "smooth_render": 197,
+      "strange_render": 110
+    },
+    "pinned_locations_union": 307,
+    "per_kind": {
+      "smooth_render": {
+        "rows": 4930,
+        "eval": 197,
+        "excluded": 28,
+        "train_side": 4705
+      },
+      "strange_render": {
+        "rows": 3085,
+        "eval": 150,
+        "excluded": 0,
+        "train_side": 2935
+      }
+    },
+    "excluded_pictures": 0,
+    "excluded_locations": 0,
+    "selection": {
+      "share": 0.1,
+      "seed": 0,
+      "drawn_over": "places on the pooled training side, so a place cannot straddle",
+      "places": 222,
+      "of_places": 2220,
+      "pictures": 356
+    }
+  },
+  "precision": "fp32"
+}
