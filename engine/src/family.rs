@@ -192,6 +192,94 @@ pub const CLASSIC_PHOENIX: Family = Family::Phoenix {
 /// never read it back.
 pub type Seed = (Complex<f64>, Complex<f64>, Complex<f64>);
 
+/// Run a body once per family, at a family the body sees as a **constant**.
+///
+/// The engine's two per-pixel loops — the escape loop behind
+/// [`field::sample`](crate::field::sample) and the direct trap's own — both
+/// carry a `match` over the families *inside* the iteration, and both collapse
+/// to the bare recurrence when the compiler can see which family it is at the
+/// call site: the match folds, `cpow`'s loop unrolls at a known degree, and what
+/// is left is the multiply the recurrence actually is. Handing the family in as
+/// a runtime value loses all of it, and there is no way to ask for it back — so
+/// the call site has to be *written out*, one per family.
+///
+/// This is that table, written once. It expands the body once per family in
+/// [`Family::is_written_out`], each time binding `$name` to a freshly
+/// constructed instance rather than to the one that was matched — construction
+/// is what makes it a constant the inliner can propagate, and re-binding the
+/// same name is what keeps the body from accidentally reading the runtime one.
+/// A family outside the table falls through to one more copy at the value it
+/// arrived as, which is the same source and the same numbers, slower.
+///
+/// ```ignore
+/// over_written_out!(family, |family| {
+///     for col in 0..width {
+///         let orbit = iterate::run(&family, view.sample_point(col, row), maxiter, &wants);
+///         // …
+///     }
+/// });
+/// ```
+///
+/// **It costs a copy of the body per family**, so it belongs around the loop and
+/// never around anything that merely contains one.
+///
+/// One caller today, [`crate::field::sweep_row`]. It lives here rather than
+/// there because the table is a fact about the enum above it: the direct trap's
+/// loop has the same runtime `match` and is not specialized yet, and when it is,
+/// the table it needs is this one and not a second copy of it.
+macro_rules! over_written_out {
+    ($subject:expr, |$name:ident| $body:block) => {
+        match *$subject {
+            $crate::family::Family::Multibrot { degree: 2 } => {
+                let $name = $crate::family::Family::Multibrot { degree: 2 };
+                $body
+            }
+            $crate::family::Family::Multibrot { degree: 3 } => {
+                let $name = $crate::family::Family::Multibrot { degree: 3 };
+                $body
+            }
+            $crate::family::Family::Multibrot { degree: 4 } => {
+                let $name = $crate::family::Family::Multibrot { degree: 4 };
+                $body
+            }
+            $crate::family::Family::Multibrot { degree: 5 } => {
+                let $name = $crate::family::Family::Multibrot { degree: 5 };
+                $body
+            }
+            $crate::family::Family::Julia { degree: 2, c } => {
+                let $name = $crate::family::Family::Julia { degree: 2, c };
+                $body
+            }
+            $crate::family::Family::Julia { degree: 3, c } => {
+                let $name = $crate::family::Family::Julia { degree: 3, c };
+                $body
+            }
+            $crate::family::Family::Julia { degree: 4, c } => {
+                let $name = $crate::family::Family::Julia { degree: 4, c };
+                $body
+            }
+            $crate::family::Family::Julia { degree: 5, c } => {
+                let $name = $crate::family::Family::Julia { degree: 5, c };
+                $body
+            }
+            $crate::family::Family::Phoenix { c, p, z_prev } => {
+                let $name = $crate::family::Family::Phoenix { c, p, z_prev };
+                $body
+            }
+            other => {
+                debug_assert!(
+                    !other.is_written_out(),
+                    "{other:?} is in the table but reached the fallthrough"
+                );
+                let $name = other;
+                $body
+            }
+        }
+    };
+}
+
+pub(crate) use over_written_out;
+
 impl Family {
     /// Start the orbit for one point of the viewport.
     pub fn seed(&self, pixel: Complex<f64>) -> Seed {
@@ -305,6 +393,31 @@ impl Family {
             Family::Multibrot { .. } | Family::Julia { .. } | Family::Phoenix { .. } => false,
             Family::FractionalMultibrot { .. } => true,
         }
+    }
+
+    /// Whether the specialized loops have a call site written out for this
+    /// family — see [`over_written_out`].
+    ///
+    /// Every integer degree the spec admits, on both planes, plus Phoenix: which
+    /// is every family a walk, a harvest or a release can reach. The one left out
+    /// is [`FractionalMultibrot`](Family::FractionalMultibrot), and it is left out
+    /// for two reasons that point the same way: its degree is a real number, so
+    /// there is no finite table to write, and its step is a polar round trip
+    /// through `exp`, `ln`, `cos` and `sin` beside which the per-iteration work a
+    /// specialization removes is a rounding error.
+    ///
+    /// That is the same set as `!`[`is_render_only`](Family::is_render_only), and
+    /// the two are written separately on purpose — one is a claim about which
+    /// doors a family may come through and the other about how fast it draws.
+    /// `field::tests::the_render_only_family_is_the_only_one_outside_the_table`
+    /// pins the coincidence, so it is a fact rather than an assumption.
+    pub fn is_written_out(&self) -> bool {
+        matches!(
+            *self,
+            Family::Multibrot { degree: 2..=5 }
+                | Family::Julia { degree: 2..=5, .. }
+                | Family::Phoenix { .. }
+        )
     }
 
     /// What this family's filled set was measured to span, or `None` for the

@@ -405,8 +405,10 @@ impl Orbit {
 /// across a crate boundary, and refusing it measured 6.3 s against 1.5 s on a
 /// 1280×720 frame of the site explorer's wasm build, where the family and the
 /// mode arrive from a JSON spec and the call site is the only place they are
-/// constant. Inside this crate `field::gather` calls it exactly once, so the
-/// attribute costs one copy of a loop that was already going to be inlined.
+/// constant. Inside this crate the call site is [`crate::field::sweep_row`],
+/// which writes one out per family and per channel set for the same reason, so
+/// the attribute costs a copy of this loop per entry of that table — which is
+/// what the table is buying.
 #[inline(always)]
 pub fn run(family: &Family, pixel: Complex<f64>, maxiter: u32, wants: &Wants) -> Orbit {
     let bailout_sq = BAILOUT * BAILOUT;

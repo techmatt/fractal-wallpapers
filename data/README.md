@@ -15,6 +15,12 @@ only exists there is a verdict no store has resolved yet. The naming convention
 and why it is both halves is
 [the labeling rig's](../src/fractal_wallpapers/labeling/README.md#one-ingest-two-stores).
 
+`batch_caveats.md` is what a registration deliberately does not carry: how a live
+population was assembled, where that shapes what its rows can be asked, and what
+reading them wrong looks like. It is the one file under `data/` that names live
+batches on purpose — a caveat has no shape to illustrate — and it sits here rather
+than in any one store because its entries span them.
+
 `palette_choice/` is the fourth head's material and the only one here that no
 human wrote: the palette head is distilled from a pretrained teacher, and what is
 committed is that teacher's answers plus the real candidate sets it was asked in

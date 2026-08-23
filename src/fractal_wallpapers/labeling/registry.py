@@ -43,6 +43,13 @@ off it is inflated, and nothing is red.
 **Eligibility is permission, not membership.** Which locations are *in* the
 evaluation side is decided once, by a seeded draw over location groups, and
 shipped as data — see [`fractal_wallpapers.labeling.split`].
+
+**And what a registration deliberately does not carry lives beside the registries,
+in `data/batch_caveats.md`.** The two flags answer one question about the draw and
+one about the page; how a live population was actually assembled — a pair drawn to
+share no locations, a draw over candidates rather than admissions, a row put in by
+name — shapes what its rows can be asked and is prose rather than data. Nothing
+here parses it, on purpose: a check that satisfied a flag would skip the paragraph.
 """
 
 from __future__ import annotations

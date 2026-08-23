@@ -51,6 +51,11 @@ selection, not non-randomness: a systematic sweep qualifies, "the top of the run
 own ranked queue" does not, and an anchored page's labels measure agreement with
 the head that suggested them however good the draw was.
 
+**What a registration does not say is in
+[`../batch_caveats.md`](../batch_caveats.md)**: how a live population was actually
+assembled, and what a rate quoted off it without that is wrong about. Two of this
+store's batches have an entry there.
+
 **The split is drawn once and shipped.** `eval_split.jsonl` is the evaluation
 side, one row per location, and re-deriving it adds without ever releasing:
 a location on that side is pinned there on its `c`-inclusive coordinate, so a
