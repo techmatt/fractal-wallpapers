@@ -21,12 +21,53 @@ what each one chose out of what.
 ```text
 1  slots per partition   release_mix over a POOL-WIDE denominator
 2  head split            per partition, by --strange-share
-3  the distance          the neutral-render embeddings, refused unless whole
+3  the distance          the neutral-render embeddings, CUT to the admitted
 4  the locations         quality-weighted farthest point under a hard radius
-5  the attempts          m locations near each chosen point, judged small
-6  the seats             floors per head, then P(>=4); unfilled beats padded
+5  the attempts          m locations near each chosen point, judged small   <-.
+6  the seats             floors per head, then P(>=4); unfilled beats padded --'  k times
 7  the pictures          2560x1440 ss4 for the winners, and only for them
 ```
+
+Steps 5 and 6 are a loop, and everything either side of them happens once.
+
+Step 7 is the one step that can be **left out without costing a decision**:
+`--no-full-size` seats everything exactly as it would have and spends no release
+render. The seats are recorded [`records.UNRENDERED`] — took the slot, no
+picture, nothing failed — and the sheets fall back to each winner's 640x360
+candidate and say which resolution they are showing. Re-running the same pass id
+without the flag makes the pictures and lifts the rows to `released`. That is a
+different thing from `--no-attempts`, which removes material the pass would
+otherwise have decided over and so changes every number it reports.
+
+## The re-seat loop, and what `below_bar` means now
+
+A slot used to be married to the one point the farthest-point draw handed it, and
+that turned out to be the whole of gallery1's shortfall. All eight of that pass's
+unfilled slots were `below_bar`; all eight were the LAST slot of their partition,
+which is by construction the point most remote from everything already chosen and
+so the point most likely to sit somewhere the head that owns the slot dislikes on
+principle; and all eight sat in partitions still holding thousands of admitted
+locations. 128 candidates over eight slots, every one under the floor. That is a
+statement about one draw, not about a pool.
+
+So an unfilled slot **re-seats**: it takes the next point its partition's draw
+offers — same radius, same weighting, the abandoned point still excluded — its
+new neighbourhood is attempted, and the whole seating is taken again. Up to
+[`RESEAT_TRIES`] neighbourhoods. `below_bar` on the record now means *k
+neighbourhoods in a row failed*, and the slot keeps every point it stood on and
+what each one held ([`Slot.tries`]), which is what the `below_floor` sheet is
+built out of.
+
+What the loop deliberately does **not** do is the other recovery. No floor moves
+and nothing is seated from under one: unfilled still beats padded.
+
+## The population the pass selects over
+
+The embedding store is append-only and the admitted population is not, so the
+store is a superset rather than a picture — a location `curate score` re-read and
+put under the junk floor keeps its vector forever. [`admitted_only`] cuts the
+rows to the current population before anything looks at them, which is what keeps
+a withdrawn location out of the picker AND out of the attempt leg at once.
 
 ## Why farthest point and not clustering
 
@@ -76,10 +117,11 @@ list holding both is a list ordered by whichever scale runs higher.
 
 ## Unfilled beats padded
 
-A slot with nothing above its head's floor is **output empty, with the reason
-named**. That is the whole point of the floors acting here: an empty slot is a
-statement about where the pool is thin, and it is the signal for where to label
-or walk next. A padded slot is the same statement with the evidence removed.
+A slot with nothing above its head's floor **after every re-seat it is allowed**
+is output empty, with the reason named. That is the whole point of the floors
+acting here: an empty slot is a statement about where the pool is thin, and it is
+the signal for where to label or walk next. A padded slot is the same statement
+with the evidence removed.
 
 Both measured floors act ([`floors.gallery_floor`]) — the strange head's 0.685
 and the smooth head's 0.385 — which is not what happens at a run's release, where
@@ -159,6 +201,23 @@ RADIUS = 0.07
 #: acting, and the radius is what stops the quality half from clustering.
 QUALITY_WEIGHT = 1.0
 
+#: **How many neighbourhoods a slot may try** before it reports `below_bar`.
+#:
+#: Three, from gallery1's readout. Every one of that pass's eight unfilled slots
+#: was `below_bar`, and every one of them was the LAST slot of its partition —
+#: which is the point of the draw most remote from everything already chosen, and
+#: so the point most likely to sit somewhere the head that owns the slot dislikes
+#: on principle. 128 candidates over eight slots, all 128 below the floor, in
+#: partitions holding thousands of admitted locations each: that is a slot married
+#: to one neighbourhood, not a pool out of material.
+#:
+#: One would be the old behaviour. Three is what makes `below_bar` a statement
+#: about the *partition* — three neighbourhoods in a row, 3 x 18 attempts on the
+#: strange head, all under the bar — at a cost of at most three times a slot's
+#: attempts and only for the slots that fail. What it deliberately does not do is
+#: the other recovery: no floor moves, and nothing is seated from under one.
+RESEAT_TRIES = 3
+
 #: `(m, smooth, strange)` — how many locations near a chosen point are tried, and
 #: how many attempts each of them gets from each head. 3 locations x (2 smooth
 #: palette anchors + 6 strange modes) = 24 attempts a slot, about a minute.
@@ -180,6 +239,13 @@ RETRO_PAIRS = 8
 
 #: How many refused-by-radius runners-up the second contact sheet shows per slot.
 RUNNERS_UP = 3
+
+#: How many of the nearest chosen pairs the `closest_pairs` sheet puts side by
+#: side. Twelve, which is more than the [`RETRO_PAIRS`] the terminal prints and
+#: for a different reason: the table is read for its numbers and this is read by
+#: eye, so it wants enough rows that "these two are the same picture" would have
+#: to be true of more than one of them before it is a finding about the radius.
+CLOSEST_PAIRS = 12
 
 
 class PassRefused(RuntimeError):
@@ -299,6 +365,50 @@ def load_embeddings(log=print):
         )
     log(f"[embed] {len(rows):,} embedded location(s), store {verdict['verdict']}")
     return rows, matrix, verdict
+
+
+def admitted_only(rows: list, matrix, scores: dict, log=print) -> tuple:
+    """`(rows, matrix, dropped)` — the store cut down to the CURRENT population.
+
+    The embedding store is **append-only**: a location embedded once keeps its
+    vector forever, and re-scoring is free to move the reading underneath it. So
+    the store is a superset of the admitted population rather than a picture of
+    it — 29,051 rows against 29,046 admitted on 2026-08-22, the five being
+    locations `curate score` re-read at the node regime and put under the junk
+    floor.
+
+    A location the sidecar now calls junk is not a place the collection may ship,
+    and the pass is the one reader for whom that is expensive rather than
+    cosmetic: an unpinned pass could choose such a point, spend a slot's attempts
+    on its neighbourhood, and seat a wallpaper of somewhere the supply phase has
+    already withdrawn. Cutting the rows here — before the picker, and before the
+    neighbourhoods the attempt leg is planned off — is what makes it invisible to
+    both at once, rather than a filter each of them has to remember.
+
+    The cut is [`floors.passes_junk_floor`] over the sidecar's live `P(>=3)`, the
+    same comparison [`embeddings.admitted`] makes; a key the sidecar does not
+    hold at all is dropped for the same reason, since a location with no current
+    reading has no current standing either.
+    """
+    keep = [
+        index
+        for index, row in enumerate(rows)
+        if floors.passes_junk_floor((scores.get(str(row["key"])) or {}).get("p_ge3"))
+    ]
+    dropped = len(rows) - len(keep)
+    if not dropped:
+        return rows, matrix, 0
+    log(
+        f"[embed] {dropped} embedded location(s) are below the junk floor now and are "
+        f"out of this pass's population: {len(keep):,} selected over"
+    )
+    if not keep:
+        raise PassRefused(
+            f"none of the {len(rows):,} embedded location(s) is in the admitted population "
+            f"any more, so there is nothing to select over. Run `fractal-wallpapers curate "
+            f"score` and `curate embed`."
+        )
+    return [rows[index] for index in keep], matrix[keep], dropped
 
 
 def colorize_row(row: dict) -> dict:
@@ -434,64 +544,119 @@ class Choice:
     gain: float | None
 
 
+class Draw:
+    """Quality-weighted farthest point over one partition, **resumable**.
+
+    The same arithmetic [`choose`] always did, kept as state instead of run to
+    completion inside one call. The first pick is the strongest by `quality`;
+    every pick after it maximizes `distance x quality^weight` over everything
+    still outside `radius` of the points already drawn.
+
+    Resumable because a slot is not married to its first neighbourhood any more.
+    When a slot's whole neighbourhood lands below its head's floor it **re-seats**
+    — it asks this draw for the next point, under the same radius and the same
+    weighting — and a draw that had to be restarted to answer that would either
+    hand back a point it had already given out or forget which regions the radius
+    has already refused. The state is the whole point: `nearest` and `live` are
+    what make the second point a partition offers continuous with the first.
+
+    A re-seated slot's abandoned point **stays excluded**. It was tried and it
+    came up short, and the radius around it is exactly the region the re-seat is
+    trying to leave.
+    """
+
+    def __init__(self, indices, matrix, quality, radius: float, weight: float):
+        import numpy
+
+        self.order = list(indices)
+        self.radius = float(radius)
+        self.matrix = matrix
+        self.taken = 0
+        if not self.order:
+            self.block = None
+            return
+        self.block = matrix[self.order]
+        self.scores = numpy.array(
+            [max(0.0, float(quality[i])) for i in self.order], dtype=numpy.float64
+        )
+        self.weighted = self.scores ** float(weight)
+        # Every point starts infinitely far from a chosen set that is still
+        # empty, so the first pick is decided by quality alone — which is what
+        # the design says it is, rather than by whatever the arithmetic would do
+        # with a zero.
+        self.nearest = numpy.full(len(self.order), numpy.inf)
+        self.live = numpy.ones(len(self.order), dtype=bool)
+
+    def next(self):
+        """The next point this partition offers, or `None` when the radius runs it out."""
+        import numpy
+
+        if self.block is None or not self.live.any():
+            return None
+        first = self.taken == 0
+        gains = numpy.where(
+            self.live, self.weighted if first else self.nearest * self.weighted, -numpy.inf
+        )
+        best = int(numpy.argmax(gains))
+        if not numpy.isfinite(gains[best]):
+            return None
+        pick = Choice(
+            index=self.order[best],
+            key="",
+            partition="",
+            quality=float(self.scores[best]),
+            distance=None if first else float(self.nearest[best]),
+            gain=None if first else float(gains[best]),
+        )
+        self.taken += 1
+        distances = 1.0 - (self.block @ self.block[best])
+        self.nearest = numpy.minimum(self.nearest, distances)
+        self.live &= distances >= self.radius
+        return pick
+
+    def take(self, k: int) -> list:
+        """Up to `k` picks, or fewer where the radius runs the partition out."""
+        picks = []
+        while len(picks) < k:
+            pick = self.next()
+            if pick is None:
+                break
+            picks.append(pick)
+        return picks
+
+    def tally(self) -> dict:
+        """What this draw has spent and what the radius cost, as it stands."""
+        return {
+            "eligible": len(self.order),
+            "chosen": self.taken,
+            # What the radius cost: every admitted location of this partition
+            # that a chosen point pulled inside the radius, including the chosen
+            # points themselves, which is why it is counted as a refusal of the
+            # *rest*.
+            "refused_by_radius": (
+                0 if self.block is None else int((~self.live).sum()) - self.taken
+            ),
+        }
+
+
 def choose(indices, matrix, quality, k: int, radius: float, weight: float) -> tuple[list, dict]:
     """`(picks, tally)` — up to `k` of `indices`, farthest-point under the radius.
 
     `indices` are positions in `matrix`, whose rows are unit vectors, so cosine
-    distance is `1 - dot`. The first pick is the strongest by `quality`; each
-    pick after it maximizes `distance x quality^weight` over everything still
-    outside `radius` of the chosen set.
+    distance is `1 - dot`.
 
     Fewer than `k` come back when the radius runs the partition out of eligible
     points, and that is a real answer rather than a failure: it means the
     partition's admitted locations do not hold `k` visibly different places, which
     is exactly the fact an unfilled slot is there to report.
-    """
-    import numpy
 
-    order = list(indices)
-    if not order or k <= 0:
-        return [], {"eligible": len(order), "chosen": 0, "refused_by_radius": 0}
-    block = matrix[order]
-    scores = numpy.array([max(0.0, float(quality[i])) for i in order], dtype=numpy.float64)
-    weighted = scores ** float(weight)
-    # Every point starts infinitely far from a chosen set that is still empty, so
-    # the first pick is decided by quality alone — which is what the design says
-    # it is, rather than by whatever the arithmetic would do with a zero.
-    nearest = numpy.full(len(order), numpy.inf)
-    live = numpy.ones(len(order), dtype=bool)
-    picks: list[Choice] = []
-    while len(picks) < k:
-        if not live.any():
-            break
-        if not picks:
-            gains = numpy.where(live, weighted, -numpy.inf)
-        else:
-            gains = numpy.where(live, nearest * weighted, -numpy.inf)
-        best = int(numpy.argmax(gains))
-        if not numpy.isfinite(gains[best]):
-            break
-        picks.append(
-            Choice(
-                index=order[best],
-                key="",
-                partition="",
-                quality=float(scores[best]),
-                distance=None if not len(picks) else float(nearest[best]),
-                gain=None if not len(picks) else float(gains[best]),
-            )
-        )
-        distances = 1.0 - (block @ block[best])
-        nearest = numpy.minimum(nearest, distances)
-        live &= distances >= float(radius)
-    return picks, {
-        "eligible": len(order),
-        "chosen": len(picks),
-        # What the radius cost: every admitted location of this partition that a
-        # chosen point pulled inside the radius, including the chosen points
-        # themselves, which is why it is counted as a refusal of the *rest*.
-        "refused_by_radius": int((~live).sum()) - len(picks),
-    }
+    A whole draw taken at once, for a caller that wants nothing more. The pass
+    itself keeps the [`Draw`], because a re-seating slot asks it for one more.
+    """
+    if k <= 0:
+        return [], {"eligible": len(list(indices)), "chosen": 0, "refused_by_radius": 0}
+    draw = Draw(indices, matrix, quality, radius, weight)
+    return draw.take(k), draw.tally()
 
 
 def retro_table(picks: list, matrix, pairs: int = RETRO_PAIRS) -> list[dict]:
@@ -573,15 +738,162 @@ class Slot:
     unfilled: str | None = None
     #: The arithmetic behind that, whether it filled or not.
     fill: dict = field(default_factory=dict)
+    #: Which re-seat this slot is on. Zero is the point the farthest-point draw
+    #: gave it first; every increment is a neighbourhood that offered it nothing.
+    try_index: int = 0
+    #: **Every point this slot has stood on**, in order, with what each one
+    #: offered and why it was left. The fields above are the *current* try; this
+    #: is the history, and it is what makes `below_bar` readable as "k
+    #: neighbourhoods in a row failed" rather than as a single verdict.
+    tries: list = field(default_factory=list)
+    #: True once this slot's partition has no point left outside the radius, so
+    #: there is nothing further to re-seat to. Not a reason a slot is unfilled —
+    #: the last try's reason is that — but the fact that stopped the loop.
+    exhausted: bool = False
+
+    def stand_on(self, pick, keys: list) -> None:
+        """Take up a new point and its neighbourhood. The re-seat itself."""
+        self.point = pick.key
+        self.point_index = int(pick.index)
+        self.quality = pick.quality
+        self.distance = pick.distance
+        self.locations = list(keys)
+
+    def snapshot(self) -> dict:
+        """This try, as the record keeps it. Rewritten each seating round.
+
+        Each round re-runs the whole seating, so a slot that filled in round one
+        can be refused in round two by a stronger slot taking its place — which
+        means the *current* try's outcome is not settled until the last round.
+        Written by index rather than appended, so a re-run of the seating
+        refreshes the try it is about instead of recording it twice.
+        """
+        return {
+            "try": self.try_index,
+            "point": self.point,
+            "point_index": self.point_index,
+            "point_quality": self.quality,
+            "nearest_chosen": self.distance,
+            "locations": list(self.locations),
+            "fill": dict(self.fill),
+            "seated": None if self.seated is None else str(self.seated["candidate"]),
+        }
+
+    def record_try(self) -> None:
+        """Put [`snapshot`] at this slot's try index, extending the history to reach it."""
+        while len(self.tries) <= self.try_index:
+            self.tries.append({})
+        self.tries[self.try_index] = self.snapshot()
+
+
+@dataclass
+class Bench:
+    """The population, the distance, and each partition's live [`Draw`].
+
+    What a **re-seat** needs and nothing else. It exists because the second point
+    a slot stands on has to be drawn out of the same state the first one came
+    from — the same admitted rows, the same matrix, the same quality readings,
+    and above all the same partly-spent draw — and threading six arguments back
+    through the loop is how two of them come to disagree.
+    """
+
+    rows: list
+    matrix: object
+    quality: list
+    by_partition: dict
+    draws: dict
+    m: int
+    radius: float
+
+    def keys_near(self, pick) -> list:
+        """The `m` location keys a point's attempts are spent on, the point first."""
+        return [
+            str(self.rows[i]["key"])
+            for i in neighbourhood(
+                pick.index,
+                self.by_partition.get(pick.partition, []),
+                self.matrix,
+                self.quality,
+                self.m,
+                self.radius,
+            )
+        ]
+
+    def next_point(self, partition: str):
+        """One more point out of a partition's draw, named, or `None` where it is spent."""
+        draw = self.draws.get(partition)
+        pick = None if draw is None else draw.next()
+        if pick is None:
+            return None
+        pick.key = str(self.rows[pick.index]["key"])
+        pick.partition = partition
+        return pick
+
+
+def reseat_slots(slots: list, bench: Bench, log=print) -> dict:
+    """Move every unfilled slot onto the next point its partition offers.
+
+    **The gap gallery1 found.** A slot was married to the one point the
+    farthest-point draw handed it, and the last points a partition gives out are
+    by construction its most remote — so a slot could fail not because the
+    partition was out of material but because the three-locations-by-eighteen-
+    attempts neighbourhood it happened to land in was hostile to the head that
+    owned it. gallery1's eight unfilled slots were all of them the last slot of
+    their partition, all `below_bar`, and every one of them sat in a partition
+    still holding thousands of admitted locations.
+
+    So an unfilled slot re-seats: it takes the next point under the same radius
+    and the same weighting, its neighbourhood is attempted, and the whole seating
+    is taken again. `below_bar` after that means *k neighbourhoods in a row
+    failed*, which is a statement about the partition; before it, it was a
+    statement about one draw.
+
+    **Every unfilled reason moves**, not only `below_bar`. `location_served` is a
+    place a stronger slot took and `no_candidates` is a neighbourhood nothing
+    rendered from, and the recovery from each is the identical one — stand
+    somewhere else. What is never done is the other recovery: nothing is seated
+    from below a floor, and no floor moves. Unfilled still beats padded.
+
+    Slots move in id order, which is pick order, so where two slots of one
+    partition both need a point the earlier pick takes the nearer one.
+    """
+    moved, spent = [], []
+    for slot in sorted(slots, key=lambda s: s.id):
+        if slot.seated is not None:
+            continue
+        pick = bench.next_point(slot.partition)
+        if pick is None:
+            slot.exhausted = True
+            spent.append(slot)
+            continue
+        slot.try_index += 1
+        slot.stand_on(pick, bench.keys_near(pick))
+        moved.append(slot)
+    if moved:
+        log(
+            f"[reseat] {len(moved)} unfilled slot(s) took a new point"
+            + (f"; {len(spent)} had none left to take" if spent else "")
+        )
+    elif spent:
+        log(f"[reseat] {len(spent)} unfilled slot(s) have no point left under the radius")
+    return {
+        "moved": len(moved),
+        "exhausted": len(spent),
+        "slots": sorted(slot.id for slot in moved),
+    }
 
 
 def plan_slots(rows, matrix, scores, n, strange_share, radius, weight, m, log=print):
-    """Steps 1, 2 and 4 together: `(slots, plan)`.
+    """Steps 1, 2 and 4 together: `(slots, plan, bench)`.
 
     One call because the three are one decision. How many slots a partition gets
     decides how many points are chosen in it; how the heads split decides what
     each of those points is asked for; and the chosen points are what the
     attempts and the seats are hung on.
+
+    The [`Bench`] comes back with them because the draws are not finished: an
+    unfilled slot asks its partition for one more point, and [`reseat_slots`] is where
+    that happens.
     """
     quality = [quality_of(row, scores) for row in rows]
     by_partition: dict[str, list[int]] = {}
@@ -595,40 +907,36 @@ def plan_slots(rows, matrix, scores, n, strange_share, radius, weight, m, log=pr
         f"{len(guaranteed)} guaranteed"
     )
 
+    bench = Bench(
+        rows=rows,
+        matrix=matrix,
+        quality=quality,
+        by_partition=by_partition,
+        draws={},
+        m=int(m),
+        radius=float(radius),
+    )
+
     slots: list[Slot] = []
-    chosen: list[Choice] = []
-    tallies, retro, splits = {}, {}, {}
+    tallies, splits = {}, {}
     for name in sorted(allocation, key=partition_index):
         want = int(allocation.get(name, 0))
         if want <= 0:
             continue
-        picks, tally = choose(by_partition.get(name, []), matrix, quality, want, radius, weight)
+        draw = Draw(by_partition.get(name, []), matrix, quality, radius, weight)
+        bench.draws[name] = draw
+        picks = draw.take(want)
         for pick in picks:
             pick.key = str(rows[pick.index]["key"])
             pick.partition = name
         split = head_split(len(picks), strange_share)
         splits[name] = {**split, "planned": want, "chosen": len(picks)}
         for pick, head in zip(picks, head_order(split), strict=True):
-            slots.append(
-                Slot(
-                    id=f"{len(slots):04d}",
-                    partition=name,
-                    head=head,
-                    point=pick.key,
-                    point_index=int(pick.index),
-                    locations=[
-                        str(rows[i]["key"])
-                        for i in neighbourhood(
-                            pick.index, by_partition[name], matrix, quality, m, radius
-                        )
-                    ],
-                    quality=pick.quality,
-                    distance=pick.distance,
-                )
-            )
-        chosen.extend(picks)
+            slot = Slot(id=f"{len(slots):04d}", partition=name, head=head, point=pick.key)
+            slot.stand_on(pick, bench.keys_near(pick))
+            slots.append(slot)
+        tally = draw.tally()
         tallies[name] = {**tally, "planned": want}
-        retro[name] = retro_table(picks, matrix)
         log(
             f"[slots] {name:<18} {want} planned, {len(picks)} chosen "
             f"({split[budget_module.STRANGE]} strange / {split[budget_module.SMOOTH]} smooth) "
@@ -647,14 +955,48 @@ def plan_slots(rows, matrix, scores, n, strange_share, radius, weight, m, log=pr
         "slots_by_partition": allocation,
         "head_split": splits,
         "selection": tallies,
-        # Per partition AND overall, because they answer two questions. The
-        # per-partition table is where the radius is calibrated — a partition is
-        # what a slot is allocated in — and the overall one is where
-        # cross-partition similarity would show up if there were any, which the
-        # design deliberately does not act on at N=50 and wants visible anyway.
-        "retro": {"by_partition": retro, "overall": retro_table(chosen, matrix)},
+        # Filled in after the re-seat loop by [`read_retro`], because the set of
+        # chosen points is not settled until it stops: a re-seated slot stands
+        # somewhere else, and a retro table over the points the first draw handed
+        # out would be calibrating the radius against a gallery nobody has.
+        "retro": {"by_partition": {}, "overall": []},
     }
-    return slots, plan
+    return slots, plan, bench
+
+
+def read_retro(slots: list, matrix, pairs: int = RETRO_PAIRS) -> dict:
+    """The retro table over the points the pass **ended on**, per partition and overall.
+
+    Per partition AND overall, because they answer two questions. The
+    per-partition table is where the radius is calibrated — a partition is what a
+    slot is allocated in — and the overall one is where cross-partition
+    similarity would show up if there were any, which the design deliberately does
+    not act on at N=50 and wants visible anyway.
+    """
+    chosen = [
+        Choice(
+            index=slot.point_index,
+            key=slot.point,
+            partition=slot.partition,
+            quality=slot.quality,
+            distance=slot.distance,
+            gain=None,
+        )
+        for slot in slots
+        if slot.point_index >= 0
+    ]
+    by_partition: dict[str, list] = {}
+    for pick in chosen:
+        by_partition.setdefault(pick.partition, []).append(pick)
+    return {
+        "by_partition": {
+            name: retro_table(picks, matrix, pairs)
+            for name, picks in sorted(
+                by_partition.items(), key=lambda cell: partition_index(cell[0])
+            )
+        },
+        "overall": retro_table(chosen, matrix, pairs),
+    }
 
 
 # --------------------------------------------------------------------------- #
@@ -682,19 +1024,28 @@ class Try:
         )
 
 
-def attempt_plan(slots: list, ranks: dict, smooth: int, strange: int) -> list[Try]:
-    """Every attempt the pass will make, deduplicated by location.
+def attempt_plan(slots: list, ranks: dict, smooth: int, strange: int, already=()) -> list[Try]:
+    """Every attempt these slots ask for that `already` does not hold, in key order.
 
     Two slots whose neighbourhoods overlap ask for the same location's attempts,
     and rendering it twice would buy the same pictures twice — the mode draw is
     seeded off the location and the head, so the second set would be identical.
     So the plan is over the **union** of every slot's locations, and step 6 reads
     whichever of them its own neighbourhood names.
+
+    `already` is the locations a previous round of this pass has planned, and it
+    is what makes the plan **extendable rather than rebuilt**. A re-seat adds
+    neighbourhoods; the pass appends their attempts to the plan it already has,
+    and never re-sorts it. That is not tidiness: an attempt's identity is its
+    position in the plan — the candidate log resumes on it, and the palette
+    anchor is drawn on it — so a plan whose front half re-ordered between two
+    invocations would resume a killed pass onto other attempts' pictures.
     """
     seen: dict[str, str] = {}
     for slot in slots:
         for key in slot.locations:
-            seen.setdefault(key, slot.partition)
+            if key not in already:
+                seen.setdefault(key, slot.partition)
     out: list[Try] = []
     for key in sorted(seen):
         partition = seen[key]
@@ -740,10 +1091,17 @@ def make_attempts(directory: Path, plan: list, by_key: dict, seed: int, device: 
     """
     log_path = directory / "candidates.jsonl"
     done = run_module.completed_attempts(log_path, log)
-    if done:
-        log(f"[attempts] {len(done)} of {len(plan)} already recorded; carrying them across")
+    carried = sum(1 for index in done if index < len(plan))
+    if carried:
+        log(f"[attempts] {carried} of {len(plan)} already recorded; carrying them across")
     anchors = colorize.anchors(colorize.pool(), max(1, len(plan)), seed)
-    rows = list(done.values())
+    # Only what THIS plan asked for. A resumed pass's log already holds the
+    # attempts its later re-seat rounds made, and round 0 asking the log what it
+    # has would otherwise seat out of a pool the same round could not have seen
+    # on a fresh run. Today the neighbourhood filter drops those rows anyway and
+    # the two runs agree exactly; this is what keeps that true when the filter
+    # changes rather than leaving it as a coincidence.
+    rows = [row for index, row in sorted(done.items()) if index < len(plan)]
     counts = {"planned": len(plan), "resumed": len(done), "made": 0, "failed": 0}
     colorizer, seconds = None, 0.0
 
@@ -839,6 +1197,11 @@ def candidate_of_pool_row(row: dict) -> dict:
         "mirror": recipe.get("mirror"),
         "render": recipe.get("render"),
         "autolevel": row.get("autolevel"),
+        # Where the picture this row was decided on sits inside its own run's
+        # directory. Carried because the `below_floor` sheet shows the best thing
+        # a slot passed over, and a candidate out of the standing pool is as
+        # likely to be that as one of this pass's attempts.
+        "picture": row.get("picture"),
         "p_ge2": read.get("p_ge2"),
         "p_ge3": read.get("p_ge3"),
         "p_ge4": read.get("p_ge4"),
@@ -920,6 +1283,13 @@ def seat(slots: list, candidates: list, log=print) -> dict:
     floor_of = {head: floors.gallery_floor(head) for head in budget_module.HEADS}
     used: dict[str, int] = {}
     order = sorted(range(len(slots)), key=lambda i: _seat_order(slots, i))
+    for slot in slots:
+        # The whole seating is taken again after every re-seat, so this runs more
+        # than once over the same slots. A slot filled in an earlier round can be
+        # refused in a later one — the location rule is checked against a counter
+        # that a re-seated slot's new place may now reach first — and a seat left
+        # standing from the previous round would be a seat nothing re-decided.
+        slot.seated, slot.unfilled, slot.fill = None, None, {}
     for position in order:
         slot = slots[position]
         pool = [
@@ -953,6 +1323,13 @@ def seat(slots: list, candidates: list, log=print) -> dict:
             )
             slot.fill["reason"] = slot.unfilled
             slot.fill["why"] = selection.UNFILLED_REASONS[slot.unfilled]
+        # The best thing this neighbourhood held, whatever the floor said about
+        # it. Kept because it is the evidence an unfilled slot is FOR: the
+        # `below_floor` sheet puts it beside the partition's best unchosen
+        # candidate pool-wide, and "0.61 against a 0.685 floor while the partition
+        # holds a 0.74" and "nothing here at all" are different findings.
+        slot.fill["best"] = _best_of(pool)
+        slot.record_try()
 
     filled = sum(1 for slot in slots if slot.seated)
     by_cell: dict = {}
@@ -986,6 +1363,53 @@ def seat(slots: list, candidates: list, log=print) -> dict:
     }
 
 
+def floor_key(candidate: dict):
+    """Nearest the head's floor first: `P(>=3)`, then `P(>=4)`, then the id.
+
+    **Not [`rank_key`], and the difference is the whole point.** `rank_key` orders
+    by `P(>=4)` because that is the question a slot asks of a candidate it might
+    seat; a **floor** acts on `P(>=3)`, and the two orderings genuinely disagree —
+    a candidate at `P(>=4) 0.60, P(>=3) 0.62` outranks one at `0.50, 0.90` and is
+    the one that fails a 0.685 bar.
+
+    So the witness an unfilled slot puts on the record is chosen on the floor's
+    own axis. "The best candidate here scored 0.62 against a 0.685 floor" is a
+    claim about how close a neighbourhood came, and answering it with the
+    highest-ranked row instead would understate the gap — reporting a slot as
+    further from its bar than it was.
+    """
+    return (
+        -(candidate.get("p_ge3") if candidate.get("p_ge3") is not None else -1.0),
+        -(candidate.get("p_ge4") if candidate.get("p_ge4") is not None else -1.0),
+        str(candidate.get("candidate")),
+    )
+
+
+def _best_of(pool: list) -> dict | None:
+    """The candidate of a slot's pool that came nearest its head's floor.
+
+    On [`floor_key`], because this is the evidence behind an unfilled slot and
+    the floor is what it is evidence about.
+
+    Small deliberately: it lands on every slot of the pass record, and a whole
+    candidate row per try is the shape that made a pass cost megabytes.
+    """
+    if not pool:
+        return None
+    best = min(pool, key=floor_key)
+    return {
+        "candidate": str(best["candidate"]),
+        "run": (best.get("source") or {}).get("run"),
+        "key": best.get("key"),
+        "head": best.get("head"),
+        "mode": best.get("mode"),
+        "colormap": best.get("colormap"),
+        "p_ge3": best.get("p_ge3"),
+        "p_ge4": best.get("p_ge4"),
+        "picture": best.get("picture"),
+    }
+
+
 def partition_index(partition: str) -> int:
     """A partition's place in the canonical report order; unregistered ones last.
 
@@ -1012,7 +1436,7 @@ def _place(candidate: dict) -> dict:
     return {"family": candidate.get("family"), "viewport": candidate.get("viewport")}
 
 
-def pool_candidates(slots: list, pass_id: str) -> list[dict]:
+def pool_candidates(slots: list, pass_id: str, rows: list | None = None) -> list[dict]:
     """Every candidate already in the pool that stands on one of this pass's locations.
 
     The whole reason the pass is worth running over an accumulated store: six runs
@@ -1028,6 +1452,9 @@ def pool_candidates(slots: list, pass_id: str) -> list[dict]:
     thousand-odd attempts, which is the largest single block of material a second
     pass has to seat out of.
 
+    `rows` is [`pool_rows`] already read, for a caller asking this once a re-seat
+    round: the neighbourhoods move between rounds and the pool does not.
+
     Three exclusions, and each is a different fact. A row this pass wrote is
     already in hand, so reading it back would double it. A row a person
     **rejected** was taken out of service deliberately and a pass that re-seated
@@ -1036,12 +1463,23 @@ def pool_candidates(slots: list, pass_id: str) -> list[dict]:
     against a wallpaper is the comparison the record exists to prevent.
     """
     wanted = {key for slot in slots for key in slot.locations}
+    everything = pool_rows(pass_id) if rows is None else rows
+    return [candidate for candidate in everything if str(candidate["key"]) in wanted]
+
+
+def pool_rows(pass_id: str) -> list[dict]:
+    """Every seatable candidate in the accumulated pool, whatever location it stands on.
+
+    [`pool_candidates`] is this narrowed to the slots' neighbourhoods, and the two
+    are split because the re-seat loop asks the question repeatedly — the
+    neighbourhoods move every round, the pool does not — and because the
+    `below_floor` sheet's whole claim is about the material a slot's
+    neighbourhoods did **not** reach.
+    """
     seen: set[str] = set()
     out = []
     for row in [*records.read_decisions(records.RELEASE), *gallery_store.read()]:
         if row.get("run") == pass_id or records.is_rejected(row):
-            continue
-        if str((row.get("location") or {}).get("key")) not in wanted:
             continue
         candidate = candidate_of_pool_row(row)
         if candidate.get("p_ge3") is None or candidate.get("head") not in budget_module.HEADS:
@@ -1060,6 +1498,50 @@ def pool_candidates(slots: list, pass_id: str) -> list[dict]:
 # --------------------------------------------------------------------------- #
 # Step 7: the winners, at full size, and only the winners.
 # --------------------------------------------------------------------------- #
+def skip_winners(slots: list, log=print) -> dict:
+    """Step 7, not taken. Mark every seat as having no full-size render yet.
+
+    The **dev-and-review affordance** the attempt leg's `--no-attempts` is not:
+    skipping the release leg costs the pass none of its decisions. Every slot is
+    seated the same way on the same candidates; what is not spent is 25 s a
+    winner making a 2560x1440 picture of a choice a person can judge perfectly
+    well off the 640x360 render the judge itself read.
+
+    The seats are recorded [`records.UNRENDERED`] — took the slot, no picture,
+    nothing failed — and the contact sheets fall back to each winner's candidate
+    render and say which resolution they are showing. Re-running the same pass id
+    without the flag renders the winners and lifts the rows to `released`; the
+    attempts are all still on disk, so that second invocation costs the release
+    leg and nothing else.
+    """
+    seated = 0
+    for slot in slots:
+        if slot.seated is None:
+            continue
+        seated += 1
+        slot.seated["release_picture"] = None
+        slot.seated["release_autolevel"] = None
+        # What tells [`_release_row`] this is a choice rather than a dead render.
+        slot.seated["release_skipped"] = True
+    log(f"[render] SKIPPED: --no-full-size, so {seated} seat(s) have no full-size picture yet")
+    return {
+        "skipped": "--no-full-size",
+        "geometry": {"resolution": list(RESOLUTION), "supersample": SUPERSAMPLE},
+        "reused": 0,
+        "workers": 0,
+        "counts": {
+            "planned": 0,
+            "resumed": 0,
+            "made": 0,
+            "failed": 0,
+            "not_started": seated,
+        },
+        "seconds": 0.0,
+        "seconds_per_full_size": None,
+        "not_started": [],
+    }
+
+
 def render_winners(slots: list, directory: Path, workers: int, log=print) -> dict:
     """Render every seated candidate at [`RESOLUTION`]. `(record)`; mutates `slots`.
 
@@ -1309,8 +1791,15 @@ def _release_row(pass_id, candidate, slot, first_of, owed) -> dict:
     recording the same rows a second time in the history.
     """
     picture = candidate.get("release_picture")
-    verdict = records.RELEASED if picture else records.KILLED
-    reason = None if picture else records.KILLED_REASON
+    if picture:
+        verdict, reason = records.RELEASED, None
+    elif candidate.get("release_skipped"):
+        # Nothing failed here: the pass was told not to make the picture. The
+        # seat is as real as any other and the row says so, which is what keeps
+        # `killed` meaning "the render died".
+        verdict, reason = records.UNRENDERED, records.UNRENDERED_REASON
+    else:
+        verdict, reason = records.KILLED, records.KILLED_REASON
     row = records.decision(
         run=pass_id,
         stage=records.RELEASE,
@@ -1413,7 +1902,16 @@ def read_pass(pass_id: str) -> dict:
 
 
 # --------------------------------------------------------------------------- #
-# The two sheets, for Matt's eye.
+# The four sheets, for Matt's eye.
+#
+#   sheet          the gallery: partition then rank, slot-labelled, unfilled in place
+#   runners_up     what the radius refused, at the neutral render it refused it on
+#   below_floor    every unfilled slot's tries, against what its partition holds
+#   closest_pairs  the retro table with the pictures attached
+#
+# Two of them are about what the pass CHOSE and two are about what it did not, and
+# the second pair is the half that says whether a number on the first pair is a
+# fact about the pool or a fact about where the pass happened to look.
 # --------------------------------------------------------------------------- #
 def contact_sheet(pass_id: str, slots: list, plan: dict, directory, output) -> Path:
     """The gallery itself: every slot, filled or not, partition then rank.
@@ -1462,14 +1960,14 @@ def _slot_card(slot, directory: Path, sheet_module) -> str:
         ]
     else:
         seated = slot.seated
-        picture = seated.get("release_picture")
-        source = directory / picture if picture else None
+        source, what = _seated_picture(seated, directory)
         body = (
             f'<img src="{sheet_module.thumbnail(source)}" alt="">'
             if source is not None and source.is_file()
             else '<div class="missing">no picture on disk</div>'
         )
         facts = [
+            what,
             f"{slot.partition} - {slot.head}",
             f"{seated.get('mode')} - {seated.get('colormap')}",
             f"P(>=4) {_number(seated.get('p_ge4'))}, P(>=3) {_number(seated.get('p_ge3'))}",
@@ -1486,6 +1984,25 @@ def _slot_card(slot, directory: Path, sheet_module) -> str:
         f'<figure><div class="frame">{body}</div>'
         f"<figcaption><b>slot {html.escape(slot.id)}</b>{html.escape(near)}"
         f"<ul>{caption}</ul></figcaption></figure>"
+    )
+
+
+def _seated_picture(seated: dict, directory) -> tuple:
+    """`(path, what it is)` for a winner: the full-size render, or the candidate.
+
+    A pass run with `--no-full-size` has taken every decision and made no
+    wallpaper, so the sheet shows the 640x360 render the judge actually read and
+    **says which one it is**. Showing a candidate under a caption that implies
+    2560x1440 is the exact confusion `records.UNRENDERED` exists to keep out of
+    the record, and a sheet is read by the same person.
+    """
+    picture = seated.get("release_picture")
+    if picture:
+        return Path(directory) / picture, f"{RESOLUTION[0]}x{RESOLUTION[1]} ss{SUPERSAMPLE}"
+    candidate = candidate_picture(seated)
+    return candidate, (
+        f"NO FULL-SIZE RENDER YET - the {colorize.RESOLUTION[0]}x{colorize.RESOLUTION[1]} "
+        f"candidate the decision was taken on"
     )
 
 
@@ -1599,6 +2116,242 @@ def _neutral_card(row: dict, distance: float, neutral_dir: Path, sheet_module, w
     )
 
 
+def candidate_picture(candidate: dict) -> Path | None:
+    """Where one candidate's own picture is, whichever run made it.
+
+    Every pool row names its picture relative to the directory of the run that
+    wrote it, and a gallery pass's directory IS a run directory ([`pass_dir`]) —
+    which is the whole reason it is one. So one join answers for this pass's
+    attempts and for six runs' candidates alike.
+    """
+    name = candidate.get("picture")
+    where = run_of(candidate)
+    if not name or not where:
+        return None
+    return run_module.run_dir(str(where)) / str(name)
+
+
+def run_of(candidate: dict) -> str | None:
+    """Which run made a candidate, whichever of the two shapes it arrived in.
+
+    A flat candidate names it under `source`; the small dict a slot's try keeps
+    ([`_best_of`]) has already resolved it to `run`. One reader, because a card
+    that read only one of them prints `None|0417` for half the pool.
+    """
+    return candidate.get("run") or (candidate.get("source") or {}).get("run")
+
+
+def best_unchosen(candidates: list, seated: set, partition: str, head: str) -> dict | None:
+    """The partition's strongest candidate on one head that this pass did not seat.
+
+    **Pool-wide** — over every candidate the pass could see, not only the ones
+    standing on a slot's neighbourhoods. That is the point of it: an unfilled slot
+    claims the pool had nothing for it, and the honest check on that claim is what
+    the same partition and the same head hold *anywhere*. A number above the floor
+    here beside an unfilled slot is a reach problem; nothing above the floor
+    anywhere is a supply fact.
+
+    On [`floor_key`] for the same reason [`_best_of`] is: the comparison this
+    card exists to make is against a floor, so both sides of it are read on the
+    floor's axis.
+    """
+    pool = [
+        candidate
+        for candidate in candidates
+        if str(candidate.get("partition")) == partition
+        and str(candidate.get("head")) == head
+        and str(candidate.get("candidate")) not in seated
+    ]
+    return min(pool, key=floor_key) if pool else None
+
+
+def below_floor_sheet(pass_id: str, slots: list, candidates: list, output) -> Path:
+    """Every unfilled slot, every neighbourhood it stood on, and what the partition held.
+
+    The sheet the re-seat loop is answerable to. Per unfilled slot it shows the
+    **best candidate each try produced**, with its score against the floor that
+    refused it, and beside them the partition's best unchosen candidate on the
+    same head pool-wide. Three cards under a floor and a fourth well over it is a
+    slot that looked in the wrong places; four cards under it is a partition whose
+    material does not reach the bar, which is the finding an unfilled slot exists
+    to make.
+    """
+    import html
+
+    from fractal_wallpapers.curation import sheet as sheet_module
+
+    seated = {str(slot.seated["candidate"]) for slot in slots if slot.seated is not None}
+    unfilled = [slot for slot in slots if slot.seated is None]
+    unfilled.sort(key=lambda s: (partition_index(s.partition), s.id))
+    sections = []
+    for slot in unfilled:
+        floor = floors.gallery_floor(slot.head)
+        cards = [
+            _candidate_card(
+                (attempt.get("fill") or {}).get("best"),
+                floor,
+                sheet_module,
+                f"try {attempt.get('try', index)}",
+                f"point {attempt.get('point')} - "
+                + ((attempt.get("fill") or {}).get("why") or "seated"),
+            )
+            for index, attempt in enumerate(slot.tries)
+        ]
+        cards.append(
+            _candidate_card(
+                best_unchosen(candidates, seated, slot.partition, slot.head),
+                floor,
+                sheet_module,
+                f"{slot.partition} pool-wide",
+                "the partition's best unchosen candidate on this head, anywhere in the pool",
+            )
+        )
+        sections.append(
+            f"<h2>slot {html.escape(slot.id)} - {html.escape(slot.partition)} - "
+            f"{html.escape(slot.head)} - {html.escape(str(slot.unfilled))}"
+            f"{' - the draw is spent' if slot.exhausted else ''}</h2>"
+            f"<p class='lede'>{len(slot.tries)} neighbourhood(s) tried; floor "
+            f"{floor.name} at {floor.value:g}.</p>"
+            "<div class='grid'>" + "".join(cards) + "</div>"
+        )
+    lines = [
+        "<!doctype html><meta charset='utf-8'>",
+        f"<title>gallery {pass_id} below the floor</title>",
+        f"<style>{sheet_module.STYLE}</style>",
+        f"<h1>gallery {pass_id} - the slots that stayed empty</h1>",
+        f"<p class='lede'>{len(unfilled)} unfilled slot(s). For each, the best candidate every "
+        f"neighbourhood it stood on produced, and then the partition's best unchosen candidate "
+        f"on the same head pool-wide - the proof of whether the partition had supply the slot "
+        f"never reached.</p>",
+        *(sections or ["<p class='lede'>Every slot filled.</p>"]),
+    ]
+    output = Path(output)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
+    return output
+
+
+def _candidate_card(candidate: dict | None, floor, sheet_module, title: str, note: str) -> str:
+    import html
+
+    if not candidate:
+        return (
+            f'<figure><div class="frame"><div class="missing">no candidate</div></div>'
+            f"<figcaption><b>{html.escape(title)}</b>"
+            f"<ul><li>{html.escape(note)}</li></ul></figcaption></figure>"
+        )
+    picture = candidate_picture(candidate)
+    body = (
+        f'<img src="{sheet_module.thumbnail(picture)}" alt="">'
+        if picture is not None and picture.is_file()
+        else '<div class="missing">no picture on disk</div>'
+    )
+    clears = floor.clears(candidate.get("p_ge3"))
+    facts = [
+        note,
+        f"P(>=3) {_number(candidate.get('p_ge3'))} against the {floor.value:g} floor - "
+        + ("CLEARS" if clears else "below"),
+        f"P(>=4) {_number(candidate.get('p_ge4'))}",
+        f"{candidate.get('mode')} - {candidate.get('colormap')}",
+        f"{run_of(candidate)}|{candidate.get('candidate')}",
+        f"key {candidate.get('key')}",
+    ]
+    caption = "".join(f"<li>{html.escape(line)}</li>" for line in facts)
+    return (
+        f'<figure><div class="frame">{body}</div>'
+        f"<figcaption><b>{html.escape(title)}</b><ul>{caption}</ul></figcaption></figure>"
+    )
+
+
+def closest_pairs_sheet(pass_id, slots, rows, matrix, directory, output, pairs=CLOSEST_PAIRS):
+    """The `k` closest chosen pairs in the whole gallery, side by side. The eye-check.
+
+    The retro table says how near the two nearest chosen points ended up; this is
+    that number with the two pictures under it, which is the only form in which
+    the question it asks — *are these two wallpapers or one* — can actually be
+    answered. Across ALL partitions, because the radius acts inside a partition
+    and the pairs that come out nearest are therefore the cross-partition ones,
+    which is exactly the similarity nothing in the pass is looking at.
+
+    A filled slot shows its wallpaper; an unfilled one shows the neutral render of
+    the point it stands on, which is the picture the distance was measured on
+    either way.
+    """
+    import html
+
+    from fractal_wallpapers.curation import neutral
+    from fractal_wallpapers.curation import sheet as sheet_module
+
+    by_point = {slot.point: slot for slot in slots if slot.point_index >= 0}
+    row_of = {str(row["key"]): row for row in rows}
+    neutral_dir = neutral.neutral_dir()
+    table = read_retro(slots, matrix, pairs)["overall"]
+    sections = []
+    for cell in table:
+        cards = [
+            _pair_card(
+                by_point.get(side["key"]),
+                row_of.get(side["key"]),
+                directory,
+                neutral_dir,
+                sheet_module,
+            )
+            for side in (cell["a"], cell["b"])
+        ]
+        same = cell["a"]["partition"] == cell["b"]["partition"]
+        sections.append(
+            f"<h2>{cell['cosine_distance']:.4f} - {html.escape(cell['a']['partition'])} / "
+            f"{html.escape(cell['b']['partition'])}"
+            f"{' - same partition' if same else ' - across partitions'}</h2>"
+            "<div class='grid'>" + "".join(cards) + "</div>"
+        )
+    lines = [
+        "<!doctype html><meta charset='utf-8'>",
+        f"<title>gallery {pass_id} closest pairs</title>",
+        f"<style>{sheet_module.STYLE}</style>",
+        f"<h1>gallery {pass_id} - the {len(table)} closest chosen pairs</h1>",
+        "<p class='lede'>The retro table with its pictures attached. If any two of these read "
+        "as one picture, the radius is too small - and a pair marked across partitions is one "
+        "the radius never looked at, because it acts inside a partition only.</p>",
+        *(sections or ["<p class='lede'>Fewer than two points were chosen.</p>"]),
+    ]
+    output = Path(output)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
+    return output
+
+
+def _pair_card(slot, row, directory: Path, neutral_dir: Path, sheet_module) -> str:
+    import html
+
+    if slot is None:
+        return '<figure><div class="frame"><div class="missing">not chosen</div></div></figure>'
+    seated = slot.seated
+    if seated is not None:
+        source, what = _seated_picture(seated, directory)
+        what = f"the seated wallpaper - {what}"
+    else:
+        source = neutral_dir / str((row or {}).get("picture") or "")
+        what = f"UNFILLED - {slot.unfilled} - the chosen point's neutral render"
+    body = (
+        f'<img src="{sheet_module.thumbnail(source)}" alt="">'
+        if source is not None and source.is_file()
+        else '<div class="missing">no picture on disk</div>'
+    )
+    facts = [what, f"{slot.partition} - {slot.head}", f"key {slot.point}"]
+    if seated is not None:
+        facts.insert(1, f"{seated.get('mode')} - {seated.get('colormap')}")
+        facts.insert(
+            2,
+            f"P(>=4) {_number(seated.get('p_ge4'))}, P(>=3) {_number(seated.get('p_ge3'))}",
+        )
+    caption = "".join(f"<li>{html.escape(line)}</li>" for line in facts)
+    return (
+        f'<figure><div class="frame">{body}</div>'
+        f"<figcaption><b>slot {html.escape(slot.id)}</b><ul>{caption}</ul></figcaption></figure>"
+    )
+
+
 # --------------------------------------------------------------------------- #
 # The pass itself.
 # --------------------------------------------------------------------------- #
@@ -1645,7 +2398,9 @@ def run(
     quality_weight: float = QUALITY_WEIGHT,
     strange_share: float | None = None,
     attempts=None,
+    reseat: int = RESEAT_TRIES,
     no_attempts: bool = False,
+    full_size: bool = True,
     seed: int = DEFAULT_SEED,
     workers: int = release.DEFAULT_WORKERS,
     device: str = "auto",
@@ -1675,49 +2430,92 @@ def run(
         log(f"[pass] {pass_id} already has a record; this invocation replaces it")
     log(
         f"[pass] {pass_id}: n={n} radius={radius:g} quality_weight={quality_weight:g} "
-        f"strange_share={share:g} attempts={m},{smooth},{strange}"
+        f"strange_share={share:g} attempts={m},{smooth},{strange} reseat={reseat}"
         + (" (SKIPPED: --no-attempts)" if no_attempts else "")
+        + (" (no full-size renders)" if not full_size else "")
     )
 
     # --- step 3, first: the distance, refused before anything is spent ------ #
     rows, matrix, store = load_embeddings(log)
     scores = intake.read_scores()
     log(f"[pass] {len(scores):,} location(s) in the supply sidecar")
+    # THE population pin. Everything below selects, attempts and seats out of
+    # `rows`, so cutting the fallen locations here is what keeps them out of all
+    # three at once. See [`admitted_only`].
+    rows, matrix, fallen = admitted_only(rows, matrix, scores, log)
 
     # --- steps 1, 2, 4 ----------------------------------------------------- #
-    slots, plan = plan_slots(rows, matrix, scores, n, share, radius, quality_weight, m, log)
+    slots, plan, bench = plan_slots(rows, matrix, scores, n, share, radius, quality_weight, m, log)
     plan["attempts"] = {"locations": m, "smooth": smooth, "strange": strange}
+    plan["reseat"] = int(reseat)
     by_key = {str(row["key"]): colorize_row(row) for row in rows}
     ranks = _ranks(rows, scores)
 
-    # --- step 5 ------------------------------------------------------------ #
-    if no_attempts:
-        made, attempt_counts = (
-            [],
-            {
+    # --- steps 5 and 6, k times: attempt, seat, RE-SEAT what came up empty -- #
+    #
+    # One loop and not two legs, because a re-seat is a slot changing its mind
+    # about where to spend attempts and the only way to know it should is to have
+    # seated once already. The plan grows and is never rebuilt, so a resumed pass
+    # lands every attempt back on its own index.
+    standing_pool = pool_rows(pass_id)
+    planned: list[Try] = []
+    made: list[dict] = []
+    attempt_counts: dict = {}
+    seating: dict = {}
+    rounds: list[dict] = []
+    for round_number in range(max(0, int(reseat)) + 1):
+        if round_number:
+            movement = reseat_slots(slots, bench, log)
+            # On the round that PRECEDED it, which is the round it is about, and
+            # written before the break so a loop that stopped because nothing
+            # could move says so rather than leaving a null nobody can read.
+            rounds[-1]["reseated"] = movement
+            if not movement["moved"]:
+                break
+
+        # --- step 5 --------------------------------------------------------- #
+        if no_attempts:
+            attempt_counts = {
                 "planned": 0,
                 "resumed": 0,
                 "made": 0,
                 "failed": 0,
                 "skipped": "--no-attempts",
-            },
-        )
-    else:
-        planned = attempt_plan(slots, ranks, smooth, strange)
-        log(
-            f"[attempts] {len(planned)} attempt(s) over "
-            f"{len({try_.key for try_ in planned})} location(s) for {len(slots)} slot(s)"
-        )
-        made, attempt_counts = make_attempts(directory, planned, by_key, seed, device, log)
+            }
+        else:
+            fresh = attempt_plan(
+                slots, ranks, smooth, strange, already={try_.key for try_ in planned}
+            )
+            planned += fresh
+            log(
+                f"[attempts] round {round_number}: {len(fresh)} new attempt(s) over "
+                f"{len({try_.key for try_ in fresh})} location(s); {len(planned)} planned in all"
+            )
+            made, attempt_counts = make_attempts(directory, planned, by_key, seed, device, log)
 
-    # --- step 6 ------------------------------------------------------------ #
-    mine = [candidate_of_attempt(row, pass_id) for row in made if row.get("p_ge3") is not None]
-    standing = pool_candidates(slots, pass_id)
-    log(f"[seat] {len(mine)} attempt candidate(s) + {len(standing)} already in the pool")
-    seating = seat(slots, mine + standing, log)
+        # --- step 6 --------------------------------------------------------- #
+        mine = [candidate_of_attempt(row, pass_id) for row in made if row.get("p_ge3") is not None]
+        standing = pool_candidates(slots, pass_id, rows=standing_pool)
+        log(f"[seat] {len(mine)} attempt candidate(s) + {len(standing)} already in the pool")
+        seating = seat(slots, mine + standing, log)
+        rounds.append(
+            {
+                "round": round_number,
+                "attempts_planned": len(planned),
+                "filled": seating["filled"],
+                "unfilled": seating["unfilled"],
+                "reseated": None,
+            }
+        )
+        if not seating["unfilled"]:
+            break
+    plan["retro"] = read_retro(slots, matrix)
+    seating["reseat"] = _reseat_readout(slots, rounds, int(reseat))
 
     # --- step 7 ------------------------------------------------------------ #
-    rendered = render_winners(slots, directory, workers, log)
+    rendered = (
+        render_winners(slots, directory, workers, log) if full_size else skip_winners(slots, log)
+    )
 
     # --- what it leaves behind --------------------------------------------- #
     written = write_records(pass_id, slots, made, plan["guaranteed"], log)
@@ -1726,7 +2524,7 @@ def run(
         [
             row
             for row in records.read_decisions(records.RELEASE, pass_id)
-            if row.get("verdict") == records.RELEASED and row.get("picture")
+            if row.get("verdict") in {records.RELEASED, records.UNRENDERED}
         ]
     )
     sheets = {
@@ -1736,6 +2534,21 @@ def run(
         "runners_up": tracked_name(
             runners_up_sheet(
                 pass_id, slots, rows, matrix, radius, sheet_dir() / f"{pass_id}_runners_up.html"
+            )
+        ),
+        "below_floor": tracked_name(
+            below_floor_sheet(
+                pass_id, slots, mine + standing_pool, sheet_dir() / f"{pass_id}_below_floor.html"
+            )
+        ),
+        "closest_pairs": tracked_name(
+            closest_pairs_sheet(
+                pass_id,
+                slots,
+                rows,
+                matrix,
+                directory,
+                sheet_dir() / f"{pass_id}_closest_pairs.html",
             )
         ),
     }
@@ -1752,7 +2565,9 @@ def run(
             "location P(>=4) ** quality_weight",
             "strange_share": share,
             "attempts": {"locations": m, "smooth": smooth, "strange": strange},
+            "reseat": int(reseat),
             "no_attempts": bool(no_attempts),
+            "full_size": bool(full_size),
             "seed": int(seed),
             "candidates_per_set": colorize.CANDIDATES,
             "colorize_geometry": {
@@ -1764,6 +2579,12 @@ def run(
         },
         "embeddings": {
             "rows": len(rows),
+            # The store is append-only and the population is not, so the two
+            # counts are named as two: `rows` is what the pass selected over and
+            # `below_junk_floor` is what the store still holds and the pass would
+            # not look at. See [`admitted_only`].
+            "stored": len(rows) + fallen,
+            "below_junk_floor": fallen,
             "verdict": store.get("verdict"),
             "manifest": store.get("manifest"),
         },
@@ -1781,9 +2602,38 @@ def run(
     path = write_pass(pass_id, record)
     record["record"] = tracked_name(path)
     log(f"[pass] record {tracked_name(path)}")
-    log(f"[pass] sheet {sheets['gallery']}")
-    log(f"[pass] runners-up {sheets['runners_up']}")
+    for name, where in sheets.items():
+        log(f"[pass] sheet {name}: {where}")
     return record
+
+
+def _reseat_readout(slots: list, rounds: list, allowed: int) -> dict:
+    """What the re-seat loop recovered, and what it could not.
+
+    The number the whole change is for: how many slots filled on a neighbourhood
+    that was not the one the first draw gave them, and on which try. A slot still
+    unfilled after `allowed` tries is reported with the count of neighbourhoods it
+    actually stood on, because "one hostile draw" and "three in a row" are the
+    two readings `below_bar` had to stop conflating.
+    """
+    on_try: dict[str, int] = {}
+    for slot in slots:
+        if slot.seated is None:
+            continue
+        on_try[str(slot.try_index)] = on_try.get(str(slot.try_index), 0) + 1
+    unfilled = [slot for slot in slots if slot.seated is None]
+    return {
+        "allowed": int(allowed),
+        "rounds": rounds,
+        # Slots that filled, by which try filled them. `0` is the first point the
+        # draw handed out — no re-seat needed — so everything above it is what
+        # this loop bought.
+        "filled_on_try": dict(sorted(on_try.items())),
+        "recovered": sum(count for key, count in on_try.items() if int(key)),
+        "unfilled": len(unfilled),
+        "unfilled_tries": sorted(slot.try_index + 1 for slot in unfilled),
+        "exhausted": sum(1 for slot in unfilled if slot.exhausted),
+    }
 
 
 def _ranks(rows: list, scores: dict) -> dict:
@@ -1819,6 +2669,12 @@ def _slot_record(slot) -> dict:
         "locations": list(slot.locations),
         "fill": slot.fill,
         "unfilled": slot.unfilled,
+        "try": slot.try_index,
+        "exhausted": slot.exhausted,
+        # Every neighbourhood this slot stood on, the current one last. About
+        # 300 bytes a try and only unfilled slots collect more than one, so the
+        # history costs the record what the finding is worth.
+        "tries": list(slot.tries),
         "seated": None
         if seated is None
         else {
@@ -1847,19 +2703,29 @@ __all__ = [
     "QUALITY_WEIGHT",
     "RADIUS",
     "RESOLUTION",
+    "RESEAT_TRIES",
+    "CLOSEST_PAIRS",
     "RETRO_PAIRS",
     "RUNNERS_UP",
     "SCHEMA",
     "SUPERSAMPLE",
+    "Bench",
     "Choice",
+    "Draw",
     "PassRefused",
     "Slot",
     "Try",
     "attempt_plan",
+    "best_unchosen",
+    "below_floor_sheet",
     "candidate_of_attempt",
     "candidate_of_pool_row",
+    "candidate_picture",
     "choose",
+    "closest_pairs_sheet",
+    "admitted_only",
     "colorize_row",
+    "floor_key",
     "head_order",
     "head_split",
     "load_embeddings",
@@ -1872,6 +2738,7 @@ __all__ = [
     "passes",
     "plan_slots",
     "pool_candidates",
+    "pool_rows",
     "population",
     "quality_of",
     "rank_key",
@@ -1883,14 +2750,18 @@ __all__ = [
     "manifest_path_of",
     "pass_record_dir",
     "read_pass",
+    "read_retro",
+    "reseat_slots",
     "slots_path",
     "tracked_bytes",
     "write_pass",
     "write_records",
     "retro_table",
     "run",
+    "run_of",
     "seat",
     "sheet_dir",
+    "skip_winners",
     "slots_for",
     "sweep_candidates",
 ]

@@ -128,13 +128,18 @@ def test_a_release_row_carries_a_collection_and_a_gate_row_does_not() -> None:
     assert released["collection"] == records.DIAGNOSTIC
 
 
-def test_the_collection_is_not_a_verdict_and_the_verdicts_did_not_grow() -> None:
-    """`released`/`killed`/`passed_over` answer one question and there are still
-    three of them. A fourth would have made the first unanswerable without
-    knowing which collection the reader meant."""
+def test_the_collection_is_not_a_verdict_and_never_became_one() -> None:
+    """The verdicts answer *is there a wallpaper at the end of this row*; the
+    collection answers *which collection was this decided for*. Two questions, two
+    fields — a collection spelled as a verdict would have made the first
+    unanswerable without knowing which collection the reader meant.
+
+    `unrendered` joined the verdicts on 2026-08-22 and is the same question's
+    fourth answer — took the slot, no picture, nothing failed — not a collection
+    wearing a verdict's clothes."""
     assert records.COLLECTIONS == ("diagnostic", "gallery")
     assert set(records.COLLECTIONS).isdisjoint(
-        {records.RELEASED, records.KILLED, records.PASSED_OVER}
+        {records.RELEASED, records.KILLED, records.UNRENDERED, records.PASSED_OVER}
     )
 
 
