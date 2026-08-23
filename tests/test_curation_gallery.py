@@ -173,18 +173,24 @@ def test_a_head_with_no_measured_floor_cannot_fill_a_gallery_slot() -> None:
         floors.gallery_floor("a_head_nobody_fit")
 
 
-def test_each_floor_acts_on_its_own_head_and_neither_reaches_the_other() -> None:
-    """A smooth candidate at 0.4 seats; a strange one at 0.4 does not, and the
-    numbers are never compared to each other."""
+def test_each_floor_acts_on_its_own_kind_and_neither_reaches_the_other() -> None:
+    """One score between the two floors seats on the lower kind and not on the
+    higher, and the numbers are never compared to each other.
+
+    Read off the floors rather than written down, because both heights move
+    whenever the judge is re-fitted — and the claim here is about which floor
+    applies to which kind, not about what either happens to be today.
+    """
     smooth_floor = floors.gallery_floor(SMOOTH).value
     strange_floor = floors.gallery_floor(STRANGE).value
-    assert smooth_floor < 0.4 < strange_floor
+    assert smooth_floor < strange_floor, "this test needs the smooth floor to be the lower"
+    between = (smooth_floor + strange_floor) / 2
     slots = [slot("0000", SMOOTH, ["a"]), slot("0001", STRANGE, ["b"])]
     gallery.seat(
         slots,
         [
-            candidate("s", "a", SMOOTH, 0.4, center="0"),
-            candidate("t", "b", STRANGE, 0.4, center="90"),
+            candidate("s", "a", SMOOTH, between, center="0"),
+            candidate("t", "b", STRANGE, between, center="90"),
         ],
         log=lambda _line: None,
     )
@@ -374,8 +380,9 @@ def test_an_unfilled_slots_witness_is_read_on_the_floors_axis_not_the_ranks() ->
     """A floor acts on P(>=3) and the seating rank leads with P(>=4), and the two
     disagree. The card that says how close a neighbourhood came has to be the
     nearest one to the bar, or the record understates the gap."""
-    ranked_first = candidate("a", "k", STRANGE, 0.62, p_ge4=0.60)
-    nearer_the_floor = candidate("b", "k", STRANGE, 0.66, p_ge4=0.50)
+    floor = floors.gallery_floor(STRANGE).value
+    ranked_first = candidate("a", "k", STRANGE, floor - 0.06, p_ge4=0.60)
+    nearer_the_floor = candidate("b", "k", STRANGE, floor - 0.02, p_ge4=0.50)
     pool = [ranked_first, nearer_the_floor]
     assert min(pool, key=gallery.rank_key) is ranked_first
     assert min(pool, key=gallery.floor_key) is nearer_the_floor
@@ -383,9 +390,9 @@ def test_an_unfilled_slots_witness_is_read_on_the_floors_axis_not_the_ranks() ->
     here = slot("0000", STRANGE, ["k"])
     gallery.seat([here], pool, log=lambda _line: None)
     assert here.unfilled == "below_bar"
-    # Both are under the 0.685 bar; the one on record is the one that came closest.
+    # Both are under the bar; the one on record is the one that came closest.
     assert here.fill["best"]["candidate"] == "b"
-    assert here.fill["best"]["p_ge3"] == 0.66
+    assert here.fill["best"]["p_ge3"] == floor - 0.02
 
 
 def test_the_seating_is_taken_again_from_scratch_on_every_round() -> None:

@@ -35,7 +35,7 @@ def test_the_strange_head_tries_a_location_twice_and_the_smooth_head_once() -> N
     same place."""
     supply = offer(**{"mandelbrot": 40})
     plan, record = budget.plan(supply, 2, 0.5)
-    for head in budget.HEADS:
+    for head in budget.KINDS:
         mine = [a for a in plan if a.head == head]
         locations = {a.key for a in mine}
         assert len(mine) == len(locations) * budget.MODES_PER_LOCATION[head]
@@ -90,12 +90,12 @@ def test_every_prefix_of_the_plan_is_near_proportional() -> None:
     plan, record = budget.plan(supply, 12, 0.5)
     assert record["prefix_deviation"] <= 1.0
     half = plan[: len(plan) // 2]
-    heads = {head: sum(1 for a in half if a.head == head) for head in budget.HEADS}
+    heads = {head: sum(1 for a in half if a.head == head) for head in budget.KINDS}
     # Against the *planned* mix, which is no longer one attempt each: the strange
     # judge is planned twice the attempts of the smooth one for the same slots, so
     # a balanced half-prefix would be the failure rather than the property.
     planned = record["head_attempts"]
-    for head in budget.HEADS:
+    for head in budget.KINDS:
         assert abs(heads[head] - planned[head] / 2) <= 2
 
 

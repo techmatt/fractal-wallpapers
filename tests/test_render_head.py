@@ -17,7 +17,7 @@ import pathlib
 import pytest
 
 from fractal_wallpapers.labeling import finished
-from fractal_wallpapers.models import finished_train, joint_acceptance, joint_render
+from fractal_wallpapers.models import finished_train, render_acceptance, render_train
 
 
 def a_picture(place: str, score: int, kind: str, side: str = "train", **changes):
@@ -33,7 +33,7 @@ def a_picture(place: str, score: int, kind: str, side: str = "train", **changes)
         "kind": kind,
     }
     fields.update(changes)
-    return joint_render.Picture(**fields)
+    return render_train.Picture(**fields)
 
 
 def test_the_forbidden_set_is_the_union_of_both_pins() -> None:
@@ -42,8 +42,8 @@ def test_the_forbidden_set_is_the_union_of_both_pins() -> None:
     Read off the shipped pins rather than hard-coded, so a store that gains a
     pinned batch tomorrow tightens this test instead of breaking it.
     """
-    forbidden = joint_render.pinned_everywhere()
-    union = set().union(*(set(finished.pinned(kind)) for kind in joint_render.KINDS))
+    forbidden = render_train.pinned_everywhere()
+    union = set().union(*(set(finished.pinned(kind)) for kind in render_train.KINDS))
     assert set(forbidden) == union
     for place, kind in forbidden.items():
         assert place in finished.pinned(kind), "a forbidden place names the store that pinned it"
@@ -60,11 +60,11 @@ def test_the_two_shipped_pins_share_no_location() -> None:
 
 
 def test_the_recipe_is_the_incumbents_shared_one_plus_a_pinned_backbone() -> None:
-    recipe = joint_render.RECIPE
+    recipe = render_train.RECIPE
     for key, value in finished_train.COMMON.items():
         assert recipe[key] == value, f"{key} drifted from what both incumbents train under"
     assert recipe["classes"] == len(finished.SCALE)
-    backbones = {finished_train.RECIPES[kind]["backbone"] for kind in joint_render.KINDS}
+    backbones = {finished_train.RECIPES[kind]["backbone"] for kind in render_train.KINDS}
     assert len(backbones) == 2, "the two incumbents used to disagree about exactly this key"
     assert recipe["backbone"] in backbones, "the backbone is one of theirs, not a third thing"
     assert recipe["backbone"] == finished_train.RECIPES["smooth_render"]["backbone"]
@@ -77,8 +77,8 @@ def test_the_head_is_told_no_kind() -> None:
     training example the loader builds out of one is the picture, its score and
     its index — three things, and the kind is not among them.
     """
-    assert "conditioning" in joint_render.RECIPE
-    assert joint_render.RECIPE["conditioning"].startswith("none")
+    assert "conditioning" in render_train.RECIPE
+    assert render_train.RECIPE["conditioning"].startswith("none")
     example = a_picture("p", 3, "strange_render")
     assert example.kind == "strange_render"
     fields = finished_train.Crops.__getitem__.__code__.co_consts
@@ -88,14 +88,14 @@ def test_the_head_is_told_no_kind() -> None:
 def test_every_chosen_key_says_what_it_was_and_why() -> None:
     """One head has one backbone and one split. Each of those is a decision with
     a direction, and a decision without a reason beside it is a preference."""
-    chosen = joint_render.INHERITANCE["chosen"]
+    chosen = render_train.INHERITANCE["chosen"]
     assert chosen
     for entry in chosen:
         assert set(entry) == {"key", "was", "now", "why"}
         assert entry["was"] != entry["now"]
         assert len(entry["why"]) > 60, f"{entry['key']}: the reason is the point of the entry"
     keys = {entry["key"] for entry in chosen}
-    assert keys.isdisjoint(joint_render.INHERITANCE["identical_to_both_incumbents"])
+    assert keys.isdisjoint(render_train.INHERITANCE["identical_to_both_incumbents"])
 
 
 def test_a_place_is_worth_one_place_across_both_kinds() -> None:
@@ -112,36 +112,42 @@ def test_a_place_is_worth_one_place_across_both_kinds() -> None:
 def test_the_sides_a_picture_can_be_on_include_the_one_the_strict_rule_invents() -> None:
     pictures = [
         a_picture("a", 1, "smooth_render", side="train"),
-        a_picture("b", 2, "smooth_render", side=joint_render.SELECTION),
+        a_picture("b", 2, "smooth_render", side=render_train.SELECTION),
         a_picture("c", 3, "strange_render", side="eval"),
-        a_picture("d", 4, "smooth_render", side=joint_render.EXCLUDED),
+        a_picture("d", 4, "smooth_render", side=render_train.EXCLUDED),
     ]
-    by_side = joint_render.sides(pictures)
+    by_side = render_train.sides(pictures)
     assert {name: len(rows) for name, rows in by_side.items()} == {
         "train": 1,
-        joint_render.SELECTION: 1,
+        render_train.SELECTION: 1,
         "eval": 1,
-        joint_render.EXCLUDED: 1,
+        render_train.EXCLUDED: 1,
     }
-    assert len(joint_render.of_kind(pictures, "smooth_render")) == 3
+    assert len(render_train.of_kind(pictures, "smooth_render")) == 3
 
 
-def test_the_candidate_is_on_no_roster_and_in_no_release() -> None:
-    """It is a candidate. A release that carried it would be shipping a head
-    nobody adopted, and `fetch-weights` would demand an asset that does not
-    exist."""
+def test_the_judge_is_on_the_roster_and_in_the_release() -> None:
+    """It was adopted on 2026-08-23 and it is what ships. A roster that still
+    named the two superseded heads would make `fetch-weights` demand two assets
+    no release carries."""
     from fractal_wallpapers.models.roster import HEADS
 
-    assert joint_render.HEAD not in HEADS
+    assert render_train.HEAD in HEADS
     manifest = json.loads(
-        (joint_render.head_dir().parent / "weights.json").read_text(encoding="utf-8")
+        (render_train.head_dir().parent / "weights.json").read_text(encoding="utf-8")
     )
-    assert joint_render.HEAD not in manifest["heads"]
+    assert render_train.HEAD in manifest["heads"]
+    assert set(manifest["heads"]) == set(HEADS)
+    # And the two it replaced are gone from both. Their label STORES are not,
+    # which is what `finished.HEADS` still names.
+    for superseded in finished.HEADS:
+        assert superseded not in HEADS
+        assert superseded not in manifest["heads"]
 
 
 def test_the_candidate_lives_beside_the_shipped_heads_and_not_inside_one() -> None:
-    home = joint_render.head_dir()
-    for kind in joint_render.KINDS:
+    home = render_train.head_dir()
+    for kind in render_train.KINDS:
         assert finished_train.head_dir(kind) not in home.parents
         assert home != finished_train.head_dir(kind)
 
@@ -149,8 +155,8 @@ def test_the_candidate_lives_beside_the_shipped_heads_and_not_inside_one() -> No
 def test_the_bar_refuses_the_boundary_it_says_it_refuses() -> None:
     """`blind_modes` at `>=4` is four anchored rows on a blind sheet. The refusal
     has to be a fact about the code and not only a paragraph."""
-    assert "strange_auc_ge4" in joint_acceptance.REFUSED
-    for arm in joint_acceptance.ARMS:
+    assert "strange_auc_ge4" in render_acceptance.REFUSED
+    for arm in render_acceptance.ARMS:
         if arm["kind"] == "strange_render":
             assert arm.get("cutpoint") != 4, "an arm reads blind_modes at >=4"
 
@@ -177,7 +183,7 @@ def test_the_smooth_sheet_has_no_negative_class_at_its_lowest_cutpoint() -> None
     own = set(finished.pinned("smooth_render"))
     rows = [r for r in finished.resolved("smooth_render").scored() if finished.place_of(r) in own]
     assert rows and min(row["score"] for row in rows) >= 2
-    assert "smooth_auc_ge2" in joint_acceptance.REFUSED
+    assert "smooth_auc_ge2" in render_acceptance.REFUSED
 
 
 @pytest.mark.parametrize(
@@ -197,16 +203,16 @@ def test_worse_reads_the_interval_in_the_statistic_s_own_direction(
 ) -> None:
     """Half the arms improve upward and half improve downward. Reading one
     interval the other one's way is a verdict that is exactly backwards."""
-    assert joint_acceptance._worse({"direction": direction}, low, high) is worse
+    assert render_acceptance._worse({"direction": direction}, low, high) is worse
 
 
 def test_the_bar_gates_on_something_and_reports_the_rest() -> None:
-    gated = [arm for arm in joint_acceptance.ARMS if arm["gated"]]
+    gated = [arm for arm in render_acceptance.ARMS if arm["gated"]]
     assert gated, "a bar that gates nothing is not a bar"
-    assert all(arm["kind"] in joint_render.KINDS for arm in joint_acceptance.ARMS)
-    for kind in joint_render.KINDS:
+    assert all(arm["kind"] in render_train.KINDS for arm in render_acceptance.ARMS)
+    for kind in render_train.KINDS:
         assert [arm for arm in gated if arm["kind"] == kind], f"{kind} is not gated on anything"
-    for arm in joint_acceptance.ARMS:
+    for arm in render_acceptance.ARMS:
         assert len(arm["why"]) > 40
 
 
@@ -214,23 +220,24 @@ def test_the_bar_names_the_confound_that_points_the_candidate_s_way() -> None:
     """A deviation that helps the candidate is the one a reader has to be told
     about, because the verdict is non-inferiority and it is the direction that
     could buy a PASS."""
-    declared = " ".join(joint_acceptance.bar()["declared"])
+    declared = " ".join(render_acceptance.bar()["declared"])
     assert "never saw" in declared
-    assert joint_acceptance.bar()["rule"].startswith("NON-INFERIORITY")
+    assert render_acceptance.bar()["rule"].startswith("NON-INFERIORITY")
 
 
-def test_the_incumbents_are_the_runs_that_actually_serve() -> None:
-    manifest = json.loads(
-        (joint_render.head_dir().parent / "weights.json").read_text(encoding="utf-8")
-    )
-    for kind, entry in joint_acceptance.INCUMBENTS.items():
-        shipped = manifest["heads"][kind]["run"]
-        expected = None if shipped == "its own" else shipped
-        assert entry["shipped"] == expected, f"{kind} is gated against a run that does not serve"
+def test_the_incumbents_are_the_runs_the_superseded_heads_served_from() -> None:
+    """The bar was read against the two heads that served when it was registered.
+    They no longer ship, so the manifest cannot answer for them any more and the
+    check moves to the record each of them left behind."""
+    for kind, entry in render_acceptance.INCUMBENTS.items():
         assert entry["shipped"] in entry["band"]
+        directory = finished_train.head_dir(kind, entry["shipped"])
+        assert (directory / "scores.jsonl").is_file(), (
+            f"{kind} is gated against a run with no committed read of its own sheet"
+        )
 
 
-@pytest.mark.parametrize("kind", sorted(joint_render.KINDS))
+@pytest.mark.parametrize("kind", sorted(render_train.KINDS))
 def test_the_strict_split_keeps_both_sheets_clean(kind: str, shipped_render_cache) -> None:
     """The claim the whole comparison rests on, checked on the split that is built.
 
@@ -239,28 +246,28 @@ def test_the_strict_split_keeps_both_sheets_clean(kind: str, shipped_render_cach
     """
     from fractal_wallpapers.models import renders
 
-    for name in joint_render.KINDS:
+    for name in render_train.KINDS:
         if not renders.crop_dir(name).is_dir() or not renders.plan_path(name).is_file():
             pytest.skip("a render cache has not been built on this machine")
         if shipped_render_cache.missing(name):
             pytest.skip("a render cache is incomplete on this machine")
 
-    pictures, record = joint_render.population()
-    by_side = joint_render.sides(pictures)
-    forbidden = {repr(place) for place in joint_render.pinned_everywhere()}
+    pictures, record = render_train.population()
+    by_side = render_train.sides(pictures)
+    forbidden = {repr(place) for place in render_train.pinned_everywhere()}
 
-    for side in ("train", joint_render.SELECTION):
+    for side in ("train", render_train.SELECTION):
         trespassing = [p for p in by_side[side] if p.place in forbidden]
         assert not trespassing, f"{side} touches a location pinned to a blind sheet"
     own = {repr(place) for place in finished.pinned(kind)}
-    assert {p.place for p in joint_render.of_kind(by_side["eval"], kind)} <= own
+    assert {p.place for p in render_train.of_kind(by_side["eval"], kind)} <= own
     # A place's pictures may not straddle the training side and the slice, in
     # either kind: the draw is over pooled places for exactly that reason.
     training = {p.place for p in by_side["train"]}
-    chosen = {p.place for p in by_side[joint_render.SELECTION]}
+    chosen = {p.place for p in by_side[render_train.SELECTION]}
     assert training.isdisjoint(chosen)
-    assert record["selection"]["share"] == joint_render.SELECTION_SHARE
-    assert record["excluded_pictures"] == len(by_side[joint_render.EXCLUDED])
+    assert record["selection"]["share"] == render_train.SELECTION_SHARE
+    assert record["excluded_pictures"] == len(by_side[render_train.EXCLUDED])
 
 
 def test_the_ablation_is_the_pooled_split_intersected_with_one_kind(
@@ -270,17 +277,17 @@ def test_the_ablation_is_the_pooled_split_intersected_with_one_kind(
     would move two things at once and could not separate either."""
     from fractal_wallpapers.models import renders
 
-    for name in joint_render.KINDS:
+    for name in render_train.KINDS:
         if not renders.crop_dir(name).is_dir() or not renders.plan_path(name).is_file():
             pytest.skip("a render cache has not been built on this machine")
         if shipped_render_cache.missing(name):
             pytest.skip("a render cache is incomplete on this machine")
 
-    pooled, _ = joint_render.population()
+    pooled, _ = render_train.population()
     whole = {(p.kind, p.name): p.side for p in pooled}
     covered: set = set()
-    for kind in joint_render.KINDS:
-        part, record = joint_render.population(kind)
+    for kind in render_train.KINDS:
+        part, record = render_train.population(kind)
         assert record["only"] == kind
         keys = {(p.kind, p.name) for p in part}
         assert keys <= set(whole)
@@ -293,22 +300,22 @@ def test_the_ablation_is_the_pooled_split_intersected_with_one_kind(
 def test_the_ablation_runs_are_named_for_the_kind_they_hold() -> None:
     """A control whose name does not say what it controls is a directory nobody
     can read a table against six months later."""
-    for kind, runs in joint_acceptance.ABLATIONS.items():
-        assert len(runs) == len(joint_render.RUNS)
+    for kind, runs in render_acceptance.ABLATIONS.items():
+        assert len(runs) == len(render_train.RUNS)
         for run in runs:
             assert run.startswith(kind.split("_")[0])
             assert run.endswith(tuple("012"))
-    names = [run for runs in joint_acceptance.ABLATIONS.values() for run in runs]
+    names = [run for runs in render_acceptance.ABLATIONS.values() for run in runs]
     assert len(set(names)) == len(names)
-    assert not set(names) & set(joint_render.RUNS)
+    assert not set(names) & set(render_train.RUNS)
 
 
 def test_the_ablation_carries_no_bar() -> None:
     """It is the arm that separates pooling from what changed alongside it, and
     a control that gated would be a second bar nobody pre-registered."""
-    bar = joint_acceptance.bar()
+    bar = render_acceptance.bar()
     assert "ablation" not in json.dumps(bar["arms"])
-    assert all(arm["key"] in {a["key"] for a in joint_acceptance.ARMS} for arm in bar["arms"])
+    assert all(arm["key"] in {a["key"] for a in render_acceptance.ARMS} for arm in bar["arms"])
 
 
 def test_the_decomposition_adds_back_up_and_is_reported_rather_than_gated() -> None:
@@ -333,7 +340,7 @@ def test_the_decomposition_adds_back_up_and_is_reported_rather_than_gated() -> N
     assert order <= raw + 1e-12, "recalibrating on the sheet cannot make the loss worse"
     assert abs((order + (raw - order)) - raw) < 1e-12
     # And it gates nothing: the bar's arms are the six, and none of them is this.
-    assert "scale" not in {arm["statistic"] for arm in joint_acceptance.ARMS}
+    assert "scale" not in {arm["statistic"] for arm in render_acceptance.ARMS}
 
 
 def test_the_wide_classifier_is_exactly_one_head_per_kind() -> None:
@@ -341,10 +348,10 @@ def test_the_wide_classifier_is_exactly_one_head_per_kind() -> None:
     `head.build` counts in tiers rather than logits, which is the off-by-one this
     pins."""
     for classes in (3, 4, 5):
-        single = joint_render.classifier_width(classes, per_kind=False)
-        both = joint_render.classifier_width(classes, per_kind=True)
+        single = render_train.classifier_width(classes, per_kind=False)
+        both = render_train.classifier_width(classes, per_kind=True)
         assert single == classes
-        assert both - 1 == (classes - 1) * len(joint_render.KINDS)
+        assert both - 1 == (classes - 1) * len(render_train.KINDS)
 
 
 def test_each_row_reads_its_own_kind_s_cutpoints() -> None:
@@ -352,11 +359,11 @@ def test_each_row_reads_its_own_kind_s_cutpoints() -> None:
 
     logits = torch.arange(12, dtype=torch.float).view(2, 6)
     kinds = torch.tensor([0, 1])
-    picked = joint_render.cutpoints_of(logits, kinds, 4, per_kind=True)
+    picked = render_train.cutpoints_of(logits, kinds, 4, per_kind=True)
     assert picked.tolist() == [[0.0, 1.0, 2.0], [9.0, 10.0, 11.0]]
     # The single head has one set and gives it to everybody, kind or no kind.
     narrow = logits[:, :3]
-    assert torch.equal(joint_render.cutpoints_of(narrow, None, 4, per_kind=False), narrow)
+    assert torch.equal(render_train.cutpoints_of(narrow, None, 4, per_kind=False), narrow)
 
 
 def test_one_kind_s_examples_never_touch_the_other_kind_s_last_layer() -> None:
@@ -369,10 +376,10 @@ def test_one_kind_s_examples_never_touch_the_other_kind_s_last_layer() -> None:
     """
     torch = pytest.importorskip("torch")
 
-    layer = torch.nn.Linear(4, (4 - 1) * len(joint_render.KINDS))
+    layer = torch.nn.Linear(4, (4 - 1) * len(render_train.KINDS))
     features = torch.randn(3, 4)
     only_the_first_kind = torch.zeros(3, dtype=torch.long)
-    joint_render.cutpoints_of(
+    render_train.cutpoints_of(
         layer(features), only_the_first_kind, 4, per_kind=True
     ).sum().backward()
     gradient = layer.weight.grad
@@ -385,29 +392,29 @@ def test_every_variant_is_reported_and_none_of_them_gates() -> None:
     """A variant moves one thing about the design. The bar was written about the
     registered candidate, and a bar a different design could satisfy is not a
     bar — so no variant's run may be mistaken for a candidate run."""
-    assert joint_render.VARIANTS
-    for name, entry in joint_render.VARIANTS.items():
+    assert render_train.VARIANTS
+    for name, entry in render_train.VARIANTS.items():
         assert entry["runs"], f"{name} names no run"
         assert len(entry["what"]) > 60, f"{name}: a variant says what it moved"
-        assert not set(entry["runs"]) & set(joint_render.RUNS)
-    assert set(joint_render.VARIANT_RUNS) == {
-        run for entry in joint_render.VARIANTS.values() for run in entry["runs"]
+        assert not set(entry["runs"]) & set(render_train.RUNS)
+    assert set(render_train.VARIANT_RUNS) == {
+        run for entry in render_train.VARIANTS.values() for run in entry["runs"]
     }
-    assert joint_render.VARIANTS["two_head"]["runs"] == joint_render.TWO_HEAD_RUNS
+    assert render_train.VARIANTS["two_head"]["runs"] == render_train.TWO_HEAD_RUNS
     # And the registered candidate is still the unconditioned one.
-    assert joint_render.RECIPE["conditioning"].startswith("none")
+    assert render_train.RECIPE["conditioning"].startswith("none")
 
 
 def test_every_candidate_takes_one_of_the_two_incumbents_backbones() -> None:
     """The backbone is the one value a joint head cannot inherit, because the two
     incumbents disagree about it. A candidate has to take one of theirs — a third
     one nobody trained under would make the comparison a different experiment."""
-    theirs = {finished_train.RECIPES[kind]["backbone"] for kind in joint_render.KINDS}
+    theirs = {finished_train.RECIPES[kind]["backbone"] for kind in render_train.KINDS}
     assert len(theirs) == 2, "the incumbents used to disagree about exactly this key"
-    for name, entry in joint_render.CANDIDATES.items():
+    for name, entry in render_train.CANDIDATES.items():
         assert entry["backbone"] in theirs, f"{name} trains at a backbone neither ships"
     # And between them the registered candidates have asked both.
-    assert {e["backbone"] for e in joint_render.CANDIDATES.values()} == theirs
+    assert {e["backbone"] for e in render_train.CANDIDATES.values()} == theirs
 
 
 def test_both_arms_weight_a_row_identically_whatever_kind_it_is() -> None:
@@ -430,8 +437,8 @@ def test_both_arms_weight_a_row_identically_whatever_kind_it_is() -> None:
     width, classes = 3, 4
     kinds = torch.tensor([0] * 24 + [1] * 8)
     labels = torch.randint(1, classes + 1, (len(kinds),))
-    layer = torch.nn.Linear(8, width * len(joint_render.KINDS))
-    logits = joint_render.cutpoints_of(layer(torch.randn(len(kinds), 8)), kinds, classes, True)
+    layer = torch.nn.Linear(8, width * len(render_train.KINDS))
+    logits = render_train.cutpoints_of(layer(torch.randn(len(kinds), 8)), kinds, classes, True)
     (gradient,) = torch.autograd.grad(head.loss_of(logits, labels, classes), logits)
 
     ranks = labels - 1
@@ -453,7 +460,7 @@ def test_both_arms_weight_a_row_identically_whatever_kind_it_is() -> None:
 def test_the_shared_and_split_arms_reach_one_loss_through_one_line() -> None:
     """The parity above is only durable because there is one call site. A second
     one — a per-kind loss added up somewhere — is how it would come back."""
-    source = pathlib.Path(joint_render.__file__).read_text(encoding="utf-8")
+    source = pathlib.Path(render_train.__file__).read_text(encoding="utf-8")
     assert source.count("head.loss_of(") == 1, (
         "more than one loss call site in the trainer: the two arms are no longer "
         "guaranteed to aggregate the same way"
@@ -485,28 +492,28 @@ def test_a_gap_splits_into_a_scale_half_and_an_order_half_that_add_back_up() -> 
 def test_each_candidate_owns_its_own_bar_and_record() -> None:
     """A superseded candidate's read stays exactly as it was read. Two candidates
     sharing one file would mean the second question overwrote the first answer."""
-    paths = {name: joint_acceptance.bar_path(name) for name in joint_render.CANDIDATES}
+    paths = {name: render_acceptance.bar_path(name) for name in render_train.CANDIDATES}
     assert len(set(paths.values())) == len(paths), "two candidates share a bar file"
-    records = {name: joint_acceptance.comparison_path(name) for name in joint_render.CANDIDATES}
+    records = {name: render_acceptance.comparison_path(name) for name in render_train.CANDIDATES}
     assert len(set(records.values())) == len(records)
     # The first candidate keeps the plain names it was registered under.
-    assert joint_acceptance.bar_path("medium").name == "bar.json"
-    assert joint_acceptance.comparison_path("medium").name == "comparison.json"
-    assert joint_render.CURRENT in joint_render.CANDIDATES
+    assert render_acceptance.bar_path("medium").name == "bar.json"
+    assert render_acceptance.comparison_path("medium").name == "comparison.json"
+    assert render_train.CURRENT in render_train.CANDIDATES
 
 
 def test_a_bar_is_never_rewritten_once_it_exists() -> None:
-    for name in joint_render.CANDIDATES:
-        if joint_acceptance.bar_path(name).is_file():
-            with pytest.raises(joint_acceptance.JointComparisonError, match="not a bar"):
-                joint_acceptance.write_bar(name)
+    for name in render_train.CANDIDATES:
+        if render_acceptance.bar_path(name).is_file():
+            with pytest.raises(render_acceptance.ComparisonError, match="not a bar"):
+                render_acceptance.write_bar(name)
 
 
 def test_every_variant_names_the_candidate_it_varies() -> None:
     """A variant read against nothing is a number with no comparison in it."""
-    for name, entry in joint_render.VARIANTS.items():
-        assert entry["against"] in joint_render.CANDIDATES, f"{name} varies no known candidate"
-        assert entry["backbone"] == joint_render.CANDIDATES[entry["against"]]["backbone"], (
+    for name, entry in render_train.VARIANTS.items():
+        assert entry["against"] in render_train.CANDIDATES, f"{name} varies no known candidate"
+        assert entry["backbone"] == render_train.CANDIDATES[entry["against"]]["backbone"], (
             f"{name} and the candidate it is compared against differ in the backbone too, "
             f"so the comparison would move two things at once"
         )
@@ -528,7 +535,7 @@ def test_the_per_seed_conjunction_reports_how_many_chances_it_takes() -> None:
         {"key": f"arm{i}", "gated": True, "band": band, "per_seed": dict.fromkeys("abc", band)}
         for i in range(5)
     ]
-    out = joint_acceptance._multiplicity(arms, ["a", "b", "c"])
+    out = render_acceptance._multiplicity(arms, ["a", "b", "c"])
     assert out["per_seed_tests"] == 15
     assert out["band_only_verdict"] == "PASS"
     assert not out["crossed_per_seed"] and not out["crossed_on_the_band"]
@@ -536,7 +543,7 @@ def test_the_per_seed_conjunction_reports_how_many_chances_it_takes() -> None:
 
     # One seed of one arm crossing is a FAIL under the conjunction and not on the band.
     arms[2]["per_seed"]["c"] = {**band, "verdict": "WORSE"}
-    out = joint_acceptance._multiplicity(arms, ["a", "b", "c"])
+    out = render_acceptance._multiplicity(arms, ["a", "b", "c"])
     assert out["crossed_per_seed"] == ["arm2:c"]
     assert out["band_only_verdict"] == "PASS", "the band is unaffected by one seed"
 

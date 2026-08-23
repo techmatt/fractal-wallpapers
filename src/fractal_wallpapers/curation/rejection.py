@@ -153,8 +153,8 @@ def below_acting_bar(rows) -> list[tuple[dict, floors.Bar]]:
     excused = exceptions()
     out = []
     for row in records.served(rows):
-        head = (row.get("scores") or {}).get("head")
-        score = (row.get("scores") or {}).get("p_ge3")
+        head = records.kind_of(row) or None
+        score = records.live_reading(row).get("p_ge3")
         if head is None or score is None:
             continue
         if str(row.get("key")) in excused:
@@ -193,7 +193,7 @@ def apply(
     failing = below_acting_bar(rows)
     stamped = []
     for row, bar in failing:
-        score = row["scores"]["p_ge3"]
+        score = records.live_reading(row)["p_ge3"]
         stamped.append(
             {
                 **row,

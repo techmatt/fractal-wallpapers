@@ -1,3 +1,11 @@
+> **SUPERSEDED on 2026-08-23.** One judge over both kinds — `models/render/` —
+> replaced this head and `smooth_render`. Nothing here is fetched, shipped or read by
+> the serving path; it is kept because a pre-registration written before the head
+> existed, the acceptance read against it, and its own reading of its blind sheet
+> are the evidence of what was decided. **The label store of the same name is NOT
+> superseded** — `data/strange_render/` is a live corpus, still collected, still the
+> population its floor is fitted on.
+
 The head that judges a finished render in one of the strange colourings.
 
 Seventeen colourings beside `smooth` — engraved banding, orbit traps, stripe and

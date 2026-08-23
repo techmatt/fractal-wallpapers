@@ -428,12 +428,40 @@ def _partition_of(row: dict) -> str:
     return str((row.get("location") or {}).get("partition") or "")
 
 
-def _head_of(row: dict) -> str:
+def live_reading(row: dict) -> dict:
+    """The block of a row that is comparable TODAY.
+
+    `scores` is what the run that made the row read, on the artifact shipped that
+    night, and it is provenance: never rewritten, and never comparable across a
+    head that has since been replaced. `scores_current` is the same picture
+    through the artifact shipped now, and it carries the sha that says so.
+
+    **Anything that compares a row against a live cut has to come through here.**
+    The two per-kind judges became one on 2026-08-23 and every number in `scores`
+    moved onto a scale nothing emits any more; a bar stamped with the live head
+    applied to one of those is a comparison between two different scales that
+    raises nothing, because the stamp check protects the bar against the head and
+    not the bar against the score.
+    """
+    return row.get("scores_current") or row.get("scores") or {}
+
+
+def kind_of(row: dict) -> str:
+    """Which KIND of finished render this row is — smooth, or one of the others.
+
+    Read off `scores.head`, which is the name the run wrote down. That value named
+    a judge when it was written and names a label store now; it selects a floor
+    and a slot, and since 2026-08-23 it does not select a model.
+    """
     return str((row.get("scores") or {}).get("head") or "")
 
 
+def _head_of(row: dict) -> str:
+    return kind_of(row)
+
+
 def _score_of(row: dict):
-    value = (row.get("scores") or {}).get("p_ge3")
+    value = live_reading(row).get("p_ge3")
     return None if value is None else float(value)
 
 
@@ -772,6 +800,8 @@ __all__ = [
     "is_rejected",
     "population",
     "read_decisions",
+    "kind_of",
+    "live_reading",
     "rejection",
     "root",
     "run_records",

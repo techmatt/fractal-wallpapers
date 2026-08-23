@@ -7,6 +7,12 @@ verdicts on **places** — is this worth rendering — one row per location.
 does this colouring of that place work — one row per picture, because a place
 appears in them many times at many recipes and the verdicts differ.
 
+Those two are named after the two judges that used to read them, and since
+2026-08-23 one judge reads both. **The stores did not merge and are not renamed**:
+a store is a corpus, these are two populations with two blind sheets and two
+floors, and the names are what every row already written spells. What the names
+select now is a floor, a slot and a mode roster — no longer a model.
+
 None of them is where a labeling page writes. A page saves to an untracked
 **drop** under `labels/` at the repository root, named for both the head and the
 sheet, and `fractal-wallpapers label ingest` resolves what is in it against that

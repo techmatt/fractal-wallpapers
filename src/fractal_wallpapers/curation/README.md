@@ -175,9 +175,9 @@ candidate render instead, captioned with the resolution it actually is.
 **Both measured floors act here, and only one of them acts at a run's release.**
 `floors.gallery_floor` is that seam and it is the one place in this project where
 a head's cut reads differently at two sites: `ACTING_RELEASE_BARS` still answers
-*does this head gate a run's release* and the smooth head's answer there is still
-no, while the pass reads `MEASURED_RELEASE_FLOORS` on both heads — strange 0.685,
-smooth 0.385. The two questions are different. A run's release is ten diagnostic
+*does this kind gate a run's release* and the smooth answer there is still
+no, while the pass reads `MEASURED_RELEASE_FLOORS` on both kinds — strange 0.620,
+smooth 0.530, both re-fitted on the one `render` judge on 2026-08-23. The two questions are different. A run's release is ten diagnostic
 pictures out of one night, and a bar there decides how much of that night is worth
 looking at; the pass decides what the collection ships out of everything, and a
 slot it cannot fill above a measured floor **after every re-seat it is allowed**
@@ -384,8 +384,8 @@ decision needs it — a second 150-row body is a labelling batch, not a check.
 
 **Two cuts act here; everything else annotates.** `floors` owns every threshold.
 The junk floor removes a row at intake, on the location head's scale, saying no
-more than *do not spend colorize compute on this*. The **strange head's release
-bar** removes one at selection: a strange row below 0.685 is not seated, and a
+more than *do not spend colorize compute on this*. The **strange kind's release
+bar** removes one at selection: a strange row below 0.620 is not seated, and a
 strange slot with nothing above it goes unfilled.
 
 Both are [`Restatement`]s now, and so are the supply engine's two — the good floor
@@ -415,9 +415,10 @@ bad, the head had been right about every one, and the release path had been
 padding strange slots out of thin passing supply. Its *height* is no longer that
 verdict: the 4-class retrain moved the head's whole probability scale, so the bar
 was restated off the labels — the crossover where the head's own P(>=3) stops
-disagreeing with the people who judged 3,085 pictures — and it landed at 0.685
-rather than at the advisory it was promoted from. **The smooth head stays
-advisory** — its below-advisory rows belong to a mix-ratio decision that has not
+disagreeing with the people who judged 3,085 pictures — and it landed at 0.685 on
+that head's scale rather than at the advisory it was promoted from. The 2026-08-23
+flip to one judge moved the scale again and the same crossover now reads **0.620**;
+THAT it acts is still the 2026-08-17 verdict. **The smooth kind stays advisory** — its below-advisory rows belong to a mix-ratio decision that has not
 been taken. An `Advisory` and a `Bar` are two classes rather than one class with
 a flag, so which kind a head has is visible at every call site.
 
@@ -547,9 +548,8 @@ question and is not this.
 service.** The rule acts at selection and cannot reach backwards, so the
 collection it began on was still holding 27 locations twice or more.
 `curate retire-repeats` (Matt, 2026-08-22) keeps the highest `P(>=3)` of each
-group **on its own head's scale, uncompared** — the two finished-render judges are
-calibrated separately and a cross-scale adjustment would be a number nobody has
-measured — with ties to the later run, and stamps the other 32 rows
+group **within its own kind, uncompared across kinds** — with ties to the later
+run, and stamps the other 32 rows
 `location_served` with the survivor's key on the row. 185 served became **153**,
 zero locations hold more than one, and `tests/test_served_locations.py` pins both.
 It is a separate pass from `curate reject` and not a mode of it: that one reads
@@ -576,19 +576,28 @@ which is a rule rather than a list, and re-running it rewrites the same bytes.
 **A ruling that keeps a row in service is a tracked record, or it is not a
 ruling.** That rule is live and idempotent, so it finds the same rows every time
 it is asked — which is why an *unwritten* exception is dangerous rather than
-merely undocumented. Four run8h strange rows sit below the 0.685 bar and stay
-served on Matt's reading of the sheet; `data/curation/bar_exceptions.jsonl` names
+merely undocumented. Four run8h strange rows sat below the 0.685 bar and stay
+served on Matt's reading of the sheet — the exception is keyed on the row, so it
+survived the flip that moved the bar to 0.620 and re-scored every score under it; `data/curation/bar_exceptions.jsonl` names
 them one by one, with the bar, the score, who ruled and when, and
 `rejection.below_acting_bar` passes over exactly those keys. It is per *row*: an
 exception naming a run would go on excusing rows that run has not made yet, and
 one naming a head would retire the bar by the back door. A pass names what it
 excused in its report.
 
-**Serving order is score rank within the partition, on each head's own scale.**
-`records.score_rank` ranks every `(partition, head)` pool separately and then
-interleaves the pools by *position*, so no sort ever compares the two judges'
-probabilities and every prefix of a listing covers the partitions evenly — the
-property the near-miss section needs, because it takes a prefix. The served set
+**Serving order is score rank within the partition, within a kind.**
+`records.score_rank` ranks every `(partition, kind)` pool separately and then
+interleaves the pools by *position*, so no sort ever ranks a smooth picture
+against a strange one and every prefix of a listing covers the partitions evenly — the
+property the near-miss section needs, because it takes a prefix.
+
+**One judge did not make the two kinds comparable, and this is the reason.** Until
+2026-08-23 the answer was easy: two heads, two scales, nothing to compare. Now one
+judge emits both and the scale is nominally shared — and the pools stay disjoint
+anyway, because the two populations have different base rates and different floors.
+A strange render at 0.55 is below its acting bar and a smooth one at 0.55 is above
+its measured floor; the number is the same and the decision is opposite. Selection
+pools stay per kind and floors stay per kind, whatever any bar says. The served set
 used to come out in candidate order, which is the attempt number, which is
 arrival order: a page led with whichever partition the attempt plan interleaved
 first. Floors are untouched by this. The junk floor still acts at intake and an

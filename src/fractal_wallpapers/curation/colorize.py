@@ -107,8 +107,13 @@ class Candidate:
         return self.row["key"]
 
 
-def modes_for(head: str) -> list[str]:
-    """The modes one judge owns, read out of the engine's catalog at call time.
+def modes_for(kind: str) -> list[str]:
+    """The modes one KIND covers, read out of the engine's catalog at call time.
+
+    Still a two-way split of the roster, and still the axis a slot is allocated
+    on — it just no longer picks a model. `smooth` is one mode and everything
+    else is the other, which is a fact about the engine rather than about how
+    many judges there are.
 
     The **production** roster only: a niche mode is renderable by name and is
     excluded from every draw, and the exclusion happens here because this is the
@@ -116,7 +121,7 @@ def modes_for(head: str) -> list[str]:
     rather than filtering the catalog keeps the tier's meaning in one place.
     """
     names = engine.production_modes()
-    if head == budget_module.SMOOTH:
+    if kind == budget_module.SMOOTH:
         return [SMOOTH_MODE]
     return [name for name in names if name != SMOOTH_MODE]
 
@@ -388,12 +393,19 @@ class Colorizer:
         self.judges = {}
         self.device = device
 
-    def judge(self, head: str):
-        """One finished-render judge, loaded on first use and kept."""
-        from fractal_wallpapers.models import finished_scoring, ship
+    def judge(self):
+        """THE finished-render judge, loaded on first use and kept.
 
+        One judge for both kinds since 2026-08-23. It used to be one per kind and
+        the cache is kept because loading is the expensive part either way — what
+        went away is the argument, so a caller can no longer reach the wrong
+        model by naming a kind.
+        """
+        from fractal_wallpapers.models import render_train, ship
+
+        head = floors.SCORING_HEAD
         if head not in self.judges:
-            self.judges[head] = finished_scoring.load(ship.shipped_path(head), self.device)
+            self.judges[head] = render_train.load_checkpoint(ship.shipped_path(head), self.device)
         return self.judges[head]
 
     def pick_palette(self, row: dict, names: list[str]) -> tuple[str, list[float]]:
@@ -415,11 +427,11 @@ class Colorizer:
         )
         return names[palette_head.top_pick(scores)], [float(value) for value in scores]
 
-    def score_picture(self, head: str, picture: Path) -> dict:
-        """One finished picture through its judge: every cutpoint, unconditional."""
+    def score_picture(self, picture: Path) -> dict:
+        """One finished picture through the judge: every cutpoint, unconditional."""
         from fractal_wallpapers.models import scoring, train
 
-        model, config, where = self.judge(head)
+        model, config, where = self.judge()
         classes = int(config["classes"])
         transform = scoring.transform_of(config)
         probabilities = train.score(model, [picture], transform, where, classes, {"batch_size": 1})
@@ -473,7 +485,7 @@ class Colorizer:
             picture, stamp = render(
                 row, mode, colormap, self.cyclic, picture, level=True, band=self.band
             )
-            verdict = self.score_picture(plan.head, picture)
+            verdict = self.score_picture(picture)
         except Exception as failure:  # noqa: BLE001 — a failed attempt is a recorded row
             record["error"] = repr(failure)[:400]
             record["picture"] = None

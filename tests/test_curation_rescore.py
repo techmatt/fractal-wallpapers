@@ -69,7 +69,7 @@ def isolated_pool(tmp_path, monkeypatch):
     records.use(None)
 
 
-def test_a_row_naming_no_head_refuses_rather_than_being_guessed_at(isolated_pool) -> None:
+def test_a_row_naming_no_kind_refuses_rather_than_being_guessed_at(isolated_pool) -> None:
     """A candidate belongs to the judge whose slots paid for it. Reading a strange
     picture through the smooth head produces a number about material that head has
     never seen."""
@@ -89,7 +89,7 @@ def test_a_row_naming_no_head_refuses_rather_than_being_guessed_at(isolated_pool
             )
         ],
     )
-    with pytest.raises(rescore.RescoreError, match="names no head"):
+    with pytest.raises(rescore.RescoreError, match="names no kind"):
         rescore.run(log=lambda *_: None)
 
 
@@ -126,18 +126,22 @@ def test_the_scoring_artifact_comes_off_the_run_record_and_not_off_the_row(
 # --------------------------------------------------------------------------- #
 # The tracked pool, after the pass.
 # --------------------------------------------------------------------------- #
-def test_every_pool_row_carries_a_reading_on_the_live_head() -> None:
+def test_every_pool_row_carries_a_reading_on_the_live_judge() -> None:
+    """The block keeps the row's KIND under `head` — every consumer reads it to
+    pick a floor and a slot — and names the one judge that produced the numbers
+    under `judge`, stamped with that judge's artifact."""
     from fractal_wallpapers.curation import floors
 
     rows = records.read_decisions(records.RELEASE)
     missing = [row["key"] for row in rows if not row.get(rescore.BLOCK)]
     if missing:
         pytest.skip(f"{len(missing)} rows have not been re-read in this checkout")
+    live = floors.live_stamp(floors.SCORING_HEAD)
     for row in rows:
         block = row[rescore.BLOCK]
-        head = row["scores"]["head"]
-        assert block["head"] == head
-        assert block["head_sha256"] == floors.live_stamp(head)
+        assert block["head"] == row["scores"]["head"]
+        assert block["judge"] == floors.SCORING_HEAD
+        assert block["head_sha256"] == live
         assert 0.0 <= block["p_ge3"] <= 1.0
 
 
