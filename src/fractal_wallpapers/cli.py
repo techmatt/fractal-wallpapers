@@ -2869,6 +2869,75 @@ def curate_replay(args: argparse.Namespace) -> int:
     return 0 if report["held"] else 1
 
 
+def curate_colors(args: argparse.Namespace) -> int:
+    """Take the colour census, and optionally draw the sheets a person rules from."""
+    from fractal_wallpapers.curation import color_sheets, colors
+
+    stages = tuple(args.stage) if args.stage else colors.STAGES
+    if args.sheets and "survival" not in stages:
+        print(
+            "the sheets are drawn from the candidate renders, so they need the survival "
+            "stage. Add --stage survival, or drop --sheets."
+        )
+        return 1
+    try:
+        readout = colors.take(stages=stages)
+    except colors.CensusError as refusal:
+        print(refusal)
+        return 1
+
+    for name in stages:
+        table = readout["stages"][name]
+        print(f"\n=== {name}")
+        if name == "library":
+            missing = [
+                swatch
+                for swatch, cell in table["metrics"]["swatches"].items()
+                if cell["at_10pct"] == 0
+            ]
+            print(f"  {table['maps']} maps ({table['in_pool']} in the pool)")
+            print(f"  swatches no map carries at 10%: {missing or 'none'}")
+        elif name == "picks":
+            ranked = sorted(
+                table["swatches"].items(),
+                key=lambda item: (item[1]["selection_ratio"] is None, item[1]["selection_ratio"]),
+            )
+            print(f"  {table['sets']} candidate sets")
+            for swatch, cell in ranked[:5]:
+                print(
+                    f"  least picked  {swatch:<26} offered {cell['offered']:>6} "
+                    f"picked {cell['picked']:>5}  x{cell['selection_ratio']}"
+                )
+        elif name == "survival":
+            print(f"  {table['pool']['renders']} candidate renders (score-free)")
+            for head, cell in table["floor_referenced"].items():
+                print(
+                    f"  {head:<15} n={cell['n']:>4} floor={cell['floor']} clears={cell['clears']}"
+                )
+        elif name == "labels":
+            for head, cell in table.items():
+                keepers = cell["keepers"]
+                print(
+                    f"  {head:<15} {cell['pictures']} judged, {keepers['n']} at 3 or 4, "
+                    f"{len(keepers['unrepresented_swatches'])} swatches with no keeper"
+                )
+
+    print(f"\ncensus  {display_path(colors.readout_path())}")
+    print(f"rows    {display_path(colors.rows_path())}")
+    print(f"manifest {display_path(colors.manifest_path())}")
+
+    if args.sheets:
+        rows = [
+            json.loads(line)
+            for line in colors.rows_path().read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+        written = color_sheets.write(rows, repo_root() / "scratch")
+        print(f"sheets  {display_path(Path(written['by_swatch']))}")
+        print(f"        {display_path(Path(written['sparse']))}")
+    return 0
+
+
 def modes(args: argparse.Namespace) -> int:
     """List the named colorings, what each one is for, and whether it ships.
 
@@ -5307,6 +5376,7 @@ def coloring_commands(subcommands) -> None:
 def curate_commands(subcommands) -> None:
     """The last stage: harvest supply in, released wallpapers out."""
     from fractal_wallpapers.curation import budget as budget_module
+    from fractal_wallpapers.curation import colors as colors_module
     from fractal_wallpapers.curation import embeddings as embeddings_module
     from fractal_wallpapers.curation import gallery as gallery_module
     from fractal_wallpapers.curation import run as run_module
@@ -5882,6 +5952,34 @@ def curate_commands(subcommands) -> None:
         "--ephemeral", action="store_true", help="read the run's ephemeral record store"
     )
     replaying.set_defaults(handler=curate_replay)
+
+    colouring_census = steps.add_parser(
+        "colors",
+        help="the colour census: what can be expressed, picked, kept and labelled",
+        description=(
+            "A standing record-and-rank over colour. It carries no cut and removes nothing: "
+            "it describes the colour distribution at four stages so a bias claim can be "
+            "checked against numbers. The stages exist to tell apart four situations that "
+            "look identical from outside and have different fixes — a colour the library "
+            "cannot express, one the palette head never picks, one that is picked and dies "
+            "at a render floor, and one nobody has ever labelled. Counted through 52 "
+            "swatches in Oklab; the codebook is written into the artifact so a share vector "
+            "read next year is read under the codebook that produced it."
+        ),
+    )
+    colouring_census.add_argument(
+        "--stage",
+        action="append",
+        choices=list(colors_module.STAGES),
+        help="run only this stage; repeatable. Omit for all four",
+    )
+    colouring_census.add_argument(
+        "--sheets",
+        action="store_true",
+        help="also write the two glance sheets to scratch/ — the pool by dominant swatch, "
+        "and the sparsest swatches drawn whole. Needs the survival stage",
+    )
+    colouring_census.set_defaults(handler=curate_colors)
 
 
 def location_arguments(draw: argparse.ArgumentParser) -> None:
