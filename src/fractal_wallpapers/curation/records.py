@@ -114,19 +114,29 @@ SCHEMA = 1
 GATE = "gate"
 RELEASE = "release"
 
-#: The three verdicts a release decision can carry. A row is `released` when it
-#: took a slot **and** the picture for that slot exists; `killed` when it took the
-#: slot and the full-resolution render died under it; `passed_over` when it took
-#: no slot at all.
+#: The four verdicts a release decision can carry, all answering ONE question —
+#: is there a wallpaper at the end of this row, and if not, why not. A row is
+#: `released` when it took a slot **and** the picture for that slot exists;
+#: `killed` when it took the slot and the full-resolution render died under it;
+#: `unrendered` when it took the slot and the render was never asked for;
+#: `passed_over` when it took no slot at all.
 #:
-#: `killed` is its own verdict rather than an annotation on `released` because the
-#: two are answers to the same question — is there a wallpaper at the end of this
-#: row — and the whole point of the record is that a reader can take the verdict
-#: at face value. run3 released 39 rows and made 37 pictures; the two rows the
-#: hung-unit backstop killed read `released` and pointed at the candidate JPEG the
-#: gate decision was taken on, which is a 640x360 thumbnail of a wallpaper that
-#: does not exist.
+#: `killed` is its own verdict rather than an annotation on `released` because a
+#: reader has to be able to take the verdict at face value. run3 released 39 rows
+#: and made 37 pictures; the two rows the hung-unit backstop killed read
+#: `released` and pointed at the candidate JPEG the gate decision was taken on,
+#: which is a 640x360 thumbnail of a wallpaper that does not exist.
+#:
+#: [`UNRENDERED`] is separate from `killed` for exactly the same reason, one step
+#: further out. A gallery pass run with `--no-full-size` takes every seating
+#: decision it would otherwise take and simply does not spend the release leg —
+#: the seat is real, the wallpaper is not made yet, and **nothing failed**.
+#: Recording that as `killed` would put a deliberate choice and a dead render
+#: under one word, which is the confusion `killed` exists to prevent. Re-running
+#: the same pass without the flag renders the winners and the rows become
+#: `released`.
 RELEASED, KILLED, PASSED_OVER = "released", "killed", "passed_over"
+UNRENDERED = "unrendered"
 
 #: **Which collection a picture is in**, which is a different question from
 #: whether there is a picture at all. The three verdicts above answer "is there a
@@ -156,6 +166,14 @@ COLLECTIONS = (DIAGNOSTIC, GALLERY)
 #: [`REASONS`]. Not a member of that mapping: those are the ways a candidate loses
 #: a slot, and this row won its slot — what it lost was the render.
 KILLED_REASON = "the release render was killed at its deadline and no picture was made"
+
+#: What an [`UNRENDERED`] row says for itself. Also not a member of [`REASONS`],
+#: and for the same reason: the seat was won. What is missing is a picture nobody
+#: asked for yet.
+UNRENDERED_REASON = (
+    "the pass was run with --no-full-size, so this seat has no full-resolution "
+    "render yet; the candidate the decision was taken on is the picture that exists"
+)
 
 #: The sentence a decision row gives for each way a candidate can lose a slot to
 #: something other than its own score. One spelling, here, because the sheet
@@ -735,6 +753,8 @@ __all__ = [
     "GATE",
     "KILLED",
     "KILLED_REASON",
+    "UNRENDERED",
+    "UNRENDERED_REASON",
     "PASSED_OVER",
     "REASONS",
     "RELEASE",

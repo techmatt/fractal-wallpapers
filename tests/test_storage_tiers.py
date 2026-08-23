@@ -324,6 +324,29 @@ def test_output_into_an_archived_subtree_is_refused(tiered):
     assert "storage restore walk_m" in str(refusal.value)
 
 
+def test_an_input_on_the_archive_tier_is_read_and_not_refused(tiered):
+    """The archive guard is about where bytes land. A ledger there is still a ledger."""
+    _, archive = tiered
+    a_subtree(archive, "harvest_m")
+    named = "artifacts/harvest_m/walk.jsonl"
+    assert cli.resolve_input(named) == archive / "harvest_m" / "walk.jsonl"
+    with pytest.raises(paths.StorageRefusal):
+        cli.resolve_output(named)
+
+
+def test_a_named_ledger_resolves_as_an_input_wherever_its_subtree_lives(tiered, monkeypatch):
+    """`--ledger` on an archived harvest reaches `binding`, rather than a refusal."""
+    import argparse
+
+    _, archive = tiered
+    a_subtree(archive, "harvest_m")
+    (archive / "harvest_m" / ledgers.LEDGER_NAME).write_text("", encoding="utf-8")
+    args = argparse.Namespace(
+        ledger=[f"artifacts/harvest_m/{ledgers.LEDGER_NAME}"], harvest=["artifacts/harvest_m"]
+    )
+    assert cli.declared_ledgers(args) == [archive / "harvest_m" / ledgers.LEDGER_NAME] * 2
+
+
 def test_the_command_line_reports_the_refusal_instead_of_a_traceback(tmp_path, monkeypatch, capsys):
     """Any subcommand can raise it, so `main` catches it — once, for all of them.
 

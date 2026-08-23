@@ -43,7 +43,10 @@ fractal-wallpapers curate run --resume v1                          # carry on wh
 fractal-wallpapers curate reject --run v1 --rejector matt_review --date 2026-08-17
 fractal-wallpapers curate reach --write scratch/unreached_keys.jsonl   # the gap, as a manifest
 fractal-wallpapers curate score --ledger <l> --key-file scratch/unreached_keys.jsonl
-fractal-wallpapers curate gallery --n 50                               # THE gallery pass
+fractal-wallpapers curate gallery --n 100                              # THE gallery pass
+fractal-wallpapers curate gallery --n 100 --reseat 0                    # no re-seat: one draw
+fractal-wallpapers curate gallery --n 100 --no-full-size                # seat, do not render
+fractal-wallpapers curate gallery --pass gallery2                       # ...then make them
 fractal-wallpapers curate gallery-store check --pass gallery1          # is the store whole?
 fractal-wallpapers curate gallery --pass gallery1 --migrate            # out of the old layout
 ```
@@ -96,12 +99,40 @@ Each invocation is a **pass** with its own id, its own record in
                          dealt across a partition's picks by largest deficit, so
                          neither judge gets the whole top of a partition.
 3  the distance          artifacts/curation/neutral_embeddings.jsonl, refused
-                         unless `curate embeddings check` says it is whole
+                         unless `curate embeddings check` says it is whole, then
+                         CUT to the currently admitted population
 4  the locations         quality-weighted farthest point under a HARD RADIUS
-5  the attempts          m locations near each chosen point, judged small
-6  the seats             both measured floors ACT; P(>=4), P(>=3) tiebreak
+5  the attempts          m locations near each chosen point, judged small     <-.
+6  the seats             both measured floors ACT; P(>=4), P(>=3) tiebreak    --'
+                         5 and 6 are a LOOP: an unfilled slot re-seats, up to
+                         --reseat (3) neighbourhoods, and everything either
+                         side of them happens once
 7  the pictures          2560x1440 ss4 for the winners, and only for them
 ```
+
+**A slot is not married to one neighbourhood.** When every candidate a slot's
+neighbourhood produced lands under its head's floor, the slot **re-seats**: it
+takes the next point its partition's draw offers, under the same radius and the
+same weighting and with the abandoned point still excluded, its new
+neighbourhood is attempted, and the whole seating is taken again. `--reseat`
+(default 3) is how many neighbourhoods a slot may stand on, and the slot record
+keeps every one of them and what each held. So **`below_bar` means *k
+neighbourhoods in a row failed*, not one did.**
+
+That gap was gallery1's whole shortfall. Every one of its eight unfilled slots
+was `below_bar`; every one was the LAST slot of its partition — which is the
+point of the draw most remote from everything already chosen, and so the one most
+likely to sit somewhere its head dislikes on principle — and every one sat in a
+partition still holding thousands of admitted locations. What the loop
+deliberately does not do is the other recovery: no floor moves and nothing is
+seated from under one.
+
+**The pass selects over the CURRENT admitted population.** The embedding store is
+append-only and the admitted population is not, so the store is a superset rather
+than a picture: 29,051 rows against 29,046 admitted, the five being locations
+`curate score` re-read at the node regime and put under the junk floor.
+`gallery.admitted_only` cuts the rows before anything looks at them, so a
+withdrawn location is invisible to the picker and to the attempt leg at once.
 
 **The draw is `gain = distance x location P(>=4) ** gamma`,** where `distance` is
 cosine distance to the *nearest* already-chosen point. The first pick of a
@@ -116,9 +147,30 @@ somebody visited a thousand times would take a thousand times the slots.
 
 Both numbers are by eye, and every pass prints the instrument that calibrates
 them: a **retro table** of the nearest chosen pairs, per partition and overall,
-with their distances, plus a second contact sheet showing what the radius refused
-next to each chosen point at its neutral render. If two rows of the retro table
-read as one picture, the radius is too small.
+read off the points the pass *ended* on rather than the ones its first draw handed
+out. If two rows of it read as one picture, the radius is too small.
+
+**Four sheets a pass, all in `scratch/<pass>_*.html`,** self-contained and
+disposable:
+
+```
+<pass>_sheet.html          the gallery: partition then rank, slot-labelled,
+                           unfilled slots in place, retro table at the top
+<pass>_runners_up.html     per chosen point, what the radius refused, at the
+                           NEUTRAL render the distance was measured on
+<pass>_below_floor.html    per UNFILLED slot: the best candidate every
+                           neighbourhood it tried produced, scored against the
+                           floor, plus the partition's best unchosen candidate
+                           on the same head POOL-WIDE — the proof of whether the
+                           partition held supply the slot never reached
+<pass>_closest_pairs.html  the 12 closest chosen pairs across ALL partitions,
+                           side by side with their cosine distance. The retro
+                           table's eye-check; a filled slot shows its wallpaper
+                           and an unfilled one its point's neutral render
+```
+
+Under `--no-full-size` the two sheets that show wallpapers show each winner's
+candidate render instead, captioned with the resolution it actually is.
 
 **Both measured floors act here, and only one of them acts at a run's release.**
 `floors.gallery_floor` is that seam and it is the one place in this project where
@@ -128,9 +180,10 @@ no, while the pass reads `MEASURED_RELEASE_FLOORS` on both heads — strange 0.6
 smooth 0.385. The two questions are different. A run's release is ten diagnostic
 pictures out of one night, and a bar there decides how much of that night is worth
 looking at; the pass decides what the collection ships out of everything, and a
-slot it cannot fill above a measured floor is a fact about the pool. **Unfilled
-beats padded**: an empty slot is output with its binding reason named, because it
-is the signal for where to label or walk next.
+slot it cannot fill above a measured floor **after every re-seat it is allowed**
+is a fact about the pool. **Unfilled beats padded**: an empty slot is output with
+its binding reason named, because it is the signal for where to label or walk
+next.
 
 **The pass has a colorize leg, and every chosen point gets both heads' attempts.**
 `--attempts m,smooth,strange` (3,2,6) buys, for each chosen point, the top `m`
@@ -140,12 +193,28 @@ about a minute. The attempts are **pool rows**, stamped with the pass id, so the
 pool grows by every one of them; the plan is taken over the *union* of every
 slot's locations, because two overlapping neighbourhoods asking for one location
 would otherwise render the same pictures twice (the mode draw is seeded off the
-location and the head). The 31 palette candidates that lost are deleted after the
-verdict — the row keeps the whole candidate set by name and the head's score for
+location and the head). A re-seat **extends** that plan rather than rebuilding it
+— an attempt's identity is its position in the plan, which is what the candidate
+log resumes on and what the palette anchor is drawn on — so a killed pass resumes
+every attempt back onto its own picture. The 31 palette candidates that lost are
+deleted after the verdict — the row keeps the whole candidate set by name and the head's score for
 each, which is what a later reader needs. `--no-attempts` skips the leg and is a
 **dev affordance only**: without it the pass is bound to whatever fraction of the
 admitted population some run happened to colour, which today is 475 locations out
 of 24,843.
+
+**`--no-full-size` skips step 7 and costs the pass no decision.** Every slot is
+seated on the same candidates; what is not spent is 25 s a winner making a
+2560x1440 picture of a choice that is perfectly judgeable off the 640x360 render
+the head itself read. The seats are recorded **`unrendered`** — took the slot, no
+picture, **nothing failed** — which is a fourth release verdict and not `killed`,
+because `killed` means the render died and a reader has to be able to take a
+verdict at face value. `records.served` still wants a picture, so an unrendered
+seat can never become a link to nothing. Re-running the same `--pass` without the
+flag renders the winners and lifts the rows to `released`: the attempts are all
+still on disk, so the second invocation costs the release leg and nothing else.
+Contrast `--no-attempts`, which removes material the pass would have decided over
+and so changes every number it reports.
 
 **One wallpaper per location acts inside the pass and the served index is not
 read.** A run is excused from the index because it has the wrong population; the

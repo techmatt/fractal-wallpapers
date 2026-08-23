@@ -15,6 +15,7 @@ from pathlib import Path
 import numpy
 import pytest
 
+from fractal_wallpapers.curation import colorize as colorize_module
 from fractal_wallpapers.curation import (
     durability,
     floors,
@@ -279,6 +280,201 @@ def test_the_pool_wide_denominator_is_every_embedded_location() -> None:
 
 
 # --------------------------------------------------------------------------- #
+# The re-seat loop: a slot is not married to one neighbourhood.
+# --------------------------------------------------------------------------- #
+def bench_over(rows, angles, quality, radius=0.05, weight=1.0, m=1):
+    """A [`gallery.Bench`] over one synthetic partition, its draw untouched."""
+    matrix = matrix_of(rows, angles)
+    indices = list(range(len(rows)))
+    by_partition = {str(rows[0]["partition"]): indices}
+    return gallery.Bench(
+        rows=rows,
+        matrix=matrix,
+        quality=list(quality),
+        by_partition=by_partition,
+        draws={str(rows[0]["partition"]): gallery.Draw(indices, matrix, quality, radius, weight)},
+        m=m,
+        radius=radius,
+    )
+
+
+def test_a_resumed_draw_gives_the_same_points_a_whole_one_does() -> None:
+    """`choose(k)` and `k` calls to `Draw.next` are the same draw, or the loop is
+    choosing out of a different population than the plan did."""
+    angles = [0.0, 0.3, 0.6, 0.9, 1.2, 1.5]
+    rows = [location(f"k{i}", angle) for i, angle in enumerate(angles)]
+    matrix = matrix_of(rows, angles)
+    quality = [0.2, 0.9, 0.4, 0.7, 0.5, 0.8]
+    whole, _tally = gallery.choose(range(6), matrix, quality, 4, 0.01, 1.0)
+    draw = gallery.Draw(range(6), matrix, quality, 0.01, 1.0)
+    stepped = [draw.next() for _ in range(4)]
+    assert [pick.index for pick in whole] == [pick.index for pick in stepped]
+    assert draw.tally()["chosen"] == 4
+
+
+def test_an_unfilled_slot_takes_the_next_point_and_a_filled_one_does_not() -> None:
+    angles = [0.0, 1.0, 2.0, 3.0]
+    rows = [location(f"k{i}", angle) for i, angle in enumerate(angles)]
+    bench = bench_over(rows, angles, [0.9, 0.8, 0.7, 0.6])
+    picks = [bench.next_point("mandelbrot") for _ in range(2)]
+    slots = [
+        slot("0000", STRANGE, [picks[0].key]),
+        slot("0001", STRANGE, [picks[1].key]),
+    ]
+    slots[0].seated = {"candidate": "already"}
+    moved = gallery.reseat_slots(slots, bench, log=lambda _line: None)
+    assert moved["moved"] == 1
+    # The filled slot kept its point; the empty one stands somewhere new.
+    assert slots[0].point == picks[0].key
+    assert slots[1].point not in {picks[0].key, picks[1].key}
+    assert slots[1].try_index == 1
+
+
+def test_a_slot_whose_partition_is_spent_is_exhausted_rather_than_moved() -> None:
+    """Nothing is invented when the radius has run the partition out."""
+    angles = [0.0, 0.005]
+    rows = [location(f"k{i}", angle) for i, angle in enumerate(angles)]
+    bench = bench_over(rows, angles, [0.9, 0.8], radius=0.5)
+    pick = bench.next_point("mandelbrot")
+    slots = [slot("0000", STRANGE, [pick.key])]
+    moved = gallery.reseat_slots(slots, bench, log=lambda _line: None)
+    assert moved == {"moved": 0, "exhausted": 1, "slots": []}
+    assert slots[0].exhausted is True
+    assert slots[0].point == pick.key
+
+
+def test_a_re_seated_slot_keeps_every_point_it_tried_and_what_each_one_held() -> None:
+    """`below_bar` after three tries is a different claim from `below_bar` after one."""
+    angles = [0.0, 1.0, 2.0]
+    rows = [location(f"k{i}", angle) for i, angle in enumerate(angles)]
+    bench = bench_over(rows, angles, [0.9, 0.8, 0.7])
+    first = bench.next_point("mandelbrot")
+    here = slot("0000", STRANGE, [first.key])
+    for round_number in range(3):
+        gallery.seat(
+            [here],
+            [candidate(f"c{round_number}", here.point, STRANGE, 0.2 + round_number / 10)],
+            log=lambda _line: None,
+        )
+        if round_number < 2:
+            gallery.reseat_slots([here], bench, log=lambda _line: None)
+    assert here.unfilled == "below_bar"
+    assert here.try_index == 2
+    assert [attempt["try"] for attempt in here.tries] == [0, 1, 2]
+    # k2 before k1: the draw is farthest-point, so the second neighbourhood is
+    # the one furthest from the first rather than the next one along.
+    assert [attempt["point"] for attempt in here.tries] == ["k0", "k2", "k1"]
+    # Each try kept the best thing its neighbourhood held, which is the evidence
+    # the `below_floor` sheet is built out of.
+    assert [round(attempt["fill"]["best"]["p_ge3"], 3) for attempt in here.tries] == [0.2, 0.3, 0.4]
+    assert all(attempt["seated"] is None for attempt in here.tries)
+
+
+def test_an_unfilled_slots_witness_is_read_on_the_floors_axis_not_the_ranks() -> None:
+    """A floor acts on P(>=3) and the seating rank leads with P(>=4), and the two
+    disagree. The card that says how close a neighbourhood came has to be the
+    nearest one to the bar, or the record understates the gap."""
+    ranked_first = candidate("a", "k", STRANGE, 0.62, p_ge4=0.60)
+    nearer_the_floor = candidate("b", "k", STRANGE, 0.66, p_ge4=0.50)
+    pool = [ranked_first, nearer_the_floor]
+    assert min(pool, key=gallery.rank_key) is ranked_first
+    assert min(pool, key=gallery.floor_key) is nearer_the_floor
+
+    here = slot("0000", STRANGE, ["k"])
+    gallery.seat([here], pool, log=lambda _line: None)
+    assert here.unfilled == "below_bar"
+    # Both are under the 0.685 bar; the one on record is the one that came closest.
+    assert here.fill["best"]["candidate"] == "b"
+    assert here.fill["best"]["p_ge3"] == 0.66
+
+
+def test_the_seating_is_taken_again_from_scratch_on_every_round() -> None:
+    """A seat left standing from the previous round is a seat nothing re-decided."""
+    slots = [slot("0000", SMOOTH, ["a"])]
+    gallery.seat(slots, [candidate("s", "a", SMOOTH, 0.9)], log=lambda _line: None)
+    assert slots[0].seated is not None
+    gallery.seat(slots, [candidate("s", "a", SMOOTH, 0.1)], log=lambda _line: None)
+    assert slots[0].seated is None
+    assert slots[0].unfilled == "below_bar"
+
+
+def test_the_attempt_plan_extends_rather_than_rebuilding() -> None:
+    """An attempt's identity is its position in the plan, so the prefix never moves."""
+    first = [slot("0000", STRANGE, ["b", "c"])]
+    plan = gallery.attempt_plan(first, {}, 1, 1)
+    assert sorted({try_.key for try_ in plan}) == ["b", "c"]
+    later = [slot("0001", STRANGE, ["a", "c"])]
+    more = gallery.attempt_plan(later, {}, 1, 1, already={try_.key for try_ in plan})
+    # `a` is new and `c` was already planned: the extension holds only the new one.
+    assert sorted({try_.key for try_ in more}) == ["a"]
+    assert [try_.key for try_ in plan + more][: len(plan)] == [try_.key for try_ in plan]
+
+
+def test_the_retro_table_is_read_off_the_points_the_pass_ended_on() -> None:
+    """A table over the first draw's points calibrates a radius against a gallery
+    nobody has."""
+    angles = [0.0, 0.4, 3.0]
+    rows = [location(f"k{i}", angle) for i, angle in enumerate(angles)]
+    matrix = matrix_of(rows, angles)
+    slots = [slot("0000", STRANGE, ["k0"]), slot("0001", STRANGE, ["k1"])]
+    slots[0].point_index, slots[1].point_index = 0, 1
+    slots[0].point, slots[1].point = "k0", "k1"
+    before = gallery.read_retro(slots, matrix)["overall"][0]["cosine_distance"]
+    slots[1].point, slots[1].point_index = "k2", 2
+    after = gallery.read_retro(slots, matrix)["overall"][0]["cosine_distance"]
+    assert after > before
+
+
+# --------------------------------------------------------------------------- #
+# Step 2: the population pin.
+# --------------------------------------------------------------------------- #
+def test_a_location_that_has_fallen_below_the_junk_floor_is_out_of_the_population() -> None:
+    """The embedding store is append-only and the admitted population is not."""
+    angles = [0.0, 1.0, 2.0]
+    rows = [location(f"k{i}", angle) for i, angle in enumerate(angles)]
+    matrix = matrix_of(rows, angles)
+    scores = {
+        "k0": {"p_ge3": 0.9, "p_ge4": 0.8},
+        # Re-scored at the node regime and now under the junk floor.
+        "k1": {"p_ge3": floors.JUNK_FLOOR / 2, "p_ge4": 0.99},
+        "k2": {"p_ge3": 0.7, "p_ge4": 0.6},
+    }
+    kept, block, dropped = gallery.admitted_only(rows, matrix, scores, log=lambda _line: None)
+    assert dropped == 1
+    assert [row["key"] for row in kept] == ["k0", "k2"]
+    assert block.shape[0] == 2
+
+
+def test_a_fallen_location_is_never_chosen_and_never_attempted() -> None:
+    """The pin acts on the rows, so the picker and the attempt leg are both blind
+    to it — even though it is the strongest thing in the store."""
+    angles = [0.0, 1.0, 2.0]
+    rows = [location(f"k{i}", angle) for i, angle in enumerate(angles)]
+    matrix = matrix_of(rows, angles)
+    scores = {
+        "k0": {"p_ge3": 0.5, "p_ge4": 0.5},
+        "k1": {"p_ge3": floors.JUNK_FLOOR / 2, "p_ge4": 1.0},
+        "k2": {"p_ge3": 0.5, "p_ge4": 0.4},
+    }
+    kept, block, _dropped = gallery.admitted_only(rows, matrix, scores, log=lambda _line: None)
+    slots, plan, _bench = gallery.plan_slots(
+        kept, block, scores, 2, 0.6, 0.05, 1.0, 3, log=lambda _line: None
+    )
+    chosen = {slot_.point for slot_ in slots}
+    attempted = {try_.key for try_ in gallery.attempt_plan(slots, {}, 1, 1)}
+    assert "k1" not in chosen
+    assert "k1" not in attempted
+    assert plan["population"] == {"mandelbrot": 2}
+
+
+def test_a_population_with_nothing_admitted_left_is_refused(monkeypatch) -> None:
+    rows = [location("k0", 0.0)]
+    matrix = matrix_of(rows, [0.0])
+    with pytest.raises(gallery.PassRefused, match="admitted population"):
+        gallery.admitted_only(rows, matrix, {"k0": {"p_ge3": 0.0}}, log=lambda _line: None)
+
+
+# --------------------------------------------------------------------------- #
 # Pass identity.
 # --------------------------------------------------------------------------- #
 @pytest.fixture
@@ -404,15 +600,35 @@ def attempt(number: int, key: str, head: str, partition: str = "mandelbrot") -> 
     }
 
 
-def seated_slot(number: int, key: str, head: str, partition: str = "mandelbrot"):
-    """One filled slot, seating this pass's own attempt `number`."""
+def seated_slot(number: int, key: str, head: str, partition: str = "mandelbrot", tries: int = 1):
+    """One filled slot, seating this pass's own attempt `number`.
+
+    `tries` is how many neighbourhoods it stood on before this one, recorded the
+    way the loop records them. It defaults to one and the size pin uses the
+    maximum, because the try history is the one part of a slot row that a re-seat
+    makes bigger and a measurement taken on a slot that never re-seated would be
+    measuring the case the guard is not about.
+    """
     filled = slot(f"{number:04d}", head, [key, f"{key}n1", f"{key}n2"], partition)
     filled.point_index = number
+    filled.fill = {
+        "eligible": 24,
+        "below_floor": 23,
+        "location_served": 0,
+        "floor": {"name": "gallery_floor", "value": 0.685, "head_sha256": "0" * 64},
+        "best": gallery._best_of(
+            [gallery.candidate_of_attempt(attempt(number, key, head, partition), "gallery1")]
+        ),
+    }
+    for _ in range(max(1, tries) - 1):
+        filled.record_try()
+        filled.try_index += 1
     filled.seated = {
         **gallery.candidate_of_attempt(attempt(number, key, head, partition), "gallery1"),
         "group": number,
         "release_picture": f"release/{number:04d}.png",
     }
+    filled.record_try()
     return filled
 
 
@@ -464,10 +680,16 @@ def synthetic_pass(extra: int) -> dict:
 
     Writes the whole record the way a pass does — the slot rows included, through
     `_slot_record`, so what the pin measures is the real per-slot cost and not a
-    stub standing in for it.
+    stub standing in for it. Every slot carries the **longest** try history the
+    re-seat loop can give one, which is the worst case the guard is about.
     """
     where = [REGISTERED[n % len(REGISTERED)] for n in range(500 + extra)]
-    slots = [seated_slot(n, f"k{n}", SMOOTH if n % 2 else STRANGE, where[n]) for n in range(500)]
+    slots = [
+        seated_slot(
+            n, f"k{n}", SMOOTH if n % 2 else STRANGE, where[n], tries=gallery.RESEAT_TRIES + 1
+        )
+        for n in range(500)
+    ]
     attempts = [attempt(n, f"k{n}", SMOOTH if n % 2 else STRANGE, where[n]) for n in range(500)]
     attempts += [
         attempt(1000 + n, f"k{n % 500}n{n}", SMOOTH if n % 2 else STRANGE, where[500 + n])
@@ -611,6 +833,62 @@ def test_migrating_moves_the_attempts_out_and_drops_the_passed_over_duplicates(
     # pass no longer refuses.
     assert gallery_store.migrate("gallery1", log=lambda _l: None)["moved"] == 0
     gallery_store.refuse_old_layout("gallery1")
+
+
+def test_a_skipped_release_leg_records_the_seat_and_not_a_dead_render(record_root) -> None:
+    """`--no-full-size` takes every decision and makes no picture. The row has to
+    say that, because `killed` means the render died and nothing died here."""
+    filled = seated_slot(0, "k0", SMOOTH)
+    report = gallery.skip_winners([filled], log=lambda _line: None)
+    assert report["skipped"] == "--no-full-size"
+    assert filled.seated["release_picture"] is None
+
+    gallery.write_records("gallery1", [filled], [], ["mandelbrot"], lambda _l: None)
+    row = records.read_decisions(records.RELEASE, "gallery1")[0]
+    assert row["verdict"] == records.UNRENDERED
+    assert row["verdict"] != records.KILLED
+    assert row["reason"] == records.UNRENDERED_REASON
+    assert row["picture"] is None
+    # The seat is real: it is in the gallery collection and it names its slot.
+    assert row["collection"] == records.GALLERY
+    assert row["slot"]["id"] == filled.id
+
+
+def test_an_unrendered_row_is_not_something_the_collection_serves(record_root) -> None:
+    """`records.served` wants a picture, so a seat with no wallpaper behind it
+    cannot become a link to nothing."""
+    filled = seated_slot(0, "k0", SMOOTH)
+    gallery.skip_winners([filled], log=lambda _line: None)
+    gallery.write_records("gallery1", [filled], [], ["mandelbrot"], lambda _l: None)
+    rows = records.read_decisions(records.RELEASE, "gallery1")
+    assert len(rows) == 1
+    assert records.served(rows) == []
+
+
+def test_a_killed_render_and_a_render_never_asked_for_are_different_rows() -> None:
+    """The distinction the fourth verdict is for, on two rows built side by side."""
+    killed = seated_slot(0, "k0", SMOOTH)
+    killed.seated["release_picture"] = None
+    skipped = seated_slot(1, "k1", SMOOTH)
+    gallery.skip_winners([skipped], log=lambda _line: None)
+    rows = [
+        gallery._release_row("gallery1", one.seated, one, {}, set()) for one in (killed, skipped)
+    ]
+    assert [row["verdict"] for row in rows] == [records.KILLED, records.UNRENDERED]
+    assert rows[0]["reason"] != rows[1]["reason"]
+
+
+def test_a_sheet_falls_back_to_the_candidate_render_and_says_which_it_is() -> None:
+    """A candidate under a caption implying 2560x1440 is the same lie the record
+    refuses to tell."""
+    filled = seated_slot(0, "k0", SMOOTH)
+    _full, said = gallery._seated_picture(filled.seated, Path())
+    assert "2560x1440" in said
+
+    gallery.skip_winners([filled], log=lambda _line: None)
+    _candidate, said = gallery._seated_picture(filled.seated, Path())
+    assert "NO FULL-SIZE RENDER YET" in said
+    assert f"{colorize_module.RESOLUTION[0]}x{colorize_module.RESOLUTION[1]}" in said
 
 
 def test_a_pass_record_reads_back_whole_out_of_its_own_directory(record_root) -> None:

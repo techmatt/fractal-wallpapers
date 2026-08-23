@@ -138,6 +138,24 @@ def fetch_weights(args: argparse.Namespace) -> int:
     return 0
 
 
+def resolve_input(named: str) -> Path:
+    """Resolve a path this invocation READS, against the repository and the tiers.
+
+    The same resolution [`resolve_output`] does and **without its archive
+    refusal**. That guard is about where new bytes land: writing to the archive
+    puts fresh output behind a seek-bound disk and splits a subtree across both
+    tiers. Neither is true of a read. A ledger that has been archived is still a
+    ledger, and the whole point of the archive tier is that what lives there
+    stays nameable — an input refused by an output guard is a subtree somebody
+    has to restore before they may so much as read it.
+    """
+    path = Path(named)
+    if path.is_absolute():
+        return path
+    resolved = rehome(path)
+    return repo_root() / path if resolved is None else resolved
+
+
 def resolve_output(out: str) -> Path:
     """Resolve an output path against the repository, not the shell's cwd.
 
@@ -717,8 +735,11 @@ def declared_ledgers(args: argparse.Namespace):
     from fractal_wallpapers.curation import binding
 
     harvests = getattr(args, "harvest", None) or []
-    chosen = [resolve_output(p) for p in (args.ledger or [])]
-    chosen += [binding.of_harvest(resolve_output(d)) for d in harvests]
+    # Through `resolve_input`, which is the same tier resolution without the
+    # archive refusal: a ledger and a harvest directory are things this
+    # invocation reads, and an archived one is still readable.
+    chosen = [resolve_input(p) for p in (args.ledger or [])]
+    chosen += [binding.of_harvest(resolve_input(d)) for d in harvests]
     return chosen or None
 
 
@@ -2530,7 +2551,9 @@ def curate_gallery(args: argparse.Namespace) -> int:
             quality_weight=args.quality_weight,
             strange_share=args.strange_share,
             attempts=args.attempts,
+            reseat=args.reseat,
             no_attempts=args.no_attempts,
+            full_size=not args.no_full_size,
             seed=args.seed,
             workers=args.workers,
             device=args.device,
@@ -2586,6 +2609,30 @@ def print_gallery(record: dict) -> None:
             + (f"  ({why})" if why else "")
         )
 
+    # What the re-seat loop recovered. Printed as its own block because it is the
+    # one number that says whether an unfilled slot is a fact about the pool or a
+    # fact about where one draw happened to look.
+    loop = seating.get("reseat") or {}
+    if loop:
+        by_try = ", ".join(
+            f"{count} on try {number}" for number, count in sorted(loop["filled_on_try"].items())
+        )
+        print(
+            f"\nRE-SEAT: {loop['recovered']} slot(s) filled on a neighbourhood the first draw "
+            f"did not give them, {loop['allowed']} tries allowed"
+        )
+        print(f"  {by_try}")
+        if loop["unfilled"]:
+            print(
+                f"  {loop['unfilled']} still unfilled after "
+                f"{loop['unfilled_tries']} neighbourhood(s) each"
+                + (
+                    f"; {loop['exhausted']} ran their partition's draw out"
+                    if loop["exhausted"]
+                    else ""
+                )
+            )
+
     attempts, rendered = record["attempts"], record["render"]
     print(
         f"\nattempts: {attempts.get('made', 0)} made, {attempts.get('resumed', 0)} resumed, "
@@ -2601,15 +2648,22 @@ def print_gallery(record: dict) -> None:
             else ""
         )
     )
-    print(
-        f"full size: {rendered['counts']['made']} rendered, {rendered['counts']['resumed']} "
-        f"reused, {rendered['counts']['failed']} failed"
-        + (
-            f"; {rendered['seconds_per_full_size']:.1f}s each"
-            if rendered.get("seconds_per_full_size")
-            else ""
+    if rendered.get("skipped"):
+        print(
+            f"full size: SKIPPED ({rendered['skipped']}) — "
+            f"{rendered['counts']['not_started']} seat(s) recorded `unrendered`, judged off "
+            f"their candidate renders. Re-run this --pass without the flag to make them."
         )
-    )
+    else:
+        print(
+            f"full size: {rendered['counts']['made']} rendered, {rendered['counts']['resumed']} "
+            f"reused, {rendered['counts']['failed']} failed"
+            + (
+                f"; {rendered['seconds_per_full_size']:.1f}s each"
+                if rendered.get("seconds_per_full_size")
+                else ""
+            )
+        )
     store = record["records"]["attempts"]
     print(
         f"\nattempt store: {store['rows']:,} pool row(s) in {store['store']}, untracked"
@@ -2627,8 +2681,8 @@ def print_gallery(record: dict) -> None:
         f"largest {tracked['largest']:,}"
     )
     print(f"\nrecord {record['record']}")
-    print(f"sheet  {record['sheets']['gallery']}")
-    print(f"       {record['sheets']['runners_up']}")
+    for name, where in record["sheets"].items():
+        print(f"sheet  {name:<14} {where}")
 
 
 def curate_gallery_store(args: argparse.Namespace) -> int:
@@ -5463,12 +5517,32 @@ def curate_commands(subcommands) -> None:
         f"modes (default: {','.join(str(part) for part in gallery_module.ATTEMPTS)})",
     )
     gallerying.add_argument(
+        "--reseat",
+        type=int,
+        default=gallery_module.RESEAT_TRIES,
+        metavar="K",
+        help="how many NEIGHBOURHOODS a slot may try before it reports below_bar. A slot "
+        "whose candidates all land under its head's floor takes the next farthest point "
+        "under the same radius and weighting and tries again, so below_bar means k "
+        "neighbourhoods in a row failed rather than one "
+        f"(default: {gallery_module.RESEAT_TRIES}; 0 is one neighbourhood and no re-seat)",
+    )
+    gallerying.add_argument(
         "--no-attempts",
         action="store_true",
         help="seat out of the standing pool alone, making no new candidate. A DEV "
         "AFFORDANCE for iterating on the selection and never how a pass is really run: "
         "without the attempt leg the pass is bound to the fraction of the admitted "
         "population some run happened to colour",
+    )
+    gallerying.add_argument(
+        "--no-full-size",
+        action="store_true",
+        help="take every seating decision and skip the release leg, so no winner is "
+        "rendered at 2560x1440. The seats are recorded `unrendered` — took the slot, no "
+        "picture, nothing failed — and the sheets show each winner's candidate render and "
+        "say so. Re-running the same --pass without this flag makes the pictures and lifts "
+        "the rows to `released`",
     )
     gallerying.add_argument(
         "--seed",
