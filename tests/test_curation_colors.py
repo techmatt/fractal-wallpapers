@@ -16,6 +16,7 @@ other than what they say:
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 
@@ -42,26 +43,30 @@ def pool_row(run: str, candidate: str, head: str, *, current: dict | None = None
     return built
 
 
+def index_of(rows: list[dict]) -> dict:
+    """The pool keyed the way stage 3 keys it, so a `source` chain can be walked."""
+    return {row["key"]: row for row in rows}
+
+
 # --------------------------------------------------------------------------- #
 # The scale restriction.
 # --------------------------------------------------------------------------- #
-def test_a_score_from_another_checkpoint_is_refused_and_not_counted(monkeypatch) -> None:
+def test_a_score_from_another_checkpoint_is_refused_and_not_counted() -> None:
     """The failure this guards is silent: the row has a number, the floor has a
     number, and comparing them produces a rate that looks exactly like a real one."""
-    head = "smooth_render"
-    stamp = floors.gallery_floor(head).stamp
+    kind = "smooth_render"
+    stamp = floors.gallery_floor(kind).stamp
     rows = [
-        pool_row("run9", "0001", head, current={"p_ge3": 0.9, "head_sha256": stamp}),
-        pool_row("run9", "0002", head, current={"p_ge3": 0.9, "head_sha256": "a" * 64}),
+        pool_row("run9", "0001", kind, current={"p_ge3": 0.9, "head_sha256": stamp}),
+        pool_row("run9", "0002", kind, current={"p_ge3": 0.9, "head_sha256": "a" * 64}),
     ]
-    monkeypatch.setattr(records, "read_decisions", lambda *a, **k: rows)
     with pytest.raises(colors.CensusError) as refusal:
-        colors._floor_referenced(log=lambda *a: None)
+        colors._floor_referenced(rows, index_of(rows), log=lambda *a: None)
     assert "floor" in str(refusal.value)
     assert "rescore" in str(refusal.value), "a refusal must name the command that fixes it"
 
 
-def test_rows_on_the_measured_artifact_are_kept_per_head(monkeypatch) -> None:
+def test_rows_on_the_measured_artifact_are_kept_per_kind() -> None:
     smooth, strange = "smooth_render", "strange_render"
     rows = [
         pool_row(
@@ -78,27 +83,62 @@ def test_rows_on_the_measured_artifact_are_kept_per_head(monkeypatch) -> None:
         ),
         pool_row("run9", "0003", smooth),  # never re-scored: no current block at all
     ]
-    monkeypatch.setattr(records, "read_decisions", lambda *a, **k: rows)
-    kept = colors._floor_referenced(log=lambda *a: None)
+    kept = colors._floor_referenced(rows, index_of(rows), log=lambda *a: None)
     assert len(kept[smooth]) == 1
     assert len(kept[strange]) == 1
     assert kept[smooth][0]["score"] == 0.9
 
 
-def test_an_unscored_row_is_skipped_rather_than_read_as_a_zero(monkeypatch) -> None:
+def test_an_unscored_row_is_skipped_rather_than_read_as_a_zero() -> None:
     """A render that failed is a decision with a reason and no number. Counting it
     as zero would make a crash indistinguishable from a colour the judge hated."""
-    head = "smooth_render"
+    kind = "smooth_render"
     rows = [
         pool_row(
             "run9",
             "0001",
-            head,
-            current={"p_ge3": None, "head_sha256": floors.gallery_floor(head).stamp},
+            kind,
+            current={"p_ge3": None, "head_sha256": floors.gallery_floor(kind).stamp},
         )
     ]
-    monkeypatch.setattr(records, "read_decisions", lambda *a, **k: rows)
-    assert colors._floor_referenced(log=lambda *a: None)[head] == []
+    assert colors._floor_referenced(rows, index_of(rows), log=lambda *a: None)[kind] == []
+
+
+def test_one_picture_named_by_a_row_in_each_store_is_counted_once() -> None:
+    """The pool's two stores overlap — a gallery pass records its own decision
+    about a candidate an earlier run released — and the floor half reads both. A
+    picture counted twice weights its colour double in a cell whose whole job is
+    to say how often that colour clears."""
+    kind = "smooth_render"
+    stamp = floors.gallery_floor(kind).stamp
+    released = pool_row("run9", "0001", kind, current={"p_ge3": 0.9, "head_sha256": stamp})
+    seated = pool_row("gallery1", "run9_0001", kind, current={"p_ge3": 0.9, "head_sha256": stamp})
+    seated["source"] = {"key": released["key"], "run": "run9", "candidate": "0001"}
+    rows = [released, seated]
+
+    kept = colors._floor_referenced(rows, index_of(rows), log=lambda *a: None)
+    assert len(kept[kind]) == 1
+    assert kept[kind][0]["picture"].endswith("0001.jpg")
+
+
+def test_a_pass_over_a_pass_resolves_to_the_run_that_rendered_it() -> None:
+    """One hop lands on a path nobody ever wrote, and the census reported that
+    render as absent rather than as the colour it is."""
+    kind = "strange_render"
+    stamp = floors.gallery_floor(kind).stamp
+    made = pool_row("run9", "0008", kind, current={"p_ge3": 0.7, "head_sha256": stamp})
+    once = pool_row("gallery1", "run9_0008", kind)
+    once["source"] = {"key": made["key"], "run": "run9", "candidate": "0008"}
+    twice = pool_row(
+        "gallery2", "gallery1_0003", kind, current={"p_ge3": 0.7, "head_sha256": stamp}
+    )
+    twice["source"] = {"key": once["key"], "run": "gallery1", "candidate": "run9_0008"}
+    rows = [made, once, twice]
+
+    kept = colors._floor_referenced(rows, index_of(rows), log=lambda *a: None)
+    resolved = {cell["picture"] for cell in kept[kind]}
+    assert len(resolved) == 1
+    assert next(iter(resolved)).endswith(str(Path("run9") / "pictures" / "0008.jpg"))
 
 
 # --------------------------------------------------------------------------- #

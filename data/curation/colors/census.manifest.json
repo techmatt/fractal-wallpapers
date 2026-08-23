@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "baseline": "pre-run11",
-  "taken_at": "2026-08-23T18:26:43Z",
+  "taken_at": "2026-08-23T23:52:31Z",
   "stages": [
     "labels",
     "library",
@@ -9,20 +9,30 @@
     "survival"
   ],
   "stages_this_run": [
-    "library",
-    "picks",
-    "survival",
-    "labels"
+    "survival"
   ],
-  "stages_carried": [],
+  "stages_carried": [
+    {
+      "stage": "library",
+      "taken_at": "2026-08-23T18:26:43Z"
+    },
+    {
+      "stage": "picks",
+      "taken_at": "2026-08-23T18:26:43Z"
+    },
+    {
+      "stage": "labels",
+      "taken_at": "2026-08-23T18:26:43Z"
+    }
+  ],
   "rows": {
     "rows": 18142,
     "bytes": 11876129,
-    "sha256": "77721a5215b171c0f543cd8f59ea9b6d522fa95b84945831ae5ede006c0c782f"
+    "sha256": "e0a91df47d130a86ce7a7a3ef5bb6c2929acbf5e99e7538424733be0ef0c64f0"
   },
   "readout": {
-    "bytes": 134356,
-    "sha256": "24e9ec156af887f4dd7d81fe6cae0e525548b3f6c24282a2e5d56e7f98b09719"
+    "bytes": 138013,
+    "sha256": "814f62363e9dca2e8c8993bb941bf2e0aeb9fb29c01b08d04b72b5a4baae0819"
   },
   "population": {
     "baseline": "pre-run11",

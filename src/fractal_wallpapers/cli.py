@@ -2897,7 +2897,7 @@ def curate_replay(args: argparse.Namespace) -> int:
 
 def curate_colors(args: argparse.Namespace) -> int:
     """Take the colour census, and optionally draw the sheets a person rules from."""
-    from fractal_wallpapers.curation import color_sheets, colors
+    from fractal_wallpapers.curation import color_sheets, colors, swatch_frequency
 
     stages = tuple(args.stage) if args.stage else colors.STAGES
     if args.sheets and "survival" not in stages:
@@ -2961,6 +2961,20 @@ def curate_colors(args: argparse.Namespace) -> int:
         written = color_sheets.write(rows, repo_root() / "scratch")
         print(f"sheets  {display_path(Path(written['by_swatch']))}")
         print(f"        {display_path(Path(written['sparse']))}")
+
+    if args.frequency:
+        try:
+            table = swatch_frequency.write(readout, repo_root() / "scratch")
+        except swatch_frequency.SheetError as refusal:
+            print(refusal)
+            return 1
+        print()
+        print(f"frequency {display_path(Path(table['csv']))}")
+        print(f"          {display_path(Path(table['page']))}")
+        print(f"  {table['swatches']} swatches over {table['renders']} judged renders")
+        print(f"  most common: {', '.join(f'{n} ({c})' for n, c in table['top'])}")
+        print(f"  never dominant: {len(table['zero_dominance'])}")
+        print(f"  carried by no map at 10%: {len(table['uncarried'])}")
     return 0
 
 
@@ -5938,6 +5952,13 @@ def curate_commands(subcommands) -> None:
         action="store_true",
         help="also write the two glance sheets to scratch/ — the pool by dominant swatch, "
         "and the sparsest swatches drawn whole. Needs the survival stage",
+    )
+    colouring_census.add_argument(
+        "--frequency",
+        action="store_true",
+        help="also write the swatch frequency sheet to scratch/ — all 52 swatches ordered by "
+        "how often each dominates a judged render, as a csv and as a colour-filled page. "
+        "Joins the library and survival stages, so it reads them off the merged artifact",
     )
     colouring_census.set_defaults(handler=curate_colors)
 
