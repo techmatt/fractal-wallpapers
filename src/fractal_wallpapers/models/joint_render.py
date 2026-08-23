@@ -75,9 +75,6 @@ HEAD = "joint_render"
 #: The two kinds it pools, in the order every table here reports them.
 KINDS: tuple[str, ...] = ("smooth_render", "strange_render")
 
-#: The band. Three seeds, and the band is the result — no staged pick.
-RUNS: tuple[str, ...] = ("seed0", "seed1", "seed2")
-
 #: The third side, and the slice that carves it out. Carried from the incumbents
 #: unchanged, because the selection population is a controlled variable.
 SELECTION = finished_train.SELECTION
@@ -100,38 +97,78 @@ RECIPE: dict = {
     "conditioning": "none — the picture is the input, and the head is told no kind",
 }
 
-#: The variants. Each is the candidate with ONE thing moved, trained into its own
-#: run, and every one of them is REPORTED rather than gated: the bar was written
-#: about the candidate in [`RECIPE`] and a bar that could be satisfied by a
-#: different design than the one registered is not a bar.
+#: Every band this study has registered a bar against, newest last. A candidate is
+#: a whole design plus the runs that realize it; the bar is written per candidate
+#: and before its band exists.
+#:
+#: `medium` was the first, and its FAIL is on the record. It traced to the one
+#: value a joint head cannot inherit — the two incumbents disagree about the
+#: backbone and one head has one — so `small_backbone` re-asks it at the strange
+#: incumbent's, which is the corpus that was starving. Everything else about the
+#: two is identical: shared classifier, no conditioning, pooled rows, the same
+#: intersection split and the same frozen selection protocol.
+CANDIDATES: dict[str, dict] = {
+    "medium": {
+        "runs": ("seed0", "seed1", "seed2"),
+        "backbone": finished_train.RECIPES["smooth_render"]["backbone"],
+        "what": (
+            "the shared-classifier joint head at the smooth incumbent's backbone. The first "
+            "registered candidate; its bar reads FAIL"
+        ),
+    },
+    "small_backbone": {
+        "runs": ("small_backbone_seed0", "small_backbone_seed1", "small_backbone_seed2"),
+        "backbone": finished_train.RECIPES["strange_render"]["backbone"],
+        "what": (
+            "the same head at the STRANGE incumbent's backbone. The prior band's failure "
+            "traced to capacity against the strange corpus rather than to pooling, and this "
+            "is that one value re-asked"
+        ),
+    },
+}
+
+#: The candidate a bare read is about. The newest registered one.
+CURRENT = "small_backbone"
+
+#: The band of the first candidate, kept as a name because the historical arm and
+#: several guards read it.
+RUNS: tuple[str, ...] = CANDIDATES["medium"]["runs"]
+
+#: The variants. Each is a candidate with ONE thing moved, trained into its own
+#: runs, and every one is REPORTED rather than gated: a bar is written about one
+#: design, and a bar a different design could satisfy is not a bar.
 #:
 #: `two_head` — one backbone, **two last layers**, one ordinal head per kind. It
 #: needs no new module: a CORN head over `classes` tiers emits `classes - 1`
 #: logits, and one `Linear` of twice that width IS two independent heads, because
 #: the rows of a linear map do not interact and an example of one kind reaches
 #: only its own kind's rows. See [`cutpoints_of`]. It is **conditioned** and the
-#: candidate is not — it has to be told which kind it is reading, which costs
-#: nothing here (the mode decides the kind, and the mode is always known) but is
-#: no longer "the picture is the input".
+#: candidates are not — it has to be told which kind it is reading, which costs
+#: nothing here (the mode decides the kind) but is no longer "the picture is the
+#: input".
 #:
-#: `small_backbone` — the candidate exactly, at the strange incumbent's backbone
-#: instead of the smooth one. The backbone is the single value a joint head
-#: cannot inherit, because the two incumbents disagree about it; this is that
-#: choice re-asked rather than assumed.
+#: `two_head_small` is the same question at the backbone where the strange corpus
+#: is not starving. At the medium backbone the split-classifier arm lost, but so
+#: did everything else that shared less — sharing was standing in for data, and a
+#: one-seed negative there could not tell the two apart.
 VARIANTS: dict[str, dict] = {
     "two_head": {
         "runs": ("two_head_seed0",),
+        "backbone": finished_train.RECIPES["smooth_render"]["backbone"],
+        "against": "medium",
         "what": (
-            "one backbone, two last layers — one ordinal head per kind. Shares every "
-            "representation and lets the two kinds keep two scales, at the cost of having "
-            "to be told which kind it is reading"
+            "one backbone, two last layers — one ordinal head per kind, at the MEDIUM "
+            "backbone. Shares every representation and lets the two kinds keep two scales, "
+            "at the cost of having to be told which kind it is reading"
         ),
     },
-    "small_backbone": {
-        "runs": ("small_backbone_seed0",),
+    "two_head_small": {
+        "runs": ("two_head_small_seed0", "two_head_small_seed1", "two_head_small_seed2"),
+        "backbone": finished_train.RECIPES["strange_render"]["backbone"],
+        "against": "small_backbone",
         "what": (
-            "the candidate exactly, at the strange incumbent's backbone rather than the "
-            "smooth one — the one value a joint head cannot inherit, re-asked"
+            "the same two last layers at the SMALL backbone, three seeds — the read the "
+            "medium one could not give, because there sharing was standing in for data"
         ),
     },
 }
@@ -960,6 +997,8 @@ __all__ = [
     "SELECTION",
     "SELECTION_SEED",
     "SELECTION_SHARE",
+    "CANDIDATES",
+    "CURRENT",
     "TWO_HEAD_RUNS",
     "VARIANTS",
     "VARIANT_RUNS",
