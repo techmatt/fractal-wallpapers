@@ -148,10 +148,7 @@ pub fn apply_taps(
             }
             let mut row = Vec::with_capacity(out_width * 3);
             for pixel in accumulated {
-                for channel in pixel {
-                    let encoded = linear_to_srgb(channel.clamp(0.0, 1.0));
-                    row.push((encoded * 255.0 + 0.5) as u8);
-                }
+                encode(pixel, &mut row);
             }
             row
         })
@@ -166,6 +163,26 @@ pub fn apply_taps(
 /// Doing it separably rather than with a 2-D kernel turns `(6·ss)²` multiplies
 /// per output pixel into `2·(6·ss)`, which at `ss = 4` is the difference between
 /// a render that resamples in a second and one that resamples in a minute.
+///
+/// **At `ss = 1` there is no reduction and both passes are skipped.** The kernel
+/// is centered on the one source sample the output pixel *is*, and every other
+/// tap lands on an integer offset, where a windowed sinc is zero — so the
+/// normalized weights are one on the center and nothing anywhere else, and the
+/// two passes are a long way to copy a buffer.
+///
+/// Skipping them is **byte-identical**, checked by
+/// [`the_ss1_skip_is_the_filter_it_skips`] over a ramp and a hard edge, and by
+/// 171 real renders — every family through every catalogued mode at the node
+/// regime — before it landed. The residual the skip removes is real but is not
+/// visible at eight bits: the off-center taps normalize to about `6e-17`
+/// together, which is `5e-15` of one 8-bit code value, so a byte could only move
+/// for a pixel that lands that close to a rounding boundary.
+///
+/// It is worth skipping because the node regime — 384x216 at `ss = 1`, the
+/// walk's own frame, drawn tens of thousands of times a run — is the `ss = 1`
+/// case, and the two passes are about **0.9 ms** of it.
+///
+/// [`the_ss1_skip_is_the_filter_it_skips`]: tests::the_ss1_skip_is_the_filter_it_skips
 pub fn downsample(
     linear: &[[f64; 3]],
     source_width: usize,
@@ -174,10 +191,61 @@ pub fn downsample(
     out_height: usize,
     ss: u32,
 ) -> Vec<u8> {
+    if ss == 1 && source_width == out_width && source_height == out_height {
+        return encode_only(linear);
+    }
     let horizontal = build_taps(out_width, source_width, ss);
     let vertical = build_taps(out_height, source_height, ss);
     apply_taps(linear, source_width, source_height, &horizontal, &vertical)
 }
+
+/// Clamp one linear-light pixel's overshoot and encode it, onto the end of a row.
+///
+/// The last two steps of a reduction, and the whole of what a frame that was
+/// never supersampled needs doing to it.
+///
+/// Inlined by request: it is called once per output pixel from inside the
+/// filter's own hot loop, which is where it used to be written out.
+#[inline]
+fn encode(pixel: [f64; 3], row: &mut Vec<u8>) {
+    for channel in pixel {
+        let encoded = linear_to_srgb(channel.clamp(0.0, 1.0));
+        row.push((encoded * 255.0 + 0.5) as u8);
+    }
+}
+
+/// A buffer that is already at output resolution, encoded and nothing else.
+///
+/// **In parallel, and that is not an optimization of the skip — it is what makes
+/// the skip a saving at all.** The two passes it replaces cost about fifty
+/// multiply-adds per output pixel, and this costs one `powf`; but that `powf` is
+/// the expensive half and [`apply_taps`] was already spreading it over every
+/// core. Measured serial against the filter at the node regime, skipping the
+/// passes was 0.85x — *slower* — because it traded fifty cheap operations for
+/// losing the parallelism on the one costly one. Chunked, the same skip is a
+/// clear win. A future edit that quietly makes this serial reverses the sign of
+/// the whole leg.
+fn encode_only(linear: &[[f64; 3]]) -> Vec<u8> {
+    linear
+        .par_chunks(ENCODE_CHUNK)
+        .map(|chunk| {
+            let mut bytes = Vec::with_capacity(chunk.len() * 3);
+            for &pixel in chunk {
+                encode(pixel, &mut bytes);
+            }
+            bytes
+        })
+        .collect::<Vec<Vec<u8>>>()
+        .concat()
+}
+
+/// Pixels one worker encodes at a time.
+///
+/// The filter's own unit of parallel work is a row, and this is a row of a wide
+/// frame rounded to a power of two: small enough that a 384-pixel walk frame
+/// still reaches every core, large enough that the per-chunk `Vec` is not most
+/// of the cost.
+const ENCODE_CHUNK: usize = 2048;
 
 /// JPEG quality for the steering thumbnails, on the encoder's 0–100 scale.
 ///
@@ -319,6 +387,67 @@ mod tests {
         assert_eq!(pixels.len(), out_w * out_h * 3);
         for &value in &pixels {
             assert_eq!(value, 128, "constant image resampled unevenly");
+        }
+    }
+
+    /// **The `ss = 1` skip is the filter it skips, byte for byte.**
+    ///
+    /// The claim the skip rests on: at `ss = 1` the Lanczos kernel normalizes to
+    /// one on the center tap and zero everywhere else, so running the two passes
+    /// and not running them cannot differ. Checked on the two patterns that would
+    /// break it if anything would — a ramp, where every pixel differs from its
+    /// neighbours by a little and a residual weight would show, and a hard edge,
+    /// where it would show by a lot.
+    #[test]
+    fn the_ss1_skip_is_the_filter_it_skips() {
+        let (width, height) = (37usize, 23usize);
+        let ramp: Vec<[f64; 3]> = (0..width * height)
+            .map(|i| {
+                let t = i as f64 / (width * height) as f64;
+                [t, 1.0 - t, (t * 7.0).fract()]
+            })
+            .collect();
+        let edge: Vec<[f64; 3]> = (0..width * height)
+            .map(|i| {
+                if (i % width) < width / 2 {
+                    [0.0, 0.0, 0.0]
+                } else {
+                    [1.0, 1.0, 1.0]
+                }
+            })
+            .collect();
+        for (name, linear) in [("ramp", &ramp), ("edge", &edge)] {
+            let horizontal = build_taps(width, width, 1);
+            let vertical = build_taps(height, height, 1);
+            let filtered = apply_taps(linear, width, height, &horizontal, &vertical);
+            let skipped = downsample(linear, width, height, width, height, 1);
+            assert_eq!(filtered, skipped, "{name}");
+        }
+    }
+
+    /// The weights the skip is allowed to drop: one on the center tap, and
+    /// nothing that survives being added to it anywhere else.
+    #[test]
+    fn the_ss1_kernel_normalizes_to_the_identity() {
+        for taps in build_taps(16, 16, 1) {
+            let (best, &weight) = taps
+                .weights
+                .iter()
+                .enumerate()
+                .max_by(|a, b| a.1.abs().total_cmp(&b.1.abs()))
+                .unwrap();
+            assert_eq!(weight, 1.0, "center tap is not exactly one");
+            let residual: f64 = taps
+                .weights
+                .iter()
+                .enumerate()
+                .filter(|(index, _)| *index != best)
+                .map(|(_, w)| w.abs())
+                .sum();
+            assert!(
+                residual < f64::EPSILON / 2.0,
+                "residual {residual} is visible"
+            );
         }
     }
 

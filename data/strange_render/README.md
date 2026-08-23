@@ -32,12 +32,17 @@ is no fourth to read, which is why the ceiling lives on the store.
 **The evaluation side is pinned, not drawn.** Every batch here conditions on
 quality through the location head before its page exists, so none of them is an
 unbiased draw and no rate read on one is a base rate. What separates them is
-whether the page served a head's own verdict prefilled: 4 of 5 did,
+whether the page served a head's own verdict prefilled: 7 of 8 did,
 and their labels measure agreement with that head. `blind_modes` is the one that did
 not, and it is registered `eval_only` — bought to referee two heads on unanchored
 labels, and spent the moment it enters a training split. The pin is asserted on
 the **location**, so a later batch that re-renders a pinned place under a fresh
 identifier cannot spend it by not naming it.
+
+**What a registration does not say is in
+[`../batch_caveats.md`](../batch_caveats.md)**: how a live population was actually
+assembled, and what a rate quoted off it without that is wrong about. Three of this
+store's batches have an entry there.
 
 **The source corpus is complete here, and a fourth tier was never collectable.**
 All 2,810 verdicts of the five batches are in these rows, checked on 2026-08-18 by

@@ -23,7 +23,7 @@ use std::num::NonZeroU32;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::family::Family;
+use crate::family::{Family, over_written_out};
 use crate::iterate::{self, Lattice, Orbit, Symbols, Wants};
 use crate::viewport::Viewport;
 
@@ -522,9 +522,7 @@ pub struct Sampled {
 /// that depends on thread timing cannot be compared against anything, including
 /// its own earlier self.
 pub fn sample(view: &Viewport, family: &Family, maxiter: u32, fields: &[FieldSpec]) -> Sampled {
-    let (lanes, interior_fraction) = gather(view, family, maxiter, fields, |value| {
-        value.map_or(f32::NAN, |value| value as f32)
-    });
+    let (lanes, interior_fraction) = gather(view, family, maxiter, fields, |value| value as f32);
     Sampled {
         fields: lanes
             .into_iter()
@@ -550,9 +548,7 @@ pub fn sample_exact(
     maxiter: u32,
     fields: &[FieldSpec],
 ) -> (Vec<Exact>, f64) {
-    let (lanes, interior_fraction) = gather(view, family, maxiter, fields, |value| {
-        value.unwrap_or(f64::NAN)
-    });
+    let (lanes, interior_fraction) = gather(view, family, maxiter, fields, |value| value);
     (
         lanes
             .into_iter()
@@ -572,7 +568,7 @@ fn gather<T: Copy + Send>(
     family: &Family,
     maxiter: u32,
     fields: &[FieldSpec],
-    keep: fn(Option<f64>) -> T,
+    keep: fn(f64) -> T,
 ) -> (Vec<Vec<T>>, f64) {
     let width = view.sample_width();
     let height = view.sample_height();
@@ -580,23 +576,24 @@ fn gather<T: Copy + Send>(
         .iter()
         .map(FieldSpec::wants)
         .fold(Wants::default(), Wants::union);
+    let channels = Channels::of(wants);
+    debug_assert_eq!(
+        !matches!(channels, Channels::Many(_)),
+        takes_the_specialized_loop(family, fields),
+        "the dispatch and what a test is told about it disagree"
+    );
 
     // One row of every field at once, plus that row's interior count: the orbit
     // is expensive and is visited once.
     let rows: Vec<(Vec<Vec<T>>, u32)> = (0..height)
         .into_par_iter()
         .map(|row| {
-            let mut lanes = vec![Vec::with_capacity(width as usize); fields.len()];
-            let mut interior = 0;
-            for col in 0..width {
-                let orbit = iterate::run(family, view.sample_point(col, row), maxiter, &wants);
-                if !orbit.escaped {
-                    interior += 1;
-                }
-                for (lane, field) in lanes.iter_mut().zip(fields) {
-                    lane.push(keep(field.reduce(&orbit)));
-                }
-            }
+            let mut reduced = vec![Vec::with_capacity(width as usize); fields.len()];
+            let interior = sweep_row(view, family, maxiter, fields, channels, row, &mut reduced);
+            let lanes = reduced
+                .into_iter()
+                .map(|values| values.into_iter().map(keep).collect())
+                .collect();
             (lanes, interior)
         })
         .collect();
@@ -610,6 +607,261 @@ fn gather<T: Copy + Send>(
         }
     }
     (values, interior as f64 / samples as f64)
+}
+
+/// Which single per-iteration channel a pass reads, when it reads only one.
+///
+/// This is one half of the pair the escape loop has to see as constants to
+/// collapse — see [`sweep_row`] for what the pair buys. It is an enum rather
+/// than the [`Wants`] itself because a specialized call site has to *write out*
+/// the channel set it hands the loop, and there are two-to-the-eleventh of those
+/// while there are twelve worth writing: the empty set, and each channel alone.
+///
+/// **Every catalogued mode lands in one of the twelve.** A composite lays its
+/// texture over the smooth base, and the smooth base asks the loop for nothing,
+/// so the union of a composite's fields is the texture's own single channel. Two
+/// channels at once is reachable only from a hand-written coloring or a
+/// multi-field dump, and that is what [`Many`](Channels::Many) is for.
+#[derive(Clone, Copy, Debug, PartialEq)]
+enum Channels {
+    /// The escape and nothing else: the smooth count, the discrete count, the
+    /// escape angle. The cheapest loop there is, and the one the specialization
+    /// is worth the most on.
+    None,
+    Stripe(f64),
+    Tia,
+    Curvature,
+    TrapCircle(f64),
+    TrapCross,
+    Threads(f64),
+    GaussianInt,
+    ExpSmoothing,
+    Velocity,
+    Itinerary(Symbols),
+    Derivative,
+    /// More than one channel at once, carried whole. Takes the generic loop.
+    Many(Wants),
+}
+
+impl Channels {
+    /// Which of the twelve `wants` is, or [`Many`](Channels::Many).
+    ///
+    /// **Classified by rebuilding.** A specialized call site does not pass on the
+    /// `Wants` it was given — it constructs one from this enum, so that the
+    /// construction is a constant the inliner can propagate. That makes "the
+    /// rebuilt set is the set the fields asked for" the correctness condition of
+    /// the whole specialization, so it is checked here rather than reasoned
+    /// about: a set whose rebuild is not equal to it is `Many` and takes the
+    /// generic loop.
+    fn of(wants: Wants) -> Channels {
+        let single = if let Some(density) = wants.stripe {
+            Channels::Stripe(density)
+        } else if wants.tia {
+            Channels::Tia
+        } else if wants.curvature {
+            Channels::Curvature
+        } else if let Some(radius) = wants.trap_circle {
+            Channels::TrapCircle(radius)
+        } else if wants.trap_cross {
+            Channels::TrapCross
+        } else if let Some(sigma) = wants.threads {
+            Channels::Threads(sigma)
+        } else if wants.gaussian_int {
+            Channels::GaussianInt
+        } else if wants.exp_smoothing {
+            Channels::ExpSmoothing
+        } else if wants.velocity {
+            Channels::Velocity
+        } else if let Some(symbols) = wants.itinerary {
+            Channels::Itinerary(symbols)
+        } else if wants.derivative {
+            Channels::Derivative
+        } else {
+            Channels::None
+        };
+        if single.wants() == wants {
+            single
+        } else {
+            Channels::Many(wants)
+        }
+    }
+
+    /// The channel set this stands for.
+    fn wants(self) -> Wants {
+        let none = Wants::default();
+        match self {
+            Channels::None => none,
+            Channels::Stripe(density) => Wants {
+                stripe: Some(density),
+                ..none
+            },
+            Channels::Tia => Wants { tia: true, ..none },
+            Channels::Curvature => Wants {
+                curvature: true,
+                ..none
+            },
+            Channels::TrapCircle(radius) => Wants {
+                trap_circle: Some(radius),
+                ..none
+            },
+            Channels::TrapCross => Wants {
+                trap_cross: true,
+                ..none
+            },
+            Channels::Threads(sigma) => Wants {
+                threads: Some(sigma),
+                ..none
+            },
+            Channels::GaussianInt => Wants {
+                gaussian_int: true,
+                ..none
+            },
+            Channels::ExpSmoothing => Wants {
+                exp_smoothing: true,
+                ..none
+            },
+            Channels::Velocity => Wants {
+                velocity: true,
+                ..none
+            },
+            Channels::Itinerary(symbols) => Wants {
+                itinerary: Some(symbols),
+                ..none
+            },
+            Channels::Derivative => Wants {
+                derivative: true,
+                ..none
+            },
+            Channels::Many(wants) => wants,
+        }
+    }
+}
+
+/// Whether one pass over `fields` on `family` takes the specialized loop.
+///
+/// The dispatch in [`sweep_row`] is what decides this; this is what a test asks.
+/// The two are held together from both sides: the generic arms assert that
+/// nothing which *should* have been specialized reached them, and
+/// `every_production_mode_takes_the_specialized_loop` walks the mode catalog
+/// over every family and asserts this is true of all of it. Weaken either half
+/// and the other fails.
+pub fn takes_the_specialized_loop(family: &Family, fields: &[FieldSpec]) -> bool {
+    let wants = fields
+        .iter()
+        .map(FieldSpec::wants)
+        .fold(Wants::default(), Wants::union);
+    family.is_written_out() && !matches!(Channels::of(wants), Channels::Many(_))
+}
+
+/// One row of every field, reduced but not yet narrowed, and the row's interior
+/// count.
+///
+/// **This is where the escape loop is specialized, and the whole of why it is
+/// written this way.** [`iterate::run`] is a long loop with eleven
+/// per-iteration channel checks and a match over the families inside it, and it
+/// collapses to the bare recurrence only when the compiler can see *both* the
+/// family and the channel set at the call site: the checks fold away, the match
+/// becomes one multiply at a known degree, and the parts of the `Orbit` nobody
+/// reads stop being built. Handing either one in as a runtime value loses the
+/// collapse. So this function does not pass on the `Family` and the `Wants` it
+/// was given — it matches them into a table of call sites and *constructs* both,
+/// which is what makes them constants the inliner can propagate.
+///
+/// That table is the twelve channel sets of [`Channels`] over the nine families
+/// of [`over_written_out`], and it is why this function is not generic over the
+/// lane type the way [`gather`] is: a copy of the table per lane type would be
+/// twice the code for a difference that is one cast at the end. So a row is
+/// reduced at `f64` here — the precision every field is reduced at anyway — and
+/// narrowed by the caller.
+///
+/// A pass outside the table falls through to the generic loop, which is the same
+/// source and the same numbers, slower. Nothing production draws lands there.
+fn sweep_row(
+    view: &Viewport,
+    family: &Family,
+    maxiter: u32,
+    fields: &[FieldSpec],
+    channels: Channels,
+    row: u32,
+    lanes: &mut [Vec<f64>],
+) -> u32 {
+    let width = view.sample_width();
+    let mut interior = 0;
+
+    // One row at a family and a channel set the call site wrote out.
+    macro_rules! sweep {
+        ($family:expr, $wants:expr) => {{
+            let family = $family;
+            let wants = $wants;
+            for col in 0..width {
+                let orbit = iterate::run(&family, view.sample_point(col, row), maxiter, &wants);
+                if !orbit.escaped {
+                    interior += 1;
+                }
+                for (lane, field) in lanes.iter_mut().zip(fields) {
+                    // `None` becomes `NaN` here rather than at the narrowing:
+                    // the same value one step earlier, and the step where the
+                    // mask this module opens on gets inside the data.
+                    lane.push(field.reduce(&orbit).unwrap_or(f64::NAN));
+                }
+            }
+        }};
+    }
+
+    // The same row, over every family the shared table is written out for.
+    macro_rules! by_family {
+        ($wants:expr) => {
+            over_written_out!(family, |family| { sweep!(family, $wants) })
+        };
+    }
+
+    let none = Wants::default();
+    match channels {
+        Channels::None => by_family!(none),
+        Channels::Stripe(density) => by_family!(Wants {
+            stripe: Some(density),
+            ..none
+        }),
+        Channels::Tia => by_family!(Wants { tia: true, ..none }),
+        Channels::Curvature => by_family!(Wants {
+            curvature: true,
+            ..none
+        }),
+        Channels::TrapCircle(radius) => by_family!(Wants {
+            trap_circle: Some(radius),
+            ..none
+        }),
+        Channels::TrapCross => by_family!(Wants {
+            trap_cross: true,
+            ..none
+        }),
+        Channels::Threads(sigma) => by_family!(Wants {
+            threads: Some(sigma),
+            ..none
+        }),
+        Channels::GaussianInt => by_family!(Wants {
+            gaussian_int: true,
+            ..none
+        }),
+        Channels::ExpSmoothing => by_family!(Wants {
+            exp_smoothing: true,
+            ..none
+        }),
+        Channels::Velocity => by_family!(Wants {
+            velocity: true,
+            ..none
+        }),
+        Channels::Itinerary(symbols) => by_family!(Wants {
+            itinerary: Some(symbols),
+            ..none
+        }),
+        Channels::Derivative => by_family!(Wants {
+            derivative: true,
+            ..none
+        }),
+        Channels::Many(wants) => sweep!(*family, wants),
+    }
+    interior
 }
 
 /// Iterate `family` over `view`, reducing to a single field.
@@ -670,6 +922,184 @@ mod tests {
                 start: AddressStart::Z0,
             },
         ]
+    }
+
+    /// Every family the sampler can be handed, one instance each — the eight
+    /// integer degrees over the two planes, Phoenix, and the one family the
+    /// specialization table deliberately leaves out.
+    fn every_family() -> Vec<Family> {
+        let mut families = Vec::new();
+        for degree in 2..=5 {
+            families.push(Family::Multibrot { degree });
+            families.push(Family::Julia {
+                degree,
+                c: Complex::new(-0.4, 0.6),
+            });
+        }
+        families.push(crate::family::CLASSIC_PHOENIX);
+        families.push(Family::FractionalMultibrot { degree: 2.5 });
+        families
+    }
+
+    /// One pass, forced down the generic loop: the family and the channel set
+    /// arrive as runtime values, which is what the specialization table exists to
+    /// avoid. Test-only, and the reference the specialized pass is checked
+    /// against.
+    fn generic_pass(
+        view: &Viewport,
+        family: &Family,
+        maxiter: u32,
+        fields: &[FieldSpec],
+    ) -> Vec<Vec<f64>> {
+        let wants = fields
+            .iter()
+            .map(FieldSpec::wants)
+            .fold(Wants::default(), Wants::union);
+        pass(view, family, maxiter, fields, Channels::Many(wants))
+    }
+
+    /// The same pass as [`sample`] takes, kept at the precision it was reduced
+    /// at.
+    fn specialized_pass(
+        view: &Viewport,
+        family: &Family,
+        maxiter: u32,
+        fields: &[FieldSpec],
+    ) -> Vec<Vec<f64>> {
+        let wants = fields
+            .iter()
+            .map(FieldSpec::wants)
+            .fold(Wants::default(), Wants::union);
+        pass(view, family, maxiter, fields, Channels::of(wants))
+    }
+
+    fn pass(
+        view: &Viewport,
+        family: &Family,
+        maxiter: u32,
+        fields: &[FieldSpec],
+        channels: Channels,
+    ) -> Vec<Vec<f64>> {
+        let mut values = vec![Vec::new(); fields.len()];
+        for row in 0..view.sample_height() {
+            let mut lanes = vec![Vec::new(); fields.len()];
+            sweep_row(view, family, maxiter, fields, channels, row, &mut lanes);
+            for (all, lane) in values.iter_mut().zip(lanes) {
+                all.extend(lane);
+            }
+        }
+        values
+    }
+
+    /// **The specialized loop is the same numbers, bit for bit.**
+    ///
+    /// The whole of the specialization's correctness: writing the family and the
+    /// channel set out at the call site changes what the compiler can fold, and
+    /// must change nothing else. Compared on the bits rather than on `==` so that
+    /// the interior's `NaN`s are compared rather than skipped, and so that a
+    /// signed zero drifting to the other sign would be caught.
+    #[test]
+    fn the_specialized_loop_is_the_generic_one_bit_for_bit() {
+        let view = whole_set_view(2);
+        for family in every_family() {
+            for field in every_field() {
+                let generic = generic_pass(&view, &family, 200, &[field]);
+                let specialized = specialized_pass(&view, &family, 200, &[field]);
+                let unlike = generic[0]
+                    .iter()
+                    .zip(&specialized[0])
+                    .filter(|(a, b)| a.to_bits() != b.to_bits())
+                    .count();
+                assert_eq!(
+                    unlike,
+                    0,
+                    "{family:?} {}: {unlike} of {} samples differ",
+                    field.name(),
+                    generic[0].len()
+                );
+            }
+        }
+    }
+
+    /// **Nothing production draws may take the generic loop.**
+    ///
+    /// The durable half of the guard: a refactor that drops a family from the
+    /// table, or that lets a mode's fields union into a channel set the table has
+    /// no call site for, fails here rather than quietly costing a multiple of the
+    /// render time. The other half is the `debug_assert` in the generic arms,
+    /// which catches the reverse — a case this function calls specialized that
+    /// the dispatch does not.
+    #[test]
+    fn every_production_mode_takes_the_specialized_loop() {
+        for family in every_family() {
+            if !family.is_written_out() {
+                continue;
+            }
+            for name in crate::mode::names() {
+                let coloring = crate::mode::resolve(name, Some(&family)).unwrap();
+                let fields = coloring.fields();
+                // A direct trap paints during its own iteration and makes no
+                // field, so it never reaches this sampler at all.
+                if fields.is_empty() {
+                    continue;
+                }
+                assert!(
+                    takes_the_specialized_loop(&family, &fields),
+                    "{name} on {family:?} takes the generic loop"
+                );
+            }
+        }
+    }
+
+    /// The one family left out is left out on purpose, and the classification
+    /// says so rather than being inferred from a table nobody can see.
+    #[test]
+    fn the_render_only_family_is_the_only_one_outside_the_table() {
+        for family in every_family() {
+            assert_eq!(
+                family.is_written_out(),
+                !family.is_render_only(),
+                "{family:?}"
+            );
+        }
+    }
+
+    /// **Every field has a call site of its own.**
+    ///
+    /// The guard on adding a twelfth channel: a new [`Wants`] flag with no arm in
+    /// [`Channels`] classifies as `Many` and quietly takes the generic loop —
+    /// correct, and a multiple of the render time. A new field fails here on the
+    /// day it is written instead.
+    #[test]
+    fn every_field_has_a_call_site_of_its_own() {
+        for field in every_field() {
+            let wants = field.wants();
+            let channels = Channels::of(wants);
+            assert!(
+                !matches!(channels, Channels::Many(_)),
+                "{} has no call site of its own",
+                field.name()
+            );
+            assert_eq!(channels.wants(), wants, "{}", field.name());
+        }
+    }
+
+    /// A channel set the table has no call site for is `Many`, and one it does
+    /// have rebuilds to exactly what the fields asked for.
+    #[test]
+    fn a_two_channel_pass_is_the_one_that_falls_through() {
+        let one = FieldSpec::Stripe { density: 6.0 }.wants();
+        assert_eq!(Channels::of(one).wants(), one);
+        assert!(!matches!(Channels::of(one), Channels::Many(_)));
+
+        let two = one.union(FieldSpec::Tia.wants());
+        assert!(matches!(Channels::of(two), Channels::Many(_)));
+        assert_eq!(Channels::of(two).wants(), two);
+
+        // Smooth over a texture is one channel, not two: that is what makes the
+        // twelve call sites cover the composites as well as the plain modes.
+        let composite = FieldSpec::Smooth.wants().union(one);
+        assert_eq!(Channels::of(composite), Channels::of(one));
     }
 
     /// The fields that have a value for a bounded orbit too. Two orbit traps —

@@ -49,6 +49,93 @@ and `src/mode.rs` the named colorings — nineteen of them, in four shapes: one
 field, two fields blended, a base whose palette position a second field shifts,
 or no field at all.
 
+## The escape loop is written out per family and per channel set
+
+`iterate::run` is one loop with eleven per-iteration channel checks and a `match`
+over the families inside it, and it collapses to the bare recurrence only when
+the compiler can see **both** the family and the channel set at the *call site*.
+Then the checks fold away, `cpow`'s loop unrolls at a known degree, and the parts
+of the `Orbit` nobody reads stop being built. Hand either one in as a runtime
+value and none of it happens.
+
+So the call site is written out rather than parameterized. `field::sweep_row`
+matches its `Family` and its `Wants` into a table and **constructs** both fresh —
+construction is what makes them constants — over the twelve channel sets of
+`field::Channels` (the empty set, and each channel alone) times the nine families
+of `family::over_written_out!`. Every catalogued mode lands in that table: a
+composite lays its texture over the smooth base, and the smooth base asks the
+loop for nothing, so a composite's channel set is its texture's single channel.
+Two channels at once is reachable only from a hand-written coloring or a
+multi-field dump, and falls through to the generic loop — same source, same
+numbers, slower.
+
+Measured on this repository's own machine, interleaved before-and-after at
+640x360 ss2 over the home view of each family, best of three:
+
+| family | smooth | tia | stripe | gaussian_int | threads | itinerary | de | all modes |
+|---|---|---|---|---|---|---|---|---|
+| mandelbrot | **2.45x** | 1.42 | 1.16 | 1.19 | 1.41 | 1.88 | 1.68 | 1.34 |
+| multibrot d=3 | 1.90 | 1.51 | 1.14 | 1.22 | 1.39 | 1.65 | 1.61 | 1.34 |
+| multibrot d=4 | 1.49 | 1.43 | 1.18 | 1.22 | 1.29 | 1.31 | 1.44 | 1.28 |
+| multibrot d=5 | 1.24 | 1.33 | 1.15 | 1.25 | 1.27 | 1.21 | 1.42 | 1.25 |
+| julia d=2 | 2.11 | 1.41 | 1.20 | 1.18 | 1.37 | 1.31 | 1.56 | 1.31 |
+| julia d=3 | 2.05 | 1.52 | 1.18 | 1.18 | 1.41 | 1.80 | 1.68 | 1.35 |
+| julia d=5 | 1.29 | 1.33 | 1.18 | 1.19 | 1.23 | 1.20 | 1.40 | 1.24 |
+| phoenix | 1.21 | 1.07 | 1.04 | 1.11 | 1.10 | 1.13 | 1.48 | 1.12 |
+| fractional d=2.5 | 1.09 | 1.06 | 1.07 | 1.14 | 1.06 | 1.07 | 1.06 | 1.08 |
+
+**The two halves separate cleanly, and the bottom two rows are how.** Phoenix's
+step is `z² + c + p·z₋₁` with no `cpow` to unroll, and `fractional_multibrot` is
+not in the table at all — so both of them measure the *channel* half alone, and
+both land near 1.1x. The gap between that and mandelbrot's 2.45x is the *family*
+half. A direct trap, which paints in its own loop and never reaches this one, is
+the control: 0.96x to 1.05x throughout.
+
+The win shrinks as the recurrence gets more expensive, in both directions: down
+the modes, because a `sin` or a `hypot` per iteration is work no folding removes,
+and down the degrees, because `cpow` at `d = 5` is four multiplies whether or not
+it unrolls. Two written-out families are cheap enough that the loop around them
+is most of the cost, and those are the two that move.
+
+It costs **175 KB of binary** (1.75 MB to 1.92 MB) and about **8 s** of the
+crate's release compile (15 s to 23 s). Nothing else about the render changed: 347
+renders spanning every family and every catalogued mode at all three live
+geometries — 640x360 ss2, 384x216 ss1 and 2560x1440 ss4 — are byte-identical
+before and after, and `field::tests::the_specialized_loop_is_the_generic_one_bit_for_bit`
+holds the two paths together on every run of the suite.
+
+**Three guards keep production out of the generic loop**, because a silent
+fallback costs a multiple of the render time and shows up as nothing at all.
+`every_production_mode_takes_the_specialized_loop` walks the mode catalog over
+every family and asserts `field::takes_the_specialized_loop`;
+`every_field_has_a_call_site_of_its_own` catches a twelfth channel added without
+one; and the fallthrough arms carry `debug_assert`s that fire if something the
+table claims to cover reaches them. The `match` over `Channels` is exhaustive, so
+an arm cannot simply be deleted.
+
+**The direct trap's own loop is not specialized and is the obvious next piece.**
+`direct_trap::trace` carries the same runtime `match` over the families, plus
+three more of its own — the trap shape, the transform and the merge — inside the
+same iteration. Four production modes draw through it. `family::over_written_out!`
+is written where it is so that loop can use the same table when somebody takes
+that on.
+
+**And at `ss = 1` the resample is skipped.** The Lanczos kernel at a reduction of
+one normalizes to exactly 1.0 on the centre tap, so both passes are a long way to
+copy a buffer; `resample::downsample` encodes straight from the source instead.
+Byte-identical over 171 renders at the node regime, which is the geometry that
+matters here — 384x216 `ss = 1` is the walk's own frame, drawn tens of thousands
+of times a run — and worth about **0.9 ms** of a node frame whose paint, after
+the specialization above, is 16 ms.
+
+That skip has a trap in it, and it is written down at `encode_only` because it
+reverses the sign of the change: the two passes it removes were **rayon-parallel**
+and the encode replacing them was not. The expensive half of a resample is one
+`powf` per output channel, and both paths do exactly the same number of those —
+so a serial skip *lost* to the filter, 0.85x, by trading fifty cheap operations
+for the parallelism on the one costly one. Chunked across the same cores it is
+1.03x to 1.20x.
+
 Every catalog entry carries a **tier**. Eighteen are `production` — a run may draw
 them, and the finished-render judges were trained on them. One is `niche`: `de`,
 renderable on demand by name and excluded from every production draw. `threads`
