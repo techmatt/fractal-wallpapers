@@ -166,9 +166,13 @@ score that cannot say which one it came from is a number about nothing.
 **The pictures a score was read off are two trees, and only one of them still
 grows.** `artifacts/location_views/` is the deploy geometry — the cache walks
 filled before they scored their own gate renders, and what the sidecar, the flip
-study and the restatement all read. It is now a read-only record. Every other
-regime writes to `artifacts/node_views/<regime>/` instead, so nothing new can
-land in the frozen one.
+study and the restatement all read. It is a read-only record, and since
+2026-08-22 that holds for **old stock's first read too**: `curate score` reads a
+row that states no regime at the node one rather than falling to the deploy
+geometry, so scoring three pre-regime ledgers whole wrote 1.48 GB into
+`artifacts/node_views/384x216ss1/` and not one file into the frozen tree. The one
+command that still renders into it is the regime-flip study, whose canonical arm
+reads production's own pictures on purpose.
 
 **Standing on a place and booking it are two decisions, at two heights.** The
 scorer is asked twice about every gate survivor: *may the walk continue from

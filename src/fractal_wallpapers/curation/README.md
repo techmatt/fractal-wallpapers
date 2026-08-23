@@ -375,29 +375,41 @@ ledgers. Like `--limit`, it is a partial pass: it upserts what it looked at and
 clears nothing, because deleting the rows it declined to score would be a partial
 pass silently truncating a complete one.
 
-That distinction is worth about thirteen hours. On 2026-08-22 the 68 unreached
-locations sat on three old ledgers (`harvest`, `walk_demo`, `walk_j`) holding
-22,898 gate survivors between them, **16,315 of which have no cached deploy view**
-— measured at **2.89 s each** on the hot tier, engine-bound rather than
-disk-bound. Scoring the ledgers whole is that leg, and because `location_views` is
-on the archive tier it also writes about 3 GB of new files into a tree this README
-calls a read-only record. The 68 themselves were all cached and cost one batch:
-68 scored, 64 of them above the junk floor, 64 embedded in 8.5 s, and `curate
-reach` went from 68 absent to **0**. Whether to score those ledgers whole — which
-would widen the pool the gallery selects over by tens of thousands of locations —
-is Matt's call and has not been taken.
+That distinction is worth about an hour, and it used to be worth thirteen. On
+2026-08-22 the 68 unreached locations sat on three old ledgers (`harvest`,
+`walk_demo`, `walk_j`) holding 22,898 gate survivors between them; the 68
+themselves cost one batch and took `curate reach` from 68 absent to **0**.
+Scoring those ledgers whole was the separate, larger leg, and it was priced at
+thirteen hours only while it was priced at the deploy geometry.
 
-**A row is re-scored at the regime it was scored at.** The head reads three
+**A row that states no regime is read at the node one.** The head reads three
 trained geometries and one scale acts across all of them, but the *picture* is not
-one picture: a walk now scores its own 384x216 ss1 gate render and stamps the
-regime and the recipe's digest onto every row it writes. `curate score` reads each
-row at the regime the row names — the walk's own picture where the digest still
-describes it, a 384x216 ss1 re-render (about 0.09 s) where it does not — and
-**never demands a deploy-geometry render for a row that was never scored at one**.
-The standing stock is untouched: its rows name no regime, they were read at the
-deploy geometry, and their pictures are the ones already in
-`artifacts/location_views`, which is now a read-only record rather than a growing
-cache.
+one picture: a walk scores its own 384x216 ss1 gate render and stamps the regime
+and the recipe's digest onto every row it writes. `curate score` reads a row at
+the regime the row states — the walk's own picture where the digest still
+describes it, a 384x216 ss1 re-render where it does not. A row that states none
+has never been scored here at all, so this stage chooses, and the choice is
+`intake.READ_REGIME`: the node regime, like every walk node, **never** the deploy
+geometry. The regime is stamped onto the sidecar row as provenance, so an
+unstated regime becomes a stated one the moment a score is written off it.
+
+`artifacts/location_views` is therefore **frozen, full stop** — the read-only
+record of what was scored at the deploy geometry before a walk scored its own
+frames, and not a cache that grows by three gigabytes the first time old stock is
+offered. That is a ruling and not an equivalence: it holds *because the location
+head is regime-robust* — one scale across all three built regimes, the property
+the adopted checkpoint was selected for — which is what makes a node-regime read
+of old stock comparable with everything else in the pool.
+
+**What the leg cost, measured.** 2026-08-22, RTX 2060 SUPER, hot tier: 22,630
+never-scored rows of those three ledgers in **3,363 s over twelve 2,000-row
+chunks**, one chunk a checkpoint, **0.149 s/row realized** against a 200-row
+pilot's 0.123 (harvest) / 0.169 (walk_demo) / 0.029 (walk_j). Not the 2.89 s the
+deploy geometry cost: these are gate survivors and the cost is what the pixels do,
+not how many there are. About **8.1 s of that is fixed per invocation** — imports,
+the head onto the GPU, the ledger read, and the sidecar rewritten whole — which is
+what sets the chunk size. It wrote **1.48 GB / 22,898 files** into
+`artifacts/node_views/384x216ss1/` and nothing anywhere else.
 
 **The release budgets the colorize, never the other way round.** A judge's attempt
 budget is a multiple of the slots it is asked to fill, and when the two cannot

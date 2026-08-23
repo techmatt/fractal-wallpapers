@@ -18,10 +18,21 @@ the picture is the one `expand` already wrote, reused where its recorded digest
 still matches the recipe and re-drawn at 384×216 ss1 (about 0.09 s) where it does
 not.
 
-Old stock is untouched. Its rows carry no regime, they were read at the deploy
-geometry, and their pictures are the ones already in `location_views` — which is
-now a read-only record rather than a growing cache, because nothing renders into
-it any more.
+Old stock states no regime, so this module chooses one for it, and the choice is
+the node regime like every walk node — never the deploy geometry. `location_views`
+is a read-only record of what was scored there before a walk scored its own
+frames, and nothing renders into it any more, including the first read of a row
+that has never been scored at all. The regime a row was read at is stamped onto
+the sidecar row as provenance, so an unstated regime becomes a stated one the
+moment a score is written off it, and a re-score reads it back rather than
+choosing again.
+
+That is a ruling and not an equivalence: reading standing stock at 384×216 ss1
+rather than 640×360 ss2 is defensible **because the head is regime-robust** — one
+scale across all three built regimes, which is the property the adopted
+checkpoint was selected for. It is what makes a node-regime read of old stock
+comparable with everything else in the pool. A head without that property would
+have to be re-read at one geometry or not compared.
 
 ## The order is read at the moment it is used, and nothing is frozen
 
@@ -106,7 +117,7 @@ from collections import Counter
 from pathlib import Path
 
 from fractal_wallpapers.curation import binding, floors
-from fractal_wallpapers.models import location_view
+from fractal_wallpapers.models import location_view, tiles
 from fractal_wallpapers.paths import under
 from fractal_wallpapers.supply import apportion, ledgers, release_mix
 from fractal_wallpapers.supply.location import key_of_row
@@ -193,21 +204,29 @@ def view_name(row: dict, colormap: str, cyclic: set[str], regime=None) -> str:
 #: is a view already in the regime's cache; `rendered` is one this pass drew.
 GATE, CACHED, RENDERED = "gate", "cached", "rendered"
 
+#: The regime a row that names none is read at. Not the deploy geometry: a row
+#: with no `score_regime` has never been scored here, and scoring it like a walk
+#: node is what keeps `artifacts/location_views` a read-only record instead of a
+#: cache that grows by three gigabytes the first time old stock is offered. The
+#: location head is regime-robust — one scale across all three built regimes — so
+#: a node-regime read of standing stock is comparable with everything else in the
+#: pool. Named here because [`_picture_for`] chooses it and every sidecar row
+#: written off that choice carries it.
+READ_REGIME = tiles.NODE_REGIME
+
 
 def regime_of(row: dict):
-    """The regime a ledger row's score was read at, or `None` for the deploy one.
+    """The regime a ledger row's score **states**, or `None` where it states none.
 
-    `None` is the honest answer for every row written before a walk said, which is
-    all of the standing stock: those were scored at the deploy geometry and their
-    pictures are the ones already in the shared cache.
+    `None` is not a regime and is not the deploy one: it is the honest answer for
+    every row written before a walk said so, and what to do about it is
+    [`_picture_for`]'s decision, taken at [`READ_REGIME`].
     """
-    from fractal_wallpapers.models import tiles as tile_module
-
     stated = row.get("score_regime")
     if not stated:
         return None
     try:
-        return tile_module.regime_of(str(stated))
+        return tiles.regime_of(str(stated))
     except ValueError as bad:
         raise IntakeError(
             f"a ledger row states scoring regime {stated!r}, which is not a regime: {bad}"
@@ -293,10 +312,11 @@ def score(
     made scoping a run a destructive act: narrowing to one harvest's ledger took
     the sidecar from 12,580 rows to 6,907 and said nothing.
 
-    **No deploy-geometry render is ever demanded for a row that was not scored at
-    one.** A new run's rows are node-regime rows and their picture is the gate
-    render the walk already wrote; only a row whose recipe has moved out from
-    under its recorded digest costs an engine call, and that one is 384×216 ss1.
+    **No deploy-geometry render is ever demanded, of any row.** A new run's rows
+    are node-regime rows and their picture is the gate render the walk already
+    wrote; only a row whose recipe has moved out from under its recorded digest
+    costs an engine call. Standing stock states no regime at all and is read at
+    384×216 ss1 like everything else, into `artifacts/node_views/<regime>/`.
 
     A `limit` pass is explicitly a prefix, so it upserts the locations it looked
     at and clears nothing — deleting the rows it declined to re-score would be a
@@ -305,11 +325,12 @@ def score(
     without clearing anything the binding also holds.
 
     `keys` exists because "score the ledgers those rows name" and "score those
-    rows" are different amounts of work by four orders of magnitude. The three
-    ledgers the gallery pass's 68 unreached locations sit on hold 22,898 gate
-    survivors between them, 16,315 of which have no cached deploy view — about
-    13 hours of 640x360 ss2 engine time to score standing stock nothing has
-    asked for. The 68 themselves are cached and cost a single batch.
+    rows" are different amounts of work by two orders of magnitude. The three
+    ledgers a gallery pass's unreached locations sit on can hold twenty thousand
+    gate survivors between them — hours of engine time to score standing stock
+    nothing has asked for — where the unreached locations themselves are a single
+    batch. Closing a reach gap is the second thing, and scoring the ledgers whole
+    is the first; they are separate legs on purpose.
     """
     from fractal_wallpapers.models import scoring, ship, train
 
@@ -391,7 +412,14 @@ def score(
         "views_rendered": tally.get(RENDERED, 0),
         "views_reused": len(rows) - tally.get(RENDERED, 0),
         "by_regime": dict(sorted(Counter(regimes).items())),
-        "view": location_view.summary(colormap),
+        # The recipe, per geometry this pass actually read at — `by_regime` counts
+        # the rows and this says what one of them was drawn like. A single cell
+        # naming the deploy geometry described a picture the pass had not made
+        # since old stock stopped falling to it.
+        "view": {
+            spelled: location_view.summary(colormap, tiles.regime_of(spelled))
+            for spelled in sorted(set(regimes))
+        },
         "union": diagnostics,
         "sidecar": upsert,
         "wrote": str(path),
@@ -401,16 +429,18 @@ def score(
 def _picture_for(row: dict, colormap: str, cyclic: set[str]) -> tuple[Path, str, str]:
     """`(picture, how, regime)` — the picture this row's score is read off.
 
-    The regime is the row's own. A row that names none was scored at the deploy
-    geometry and reads its cached view there; a row that names the node regime
-    reads the gate render the walk already made, and pays an engine call only when
-    that picture is gone or is no longer what the recipe describes.
+    A row that states a regime is read at the one it states, off the gate render
+    the walk already made where that picture is still what the recipe describes.
+    A row that states none has never been scored here, so this chooses for it,
+    and the choice is [`READ_REGIME`] — the node regime, like every walk node,
+    never the deploy geometry. The regime is returned so the sidecar row can
+    carry it: an unstated regime becomes a stated one at the moment a score is
+    written off it.
     """
-    from fractal_wallpapers.models import tiles as tile_module
-
-    regime = regime_of(row)
-    spelled = (regime or tile_module.CANONICAL_REGIME).spelled
-    if regime is not None:
+    stated = regime_of(row)
+    regime = READ_REGIME if stated is None else stated
+    spelled = regime.spelled
+    if stated is not None:
         picture = gate_render(row, colormap, cyclic, regime)
         if picture is not None:
             return picture, GATE, spelled
