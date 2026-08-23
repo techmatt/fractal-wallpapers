@@ -25,6 +25,39 @@ picture as it was decoded and a tone measurement runs about 30% faster; hand it
 fractional values, as a gradient sampled between its stops gives, and it does the
 arithmetic.
 
+`codebook` is the colour vocabulary: **52 swatches** — 12 hues × {dark, light} ×
+{muted, vivid} plus 4 neutrals — as points in Oklab, and one soft assignment that
+turns any ramp or picture into a share vector over them. It is what
+[`curation.colors`](../curation/README.md) counts with, and it holds no cut of any
+kind. Two facts a reader needs before trusting a cell of it:
+
+* **The ratified codebook calls these *anchors*; the code calls them *swatches*.**
+  `anchor` already names the map a hard candidate set is built around — and it is
+  spelled `anchor` on the very pool rows a census reads — plus a smoke-test
+  location in `data/anchors.jsonl` and a `deep` center. The translation is stated
+  in the module and in the persisted document's `note`.
+* **A swatch's chroma is fitted to the sRGB gamut, per hue and lightness.** A fixed
+  vivid chroma of 0.16 puts seven of the twelve dark-vivid swatches outside sRGB —
+  dark green among them — and a census through those buckets would report the
+  library's ~40 dark-green maps as absent. Where the gamut is too tight to hold
+  both tiers apart (dark cyan, teal and yellow) the two land inside the
+  assignment's own resolution; `closest_pairs` reports it and those cells are read
+  together.
+
+`SIGMA` is 0.015, fixed by measurement against three checks declared before the
+sweep and pinned by `tests/test_color_codebook.py`: a pure swatch dominates its own
+cell 52/52, a neutral grey keeps ≥0.99 of its mass on the neutrals at every
+lightness, and the median pure-swatch self-share is 0.81. The middle one is not
+decoration — an earlier codebook with the neutrals between the tone levels sent a
+pure mid-grey to dark muted cyan, which would have made every achromatic wallpaper
+donate a quarter of its mass to cyan and teal.
+
+A picture is censused at **160×90**, which is exactly what JPEG's own scaled decode
+gives for both stored sizes — the 640×360 candidate render at ¼ and the 1280×720
+label crop at ⅛ — so nothing is resampled between the stored pixels and the count.
+Duplicate colours are collapsed before assignment (`distinct`), which is the same
+arithmetic to 6e-15 and about three times faster.
+
 `provenance` recovers how the *made* maps were made and writes one row per map to
 `data/palettes/provenance.jsonl`: an authored map's mood family, generator
 version, colour architecture, lightness skeleton, value key, complexity and its

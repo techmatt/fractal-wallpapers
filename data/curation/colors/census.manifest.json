@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "baseline": "pre-run11",
+  "taken_at": "2026-08-23T18:26:43Z",
+  "stages": [
+    "labels",
+    "library",
+    "picks",
+    "survival"
+  ],
+  "stages_this_run": [
+    "library",
+    "picks",
+    "survival",
+    "labels"
+  ],
+  "stages_carried": [],
+  "rows": {
+    "rows": 18142,
+    "bytes": 11876129,
+    "sha256": "77721a5215b171c0f543cd8f59ea9b6d522fa95b84945831ae5ede006c0c782f"
+  },
+  "readout": {
+    "bytes": 134356,
+    "sha256": "24e9ec156af887f4dd7d81fe6cae0e525548b3f6c24282a2e5d56e7f98b09719"
+  },
+  "population": {
+    "baseline": "pre-run11",
+    "pool": {
+      "release_rows": 1192,
+      "gallery_store_rows": 3592,
+      "runs": [
+        "gallery1",
+        "gallery2",
+        "release_v1",
+        "run10",
+        "run2",
+        "run3",
+        "run8h",
+        "run9"
+      ],
+      "passes": [
+        "gallery1",
+        "gallery2"
+      ]
+    }
+  },
+  "codebook": {
+    "sigma": 0.015,
+    "swatches": 52,
+    "census_size": [
+      160,
+      90
+    ]
+  },
+  "why_not_tracked": "the rows are megabytes against the 1 MiB per-file history guard, and the census re-runs in about five minutes from tracked inputs plus the render caches, so what the history keeps is provenance rather than the file",
+  "rebuild_command": "fractal-wallpapers curate colors"
+}

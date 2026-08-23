@@ -691,6 +691,54 @@ half-written is trusted; and the seam is checked arithmetically — `planned =
 resumed + made + failed + not-started` on both legs, loudly and non-zero when it
 does not balance.
 
+## The colour census
+
+[`colors`](colors.py) is a standing **record-and-rank** over colour: it carries no
+cut, gates nothing, and exists to tell four situations apart that look identical
+from a distance — a colour that *cannot be expressed*, one that is *never picked*,
+one that is *picked but dies at the floor*, and one that was *never labelled*.
+They have different fixes, which is the whole reason to separate them. It counts
+through [`palettes.codebook`](../palettes/README.md) — 52 swatches in Oklab; the
+ratified codebook's word for them is *anchor*, renamed here because `anchor`
+already means the map a hard candidate set is built around and appears under that
+meaning on the very rows this reads.
+
+```
+fractal-wallpapers curate colors                     # all four stages
+fractal-wallpapers curate colors --stage library     # one stage
+fractal-wallpapers curate colors --sheets            # + the two glance sheets
+```
+
+```
+artifacts/curation/colors/census.json          the readout, carrying its own codebook
+artifacts/curation/colors/rows.jsonl           one row per map, candidate render, labelled crop
+data/curation/colors/census.manifest.json      tracked: rows, bytes, sha256, population
+scratch/color_census_by_swatch.html            the pool by dominant swatch, sampled
+scratch/color_census_sparse.html               the sparsest cells, drawn whole
+```
+
+**A partial run merges.** `--stage library` recomputes a quarter of the census and
+carries the other three stages whole, rows included, rather than deleting them —
+the same reason `intake` upserts one binding's rows instead of rewriting the file.
+A carried stage keeps its own `taken_at`, and the manifest reports
+`stages_this_run` beside `stages_carried`, because a table dated today over a pool
+that has since grown is worse than a visibly stale one.
+
+A **manifest without an archive copy**, unlike the supply sidecar and the embedding
+store above. Those cost a GPU leg or a standing supply the checkout cannot rebuild;
+this re-runs in about five minutes over inputs that are all tracked or regenerable,
+so what the history needs is provenance rather than a second disk.
+
+**Stage 3 restricts rather than pools, and this is the part to keep straight.** A
+judge's score is calibrated against its own training prior, so a stored number from
+a retired checkpoint is not on the same scale as a committed floor. Everything
+score-free — which colours the pool's renders *are* — runs over the whole pool
+(4,642 renders). Everything floor-referenced runs only over rows whose
+`scores_current` stamp is the very artifact that head's floor was measured on, and
+a row whose stamps disagree is **refused, not counted**. Today that is 582 smooth
+and 606 strange rows out of 4,784, because the gallery-pass attempt rows have never
+been re-scored; `curate rescore` widens it and the next census picks that up.
+
 The two claims this stage makes that a test cannot settle are settled by commands
 against a real plan — `curate parity`, that a concurrently rendered release is
 byte-identical to a serial one, and `curate replay`, that every released picture
