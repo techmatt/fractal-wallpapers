@@ -12,6 +12,7 @@ anyway.
 from __future__ import annotations
 
 import json
+import pathlib
 
 import pytest
 
@@ -397,9 +398,171 @@ def test_every_variant_is_reported_and_none_of_them_gates() -> None:
     assert joint_render.RECIPE["conditioning"].startswith("none")
 
 
-def test_the_backbone_variant_moves_the_one_value_that_could_not_be_inherited() -> None:
-    """`small_backbone` exists because the pinned choice is a choice. It has to be
-    the OTHER incumbent's backbone, not a third thing nobody trained under."""
-    assert "small_backbone" in joint_render.VARIANTS
+def test_every_candidate_takes_one_of_the_two_incumbents_backbones() -> None:
+    """The backbone is the one value a joint head cannot inherit, because the two
+    incumbents disagree about it. A candidate has to take one of theirs — a third
+    one nobody trained under would make the comparison a different experiment."""
     theirs = {finished_train.RECIPES[kind]["backbone"] for kind in joint_render.KINDS}
-    assert joint_render.RECIPE["backbone"] in theirs and len(theirs) == 2
+    assert len(theirs) == 2, "the incumbents used to disagree about exactly this key"
+    for name, entry in joint_render.CANDIDATES.items():
+        assert entry["backbone"] in theirs, f"{name} trains at a backbone neither ships"
+    # And between them the registered candidates have asked both.
+    assert {e["backbone"] for e in joint_render.CANDIDATES.values()} == theirs
+
+
+def test_both_arms_weight_a_row_identically_whatever_kind_it_is() -> None:
+    """ARM C, as a guard. The failure it forecloses: if the shared arm took one
+    mean over the pooled batch while the split arm took a mean PER KIND and summed
+    them, the rarer kind's head would carry an effective weight of
+    `n_pooled / n_kind` — about 2.6x for strange — and the two arms would differ in
+    learning rate rather than in architecture. Every comparison between them would
+    then be measuring the wrong thing, silently.
+
+    Checked at the derivative, which is where the normalization actually lives:
+    `dL/dz` for a row is `(sigmoid(z) - target) / (tasks * |subset|)`, and that
+    denominator has to be the POOLED subset for every row of either kind.
+    """
+    torch = pytest.importorskip("torch")
+
+    from fractal_wallpapers.models import head
+
+    torch.manual_seed(0)
+    width, classes = 3, 4
+    kinds = torch.tensor([0] * 24 + [1] * 8)
+    labels = torch.randint(1, classes + 1, (len(kinds),))
+    layer = torch.nn.Linear(8, width * len(joint_render.KINDS))
+    logits = joint_render.cutpoints_of(layer(torch.randn(len(kinds), 8)), kinds, classes, True)
+    (gradient,) = torch.autograd.grad(head.loss_of(logits, labels, classes), logits)
+
+    ranks = labels - 1
+    for cutpoint in range(width):
+        subset = ranks > (cutpoint - 1)
+        size = int(subset.sum())
+        if size == 0:
+            continue
+        target = (ranks[subset] > cutpoint).float()
+        residual = torch.sigmoid(logits[subset, cutpoint].detach()) - target
+        coefficient = gradient[subset, cutpoint] / residual
+        expected = torch.full_like(coefficient, 1.0 / (width * size))
+        assert torch.allclose(coefficient, expected, atol=1e-6), (
+            f"cutpoint {cutpoint}: a row's weight is not 1/(tasks * pooled subset). "
+            f"Some kind is being up- or down-weighted relative to the other arm."
+        )
+
+
+def test_the_shared_and_split_arms_reach_one_loss_through_one_line() -> None:
+    """The parity above is only durable because there is one call site. A second
+    one — a per-kind loss added up somewhere — is how it would come back."""
+    source = pathlib.Path(joint_render.__file__).read_text(encoding="utf-8")
+    assert source.count("head.loss_of(") == 1, (
+        "more than one loss call site in the trainer: the two arms are no longer "
+        "guaranteed to aggregate the same way"
+    )
+
+
+def test_a_gap_splits_into_a_scale_half_and_an_order_half_that_add_back_up() -> None:
+    """`scale_or_order` claims a decomposition. A decomposition that does not sum
+    to the thing it decomposes is two unrelated numbers wearing one name."""
+    import numpy
+
+    from fractal_wallpapers.models.release_floor import isotonic
+
+    generator = numpy.random.default_rng(0)
+    truth = (generator.random(300) < 0.4).astype(float)
+    probability = numpy.clip(0.35 * truth + generator.random(300) * 0.5, 1e-6, 1 - 1e-6)
+
+    def entropy(t, p):
+        p = numpy.clip(p, 1e-7, 1.0 - 1e-7)
+        return float(-(t * numpy.log(p) + (1.0 - t) * numpy.log(1.0 - p)).mean())
+
+    curve = dict(isotonic(list(zip(map(float, probability), map(float, truth), strict=True))))
+    order = entropy(truth, numpy.array([curve[float(v)] for v in probability]))
+    raw = entropy(truth, probability)
+    assert order <= raw + 1e-12, "recalibrating on the sheet cannot make the loss worse"
+    assert abs(order + (raw - order) - raw) < 1e-12
+
+
+def test_each_candidate_owns_its_own_bar_and_record() -> None:
+    """A superseded candidate's read stays exactly as it was read. Two candidates
+    sharing one file would mean the second question overwrote the first answer."""
+    paths = {name: joint_acceptance.bar_path(name) for name in joint_render.CANDIDATES}
+    assert len(set(paths.values())) == len(paths), "two candidates share a bar file"
+    records = {name: joint_acceptance.comparison_path(name) for name in joint_render.CANDIDATES}
+    assert len(set(records.values())) == len(records)
+    # The first candidate keeps the plain names it was registered under.
+    assert joint_acceptance.bar_path("medium").name == "bar.json"
+    assert joint_acceptance.comparison_path("medium").name == "comparison.json"
+    assert joint_render.CURRENT in joint_render.CANDIDATES
+
+
+def test_a_bar_is_never_rewritten_once_it_exists() -> None:
+    for name in joint_render.CANDIDATES:
+        if joint_acceptance.bar_path(name).is_file():
+            with pytest.raises(joint_acceptance.JointComparisonError, match="not a bar"):
+                joint_acceptance.write_bar(name)
+
+
+def test_every_variant_names_the_candidate_it_varies() -> None:
+    """A variant read against nothing is a number with no comparison in it."""
+    for name, entry in joint_render.VARIANTS.items():
+        assert entry["against"] in joint_render.CANDIDATES, f"{name} varies no known candidate"
+        assert entry["backbone"] == joint_render.CANDIDATES[entry["against"]]["backbone"], (
+            f"{name} and the candidate it is compared against differ in the backbone too, "
+            f"so the comparison would move two things at once"
+        )
+
+
+def test_the_per_seed_conjunction_reports_how_many_chances_it_takes() -> None:
+    """The strict reading runs one test per gated arm per seed. That is a lot of
+    one-sided 2.5% tests, and a candidate that is exactly non-inferior everywhere
+    still trips one a third of the time — so the number of chances is reported
+    beside the verdict rather than left for a reader to work out."""
+    band = {
+        "verdict": "NOT_RESOLVED",
+        "ours": 0.5,
+        "theirs": 0.5,
+        "delta": 0.0,
+        "ci": [-0.1, 0.1],
+    }
+    arms = [
+        {"key": f"arm{i}", "gated": True, "band": band, "per_seed": dict.fromkeys("abc", band)}
+        for i in range(5)
+    ]
+    out = joint_acceptance._multiplicity(arms, ["a", "b", "c"])
+    assert out["per_seed_tests"] == 15
+    assert out["band_only_verdict"] == "PASS"
+    assert not out["crossed_per_seed"] and not out["crossed_on_the_band"]
+    assert 0.30 < out["chance_of_a_crossing_if_exactly_non_inferior"] < 0.33
+
+    # One seed of one arm crossing is a FAIL under the conjunction and not on the band.
+    arms[2]["per_seed"]["c"] = {**band, "verdict": "WORSE"}
+    out = joint_acceptance._multiplicity(arms, ["a", "b", "c"])
+    assert out["crossed_per_seed"] == ["arm2:c"]
+    assert out["band_only_verdict"] == "PASS", "the band is unaffected by one seed"
+
+
+def test_blind_modes_is_blind_at_the_boundary_it_gates_on() -> None:
+    """The anchored pass moved four rows from 3 to 4. That contaminates `>=4`,
+    which is refused — but it moved them WITHIN the `>=3` class, so the `>=3`
+    positive set is identical before and after and gating there is sound.
+
+    Worth a guard because the two facts look alike and the wrong one would either
+    throw away a legitimate arm or read a contaminated one.
+    """
+    from fractal_wallpapers.labeling import store
+
+    rows = [row for row in finished.read("strange_render") if row["batch"] == "blind_modes"]
+    blind: dict = {}
+    for row in sorted(rows, key=store.order_of):
+        blind.setdefault(finished.render_key(row), row)
+    current = finished.resolve(rows).current
+
+    at_least_three = [{k for k, v in side.items() if v["score"] >= 3} for side in (blind, current)]
+    assert at_least_three[0] == at_least_three[1], "the anchored pass moved the >=3 boundary"
+    assert len(at_least_three[0]) == 6
+
+    at_least_four = [{k for k, v in side.items() if v["score"] >= 4} for side in (blind, current)]
+    assert not at_least_four[0] and len(at_least_four[1]) == 4, (
+        "the >=4 positives should be entirely a product of the anchored pass, "
+        "which is why that boundary is refused"
+    )

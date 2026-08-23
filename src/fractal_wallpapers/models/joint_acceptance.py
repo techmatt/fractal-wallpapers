@@ -189,25 +189,75 @@ ABLATIONS: dict[str, tuple[str, ...]] = {
 }
 
 
+#: How the two architectures' losses aggregate, and why that is a fact worth
+#: writing down rather than assuming.
+#:
+#: The worry is real and specific: if the shared arm took one mean over the
+#: pooled batch while the split arm took a mean **per kind** and summed them, the
+#: rarer kind's head would carry an effective weight of `n_pooled / n_kind` — about
+#: 2.6x for strange — and the two arms would differ in learning rate rather than
+#: in architecture. `tests/test_joint_render.py` proves they do not: both arms
+#: reach one `corn_loss` over the whole batch through the same line, and every
+#: row's weight is `1 / (tasks * pooled subset size)` whatever kind it is.
+LOSS_PARITY = {
+    "aggregation": (
+        "identical. Both arms call head.loss_of once on a (batch, cutpoints) tensor; the "
+        "split arm's tensor is a GATHER of each row's own kind's columns, not a pair of "
+        "per-kind losses. Every row's weight is 1/(tasks x pooled subset size), verified "
+        "exactly and kind-independent"
+    ),
+    "batch_composition": (
+        "the same sampler over the same weights: `_loader` computes them from the training "
+        "list regardless of the arm, and only the dataset class differs. The realized batch "
+        "SEQUENCES do differ, because a wider classifier consumes more of the RNG at init — "
+        "that is what a seed band is for, and it is inherent to changing an architecture "
+        "rather than a defect in the aggregation"
+    ),
+    "gradient_clipping": (
+        "on the global norm over all parameters, so the extra classifier rows can shift it "
+        "only by their own share: the classifier is 0.045% of the medium head's parameters "
+        "and 0.090% of the split one's, 0.152% and 0.30% at the small backbone. Bounded far "
+        "below anything these sheets resolve"
+    ),
+    "defect_found": False,
+}
+
+
 class JointComparisonError(RuntimeError):
     """The bar cannot be built, or the candidate cannot be read against it."""
 
 
-def bar_path() -> Path:
+def _suffix(candidate: str) -> str:
+    """One file name per candidate. The first one's records keep their plain names.
+
+    Not a version number. A candidate is a design, its bar was written about that
+    design, and the read of a superseded one stays exactly as it was read — the
+    first band's FAIL is a file in git, not a thing to be overwritten by the next
+    question.
+    """
+    return "" if candidate == "medium" else f"_{candidate}"
+
+
+def bar_path(candidate: str = joint_render.CURRENT) -> Path:
     """The bar, as a file. Written before any score existed; never rewritten."""
-    return joint_render.head_dir() / "bar.json"
+    return joint_render.head_dir() / f"bar{_suffix(candidate)}.json"
 
 
-def comparison_path() -> Path:
+def comparison_path(candidate: str = joint_render.CURRENT) -> Path:
     """What the bar says about the candidate band."""
-    return joint_render.head_dir() / "comparison.json"
+    return joint_render.head_dir() / f"comparison{_suffix(candidate)}.json"
 
 
-def bar() -> dict:
+def bar(candidate: str = joint_render.CURRENT) -> dict:
     """Everything a verdict rests on, spelled out before a number exists."""
+    entry = joint_render.CANDIDATES[candidate]
     return {
         "schema": SCHEMA,
         "study": "one render judge over both kinds",
+        "candidate": candidate,
+        "candidate_is": entry["what"],
+        "backbone": entry["backbone"],
+        "runs": list(entry["runs"]),
         "question": (
             "Would ONE head over the pooled smooth and strange stores be non-inferior to "
             "the two shipped heads, on each kind's own blind sheet?"
@@ -232,8 +282,8 @@ def bar() -> dict:
         "arms": [dict(arm) for arm in ARMS],
         "refused": dict(REFUSED),
         "incumbents": {
-            kind: {"shipped": entry["shipped"], "band": list(entry["band"])}
-            for kind, entry in INCUMBENTS.items()
+            kind: {"shipped": row["shipped"], "band": list(row["band"])}
+            for kind, row in INCUMBENTS.items()
         },
         "training": {
             "split": (
@@ -243,9 +293,9 @@ def bar() -> dict:
             ),
             "conditioning": "none. The head is handed no kind",
             "recipe": (
-                "the incumbents', which agree on every behavioural key but the backbone. "
-                "The backbone is pinned to the medium and is the one value that could not "
-                "be inherited"
+                "the incumbents', which agree on every behavioural key but the backbone — "
+                f"the one value a joint head cannot inherit. This candidate takes "
+                f"{entry['backbone']}"
             ),
             "selection": (
                 "the incumbents' objective, share and seed, over the pooled training side's "
@@ -268,6 +318,11 @@ def bar() -> dict:
             "stay disjoint per kind and floors stay per kind, whatever this bar says.",
             "The gate is against each kind's SHIPPED run. The incumbent's other two seeds "
             "are read the same way and reported.",
+            "CARRIED FORWARD from the first band, which learned it the hard way: sheet D's "
+            ">=4 cross-entropy is dominated by the smooth incumbent's own calibration on an "
+            "enriched sheet (CE 2.385, of which 1.744 is scale). ANY head 'wins' there by "
+            "being less under-confident, so that arm is not read for a cross-model claim "
+            "except recalibrated. The recalibrated split is reported below the table.",
         ],
         "verdicts": {
             "PASS": "no gated arm is significantly worse, on the band or on any seed",
@@ -278,15 +333,23 @@ def bar() -> dict:
     }
 
 
-def write_bar(force: bool = False) -> Path:
-    """Ship the bar to its file. Refuses to overwrite one already read against."""
-    path = bar_path()
+def write_bar(candidate: str = joint_render.CURRENT, *, force: bool = False) -> Path:
+    """Ship one candidate's bar to its file. Refuses to overwrite one that exists.
+
+    `force` is keyword-only, and that is not decoration. It read positionally
+    once, so `write_bar("medium")` bound the candidate NAME to `force`, which is
+    truthy — the call asking for a different candidate's bar was the very call
+    that disabled the guard against rewriting one. A bar is the one file in this
+    study that may never be rewritten, so its guard may not be switchable by a
+    misplaced argument.
+    """
+    path = bar_path(candidate)
     if path.is_file() and not force:
         raise JointComparisonError(
             f"{path} already exists. A bar rewritten after the numbers are in is not a bar."
         )
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(bar(), indent=2) + "\n", encoding="utf-8", newline="\n")
+    path.write_text(json.dumps(bar(candidate), indent=2) + "\n", encoding="utf-8", newline="\n")
     return path
 
 
@@ -493,7 +556,7 @@ def ablation_arm(
     return out
 
 
-def decomposition(context: dict, candidate_run: str, classes: int = 4) -> list[dict]:
+def decomposition(context: dict, arms: dict[str, str], classes: int = 4) -> list[dict]:
     """Split each cutpoint's cross-entropy into a scale term and an order term.
 
     REPORTED, never gated. The bar is a proper scoring rule and a proper scoring
@@ -523,11 +586,7 @@ def decomposition(context: dict, candidate_run: str, classes: int = 4) -> list[d
         )
 
     labels = context["labels"]
-    heads = {
-        "candidate": f"candidate:{candidate_run}",
-        "incumbent": f"incumbent:{INCUMBENTS[context['kind']]['shipped']}",
-    }
-    predicted = {name: _probabilities(context, key, classes) for name, key in heads.items()}
+    predicted = {name: _probabilities(context, key, classes) for name, key in arms.items()}
     out = []
     for index in range(classes - 1):
         cutpoint = index + 2
@@ -550,6 +609,96 @@ def decomposition(context: dict, candidate_run: str, classes: int = 4) -> list[d
             }
         out.append(row)
     return out
+
+
+def scale_or_order(context: dict, left: str, right: str, classes: int = 4) -> dict:
+    """Where the gap between two arms lives: in the thresholds, or in the order?
+
+    A proper scoring rule is minimized only by probabilities that are both well
+    ordered and correctly scaled, which is its virtue and also why a bare delta
+    off it does not say which of the two moved. This splits the delta: what an
+    in-sample isotonic recalibration removes is the **scale**, what survives it is
+    the **order**, and each half gets its own paired interval over whole groups.
+
+    It answers a question the bar cannot. A gap that is scale-only is a gap the
+    adoption path re-derives anyway, because placing a release floor IS that fit.
+    A gap in the order term is not.
+    """
+    import numpy
+
+    from fractal_wallpapers.models.release_floor import isotonic
+
+    def entropy(truth, probability):
+        probability = numpy.clip(probability, 1e-7, 1.0 - 1e-7)
+        return float(
+            -(truth * numpy.log(probability) + (1.0 - truth) * numpy.log(1.0 - probability)).mean()
+        )
+
+    def order_term(truth, probability):
+        curve = dict(isotonic(list(zip(map(float, probability), map(float, truth), strict=True))))
+        return entropy(truth, numpy.array([curve[float(value)] for value in probability]))
+
+    labels, groups = context["labels"], context["groups"]
+    ours, theirs = _probabilities(context, left, classes), _probabilities(context, right, classes)
+    cutpoints, totals = [], {"cross_entropy": 0.0, "order": 0.0, "scale": 0.0}
+    for index in range(classes - 1):
+        cutpoint = index + 2
+        truth = (labels >= cutpoint).astype(float)
+        if truth.sum() == 0 or truth.sum() == len(truth):
+            cutpoints.append({"cutpoint": cutpoint, "unreadable": "one class only"})
+            continue
+        mine, yours = ours[:, index], theirs[:, index]
+        raw = entropy(truth, mine) - entropy(truth, yours)
+        order = order_term(truth, mine) - order_term(truth, yours)
+
+        def statistic(picked, truth=truth, mine=mine, yours=yours):
+            here = order_term(truth[picked], mine[picked])
+            there = order_term(truth[picked], yours[picked])
+            return here - there
+
+        interval = metrics.bootstrap(statistic, groups, draws=DRAWS // 2, seed=BOOTSTRAP_SEED)
+        auc = metrics.paired_delta(
+            (labels >= cutpoint).astype(int), mine, yours, groups, draws=DRAWS, seed=BOOTSTRAP_SEED
+        )
+        for key, value in (("cross_entropy", raw), ("order", order), ("scale", raw - order)):
+            totals[key] += value / (classes - 1)
+        cutpoints.append(
+            {
+                "cutpoint": cutpoint,
+                "positives": int(truth.sum()),
+                "delta_cross_entropy": raw,
+                "delta_order": order,
+                "delta_scale": raw - order,
+                "order_ci": [interval["lo"], interval["hi"]],
+                "order_reads": (
+                    "FLAT"
+                    if interval["lo"] is None or (interval["lo"] <= 0 <= interval["hi"])
+                    else "DIFFERS"
+                ),
+                "delta_auc": auc["delta"],
+                "auc_ci": [auc["lo"], auc["hi"]],
+                "auc_reads": (
+                    "FLAT" if auc["lo"] is None or (auc["lo"] <= 0 <= auc["hi"]) else "DIFFERS"
+                ),
+            }
+        )
+    share = None if totals["cross_entropy"] == 0 else totals["scale"] / totals["cross_entropy"]
+    return {
+        "left": left,
+        "right": right,
+        "sign": "left minus right, so a positive delta means `left` is the worse of the two",
+        "mean_over_cutpoints": totals,
+        "scale_share_of_the_gap": share,
+        "reads": (
+            "SCALE ONLY — the two arms order this sheet alike and differ in where they put "
+            "the probability"
+            if share is not None
+            and share > 0.9
+            and all(row.get("order_reads", "FLAT") == "FLAT" for row in cutpoints)
+            else "the order term carries part of the gap"
+        ),
+        "cutpoints": cutpoints,
+    }
 
 
 def _arm(arm: dict, context: dict, candidate_runs: list[str], classes: int = 4) -> dict:
@@ -619,16 +768,94 @@ def _arm(arm: dict, context: dict, candidate_runs: list[str], classes: int = 4) 
     }
 
 
-def read(runs: list[str] | None = None) -> dict:
-    """The whole read: every arm, every seed, and what the bar says about them."""
+def _variant_split(contexts: dict, name: str, runs: list[str], bands: dict) -> dict:
+    """One variant against the candidate it varies, split into scale and order.
+
+    Both sides are read on their own band's median by the scoring rule, so the
+    split describes the same two checkpoints the tables above report. `None` when
+    the candidate it varies has not been scored — a variant read against nothing
+    is a number with no comparison in it.
+    """
+    against = joint_render.VARIANTS[name]["against"]
+    theirs = bands.get(against)
+    if not theirs:
+        return {"against": against, "unreadable": f"the {against} band is not scored here"}
+    out = {"against": against}
+    for kind, context in contexts.items():
+        arm = next(
+            a for a in ARMS if a["kind"] == kind and a["statistic"] == "cutpoint_cross_entropy"
+        )
+        pick = {
+            side: _median_run(
+                {
+                    run: _statistic_of(
+                        arm, context["labels"], _probabilities(context, f"candidate:{run}")
+                    )
+                    for run in group
+                },
+                arm["direction"],
+            )
+            for side, group in (("variant", runs), ("candidate", theirs))
+        }
+        out[kind] = scale_or_order(
+            context, f"candidate:{pick['variant']}", f"candidate:{pick['candidate']}"
+        )
+        out[kind]["read_on"] = pick
+    return out
+
+
+def _multiplicity(arms: list[dict], candidate_runs: list[str]) -> dict:
+    """How many chances the per-seed conjunction gives a good candidate to fail.
+
+    REPORTED, and it changes no verdict — the bar says "per seed and on the band"
+    and that is the bar. But the strict reading runs one test per gated arm per
+    seed, each one-sided at 2.5%, and a reader is owed the size of that. Five
+    gated arms and three seeds is fifteen chances, and a candidate that is
+    *exactly* non-inferior everywhere still trips at least one about a third of
+    the time. That is a property of the rule rather than evidence about the head,
+    and it is why the band-only reading is reported beside it — not instead of it.
+    """
+    gated = [arm for arm in arms if arm["gated"]]
+    tests = len(gated) * len(candidate_runs)
+    return {
+        "gated_arms": len(gated),
+        "seeds": len(candidate_runs),
+        "per_seed_tests": tests,
+        "one_sided_alpha": 0.025,
+        "chance_of_a_crossing_if_exactly_non_inferior": 1.0 - 0.975**tests,
+        "crossed_per_seed": [
+            f"{arm['key']}:{run}"
+            for arm in gated
+            for run, out in arm["per_seed"].items()
+            if out["verdict"] == "WORSE"
+        ],
+        "crossed_on_the_band": [arm["key"] for arm in gated if arm["band"]["verdict"] == "WORSE"],
+        "band_only_verdict": (
+            "FAIL" if any(arm["band"]["verdict"] == "WORSE" for arm in gated) else "PASS"
+        ),
+        "note": (
+            "the band-only verdict reads the same five arms on their own median seed — "
+            "one test per arm rather than one per arm per seed"
+        ),
+    }
+
+
+def read(runs: list[str] | None = None, candidate: str = joint_render.CURRENT) -> dict:
+    """The whole read: every arm, every seed, and what the bar says about them.
+
+    `candidate` names which registered design is being gated. Each has its own
+    bar file, written before its band existed, and its own comparison record — a
+    superseded candidate's read stays exactly as it was read.
+    """
     import numpy
 
-    if not bar_path().is_file():
+    path = bar_path(candidate)
+    if not path.is_file():
         raise JointComparisonError(
-            f"{bar_path()} is missing. The bar comes from the file and nothing here may invent one."
+            f"{path} is missing. The bar comes from the file and nothing here may invent one."
         )
-    declared = json.loads(bar_path().read_text(encoding="utf-8"))
-    candidate_runs = list(runs or joint_render.RUNS)
+    declared = json.loads(path.read_text(encoding="utf-8"))
+    candidate_runs = list(runs or joint_render.CANDIDATES[candidate]["runs"])
 
     present = {
         kind: [run for run in ABLATIONS[kind] if joint_render.scores_path(kind, run).is_file()]
@@ -643,8 +870,21 @@ def read(runs: list[str] | None = None) -> dict:
         for name, entry in joint_render.VARIANTS.items()
     }
     every = [run for runs in variants.values() for run in runs]
+    variants_of = {
+        name: [
+            run
+            for run in entry["runs"]
+            if all(joint_render.scores_path(kind, run).is_file() for kind in joint_render.KINDS)
+        ]
+        for name, entry in joint_render.CANDIDATES.items()
+    }
     contexts = {
-        kind: aligned(kind, [*candidate_runs, *every], present[kind]) for kind in joint_render.KINDS
+        kind: aligned(
+            kind,
+            sorted({*candidate_runs, *every, *(r for v in variants_of.values() for r in v)}),
+            present[kind],
+        )
+        for kind in joint_render.KINDS
     }
     arms = [_arm(arm, contexts[arm["kind"]], candidate_runs) for arm in ARMS]
     ablations = {
@@ -687,6 +927,12 @@ def read(runs: list[str] | None = None) -> dict:
     return {
         "schema": SCHEMA,
         "head": joint_render.HEAD,
+        "candidate": candidate,
+        # `.get` rather than `[]`: the first candidate's bar was registered before
+        # this study had a second one to distinguish it from, and a bar is never
+        # rewritten to suit a later reader. Its fields are filled from the roster.
+        "candidate_is": declared.get("candidate_is", joint_render.CANDIDATES[candidate]["what"]),
+        "backbone": declared.get("backbone", joint_render.CANDIDATES[candidate]["backbone"]),
         "bar": {"rule": declared["rule"], "significance": declared["significance"]},
         "candidate_runs": candidate_runs,
         "populations": populations,
@@ -702,11 +948,19 @@ def read(runs: list[str] | None = None) -> dict:
             ),
             "read_on": {kind: band_run_of[kind] for kind in joint_render.KINDS},
             "cutpoints": {
-                kind: decomposition(contexts[kind], band_run_of[kind])
+                kind: decomposition(
+                    contexts[kind],
+                    {
+                        "candidate": f"candidate:{band_run_of[kind]}",
+                        "incumbent": f"incumbent:{INCUMBENTS[kind]['shipped']}",
+                    },
+                )
                 for kind in joint_render.KINDS
             },
         },
         "against_the_corpus_matched_ablation": ablations,
+        "loss_parity": LOSS_PARITY,
+        "multiplicity": _multiplicity(arms, candidate_runs),
         "variants": {
             "what_they_are": (
                 "the candidate with ONE thing moved. REPORTED, never gated: this bar was "
@@ -719,6 +973,8 @@ def read(runs: list[str] | None = None) -> dict:
                     "seeds": len(runs),
                     "what": joint_render.VARIANTS[name]["what"],
                     "arms": [_arm(arm, contexts[arm["kind"]], runs) for arm in ARMS],
+                    "against": joint_render.VARIANTS[name]["against"],
+                    "scale_or_order": _variant_split(contexts, name, runs, variants_of),
                 }
                 for name, runs in variants.items()
                 if runs
@@ -760,7 +1016,12 @@ def _gain(arms: list[dict]) -> dict:
     return out
 
 
-def disagreements(run: str | None = None, per_kind: int = 6, out_dir: str | None = None) -> dict:
+def disagreements(
+    run: str | None = None,
+    per_kind: int = 6,
+    out_dir: str | None = None,
+    candidate: str = joint_render.CURRENT,
+) -> dict:
     """Copy out the sheet rows the candidate and the incumbent read most differently.
 
     Admissions and rejects, per kind, at that sheet's own gated boundary: the rows
@@ -772,7 +1033,7 @@ def disagreements(run: str | None = None, per_kind: int = 6, out_dir: str | None
     written = {}
     for kind in joint_render.KINDS:
         arm = next(a for a in ARMS if a["kind"] == kind and a["statistic"] == "auc" and a["gated"])
-        candidate_runs = [run] if run else list(joint_render.RUNS)
+        candidate_runs = [run] if run else list(joint_render.CANDIDATES[candidate]["runs"])
         context = aligned(kind, candidate_runs)
         chosen = run or _median_run(
             {
@@ -857,5 +1118,6 @@ __all__ = [
     "comparison_path",
     "disagreements",
     "read",
+    "scale_or_order",
     "write_bar",
 ]
