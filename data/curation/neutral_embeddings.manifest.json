@@ -2,9 +2,9 @@
   "schema": 1,
   "path": "artifacts/curation/neutral_embeddings.jsonl",
   "copy": "artifacts/curation_backup/neutral_embeddings.jsonl",
-  "rows": 24843,
-  "bytes": 43382003,
-  "sha256": "e8ebfacdb7f946db8d1ba54f211ccbb3bd09db8c0859173ea2519ba7df097b01",
+  "rows": 29051,
+  "bytes": 50685669,
+  "sha256": "8f408445af70128a3ca86c50d2013bd77559652576678613434ca55e624e65a4",
   "stamp": "bf03db95ce61",
   "choices": {
     "colormap": "twilight_shifted",
@@ -18,20 +18,20 @@
     "mirror": false
   },
   "rows_by_partition": {
-    "julia:mandelbrot": 3728,
+    "julia:mandelbrot": 5387,
     "julia:multibrot3": 4639,
     "julia:multibrot4": 3929,
     "julia:multibrot5": 3817,
-    "mandelbrot": 3634,
-    "multibrot3": 1256,
-    "multibrot4": 1020,
-    "multibrot5": 1659,
-    "phoenix": 1161
+    "mandelbrot": 4016,
+    "multibrot3": 1799,
+    "multibrot4": 1635,
+    "multibrot5": 2111,
+    "phoenix": 1718
   },
   "pictures": {
     "directory": "artifacts/curation/neutral",
-    "files": 24843,
-    "bytes": 2327005340,
+    "files": 29051,
+    "bytes": 2724151873,
     "regenerable": "yes, from this store's own rows: every row carries the family, the viewport and the maxiter its neutral render is made from. About a tenth of a second each, so they are counted here and not copied."
   },
   "recorded": "2026-08-22",

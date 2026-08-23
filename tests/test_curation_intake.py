@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 
@@ -310,11 +311,12 @@ def test_a_gate_render_the_run_no_longer_has_costs_a_re_render(tmp_path) -> None
     assert intake.gate_render(gone, "twilight_shifted", set(), tile_module.NODE_REGIME) is None
 
 
-def test_a_row_that_names_no_regime_is_read_at_the_deploy_one(tmp_path) -> None:
-    """Every row of the standing stock predates a walk saying, and every one of
-    them was scored at the deploy geometry off a picture already on disk."""
+def test_a_row_states_a_regime_or_it_does_not_and_none_is_not_the_deploy_one(tmp_path) -> None:
+    """`regime_of` reports what the row says and nothing else. Every row of the
+    standing stock predates a walk saying, and what to do about that is
+    `_picture_for`'s decision rather than a default hidden in the reader."""
     assert intake.regime_of(candidate("-0.5")) is None
-    assert intake.regime_of(node_row(tmp_path)) is not None
+    assert intake.regime_of(node_row(tmp_path)) == intake.READ_REGIME
 
 
 def test_a_row_that_names_something_that_is_not_a_regime_refuses(tmp_path) -> None:
@@ -340,5 +342,54 @@ def test_a_node_regime_row_is_scored_without_one_engine_call(tmp_path, score, mo
     report = score([ledger])
     assert drew == [], "a row whose picture already exists cost an engine call"
     assert report["pictures"] == {"gate": 1, "cached": 0, "rendered": 0}
+    assert report["by_regime"] == {"384x216ss1": 1}
+    assert next(iter(intake.read_scores().values()))["regime"] == "384x216ss1"
+
+
+def test_a_regime_less_row_is_scored_at_the_node_regime_and_never_touches_location_views(
+    tmp_path, monkeypatch
+) -> None:
+    """Matt's ruling, end to end. A row with no `score_regime` has never been
+    scored at all, so it is read like every walk node — into
+    `artifacts/node_views/<regime>/`, and the sidecar row says so. The deploy
+    cache is a record of what was scored there before a walk scored its own
+    frames; a first read of old stock must not make it grow again.
+
+    The roots are redirected rather than `view_dir` stubbed, because *which
+    directory* is the whole claim and a stub would be the test asserting its own
+    answer.
+    """
+    from fractal_wallpapers.models import scoring, ship, train
+    from fractal_wallpapers.paths import ARCHIVE_ROOT_VARIABLE, HOT_ROOT_VARIABLE
+
+    (tmp_path / "artifacts").mkdir()
+    monkeypatch.setenv(HOT_ROOT_VARIABLE, str(tmp_path / "artifacts"))
+    monkeypatch.setenv(ARCHIVE_ROOT_VARIABLE, "")
+    monkeypatch.setattr(intake.floors, "live_stamp", lambda head: "a-stamp")
+    monkeypatch.setattr(intake.location_view, "canonical_map", lambda: "twilight_shifted")
+    monkeypatch.setattr(intake.location_view, "cyclic_maps", lambda: set())
+    monkeypatch.setattr(ship, "shipped_path", lambda head: tmp_path / "head.pt")
+    monkeypatch.setattr(scoring, "load", lambda path, device: (None, {"classes": 4}, "cpu"))
+    monkeypatch.setattr(scoring, "transform_of", lambda config: None)
+    monkeypatch.setattr(train, "score", lambda *rest: [[0.9, 0.8, 0.7]])
+
+    drawn = []
+
+    def drew(row, colormap, cyclic, directory, regime=None):
+        picture = Path(directory) / "drawn.jpg"
+        picture.parent.mkdir(parents=True, exist_ok=True)
+        picture.write_bytes(b"a finished picture")
+        drawn.append((picture, regime))
+        return picture, True
+
+    monkeypatch.setattr(intake.location_view, "render_view", drew)
+
+    ledger = written(tmp_path / "old" / "walk.jsonl", ["-0.5"])
+    report = intake.score([ledger], log=lambda _m: None)
+
+    (picture, regime) = drawn[0]
+    assert regime == intake.READ_REGIME
+    assert picture.parent == tmp_path / "artifacts" / "node_views" / "384x216ss1"
+    assert not (tmp_path / "artifacts" / "location_views").exists()
     assert report["by_regime"] == {"384x216ss1": 1}
     assert next(iter(intake.read_scores().values()))["regime"] == "384x216ss1"
