@@ -105,13 +105,23 @@ class ServedLocations:
         return {"served_rows": len(self.rows), "by_run": dict(sorted(runs.items()))}
 
 
-def build(exclude_run: str | None = None, under=None) -> ServedLocations:
+def build(
+    exclude_run: str | None = None, under=None, collection: str | None = None
+) -> ServedLocations:
     """Read the tracked release records into an index of served locations.
 
     `exclude_run` drops one run's own rows, for a caller asking what the index
     would be *without* a given run in it — what the collection looked like before
     it, or what a gallery pass would decide if that run's seats were not already
     taken. A name nothing has released under passes harmlessly.
+
+    `collection` narrows it to one of [`records.COLLECTIONS`], and **the rule is
+    per collection**. There are two: the runs' `diagnostic` pictures and the
+    gallery pass's. A gallery winner standing where a run's diagnostic picture
+    already stands is not a repeat — it is the design, stated at the top of this
+    module — and an index over both at once answers a question nobody asked.
+    `None` is every row, which is what `curate repeats` reads when it wants to see
+    the whole store at once.
 
     `under` names a record store other than the tracked one. It is not how a run
     calls this — a run's index is the collection's and the collection is tracked
@@ -124,21 +134,29 @@ def build(exclude_run: str | None = None, under=None) -> ServedLocations:
     rows = [
         row
         for row in records.served(tracked)
-        if exclude_run is None or row.get("run") != exclude_run
+        if (exclude_run is None or row.get("run") != exclude_run)
+        and (collection is None or row.get("collection") == collection)
     ]
     return ServedLocations(locations=[dict(row.get("location") or {}) for row in rows], rows=rows)
 
 
-def repeats(index: ServedLocations | None = None, under=None) -> list[dict]:
+def repeats(
+    index: ServedLocations | None = None, under=None, collection: str | None = None
+) -> list[dict]:
     """Every group of the served set holding more than one wallpaper.
 
     The retro read of the rule against the collection that predates it: what the
     ruling would have refused, laid out so somebody can choose which one of each
     group survives. It decides nothing and rejects nothing.
+
+    `collection` is [`build`]'s and means the same thing: the rule acts inside one
+    collection, and a group holding a run's diagnostic picture and a gallery
+    winner of the same place is two collections agreeing about a location rather
+    than one collection holding it twice.
     """
     from fractal_wallpapers.labeling import groups as group_module
 
-    index = build(under=under) if index is None else index
+    index = build(under=under, collection=collection) if index is None else index
     grouping = group_module.assign(index.locations)
     out = []
     for group, members in sorted(grouping.members.items()):
@@ -150,6 +168,7 @@ def repeats(index: ServedLocations | None = None, under=None) -> list[dict]:
                 "group": f"group#{group}",
                 "partition": (rows[0].get("location") or {}).get("partition"),
                 "runs": sorted({str(row.get("run")) for row in rows}),
+                "collections": sorted({str(row.get("collection")) for row in rows}),
                 "served": [
                     {
                         "key": row.get("key"),

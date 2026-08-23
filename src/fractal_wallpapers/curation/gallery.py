@@ -86,6 +86,15 @@ and the smooth head's 0.385 — which is not what happens at a run's release, wh
 only the strange one gates. The two decisions are different: a run's is about how
 much of its own night is worth looking at, and this one is about what the
 collection ships.
+
+## What the pass leaves in the history, and what it leaves beside it
+
+Everything a pass writes into `data/` scales with `n`; nothing does with the
+attempts. The pass record and the winners' release rows are tracked; the attempt
+rows are pool rows and go to [`curation.gallery_store`], under `artifacts/` with
+a tracked manifest and an archive copy. [`write_records`] is where the split is
+taken and says why, and [`tracked_bytes`] measures the result on every pass so
+the claim stays checked rather than remembered.
 """
 
 from __future__ import annotations
@@ -101,6 +110,7 @@ from fractal_wallpapers.curation import (
     durability,
     embeddings,
     floors,
+    gallery_store,
     intake,
     records,
     release,
@@ -203,8 +213,32 @@ def record_dir() -> Path:
     return records.root() / "gallery"
 
 
+#: What a pass's own summary is called inside its directory. Everything about the
+#: pass that is not per-slot: the knobs, the plan, the retro table, the timings.
+RECORD_NAME = "pass.json"
+
+
+def pass_record_dir(pass_id: str) -> Path:
+    """One pass's tracked directory: its summary, its slots, its store's manifest."""
+    return record_dir() / str(pass_id)
+
+
 def record_path(pass_id: str) -> Path:
-    return record_dir() / f"{pass_id}.json"
+    return pass_record_dir(pass_id) / RECORD_NAME
+
+
+def slots_path(pass_id: str, partition: str | None) -> Path:
+    """Where one partition's slot rows go. The same file axis the pool splits on.
+
+    A slot row carries the chosen point, its embedding index, the neighbourhood the
+    attempts were spent on, the fill arithmetic and the seat, and it runs about a
+    kilobyte. Fifty of them fit in one file and five hundred do not: at N=500 a
+    single-file pass record lands around 1.3 MiB against the 1 MiB history guard,
+    which is the same wall the decision stores hit and it is answered the same way.
+    Partition, because that is the axis a slot is allocated on and therefore the
+    axis the rows already arrive in blocks of.
+    """
+    return pass_record_dir(pass_id) / records.partition_file(partition)
 
 
 def passes() -> list[str]:
@@ -212,7 +246,10 @@ def passes() -> list[str]:
     directory = record_dir()
     if not directory.is_dir():
         return []
-    return sorted((path.stem for path in directory.glob("*.json")), key=_ordinal)
+    return sorted(
+        (entry.name for entry in directory.iterdir() if (entry / RECORD_NAME).is_file()),
+        key=_ordinal,
+    )
 
 
 def _ordinal(name: str) -> tuple:
@@ -262,6 +299,25 @@ def load_embeddings(log=print):
         )
     log(f"[embed] {len(rows):,} embedded location(s), store {verdict['verdict']}")
     return rows, matrix, verdict
+
+
+def colorize_row(row: dict) -> dict:
+    """An embedding-store row spelled the way [`colorize.attempt`] reads one.
+
+    THE row-shape adapter on the attempt side, and it exists because the pass
+    feeds the colorizer out of a store no run has ever fed it out of. A run's rows
+    come from [`intake.ranked`], which stamps `_ledger` on each one as it reads the
+    walk ledger and calls the location head's reading `score`; an embedding row
+    carries the same two facts already resolved, under `ledger` and
+    `location_p_ge3`.
+
+    Two spellings that do not line up produce no error and no warning — every
+    attempt the pass makes is simply recorded with `ledger: null` and
+    `location_score: null`, which is a pool row nothing can say where it came from
+    or how good its place was. gallery1's first 1,120 attempts were written that
+    way and had to be repaired by hand.
+    """
+    return {**row, "_ledger": row.get("ledger"), "score": row.get("location_p_ge3")}
 
 
 def quality_of(row: dict, scores: dict) -> float:
@@ -496,6 +552,11 @@ class Slot:
     head: str
     #: The chosen point: the location the farthest-point draw picked.
     point: str
+    #: Its row in the embedding store, which is the only thing that makes the
+    #: distance re-derivable from the record. The key names the location and the
+    #: index names the vector, and a reader holding one of the two would have to
+    #: re-derive the other against a store that has since grown.
+    point_index: int = -1
     #: The `m` locations this slot's attempts are spent on, the point first.
     locations: list = field(default_factory=list)
     quality: float = 0.0
@@ -554,6 +615,7 @@ def plan_slots(rows, matrix, scores, n, strange_share, radius, weight, m, log=pr
                     partition=name,
                     head=head,
                     point=pick.key,
+                    point_index=int(pick.index),
                     locations=[
                         str(rows[i]["key"])
                         for i in neighbourhood(
@@ -958,6 +1020,14 @@ def pool_candidates(slots: list, pass_id: str) -> list[dict]:
     a chosen point's neighbourhood is a wallpaper the pass can seat without
     rendering anything first.
 
+    **Two stores, because the pool is in two places.** A run records every scored
+    attempt in the tracked release store, and an earlier *pass* records its
+    attempts in [`curation.gallery_store`] instead — untracked, manifest-described,
+    and every bit as much a coloured judged candidate standing on a location. A
+    reader of the release store alone would silently lose an earlier pass's
+    thousand-odd attempts, which is the largest single block of material a second
+    pass has to seat out of.
+
     Three exclusions, and each is a different fact. A row this pass wrote is
     already in hand, so reading it back would double it. A row a person
     **rejected** was taken out of service deliberately and a pass that re-seated
@@ -966,8 +1036,9 @@ def pool_candidates(slots: list, pass_id: str) -> list[dict]:
     against a wallpaper is the comparison the record exists to prevent.
     """
     wanted = {key for slot in slots for key in slot.locations}
+    seen: set[str] = set()
     out = []
-    for row in records.read_decisions(records.RELEASE):
+    for row in [*records.read_decisions(records.RELEASE), *gallery_store.read()]:
         if row.get("run") == pass_id or records.is_rejected(row):
             continue
         if str((row.get("location") or {}).get("key")) not in wanted:
@@ -975,6 +1046,13 @@ def pool_candidates(slots: list, pass_id: str) -> list[dict]:
         candidate = candidate_of_pool_row(row)
         if candidate.get("p_ge3") is None or candidate.get("head") not in budget_module.HEADS:
             continue
+        # An earlier pass's winner is in both stores — once as the attempt that
+        # was made and once as the seat it took — and the two rows carry the same
+        # `<run>_<candidate>` identity, so the second one read is the same
+        # picture arriving twice into one ranked pool.
+        if candidate["candidate"] in seen:
+            continue
+        seen.add(candidate["candidate"])
         out.append(candidate)
     return out
 
@@ -1103,12 +1181,25 @@ def _release_stamps(where: Path) -> dict:
 # What the pass leaves behind.
 # --------------------------------------------------------------------------- #
 def write_records(pass_id, slots, attempts, guaranteed, log=print) -> dict:
-    """Every decision the pass took, into the pool's own stores.
+    """Everything the pass leaves behind, split by what its size does with `n`.
 
-    Two stores and one identity. The **decisions** go where a run's go, keyed by
-    the pass id, because the pass's attempts are pool rows and the pool is one
-    store — a second one would be a second answer to what the pool holds. The
-    pass's **summary** does not: [`record_dir`] is beside `runs/` and not in it,
+    Three stores and one identity.
+
+    The **attempts** are pool rows — the location, the recipe, the palette draw,
+    the judge's verdict, one line each carrying its whole join — and they go to
+    [`curation.gallery_store`], under `artifacts/` with a tracked manifest and a
+    copy on the archive tier. That is where the size is: `locations x heads x
+    draws` per slot, 1,120 rows at n=50 and ten times that at n=500, at about
+    3.8 KB a row, against a 1 MiB per-file history guard.
+
+    The **release store** takes the winners and nothing else. It answers *which
+    candidate took a slot*, a pass takes at most `n` of those decisions, and a row
+    per losing attempt was the duplicate that made a pass cost eight megabytes of
+    tracked text. What each slot passed over is on the slot — `eligible`,
+    `below_floor`, `location_served` — in the pass record, so the denominator
+    survives the rows.
+
+    The pass's **summary** goes to [`record_dir`], beside `runs/` and not in it,
     because a pass books no clock and measures no release rate a later night
     should derive a reservation from.
 
@@ -1127,7 +1218,7 @@ def write_records(pass_id, slots, attempts, guaranteed, log=print) -> dict:
     ):
         first_of.setdefault(slot.partition, slot.id)
 
-    gate_rows = [
+    attempt_rows = [
         records.decision(
             run=pass_id,
             stage=records.GATE,
@@ -1139,55 +1230,87 @@ def write_records(pass_id, slots, attempts, guaranteed, log=print) -> dict:
         )
         for row in attempts
     ]
+    store_path, store_rows, store_new = gallery_store.write(pass_id, attempt_rows)
+    manifest = (
+        gallery_store.save(pass_id, log=lambda line: log(f"[store] {line}"))
+        if attempt_rows
+        else None
+    )
 
-    floor_of = {head: floors.gallery_floor(head) for head in budget_module.HEADS}
-    release_rows = []
-    for row in attempts:
-        if row.get("p_ge3") is None:
-            continue
-        identifier = f"{row['attempt']:04d}"
-        slot = seated.get(identifier)
-        # The SEATED dict where there is one, never a freshly derived twin of it:
-        # the seat carries the group tag the pass assigned, the full-size picture
-        # and that render's own autolevel stamp, and a row rebuilt from the
-        # attempt alone would silently have none of the three.
-        held = slot.seated if slot is not None else candidate_of_attempt(row, pass_id)
-        release_rows.append(_release_row(pass_id, held, slot, first_of, owed, floor_of))
-    for identifier, slot in sorted(seated.items()):
-        if identifier.isdigit():
-            continue  # one of this pass's own attempts; already written above
-        release_rows.append(_release_row(pass_id, slot.seated, slot, first_of, owed, floor_of))
-
-    gate_path, _, gate_new = records.write_decisions(records.GATE, pass_id, gate_rows)
+    release_rows = [
+        _release_row(pass_id, slot.seated, slot, first_of, owed)
+        for _, slot in sorted(seated.items())
+    ]
     release_path, _, release_new = records.write_decisions(records.RELEASE, pass_id, release_rows)
     log(
-        f"[records] {len(gate_rows)} gate row(s), {len(release_rows)} release row(s) "
-        f"under {pass_id}"
+        f"[records] {len(attempt_rows)} attempt row(s) under {tracked_name(store_path)}, "
+        f"{len(release_rows)} winner(s) under {pass_id}"
     )
     return {
         "durable": records.is_durable(),
         "root": tracked_name(records.root()),
-        "gate": f"{tracked_name(gate_path)} (+{gate_new})",
+        # The two halves, named as two, because the whole point of the split is
+        # that only one of them is in the history and only the other one grows
+        # with the attempt count.
+        "attempts": {
+            "store": tracked_name(store_path),
+            "rows": store_rows,
+            "new": store_new,
+            "manifest": None if manifest is None else tracked_name(manifest_path_of(pass_id)),
+            "copy": None if manifest is None else manifest.get("copy"),
+            "sha256": None if manifest is None else manifest.get("sha256"),
+            "bytes": None if manifest is None else manifest.get("bytes"),
+        },
         "release": f"{tracked_name(release_path)} (+{release_new})",
-        "gate_rows": len(gate_rows),
         "release_rows": len(release_rows),
     }
 
 
-def _release_row(pass_id, candidate, slot, first_of, owed, floor_of) -> dict:
-    """One pool row for one candidate, saying what the pass decided about it."""
-    won = slot is not None
-    picture = candidate.get("release_picture") if won else candidate.get("picture")
-    verdict = (
-        records.RELEASED if won and picture else records.KILLED if won else records.PASSED_OVER
-    )
-    reason = None
-    if won and not picture:
-        reason = records.KILLED_REASON
-    elif not won:
-        floor = floor_of.get(str(candidate.get("head")))
-        if floor is not None and not floor.acts(candidate.get("p_ge3")):
-            reason = records.REASONS["below_bar"]
+def manifest_path_of(pass_id: str) -> Path:
+    """The tracked manifest describing this pass's attempt store."""
+    return gallery_store.manifest_path(pass_id)
+
+
+def tracked_bytes(pass_id: str) -> dict:
+    """What one pass has put in the history, by file. The number the split is about.
+
+    A reading, not a field: it is taken *after* everything is written — by
+    [`cli.print_gallery`], and by anybody checking — because a total recorded
+    inside the pass record would be a number that changed the file it measured.
+
+    Everything counted here scales with `n`. Nothing here scales with the attempt
+    count, and `tests/test_curation_gallery.py` pins that on a synthetic N=500
+    plan rather than leaving it as something somebody remembers.
+    """
+    files: dict[str, int] = {}
+    directory = pass_record_dir(pass_id)
+    if directory.is_dir():
+        for path in sorted(directory.iterdir()):
+            if path.is_file():
+                files[tracked_name(path)] = path.stat().st_size
+    releases = records.decisions_dir(records.RELEASE, pass_id)
+    if releases.is_dir():
+        for path in sorted(releases.glob("*.jsonl")):
+            files[tracked_name(path)] = path.stat().st_size
+    return {
+        "total": sum(files.values()),
+        "largest": max(files.values(), default=0),
+        "files": dict(sorted(files.items())),
+    }
+
+
+def _release_row(pass_id, candidate, slot, first_of, owed) -> dict:
+    """One release row for one seated candidate: what the pass decided to ship.
+
+    Only ever called for a slot that filled. A candidate the pass looked at and
+    did not seat has its row in the attempt store and its arithmetic on the slot;
+    [`records.PASSED_OVER`] is a run's verdict, written over a night's population
+    that will not exist again, and a pass writing one per losing attempt was
+    recording the same rows a second time in the history.
+    """
+    picture = candidate.get("release_picture")
+    verdict = records.RELEASED if picture else records.KILLED
+    reason = None if picture else records.KILLED_REASON
     row = records.decision(
         run=pass_id,
         stage=records.RELEASE,
@@ -1201,52 +1324,92 @@ def _release_row(pass_id, candidate, slot, first_of, owed, floor_of) -> dict:
         row=candidate,
         reason=reason,
         slot_source=(
-            (
-                "guarantee"
-                if first_of.get(slot.partition) == slot.id and slot.partition in owed
-                else "mix"
-            )
-            if won
-            else None
+            "guarantee"
+            if first_of.get(slot.partition) == slot.id and slot.partition in owed
+            else "mix"
         ),
-        group=candidate.get("group") if won else None,
-        picture=None if (won and not picture) else picture,
+        group=candidate.get("group"),
+        picture=picture,
     )
     row["scores_current"] = candidate.get("scores_current")
-    row["release_autolevel"] = candidate.get("release_autolevel") if won else None
+    row["release_autolevel"] = candidate.get("release_autolevel")
     # Which slot this was decided against, and the arithmetic of the slot. On the
     # row rather than only on the pass record, because a pool row outlives the
     # pass that wrote it and a reader joining on the pass id alone could not say
     # which of fifty slots a wallpaper took or how far its place sat from the
     # nearest other place the pass chose.
-    row["slot"] = (
-        None
-        if slot is None
-        else {
-            "pass": pass_id,
-            "id": slot.id,
-            "head": slot.head,
-            "point": slot.point,
-            "locations": list(slot.locations),
-            "point_quality": slot.quality,
-            "nearest_chosen": slot.distance,
-        }
-    )
+    row["slot"] = {
+        "pass": pass_id,
+        "id": slot.id,
+        "head": slot.head,
+        "point": slot.point,
+        "point_index": slot.point_index,
+        "locations": list(slot.locations),
+        "point_quality": slot.quality,
+        "nearest_chosen": slot.distance,
+    }
     row["source"] = candidate.get("source")
     return row
 
 
 def write_pass(pass_id: str, record: dict) -> Path:
-    """The pass's own summary, one file, whole. A re-run of a pass replaces it.
+    """The pass's record, whole, into its own directory. A re-run replaces it.
 
     Not upserted and not appended to a shared listing: a pass is superseded by the
     next one rather than accumulated into it, and the record that says what the
-    gallery is right now is the newest file in this directory.
+    gallery is right now is the newest directory here.
+
+    **The slots go to a file per partition** and the summary keeps everything else.
+    One file held both until the numbers said what a slot costs — about a kilobyte,
+    so N=500 is 1.3 MiB in one file against a 1 MiB history guard. The split is the
+    one the decision stores already take, on the axis a slot is allocated on, and
+    [`read_pass`] puts the record back together so no reader has to know.
     """
+    directory = pass_record_dir(pass_id)
+    directory.mkdir(parents=True, exist_ok=True)
+    by_partition: dict[str, list[dict]] = {}
+    for row in record.get("slots") or []:
+        by_partition.setdefault(str(row.get("partition")), []).append(row)
+    written = set()
+    for name, rows in by_partition.items():
+        path = slots_path(pass_id, name)
+        path.write_text(
+            "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows),
+            encoding="utf-8",
+            newline="\n",
+        )
+        written.add(path.name)
+    # A re-run over fewer partitions leaves no file behind claiming slots this pass
+    # no longer has.
+    for stale in directory.glob("*.jsonl"):
+        if stale.name not in written:
+            stale.unlink()
+
+    summary = {key: value for key, value in record.items() if key != "slots"}
+    summary["slots"] = {
+        "count": len(record.get("slots") or []),
+        "files": sorted(tracked_name(slots_path(pass_id, name)) for name in by_partition),
+    }
     path = record_path(pass_id)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8", newline="\n")
+    path.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8", newline="\n")
     return path
+
+
+def read_pass(pass_id: str) -> dict:
+    """One pass's record, put back together: the summary with its slots re-attached.
+
+    In slot-id order, which is the order the draw chose them in, so a reader gets
+    the same list [`run`] returned whatever the file axis under it happens to be.
+    """
+    record = json.loads(record_path(pass_id).read_text(encoding="utf-8"))
+    rows = [
+        json.loads(line)
+        for path in sorted(pass_record_dir(pass_id).glob("*.jsonl"))
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    record["slots"] = sorted(rows, key=lambda row: str(row.get("id")))
+    return record
 
 
 # --------------------------------------------------------------------------- #
@@ -1501,6 +1664,11 @@ def run(
     share = run_module.STRANGE_SHARE if strange_share is None else float(strange_share)
     m, smooth, strange = parse_attempts(attempts)
     pass_id = str(pass_id or next_pass_id())
+    # Before anything is spent and before a row is written. A pass run over the
+    # pre-split layout would upsert its winners into a release directory still
+    # holding every attempt the old code passed over, and the store would come
+    # out both layouts at once.
+    gallery_store.refuse_old_layout(pass_id)
     directory = pass_dir(pass_id)
     directory.mkdir(parents=True, exist_ok=True)
     if record_path(pass_id).is_file():
@@ -1519,7 +1687,7 @@ def run(
     # --- steps 1, 2, 4 ----------------------------------------------------- #
     slots, plan = plan_slots(rows, matrix, scores, n, share, radius, quality_weight, m, log)
     plan["attempts"] = {"locations": m, "smooth": smooth, "strange": strange}
-    by_key = {str(row["key"]): row for row in rows}
+    by_key = {str(row["key"]): colorize_row(row) for row in rows}
     ranks = _ranks(rows, scores)
 
     # --- step 5 ------------------------------------------------------------ #
@@ -1645,6 +1813,7 @@ def _slot_record(slot) -> dict:
         "partition": slot.partition,
         "head": slot.head,
         "point": slot.point,
+        "point_index": slot.point_index,
         "point_quality": slot.quality,
         "nearest_chosen": slot.distance,
         "locations": list(slot.locations),
@@ -1662,7 +1831,10 @@ def _slot_record(slot) -> dict:
             "p_ge3": seated.get("p_ge3"),
             "p_ge4": seated.get("p_ge4"),
             "picture": seated.get("release_picture"),
-            "release_autolevel": seated.get("release_autolevel"),
+            # The full-size render's autolevel stamp is NOT here. It is a kilobyte
+            # of operator provenance, it is already on this candidate's release row
+            # under the same id, and a copy on every slot was three quarters of
+            # what a seated slot cost the history.
         },
     }
 
@@ -1687,6 +1859,7 @@ __all__ = [
     "candidate_of_attempt",
     "candidate_of_pool_row",
     "choose",
+    "colorize_row",
     "head_order",
     "head_split",
     "load_embeddings",
@@ -1707,6 +1880,11 @@ __all__ = [
     "record_path",
     "render_winners",
     "runners_up_sheet",
+    "manifest_path_of",
+    "pass_record_dir",
+    "read_pass",
+    "slots_path",
+    "tracked_bytes",
     "write_pass",
     "write_records",
     "retro_table",

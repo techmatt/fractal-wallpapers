@@ -19,6 +19,7 @@ colorize   a candidate set of maps, the head's pick, a render, a verdict
 selection  top-N per judge, under the slot and supply caps, the location rule
            — and the bar
 gallery    the second phase: one pass over the whole pool for what ships
+gallery_store  a pass's attempt rows: under artifacts/, manifest-tracked
 release    the selected rows again at full size, workers rendering
 pacing     the wall clock: what may still start, and what is killed
 records    what the run decided, and out of what population
@@ -43,6 +44,8 @@ fractal-wallpapers curate reject --run v1 --rejector matt_review --date 2026-08-
 fractal-wallpapers curate reach --write scratch/unreached_keys.jsonl   # the gap, as a manifest
 fractal-wallpapers curate score --ledger <l> --key-file scratch/unreached_keys.jsonl
 fractal-wallpapers curate gallery --n 50                               # THE gallery pass
+fractal-wallpapers curate gallery-store check --pass gallery1          # is the store whole?
+fractal-wallpapers curate gallery --pass gallery1 --migrate            # out of the old layout
 ```
 
 ## A run accumulates; the gallery pass chooses
@@ -159,6 +162,69 @@ deliberately: `curation.rescore` finds any pool row's candidate render at
 that stored its pictures elsewhere would be a pass whose rows the next re-score
 refuses to read. Both contact sheets are written to `scratch/`, self-contained
 with their thumbnails embedded.
+
+## What a pass puts in the history, and what it puts beside it
+
+**Everything a pass tracks scales with `n`; nothing tracked scales with the
+attempts.** That is a rule, it is measured on every pass, and
+`tests/test_curation_gallery.py` pins it on a synthetic N=500 plan by writing the
+same 500 seats under two attempt counts an order of magnitude apart and demanding
+the tracked bytes come out the same to within the manifest's own digits.
+
+```
+data/curation/gallery/<pass>/pass.json              knobs, the plan, the retro
+                                                    table, the seating tally,
+                                                    timings
+data/curation/gallery/<pass>/<partition>.jsonl      one row per slot: the chosen
+                                                    point (key + embedding index),
+                                                    its neighbourhood, the fill
+                                                    arithmetic, the seat by key,
+                                                    the refusal by slug
+data/curation/gallery/<pass>/gate.manifest.json     rows, bytes, sha256, population
+data/curation/release/<pass>/<partition>.jsonl      the WINNERS, at most n of them
+artifacts/curation/gallery/<pass>/gate.jsonl        every attempt, one pool row each
+<archive>/curation_backup/gallery/<pass>/gate.jsonl the durable copy
+```
+
+`gallery.read_pass` puts the record back together — the summary with its slots
+re-attached in slot order — so nothing has to know about the file axis. **The
+slots split on partition for the same reason the decision stores do**: a slot row
+runs about a kilobyte, N=500 is 1.3 MiB, and the history guard acts per file.
+gallery1 at N=50 tracks **337 KB over twenty files, the largest 52 KB**.
+
+**The attempts are the bulk and they are not in the history.** A pass makes
+`locations x heads x draws` attempts per slot — 1,120 at n=50, ten times that at
+n=500 — and a pool row carrying its whole join runs about 3.8 KB. They get the
+`neutral_embeddings` treatment: under the regenerable tree, a copy on the archive
+tier, a tracked manifest, and `curate gallery-store {check,save,restore}` over
+them. The pass writes the copy and the manifest itself as its last act.
+
+**A pass no longer writes a release row per attempt.** It used to write both a
+gate row and a release row for every scored attempt, which is the same row twice
+and the second copy in the history. Measured on gallery1's own 1,120 attempts,
+the old layout would have tracked **7.84 MB** — 4.06 MB of release rows with the
+largest partition file at 0.86 MiB against the 1 MiB guard, 3.59 MB of gate rows,
+and a 197 KB single-file pass record — per pass, kept forever. The release store now answers
+only the question it exists for, *which candidate took a slot*, and a pass takes
+at most `n` of those decisions. What each slot passed over is not lost: it is on
+the slot as `eligible` / `below_floor` / `location_served`, in the tracked pass
+record, and the rows themselves are in the attempt store. A **run** still writes
+its passed-over rows into the tracked store, and that is not an inconsistency —
+a run's population is one night that will not exist again, and a pass's is the
+accumulated pool, which is still there.
+
+**A later pass reads both stores.** `gallery.pool_candidates` reads the release
+store *and* every earlier pass's attempt store, because an earlier pass's
+thousand-odd attempts are standing coloured judged candidates and are the largest
+single block of material a second pass can seat without rendering anything.
+
+**`curate gallery` refuses the pre-split layout** — a tracked gate directory under
+the pass id, or a passed-over release row in the history — before it spends
+anything, because a pass run over it would upsert its winners into a directory
+still holding every attempt the old code passed over. `curate gallery --pass <id>
+--migrate` moves one pass across: attempt rows into the new store with its
+manifest, the release directory rewritten to the winners alone. It reads and
+writes records only and renders nothing. It is idempotent.
 
 ## The gallery pass needs a distance, so every admitted location has a vector
 

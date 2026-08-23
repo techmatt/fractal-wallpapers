@@ -291,10 +291,18 @@ def test_a_second_pass_has_nothing_to_do(tmp_path) -> None:
         records.use(None)
 
 
-def test_the_collection_holds_one_wallpaper_per_location() -> None:
+def test_each_collection_holds_one_wallpaper_per_location() -> None:
     """The tracked store, after the retirement. This is the rule's whole claim, and
-    the only place it can be checked is against the collection itself."""
-    assert served_locations.repeats() == []
+    the only place it can be checked is against the collection itself.
+
+    **Per collection**, which is where the rule acts. The runs' diagnostic pictures
+    and the gallery pass's are two sets of places, and a pass that refused every
+    place a run's diagnostic release happens to sit on would hand the collection's
+    best locations to the ten pictures a night kept to prove its path worked. So a
+    group holding one of each is two collections agreeing about a location, and the
+    unscoped read is expected to find those."""
+    for collection in records.COLLECTIONS:
+        assert served_locations.repeats(collection=collection) == [], collection
 
 
 def test_every_location_served_rejection_names_a_survivor_that_is_still_served() -> None:

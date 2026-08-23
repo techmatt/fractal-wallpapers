@@ -2500,7 +2500,27 @@ def curate_run(args: argparse.Namespace) -> int:
 
 def curate_gallery(args: argparse.Namespace) -> int:
     """One gallery pass: choose N wallpapers over the whole pool, and render them."""
-    from fractal_wallpapers.curation import durability, embeddings, floors, gallery
+    from fractal_wallpapers.curation import (
+        durability,
+        embeddings,
+        floors,
+        gallery,
+        gallery_store,
+    )
+
+    if args.migrate:
+        if not args.pass_id:
+            print(
+                "--migrate acts on one named pass, so it needs --pass. There is no ordinal to "
+                "guess: a pass that has never run has nothing in the old layout to move."
+            )
+            return 1
+        try:
+            print(json.dumps(gallery_store.migrate(args.pass_id), indent=2))
+        except durability.DurableLost as refusal:
+            print(refusal)
+            return 1
+        return 0
 
     try:
         record = gallery.run(
@@ -2517,6 +2537,7 @@ def curate_gallery(args: argparse.Namespace) -> int:
         )
     except (
         gallery.PassRefused,
+        gallery_store.LayoutRefused,
         durability.DurableLost,
         embeddings.StoreRefused,
         floors.HeadStampMismatch,
@@ -2589,9 +2610,45 @@ def print_gallery(record: dict) -> None:
             else ""
         )
     )
+    store = record["records"]["attempts"]
+    print(
+        f"\nattempt store: {store['rows']:,} pool row(s) in {store['store']}, untracked"
+        + (f", {store['bytes']:,} bytes" if store.get("bytes") else "")
+    )
+    if store.get("copy"):
+        print(f"               copy {store['copy']}, manifest {store['manifest']}")
+    # Read off the disk here rather than recorded inside the pass record: a total
+    # written into the files it measures would change the number it reported.
+    from fractal_wallpapers.curation import gallery
+
+    tracked = gallery.tracked_bytes(record["pass"])
+    print(
+        f"tracked bytes: {tracked['total']:,} over {len(tracked['files'])} file(s), "
+        f"largest {tracked['largest']:,}"
+    )
     print(f"\nrecord {record['record']}")
     print(f"sheet  {record['sheets']['gallery']}")
     print(f"       {record['sheets']['runners_up']}")
+
+
+def curate_gallery_store(args: argparse.Namespace) -> int:
+    """Record, check or restore one pass's attempt store against its tracked manifest."""
+    from fractal_wallpapers.curation import durability, gallery_store
+
+    doing = {
+        "save": lambda: gallery_store.save(args.pass_id),
+        "check": lambda: gallery_store.check(args.pass_id),
+        "restore": lambda: gallery_store.restore(args.pass_id, force=args.force),
+    }[args.what]
+    try:
+        report = doing()
+    except durability.DurableLost as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps(report, indent=2))
+    if args.what == "check" and report.get("verdict") in {"short", "missing"}:
+        return 1
+    return 0
 
 
 def curate_reject(args: argparse.Namespace) -> int:
@@ -5427,7 +5484,47 @@ def curate_commands(subcommands) -> None:
         help="worker processes for the full-resolution pass (1 is the serial path)",
     )
     gallerying.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
+    gallerying.add_argument(
+        "--migrate",
+        action="store_true",
+        help="move --pass out of the layout that predates the store split — attempt rows "
+        "into the untracked gate store beside its manifest, the release store rewritten to "
+        "the winners alone — and stop. Reads and writes records only; renders nothing",
+    )
     gallerying.set_defaults(handler=curate_gallery)
+
+    pass_store = steps.add_parser(
+        "gallery-store",
+        help="a gallery pass's attempt store: record it, check it, restore it",
+        description=(
+            "A pass makes locations x heads x draws attempts per slot and each one is a pool "
+            "row carrying its whole join — 1,120 rows at n=50 and ten times that at n=500, "
+            "at about 3.8 KB a row. They live under the regenerable tree rather than in the "
+            "history, so they get what the supply sidecar and the embedding store get: a "
+            "copy on the archive tier, a tracked manifest carrying the row count, the bytes, "
+            "the sha256 and the population the attempts were made over, and a restore that "
+            "counts before it believes."
+        ),
+    )
+    pass_store.add_argument(
+        "what",
+        choices=["check", "save", "restore"],
+        help="check the live store against the manifest, save a fresh copy and manifest, "
+        "or restore the copy",
+    )
+    pass_store.add_argument(
+        "--pass",
+        dest="pass_id",
+        required=True,
+        help="which pass's store, by id",
+    )
+    pass_store.add_argument(
+        "--force",
+        action="store_true",
+        help="with `restore`: overwrite a live store that holds MORE rows than the manifest "
+        "records. Those rows are attempts nobody has saved yet",
+    )
+    pass_store.set_defaults(handler=curate_gallery_store)
 
     rejecting = steps.add_parser(
         "reject",

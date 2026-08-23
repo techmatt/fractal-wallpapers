@@ -151,11 +151,17 @@ def test_the_word_gallery_is_curations_and_the_deep_run_names_its_frames() -> No
 
 
 def test_every_release_row_on_record_says_which_collection_it_is_in() -> None:
-    """The backfill, against the tracked store. Everything released so far was a
-    run's, so all of it is diagnostic; nothing has been chosen against a pool."""
+    """Against the tracked store: every row names a collection and it is one of the
+    two. `None` is what a row written before the field existed carries, and the
+    backfill left none of those."""
     rows = records.read_decisions(records.RELEASE)
     kinds = {row.get("collection") for row in rows}
-    assert kinds == {records.DIAGNOSTIC}, f"{len(rows)} rows carry {kinds}"
+    assert kinds <= set(records.COLLECTIONS), f"{len(rows)} rows carry {kinds}"
+    assert None not in kinds
+    # Only the gallery pass writes the second one, and it writes it on every row.
+    galleries = {row["run"] for row in rows if row["collection"] == records.GALLERY}
+    diagnostics = {row["run"] for row in rows if row["collection"] == records.DIAGNOSTIC}
+    assert not (galleries & diagnostics)
 
 
 # --------------------------------------------------------------------------- #

@@ -2,15 +2,26 @@
   "schema": 1,
   "note": "which walk ledger each released row was drawn from, and whether that ledger still reads. A row whose ledger is gone still re-renders from its own join and still counts in every rate; what it cannot be is offered to another run. `tier` is a snapshot of where the file was on `read`, not a property of the ledger.",
   "read": "2026-08-22",
-  "pool_rows": 1050,
-  "ledgers_named": 8,
+  "pool_rows": 1092,
+  "ledgers_named": 9,
   "ledgers_absent": 0,
   "rows_on_absent_ledgers": 0,
   "ledgers": [
     {
-      "ledger": "artifacts/harvest/walk.jsonl",
-      "rows": 112,
+      "ledger": "artifacts/deep_shakedown/walk.jsonl",
+      "rows": 1,
       "runs": [
+        "gallery1"
+      ],
+      "resolves": true,
+      "at": "artifacts/deep_shakedown/walk.jsonl",
+      "tier": "hot"
+    },
+    {
+      "ledger": "artifacts/harvest/walk.jsonl",
+      "rows": 113,
+      "runs": [
+        "gallery1",
         "run8h"
       ],
       "resolves": true,
@@ -19,8 +30,9 @@
     },
     {
       "ledger": "artifacts/harvest_run10/walk.jsonl",
-      "rows": 320,
+      "rows": 336,
       "runs": [
+        "gallery1",
         "run10"
       ],
       "resolves": true,
@@ -29,8 +41,9 @@
     },
     {
       "ledger": "artifacts/harvest_run2/walk.jsonl",
-      "rows": 238,
+      "rows": 249,
       "runs": [
+        "gallery1",
         "run2",
         "run9"
       ],
@@ -40,8 +53,9 @@
     },
     {
       "ledger": "artifacts/harvest_run3/walk.jsonl",
-      "rows": 268,
+      "rows": 273,
       "runs": [
+        "gallery1",
         "run3",
         "run9"
       ],
@@ -61,8 +75,9 @@
     },
     {
       "ledger": "artifacts/mandelbrot_sourcing/walk.jsonl",
-      "rows": 56,
+      "rows": 64,
       "runs": [
+        "gallery1",
         "run9"
       ],
       "resolves": true,

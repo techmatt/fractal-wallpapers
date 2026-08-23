@@ -15,7 +15,15 @@ from pathlib import Path
 import numpy
 import pytest
 
-from fractal_wallpapers.curation import floors, gallery, records, selection
+from fractal_wallpapers.curation import (
+    durability,
+    floors,
+    gallery,
+    gallery_store,
+    records,
+    selection,
+)
+from fractal_wallpapers.supply import partitions
 
 
 # --------------------------------------------------------------------------- #
@@ -275,8 +283,21 @@ def test_the_pool_wide_denominator_is_every_embedded_location() -> None:
 # --------------------------------------------------------------------------- #
 @pytest.fixture
 def record_root(tmp_path, monkeypatch):
-    """Every record this process writes, redirected under `tmp_path`."""
+    """Every record this process writes, redirected under `tmp_path`.
+
+    Both halves of the store, because the pass now writes to two trees: the
+    tracked one under `data/` that [`records.root`] names, and the untracked
+    attempt store beside it. A fixture that redirected one of the two would leave
+    a test writing pool rows into the live `artifacts/`.
+    """
     monkeypatch.setattr(records, "_ROOT", (tmp_path / "curation").resolve())
+    monkeypatch.setattr(gallery_store, "store_root", lambda: tmp_path / "gallery_store")
+    monkeypatch.setattr(
+        gallery_store,
+        "backup_path",
+        lambda pass_id: tmp_path / "backup" / str(pass_id) / gallery_store.STORE_NAME,
+    )
+    monkeypatch.setattr(durability, "rehome", lambda stored: None)
     return tmp_path / "curation"
 
 
@@ -293,7 +314,7 @@ def test_two_passes_leave_two_records_and_the_first_is_untouched(record_root) ->
 def test_a_pass_record_lives_beside_the_runs_and_not_among_them(record_root) -> None:
     """A pass books no clock and measures no release rate, so it writes no run row."""
     gallery.write_pass("gallery1", {"schema": 1, "pass": "gallery1"})
-    assert gallery.record_path("gallery1").parent.name == "gallery"
+    assert gallery.record_path("gallery1").parent.parent.name == "gallery"
     assert not (record_root / "runs").exists()
     assert not (record_root / "runs.jsonl").exists()
 
@@ -350,3 +371,295 @@ def test_the_gallery_pass_carries_none_of_the_retired_vocabulary() -> None:
         Path("src/fractal_wallpapers/cli.py"),
     ):
         assert not banned.search(path.read_text(encoding="utf-8")), path
+
+
+# --------------------------------------------------------------------------- #
+# The store split: what a pass puts in the history, and what it puts beside it.
+# --------------------------------------------------------------------------- #
+#: The per-file ceiling `tests/test_history_purity.py` holds every tracked file to.
+MAX_TRACKED_BYTES = 1024 * 1024
+
+
+def attempt(number: int, key: str, head: str, partition: str = "mandelbrot") -> dict:
+    """One attempt row in the shape `colorize.annotate` hands back."""
+    return {
+        "attempt": number,
+        "head": head,
+        "partition": partition,
+        "key": key,
+        "family": {"kind": "mandelbrot", "degree": 2},
+        "viewport": {"center_re": key, "center_im": "0", "width": "1e-3"},
+        "maxiter": 1000,
+        "mode": "smooth",
+        "colormap": "viridis",
+        "anchor": "twilight",
+        "candidates": [f"map{i}" for i in range(8)],
+        "candidate_scores": {f"map{i}": 0.5 for i in range(8)},
+        "location_score": 0.9,
+        "p_ge2": 0.95,
+        "p_ge3": 0.9,
+        "p_ge4": 0.6,
+        "rank_score": 0.6,
+        "picture": f"pictures/{number:04d}.jpg",
+    }
+
+
+def seated_slot(number: int, key: str, head: str, partition: str = "mandelbrot"):
+    """One filled slot, seating this pass's own attempt `number`."""
+    filled = slot(f"{number:04d}", head, [key, f"{key}n1", f"{key}n2"], partition)
+    filled.point_index = number
+    filled.seated = {
+        **gallery.candidate_of_attempt(attempt(number, key, head, partition), "gallery1"),
+        "group": number,
+        "release_picture": f"release/{number:04d}.png",
+    }
+    return filled
+
+
+def tracked_total(root: Path) -> int:
+    return sum(path.stat().st_size for path in root.rglob("*") if path.is_file())
+
+
+def test_a_pass_writes_its_attempts_beside_the_history_and_its_winners_into_it(
+    record_root,
+) -> None:
+    """One attempt row per attempt, untracked; one release row per SEAT, tracked."""
+    attempts = [attempt(n, f"k{n}", SMOOTH) for n in range(40)]
+    slots = [seated_slot(0, "k0", SMOOTH), seated_slot(7, "k7", SMOOTH)]
+    written = gallery.write_records("gallery1", slots, attempts, ["mandelbrot"], lambda _l: None)
+
+    assert written["attempts"]["rows"] == 40
+    assert len(gallery_store.read("gallery1")) == 40
+    assert gallery_store.manifest_path("gallery1").is_file()
+
+    assert written["release_rows"] == 2
+    rows = records.read_decisions(records.RELEASE, "gallery1")
+    assert [row["candidate"] for row in rows] == ["0000", "0007"]
+    assert {row["verdict"] for row in rows} == {records.RELEASED}
+    # The half that used to be 1,120 rows of tracked text: nothing the pass passed
+    # over is in the history, and the gate directory a pass used to fill is gone.
+    assert not records.decisions_dir(records.GATE, "gallery1").exists()
+
+
+def test_what_a_slot_passed_over_is_still_on_the_record_as_a_count() -> None:
+    """The denominator survives the rows: it moves onto the slot, not out of the store."""
+    slots = [slot("0000", SMOOTH, ["a"])]
+    below = candidate("0001", "a", SMOOTH, 0.01, p_ge4=0.01)
+    gallery.seat(slots, [below], log=lambda _l: None)
+    assert slots[0].seated is None
+    written = gallery._slot_record(slots[0])
+    assert written["unfilled"] == "below_bar"
+    assert written["fill"]["eligible"] == 1
+    assert written["fill"]["below_floor"] == 1
+
+
+#: Every registered partition, so a synthetic plan spreads its rows over the file
+#: axis the tracked store splits on rather than piling them all into one file and
+#: measuring a case that cannot happen.
+REGISTERED = list(partitions.ALL_PARTITIONS)
+
+
+def synthetic_pass(extra: int) -> dict:
+    """A 500-slot plan, each slot seating its own attempt, plus `extra` that lost.
+
+    Writes the whole record the way a pass does — the slot rows included, through
+    `_slot_record`, so what the pin measures is the real per-slot cost and not a
+    stub standing in for it.
+    """
+    where = [REGISTERED[n % len(REGISTERED)] for n in range(500 + extra)]
+    slots = [seated_slot(n, f"k{n}", SMOOTH if n % 2 else STRANGE, where[n]) for n in range(500)]
+    attempts = [attempt(n, f"k{n}", SMOOTH if n % 2 else STRANGE, where[n]) for n in range(500)]
+    attempts += [
+        attempt(1000 + n, f"k{n % 500}n{n}", SMOOTH if n % 2 else STRANGE, where[500 + n])
+        for n in range(extra)
+    ]
+    written = gallery.write_records("gallery1", slots, attempts, ["mandelbrot"], lambda _l: None)
+    gallery.write_pass(
+        "gallery1",
+        {
+            "schema": 1,
+            "pass": "gallery1",
+            "records": written,
+            "slots": [gallery._slot_record(one) for one in slots],
+        },
+    )
+    return written
+
+
+def test_the_tracked_bytes_of_a_pass_do_not_move_with_the_attempt_count(
+    tmp_path, monkeypatch
+) -> None:
+    """THE pin on the store split. Ten times the attempts, the same history.
+
+    The two runs write the same 500 seats and differ only in how many attempts
+    lost. Everything tracked comes out the same size to within the manifest's own
+    row count — a few digits — while the untracked store grows by an order of
+    magnitude. A pass that duplicated its attempts as release rows would fail this
+    by megabytes.
+    """
+    sizes, stores = [], []
+    for index, extra in enumerate((1_200, 12_000)):
+        here = tmp_path / f"run{index}"
+        monkeypatch.setattr(records, "_ROOT", (here / "curation").resolve())
+        monkeypatch.setattr(gallery_store, "store_root", lambda here=here: here / "store")
+        monkeypatch.setattr(
+            gallery_store,
+            "backup_path",
+            lambda pass_id, here=here: here / "backup" / str(pass_id) / gallery_store.STORE_NAME,
+        )
+        monkeypatch.setattr(durability, "rehome", lambda stored: None)
+        written = synthetic_pass(extra)
+        sizes.append(tracked_total(here / "curation"))
+        stores.append(written["attempts"]["bytes"])
+
+    assert stores[1] > 6 * stores[0]
+    assert abs(sizes[1] - sizes[0]) < 64, (sizes, stores)
+
+
+def test_every_tracked_file_a_five_hundred_slot_pass_writes_clears_the_history_guard(
+    record_root,
+) -> None:
+    """The largest tracked file at N=500, against the 1 MiB the history refuses over."""
+    synthetic_pass(12_000)
+    files = {path: path.stat().st_size for path in record_root.rglob("*") if path.is_file()}
+    # A file of winners and a file of slots per partition, plus the record and the
+    # store's manifest.
+    assert len(files) == 2 * len(REGISTERED) + 2
+    largest = max(files.values())
+    assert largest < MAX_TRACKED_BYTES, {str(key): size for key, size in files.items()}
+
+
+def test_a_later_pass_can_seat_what_an_earlier_pass_attempted(record_root) -> None:
+    """An earlier pass's attempts are standing pool candidates, out of the new store."""
+    gallery.write_records(
+        "gallery1", [], [attempt(3, "a", SMOOTH)], ["mandelbrot"], lambda _l: None
+    )
+    standing = gallery.pool_candidates([slot("0000", SMOOTH, ["a"])], "gallery2")
+    assert [row["candidate"] for row in standing] == ["gallery1_0003"]
+    # `source.key` is the POOL ROW's key, which is what `rescore` joins on — not
+    # the location's, which is on the candidate itself.
+    assert standing[0]["source"] == {
+        "run": "gallery1",
+        "candidate": "0003",
+        "key": "gallery1|gate|0003",
+    }
+    # Its own attempts are never read back: they are already in hand.
+    assert gallery.pool_candidates([slot("0000", SMOOTH, ["a"])], "gallery1") == []
+
+
+def test_a_pass_refuses_to_run_against_the_layout_that_predates_the_split(record_root) -> None:
+    records.write_decisions(
+        records.GATE,
+        "gallery1",
+        [
+            records.decision(
+                run="gallery1",
+                stage=records.GATE,
+                candidate="0000",
+                verdict="kept",
+                row=attempt(0, "a", SMOOTH),
+            )
+        ],
+    )
+    with pytest.raises(gallery_store.LayoutRefused, match="predates the store split"):
+        gallery_store.refuse_old_layout("gallery1")
+
+
+def test_migrating_moves_the_attempts_out_and_drops_the_passed_over_duplicates(
+    record_root,
+) -> None:
+    records.write_decisions(
+        records.GATE,
+        "gallery1",
+        [
+            records.decision(
+                run="gallery1",
+                stage=records.GATE,
+                candidate=f"{n:04d}",
+                verdict="kept",
+                row=attempt(n, f"k{n}", SMOOTH),
+            )
+            for n in range(20)
+        ],
+    )
+    records.write_decisions(
+        records.RELEASE,
+        "gallery1",
+        [
+            records.decision(
+                run="gallery1",
+                stage=records.RELEASE,
+                candidate=f"{n:04d}",
+                verdict=records.RELEASED if n == 0 else records.PASSED_OVER,
+                collection=records.GALLERY,
+                row=attempt(n, f"k{n}", SMOOTH),
+                picture=f"release/{n:04d}.png" if n == 0 else None,
+            )
+            for n in range(20)
+        ],
+    )
+
+    report = gallery_store.migrate("gallery1", log=lambda _l: None)
+    assert report == {"pass": "gallery1", "moved": 20, "dropped": 19, "kept": 1}
+    assert not records.decisions_dir(records.GATE, "gallery1").exists()
+    assert [row["candidate"] for row in records.read_decisions(records.RELEASE, "gallery1")] == [
+        "0000"
+    ]
+    assert len(gallery_store.read("gallery1")) == 20
+    assert gallery_store.check("gallery1", log=lambda _l: None)["verdict"] == "ok"
+    # Idempotent: the layout is clean now, so a second call finds nothing and the
+    # pass no longer refuses.
+    assert gallery_store.migrate("gallery1", log=lambda _l: None)["moved"] == 0
+    gallery_store.refuse_old_layout("gallery1")
+
+
+def test_a_pass_record_reads_back_whole_out_of_its_own_directory(record_root) -> None:
+    """The slots live a file per partition; a reader still gets one record."""
+    slots = [
+        seated_slot(0, "k0", SMOOTH, "mandelbrot"),
+        seated_slot(1, "k1", STRANGE, "phoenix"),
+        seated_slot(2, "k2", SMOOTH, "mandelbrot"),
+    ]
+    gallery.write_pass(
+        "gallery1",
+        {"schema": 1, "pass": "gallery1", "slots": [gallery._slot_record(one) for one in slots]},
+    )
+    assert gallery.record_path("gallery1").is_file()
+    assert sorted(path.name for path in gallery.pass_record_dir("gallery1").glob("*.jsonl")) == [
+        "mandelbrot.jsonl",
+        "phoenix.jsonl",
+    ]
+    back = gallery.read_pass("gallery1")
+    assert [row["id"] for row in back["slots"]] == ["0000", "0001", "0002"]
+    assert gallery.passes() == ["gallery1"]
+    # The summary says how many slots there are and where they went, so nothing has
+    # to glob to know whether it read them all.
+    summary = json.loads(gallery.record_path("gallery1").read_text(encoding="utf-8"))
+    assert summary["slots"]["count"] == 3
+    assert len(summary["slots"]["files"]) == 2
+
+
+def test_a_seated_slot_does_not_carry_the_release_renders_autolevel_stamp(record_root) -> None:
+    """A kilobyte of operator provenance, already on the release row of the same id."""
+    filled = seated_slot(0, "k0", SMOOTH)
+    filled.seated["release_autolevel"] = {"operator": "band_autolevel/v1", "curve": [0] * 200}
+    assert "release_autolevel" not in gallery._slot_record(filled)["seated"]
+
+
+def test_an_embedding_row_reaches_the_colorizer_with_its_ledger_and_its_score() -> None:
+    """Two spellings that do not line up write `null` and say nothing about it."""
+    from fractal_wallpapers.curation import colorize
+
+    row = {
+        **location("a", 0.0),
+        "ledger": "artifacts/harvest_run10/walk.jsonl",
+        "location_p_ge3": 0.87,
+    }
+    spelled = gallery.colorize_row(row)
+    assert spelled["_ledger"] == "artifacts/harvest_run10/walk.jsonl"
+    assert spelled["score"] == 0.87
+    # The two names the colorizer actually reads, off its own source rather than
+    # off this test's memory of them.
+    source = Path(colorize.__file__).read_text(encoding="utf-8")
+    assert '"ledger": row.get("_ledger")' in source
+    assert '"location_score": row.get("score")' in source

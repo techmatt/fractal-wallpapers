@@ -13,7 +13,7 @@ import json
 
 import pytest
 
-from fractal_wallpapers.curation import records, rescore
+from fractal_wallpapers.curation import durability, gallery_store, records, rescore
 from fractal_wallpapers.curation import run as run_module
 
 
@@ -54,39 +54,48 @@ def test_a_gallery_seat_reads_the_picture_of_the_run_that_made_it() -> None:
     assert where.parent == run_module.run_dir("run9") / rescore.PICTURES
 
 
-def test_a_row_naming_no_head_refuses_rather_than_being_guessed_at(tmp_path) -> None:
+@pytest.fixture
+def isolated_pool(tmp_path, monkeypatch):
+    """Both halves of the pool under `tmp_path`: the tracked store and the pass stores."""
+    monkeypatch.setattr(gallery_store, "store_root", lambda: tmp_path / "gallery_store")
+    monkeypatch.setattr(
+        gallery_store,
+        "backup_path",
+        lambda pass_id: tmp_path / "backup" / str(pass_id) / gallery_store.STORE_NAME,
+    )
+    monkeypatch.setattr(durability, "rehome", lambda stored: None)
+    records.use(tmp_path)
+    yield tmp_path
+    records.use(None)
+
+
+def test_a_row_naming_no_head_refuses_rather_than_being_guessed_at(isolated_pool) -> None:
     """A candidate belongs to the judge whose slots paid for it. Reading a strange
     picture through the smooth head produces a number about material that head has
     never seen."""
-    records.use(tmp_path)
-    try:
-        records.write_decisions(
-            records.RELEASE,
-            "r",
-            [
-                records.decision(
-                    run="r",
-                    stage=records.RELEASE,
-                    candidate="0000",
-                    verdict=records.PASSED_OVER,
-                    row={"partition": "mandelbrot"},
-                    collection=records.DIAGNOSTIC,
-                )
-            ],
-        )
-        with pytest.raises(rescore.RescoreError, match="names no head"):
-            rescore.run(log=lambda *_: None)
-    finally:
-        records.use(None)
+    records.write_decisions(
+        records.RELEASE,
+        "r",
+        [
+            records.decision(
+                run="r",
+                stage=records.RELEASE,
+                candidate="0000",
+                verdict=records.PASSED_OVER,
+                # Scored, and naming no head: an unscored row is skipped before
+                # this refusal can act, and would test nothing.
+                row={"partition": "mandelbrot", "p_ge3": 0.5},
+                collection=records.DIAGNOSTIC,
+            )
+        ],
+    )
+    with pytest.raises(rescore.RescoreError, match="names no head"):
+        rescore.run(log=lambda *_: None)
 
 
-def test_an_empty_store_refuses(tmp_path) -> None:
-    records.use(tmp_path)
-    try:
-        with pytest.raises(rescore.RescoreError, match="no row"):
-            rescore.run(log=lambda *_: None)
-    finally:
-        records.use(None)
+def test_an_empty_store_refuses(isolated_pool) -> None:
+    with pytest.raises(rescore.RescoreError, match="no scored row"):
+        rescore.run(log=lambda *_: None)
 
 
 # --------------------------------------------------------------------------- #
@@ -164,3 +173,36 @@ def test_a_reading_never_lands_where_a_cut_would_read_it_by_accident() -> None:
             "p_ge4",
             "rank_score",
         }
+
+
+def test_a_reading_goes_back_to_the_store_the_row_came_from(isolated_pool) -> None:
+    """A pass's attempts are not in the history, and a re-score must not put them there."""
+    attempt = records.decision(
+        run="gallery1",
+        stage=records.GATE,
+        candidate="0007",
+        verdict="kept",
+        row={"partition": "mandelbrot", "head": "smooth_render", "p_ge3": 0.5},
+    )
+    seat = records.decision(
+        run="gallery1",
+        stage=records.RELEASE,
+        candidate="0007",
+        verdict=records.RELEASED,
+        collection=records.GALLERY,
+        row={"partition": "mandelbrot", "head": "smooth_render", "p_ge3": 0.5},
+        picture="release/0007.png",
+    )
+    gallery_store.write("gallery1", [attempt])
+    records.write_decisions(records.RELEASE, "gallery1", [seat])
+    block = {"head": "smooth_render", "p_ge3": 0.9}
+
+    written = rescore._write([attempt, seat], {attempt["key"]: block, seat["key"]: block}, print)
+
+    assert written == {"gallery1/gate": 1, "gallery1/release": 1}
+    assert gallery_store.read("gallery1")[0][rescore.BLOCK] == block
+    tracked = records.read_decisions(records.RELEASE, "gallery1")
+    assert [row["candidate"] for row in tracked] == ["0007"]
+    assert tracked[0][rescore.BLOCK] == block
+    # The manifest was saved again in the same call, so the store still reads whole.
+    assert gallery_store.check("gallery1", log=lambda _line: None)["verdict"] == "ok"

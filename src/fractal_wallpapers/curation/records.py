@@ -94,7 +94,7 @@ a [`rejected`] block saying who rejected it, when, and against what. Scores are
 untouched, nothing is deleted, and [`served`] is what every listing reads instead
 of the raw verdict.
 
-The block outlives a re-record. `_upsert` carries it forward when a fresh run of
+The block outlives a re-record. [`upsert_directory`] carries it forward when a fresh run of
 the same name writes the same key without one, because the alternative is that
 re-running a curation silently un-rejects rows a person rejected by hand.
 """
@@ -537,11 +537,14 @@ def _carry(previous: dict | None, row: dict) -> dict:
     return row
 
 
-def _upsert_file(path: Path, rows) -> tuple[int, int]:
+def upsert_file(path: Path, rows) -> tuple[int, int]:
     """Merge `rows` into one flat file by key, rewritten in key order. `(total, new)`.
 
-    What `runs.jsonl` is written with. It takes a row per run rather than a run's
-    worth of rows, so it has no reason to be anything but one file.
+    What `runs.jsonl` is written with — it takes a row per run rather than a run's
+    worth of rows, so it has no reason to be anything but one file — and what
+    [`curation.gallery_store`] writes a gallery pass's untracked gate store with,
+    for the opposite reason: that file is not in the history, so the 1 MiB guard
+    the tracked stores split on does not act over it.
     """
     merged: dict = {}
     if path.is_file():
@@ -561,7 +564,7 @@ def _upsert_file(path: Path, rows) -> tuple[int, int]:
     return len(merged), len(set(merged) - before)
 
 
-def _upsert(directory: Path, rows) -> tuple[int, int]:
+def upsert_directory(directory: Path, rows) -> tuple[int, int]:
     """Merge `rows` into one run's decision directory by key. `(total, new)`.
 
     The whole directory is rewritten from the merge rather than only the file a row
@@ -605,13 +608,13 @@ def _upsert(directory: Path, rows) -> tuple[int, int]:
 
 def write_decisions(stage: str, run: str, rows) -> tuple[Path, int, int]:
     directory = sinks(run)["gate" if stage == GATE else "release"]
-    total, new = _upsert(directory, rows)
+    total, new = upsert_directory(directory, rows)
     return directory, total, new
 
 
 def write_population(run: str, row: dict) -> tuple[Path, int, int]:
     path = sinks(run)["runs"]
-    total, new = _upsert_file(path, [row])
+    total, new = upsert_file(path, [row])
     return path, total, new
 
 
@@ -755,6 +758,8 @@ __all__ = [
     "scratch_root",
     "score_rank",
     "served",
+    "upsert_directory",
+    "upsert_file",
     "sinks",
     "use",
     "write_decisions",
