@@ -1,0 +1,1744 @@
+[
+  {
+    "name": "Verdigris & Coal",
+    "mood": "pure teal against pure magenta, both taken to the gamut edge, with true black and a white flare between them; no bridging mid-tone \u2014 the jump routes through white",
+    "architecture": "duotone-plus",
+    "skeleton": "cliff-in-mids",
+    "value_key": "low",
+    "complexity": 3,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.05,
+          0.0,
+          180
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.16,
+        "oklch": [
+          0.62,
+          0.105,
+          182
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.34,
+        "oklch": [
+          0.82,
+          0.1472,
+          178
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.46,
+        "oklch": [
+          0.97,
+          0.0042,
+          180
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.64,
+        "oklch": [
+          0.55,
+          0.2313,
+          335
+        ],
+        "role": "anchor",
+        "segment": "cliff"
+      },
+      {
+        "pos": 0.8,
+        "oklch": [
+          0.3,
+          0.0919,
+          338
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.05,
+          0.0,
+          180
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Chartreuse Eclipse",
+    "mood": "a pale cream-lime field with vivid chartreuse rising out of it and a deep violet as the only dark event; two hues, no mid-tone family between them",
+    "architecture": "duotone-plus",
+    "skeleton": "inverted-arc",
+    "value_key": "high",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.93,
+          0.0221,
+          100
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.14,
+        "oklch": [
+          0.8,
+          0.1761,
+          118
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.3,
+        "oklch": [
+          0.72,
+          0.1685,
+          121
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.44,
+        "oklch": [
+          0.96,
+          0.0136,
+          115
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.6,
+        "oklch": [
+          0.3,
+          0.1438,
+          300
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.7,
+        "oklch": [
+          0.16,
+          0.0655,
+          298
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.84,
+        "oklch": [
+          0.45,
+          0.1978,
+          305
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.93,
+          0.0221,
+          100
+        ],
+        "role": "field"
+      }
+    ]
+  },
+  {
+    "name": "Green Fire, Black Ash",
+    "mood": "pure green climbing to a white flare, dropped into black, then pure oxblood-red burning back down; hot and cold both at full chroma with black as the only bridge",
+    "architecture": "duotone-plus",
+    "skeleton": "peak-early",
+    "value_key": "low",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.04,
+          0.0,
+          150
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.1,
+        "oklch": [
+          0.62,
+          0.1615,
+          150
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.2,
+        "oklch": [
+          0.76,
+          0.2041,
+          150
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.28,
+        "oklch": [
+          0.88,
+          0.1971,
+          148
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.36,
+        "oklch": [
+          0.98,
+          0.0019,
+          150
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.46,
+        "oklch": [
+          0.13,
+          0.0149,
+          150
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.6,
+        "oklch": [
+          0.64,
+          0.2322,
+          28
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.74,
+        "oklch": [
+          0.4,
+          0.1458,
+          26
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.86,
+        "oklch": [
+          0.17,
+          0.0383,
+          24
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.04,
+          0.0,
+          150
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Ice Verdant Ramp",
+    "mood": "one cold temperature the whole way \u2014 black through indigo and petrol into vivid teal and a white peak; drama is the pure value-and-chroma sweep, never a reversal",
+    "architecture": "mono-temperature-ramp",
+    "skeleton": "peak-late",
+    "value_key": "low",
+    "complexity": 3,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.04,
+          0.0,
+          255
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.2,
+        "oklch": [
+          0.22,
+          0.0533,
+          250
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.42,
+        "oklch": [
+          0.45,
+          0.0698,
+          210
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.62,
+        "oklch": [
+          0.68,
+          0.1169,
+          185
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.78,
+        "oklch": [
+          0.84,
+          0.1451,
+          179
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.88,
+        "oklch": [
+          0.97,
+          0.0033,
+          180
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.04,
+          0.0,
+          255
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Forest Bloom",
+    "mood": "a single verdant temperature from deep forest through saturated green into a warm cream glow; no black, no reversal, the whole drama in the chroma climb",
+    "architecture": "mono-temperature-ramp",
+    "skeleton": "no-cliff",
+    "value_key": "mid",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.18,
+          0.0309,
+          160
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.16,
+        "oklch": [
+          0.36,
+          0.0799,
+          155
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.34,
+        "oklch": [
+          0.58,
+          0.1443,
+          152
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.5,
+        "oklch": [
+          0.75,
+          0.2056,
+          150
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.64,
+        "oklch": [
+          0.85,
+          0.2394,
+          145
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.78,
+        "oklch": [
+          0.94,
+          0.0511,
+          130
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.9,
+        "oklch": [
+          0.6,
+          0.0879,
+          165
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.18,
+          0.0309,
+          160
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Ember to Lime",
+    "mood": "a heat ramp that keeps going past gold into chartreuse \u2014 black, umber, rust, amber, gold, vivid lime, white; one warm temperature, no cool anywhere",
+    "architecture": "mono-temperature-ramp",
+    "skeleton": "peak-late",
+    "value_key": "low",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.04,
+          0.0,
+          45
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.12,
+        "oklch": [
+          0.2,
+          0.0569,
+          35
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.26,
+        "oklch": [
+          0.4,
+          0.1083,
+          45
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.4,
+        "oklch": [
+          0.56,
+          0.1242,
+          60
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.54,
+        "oklch": [
+          0.68,
+          0.1314,
+          88
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.64,
+        "oklch": [
+          0.75,
+          0.1565,
+          110
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.78,
+        "oklch": [
+          0.8,
+          0.1872,
+          121
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.88,
+        "oklch": [
+          0.96,
+          0.0256,
+          115
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.04,
+          0.0,
+          45
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Teal Against Rust",
+    "mood": "a cool teal mass and a warm rust mass held at equal chroma, bridged by a cool bone-mint glow and never by a blend; the temperature swing is the whole point",
+    "architecture": "complementary-tension",
+    "skeleton": "double-peak",
+    "value_key": "mid",
+    "complexity": 3,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.24,
+          0.0286,
+          200
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.12,
+        "oklch": [
+          0.64,
+          0.1006,
+          186
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.26,
+        "oklch": [
+          0.81,
+          0.1325,
+          179
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.36,
+        "oklch": [
+          0.94,
+          0.0191,
+          176
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.54,
+        "oklch": [
+          0.3,
+          0.0601,
+          45
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.72,
+        "oklch": [
+          0.66,
+          0.1181,
+          50
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.24,
+          0.0286,
+          200
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Lime and Cobalt",
+    "mood": "vivid chartreuse walked up to a white flare, then deep cobalt worked down the other side; a big warm-cool swing with the chroma held across it",
+    "architecture": "complementary-tension",
+    "skeleton": "peak-early",
+    "value_key": "low",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.05,
+          0.0,
+          260
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.1,
+        "oklch": [
+          0.58,
+          0.1359,
+          128
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.2,
+        "oklch": [
+          0.72,
+          0.1704,
+          122
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.3,
+        "oklch": [
+          0.84,
+          0.1831,
+          117
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.38,
+        "oklch": [
+          0.97,
+          0.0177,
+          110
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.52,
+        "oklch": [
+          0.52,
+          0.2071,
+          260
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.66,
+        "oklch": [
+          0.3,
+          0.1252,
+          262
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.8,
+        "oklch": [
+          0.44,
+          0.1227,
+          255
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.05,
+          0.0,
+          260
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Green and Magenta",
+    "mood": "deep plum against saturated green, each entered through a dark rather than blended; a cool mint glow at the top and no grey anywhere in the crossing",
+    "architecture": "complementary-tension",
+    "skeleton": "no-cliff",
+    "value_key": "mid",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.2,
+          0.07,
+          340
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.14,
+        "oklch": [
+          0.44,
+          0.1677,
+          345
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.26,
+        "oklch": [
+          0.12,
+          0.0218,
+          340
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.4,
+        "oklch": [
+          0.6,
+          0.1493,
+          152
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.54,
+        "oklch": [
+          0.76,
+          0.2083,
+          150
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.66,
+        "oklch": [
+          0.86,
+          0.2229,
+          148
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.78,
+        "oklch": [
+          0.95,
+          0.0238,
+          140
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.9,
+        "oklch": [
+          0.5,
+          0.2011,
+          345
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.2,
+          0.07,
+          340
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Copper on Verdigris",
+    "mood": "a pale cream field over oxide green and teal, with one genuinely deep petrol trough and a warm copper answering it; the mineral register, chroma pulled back from the edge",
+    "architecture": "complementary-tension",
+    "skeleton": "cliff-in-mids",
+    "value_key": "high",
+    "complexity": 3,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.93,
+          0.0178,
+          90
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.14,
+        "oklch": [
+          0.8,
+          0.1206,
+          150
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.3,
+        "oklch": [
+          0.71,
+          0.109,
+          180
+        ],
+        "role": "anchor",
+        "segment": "cliff"
+      },
+      {
+        "pos": 0.44,
+        "oklch": [
+          0.6,
+          0.0774,
+          190
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.58,
+        "oklch": [
+          0.17,
+          0.0208,
+          192
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.74,
+        "oklch": [
+          0.6,
+          0.0917,
+          55
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.93,
+          0.0178,
+          90
+        ],
+        "role": "field"
+      }
+    ]
+  },
+  {
+    "name": "Navy to Foam",
+    "mood": "a four-hue walk with no complement in it \u2014 navy, petrol, teal, green, foam \u2014 the drama in the value arc and the length of the hue path",
+    "architecture": "analogous-drift",
+    "skeleton": "peak-early",
+    "value_key": "mid",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.2,
+          0.0486,
+          250
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.1,
+        "oklch": [
+          0.48,
+          0.0813,
+          222
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.2,
+        "oklch": [
+          0.72,
+          0.116,
+          196
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.3,
+        "oklch": [
+          0.94,
+          0.0261,
+          175
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.44,
+        "oklch": [
+          0.8,
+          0.1401,
+          180
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.58,
+        "oklch": [
+          0.84,
+          0.2155,
+          152
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.72,
+        "oklch": [
+          0.58,
+          0.1149,
+          160
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.86,
+        "oklch": [
+          0.34,
+          0.0492,
+          205
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.2,
+          0.0486,
+          250
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Olive, Lime, Foam",
+    "mood": "black up through deep olive into chartreuse, a trough, then green out to a cool foam peak; neighbouring hues only, two lightness maxima of different temperature",
+    "architecture": "analogous-drift",
+    "skeleton": "double-peak",
+    "value_key": "low",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.04,
+          0.0,
+          100
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.1,
+        "oklch": [
+          0.34,
+          0.0593,
+          95
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.22,
+        "oklch": [
+          0.72,
+          0.1618,
+          118
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.32,
+        "oklch": [
+          0.9,
+          0.1195,
+          122
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.44,
+        "oklch": [
+          0.46,
+          0.1205,
+          135
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.56,
+        "oklch": [
+          0.7,
+          0.188,
+          150
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.68,
+        "oklch": [
+          0.84,
+          0.2089,
+          152
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.78,
+        "oklch": [
+          0.95,
+          0.0221,
+          165
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.9,
+        "oklch": [
+          0.4,
+          0.0597,
+          185
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.04,
+          0.0,
+          100
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Bone and Deep Green",
+    "mood": "a pale bone field, soft green and sea-green through the middle, one deep teal trough as the dark event; chroma deliberately held back \u2014 the muted end of the range",
+    "architecture": "analogous-drift",
+    "skeleton": "peak-late",
+    "value_key": "high",
+    "complexity": 3,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.9,
+          0.0284,
+          95
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.16,
+        "oklch": [
+          0.74,
+          0.1258,
+          150
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.32,
+        "oklch": [
+          0.6,
+          0.076,
+          162
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.48,
+        "oklch": [
+          0.22,
+          0.0241,
+          180
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.72,
+        "oklch": [
+          0.68,
+          0.1264,
+          140
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.86,
+        "oklch": [
+          0.96,
+          0.0417,
+          110
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.9,
+          0.0284,
+          95
+        ],
+        "role": "field"
+      }
+    ]
+  },
+  {
+    "name": "Teal, Magenta, Gold",
+    "mood": "three well-separated hues in balance \u2014 vivid teal, deep magenta, warm gold \u2014 each reached through black or a white peak, none of them blended into another",
+    "architecture": "triad",
+    "skeleton": "double-peak",
+    "value_key": "mid",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.16,
+          0.0195,
+          195
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.12,
+        "oklch": [
+          0.7,
+          0.1197,
+          184
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.26,
+        "oklch": [
+          0.88,
+          0.137,
+          178
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.38,
+        "oklch": [
+          0.14,
+          0.013,
+          182
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.52,
+        "oklch": [
+          0.55,
+          0.2331,
+          340
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.64,
+        "oklch": [
+          0.72,
+          0.1884,
+          345
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.76,
+        "oklch": [
+          0.96,
+          0.0091,
+          90
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.88,
+        "oklch": [
+          0.68,
+          0.1314,
+          88
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.16,
+          0.0195,
+          195
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Lime, Cobalt, Oxblood",
+    "mood": "chartreuse, cobalt and oxblood at full purity around a white flare and a black trough; polychromatic breadth a single pair could not give",
+    "architecture": "triad",
+    "skeleton": "no-cliff",
+    "value_key": "low",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.04,
+          0.0,
+          120
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.09,
+        "oklch": [
+          0.58,
+          0.1359,
+          128
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.19,
+        "oklch": [
+          0.72,
+          0.1704,
+          122
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.29,
+        "oklch": [
+          0.85,
+          0.1779,
+          116
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.37,
+        "oklch": [
+          0.96,
+          0.0228,
+          108
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.5,
+        "oklch": [
+          0.46,
+          0.1663,
+          258
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.62,
+        "oklch": [
+          0.26,
+          0.1089,
+          262
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.72,
+        "oklch": [
+          0.1,
+          0.0356,
+          265
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.84,
+        "oklch": [
+          0.48,
+          0.1915,
+          28
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.04,
+          0.0,
+          120
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Jade in Amethyst Light",
+    "mood": "a pale field, jade green through the upper half, a deep amethyst trough as the event and a warm amber glow returning; three hues, no blacks",
+    "architecture": "triad",
+    "skeleton": "inverted-arc",
+    "value_key": "high",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.94,
+          0.0095,
+          85
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.14,
+        "oklch": [
+          0.8,
+          0.2127,
+          150
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.28,
+        "oklch": [
+          0.68,
+          0.1745,
+          152
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.42,
+        "oklch": [
+          0.5,
+          0.0845,
+          175
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.54,
+        "oklch": [
+          0.18,
+          0.0822,
+          300
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.68,
+        "oklch": [
+          0.46,
+          0.2141,
+          305
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.8,
+        "oklch": [
+          0.72,
+          0.1667,
+          320
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.9,
+        "oklch": [
+          0.9,
+          0.0226,
+          60
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.94,
+          0.0095,
+          85
+        ],
+        "role": "field"
+      }
+    ]
+  },
+  {
+    "name": "Lime, Steel, Rose",
+    "mood": "chartreuse climbing off a steel-blue ground to a warm white peak, then dusky rose worked back down; three hues, every crossing routed through the flare or the dark",
+    "architecture": "triad",
+    "skeleton": "peak-early",
+    "value_key": "mid",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.16,
+          0.03,
+          240
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.1,
+        "oklch": [
+          0.62,
+          0.1528,
+          130
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.2,
+        "oklch": [
+          0.76,
+          0.1798,
+          122
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.3,
+        "oklch": [
+          0.87,
+          0.1766,
+          115
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.38,
+        "oklch": [
+          0.96,
+          0.0284,
+          108
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.54,
+        "oklch": [
+          0.44,
+          0.1737,
+          350
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.74,
+        "oklch": [
+          0.58,
+          0.2034,
+          352
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.16,
+          0.03,
+          240
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Teal Depths, Coral Spark",
+    "mood": "one teal family worked across the whole value range from pale ice to a deep petrol dark, interrupted once by a narrow coral spark bracketed by darkness",
+    "architecture": "near-monochrome-spark",
+    "skeleton": "inverted-arc",
+    "value_key": "high",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.95,
+          0.0088,
+          190
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.14,
+        "oklch": [
+          0.82,
+          0.1301,
+          184
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.28,
+        "oklch": [
+          0.66,
+          0.1118,
+          186
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.42,
+        "oklch": [
+          0.36,
+          0.0524,
+          192
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.54,
+        "oklch": [
+          0.17,
+          0.0206,
+          196
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.64,
+        "oklch": [
+          0.58,
+          0.2131,
+          30
+        ],
+        "role": "accent"
+      },
+      {
+        "pos": 0.72,
+        "oklch": [
+          0.16,
+          0.0398,
+          28
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.84,
+        "oklch": [
+          0.62,
+          0.0987,
+          188
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.95,
+          0.0088,
+          190
+        ],
+        "role": "field"
+      }
+    ]
+  },
+  {
+    "name": "Olive Field, Violet Spark",
+    "mood": "one chartreuse-olive family across the full value range with a crisp small-step cliff in the mids, and a single narrow violet spark as the contrast",
+    "architecture": "near-monochrome-spark",
+    "skeleton": "cliff-in-mids",
+    "value_key": "mid",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.2,
+          0.0301,
+          105
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.14,
+        "oklch": [
+          0.46,
+          0.0901,
+          110
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.26,
+        "oklch": [
+          0.7,
+          0.1573,
+          118
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.38,
+        "oklch": [
+          0.84,
+          0.1926,
+          122
+        ],
+        "role": "anchor",
+        "segment": "cliff"
+      },
+      {
+        "pos": 0.5,
+        "oklch": [
+          0.62,
+          0.1414,
+          126
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.62,
+        "oklch": [
+          0.95,
+          0.0523,
+          112
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.76,
+        "oklch": [
+          0.14,
+          0.0457,
+          300
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.86,
+        "oklch": [
+          0.42,
+          0.2009,
+          300
+        ],
+        "role": "accent"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.2,
+          0.0301,
+          105
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Amber Through Teal and Lime",
+    "mood": "one long green family from petrol through teal to chartreuse, peaking in white, with a single fierce amber spark on the way down",
+    "architecture": "near-monochrome-spark",
+    "skeleton": "peak-late",
+    "value_key": "low",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.04,
+          0.0,
+          160
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.12,
+        "oklch": [
+          0.3,
+          0.048,
+          175
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.24,
+        "oklch": [
+          0.55,
+          0.0944,
+          180
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.36,
+        "oklch": [
+          0.74,
+          0.1293,
+          182
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.48,
+        "oklch": [
+          0.8,
+          0.1711,
+          160
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.58,
+        "oklch": [
+          0.78,
+          0.1889,
+          124
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.7,
+        "oklch": [
+          0.86,
+          0.1793,
+          118
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.8,
+        "oklch": [
+          0.97,
+          0.015,
+          108
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.9,
+        "oklch": [
+          0.5,
+          0.1251,
+          50
+        ],
+        "role": "accent"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.04,
+          0.0,
+          160
+        ],
+        "role": "ground"
+      }
+    ]
+  }
+]

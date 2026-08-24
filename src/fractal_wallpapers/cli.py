@@ -1912,6 +1912,19 @@ def palettes_provenance(args: argparse.Namespace) -> int:
     return 0
 
 
+def palettes_ingest(args: argparse.Namespace) -> int:
+    """Densify a drop of authored palettes into maps the engine can bake."""
+    from fractal_wallpapers.palettes import authored_import
+
+    try:
+        report = authored_import.run(args.drop)
+    except authored_import.AuthoredImportError as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps(report, indent=2, ensure_ascii=False))
+    return 0
+
+
 def palettes_clusters(args: argparse.Namespace) -> int:
     """Regroup the library and rewrite the tracked clustering."""
     try:
@@ -4325,14 +4338,29 @@ def library_commands(subcommands) -> None:
     """
     group = subcommands.add_parser(
         "palettes",
-        help="the colormap library: provenance, clusters, and a map's gradient as a strip",
+        help="the colormap library: ingest, provenance, clusters, and a map's gradient as a strip",
         description=(
-            "The maps themselves, not the head that picks between them. `provenance` "
-            "rebuilds the record of how the made maps were made, `clusters` regroups the "
-            "library, and `strip` draws one map's gradient the way a render spends it."
+            "The maps themselves, not the head that picks between them. `ingest` densifies "
+            "a drop of authored palettes into the library, `provenance` rebuilds the record "
+            "of how the made maps were made, `clusters` regroups the library, and `strip` "
+            "draws one map's gradient the way a render spends it."
         ),
     )
     steps = group.add_subparsers(dest="step", required=True)
+
+    ingesting = steps.add_parser(
+        "ingest",
+        help="densify a drop of authored palettes into the colormap library",
+        description=(
+            "Reads a tracked drop under data/palettes/batches, interpolates each palette's "
+            "OKLCH control points in OKLab, and writes it beside the other maps. Whether a "
+            "map is cyclic is measured on the gradient — twice — rather than assumed from "
+            "the drop it arrived in, and a name the library already holds is refused until "
+            "the drop's renames.json says what it ships as."
+        ),
+    )
+    ingesting.add_argument("--drop", required=True, help="the drop's directory name")
+    ingesting.set_defaults(handler=palettes_ingest)
 
     recovering = steps.add_parser(
         "provenance",

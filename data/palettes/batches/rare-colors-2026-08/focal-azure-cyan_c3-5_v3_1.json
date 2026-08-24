@@ -1,0 +1,1753 @@
+[
+  {
+    "name": "Azure & Coal",
+    "mood": "pure azure and pure orange against true black and true white; azure climbs to a white flare, orange falls into black -- two hues, no bridge",
+    "architecture": "duotone-plus",
+    "skeleton": "peak-early",
+    "value_key": "low",
+    "complexity": 3,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.06,
+          0.015,
+          240
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.14,
+        "oklch": [
+          0.7,
+          0.14,
+          241
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.3,
+        "oklch": [
+          0.8,
+          0.1138,
+          239
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.38,
+        "oklch": [
+          0.97,
+          0.012,
+          235
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.6,
+        "oklch": [
+          0.11,
+          0.03,
+          300
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.8,
+        "oklch": [
+          0.7,
+          0.18,
+          52
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.06,
+          0.015,
+          240
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Cyan & Ember",
+    "mood": "vivid cyan against ember red, black and white at the extremes; a small-step cliff steps the ember up, the big turn goes through black",
+    "architecture": "duotone-plus",
+    "skeleton": "cliff-in-mids",
+    "value_key": "low",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.05,
+          0.012,
+          208
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.1,
+        "oklch": [
+          0.36,
+          0.058,
+          206
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.24,
+        "oklch": [
+          0.72,
+          0.1242,
+          209
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.36,
+        "oklch": [
+          0.78,
+          0.122,
+          212
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.46,
+        "oklch": [
+          0.96,
+          0.01,
+          215
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.6,
+        "oklch": [
+          0.14,
+          0.035,
+          250
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.72,
+        "oklch": [
+          0.52,
+          0.15,
+          32
+        ],
+        "role": "anchor",
+        "segment": "cliff"
+      },
+      {
+        "pos": 0.8,
+        "oklch": [
+          0.66,
+          0.195,
+          28
+        ],
+        "role": "accent"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.05,
+          0.012,
+          208
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Signal & Sulphur",
+    "mood": "azure sliding to cyan under a cream blowout, then sulphur gold; the cool mass is one long light plateau, the warm is a single late strike",
+    "architecture": "duotone-plus",
+    "skeleton": "peak-late",
+    "value_key": "mid",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.13,
+          0.03,
+          238
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.12,
+        "oklch": [
+          0.44,
+          0.095,
+          241
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.26,
+        "oklch": [
+          0.71,
+          0.14,
+          240
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.38,
+        "oklch": [
+          0.76,
+          0.132,
+          238
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.52,
+        "oklch": [
+          0.74,
+          0.128,
+          210
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.64,
+        "oklch": [
+          0.78,
+          0.124,
+          206
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.8,
+        "oklch": [
+          0.95,
+          0.055,
+          88
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.9,
+        "oklch": [
+          0.74,
+          0.1513,
+          90
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.13,
+          0.03,
+          238
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Fuchsia Beacon",
+    "mood": "azure and fuchsia as two saturated poles with white between and black beneath; no mid-tone bridge, maximum purity on both sides",
+    "architecture": "duotone-plus",
+    "skeleton": "double-peak",
+    "value_key": "mid",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.12,
+          0.03,
+          242
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.09,
+        "oklch": [
+          0.45,
+          0.1,
+          243
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.2,
+        "oklch": [
+          0.72,
+          0.14,
+          241
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.36,
+        "oklch": [
+          0.82,
+          0.1017,
+          239
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.44,
+        "oklch": [
+          0.96,
+          0.012,
+          300
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.58,
+        "oklch": [
+          0.14,
+          0.04,
+          320
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.7,
+        "oklch": [
+          0.62,
+          0.24,
+          335
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.84,
+        "oklch": [
+          0.3,
+          0.132,
+          338
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.12,
+          0.03,
+          242
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Deep Cold Run",
+    "mood": "a single cold sweep with no reversal -- black, navy, slate-azure, vivid azure, cyan, white; drama is the pure value-and-chroma climb",
+    "architecture": "mono-temperature-ramp",
+    "skeleton": "peak-late",
+    "value_key": "low",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.04,
+          0.01,
+          250
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.06,
+        "oklch": [
+          0.2,
+          0.07,
+          258
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.16,
+        "oklch": [
+          0.38,
+          0.078,
+          246
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.3,
+        "oklch": [
+          0.49,
+          0.092,
+          241
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.44,
+        "oklch": [
+          0.71,
+          0.14,
+          240
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.58,
+        "oklch": [
+          0.78,
+          0.1287,
+          237
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.67,
+        "oklch": [
+          0.76,
+          0.128,
+          212
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.82,
+        "oklch": [
+          0.82,
+          0.12,
+          204
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.88,
+        "oklch": [
+          0.98,
+          0.008,
+          200
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.04,
+          0.01,
+          250
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Glacier Meridian",
+    "mood": "one cool temperature walked from petrol dark to cyan light to white; no warm anywhere, the ramp itself is the event",
+    "architecture": "mono-temperature-ramp",
+    "skeleton": "no-cliff",
+    "value_key": "mid",
+    "complexity": 3,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.16,
+          0.0279,
+          200
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.14,
+        "oklch": [
+          0.34,
+          0.058,
+          198
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.3,
+        "oklch": [
+          0.52,
+          0.0885,
+          202
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.48,
+        "oklch": [
+          0.72,
+          0.1238,
+          208
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.66,
+        "oklch": [
+          0.8,
+          0.124,
+          212
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.82,
+        "oklch": [
+          0.96,
+          0.02,
+          205
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.16,
+          0.0279,
+          200
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Cold Iron Ascent",
+    "mood": "muted iron-blues from near-black through slate-azure to a bone flare and back down; restraint held across a very wide value range",
+    "architecture": "mono-temperature-ramp",
+    "skeleton": "peak-early",
+    "value_key": "low",
+    "complexity": 3,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.05,
+          0.012,
+          250
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.24,
+        "oklch": [
+          0.72,
+          0.105,
+          240
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.34,
+        "oklch": [
+          0.93,
+          0.022,
+          236
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.52,
+        "oklch": [
+          0.74,
+          0.104,
+          241
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.7,
+        "oklch": [
+          0.5,
+          0.098,
+          244
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.86,
+        "oklch": [
+          0.34,
+          0.06,
+          247
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.05,
+          0.012,
+          250
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Copper Tide",
+    "mood": "deep saturated copper against a deep saturated azure, bridged by a cream glow and a pale steel step -- temperature tension, chroma held on both sides",
+    "architecture": "complementary-tension",
+    "skeleton": "double-peak",
+    "value_key": "mid",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.14,
+          0.045,
+          40
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.12,
+        "oklch": [
+          0.42,
+          0.13,
+          38
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.24,
+        "oklch": [
+          0.62,
+          0.1774,
+          45
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.34,
+        "oklch": [
+          0.94,
+          0.03,
+          80
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.46,
+        "oklch": [
+          0.8,
+          0.055,
+          205
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.58,
+        "oklch": [
+          0.68,
+          0.14,
+          242
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.7,
+        "oklch": [
+          0.78,
+          0.125,
+          240
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.84,
+        "oklch": [
+          0.28,
+          0.068,
+          246
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.14,
+          0.045,
+          40
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Verdigris Furnace",
+    "mood": "oxide cyan-teal cooled against a banked copper, bone glow between; the muted register, kept off grey by holding chroma at both poles",
+    "architecture": "complementary-tension",
+    "skeleton": "no-cliff",
+    "value_key": "low",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.07,
+          0.015,
+          240
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.1,
+        "oklch": [
+          0.4,
+          0.07,
+          238
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.22,
+        "oklch": [
+          0.36,
+          0.0736,
+          232
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.34,
+        "oklch": [
+          0.7,
+          0.108,
+          212
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.56,
+        "oklch": [
+          0.76,
+          0.1,
+          205
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.7,
+        "oklch": [
+          0.93,
+          0.025,
+          95
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.82,
+        "oklch": [
+          0.58,
+          0.115,
+          58
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.92,
+        "oklch": [
+          0.24,
+          0.058,
+          42
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.07,
+          0.015,
+          240
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Rose Under Ice",
+    "mood": "a pale ice field with a deep navy trough as the event, answered late by a dusky rose; cool mass versus warm mass, no blacks",
+    "architecture": "complementary-tension",
+    "skeleton": "inverted-arc",
+    "value_key": "high",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.9,
+          0.035,
+          240
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.12,
+        "oklch": [
+          0.78,
+          0.1,
+          238
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.26,
+        "oklch": [
+          0.72,
+          0.135,
+          240
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.4,
+        "oklch": [
+          0.46,
+          0.09,
+          242
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.52,
+        "oklch": [
+          0.2,
+          0.0575,
+          250
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.68,
+        "oklch": [
+          0.5,
+          0.088,
+          246
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.76,
+        "oklch": [
+          0.94,
+          0.02,
+          330
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.88,
+        "oklch": [
+          0.74,
+          0.135,
+          350
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.9,
+          0.035,
+          240
+        ],
+        "role": "field"
+      }
+    ]
+  },
+  {
+    "name": "Petrol to Powder",
+    "mood": "a four-station cool walk -- petrol, teal, cyan, azure, periwinkle -- rising to a powder-white peak; hue does the work, no temperature reversal",
+    "architecture": "analogous-drift",
+    "skeleton": "peak-late",
+    "value_key": "low",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.06,
+          0.015,
+          192
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.1,
+        "oklch": [
+          0.3,
+          0.05,
+          194
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.24,
+        "oklch": [
+          0.55,
+          0.092,
+          200
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.38,
+        "oklch": [
+          0.74,
+          0.126,
+          209
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.5,
+        "oklch": [
+          0.78,
+          0.122,
+          214
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.62,
+        "oklch": [
+          0.74,
+          0.14,
+          240
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.74,
+        "oklch": [
+          0.72,
+          0.136,
+          244
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.84,
+        "oklch": [
+          0.96,
+          0.015,
+          258
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.06,
+          0.015,
+          192
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Nightfall Azure",
+    "mood": "indigo to cobalt to azure to cyan, two light peaks with a dusk trough between; polychromatic but strictly within the cool half",
+    "architecture": "analogous-drift",
+    "skeleton": "double-peak",
+    "value_key": "mid",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.13,
+          0.045,
+          280
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.08,
+        "oklch": [
+          0.36,
+          0.165,
+          265
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.2,
+        "oklch": [
+          0.44,
+          0.1,
+          248
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.38,
+        "oklch": [
+          0.46,
+          0.092,
+          242
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.44,
+        "oklch": [
+          0.72,
+          0.14,
+          240
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.6,
+        "oklch": [
+          0.8,
+          0.1149,
+          238
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.64,
+        "oklch": [
+          0.62,
+          0.105,
+          224
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.78,
+        "oklch": [
+          0.76,
+          0.128,
+          210
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.9,
+        "oklch": [
+          0.94,
+          0.03,
+          205
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.13,
+          0.045,
+          280
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Green Water Drift",
+    "mood": "pale sea-green drifting through mint to cyan over a high field, with one deep navy jewel as the anchor; muted and luminous",
+    "architecture": "analogous-drift",
+    "skeleton": "peak-early",
+    "value_key": "high",
+    "complexity": 3,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.72,
+          0.07,
+          150
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.14,
+        "oklch": [
+          0.84,
+          0.09,
+          175
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.28,
+        "oklch": [
+          0.95,
+          0.03,
+          200
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.48,
+        "oklch": [
+          0.74,
+          0.12,
+          208
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.66,
+        "oklch": [
+          0.68,
+          0.115,
+          212
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.84,
+        "oklch": [
+          0.185,
+          0.07,
+          258
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.72,
+          0.07,
+          150
+        ],
+        "role": "field"
+      }
+    ]
+  },
+  {
+    "name": "Slate Ascension",
+    "mood": "azure light field, a small-step cliff dropping into slate and a deep navy event, then a cyan rise back -- the dark is the subject",
+    "architecture": "analogous-drift",
+    "skeleton": "cliff-in-mids",
+    "value_key": "high",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.88,
+          0.06,
+          228
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.12,
+        "oklch": [
+          0.76,
+          0.13,
+          238
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.26,
+        "oklch": [
+          0.72,
+          0.138,
+          241
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.38,
+        "oklch": [
+          0.5,
+          0.095,
+          244
+        ],
+        "role": "mid",
+        "segment": "cliff"
+      },
+      {
+        "pos": 0.46,
+        "oklch": [
+          0.38,
+          0.078,
+          246
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.6,
+        "oklch": [
+          0.2,
+          0.0575,
+          250
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.74,
+        "oklch": [
+          0.6,
+          0.1,
+          225
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.84,
+        "oklch": [
+          0.8,
+          0.122,
+          208
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.88,
+          0.06,
+          228
+        ],
+        "role": "field"
+      }
+    ]
+  },
+  {
+    "name": "Azure, Gold, Oxblood",
+    "mood": "three separated hues in balance: azure against gold against oxblood, every turn routed through white or black, all three at full purity",
+    "architecture": "triad",
+    "skeleton": "peak-early",
+    "value_key": "low",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.05,
+          0.012,
+          240
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.09,
+        "oklch": [
+          0.44,
+          0.1,
+          243
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.18,
+        "oklch": [
+          0.72,
+          0.14,
+          240
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.34,
+        "oklch": [
+          0.8,
+          0.1149,
+          238
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.42,
+        "oklch": [
+          0.97,
+          0.01,
+          230
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.56,
+        "oklch": [
+          0.8,
+          0.1637,
+          92
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.68,
+        "oklch": [
+          0.42,
+          0.0987,
+          60
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.78,
+        "oklch": [
+          0.15,
+          0.0594,
+          32
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.88,
+        "oklch": [
+          0.52,
+          0.205,
+          28
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.05,
+          0.012,
+          240
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Cyan, Magenta, Amber",
+    "mood": "cyan, magenta and amber held as a true triad; white bridges the first turn, black the second, and no two hues ever blend",
+    "architecture": "triad",
+    "skeleton": "double-peak",
+    "value_key": "mid",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.12,
+          0.0221,
+          210
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.1,
+        "oklch": [
+          0.44,
+          0.0757,
+          208
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.24,
+        "oklch": [
+          0.72,
+          0.1242,
+          209
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.38,
+        "oklch": [
+          0.8,
+          0.122,
+          212
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.46,
+        "oklch": [
+          0.96,
+          0.015,
+          220
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.56,
+        "oklch": [
+          0.6,
+          0.25,
+          335
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.66,
+        "oklch": [
+          0.3,
+          0.1308,
+          340
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.76,
+        "oklch": [
+          0.16,
+          0.06,
+          20
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.86,
+        "oklch": [
+          0.74,
+          0.1604,
+          70
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.12,
+          0.0221,
+          210
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Deep Azure & Coral",
+    "mood": "a long slate-azure floor, a white break, then moss and coral -- the triad is weighted heavily toward the deep cool mass",
+    "architecture": "triad",
+    "skeleton": "no-cliff",
+    "value_key": "low",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.07,
+          0.02,
+          242
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.12,
+        "oklch": [
+          0.34,
+          0.07,
+          244
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.26,
+        "oklch": [
+          0.46,
+          0.09,
+          240
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.38,
+        "oklch": [
+          0.4,
+          0.078,
+          246
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.5,
+        "oklch": [
+          0.92,
+          0.03,
+          230
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.62,
+        "oklch": [
+          0.72,
+          0.115,
+          125
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.76,
+        "oklch": [
+          0.5,
+          0.1023,
+          90
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.88,
+        "oklch": [
+          0.62,
+          0.165,
+          38
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.07,
+          0.02,
+          242
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Azure Monolith",
+    "mood": "one azure family from black to white across the whole value range, with a single amber spark struck out of a cream glow",
+    "architecture": "near-monochrome-spark",
+    "skeleton": "peak-late",
+    "value_key": "low",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.05,
+          0.012,
+          244
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.1,
+        "oklch": [
+          0.34,
+          0.075,
+          246
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.24,
+        "oklch": [
+          0.46,
+          0.095,
+          243
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.42,
+        "oklch": [
+          0.72,
+          0.142,
+          240
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.58,
+        "oklch": [
+          0.7,
+          0.135,
+          238
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.74,
+        "oklch": [
+          0.95,
+          0.0435,
+          78
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.88,
+        "oklch": [
+          0.62,
+          0.1485,
+          58
+        ],
+        "role": "accent"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.05,
+          0.012,
+          244
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Cyan Vault",
+    "mood": "a cyan family walked from ink to white with one small-step cliff low down, a cream glow at the top, and one magenta spark as the only outside hue",
+    "architecture": "near-monochrome-spark",
+    "skeleton": "cliff-in-mids",
+    "value_key": "mid",
+    "complexity": 3,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.13,
+          0.0233,
+          205
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.16,
+        "oklch": [
+          0.42,
+          0.072,
+          206
+        ],
+        "role": "field",
+        "segment": "cliff"
+      },
+      {
+        "pos": 0.26,
+        "oklch": [
+          0.6,
+          0.1032,
+          208
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.48,
+        "oklch": [
+          0.78,
+          0.128,
+          211
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.72,
+        "oklch": [
+          0.94,
+          0.058,
+          92
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.88,
+        "oklch": [
+          0.55,
+          0.235,
+          335
+        ],
+        "role": "accent"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.13,
+          0.0233,
+          205
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Porcelain Azure",
+    "mood": "porcelain azure field with a deep navy trough as the event and a warm cream glow carrying a single rose glint; pale, cool and nearly monochrome",
+    "architecture": "near-monochrome-spark",
+    "skeleton": "inverted-arc",
+    "value_key": "high",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.92,
+          0.03,
+          238
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.2,
+        "oklch": [
+          0.74,
+          0.13,
+          241
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.4,
+        "oklch": [
+          0.44,
+          0.092,
+          244
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.56,
+        "oklch": [
+          0.19,
+          0.0521,
+          248
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.78,
+        "oklch": [
+          0.66,
+          0.112,
+          243
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.9,
+        "oklch": [
+          0.94,
+          0.0426,
+          68
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.96,
+        "oklch": [
+          0.74,
+          0.155,
+          25
+        ],
+        "role": "accent"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.92,
+          0.03,
+          238
+        ],
+        "role": "field"
+      }
+    ]
+  }
+]

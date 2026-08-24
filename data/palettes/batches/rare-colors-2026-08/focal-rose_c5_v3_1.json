@@ -1,0 +1,1898 @@
+[
+ {
+  "name": "Coal Rose",
+  "mood": "true black and white with cobalt and pure rose; cobalt climbs to a white flare and the whole descent is rose, deep focal crimson before the fall to coal",
+  "architecture": "duotone-plus",
+  "skeleton": "peak-early",
+  "value_key": "low",
+  "complexity": 5,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.05,
+     0.01,
+     0
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.1,
+    "oklch": [
+     0.3,
+     0.13,
+     262
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.22,
+    "oklch": [
+     0.6,
+     0.16,
+     255
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.32,
+    "oklch": [
+     0.98,
+     0.005,
+     250
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.46,
+    "oklch": [
+     0.52,
+     0.19,
+     5
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.6,
+    "oklch": [
+     0.72,
+     0.165,
+     358
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.74,
+    "oklch": [
+     0.4,
+     0.158,
+     10
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.88,
+    "oklch": [
+     0.16,
+     0.06,
+     5
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.05,
+     0.01,
+     0
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Ember Rose Ramp",
+  "mood": "one warm sweep, no reversal: coal to oxblood to deep rose to blush to cream and a white flare at the top",
+  "architecture": "mono-temperature-ramp",
+  "skeleton": "peak-late",
+  "value_key": "low",
+  "complexity": 5,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.04,
+     0.01,
+     20
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.12,
+    "oklch": [
+     0.2,
+     0.089,
+     15
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.28,
+    "oklch": [
+     0.36,
+     0.147,
+     8
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.44,
+    "oklch": [
+     0.5,
+     0.19,
+     5
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.58,
+    "oklch": [
+     0.62,
+     0.18,
+     2
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.72,
+    "oklch": [
+     0.75,
+     0.16,
+     358
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.84,
+    "oklch": [
+     0.88,
+     0.064,
+     20
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.93,
+    "oklch": [
+     0.98,
+     0.01,
+     40
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.04,
+     0.01,
+     20
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Slate and Dusty Rose",
+  "mood": "dusty rose mass against slate-teal, bridged by a cream glow; the muted antique register, temperature tension held without vivid chroma",
+  "architecture": "complementary-tension",
+  "skeleton": "no-cliff",
+  "value_key": "mid",
+  "complexity": 5,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.14,
+     0.033,
+     200
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.14,
+    "oklch": [
+     0.34,
+     0.06,
+     195
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.26,
+    "oklch": [
+     0.26,
+     0.048,
+     190
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.4,
+    "oklch": [
+     0.93,
+     0.03,
+     90
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.52,
+    "oklch": [
+     0.74,
+     0.1,
+     358
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.66,
+    "oklch": [
+     0.56,
+     0.125,
+     3
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.8,
+    "oklch": [
+     0.4,
+     0.12,
+     10
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.9,
+    "oklch": [
+     0.22,
+     0.07,
+     350
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.14,
+     0.033,
+     200
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Rose Triad",
+  "mood": "cobalt, rose and gold in balance; an ice flare opens the way into a long rose body, a coal trough, then a gold second peak",
+  "architecture": "triad",
+  "skeleton": "double-peak",
+  "value_key": "mid",
+  "complexity": 5,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.08,
+     0.02,
+     260
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.14,
+    "oklch": [
+     0.45,
+     0.15,
+     258
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.3,
+    "oklch": [
+     0.9,
+     0.049,
+     255
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.4,
+    "oklch": [
+     0.75,
+     0.16,
+     358
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.5,
+    "oklch": [
+     0.55,
+     0.19,
+     3
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.6,
+    "oklch": [
+     0.38,
+     0.154,
+     10
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.68,
+    "oklch": [
+     0.13,
+     0.035,
+     20
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.8,
+    "oklch": [
+     0.82,
+     0.13,
+     88
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.9,
+    "oklch": [
+     0.45,
+     0.107,
+     60
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.08,
+     0.02,
+     260
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Rose in Ash",
+  "mood": "one smoky rose family across the whole value range with a single cold teal spark; a small step-up cliff in the mids",
+  "architecture": "near-monochrome-spark",
+  "skeleton": "cliff-in-mids",
+  "value_key": "mid",
+  "complexity": 5,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.1,
+     0.03,
+     350
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.16,
+    "oklch": [
+     0.28,
+     0.085,
+     355
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.32,
+    "oklch": [
+     0.44,
+     0.12,
+     5
+    ],
+    "role": "anchor",
+    "segment": "cliff"
+   },
+   {
+    "pos": 0.38,
+    "oklch": [
+     0.62,
+     0.115,
+     2
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.52,
+    "oklch": [
+     0.78,
+     0.09,
+     358
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.64,
+    "oklch": [
+     0.95,
+     0.02,
+     20
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.76,
+    "oklch": [
+     0.5,
+     0.086,
+     200
+    ],
+    "role": "accent"
+   },
+   {
+    "pos": 0.86,
+    "oklch": [
+     0.14,
+     0.03,
+     350
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.1,
+     0.03,
+     350
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Petal Drift",
+  "mood": "violet drifting through magenta and rose to peach and a pale gold glow; no blacks, a deep violet jewel holds the floor",
+  "architecture": "analogous-drift",
+  "skeleton": "peak-late",
+  "value_key": "high",
+  "complexity": 5,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.22,
+     0.11,
+     300
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.14,
+    "oklch": [
+     0.42,
+     0.16,
+     330
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.28,
+    "oklch": [
+     0.55,
+     0.19,
+     350
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.4,
+    "oklch": [
+     0.48,
+     0.18,
+     5
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.54,
+    "oklch": [
+     0.7,
+     0.165,
+     0
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.68,
+    "oklch": [
+     0.8,
+     0.118,
+     10
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.82,
+    "oklch": [
+     0.93,
+     0.036,
+     30
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.9,
+    "oklch": [
+     0.72,
+     0.1,
+     320
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.22,
+     0.11,
+     300
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Rose Against Cobalt",
+  "mood": "a pale rose field with the dark as the event: the ramp falls from blush through pure rose into a deep navy trough, then back up to an icy glow",
+  "architecture": "complementary-tension",
+  "skeleton": "inverted-arc",
+  "value_key": "high",
+  "complexity": 5,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.88,
+     0.06,
+     20
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.12,
+    "oklch": [
+     0.8,
+     0.12,
+     5
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.26,
+    "oklch": [
+     0.68,
+     0.165,
+     0
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.38,
+    "oklch": [
+     0.52,
+     0.19,
+     5
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.5,
+    "oklch": [
+     0.36,
+     0.147,
+     10
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.58,
+    "oklch": [
+     0.18,
+     0.07,
+     300
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.66,
+    "oklch": [
+     0.16,
+     0.089,
+     258
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.78,
+    "oklch": [
+     0.42,
+     0.121,
+     250
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.9,
+    "oklch": [
+     0.92,
+     0.03,
+     240
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.88,
+     0.06,
+     20
+    ],
+    "role": "field"
+   }
+  ]
+ },
+ {
+  "name": "Crimson Ice Duet",
+  "mood": "two pure hues only, rose and cobalt, meeting through true white; black at the floor, a small cliff inside the rose",
+  "architecture": "duotone-plus",
+  "skeleton": "cliff-in-mids",
+  "value_key": "low",
+  "complexity": 5,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.04,
+     0.01,
+     0
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.12,
+    "oklch": [
+     0.36,
+     0.147,
+     8
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.26,
+    "oklch": [
+     0.52,
+     0.19,
+     3
+    ],
+    "role": "anchor",
+    "segment": "cliff"
+   },
+   {
+    "pos": 0.32,
+    "oklch": [
+     0.68,
+     0.165,
+     358
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.46,
+    "oklch": [
+     0.98,
+     0.005,
+     0
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.6,
+    "oklch": [
+     0.62,
+     0.15,
+     245
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.74,
+    "oklch": [
+     0.34,
+     0.116,
+     255
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.86,
+    "oklch": [
+     0.14,
+     0.05,
+     260
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.04,
+     0.01,
+     0
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Rose Smoke",
+  "mood": "a single muted rose family from soot to blush with one warm bone glow as the spark; the quietest palette in the set",
+  "architecture": "near-monochrome-spark",
+  "skeleton": "no-cliff",
+  "value_key": "low",
+  "complexity": 5,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.06,
+     0.02,
+     350
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.14,
+    "oklch": [
+     0.24,
+     0.07,
+     355
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.28,
+    "oklch": [
+     0.4,
+     0.11,
+     5
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.42,
+    "oklch": [
+     0.3,
+     0.08,
+     0
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.56,
+    "oklch": [
+     0.58,
+     0.115,
+     358
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.7,
+    "oklch": [
+     0.72,
+     0.08,
+     10
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.82,
+    "oklch": [
+     0.9,
+     0.038,
+     80
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.92,
+    "oklch": [
+     0.44,
+     0.06,
+     40
+    ],
+    "role": "accent"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.06,
+     0.02,
+     350
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Furnace Rose",
+  "mood": "a pure heat sweep: black to oxblood to vivid rose to a white flare, then a long amber descent back through rose to coal",
+  "architecture": "mono-temperature-ramp",
+  "skeleton": "peak-early",
+  "value_key": "low",
+  "complexity": 5,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.03,
+     0.01,
+     10
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.08,
+    "oklch": [
+     0.28,
+     0.116,
+     12
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.16,
+    "oklch": [
+     0.52,
+     0.19,
+     5
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.24,
+    "oklch": [
+     0.72,
+     0.165,
+     0
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.32,
+    "oklch": [
+     0.97,
+     0.01,
+     20
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.48,
+    "oklch": [
+     0.8,
+     0.133,
+     55
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.62,
+    "oklch": [
+     0.6,
+     0.17,
+     35
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.76,
+    "oklch": [
+     0.4,
+     0.158,
+     12
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.88,
+    "oklch": [
+     0.18,
+     0.07,
+     10
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.03,
+     0.01,
+     10
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Court of Thorns",
+  "mood": "indigo, rose and chartreuse held apart by dark gaps; the rose body is the widest of the three and the chartreuse is the shock",
+  "architecture": "triad",
+  "skeleton": "no-cliff",
+  "value_key": "mid",
+  "complexity": 5,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.12,
+     0.035,
+     280
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.12,
+    "oklch": [
+     0.34,
+     0.13,
+     285
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.26,
+    "oklch": [
+     0.16,
+     0.05,
+     300
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.38,
+    "oklch": [
+     0.55,
+     0.19,
+     352
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.5,
+    "oklch": [
+     0.72,
+     0.165,
+     0
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.62,
+    "oklch": [
+     0.44,
+     0.16,
+     8
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.72,
+    "oklch": [
+     0.15,
+     0.035,
+     30
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.84,
+    "oklch": [
+     0.72,
+     0.11,
+     110
+    ],
+    "role": "accent"
+   },
+   {
+    "pos": 0.92,
+    "oklch": [
+     0.9,
+     0.05,
+     95
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.12,
+     0.035,
+     280
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Bone and Blush",
+  "mood": "bone, peach, blush and rose walking one direction only, with a deep oxblood trough as the single dark event",
+  "architecture": "analogous-drift",
+  "skeleton": "inverted-arc",
+  "value_key": "high",
+  "complexity": 5,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.9,
+     0.04,
+     40
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.14,
+    "oklch": [
+     0.82,
+     0.1,
+     20
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.28,
+    "oklch": [
+     0.7,
+     0.16,
+     5
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.42,
+    "oklch": [
+     0.56,
+     0.19,
+     0
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.56,
+    "oklch": [
+     0.4,
+     0.16,
+     8
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.68,
+    "oklch": [
+     0.2,
+     0.089,
+     15
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.8,
+    "oklch": [
+     0.52,
+     0.15,
+     25
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.9,
+    "oklch": [
+     0.78,
+     0.1,
+     45
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.9,
+     0.04,
+     40
+    ],
+    "role": "field"
+   }
+  ]
+ },
+ {
+  "name": "Sapphire Bloom",
+  "mood": "deep sapphire against vivid rose, the two masses meeting only at a cold white peak; a second rose peak later, trough between",
+  "architecture": "complementary-tension",
+  "skeleton": "double-peak",
+  "value_key": "low",
+  "complexity": 5,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.05,
+     0.015,
+     255
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.1,
+    "oklch": [
+     0.26,
+     0.105,
+     258
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.22,
+    "oklch": [
+     0.46,
+     0.132,
+     250
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.32,
+    "oklch": [
+     0.94,
+     0.02,
+     240
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.44,
+    "oklch": [
+     0.62,
+     0.185,
+     355
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.54,
+    "oklch": [
+     0.44,
+     0.165,
+     5
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.66,
+    "oklch": [
+     0.76,
+     0.155,
+     358
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.8,
+    "oklch": [
+     0.38,
+     0.15,
+     10
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.9,
+    "oklch": [
+     0.16,
+     0.06,
+     0
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.05,
+     0.015,
+     255
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Rose Quartz Ramp",
+  "mood": "almost nothing but the focal colour: deep plum rising through the full rose range to peach and a white glow, one temperature the whole way",
+  "architecture": "mono-temperature-ramp",
+  "skeleton": "peak-late",
+  "value_key": "high",
+  "complexity": 5,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.2,
+     0.097,
+     340
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.12,
+    "oklch": [
+     0.34,
+     0.145,
+     350
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.26,
+    "oklch": [
+     0.48,
+     0.185,
+     355
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.4,
+    "oklch": [
+     0.58,
+     0.19,
+     0
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.54,
+    "oklch": [
+     0.68,
+     0.17,
+     5
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.68,
+    "oklch": [
+     0.78,
+     0.13,
+     15
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.8,
+    "oklch": [
+     0.86,
+     0.076,
+     30
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.9,
+    "oklch": [
+     0.96,
+     0.02,
+     40
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.2,
+     0.097,
+     340
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Gilt and Rose",
+  "mood": "rose and gold as two poster hues, the jump between them made only through white; a small cliff lifts the rose before the flare",
+  "architecture": "duotone-plus",
+  "skeleton": "cliff-in-mids",
+  "value_key": "mid",
+  "complexity": 5,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.1,
+     0.03,
+     30
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.14,
+    "oklch": [
+     0.44,
+     0.16,
+     8
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.3,
+    "oklch": [
+     0.6,
+     0.19,
+     0
+    ],
+    "role": "anchor",
+    "segment": "cliff"
+   },
+   {
+    "pos": 0.36,
+    "oklch": [
+     0.78,
+     0.146,
+     355
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.48,
+    "oklch": [
+     0.96,
+     0.01,
+     20
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.62,
+    "oklch": [
+     0.78,
+     0.14,
+     90
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.76,
+    "oklch": [
+     0.5,
+     0.105,
+     80
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.88,
+    "oklch": [
+     0.2,
+     0.06,
+     50
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.1,
+     0.03,
+     30
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Lantern Rose",
+  "mood": "rose alone across two lightness peaks with a dark trough between, then a single cold cyan spark out of the black",
+  "architecture": "near-monochrome-spark",
+  "skeleton": "double-peak",
+  "value_key": "mid",
+  "complexity": 5,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.08,
+     0.02,
+     0
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.12,
+    "oklch": [
+     0.42,
+     0.16,
+     5
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.24,
+    "oklch": [
+     0.66,
+     0.18,
+     358
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.36,
+    "oklch": [
+     0.34,
+     0.139,
+     10
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.48,
+    "oklch": [
+     0.86,
+     0.088,
+     352
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.6,
+    "oklch": [
+     0.55,
+     0.175,
+     0
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.72,
+    "oklch": [
+     0.12,
+     0.03,
+     5
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.82,
+    "oklch": [
+     0.55,
+     0.095,
+     205
+    ],
+    "role": "accent"
+   },
+   {
+    "pos": 0.92,
+    "oklch": [
+     0.18,
+     0.04,
+     240
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.08,
+     0.02,
+     0
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Deep Rose Vault",
+  "mood": "violet to magenta to rose to coral, one direction, an early blush glow and a long saturated fall",
+  "architecture": "analogous-drift",
+  "skeleton": "peak-early",
+  "value_key": "low",
+  "complexity": 5,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.05,
+     0.015,
+     320
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.1,
+    "oklch": [
+     0.3,
+     0.13,
+     315
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.2,
+    "oklch": [
+     0.55,
+     0.185,
+     340
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.3,
+    "oklch": [
+     0.86,
+     0.086,
+     355
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.44,
+    "oklch": [
+     0.62,
+     0.18,
+     0
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.56,
+    "oklch": [
+     0.72,
+     0.15,
+     5
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.7,
+    "oklch": [
+     0.44,
+     0.16,
+     8
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.84,
+    "oklch": [
+     0.24,
+     0.09,
+     20
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.05,
+     0.015,
+     320
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Rose and Verdigris",
+  "mood": "oxide green against vivid rose across a cream bridge; a small cliff steps the green up before the glow",
+  "architecture": "complementary-tension",
+  "skeleton": "cliff-in-mids",
+  "value_key": "mid",
+  "complexity": 5,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.13,
+     0.035,
+     170
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.16,
+    "oklch": [
+     0.38,
+     0.081,
+     165
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.3,
+    "oklch": [
+     0.55,
+     0.11,
+     160
+    ],
+    "role": "field",
+    "segment": "cliff"
+   },
+   {
+    "pos": 0.36,
+    "oklch": [
+     0.7,
+     0.09,
+     158
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.46,
+    "oklch": [
+     0.93,
+     0.03,
+     85
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.58,
+    "oklch": [
+     0.74,
+     0.16,
+     358
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.7,
+    "oklch": [
+     0.56,
+     0.19,
+     3
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.82,
+    "oklch": [
+     0.38,
+     0.15,
+     10
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.92,
+    "oklch": [
+     0.19,
+     0.06,
+     350
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.13,
+     0.035,
+     170
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Tourmaline Rose",
+  "mood": "pale teal field, an early gold flare, then the full rose range plunging to a deep jewel dark and climbing back through teal",
+  "architecture": "triad",
+  "skeleton": "peak-early",
+  "value_key": "high",
+  "complexity": 5,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.86,
+     0.05,
+     190
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.1,
+    "oklch": [
+     0.94,
+     0.02,
+     90
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.22,
+    "oklch": [
+     0.72,
+     0.16,
+     0
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.34,
+    "oklch": [
+     0.55,
+     0.19,
+     5
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.46,
+    "oklch": [
+     0.36,
+     0.147,
+     10
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.56,
+    "oklch": [
+     0.18,
+     0.08,
+     20
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.68,
+    "oklch": [
+     0.5,
+     0.091,
+     180
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.8,
+    "oklch": [
+     0.7,
+     0.11,
+     185
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.9,
+    "oklch": [
+     0.82,
+     0.09,
+     150
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.86,
+     0.05,
+     190
+    ],
+    "role": "field"
+   }
+  ]
+ },
+ {
+  "name": "Pale Fire Rose",
+  "mood": "a near-white field falling through the whole rose range into a dark rose event, then rising through cobalt; two hues and white, no bridge",
+  "architecture": "duotone-plus",
+  "skeleton": "inverted-arc",
+  "value_key": "high",
+  "complexity": 5,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.92,
+     0.03,
+     0
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.12,
+    "oklch": [
+     0.78,
+     0.14,
+     358
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.26,
+    "oklch": [
+     0.58,
+     0.19,
+     2
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.4,
+    "oklch": [
+     0.34,
+     0.139,
+     8
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.52,
+    "oklch": [
+     0.17,
+     0.08,
+     350
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.64,
+    "oklch": [
+     0.4,
+     0.15,
+     258
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.78,
+    "oklch": [
+     0.66,
+     0.14,
+     250
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.9,
+    "oklch": [
+     0.86,
+     0.06,
+     245
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.92,
+     0.03,
+     0
+    ],
+    "role": "field"
+   }
+  ]
+ }
+]

@@ -1,0 +1,1807 @@
+[
+  {
+    "name": "Ember Standard",
+    "mood": "gold + deep violet-blue, through black and white",
+    "architecture": "duotone-plus",
+    "skeleton": "peak-early",
+    "value_key": "low",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.05,
+          0.01,
+          270.0
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.09,
+        "oklch": [
+          0.28,
+          0.1685,
+          274.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.2,
+        "oklch": [
+          0.6,
+          0.1991,
+          266.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.3,
+        "oklch": [
+          0.97,
+          0.012,
+          95.0
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.42,
+        "oklch": [
+          0.44,
+          0.0874,
+          93.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.56,
+        "oklch": [
+          0.47,
+          0.0941,
+          90.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.7,
+        "oklch": [
+          0.33,
+          0.0655,
+          87.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.84,
+        "oklch": [
+          0.12,
+          0.02,
+          80.0
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.05,
+          0.01,
+          270.0
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Khaki Cathedral",
+    "mood": "greyed khaki + magenta, white waypoint",
+    "architecture": "duotone-plus",
+    "skeleton": "cliff-in-mids",
+    "value_key": "mid",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.22,
+          0.03,
+          335.0
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.14,
+        "oklch": [
+          0.4,
+          0.0548,
+          90.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.3,
+        "oklch": [
+          0.46,
+          0.0546,
+          92.0
+        ],
+        "role": "anchor",
+        "segment": "cliff"
+      },
+      {
+        "pos": 0.42,
+        "oklch": [
+          0.34,
+          0.05,
+          88.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.55,
+        "oklch": [
+          0.92,
+          0.015,
+          340.0
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.7,
+        "oklch": [
+          0.52,
+          0.105,
+          336.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.86,
+        "oklch": [
+          0.3,
+          0.075,
+          332.0
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.22,
+          0.03,
+          335.0
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Pale Reliquary",
+    "mood": "pale field, gold body, indigo as the dark event",
+    "architecture": "duotone-plus",
+    "skeleton": "inverted-arc",
+    "value_key": "high",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.95,
+          0.018,
+          95.0
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.1,
+        "oklch": [
+          0.7,
+          0.1002,
+          92.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.24,
+        "oklch": [
+          0.52,
+          0.1031,
+          91.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.4,
+        "oklch": [
+          0.42,
+          0.0841,
+          90.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.52,
+        "oklch": [
+          0.32,
+          0.0635,
+          88.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.62,
+        "oklch": [
+          0.17,
+          0.055,
+          275.0
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.76,
+        "oklch": [
+          0.42,
+          0.2477,
+          270.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.88,
+        "oklch": [
+          0.96,
+          0.016,
+          85.0
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.95,
+          0.018,
+          95.0
+        ],
+        "role": "field"
+      }
+    ]
+  },
+  {
+    "name": "Forge Ascent",
+    "mood": "one heat ramp: black to bronze to ochre to cream",
+    "architecture": "mono-temperature-ramp",
+    "skeleton": "peak-late",
+    "value_key": "low",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.03,
+          0.006,
+          65.0
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.13,
+        "oklch": [
+          0.16,
+          0.0319,
+          70.0
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.27,
+        "oklch": [
+          0.31,
+          0.0616,
+          80.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.42,
+        "oklch": [
+          0.42,
+          0.0842,
+          87.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.56,
+        "oklch": [
+          0.52,
+          0.1041,
+          90.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.7,
+        "oklch": [
+          0.79,
+          0.1568,
+          92.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.82,
+        "oklch": [
+          0.97,
+          0.015,
+          95.0
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.92,
+        "oklch": [
+          0.4,
+          0.075,
+          60.0
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.03,
+          0.006,
+          65.0
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Two Golds",
+    "mood": "warm sweep that passes greyed khaki then gamut-edge ochre",
+    "architecture": "mono-temperature-ramp",
+    "skeleton": "no-cliff",
+    "value_key": "mid",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.16,
+          0.025,
+          85.0
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.14,
+        "oklch": [
+          0.32,
+          0.0392,
+          88.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.3,
+        "oklch": [
+          0.44,
+          0.0557,
+          90.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.44,
+        "oklch": [
+          0.5,
+          0.0971,
+          90.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.58,
+        "oklch": [
+          0.38,
+          0.0753,
+          88.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.72,
+        "oklch": [
+          0.78,
+          0.1549,
+          93.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.86,
+        "oklch": [
+          0.94,
+          0.03,
+          96.0
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.16,
+          0.025,
+          85.0
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Bleached Bronze",
+    "mood": "high-key warm sweep, deep bronze as the only dark",
+    "architecture": "mono-temperature-ramp",
+    "skeleton": "peak-early",
+    "value_key": "high",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.62,
+          0.0709,
+          100.0
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.1,
+        "oklch": [
+          0.88,
+          0.03,
+          100.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.24,
+        "oklch": [
+          0.97,
+          0.014,
+          103.0
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.4,
+        "oklch": [
+          0.66,
+          0.0705,
+          95.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.56,
+        "oklch": [
+          0.46,
+          0.062,
+          90.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.72,
+        "oklch": [
+          0.34,
+          0.0487,
+          86.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.86,
+        "oklch": [
+          0.21,
+          0.042,
+          78.0
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.62,
+          0.0709,
+          100.0
+        ],
+        "role": "field"
+      }
+    ]
+  },
+  {
+    "name": "Cobalt Against Gold",
+    "mood": "saturated cobalt mass vs gold mass, two white peaks",
+    "architecture": "complementary-tension",
+    "skeleton": "double-peak",
+    "value_key": "low",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.05,
+          0.012,
+          262.0
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.1,
+        "oklch": [
+          0.3,
+          0.1895,
+          265.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.2,
+        "oklch": [
+          0.66,
+          0.1639,
+          252.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.28,
+        "oklch": [
+          0.96,
+          0.014,
+          240.0
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.42,
+        "oklch": [
+          0.5,
+          0.0992,
+          92.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.56,
+        "oklch": [
+          0.38,
+          0.0761,
+          88.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.68,
+        "oklch": [
+          0.6,
+          0.118,
+          85.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.8,
+        "oklch": [
+          0.93,
+          0.03,
+          80.0
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.9,
+        "oklch": [
+          0.3,
+          0.038,
+          60.0
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.05,
+          0.012,
+          262.0
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Steel and Straw",
+    "mood": "muted steel-blue vs muted khaki, bone bridge",
+    "architecture": "complementary-tension",
+    "skeleton": "no-cliff",
+    "value_key": "mid",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.19,
+          0.032,
+          240.0
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.12,
+        "oklch": [
+          0.36,
+          0.0598,
+          245.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.26,
+        "oklch": [
+          0.55,
+          0.0756,
+          238.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.36,
+        "oklch": [
+          0.9,
+          0.022,
+          70.0
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.5,
+        "oklch": [
+          0.4,
+          0.0532,
+          92.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.66,
+        "oklch": [
+          0.43,
+          0.0598,
+          89.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.8,
+        "oklch": [
+          0.3,
+          0.043,
+          86.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.19,
+          0.032,
+          240.0
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Petrol Noon",
+    "mood": "pale field, gold vs petrol teal, deep petrol jewel",
+    "architecture": "complementary-tension",
+    "skeleton": "peak-late",
+    "value_key": "high",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.86,
+          0.028,
+          88.0
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.12,
+        "oklch": [
+          0.78,
+          0.1548,
+          92.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.24,
+        "oklch": [
+          0.46,
+          0.0921,
+          90.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.44,
+        "oklch": [
+          0.34,
+          0.0681,
+          88.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.52,
+        "oklch": [
+          0.18,
+          0.0275,
+          200.0
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.66,
+        "oklch": [
+          0.4,
+          0.0646,
+          198.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.78,
+        "oklch": [
+          0.66,
+          0.0901,
+          195.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.87,
+        "oklch": [
+          0.96,
+          0.016,
+          180.0
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.86,
+          0.028,
+          88.0
+        ],
+        "role": "field"
+      }
+    ]
+  },
+  {
+    "name": "Violet Cellar",
+    "mood": "deep violet vs olive-khaki, cliff in the khaki",
+    "architecture": "complementary-tension",
+    "skeleton": "cliff-in-mids",
+    "value_key": "low",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.06,
+          0.014,
+          290.0
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.12,
+        "oklch": [
+          0.32,
+          0.095,
+          288.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.24,
+        "oklch": [
+          0.56,
+          0.105,
+          285.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.34,
+        "oklch": [
+          0.94,
+          0.018,
+          300.0
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.46,
+        "oklch": [
+          0.48,
+          0.065,
+          95.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.58,
+        "oklch": [
+          0.42,
+          0.0601,
+          92.0
+        ],
+        "role": "anchor",
+        "segment": "cliff"
+      },
+      {
+        "pos": 0.7,
+        "oklch": [
+          0.31,
+          0.0456,
+          88.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.84,
+        "oklch": [
+          0.16,
+          0.028,
+          80.0
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.06,
+          0.014,
+          290.0
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Rust to Olive",
+    "mood": "rust to amber to ochre to olive, no complement",
+    "architecture": "analogous-drift",
+    "skeleton": "peak-early",
+    "value_key": "mid",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.18,
+          0.0505,
+          35.0
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.12,
+        "oklch": [
+          0.48,
+          0.1674,
+          32.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.26,
+        "oklch": [
+          0.72,
+          0.1491,
+          62.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.34,
+        "oklch": [
+          0.95,
+          0.03,
+          80.0
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.48,
+        "oklch": [
+          0.52,
+          0.1031,
+          88.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.62,
+        "oklch": [
+          0.4,
+          0.0802,
+          92.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.76,
+        "oklch": [
+          0.46,
+          0.0937,
+          105.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.88,
+        "oklch": [
+          0.3,
+          0.0594,
+          118.0
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.18,
+          0.0505,
+          35.0
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Green Hour",
+    "mood": "green to olive to vivid ochre to greyed khaki to amber",
+    "architecture": "analogous-drift",
+    "skeleton": "double-peak",
+    "value_key": "low",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.04,
+          0.008,
+          140.0
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.1,
+        "oklch": [
+          0.6,
+          0.1767,
+          143.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.2,
+        "oklch": [
+          0.92,
+          0.04,
+          128.0
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.3,
+        "oklch": [
+          0.5,
+          0.1029,
+          105.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.46,
+        "oklch": [
+          0.42,
+          0.0833,
+          90.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.56,
+        "oklch": [
+          0.36,
+          0.0456,
+          88.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.7,
+        "oklch": [
+          0.46,
+          0.0565,
+          92.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.82,
+        "oklch": [
+          0.9,
+          0.06,
+          62.0
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.04,
+          0.008,
+          140.0
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Bone and Moss",
+    "mood": "pale bone down to khaki, deep olive-green trough",
+    "architecture": "analogous-drift",
+    "skeleton": "inverted-arc",
+    "value_key": "high",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.94,
+          0.02,
+          95.0
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.14,
+        "oklch": [
+          0.74,
+          0.0908,
+          92.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.3,
+        "oklch": [
+          0.5,
+          0.0695,
+          90.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.44,
+        "oklch": [
+          0.38,
+          0.0544,
+          88.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.56,
+        "oklch": [
+          0.3,
+          0.0449,
+          100.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.68,
+        "oklch": [
+          0.18,
+          0.0407,
+          125.0
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.82,
+        "oklch": [
+          0.44,
+          0.0635,
+          118.0
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.92,
+        "oklch": [
+          0.86,
+          0.03,
+          105.0
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.94,
+          0.02,
+          95.0
+        ],
+        "role": "field"
+      }
+    ]
+  },
+  {
+    "name": "Three Fires",
+    "mood": "cobalt, crimson, gold - each zone gated by dark or white",
+    "architecture": "triad",
+    "skeleton": "peak-late",
+    "value_key": "low",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.04,
+          0.01,
+          262.0
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.11,
+        "oklch": [
+          0.4,
+          0.1566,
+          260.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.22,
+        "oklch": [
+          0.17,
+          0.0577,
+          290.0
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.33,
+        "oklch": [
+          0.44,
+          0.1702,
+          22.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.45,
+        "oklch": [
+          0.3,
+          0.0815,
+          45.0
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.55,
+        "oklch": [
+          0.42,
+          0.0841,
+          88.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.74,
+        "oklch": [
+          0.52,
+          0.1042,
+          92.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.86,
+        "oklch": [
+          0.97,
+          0.014,
+          95.0
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.04,
+          0.01,
+          262.0
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Rose Slate Khaki",
+    "mood": "slate-blue, dusty rose, khaki, all held back",
+    "architecture": "triad",
+    "skeleton": "double-peak",
+    "value_key": "mid",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.14,
+          0.03,
+          250.0
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.11,
+        "oklch": [
+          0.4,
+          0.0743,
+          248.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.22,
+        "oklch": [
+          0.56,
+          0.076,
+          244.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.31,
+        "oklch": [
+          0.9,
+          0.028,
+          330.0
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.42,
+        "oklch": [
+          0.48,
+          0.0841,
+          350.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.53,
+        "oklch": [
+          0.18,
+          0.0423,
+          344.0
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.66,
+        "oklch": [
+          0.4,
+          0.0572,
+          90.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.8,
+        "oklch": [
+          0.5,
+          0.0697,
+          94.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.9,
+        "oklch": [
+          0.32,
+          0.0471,
+          88.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.14,
+          0.03,
+          250.0
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Signal Triad",
+    "mood": "pale field, gold, magenta jewel, teal return",
+    "architecture": "triad",
+    "skeleton": "cliff-in-mids",
+    "value_key": "high",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.93,
+          0.022,
+          90.0
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.12,
+        "oklch": [
+          0.62,
+          0.1115,
+          90.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.26,
+        "oklch": [
+          0.46,
+          0.0921,
+          90.0
+        ],
+        "role": "anchor",
+        "segment": "cliff"
+      },
+      {
+        "pos": 0.4,
+        "oklch": [
+          0.34,
+          0.0681,
+          88.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.52,
+        "oklch": [
+          0.17,
+          0.0659,
+          330.0
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.64,
+        "oklch": [
+          0.44,
+          0.1761,
+          335.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.76,
+        "oklch": [
+          0.96,
+          0.016,
+          320.0
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.88,
+        "oklch": [
+          0.55,
+          0.0845,
+          195.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.93,
+          0.022,
+          90.0
+        ],
+        "role": "field"
+      }
+    ]
+  },
+  {
+    "name": "Ash Gold",
+    "mood": "gold family full value range, one cold cobalt spark",
+    "architecture": "near-monochrome-spark",
+    "skeleton": "no-cliff",
+    "value_key": "low",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.03,
+          0.0064,
+          85.0
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.12,
+        "oklch": [
+          0.2,
+          0.0309,
+          82.0
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.26,
+        "oklch": [
+          0.36,
+          0.0478,
+          88.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.4,
+        "oklch": [
+          0.46,
+          0.0583,
+          92.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.54,
+        "oklch": [
+          0.34,
+          0.0486,
+          90.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.66,
+        "oklch": [
+          0.19,
+          0.0913,
+          265.0
+        ],
+        "role": "accent"
+      },
+      {
+        "pos": 0.78,
+        "oklch": [
+          0.52,
+          0.0641,
+          95.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.9,
+        "oklch": [
+          0.9,
+          0.03,
+          98.0
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.03,
+          0.0064,
+          85.0
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Straw and Teal",
+    "mood": "gold family both saturations, deep teal spark",
+    "architecture": "near-monochrome-spark",
+    "skeleton": "peak-early",
+    "value_key": "mid",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.16,
+          0.032,
+          88.0
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.1,
+        "oklch": [
+          0.78,
+          0.1549,
+          93.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.24,
+        "oklch": [
+          0.95,
+          0.022,
+          95.0
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.36,
+        "oklch": [
+          0.5,
+          0.0982,
+          92.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.52,
+        "oklch": [
+          0.4,
+          0.0793,
+          90.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.62,
+        "oklch": [
+          0.34,
+          0.0431,
+          88.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.78,
+        "oklch": [
+          0.44,
+          0.0541,
+          93.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.86,
+        "oklch": [
+          0.19,
+          0.0275,
+          198.0
+        ],
+        "role": "accent"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.16,
+          0.032,
+          88.0
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "High Gold",
+    "mood": "pale gold field, deep violet spark as the dark event",
+    "architecture": "near-monochrome-spark",
+    "skeleton": "inverted-arc",
+    "value_key": "high",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.95,
+          0.02,
+          92.0
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.12,
+        "oklch": [
+          0.79,
+          0.1568,
+          92.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.26,
+        "oklch": [
+          0.52,
+          0.1031,
+          91.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.42,
+        "oklch": [
+          0.42,
+          0.0841,
+          90.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.56,
+        "oklch": [
+          0.32,
+          0.0635,
+          88.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.66,
+        "oklch": [
+          0.19,
+          0.0964,
+          300.0
+        ],
+        "role": "accent"
+      },
+      {
+        "pos": 0.78,
+        "oklch": [
+          0.4,
+          0.1208,
+          295.0
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.9,
+        "oklch": [
+          0.88,
+          0.028,
+          85.0
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.95,
+          0.02,
+          92.0
+        ],
+        "role": "field"
+      }
+    ]
+  },
+  {
+    "name": "Verdigris Khaki",
+    "mood": "greyed khaki + petrol teal, through white and black",
+    "architecture": "duotone-plus",
+    "skeleton": "double-peak",
+    "value_key": "mid",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.22,
+          0.03,
+          200.0
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.12,
+        "oklch": [
+          0.44,
+          0.0606,
+          200.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.22,
+        "oklch": [
+          0.9,
+          0.024,
+          195.0
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.36,
+        "oklch": [
+          0.52,
+          0.0726,
+          95.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.5,
+        "oklch": [
+          0.4,
+          0.0572,
+          90.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.62,
+        "oklch": [
+          0.3,
+          0.0442,
+          88.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.76,
+        "oklch": [
+          0.62,
+          0.0698,
+          92.0
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.86,
+        "oklch": [
+          0.86,
+          0.032,
+          88.0
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.22,
+          0.03,
+          200.0
+        ],
+        "role": "ground"
+      }
+    ]
+  }
+]

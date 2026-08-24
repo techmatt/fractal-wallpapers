@@ -1,6 +1,7 @@
 Which colors are available: palette assets, palette generation, and palette curation.
 
 ```
+fractal-wallpapers palettes ingest --drop rare-colors-2026-08
 fractal-wallpapers palettes provenance --source <archive> --images <pictures>
 fractal-wallpapers palettes clusters
 fractal-wallpapers palettes strip --name "Bone Vault" --out artifacts/figures/bone.png
@@ -9,6 +10,19 @@ fractal-wallpapers palettes strip --manifest names.txt --width 1600 --height 120
 
 `palettes` (plural) is the **library**; `palette` (singular) is the head that picks
 between its maps. Nothing in this package loads a model.
+
+`authored_import` is the other way in, and the only place authored OKLCH control
+points become a gradient: a **drop** of generator batch files under
+`data/palettes/batches/<drop>` is densified to 512 evenly spaced sRGB8 stops,
+interpolated in OKLab through `space`, and every provenance row it writes carries
+the drop's directory name as its `drop` stamp. `kind` is measured on the gradient
+— the control points must close within `CLOSES`, and the dense table has to close
+exactly — because `mirror = the map is not cyclic` is read off it everywhere and a
+misclassification is silent in both directions. The claim that this is the
+archive's densifier rather than a second one is a test, not a comment:
+`tests/test_authored_import.py` re-densifies all 175 pre-drop authored maps from
+the stops their provenance rows carry and requires the tracked files back stop for
+stop.
 
 `library_import` brings a map across from the source project's pooled library and
 writes it here as stops. `space` measures how near two maps are — the gradient as
@@ -59,7 +73,11 @@ Duplicate colours are collapsed before assignment (`distinct`), which is the sam
 arithmetic to 6e-15 and about three times faster.
 
 `provenance` recovers how the *made* maps were made and writes one row per map to
-`data/palettes/provenance.jsonl`: an authored map's mood family, generator
+`data/palettes/provenance.jsonl`. It reads two sources of authored briefs — the
+archive's batches and the tracked drops — so a rebuild cannot silently delete the
+rows a drop put there; and `merge` is how a drop writes without a rebuild, because
+the pictures the extracted maps were read from are not in the archive and a full
+rebuild would replace each `image` with a bare stem. A row it writes carries: an authored map's mood family, generator
 version, colour architecture, lightness skeleton, value key, complexity and its
 author's own OKLCH control points; an extracted map's source image file and
 nothing else. Matching is by name and an unmatched name on either side is
