@@ -806,3 +806,63 @@ The two claims this stage makes that a test cannot settle are settled by command
 against a real plan — `curate parity`, that a concurrently rendered release is
 byte-identical to a serial one, and `curate replay`, that every released picture
 re-derives from its own record.
+
+## Coverage on pixels
+
+[`palette_coverage`](palette_coverage.py) asks the census's question about
+**pixels** instead of about a ramp: per swatch, how many maps can put that swatch
+on 5% / 10% / 15% / 20% of an image. The two numbers come apart, and the reason is
+mechanical — an escape-time field is not uniform over its own stretch (one panel
+cell here puts 67% of its samples in the bottom decile of gradient position, and
+another 53% in the top one), and production folds every non-cyclic map, so a
+sequential map's far half is only reachable by field values near the middle of the
+frame. A map can carry a colour across a quarter of its gradient and put it almost
+nowhere.
+
+```
+fractal-wallpapers curate coverage                    # panel, probe, read
+fractal-wallpapers curate coverage --step panel       # draw and choose the panel only
+fractal-wallpapers curate coverage --step probe --workers 6
+fractal-wallpapers curate coverage --step read        # tables off rows already written
+fractal-wallpapers curate coverage --sheet            # + the contact sheet
+```
+
+```
+artifacts/curation/coverage/panel.json           the 16 cells and their field shapes
+artifacts/curation/coverage/fields/*.f32         one dumped field per cell, reused by every recolor
+artifacts/curation/coverage/rows.jsonl           one row per cell x map x fold
+artifacts/curation/coverage/coverage.json        both tables, the false capabilities, the population
+scratch/palette_coverage/coverage_tiles.html     the weakest picture each threshold admits
+```
+
+**Two reads, two estimands, never pooled.** *Capability* is a max over the panel —
+a map counts for a swatch if **one** cell showed it — and is bounded by the panel,
+so a wider panel can only raise a count. *Realized supply* counts distinct maps
+that have ever produced a pool render carrying the swatch, off the census's own
+survival rows, and re-renders nothing; it is conditioned on what the walk found and
+what the palette head picked, so it is a lower bound on capability. The gap between
+them is the reading.
+
+**The panel is selected, not drawn.** 56 pool rows over the seven probeable modes
+are dumped and measured first, then 16 are chosen: the two hardest end-decile
+pile-ups by construction, one cell per mode, then a spread over the `end_mass`
+range preferring partitions the panel does not hold. A panel of good-looking
+wallpapers would be a panel of well-spread fields and would overstate every count.
+Only the **seven `field` modes** can be probed at all — a composite normalizes two
+fields against the whole frame, a modulate looks up a different gradient place per
+sample, and a direct trap is colour-valued before any gradient is spent, so none
+has one scalar field to dump.
+
+**Production settings, and a false capability.** Every palette knob is the identity
+(gamma 1.0, cycles 1.0, phase 0.0, reverse off) and `mirror = colormap not in
+cyclic`. Production samples none of those knobs, so the max is over the panel
+alone. A sequential map is *also* probed with the fold off, which production never
+does; a swatch it reaches only that way is reported apart and counted in neither
+table. The reverse cannot arise — the engine refuses to fold a cyclic map.
+
+**Runtime.** 16 cells x 901 maps, plus the unfolded arm for the 156 sequential
+maps, is 16,912 recolors at about 75 ms each: 21 minutes serial, about 6 with
+`--workers 6`. The panel's own dumps are 56 iteration passes, about 40 seconds.
+Each recolor is censused and its JPEG overwritten rather than kept — keeping them
+would be a gigabyte of pictures answering four hundred bytes each — so the contact
+sheet re-makes the sixteen tiles it shows.
