@@ -59,10 +59,8 @@ keyed by name:
 * **authored** — written as OKLCH control points against a stated brief, and
   carrying it: the mood, the colour architecture, the lightness skeleton, the
   value key, the complexity, the generator version that emitted the batch, and
-  the author's own stops. `generator_prompt.md` beside it is the brief those runs
-  were given, and `validate_palettes.py` is the mechanical checker it names —
-  a standalone script for a reader to run on their own output, not a module of
-  this package and not a subcommand.
+  the author's own stops. The brief those runs were given, and the checker their
+  output is held to, are in [`../palette_authoring`](../palette_authoring/).
 * **extracted** — recovered from a picture somebody else made. The row records
   the image file, and nothing more.
 
@@ -99,6 +97,10 @@ under the old name; removing it is a person's call, not the ingest's.
 
 `ingest` is **bake, not offer**: a densified map is renderable immediately and is
 not in `../palette_choice/pool.json`, so nothing picks it until somebody adds it
-there. `generator_prompt_focus_color.md` is the variant brief the
-`rare-colors-2026-08` runs were given — the base brief conditioned on one focal
-colour region rather than a mood family.
+there.
+
+A drop's files stay here rather than beside the brief that produced them, because a
+batch file and `provenance.jsonl` are one record split in two — the row a shipped
+map carries and the run that emitted it — and nothing reads one without the other.
+[`../palette_authoring`](../palette_authoring/) holds the input side: the brief, the
+variant of it the `rare-colors-2026-08` runs were given, and the checker.

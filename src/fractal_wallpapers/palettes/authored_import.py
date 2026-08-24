@@ -2,7 +2,7 @@
 
 An authored palette is six to fifteen OKLCH control points with a brief attached
 — a mood, a colour architecture, a lightness skeleton, a value key, a complexity
-— written by a person against the generator brief in `data/palettes`. The engine
+— written by a person against the generator brief in `data/palette_authoring`. The engine
 does not read control points. It reads a dense, evenly spaced `[position, [r, g,
 b]]` table in sRGB8 and bakes it into an OKLab lookup. This module is that one
 bridge, and it is the only place in this repository that turns authored stops
@@ -401,7 +401,7 @@ def retired(drop: str, written: list[str], directory: Path | None = None) -> lis
     """Maps this drop wrote once and no longer ships, named rather than removed.
 
     A rename settled in `renames.json` and re-ingested leaves the map under its
-    old name sitting in the library: the drop's provenance row for it is gone —
+    old name still in the library: the drop's provenance row for it is gone —
     the drop is authoritative for its own stamp — but the gradient is still there,
     and a map with no row reads as "converted, nobody authored it", which is a
     lie about how it got here. Deleting a colormap is not a thing an ingest does
