@@ -49,81 +49,81 @@
       "cutpoint": null,
       "why": "the proper scoring rule on the smooth eval split, over all three cutpoints. This head's interface is its probabilities and a floor is a point on one of them",
       "candidate_band": {
-        "enlarged_corpus_seed0": 0.9460634128616991,
-        "enlarged_corpus_seed1": 0.9279735972704287,
-        "enlarged_corpus_seed2": 0.7740144804869233
+        "enlarged_corpus_seed0": 0.6866657945232694,
+        "enlarged_corpus_seed1": 0.6446199572988566,
+        "enlarged_corpus_seed2": 0.7986545996159059
       },
       "incumbent_band": {
         "small_backbone_seed0": 0.7234912009096162,
         "small_backbone_seed1": 0.719270126597622,
         "small_backbone_seed2": 0.5821502743827159
       },
-      "band_read_on": "enlarged_corpus_seed1",
+      "band_read_on": "enlarged_corpus_seed0",
       "band": {
-        "ours": 0.9279735972704287,
+        "ours": 0.6866657945232694,
         "theirs": 0.7234912009096162,
-        "delta": 0.20448239636081256,
+        "delta": -0.03682540638634679,
         "ci": [
-          0.104512429059312,
-          0.30962905795091866
+          -0.10126136457521313,
+          0.02664599300430436
         ],
         "clusters": 192,
-        "verdict": "WORSE"
+        "verdict": "NOT_RESOLVED"
       },
       "per_seed": {
         "enlarged_corpus_seed0": {
-          "ours": 0.9460634128616991,
+          "ours": 0.6866657945232694,
           "theirs": 0.7234912009096162,
-          "delta": 0.222572211952083,
+          "delta": -0.03682540638634679,
           "ci": [
-            0.07780886258420927,
-            0.38634552125227706
-          ],
-          "clusters": 192,
-          "verdict": "WORSE"
-        },
-        "enlarged_corpus_seed1": {
-          "ours": 0.9279735972704287,
-          "theirs": 0.7234912009096162,
-          "delta": 0.20448239636081256,
-          "ci": [
-            0.104512429059312,
-            0.30962905795091866
-          ],
-          "clusters": 192,
-          "verdict": "WORSE"
-        },
-        "enlarged_corpus_seed2": {
-          "ours": 0.7740144804869233,
-          "theirs": 0.7234912009096162,
-          "delta": 0.05052327957730718,
-          "ci": [
-            -0.05712625399894443,
-            0.1571213625801932
+            -0.10126136457521313,
+            0.02664599300430436
           ],
           "clusters": 192,
           "verdict": "NOT_RESOLVED"
+        },
+        "enlarged_corpus_seed1": {
+          "ours": 0.6446199572988566,
+          "theirs": 0.7234912009096162,
+          "delta": -0.07887124361075959,
+          "ci": [
+            -0.15844066524341294,
+            0.0007525494507214142
+          ],
+          "clusters": 192,
+          "verdict": "NOT_RESOLVED"
+        },
+        "enlarged_corpus_seed2": {
+          "ours": 0.7986545996159059,
+          "theirs": 0.7234912009096162,
+          "delta": 0.07516339870628974,
+          "ci": [
+            0.014312258773253532,
+            0.13538222577851394
+          ],
+          "clusters": 192,
+          "verdict": "WORSE"
         }
       },
       "against_the_incumbent_s_other_seeds": {
         "small_backbone_seed1": {
-          "ours": 0.9279735972704287,
+          "ours": 0.6866657945232694,
           "theirs": 0.719270126597622,
-          "delta": 0.2087034706728067,
+          "delta": -0.03260433207435265,
           "ci": [
-            0.10721651596780142,
-            0.3152038802940578
+            -0.11308387346103892,
+            0.0459718551878151
           ],
           "clusters": 192,
-          "verdict": "WORSE"
+          "verdict": "NOT_RESOLVED"
         },
         "small_backbone_seed2": {
-          "ours": 0.9279735972704287,
+          "ours": 0.6866657945232694,
           "theirs": 0.5821502743827159,
-          "delta": 0.3458233228877128,
+          "delta": 0.10451552014055343,
           "ci": [
-            0.24900630332008736,
-            0.44798785503480165
+            0.0449528419933091,
+            0.16494724732410085
           ],
           "clusters": 192,
           "verdict": "WORSE"
@@ -141,9 +141,9 @@
       "cutpoint": 4,
       "why": "the one boundary this sheet's draw supports, and the one production cuts on",
       "candidate_band": {
-        "enlarged_corpus_seed0": 0.6066419141914191,
-        "enlarged_corpus_seed1": 0.5600247524752475,
-        "enlarged_corpus_seed2": 0.5618811881188119
+        "enlarged_corpus_seed0": 0.5576526402640264,
+        "enlarged_corpus_seed1": 0.6050948844884488,
+        "enlarged_corpus_seed2": 0.5815800330033003
       },
       "incumbent_band": {
         "small_backbone_seed0": 0.5604372937293729,
@@ -152,46 +152,46 @@
       },
       "band_read_on": "enlarged_corpus_seed2",
       "band": {
-        "ours": 0.5618811881188119,
+        "ours": 0.5815800330033003,
         "theirs": 0.5604372937293729,
-        "delta": 0.0014438943894390377,
+        "delta": 0.021142739273927402,
         "ci": [
-          -0.07633850189994794,
-          0.07726315215331875
+          -0.04566815074653717,
+          0.09094583513298642
         ],
         "clusters": 192,
         "verdict": "NOT_RESOLVED"
       },
       "per_seed": {
         "enlarged_corpus_seed0": {
-          "ours": 0.6066419141914191,
+          "ours": 0.5576526402640264,
           "theirs": 0.5604372937293729,
-          "delta": 0.04620462046204621,
+          "delta": -0.0027846534653465094,
           "ci": [
-            -0.035767358294844856,
-            0.12568637169839425
+            -0.06575421896206804,
+            0.06059276563021609
           ],
           "clusters": 192,
           "verdict": "NOT_RESOLVED"
         },
         "enlarged_corpus_seed1": {
-          "ours": 0.5600247524752475,
+          "ours": 0.6050948844884488,
           "theirs": 0.5604372937293729,
-          "delta": -0.0004125412541253759,
+          "delta": 0.04465759075907594,
           "ci": [
-            -0.06984363145729557,
-            0.06727777362824083
+            -0.02181829203328499,
+            0.10707474516609163
           ],
           "clusters": 192,
           "verdict": "NOT_RESOLVED"
         },
         "enlarged_corpus_seed2": {
-          "ours": 0.5618811881188119,
+          "ours": 0.5815800330033003,
           "theirs": 0.5604372937293729,
-          "delta": 0.0014438943894390377,
+          "delta": 0.021142739273927402,
           "ci": [
-            -0.07633850189994794,
-            0.07726315215331875
+            -0.04566815074653717,
+            0.09094583513298642
           ],
           "clusters": 192,
           "verdict": "NOT_RESOLVED"
@@ -199,23 +199,23 @@
       },
       "against_the_incumbent_s_other_seeds": {
         "small_backbone_seed1": {
-          "ours": 0.5618811881188119,
+          "ours": 0.5815800330033003,
           "theirs": 0.6222153465346535,
-          "delta": -0.060334158415841554,
+          "delta": -0.04063531353135319,
           "ci": [
-            -0.1452588476932799,
-            0.02272016756444926
+            -0.11428083721133755,
+            0.035684962406015
           ],
           "clusters": 192,
           "verdict": "NOT_RESOLVED"
         },
         "small_backbone_seed2": {
-          "ours": 0.5618811881188119,
+          "ours": 0.5815800330033003,
           "theirs": 0.5807549504950495,
-          "delta": -0.018873762376237613,
+          "delta": 0.0008250825082507518,
           "ci": [
-            -0.09277703976083795,
-            0.05510993290198878
+            -0.06911256422975168,
+            0.07274906447954424
           ],
           "clusters": 192,
           "verdict": "NOT_RESOLVED"
@@ -233,57 +233,57 @@
       "cutpoint": 3,
       "why": "six negatives in 197. Reported so the table is complete; decides nothing",
       "candidate_band": {
-        "enlarged_corpus_seed0": 0.7735602094240838,
-        "enlarged_corpus_seed1": 0.7739965095986039,
-        "enlarged_corpus_seed2": 0.7050610820244329
+        "enlarged_corpus_seed0": 0.7835951134380453,
+        "enlarged_corpus_seed1": 0.725130890052356,
+        "enlarged_corpus_seed2": 0.7713787085514834
       },
       "incumbent_band": {
         "small_backbone_seed0": 0.6780104712041884,
         "small_backbone_seed1": 0.6431064572425829,
         "small_backbone_seed2": 0.7801047120418848
       },
-      "band_read_on": "enlarged_corpus_seed0",
+      "band_read_on": "enlarged_corpus_seed2",
       "band": {
-        "ours": 0.7735602094240838,
+        "ours": 0.7713787085514834,
         "theirs": 0.6780104712041884,
-        "delta": 0.09554973821989532,
+        "delta": 0.09336823734729494,
         "ci": [
-          -0.22268760907504362,
-          0.38317312884760774
+          -0.11390316848872858,
+          0.3227755438009392
         ],
         "clusters": 192,
         "verdict": "NOT_RESOLVED"
       },
       "per_seed": {
         "enlarged_corpus_seed0": {
-          "ours": 0.7735602094240838,
+          "ours": 0.7835951134380453,
           "theirs": 0.6780104712041884,
-          "delta": 0.09554973821989532,
+          "delta": 0.10558464223385688,
           "ci": [
-            -0.22268760907504362,
-            0.38317312884760774
+            -0.11194280343716438,
+            0.3527960526315789
           ],
           "clusters": 192,
           "verdict": "NOT_RESOLVED"
         },
         "enlarged_corpus_seed1": {
-          "ours": 0.7739965095986039,
+          "ours": 0.725130890052356,
           "theirs": 0.6780104712041884,
-          "delta": 0.09598603839441544,
+          "delta": 0.04712041884816753,
           "ci": [
-            -0.10103785103785098,
-            0.2757772653282692
+            -0.189715685216171,
+            0.2746758267097089
           ],
           "clusters": 192,
           "verdict": "NOT_RESOLVED"
         },
         "enlarged_corpus_seed2": {
-          "ours": 0.7050610820244329,
+          "ours": 0.7713787085514834,
           "theirs": 0.6780104712041884,
-          "delta": 0.027050610820244403,
+          "delta": 0.09336823734729494,
           "ci": [
-            -0.12635783110626303,
-            0.1582392407134675
+            -0.11390316848872858,
+            0.3227755438009392
           ],
           "clusters": 192,
           "verdict": "NOT_RESOLVED"
@@ -291,23 +291,23 @@
       },
       "against_the_incumbent_s_other_seeds": {
         "small_backbone_seed1": {
-          "ours": 0.7735602094240838,
+          "ours": 0.7713787085514834,
           "theirs": 0.6431064572425829,
-          "delta": 0.1304537521815009,
+          "delta": 0.12827225130890052,
           "ci": [
-            -0.037702075870304,
-            0.346500318877551
+            -0.13680302189086294,
+            0.3919361946477218
           ],
           "clusters": 192,
           "verdict": "NOT_RESOLVED"
         },
         "small_backbone_seed2": {
-          "ours": 0.7735602094240838,
+          "ours": 0.7713787085514834,
           "theirs": 0.7801047120418848,
-          "delta": -0.00654450261780104,
+          "delta": -0.008726003490401424,
           "ci": [
-            -0.29117063492063494,
-            0.24263888888888893
+            -0.16923741198352604,
+            0.16633944153577665
           ],
           "clusters": 192,
           "verdict": "NOT_RESOLVED"
@@ -325,9 +325,9 @@
       "cutpoint": null,
       "why": "the proper scoring rule on the strange eval split, over all three cutpoints",
       "candidate_band": {
-        "enlarged_corpus_seed0": 0.3304508285814686,
-        "enlarged_corpus_seed1": 0.4329729177027852,
-        "enlarged_corpus_seed2": 0.36765020482567873
+        "enlarged_corpus_seed0": 0.312856409517326,
+        "enlarged_corpus_seed1": 0.3017292480057973,
+        "enlarged_corpus_seed2": 0.30616424803483333
       },
       "incumbent_band": {
         "small_backbone_seed0": 0.3065375602844361,
@@ -336,76 +336,76 @@
       },
       "band_read_on": "enlarged_corpus_seed2",
       "band": {
-        "ours": 0.36765020482567873,
+        "ours": 0.30616424803483333,
         "theirs": 0.3065375602844361,
-        "delta": 0.061112644541242656,
+        "delta": -0.0003733122496027419,
         "ci": [
-          0.0054846276196311725,
-          0.12161266032828887
+          -0.036477085345967414,
+          0.03635016051974315
         ],
         "clusters": 108,
-        "verdict": "WORSE"
+        "verdict": "NOT_RESOLVED"
       },
       "per_seed": {
         "enlarged_corpus_seed0": {
-          "ours": 0.3304508285814686,
+          "ours": 0.312856409517326,
           "theirs": 0.3065375602844361,
-          "delta": 0.023913268297032553,
+          "delta": 0.006318849232889945,
           "ci": [
-            -0.02666118875033368,
-            0.07834487601213533
+            -0.039329315562963554,
+            0.057536003718284455
           ],
           "clusters": 108,
           "verdict": "NOT_RESOLVED"
         },
         "enlarged_corpus_seed1": {
-          "ours": 0.4329729177027852,
+          "ours": 0.3017292480057973,
           "theirs": 0.3065375602844361,
-          "delta": 0.1264353574183491,
+          "delta": -0.00480831227863876,
           "ci": [
-            0.06449896060224451,
-            0.19680647867402956
+            -0.05097316769125338,
+            0.04391374632918485
           ],
           "clusters": 108,
-          "verdict": "WORSE"
+          "verdict": "NOT_RESOLVED"
         },
         "enlarged_corpus_seed2": {
-          "ours": 0.36765020482567873,
+          "ours": 0.30616424803483333,
           "theirs": 0.3065375602844361,
-          "delta": 0.061112644541242656,
+          "delta": -0.0003733122496027419,
           "ci": [
-            0.0054846276196311725,
-            0.12161266032828887
-          ],
-          "clusters": 108,
-          "verdict": "WORSE"
-        }
-      },
-      "against_the_incumbent_s_other_seeds": {
-        "small_backbone_seed1": {
-          "ours": 0.36765020482567873,
-          "theirs": 0.301227375834442,
-          "delta": 0.06642282899123675,
-          "ci": [
-            0.003724599245268548,
-            0.13110444950622815
-          ],
-          "clusters": 108,
-          "verdict": "WORSE"
-        },
-        "small_backbone_seed2": {
-          "ours": 0.36765020482567873,
-          "theirs": 0.298260378243178,
-          "delta": 0.0693898265825007,
-          "ci": [
-            -0.010350553975807452,
-            0.14400973315795468
+            -0.036477085345967414,
+            0.03635016051974315
           ],
           "clusters": 108,
           "verdict": "NOT_RESOLVED"
         }
       },
-      "verdict": "FAIL"
+      "against_the_incumbent_s_other_seeds": {
+        "small_backbone_seed1": {
+          "ours": 0.30616424803483333,
+          "theirs": 0.301227375834442,
+          "delta": 0.004936872200391351,
+          "ci": [
+            -0.03671374360435807,
+            0.04821677084448568
+          ],
+          "clusters": 108,
+          "verdict": "NOT_RESOLVED"
+        },
+        "small_backbone_seed2": {
+          "ours": 0.30616424803483333,
+          "theirs": 0.298260378243178,
+          "delta": 0.007903869791655305,
+          "ci": [
+            -0.02841202846670808,
+            0.045434639987392146
+          ],
+          "clusters": 108,
+          "verdict": "NOT_RESOLVED"
+        }
+      },
+      "verdict": "PASS"
     },
     {
       "key": "strange_auc_ge2",
@@ -417,57 +417,57 @@
       "cutpoint": 2,
       "why": "the boundary this sheet was drawn to inform",
       "candidate_band": {
-        "enlarged_corpus_seed0": 0.7153271692745377,
-        "enlarged_corpus_seed1": 0.6875889046941679,
-        "enlarged_corpus_seed2": 0.7432432432432432
+        "enlarged_corpus_seed0": 0.7539118065433855,
+        "enlarged_corpus_seed1": 0.7480440967283073,
+        "enlarged_corpus_seed2": 0.7501778093883357
       },
       "incumbent_band": {
         "small_backbone_seed0": 0.7293741109530584,
         "small_backbone_seed1": 0.7473328591749644,
         "small_backbone_seed2": 0.7491109530583214
       },
-      "band_read_on": "enlarged_corpus_seed0",
+      "band_read_on": "enlarged_corpus_seed2",
       "band": {
-        "ours": 0.7153271692745377,
+        "ours": 0.7501778093883357,
         "theirs": 0.7293741109530584,
-        "delta": -0.014046941678520719,
+        "delta": 0.020803698435277296,
         "ci": [
-          -0.07412672804239072,
-          0.044658474386755485
+          -0.04175240254311258,
+          0.07818952285618949
         ],
         "clusters": 108,
         "verdict": "NOT_RESOLVED"
       },
       "per_seed": {
         "enlarged_corpus_seed0": {
-          "ours": 0.7153271692745377,
+          "ours": 0.7539118065433855,
           "theirs": 0.7293741109530584,
-          "delta": -0.014046941678520719,
+          "delta": 0.024537695590327147,
           "ci": [
-            -0.07412672804239072,
-            0.044658474386755485
+            -0.023474287181227623,
+            0.07285475086967592
           ],
           "clusters": 108,
           "verdict": "NOT_RESOLVED"
         },
         "enlarged_corpus_seed1": {
-          "ours": 0.6875889046941679,
+          "ours": 0.7480440967283073,
           "theirs": 0.7293741109530584,
-          "delta": -0.041785206258890484,
+          "delta": 0.01866998577524892,
           "ci": [
-            -0.10090449827478933,
-            0.012445331907054161
+            -0.03731343283582089,
+            0.0752005036630037
           ],
           "clusters": 108,
           "verdict": "NOT_RESOLVED"
         },
         "enlarged_corpus_seed2": {
-          "ours": 0.7432432432432432,
+          "ours": 0.7501778093883357,
           "theirs": 0.7293741109530584,
-          "delta": 0.013869132290184827,
+          "delta": 0.020803698435277296,
           "ci": [
-            -0.03589250232693227,
-            0.06194201364681145
+            -0.04175240254311258,
+            0.07818952285618949
           ],
           "clusters": 108,
           "verdict": "NOT_RESOLVED"
@@ -475,23 +475,23 @@
       },
       "against_the_incumbent_s_other_seeds": {
         "small_backbone_seed1": {
-          "ours": 0.7153271692745377,
+          "ours": 0.7501778093883357,
           "theirs": 0.7473328591749644,
-          "delta": -0.03200568990042674,
+          "delta": 0.002844950213371278,
           "ci": [
-            -0.0998855621989951,
-            0.033190003561838904
+            -0.054705963825973584,
+            0.05599755029815777
           ],
           "clusters": 108,
           "verdict": "NOT_RESOLVED"
         },
         "small_backbone_seed2": {
-          "ours": 0.7153271692745377,
+          "ours": 0.7501778093883357,
           "theirs": 0.7491109530583214,
-          "delta": -0.03378378378378377,
+          "delta": 0.001066856330014243,
           "ci": [
-            -0.09345784358047016,
-            0.025192199048363468
+            -0.049123478338703834,
+            0.0487507621951219
           ],
           "clusters": 108,
           "verdict": "NOT_RESOLVED"
@@ -509,57 +509,57 @@
       "cutpoint": 3,
       "why": "a boundary the draw supports, on six positives. The interval decides; the point estimate is not a finding in either direction",
       "candidate_band": {
-        "enlarged_corpus_seed0": 0.9120370370370371,
-        "enlarged_corpus_seed1": 0.8854166666666666,
-        "enlarged_corpus_seed2": 0.9791666666666666
+        "enlarged_corpus_seed0": 0.8912037037037037,
+        "enlarged_corpus_seed1": 0.9629629629629629,
+        "enlarged_corpus_seed2": 0.9363425925925926
       },
       "incumbent_band": {
         "small_backbone_seed0": 0.90625,
         "small_backbone_seed1": 0.9131944444444444,
         "small_backbone_seed2": 0.8402777777777778
       },
-      "band_read_on": "enlarged_corpus_seed0",
+      "band_read_on": "enlarged_corpus_seed2",
       "band": {
-        "ours": 0.9120370370370371,
+        "ours": 0.9363425925925926,
         "theirs": 0.90625,
-        "delta": 0.0057870370370370905,
+        "delta": 0.03009259259259256,
         "ci": [
-          -0.04959231522956325,
-          0.051447320134038355
+          -0.005384772182254163,
+          0.09349160671462833
         ],
         "clusters": 108,
         "verdict": "NOT_RESOLVED"
       },
       "per_seed": {
         "enlarged_corpus_seed0": {
-          "ours": 0.9120370370370371,
+          "ours": 0.8912037037037037,
           "theirs": 0.90625,
-          "delta": 0.0057870370370370905,
+          "delta": -0.01504629629629628,
           "ci": [
-            -0.04959231522956325,
-            0.051447320134038355
+            -0.08076314953122521,
+            0.06453427524856092
           ],
           "clusters": 108,
           "verdict": "NOT_RESOLVED"
         },
         "enlarged_corpus_seed1": {
-          "ours": 0.8854166666666666,
+          "ours": 0.9629629629629629,
           "theirs": 0.90625,
-          "delta": -0.02083333333333337,
+          "delta": 0.05671296296296291,
           "ci": [
-            -0.08275862068965523,
-            0.026650349650349604
+            0.0,
+            0.17654861237075983
           ],
           "clusters": 108,
           "verdict": "NOT_RESOLVED"
         },
         "enlarged_corpus_seed2": {
-          "ours": 0.9791666666666666,
+          "ours": 0.9363425925925926,
           "theirs": 0.90625,
-          "delta": 0.07291666666666663,
+          "delta": 0.03009259259259256,
           "ci": [
-            -0.011386613386613318,
-            0.1957532149418248
+            -0.005384772182254163,
+            0.09349160671462833
           ],
           "clusters": 108,
           "verdict": "NOT_RESOLVED"
@@ -567,26 +567,26 @@
       },
       "against_the_incumbent_s_other_seeds": {
         "small_backbone_seed1": {
-          "ours": 0.9120370370370371,
+          "ours": 0.9363425925925926,
           "theirs": 0.9131944444444444,
-          "delta": -0.0011574074074073293,
+          "delta": 0.02314814814814814,
           "ci": [
-            -0.15844780219780213,
-            0.11766616105901821
+            -0.0805163795935608,
+            0.1064002725081229
           ],
           "clusters": 108,
           "verdict": "NOT_RESOLVED"
         },
         "small_backbone_seed2": {
-          "ours": 0.9120370370370371,
+          "ours": 0.9363425925925926,
           "theirs": 0.8402777777777778,
-          "delta": 0.0717592592592593,
+          "delta": 0.09606481481481477,
           "ci": [
-            -0.0397161888883743,
-            0.1854304635761589
+            0.005198092443140194,
+            0.18202254305977705
           ],
           "clusters": 108,
-          "verdict": "NOT_RESOLVED"
+          "verdict": "BETTER"
         }
       },
       "verdict": "PASS"
@@ -598,46 +598,46 @@
   },
   "gain_on_the_smooth_side": {
     "smooth_scoring_rule": {
-      "delta": 0.20448239636081256,
+      "delta": -0.03682540638634679,
       "ci": [
-        0.104512429059312,
-        0.30962905795091866
+        -0.10126136457521313,
+        0.02664599300430436
       ],
       "direction": "lower",
       "band": {
-        "enlarged_corpus_seed0": 0.9460634128616991,
-        "enlarged_corpus_seed1": 0.9279735972704287,
-        "enlarged_corpus_seed2": 0.7740144804869233
+        "enlarged_corpus_seed0": 0.6866657945232694,
+        "enlarged_corpus_seed1": 0.6446199572988566,
+        "enlarged_corpus_seed2": 0.7986545996159059
       },
       "incumbent": 0.7234912009096162,
-      "reads": "WORSE"
+      "reads": "NOT_RESOLVED"
     },
     "smooth_auc_ge4": {
-      "delta": 0.0014438943894390377,
+      "delta": 0.021142739273927402,
       "ci": [
-        -0.07633850189994794,
-        0.07726315215331875
+        -0.04566815074653717,
+        0.09094583513298642
       ],
       "direction": "higher",
       "band": {
-        "enlarged_corpus_seed0": 0.6066419141914191,
-        "enlarged_corpus_seed1": 0.5600247524752475,
-        "enlarged_corpus_seed2": 0.5618811881188119
+        "enlarged_corpus_seed0": 0.5576526402640264,
+        "enlarged_corpus_seed1": 0.6050948844884488,
+        "enlarged_corpus_seed2": 0.5815800330033003
       },
       "incumbent": 0.5604372937293729,
       "reads": "NOT_RESOLVED"
     },
     "smooth_auc_ge3": {
-      "delta": 0.09554973821989532,
+      "delta": 0.09336823734729494,
       "ci": [
-        -0.22268760907504362,
-        0.38317312884760774
+        -0.11390316848872858,
+        0.3227755438009392
       ],
       "direction": "higher",
       "band": {
-        "enlarged_corpus_seed0": 0.7735602094240838,
-        "enlarged_corpus_seed1": 0.7739965095986039,
-        "enlarged_corpus_seed2": 0.7050610820244329
+        "enlarged_corpus_seed0": 0.7835951134380453,
+        "enlarged_corpus_seed1": 0.725130890052356,
+        "enlarged_corpus_seed2": 0.7713787085514834
       },
       "incumbent": 0.6780104712041884,
       "reads": "NOT_RESOLVED"
@@ -647,7 +647,7 @@
   "scale_against_order": {
     "what_it_is": "REPORTED, never gated. Each cutpoint's cross-entropy split into what an in-sample isotonic recalibration removes (the scale) and what survives it (the order). The same fit the release floors are placed by, so a gap that lives in the scale term is a gap adoption re-derives anyway",
     "read_on": {
-      "smooth_render": "enlarged_corpus_seed1",
+      "smooth_render": "enlarged_corpus_seed0",
       "strange_render": "enlarged_corpus_seed2"
     },
     "cutpoints": {
@@ -660,10 +660,10 @@
           "cutpoint": 3,
           "positives": 191,
           "candidate": {
-            "cross_entropy": 0.7040802301183945,
-            "order_term": 0.09763523633084499,
-            "scale_term": 0.6064449937875495,
-            "auc": 0.7739965095986039
+            "cross_entropy": 0.36470329859930994,
+            "order_term": 0.10475123879488435,
+            "scale_term": 0.2599520598044256,
+            "auc": 0.7835951134380453
           },
           "incumbent": {
             "cross_entropy": 0.3677523758945524,
@@ -676,10 +676,10 @@
           "cutpoint": 4,
           "positives": 96,
           "candidate": {
-            "cross_entropy": 2.0352715324676884,
-            "order_term": 0.6584177490741666,
-            "scale_term": 1.3768537833935217,
-            "auc": 0.5600247524752475
+            "cross_entropy": 1.666106885318453,
+            "order_term": 0.6590301196966365,
+            "scale_term": 1.0070767656218167,
+            "auc": 0.5576526402640264
           },
           "incumbent": {
             "cross_entropy": 1.7541064720731634,
@@ -694,10 +694,10 @@
           "cutpoint": 2,
           "positives": 76,
           "candidate": {
-            "cross_entropy": 0.8161220475351486,
-            "order_term": 0.5364302665759428,
-            "scale_term": 0.27969178095920577,
-            "auc": 0.7432432432432432
+            "cross_entropy": 0.639374547737152,
+            "order_term": 0.540121429913738,
+            "scale_term": 0.09925311782341395,
+            "auc": 0.7501778093883357
           },
           "incumbent": {
             "cross_entropy": 0.6488369770766781,
@@ -710,10 +710,10 @@
           "cutpoint": 3,
           "positives": 6,
           "candidate": {
-            "cross_entropy": 0.24954179614695401,
-            "order_term": 0.03948869386930277,
-            "scale_term": 0.21005310227765125,
-            "auc": 0.9791666666666666
+            "cross_entropy": 0.19307977344689742,
+            "order_term": 0.06172572837596187,
+            "scale_term": 0.13135404507093554,
+            "auc": 0.9363425925925926
           },
           "incumbent": {
             "cross_entropy": 0.19967250972267503,
@@ -726,10 +726,10 @@
           "cutpoint": 4,
           "positives": 4,
           "candidate": {
-            "cross_entropy": 0.03728677079493352,
-            "order_term": 0.01802254435465694,
-            "scale_term": 0.019264226440276578,
-            "auc": 0.9914383561643836
+            "cross_entropy": 0.08603842292045057,
+            "order_term": 0.05518297540167606,
+            "scale_term": 0.030855447518774504,
+            "auc": 0.940068493150685
           },
           "incumbent": {
             "cross_entropy": 0.07110319405395502,
@@ -775,16 +775,10 @@
     "one_sided_alpha": 0.025,
     "chance_of_a_crossing_if_exactly_non_inferior": 0.3159793144360765,
     "crossed_per_seed": [
-      "smooth_scoring_rule:enlarged_corpus_seed0",
-      "smooth_scoring_rule:enlarged_corpus_seed1",
-      "strange_scoring_rule:enlarged_corpus_seed1",
-      "strange_scoring_rule:enlarged_corpus_seed2"
+      "smooth_scoring_rule:enlarged_corpus_seed2"
     ],
-    "crossed_on_the_band": [
-      "smooth_scoring_rule",
-      "strange_scoring_rule"
-    ],
-    "band_only_verdict": "FAIL",
+    "crossed_on_the_band": [],
+    "band_only_verdict": "PASS",
     "note": "the band-only verdict reads the same five arms on their own median seed \u2014 one test per arm rather than one per arm per seed"
   },
   "variants": {
@@ -802,6 +796,6 @@
     },
     "not_read_because": "the ablation and variant arms belong to the design study, whose candidates are gated against the per-kind heads. This candidate is gated against 'small_backbone' and its runs were trained on a smaller corpus, so no seed-for-seed pairing against them is corpus-matched"
   },
-  "verdict": "FAIL",
+  "verdict": "PASS",
   "adoption": "NOT part of this bar and not done anywhere. A passing candidate is a candidate; what adopting it would cost is written in the report and nowhere else"
 }

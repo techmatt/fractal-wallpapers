@@ -989,6 +989,14 @@ def read(runs: list[str] | None = None, candidate: str = render_train.CURRENT) -
         )
     declared = json.loads(path.read_text(encoding="utf-8"))
     candidate_runs = list(runs or render_train.CANDIDATES[candidate]["runs"])
+    # The band has to REALIZE the design the bar was written about, and the only
+    # thing that can say whether it does is the declaration — a run's own record
+    # agrees with its checkpoint whatever it trained at. `enlarged_corpus` was
+    # read once against a bar naming a backbone none of its three runs used.
+    try:
+        render_train.check_written_backbone(candidate_runs)
+    except render_train.TrainingError as refusal:
+        raise ComparisonError(str(refusal)) from refusal
     against = incumbent_of(candidate)
     band_only = declared.get("reading") == "band"
 

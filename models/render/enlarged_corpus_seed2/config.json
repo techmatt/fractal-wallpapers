@@ -32,7 +32,7 @@
   "sampler": "w_class[1/sqrt] x w_place[1/pictures at this place], in that order",
   "selection": "min validation loss over the selection slice, through the deploy transform: the mean cross-entropy of the unconditional probability at each cutpoint against that cutpoint's own truth. A proper scoring rule, so it sees the scale and not only the order",
   "classes": 4,
-  "backbone": "mobilenetv4_conv_medium.e250_r384_in12k",
+  "backbone": "mobilenetv4_conv_small.e2400_r224_in1k",
   "selection_cutpoint": 3,
   "conditioning": "none \u2014 the picture is the input, and the head is told no kind",
   "kinds": [
@@ -50,7 +50,7 @@
     0.225
   ],
   "interpolation": "bicubic",
-  "best_epoch": 28,
+  "best_epoch": 4,
   "inherited": {
     "identical_to_both_incumbents": [
       "amp",

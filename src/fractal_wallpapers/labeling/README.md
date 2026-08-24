@@ -284,6 +284,21 @@ same name. The drop is untracked, ignored, and disposable; `label ingest` is wha
 makes it durable, and it reads the drop by default so it does not have to be told
 where the page just wrote.
 
+**`/labels/` is ignored, and the leading slash is the point.** The entry in
+`.gitignore` is anchored at the repository root, so it hides the drop directory
+and leaves `data/labels/` — the location head's tracked store — alone. Two
+directories one path segment apart, one disposable and one the corpus, and an
+unanchored `labels/` would have ignored both.
+
+**Export and ingest in the same session.** A drop is only meaningful beside the
+sheet it was cut from: units are numbered `u0001` upward *by position* in that
+sheet's row file, so `intake.read_sheet` joins each verdict through
+`artifacts/sheet/` and nothing else can. Both halves are ignored trees — the drop
+under `labels/`, the sheet and its pictures under `artifacts/` — and a rebuilt
+sheet renumbers. So a drop whose sheet is gone cannot be ingested, and a drop
+joined against a *different* sheet of the same size would bind every verdict to a
+plausible picture rather than to its own. Ingest before the sheet moves.
+
 `ingest` exists because a sheet is cut somewhere untracked and its pictures live
 somewhere untracked, and none of that may survive as part of what a label means.
 It joins each exported unit to its sheet row **once**, and writes a row carrying
@@ -293,8 +308,20 @@ for a finished render. The sheet says which judge it was cut for and that decide
 which store it lands in; `Records` is that difference, spelled once. Both counts
 are checked in both directions, a row already in a store is not written twice, a
 verdict that changed is a new row rather than an edit, and the pin is asserted
-after the write — so the step is safe to re-run, which is the only reason anybody
-re-runs it after finding a mistake.
+**before** the write and again after it — so the step is safe to re-run, which is
+the only reason anybody re-runs it after finding a mistake. Asserting only
+afterwards left the store holding rows the suite forbids, once, on the first
+attempt at the manufactured rare-colour drop.
+
+**The imported rows of a store may stop short of its scale.** This project judges
+on `finished.SCALE`, 1..4 for both kinds, and that is what every page serves and
+every head emits. What the source project *collected* each corpus on is a
+separate and smaller fact — `finished_import.SOURCE_SCALE`, 4 for smooth renders
+and 3 for strange — and it lives on the importer because it is about pages served
+years ago rather than about this store. A source row outside its own corpus's
+ceiling is a misread file and the import refuses it; a row cast here is held to
+`finished.SCALE`. Which is why 145 of the strange store's rows are tier 4 and not
+one of them was imported.
 
 ### Reading a labelled batch back afterwards
 

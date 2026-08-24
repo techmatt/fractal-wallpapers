@@ -34,13 +34,13 @@
       }
     },
     "render": {
-      "tag": "weights-v3",
+      "tag": "weights-v4",
       "asset": "render.fp16.pt",
-      "sha256": "b2e225a929ef5e53b1d9b0521539184453039e351272b7cfdc192e0cd3abfd78",
+      "sha256": "e62e8dbab7f47ffedce3fcb3056b68eb4337dce0247ec387e03fdd517752d9b5",
       "bytes": 5133550,
       "precision": "fp16",
-      "run": "small_backbone_seed0",
-      "source_commit": "f9cc0fcb0e700f3a71f41bba535aadaf1da905a1",
+      "run": "enlarged_corpus_seed1",
+      "source_commit": "f90ad31e8e4a07d9c092d8ace60f030d6a70afb9",
       "provenance": {
         "supervision": "human verdicts",
         "corpus": "data/smooth_render + data/strange_render"

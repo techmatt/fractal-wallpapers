@@ -15,10 +15,11 @@ one of those two; the **head** is this one.
 
 ## What ships
 
-`render.fp16.pt`, staged from `small_backbone_seed0` by the pre-declared pick
-rule — the lowest frozen selection objective of the band, 0.386392 against 0.389127
-and 0.391972. The band remains the honest performance read; the pick rule only
-chooses which artifact carries it.
+`render.fp16.pt`, staged from `enlarged_corpus_seed1` by the pre-declared pick
+rule — the lowest frozen selection objective of the band, 0.372271 against 0.385630
+and 0.377333. The band remains the honest performance read; the pick rule only
+chooses which artifact carries it. It succeeded `small_backbone_seed0` on
+2026-08-24, at the same design and the same backbone, on a corpus 487 rows larger.
 
 The weights are not tracked. `best.pt` and `last.pt` are what training leaves in
 full precision, and `fractal-wallpapers fetch-weights` downloads the halved
@@ -31,9 +32,16 @@ floor is *for* and the head it is *on* are different names now, and the record
 carries both.
 
 ```text
-strange_render   0.620   ACTING at release selection      crossing 0.618078
-smooth_render    0.530   measured, advisory, gates nothing crossing 0.527937
+strange_render   0.575   ACTING at release selection      crossing 0.573085
+smooth_render    0.540   measured, advisory, gates nothing crossing 0.535952
 ```
+
+**A flip moves these two for two reasons and the record separates them.** The store
+grows and the scale moves, and a method that credited the whole drop to the scale
+would misstate a number somebody restates again. Fit on the *retired* artifact over
+the *grown* stores, the strange crossing is 0.614688 and the smooth is 0.527937 — so
+0.005 of the strange bar's 0.045 drop is the 237 new rows and the rest is the scale,
+and the smooth floor's whole 0.010 rise is the scale.
 
 Both were re-fitted by `head floor --head <kind>` when the judge changed, and both
 reproduce on re-fit — that check is the STOP condition, and it now bites on a
@@ -46,12 +54,12 @@ fractal-wallpapers head floor --head strange_render     # re-fit, must reproduce
 fractal-wallpapers curate rescore                       # the pool onto this scale
 ```
 
-## The retrain that did not adopt: `enlarged_corpus`, 2026-08-24
+## The retrain that adopted: `enlarged_corpus`, 2026-08-24
 
 The manufactured rare-colour batch grew both stores by 487 rows, and the shipped
 design was retrained on them at three seeds — no recipe key moved, backbone
 included. `bar_enlarged_corpus.json` is its bar and `comparison_enlarged_corpus.json`
-is the read. **It reads FAIL on the band and was not adopted.**
+is the read. **It passes five of five gated arms on the band and was adopted.**
 
 The first candidate here gated against a **joint** incumbent rather than the retired
 per-kind pair: `CANDIDATES[...]["incumbent"]` names which, and a candidate that omits
@@ -59,21 +67,39 @@ the key is read against the pair as before. `medium` and `small_backbone` are
 untouched by that indirection and their records reproduce.
 
 ```text
-smooth_scoring_rule   +0.2045  CI [+0.1045, +0.3096]   WORSE
-strange_scoring_rule  +0.0611  CI [+0.0055, +0.1216]   WORSE
+smooth_scoring_rule   -0.0368  CI [-0.1013, +0.0266]   flat
+strange_scoring_rule  -0.0004  CI [-0.0365, +0.0364]   flat
 every AUC arm                                          flat
 ```
 
-**The whole gap is scale.** On every readable cutpoint the candidate's order term is
-equal or better than the incumbent's, and the cross-entropy arms are the ones that
-read the scale. Best epoch moved 3/4/3 → 20/26/28: the larger corpus trains longer
-and arrives more confident. That is what re-fitting both floors on adoption absorbs,
-and it is also what the gated arms are measuring, so the FAIL stands as read.
+Growing the corpus costs nothing on either blind sheet, which is the only question
+the bar asked. The order/scale decomposition says the same thing from the other
+side: the candidate's scale term is at or below the incumbent's at three of the four
+readable cutpoints, and best epoch lands at 5/5/4 against the incumbent's 3/4/3.
 
-**The selection objective is not comparable across the two candidates** — 0.474–0.528
+**This band was trained twice, and the first three runs are why
+[`render_train.check_declared_backbone`] exists.** They were launched without
+`--backbone`, so they took `RECIPE`'s pinned **medium** — the *first* candidate's
+value — while this band and its bar both declare the small. The bar states the
+recipe as "the incumbent's, unchanged in every key including the backbone", and
+nothing read it. Those runs read FAIL, at +0.2045 and +0.0611 on the two
+cross-entropy arms, with the entire gap in the scale term and best epoch at 20/26/28:
+an under-fed larger backbone arriving over-confident, which is the same failure the
+first band traced to capacity. Re-run at the declared backbone, every one of those
+numbers goes flat.
+
+Nothing in a run directory could have caught it. `config.json`, the config inside
+both checkpoints and `head audit` all agreed with each other and with the wrong
+value; the tell was a checkpoint 3.3x the expected size. So the declaration is
+enforced at both ends now — before a launch spends hours, and before a written band
+is read against a bar it may not answer. The three runs are kept as
+`mislaunch_medium_seed*`, out of every band, named in `render_train.MISLAUNCHED`.
+
+**The selection objective is not comparable across the two candidates** — 0.372–0.386
 against 0.386–0.392 — because the slice is drawn over the pooled training side's
 places and that side grew: 222 places / 757 pictures against 259 / 620. It orders
-runs *within* a band and nothing else.
+runs *within* a band and nothing else, and the pick rule is the only thing that
+reads it across one.
 
 `renders glance --batch <name> --run <run>` cuts the qualitative read a band cannot
 give: one batch's rows under two heads' orderings, side by side, into `scratch/`.
@@ -109,6 +135,13 @@ fractal-wallpapers renders disagreements                      # pictures into sc
 `--only <kind>` trains the corpus-matched ablation, `--two-head` puts one ordinal
 classifier per kind on the shared backbone, and `--backbone` re-asks the one value
 a joint judge cannot inherit. All three are study arms and none of them gates.
+
+**A named run takes its band's declared backbone, and `--backbone` may not override
+it.** `RECIPE` still carries the first candidate's medium; every band since has
+re-asked that value in its own `CANDIDATES` entry, and the trainer reads the entry
+rather than the module default. So the `--backbone` above is for a run name no band
+claims — under one that a band does, a value contradicting the declaration is
+refused rather than obeyed.
 
 **Two runs at a time is the right way to spend this machine.** The pipeline is
 data-loading bound, not compute bound: the GPU sits at ~20% and an epoch costs

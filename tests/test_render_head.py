@@ -653,3 +653,91 @@ def test_the_retrains_bar_is_reproducible_from_the_module_that_wrote_it() -> Non
         pytest.skip("the retrain's bar has not been written on this machine")
     written = json.loads(path.read_text(encoding="utf-8"))
     assert written == json.loads(json.dumps(render_acceptance.bar("enlarged_corpus")))
+
+
+def test_a_named_run_trains_at_its_band_s_declared_backbone_and_not_the_module_s() -> None:
+    """The defect of 2026-08-24, as a guard. `RECIPE["backbone"]` is the FIRST
+    candidate's medium and every band since has re-asked that one value in its own
+    declaration — so a launch that read the module default instead of the band trained
+    a design no bar had been written about. Three `enlarged_corpus` runs did, and
+    nothing downstream could see it: `config.json`, the checkpoint's own config and
+    `head audit` all agreed with each other and with the wrong value."""
+    for name, entry in render_train.CANDIDATES.items():
+        for run in entry["runs"]:
+            assert render_train.declared_backbone(run) == entry["backbone"], (
+                f"{run} resolves to a backbone its {name} band does not declare"
+            )
+    # The one that bit: the newest band's value is NOT the module's pinned default.
+    assert (
+        render_train.declared_backbone("enlarged_corpus_seed0") != render_train.RECIPE["backbone"]
+    ), "this guard is only worth anything while the two actually differ"
+    # A run no band claims stays free: nothing has written a bar about it.
+    assert render_train.declared_backbone("some_scratch_run") is None
+
+
+def test_a_launch_at_a_backbone_the_band_does_not_declare_is_refused() -> None:
+    """`--backbone` may re-ask the value under a run name nobody has written a bar
+    about. It may not quietly retarget a band: the bar names the design and a band
+    trained at another backbone cannot answer it."""
+    with pytest.raises(render_train.TrainingError) as refusal:
+        render_train.check_declared_backbone(
+            "enlarged_corpus_seed1", {"backbone": render_train.RECIPE["backbone"]}
+        )
+    said = str(refusal.value)
+    assert "enlarged_corpus" in said and render_train.RECIPE["backbone"] in said
+    # The declared value passes, and an unclaimed run name is not checked at all.
+    render_train.check_declared_backbone(
+        "enlarged_corpus_seed1",
+        {"backbone": render_train.CANDIDATES["enlarged_corpus"]["backbone"]},
+    )
+    render_train.check_declared_backbone("some_scratch_run", {"backbone": "anything_at_all"})
+
+
+def test_a_planted_mismatch_between_a_written_run_and_its_band_fails(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The half that sees it AFTER the hours are spent. A run records the recipe it
+    ran, so nothing inside its directory can say the band was supposed to be something
+    else — only the declaration can, and this is where a written band is held to it."""
+    # Only where a run's config is READ: the bar still comes off the tracked file,
+    # because what is being checked is that the read refuses on the declaration and
+    # not on something incidental about a temporary directory.
+    monkeypatch.setattr(render_train, "config_path", lambda run=None: tmp_path / f"{run}.json")
+    band = "enlarged_corpus"
+    runs = render_train.CANDIDATES[band]["runs"]
+    declared = render_train.CANDIDATES[band]["backbone"]
+    for run in runs:
+        render_train.config_path(run).write_text(
+            json.dumps({"backbone": declared}), encoding="utf-8", newline="\n"
+        )
+    # As declared: nothing to say.
+    render_train.check_written_backbone(runs)
+
+    # Now plant the mismatch on one seed, exactly as the mis-launch wrote it.
+    render_train.config_path(runs[1]).write_text(
+        json.dumps({"backbone": render_train.RECIPE["backbone"]}), encoding="utf-8", newline="\n"
+    )
+    with pytest.raises(render_train.TrainingError) as refusal:
+        render_train.check_written_backbone(runs)
+    said = str(refusal.value)
+    assert runs[1] in said and band in said and declared in said
+
+    # And the acceptance read refuses on it rather than reporting a band that is not
+    # the design its bar was written about.
+    with pytest.raises(render_acceptance.ComparisonError) as refused:
+        render_acceptance.read(candidate=band)
+    assert "backbone their band declares" in str(refused.value), (
+        "it must refuse on the declaration, not later on a missing score file"
+    )
+
+
+def test_the_mislaunched_runs_are_out_of_every_band_and_say_what_they_are() -> None:
+    """They trained, they cost hours, and they answer no bar. Kept and named rather
+    than deleted — but out of the band, so no read can pair them against it."""
+    claimed = {run for entry in render_train.CANDIDATES.values() for run in entry["runs"]}
+    claimed |= {run for entry in render_train.VARIANTS.values() for run in entry["runs"]}
+    for run, entry in render_train.MISLAUNCHED.items():
+        assert run not in claimed, f"{run} is a mis-launch and still sits inside a band"
+        assert render_train.declared_for(run) is None
+        assert entry["launched_as"] in claimed, "it was launched under a name a band does claim"
+    assert "--backbone" in render_train.MISLAUNCH_BASIS

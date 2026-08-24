@@ -198,6 +198,145 @@ TWO_HEAD_RUNS: tuple[str, ...] = VARIANTS["two_head"]["runs"]
 #: Every run of every variant, which is what a comparison has to align over.
 VARIANT_RUNS: tuple[str, ...] = tuple(run for entry in VARIANTS.values() for run in entry["runs"])
 
+#: Runs that are on disk and belong to no band, with what happened to them.
+#:
+#: A band is a design plus the runs that realize it, so a run that did not train
+#: the design cannot stay in the band — its records would be read against a bar
+#: written about something else. It is not deleted either: it trained, it cost
+#: hours, and what it says about the design it *did* train is worth keeping.
+#: So it is renamed out of the band and named here.
+#:
+#: These three are the whole of it. `enlarged_corpus` declares the small
+#: backbone, its bar states the recipe as "the incumbent's, unchanged in every
+#: key including the backbone", and all three runs trained at the **medium** —
+#: [`RECIPE`]'s pinned default, taken because nothing read the declaration and
+#: the launches passed no `--backbone`. Their records are internally consistent
+#: and consistently wrong, which is why the checkpoint being 3.3x the expected
+#: size is what gave it away. [`check_declared_backbone`] is what stops it
+#: happening at launch and [`check_written_backbone`] is what sees it afterwards.
+MISLAUNCHED: dict[str, dict] = {
+    "mislaunch_medium_seed0": {"launched_as": "enlarged_corpus_seed0"},
+    "mislaunch_medium_seed1": {"launched_as": "enlarged_corpus_seed1"},
+    "mislaunch_medium_seed2": {"launched_as": "enlarged_corpus_seed2"},
+}
+
+#: What the runs above were, in one sentence, carried onto anything that reports
+#: them. They answer no bar and gate nothing.
+MISLAUNCH_BASIS = (
+    "launched 2026-08-24 without --backbone, so all three took RECIPE's pinned medium "
+    "rather than the small backbone the enlarged_corpus band and its bar declare. Renamed "
+    "out of that band on 2026-08-24: they realize no registered design and answer no bar"
+)
+
+#: Every band with a bar, candidates and variants alike, keyed by run name. A
+#: band **declares** its recipe and its runs together, and this is the index that
+#: lets a run name answer which declaration it is supposed to realize.
+DECLARED_BY_RUN: dict[str, tuple[str, dict]] = {
+    run: (name, entry)
+    for source in (CANDIDATES, VARIANTS)
+    for name, entry in source.items()
+    for run in entry["runs"]
+}
+
+
+def declared_for(run_name: str | None) -> tuple[str, dict] | None:
+    """`(band, entry)` for a named run, or `None` for a run no band declares.
+
+    A run outside every band is a scratch run and stays free: nothing has written
+    a bar about it, so there is no declaration for it to disagree with.
+    """
+    if not run_name:
+        return None
+    return DECLARED_BY_RUN.get(str(run_name))
+
+
+def declared_backbone(run_name: str | None) -> str | None:
+    """The backbone the band this run belongs to says it is trained at."""
+    found = declared_for(run_name)
+    return None if found is None else str(found[1]["backbone"])
+
+
+def check_declared_backbone(run_name: str, recipe: dict) -> None:
+    """Refuse a recipe whose backbone is not the one this run's band declares.
+
+    **The declaration is the bar.** `bar_enlarged_corpus.json` states the recipe
+    as "the incumbent's, unchanged in every key including the backbone
+    (mobilenetv4_conv_small…)", and [`CANDIDATES`] says the same thing in code —
+    but for as long as neither was *read* at launch, the value that actually
+    trained was [`RECIPE`]'s, which is the first candidate's medium. All three
+    `enlarged_corpus` runs of 2026-08-24 were launched that way and trained at
+    the medium backbone: a band that did not realize the design its own bar was
+    written about, read as though it did, and only a 3.3x checkpoint size gave it
+    away.
+
+    Nothing about that was detectable from the record — `config.json` agreed with
+    the checkpoint, the audit agreed with both, and every one of them agreed on
+    the wrong value. So the declaration is enforced in the two places it can be:
+    here, before a launch spends hours, and in
+    [`fractal_wallpapers.models.render_acceptance`], before a written band is
+    read against a bar it may not answer.
+    """
+    declared = declared_backbone(run_name)
+    if declared is None:
+        return
+    band, _ = declared_for(run_name)
+    actual = str(recipe.get("backbone"))
+    if actual != declared:
+        raise TrainingError(
+            f"run {run_name!r} belongs to the {band!r} band, which declares the backbone "
+            f"{declared!r}, and this launch would train at {actual!r}. The bar for that band "
+            f"was written about the declared design and a band trained at another backbone "
+            f"cannot answer it. Drop --backbone to take the declared value, or train under a "
+            f"run name no band claims."
+        )
+
+
+def written_backbone(run_name: str) -> str | None:
+    """What a run's tracked `config.json` says it actually trained at.
+
+    `None` where the run has no record here — a band read against runs that were
+    never written is a different refusal, and it belongs to the reader.
+    """
+    import json as _json
+
+    path = config_path(run_name)
+    if not path.is_file():
+        return None
+    return str(_json.loads(path.read_text(encoding="utf-8")).get("backbone"))
+
+
+def check_written_backbone(run_names) -> None:
+    """Refuse a band whose written runs did not train at the declared backbone.
+
+    The launch-time check above stops this happening again; this one is what sees
+    it when it already has. A run records the recipe it ran, so `config.json`,
+    the checkpoint's own config and `head audit` all agree — with each other, and
+    with the wrong value. Nothing in a run directory can tell you the band was
+    supposed to be something else, because the only place that says so is the
+    declaration.
+    """
+    wrong = []
+    for run_name in run_names:
+        declared = declared_backbone(run_name)
+        written = written_backbone(run_name)
+        if declared is not None and written is not None and written != declared:
+            band, _ = declared_for(run_name)
+            wrong.append((run_name, band, declared, written))
+    if not wrong:
+        return
+    lines = "; ".join(
+        f"{run_name} ({band} declares {declared}, the run trained at {written})"
+        for run_name, band, declared, written in wrong
+    )
+    raise TrainingError(
+        f"{len(wrong)} run(s) of this band did not train at the backbone their band declares, "
+        f"so the band does not realize the design its bar was written about: {lines}. "
+        f"Re-train them under the declared recipe, or record them as a mis-launch under run "
+        f"names no band claims — a read of these against that bar reads one design against a "
+        f"bar for another."
+    )
+
+
 #: What the candidate inherited, and every key that could not come across.
 INHERITANCE = {
     "identical_to_both_incumbents": [
@@ -622,8 +761,17 @@ def run(
         recipe["epochs"] = int(epochs)
     if seed is not None:
         recipe["seed"] = int(seed)
+    # The band's DECLARED backbone, not the module's default. `RECIPE` carries
+    # the first candidate's medium, and every band since has re-asked that one
+    # value in its own declaration — so a named run takes its band's value and a
+    # `--backbone` that disagrees with it is refused rather than obeyed.
+    declared = declared_backbone(run_name)
+    if declared is not None:
+        recipe["backbone"] = declared
     if backbone is not None:
         recipe["backbone"] = backbone
+    if run_name:
+        check_declared_backbone(run_name, recipe)
     if per_kind:
         recipe["per_kind"] = True
         recipe["conditioning"] = (
@@ -1031,6 +1179,8 @@ __all__ = [
     "HEAD",
     "INHERITANCE",
     "KINDS",
+    "MISLAUNCHED",
+    "MISLAUNCH_BASIS",
     "RECIPE",
     "RUNS",
     "SCHEMA",
@@ -1039,17 +1189,22 @@ __all__ = [
     "SELECTION_SHARE",
     "CANDIDATES",
     "CURRENT",
+    "DECLARED_BY_RUN",
     "TWO_HEAD_RUNS",
     "VARIANTS",
     "VARIANT_RUNS",
     "TrainingError",
     "Picture",
     "KindCrops",
+    "check_declared_backbone",
+    "check_written_backbone",
     "checkpoint_path",
     "classifier_width",
     "cluster_of",
     "cutpoints_of",
     "config_path",
+    "declared_backbone",
+    "declared_for",
     "head_dir",
     "metrics_path",
     "load",
@@ -1063,4 +1218,5 @@ __all__ = [
     "score_through",
     "scores_path",
     "sides",
+    "written_backbone",
 ]
