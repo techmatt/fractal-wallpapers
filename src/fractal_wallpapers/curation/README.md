@@ -751,6 +751,18 @@ store above. Those cost a GPU leg or a standing supply the checkout cannot rebui
 this re-runs in about five minutes over inputs that are all tracked or regenerable,
 so what the history needs is provenance rather than a second disk.
 
+**Stage 2 answers half of a tail question, and stage 3 answers the other half.** A
+swatch the library carries and the pool never shows can fail in two places: the head
+never picks a map carrying it, or the head picks one and the geometry never lands the
+colour. The picks table settles the first — `offered` against `picked`, with
+`expected_if_blind = offered / 32` — and the second is a **join of the two stages' rows
+on `run` + `candidate`**, which asks what share the render actually gave a swatch its
+chosen map carried at 10%. Both keys are on both row kinds and no re-render is needed.
+Two things to know before trusting the join: the two stores overlap on identity, so a
+little over a hundred pick rows share a `(run, candidate)` with another row and resolve
+to the same render; and a handful of pick rows have no render at all. Neither can invent
+a landing, so a *low* landing rate is still a real one.
+
 **Stage 3 restricts rather than pools, and this is the part to keep straight.** A
 judge's score is calibrated against its own training prior, so a stored number from
 a retired checkpoint is not on the same scale as a committed floor. Everything
