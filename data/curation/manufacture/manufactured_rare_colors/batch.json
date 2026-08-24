@@ -1,0 +1,57 @@
+{
+  "schema": 1,
+  "batch": "manufactured_rare_colors",
+  "rows": {
+    "smooth_render": 250,
+    "strange_render": 246
+  },
+  "confirmed": 1204,
+  "served": 917,
+  "shortfall": {
+    "strange_render/light_vivid_lime/new": 3,
+    "strange_render/light_muted_green/new": 1
+  },
+  "capped_out": 161,
+  "rows_per_map": {
+    "cap": 4,
+    "maps_used": 197,
+    "distribution": {
+      "1": 75,
+      "2": 23,
+      "3": 21,
+      "4": 78
+    }
+  },
+  "tiers": {
+    "human_q3": 496
+  },
+  "arms": {
+    "contrast": 50,
+    "new": 446
+  },
+  "modes": {
+    "curvature": 14,
+    "direct_trap_lines": 14,
+    "direct_trap_multiply": 2,
+    "direct_trap_ring": 7,
+    "direct_trap_screen": 8,
+    "exp_smoothing": 20,
+    "gaussian_int": 14,
+    "itinerary": 22,
+    "smooth": 250,
+    "smooth_angle_min": 18,
+    "smooth_curvature": 18,
+    "smooth_mean_angle": 18,
+    "smooth_stripe": 22,
+    "smooth_trap_circle": 14,
+    "stripe": 12,
+    "threads": 23,
+    "tia": 15,
+    "trap_circle": 5
+  },
+  "plan": "artifacts/curation/manufacture/manufactured_rare_colors/plan.json",
+  "rows_file": [
+    "smooth_render.jsonl",
+    "strange_render.jsonl"
+  ]
+}

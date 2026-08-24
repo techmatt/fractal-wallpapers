@@ -26,6 +26,7 @@ records    what the run decided, and out of what population
 rejection  taking a released row back afterwards, without losing what the run did
 below_bar  the glance sheet of what an acting bar would take back, to rule off
 sheet      the same thing laid out for a person to disagree with
+manufacture  forcing the rare swatches onto good places, and the sheets that ask
 checks     the two claims only a re-render can settle
 run        the wiring, and nothing else
 ```
@@ -51,6 +52,9 @@ fractal-wallpapers curate gallery --n 100 --no-full-size                # seat, 
 fractal-wallpapers curate gallery --pass gallery2                       # ...then make them
 fractal-wallpapers curate gallery-store check --pass gallery1          # is the store whole?
 fractal-wallpapers curate gallery --pass gallery1 --migrate            # out of the old layout
+fractal-wallpapers curate manufacture --step register --write          # BEFORE anything
+fractal-wallpapers curate manufacture --oversample 2.5                 # plan, build, select
+fractal-wallpapers curate manufacture --step verify --sheet artifacts/<sheet>
 ```
 
 ## A run accumulates; the gallery pass chooses
@@ -296,6 +300,74 @@ still holding every attempt the old code passed over. `curate gallery --pass <id
 --migrate` moves one pass across: attempt rows into the new store with its
 manifest, the release directory rewritten to the winners alone. It reads and
 writes records only and renders nothing. It is idempotent.
+
+## `curate manufacture` — the one population here that is made rather than found
+
+Everything else in this stage spends supply. This makes some. `expressed` counted
+what the collection actually holds and found **eight of the fifty-two swatches on
+none of the 246 finished wallpapers and twenty-one on five or fewer**, against a
+library with 38 to 258 maps able to reach each of those twenty-one. The gap is
+not capability, and it is not something a floor can fix — the arithmetic there
+says a per-swatch floor cannot exist above about five percent. Nothing has ever
+*asked* for those colours, so this asks.
+
+```
+1  register    both arms, in both stores, BEFORE a pixel exists
+2  plan        21 target swatches x 2 kinds x 2 arms; one location per row, a
+               mode drawn the way a run draws one, maps off the coverage panel
+3  screen      every attempt at 640x360 x2: censused, judged, nothing selected
+4  confirm     the best attempt at each location again at 1280x720 x2 — the
+               sheet's own geometry, and where BOTH cuts act
+5  select      quotas filled from the confirmed share, under a per-map cap
+6  read        the per-location hit rate, the yield, the geometry drift
+```
+
+**The screen is a pre-filter and the confirm is the decision.** A candidate-geometry
+render is a quarter of the cost of the picture a person judges, so it is what the
+overbuild is paid at — but nothing is *selected* there, because a new map can
+wreck a picture an old map carried and the score that matters is the one on the
+picture that will be on the sheet. Both cuts — a tenth of the pixels on the
+target swatch, at least a 2 from the render judge — are read off the sheet render.
+
+**The sheet serves that exact render, and it is checked rather than argued.** A
+plan unit names the *levelled* colormap directory the autolevel operator wrote,
+so `label build` renders through the same map and produces the same picture;
+`curate manufacture --step verify --sheet <dir>` hashes every row both ways and
+compares the sheet's own reading of the judge against the reading the cut was
+taken on. Without the levelled directory the sheet would render through the map
+as it was before the operator touched it, which is a different picture with the
+same join.
+
+**Production draws no palette knob, and that is the diagnostic's answer.** Every
+colorize this repository makes is `finished.recipe()` at the identity — gamma
+1.0, cycles 1.0, phase 0.0, no reverse, the value transfer, no rolloff — with
+`mirror` read off the map's cyclicity rather than sampled. So the hit rate this
+batch reports is a hit rate *against a draw that varied nothing*: a low one is a
+fact about where a pinned ramp lands on a field, never an under-explored recipe.
+Every map of the `rare-colors-2026-08` drop is cyclic, so every new-map row is
+unfolded and its whole recipe is the identity.
+
+**A tenth of the rows are a contrast arm** — the same target swatches forced
+through maps the library held before the drop — in their own registered batch. A
+correction on a drop row is otherwise confounded: two hundred maps authored in
+one run against one brief is exactly the kind of thing a judge can have a blanket
+opinion about, and without the arm nothing separates *this colour is wrong* from
+*these maps are wrong*.
+
+**One row per location, across both sheets.** A swatch quota that cannot be
+filled at one row per location is reported short; it is never backfilled by
+recolouring a cooperative location several ways, which would put one place on the
+page under four maps and turn a correction rate into a fact about that place.
+Locations come from the human q3+ tier first and the highest-scoring admitted
+supply after it, and **every row stamps which tier it came from** — in
+`data/curation/manufacture/<batch>/<kind>.jsonl`, keyed on the render identity a
+verdict is cast on, because a store row carries the place and the recipe and
+deliberately not what the page printed under the picture.
+
+**What comes off these sheets is a ceiling.** The population is enriched twice
+over, by location quality and by a passing score, so a correction rate measured
+on it bounds what a correction rate could be and is never a base rate about the
+pool.
 
 ## The gallery pass needs a distance, so every admitted location has a vector
 

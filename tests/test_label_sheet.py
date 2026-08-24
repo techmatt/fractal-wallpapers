@@ -578,3 +578,70 @@ def test_the_render_cache_is_reused_only_on_an_exact_spec(tmp_path, monkeypatch)
     assert hit.manifest["cut"] == {"reused_from_cache": 1, "rendered": 0}
     missed = finished_sheet(tmp_path / "third", [finished_unit(1)], reuse_cache=True)
     assert missed.manifest["cut"] == {"reused_from_cache": 0, "rendered": 1}
+
+
+# --------------------------------------------------------------------------- #
+# How a finished page is read, and by which judge.
+# --------------------------------------------------------------------------- #
+def test_a_finished_page_reads_by_the_expected_tier_unless_told_otherwise(tmp_path) -> None:
+    """The default order is the head's expected tier over the whole scale: the
+    sum of its unconditional cutpoints, not any one of them."""
+    units = [finished_unit(0), finished_unit(1), finished_unit(2)]
+    sheet = finished_sheet(
+        tmp_path,
+        units,
+        probabilities=[[0.9, 0.10], [0.4, 0.35], [0.6, 0.20]],
+    )
+    assert [row["suggestion_score"] for row in sheet.rows] == [1.0, 0.8, 0.75]
+    assert sheet.manifest["order"] == "score"
+
+
+def test_the_top_cutpoint_orders_a_page_where_the_one_below_it_saturates(tmp_path) -> None:
+    """At the good end of a correction sheet `P(>=3)` is pinned near one and
+    cannot separate two rows. `--order-by top` reads the last cutpoint instead,
+    and it is a different order over the same three rows."""
+    units = [finished_unit(0), finished_unit(1), finished_unit(2)]
+    sheet = finished_sheet(
+        tmp_path,
+        units,
+        probabilities=[[0.9, 0.10], [0.4, 0.35], [0.6, 0.20]],
+        order_by="top",
+    )
+    assert [row["columns"]["p_ge3"] for row in sheet.rows] == [0.35, 0.20, 0.10]
+    assert sheet.manifest["order"] == "p_ge4"
+    # The reported score is unchanged: what moved is the reading order, not what
+    # a row says about itself.
+    assert [row["suggestion_score"] for row in sheet.rows] == [0.75, 0.8, 1.0]
+
+
+def test_an_unknown_ordering_is_refused_rather_than_defaulted() -> None:
+    with pytest.raises(sheets.SheetError, match="unknown ordering"):
+        sheets.finished_source("smooth_render", scores=([], 3), order_by="by_hue")
+
+
+def test_a_finished_sheet_is_scored_by_the_one_shipped_judge_and_not_by_its_kind(
+    tmp_path, monkeypatch
+) -> None:
+    """One judge reads both kinds since 2026-08-23, and it is the only
+    finished-render head the roster carries. A sheet that loaded
+    `models/<kind>/<kind>.fp16.pt` read a retired checkpoint on a scale nothing
+    else speaks — and on a fresh clone it read a file that is not there."""
+    from fractal_wallpapers.curation import floors
+    from fractal_wallpapers.labeling import finished
+    from fractal_wallpapers.models import render_train, scoring, ship, train
+
+    asked = []
+
+    def load(path, device):
+        asked.append(path)
+        return object(), {"classes": 3}, "cpu"
+
+    monkeypatch.setattr(render_train, "load_checkpoint", load)
+    monkeypatch.setattr(scoring, "transform_of", lambda config: None)
+    monkeypatch.setattr(train, "score", lambda *arguments, **keywords: [[0.9, 0.1]])
+
+    probabilities, classes = sheets.score_pictures("smooth_render", [tmp_path / "a.jpg"])
+    assert asked == [ship.shipped_path(floors.SCORING_HEAD)]
+    assert classes == 3 and probabilities == [[0.9, 0.1]]
+    # The kind is not the judge, and the check is that the two names differ.
+    assert floors.SCORING_HEAD not in finished.HEADS
