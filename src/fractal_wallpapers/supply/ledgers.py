@@ -151,16 +151,144 @@ def is_admitted(row: dict) -> bool:
     return passes_gates(row) and money.passes_good_floor(row.get("score"))
 
 
+def refined_of(row: dict, refinements: dict) -> dict:
+    """A candidate row with its refinement applied, or the row itself.
+
+    **THE reader that prefers the later row.** A walk cannot refine a framing
+    before it writes the candidate — "the best three frames of this walk" is not
+    knowable until the walk has finished — and a ledger is append-only, so the
+    refinement is a [`ledger.REFINED`] row after the candidates and this is where
+    it is joined back on.
+
+    What moves is the frame and the verdict on it: `viewport`, `maxiter`,
+    `score`, `score_great`, and the fate that score now earns. The frame the walk
+    actually stood on is kept under `framing.original` and the row on disk is
+    untouched either way.
+
+    **The location key moves with the frame, and that is deliberate.** A key is
+    built from the family and the viewport, so a refined row is a different
+    location — which is this project's existing stance, stated where the
+    reframing operators dedup: *the framing is part of the identity, and the same
+    atom at two framings is two views*. It is the opposite of what the gallery
+    pass does with a refinement, and the two are not in conflict: a pass refines a
+    location the pool **already holds** at its recorded frame, so pinning identity
+    is what stops one place taking two seats, while a walk refines a frame nothing
+    downstream has seen yet and the refined frame simply is the location it found.
+
+    The fate is re-derived rather than carried, because a refinement is only ever
+    an improvement — the window contains the original frame and the margin is
+    strict — so a row can cross a floor upward here and can never fall.
+    """
+    key = key_of_row(row)
+    refinement = refinements.get(key) if key is not None else None
+    if refinement is None:
+        return row
+    out = dict(row)
+    out["framing"] = {
+        "adopted": True,
+        "original": {
+            "viewport": row.get("viewport"),
+            "maxiter": row.get("maxiter"),
+            "score": row.get("score"),
+            "score_great": row.get("score_great"),
+        },
+        "gain": refinement.get("gain"),
+        "margin": refinement.get("margin"),
+        "width_scale": refinement.get("width_scale"),
+        "dx": refinement.get("dx"),
+        "dy": refinement.get("dy"),
+        "slug": refinement.get("framing"),
+        "refined_by": refinement.get("run_seed"),
+    }
+    out["viewport"] = refinement["refined_viewport"]
+    out["maxiter"] = refinement.get("refined_maxiter", row.get("maxiter"))
+    out["score"] = refinement.get("score")
+    out["score_great"] = refinement.get("score_great")
+    out["score_regime"] = refinement.get("score_regime", row.get("score_regime"))
+    # The digest names a picture of the *original* frame, so carrying it onto a
+    # row that is now about another frame would be a name that promises the wrong
+    # file — which is the one thing `score_view` exists to prevent.
+    out["score_view"] = None
+    if row.get("fate") in ledger_module.SCORED:
+        out["fate"] = _fate_of(out["score"])
+    return out
+
+
+def _fate_of(score: float | None) -> str:
+    """Which of the three scored fates a score earns, on the floors as they stand.
+
+    Both floors through their owners rather than restated: the keeper floor is
+    the supply currency's and the junk floor is curation's, which is the same
+    pair [`discovery.scoring.LocationScorer`] asks when it decides a fate the
+    first time. Curation is reached lazily, the way every reach from this half of
+    the project into it is.
+    """
+    from fractal_wallpapers.curation import floors
+
+    if money.passes_good_floor(score):
+        return ledger_module.SURVIVED
+    if floors.passes_junk_floor(score):
+        return ledger_module.EXPANDABLE
+    return ledger_module.NOT_ADMITTED
+
+
+def refinements(path: Path) -> dict:
+    """`{location key: row}` for every adopted refinement in one ledger.
+
+    Only the adopted ones. A refinement whose window did not clear the margin is
+    on the record — it is the evidence the margin is set where it should be — and
+    it changes nothing about the location it is about, so a reader that acted on
+    it would be acting on a decision that was deliberately not taken.
+    """
+    out: dict = {}
+    for row in rows(path, kind=ledger_module.REFINED):
+        if not row.get("adopted") or not row.get("refined_viewport"):
+            continue
+        key = key_of_row(row)
+        if key is not None:
+            out[key] = row
+    return out
+
+
 def admitted(path: Path, admit=None) -> list[dict]:
-    """Every admitted candidate row of one ledger.
+    """Every admitted candidate row of one ledger, refinements preferred.
 
     `admit` replaces the whole predicate with a caller-supplied `row -> bool`. It
     exists so a second consumer can share this reader — and therefore the
     schema check, the namespacing and the deduplication — instead of growing a
     second walker that could disagree about what the population is.
+
+    One pass over the file, and only the **gate survivors** are held while it
+    runs: the refinements are appended *after* the candidates they are about, so
+    a scored row cannot be decided on the way past. Everything else is decided as
+    it is read and put back in ledger order afterwards, because a candidate the
+    structural gates refused can never be refined into passing — a refinement
+    moves a score, and the gates are not a score — so no predicate can want a
+    different answer about one than it would have got before.
     """
     predicate = is_admitted if admit is None else admit
-    return [row for row in rows(path, kind="candidate") if predicate(row)]
+    decided: list[tuple[int, dict]] = []
+    pending: list[tuple[int, dict]] = []
+    found: dict = {}
+    position = 0
+    for row in rows(path):
+        kind = row.get("kind")
+        if kind == "candidate":
+            if row.get("fate") in ledger_module.SCORED:
+                pending.append((position, row))
+            elif predicate(row):
+                decided.append((position, row))
+            position += 1
+        elif kind == ledger_module.REFINED and row.get("adopted") and row.get("refined_viewport"):
+            key = key_of_row(row)
+            if key is not None:
+                found[key] = row
+    for at, row in pending:
+        row = refined_of(row, found) if found else row
+        if predicate(row):
+            decided.append((at, row))
+    decided.sort(key=lambda cell: cell[0])
+    return [row for _at, row in decided]
 
 
 def admitted_union(paths=None, admit=None) -> tuple[list[dict], dict]:

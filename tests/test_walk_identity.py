@@ -252,9 +252,19 @@ def test_a_batch_drawn_at_another_geometry_is_refused_on_the_engine_s_own_word(
 @needs_engine
 def test_the_walk_hands_the_scorer_the_picture_the_engine_already_made(tmp_path, corpus) -> None:
     """The whole change: a survivor's score is read off the gate render, and no
-    view is drawn for scoring at all."""
+    view is drawn for scoring at all.
+
+    The refine leg is off here because it is the one thing in a walk that *does*
+    draw frames to score, and it does so deliberately and after the walk has
+    closed. The claim being pinned is about the expansion, so the leg is turned
+    off rather than allowed to weaken it — `test_walk_refine` pins the other half.
+    """
     judge = Judge()
-    run = rooted(walk(tmp_path, judge))
+    run = rooted(
+        walk(
+            tmp_path, judge, limits=Limits(batch=3, batches=2, root_expansions=4, refine_per_walk=0)
+        )
+    )
     run.run()
 
     offered = [batch for batch in judge.offered if batch]

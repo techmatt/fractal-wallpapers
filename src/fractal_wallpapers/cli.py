@@ -883,6 +883,22 @@ def reframings_from(args: argparse.Namespace, *, enabled: bool = True):
     return reframings
 
 
+def refine_limits(args: argparse.Namespace) -> dict:
+    """The refine leg's two limits, defaults left alone unless the flags were passed.
+
+    Both default to `None` at the parser so a run says nothing about the leg
+    unless it was asked to: the shipped `k` lives on [`Limits`] and the margin
+    lives on `curation.framing`, and a flag nobody typed must not quietly
+    overrule either.
+    """
+    out: dict = {}
+    if getattr(args, "refine_per_walk", None) is not None:
+        out["refine_per_walk"] = max(0, int(args.refine_per_walk))
+    if getattr(args, "refine_margin", None) is not None:
+        out["refine_margin"] = float(args.refine_margin)
+    return out
+
+
 def walk(args: argparse.Namespace) -> int:
     """Run one discovery walk and print what it found."""
     from fractal_wallpapers.discovery.walk import Gates, Limits, Policy, Walk
@@ -902,6 +918,7 @@ def walk(args: argparse.Namespace) -> int:
             root_expansions=args.root_expansions,
             probe_probability=args.probe,
             plane_grace_rungs=args.plane_grace_rungs,
+            **refine_limits(args),
         ),
         policy=Policy(candidates=args.candidates, node_width=args.node_width),
         gates=Gates(),
@@ -1012,6 +1029,7 @@ def harvest(args: argparse.Namespace) -> int:
         batch=args.batch,
         root_expansions=args.root_expansions,
         plane_grace_rungs=args.plane_grace_rungs,
+        **refine_limits(args),
         # `None` and not `0`: zero is a real answer to "how many admissions may a
         # lineage book" and it is not the one the flag's zero means.
         lineage_admissions=args.lineage_cap if args.lineage_cap > 0 else None,
@@ -3558,6 +3576,28 @@ def build_parser() -> argparse.ArgumentParser:
         help="probability the reframing probe fires on an admission (default: 0.25)",
     )
     search.add_argument(
+        "--refine-per-walk",
+        type=int,
+        default=None,
+        metavar="K",
+        help="how many of this walk's best gate survivors have their FRAMING refined when the "
+        "walk closes, best first by the seating statistic. The gallery pass's step 5a at the "
+        "other end of the pipeline and through the same code: a small window of framings drawn "
+        "at the node regime, read through the location head, the best adopted if it beats the "
+        "recorded framing by --refine-margin. It is recorded as a later ledger row that the "
+        "readers prefer, never as an edit; nothing feeds back into this walk's reward or "
+        f"descent (default: {WalkLimits.refine_per_walk}; 0 disables the leg)",
+    )
+    search.add_argument(
+        "--refine-margin",
+        type=float,
+        default=None,
+        metavar="DELTA",
+        help="how much better a framing has to read before it is adopted, in NATS of log-odds "
+        "on P(>=4). The gallery pass's own default unless said otherwise, so a scan taken here "
+        "and a scan taken at a pass are the same decision",
+    )
+    search.add_argument(
         "--no-reframings",
         action="store_true",
         help="expand only what the walk descends into; fire no reframing operators",
@@ -3698,6 +3738,28 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="probability the reframing probe fires on an admission (default: "
         f"{WalkLimits.probe_probability})",
+    )
+    production.add_argument(
+        "--refine-per-walk",
+        type=int,
+        default=None,
+        metavar="K",
+        help="how many of this walk's best gate survivors have their FRAMING refined when the "
+        "walk closes, best first by the seating statistic. The gallery pass's step 5a at the "
+        "other end of the pipeline and through the same code: a small window of framings drawn "
+        "at the node regime, read through the location head, the best adopted if it beats the "
+        "recorded framing by --refine-margin. It is recorded as a later ledger row that the "
+        "readers prefer, never as an edit; nothing feeds back into this walk's reward or "
+        f"descent (default: {WalkLimits.refine_per_walk}; 0 disables the leg)",
+    )
+    production.add_argument(
+        "--refine-margin",
+        type=float,
+        default=None,
+        metavar="DELTA",
+        help="how much better a framing has to read before it is adopted, in NATS of log-odds "
+        "on P(>=4). The gallery pass's own default unless said otherwise, so a scan taken here "
+        "and a scan taken at a pass are the same decision",
     )
     harvest_neighborhood = production.add_mutually_exclusive_group()
     harvest_neighborhood.add_argument(

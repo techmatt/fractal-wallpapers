@@ -214,6 +214,11 @@ class Tally:
     #: `--minutes` and only their sum was ever recorded.
     expand_minutes: float = 0.0
     reframe_minutes: float = 0.0
+    #: The framing scan the walk takes when it closes. A third bucket and not a
+    #: share of `reframe`: the operators fire per batch off admissions and this
+    #: fires once per run off the whole walk, so folding it in would make the
+    #: operator suite look more expensive on exactly the runs that refined most.
+    refine_minutes: float = 0.0
 
     def channel(self, name: str) -> dict:
         return self.by_channel.setdefault(name, _channel_cell())
@@ -223,6 +228,10 @@ class Tally:
 
     def saturation(self, partition: str) -> dict:
         return self.saturation_by_partition.setdefault(partition, {"seen": 0, "discounted": 0})
+
+    def charged(self) -> float:
+        """Minutes this run charged to something it can name. The three buckets."""
+        return self.expand_minutes + self.reframe_minutes + self.refine_minutes
 
     def feed(self) -> int:
         """Nodes this run pushed onto the frontier from its own expansions."""
@@ -263,10 +272,12 @@ class Tally:
             "minutes": {
                 "expand": round(self.expand_minutes, 4),
                 "reframe": round(self.reframe_minutes, 4),
+                "refine": round(self.refine_minutes, 4),
                 "reframe_share": (
-                    round(self.reframe_minutes / (self.expand_minutes + self.reframe_minutes), 4)
-                    if (self.expand_minutes + self.reframe_minutes) > 0
-                    else None
+                    round(self.reframe_minutes / self.charged(), 4) if self.charged() > 0 else None
+                ),
+                "refine_share": (
+                    round(self.refine_minutes / self.charged(), 4) if self.charged() > 0 else None
                 ),
             },
         }
@@ -717,8 +728,20 @@ class Harvest:
         return self.finish(stopped or "budget")
 
     def finish(self, reason: str) -> dict:
-        """Write the run's summary and close the ledger."""
-        summary = self.summary(reason)
+        """Refine the walk's best framings, write the run's summary, close the ledger.
+
+        The refine leg is the last thing the walk does and the first thing this
+        does, in that order: it is a statement about the whole walk, so it cannot
+        run until there is a whole walk to rank, and the summary has to be able to
+        report what it cost. Its minutes are charged to their own bucket — the
+        run's `--minutes` budget is already spent by the time this is reached,
+        and hiding a close-time leg inside the operator suite's clock would make
+        the operators look more expensive on the runs that refined most.
+        """
+        started = time.monotonic()
+        refined = self.walk.refine_framings(log=print)
+        self.tally.refine_minutes += (time.monotonic() - started) / 60.0
+        summary = self.summary(reason) | {"refine": refined}
         (self.run_dir / "summary.json").write_text(
             json.dumps(summary, indent=2) + "\n", encoding="utf-8"
         )
@@ -814,7 +837,7 @@ class Harvest:
         to the other operators and to the expansion it is triggered by — and both
         are here.
         """
-        total = (self.tally.expand_minutes + self.tally.reframe_minutes) * 60.0
+        total = self.tally.charged() * 60.0
         rows = {}
         for name, cell in sorted(self.walk.operator_seconds.items()):
             rows[name] = {
@@ -870,6 +893,7 @@ class Harvest:
                 "saturation_by_partition": self.tally.saturation_by_partition,
                 "expand_minutes": self.tally.expand_minutes,
                 "reframe_minutes": self.tally.reframe_minutes,
+                "refine_minutes": self.tally.refine_minutes,
             },
             "walk": {
                 "frontier": self.walk.frontier,
@@ -952,6 +976,7 @@ class Harvest:
             },
             expand_minutes=float(saved.get("expand_minutes", 0.0)),
             reframe_minutes=float(saved.get("reframe_minutes", 0.0)),
+            refine_minutes=float(saved.get("refine_minutes", 0.0)),
         )
         walk_state = state.get("walk") or {}
         self.walk.frontier = list(walk_state.get("frontier") or [])

@@ -127,11 +127,20 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 from fractal_wallpapers import engine
+
+# The gallery pass's framing scan, reused rather than forked — one window, one
+# margin, one provenance shape at both sites. It imports the engine and the
+# standard library and nothing else, so the walk's import graph stays what the
+# torch-free base install proves it is; the two model doors it needs are lazy
+# inside it, the way every other reach from this half of the project into
+# curation is.
+from fractal_wallpapers.curation import framing
 from fractal_wallpapers.discovery import identity, nucleus, operators, pools
 from fractal_wallpapers.discovery import ledger as ledger_module
 from fractal_wallpapers.discovery.ledger import Ledger
 from fractal_wallpapers.discovery.scoring import NullScorer, Scorer
 from fractal_wallpapers.paths import tracked_name
+from fractal_wallpapers.supply.location import key_of_row
 
 #: The priority an unscored node carries. Scores are compared only against each
 #: other, so the level is arbitrary and only the fact that it is shared matters.
@@ -160,6 +169,11 @@ DEPTH_WEIGHT = 0.02
 ROOT_ORIGIN = "root"
 WALK_ORIGIN = "walk"
 REFRAMED_ORIGINS = frozenset({"snap_to_nucleus", "lateral_to_sibling", "expand_neighborhood"})
+
+#: What a node the refine leg put on the frontier says it came from. Not one of
+#: [`REFRAMED_ORIGINS`] on purpose: those are the nucleus operators, which push a
+#: node at a *different* place, and this is the same place at a different frame.
+REFINED_ORIGIN = "refine_framing"
 
 #: The depth a root stands at. The engine counts rungs from the root and calls the
 #: first one 1, so a root's own children are one rung below it.
@@ -224,6 +238,22 @@ class Limits:
     #: `None` and not `0`: zero is a real answer to "how many admissions may a
     #: lineage book" and it is not this one.
     lineage_admissions: int | None = None
+    #: How many of a walk's gate survivors have their framing refined when the
+    #: walk closes, best first by the seating statistic. `0` disables the leg and
+    #: is the walk this project ran before it existed, exactly.
+    #:
+    #: Three, and it is the archive's own number: the maker reframed the top
+    #: `KRAW = 3` frames of each walk and took the walk's reward as the max over
+    #: them. It is deliberately tiny — the leg is seven node-regime renders a
+    #: location and it buys nothing the walk itself reads, so spending it on more
+    #: than the handful of frames a walk is actually likely to ship would be
+    #: paying for refinements no gallery will ever seat.
+    refine_per_walk: int = 3
+    #: Δ the refine leg adopts on, in nats of log-odds on `P(≥4)`, or `None` for
+    #: the gallery pass's own default. Read off [`curation.framing`] rather than
+    #: restated: one margin, one meaning, and a scan taken here that a pass would
+    #: have refused is a scan nobody can compare.
+    refine_margin: float | None = None
 
 
 @dataclass
@@ -335,6 +365,44 @@ class Reframings:
     framings: tuple[float | None, ...] = operators.FRAMINGS
 
 
+class Best:
+    """The `k` gate survivors of a walk that are worth refining, best first.
+
+    **The seating statistic, so the walk and the gallery agree about "best".**
+    `logit P(≥4)` then `P(≥3)`, which is the order [`curation.framing.rank`] takes
+    and the order a gallery slot is filled in. The logit is monotone in the
+    probability, so the comparison here is on the probability and the two orders
+    are the same one — the scale matters where a *margin* is taken, not where a
+    sort is.
+
+    Offered every scored candidate and keeping `k` of them, because a walk is a
+    few tens of thousands of rows and the leg is seven node-regime renders each.
+    A row with no `P(≥4)` is never offered: a failed render has no verdict to be
+    ranked on, and a walk under the null scorer has none at all.
+    """
+
+    def __init__(self, k: int):
+        self.k = max(0, int(k))
+        self.rows: list[tuple] = []
+        self.seen = 0
+
+    def offer(self, row: dict) -> None:
+        if self.k <= 0 or row.get("score_great") is None:
+            return
+        self.seen += 1
+        # The offer order is the ledger's own order, and it is the last
+        # tiebreak — so a walk re-run on one seed refines the same frames rather
+        # than whichever of a tie the sort happened to leave on top.
+        self.rows.append(
+            (-float(row["score_great"]), -float(row.get("score") or 0.0), self.seen, row)
+        )
+        self.rows.sort(key=lambda cell: cell[:3])
+        del self.rows[self.k :]
+
+    def take(self) -> list[dict]:
+        return [cell[-1] for cell in self.rows]
+
+
 def family_key(family: dict) -> str:
     """A stable key for one family identity, constants included.
 
@@ -384,6 +452,16 @@ class Walk:
         # discovered with a ledger already written.
         self.identity = self._enforce_identity()
         self.flip_sample = identity.Sample(seed=self.seed)
+        #: The `k` survivors this walk will refine when it closes, kept as they
+        #: are scored so nothing has to be re-read off the ledger afterwards.
+        self.best = Best(self.limits.refine_per_walk)
+        #: Δ the refine leg adopts on. Resolved here so the run header records
+        #: the number the leg actually used rather than the word "default".
+        self.refine_margin = (
+            framing.MARGIN
+            if self.limits.refine_margin is None
+            else float(self.limits.refine_margin)
+        )
 
         self.rng = random.Random(self.seed)
         self.governor = operators.ProbeGovernor(self.limits.probe_probability, self.rng)
@@ -1102,6 +1180,14 @@ class Walk:
             recorded.append(self.ledger.write("candidate", node_id=node["node_id"], **candidate))
             survivors.append(node)
 
+        # After the write loop and not inside it, because a candidate's fate is
+        # not settled until that loop has had it: a survivor can still become
+        # `expandable` or `not_admitted` when the floors are consulted, and the
+        # refine leg picks over gate survivors of all three fates.
+        for candidate in candidates:
+            if candidate["fate"] in ledger_module.SCORED:
+                self.best.offer(candidate)
+
         for row in report["dead"]:
             self.ledger.write(
                 "node_dead",
@@ -1265,6 +1351,218 @@ class Walk:
             self._count(f"reframing:{row.operator}:{'available' if row.available else row.reason}")
         return pushed
 
+    # -------------------------------------------------------- refine framing
+
+    def refine_dir(self) -> Path:
+        """Where the refine leg's node-regime scan frames go, under the run."""
+        return self.out_dir / "framings"
+
+    def refine_framings(self, log=None) -> dict:
+        """Scan the framing of this walk's best `k` survivors. **After it closes.**
+
+        The gallery pass's step 5a, at the other end of the pipeline: the same
+        window, the same margin, the same gate requirement, the same provenance
+        shape, through the same [`curation.framing`] module. What differs is only
+        *which* frames are scanned — a pass scans the neighbourhoods it is about
+        to colour, and a walk scans the handful it is most likely to have found.
+
+        **At close, per walk, top-k**, which is the archive's own shape and is
+        what makes it affordable: the leg is seven node-regime renders a location
+        and it is bought once per run rather than once per admission.
+
+        **Nothing here feeds back into the walk.** No priority moves, no score
+        term is re-read, no descent is re-taken; every row this walk wrote stays
+        exactly as it was written. What the leg produces is a `refined` row per
+        scanned location, appended after the candidates, and
+        [`fractal_wallpapers.supply.ledgers.admitted`] is where a reader prefers
+        it. That is the whole of the never-edit-in-place rule: the walk's shape
+        cannot refine before the row is written, because "the top three of this
+        walk" is not knowable until the walk has finished.
+        """
+        log = log or (lambda _line: None)
+        if self.limits.refine_per_walk <= 0:
+            return {"status": "off", "reason": "--refine-per-walk 0"}
+        if self.identity is None:
+            # The same precondition the gate render's own score rests on. Without
+            # it the scan would draw frames at a geometry this run's judge does
+            # not read, and record the result as a framing decision.
+            return {
+                "status": "skipped",
+                "reason": "this run does not assert the node-regime identity, so the scan "
+                "would compare frames the head was never trained on",
+            }
+        rows = self.best.take()
+        if not rows:
+            return {"status": "empty", "reason": "no scored gate survivor to refine", "seen": 0}
+
+        started = time.monotonic()
+        scanned = [
+            {
+                "key": _location_text(row),
+                "family": row["family"],
+                "viewport": row["viewport"],
+                "maxiter": row["maxiter"],
+            }
+            for row in rows
+        ]
+        records = framing.refine(
+            scanned,
+            directory=self.refine_dir(),
+            scorer=self.scorer,
+            margin=self.refine_margin,
+            # What the walk's OWN read of the x1.0 frame was, so the record
+            # carries the two readings of one frame side by side. This is the
+            # gallery pass's sidecar comparison asked at the site that can
+            # actually answer it: here the picture the first read was taken off
+            # is still on disk.
+            scores={cell["key"]: _walk_read(row) for cell, row in zip(scanned, rows, strict=True)},
+            log=log,
+        )
+        seconds = time.monotonic() - started
+        self._charge("refine_framing", seconds)
+
+        pushed = 0
+        for record, row in zip(records, rows, strict=True):
+            record["gate_render"] = self._gate_comparison(row, record)
+            written = self._write_refined(row, record)
+            pushed += self._admit_refined(row, record, written)
+            self._count("refine:scanned")
+            self._count(f"refine:{'adopted' if record['adopted'] else record['refused']}")
+        report = {
+            "status": "on",
+            "k": self.limits.refine_per_walk,
+            "margin": self.refine_margin,
+            "survivors_offered": self.best.seen,
+            "operator_nodes_pushed": pushed,
+            **framing.price(records),
+            "gate_render": _gate_report(records),
+        }
+        log(
+            f"[refine] {report['adopted']}/{report['locations']} framing(s) adopted at "
+            f"margin {self.refine_margin:g}, {report['frames']} frame(s) in {seconds:.1f}s"
+        )
+        return report
+
+    def _write_refined(self, row: dict, record: dict) -> dict:
+        """One `refined` ledger row: the join, both frames, both readings.
+
+        Keyed by the **original** family and viewport, because that is the
+        identity every reader already dedups on — a refined row is a statement
+        *about* a location the ledger already holds, not a second location.
+        """
+        best = record["best"] or {}
+        return self.ledger.write(
+            ledger_module.REFINED,
+            run_seed=self.seed,
+            batch=self.batch_index,
+            family=row["family"],
+            viewport=row["viewport"],
+            maxiter=row["maxiter"],
+            adopted=bool(record["adopted"]),
+            refused=record["refused"],
+            margin=record["margin"],
+            gain=record["gain"],
+            gain_p_ge4=record["gain_p_ge4"],
+            width_scale=record["width_scale"],
+            dx=record["dx"],
+            dy=record["dy"],
+            framing=record["slug"],
+            # The frame the reader is to prefer, and what the head made of it.
+            # `null` on a row nothing was adopted for, which is what tells a
+            # reader to leave the candidate row alone.
+            refined_viewport=best.get("viewport") if record["adopted"] else None,
+            refined_maxiter=best.get("maxiter") if record["adopted"] else None,
+            score=best.get("p_ge3") if record["adopted"] else None,
+            score_great=best.get("p_ge4") if record["adopted"] else None,
+            # The window's best whether or not it was taken: the evidence the
+            # margin is set where it should be, which a record holding only the
+            # adopted ones could not show.
+            best_score=best.get("p_ge3"),
+            best_score_great=best.get("p_ge4"),
+            scan_score=(record["original"] or {}).get("p_ge3"),
+            scan_score_great=(record["original"] or {}).get("p_ge4"),
+            walk_score=row.get("score"),
+            walk_score_great=row.get("score_great"),
+            gate_render=record["gate_render"],
+            # The two frames of the window a person looks at, by name under the
+            # run's own `framings/`. Regenerable like every other picture this
+            # project makes, and on the row because a before-and-after sheet is
+            # the only verdict on the head's framing taste there is.
+            scan_picture=(record["original"] or {}).get("picture"),
+            best_picture=(record["best"] or {}).get("picture"),
+            scanned=record["scanned"],
+            scorer=self.scorer.name,
+            score_regime=row.get("score_regime"),
+        )
+
+    def _admit_refined(self, row: dict, record: dict, written: dict) -> int:
+        """Book a refinement that crosses the keeper floor, and fire the operators.
+
+        Only where it **crosses**: a row already admitted had its operators fired
+        at its own centre while the walk was running, and firing them again at a
+        centre a quarter-frame away would be paying twice for the atom the dedup
+        set is about to refuse anyway. A row the refinement lifts over the floor
+        is a new admission and gets what any admission gets.
+
+        The nodes this pushes are on the frontier the run is **closing with**, so
+        this walk expands none of them and the checkpoint is already written —
+        they are a record of what the operator found, not a feed into a descent.
+        """
+        if not record["adopted"]:
+            return 0
+        best = record["best"]
+        if self.scorer.admits(row, row.get("score")):
+            return 0
+        if not self.scorer.admits(row, best["p_ge3"]):
+            return 0
+        self._count("refine:admitted")
+        root_id = int(row.get("root_id") or 0)
+        self._book_admission(root_id)
+        if self.lineage_full(root_id) or not self.reframings.enabled:
+            return 0
+        node = self._node(
+            family=row["family"],
+            view=best["viewport"],
+            depth=int(row.get("depth") or ROOT_DEPTH),
+            root_id=root_id,
+            origin=REFINED_ORIGIN,
+            parent_node_id=written.get("node_id"),
+            atom_key=row.get("atom_key"),
+        )
+        node["score_term"] = float(best["p_ge3"])
+        node["priority"] = self._priority(best["p_ge3"], node["depth"])
+        return self.trigger_reframings([node])
+
+    def _gate_comparison(self, row: dict, record: dict) -> dict:
+        """The walk's own gate render against the scan's, for the same frame.
+
+        The gallery pass found its `x1.0` reads disagreeing with the supply
+        sidecar's by up to 0.029 on `P(≥4)` and could not say why: 19 of its 20
+        locations had been scored off a walk's gate render, and that picture is
+        not on the view-cache path. Here it is — this run drew it — so the two
+        pictures are hashed and the two readings differenced, and the question
+        becomes a measurement instead of an inference.
+        """
+        scan = record.get("original") or {}
+        gate = self.views_dir() / str(row.get("image") or "")
+        drawn = self.refine_dir() / str(scan.get("picture") or "")
+        walk_read, scan_read = row.get("score_great"), scan.get("p_ge4")
+        return {
+            "gate_sha256": _digest(gate) if row.get("image") else None,
+            "scan_sha256": _digest(drawn) if scan.get("picture") else None,
+            "gate_bytes": gate.stat().st_size if gate.is_file() else None,
+            "scan_bytes": drawn.stat().st_size if drawn.is_file() else None,
+            "walk_p_ge4": walk_read,
+            "scan_p_ge4": scan_read,
+            "delta_p_ge4": (
+                None
+                if (walk_read is None or scan_read is None)
+                else round(scan_read - walk_read, 8)
+            ),
+            "maxiter": {"walk": row.get("maxiter"), "scan": scan.get("maxiter")},
+            "regime": row.get("score_regime"),
+        }
+
     # ------------------------------------------------------------------- run
 
     def run(self) -> dict:
@@ -1280,6 +1578,11 @@ class Walk:
             self._count("batches")
             self._count("expanded", len(batch))
 
+        # After the last batch and before the summary: the leg is about the walk
+        # as a whole, so it cannot run until there is a whole walk to rank, and
+        # the summary has to be able to report what it cost.
+        refined = self.refine_framings()
+
         summary = {
             "seed": self.seed,
             "batches": self.tally.get("batches", 0),
@@ -1291,12 +1594,67 @@ class Walk:
             "gate_flips": self.gate_flips(),
             "lineages": self.lineages(),
             "probe": self.governor.tally(),
+            "refine": refined,
             "counts": dict(sorted(self.tally.items())),
             "ledger": tracked_name(self.ledger.path),
         }
         self.ledger.write("summary", **summary)
         self.ledger.close()
         return summary
+
+
+def _location_text(row: dict) -> str:
+    """A ledger row's location identity as JSON, the spelling the sidecar uses.
+
+    The refine leg keys its records on this, so a scan taken at a walk and a scan
+    taken at a gallery pass are keyed the same way and a reader joining the two
+    is joining on one string rather than on two spellings of one idea.
+    """
+    key = key_of_row(row)
+    return "" if key is None else json.dumps(key, ensure_ascii=False)
+
+
+def _walk_read(row: dict) -> dict:
+    """What this walk's own judge said about the frame, in the shape the refine
+    record keeps a second opinion in."""
+    return {
+        "regime": row.get("score_regime"),
+        "head_sha256": None,
+        "p_ge4": row.get("score_great"),
+        "p_ge3": row.get("score"),
+    }
+
+
+def _digest(path: Path) -> str | None:
+    """The sha256 of a picture, or `None` where it is not on disk."""
+    import hashlib
+
+    path = Path(path)
+    if not path.is_file():
+        return None
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _gate_report(records: list[dict]) -> dict:
+    """The gate-render comparison over a leg: how often the two paths agree.
+
+    The measurement the gallery pass could not take. `identical` counts the
+    frames where the walk's own render and the scan's are the same bytes;
+    `exact` counts the readings that came out equal. They are different
+    questions and a run where the first is high and the second is not would be
+    saying something about the head rather than about the engine.
+    """
+    cells = [record.get("gate_render") or {} for record in records]
+    both = [cell for cell in cells if cell.get("gate_sha256") and cell.get("scan_sha256")]
+    deltas = [abs(cell["delta_p_ge4"]) for cell in cells if cell.get("delta_p_ge4") is not None]
+    return {
+        "compared": len(both),
+        "identical_bytes": sum(1 for cell in both if cell["gate_sha256"] == cell["scan_sha256"]),
+        "readings": len(deltas),
+        "exact": sum(1 for delta in deltas if delta == 0.0),
+        "max_abs_delta_p_ge4": round(max(deltas), 8) if deltas else None,
+        "mean_abs_delta_p_ge4": (round(sum(deltas) / len(deltas), 8) if deltas else None),
+    }
 
 
 def views_dir(out_dir) -> Path:
