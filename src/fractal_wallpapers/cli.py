@@ -2821,6 +2821,34 @@ def curate_reject(args: argparse.Namespace) -> int:
     return 0
 
 
+def curate_below_bar(args: argparse.Namespace) -> int:
+    """Draw the glance sheet of every served wallpaper an acting bar would take back.
+
+    Report only, and the read to take before `curate reject`: the same rule, the
+    same rows, laid out as pictures for the one judgement no head is asked for.
+    """
+    from fractal_wallpapers.curation import below_bar, records
+
+    if args.ephemeral:
+        records.use(records.scratch_root("below_bar"))
+    try:
+        report = below_bar.write(
+            path=Path(args.out) if args.out else None,
+            exclude=args.exclude or (),
+            reason=args.exclude_reason,
+        )
+    except ValueError as refusal:
+        print(refusal)
+        return 1
+    print(
+        f"{report['below_bar']} served row(s) below an acting bar, {report['shown']} on the "
+        f"sheet, {len(report['held_by_ruling'])} held in service by a ruling — "
+        f"{report['sheet']}"
+    )
+    print(json.dumps(report, indent=2))
+    return 0
+
+
 def curate_repeats(args: argparse.Namespace) -> int:
     """List every location the collection has served more than one wallpaper of.
 
@@ -5349,6 +5377,7 @@ def coloring_commands(subcommands) -> None:
 
 def curate_commands(subcommands) -> None:
     """The last stage: harvest supply in, released wallpapers out."""
+    from fractal_wallpapers.curation import below_bar as below_bar_module
     from fractal_wallpapers.curation import budget as budget_module
     from fractal_wallpapers.curation import colors as colors_module
     from fractal_wallpapers.curation import embeddings as embeddings_module
@@ -5851,6 +5880,41 @@ def curate_commands(subcommands) -> None:
         "--ephemeral", action="store_true", help="read the run's ephemeral record store"
     )
     rejecting.set_defaults(handler=curate_reject)
+
+    glancing = steps.add_parser(
+        "below-bar",
+        help="draw the glance sheet of every served wallpaper an acting bar would take back",
+        description=(
+            "The read to take before `reject`, off the same rule and the same rows: every "
+            "wallpaper the collection still serves whose KIND has an ACTING release bar it "
+            "does not clear, one row each with the picture, the key, the kind, and the "
+            "current score against that kind's floor, best score first. Rows a tracked "
+            "ruling holds in service are on the page under their own heading and are not "
+            "counted with the rest. It decides nothing, rejects nothing, re-renders nothing "
+            "and writes nothing but the sheet."
+        ),
+    )
+    glancing.add_argument(
+        "--out",
+        metavar="PATH",
+        help=f"where to write the sheet (default {below_bar_module.DEFAULT_SHEET.as_posix()})",
+    )
+    glancing.add_argument(
+        "--exclude",
+        action="append",
+        metavar="RUN|STAGE|CANDIDATE",
+        help="drop one row from the sheet by its record key, repeatable. Refuses a key that "
+        "is not below the bar today, since a sheet quietly a row short cannot be checked",
+    )
+    glancing.add_argument(
+        "--exclude-reason",
+        default="",
+        metavar="TEXT",
+        help="why those rows were dropped, printed on the sheet beside the keys. An "
+        "exclusion is a person's call rather than a rule, so the page carries the call",
+    )
+    glancing.add_argument("--ephemeral", action="store_true", help="read an ephemeral record store")
+    glancing.set_defaults(handler=curate_below_bar)
 
     repeating = steps.add_parser(
         "repeats",
