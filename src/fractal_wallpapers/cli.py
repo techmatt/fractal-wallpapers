@@ -1883,6 +1883,26 @@ def judge_disagreements(args: argparse.Namespace) -> int:
     return 0
 
 
+def judge_glance(args: argparse.Namespace) -> int:
+    """Lay one batch's rows out under the candidate's ordering and the incumbent's."""
+    from fractal_wallpapers.models import render_glance
+
+    try:
+        report = render_glance.write(
+            batch=args.batch,
+            run=args.run,
+            path=resolve_output(args.out) if args.out else None,
+            rows=args.rows if args.rows is not None else render_glance.ROWS,
+            which=args.which,
+            device=args.device,
+        )
+    except render_glance.GlanceError as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps(report, indent=2))
+    return 0
+
+
 def figure_score_to_decision(args: argparse.Namespace) -> int:
     """Draw one frame per outcome the judges' ladder has, plus their provenance."""
     from fractal_wallpapers.models import decisions
@@ -4472,6 +4492,30 @@ def render_commands(subcommands) -> None:
         "--force", action="store_true", help="ship a judge whose acceptance read failed"
     )
     shipping.set_defaults(handler=judge_ship)
+
+    glancing = steps.add_parser(
+        "glance",
+        help="lay one batch's rows out under a candidate's ordering and the shipped one's",
+        description=(
+            "The read a band cannot give. A correction batch is anchored and train-side, so "
+            "no rate quoted off it is a rate — what a person can still ask is whether the "
+            "pictures come out in a better order. Two columns of the same rows, the pair of "
+            "scores under each, and the rows that moved furthest either way. Lands in "
+            "scratch/, decides nothing, and re-renders nothing."
+        ),
+    )
+    glancing.add_argument(
+        "--batch", required=True, help="the batch to lay out; a prefix, so a contrast arm comes too"
+    )
+    glancing.add_argument("--run", required=True, help="the candidate run to order by")
+    glancing.add_argument("--which", default="best", choices=["best", "last"])
+    # The default lives in the module and is resolved in the handler, not here:
+    # this parser is built on the base install, where the module's import graph is
+    # not available. `tests/test_base_install.py` is what says so.
+    glancing.add_argument("--rows", type=int, help="rows per column (default: the module's, 12)")
+    glancing.add_argument("--out", help="where the page lands (default: scratch/)")
+    glancing.add_argument("--device", default="auto")
+    glancing.set_defaults(handler=judge_glance)
 
     drawing = steps.add_parser(
         "disagreements",

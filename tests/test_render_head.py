@@ -573,3 +573,83 @@ def test_blind_modes_is_blind_at_the_boundary_it_gates_on() -> None:
         "the >=4 positives should be entirely a product of the anchored pass, "
         "which is why that boundary is refused"
     )
+
+
+# --------------------------------------------------------------------------- #
+# Which head a candidate is gated against.
+# --------------------------------------------------------------------------- #
+def test_a_candidate_without_an_incumbent_is_gated_against_the_per_kind_pair() -> None:
+    """The design study's reading, unchanged. Both of its candidates predate any
+    joint head shipping, and a superseded read has to stay exactly as it was read."""
+    for name in ("medium", "small_backbone"):
+        against = render_acceptance.incumbent_of(name)
+        assert against["source"] == render_acceptance.PER_KIND
+        assert against["per_kind"] == {
+            kind: dict(row) for kind, row in render_acceptance.INCUMBENTS.items()
+        }
+
+
+def test_a_retrain_is_gated_against_the_shipped_joint_band() -> None:
+    """A retrain's incumbent is the head it would replace, and once a joint head
+    ships that is no longer the pair it replaced."""
+    against = render_acceptance.incumbent_of("enlarged_corpus")
+    assert against["source"] == render_acceptance.JOINT
+    assert against["candidate"] == "small_backbone"
+    band = render_train.CANDIDATES["small_backbone"]["runs"]
+    for kind in render_train.KINDS:
+        assert against["per_kind"][kind]["band"] == band
+        assert against["per_kind"][kind]["shipped"] == band[0]
+
+
+def test_an_incumbent_that_names_no_registered_candidate_is_refused() -> None:
+    entry = dict(render_train.CANDIDATES["enlarged_corpus"], incumbent="a_head_nobody_trained")
+    saved = render_train.CANDIDATES["enlarged_corpus"]
+    render_train.CANDIDATES["enlarged_corpus"] = entry
+    try:
+        with pytest.raises(render_acceptance.ComparisonError):
+            render_acceptance.incumbent_of("enlarged_corpus")
+    finally:
+        render_train.CANDIDATES["enlarged_corpus"] = saved
+
+
+def test_the_retrains_bar_reads_the_band_and_says_so() -> None:
+    """Matt's standing ruling of 2026-08-23. The per-seed conjunction is still
+    computed and still reported; it gates nothing."""
+    declared = render_acceptance.bar("enlarged_corpus")
+    assert declared["reading"] == "band"
+    assert "band" in declared["verdicts"]["PASS"]
+    assert "seed" not in declared["verdicts"]["PASS"]
+    assert render_acceptance.bar("small_backbone")["reading"] == "band and every seed"
+
+
+def test_the_retrains_bar_declares_the_scale_shift_before_it_has_a_number() -> None:
+    """The one thing a corpus-growth retrain is guaranteed to do, said out loud
+    in the bar rather than explained in the report afterwards."""
+    declared = render_acceptance.bar("enlarged_corpus")
+    said = " ".join(declared["declared"]).lower()
+    assert "scale" in said and "expected" in said
+    assert "no number" in said, "the rare-colour motivation must be declared unmeasurable"
+
+
+def test_every_shipped_bar_carries_the_fields_the_read_takes_from_it() -> None:
+    """A bar is never rewritten, so `read` fills a missing field from the roster and
+    the older documents are genuinely short of some. What it may NOT do is invent one
+    of these: the rule, how significance was decided, and what adoption is not."""
+    for name in render_train.CANDIDATES:
+        path = render_acceptance.bar_path(name)
+        if not path.is_file():
+            continue
+        declared = json.loads(path.read_text(encoding="utf-8"))
+        for key in ("rule", "significance", "adoption", "arms", "refused", "incumbents"):
+            assert declared.get(key), f"{name}: its bar carries no {key}"
+
+
+def test_the_retrains_bar_is_reproducible_from_the_module_that_wrote_it() -> None:
+    """The newest bar, exactly. The two older ones predate fields this module now
+    writes and are exempt by the rule that a bar is never rewritten; this one was
+    written by the code as it stands and must still come out of it unchanged."""
+    path = render_acceptance.bar_path("enlarged_corpus")
+    if not path.is_file():
+        pytest.skip("the retrain's bar has not been written on this machine")
+    written = json.loads(path.read_text(encoding="utf-8"))
+    assert written == json.loads(json.dumps(render_acceptance.bar("enlarged_corpus")))

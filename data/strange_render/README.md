@@ -39,6 +39,14 @@ labels, and spent the moment it enters a training split. The pin is asserted on
 the **location**, so a later batch that re-renders a pinned place under a fresh
 identifier cannot spend it by not naming it.
 
+**A verdict cast on a pinned location never reaches these rows.** The pin is asserted
+on the location, and `blind_modes` is derived from the pinned places, so a later drop
+that re-renders one of them would grow the blind sheet by a row that was not cast
+blind. `label ingest` withholds those verdicts before it writes, names the units, and
+leaves them in the export. It has happened once: the manufactured rare-colour drop of
+2026-08-24 drew nine of its locations from this store's pinned set, and nine of its
+246 verdicts are in `labels/` and not here.
+
 **What a registration does not say is in
 [`../batch_caveats.md`](../batch_caveats.md)**: how a live population was actually
 assembled, and what a rate quoted off it without that is wrong about. Three of this

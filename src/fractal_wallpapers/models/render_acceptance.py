@@ -94,6 +94,45 @@ INCUMBENTS: dict[str, dict] = {
     },
 }
 
+#: Where one incumbent's committed reads live. `per_kind` is the pair of retired
+#: heads above, each in its own store's model directory; `joint` is a band of this
+#: head's own registered runs, read out of `models/render/<run>/`.
+PER_KIND = "per_kind"
+JOINT = "joint"
+
+
+def incumbent_of(candidate: str) -> dict:
+    """Which band this candidate is gated against, and where to read it.
+
+    A retrain's incumbent is the head it would replace, and once one joint head
+    ships that is no longer the pair of per-kind heads it replaced. The answer is
+    a property of the candidate's registration rather than of this module, so a
+    superseded candidate keeps being read against what it was actually read
+    against.
+    """
+    entry = render_train.CANDIDATES[candidate]
+    named = entry.get("incumbent")
+    if named is None:
+        return {
+            "source": PER_KIND,
+            "what": "the two retired per-kind heads, each on its own blind sheet",
+            "per_kind": {kind: dict(row) for kind, row in INCUMBENTS.items()},
+        }
+    if named not in render_train.CANDIDATES:
+        raise ComparisonError(
+            f"candidate {candidate!r} names incumbent {named!r}, which is not a registered "
+            f"candidate. An incumbent is a band this study wrote a bar about."
+        )
+    prior = render_train.CANDIDATES[named]
+    band = tuple(prior["runs"])
+    return {
+        "source": JOINT,
+        "candidate": named,
+        "what": f"the shipped joint head: the {named} band, {band[0]} on the release",
+        "per_kind": {kind: {"shipped": band[0], "band": band} for kind in render_train.KINDS},
+    }
+
+
 #: Every arm, in the order the tables report them. `direction` is which way the
 #: statistic improves; `gated` says whether a significant loss fails the bar.
 ARMS: tuple[dict, ...] = (
@@ -248,9 +287,40 @@ def comparison_path(candidate: str = render_train.CURRENT) -> Path:
     return render_train.head_dir() / f"comparison{_suffix(candidate)}.json"
 
 
+#: What a corpus-growth retrain has to say out loud before it has a number. The
+#: design study's list does not transfer: none of its confounds is this one's, and
+#: the thing this retrain was bought for is the thing no sheet here can see.
+RETRAIN_DECLARED: tuple[str, ...] = (
+    "Adjacent-category label noise at these boundaries is larger than the differences "
+    "the sheets can resolve. The bootstrap verdicts are the result; a non-significant "
+    "gap is not a finding in either direction, and small AUC differences at >=3 are "
+    "read as nothing at all.",
+    "A retrain moves the whole CORN probability scale. A scale shift alone is EXPECTED "
+    "and is not a fail — it is what re-fitting both floors on adoption is for. The "
+    "cross-entropy arms see the scale and the AUC arms see only the order, and the "
+    "scale/order decomposition below the table says which term any gap lives in.",
+    "The rare-colour motivation gets NO NUMBER here and none is computed. The 500 "
+    "manufactured rows are anchored, incumbent-screened and train-side forever, so "
+    "every read of them is a read of the population that was enriched to produce them. "
+    "The qualitative read is a re-cut glance sheet, for a person's eye.",
+    "The candidate trains on rows the incumbent never saw and the incumbent trains on "
+    "none the candidate lacks, so this comparison points the candidate's way by "
+    "construction. That is the point of a NON-inferiority bar rather than a winner "
+    "rule: nothing here is asked to be better.",
+    "Both blind sheets are unchanged in size and membership, and that is asserted "
+    "rather than assumed — the ingest that grew the corpus WITHHELD nine verdicts cast "
+    "on locations the strange sheet pins, because a row at a pinned place may neither "
+    "train nor join a blind sheet.",
+    "The gate is against the SHIPPED run. The incumbent's other two seeds are read the "
+    "same way and reported.",
+)
+
+
 def bar(candidate: str = render_train.CURRENT) -> dict:
     """Everything a verdict rests on, spelled out before a number exists."""
     entry = render_train.CANDIDATES[candidate]
+    against = incumbent_of(candidate)
+    band_only = bool(entry.get("band_only"))
     return {
         "schema": SCHEMA,
         "study": "one render judge over both kinds",
@@ -259,14 +329,31 @@ def bar(candidate: str = render_train.CURRENT) -> dict:
         "backbone": entry["backbone"],
         "runs": list(entry["runs"]),
         "question": (
-            "Would ONE head over the pooled smooth and strange stores be non-inferior to "
-            "the two shipped heads, on each kind's own blind sheet?"
+            (
+                "Does retraining the shipped head on the corpus after the manufactured "
+                "rare-colour batch landed cost anything, on either kind's blind sheet?"
+            )
+            if against["source"] == JOINT
+            else (
+                "Would ONE head over the pooled smooth and strange stores be non-inferior to "
+                "the two shipped heads, on each kind's own blind sheet?"
+            )
         ),
         "rule": (
-            "NON-INFERIORITY, and it is a ratified deviation from this project's winner "
-            "rule. The candidate is viable iff no gated arm is significantly worse than "
-            "that kind's shipped head. Nothing is required to be better: the declared "
-            "benefit is one head instead of two, which no sheet can measure"
+            (
+                "NON-INFERIORITY, and it is a ratified deviation from this project's winner "
+                "rule. The candidate is viable iff no gated arm is significantly worse than "
+                "the shipped head. Nothing is required to be better: the declared benefit is "
+                "a corpus that covers colours the shipped head was never shown, and the rows "
+                "that carry it are train-side forever, so no sheet here can measure it"
+            )
+            if against["source"] == JOINT
+            else (
+                "NON-INFERIORITY, and it is a ratified deviation from this project's winner "
+                "rule. The candidate is viable iff no gated arm is significantly worse than "
+                "that kind's shipped head. Nothing is required to be better: the declared "
+                "benefit is one head instead of two, which no sheet can measure"
+            )
         ),
         "significance": (
             f"95 percent paired cluster bootstrap, {DRAWS} draws at seed {BOOTSTRAP_SEED}, "
@@ -276,14 +363,22 @@ def bar(candidate: str = render_train.CURRENT) -> dict:
         ),
         "band": (
             "three seeds, and the band IS the result — no staged pick. Every arm is read on "
-            "each seed AND on the band's median seed by that arm's own statistic. An arm "
-            "fails if it fails on the band or on any single seed"
+            "the band's median seed by that arm's own statistic, and the BAND is what the "
+            "verdict rests on. The per-seed reads are computed and reported beside it, and "
+            "they gate nothing: a per-seed conjunction is fifteen one-sided tests and its "
+            "false-alarm size is in `multiplicity`. Matt's standing ruling of 2026-08-23"
+            if band_only
+            else "three seeds, and the band IS the result — no staged pick. Every arm is "
+            "read on each seed AND on the band's median seed by that arm's own statistic. "
+            "An arm fails if it fails on the band or on any single seed"
         ),
+        "reading": "band" if band_only else "band and every seed",
         "arms": [dict(arm) for arm in ARMS],
         "refused": dict(REFUSED),
+        "incumbent_is": against["what"],
         "incumbents": {
             kind: {"shipped": row["shipped"], "band": list(row["band"])}
-            for kind, row in INCUMBENTS.items()
+            for kind, row in against["per_kind"].items()
         },
         "training": {
             "split": (
@@ -293,16 +388,26 @@ def bar(candidate: str = render_train.CURRENT) -> dict:
             ),
             "conditioning": "none. The head is handed no kind",
             "recipe": (
-                "the incumbents', which agree on every behavioural key but the backbone — "
-                f"the one value a joint head cannot inherit. This candidate takes "
-                f"{entry['backbone']}"
+                f"the incumbent's, unchanged in every key including the backbone "
+                f"({entry['backbone']}). Nothing here is re-asked; the corpus is the only "
+                f"thing that moved"
+                if against["source"] == JOINT
+                else "the incumbents', which agree on every behavioural key but the "
+                f"backbone — the one value a joint head cannot inherit. This candidate "
+                f"takes {entry['backbone']}"
             ),
             "selection": (
-                "the incumbents' objective, share and seed, over the pooled training side's "
-                "places. A controlled variable"
+                "the incumbent's objective, share, seed and population rule. A controlled "
+                "variable, and the population follows the head: the pooled training side "
+                "is what it is drawn over, and it is now larger"
+                if against["source"] == JOINT
+                else "the incumbents' objective, share and seed, over the pooled training "
+                "side's places. A controlled variable"
             ),
         },
-        "declared": [
+        "declared": RETRAIN_DECLARED
+        if against["source"] == JOINT
+        else [
             "Adjacent-category label noise at these boundaries is larger than the "
             "differences the sheets can resolve. The bootstrap verdicts are the result; a "
             "non-significant gap is not a finding in either direction, and small AUC "
@@ -325,7 +430,11 @@ def bar(candidate: str = render_train.CURRENT) -> dict:
             "except recalibrated. The recalibrated split is reported below the table.",
         ],
         "verdicts": {
-            "PASS": "no gated arm is significantly worse, on the band or on any seed",
+            "PASS": (
+                "no gated arm is significantly worse on the band"
+                if band_only
+                else "no gated arm is significantly worse, on the band or on any seed"
+            ),
             "FAIL": "some gated arm is significantly worse",
         },
         "adoption": "NOT part of this bar and not done anywhere. A passing candidate is a "
@@ -353,8 +462,16 @@ def write_bar(candidate: str = render_train.CURRENT, *, force: bool = False) -> 
     return path
 
 
-def _incumbent_rows(kind: str, run: str | None) -> dict[str, dict]:
+def _incumbent_rows(kind: str, run: str | None, source: str = PER_KIND) -> dict[str, dict]:
     """One incumbent run's committed read of its own sheet, keyed by picture."""
+    if source == JOINT:
+        path = render_train.scores_path(kind, run)
+        if not path.is_file():
+            raise ComparisonError(
+                f"{path} is missing: incumbent run {run!r} has no committed read of the {kind} "
+                f"sheet. Every arm here is paired row by row."
+            )
+        return {row["name"]: row for row in render_train.read(kind, run)}
     path = finished_scoring.scores_path(kind, run)
     if not path.is_file():
         raise ComparisonError(
@@ -374,7 +491,12 @@ def _candidate_rows(kind: str, run: str) -> dict[str, dict]:
     return {row["name"]: row for row in render_train.read(kind, run)}
 
 
-def aligned(kind: str, candidate_runs: list[str], ablation_runs: list[str] | None = None) -> dict:
+def aligned(
+    kind: str,
+    candidate_runs: list[str],
+    ablation_runs: list[str] | None = None,
+    incumbent: dict | None = None,
+) -> dict:
     """Every read of one sheet, over the pictures all of them cover.
 
     Refuses a partial overlap rather than intersecting quietly: two heads
@@ -384,8 +506,13 @@ def aligned(kind: str, candidate_runs: list[str], ablation_runs: list[str] | Non
     """
     import numpy
 
+    incumbent = incumbent or incumbent_of(render_train.CURRENT)
+    source = incumbent["source"]
     reads = (
-        {f"incumbent:{run}": _incumbent_rows(kind, run) for run in INCUMBENTS[kind]["band"]}
+        {
+            f"incumbent:{run}": _incumbent_rows(kind, run, source)
+            for run in incumbent["per_kind"][kind]["band"]
+        }
         | {f"candidate:{run}": _candidate_rows(kind, run) for run in candidate_runs}
         | {f"ablation:{run}": _candidate_rows(kind, run) for run in ablation_runs or ()}
     )
@@ -701,19 +828,27 @@ def scale_or_order(context: dict, left: str, right: str, classes: int = 4) -> di
     }
 
 
-def _arm(arm: dict, context: dict, candidate_runs: list[str], classes: int = 4) -> dict:
+def _arm(
+    arm: dict,
+    context: dict,
+    candidate_runs: list[str],
+    classes: int = 4,
+    incumbent: dict | None = None,
+) -> dict:
     """One arm: the candidate band, the incumbent band, and every paired verdict."""
+    incumbent = incumbent or incumbent_of(render_train.CURRENT)
+    theirs = incumbent["per_kind"][arm["kind"]]
     labels = context["labels"]
     groups = context["groups"]
     predicted = {
         key: _probabilities(context, key, classes)
         for key in (
             *(f"candidate:{run}" for run in candidate_runs),
-            *(f"incumbent:{run}" for run in INCUMBENTS[arm["kind"]]["band"]),
+            *(f"incumbent:{run}" for run in theirs["band"]),
         )
     }
     scored = {key: _statistic_of(arm, labels, values, classes) for key, values in predicted.items()}
-    shipped = f"incumbent:{INCUMBENTS[arm['kind']]['shipped']}"
+    shipped = f"incumbent:{theirs['shipped']}"
 
     def against(candidate_key: str, incumbent_key: str) -> dict:
         def statistic(indices):
@@ -746,7 +881,7 @@ def _arm(arm: dict, context: dict, candidate_runs: list[str], classes: int = 4) 
     band = against(f"candidate:{band_run}", shipped)
     reported = {
         run: against(f"candidate:{band_run}", f"incumbent:{run}")
-        for run in INCUMBENTS[arm["kind"]]["band"]
+        for run in theirs["band"]
         if f"incumbent:{run}" != shipped
     }
     failed = band["verdict"] == "WORSE" or any(
@@ -757,9 +892,7 @@ def _arm(arm: dict, context: dict, candidate_runs: list[str], classes: int = 4) 
         "cutpoint": arm.get("cutpoint"),
         "why": arm["why"],
         "candidate_band": {run: scored[f"candidate:{run}"] for run in candidate_runs},
-        "incumbent_band": {
-            str(run): scored[f"incumbent:{run}"] for run in INCUMBENTS[arm["kind"]]["band"]
-        },
+        "incumbent_band": {str(run): scored[f"incumbent:{run}"] for run in theirs["band"]},
         "band_read_on": band_run,
         "band": band,
         "per_seed": per_seed,
@@ -856,16 +989,40 @@ def read(runs: list[str] | None = None, candidate: str = render_train.CURRENT) -
         )
     declared = json.loads(path.read_text(encoding="utf-8"))
     candidate_runs = list(runs or render_train.CANDIDATES[candidate]["runs"])
+    against = incumbent_of(candidate)
+    band_only = declared.get("reading") == "band"
 
+    # The corpus-matched ablation and the variants are arms of the DESIGN study —
+    # they answer what pooling cost and what splitting the classifier bought, and
+    # both were trained on the corpus as it stood then. A candidate gated against
+    # the shipped joint head is not asking either question, and pairing a run of
+    # this corpus seed-for-seed against a run of that one would move two things at
+    # once. They are reported absent, with the reason, rather than computed.
+    design_study = against["source"] != JOINT
+    withheld_arms = (
+        None
+        if design_study
+        else (
+            f"the ablation and variant arms belong to the design study, whose candidates are "
+            f"gated against the per-kind heads. This candidate is gated against "
+            f"{against['candidate']!r} and its runs were trained on a smaller corpus, so no "
+            f"seed-for-seed pairing against them is corpus-matched"
+        )
+    )
     present = {
-        kind: [run for run in ABLATIONS[kind] if render_train.scores_path(kind, run).is_file()]
+        kind: [
+            run
+            for run in ABLATIONS[kind]
+            if design_study and render_train.scores_path(kind, run).is_file()
+        ]
         for kind in render_train.KINDS
     }
     variants = {
         name: [
             run
             for run in entry["runs"]
-            if all(render_train.scores_path(kind, run).is_file() for kind in render_train.KINDS)
+            if design_study
+            and all(render_train.scores_path(kind, run).is_file() for kind in render_train.KINDS)
         ]
         for name, entry in render_train.VARIANTS.items()
     }
@@ -874,7 +1031,8 @@ def read(runs: list[str] | None = None, candidate: str = render_train.CURRENT) -
         name: [
             run
             for run in entry["runs"]
-            if all(render_train.scores_path(kind, run).is_file() for kind in render_train.KINDS)
+            if design_study
+            and all(render_train.scores_path(kind, run).is_file() for kind in render_train.KINDS)
         ]
         for name, entry in render_train.CANDIDATES.items()
     }
@@ -883,10 +1041,11 @@ def read(runs: list[str] | None = None, candidate: str = render_train.CURRENT) -
             kind,
             sorted({*candidate_runs, *every, *(r for v in variants_of.values() for r in v)}),
             present[kind],
+            against,
         )
         for kind in render_train.KINDS
     }
-    arms = [_arm(arm, contexts[arm["kind"]], candidate_runs) for arm in ARMS]
+    arms = [_arm(arm, contexts[arm["kind"]], candidate_runs, incumbent=against) for arm in ARMS]
     ablations = {
         "runs": {kind: present[kind] for kind in render_train.KINDS},
         "absent": {
@@ -898,6 +1057,7 @@ def read(runs: list[str] | None = None, candidate: str = render_train.CURRENT) -
             "recipe. Paired seed for seed against the candidate, so the only thing that "
             "moves is whether the other kind's rows were in the batch. NO BAR is attached"
         ),
+        "not_read_because": withheld_arms,
         "arms": [
             ablation_arm(arm, contexts[arm["kind"]], candidate_runs, present[arm["kind"]])
             for arm in ARMS
@@ -912,7 +1072,14 @@ def read(runs: list[str] | None = None, candidate: str = render_train.CURRENT) -
         for arm in arms
         if arm["statistic"] == "cutpoint_cross_entropy"
     }
-    verdict = "FAIL" if any(arm["verdict"] == "FAIL" for arm in gated) else "PASS"
+    # The bar decides which reading is the verdict. `arm["verdict"]` is the strict
+    # conjunction — band AND every seed — and a bar that declares itself band-only is
+    # read off the band alone, with the conjunction still computed and still reported.
+    verdict = (
+        ("FAIL" if any(arm["band"]["verdict"] == "WORSE" for arm in gated) else "PASS")
+        if band_only
+        else ("FAIL" if any(arm["verdict"] == "FAIL" for arm in gated) else "PASS")
+    )
 
     populations = {}
     for kind, context in contexts.items():
@@ -935,6 +1102,8 @@ def read(runs: list[str] | None = None, candidate: str = render_train.CURRENT) -
         "backbone": declared.get("backbone", render_train.CANDIDATES[candidate]["backbone"]),
         "bar": {"rule": declared["rule"], "significance": declared["significance"]},
         "candidate_runs": candidate_runs,
+        "incumbent_is": declared.get("incumbent_is", against["what"]),
+        "reading": "band" if band_only else "band and every seed",
         "populations": populations,
         "arms": arms,
         "refused": dict(REFUSED),
@@ -952,7 +1121,7 @@ def read(runs: list[str] | None = None, candidate: str = render_train.CURRENT) -
                     contexts[kind],
                     {
                         "candidate": f"candidate:{band_run_of[kind]}",
-                        "incumbent": f"incumbent:{INCUMBENTS[kind]['shipped']}",
+                        "incumbent": f"incumbent:{against['per_kind'][kind]['shipped']}",
                     },
                 )
                 for kind in render_train.KINDS
@@ -972,7 +1141,9 @@ def read(runs: list[str] | None = None, candidate: str = render_train.CURRENT) -
                     "runs": runs,
                     "seeds": len(runs),
                     "what": render_train.VARIANTS[name]["what"],
-                    "arms": [_arm(arm, contexts[arm["kind"]], runs) for arm in ARMS],
+                    "arms": [
+                        _arm(arm, contexts[arm["kind"]], runs, incumbent=against) for arm in ARMS
+                    ],
                     "against": render_train.VARIANTS[name]["against"],
                     "scale_or_order": _variant_split(contexts, name, runs, variants_of),
                 }
@@ -983,6 +1154,7 @@ def read(runs: list[str] | None = None, candidate: str = render_train.CURRENT) -
                 name: [run for run in render_train.VARIANTS[name]["runs"] if run not in runs]
                 for name, runs in variants.items()
             },
+            "not_read_because": withheld_arms,
         },
         "verdict": verdict,
         "adoption": declared["adoption"],

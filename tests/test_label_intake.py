@@ -167,7 +167,12 @@ def test_only_units_a_person_acted_on_become_rows(tmp_path, head_store) -> None:
     report = intake.run(
         sheet=stem, labels=an_export(tmp_path, {"u0002": 4}), labeler="matt", write=True
     )
-    assert report["units"] == {"on the sheet": 5, "exported": 1, "not acted on": 4}
+    assert report["units"] == {
+        "on the sheet": 5,
+        "exported": 1,
+        "not acted on": 4,
+        "withheld on a pinned location": 0,
+    }
     assert report["written"] == 1
     assert finished.resolved(HEAD).n_rows == 1
 
@@ -275,6 +280,78 @@ def test_a_dry_run_writes_nothing_and_says_what_it_would(tmp_path, head_store) -
     stem = a_sheet(tmp_path)
     report = intake.run(sheet=stem, labels=an_export(tmp_path, {"u0001": 3}), labeler="matt")
     assert report["written"] == 0 and report["rows"]["to write"] == 1
+    assert finished.resolved(HEAD).n_rows == 0
+
+
+# --------------------------------------------------------------------------- #
+# The pin, at the seam.
+# --------------------------------------------------------------------------- #
+def test_a_verdict_on_a_pinned_location_is_withheld_and_named(tmp_path, head_store) -> None:
+    """The failure that bought this: a correction drop re-renders a place the blind
+    sheet holds. The row may not train, and it was not cast blind either, so it is
+    neither thing — it stays in the export and out of the store, counted."""
+    finished.register(
+        HEAD,
+        registry_module.Registration(
+            batch="a_blind_sheet", method="blind", eval_only=True, why="the instrument"
+        ),
+    )
+    blind = a_sheet(tmp_path, units=3, batch="a_blind_sheet")
+    finished.write_pin(HEAD, _rows_of(blind)[:1], {"schema": 1})
+
+    second = tmp_path / "second"
+    second.mkdir()
+    trespasser = a_sheet(second, units=3)
+    report = intake.run(
+        trespasser,
+        labels=an_export(tmp_path, {f"u000{i}": 2 for i in (1, 2, 3)}),
+        labeler="a tester",
+        write=True,
+    )
+    assert report["units"]["withheld on a pinned location"] == 1
+    assert report["withheld"]["units"] == ["u0001"]
+    assert report["written"] == 2
+    assert finished.assert_pin_holds(HEAD, finished.resolved(HEAD).scored())["ok"]
+
+
+def _rows_of(stem) -> list[dict]:
+    """The pinned rows, in the shape the pin file holds — join flattened onto the row."""
+    read = intake.read_sheet(stem)
+    return [{"schema": 1, "batch": row["batch"], **row["join"]} for row in read.rows]
+
+
+def test_the_blind_batch_itself_is_never_withheld_from_its_own_store(tmp_path, head_store) -> None:
+    """The predicate is `not my batch`, not `pinned`: the instrument's own rows are
+    how the instrument got there, and re-ingesting them must still land."""
+    finished.register(
+        HEAD,
+        registry_module.Registration(
+            batch="a_blind_sheet", method="blind", eval_only=True, why="the instrument"
+        ),
+    )
+    stem = a_sheet(tmp_path, units=3, batch="a_blind_sheet")
+    finished.write_pin(HEAD, _rows_of(stem), {"schema": 1})
+    report = intake.run(
+        stem,
+        labels=an_export(tmp_path, {f"u000{i}": 2 for i in (1, 2, 3)}),
+        labeler="a tester",
+        write=True,
+    )
+    assert report["units"]["withheld on a pinned location"] == 0
+    assert report["written"] == 3
+
+
+def test_a_refused_ingest_leaves_the_store_exactly_as_it_was(tmp_path, head_store) -> None:
+    """The ordering defect this step used to have: it wrote, then asserted, and a
+    raise left rows behind that the shipped-store invariant forbids."""
+    stem = a_sheet(tmp_path, units=2)
+    with pytest.raises(intake.IntakeError):
+        intake.run(
+            stem,
+            labels=an_export(tmp_path, {"u0001": 2, "u0009": 2}),
+            labeler="a tester",
+            write=True,
+        )
     assert finished.resolved(HEAD).n_rows == 0
 
 

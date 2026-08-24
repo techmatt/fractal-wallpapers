@@ -103,6 +103,31 @@ sheets cut for the same judge cannot overwrite each other (see [`export_control.
 against its sheet; until then the store is untouched. Drops written before sheets carried
 their own name are called `<head>.json`, and re-ingesting one needs an explicit `--labels`.
 
+## A verdict cast on a pinned location is WITHHELD, not written
+
+A finished store's evaluation side is a **batch** — one registered `eval_only`, cut
+blind — and its pin is asserted on the *location* so a later drop cannot re-render the
+place under a fresh name. A verdict from any other batch at one of those places is
+therefore neither thing this store holds: it may not train, because the instrument is
+spent the moment it does, and it may not join the blind sheet either, because it was
+cast against a prefilled suggestion. `label ingest` names those units, counts them, and
+leaves them in the export:
+
+```
+"units": {"on the sheet": 246, "exported": 246, "not acted on": 0,
+          "withheld on a pinned location": 9}
+"withheld": {"rows": 9, "locations": 9, "units": ["u0007", "u0018", ...]}
+```
+
+Both blind sheets are derived by location, so a withheld row that *had* landed would
+have grown a blind sheet by nine anchored rows and broken every paired comparison
+against it. `tests/test_finished_store.py` holds the invariant this protects: no
+non-`eval_only` row sits on a pinned place. The pin is never the thing that moves.
+
+**The check runs before the write.** It used to run after, so a drop that trespassed
+left the rows behind and raised — a store the suite forbids, produced by the command
+that refuses to produce it.
+
 ## What cutting a sheet costs, and why the number moves so much
 
 A location unit is **two renders at 1280×720 ss2**, and that is the whole bill —
