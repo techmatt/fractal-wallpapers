@@ -101,12 +101,20 @@ Each prompt in this project ends the same way:
   conventions — get promoted into the relevant module README as you pass them**, not
   left only in a scratch report. `scratch/` is defined as disposable; a fact worth
   writing down twice belongs in tracked documentation once.
+- **A step estimated over about thirty seconds is backgrounded, not waited on.** Say
+  what it was estimated at, launch it in the background, and poll — a training band,
+  a render leg or a sweep over the tracked records is minutes to hours, and a prompt
+  that blocks on one reports nothing until it lands.
+- **The commit gate is part of the contract, not a step after it.** Commit to `main`,
+  and when another prompt is in flight in this repository — anything `git status`
+  lists as modified or untracked that is not yours — commit **only your own files, by
+  explicit path**: `git add <path> …`, never `git add -A` or `git add .`.
 
 ## Rules
 
 - Commit to `main` only.
 - **No commit ≥20 MB** — single blob or aggregate — without Matt's explicit prior
-  confirmation.
+  confirmation. Stop and ask; do not commit and report it afterwards.
 - Every prompt names its target repository; if the working directory is not that
   repository, stop immediately and say so rather than guessing.
 

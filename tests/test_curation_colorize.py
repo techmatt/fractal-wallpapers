@@ -150,3 +150,98 @@ def test_an_attempt_killed_at_its_deadline_is_a_recorded_row_and_not_a_dead_run(
     assert row["attempt"] == 3 and row["mode"] is None
     assert "EngineTimeout" in row["error"]
     assert row.get("p_ge3") is None, "a crash and a bad wallpaper are not the same number"
+
+
+# --------------------------------------------------------------------------- #
+# The field cache's identity.
+# --------------------------------------------------------------------------- #
+#: Three real places, and the field names the shipped cache holds them under.
+#: Recorded rather than derived, because the whole property is that the derivation
+#: may be rewritten and these must not move: `artifacts/curation/runs/*/fields/`
+#: is named by them, and a name that moved would re-dump every field this project
+#: has ever paid for while the old ones sat beside them unread.
+SHIPPED_FIELD_NAMES = (
+    (
+        {"kind": "mandelbrot"},
+        {"center_re": "-0.5", "center_im": "0.0", "width": "3.0"},
+        3000,
+        "38981183c194fb38",
+    ),
+    (
+        {"kind": "multibrot", "degree": 3},
+        {
+            "center_re": "-0.11784803243926409",
+            "center_im": "0.803838676554543",
+            "width": "4.056617606305728e-05",
+        },
+        23409,
+        "47af459a402683a0",
+    ),
+    (
+        {"kind": "julia", "degree": 2, "c": ["-0.4", "0.6"]},
+        {"center_re": "0.1", "center_im": "0.2", "width": "0.5"},
+        8000,
+        "9637d66376fed937",
+    ),
+)
+
+
+def a_field_name(family, viewport, maxiter, changes=None) -> str:
+    """One field's cache name, exactly as `colorize.field_of` asks for it."""
+    from fractal_wallpapers.models import renders
+
+    call = {
+        "family": family,
+        "viewport": viewport,
+        "render": {
+            "resolution": list(colorize.RESOLUTION),
+            "supersample": colorize.SUPERSAMPLE,
+            "maxiter": int(maxiter),
+        },
+        "mode": colorize.SMOOTH_MODE,
+        "curve": colorize.CURVE,
+    }
+    return renders.field_job_name(**{**call, **(changes or {})})
+
+
+def test_the_shipped_field_names_have_not_moved() -> None:
+    for family, viewport, maxiter, expected in SHIPPED_FIELD_NAMES:
+        assert a_field_name(family, viewport, maxiter) == expected, family
+
+
+def test_every_field_side_member_moves_the_field_name() -> None:
+    """Declaring a member field-side is a claim that the field depends on it. A
+    member that could be changed without moving the name would be one the cache
+    is silently pooling over."""
+    family, viewport, maxiter, base = SHIPPED_FIELD_NAMES[0]
+    perturbed = {
+        "family": {"kind": "multibrot", "degree": 3},
+        "viewport": {"center_re": "0.0", "center_im": "0.0", "width": "3.0"},
+        "render": {"resolution": [64, 36], "supersample": 2, "maxiter": 3000},
+        "mode": "tia",
+        "curve": "log",
+    }
+    from fractal_wallpapers.models import renders
+
+    assert set(perturbed) | {"mode_params"} == set(renders.FIELD_IDENTITY), (
+        "every declared field-side member needs a perturbation here, or the claim "
+        "that it moves the name is untested"
+    )
+    for member, value in perturbed.items():
+        assert a_field_name(family, viewport, maxiter, {member: value}) != base, member
+
+    # `mode_params` only ever reaches a direct mode, so it is perturbed against a
+    # base of its own rather than against the smooth field above.
+    direct = {"mode": "direct_trap_ring", "curve": "linear"}
+    assert a_field_name(family, viewport, maxiter, direct) != a_field_name(
+        family, viewport, maxiter, {**direct, "mode_params": {"opacity": 0.9}}
+    ), "mode_params"
+
+
+def test_the_recolour_half_is_not_in_a_field_s_name() -> None:
+    """A field is dumped once and recoloured thirty-two times. If the map were in
+    the name, that would be thirty-two iteration passes instead of one."""
+    from fractal_wallpapers.models import renders
+
+    assert "colormap" in renders.RECOLOR_MEMBERS and "recipe" in renders.RECOLOR_MEMBERS
+    assert "colormap" not in renders.FIELD_IDENTITY and "recipe" not in renders.FIELD_IDENTITY

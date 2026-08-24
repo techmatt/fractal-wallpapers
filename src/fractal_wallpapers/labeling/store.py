@@ -154,7 +154,12 @@ def registry() -> dict[str, registry_module.Registration]:
 
 
 def register(registration: registry_module.Registration) -> dict:
-    """Register a batch. Appended, so a correction leaves the original readable."""
+    """Register a batch. Appended, and refused when it contradicts what stands.
+
+    An identical re-registration is written and reads as a no-op; one that
+    disagrees is refused here rather than at the next read, so the file never
+    holds two answers about one population.
+    """
     if not registration.batch:
         raise registry_module.RegistrationError("a registration must name its batch")
     if not registration.method:
@@ -163,6 +168,7 @@ def register(registration: registry_module.Registration) -> dict:
             "that sentence is the only record of why a rate measured on it does or does not "
             "mean anything"
         )
+    registry_module.refuse_contradiction(registry(), registration)
     row = registration.row()
     if row["registered_at"] is None:
         row["registered_at"] = now()

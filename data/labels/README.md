@@ -65,6 +65,16 @@ ineligible member goes to the training side entire. `split.json` records the
 seed, the target share and the share that was actually realized; the two are not
 the same number and the second is the one to quote.
 
+**The trainers are where that pin is enforced, and they assert on the same
+coordinate.** `labeling.pins` owns it, and every training pass routes through it
+rather than re-deriving a side: `models/train.py` calls `pins.assert_eval` over
+the split it built, and `models/render_train.py` refuses on the *union* of both
+finished stores' pins, because a joint head is read on both blind sheets and
+either instrument is spent by one trespassing row. Both keys the `c`-inclusive
+coordinate through `supply.location.key_of_row`, which is the same key this store
+resolves on — so a location cannot be one place to the split and another to the
+trainer that reads it.
+
 ## Where these came from
 
 The 11,303 locations here are the source project's label corpus, imported once

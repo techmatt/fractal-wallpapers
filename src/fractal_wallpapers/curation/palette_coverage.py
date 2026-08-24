@@ -478,8 +478,19 @@ def probe_cell(cell: dict, maps: list[str], workdir: Path) -> list[dict]:
     hundred maps is a gigabyte of JPEG that answers one question each, and the
     answer is four hundred bytes. Keeping the field and throwing the picture away
     is the same trade the field dump itself is.
+
+    **The curve is stated, and it is production's rather than the dump's.** A
+    dumped field records the curve it was dumped under, which is the *mode's own*;
+    a render states [`colorize.CURVE`] and `renders.coloring_of` writes it over
+    the mode's. Those agree for every field mode but `trap_circle`, which names
+    `log` where everything else names `linear` — so a recolor that left
+    `transform` off its spec measured, for that one mode, a picture production
+    never makes. Three of the shipped panel's sixteen cells are `trap_circle`,
+    which is what the omission was worth. `manufacture.render_through` states it
+    for the same reason and is the site this now matches.
     """
     from fractal_wallpapers import engine, paths
+    from fractal_wallpapers.curation import colorize
     from fractal_wallpapers.labeling import finished
     from fractal_wallpapers.models import palette_sets
 
@@ -496,6 +507,7 @@ def probe_cell(cell: dict, maps: list[str], workdir: Path) -> list[dict]:
                     "field": str(field),
                     "colormap": colormap,
                     "colormap_dir": str(paths.colormap_dir()),
+                    "transform": colorize.CURVE,
                     "palette": finished.recipe(mirror=mirror),
                     "output": str(picture),
                 }

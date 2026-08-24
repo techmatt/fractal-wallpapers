@@ -318,3 +318,67 @@ def test_a_tile_is_named_by_what_it_shows_so_two_sheets_share_the_file() -> None
     name = coverage._tile_name("dark_vivid_lime", 0.15, entry)
     assert name == "dark_vivid_lime_15_smooth_phoenix_2ed6828c1f_Reed-Walk.jpg"
     assert name == coverage._tile_name("dark_vivid_lime", 0.15, dict(entry))
+
+
+# --------------------------------------------------------------------------- #
+# The curve the probe recolors through.
+# --------------------------------------------------------------------------- #
+def probe_specs(monkeypatch, tmp_path, mode: str) -> list[dict]:
+    """Every recolor spec `probe_cell` hands the engine for one cell, uniterated."""
+    from fractal_wallpapers import engine
+    from fractal_wallpapers.models import palette_sets
+
+    seen: list[dict] = []
+    monkeypatch.setattr(engine, "recolor", lambda spec: seen.append(dict(spec)))
+    monkeypatch.setattr(palette_sets, "cyclic", lambda: {"twilight_shifted"})
+    monkeypatch.setattr(codebook, "of_picture", lambda path: {"shares": {}, "interior": 0.0})
+    monkeypatch.setattr(coverage, "fields_dir", lambda: tmp_path)
+    cell = {
+        "cell": f"{mode}_mandelbrot_0123456789",
+        "mode": mode,
+        "kind": "smooth" if mode == coverage.SMOOTH_MODE else "strange",
+        "partition": "mandelbrot",
+        "field": "a.f32",
+    }
+    coverage.probe_cell(cell, ["twilight_shifted"], tmp_path / "work")
+    return seen
+
+
+def test_the_probe_states_its_transform_on_a_trap_circle_field(monkeypatch, tmp_path) -> None:
+    """`trap_circle` is the one field mode whose own curve is `log`, so a recolor
+    that left `transform` off inherited the dump's `log` and measured a picture
+    production never makes. Three of the shipped panel's sixteen cells are this
+    mode."""
+    from fractal_wallpapers.curation import colorize
+    from fractal_wallpapers.models import renders
+
+    assert renders.catalog()["trap_circle"]["transform"] == "log", "the premise of this test"
+    assert colorize.CURVE == "linear"
+    for spec in probe_specs(monkeypatch, tmp_path, "trap_circle"):
+        assert spec["transform"] == colorize.CURVE
+
+
+def test_the_probe_states_its_transform_on_every_probeable_mode(monkeypatch, tmp_path) -> None:
+    """Not a special case for one mode: a spec without a transform is a picture
+    nobody can join back to a render, whichever field it came from."""
+    from fractal_wallpapers.curation import colorize
+
+    for mode in coverage.probeable_modes():
+        specs = probe_specs(monkeypatch, tmp_path, mode)
+        assert specs, mode
+        for spec in specs:
+            assert spec.get("transform") == colorize.CURVE, mode
+
+
+def test_trap_circle_is_the_only_field_mode_that_disagrees_with_production() -> None:
+    """The reason the omission was invisible for so long, written down as a test:
+    every other probeable mode's own curve happens to be the one production
+    states, so leaving the transform off was wrong on exactly one mode."""
+    from fractal_wallpapers.curation import colorize
+    from fractal_wallpapers.models import renders
+
+    catalog = renders.catalog()
+    disagree = [
+        mode for mode in coverage.probeable_modes() if catalog[mode]["transform"] != colorize.CURVE
+    ]
+    assert disagree == ["trap_circle"]

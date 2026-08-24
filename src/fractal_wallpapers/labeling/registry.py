@@ -16,6 +16,14 @@ not of anybody's discipline.
 therefore train-side. An omission is safe; the only thing an omission cannot do
 is put a population into the evaluation side by accident.
 
+**And a contradiction aborts.** Registering one batch twice is fine while both
+rows say the same thing — re-running a registration step is how anybody finds out
+it already ran — but a second row that disagrees about the method or the flags is
+refused by [`read`], naming both rows. It used to win silently, which meant a
+batch could change sides between two readings of one file with nothing red. An
+omission fails closed; a contradiction cannot, because there is no safe side to
+fail to when the file itself holds both answers.
+
 **Two independent facts, and eligibility follows from them.**
 
 * `score_unconditioned` — was the *draw* free of any model score? This is the
@@ -66,6 +74,14 @@ class RegistrationError(ValueError):
     """A registration that cannot be written, or a batch name that is not one."""
 
 
+class RegistrationContradiction(RegistrationError):
+    """One batch registered twice, saying two different things about its draw.
+
+    A named subclass, so a test can assert the reason rather than the wording, and
+    a subclass of [`RegistrationError`] so every existing handler still catches it.
+    """
+
+
 @dataclass(frozen=True)
 class Registration:
     """One batch's classification. `method` is prose; the two flags are data."""
@@ -92,6 +108,17 @@ class Registration:
     def side(self) -> str:
         """The side this batch's locations may reach: `eval` or `train`."""
         return "eval" if self.eval_eligible else "train"
+
+    @property
+    def claim(self) -> tuple:
+        """What this registration *asserts* — the part a second row may not change.
+
+        The method sentence and the three flags. `why` is the rationale beside the
+        claim and `registered_at` is when it was written down, so neither is here:
+        a re-registration stamps a fresh time by construction, and comparing on it
+        would make "identical" unreachable.
+        """
+        return (self.method, self.score_unconditioned, self.anchored, self.eval_only)
 
     def row(self) -> dict:
         return {
@@ -141,15 +168,31 @@ def registration_of(row: dict) -> Registration:
 def read(path: Path) -> dict[str, Registration]:
     """`{batch: Registration}` from a registration record.
 
-    Later rows replace earlier ones for the same batch, which is what makes the
-    file append-only: a registration corrected on the day it was found wrong
-    leaves the original readable underneath it. Missing file is an empty
-    registry, which is the state a fresh checkout is in.
+    **A batch registered twice has to say the same thing twice.** An identical
+    re-registration is a no-op — the file is append-only and re-running a
+    registration step is the ordinary way anybody finds out it already ran — but a
+    second row that *disagrees* is refused here, with both rows named, rather than
+    silently winning.
+
+    Silently winning is what it used to do, and it is the wrong default for this
+    file specifically. A registration is the answer to "was a model score in the
+    selection", it is written before the rows exist because afterwards it is
+    answered from memory, and it is the input to which side a population may reach.
+    A later row quietly moving a batch from `eval` to `train` — or the other way,
+    which spends an instrument — is a change to what every number measured on that
+    batch means, and nothing downstream reads the file twice to notice. If a
+    registration really was wrong, the fix is to correct the row in place and say
+    so in `why`: this store's append-only rule is about *labels*, whose originals
+    are evidence, and a registration nobody can contradict has no evidence to
+    preserve.
+
+    Missing file is an empty registry, which is the state a fresh checkout is in.
     """
     path = Path(path)
     if not path.is_file():
         return {}
     out: dict[str, Registration] = {}
+    seen: dict[str, int] = {}
     with path.open(encoding="utf-8") as handle:
         for number, line in enumerate(handle, start=1):
             line = line.strip()
@@ -159,8 +202,51 @@ def read(path: Path) -> dict[str, Registration]:
                 registration = registration_of(json.loads(line))
             except RegistrationError as complaint:
                 raise RegistrationError(f"{path}:{number}: {complaint}") from complaint
-            out[registration.batch] = registration
+            batch = registration.batch
+            standing = out.get(batch)
+            if standing is not None and standing.claim != registration.claim:
+                raise RegistrationContradiction(
+                    f"{path}: {batch!r} is registered twice and the two rows disagree.\n"
+                    f"  line {seen[batch]}: {_claim_line(standing)}\n"
+                    f"  line {number}: {_claim_line(registration)}\n"
+                    f"A registration says how a population was drawn and which side it may "
+                    f"reach, and it is written before the rows exist for exactly that reason. "
+                    f"Correct the row in place — do not append a second answer."
+                )
+            if standing is None:
+                seen[batch] = number
+                out[batch] = registration
     return out
+
+
+def _claim_line(registration: Registration) -> str:
+    """One registration's claim, for a refusal that has to show two of them."""
+    return (
+        f"method={registration.method!r} score_unconditioned="
+        f"{registration.score_unconditioned} anchored={registration.anchored} "
+        f"eval_only={registration.eval_only} -> {registration.side}"
+    )
+
+
+def refuse_contradiction(registry: dict[str, Registration], registration: Registration) -> None:
+    """Raise if `registration` disagrees with the one already standing for its batch.
+
+    The same rule [`read`] enforces, asked one step earlier — at the *writer*, so
+    the contradicting row never reaches the file. Without this the read-side guard
+    is a trap rather than a guard: the append succeeds, and every read of that
+    registry afterwards raises until somebody edits the file by hand.
+    """
+    standing = registry.get(registration.batch)
+    if standing is None or standing.claim == registration.claim:
+        return
+    raise RegistrationContradiction(
+        f"{registration.batch!r} is already registered, saying something else.\n"
+        f"  standing: {_claim_line(standing)}\n"
+        f"  offered:  {_claim_line(registration)}\n"
+        f"A registration is written before the rows exist because afterwards how a "
+        f"population was drawn is answered from memory. If the standing row is wrong, "
+        f"correct it in place and say so in `why` — do not append a second answer."
+    )
 
 
 def lookup(registry: dict[str, Registration], batch: str) -> Registration:
@@ -190,10 +276,12 @@ __all__ = [
     "SCHEMA",
     "UNREGISTERED",
     "Registration",
+    "RegistrationContradiction",
     "RegistrationError",
     "eval_eligible",
     "lookup",
     "read",
+    "refuse_contradiction",
     "registration_of",
     "summary",
 ]

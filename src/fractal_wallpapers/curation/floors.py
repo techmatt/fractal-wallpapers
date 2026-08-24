@@ -329,9 +329,11 @@ SCORING_HEAD = "render"
 ACTING_RELEASE_BARS = {"strange_render": STRANGE_RELEASE_BAR}
 
 #: Every release floor that has been **measured**, acting or not. The fit that
-#: produced each one is `head floor --head <head>`, and the record it wrote is
-#: `models/<head>/release_floor.json`. Both heights are the record's
-#: `rounded_up_to_0_005`: one grid, so the two are comparable.
+#: produced each one is `head floor --head <kind>`, and the record it wrote is
+#: `models/render/release_floor_<kind>.json` — beside the one judge that emits
+#: both, keyed by the KIND the floor is for, because the kind a floor is *for* and
+#: the head it is *on* stopped being the same name on 2026-08-23. Both heights are
+#: the record's `rounded_up_to_0_005`: one grid, so the two are comparable.
 MEASURED_RELEASE_FLOORS = {
     "strange_render": STRANGE_RELEASE_BAR,
     "smooth_render": SMOOTH_RELEASE_FLOOR,

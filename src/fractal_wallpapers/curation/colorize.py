@@ -218,17 +218,16 @@ def field_of(row: dict, directory: Path) -> Path:
     """
     from fractal_wallpapers.models import renders
 
-    name = renders.job_name(
-        {
-            "family": row["family"],
-            "viewport": row["viewport"],
-            "mode": SMOOTH_MODE,
-            "mode_params": {},
-            "curve": CURVE,
-            "colormap": "_field",
-            "recipe": _plain_recipe(False),
-            "render": _geometry(row),
-        }
+    # Through `renders.field_job_name` rather than a dict spelled out here: the
+    # members a dumped field depends on are declared once, beside `spec_of`, so a
+    # field-side axis added to the engine cannot be left out of this cache's name
+    # by being forgotten at this call site. It used to be spelled out here.
+    name = renders.field_job_name(
+        family=row["family"],
+        viewport=row["viewport"],
+        render=_geometry(row),
+        mode=SMOOTH_MODE,
+        curve=CURVE,
     )
     directory.mkdir(parents=True, exist_ok=True)
     path = directory / f"{name}.f32"
