@@ -1,0 +1,1636 @@
+[
+  {
+    "name": "Cyanotype Furnace",
+    "mood": "pure cyan and amber, nothing between them: cyan climbs to a white flare, amber burns out of black; the two hues never touch",
+    "architecture": "duotone-plus",
+    "skeleton": "peak-early",
+    "value_key": "low",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.04,
+          0.012,
+          210
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.1,
+        "oklch": [
+          0.62,
+          0.1059,
+          205
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.24,
+        "oklch": [
+          0.97,
+          0.02,
+          200
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.45,
+        "oklch": [
+          0.44,
+          0.073,
+          211
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.62,
+        "oklch": [
+          0.34,
+          0.0587,
+          209
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.72,
+        "oklch": [
+          0.08,
+          0.02,
+          40
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.86,
+        "oklch": [
+          0.6,
+          0.1716,
+          45
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.04,
+          0.012,
+          210
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Black Lacquer, Teal Seal",
+    "mood": "lacquer black, one teal mass rising to white, one magenta flare after it; two saturated hues with the white as the only bridge",
+    "architecture": "duotone-plus",
+    "skeleton": "cliff-in-mids",
+    "value_key": "low",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.04,
+          0.012,
+          180
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.12,
+        "oklch": [
+          0.33,
+          0.0609,
+          178
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.32,
+        "oklch": [
+          0.47,
+          0.078,
+          182
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.42,
+        "oklch": [
+          0.62,
+          0.105,
+          180
+        ],
+        "role": "mid",
+        "segment": "cliff"
+      },
+      {
+        "pos": 0.48,
+        "oklch": [
+          0.75,
+          0.128,
+          178
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.6,
+        "oklch": [
+          0.96,
+          0.018,
+          190
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.78,
+        "oklch": [
+          0.5,
+          0.2,
+          332
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.04,
+          0.012,
+          180
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Bone and Verdigris",
+    "mood": "bone-pale ochre field with a verdigris well cut into it; the dark is the event, the ochre and the cyan meet only through white",
+    "architecture": "duotone-plus",
+    "skeleton": "inverted-arc",
+    "value_key": "high",
+    "complexity": 3,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.93,
+          0.022,
+          90
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.15,
+        "oklch": [
+          0.8,
+          0.105,
+          88
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.3,
+        "oklch": [
+          0.97,
+          0.014,
+          200
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.46,
+        "oklch": [
+          0.44,
+          0.072,
+          212
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.58,
+        "oklch": [
+          0.21,
+          0.0373,
+          214
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.74,
+        "oklch": [
+          0.42,
+          0.068,
+          209
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.93,
+          0.022,
+          90
+        ],
+        "role": "field"
+      }
+    ]
+  },
+  {
+    "name": "Ice Shaft",
+    "mood": "one cold sweep, no reversal: black through deep teal and turquoise to a white burn; drama is the pure value and chroma climb",
+    "architecture": "mono-temperature-ramp",
+    "skeleton": "peak-late",
+    "value_key": "low",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.03,
+          0.01,
+          190
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.14,
+        "oklch": [
+          0.19,
+          0.0338,
+          186
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.32,
+        "oklch": [
+          0.35,
+          0.0632,
+          181
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.5,
+        "oklch": [
+          0.47,
+          0.082,
+          179
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.66,
+        "oklch": [
+          0.64,
+          0.112,
+          176
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.8,
+        "oklch": [
+          0.82,
+          0.15,
+          172
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.88,
+        "oklch": [
+          0.97,
+          0.022,
+          180
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.03,
+          0.01,
+          190
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Cyan Tide",
+    "mood": "a mid-key cyan rise with no warm anywhere: slate ground, focal cyan body, a pale saturated crest late",
+    "architecture": "mono-temperature-ramp",
+    "skeleton": "peak-late",
+    "value_key": "mid",
+    "complexity": 3,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.14,
+          0.0257,
+          215
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.2,
+        "oklch": [
+          0.34,
+          0.0596,
+          213
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.42,
+        "oklch": [
+          0.46,
+          0.074,
+          210
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.62,
+        "oklch": [
+          0.63,
+          0.1078,
+          206
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.8,
+        "oklch": [
+          0.88,
+          0.13,
+          200
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.14,
+          0.0257,
+          215
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Deep Current",
+    "mood": "cool throughout and deliberately restrained: an early ice flare, then a long muted descent through petrol teal into black",
+    "architecture": "mono-temperature-ramp",
+    "skeleton": "peak-early",
+    "value_key": "low",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.03,
+          0.01,
+          185
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.1,
+        "oklch": [
+          0.3,
+          0.0536,
+          183
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.22,
+        "oklch": [
+          0.55,
+          0.09,
+          178
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.32,
+        "oklch": [
+          0.95,
+          0.024,
+          190
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.46,
+        "oklch": [
+          0.6,
+          0.1,
+          196
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.6,
+        "oklch": [
+          0.44,
+          0.058,
+          190
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.74,
+        "oklch": [
+          0.34,
+          0.056,
+          186
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.88,
+        "oklch": [
+          0.16,
+          0.0281,
+          192
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.03,
+          0.01,
+          185
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Copper Reef",
+    "mood": "a teal reef against a copper mass, both held at full chroma and bridged only by a cream glow; the temperature swing is the whole idea",
+    "architecture": "complementary-tension",
+    "skeleton": "double-peak",
+    "value_key": "mid",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.16,
+          0.0283,
+          190
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.14,
+        "oklch": [
+          0.36,
+          0.0646,
+          182
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.3,
+        "oklch": [
+          0.47,
+          0.08,
+          180
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.4,
+        "oklch": [
+          0.72,
+          0.12,
+          175
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.5,
+        "oklch": [
+          0.95,
+          0.028,
+          90
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.64,
+        "oklch": [
+          0.42,
+          0.095,
+          52
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.8,
+        "oklch": [
+          0.74,
+          0.165,
+          58
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.16,
+          0.0283,
+          190
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Cold Forge",
+    "mood": "deep cyan against forge-red at full purity, true black and true white at the extremes; the red is reached through the white, never across",
+    "architecture": "complementary-tension",
+    "skeleton": "no-cliff",
+    "value_key": "low",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.03,
+          0.012,
+          210
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.13,
+        "oklch": [
+          0.32,
+          0.0561,
+          213
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.32,
+        "oklch": [
+          0.47,
+          0.075,
+          208
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.42,
+        "oklch": [
+          0.74,
+          0.124,
+          204
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.5,
+        "oklch": [
+          0.97,
+          0.02,
+          200
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.62,
+        "oklch": [
+          0.18,
+          0.05,
+          24
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.78,
+        "oklch": [
+          0.58,
+          0.215,
+          28
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.89,
+        "oklch": [
+          0.3,
+          0.122,
+          25
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.03,
+          0.012,
+          210
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Rust Lagoon",
+    "mood": "the muted register of the same tension: petrol cyan and a dusty copper, neither pushed, meeting at a cream high",
+    "architecture": "complementary-tension",
+    "skeleton": "double-peak",
+    "value_key": "mid",
+    "complexity": 3,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.15,
+          0.0273,
+          215
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.16,
+        "oklch": [
+          0.44,
+          0.06,
+          212
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.3,
+        "oklch": [
+          0.64,
+          0.092,
+          205
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.48,
+        "oklch": [
+          0.36,
+          0.058,
+          210
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.62,
+        "oklch": [
+          0.93,
+          0.026,
+          80
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.8,
+        "oklch": [
+          0.52,
+          0.098,
+          48
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.15,
+          0.0273,
+          215
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Pale Ember Over Teal",
+    "mood": "no blacks: a bone field, a deep muted teal well, and a warm ember that climbs to the brightest point late",
+    "architecture": "complementary-tension",
+    "skeleton": "peak-late",
+    "value_key": "high",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.9,
+          0.025,
+          85
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.15,
+        "oklch": [
+          0.47,
+          0.062,
+          186
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.3,
+        "oklch": [
+          0.35,
+          0.058,
+          181
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.44,
+        "oklch": [
+          0.21,
+          0.036,
+          178
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.6,
+        "oklch": [
+          0.52,
+          0.105,
+          58
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.78,
+        "oklch": [
+          0.97,
+          0.018,
+          70
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.9,
+          0.025,
+          85
+        ],
+        "role": "field"
+      }
+    ]
+  },
+  {
+    "name": "Indigo to Foam",
+    "mood": "a four-station cool walk with no reversal: indigo, focal cyan, focal teal, green foam; drama is the hue walk over a wide value range",
+    "architecture": "analogous-drift",
+    "skeleton": "no-cliff",
+    "value_key": "mid",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.1,
+          0.03,
+          265
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.16,
+        "oklch": [
+          0.34,
+          0.158,
+          262
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.32,
+        "oklch": [
+          0.42,
+          0.058,
+          216
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.5,
+        "oklch": [
+          0.36,
+          0.056,
+          182
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.64,
+        "oklch": [
+          0.58,
+          0.105,
+          158
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.8,
+        "oklch": [
+          0.93,
+          0.03,
+          150
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.1,
+          0.03,
+          265
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Green Water, Blue Deep",
+    "mood": "saturated cobalt falling through focal cyan into teal and a green-white crest; a neighbouring-hue walk with the chroma left high",
+    "architecture": "analogous-drift",
+    "skeleton": "double-peak",
+    "value_key": "low",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.03,
+          0.012,
+          250
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.12,
+        "oklch": [
+          0.42,
+          0.2453,
+          264
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.26,
+        "oklch": [
+          0.74,
+          0.1,
+          225
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.4,
+        "oklch": [
+          0.45,
+          0.074,
+          210
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.52,
+        "oklch": [
+          0.33,
+          0.0564,
+          204
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.66,
+        "oklch": [
+          0.55,
+          0.1037,
+          175
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.8,
+        "oklch": [
+          0.96,
+          0.022,
+          95
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.03,
+          0.012,
+          250
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Mint Field, Teal Well",
+    "mood": "pale mint carrying the image, a single deep teal well as the dark event; mint, foam and teal are one continuous walk",
+    "architecture": "analogous-drift",
+    "skeleton": "peak-early",
+    "value_key": "high",
+    "complexity": 3,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.88,
+          0.04,
+          155
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.2,
+        "oklch": [
+          0.97,
+          0.02,
+          170
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.42,
+        "oklch": [
+          0.45,
+          0.074,
+          180
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.56,
+        "oklch": [
+          0.34,
+          0.0627,
+          178
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.7,
+        "oklch": [
+          0.22,
+          0.0383,
+          190
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.86,
+        "oklch": [
+          0.6,
+          0.09,
+          150
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.88,
+          0.04,
+          155
+        ],
+        "role": "field"
+      }
+    ]
+  },
+  {
+    "name": "Teal, Magenta, Gold",
+    "mood": "three hues in balance: focal teal low, magenta out of a near-black trough, gold after the white; polychrome breadth no pair could give",
+    "architecture": "triad",
+    "skeleton": "double-peak",
+    "value_key": "mid",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.11,
+          0.0215,
+          180
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.12,
+        "oklch": [
+          0.35,
+          0.0636,
+          180
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.32,
+        "oklch": [
+          0.47,
+          0.08,
+          178
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.4,
+        "oklch": [
+          0.72,
+          0.13,
+          172
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.5,
+        "oklch": [
+          0.16,
+          0.045,
+          300
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.62,
+        "oklch": [
+          0.52,
+          0.215,
+          335
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.72,
+        "oklch": [
+          0.96,
+          0.0197,
+          20
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.86,
+        "oklch": [
+          0.62,
+          0.1268,
+          88
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.11,
+          0.0215,
+          180
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Oxblood, Cyan, Cream",
+    "mood": "oxblood, focal cyan and a cream high, black underneath everything; a small cliff steps the cyan up mid-ramp",
+    "architecture": "triad",
+    "skeleton": "cliff-in-mids",
+    "value_key": "low",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.04,
+          0.012,
+          212
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.14,
+        "oklch": [
+          0.36,
+          0.058,
+          214
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.36,
+        "oklch": [
+          0.46,
+          0.062,
+          210
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.44,
+        "oklch": [
+          0.6,
+          0.075,
+          208
+        ],
+        "role": "mid",
+        "segment": "cliff"
+      },
+      {
+        "pos": 0.5,
+        "oklch": [
+          0.74,
+          0.08,
+          205
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.6,
+        "oklch": [
+          0.95,
+          0.022,
+          90
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.76,
+        "oklch": [
+          0.4,
+          0.1627,
+          26
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.88,
+        "oklch": [
+          0.2,
+          0.08,
+          24
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.04,
+          0.012,
+          212
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Violet, Cyan, Ochre",
+    "mood": "violet, focal cyan-into-teal, and an ochre close; the violet drops to a near-black before the cyan so the swing never crosses in the mids",
+    "architecture": "triad",
+    "skeleton": "cliff-in-mids",
+    "value_key": "mid",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.14,
+          0.035,
+          300
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.12,
+        "oklch": [
+          0.34,
+          0.18,
+          300
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.24,
+        "oklch": [
+          0.18,
+          0.058,
+          280
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.36,
+        "oklch": [
+          0.44,
+          0.074,
+          212
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.5,
+        "oklch": [
+          0.38,
+          0.06,
+          186
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.54,
+        "oklch": [
+          0.46,
+          0.068,
+          184
+        ],
+        "role": "mid",
+        "segment": "cliff"
+      },
+      {
+        "pos": 0.6,
+        "oklch": [
+          0.6,
+          0.098,
+          178
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.74,
+        "oklch": [
+          0.95,
+          0.024,
+          120
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.88,
+        "oklch": [
+          0.62,
+          0.1268,
+          88
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.14,
+          0.035,
+          300
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Teal Ash",
+    "mood": "one teal family from bone-pale to a deep well, greyed to ash at the top of the return, with a single warm spark before the field closes",
+    "architecture": "near-monochrome-spark",
+    "skeleton": "inverted-arc",
+    "value_key": "high",
+    "complexity": 3,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.93,
+          0.022,
+          178
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.18,
+        "oklch": [
+          0.62,
+          0.082,
+          180
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.4,
+        "oklch": [
+          0.42,
+          0.058,
+          181
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.56,
+        "oklch": [
+          0.22,
+          0.0389,
+          186
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.74,
+        "oklch": [
+          0.58,
+          0.038,
+          176
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.88,
+        "oklch": [
+          0.8,
+          0.12,
+          42
+        ],
+        "role": "accent"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.93,
+          0.022,
+          178
+        ],
+        "role": "field"
+      }
+    ]
+  },
+  {
+    "name": "Cyan Coal, One Coral",
+    "mood": "cyan across the whole value range out of coal black, one coral pop as the only warm event; a cream glow keeps the top warm-edged",
+    "architecture": "near-monochrome-spark",
+    "skeleton": "peak-early",
+    "value_key": "low",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.03,
+          0.012,
+          210
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.1,
+        "oklch": [
+          0.4,
+          0.0698,
+          212
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.22,
+        "oklch": [
+          0.97,
+          0.02,
+          85
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.38,
+        "oklch": [
+          0.46,
+          0.074,
+          210
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.52,
+        "oklch": [
+          0.34,
+          0.0599,
+          214
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.66,
+        "oklch": [
+          0.14,
+          0.0258,
+          216
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.8,
+        "oklch": [
+          0.56,
+          0.195,
+          32
+        ],
+        "role": "accent"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.03,
+          0.012,
+          210
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Petrol Monolith",
+    "mood": "petrol teal from slate to a near-white crest, one magenta glint on the way down; tonal depth in a single hue family",
+    "architecture": "near-monochrome-spark",
+    "skeleton": "no-cliff",
+    "value_key": "mid",
+    "complexity": 3,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.13,
+          0.0244,
+          182
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.16,
+        "oklch": [
+          0.36,
+          0.0654,
+          180
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.36,
+        "oklch": [
+          0.47,
+          0.082,
+          178
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.52,
+        "oklch": [
+          0.3,
+          0.0533,
+          184
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.7,
+        "oklch": [
+          0.93,
+          0.045,
+          175
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.86,
+        "oklch": [
+          0.66,
+          0.14,
+          340
+        ],
+        "role": "accent"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.13,
+          0.0244,
+          182
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "High Cyan, Low Gold",
+    "mood": "a pale cyan field with the deep cyan-teal trough as the event, and a gold spark high on the return; no blacks anywhere",
+    "architecture": "near-monochrome-spark",
+    "skeleton": "inverted-arc",
+    "value_key": "high",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.95,
+          0.02,
+          205
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.12,
+        "oklch": [
+          0.78,
+          0.09,
+          208
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.26,
+        "oklch": [
+          0.48,
+          0.062,
+          212
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.38,
+        "oklch": [
+          0.4,
+          0.058,
+          214
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.5,
+        "oklch": [
+          0.2,
+          0.035,
+          210
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.62,
+        "oklch": [
+          0.38,
+          0.0682,
+          182
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.74,
+        "oklch": [
+          0.46,
+          0.076,
+          178
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.84,
+        "oklch": [
+          0.91,
+          0.038,
+          150
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.92,
+        "oklch": [
+          0.7,
+          0.13,
+          62
+        ],
+        "role": "accent"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.95,
+          0.02,
+          205
+        ],
+        "role": "field"
+      }
+    ]
+  }
+]

@@ -1,0 +1,1663 @@
+[
+  {
+    "name": "Sage Over Oxblood",
+    "mood": "deep oxblood and rust against a broad light-sage shelf; the swing is warm mass to cool field, pivoted through a near-black so the hue turn never greys",
+    "architecture": "complementary-tension",
+    "skeleton": "peak-late",
+    "value_key": "low",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.06,
+          0.02,
+          30
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.1,
+        "oklch": [
+          0.42,
+          0.17,
+          28
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.22,
+        "oklch": [
+          0.14,
+          0.0306,
+          110
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.36,
+        "oklch": [
+          0.71,
+          0.05,
+          146
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.6,
+        "oklch": [
+          0.79,
+          0.072,
+          153
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.8,
+        "oklch": [
+          0.96,
+          0.02,
+          140
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.9,
+        "oklch": [
+          0.16,
+          0.035,
+          130
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.06,
+          0.02,
+          30
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Verdigris Lantern",
+    "mood": "one teal family from near-black to a pale verdigris glow, with a single fierce amber spark struck out of the dark; tonal depth plus one event",
+    "architecture": "near-monochrome-spark",
+    "skeleton": "peak-early",
+    "value_key": "low",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.05,
+          0.0092,
+          200
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.12,
+        "oklch": [
+          0.38,
+          0.0651,
+          192
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.28,
+        "oklch": [
+          0.93,
+          0.045,
+          178
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.46,
+        "oklch": [
+          0.76,
+          0.062,
+          180
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.66,
+        "oklch": [
+          0.7,
+          0.052,
+          176
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.78,
+        "oklch": [
+          0.13,
+          0.0225,
+          190
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.88,
+        "oklch": [
+          0.62,
+          0.1532,
+          55
+        ],
+        "role": "accent"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.05,
+          0.0092,
+          200
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Lime Ash Ember",
+    "mood": "olive and lime across the full value range with a crisp small cliff in the mids and one red ember late; ash-dark ground, cool pale glow",
+    "architecture": "near-monochrome-spark",
+    "skeleton": "cliff-in-mids",
+    "value_key": "mid",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.1,
+          0.022,
+          110
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.14,
+        "oklch": [
+          0.34,
+          0.075,
+          115
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.34,
+        "oklch": [
+          0.58,
+          0.115,
+          118
+        ],
+        "role": "anchor",
+        "segment": "cliff"
+      },
+      {
+        "pos": 0.4,
+        "oklch": [
+          0.72,
+          0.06,
+          116
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.62,
+        "oklch": [
+          0.8,
+          0.075,
+          124
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.78,
+        "oklch": [
+          0.93,
+          0.03,
+          105
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.9,
+        "oklch": [
+          0.4,
+          0.14,
+          35
+        ],
+        "role": "accent"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.1,
+          0.022,
+          110
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Cobalt & Celadon",
+    "mood": "pure cobalt and a celadon-to-teal shelf, separated by true white and true black; two hues, no blend, poster contrast",
+    "architecture": "duotone-plus",
+    "skeleton": "double-peak",
+    "value_key": "low",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.05,
+          0.0183,
+          255
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.12,
+        "oklch": [
+          0.45,
+          0.16,
+          258
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.24,
+        "oklch": [
+          0.97,
+          0.01,
+          250
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.38,
+        "oklch": [
+          0.73,
+          0.055,
+          150
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.52,
+        "oklch": [
+          0.8,
+          0.07,
+          160
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.64,
+        "oklch": [
+          0.76,
+          0.06,
+          180
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.76,
+        "oklch": [
+          0.93,
+          0.03,
+          170
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.88,
+        "oklch": [
+          0.22,
+          0.0373,
+          200
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.05,
+          0.0183,
+          255
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Sage Ascendant",
+    "mood": "a single cool sweep with no reversal: black through indigo and petrol into a broad sage plateau and out to white; drama is the pure ramp, not an arc",
+    "architecture": "mono-temperature-ramp",
+    "skeleton": "no-cliff",
+    "value_key": "mid",
+    "complexity": 3,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.05,
+          0.0125,
+          240
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.16,
+        "oklch": [
+          0.3,
+          0.0596,
+          230
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.34,
+        "oklch": [
+          0.5,
+          0.0848,
+          200
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.52,
+        "oklch": [
+          0.71,
+          0.05,
+          160
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.72,
+        "oklch": [
+          0.8,
+          0.072,
+          148
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.88,
+        "oklch": [
+          0.97,
+          0.015,
+          140
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.05,
+          0.0125,
+          240
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Plum, Gold & Moss",
+    "mood": "three hues held in balance — saturated plum, warm gold, mossy lime — with a white flare between plum and gold and a near-black pivot home",
+    "architecture": "triad",
+    "skeleton": "peak-early",
+    "value_key": "mid",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.12,
+          0.045,
+          340
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.14,
+        "oklch": [
+          0.42,
+          0.1838,
+          338
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.3,
+        "oklch": [
+          0.95,
+          0.03,
+          60
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.44,
+        "oklch": [
+          0.78,
+          0.145,
+          88
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.58,
+        "oklch": [
+          0.72,
+          0.058,
+          118
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.8,
+        "oklch": [
+          0.79,
+          0.075,
+          126
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.9,
+        "oklch": [
+          0.16,
+          0.035,
+          140
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.12,
+          0.045,
+          340
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Pale Reed Hollow",
+    "mood": "a pale reed field walking cream to lime to sage, with one deep green hollow as the only dark event; no blacks anywhere",
+    "architecture": "analogous-drift",
+    "skeleton": "inverted-arc",
+    "value_key": "high",
+    "complexity": 3,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.92,
+          0.03,
+          100
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.16,
+        "oklch": [
+          0.8,
+          0.075,
+          116
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.34,
+        "oklch": [
+          0.74,
+          0.06,
+          132
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.5,
+        "oklch": [
+          0.18,
+          0.0495,
+          150
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.66,
+        "oklch": [
+          0.72,
+          0.055,
+          148
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.84,
+        "oklch": [
+          0.81,
+          0.07,
+          152
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.92,
+          0.03,
+          100
+        ],
+        "role": "field"
+      }
+    ]
+  },
+  {
+    "name": "Teal Ember Cliff",
+    "mood": "a deep petrol-to-teal mass against a late copper ember, bridged by a cool glow; a small cliff steps up through the mid-tones",
+    "architecture": "complementary-tension",
+    "skeleton": "cliff-in-mids",
+    "value_key": "low",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.04,
+          0.0079,
+          200
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.12,
+        "oklch": [
+          0.3,
+          0.051,
+          196
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.3,
+        "oklch": [
+          0.55,
+          0.048,
+          188
+        ],
+        "role": "mid",
+        "segment": "cliff"
+      },
+      {
+        "pos": 0.38,
+        "oklch": [
+          0.72,
+          0.052,
+          182
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.58,
+        "oklch": [
+          0.81,
+          0.07,
+          180
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.72,
+        "oklch": [
+          0.95,
+          0.025,
+          160
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.86,
+        "oklch": [
+          0.52,
+          0.1483,
+          45
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.04,
+          0.0079,
+          200
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Chartreuse Nocturne",
+    "mood": "saturated magenta and a chartreuse shelf, meeting only through black and white; minimal mid-tones, maximum purity",
+    "architecture": "duotone-plus",
+    "skeleton": "peak-late",
+    "value_key": "low",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.05,
+          0.02,
+          320
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.14,
+        "oklch": [
+          0.4,
+          0.1734,
+          340
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.28,
+        "oklch": [
+          0.1,
+          0.0171,
+          200
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.44,
+        "oklch": [
+          0.71,
+          0.08,
+          118
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.66,
+        "oklch": [
+          0.8,
+          0.098,
+          126
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.84,
+        "oklch": [
+          0.96,
+          0.02,
+          130
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.92,
+        "oklch": [
+          0.14,
+          0.03,
+          135
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.05,
+          0.02,
+          320
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Foam Over Indigo",
+    "mood": "a neighbour walk with no reversal — indigo, cobalt, a cool glow, teal foam, lime — the drama is value plus the length of the hue walk",
+    "architecture": "analogous-drift",
+    "skeleton": "peak-early",
+    "value_key": "mid",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.14,
+          0.05,
+          265
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.16,
+        "oklch": [
+          0.5,
+          0.1493,
+          252
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.3,
+        "oklch": [
+          0.92,
+          0.035,
+          220
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.44,
+        "oklch": [
+          0.74,
+          0.06,
+          186
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.62,
+        "oklch": [
+          0.81,
+          0.072,
+          176
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.8,
+        "oklch": [
+          0.76,
+          0.07,
+          124
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.92,
+        "oklch": [
+          0.3,
+          0.09,
+          140
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.14,
+          0.05,
+          265
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Bone & Deep Petrol",
+    "mood": "a bone-pale teal field whose event is a genuinely deep petrol trough, with one warm spark struck off the bone glow; no blacks",
+    "architecture": "near-monochrome-spark",
+    "skeleton": "inverted-arc",
+    "value_key": "high",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.93,
+          0.02,
+          90
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.18,
+        "oklch": [
+          0.82,
+          0.062,
+          178
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.38,
+        "oklch": [
+          0.72,
+          0.055,
+          182
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.54,
+        "oklch": [
+          0.35,
+          0.0594,
+          198
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.7,
+        "oklch": [
+          0.78,
+          0.058,
+          186
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.84,
+        "oklch": [
+          0.95,
+          0.02,
+          120
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.92,
+        "oklch": [
+          0.7,
+          0.14,
+          58
+        ],
+        "role": "accent"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.93,
+          0.02,
+          90
+        ],
+        "role": "field"
+      }
+    ]
+  },
+  {
+    "name": "Copper Verdigris",
+    "mood": "warm copper against oxide sage and teal over a cream field, with a deep petrol jewel standing in for black; two glows, warm then cool",
+    "architecture": "complementary-tension",
+    "skeleton": "double-peak",
+    "value_key": "high",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.9,
+          0.03,
+          80
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.14,
+        "oklch": [
+          0.68,
+          0.14,
+          55
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.26,
+        "oklch": [
+          0.96,
+          0.02,
+          70
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.4,
+        "oklch": [
+          0.73,
+          0.058,
+          148
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.56,
+        "oklch": [
+          0.8,
+          0.07,
+          158
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.7,
+        "oklch": [
+          0.75,
+          0.062,
+          180
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.82,
+        "oklch": [
+          0.92,
+          0.025,
+          190
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.92,
+        "oklch": [
+          0.3,
+          0.0511,
+          205
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.9,
+          0.03,
+          80
+        ],
+        "role": "field"
+      }
+    ]
+  },
+  {
+    "name": "Olive Ember Ramp",
+    "mood": "one temperature the whole way — black, umber, rust, ochre, then a broad olive-lime shelf into cream; a heat ramp that ends green rather than white-hot",
+    "architecture": "mono-temperature-ramp",
+    "skeleton": "peak-late",
+    "value_key": "low",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.04,
+          0.0117,
+          60
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.14,
+        "oklch": [
+          0.28,
+          0.0799,
+          45
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.32,
+        "oklch": [
+          0.5,
+          0.1235,
+          55
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.48,
+        "oklch": [
+          0.66,
+          0.135,
+          85
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.62,
+        "oklch": [
+          0.75,
+          0.088,
+          112
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.84,
+        "oklch": [
+          0.82,
+          0.068,
+          124
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.9,
+        "oklch": [
+          0.97,
+          0.02,
+          100
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.96,
+        "oklch": [
+          0.45,
+          0.11,
+          50
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.04,
+          0.0117,
+          60
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Sea Glass Vault",
+    "mood": "magenta, gold and sea-glass green-teal in three-way balance, each pair separated by a dark pivot or a slow walk; polychromatic breadth",
+    "architecture": "triad",
+    "skeleton": "no-cliff",
+    "value_key": "mid",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.09,
+          0.03,
+          335
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.14,
+        "oklch": [
+          0.45,
+          0.19,
+          338
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.26,
+        "oklch": [
+          0.13,
+          0.035,
+          30
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.38,
+        "oklch": [
+          0.7,
+          0.1431,
+          85
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.54,
+        "oklch": [
+          0.76,
+          0.09,
+          116
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.68,
+        "oklch": [
+          0.8,
+          0.07,
+          128
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.78,
+        "oklch": [
+          0.76,
+          0.062,
+          178
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.92,
+        "oklch": [
+          0.79,
+          0.07,
+          186
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.09,
+          0.03,
+          335
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Mist Field, Ink Well",
+    "mood": "pale mist drifting sage to teal, punctured once by a deep petrol ink well; the dark is the event and everything else is light",
+    "architecture": "analogous-drift",
+    "skeleton": "inverted-arc",
+    "value_key": "high",
+    "complexity": 3,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.94,
+          0.02,
+          150
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.16,
+        "oklch": [
+          0.79,
+          0.07,
+          158
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.34,
+        "oklch": [
+          0.72,
+          0.055,
+          150
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.48,
+        "oklch": [
+          0.3,
+          0.051,
+          196
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.62,
+        "oklch": [
+          0.76,
+          0.06,
+          184
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.8,
+        "oklch": [
+          0.81,
+          0.072,
+          176
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.94,
+          0.02,
+          150
+        ],
+        "role": "field"
+      }
+    ]
+  },
+  {
+    "name": "Gold Cliff Sage",
+    "mood": "a saturated gold mass cliffing up to a white flare, then falling into a broad sage field; warm against cool with the glow as the only bridge",
+    "architecture": "complementary-tension",
+    "skeleton": "cliff-in-mids",
+    "value_key": "mid",
+    "complexity": 3,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.1,
+          0.0206,
+          90
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.26,
+        "oklch": [
+          0.5,
+          0.104,
+          78
+        ],
+        "role": "anchor",
+        "segment": "cliff"
+      },
+      {
+        "pos": 0.36,
+        "oklch": [
+          0.68,
+          0.1386,
+          90
+        ],
+        "role": "accent"
+      },
+      {
+        "pos": 0.5,
+        "oklch": [
+          0.96,
+          0.02,
+          100
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.66,
+        "oklch": [
+          0.72,
+          0.058,
+          145
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.88,
+        "oklch": [
+          0.8,
+          0.075,
+          155
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.1,
+          0.0206,
+          90
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Ice Sage Ramp",
+    "mood": "a pure ice ramp with no warm anywhere: black, indigo, cobalt, petrol, a wide teal shelf, then white; value and chroma sweep alone",
+    "architecture": "mono-temperature-ramp",
+    "skeleton": "peak-late",
+    "value_key": "low",
+    "complexity": 3,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.04,
+          0.0162,
+          255
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.16,
+        "oklch": [
+          0.32,
+          0.1,
+          258
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.36,
+        "oklch": [
+          0.55,
+          0.1477,
+          248
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.56,
+        "oklch": [
+          0.7,
+          0.06,
+          195
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.8,
+        "oklch": [
+          0.79,
+          0.072,
+          182
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.92,
+        "oklch": [
+          0.97,
+          0.02,
+          175
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.04,
+          0.0162,
+          255
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Rose Quartz Meadow",
+    "mood": "dusky rose and a lime-to-sage meadow over a blush field, meeting only at white; one deep green jewel where the black would be",
+    "architecture": "duotone-plus",
+    "skeleton": "no-cliff",
+    "value_key": "high",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.88,
+          0.035,
+          20
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.14,
+        "oklch": [
+          0.62,
+          0.17,
+          15
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.26,
+        "oklch": [
+          0.97,
+          0.015,
+          40
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.4,
+        "oklch": [
+          0.78,
+          0.088,
+          118
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.56,
+        "oklch": [
+          0.81,
+          0.075,
+          132
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.72,
+        "oklch": [
+          0.75,
+          0.06,
+          150
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.88,
+        "oklch": [
+          0.8,
+          0.07,
+          158
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.96,
+        "oklch": [
+          0.35,
+          0.075,
+          155
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.88,
+          0.035,
+          20
+        ],
+        "role": "field"
+      }
+    ]
+  },
+  {
+    "name": "Ember in Green Ash",
+    "mood": "one green family from ash-black to two pale glows, then a single red ember falling back into the dark; tonal depth plus one fierce spark",
+    "architecture": "near-monochrome-spark",
+    "skeleton": "double-peak",
+    "value_key": "low",
+    "complexity": 5,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.05,
+          0.0149,
+          150
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.1,
+        "oklch": [
+          0.26,
+          0.06,
+          155
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.22,
+        "oklch": [
+          0.93,
+          0.035,
+          140
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.36,
+        "oklch": [
+          0.72,
+          0.055,
+          148
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.58,
+        "oklch": [
+          0.8,
+          0.075,
+          154
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.7,
+        "oklch": [
+          0.96,
+          0.02,
+          130
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.82,
+        "oklch": [
+          0.48,
+          0.1815,
+          32
+        ],
+        "role": "accent"
+      },
+      {
+        "pos": 0.92,
+        "oklch": [
+          0.12,
+          0.0283,
+          60
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.05,
+          0.0149,
+          150
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Lime, Sage & Teal Dusk",
+    "mood": "violet, gold and a long green arc in three-way balance; the arc walks lime to sage to teal in one slow shelf, both hue turns pivoted through darkness",
+    "architecture": "triad",
+    "skeleton": "no-cliff",
+    "value_key": "low",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.06,
+          0.025,
+          300
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.12,
+        "oklch": [
+          0.38,
+          0.19,
+          305
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.24,
+        "oklch": [
+          0.13,
+          0.035,
+          340
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.34,
+        "oklch": [
+          0.66,
+          0.135,
+          85
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.46,
+        "oklch": [
+          0.72,
+          0.085,
+          112
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.62,
+        "oklch": [
+          0.79,
+          0.078,
+          138
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.78,
+        "oklch": [
+          0.81,
+          0.068,
+          162
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.9,
+        "oklch": [
+          0.75,
+          0.06,
+          188
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.06,
+          0.025,
+          300
+        ],
+        "role": "ground"
+      }
+    ]
+  }
+]

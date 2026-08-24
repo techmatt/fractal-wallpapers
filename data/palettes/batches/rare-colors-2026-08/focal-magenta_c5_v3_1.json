@@ -1,0 +1,386 @@
+[
+  {
+    "name": "Fuchsia & Coal",
+    "mood": "pure magenta and gold against true black and white; magenta climbs to a white flare, gold falls into black, a second magenta ember late — two hues, no bridge",
+    "architecture": "duotone-plus",
+    "skeleton": "peak-early",
+    "value_key": "low",
+    "complexity": 5,
+    "stops": [
+      {"pos": 0.0,  "oklch": [0.05, 0.01, 330], "role": "ground"},
+      {"pos": 0.10, "oklch": [0.40, 0.16, 331], "role": "anchor"},
+      {"pos": 0.22, "oklch": [0.75, 0.16, 330], "role": "anchor"},
+      {"pos": 0.30, "oklch": [0.97, 0.01, 330], "role": "glow"},
+      {"pos": 0.44, "oklch": [0.70, 0.142, 88], "role": "anchor"},
+      {"pos": 0.58, "oklch": [0.18, 0.055, 55], "role": "mid"},
+      {"pos": 0.72, "oklch": [0.50, 0.17, 335], "role": "accent"},
+      {"pos": 0.88, "oklch": [0.12, 0.04, 330], "role": "ground"},
+      {"pos": 1.0,  "oklch": [0.05, 0.01, 330], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Orchid Furnace",
+    "mood": "a single warm sweep — black through oxblood and deep magenta to pale fuchsia and white; no reversal, the drama is the pure ramp",
+    "architecture": "mono-temperature-ramp",
+    "skeleton": "peak-late",
+    "value_key": "low",
+    "complexity": 5,
+    "stops": [
+      {"pos": 0.0,  "oklch": [0.04, 0.01, 340], "role": "ground"},
+      {"pos": 0.14, "oklch": [0.20, 0.09, 350], "role": "field"},
+      {"pos": 0.28, "oklch": [0.32, 0.14, 340], "role": "anchor"},
+      {"pos": 0.42, "oklch": [0.45, 0.19, 335], "role": "anchor"},
+      {"pos": 0.56, "oklch": [0.60, 0.19, 332], "role": "anchor"},
+      {"pos": 0.70, "oklch": [0.75, 0.16, 330], "role": "anchor"},
+      {"pos": 0.82, "oklch": [0.88, 0.08, 328], "role": "glow"},
+      {"pos": 0.92, "oklch": [0.98, 0.01, 330], "role": "glow"},
+      {"pos": 1.0,  "oklch": [0.04, 0.01, 340], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Plum Reliquary",
+    "mood": "a deep magenta mass against a chartreuse-gold mass, bridged by a cream flare; plum vs olive with chroma held across the swing",
+    "architecture": "complementary-tension",
+    "skeleton": "double-peak",
+    "value_key": "mid",
+    "complexity": 5,
+    "stops": [
+      {"pos": 0.0,  "oklch": [0.14, 0.06, 320], "role": "ground"},
+      {"pos": 0.12, "oklch": [0.40, 0.16, 330], "role": "anchor"},
+      {"pos": 0.24, "oklch": [0.62, 0.17, 332], "role": "anchor"},
+      {"pos": 0.34, "oklch": [0.95, 0.025, 330], "role": "glow"},
+      {"pos": 0.46, "oklch": [0.78, 0.135, 95], "role": "anchor"},
+      {"pos": 0.58, "oklch": [0.48, 0.10, 105], "role": "mid"},
+      {"pos": 0.70, "oklch": [0.14, 0.045, 118], "role": "field"},
+      {"pos": 0.84, "oklch": [0.55, 0.14, 328], "role": "accent"},
+      {"pos": 0.92, "oklch": [0.30, 0.13, 322], "role": "mid"},
+      {"pos": 1.0,  "oklch": [0.14, 0.06, 320], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Ashen Orchid",
+    "mood": "one dusty magenta family walked across the whole value range with a single cold teal spark; muted throughout, tonal depth is the drama",
+    "architecture": "near-monochrome-spark",
+    "skeleton": "no-cliff",
+    "value_key": "mid",
+    "complexity": 5,
+    "stops": [
+      {"pos": 0.0,  "oklch": [0.10, 0.02, 330], "role": "ground"},
+      {"pos": 0.16, "oklch": [0.38, 0.05, 328], "role": "field"},
+      {"pos": 0.34, "oklch": [0.24, 0.07, 326], "role": "field"},
+      {"pos": 0.48, "oklch": [0.75, 0.06, 330], "role": "anchor"},
+      {"pos": 0.60, "oklch": [0.93, 0.02, 330], "role": "glow"},
+      {"pos": 0.70, "oklch": [0.52, 0.085, 200], "role": "accent"},
+      {"pos": 0.80, "oklch": [0.30, 0.05, 250], "role": "mid"},
+      {"pos": 0.90, "oklch": [0.20, 0.03, 300], "role": "mid"},
+      {"pos": 1.0,  "oklch": [0.10, 0.02, 330], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Cobalt Orchid",
+    "mood": "deep saturated cobalt against deep saturated magenta, the two masses meeting only through a white flare; a violet glint on the way back down",
+    "architecture": "complementary-tension",
+    "skeleton": "peak-early",
+    "value_key": "low",
+    "complexity": 5,
+    "stops": [
+      {"pos": 0.0,  "oklch": [0.06, 0.02, 265], "role": "ground"},
+      {"pos": 0.12, "oklch": [0.30, 0.12, 262], "role": "anchor"},
+      {"pos": 0.22, "oklch": [0.55, 0.17, 258], "role": "anchor"},
+      {"pos": 0.32, "oklch": [0.97, 0.01, 260], "role": "glow"},
+      {"pos": 0.44, "oklch": [0.75, 0.16, 330], "role": "anchor"},
+      {"pos": 0.56, "oklch": [0.46, 0.19, 335], "role": "anchor"},
+      {"pos": 0.70, "oklch": [0.18, 0.08, 320], "role": "mid"},
+      {"pos": 0.84, "oklch": [0.40, 0.12, 290], "role": "accent"},
+      {"pos": 1.0,  "oklch": [0.06, 0.02, 265], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Fuchsia Cliffside",
+    "mood": "vivid magenta and cold petrol-teal with black and white at the extremes; a small crisp value step in the teal mids does the filigree",
+    "architecture": "duotone-plus",
+    "skeleton": "cliff-in-mids",
+    "value_key": "mid",
+    "complexity": 5,
+    "stops": [
+      {"pos": 0.0,  "oklch": [0.08, 0.02, 330], "role": "ground"},
+      {"pos": 0.14, "oklch": [0.40, 0.17, 332], "role": "anchor"},
+      {"pos": 0.28, "oklch": [0.75, 0.16, 330], "role": "anchor"},
+      {"pos": 0.38, "oklch": [0.98, 0.01, 330], "role": "glow"},
+      {"pos": 0.50, "oklch": [0.62, 0.10, 195], "role": "anchor", "segment": "cliff", "width": 0.05},
+      {"pos": 0.62, "oklch": [0.38, 0.06, 190], "role": "mid"},
+      {"pos": 0.76, "oklch": [0.20, 0.038, 200], "role": "field"},
+      {"pos": 0.88, "oklch": [0.14, 0.05, 300], "role": "mid"},
+      {"pos": 1.0,  "oklch": [0.08, 0.02, 330], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Wine & Ember",
+    "mood": "an analogous walk — violet, plum, magenta, oxblood, rust, amber — rising to a cream glow; no temperature reversal, the hue walk is the event",
+    "architecture": "analogous-drift",
+    "skeleton": "peak-late",
+    "value_key": "mid",
+    "complexity": 5,
+    "stops": [
+      {"pos": 0.0,  "oklch": [0.14, 0.05, 300], "role": "ground"},
+      {"pos": 0.12, "oklch": [0.24, 0.09, 295], "role": "field"},
+      {"pos": 0.26, "oklch": [0.36, 0.15, 320], "role": "mid"},
+      {"pos": 0.40, "oklch": [0.42, 0.17, 333], "role": "anchor"},
+      {"pos": 0.52, "oklch": [0.30, 0.127, 350], "role": "mid"},
+      {"pos": 0.64, "oklch": [0.52, 0.14,  25], "role": "anchor"},
+      {"pos": 0.78, "oklch": [0.76, 0.14,  50], "role": "anchor"},
+      {"pos": 0.90, "oklch": [0.96, 0.02,  60], "role": "glow"},
+      {"pos": 1.0,  "oklch": [0.14, 0.05, 300], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Bone & Bruise",
+    "mood": "a pale dusty-magenta field with the dark as the event — a deep bruised plum trough — and one warm amber spark high up",
+    "architecture": "near-monochrome-spark",
+    "skeleton": "inverted-arc",
+    "value_key": "high",
+    "complexity": 5,
+    "stops": [
+      {"pos": 0.0,  "oklch": [0.88, 0.03, 320], "role": "field"},
+      {"pos": 0.12, "oklch": [0.80, 0.05, 325], "role": "field"},
+      {"pos": 0.26, "oklch": [0.75, 0.06, 330], "role": "anchor"},
+      {"pos": 0.40, "oklch": [0.50, 0.115, 332], "role": "mid"},
+      {"pos": 0.52, "oklch": [0.32, 0.14, 330], "role": "anchor"},
+      {"pos": 0.62, "oklch": [0.22, 0.10, 328], "role": "anchor"},
+      {"pos": 0.74, "oklch": [0.46, 0.11, 335], "role": "mid"},
+      {"pos": 0.86, "oklch": [0.90, 0.03, 340], "role": "glow"},
+      {"pos": 0.94, "oklch": [0.80, 0.09,  60], "role": "accent"},
+      {"pos": 1.0,  "oklch": [0.88, 0.03, 320], "role": "field"}
+    ]
+  },
+  {
+    "name": "Trinity of Ash",
+    "mood": "magenta, gold and petrol-teal held in three-way balance, each reached through black or white; polychromatic breadth a pair can't give",
+    "architecture": "triad",
+    "skeleton": "double-peak",
+    "value_key": "mid",
+    "complexity": 5,
+    "stops": [
+      {"pos": 0.0,  "oklch": [0.12, 0.03, 330], "role": "ground"},
+      {"pos": 0.12, "oklch": [0.40, 0.17, 332], "role": "anchor"},
+      {"pos": 0.24, "oklch": [0.75, 0.16, 330], "role": "anchor"},
+      {"pos": 0.32, "oklch": [0.95, 0.02, 330], "role": "glow"},
+      {"pos": 0.44, "oklch": [0.74, 0.13,  88], "role": "anchor"},
+      {"pos": 0.56, "oklch": [0.42, 0.085, 100], "role": "mid"},
+      {"pos": 0.66, "oklch": [0.16, 0.045, 150], "role": "field"},
+      {"pos": 0.76, "oklch": [0.48, 0.08, 195], "role": "anchor"},
+      {"pos": 0.88, "oklch": [0.18, 0.055, 300], "role": "mid"},
+      {"pos": 1.0,  "oklch": [0.12, 0.03, 330], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Widow's Gold",
+    "mood": "one magenta family from true black to a pale flare, dipping once mid-climb, with a single burnt-gold spark near the top",
+    "architecture": "near-monochrome-spark",
+    "skeleton": "peak-late",
+    "value_key": "low",
+    "complexity": 5,
+    "stops": [
+      {"pos": 0.0,  "oklch": [0.04, 0.01, 335], "role": "ground"},
+      {"pos": 0.14, "oklch": [0.22, 0.10, 338], "role": "field"},
+      {"pos": 0.28, "oklch": [0.40, 0.16, 332], "role": "anchor"},
+      {"pos": 0.40, "oklch": [0.28, 0.13, 328], "role": "mid"},
+      {"pos": 0.52, "oklch": [0.52, 0.19, 330], "role": "anchor"},
+      {"pos": 0.64, "oklch": [0.70, 0.17, 332], "role": "anchor"},
+      {"pos": 0.76, "oklch": [0.92, 0.03, 330], "role": "glow"},
+      {"pos": 0.86, "oklch": [0.82, 0.12,  90], "role": "accent"},
+      {"pos": 1.0,  "oklch": [0.04, 0.01, 335], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Frost Orchid",
+    "mood": "a single cool sweep — black through indigo and violet into vivid magenta and white; one temperature, no reversal, chroma pushed to the edge",
+    "architecture": "mono-temperature-ramp",
+    "skeleton": "peak-late",
+    "value_key": "low",
+    "complexity": 5,
+    "stops": [
+      {"pos": 0.0,  "oklch": [0.04, 0.01, 300], "role": "ground"},
+      {"pos": 0.14, "oklch": [0.16, 0.07, 285], "role": "field"},
+      {"pos": 0.28, "oklch": [0.30, 0.11, 295], "role": "anchor"},
+      {"pos": 0.42, "oklch": [0.44, 0.16, 310], "role": "anchor"},
+      {"pos": 0.56, "oklch": [0.58, 0.19, 325], "role": "anchor"},
+      {"pos": 0.70, "oklch": [0.75, 0.16, 330], "role": "anchor"},
+      {"pos": 0.82, "oklch": [0.85, 0.09, 335], "role": "anchor"},
+      {"pos": 0.92, "oklch": [0.98, 0.01, 330], "role": "glow"},
+      {"pos": 1.0,  "oklch": [0.04, 0.01, 300], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Verdigris & Fuchsia",
+    "mood": "an oxide teal-green mass against a vivid magenta mass, bridged by a white flare; a small crisp step inside the verdigris",
+    "architecture": "complementary-tension",
+    "skeleton": "cliff-in-mids",
+    "value_key": "mid",
+    "complexity": 5,
+    "stops": [
+      {"pos": 0.0,  "oklch": [0.13, 0.035, 175], "role": "ground"},
+      {"pos": 0.14, "oklch": [0.34, 0.06, 178], "role": "field"},
+      {"pos": 0.26, "oklch": [0.52, 0.09, 172], "role": "anchor", "segment": "cliff", "width": 0.06},
+      {"pos": 0.36, "oklch": [0.36, 0.07, 168], "role": "mid"},
+      {"pos": 0.48, "oklch": [0.96, 0.02, 170], "role": "glow"},
+      {"pos": 0.60, "oklch": [0.75, 0.16, 330], "role": "anchor"},
+      {"pos": 0.72, "oklch": [0.44, 0.18, 335], "role": "anchor"},
+      {"pos": 0.84, "oklch": [0.20, 0.09, 340], "role": "mid"},
+      {"pos": 1.0,  "oklch": [0.13, 0.035, 175], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Ember in Orchid Ash",
+    "mood": "smoky desaturated magenta-grey across the full value range, a bone glow, then one fierce saturated fuchsia event",
+    "architecture": "near-monochrome-spark",
+    "skeleton": "no-cliff",
+    "value_key": "mid",
+    "complexity": 5,
+    "stops": [
+      {"pos": 0.0,  "oklch": [0.15, 0.03, 330], "role": "ground"},
+      {"pos": 0.14, "oklch": [0.26, 0.045, 328], "role": "field"},
+      {"pos": 0.28, "oklch": [0.42, 0.055, 330], "role": "field"},
+      {"pos": 0.38, "oklch": [0.30, 0.05, 332], "role": "mid"},
+      {"pos": 0.50, "oklch": [0.58, 0.06, 330], "role": "mid"},
+      {"pos": 0.62, "oklch": [0.75, 0.06, 330], "role": "anchor"},
+      {"pos": 0.74, "oklch": [0.90, 0.03, 328], "role": "glow"},
+      {"pos": 0.84, "oklch": [0.60, 0.20, 335], "role": "accent"},
+      {"pos": 1.0,  "oklch": [0.15, 0.03, 330], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Pale Reliquary",
+    "mood": "bone, faded amber, dusty rose and lilac drifting through neighbouring hues over a pale field, with a deep plum trough as the only dark event",
+    "architecture": "analogous-drift",
+    "skeleton": "inverted-arc",
+    "value_key": "high",
+    "complexity": 5,
+    "stops": [
+      {"pos": 0.0,  "oklch": [0.92, 0.025, 80], "role": "field"},
+      {"pos": 0.12, "oklch": [0.84, 0.05,  40], "role": "field"},
+      {"pos": 0.24, "oklch": [0.76, 0.07,  10], "role": "field"},
+      {"pos": 0.36, "oklch": [0.75, 0.06, 340], "role": "anchor"},
+      {"pos": 0.48, "oklch": [0.52, 0.10, 330], "role": "mid"},
+      {"pos": 0.60, "oklch": [0.26, 0.11, 325], "role": "anchor"},
+      {"pos": 0.72, "oklch": [0.46, 0.09, 320], "role": "mid"},
+      {"pos": 0.84, "oklch": [0.70, 0.06, 315], "role": "field"},
+      {"pos": 1.0,  "oklch": [0.92, 0.025, 80], "role": "field"}
+    ]
+  },
+  {
+    "name": "Sulphur & Plum",
+    "mood": "cobalt, sulphur-yellow and deep magenta in three-way balance; each hand-off routed through white or black so nothing greys out",
+    "architecture": "triad",
+    "skeleton": "peak-early",
+    "value_key": "low",
+    "complexity": 5,
+    "stops": [
+      {"pos": 0.0,  "oklch": [0.05, 0.02, 250], "role": "ground"},
+      {"pos": 0.10, "oklch": [0.28, 0.095, 255], "role": "anchor"},
+      {"pos": 0.20, "oklch": [0.55, 0.17, 258], "role": "anchor"},
+      {"pos": 0.30, "oklch": [0.97, 0.012, 250], "role": "glow"},
+      {"pos": 0.42, "oklch": [0.88, 0.14, 100], "role": "anchor"},
+      {"pos": 0.52, "oklch": [0.55, 0.11,  95], "role": "mid"},
+      {"pos": 0.62, "oklch": [0.16, 0.045, 80], "role": "field"},
+      {"pos": 0.74, "oklch": [0.40, 0.18, 332], "role": "anchor"},
+      {"pos": 0.88, "oklch": [0.22, 0.10, 320], "role": "mid"},
+      {"pos": 1.0,  "oklch": [0.05, 0.02, 250], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Ember Triad",
+    "mood": "deep green, burnt amber and vivid magenta in three-way balance, each separated by a drop to black; the magenta carries the top of the ramp to white",
+    "architecture": "triad",
+    "skeleton": "double-peak",
+    "value_key": "low",
+    "complexity": 5,
+    "stops": [
+      {"pos": 0.0,  "oklch": [0.08, 0.02, 140], "role": "ground"},
+      {"pos": 0.14, "oklch": [0.26, 0.08, 145], "role": "field"},
+      {"pos": 0.28, "oklch": [0.16, 0.05, 150], "role": "mid"},
+      {"pos": 0.40, "oklch": [0.58, 0.135, 60], "role": "anchor"},
+      {"pos": 0.52, "oklch": [0.06, 0.02,  55], "role": "ground"},
+      {"pos": 0.64, "oklch": [0.44, 0.18, 335], "role": "anchor"},
+      {"pos": 0.76, "oklch": [0.75, 0.16, 330], "role": "anchor"},
+      {"pos": 0.88, "oklch": [0.97, 0.01, 330], "role": "glow"},
+      {"pos": 1.0,  "oklch": [0.08, 0.02, 140], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Orchid Deep",
+    "mood": "a vast cold petrol field with a small luminous magenta core; deep teal against saturated fuchsia, with a small step inside the teal",
+    "architecture": "complementary-tension",
+    "skeleton": "cliff-in-mids",
+    "value_key": "low",
+    "complexity": 5,
+    "stops": [
+      {"pos": 0.0,  "oklch": [0.05, 0.02, 280], "role": "ground"},
+      {"pos": 0.14, "oklch": [0.16, 0.033, 195], "role": "field"},
+      {"pos": 0.28, "oklch": [0.30, 0.05, 190], "role": "field", "segment": "cliff", "width": 0.05},
+      {"pos": 0.40, "oklch": [0.19, 0.036, 198], "role": "mid"},
+      {"pos": 0.52, "oklch": [0.40, 0.17, 332], "role": "anchor"},
+      {"pos": 0.64, "oklch": [0.64, 0.20, 335], "role": "anchor"},
+      {"pos": 0.74, "oklch": [0.90, 0.05, 330], "role": "glow"},
+      {"pos": 0.86, "oklch": [0.75, 0.06, 340], "role": "field"},
+      {"pos": 1.0,  "oklch": [0.05, 0.02, 280], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Lilac Vellum",
+    "mood": "pale lilac, blush and periwinkle drifting through adjacent hues; the only event is a genuinely deep plum trough dropped into the pale field",
+    "architecture": "analogous-drift",
+    "skeleton": "inverted-arc",
+    "value_key": "high",
+    "complexity": 5,
+    "stops": [
+      {"pos": 0.0,  "oklch": [0.80, 0.045, 300], "role": "field"},
+      {"pos": 0.12, "oklch": [0.92, 0.02, 310], "role": "glow"},
+      {"pos": 0.24, "oklch": [0.75, 0.06, 330], "role": "anchor"},
+      {"pos": 0.36, "oklch": [0.55, 0.09, 340], "role": "mid"},
+      {"pos": 0.48, "oklch": [0.24, 0.11, 335], "role": "anchor"},
+      {"pos": 0.60, "oklch": [0.50, 0.10, 320], "role": "mid"},
+      {"pos": 0.72, "oklch": [0.74, 0.06, 305], "role": "field"},
+      {"pos": 0.84, "oklch": [0.94, 0.02, 295], "role": "glow"},
+      {"pos": 1.0,  "oklch": [0.80, 0.045, 300], "role": "field"}
+    ]
+  },
+  {
+    "name": "Black Iris",
+    "mood": "vivid magenta and acid chartreuse against true black and white, minimal mid-tones; the jump between them goes through the white flare, the return through black",
+    "architecture": "duotone-plus",
+    "skeleton": "peak-early",
+    "value_key": "low",
+    "complexity": 5,
+    "stops": [
+      {"pos": 0.0,  "oklch": [0.04, 0.01, 330], "role": "ground"},
+      {"pos": 0.12, "oklch": [0.40, 0.17, 332], "role": "anchor"},
+      {"pos": 0.24, "oklch": [0.75, 0.16, 330], "role": "anchor"},
+      {"pos": 0.32, "oklch": [0.98, 0.01, 330], "role": "glow"},
+      {"pos": 0.44, "oklch": [0.86, 0.15, 115], "role": "anchor"},
+      {"pos": 0.58, "oklch": [0.48, 0.10, 118], "role": "mid"},
+      {"pos": 0.70, "oklch": [0.10, 0.03, 120], "role": "ground"},
+      {"pos": 0.84, "oklch": [0.30, 0.135, 335], "role": "accent"},
+      {"pos": 1.0,  "oklch": [0.04, 0.01, 330], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Rose Quartz Vault",
+    "mood": "one muted rose temperature climbing from a hued dark to a cream flare; no reversal, no spark — value and the quiet chroma rise carry it",
+    "architecture": "mono-temperature-ramp",
+    "skeleton": "no-cliff",
+    "value_key": "mid",
+    "complexity": 5,
+    "stops": [
+      {"pos": 0.0,  "oklch": [0.16, 0.05, 340], "role": "ground"},
+      {"pos": 0.14, "oklch": [0.28, 0.07, 338], "role": "field"},
+      {"pos": 0.28, "oklch": [0.40, 0.08, 335], "role": "field"},
+      {"pos": 0.42, "oklch": [0.50, 0.09, 332], "role": "mid"},
+      {"pos": 0.56, "oklch": [0.62, 0.08, 330], "role": "mid"},
+      {"pos": 0.70, "oklch": [0.75, 0.06, 330], "role": "anchor"},
+      {"pos": 0.82, "oklch": [0.84, 0.045, 328], "role": "field"},
+      {"pos": 0.92, "oklch": [0.96, 0.02, 330], "role": "glow"},
+      {"pos": 1.0,  "oklch": [0.16, 0.05, 340], "role": "ground"}
+    ]
+  }
+]

@@ -1,0 +1,55 @@
+{
+  "schema": 1,
+  "drop": "rare-colors-2026-08",
+  "note": "A name is the join key between a batch entry, its dense colormap and its provenance row, so two maps cannot share one. Where a run emitted a name another map already held, the map ships under a new name and the emitted one is kept here. The names to clear are the ones in this drop, the ones in the shipped library, and the ones in the source project's pooled library — a name held there is a different gradient a corpus row may still resolve through `library_import`, which is why `tests/test_library_import.py` compares by name. Batch files are exactly as the generator wrote them; this is the only place a name was changed.",
+  "renames": [
+    {
+      "batch": "focal-dark-yellow_c5_v3_1.json",
+      "emitted": "Three Fires",
+      "shipped": "Cobalt, Crimson, Gold",
+      "why": "the shipped library already holds a map called Three Fires"
+    },
+    {
+      "batch": "focal-green_c5_v3_1.json",
+      "emitted": "Green Hour",
+      "shipped": "Verdigris to Lime, One Rose",
+      "why": "focal-dark-yellow_c5_v3_1.json emitted the same name for a different gradient"
+    },
+    {
+      "batch": "focal-magenta_c5_v3_1.json",
+      "emitted": "Pale Reliquary",
+      "shipped": "Lilac Drift, Plum Trough",
+      "why": "focal-dark-yellow_c5_v3_1.json emitted the same name for a different gradient"
+    },
+    {
+      "batch": "focal-sage_c3-5_v3_1.json",
+      "emitted": "Foam Over Indigo",
+      "shipped": "Indigo Walk to Lime",
+      "why": "the shipped library already holds a map called Foam Over Indigo"
+    },
+    {
+      "batch": "focal-sage_c3-5_v3_1.json",
+      "emitted": "Copper Verdigris",
+      "shipped": "Copper, Sage & Petrol",
+      "why": "dark-vivid-green_c3-5_v3_1.json emitted the same name for a different gradient"
+    },
+    {
+      "batch": "focal-teal-lime-green_c3-5_v3_1.json",
+      "emitted": "Teal, Magenta, Gold",
+      "shipped": "Three Hues, Kept Apart",
+      "why": "focal-teal-cyan_c3-5_v3_1.json emitted the same name for a different gradient"
+    },
+    {
+      "batch": "focal-teal-cyan_c3-5_v3_1.json",
+      "emitted": "Indigo to Foam",
+      "shipped": "Indigo, Cyan, Teal, Foam",
+      "why": "the source project's pooled library holds a different gradient under this name"
+    },
+    {
+      "batch": "focal-sage_c3-5_v3_1.json",
+      "emitted": "Verdigris Lantern",
+      "shipped": "Teal Family, Amber Spark",
+      "why": "the source project's pooled library holds a different gradient under this name"
+    }
+  ]
+}

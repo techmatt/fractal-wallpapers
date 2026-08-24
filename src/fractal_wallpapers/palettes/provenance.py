@@ -27,6 +27,20 @@ control points here would be a second answer to "what colour is this map at
 0.4". The dense file wins by construction, because it is the only one anything
 reads.
 
+## Two sources of authored briefs, and the drop stamp that tells them apart
+
+The 175 maps this repository started with were authored in the source project and
+their briefs live in its read-only archive. Maps authored since arrive as a
+**drop** — a tracked directory of generator batch files under
+`data/palettes/batches`, densified by [`authored_import`] — and their briefs are
+here. Both produce the same authored row; a drop's rows carry the drop's name as
+`drop`, and the archive's carry no such key. That absence is the separation a
+census or a preference read needs, and introducing it rewrote no existing row.
+
+The rebuild reads both, because a rebuild that read only the archive would delete
+every row a drop had put here — the same shape of mistake a partial census write
+would make, and just as silent.
+
 ## Matching is by name, and a miss is reported rather than guessed
 
 The archive holds more authored maps than this repository ships, because the
@@ -143,12 +157,12 @@ def read_batches(root: Path) -> dict[str, dict]:
                 "skeleton": entry["skeleton"],
                 "value_key": entry["value_key"],
                 "complexity": int(entry["complexity"]),
-                "stops": [_stop(stop) for stop in entry["stops"]],
+                "stops": [control_point(stop) for stop in entry["stops"]],
             }
     return out
 
 
-def _stop(stop: dict) -> dict:
+def control_point(stop: dict) -> dict:
     """One authored control point, with its optional keys kept only when present.
 
     `segment` says a stop opens a cliff rather than a smooth ramp and `keypoint`
@@ -214,17 +228,32 @@ def rows(root: Path, images: Path | None = None, directory: Path | None = None) 
     Sorted by name, which is the order the file is written in and the order a
     diff of it reads in.
     """
+    from fractal_wallpapers.palettes import authored_import
+
     directory = Path(directory) if directory is not None else colormap_dir()
     held = sorted(path.stem for path in directory.glob("*.json"))
     pool = read_pool(root)
     briefs = read_batches(root)
     pictures = image_names(images)
 
+    dropped: dict[str, dict] = {}
+    for drop in authored_import.drops():
+        for name, row in authored_import.briefs(drop).items():
+            if name in briefs or name in dropped:
+                raise ProvenanceError(
+                    f"{name!r} is authored twice — drop {drop} and "
+                    f"{dropped.get(name, briefs.get(name, {})).get('batch')}. The name is the "
+                    f"join key, so two briefs under it would attach one of them to the wrong "
+                    f"gradient."
+                )
+            dropped[name] = row
+    briefs = {**briefs, **dropped}
+
     out: list[dict] = []
     unmatched: list[str] = []
     without_image: list[str] = []
     for name in held:
-        source = pool.get(name)
+        source = AUTHORED if name in dropped else pool.get(name)
         if source == AUTHORED:
             brief = briefs.get(name)
             if brief is None:
@@ -249,6 +278,10 @@ def rows(root: Path, images: Path | None = None, directory: Path | None = None) 
         "maps": len(held),
         "authored": sum(1 for row in out if row["source"] == AUTHORED),
         "extracted": sum(1 for row in out if row["source"] == EXTRACTED),
+        "drops": {
+            drop: sum(1 for row in out if row.get("drop") == drop)
+            for drop in authored_import.drops()
+        },
         "authored_without_brief": unmatched,
         "extracted_without_image": without_image,
         "briefs_unused": sorted(set(briefs) - written),
@@ -267,6 +300,42 @@ def write(records: list[dict], directory: Path | None = None) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text_of(records), encoding="utf-8", newline="\n")
     return path
+
+
+def merge(records: list[dict], directory: Path | None = None, drop: str | None = None) -> dict:
+    """Upsert rows into the tracked record, carrying every other row whole.
+
+    A drop adds its rows to a record whose others were built from an archive a
+    clone does not have — and cannot rebuild identically even with it, because
+    the pictures the extracted maps were read from are not in that archive, so a
+    rebuild would replace each `image` with a bare stem and say the extension was
+    not recovered. Writing only the new rows would delete the rest; rebuilding to
+    write them would degrade the rest. So a drop upserts, the same rule `intake`
+    and the colour census follow, and for the same reason.
+
+    `drop` names the one stamp this write is authoritative for: a row carrying it
+    that the drop no longer ships is dropped rather than carried. That is the
+    narrowest delete that makes a rename possible — settle a collision in a
+    drop's `renames.json`, re-ingest, and the row under the old name goes with
+    it. Without a `drop` nothing is ever removed.
+    """
+    held = read(directory)
+    written = {row["name"] for row in records}
+    retired = sorted(
+        name
+        for name, row in held.items()
+        if drop is not None and row.get("drop") == drop and name not in written
+    )
+    for name in retired:
+        del held[name]
+    held.update({row["name"]: row for row in records})
+    ordered = [held[name] for name in sorted(held)]
+    return {
+        "path": str(write(ordered, directory)),
+        "rows": len(ordered),
+        "upserted": len(records),
+        "retired": retired,
+    }
 
 
 def read(directory: Path | None = None) -> dict[str, dict]:
@@ -298,7 +367,9 @@ __all__ = [
     "SCHEMA",
     "ProvenanceError",
     "batch_conditioning",
+    "control_point",
     "image_names",
+    "merge",
     "read",
     "read_batches",
     "read_pool",

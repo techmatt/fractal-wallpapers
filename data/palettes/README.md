@@ -71,3 +71,34 @@ renders from them; the dense file above is the render truth. A map with no row
 is a map nobody made — its `source` line already says all there is to say.
 
 `fractal-wallpapers palettes provenance --source <archive>` rebuilds the record.
+
+## Where a map added since came from: `batches/`
+
+The 175 maps this repository started with were authored in the source project and
+their briefs are in its read-only archive. Maps authored since arrive as a
+**drop** — one directory under `batches/`, holding the generator's own output
+files exactly as it wrote them, one file per run:
+
+```
+batches/<drop>/<mood family>_c<complexity band>_v<major>_<minor>.json
+batches/<drop>/renames.json      only where a name had to change
+fractal-wallpapers palettes ingest --drop <drop>
+```
+
+`ingest` interpolates each palette's OKLCH control points in OKLab, writes the
+dense map beside the others, and upserts its provenance row. **The directory name
+is the batch stamp**: every row a drop produces carries it as `drop`, and a row
+with no `drop` is a map from before drops existed — which is how a census or a
+preference read separates one from the other without any old row being rewritten.
+
+Whether a map is cyclic is measured on the gradient rather than taken from the
+drop it arrived in, and a name the library, the drop or the source project's
+pooled library already holds is refused until `renames.json` says what the map
+ships as and why. Re-ingesting a drop after a rename reports the map left behind
+under the old name; removing it is a person's call, not the ingest's.
+
+`ingest` is **bake, not offer**: a densified map is renderable immediately and is
+not in `../palette_choice/pool.json`, so nothing picks it until somebody adds it
+there. `generator_prompt_focus_color.md` is the variant brief the
+`rare-colors-2026-08` runs were given — the base brief conditioned on one focal
+colour region rather than a mood family.

@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "baseline": "pre-run11",
-  "taken_at": "2026-08-24T00:12:58Z",
+  "taken_at": "2026-08-24T03:08:15Z",
   "stages": [
     "labels",
     "library",
@@ -9,12 +9,12 @@
     "survival"
   ],
   "stages_this_run": [
-    "picks"
+    "library"
   ],
   "stages_carried": [
     {
-      "stage": "library",
-      "taken_at": "2026-08-23T18:26:43Z"
+      "stage": "picks",
+      "taken_at": "2026-08-24T00:12:58Z"
     },
     {
       "stage": "survival",
@@ -26,13 +26,13 @@
     }
   ],
   "rows": {
-    "rows": 18142,
-    "bytes": 11876129,
-    "sha256": "070fbf778c23de383d8d39ff77b7d047bdfbe048437b8e3e36cb274dd04fd5b2"
+    "rows": 18342,
+    "bytes": 12042118,
+    "sha256": "6e2017f69efa886f641a704934b7dd5f09089c85b4a3cc44d9edfe937c5ce00e"
   },
   "readout": {
-    "bytes": 138016,
-    "sha256": "a94cc4501592e58afd26e647f5842e8c73756c38aebdfea9c47a82588891cb8c"
+    "bytes": 138090,
+    "sha256": "aa8da627dd011130304b852da3f34e4c6159a7ff04668ebdd57840f6091fc5a0"
   },
   "population": {
     "baseline": "pre-run11",
