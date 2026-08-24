@@ -1,0 +1,119 @@
+{
+  "schema": 1,
+  "study": "one render judge over both kinds",
+  "candidate": "enlarged_corpus",
+  "candidate_is": "the shipped design, unchanged, on the corpus after the manufactured rare-colour batch landed in both stores. No recipe key moves; the question is only whether growing the corpus costs anything on either blind sheet",
+  "backbone": "mobilenetv4_conv_small.e2400_r224_in1k",
+  "runs": [
+    "enlarged_corpus_seed0",
+    "enlarged_corpus_seed1",
+    "enlarged_corpus_seed2"
+  ],
+  "question": "Does retraining the shipped head on the corpus after the manufactured rare-colour batch landed cost anything, on either kind's blind sheet?",
+  "rule": "NON-INFERIORITY, and it is a ratified deviation from this project's winner rule. The candidate is viable iff no gated arm is significantly worse than the shipped head. Nothing is required to be better: the declared benefit is a corpus that covers colours the shipped head was never shown, and the rows that carry it are train-side forever, so no sheet here can measure it",
+  "significance": "95 percent paired cluster bootstrap, 5000 draws at seed 0, resampling whole neighbourhood groups under the exact non-`c` rule. Both heads are scored on the same resampled rows, so the population's own difficulty cancels",
+  "band": "three seeds, and the band IS the result \u2014 no staged pick. Every arm is read on the band's median seed by that arm's own statistic, and the BAND is what the verdict rests on. The per-seed reads are computed and reported beside it, and they gate nothing: a per-seed conjunction is fifteen one-sided tests and its false-alarm size is in `multiplicity`. Matt's standing ruling of 2026-08-23",
+  "reading": "band",
+  "arms": [
+    {
+      "key": "smooth_scoring_rule",
+      "kind": "smooth_render",
+      "sheet": "blind_minibrot",
+      "statistic": "cutpoint_cross_entropy",
+      "direction": "lower",
+      "gated": true,
+      "why": "the proper scoring rule on the smooth eval split, over all three cutpoints. This head's interface is its probabilities and a floor is a point on one of them"
+    },
+    {
+      "key": "smooth_auc_ge4",
+      "kind": "smooth_render",
+      "sheet": "blind_minibrot",
+      "statistic": "auc",
+      "cutpoint": 4,
+      "direction": "higher",
+      "gated": true,
+      "why": "the one boundary this sheet's draw supports, and the one production cuts on"
+    },
+    {
+      "key": "smooth_auc_ge3",
+      "kind": "smooth_render",
+      "sheet": "blind_minibrot",
+      "statistic": "auc",
+      "cutpoint": 3,
+      "direction": "higher",
+      "gated": false,
+      "why": "six negatives in 197. Reported so the table is complete; decides nothing"
+    },
+    {
+      "key": "strange_scoring_rule",
+      "kind": "strange_render",
+      "sheet": "blind_modes",
+      "statistic": "cutpoint_cross_entropy",
+      "direction": "lower",
+      "gated": true,
+      "why": "the proper scoring rule on the strange eval split, over all three cutpoints"
+    },
+    {
+      "key": "strange_auc_ge2",
+      "kind": "strange_render",
+      "sheet": "blind_modes",
+      "statistic": "auc",
+      "cutpoint": 2,
+      "direction": "higher",
+      "gated": true,
+      "why": "the boundary this sheet was drawn to inform"
+    },
+    {
+      "key": "strange_auc_ge3",
+      "kind": "strange_render",
+      "sheet": "blind_modes",
+      "statistic": "auc",
+      "cutpoint": 3,
+      "direction": "higher",
+      "gated": true,
+      "why": "a boundary the draw supports, on six positives. The interval decides; the point estimate is not a finding in either direction"
+    }
+  ],
+  "refused": {
+    "strange_auc_ge4": "blind_modes is never read at >=4. Its only four positives at that boundary are four rows a later ANCHORED pass revised up from 3, having seen a tier; they are the sheet's four superseded rows. An AUC over them is an AUC over the only non-blind rows on a blind sheet",
+    "smooth_auc_ge2": "blind_minibrot holds no tier-1 row, so its >=2 boundary has no negative class and its AUC there is undefined rather than perfect"
+  },
+  "incumbent_is": "the shipped joint head: the small_backbone band, small_backbone_seed0 on the release",
+  "incumbents": {
+    "smooth_render": {
+      "shipped": "small_backbone_seed0",
+      "band": [
+        "small_backbone_seed0",
+        "small_backbone_seed1",
+        "small_backbone_seed2"
+      ]
+    },
+    "strange_render": {
+      "shipped": "small_backbone_seed0",
+      "band": [
+        "small_backbone_seed0",
+        "small_backbone_seed1",
+        "small_backbone_seed2"
+      ]
+    }
+  },
+  "training": {
+    "split": "the INTERSECTION of the two stores' training sides: a location pinned in either store may not train. Stricter than what either incumbent faced, and the strictness costs the candidate",
+    "conditioning": "none. The head is handed no kind",
+    "recipe": "the incumbent's, unchanged in every key including the backbone (mobilenetv4_conv_small.e2400_r224_in1k). Nothing here is re-asked; the corpus is the only thing that moved",
+    "selection": "the incumbent's objective, share, seed and population rule. A controlled variable, and the population follows the head: the pooled training side is what it is drawn over, and it is now larger"
+  },
+  "declared": [
+    "Adjacent-category label noise at these boundaries is larger than the differences the sheets can resolve. The bootstrap verdicts are the result; a non-significant gap is not a finding in either direction, and small AUC differences at >=3 are read as nothing at all.",
+    "A retrain moves the whole CORN probability scale. A scale shift alone is EXPECTED and is not a fail \u2014 it is what re-fitting both floors on adoption is for. The cross-entropy arms see the scale and the AUC arms see only the order, and the scale/order decomposition below the table says which term any gap lives in.",
+    "The rare-colour motivation gets NO NUMBER here and none is computed. The 500 manufactured rows are anchored, incumbent-screened and train-side forever, so every read of them is a read of the population that was enriched to produce them. The qualitative read is a re-cut glance sheet, for a person's eye.",
+    "The candidate trains on rows the incumbent never saw and the incumbent trains on none the candidate lacks, so this comparison points the candidate's way by construction. That is the point of a NON-inferiority bar rather than a winner rule: nothing here is asked to be better.",
+    "Both blind sheets are unchanged in size and membership, and that is asserted rather than assumed \u2014 the ingest that grew the corpus WITHHELD nine verdicts cast on locations the strange sheet pins, because a row at a pinned place may neither train nor join a blind sheet.",
+    "The gate is against the SHIPPED run. The incumbent's other two seeds are read the same way and reported."
+  ],
+  "verdicts": {
+    "PASS": "no gated arm is significantly worse on the band",
+    "FAIL": "some gated arm is significantly worse"
+  },
+  "adoption": "NOT part of this bar and not done anywhere. A passing candidate is a candidate; what adopting it would cost is written in the report and nowhere else"
+}

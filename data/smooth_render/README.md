@@ -39,6 +39,14 @@ labels, and spent the moment it enters a training split. The pin is asserted on
 the **location**, so a later batch that re-renders a pinned place under a fresh
 identifier cannot spend it by not naming it.
 
+**A verdict cast on a pinned location never reaches these rows.** The pin is asserted
+on the location and `blind_minibrot` is derived from the pinned places, so `label
+ingest` withholds such a verdict before it writes rather than growing a blind sheet
+by a row that was not cast blind. No drop has yet had one here — the nine the
+manufactured rare-colour drop lost were on the *other* store's pin. Its rows at those
+places are stored and are EXCLUDED from training by the strict split, which is a
+different rule and is the trainer's.
+
 **The source corpus is complete here.** All 4,795 verdicts it holds are in these
 rows, checked on 2026-08-18 by rebuilding each one and looking its key up — not by
 counting batches. Its eighth batch is absent on purpose: 364 renders were built for

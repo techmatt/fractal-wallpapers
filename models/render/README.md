@@ -46,6 +46,38 @@ fractal-wallpapers head floor --head strange_render     # re-fit, must reproduce
 fractal-wallpapers curate rescore                       # the pool onto this scale
 ```
 
+## The retrain that did not adopt: `enlarged_corpus`, 2026-08-24
+
+The manufactured rare-colour batch grew both stores by 487 rows, and the shipped
+design was retrained on them at three seeds — no recipe key moved, backbone
+included. `bar_enlarged_corpus.json` is its bar and `comparison_enlarged_corpus.json`
+is the read. **It reads FAIL on the band and was not adopted.**
+
+The first candidate here gated against a **joint** incumbent rather than the retired
+per-kind pair: `CANDIDATES[...]["incumbent"]` names which, and a candidate that omits
+the key is read against the pair as before. `medium` and `small_backbone` are
+untouched by that indirection and their records reproduce.
+
+```text
+smooth_scoring_rule   +0.2045  CI [+0.1045, +0.3096]   WORSE
+strange_scoring_rule  +0.0611  CI [+0.0055, +0.1216]   WORSE
+every AUC arm                                          flat
+```
+
+**The whole gap is scale.** On every readable cutpoint the candidate's order term is
+equal or better than the incumbent's, and the cross-entropy arms are the ones that
+read the scale. Best epoch moved 3/4/3 → 20/26/28: the larger corpus trains longer
+and arrives more confident. That is what re-fitting both floors on adoption absorbs,
+and it is also what the gated arms are measuring, so the FAIL stands as read.
+
+**The selection objective is not comparable across the two candidates** — 0.474–0.528
+against 0.386–0.392 — because the slice is drawn over the pooled training side's
+places and that side grew: 222 places / 757 pictures against 259 / 620. It orders
+runs *within* a band and nothing else.
+
+`renders glance --batch <name> --run <run>` cuts the qualitative read a band cannot
+give: one batch's rows under two heads' orderings, side by side, into `scratch/`.
+
 ## The band, and the study that adopted it
 
 Three seeds, and **the band is the result**. `bar_small_backbone.json` is the

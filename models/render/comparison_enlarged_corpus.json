@@ -1,0 +1,807 @@
+{
+  "schema": 1,
+  "head": "render",
+  "candidate": "enlarged_corpus",
+  "candidate_is": "the shipped design, unchanged, on the corpus after the manufactured rare-colour batch landed in both stores. No recipe key moves; the question is only whether growing the corpus costs anything on either blind sheet",
+  "backbone": "mobilenetv4_conv_small.e2400_r224_in1k",
+  "bar": {
+    "rule": "NON-INFERIORITY, and it is a ratified deviation from this project's winner rule. The candidate is viable iff no gated arm is significantly worse than the shipped head. Nothing is required to be better: the declared benefit is a corpus that covers colours the shipped head was never shown, and the rows that carry it are train-side forever, so no sheet here can measure it",
+    "significance": "95 percent paired cluster bootstrap, 5000 draws at seed 0, resampling whole neighbourhood groups under the exact non-`c` rule. Both heads are scored on the same resampled rows, so the population's own difficulty cancels"
+  },
+  "candidate_runs": [
+    "enlarged_corpus_seed0",
+    "enlarged_corpus_seed1",
+    "enlarged_corpus_seed2"
+  ],
+  "incumbent_is": "the shipped joint head: the small_backbone band, small_backbone_seed0 on the release",
+  "reading": "band",
+  "populations": {
+    "smooth_render": {
+      "sheet": "blind_minibrot",
+      "pictures": 197,
+      "clusters": 192,
+      "tiers": {
+        "2": 6,
+        "3": 95,
+        "4": 96
+      }
+    },
+    "strange_render": {
+      "sheet": "blind_modes",
+      "pictures": 150,
+      "clusters": 108,
+      "tiers": {
+        "1": 74,
+        "2": 70,
+        "3": 2,
+        "4": 4
+      }
+    }
+  },
+  "arms": [
+    {
+      "key": "smooth_scoring_rule",
+      "kind": "smooth_render",
+      "sheet": "blind_minibrot",
+      "statistic": "cutpoint_cross_entropy",
+      "direction": "lower",
+      "gated": true,
+      "cutpoint": null,
+      "why": "the proper scoring rule on the smooth eval split, over all three cutpoints. This head's interface is its probabilities and a floor is a point on one of them",
+      "candidate_band": {
+        "enlarged_corpus_seed0": 0.9460634128616991,
+        "enlarged_corpus_seed1": 0.9279735972704287,
+        "enlarged_corpus_seed2": 0.7740144804869233
+      },
+      "incumbent_band": {
+        "small_backbone_seed0": 0.7234912009096162,
+        "small_backbone_seed1": 0.719270126597622,
+        "small_backbone_seed2": 0.5821502743827159
+      },
+      "band_read_on": "enlarged_corpus_seed1",
+      "band": {
+        "ours": 0.9279735972704287,
+        "theirs": 0.7234912009096162,
+        "delta": 0.20448239636081256,
+        "ci": [
+          0.104512429059312,
+          0.30962905795091866
+        ],
+        "clusters": 192,
+        "verdict": "WORSE"
+      },
+      "per_seed": {
+        "enlarged_corpus_seed0": {
+          "ours": 0.9460634128616991,
+          "theirs": 0.7234912009096162,
+          "delta": 0.222572211952083,
+          "ci": [
+            0.07780886258420927,
+            0.38634552125227706
+          ],
+          "clusters": 192,
+          "verdict": "WORSE"
+        },
+        "enlarged_corpus_seed1": {
+          "ours": 0.9279735972704287,
+          "theirs": 0.7234912009096162,
+          "delta": 0.20448239636081256,
+          "ci": [
+            0.104512429059312,
+            0.30962905795091866
+          ],
+          "clusters": 192,
+          "verdict": "WORSE"
+        },
+        "enlarged_corpus_seed2": {
+          "ours": 0.7740144804869233,
+          "theirs": 0.7234912009096162,
+          "delta": 0.05052327957730718,
+          "ci": [
+            -0.05712625399894443,
+            0.1571213625801932
+          ],
+          "clusters": 192,
+          "verdict": "NOT_RESOLVED"
+        }
+      },
+      "against_the_incumbent_s_other_seeds": {
+        "small_backbone_seed1": {
+          "ours": 0.9279735972704287,
+          "theirs": 0.719270126597622,
+          "delta": 0.2087034706728067,
+          "ci": [
+            0.10721651596780142,
+            0.3152038802940578
+          ],
+          "clusters": 192,
+          "verdict": "WORSE"
+        },
+        "small_backbone_seed2": {
+          "ours": 0.9279735972704287,
+          "theirs": 0.5821502743827159,
+          "delta": 0.3458233228877128,
+          "ci": [
+            0.24900630332008736,
+            0.44798785503480165
+          ],
+          "clusters": 192,
+          "verdict": "WORSE"
+        }
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "key": "smooth_auc_ge4",
+      "kind": "smooth_render",
+      "sheet": "blind_minibrot",
+      "statistic": "auc",
+      "direction": "higher",
+      "gated": true,
+      "cutpoint": 4,
+      "why": "the one boundary this sheet's draw supports, and the one production cuts on",
+      "candidate_band": {
+        "enlarged_corpus_seed0": 0.6066419141914191,
+        "enlarged_corpus_seed1": 0.5600247524752475,
+        "enlarged_corpus_seed2": 0.5618811881188119
+      },
+      "incumbent_band": {
+        "small_backbone_seed0": 0.5604372937293729,
+        "small_backbone_seed1": 0.6222153465346535,
+        "small_backbone_seed2": 0.5807549504950495
+      },
+      "band_read_on": "enlarged_corpus_seed2",
+      "band": {
+        "ours": 0.5618811881188119,
+        "theirs": 0.5604372937293729,
+        "delta": 0.0014438943894390377,
+        "ci": [
+          -0.07633850189994794,
+          0.07726315215331875
+        ],
+        "clusters": 192,
+        "verdict": "NOT_RESOLVED"
+      },
+      "per_seed": {
+        "enlarged_corpus_seed0": {
+          "ours": 0.6066419141914191,
+          "theirs": 0.5604372937293729,
+          "delta": 0.04620462046204621,
+          "ci": [
+            -0.035767358294844856,
+            0.12568637169839425
+          ],
+          "clusters": 192,
+          "verdict": "NOT_RESOLVED"
+        },
+        "enlarged_corpus_seed1": {
+          "ours": 0.5600247524752475,
+          "theirs": 0.5604372937293729,
+          "delta": -0.0004125412541253759,
+          "ci": [
+            -0.06984363145729557,
+            0.06727777362824083
+          ],
+          "clusters": 192,
+          "verdict": "NOT_RESOLVED"
+        },
+        "enlarged_corpus_seed2": {
+          "ours": 0.5618811881188119,
+          "theirs": 0.5604372937293729,
+          "delta": 0.0014438943894390377,
+          "ci": [
+            -0.07633850189994794,
+            0.07726315215331875
+          ],
+          "clusters": 192,
+          "verdict": "NOT_RESOLVED"
+        }
+      },
+      "against_the_incumbent_s_other_seeds": {
+        "small_backbone_seed1": {
+          "ours": 0.5618811881188119,
+          "theirs": 0.6222153465346535,
+          "delta": -0.060334158415841554,
+          "ci": [
+            -0.1452588476932799,
+            0.02272016756444926
+          ],
+          "clusters": 192,
+          "verdict": "NOT_RESOLVED"
+        },
+        "small_backbone_seed2": {
+          "ours": 0.5618811881188119,
+          "theirs": 0.5807549504950495,
+          "delta": -0.018873762376237613,
+          "ci": [
+            -0.09277703976083795,
+            0.05510993290198878
+          ],
+          "clusters": 192,
+          "verdict": "NOT_RESOLVED"
+        }
+      },
+      "verdict": "PASS"
+    },
+    {
+      "key": "smooth_auc_ge3",
+      "kind": "smooth_render",
+      "sheet": "blind_minibrot",
+      "statistic": "auc",
+      "direction": "higher",
+      "gated": false,
+      "cutpoint": 3,
+      "why": "six negatives in 197. Reported so the table is complete; decides nothing",
+      "candidate_band": {
+        "enlarged_corpus_seed0": 0.7735602094240838,
+        "enlarged_corpus_seed1": 0.7739965095986039,
+        "enlarged_corpus_seed2": 0.7050610820244329
+      },
+      "incumbent_band": {
+        "small_backbone_seed0": 0.6780104712041884,
+        "small_backbone_seed1": 0.6431064572425829,
+        "small_backbone_seed2": 0.7801047120418848
+      },
+      "band_read_on": "enlarged_corpus_seed0",
+      "band": {
+        "ours": 0.7735602094240838,
+        "theirs": 0.6780104712041884,
+        "delta": 0.09554973821989532,
+        "ci": [
+          -0.22268760907504362,
+          0.38317312884760774
+        ],
+        "clusters": 192,
+        "verdict": "NOT_RESOLVED"
+      },
+      "per_seed": {
+        "enlarged_corpus_seed0": {
+          "ours": 0.7735602094240838,
+          "theirs": 0.6780104712041884,
+          "delta": 0.09554973821989532,
+          "ci": [
+            -0.22268760907504362,
+            0.38317312884760774
+          ],
+          "clusters": 192,
+          "verdict": "NOT_RESOLVED"
+        },
+        "enlarged_corpus_seed1": {
+          "ours": 0.7739965095986039,
+          "theirs": 0.6780104712041884,
+          "delta": 0.09598603839441544,
+          "ci": [
+            -0.10103785103785098,
+            0.2757772653282692
+          ],
+          "clusters": 192,
+          "verdict": "NOT_RESOLVED"
+        },
+        "enlarged_corpus_seed2": {
+          "ours": 0.7050610820244329,
+          "theirs": 0.6780104712041884,
+          "delta": 0.027050610820244403,
+          "ci": [
+            -0.12635783110626303,
+            0.1582392407134675
+          ],
+          "clusters": 192,
+          "verdict": "NOT_RESOLVED"
+        }
+      },
+      "against_the_incumbent_s_other_seeds": {
+        "small_backbone_seed1": {
+          "ours": 0.7735602094240838,
+          "theirs": 0.6431064572425829,
+          "delta": 0.1304537521815009,
+          "ci": [
+            -0.037702075870304,
+            0.346500318877551
+          ],
+          "clusters": 192,
+          "verdict": "NOT_RESOLVED"
+        },
+        "small_backbone_seed2": {
+          "ours": 0.7735602094240838,
+          "theirs": 0.7801047120418848,
+          "delta": -0.00654450261780104,
+          "ci": [
+            -0.29117063492063494,
+            0.24263888888888893
+          ],
+          "clusters": 192,
+          "verdict": "NOT_RESOLVED"
+        }
+      },
+      "verdict": "REPORTED"
+    },
+    {
+      "key": "strange_scoring_rule",
+      "kind": "strange_render",
+      "sheet": "blind_modes",
+      "statistic": "cutpoint_cross_entropy",
+      "direction": "lower",
+      "gated": true,
+      "cutpoint": null,
+      "why": "the proper scoring rule on the strange eval split, over all three cutpoints",
+      "candidate_band": {
+        "enlarged_corpus_seed0": 0.3304508285814686,
+        "enlarged_corpus_seed1": 0.4329729177027852,
+        "enlarged_corpus_seed2": 0.36765020482567873
+      },
+      "incumbent_band": {
+        "small_backbone_seed0": 0.3065375602844361,
+        "small_backbone_seed1": 0.301227375834442,
+        "small_backbone_seed2": 0.298260378243178
+      },
+      "band_read_on": "enlarged_corpus_seed2",
+      "band": {
+        "ours": 0.36765020482567873,
+        "theirs": 0.3065375602844361,
+        "delta": 0.061112644541242656,
+        "ci": [
+          0.0054846276196311725,
+          0.12161266032828887
+        ],
+        "clusters": 108,
+        "verdict": "WORSE"
+      },
+      "per_seed": {
+        "enlarged_corpus_seed0": {
+          "ours": 0.3304508285814686,
+          "theirs": 0.3065375602844361,
+          "delta": 0.023913268297032553,
+          "ci": [
+            -0.02666118875033368,
+            0.07834487601213533
+          ],
+          "clusters": 108,
+          "verdict": "NOT_RESOLVED"
+        },
+        "enlarged_corpus_seed1": {
+          "ours": 0.4329729177027852,
+          "theirs": 0.3065375602844361,
+          "delta": 0.1264353574183491,
+          "ci": [
+            0.06449896060224451,
+            0.19680647867402956
+          ],
+          "clusters": 108,
+          "verdict": "WORSE"
+        },
+        "enlarged_corpus_seed2": {
+          "ours": 0.36765020482567873,
+          "theirs": 0.3065375602844361,
+          "delta": 0.061112644541242656,
+          "ci": [
+            0.0054846276196311725,
+            0.12161266032828887
+          ],
+          "clusters": 108,
+          "verdict": "WORSE"
+        }
+      },
+      "against_the_incumbent_s_other_seeds": {
+        "small_backbone_seed1": {
+          "ours": 0.36765020482567873,
+          "theirs": 0.301227375834442,
+          "delta": 0.06642282899123675,
+          "ci": [
+            0.003724599245268548,
+            0.13110444950622815
+          ],
+          "clusters": 108,
+          "verdict": "WORSE"
+        },
+        "small_backbone_seed2": {
+          "ours": 0.36765020482567873,
+          "theirs": 0.298260378243178,
+          "delta": 0.0693898265825007,
+          "ci": [
+            -0.010350553975807452,
+            0.14400973315795468
+          ],
+          "clusters": 108,
+          "verdict": "NOT_RESOLVED"
+        }
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "key": "strange_auc_ge2",
+      "kind": "strange_render",
+      "sheet": "blind_modes",
+      "statistic": "auc",
+      "direction": "higher",
+      "gated": true,
+      "cutpoint": 2,
+      "why": "the boundary this sheet was drawn to inform",
+      "candidate_band": {
+        "enlarged_corpus_seed0": 0.7153271692745377,
+        "enlarged_corpus_seed1": 0.6875889046941679,
+        "enlarged_corpus_seed2": 0.7432432432432432
+      },
+      "incumbent_band": {
+        "small_backbone_seed0": 0.7293741109530584,
+        "small_backbone_seed1": 0.7473328591749644,
+        "small_backbone_seed2": 0.7491109530583214
+      },
+      "band_read_on": "enlarged_corpus_seed0",
+      "band": {
+        "ours": 0.7153271692745377,
+        "theirs": 0.7293741109530584,
+        "delta": -0.014046941678520719,
+        "ci": [
+          -0.07412672804239072,
+          0.044658474386755485
+        ],
+        "clusters": 108,
+        "verdict": "NOT_RESOLVED"
+      },
+      "per_seed": {
+        "enlarged_corpus_seed0": {
+          "ours": 0.7153271692745377,
+          "theirs": 0.7293741109530584,
+          "delta": -0.014046941678520719,
+          "ci": [
+            -0.07412672804239072,
+            0.044658474386755485
+          ],
+          "clusters": 108,
+          "verdict": "NOT_RESOLVED"
+        },
+        "enlarged_corpus_seed1": {
+          "ours": 0.6875889046941679,
+          "theirs": 0.7293741109530584,
+          "delta": -0.041785206258890484,
+          "ci": [
+            -0.10090449827478933,
+            0.012445331907054161
+          ],
+          "clusters": 108,
+          "verdict": "NOT_RESOLVED"
+        },
+        "enlarged_corpus_seed2": {
+          "ours": 0.7432432432432432,
+          "theirs": 0.7293741109530584,
+          "delta": 0.013869132290184827,
+          "ci": [
+            -0.03589250232693227,
+            0.06194201364681145
+          ],
+          "clusters": 108,
+          "verdict": "NOT_RESOLVED"
+        }
+      },
+      "against_the_incumbent_s_other_seeds": {
+        "small_backbone_seed1": {
+          "ours": 0.7153271692745377,
+          "theirs": 0.7473328591749644,
+          "delta": -0.03200568990042674,
+          "ci": [
+            -0.0998855621989951,
+            0.033190003561838904
+          ],
+          "clusters": 108,
+          "verdict": "NOT_RESOLVED"
+        },
+        "small_backbone_seed2": {
+          "ours": 0.7153271692745377,
+          "theirs": 0.7491109530583214,
+          "delta": -0.03378378378378377,
+          "ci": [
+            -0.09345784358047016,
+            0.025192199048363468
+          ],
+          "clusters": 108,
+          "verdict": "NOT_RESOLVED"
+        }
+      },
+      "verdict": "PASS"
+    },
+    {
+      "key": "strange_auc_ge3",
+      "kind": "strange_render",
+      "sheet": "blind_modes",
+      "statistic": "auc",
+      "direction": "higher",
+      "gated": true,
+      "cutpoint": 3,
+      "why": "a boundary the draw supports, on six positives. The interval decides; the point estimate is not a finding in either direction",
+      "candidate_band": {
+        "enlarged_corpus_seed0": 0.9120370370370371,
+        "enlarged_corpus_seed1": 0.8854166666666666,
+        "enlarged_corpus_seed2": 0.9791666666666666
+      },
+      "incumbent_band": {
+        "small_backbone_seed0": 0.90625,
+        "small_backbone_seed1": 0.9131944444444444,
+        "small_backbone_seed2": 0.8402777777777778
+      },
+      "band_read_on": "enlarged_corpus_seed0",
+      "band": {
+        "ours": 0.9120370370370371,
+        "theirs": 0.90625,
+        "delta": 0.0057870370370370905,
+        "ci": [
+          -0.04959231522956325,
+          0.051447320134038355
+        ],
+        "clusters": 108,
+        "verdict": "NOT_RESOLVED"
+      },
+      "per_seed": {
+        "enlarged_corpus_seed0": {
+          "ours": 0.9120370370370371,
+          "theirs": 0.90625,
+          "delta": 0.0057870370370370905,
+          "ci": [
+            -0.04959231522956325,
+            0.051447320134038355
+          ],
+          "clusters": 108,
+          "verdict": "NOT_RESOLVED"
+        },
+        "enlarged_corpus_seed1": {
+          "ours": 0.8854166666666666,
+          "theirs": 0.90625,
+          "delta": -0.02083333333333337,
+          "ci": [
+            -0.08275862068965523,
+            0.026650349650349604
+          ],
+          "clusters": 108,
+          "verdict": "NOT_RESOLVED"
+        },
+        "enlarged_corpus_seed2": {
+          "ours": 0.9791666666666666,
+          "theirs": 0.90625,
+          "delta": 0.07291666666666663,
+          "ci": [
+            -0.011386613386613318,
+            0.1957532149418248
+          ],
+          "clusters": 108,
+          "verdict": "NOT_RESOLVED"
+        }
+      },
+      "against_the_incumbent_s_other_seeds": {
+        "small_backbone_seed1": {
+          "ours": 0.9120370370370371,
+          "theirs": 0.9131944444444444,
+          "delta": -0.0011574074074073293,
+          "ci": [
+            -0.15844780219780213,
+            0.11766616105901821
+          ],
+          "clusters": 108,
+          "verdict": "NOT_RESOLVED"
+        },
+        "small_backbone_seed2": {
+          "ours": 0.9120370370370371,
+          "theirs": 0.8402777777777778,
+          "delta": 0.0717592592592593,
+          "ci": [
+            -0.0397161888883743,
+            0.1854304635761589
+          ],
+          "clusters": 108,
+          "verdict": "NOT_RESOLVED"
+        }
+      },
+      "verdict": "PASS"
+    }
+  ],
+  "refused": {
+    "strange_auc_ge4": "blind_modes is never read at >=4. Its only four positives at that boundary are four rows a later ANCHORED pass revised up from 3, having seen a tier; they are the sheet's four superseded rows. An AUC over them is an AUC over the only non-blind rows on a blind sheet",
+    "smooth_auc_ge2": "blind_minibrot holds no tier-1 row, so its >=2 boundary has no negative class and its AUC there is undefined rather than perfect"
+  },
+  "gain_on_the_smooth_side": {
+    "smooth_scoring_rule": {
+      "delta": 0.20448239636081256,
+      "ci": [
+        0.104512429059312,
+        0.30962905795091866
+      ],
+      "direction": "lower",
+      "band": {
+        "enlarged_corpus_seed0": 0.9460634128616991,
+        "enlarged_corpus_seed1": 0.9279735972704287,
+        "enlarged_corpus_seed2": 0.7740144804869233
+      },
+      "incumbent": 0.7234912009096162,
+      "reads": "WORSE"
+    },
+    "smooth_auc_ge4": {
+      "delta": 0.0014438943894390377,
+      "ci": [
+        -0.07633850189994794,
+        0.07726315215331875
+      ],
+      "direction": "higher",
+      "band": {
+        "enlarged_corpus_seed0": 0.6066419141914191,
+        "enlarged_corpus_seed1": 0.5600247524752475,
+        "enlarged_corpus_seed2": 0.5618811881188119
+      },
+      "incumbent": 0.5604372937293729,
+      "reads": "NOT_RESOLVED"
+    },
+    "smooth_auc_ge3": {
+      "delta": 0.09554973821989532,
+      "ci": [
+        -0.22268760907504362,
+        0.38317312884760774
+      ],
+      "direction": "higher",
+      "band": {
+        "enlarged_corpus_seed0": 0.7735602094240838,
+        "enlarged_corpus_seed1": 0.7739965095986039,
+        "enlarged_corpus_seed2": 0.7050610820244329
+      },
+      "incumbent": 0.6780104712041884,
+      "reads": "NOT_RESOLVED"
+    },
+    "caveat": "the candidate saw 160 smooth rows the shipped smooth head never did, so a BETTER here is transfer OR corpus growth. The corpus-matched ablation is the arm that separates them"
+  },
+  "scale_against_order": {
+    "what_it_is": "REPORTED, never gated. Each cutpoint's cross-entropy split into what an in-sample isotonic recalibration removes (the scale) and what survives it (the order). The same fit the release floors are placed by, so a gap that lives in the scale term is a gap adoption re-derives anyway",
+    "read_on": {
+      "smooth_render": "enlarged_corpus_seed1",
+      "strange_render": "enlarged_corpus_seed2"
+    },
+    "cutpoints": {
+      "smooth_render": [
+        {
+          "cutpoint": 2,
+          "unreadable": "the sheet holds only one class here"
+        },
+        {
+          "cutpoint": 3,
+          "positives": 191,
+          "candidate": {
+            "cross_entropy": 0.7040802301183945,
+            "order_term": 0.09763523633084499,
+            "scale_term": 0.6064449937875495,
+            "auc": 0.7739965095986039
+          },
+          "incumbent": {
+            "cross_entropy": 0.3677523758945524,
+            "order_term": 0.10235303977186551,
+            "scale_term": 0.2653993361226869,
+            "auc": 0.6780104712041884
+          }
+        },
+        {
+          "cutpoint": 4,
+          "positives": 96,
+          "candidate": {
+            "cross_entropy": 2.0352715324676884,
+            "order_term": 0.6584177490741666,
+            "scale_term": 1.3768537833935217,
+            "auc": 0.5600247524752475
+          },
+          "incumbent": {
+            "cross_entropy": 1.7541064720731634,
+            "order_term": 0.6765140931994981,
+            "scale_term": 1.0775923788736654,
+            "auc": 0.5604372937293729
+          }
+        }
+      ],
+      "strange_render": [
+        {
+          "cutpoint": 2,
+          "positives": 76,
+          "candidate": {
+            "cross_entropy": 0.8161220475351486,
+            "order_term": 0.5364302665759428,
+            "scale_term": 0.27969178095920577,
+            "auc": 0.7432432432432432
+          },
+          "incumbent": {
+            "cross_entropy": 0.6488369770766781,
+            "order_term": 0.5359035492083797,
+            "scale_term": 0.11293342786829841,
+            "auc": 0.7293741109530584
+          }
+        },
+        {
+          "cutpoint": 3,
+          "positives": 6,
+          "candidate": {
+            "cross_entropy": 0.24954179614695401,
+            "order_term": 0.03948869386930277,
+            "scale_term": 0.21005310227765125,
+            "auc": 0.9791666666666666
+          },
+          "incumbent": {
+            "cross_entropy": 0.19967250972267503,
+            "order_term": 0.0820562852587791,
+            "scale_term": 0.11761622446389593,
+            "auc": 0.90625
+          }
+        },
+        {
+          "cutpoint": 4,
+          "positives": 4,
+          "candidate": {
+            "cross_entropy": 0.03728677079493352,
+            "order_term": 0.01802254435465694,
+            "scale_term": 0.019264226440276578,
+            "auc": 0.9914383561643836
+          },
+          "incumbent": {
+            "cross_entropy": 0.07110319405395502,
+            "order_term": 0.0486499350996822,
+            "scale_term": 0.022453258954272817,
+            "auc": 0.910958904109589
+          }
+        }
+      ]
+    }
+  },
+  "against_the_corpus_matched_ablation": {
+    "runs": {
+      "smooth_render": [],
+      "strange_render": []
+    },
+    "absent": {
+      "smooth_render": [
+        "smooth_only_seed0",
+        "smooth_only_seed1",
+        "smooth_only_seed2"
+      ],
+      "strange_render": [
+        "strange_only_seed0",
+        "strange_only_seed1",
+        "strange_only_seed2"
+      ]
+    },
+    "what_it_is": "one kind's share of exactly the pooled split, at exactly the candidate's recipe. Paired seed for seed against the candidate, so the only thing that moves is whether the other kind's rows were in the batch. NO BAR is attached",
+    "not_read_because": "the ablation and variant arms belong to the design study, whose candidates are gated against the per-kind heads. This candidate is gated against 'small_backbone' and its runs were trained on a smaller corpus, so no seed-for-seed pairing against them is corpus-matched",
+    "arms": []
+  },
+  "loss_parity": {
+    "aggregation": "identical. Both arms call head.loss_of once on a (batch, cutpoints) tensor; the split arm's tensor is a GATHER of each row's own kind's columns, not a pair of per-kind losses. Every row's weight is 1/(tasks x pooled subset size), verified exactly and kind-independent",
+    "batch_composition": "the same sampler over the same weights: `_loader` computes them from the training list regardless of the arm, and only the dataset class differs. The realized batch SEQUENCES do differ, because a wider classifier consumes more of the RNG at init \u2014 that is what a seed band is for, and it is inherent to changing an architecture rather than a defect in the aggregation",
+    "gradient_clipping": "on the global norm over all parameters, so the extra classifier rows can shift it only by their own share: the classifier is 0.045% of the medium head's parameters and 0.090% of the split one's, 0.152% and 0.30% at the small backbone. Bounded far below anything these sheets resolve",
+    "defect_found": false
+  },
+  "multiplicity": {
+    "gated_arms": 5,
+    "seeds": 3,
+    "per_seed_tests": 15,
+    "one_sided_alpha": 0.025,
+    "chance_of_a_crossing_if_exactly_non_inferior": 0.3159793144360765,
+    "crossed_per_seed": [
+      "smooth_scoring_rule:enlarged_corpus_seed0",
+      "smooth_scoring_rule:enlarged_corpus_seed1",
+      "strange_scoring_rule:enlarged_corpus_seed1",
+      "strange_scoring_rule:enlarged_corpus_seed2"
+    ],
+    "crossed_on_the_band": [
+      "smooth_scoring_rule",
+      "strange_scoring_rule"
+    ],
+    "band_only_verdict": "FAIL",
+    "note": "the band-only verdict reads the same five arms on their own median seed \u2014 one test per arm rather than one per arm per seed"
+  },
+  "variants": {
+    "what_they_are": "the candidate with ONE thing moved. REPORTED, never gated: this bar was written about the registered candidate, and a bar a different design could satisfy is not a bar. Seed counts are stated because they are not bands",
+    "read": {},
+    "absent": {
+      "two_head": [
+        "two_head_seed0"
+      ],
+      "two_head_small": [
+        "two_head_small_seed0",
+        "two_head_small_seed1",
+        "two_head_small_seed2"
+      ]
+    },
+    "not_read_because": "the ablation and variant arms belong to the design study, whose candidates are gated against the per-kind heads. This candidate is gated against 'small_backbone' and its runs were trained on a smaller corpus, so no seed-for-seed pairing against them is corpus-matched"
+  },
+  "verdict": "FAIL",
+  "adoption": "NOT part of this bar and not done anywhere. A passing candidate is a candidate; what adopting it would cost is written in the report and nowhere else"
+}

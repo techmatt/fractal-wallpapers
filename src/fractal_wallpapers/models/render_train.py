@@ -107,6 +107,14 @@ RECIPE: dict = {
 #: incumbent's, which is the corpus that was starving. Everything else about the
 #: two is identical: shared classifier, no conditioning, pooled rows, the same
 #: intersection split and the same frozen selection protocol.
+#:
+#: `enlarged_corpus` is the first candidate here that is not a design question at
+#: all. Nothing about the recipe moves — same backbone, same shared classifier, same
+#: frozen selection objective and population rule — and the only thing that changed
+#: is that the two stores grew by the manufactured rare-colour batch. Which is why
+#: it is the first candidate whose incumbent is not the pair of retired per-kind
+#: heads but **the shipped joint head itself**: `incumbent` names it, and a
+#: candidate that omits the key is gated against the per-kind pair as before.
 CANDIDATES: dict[str, dict] = {
     "medium": {
         "runs": ("seed0", "seed1", "seed2"),
@@ -125,10 +133,21 @@ CANDIDATES: dict[str, dict] = {
             "is that one value re-asked"
         ),
     },
+    "enlarged_corpus": {
+        "runs": ("enlarged_corpus_seed0", "enlarged_corpus_seed1", "enlarged_corpus_seed2"),
+        "backbone": finished_train.RECIPES["strange_render"]["backbone"],
+        "incumbent": "small_backbone",
+        "band_only": True,
+        "what": (
+            "the shipped design, unchanged, on the corpus after the manufactured "
+            "rare-colour batch landed in both stores. No recipe key moves; the question is "
+            "only whether growing the corpus costs anything on either blind sheet"
+        ),
+    },
 }
 
 #: The candidate a bare read is about. The newest registered one.
-CURRENT = "small_backbone"
+CURRENT = "enlarged_corpus"
 
 #: The band of the first candidate, kept as a name because the historical arm and
 #: several guards read it.

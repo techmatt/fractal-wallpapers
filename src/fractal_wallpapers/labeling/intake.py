@@ -122,6 +122,12 @@ class Records:
     append: object
     #: `(train rows) -> report`. Raises if one sits on a pinned location.
     assert_pin: object
+    #: `(row) -> bool`, or `None` where the question does not arise. True when a
+    #: row's place is pinned to this store's evaluation side *and* the row's own
+    #: batch is not the batch that pinned it. Such a row is neither training data
+    #: nor instrument, and [`run`] withholds it rather than writing it — see
+    #: there for why refusing the whole drop would be the wrong answer.
+    pinned_place: object = None
 
 
 LOCATION_JOIN_KEYS = ("family", "viewport", "render")
@@ -198,6 +204,23 @@ def _finished_row(sheet, unit: str, score: int, labeler: str, recorded_at: str |
     )
 
 
+def _finished_trespass(head: str):
+    """`(row) -> bool` for one finished store: does this row trespass on the pin?
+
+    A finished store's evaluation side is a *batch* — one registered `eval_only`,
+    cut blind — and the pin is asserted on that batch's locations so a later drop
+    cannot re-render the place under a fresh name. A row from any other batch at
+    one of those places is therefore neither thing: it may not train, because the
+    instrument is spent the moment it does, and it may not join the sheet either,
+    because it was cast against a prefilled suggestion and the sheet is blind.
+    """
+    keys = finished.pinned(head)
+    eval_only = {
+        batch for batch, registration in finished.registry(head).items() if registration.eval_only
+    }
+    return lambda row: row.get("batch") not in eval_only and finished.place_of(row) in keys
+
+
 def records_for(head: str) -> Records:
     """The store a sheet cut for `head` writes into."""
     from fractal_wallpapers.supply.location import key_of_row
@@ -213,6 +236,7 @@ def records_for(head: str) -> Records:
             resolved=lambda: finished.resolved(head),
             append=lambda rows, known: finished.append(head, rows, known=known),
             assert_pin=lambda rows: finished.assert_pin_holds(head, rows),
+            pinned_place=_finished_trespass(head),
         )
     if head == "location":
         return Records(
@@ -487,9 +511,29 @@ def run(sheet: Path, labels=None, labeler: str = "", write: bool = False) -> dic
             f"is answered from memory. See `fractal-wallpapers label register --head {head}`."
         )
 
+    # A verdict cast on a place the evaluation side already holds is withheld here,
+    # before anything is written. It cannot train — that spends the instrument — and
+    # it cannot join the sheet either, because the sheet is blind and this one was
+    # cast against a prefilled suggestion. Refusing the whole drop would be the wrong
+    # answer to nine units out of hundreds; writing them and raising afterwards, which
+    # is what this step used to do, left the store holding rows the suite forbids. So
+    # they are named, counted on both sides of the join, and left in the export.
+    trespass = records.pinned_place
+    withheld = [row for row in candidates if trespass(row)] if trespass else []
+    held = {id(row) for row in withheld}
+    candidates = [row for row in candidates if id(row) not in held]
+
     sorted_out = classify(records, candidates)
     writing = sorted_out["fresh"] + sorted_out["revised"]
     before = records.resolved()
+
+    # Asserted on what is about to land rather than on what already did: a drop that
+    # trespasses is refused with the store untouched.
+    known_registry = records.registry()
+    landing = [
+        row for row in writing if not registry_module.lookup(known_registry, row["batch"]).eval_only
+    ]
+    pin_report = records.assert_pin(landing)
 
     report = {
         "head": head,
@@ -500,6 +544,7 @@ def run(sheet: Path, labels=None, labeler: str = "", write: bool = False) -> dic
             "on the sheet": len(read.rows),
             "exported": len(export),
             "not acted on": len(read.rows) - len(export),
+            "withheld on a pinned location": len(withheld),
         },
         "rows": {
             "fresh": len(sorted_out["fresh"]),
@@ -523,6 +568,18 @@ def run(sheet: Path, labels=None, labeler: str = "", write: bool = False) -> dic
         },
         "store before": before.summary(),
     }
+    if withheld:
+        report["withheld"] = {
+            "rule": (
+                "a verdict on a location pinned to this store's evaluation side is neither a "
+                "training row nor an instrument row: it may not train, and it was not cast "
+                "blind. It stays in the export and out of the store."
+            ),
+            "rows": len(withheld),
+            "locations": len({repr(finished.place_of(row)) for row in withheld}),
+            "by batch": dict(sorted(Counter(row["batch"] for row in withheld).items())),
+            "units": sorted(str(row.get("unit")) for row in withheld),
+        }
     if not write:
         report["written"] = 0
         report["note"] = "dry run — pass --write to append these rows"
@@ -557,11 +614,13 @@ def run(sheet: Path, labels=None, labeler: str = "", write: bool = False) -> dic
     # store as a whole is the wrong population: the evaluation side is drawn *from* it,
     # so every pinned location is already a stored row and asking whether one exists is
     # asking whether the split is empty. What an ingest can newly break is a fresh batch
-    # that re-drew a pinned place, and that is exactly this population.
+    # that re-drew a pinned place, and that is exactly this population. It is asserted a
+    # second time here, on the rows as the store read them back, because the first pass
+    # ran on rows that had not yet been through a writer.
     landed = [row for row in writing if not registry_module.lookup(known, row["batch"]).eval_only]
     report["written"] = written
     report["store after"] = after.summary()
-    report["pin"] = records.assert_pin(landed)
+    report["pin"] = records.assert_pin(landed) | {"asserted_before_writing": pin_report["ok"]}
     report["registry"] = registry_module.summary(known)
     return report
 
