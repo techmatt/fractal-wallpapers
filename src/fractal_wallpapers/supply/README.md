@@ -337,14 +337,27 @@ fractal-wallpapers derive-tau-h --write
   readout's, not a cut's.
 * `tally.saturation_by_partition` — seen against discounted, per partition. The
   run-wide pair says whether the cross-run memory fired; this says where.
-* `tally.minutes` — the charged clock split into `expand` and `reframe`. Both are
-  inside `--minutes` and only their sum was recorded before.
+* `tally.minutes` — the charged clock split into `expand`, `reframe` and
+  `refine`. The first two are inside `--minutes` and only their sum was recorded
+  before. The third is the framing scan the walk takes **when it closes**, and it
+  is a third bucket rather than a share of `reframe` on purpose: the reframing
+  operators fire per batch off admissions and this fires once per run off the
+  whole walk, so folding it in would make the operator suite look more expensive
+  on exactly the runs that refined most. It is spent after `--minutes` is
+  already gone, so it is charged and reported rather than budgeted.
 * `walk.operators` — firings, seconds, seconds per firing and share of the charged
-  clock, **per reframing operator**. The neighbourhood enumeration is the
-  expensive one and is on by default in production; this is the first time a run
-  prices it out of its own record instead of out of a replay. The availability and
-  refusal counts sit beside it in `walk.counts` as
-  `reframing:<operator>:<available|reason>`.
+  clock, **per reframing operator**, and `refine_framing` beside them. The
+  neighbourhood enumeration is the expensive one and is on by default in
+  production; this is the first time a run prices it out of its own record
+  instead of out of a replay. The availability and refusal counts sit beside it in
+  `walk.counts` as `reframing:<operator>:<available|reason>`.
+* `refine` — what the close-time framing scan cost and bought: locations scanned,
+  frames drawn, the adopted share, the chosen-width and chosen-move histograms,
+  the whole Δ distribution in nats, how many refinements crossed the keeper floor,
+  and the walk's own gate render measured against a fresh one of the same frame.
+  `walk.counts` carries `refine:scanned`, `refine:adopted`, `refine:below_margin`
+  and `refine:admitted` beside it. See `discovery/README.md` for what the leg is
+  and why its rows are appended rather than edited in.
 * `quota.floor_versus_deficit.per_partition` and `quota.unspent_floor.per_partition`
   are two different questions and are already two blocks: the first is how many
   realized minutes each bucket bought, the second is whether the floor's promise

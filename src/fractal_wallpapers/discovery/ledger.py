@@ -142,6 +142,26 @@ FATES = (
     NOT_ADMITTED,
 )
 
+#: A refinement of a location this ledger already holds: the same place, at a
+#: better frame, decided after the walk closed.
+#:
+#: **It is a row, not an edit.** A ledger is append-only and nothing rewrites one,
+#: so a scan taken at close cannot go back and change the candidate row it is
+#: about — and the walk's shape leaves no earlier place to put it, because "the
+#: best three frames of this walk" is not knowable until the walk has finished.
+#: So the refinement is appended after the candidates and **the reader prefers
+#: it**: [`fractal_wallpapers.supply.ledgers.admitted`] joins it onto the
+#: candidate row on the location's own identity and hands on the refined frame,
+#: the refined score and the fate that score earns.
+#:
+#: The row's `family` and `viewport` are the **original** ones, because that is
+#: the identity every reader already dedups on — a refinement is a statement
+#: about a location the ledger holds, never a second location. `refined_viewport`
+#: and `score`/`score_great` are what to prefer, and they are `null` on a row
+#: whose window did not clear the margin: such a row is kept because what the
+#: margin refused is the evidence the margin is set where it should be.
+REFINED = "refined"
+
 #: Why a node produced no child at all.
 NODE_CAUSES = (
     "width_floor",

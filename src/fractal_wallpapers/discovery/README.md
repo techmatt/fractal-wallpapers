@@ -18,6 +18,11 @@ identity   why the gate render is the picture that head was trained on
 boundary   a seeded uniform draw, screened by those same gates
 ```
 
+The one thing a walk does that is not in this package: when it **closes**, it
+refines the framing of its best few finds, through `curation.framing` — the
+gallery pass's own step 5a, reused rather than forked. See *The refine leg*
+below.
+
 Nothing here judges a picture. The gates are geometry — how much of the frame is
 the set's interior, how much variety its escape times have, whether its detail is
 spread over the frame or piled in a corner — and the judgement that decides
@@ -27,6 +32,80 @@ it admits what survives the gates, and its ledger is what the first head gets
 trained on, which is the only order the two can be built in.
 
 What follows is what to read before changing anything here.
+
+## The refine leg: `--refine-per-walk`, at close, top-k
+
+A walk stops on a frame because the gates let it through and the head liked it,
+not because that is the best crop of what is there. So when the walk closes it
+takes its best `k` gate survivors — `--refine-per-walk`, default **3** — and
+scans a small window of framings around each: width `x{0.707, 1.0, 1.414}` at the
+current centre, then at the best of those a recentring of `+-0.25` frame one axis
+at a time. Seven frames a location, drawn through `engine.screen` at the node
+regime, read through the shipped location head, and the best **adopted only if it
+beats the recorded framing by `--refine-margin`** — a strict improvement in nats
+of log-odds on `P(>=4)`, never an argmax. Monotonicity is asserted and a violation
+raises.
+
+**It is the gallery pass's step 5a, at the other end of the pipeline and through
+the same code.** One window, one margin, one gate requirement, one provenance
+shape; `curation/framing.py` owns all of them and neither site restates any. What
+differs is only *which* frames are scanned — a pass scans the neighbourhoods it is
+about to colour, a walk scans the handful it is most likely to have found — and
+that is why the leg is bought once per run rather than once per admission.
+
+**Best is the seating statistic**: `logit P(>=4)`, `P(>=3)` breaking the tie,
+which is the order a gallery slot is filled in. A full tie falls to the order the
+ledger wrote, so one seed refines the same frames twice. Three is the archive's
+own number: the maker reframed each walk's top `KRAW = 3` and took the walk's
+reward as the max over them.
+
+**Nothing feeds back into the walk.** No priority moves, no score term is re-read,
+no descent is re-taken. `--refine-per-walk 0` is the walk this repository ran
+before the leg existed, exactly.
+
+### A written row is never edited, so the refinement is a later row
+
+The walk's shape leaves nowhere earlier to put it: *the best three frames of this
+walk* is not knowable until the walk has finished, and a ledger is append-only. So
+the leg appends a `refined` row per scanned location after the candidates, and
+**the reader prefers it** — `supply.ledgers.admitted` joins it onto the candidate
+row and hands on the refined frame, the refined cap, the refined score and the
+fate that score earns. The candidate row on disk is byte-for-byte what was
+written. A window that did **not** clear the margin still gets a row: what the
+margin refused is the evidence the margin is set where it should be, and such a
+row changes nothing about the location it is about.
+
+**Admission reads the refined score**, so a row the scan lifts over the keeper
+floor is admitted at its refined viewport and — only where it *crosses*, never
+where it was admitted already — gets the triggered operators any admission gets.
+Those fire at the refined centre onto the frontier the run is **closing with**, so
+this walk expands none of them and the checkpoint is already written: they are a
+record of what the operator found, not a feed into a descent.
+
+**The location key moves with the frame**, and that is deliberate. A key is the
+family and the viewport, so a refined row is a different location — which is this
+package's existing stance, stated where the operators dedup: *the framing is part
+of the identity, and the same atom at two framings is two views*. It is the
+opposite of what the gallery pass does, and the two are not in conflict: a pass
+refines a location the pool **already holds** at its recorded frame and has to pin
+identity so one place cannot take two seats, while a walk refines a frame nothing
+downstream has seen yet. The frame the walk stood on is kept on the row under
+`framing.original` either way.
+
+**Priced in its own bucket.** `_charge("refine_framing", seconds)` puts it beside
+the reframing operators in `harvest._operator_report`, and the harvest tally
+carries `refine_minutes` as a **third** bucket rather than a share of
+`reframe_minutes` — the operators fire per batch off admissions and this fires
+once per run off the whole walk, so folding it in would make the operator suite
+look more expensive on exactly the runs that refined most.
+
+**Reading a walk's own gate render against a fresh one.** The gallery pass found
+its scan disagreeing with the supply sidecar by up to 0.029 on `P(>=4)` and could
+not say why: 19 of its 20 locations had been scored off a walk's gate render, and
+that picture is not on the view-cache path. Here it is — this run drew it — so
+every scanned location's `refined` row carries `gate_render`: both pictures'
+sha256, both byte counts, both readings and their difference. It is a measurement
+and nothing acts on it.
 
 **Reframing operators are triggered, never a source.** They apply to a place the
 walk already found and admitted, and they inherit both its provenance and its
