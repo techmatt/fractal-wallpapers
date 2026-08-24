@@ -104,6 +104,17 @@ class TestTheTrackedRecord:
         pool = set(palette_sets.pool()["pool"])
         assert not {name for row in rows for name in row["candidates"]} - pool
 
+    def test_the_pool_holds_every_map_of_every_admitted_drop(self) -> None:
+        """A drop is authored to be drawn. Admitting it and then leaving its maps
+        out of the pool is the same as not admitting it, silently."""
+        document = palette_sets.pool()
+        pool = set(document["pool"])
+        drop_maps = palette_sets.admitted()
+        assert drop_maps
+        assert not set(drop_maps) - pool
+        assert document["admitted"]["maps"] == len(drop_maps)
+        assert document["inherited"] + document["admitted"]["maps"] == len(document["pool"])
+
     def test_no_set_shares_a_location_with_another(self, rows) -> None:
         keys = [location_key(row["family"], row["viewport"]) for row in rows]
         assert len(set(keys)) == len(keys)

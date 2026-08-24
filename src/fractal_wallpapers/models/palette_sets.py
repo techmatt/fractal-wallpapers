@@ -75,6 +75,14 @@ SCHEMA = 1
 #: imported, and therefore checked — see the module docstring.
 CAP = 32
 
+#: The drops authored in this repository whose maps are admitted to the drawable
+#: pool. The pool is the source project's production pool as this repository
+#: holds it *plus* these — a drop is authored to be drawn, and a map nothing may
+#: pick is a map nobody ever sees. Membership is read off each map's provenance
+#: `drop` stamp rather than restated as a list of names here, so admitting a drop
+#: is one line and cannot fall out of step with the maps it names.
+ADMITTED_DROPS = ("rare-colors-2026-08",)
+
 #: Every source batch the real decisions come from, each a colorize-path run —
 #: one render per location, coloured the way a release run colours it — and each
 #: paired with the short key its set ids carry, so a set names its own origin
@@ -324,6 +332,24 @@ def read() -> list[dict]:
     return rows
 
 
+def admitted() -> list[str]:
+    """The maps an admitted drop adds to the drawable pool, in provenance order.
+
+    Read off the `drop` stamp every drop's provenance row carries, and filtered to
+    what this repository actually holds — the same test the source pool's own
+    members pass, applied to the maps authored here.
+    """
+    from fractal_wallpapers.palettes import provenance
+
+    wanted = set(ADMITTED_DROPS)
+    held = {path.stem for path in colormap_dir().glob("*.json")}
+    return [
+        name
+        for name, row in provenance.read().items()
+        if row.get("drop") in wanted and name in held
+    ]
+
+
 def pool() -> dict:
     """The shipped palette pool: the maps a colorize may choose between."""
     path = pool_path()
@@ -346,17 +372,23 @@ def run(root: Path) -> dict:
 
     _, order = _flavours(root)
     held = {path.stem for path in colormap_dir().glob("*.json")}
-    members = [name for name in order if name in held]
+    inherited = [name for name in order if name in held]
+    extra = [name for name in admitted() if name not in set(order)]
+    members = inherited + extra
     document = {
         "schema": SCHEMA,
         "rule": (
             "the maps a colorize-time candidate set may hold: the source project's production "
-            "pool, as this repository holds it. A map is here because a tracked corpus row or "
-            "a vendored candidate set names it — nothing was brought across to round the "
-            "number up, so this is a subset of that pool rather than a copy of it."
+            "pool as this repository holds it, plus every map of an admitted drop. An "
+            "inherited map is here because a tracked corpus row or a vendored candidate set "
+            "names it — nothing was brought across to round the number up, so that part is a "
+            "subset of the source pool rather than a copy of it. A drop's maps were authored "
+            "here to be drawn."
         ),
         "pool": members,
         "of_source_pool": len(order),
+        "inherited": len(inherited),
+        "admitted": {"drops": list(ADMITTED_DROPS), "maps": len(extra)},
         # Named the way the docstring above names it, and the way every colormap
         # this repository holds names its own origin: by the source project and
         # the file inside it. `root` is a build-era argument pointing at another
@@ -376,12 +408,18 @@ def run(root: Path) -> dict:
         "flavours": len({row["flavour"] for row in rows}),
         "distinct_maps": len(named),
         "colormaps": brought,
-        "pool": {"members_here": len(members), "in_the_source_pool": len(order)},
+        "pool": {
+            "members_here": len(members),
+            "inherited": len(inherited),
+            "admitted": len(extra),
+            "in_the_source_pool": len(order),
+        },
         "wrote": [str(sets_path()), str(pool_path())],
     }
 
 
 __all__ = [
+    "ADMITTED_DROPS",
     "BATCH",
     "CAP",
     "CATEGORIES",
@@ -394,6 +432,7 @@ __all__ = [
     "SOURCE_BATCHES",
     "SUPERSAMPLE",
     "SetsError",
+    "admitted",
     "candidate_row",
     "cyclic",
     "extract",
