@@ -114,6 +114,98 @@ def job_name(row: dict) -> str:
     return hashlib.sha256(material.encode("utf-8")).hexdigest()[:NAME_LENGTH]
 
 
+#: Every row member [`spec_of`] reads. Declared here so the two sets below can be
+#: held to covering it: `tests/test_renders.py` records what `spec_of` actually
+#: reaches for and fails when this list stops being that.
+SPEC_MEMBERS: tuple[str, ...] = (
+    "family",
+    "viewport",
+    "render",
+    "mode",
+    "mode_params",
+    "curve",
+    "colormap",
+    "recipe",
+)
+
+#: **The field-side members: what a dumped scalar field is a function of.** The
+#: place, the geometry, and the field the mode names with the curve it is read
+#: through. Everything a `dump-field` spends before it stops.
+FIELD_IDENTITY: tuple[str, ...] = (
+    "family",
+    "viewport",
+    "render",
+    "mode",
+    "mode_params",
+    "curve",
+)
+
+#: The rest, and the reason the split exists: a recolor spends these *after* the
+#: field is on disk, over and over, without iterating anything. Two candidates
+#: differing only here are one field and thirty-two pictures.
+RECOLOR_MEMBERS: tuple[str, ...] = ("colormap", "recipe")
+
+#: What the recolor half is pinned to when a **field** is being named rather than
+#: a picture. Constants, so they contribute nothing that varies — but they have to
+#: be present, because the digest goes through [`spec_of`], which is the one
+#: derivation this project has of what the engine is told.
+FIELD_COLORMAP = "_field"
+
+
+def field_job_name(
+    family: dict,
+    viewport: dict,
+    render: dict,
+    mode: str,
+    curve: str,
+    mode_params: dict | None = None,
+) -> str:
+    """The name a **dumped field** is cached under: [`FIELD_IDENTITY`], digested.
+
+    A field cache keyed on a hand-written dict is one engine axis away from two
+    different fields sharing a name — and a shared name is not a wrong picture,
+    it is thirty-two wrong pictures, because every candidate recolours whichever
+    field was dumped first. So the members are named once, above, and this
+    refuses rather than proceeds when the two halves stop covering
+    [`SPEC_MEMBERS`]: an axis added to the engine and to `spec_of` has to be
+    *classified* — field-side or recolour-side — and cannot be left out by being
+    forgotten at a call site.
+
+    The digest is [`job_name`]'s, over the same [`spec_of`] every picture goes
+    through, so a field and the smooth render of the same row are named by one
+    derivation rather than two that can drift.
+    """
+    uncovered = set(SPEC_MEMBERS) - set(FIELD_IDENTITY) - set(RECOLOR_MEMBERS)
+    if uncovered:
+        raise RenderCacheError(
+            f"{sorted(uncovered)} is read by spec_of and is in neither FIELD_IDENTITY nor "
+            f"RECOLOR_MEMBERS, so a dumped field's name does not say whether it depends on "
+            f"it. Classify it: field-side members go in the digest, recolour-side members "
+            f"are spent after the field exists."
+        )
+    field_side = {
+        "family": family,
+        "viewport": viewport,
+        "render": render,
+        "mode": mode,
+        "mode_params": dict(mode_params or {}),
+        "curve": curve,
+    }
+    missing = [member for member in FIELD_IDENTITY if member not in field_side]
+    if missing:
+        raise RenderCacheError(
+            f"{missing} is field-side and this caller supplied no value for it. A field "
+            f"cached without it would be shared by every value it can take."
+        )
+    return job_name(
+        {
+            **field_side,
+            "colormap": FIELD_COLORMAP,
+            "recipe": finished.recipe(mirror=False),
+        }
+    )
+
+
 _CATALOG: dict[str, dict] | None = None
 
 
@@ -516,13 +608,18 @@ def crop_of(head: str, row: dict) -> Path:
 
 
 __all__ = [
+    "FIELD_COLORMAP",
+    "FIELD_IDENTITY",
     "JPEG_FLOOR_QUALITY",
     "NAME_LENGTH",
+    "RECOLOR_MEMBERS",
     "SCHEMA",
     "SEED",
+    "SPEC_MEMBERS",
     "Job",
     "RenderCacheError",
     "build",
+    "field_job_name",
     "build_record_path",
     "cache_dir",
     "catalog",

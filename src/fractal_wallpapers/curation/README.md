@@ -125,6 +125,15 @@ neighbourhood is attempted, and the whole seating is taken again. `--reseat`
 keeps every one of them and what each held. So **`below_bar` means *k
 neighbourhoods in a row failed*, not one did.**
 
+**`--reseat` is this project's seat-to-budget lever, and it lives here rather
+than in the supply engine.** The supply engine's levers are about a *clock* — the
+per-partition floor, the exploration share, the discounted contest — and none of
+them can move a seat, because a pass books no clock at all. What a re-seat spends
+is attempts against a slot that is already allocated: the slot count never
+changes, the partition never gains or loses one, and the only thing that moves is
+which chosen point the slot stands on. Reaching for a supply flag to fill a
+gallery slot is reaching for the wrong stage.
+
 That gap was gallery1's whole shortfall. Every one of its eight unfilled slots
 was `below_bar`; every one was the LAST slot of its partition — which is the
 point of the draw most remote from everything already chosen, and so the one most
@@ -426,6 +435,16 @@ the same region of palette space. Every candidate is a *recolor of one dumped
 smooth field* — one iteration pass per location instead of thirty-two, and the
 pictures the head reads are the smooth renders it was distilled on. The chosen
 map then colours whatever mode the attempt actually draws.
+
+**And the anchor draw is the whole of it: there is no palette-cluster cap at
+release.** `data/palettes/clusters.jsonl` exists and groups the library sixteen
+ways, but it is a *figure's* record — `palettes clusters` is its only reader, and
+nothing in selection, in the release path or in the gallery pass consults it. So
+two seated rows may land in one cluster, and what stops that is the without-
+replacement anchor draw upstream rather than a cap downstream. This is a
+deliberate gap and not an oversight: palette-level diversity across the
+collection is the colour-coverage floor's question, and until that leg exists the
+honest statement is that nothing enforces it.
 
 **A run is bound to its ledgers, and nothing defaults to all of them.** `--ledger`
 names them; `--harvest` names the run that wrote them and takes its `walk.jsonl`.
@@ -792,6 +811,27 @@ half-written is trusted; and the seam is checked arithmetically — `planned =
 resumed + made + failed + not-started` on both legs, loudly and non-zero when it
 does not balance.
 
+**What "the stored plan" is, exactly, is `run.SHAPE`.** Seven keys — `n`, `seed`,
+`strange_share`, `modes`, `attempts`, `ledgers`, `ephemeral` — and they are the
+whole of what a resume is compared against. A flag outside that tuple is an
+*execution* setting and a resume may carry a different one: `--workers`, `--deep`,
+`--device`, `--skip-release`. The split is the useful part of the rule, because it
+says which flags a person may retype under pressure at four in the morning and
+which ones change what the run is. Adding a knob that decides what gets made
+without adding it here is how a resumed run silently becomes a second run.
+
+**A ledger that has been archived is still readable, and only outputs say
+otherwise.** `cli.resolve_input` and `cli.resolve_output` do the same resolution
+against the checkout and the two tiers, and differ in exactly one thing: the
+output form **refuses** a name that resolves to the archive, because writing there
+puts fresh bytes behind a seek-bound disk and leaves one subtree spread across
+both tiers. The input form carries no such guard. So `curate score --ledger
+<archived>` is a legitimate read and needs no restore, while anything naming a
+place to *write* into an archived subtree stops and names the restore command.
+Reading and writing are different questions about the same path, and an input
+held to an output's guard is a subtree somebody has to restore before they may so
+much as look at it.
+
 ## The colour census
 
 [`colors`](colors.py) is a standing **record-and-rank** over colour: it carries no
@@ -949,6 +989,19 @@ cyclic`. Production samples none of those knobs, so the max is over the panel
 alone. A sequential map is *also* probed with the fold off, which production never
 does; a swatch it reaches only that way is reported apart and counted in neither
 table. The reverse cannot arise — the engine refuses to fold a cyclic map.
+
+**Every recolor path states its field curve, and this is the one that forgot.** A
+dumped field records the curve it was dumped under, which is the *mode's own*; a
+render states `colorize.CURVE` and `renders.coloring_of` writes it over the
+mode's. Those two agree for every field mode but one — **`trap_circle` names
+`log` and every other field mode names `linear`** — so a recolor that leaves
+`transform` off its spec inherits the dump's curve and produces, for that one
+mode and no other, a different picture from the render of the same row. The probe
+passes the curve explicitly for exactly that reason; the shipped panel holds
+three `trap_circle` cells of sixteen, so the omission was worth three cells of
+every table on this page. `manufacture.render_through` is the other site that
+states it, and the rule is the general one: a recolor spec that does not name its
+transform is a picture nobody can join back to a render.
 
 **Runtime.** 16 cells x 901 maps, plus the unfolded arm for the 156 sequential
 maps, is 16,912 recolors at about 75 ms each: 21 minutes serial, about 6 with

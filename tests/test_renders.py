@@ -144,6 +144,54 @@ def test_a_picture_s_name_depends_on_every_part_of_its_recipe() -> None:
         assert renders.job_name(base) != renders.job_name(changed), changed
 
 
+def test_spec_members_is_what_spec_of_actually_reads() -> None:
+    """`SPEC_MEMBERS` is a declaration, and `field_job_name` divides it in two.
+    A member `spec_of` reaches for that nobody listed would be a field-side axis
+    the field cache silently ignores, so the list is recorded against the reader
+    rather than kept in step by hand."""
+
+    class Recording(dict):
+        def __init__(self, wrapped):
+            super().__init__(wrapped)
+            self.reached = set()
+
+        def __getitem__(self, key):
+            self.reached.add(key)
+            return super().__getitem__(key)
+
+        def get(self, key, default=None):
+            self.reached.add(key)
+            return super().get(key, default)
+
+    watched = Recording(a_row())
+    renders.spec_of(watched, "out.jpg")
+    read = {key for key in watched.reached if not key.startswith("_")}
+    assert read == set(renders.SPEC_MEMBERS), (
+        f"spec_of reads {sorted(read)}; SPEC_MEMBERS says {sorted(renders.SPEC_MEMBERS)}. "
+        f"Update the list and classify any new member as field-side or recolour-side."
+    )
+
+
+def test_the_two_halves_cover_every_spec_member_exactly_once() -> None:
+    field, recolor = set(renders.FIELD_IDENTITY), set(renders.RECOLOR_MEMBERS)
+    assert not field & recolor, "a member cannot be both field-side and recolour-side"
+    assert field | recolor == set(renders.SPEC_MEMBERS)
+
+
+def test_an_unclassified_spec_member_refuses_rather_than_naming_a_field(monkeypatch) -> None:
+    """The failure this closes is not a wrong picture, it is thirty-two wrong
+    pictures: every candidate recolours whichever field was dumped first."""
+    monkeypatch.setattr(renders, "SPEC_MEMBERS", renders.SPEC_MEMBERS + ("perturbation",))
+    with pytest.raises(renders.RenderCacheError, match="perturbation"):
+        renders.field_job_name(
+            family={"kind": "mandelbrot"},
+            viewport={"center_re": "-0.5", "center_im": "0.0", "width": "3.0"},
+            render={"resolution": [640, 360], "supersample": 2, "maxiter": 3000},
+            mode="smooth",
+            curve="linear",
+        )
+
+
 def test_the_evaluation_side_is_in_the_plan(shipped_render_cache) -> None:
     """A held-out picture is scored through the same renderer the training side
     was learned from, or the number measures the render as much as the head."""

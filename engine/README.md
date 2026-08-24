@@ -171,10 +171,21 @@ something merely similar to it.
 
 **A new field of a coloring must `skip_serializing_if` its default.** The render
 cache and the location head's deploy view both name a file by
-`renders.job_name`, a sha256 of the whole spec that goes over the wire, so a key
-that appeared unconditionally would rename every picture the corpora were built
-from. `Composite::texture_gamma`, `Direct::merge_order` and the itinerary field's
+`renders.job_name`, a **truncated sha256 of the whole spec that goes over the
+wire** — every key the engine is told, and nothing else — so a key that appeared
+unconditionally would rename every picture the corpora were built from.
+`Composite::texture_gamma`, `Direct::merge_order` and the itinerary field's
 `start` are all written that way, and each says so where it is declared.
+
+**The same digest names a dumped field, and there the rule runs the other way.**
+`curation.colorize.field_of` keys the field cache with `renders.job_name` over a
+spec it *builds* rather than one it was handed, so a field-side axis added to the
+engine and left out of that spec would leave two different fields sharing one
+name — and every candidate recoloured off whichever was dumped first. The
+identity is therefore derived from the field-side members themselves
+(`renders.FIELD_IDENTITY`) rather than hand-listed at the call site, and
+`tests/test_curation_colorize.py` pins both halves: an added member moves the
+digest, and the digests of the specs already on disk do not move.
 
 ## The one family that only draws pictures
 

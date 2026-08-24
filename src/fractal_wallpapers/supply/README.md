@@ -95,6 +95,20 @@ home-view root is the same point every prior run rooted at, so 90%+ of pool and
 twin roots enter already saturated, where a labelled frame enters clean about two
 times in three. Run the leg with `--partition <dynamical> --root-channel proven`.
 
+**Three things about the channel are decided in `proven.py` and nowhere else.**
+Its **tier floor is `min(currency.CLASS_WEIGHT)`** — the currency's own bottom
+class rather than a fresh cut, so what counts as a proven place is exactly what
+counts as a keeper and moving one moves both. The pool is **interleaved at
+`RATIO` (2) proven entries per pool entry**, never substituted: a channel fed by
+this project's own past output cannot open new ground, so the fresh pool has to
+keep coming through it. And the queue is ordered by a **digest of the location
+key**, not by a shuffle — best tier first, and inside a tier by
+`blake2b(key)`. That is what makes a resume exact: the order is the same on every
+machine and stable as the label store grows, so a cursor one insertion ahead
+costs one root served twice rather than re-ordering everything behind it. The
+root id is that same digest, so a root's provenance names a place rather than a
+position.
+
 **The mix is decided where the batch is popped.** Weighting the *root draw* by
 family cannot enforce a mix: anything that only changes what enters the frontier
 is diluted by whatever multiplies fastest inside it. In the source project an
@@ -152,10 +166,15 @@ the junk floor kills; the discount never reaches it.
 
 **A run's `--ledgers` names one root, and the two cross-run indexes are only as
 wide as it.** Both `saturation` and `novelty` read the tree that flag points at,
-so the shipped default of `artifacts` indexes the *hot* tier alone — a checkout
-whose production runs have been archived builds both memories out of whatever
-happens to be local. Naming the archive root explicitly is how a run gets the
-whole history, and it costs one pass per index over every ledger there.
+and the flag's default is the literal string `artifacts`, which resolves through
+`cli.resolve_output` to the **hot** tier — so a checkout whose production runs
+have been archived builds both memories out of whatever happens to be local.
+Naming the archive root explicitly is how a run gets the whole history, and it
+costs one pass per index over every ledger there. `ledgers.ledger_paths` is the
+one place that answers how many that is: with no root it searches **both** tiers,
+with a root it searches that one, and the three counts move every time a subtree
+changes tier — so ask it rather than quoting a number, and a run that prints a
+ledger count smaller than expected is a run pointed at one tier.
 
 **A finished run's saturation verdict is re-derivable, exactly, and that is what
 makes "novel" a readable property of a frame afterwards.** The index is a pure
@@ -194,6 +213,14 @@ for a night of the second kind cost run10 36 active minutes. Size a leg on the
 ratio that matches how the night scores; `--minutes` alone will under-book the
 clock either way, and the tail lands after the last batch rather than inside it.
 
+Both are constants of `fractal_wallpapers/schedule.py` —
+`ACTIVE_TO_WALL_DRAWING_VIEWS` (1.13) and `ACTIVE_TO_WALL_SCORING_GATE_RENDERS`
+(1.013) — and **the run's own config picks between them, not the caller**: a run
+that scores the gate renders the walk already made books 1.013, and one whose
+judge draws its own views books 1.13. `schedule.plan` prints which it used and
+why, so a night that lands late names the ratio it was reserved under instead of
+leaving a reader to guess which kind of night it was.
+
 **A run told one partition allocates its whole clock there.** `--partition` is
 repeatable and defaults to every registered one; naming one keeps the books for
 that partition alone, and its census, its price and its refill census all cover
@@ -207,11 +234,19 @@ or expandable, and every admission is either a new location or one the run
 already had. `ReconcileError` is a `SystemExit`, so the failure is a non-zero exit
 rather than a line in a log — a long unattended run that silently loses
 candidates is the one failure a summary cannot show afterwards, because the
-missing rows are missing from both sides. The checkpoint (`harvest.STATE_SCHEMA`)
-is written at the batch boundary *after* the reconcile, so every state a run can
-resume from is one whose identities closed; what it holds is the frontier, the
-counters, the quota's realized tallies and price accumulators, the floor ledger's
-accrual and the random state.
+missing rows are missing from both sides. The checkpoint (`harvest.STATE_SCHEMA`,
+**5**) is written at the batch boundary *after* the reconcile, so every state a
+run can resume from is one whose identities closed; what it holds is the
+frontier, the counters, the quota's realized tallies and price accumulators, the
+floor ledger's accrual and the random state.
+
+**A checkpoint of an older schema is REFUSED at resume, not adopted.**
+`Harvest.resume` raises on anything but the current number, and each bump was
+taken for the same shape of reason: a schema-4 checkpoint carries no per-partition
+readout books, so resuming from one would reopen the share-against-contest split,
+the head-score histograms and the saturation activations at zero and then report
+medians covering the second session alone, with nothing on the page saying so.
+Refusing costs a run; adopting costs a number nobody can tell is wrong.
 
 **`--finish-by HH:MM` derives `--minutes` from the time the night has to end.**
 The span to the next `HH:MM`, less what has to happen after the harvest — the
