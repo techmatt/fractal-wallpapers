@@ -208,10 +208,20 @@ class TestTheTrackedCorpus:
         )
 
     def test_a_hard_set_opens_on_the_anchor_it_was_built_around(self, grouped) -> None:
+        """Rebuilt over the pool AS THE CORPUS WAS DRAWN FROM IT, which is the
+        inherited part: the drawable pool has since gained an admitted drop, and a
+        neighbourhood is a function of the whole pool it is taken over. The split
+        records the size it drew from, so a redraw against a different pool fails
+        the guard below rather than quietly rebuilding against the wrong one."""
+        import json
+
         from fractal_wallpapers.models import palette_sets
         from fractal_wallpapers.palettes import space
 
-        pool = palette_sets.pool()["pool"]
+        document = palette_sets.pool()
+        drawn_from = json.loads(palette_corpus.split_path().read_text(encoding="utf-8"))["pool"]
+        assert drawn_from == document["inherited"]
+        pool = document["pool"][:drawn_from]
         hard = [entry for entry in grouped if entry["kind"] == "hard"]
         assert hard
         for entry in hard[:5]:

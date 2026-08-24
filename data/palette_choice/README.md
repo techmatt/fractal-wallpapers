@@ -103,8 +103,21 @@ the map it names.
 
 ## `pool.json` — the shipped palette pool
 
-The maps a colorize may choose between: the source project's production pool as
-this repository holds it, 700 of its 987. A map is here because a tracked corpus
-row or a vendored candidate set names it — nothing was brought across to round
-the number up. Every candidate set is therefore complete, and the pool the corpus
-draws from is a subset of the production one.
+The maps a colorize may choose between, in two parts the record counts apart.
+
+**Inherited** — the source project's production pool as this repository holds it,
+700 of its 987. A map is here because a tracked corpus row or a vendored candidate
+set names it — nothing was brought across to round the number up. Every candidate
+set is therefore complete, and the inherited part is a subset of the production
+pool.
+
+**Admitted** — every map of a drop named in `palette_sets.ADMITTED_DROPS`, read off
+the `drop` stamp its provenance row carries. A drop is authored to be drawn, and a
+map nothing may pick is a map nobody sees. `rare-colors-2026-08` puts 200 here, so
+the drawable pool is 900 of the library's 901. (The library's odd map out is
+`blue_orange`, the sequential map the tile floor and the labeler's vivid render
+reserve — a standing job outside the colorize draw.)
+
+Admitting a drop is one line in `ADMITTED_DROPS`, and re-running `palette-extract`
+keeps it: the writer composes the pool from both parts rather than from the source
+pool alone.
