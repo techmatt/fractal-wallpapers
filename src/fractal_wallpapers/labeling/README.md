@@ -23,6 +23,7 @@ label register --batch NAME --method "how the population was drawn" [--head smoo
 label build --from-ledger artifacts/walk/walk.jsonl --batch NAME
 label build --from-plan artifacts/places.jsonl --batch NAME
 label build --from-plan artifacts/promotion.jsonl --head strange_render --batch NAME
+label build --from-plan <plan> --head smooth_render --batch NAME --order-by top
 label sheets
 label serve --sheet artifacts/sheet
 label ingest --sheet artifacts/sheet --labeler matt --write
@@ -215,6 +216,32 @@ the page good→bad, because that is what a correction sheet is worth.
 already holds that spec. The cache names a picture by a digest of everything the
 engine is told, so a hit is the same picture and anything different anywhere is
 a miss.
+
+A plan unit may also name a **`leveled`** directory — a colormap the autolevel
+operator re-baked for one render — and then the sheet renders through that
+instead of through the library's copy of the map. That is what lets a batch
+screen a picture at the sheet's own geometry and be sure the page serves the same
+one: the join is identical either way, so a unit that lost the name would come
+back a different picture with the same identity. `curation.manufacture.verify` is
+the check that says it did not.
+
+### Which judge prefills a finished-render sheet, and which reading orders it
+
+**The head a sheet is cut for names the STORE, not the model.** One judge reads
+both kinds since 2026-08-23 — `curation.floors.SCORING_HEAD` — and it is the only
+finished-render head `fetch-weights` brings down. A sheet that loaded
+`models/<kind>/<kind>.fp16.pt` was reading a retired checkpoint on a scale nothing
+else in this project still speaks, and on a fresh clone it was reading a file that
+is not there.
+
+`--order-by` says which reading the page is read good→bad by. `rank`, the
+default, is the head's expected tier — the sum of its unconditional cutpoints,
+which is what orders a page over the whole scale. `top` is the last cutpoint
+alone, and it exists because the one below it saturates: the first production
+run's released smooth rows had a median `P(≥3)` of 0.9999, so at the good end of a
+page — the end a correction sheet is read from — `P(≥3)` cannot separate two rows
+and `P(≥4)` still can. Only the ordering moves; `suggestion_score` on a row is the
+expected tier either way.
 
 ## One ingest, two stores
 

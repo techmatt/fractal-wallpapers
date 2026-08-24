@@ -6,6 +6,7 @@ release/<run>/<partition>.jsonl  one row per scored candidate: released, or pass
 runs.jsonl                       one row per run: the funnel, the cuts, the configuration
 runs/<run>.json                  that run's own summary, whole
 gallery/<pass>.json              one gallery pass: its slots, its seats and its retro table
+manufacture/<batch>/<kind>.jsonl what a manufactured row was made FOR, keyed on its render
 bar_exceptions.jsonl             rows a ruling keeps in service below an acting bar
 supply_scores.manifest.json      what the untracked supply sidecar is, so a loss shows
 neutral_embeddings.manifest.json what the untracked embedding store is, and under what
@@ -218,3 +219,37 @@ fractal-wallpapers curate reject --run <name> --rejector <who> --date <when>
 fractal-wallpapers curate repeats
 fractal-wallpapers curate retire-repeats --rejector <who> --date <when> --dry-run
 ```
+
+## `manufacture/` — the half of a manufactured row a label store cannot hold
+
+`curate manufacture` forces the rare swatches onto places a person already scored
+a keeper, and puts the results in front of a person to correct. What comes back
+lands in `data/<kind>/rows/` like any other verdict, carrying the place, the mode,
+the map and every knob — everything needed to rebuild the picture, and nothing
+about **why that picture was made**.
+
+That half is here. One row per selected sheet row, per kind, carrying its
+`render_key` — the identity a finished-render verdict is cast on, so the join to
+the store is exact rather than by viewport arithmetic — beside the things only the
+batch knows:
+
+```text
+target       which thin swatch this row was manufactured for
+arm          `new` for a rare-colours-drop map, `contrast` for one the library held
+tier         `human_q3` or `admitted`: which population the location came from
+sheet        what the codebook and the judge read off the picture SERVED
+candidate    the same two readings at candidate geometry, where the screen ran
+```
+
+`batch.json` beside them is the selection: rows per kind, what fell short and
+where, the realized rows-per-map distribution, and the tier and arm splits. It is
+about a kilobyte and a half a row, so a 250-row kind is a third of a megabyte and
+the two kinds are two files — the history guard acts per file, and the split is
+the same one the gallery's slot records take for the same reason.
+
+**The arm is a batch and the tier is a row.** Two batches are registered per
+store — `manufactured_rare_colors` and `manufactured_rare_colors_contrast` —
+because the two arms are two draws and a registration is what says how a
+population was drawn. The tier is not: both tiers are the same draw reaching
+further down one ranked list, so it rides on the row rather than splitting the
+registry four ways.

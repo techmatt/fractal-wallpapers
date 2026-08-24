@@ -16,6 +16,8 @@ from pathlib import Path
 
 from fractal_wallpapers import engine, paths
 from fractal_wallpapers import schedule as schedule_module
+from fractal_wallpapers.curation import manufacture as manufacture_module
+from fractal_wallpapers.labeling import sheets as sheets_module
 from fractal_wallpapers.labeling.finished import HEADS as FINISHED_HEADS
 from fractal_wallpapers.palettes import clusters as palette_clusters
 from fractal_wallpapers.palettes import strip as palette_strip
@@ -1393,6 +1395,7 @@ def label_build(args: argparse.Namespace) -> int:
             resolution=tuple(args.resolution),
             supersample=args.supersample,
             reuse_cache=args.reuse_renders,
+            order_by=args.order_by,
         )
     else:
         if args.from_plan:
@@ -3073,6 +3076,92 @@ def curate_coverage(args: argparse.Namespace) -> int:
     return 0
 
 
+def curate_manufacture(args: argparse.Namespace) -> int:
+    """Force the rare swatches onto good places, measure what landed, and cut the sheets."""
+    from fractal_wallpapers.curation import manufacture
+
+    steps = ("register", "plan", "screen", "confirm", "select", "read")
+    wanted = steps if args.step_of_manufacture == "all" else (args.step_of_manufacture,)
+    try:
+        if "register" in wanted:
+            for line in manufacture.register(write=args.write):
+                print(line)
+            if wanted == ("register",):
+                return 0
+        if "plan" in wanted:
+            manufacture.build_plan(
+                oversample=args.oversample,
+                rows_per_kind=args.rows_per_kind,
+                seed=args.seed,
+                batch=args.batch,
+            )
+        if "screen" in wanted:
+            manufacture.screen(workers=args.workers, device=args.device, batch=args.batch)
+        if "confirm" in wanted:
+            manufacture.confirm(workers=args.workers, device=args.device, batch=args.batch)
+        if "select" in wanted:
+            manufacture.select(rows_per_kind=args.rows_per_kind, batch=args.batch)
+        if args.step_of_manufacture == "top-up":
+            manufacture.top_up(oversample=args.oversample, batch=args.batch)
+            return 0
+        if args.step_of_manufacture == "knobs":
+            probe = manufacture.probe_knobs(sample=args.knob_sample, batch=args.batch)
+            print(json.dumps(probe, indent=2))
+            return 0
+        if args.step_of_manufacture == "verify":
+            if not args.sheet:
+                print("--step verify needs --sheet, the built sheet to check")
+                return 1
+            held = manufacture.verify(resolve_output(args.sheet), args.batch)
+            print(json.dumps(held, indent=2))
+            return 0 if held["held"] else 1
+        if "read" not in wanted:
+            return 0
+        readout = manufacture.read(args.batch)
+    except manufacture.ManufactureError as refusal:
+        print(refusal)
+        return 1
+
+    spent = readout["yield"]
+    print(
+        f"\n{spent['attempts']} attempts over {spent['locations']} locations -> "
+        f"{spent['attempts_past_screen']} past the screen -> {spent['confirmed']} confirmed -> "
+        f"{spent['served']} served "
+        f"({spent['lost_to_colour']} lost to colour, {spent['lost_to_tier']} to the tier cut)"
+    )
+    selection = readout["selection"]
+    for kind, rows in sorted(selection["rows"].items()):
+        print(f"{kind:<16} {rows} rows")
+    if selection["shortfall"]:
+        print(f"short in {len(selection['shortfall'])} cell(s): {selection['shortfall']}")
+    spread = selection["rows_per_map"]
+    print(
+        f"maps {spread['maps_used']} carrying at most {spread['cap']} rows each, "
+        f"{spread['distribution']}; tiers {selection['tiers']}; arms {selection['arms']}"
+    )
+
+    print("\nper target swatch: locations that reached 10%, worst first")
+    for swatch, cell in readout["hit_rate"].items():
+        flag = "  DEFECT?" if cell["probable_defect"] else ""
+        print(
+            f"  {swatch:<24} {cell['reached']:>3}/{cell['locations']:<3} "
+            f"{cell['rate']:.2f}  best {cell['best_share']:.3f}{flag}"
+        )
+    moved = readout["drift"]
+    if moved["rows"]:
+        print(
+            f"\ncandidate -> sheet geometry over {moved['rows']} rows: share moves a median "
+            f"{moved['share_median']:.4f}, p95 {moved['share_p95']:.4f}, worst "
+            f"{moved['share_worst']:.4f}; {moved['crossed_the_threshold']} cross 10%; "
+            f"tier {moved['tier']}"
+        )
+    print(f"\nplan      {display_path(manufacture.plan_path(args.batch))}")
+    for kind in sorted(selection["rows"]):
+        print(f"sheet plan {display_path(manufacture.sheet_plan_path(kind, args.batch))}")
+    print(f"record    {display_path(manufacture.record_dir(args.batch))}")
+    return 0
+
+
 def curate_expressed(args: argparse.Namespace) -> int:
     """How much of the codebook the finished collection expresses, and what a floor could ask."""
     from fractal_wallpapers.curation import expressed
@@ -4053,6 +4142,15 @@ def label_commands(subcommands) -> None:
         help="take a unit's picture off this head's render cache where the cache already holds "
         "that exact spec, instead of rendering it again. The cache names a picture by a digest "
         "of everything the engine is told, so a hit is the same picture",
+    )
+    building.add_argument(
+        "--order-by",
+        choices=list(sheets_module.ORDERINGS),
+        default="rank",
+        help="which reading a FINISHED-RENDER page is ordered good-to-bad by: `rank`, the "
+        "head's expected tier over the whole scale (default), or `top`, its last cutpoint "
+        "alone — which is what separates rows at the good end of a page, where the "
+        "cutpoint below it is saturated",
     )
     building.add_argument(
         "--out-dir",
@@ -6203,6 +6301,91 @@ def curate_commands(subcommands) -> None:
         "rung, and the maps reaching 20% with the drop's members marked",
     )
     covering.set_defaults(handler=curate_coverage)
+
+    manufacturing = steps.add_parser(
+        "manufacture",
+        help="force the rare swatches onto good places, and cut the correction sheets",
+        description=(
+            "Every other population here is found; this one is made. A location a person "
+            "already scored a keeper is coloured through a map CHOSEN because the coverage "
+            "read says it can reach a target swatch, in a mode drawn the way a run draws "
+            "one, under the identity recipe production uses. A map's ramp does not predict "
+            "what a picture holds, so the order is build, measure, then select: every "
+            "attempt is screened at candidate geometry, the best one at each location is "
+            "re-rendered at the sheet's own, and both cuts — a tenth of the pixels on the "
+            "target, at least a 2 from the render judge — act on that second reading. The "
+            "batch is model- and construction-conditioned and is registered train-side "
+            "before a pixel is made; a tenth of its rows force the same swatches through "
+            "maps the library already held, so a correction cannot be read as being about "
+            "the drop when it is about the colour."
+        ),
+    )
+    manufacturing.add_argument(
+        "--step",
+        dest="step_of_manufacture",
+        choices=[
+            "all",
+            "register",
+            "plan",
+            "screen",
+            "confirm",
+            "select",
+            "read",
+            "top-up",
+            "verify",
+            "knobs",
+        ],
+        default="all",
+        help="run one step only (default: all six, in order). Three are not among them: "
+        "`top-up` extends the plan for the cells a selection came back short in, `verify` is "
+        "taken against a sheet after it has been built, and `knobs` measures the "
+        "counterfactual the diagnostic asks about",
+    )
+    manufacturing.add_argument(
+        "--sheet",
+        help="a built sheet, for --step verify: does it serve the picture the cuts were "
+        "taken on, byte for byte, and does its own reading of the judge agree",
+    )
+    manufacturing.add_argument(
+        "--batch",
+        default=manufacture_module.BATCH,
+        help=f"the batch this is (default: {manufacture_module.BATCH})",
+    )
+    manufacturing.add_argument(
+        "--rows-per-kind",
+        type=int,
+        default=manufacture_module.ROWS_PER_KIND,
+        help=f"rows on each kind's sheet (default: {manufacture_module.ROWS_PER_KIND})",
+    )
+    manufacturing.add_argument(
+        "--oversample",
+        type=float,
+        default=4.0,
+        help="how many locations a cell attempts per row it owes (default: 4). The yield is "
+        "a property of this population and nothing measured elsewhere predicts it, so pilot "
+        "it on a small plan before spending the night's build on a guess",
+    )
+    manufacturing.add_argument(
+        "--seed", type=int, default=manufacture_module.SEED, help="the draw's seed"
+    )
+    manufacturing.add_argument(
+        "--workers", type=int, default=6, help="how many groups are built at once (default: 6)"
+    )
+    manufacturing.add_argument("--device", default="auto", help="cuda, cpu, or auto")
+    manufacturing.add_argument(
+        "--knob-sample",
+        type=int,
+        default=120,
+        help="how many missed attempts --step knobs re-colours through the knob grid "
+        "(default: 120). Nothing in this project renders through those knobs; the sweep "
+        "prices what a draw production does not make would have bought",
+    )
+    manufacturing.add_argument(
+        "--write",
+        action="store_true",
+        help="the register step appends; otherwise it prints what it would register",
+    )
+    manufacturing.set_defaults(handler=curate_manufacture)
 
     expressing = steps.add_parser(
         "expressed",

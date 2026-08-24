@@ -138,6 +138,15 @@ LABEL_RESOLUTION = (1280, 720)
 LABEL_SUPERSAMPLE = 2
 LABEL_FILTER = "lanczos3"
 
+#: How a finished-render page reads good->bad, and which reading each name is.
+#: `rank` is the sum of the unconditional cutpoints — the head's expected tier,
+#: which is what orders a page over the whole scale. `top` is the last cutpoint
+#: alone, and it exists because the one below it saturates: the first production
+#: run's released smooth rows had a median `P(>=3)` of 0.9999, so at the good end
+#: of a page — which is the end a correction sheet is read from — `P(>=3)` cannot
+#: separate two rows and `P(>=4)` still can.
+ORDERINGS: tuple[str, ...] = ("rank", "top")
+
 #: The overview grid's thumbnails. Small on purpose: three hundred full renders
 #: in one page's sidebar is a page that never finishes loading.
 THUMB_WIDTH = 320
@@ -678,16 +687,27 @@ def render_finished(join: dict, output: Path, colormaps: Path | None = None) -> 
 
 
 def score_pictures(head: str, pictures: list[Path]) -> tuple[list, int]:
-    """Every picture through the shipped judge. Unconditional cutpoints.
+    """Every picture through the shipped finished-render judge. Unconditional cutpoints.
+
+    `head` names the **kind** this sheet was cut for — which store the verdicts
+    land in — and it does not name a model. One judge reads both kinds since
+    2026-08-23, it is [`curation.floors.SCORING_HEAD`], and it is the only thing
+    on the roster `fetch-weights` brings down: a sheet that loaded
+    `models/<kind>/<kind>.fp16.pt` was reading a retired checkpoint on a scale
+    nothing else in this project still speaks, and on a fresh clone it was
+    reading a file that is not there.
 
     Returns the probabilities and **the checkpoint's own class count**, which is
     what decides how far a decode can reach. The store is cast on
-    [`finished.SCALE`] and is wider than one of these heads; a suggestion is a
-    fact about the model and may never be stretched to the scale of the page.
+    [`finished.SCALE`]; a suggestion is a fact about the model and may never be
+    stretched to the scale of the page.
     """
-    from fractal_wallpapers.models import finished_scoring, scoring, ship, train
+    from fractal_wallpapers.curation import floors
+    from fractal_wallpapers.models import render_train, scoring, ship, train
 
-    model, config, where = finished_scoring.load(ship.shipped_path(head), "auto")
+    finished.head_of(head)
+    judge = floors.SCORING_HEAD
+    model, config, where = render_train.load_checkpoint(ship.shipped_path(judge), "auto")
     classes = int(config["classes"])
     probabilities = train.score(
         model, pictures, scoring.transform_of(config), where, classes, {"batch_size": 32}
@@ -703,6 +723,7 @@ def finished_source(
     renderer=None,
     scores=None,
     reuse_cache: bool = False,
+    order_by: str = "rank",
 ) -> Source:
     """The source that asks whether a finished picture is worth keeping.
 
@@ -724,6 +745,8 @@ def finished_source(
     from fractal_wallpapers.supply.partitions import partition_of_family
 
     head = finished.head_of(head)
+    if order_by not in ORDERINGS:
+        raise SheetError(f"unknown ordering {order_by!r} — known: {list(ORDERINGS)}")
     render = render_finished if renderer is None else renderer
     picked: dict = {"colorizer": None, "anchors": None, "cyclic": None}
     notes: dict = {"reused_from_cache": 0, "rendered": 0}
@@ -836,6 +859,12 @@ def finished_source(
             # The score orders the page whoever prefilled it: a revision sheet is
             # still worth most read good→bad by the judge the labels train.
             row["suggestion_score"] = float(sum(probability))
+            # What the page is READ in, which is a separate choice from what the
+            # row reports. `suggestion_score` is the head's expected tier and is
+            # on every row of every sheet; this is the one the order is taken on.
+            row["_order_score"] = (
+                float(probability[-1]) if order_by == "top" else float(sum(probability))
+            )
             if stated is None:
                 # The decode reaches as far as the CHECKPOINT can, never as far as
                 # the page can: this head emits `classes - 1` cutpoints and a tier
@@ -854,11 +883,13 @@ def finished_source(
         for row in rows:
             if row["section"] not in sections:
                 sections.append(row["section"])
+        scores = [row.pop("_order_score") for row in rows]
         indices = sorted(
             range(len(rows)),
-            key=lambda i: (sections.index(rows[i]["section"]), -rows[i]["suggestion_score"], i),
+            key=lambda i: (sections.index(rows[i]["section"]), -scores[i], i),
         )
-        return indices, "score" if len(sections) == 1 else "sections"
+        reading = "score" if order_by == "rank" else "p_ge4"
+        return indices, reading if len(sections) == 1 else f"sections, {reading}"
 
     return Source(
         kind="finished_render",
