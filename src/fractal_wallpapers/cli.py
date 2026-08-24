@@ -3073,6 +3073,58 @@ def curate_coverage(args: argparse.Namespace) -> int:
     return 0
 
 
+def curate_expressed(args: argparse.Namespace) -> int:
+    """How much of the codebook the finished collection expresses, and what a floor could ask."""
+    from fractal_wallpapers.curation import expressed
+
+    try:
+        if args.step_of_expressed in ("census", "all"):
+            expressed.census()
+        readout = expressed.take() if args.step_of_expressed in ("read", "all") else None
+    except expressed.ExpressedError as refusal:
+        print(refusal)
+        return 1
+    if readout is None:
+        return 0
+
+    population = readout["population"]
+    budget = readout["budget"]
+    print(
+        f"\npopulation {population['pictures']} finished wallpapers over "
+        f"{len(population['runs'])} passes, {population['rejected_afterwards']} since taken back"
+    )
+    for label in ("all", "non_neutral"):
+        cell = budget[label]
+        spread = cell["distribution"]
+        print(
+            f"{label:<12} mean {cell['sum_coverage']:.3f} swatches expressed over "
+            f"{cell['swatches']} "
+            f"(median {spread['median']:g}, {spread['min']}-{spread['max']}); "
+            f"largest uniform floor that fits: {cell['implied_ceiling']:.4f}"
+        )
+    print("\nthinnest first:")
+    for swatch in readout["ranked"][:12]:
+        value = readout["coverage"][swatch]
+        print(f"  {swatch:<26} {value:.4f}  ({round(value * population['pictures'])})")
+    print(f"  ... and {len(readout['ranked']) - 12} more, in the readout")
+    census_gap = readout["agreement"]["census_decode"]
+    print(
+        f"\n160x90 decode moves a swatch by at most "
+        f"{census_gap['worst_swatch_move']:.4f} and flips "
+        f"{census_gap['threshold_cells_flipped']} of {census_gap['threshold_cells']} cells"
+    )
+    cost = readout["recolor_cost"]
+    print(
+        f"recolor pass over {cost['thin_swatches']} thin swatches would put "
+        f"{cost['carriers_union']} carrier maps through "
+        f"{cost['populations']['field']['pictures']} field pictures and "
+        f"{cost['populations']['not_field']['pictures']} that need a re-render"
+    )
+    print(f"\nexpressed {display_path(expressed.readout_path())}")
+    print(f"pictures  {display_path(expressed.pictures_path())}")
+    return 0
+
+
 def modes(args: argparse.Namespace) -> int:
     """List the named colorings, what each one is for, and whether it ships.
 
@@ -6151,6 +6203,30 @@ def curate_commands(subcommands) -> None:
         "rung, and the maps reaching 20% with the drop's members marked",
     )
     covering.set_defaults(handler=curate_coverage)
+
+    expressing = steps.add_parser(
+        "expressed",
+        help="how much of the codebook the finished collection expresses, and what a "
+        "per-swatch floor could arithmetically ask for",
+        description=(
+            "COVERAGE(s) is the fraction of finished full-size wallpapers in which at least "
+            "a tenth of the pixels are assigned to swatch s, read off the shipped render at "
+            "its own resolution rather than off the candidate that stands behind it. Summed "
+            "over the fifty-two, COVERAGE is the mean number of swatches a wallpaper "
+            "expresses — which is what decides whether a uniform per-swatch floor can exist "
+            "at all, since a floor of f across k swatches asks the average picture for f*k "
+            "expressed colours. Measurement only: no floor is set and nothing is gated."
+        ),
+    )
+    expressing.add_argument(
+        "--step",
+        dest="step_of_expressed",
+        choices=["all", "census", "read"],
+        default="all",
+        help="run one step only: census every finished wallpaper, or read the tables off a "
+        "census already taken (default: both)",
+    )
+    expressing.set_defaults(handler=curate_expressed)
 
 
 def location_arguments(draw: argparse.ArgumentParser) -> None:
