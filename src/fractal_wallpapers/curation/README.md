@@ -24,6 +24,7 @@ release    the selected rows again at full size, workers rendering
 pacing     the wall clock: what may still start, and what is killed
 records    what the run decided, and out of what population
 rejection  taking a released row back afterwards, without losing what the run did
+below_bar  the glance sheet of what an acting bar would take back, to rule off
 sheet      the same thing laid out for a person to disagree with
 checks     the two claims only a re-render can settle
 run        the wiring, and nothing else
@@ -40,6 +41,7 @@ fractal-wallpapers curate run --run v1 --harvest artifacts/harvest_run3
 fractal-wallpapers curate run --run v1 --ledger artifacts/harvest_run3/walk.jsonl \
     --wall-budget 28800                                            # eight hours, or less
 fractal-wallpapers curate run --resume v1                          # carry on where it stopped
+fractal-wallpapers curate below-bar                    # the read to take BEFORE reject
 fractal-wallpapers curate reject --run v1 --rejector matt_review --date 2026-08-17
 fractal-wallpapers curate reach --write scratch/unreached_keys.jsonl   # the gap, as a manifest
 fractal-wallpapers curate score --ledger <l> --key-file scratch/unreached_keys.jsonl
@@ -584,6 +586,24 @@ them one by one, with the bar, the score, who ruled and when, and
 exception naming a run would go on excusing rows that run has not made yet, and
 one naming a head would retire the bar by the back door. A pass names what it
 excused in its report.
+
+**The read to take before the pass is a page of pictures, not a list of keys.**
+`curate below-bar` ([`below_bar`](below_bar.py)) draws every served wallpaper an
+acting bar would take back today — one row each, the picture at 560px with the
+key, the kind and the current `P(≥3)` against that kind's floor under it, best
+score first — into `scratch/below_bar_glance.html`, self-contained and carrying
+its own thumbnails. It decides nothing and writes nothing else: whether a picture
+is a wallpaper is the one judgement no head here is asked for, and a bar that
+moved under a row is a reason to look rather than a verdict.
+
+The population is `rejection.below_acting_bar`'s own, so the sheet and the pass
+cannot disagree; the rows a ruling holds in service are on the page under their
+own heading and are **not** counted with the rest, because a reviewer shown only
+the condemned rows would read the page as the whole below-bar set. A row can be
+dropped by key with `--exclude`, which refuses a key that is not below the bar
+today — a sheet quietly one row short cannot be checked against the store — and
+prints the keys and the `--exclude-reason` on the page, since an exclusion is a
+person's call rather than a rule.
 
 **Serving order is score rank within the partition, within a kind.**
 `records.score_rank` ranks every `(partition, kind)` pool separately and then
