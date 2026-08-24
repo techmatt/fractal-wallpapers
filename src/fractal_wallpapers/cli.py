@@ -3019,6 +3019,58 @@ def curate_colors(args: argparse.Namespace) -> int:
     return 0
 
 
+def curate_coverage(args: argparse.Namespace) -> int:
+    """Coverage on pixels: how many maps can put each swatch on a real share of a picture."""
+    from fractal_wallpapers.curation import palette_coverage as coverage
+
+    try:
+        if args.step_of_coverage in ("panel", "all"):
+            coverage.build_panel()
+        if args.step_of_coverage in ("probe", "all"):
+            coverage.probe(workers=args.workers)
+        if args.step_of_coverage in ("read", "all"):
+            readout = coverage.take()
+        else:
+            return 0
+    except coverage.CoverageError as refusal:
+        print(refusal)
+        return 1
+
+    thin = coverage.thinnest(readout)
+    table = readout["capability"]
+    print(f"\npanel   {len(readout['panel']['cells'])} cells, {readout['panel']['modes']}")
+    print(
+        f"maps    {table['all']['maps']} ({table['prior']['maps']} pre-existing, "
+        f"{table['drop']['maps']} in the drop)"
+    )
+    print(f"thinnest at 10%: {', '.join(thin)}")
+    for swatch in thin:
+        cells = table["all"]["swatches"][swatch]
+        prior = table["prior"]["swatches"][swatch]
+        print(
+            f"  {swatch:<26} "
+            + "  ".join(
+                f"{int(t * 100):>2}%: {cells[f'at_{int(t * 100)}pct']:>3}"
+                f"({prior[f'at_{int(t * 100)}pct']:>3})"
+                for t in coverage.THRESHOLDS
+            )
+        )
+    print(f"false capabilities (fold off only): {len(readout['false_capabilities'])}")
+    print(
+        f"realized: {readout['realized']['maps']} maps over "
+        f"{readout['realized']['renders']} pool renders"
+    )
+    print(f"\ncoverage {display_path(coverage.readout_path())}")
+    print(f"rows     {display_path(coverage.rows_path())}")
+
+    if args.sheet:
+        page = coverage.contact_sheet(
+            readout, coverage.read_rows(), repo_root() / "scratch" / "palette_coverage"
+        )
+        print(f"sheet    {display_path(page)}")
+    return 0
+
+
 def modes(args: argparse.Namespace) -> int:
     """List the named colorings, what each one is for, and whether it ships.
 
@@ -6053,6 +6105,43 @@ def curate_commands(subcommands) -> None:
         "Joins the library and survival stages, so it reads them off the merged artifact",
     )
     colouring_census.set_defaults(handler=curate_colors)
+
+    covering = steps.add_parser(
+        "coverage",
+        help="coverage on pixels: how many maps can put each swatch on a real share of an image",
+        description=(
+            "The census counts a swatch's share of a colormap's ramp; this counts its share "
+            "of an image's pixels, which is a different number. An escape-time field piles "
+            "up at one end of its own stretch and production folds every non-cyclic map, so "
+            "a map can carry a colour across a quarter of its gradient and put it almost "
+            "nowhere. Two reads, side by side and never pooled: capability, a max over a "
+            "fixed probe panel chosen for its field shapes; and realized supply, a count "
+            "over the renders the pool already holds, which re-renders nothing. A map "
+            "reaching a swatch only with the fold off is reported apart as a false "
+            "capability, because production never colours that way."
+        ),
+    )
+    covering.add_argument(
+        "--step",
+        dest="step_of_coverage",
+        choices=["all", "panel", "probe", "read"],
+        default="all",
+        help="run one step only: draw and choose the panel, put every map through it, or "
+        "read the tables off rows already written (default: all three)",
+    )
+    covering.add_argument(
+        "--workers",
+        type=int,
+        default=6,
+        help="how many cells are probed at once (default: 6)",
+    )
+    covering.add_argument(
+        "--sheet",
+        action="store_true",
+        help="also write the contact sheet to scratch/ — the weakest picture each threshold "
+        "admits, for the swatches fewest maps can reach, so the bar is set by eye",
+    )
+    covering.set_defaults(handler=curate_coverage)
 
 
 def location_arguments(draw: argparse.ArgumentParser) -> None:
