@@ -37,9 +37,15 @@ that does not announce itself is the kind of thing a reader takes for evidence.
 hand and are the ones a render chooses from; the rest arrived with the
 finished-render corpora and with the palette head's vendored candidate sets,
 because a row — or a recorded decision — naming a map nobody holds is about a
-picture nobody can rebuild. Three files in there are not maps and are named
-`.jsonl`/`.md`/`.py` so no reader globbing `*.json` mistakes them for one:
-`provenance.jsonl` says how the authored and extracted maps were made,
-`clusters.jsonl` groups the library for a figure, and `generator_prompt.md` with
-`validate_palettes.py` are the brief the authored maps were written against and
-the checker a reader runs on their own output.
+picture nobody can rebuild. Two files in there are not maps and are named `.jsonl`
+so no reader globbing `*.json` mistakes them for one: `provenance.jsonl` says how
+the authored and extracted maps were made, and `clusters.jsonl` groups the library
+for a figure. `batches/` holds the generator runs that authored the maps added
+since, one directory per drop, and is the other half of what `provenance.jsonl`
+records.
+
+`palette_authoring/` is how a palette gets written in the first place: the brief a
+generator run is given, a variant of it aimed at one colour region rather than one
+mood, and the standalone checker both name. It sits apart from the library because
+none of it is a colormap and none of it is read at render time — three files among
+nine hundred maps are three files nobody finds.

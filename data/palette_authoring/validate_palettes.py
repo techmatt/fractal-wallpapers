@@ -9,6 +9,9 @@ python validate_palettes.py batch.json      # one emitted batch (a JSON array)
 python validate_palettes.py --dir results   # every batch in a directory
 ```
 
+`--dir` checks the files in a directory that *are* batches and names the ones it
+skipped, so a directory that also holds a record about its batches walks cleanly.
+
 The exit code is 0 exactly when there are no ERRORs. Warnings never change it.
 
 **This file is authoritative for the mechanical rules.** `generator_prompt.md`
@@ -358,11 +361,31 @@ def report_duplicates(pairs, scope: str) -> int:
     return len(duplicates)
 
 
+def is_batch(path: Path) -> bool:
+    """Whether this JSON file is a batch of palettes at all.
+
+    A directory of batches may hold a record about them rather than one of them —
+    a note, an index, a table of renames. Checking the shape is how `--dir` walks
+    a real directory without being told what else is in it; refusing to look at a
+    file the generator did not emit is not the same as passing it.
+    """
+    try:
+        document = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    return isinstance(document, list) and all(
+        isinstance(entry, dict) and "stops" in entry for entry in document
+    )
+
+
 def main() -> int:
     arguments = sys.argv[1:]
     if arguments and arguments[0] == "--dir":
         directory = Path(arguments[1] if len(arguments) > 1 else "results")
-        files = sorted(directory.glob("*.json"))
+        files = [path for path in sorted(directory.glob("*.json")) if is_batch(path)]
+        skipped = sorted(path.name for path in directory.glob("*.json") if path not in set(files))
+        if skipped:
+            print(f"--- not batches, not checked: {', '.join(skipped)} ---\n")
         total, pairs = 0, []
         for path in files:
             errors, found = report(path)
