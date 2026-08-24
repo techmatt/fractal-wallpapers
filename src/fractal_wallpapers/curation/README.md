@@ -884,3 +884,54 @@ maps, is 16,912 recolors at about 75 ms each: 21 minutes serial, about 6 with
 Each recolor is censused and its JPEG overwritten rather than kept — keeping them
 would be a gigabyte of pictures answering four hundred bytes each — so the contact
 sheet re-makes the sixteen tiles it shows.
+
+## What the finished collection expresses
+
+[`expressed`](expressed.py) asks the same question one step further downstream,
+about the pictures that exist rather than the maps that could make them:
+
+```text
+COVERAGE(s) = the fraction of finished wallpapers in which at least
+              10% of the pixels are assigned to swatch s
+```
+
+```
+fractal-wallpapers curate expressed                 # census, then read
+fractal-wallpapers curate expressed --step census   # read every finished wallpaper only
+fractal-wallpapers curate expressed --step read     # tables off a census already taken
+```
+
+```
+artifacts/curation/expressed/pictures.jsonl   one row per finished wallpaper, four share vectors
+artifacts/curation/expressed/expressed.json   the coverage vector, the budget, the agreement table
+```
+
+**The budget is the finding, and it is arithmetic.** Summed over a set of
+swatches, COVERAGE *is* the mean number of them a picture expresses — the same
+double sum read down the columns instead of across the rows. So a uniform floor
+`f` over `k` swatches asks the average picture for `f * k` expressed colours, and
+the largest `f` that can exist is `mean / k` whatever curation does. Both halves
+are reported, all 52 and the 48 non-neutral, each with the whole histogram: the
+population is 246 pictures over seven integers and every bar is a sentence about
+what a floor would have to be true of.
+
+**Population: the verdict, checked.** Every release row whose verdict is
+`released` and whose full-size picture is on disk — the file is tested rather than
+trusted, because a coverage vector short a picture is a number nobody can
+reproduce. A row [`rejection`](rejection.py) took back afterwards is **kept**:
+this is a question about colour, not about seating.
+
+**Read at the shipped render's own resolution.** A share vector is not
+scale-free, so the census reads the release PNG at 2560x1440 and the two cheap
+instruments are priced against it rather than assumed. The 160x90 decode
+[`codebook.of_picture`](../palettes/codebook.py) uses moves a swatch by at most
+0.7 of a point over the released population and flips 12 of 12,792 threshold
+cells. The **candidate render is a different picture** — half the supersampling
+at a sixteenth of the area, levelled off its own histogram — and moves a median
+of 2.1 points, up to 64. That is why a recolor pass would screen at candidate
+geometry and never measure there.
+
+**Runtime.** 246 pictures, four share vectors each, about 180 s. The recolor pass
+the readout *prices* is not run: `recolor_cost` reports the cross product it
+would need — 724 carrier maps over 194 field pictures and 52 that need a whole
+re-render per map — so the decision to spend it is taken against a number.
