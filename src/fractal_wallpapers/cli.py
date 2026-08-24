@@ -2689,6 +2689,8 @@ def curate_gallery(args: argparse.Namespace) -> int:
             reseat=args.reseat,
             no_attempts=args.no_attempts,
             full_size=not args.no_full_size,
+            refine=not args.no_refine,
+            margin=args.refine_margin,
             seed=args.seed,
             workers=args.workers,
             device=args.device,
@@ -2767,6 +2769,37 @@ def print_gallery(record: dict) -> None:
                     else ""
                 )
             )
+
+    refine = record.get("refine") or {}
+    if refine.get("locations"):
+        widths = ", ".join(f"x{name}: {count}" for name, count in refine["chosen_width"].items())
+        moves = ", ".join(f"{name}: {count}" for name, count in refine["chosen_move"].items())
+        gain = refine.get("gain_adopted") or {}
+        print(
+            f"\nREFINE: {refine['adopted']}/{refine['locations']} location(s) took a new framing "
+            f"at margin {refine['margin']:g} ({refine['adopted_share'] * 100:.1f}%), "
+            f"{refine['frames']} frame(s) in {refine['seconds']:.0f}s "
+            f"({refine['seconds_per_location']:.2f}s a location)"
+        )
+        if widths:
+            print(f"  width {widths}   move {moves}")
+        if gain:
+            print(
+                f"  gain where adopted, nats of log-odds on P(>=4): median {gain['median']:.2f}, "
+                f"q25 {gain['q25']:.2f}, q75 {gain['q75']:.2f}, max {gain['max']:.2f}"
+            )
+        refused = ", ".join(f"{count} {name}" for name, count in refine["refused"].items())
+        if refused:
+            print(f"  kept the recorded framing: {refused}")
+        agreement = refine.get("sidecar_agreement") or {}
+        if agreement.get("compared"):
+            print(
+                f"  the scan's read of the recorded framing against the sidecar's: "
+                f"{agreement['exact']}/{agreement['compared']} exact, "
+                f"largest gap {agreement['max_abs_delta_p_ge4']:g}"
+            )
+    elif not refine.get("on", True):
+        print("\nREFINE: off (--no-refine); every attempt is framed where the pool records it")
 
     attempts, rendered = record["attempts"], record["render"]
     print(
@@ -5653,10 +5686,13 @@ def coloring_commands(subcommands) -> None:
 
 def curate_commands(subcommands) -> None:
     """The last stage: harvest supply in, released wallpapers out."""
+    import math
+
     from fractal_wallpapers.curation import below_bar as below_bar_module
     from fractal_wallpapers.curation import budget as budget_module
     from fractal_wallpapers.curation import colors as colors_module
     from fractal_wallpapers.curation import embeddings as embeddings_module
+    from fractal_wallpapers.curation import framing as framing_module
     from fractal_wallpapers.curation import gallery as gallery_module
     from fractal_wallpapers.curation import run as run_module
 
@@ -6061,6 +6097,28 @@ def curate_commands(subcommands) -> None:
         "AFFORDANCE for iterating on the selection and never how a pass is really run: "
         "without the attempt leg the pass is bound to the fraction of the admitted "
         "population some run happened to colour",
+    )
+    gallerying.add_argument(
+        "--no-refine",
+        action="store_true",
+        help="do not scan a location's framing before its attempts render. Refining is ON: "
+        "before the attempt leg colours a location, a small window of framings around the one "
+        "the pool records is drawn at the node regime and read through the location head, and "
+        "the best is adopted if it beats the recorded framing by --refine-margin. Seating and "
+        "the radius are decided on unrefined geometry either way, so this changes what the "
+        "attempts are pictures OF and nothing about which places the pass chose",
+    )
+    gallerying.add_argument(
+        "--refine-margin",
+        type=float,
+        default=framing_module.MARGIN,
+        metavar="DELTA",
+        help=f"how much better a framing has to read before it is adopted, in NATS of log-odds "
+        f"on P(>=4) - strict improvement, never argmax, so a window whose best does not clear "
+        f"it keeps the recorded framing. Log-odds and not probability because the locations "
+        f"this step sees read P(>=4) near 1 at every framing, where an absolute margin refuses "
+        f"everything (default: {framing_module.MARGIN:g} nats, a factor of "
+        f"{math.exp(framing_module.MARGIN):.1f} in the odds)",
     )
     gallerying.add_argument(
         "--no-full-size",

@@ -158,6 +158,7 @@ from fractal_wallpapers.curation import (
     release,
     selection,
 )
+from fractal_wallpapers.curation import framing as framing_module
 from fractal_wallpapers.curation import run as run_module
 from fractal_wallpapers.paths import tracked_name
 from fractal_wallpapers.supply import apportion
@@ -1002,9 +1003,19 @@ def read_retro(slots: list, matrix, pairs: int = RETRO_PAIRS) -> dict:
 # --------------------------------------------------------------------------- #
 # Step 5: the attempts.
 # --------------------------------------------------------------------------- #
+#: What a planned attempt is framed at. [`REFINED`] is whatever the refine leg
+#: decided for that location, which is the original framing wherever it adopted
+#: nothing; [`ORIGINAL`] is the recorded framing, always, and it is what the
+#: fallback leg asks for after every refined attempt on a slot landed under the
+#: bar.
+REFINED = "refined"
+ORIGINAL = "original"
+
+
 @dataclass(frozen=True)
 class Try:
-    """One planned attempt: a location, a head, and its place in that head's draw."""
+    """One planned attempt: a location, a head, its place in that head's draw — and
+    which framing of the location it is rendered at."""
 
     key: str
     partition: str
@@ -1012,6 +1023,12 @@ class Try:
     rank: int
     modes_drawn: int
     mode_index: int
+    #: [`REFINED`] or [`ORIGINAL`]. Part of the identity of a planned attempt and
+    #: not of the [`budget_module.Attempt`] it becomes: the mode draw is seeded off
+    #: the location and the head, so the two framings of one location draw the
+    #: *same* modes — which is what makes the fallback a controlled comparison
+    #: rather than a second roll of the dice.
+    framing: str = REFINED
 
     def plan(self) -> budget_module.Attempt:
         return budget_module.Attempt(
@@ -1024,7 +1041,15 @@ class Try:
         )
 
 
-def attempt_plan(slots: list, ranks: dict, smooth: int, strange: int, already=()) -> list[Try]:
+def attempt_plan(
+    slots: list,
+    ranks: dict,
+    smooth: int,
+    strange: int,
+    already=(),
+    framing: str = REFINED,
+    keys: set | None = None,
+) -> list[Try]:
     """Every attempt these slots ask for that `already` does not hold, in key order.
 
     Two slots whose neighbourhoods overlap ask for the same location's attempts,
@@ -1033,18 +1058,26 @@ def attempt_plan(slots: list, ranks: dict, smooth: int, strange: int, already=()
     So the plan is over the **union** of every slot's locations, and step 6 reads
     whichever of them its own neighbourhood names.
 
-    `already` is the locations a previous round of this pass has planned, and it
-    is what makes the plan **extendable rather than rebuilt**. A re-seat adds
-    neighbourhoods; the pass appends their attempts to the plan it already has,
-    and never re-sorts it. That is not tidiness: an attempt's identity is its
-    position in the plan — the candidate log resumes on it, and the palette
-    anchor is drawn on it — so a plan whose front half re-ordered between two
-    invocations would resume a killed pass onto other attempts' pictures.
+    `already` is the `(key, framing)` pairs a previous round of this pass has
+    planned, and it is what makes the plan **extendable rather than rebuilt**. A
+    re-seat adds neighbourhoods; the pass appends their attempts to the plan it
+    already has, and never re-sorts it. That is not tidiness: an attempt's
+    identity is its position in the plan — the candidate log resumes on it, and
+    the palette anchor is drawn on it — so a plan whose front half re-ordered
+    between two invocations would resume a killed pass onto other attempts'
+    pictures.
+
+    The pair and not the key, because one location can be planned twice: once at
+    the framing the refine leg chose and once, if the slot standing on it came up
+    empty, at the framing the record holds. `keys` narrows the plan to a named
+    set, which is how the fallback asks for those locations and no others.
     """
     seen: dict[str, str] = {}
     for slot in slots:
         for key in slot.locations:
-            if key not in already:
+            if keys is not None and key not in keys:
+                continue
+            if (key, framing) not in already:
                 seen.setdefault(key, slot.partition)
     out: list[Try] = []
     for key in sorted(seen):
@@ -1054,11 +1087,106 @@ def attempt_plan(slots: list, ranks: dict, smooth: int, strange: int, already=()
             # The smooth judge owns one coloring, so its draws are distinct
             # PALETTE ANCHORS rather than distinct modes — `modes_drawn` stays at
             # one, and the anchor is what the two attempts differ in.
-            out.append(Try(key, partition, budget_module.SMOOTH, rank, 1, 0))
+            out.append(Try(key, partition, budget_module.SMOOTH, rank, 1, 0, framing))
             del index
         for index in range(max(0, strange)):
-            out.append(Try(key, partition, budget_module.STRANGE, rank, max(1, strange), index))
+            out.append(
+                Try(key, partition, budget_module.STRANGE, rank, max(1, strange), index, framing)
+            )
     return out
+
+
+# --------------------------------------------------------------------------- #
+# Step 5a: the framing every one of those attempts is rendered at.
+# --------------------------------------------------------------------------- #
+def framing_dir(directory: Path) -> Path:
+    """Where the refine leg's node-regime scan pictures live, under the pass."""
+    return Path(directory) / "framings"
+
+
+def location_scorer(device: str, log=print):
+    """The shipped location head, reading at the node regime. One per pass.
+
+    Constructed eagerly by [`run`] rather than on the first scan: the constructor
+    resolves the artifact and the stack that reads it, so a machine with no
+    weights refuses before the pass spends a render, while the model itself is
+    still loaded lazily on the first batch.
+    """
+    from fractal_wallpapers.discovery import scoring as discovery_scoring
+    from fractal_wallpapers.models import tiles as tile_module
+
+    return discovery_scoring.LocationScorer(
+        workers=1, device=device, regime=tile_module.NODE_REGIME, log=log
+    )
+
+
+def enforce_scan_identity(log=print) -> dict:
+    """Refuse unless the scan's frames are the pictures this head was trained on.
+
+    The whole design rests on one claim: [`engine.screen`] at the node regime
+    draws the tile the location head reads. The walk already stands on that claim
+    and checks it at a run's start; the pass stands on it too and checks it here,
+    before it spends a frame — an unchecked scan would score every candidate
+    framing off a distribution nobody trained the head on and record the result as
+    a framing decision.
+    """
+    from fractal_wallpapers.discovery import identity
+    from fractal_wallpapers.models import location_view
+    from fractal_wallpapers.models import tiles as tile_module
+
+    try:
+        return identity.enforce(
+            location_view.canonical_map(),
+            tile_module.NODE_REGIME.tile[0],
+            tile_module.NODE_REGIME,
+            log=log,
+        )
+    except identity.IdentityBroken as broken:
+        raise PassRefused(
+            f"the framing scan cannot be taken on this checkout: {broken} Run with "
+            f"--no-refine to take the pass on the framings the pool records."
+        ) from broken
+
+
+def refine_framings(
+    keys,
+    by_key: dict,
+    directory: Path,
+    *,
+    scorer,
+    scores: dict,
+    margin: float,
+    framings: dict | None = None,
+    log=print,
+) -> tuple[dict, list]:
+    """`(framings, new)` — every named location's framing decided, resuming the log.
+
+    Called once a round, over the locations that round's neighbourhoods added. A
+    location already in the log keeps the decision it was given: the scan is seven
+    node-regime renders and a re-seat round that re-scanned the locations it
+    shares with the round before it would pay for them twice and could answer
+    differently, which would re-frame attempts that are already on disk.
+    """
+    framings = (
+        dict(framings)
+        if framings
+        else framing_module.completed(framing_module.log_path(directory), log)
+    )
+    wanted = [key for key in sorted(set(keys)) if key not in framings]
+    if not wanted:
+        return framings, []
+    made = framing_module.refine(
+        [by_key[key] for key in wanted],
+        directory=framing_dir(directory),
+        scorer=scorer,
+        margin=margin,
+        scores=scores,
+        log=log,
+    )
+    for record in made:
+        framing_module.append(framing_module.log_path(directory), record)
+        framings[record["key"]] = record
+    return framings, made
 
 
 def sweep_candidates(directory: Path, keep: set) -> int:
@@ -1082,12 +1210,26 @@ def sweep_candidates(directory: Path, keep: set) -> int:
     return dropped
 
 
-def make_attempts(directory: Path, plan: list, by_key: dict, seed: int, device: str, log=print):
+def make_attempts(
+    directory: Path,
+    plan: list,
+    by_key: dict,
+    seed: int,
+    device: str,
+    log=print,
+    framings: dict | None = None,
+):
     """Run every planned attempt, resuming whatever this pass already recorded.
 
     `(rows, counts)`. The candidate log is the record that an attempt is done —
     the same rule a run follows, and for the same reason: a picture on disk is
     evidence that a render wrote bytes and nothing else.
+
+    `framings` is the refine leg's decision per location, and it does two things:
+    it re-frames the row the colorizer is handed where a refinement was adopted,
+    and it puts the whole before-and-after on every row that comes out. A row a
+    later reader picks up therefore carries both viewports and both of the head's
+    readings of them, whichever one it was rendered at.
     """
     log_path = directory / "candidates.jsonl"
     done = run_module.completed_attempts(log_path, log)
@@ -1112,8 +1254,11 @@ def make_attempts(directory: Path, plan: list, by_key: dict, seed: int, device: 
             colorizer = colorize.Colorizer(directory, seed, device, log)
         started = time.monotonic()
         row = colorize.annotate(
-            colorizer.attempt(planned.plan(), by_key[planned.key], anchors[index], index)
+            colorizer.attempt(
+                planned.plan(), framed(by_key, framings, planned), anchors[index], index
+            )
         )
+        row["framing"] = framing_block(framings, planned)
         seconds += time.monotonic() - started
         rows.append(row)
         run_module.append_attempt(log_path, row)
@@ -1133,9 +1278,7 @@ def make_attempts(directory: Path, plan: list, by_key: dict, seed: int, device: 
     # would delete a picture the next attempt is about to ask for; and a sweep
     # taken off this invocation's rows alone would leave a resumed pass's working
     # behind forever.
-    counts["dropped_candidate_jpegs"] = sweep_candidates(
-        directory, _picked(rows, by_key, directory)
-    )
+    counts["dropped_candidate_jpegs"] = sweep_candidates(directory, _picked(rows, directory))
     counts["seconds"] = round(seconds, 1)
     counts["seconds_per_attempt"] = round(seconds / counts["made"], 2) if counts["made"] else None
     rows.sort(key=lambda row: row["attempt"])
@@ -1145,13 +1288,39 @@ def make_attempts(directory: Path, plan: list, by_key: dict, seed: int, device: 
 # --------------------------------------------------------------------------- #
 # Step 6: what takes each slot.
 # --------------------------------------------------------------------------- #
-def _picked(rows: list, by_key: dict, directory: Path) -> set:
-    """`{field/map.jpg}` for every palette the pass's verdicts actually used."""
+def framed(by_key: dict, framings: dict | None, planned: Try) -> dict:
+    """The row the colorizer is handed for one planned attempt.
+
+    The recorded framing where the plan asks for it or nothing was adopted, and
+    the refined one where it was. One place, so a row can never be re-framed on
+    one path and left alone on another.
+    """
+    row = by_key[planned.key]
+    if planned.framing == ORIGINAL:
+        return row
+    record = (framings or {}).get(planned.key)
+    return row if record is None else framing_module.apply_to(row, record)
+
+
+def framing_block(framings: dict | None, planned: Try) -> dict | None:
+    """The before-and-after this attempt carries, or `None` where nothing scanned it."""
+    record = (framings or {}).get(planned.key)
+    return None if record is None else framing_module.block(record, planned.framing)
+
+
+def _picked(rows: list, directory: Path) -> set:
+    """`{field/map.jpg}` for every palette the pass's verdicts actually used.
+
+    Off the attempt rows themselves and not off the location table, because one
+    location can be attempted at two framings and each of those is a field of its
+    own — a sweep that resolved the field through the table would delete the
+    fallback leg's working the moment the two disagreed.
+    """
     kept = set()
     for row in rows:
         if not row.get("colormap"):
             continue
-        field_name = colorize.field_of(by_key[row["key"]], directory / "fields").stem
+        field_name = colorize.field_of(row, directory / "fields").stem
         kept.add(f"{field_name}/{row['colormap']}.jpg")
     return kept
 
@@ -1202,6 +1371,11 @@ def candidate_of_pool_row(row: dict) -> dict:
         # a slot passed over, and a candidate out of the standing pool is as
         # likely to be that as one of this pass's attempts.
         "picture": row.get("picture"),
+        # Which framing of its location this row was rendered at, and what the
+        # location head made of the other one. Carried so the near-duplicate
+        # grouping can key on the ORIGINAL frame for a standing row the same way
+        # it does for one of this pass's own attempts.
+        "framing": row.get("framing"),
         "p_ge2": read.get("p_ge2"),
         "p_ge3": read.get("p_ge3"),
         "p_ge4": read.get("p_ge4"),
@@ -1434,8 +1608,19 @@ def _seat_order(slots: list, index: int) -> tuple:
 
 
 def _place(candidate: dict) -> dict:
-    """What the near-duplicate grouping needs off a candidate: the location."""
-    return {"family": candidate.get("family"), "viewport": candidate.get("viewport")}
+    """What the near-duplicate grouping needs off a candidate: the location.
+
+    The **original** viewport where the row carries one, which is the whole of the
+    identity rule the refine leg is held to: a re-framed attempt is a second
+    picture of the same place, and one-wallpaper-per-location has to count it
+    against that place. Grouping on the frame that was actually rendered would
+    let a location the pass widened by half take a second seat beside itself.
+    """
+    original = ((candidate.get("framing") or {}).get("original") or {}).get("viewport")
+    return {
+        "family": candidate.get("family"),
+        "viewport": original or candidate.get("viewport"),
+    }
 
 
 def pool_candidates(slots: list, pass_id: str, rows: list | None = None) -> list[dict]:
@@ -1703,15 +1888,22 @@ def write_records(pass_id, slots, attempts, guaranteed, log=print) -> dict:
         first_of.setdefault(slot.partition, slot.id)
 
     attempt_rows = [
-        records.decision(
-            run=pass_id,
-            stage=records.GATE,
-            candidate=f"{row['attempt']:04d}",
-            verdict="kept" if row.get("p_ge3") is not None else "dropped",
-            row=row,
-            reason=row.get("error"),
-            picture=row.get("picture"),
-        )
+        {
+            **records.decision(
+                run=pass_id,
+                stage=records.GATE,
+                candidate=f"{row['attempt']:04d}",
+                verdict="kept" if row.get("p_ge3") is not None else "dropped",
+                row=row,
+                reason=row.get("error"),
+                picture=row.get("picture"),
+            ),
+            # Beside the decision rather than inside it: `location.viewport` is
+            # the frame this row was rendered at, whichever one that is, and this
+            # is the other one plus what the head said about each. A later pass
+            # seats these rows, so the provenance has to survive the store.
+            "framing": row.get("framing"),
+        }
         for row in attempts
     ]
     store_path, store_rows, store_new = gallery_store.write(pass_id, attempt_rows)
@@ -1824,6 +2016,11 @@ def _release_row(pass_id, candidate, slot, first_of, owed) -> dict:
     )
     row["scores_current"] = candidate.get("scores_current")
     row["release_autolevel"] = candidate.get("release_autolevel")
+    # Both framings and both of the location head's readings, on the row the
+    # collection ships. `location.viewport` is the frame the full-size picture was
+    # rendered at — the refined one wherever one was adopted — and this says what
+    # it was before and what the head made of the difference.
+    row["framing"] = candidate.get("framing")
     # Which slot this was decided against, and the arithmetic of the slot. On the
     # row rather than only on the pass record, because a pool row outlives the
     # pass that wrote it and a reader joining on the pass id alone could not say
@@ -2265,6 +2462,109 @@ def _candidate_card(candidate: dict | None, floor, sheet_module, title: str, not
     )
 
 
+#: How many before-and-after pairs the `refined_pairs` sheet lays out. Enough to
+#: form a view of the head's framing taste at one reading; a pass at n=50 scans
+#: three times this many locations, so the sheet is a sample and says so.
+REFINED_PAIRS = 40
+
+
+def refined_pairs_sheet(pass_id, records_, directory, output, margin=framing_module.MARGIN):
+    """The framing scan, laid out for the eye that is the actual verdict on it.
+
+    Original left, the window's best right, both at the node regime the head read
+    them at, both scores under each. **The adopted ones first**, best gain first,
+    because those are the frames that went on to attempts and are the decision
+    being reviewed; then, where there is room, the ones the margin refused — which
+    is the only way to see whether Δ is set where it should be. A sheet showing
+    only what was adopted could not answer the question the margin exists for.
+
+    No head decides whether a framing is a good framing. It decides the score the
+    margin acts on, and this page is where a person disagrees with it.
+    """
+    import html
+
+    from fractal_wallpapers.curation import sheet as sheet_module
+
+    directory = Path(directory)
+    adopted = sorted(
+        (record for record in records_ if record["adopted"]),
+        key=lambda record: -(record["gain"] or 0.0),
+    )
+    refused = sorted(
+        (
+            record
+            for record in records_
+            if not record["adopted"] and record.get("best") and record.get("original")
+        ),
+        key=lambda record: -(record["gain"] if record["gain"] is not None else -1.0),
+    )
+    shown = [*adopted[:REFINED_PAIRS], *refused[: max(0, REFINED_PAIRS - len(adopted))]]
+    sections = [_pair_section(record, directory, sheet_module, html) for record in shown]
+    lines = [
+        "<!doctype html><meta charset='utf-8'>",
+        f"<title>gallery {pass_id} refined framings</title>",
+        f"<style>{sheet_module.STYLE}</style>",
+        f"<h1>gallery {pass_id} - {len(shown)} framings, before and after</h1>",
+        "<p class='lede'>"
+        f"{len(adopted)} of {len(records_)} location(s) adopted a new framing at a margin of "
+        f"{margin:g} on P(&gt;=4); {len(shown)} pair(s) shown, adopted first. Left is the frame "
+        "the pool records and right is the best the window found - both at the node regime the "
+        "location head read them at, which is the picture the decision was taken on and not the "
+        "wallpaper that comes out of it. A row marked REFUSED is one the margin turned away, and "
+        "it is there so the margin can be judged as well as the framings.</p>",
+        *(sections or ["<p class='lede'>Nothing was scanned.</p>"]),
+    ]
+    output = Path(output)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
+    return output
+
+
+def _pair_section(record: dict, directory: Path, sheet_module, html) -> str:
+    gain = record["gain"]
+    verdict = (
+        f"ADOPTED - {record['slug']}"
+        if record["adopted"]
+        else f"REFUSED - {record['refused']} - would have been {record['slug']}"
+    )
+    head = (
+        f"<h2>{html.escape(verdict)}"
+        + (f" - gain {gain:+.4f} on P(&gt;=4)" if gain is not None else "")
+        + f"<br><small>{html.escape(record['key'])}</small></h2>"
+    )
+    cards = [
+        _framing_card(record["original"], "original", record, directory, sheet_module, html),
+        _framing_card(record["best"], "the window's best", record, directory, sheet_module, html),
+    ]
+    return head + "<div class='grid'>" + "".join(cards) + "</div>"
+
+
+def _framing_card(side, what: str, record: dict, directory: Path, sheet_module, html) -> str:
+    if side is None:
+        missing = f'<div class="missing">no {html.escape(what)}</div>'
+        return f'<figure><div class="frame">{missing}</div></figure>'
+    source = directory / str(side.get("picture") or "")
+    body = (
+        f'<img src="{sheet_module.thumbnail(source)}" alt="">'
+        if side.get("picture") and source.is_file()
+        else '<div class="missing">no picture on disk</div>'
+    )
+    viewport = side["viewport"]
+    facts = [
+        f"P(>=4) {_number(side.get('p_ge4'))}, P(>=3) {_number(side.get('p_ge3'))}",
+        f"width {viewport['width']}, maxiter {side.get('maxiter')}",
+        f"centre {viewport['center_re']}, {viewport['center_im']}",
+        f"gates: {side.get('fate')}",
+    ]
+    if what != "original":
+        facts.insert(1, f"x{record['width_scale']:g} width, move {record['slug'].split('_')[-1]}")
+    caption = "".join(f"<li>{html.escape(line)}</li>" for line in facts)
+    return (
+        f'<figure><div class="frame">{body}</div>'
+        f"<figcaption><b>{html.escape(what)}</b><ul>{caption}</ul></figcaption></figure>"
+    )
+
+
 def closest_pairs_sheet(pass_id, slots, rows, matrix, directory, output, pairs=CLOSEST_PAIRS):
     """The `k` closest chosen pairs in the whole gallery, side by side. The eye-check.
 
@@ -2403,6 +2703,8 @@ def run(
     reseat: int = RESEAT_TRIES,
     no_attempts: bool = False,
     full_size: bool = True,
+    refine: bool = True,
+    margin: float = framing_module.MARGIN,
     seed: int = DEFAULT_SEED,
     workers: int = release.DEFAULT_WORKERS,
     device: str = "auto",
@@ -2416,6 +2718,11 @@ def run(
     to colour, and every number it reports about how full the gallery is is a
     number about that fraction rather than about the pool. It exists so somebody
     iterating on the selection does not pay an hour of renders per change.
+
+    `refine` is step 5a and it is **on**: before a location's attempts render, its
+    framing is scanned and the best one adopted if it beats the recorded framing
+    by `margin` ([`curation.framing`]). `refine=False` is the pass this repository
+    took before the step existed, exactly — same plan, same seed, same attempts.
     """
     started = time.monotonic()
     share = run_module.STRANGE_SHARE if strange_share is None else float(strange_share)
@@ -2432,10 +2739,14 @@ def run(
         log(f"[pass] {pass_id} already has a record; this invocation replaces it")
     log(
         f"[pass] {pass_id}: n={n} radius={radius:g} quality_weight={quality_weight:g} "
-        f"strange_share={share:g} attempts={m},{smooth},{strange} reseat={reseat}"
+        f"strange_share={share:g} attempts={m},{smooth},{strange} reseat={reseat} "
+        + (f"refine at margin {margin:g}" if refine else "NO refine")
         + (" (SKIPPED: --no-attempts)" if no_attempts else "")
         + (" (no full-size renders)" if not full_size else "")
     )
+    scanning = bool(refine) and not no_attempts
+    scan_identity = enforce_scan_identity(log) if scanning else None
+    scorer = location_scorer(device, log) if scanning else None
 
     # --- step 3, first: the distance, refused before anything is spent ------ #
     rows, matrix, store = load_embeddings(log)
@@ -2465,6 +2776,7 @@ def run(
     attempt_counts: dict = {}
     seating: dict = {}
     rounds: list[dict] = []
+    framings: dict = {}
     for round_number in range(max(0, int(reseat)) + 1):
         if round_number:
             movement = reseat_slots(slots, bench, log)
@@ -2475,7 +2787,7 @@ def run(
             if not movement["moved"]:
                 break
 
-        # --- step 5 --------------------------------------------------------- #
+        # --- steps 5a and 5 ------------------------------------------------- #
         if no_attempts:
             attempt_counts = {
                 "planned": 0,
@@ -2485,15 +2797,30 @@ def run(
                 "skipped": "--no-attempts",
             }
         else:
-            fresh = attempt_plan(
-                slots, ranks, smooth, strange, already={try_.key for try_ in planned}
-            )
+            done = {(try_.key, try_.framing) for try_ in planned}
+            fresh = attempt_plan(slots, ranks, smooth, strange, already=done)
+            if scanning and fresh:
+                # BEFORE the attempts, and only over the locations this round
+                # added: a location already framed keeps its decision, so a
+                # re-seat never re-frames a picture that is already on disk.
+                framings, _ = refine_framings(
+                    {try_.key for try_ in fresh},
+                    by_key,
+                    directory,
+                    scorer=scorer,
+                    scores=scores,
+                    margin=margin,
+                    framings=framings,
+                    log=log,
+                )
             planned += fresh
             log(
                 f"[attempts] round {round_number}: {len(fresh)} new attempt(s) over "
                 f"{len({try_.key for try_ in fresh})} location(s); {len(planned)} planned in all"
             )
-            made, attempt_counts = make_attempts(directory, planned, by_key, seed, device, log)
+            made, attempt_counts = make_attempts(
+                directory, planned, by_key, seed, device, log, framings=framings
+            )
 
         # --- step 6 --------------------------------------------------------- #
         mine = [candidate_of_attempt(row, pass_id) for row in made if row.get("p_ge3") is not None]
@@ -2506,9 +2833,52 @@ def run(
                 "attempts_planned": len(planned),
                 "filled": seating["filled"],
                 "unfilled": seating["unfilled"],
+                "fallback": None,
                 "reseated": None,
             }
         )
+
+        # --- the fallback, before the seat is allowed to count as failed ----- #
+        #
+        # A slot whose every attempt landed under the bar was attempted on frames
+        # this pass MOVED, and the honest question before it re-seats is whether
+        # the move is what emptied it. So its refined locations are attempted once
+        # more at the framing the record holds — same modes, seeded off the same
+        # location and head — and the whole seating is taken again. Only then is
+        # the slot's emptiness a fact about the neighbourhood.
+        fallback = _fallback_leg(
+            slots,
+            planned,
+            framings,
+            ranks,
+            smooth,
+            strange,
+            enabled=scanning and not no_attempts and bool(seating["unfilled"]),
+        )
+        if fallback:
+            planned += fallback
+            log(
+                f"[fallback] {len(fallback)} attempt(s) over "
+                f"{len({try_.key for try_ in fallback})} location(s) at the ORIGINAL framing, "
+                f"for {seating['unfilled']} unfilled slot(s)"
+            )
+            made, attempt_counts = make_attempts(
+                directory, planned, by_key, seed, device, log, framings=framings
+            )
+            mine = [
+                candidate_of_attempt(row, pass_id) for row in made if row.get("p_ge3") is not None
+            ]
+            before = seating["filled"]
+            seating = seat(slots, mine + standing, log)
+            rounds[-1]["fallback"] = {
+                "attempts": len(fallback),
+                "locations": len({try_.key for try_ in fallback}),
+                "recovered": seating["filled"] - before,
+            }
+            rounds[-1]["filled"] = seating["filled"]
+            rounds[-1]["unfilled"] = seating["unfilled"]
+            rounds[-1]["attempts_planned"] = len(planned)
+
         if not seating["unfilled"]:
             break
     plan["retro"] = read_retro(slots, matrix)
@@ -2536,6 +2906,15 @@ def run(
         "runners_up": tracked_name(
             runners_up_sheet(
                 pass_id, slots, rows, matrix, radius, sheet_dir() / f"{pass_id}_runners_up.html"
+            )
+        ),
+        "refined_pairs": tracked_name(
+            refined_pairs_sheet(
+                pass_id,
+                list(framings.values()),
+                framing_dir(directory),
+                sheet_dir() / f"{pass_id}_refined_pairs.html",
+                margin=margin,
             )
         ),
         "below_floor": tracked_name(
@@ -2570,6 +2949,8 @@ def run(
             "reseat": int(reseat),
             "no_attempts": bool(no_attempts),
             "full_size": bool(full_size),
+            "refine": bool(refine),
+            "refine_margin": float(margin),
             "seed": int(seed),
             "candidates_per_set": colorize.CANDIDATES,
             "colorize_geometry": {
@@ -2592,6 +2973,23 @@ def run(
         },
         "plan": plan,
         "attempts": attempt_counts,
+        # Step 5a, priced per pass rather than by an A/B leg: what the scan cost,
+        # how often it moved a framing, which rung it moved to, and the whole Δ
+        # distribution. Aggregates only — the per-location detail is a row each in
+        # the pass directory's `framings.jsonl`, because this record is tracked.
+        "refine": {
+            "on": bool(refine),
+            "margin": float(margin),
+            "window": {
+                "width_ladder": list(framing_module.WIDTH_LADDER),
+                "recentre": framing_module.RECENTRE,
+                "moves": [list(axis) for axis in framing_module.AXES],
+                "frames_per_location": len(framing_module.WIDTH_LADDER) + len(framing_module.AXES),
+                "scans_the_original": framing_module.SCAN_THE_ORIGINAL,
+            },
+            "identity": scan_identity,
+            **framing_module.price(list(framings.values())),
+        },
         "pool": {"standing_candidates": len(standing), "pass_candidates": len(mine)},
         "seating": seating,
         "render": rendered,
@@ -2607,6 +3005,49 @@ def run(
     for name, where in sheets.items():
         log(f"[pass] sheet {name}: {where}")
     return record
+
+
+def _fallback_leg(
+    slots: list,
+    planned: list,
+    framings: dict,
+    ranks: dict,
+    smooth: int,
+    strange: int,
+    enabled: bool,
+) -> list[Try]:
+    """The attempts an unfilled slot is owed at the framing the record holds.
+
+    Only for slots that are actually empty, and only for the locations of theirs
+    whose framing the refine leg **moved** — a location it left alone was already
+    attempted at its recorded framing, so asking for it again would render the
+    same pictures twice.
+
+    Empty where the fallback is off, where nothing is unfilled, or where every
+    unfilled slot stands on locations nothing was adopted for. That last case is
+    the common one and it is the point: the fallback costs nothing on a pass whose
+    framings did not move.
+    """
+    if not enabled:
+        return []
+    wanted = {
+        key
+        for slot in slots
+        if slot.seated is None
+        for key in slot.locations
+        if (framings.get(key) or {}).get("adopted")
+    }
+    if not wanted:
+        return []
+    return attempt_plan(
+        slots,
+        ranks,
+        smooth,
+        strange,
+        already={(try_.key, try_.framing) for try_ in planned},
+        framing=ORIGINAL,
+        keys=wanted,
+    )
 
 
 def _reseat_readout(slots: list, rounds: list, allowed: int) -> dict:

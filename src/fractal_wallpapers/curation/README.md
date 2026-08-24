@@ -16,6 +16,7 @@ embeddings one DINOv2 vector per admitted location, keyed and kept forever
 intake     the ranked offer, best first per partition
 budget     how many pictures to make, and for which judge
 colorize   a candidate set of maps, the head's pick, a render, a verdict
+framing    where a location's attempts are framed, decided before they render
 selection  top-N per judge, under the slot and supply caps, the location rule
            — and the bar
 gallery    the second phase: one pass over the whole pool for what ships
@@ -47,6 +48,8 @@ fractal-wallpapers curate reject --run v1 --rejector matt_review --date 2026-08-
 fractal-wallpapers curate reach --write scratch/unreached_keys.jsonl   # the gap, as a manifest
 fractal-wallpapers curate score --ledger <l> --key-file scratch/unreached_keys.jsonl
 fractal-wallpapers curate gallery --n 100                              # THE gallery pass
+fractal-wallpapers curate gallery --n 100 --no-refine                   # framings as recorded
+fractal-wallpapers curate gallery --n 100 --refine-margin 0.10          # a stricter adoption
 fractal-wallpapers curate gallery --n 100 --reseat 0                    # no re-seat: one draw
 fractal-wallpapers curate gallery --n 100 --no-full-size                # seat, do not render
 fractal-wallpapers curate gallery --pass gallery2                       # ...then make them
@@ -108,10 +111,12 @@ Each invocation is a **pass** with its own id, its own record in
                          unless `curate embeddings check` says it is whole, then
                          CUT to the currently admitted population
 4  the locations         quality-weighted farthest point under a HARD RADIUS
-5  the attempts          m locations near each chosen point, judged small     <-.
+5a the framings          each location's frame scanned and the best adopted    <-.
+                         if it beats the recorded one by --refine-margin        |
+5  the attempts          m locations near each chosen point, judged small       |
 6  the seats             both measured floors ACT; P(>=4), P(>=3) tiebreak    --'
-                         5 and 6 are a LOOP: an unfilled slot re-seats, up to
-                         --reseat (3) neighbourhoods, and everything either
+                         5a, 5 and 6 are a LOOP: an unfilled slot re-seats, up
+                         to --reseat (3) neighbourhoods, and everything either
                          side of them happens once
 7  the pictures          2560x1440 ss4 for the winners, and only for them
 ```
@@ -165,12 +170,15 @@ them: a **retro table** of the nearest chosen pairs, per partition and overall,
 read off the points the pass *ended* on rather than the ones its first draw handed
 out. If two rows of it read as one picture, the radius is too small.
 
-**Four sheets a pass, all in `scratch/<pass>_*.html`,** self-contained and
+**Five sheets a pass, all in `scratch/<pass>_*.html`,** self-contained and
 disposable:
 
 ```
 <pass>_sheet.html          the gallery: partition then rank, slot-labelled,
                            unfilled slots in place, retro table at the top
+<pass>_refined_pairs.html  up to 40 framings before and after, at the NODE
+                           regime the head read them at, both scores under
+                           each. Adopted first, then what the margin refused
 <pass>_runners_up.html     per chosen point, what the radius refused, at the
                            NEUTRAL render the distance was measured on
 <pass>_below_floor.html    per UNFILLED slot: the best candidate every
@@ -217,6 +225,86 @@ each, which is what a later reader needs. `--no-attempts` skips the leg and is a
 **dev affordance only**: without it the pass is bound to whatever fraction of the
 admitted population some run happened to colour, which today is 475 locations out
 of 24,843.
+
+**Step 5a: the pass decides where a location is framed before it colours it, and
+it is ON.** A walk stops on a frame because the gates let it through and the head
+liked it, not because that is the best crop of what is there. So before a
+location's attempts render, `curation.framing` scans a small window around the
+frame the pool records — width `x{0.707, 1.0, 1.414}` at the current centre, then
+at the best of those a recentring of `+-0.25` frame one axis at a time — draws
+every one of them through `engine.screen` at the **node regime**, reads them
+through the shipped location head, and adopts the best **only if it beats the
+recorded framing by `--refine-margin` on `P(>=4)`**. Seven frames a location. It
+is a strict improvement and never an argmax: an unmargined best-of-seven over
+correlated reads of one place wins by construction whether or not the head can
+tell the seven apart. Monotonicity is asserted rather than assumed, and a
+violation raises and stops the pass.
+
+**Only the frames that go on to attempts move.** The slot allocation, the
+farthest-point draw, the hard radius and the neighbourhoods are all decided on
+unrefined geometry, because the embedding store holds one vector per location at
+its *recorded* framing and a picker choosing off refined geometry would be
+choosing distances nobody has measured. The location's identity does not move
+either: the key is unchanged, and one-wallpaper-per-location and the
+near-duplicate grouping both still key on the **original** viewport, so a
+location the pass widened by half cannot take a second seat beside itself. Every
+attempt row and every gallery row carries **both viewports and both of the head's
+readings**, under `framing`, and step 7 renders the refined one.
+
+**The fallback, before an empty slot is allowed to count as failed.** A slot whose
+every attempt landed under the bar was attempted on frames the pass *moved*, so
+its refined locations are attempted once more at the framing the record holds —
+same modes, seeded off the same location and head, so the two are a comparison
+rather than a second roll — and the whole seating is taken again. Only then does
+the slot re-seat. It costs nothing on a pass whose framings did not move.
+
+**Priced per pass and never by an A/B leg**, the way the audit that proposed this
+insisted: locations scanned, frames, seconds, the winner-not-original share, the
+chosen-width and chosen-move histograms and the whole Δ distribution go in the
+pass record under `refine`, and the per-location detail is a row each in the pass
+directory's `framings.jsonl` — untracked, resumable, and never re-scanned by a
+later re-seat round. `<pass>_refined_pairs.html` is the verdict that actually
+matters: up to forty framings before and after at the node regime, adopted first,
+then the ones the margin refused, which is the only way to see whether Δ is set
+where it should be.
+
+**Δ is in log-odds, and that is a measurement rather than a taste.** The margin
+acts on `P(>=4)` — the statistic the pass seats by — but on the **log-odds** of it,
+because the population this step actually sees is the pass's own neighbourhoods
+and those are the strongest locations the pool holds. Over the first twenty
+scanned, `P(>=4)` at the recorded framing ran **0.9285 to 1.0000, median 0.9998**.
+An absolute margin there refuses everything however much better a framing is: a
+Δ of 0.05 on the probability adopted **0 of 20**, and so did every Δ down to
+0.005. The same twenty framings spread **-1.69 to +6.05 nats**. It is a monotone
+re-scale, so the ordering, the `P(>=3)` tie-break and the monotonicity assertion
+are the same claims they were.
+
+**The default is 2.0 nats — a factor of 7.4 in the odds — and the flip rate is why
+it is not lower.** The shipped location head is the **regime-robust** one adopted
+on 2026-08-20 (`seed0_all_regimes`, `f8f80511...`, `weights-v2`), whose pooled
+node-regime flip rate is **4.56%** and whose great-cut flip rate is **1.58%**. The
+10.36% figure beside it in `src/fractal_wallpapers/models/README.md` is the head
+that *retired* that day. On the first twenty, 2.0 nats took 7, 3.0 took 3 and 1.0
+took 8.
+
+**The `x1.0` rung is rendered rather than taken free, and the first scan is why.**
+The design counted it free because the supply sidecar already holds that frame's
+score at that regime. It does not agree: over the first twenty locations the
+scan's own read of the recorded framing matched the sidecar on **6**, and the
+largest gap was **0.0288 on `P(>=4)`** — more than the whole probability margin
+that was originally proposed. The head is deterministic (batch shape moves a read
+by 1e-7), the artifact is the same, and a fresh `location_view` render of the
+frame is **byte-identical** to the scan's and scores identically. So the gap is a
+fact about the picture the sidecar's number was read off — for 19 of the 20 a
+walk's own gate render, which is not on the view-cache path and cannot be
+re-checked. `identity.enforce` pins four settings and the engine build is not one
+of them. Worth chasing; until then the pass measures rather than inherits, and
+reports the agreement on every run.
+
+**`--no-refine` is the leg this repository had before the step existed**, exactly:
+the same plan, the same seed, the same anchors, the same mode draws and the same
+frames. `tests/test_curation_framing.py` pins that, along with the window
+geometry, the margin refusing a planted sub-Δ winner, and the monotonicity abort.
 
 **`--no-full-size` skips step 7 and costs the pass no decision.** Every slot is
 seated on the same candidates; what is not spent is 25 s a winner making a
