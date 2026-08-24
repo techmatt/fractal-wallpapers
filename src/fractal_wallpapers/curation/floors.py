@@ -246,25 +246,27 @@ RELEASE_ADVISORY = 0.50
 #: way a release bar can honestly be restated, off the verdicts a person actually
 #: cast, and it landed well above where policy had left it.
 STRANGE_RELEASE_BAR = Restatement(
-    value=0.620,
-    head_sha256="b2e225a929ef5e53b1d9b0521539184453039e351272b7cfdc192e0cd3abfd78",
+    value=0.575,
+    head_sha256="e62e8dbab7f47ffedce3fcb3056b68eb4337dce0247ec387e03fdd517752d9b5",
     method=(
         "the labels-derived crossover, re-fitted on the SHIPPED RENDER judge by "
         "`head floor --head strange_render`. Isotonic regression of P(the human said >=3) "
-        "against the judge's own P(>=3), over all 3,085 labeled strange_render pictures, "
+        "against the judge's own P(>=3), over all 3,322 labeled strange_render pictures, "
         "ties pooled, non-decreasing; the crossing is the LOWEST score whose fitted "
         "agreement reaches a half, and the bar is that crossing rounded up to the next "
-        "0.005. Crossing 0.618078, 95% cluster bootstrap over places [0.507, 0.808]. "
-        "713 of the 3,085 are keepers (23.1%). STILL A >=3 BAR: the judge's fourth class is "
+        "0.005. Crossing 0.573085, 95% cluster bootstrap over places [0.404, 0.589]. "
+        "799 of the 3,322 are keepers (24.1%). STILL A >=3 BAR: the judge's fourth class is "
         "preferred where it appears and gates nothing. THAT the cut acts is unchanged and "
-        "is Matt's review verdict of 2026-08-17; only the height moved, because the scale "
-        "did."
+        "is Matt's review verdict of 2026-08-17; only the height moved. TWO THINGS moved it "
+        "and they are separable: the same fit on the RETIRED artifact over this same grown "
+        "store crosses 0.614688 and rounds to 0.615, so 0.005 of the drop is the 237 new "
+        "rows and the remaining 0.040 is the scale."
     ),
     reference_pool=(
-        "all 3,085 labeled strange_render pictures, over 850 places, read through the "
+        "all 3,322 labeled strange_render pictures, over 1,047 places, read through the "
         "shipped render artifact"
     ),
-    date="2026-08-23",
+    date="2026-08-24",
 )
 
 #: **The smooth head's measured release floor**, which does not act.
@@ -293,23 +295,25 @@ STRANGE_RELEASE_BAR = Restatement(
 #: is the command that produced it — the strange bar's own crossover lived as
 #: prose for five days and could not be checked by anybody.
 SMOOTH_RELEASE_FLOOR = Restatement(
-    value=0.530,
-    head_sha256="b2e225a929ef5e53b1d9b0521539184453039e351272b7cfdc192e0cd3abfd78",
+    value=0.540,
+    head_sha256="e62e8dbab7f47ffedce3fcb3056b68eb4337dce0247ec387e03fdd517752d9b5",
     method=(
         "the labels-derived crossover, re-fitted on the SHIPPED RENDER judge by "
         "`head floor --head smooth_render`. Isotonic regression (pool-adjacent-violators, "
         "ties pooled, non-decreasing) of P(the human said >=3) against the judge's own "
-        "P(>=3), over all 4,930 labeled smooth_render pictures; the crossing is the LOWEST "
+        "P(>=3), over all 5,180 labeled smooth_render pictures; the crossing is the LOWEST "
         "score whose fitted agreement reaches a half, and the floor is that crossing "
-        "rounded UP on the 0.005 grid both heights sit on. Crossing 0.527937, 95% cluster "
-        "bootstrap over places [0.496, 0.591]. 1,995 of the 4,930 are keepers (40.5%). "
-        "ADVISORY: this height still gates nothing."
+        "rounded UP on the 0.005 grid both heights sit on. Crossing 0.535952, 95% cluster "
+        "bootstrap over places [0.490, 0.576]. 2,172 of the 5,180 are keepers (41.9%). "
+        "ADVISORY: this height still gates nothing. The whole of the move is the scale: the "
+        "same fit on the RETIRED artifact over this same grown store crosses 0.527937 and "
+        "rounds to 0.530, which is exactly where it stood before the 250 new rows landed."
     ),
     reference_pool=(
-        "all 4,930 labeled smooth_render pictures, over 1,828 places, read through the "
+        "all 5,180 labeled smooth_render pictures, over 2,054 places, read through the "
         "shipped render artifact"
     ),
-    date="2026-08-23",
+    date="2026-08-24",
 )
 
 #: Which render heads' release cut ACTS, and at what height. Everything not in

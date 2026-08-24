@@ -2,33 +2,33 @@
   "schema": 1,
   "head": "render",
   "kind": "smooth_render",
-  "head_sha256": "b2e225a929ef5e53b1d9b0521539184453039e351272b7cfdc192e0cd3abfd78",
-  "value": 0.528,
-  "crossing": 0.527937,
-  "rounded_up_3_places": 0.528,
-  "rounded_up_to_0_005": 0.53,
+  "head_sha256": "e62e8dbab7f47ffedce3fcb3056b68eb4337dce0247ec387e03fdd517752d9b5",
+  "value": 0.536,
+  "crossing": 0.535952,
+  "rounded_up_3_places": 0.536,
+  "rounded_up_to_0_005": 0.54,
   "at": 0.5,
   "keeper_tier": 3,
   "interval_95": {
     "resamples": 1000,
-    "low": 0.4958,
-    "high": 0.5905,
+    "low": 0.4901,
+    "high": 0.5755,
     "no_crossing": 0
   },
   "population": {
-    "pictures": 4930,
-    "places": 1828,
-    "store_rows": 4983,
+    "pictures": 5180,
+    "places": 2054,
+    "store_rows": 5233,
     "superseded": 53,
-    "keepers": 1995,
-    "keeper_share": 0.4047,
-    "below_the_floor": 2972
+    "keepers": 2172,
+    "keeper_share": 0.4193,
+    "below_the_floor": 3203
   },
   "inputs": {
-    "labels_sha256": "ed9484640ce6f656f05876c2f6e025ac65229bbed1e92b2aa76b0f6cd6a5edbb",
-    "scores_sha256": "187d7d16aa83bcf495a4c96128f34a30941f9376faf0f77542ef3643ac9cfd60",
+    "labels_sha256": "3faa8e6776068e624e88511ded1b2c3f53202b781bf4964a65a128d8a7da4661",
+    "scores_sha256": "b830b2ad7a4bceee5db3e2ee270573cb972762286a9b27f6b1d186b5fb2d8640",
     "classes": 4
   },
-  "method": "the labels-derived crossover. Isotonic regression (pool-adjacent-violators, ties pooled, non-decreasing) of P(the human said >=3) against this head's own P(>=3), over all 4930 labeled smooth_render pictures scored through the shipped render artifact; the crossing is the LOWEST score whose fitted agreement reaches 0.5, and the floor is that crossing rounded UP. Rounded up because a floor rounded down admits material the fit did not vouch for.",
-  "reference_pool": "all 4930 labeled smooth_render pictures, over 1828 places, read through the shipped render"
+  "method": "the labels-derived crossover. Isotonic regression (pool-adjacent-violators, ties pooled, non-decreasing) of P(the human said >=3) against this head's own P(>=3), over all 5180 labeled smooth_render pictures scored through the shipped render artifact; the crossing is the LOWEST score whose fitted agreement reaches 0.5, and the floor is that crossing rounded UP. Rounded up because a floor rounded down admits material the fit did not vouch for.",
+  "reference_pool": "all 5180 labeled smooth_render pictures, over 2054 places, read through the shipped render"
 }

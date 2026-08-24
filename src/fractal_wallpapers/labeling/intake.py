@@ -52,9 +52,14 @@ not.
 * **Registration comes first.** Both writers refuse a batch nobody registered, so
   the flags that decide train from eval are on record before the first row exists
   rather than reconstructed after it.
-* **The pin is asserted after the write.** A row that landed on a location held
-  out as an instrument is caught here, in both stores, rather than at whichever
-  training pass happens to look first.
+* **The pin is asserted before the write AND after it.** A row that would land on
+  a location held out as an instrument is caught here, in both stores, rather
+  than at whichever training pass happens to look first — and it is caught with
+  the store untouched. Asserting only afterwards is what left the store holding
+  rows the suite forbids on the first attempt at the manufactured rare-colour
+  drop: the ingest wrote, then raised. The second assertion stays, on the rows as
+  the store read them back rather than as they were handed to a writer, and the
+  report carries `asserted_before_writing` so both readings are on the record.
 
 ## Only what a person acted on
 
