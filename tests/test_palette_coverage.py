@@ -233,3 +233,88 @@ def test_the_thresholds_are_finer_than_the_censuss_because_the_bar_is_not_set_ye
     assert coverage.THRESHOLDS == (0.05, 0.10, 0.15, 0.20)
     assert min(coverage.THRESHOLDS) < min(codebook.SHARE_THRESHOLDS)
     assert len(coverage.THRESHOLDS) == 4
+
+
+# --------------------------------------------------------------------------- #
+# The by-swatch sheet: order, gaps, and the cut it takes.
+# --------------------------------------------------------------------------- #
+def readout_of(counts: dict, floor: int = 250) -> dict:
+    """A coverage readout holding only what the sheet's ordering reads.
+
+    Every swatch the caller does not name sits at `floor`, so the named ones are
+    ordered against a populated table rather than against forty-nine zeroes.
+    """
+    swatches = {
+        name: {f"at_{int(t * 100)}pct": floor for t in coverage.THRESHOLDS}
+        for name in codebook.names()
+    }
+    for name, cells in counts.items():
+        swatches[name].update(cells)
+    return {"capability": {"all": {"maps": 901, "swatches": swatches}}}
+
+
+def test_the_sheet_is_ordered_by_the_pixel_count_and_never_by_the_ramp() -> None:
+    """The two disagree hard enough to invert the order — the muted tiers read four
+    to five times thinner on a ramp than they are on a picture. A page about pixel
+    scarcity sorted the other way would put its abundant half at the top."""
+    order = coverage.scarcity_order(
+        readout_of(
+            {
+                "black": {"at_10pct": 500},
+                "dark_vivid_lime": {"at_10pct": 38},
+                "light_muted_rose": {"at_10pct": 151},
+            }
+        )
+    )
+    assert len(order) == 52
+    assert order[0] == "dark_vivid_lime"
+    assert order[-1] == "black"
+    assert order.index("dark_vivid_lime") < order.index("light_muted_rose") < order.index("black")
+
+
+def test_a_tie_at_the_ten_percent_rung_is_broken_by_the_rung_below_it() -> None:
+    """Two swatches level at 10% are not equally scarce if one of them is also
+    absent at 5%, and the eye scrolling the page should meet the scarcer one first."""
+    order = coverage.scarcity_order(
+        readout_of(
+            {
+                "dark_vivid_teal": {"at_10pct": 40, "at_5pct": 90},
+                "dark_vivid_lime": {"at_10pct": 40, "at_5pct": 45},
+            }
+        )
+    )
+    assert order.index("dark_vivid_lime") < order.index("dark_vivid_teal")
+
+
+def test_an_empty_band_says_which_of_the_two_things_it_is() -> None:
+    """Nothing reaches the rung, or everything that reaches it clears the next one
+    too. Those are opposite findings and a blank cell is both of them."""
+    absent = coverage._gap_note("&ge;20%", 0)
+    abundant = coverage._gap_note("&ge;5%", 436)
+    assert "no map on the panel reaches" in absent
+    assert "436 maps" in abundant and "clear it too" in abundant
+    assert absent != abundant
+
+
+def test_the_carrier_list_marks_the_drop_and_says_what_it_cut() -> None:
+    """A silent truncation reads as `these are the maps`. `black` is reached at 20%
+    by four hundred of them and the page has to say so rather than show twelve."""
+    best = {f"map{index}": {"black": 0.9 - index / 1000.0} for index in range(30)}
+    cell = coverage._carriers_cell(best, {"map0": "a-drop"}, "black", 0.20)
+    assert "class='drop'>map0" in cell
+    assert "class='old'>map1" in cell
+    assert f"+{30 - coverage.CARRIERS_LISTED} more, not listed" in cell
+
+
+def test_a_rung_nothing_reaches_says_so_in_the_carrier_list_too() -> None:
+    """An empty list and a missing list are the same characters on a page."""
+    assert "no map" in coverage._carriers_cell({"one": {"black": 0.1}}, {}, "black", 0.20)
+
+
+def test_a_tile_is_named_by_what_it_shows_so_two_sheets_share_the_file() -> None:
+    """The by-swatch sheet and the contact sheet pick the same weakest example for
+    the swatches they both cover, and the second one should cost nothing."""
+    entry = row("smooth_phoenix_2ed6828c1f", "Reed Walk", {"dark_vivid_lime": 0.15})
+    name = coverage._tile_name("dark_vivid_lime", 0.15, entry)
+    assert name == "dark_vivid_lime_15_smooth_phoenix_2ed6828c1f_Reed-Walk.jpg"
+    assert name == coverage._tile_name("dark_vivid_lime", 0.15, dict(entry))

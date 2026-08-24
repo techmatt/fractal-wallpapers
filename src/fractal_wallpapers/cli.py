@@ -3063,11 +3063,13 @@ def curate_coverage(args: argparse.Namespace) -> int:
     print(f"\ncoverage {display_path(coverage.readout_path())}")
     print(f"rows     {display_path(coverage.rows_path())}")
 
-    if args.sheet:
-        page = coverage.contact_sheet(
-            readout, coverage.read_rows(), repo_root() / "scratch" / "palette_coverage"
-        )
-        print(f"sheet    {display_path(page)}")
+    if args.sheet or args.by_swatch:
+        rows = coverage.read_rows()
+        where = repo_root() / "scratch" / "palette_coverage"
+        if args.sheet:
+            print(f"sheet    {display_path(coverage.contact_sheet(readout, rows, where))}")
+        if args.by_swatch:
+            print(f"by-swatch {display_path(coverage.by_swatch_sheet(readout, rows, where))}")
     return 0
 
 
@@ -6140,6 +6142,13 @@ def curate_commands(subcommands) -> None:
         action="store_true",
         help="also write the contact sheet to scratch/ — the weakest picture each threshold "
         "admits, for the swatches fewest maps can reach, so the bar is set by eye",
+    )
+    covering.add_argument(
+        "--by-swatch",
+        action="store_true",
+        help="also write the by-swatch sheet to scratch/ — all 52, ordered by scarcity on "
+        "pixels, each with its counts against the pre-existing library, a picture of every "
+        "rung, and the maps reaching 20% with the drop's members marked",
     )
     covering.set_defaults(handler=curate_coverage)
 
