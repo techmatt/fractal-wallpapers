@@ -239,12 +239,23 @@ wrong and they are not comparable: a rho is a property of the population as much
 as of the head. Say which rows a cross-regime claim was measured on, and prefer
 the ones a floor is actually decided on.
 
-The second bar did exactly that and resolved every cell it gated. On 4,000 stock
-locations the shipped head's pooled flip rate is 5.96% at 640×360ss1 and 10.36%
-at 384×216ss1; the regime-robust candidate's are 3.06% and 4.56%, and all six
-regime × gate cells improved. **The bias, not the noise, is what moved**: at the
-incumbent's 384×216 junk floor 548 decisions turn off at the cheaper regime
-against 30 that turn on, and the candidate's are 208 against 53.
+The second bar did exactly that and resolved every cell it gated, and **the head
+it was reading as the candidate is the head that ships now** — `seed0_all_regimes`,
+sha `f8f80511…`, under `weights-v2`, adopted on 2026-08-20. Written the way the
+bar was read, incumbent first: on 4,000 stock locations the **retired** head's
+(`seed0`, `4b60deb9…`) pooled flip rate is 5.96% at 640×360ss1 and 10.36% at
+384×216ss1, and the **shipped** regime-robust head's are 3.06% and 4.56%, with all
+six regime × gate cells improved. Per gate at 384×216ss1 the shipped head reads
+6.53% at the junk floor, 5.58% at the good floor and 1.58% at the great cut.
+**The bias, not the noise, is what moved**: at the retired head's 384×216 junk
+floor 548 decisions turn off at the cheaper regime against 30 that turn on, and
+the shipped head's are 208 against 53.
+
+Read the two names carefully anywhere this section says *shipped* or *candidate*:
+`flip_acceptance.json` was written before the flip and calls `seed0` the
+incumbent, and the paragraphs below about what adoption costs are about the
+decision as it stood then. The manifest is the only thing that answers *what
+ships* — `models/weights.json` and `models/location/adoption.json`.
 
 **A retrained location head is not a drop-in.** Canonical-regime pass rates on
 that same draw: junk floor 57.85% → 48.62%, good floor 36.75% → 32.80%, great cut
