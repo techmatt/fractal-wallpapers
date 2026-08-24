@@ -825,15 +825,33 @@ fractal-wallpapers curate coverage --step panel       # draw and choose the pane
 fractal-wallpapers curate coverage --step probe --workers 6
 fractal-wallpapers curate coverage --step read        # tables off rows already written
 fractal-wallpapers curate coverage --sheet            # + the contact sheet
+fractal-wallpapers curate coverage --by-swatch        # + all 52 by scarcity on pixels
 ```
 
 ```
-artifacts/curation/coverage/panel.json           the 16 cells and their field shapes
-artifacts/curation/coverage/fields/*.f32         one dumped field per cell, reused by every recolor
-artifacts/curation/coverage/rows.jsonl           one row per cell x map x fold
-artifacts/curation/coverage/coverage.json        both tables, the false capabilities, the population
-scratch/palette_coverage/coverage_tiles.html     the weakest picture each threshold admits
+artifacts/curation/coverage/panel.json            the 16 cells and their field shapes
+artifacts/curation/coverage/fields/*.f32          one dumped field per cell, reused by every recolor
+artifacts/curation/coverage/rows.jsonl            one row per cell x map x fold
+artifacts/curation/coverage/coverage.json         both tables, the false capabilities, the population
+scratch/palette_coverage/coverage_tiles.html      the weakest picture each threshold admits
+scratch/palette_coverage/coverage_by_swatch.html  all 52, thinnest on pixels first
+scratch/palette_coverage/tiles/                   both sheets' tiles, named by what they show
 ```
+
+**The by-swatch sheet** is the whole read on one page: 52 rows ordered by the 10%
+count, scarcest first, each carrying the colour, its four counts against the same
+four over the pre-existing library, a picture of what every rung admits, and the
+maps reaching 20% with the drop's members marked. It orders on the **pixel** count
+and never on the ramp one — they disagree hard enough to invert the order, so a page
+about pixel scarcity sorted by ramp share would put its abundant half at the top.
+Two things it is careful about: an empty band says *which* of the two things it is
+(nothing reaches the rung, or everything that reaches it clears the next one too —
+opposite findings that look identical as a blank cell), and the 20% carrier list is
+cut at 12 and prints how many it dropped. Both sheets read the probe rows and
+re-probe nothing; the tiles are recolored from the kept fields, because the probe
+overwrote its pictures on purpose. A tile is named by the (swatch, rung, cell, map)
+it shows, so the two sheets share files and the second costs nothing — the full 52
+is 208 tiles, about 10 s and 38 MB.
 
 **Two reads, two estimands, never pooled.** *Capability* is a max over the panel —
 a map counts for a swatch if **one** cell showed it — and is bounded by the panel,

@@ -775,6 +775,12 @@ def thinnest(readout: dict, count: int = 4, threshold: float = 0.10) -> list[str
 TILE_WIDTH = 320
 
 
+#: How many maps the 20% rung names before the list is cut. A cut, and therefore
+#: said out loud on the sheet — `black` is reached at 20% by four hundred maps and
+#: a page that printed them all would be a page nobody scrolls past.
+CARRIERS_LISTED = 12
+
+
 def _example_for(rows: list[dict], swatch: str, threshold: float, ceiling: float | None):
     """The probe row whose share of this swatch sits lowest inside the band.
 
@@ -793,6 +799,42 @@ def _example_for(rows: list[dict], swatch: str, threshold: float, ceiling: float
     if not inside:
         return None
     return min(inside, key=lambda row: row["shares"][swatch])
+
+
+def _tile_name(swatch: str, threshold: float, row: dict) -> str:
+    """The tile's filename, a pure function of what it shows.
+
+    So two sheets choosing the same (cell, map) pair name the same file and the
+    second one costs nothing.
+    """
+    raw = f"{swatch}_{int(threshold * 100)}_{row['cell']}_{row['colormap']}.jpg"
+    return "".join(char if char.isalnum() or char in "._-" else "-" for char in raw)
+
+
+def _make_tile(row: dict, cell: dict, output: Path) -> bool:
+    """Recolor one panel cell through one map. `True` if it had to be made.
+
+    The probe censused its recolor and overwrote it — keeping 16,912 pictures to
+    answer four hundred bytes each was the trade that was declined — so a tile is
+    remade from the kept field here. A file already on disk is left alone: the
+    name says exactly which (cell, map, fold) made it.
+    """
+    from fractal_wallpapers import engine, paths
+    from fractal_wallpapers.labeling import finished
+
+    if output.is_file():
+        return False
+    engine.recolor(
+        {
+            "schema": 1,
+            "field": str(fields_dir() / cell["field"]),
+            "colormap": row["colormap"],
+            "colormap_dir": str(paths.colormap_dir()),
+            "palette": finished.recipe(mirror=row["mirror"]),
+            "output": str(output),
+        }
+    )
+    return True
 
 
 def contact_sheet(readout: dict, rows: list[dict], directory: Path, log=print) -> Path:
@@ -875,6 +917,228 @@ def contact_sheet(readout: dict, rows: list[dict], directory: Path, log=print) -
     return page
 
 
+# --------------------------------------------------------------------------- #
+# The by-swatch sheet: all fifty-two, ordered by scarcity on pixels.
+# --------------------------------------------------------------------------- #
+def scarcity_order(readout: dict, threshold: float = 0.10) -> list[str]:
+    """All fifty-two, thinnest first at one rung. The sheet's row order.
+
+    Ordered on the **pixel** count and never on the ramp one. They disagree hard
+    — the muted tiers read four to five times thinner on a ramp than they are on
+    a picture, the vivid tiers about twice as thick — so a page about pixel
+    scarcity sorted by ramp share would put its abundant half at the top and read
+    as the opposite of what it says.
+    """
+    key = f"at_{int(threshold * 100)}pct"
+    lowest = f"at_{int(THRESHOLDS[0] * 100)}pct"
+    table = readout["capability"]["all"]["swatches"]
+    return sorted(table, key=lambda name: (table[name][key], table[name][lowest], name))
+
+
+def _gap_note(label: str, reached: int) -> str:
+    """What an empty tile slot means. Two different facts, never the same blank cell.
+
+    A band is empty either because **nothing reaches the rung** — the finding the
+    page exists for — or because **everything that reaches it already clears the
+    next one**, which is the opposite finding and belongs to the most abundant
+    swatches. Left as a blank cell they read identically, and a reader would take
+    whichever one they arrived expecting.
+    """
+    if not reached:
+        return f"no map on the panel reaches {label}"
+    return (
+        f"nothing lands between {label} and the next rung: all {reached} maps that "
+        f"reach {label} clear it too"
+    )
+
+
+def _tier_of(entry: dict) -> str:
+    """A swatch's tier, as the sheet labels it."""
+    if entry["kind"] == "neutral":
+        return "neutral"
+    return f"{entry['tone']} {entry['chroma']} {entry['hue']}"
+
+
+def _carriers_cell(best: dict, drops: dict, swatch: str, threshold: float) -> str:
+    """The maps reaching one rung, best first, drop members marked, cut and said so."""
+    import html
+
+    found = sorted(
+        (
+            (share, name)
+            for name, shares in best.items()
+            if (share := shares.get(swatch, 0.0)) >= threshold
+        ),
+        reverse=True,
+    )
+    if not found:
+        return "<span class='miss'>no map on the panel reaches this rung</span>"
+    shown = found[:CARRIERS_LISTED]
+    parts = [
+        f"<span class='{'drop' if name in drops else 'old'}'>{html.escape(name)}"
+        f" <i>{share:.2f}</i></span>"
+        for share, name in shown
+    ]
+    tail = (
+        f" <span class='cut'>+{len(found) - len(shown)} more, not listed</span>"
+        if len(found) > len(shown)
+        else ""
+    )
+    return " &middot; ".join(parts) + tail
+
+
+def by_swatch_sheet(readout: dict, rows: list[dict], directory: Path, log=print) -> Path:
+    """All fifty-two swatches, thinnest on pixels first, with the pictures.
+
+    One row per swatch: the colour itself, its four capability counts beside the
+    same four over the pre-existing library, a picture of what each rung admits,
+    and the maps that reach the 20% rung with the drop's members marked. The
+    counts and the tile choices are read off the probe rows the last pass wrote —
+    nothing is re-probed and no field is re-dumped. The tiles themselves are
+    recolored from the kept fields, because the probe deliberately did not keep
+    its pictures.
+
+    **A band with no example is not the same as a rung with no map.** A swatch
+    every map carries past 20% has an empty `[5%, 10%)` band and a full count, and
+    printing both cases as a blank cell would say the opposite of the truth about
+    one of them. Each is spelled out.
+    """
+    import html
+
+    directory = Path(directory)
+    tiles = directory / "tiles"
+    tiles.mkdir(parents=True, exist_ok=True)
+    chips = {entry["swatch"]: entry for entry in codebook.swatches()}
+    by_cell = {cell["cell"]: cell for cell in readout["panel"]["cells"]}
+    drops = of_drop()
+    best = reach(rows, "production")
+    order = scarcity_order(readout)
+    table = readout["capability"]
+    widest = max(cell["at_10pct"] for cell in table["all"]["swatches"].values()) or 1
+    columns = [(t, f"at_{int(t * 100)}pct") for t in THRESHOLDS]
+
+    out = [
+        "<!doctype html><meta charset='utf-8'>",
+        "<title>palette coverage: all fifty-two, thinnest on pixels first</title>",
+        "<style>"
+        "body{background:#101013;color:#dcdce2;font:14px/1.55 system-ui,sans-serif;margin:0}"
+        "header{padding:26px 28px 18px;border-bottom:1px solid #2a2a33}"
+        "h1{font-size:21px;margin:0 0 8px}p{margin:6px 0;max-width:76ch;color:#a8a8b4}"
+        "main{padding:8px 28px 60px}"
+        "section{border-bottom:1px solid #22222a;padding:20px 0;display:grid;"
+        "grid-template-columns:290px 1fr;gap:22px;align-items:start}"
+        ".rank{color:#6a6a78;font-variant-numeric:tabular-nums;font-size:12px}"
+        ".name{font-size:15px;font-weight:600;margin:2px 0}"
+        ".tier{color:#8a8a98;font-size:12px}"
+        ".chip{display:inline-block;width:46px;height:46px;border-radius:6px;"
+        "border:1px solid #3a3a45;vertical-align:middle;margin-right:10px}"
+        ".bar{height:5px;background:#26262f;border-radius:3px;margin:9px 0 11px}"
+        ".bar>i{display:block;height:5px;border-radius:3px;background:#5b8cd6}"
+        "table.counts{border-collapse:collapse;font-variant-numeric:tabular-nums}"
+        "table.counts th{color:#8a8a98;font-weight:500;font-size:11px;text-align:right;"
+        "padding:0 0 3px 12px}table.counts td{text-align:right;padding:2px 0 2px 12px}"
+        "table.counts th:first-child,table.counts td:first-child{text-align:left;padding-left:0}"
+        ".prior{color:#7d7d8c;font-size:12px}"
+        ".tiles{display:flex;gap:12px;flex-wrap:wrap}"
+        f".tile{{width:{TILE_WIDTH}px}}"
+        "img{width:100%;display:block;border-radius:4px;background:#1a1a20}"
+        ".cap{font-size:12px;color:#9a9aa8;margin-top:5px}"
+        ".cap b{color:#dcdce2}"
+        f".gap{{width:{TILE_WIDTH}px;min-height:150px;border:1px dashed #3a3a45;border-radius:4px;"
+        "display:flex;align-items:center;padding:14px;color:#8a8a98;font-size:12.5px;"
+        "font-style:italic;box-sizing:border-box}"
+        ".carriers{margin-top:14px;font-size:12px;color:#8a8a98;line-height:1.9}"
+        ".drop{background:#243a2a;color:#a9dcb6;border-radius:3px;padding:1px 5px}"
+        ".old{background:#22222a;color:#b6b6c4;border-radius:3px;padding:1px 5px}"
+        ".drop i,.old i{color:#7d7d8c;font-style:normal}"
+        ".cut{color:#c8a26a}.miss{color:#8a8a98;font-style:italic}"
+        ".flag{color:#c8a26a;font-size:11px}"
+        "</style>",
+        "<header><h1>All fifty-two, thinnest on pixels first</h1>",
+        f"<p>How many of the {table['all']['maps']} baked maps can put each swatch on "
+        f"&ge;5 / 10 / 15 / 20% of a real picture's pixels, and what that looks like. "
+        f"Grey figures are the same count over the <b>{table['prior']['maps']} pre-existing "
+        f"maps only</b>, so the {table['drop']['maps']}-map drop's contribution is the "
+        f"difference. Each tile is the <b>weakest</b> picture its rung admits &mdash; the "
+        f"one that decided the count, not the one that flatters it.</p>",
+        "<p>Ordered by the 10% count, scarcest at the top. That is the <b>pixel</b> "
+        "count: the ramp reading disagrees with it hard enough to invert the order, so it "
+        "is not the instrument for this page. Production recipe, production fold. "
+        "Record-and-rank &mdash; nothing here gates anything, and nothing on this page is "
+        "a labelling obligation.</p>",
+        f"<p><span class='drop'>green</span> names a map from the drop, "
+        f"<span class='old'>grey</span> one the library already held; the number after each "
+        f"is its best share on the panel. The 20% list is cut at {CARRIERS_LISTED} and says "
+        f"how many it dropped.</p></header>",
+        "<main>",
+    ]
+
+    made = 0
+    for rank, swatch in enumerate(order, start=1):
+        entry = chips[swatch]
+        red, green, blue = entry["srgb"]
+        counts_all = table["all"]["swatches"][swatch]
+        counts_prior = table["prior"]["swatches"][swatch]
+        limited = (
+            "<div class='flag'>sRGB clipped this chroma</div>" if entry["gamut_limited"] else ""
+        )
+        width = 100.0 * counts_all["at_10pct"] / widest
+        out.append(
+            "<section>"
+            "<div>"
+            f"<div class='rank'>{rank} / {len(order)}</div>"
+            f"<span class='chip' style='background:rgb({red},{green},{blue})'></span>"
+            f"<span><span class='name'>{html.escape(swatch)}</span>"
+            f"<div class='tier'>{html.escape(_tier_of(entry))}</div></span>"
+            f"{limited}"
+            f"<div class='bar'><i style='width:{width:.1f}%'></i></div>"
+            "<table class='counts'><tr><th>rung</th>"
+            + "".join(f"<th>&ge;{int(t * 100)}%</th>" for t, _ in columns)
+            + "</tr><tr><td>maps</td>"
+            + "".join(f"<td>{counts_all[key]}</td>" for _, key in columns)
+            + "</tr><tr class='prior'><td>pre-drop</td>"
+            + "".join(f"<td>{counts_prior[key]}</td>" for _, key in columns)
+            + "</tr><tr class='prior'><td>drop</td>"
+            + "".join(f"<td>{counts_all[key] - counts_prior[key]:+d}</td>" for _, key in columns)
+            + "</tr></table></div><div><div class='tiles'>"
+        )
+        for index, threshold in enumerate(THRESHOLDS):
+            ceiling = THRESHOLDS[index + 1] if index + 1 < len(THRESHOLDS) else None
+            row = _example_for(rows, swatch, threshold, ceiling)
+            label = f"&ge;{int(threshold * 100)}%"
+            if row is None:
+                reached = counts_all[f"at_{int(threshold * 100)}pct"]
+                out.append(
+                    f"<div class='gap'><span><b>{label}</b> &mdash; "
+                    f"{_gap_note(label, reached)}</span></div>"
+                )
+                continue
+            cell = by_cell[row["cell"]]
+            name = _tile_name(swatch, threshold, row)
+            made += int(_make_tile(row, cell, tiles / name))
+            share = row["shares"][swatch]
+            fold = " &middot; folded" if row["mirror"] else ""
+            drop_mark = " &middot; drop" if row["colormap"] in drops else ""
+            out.append(
+                f"<div class='tile'><img loading='lazy' src='tiles/{html.escape(name)}' alt=''>"
+                f"<div class='cap'><b>{label}</b> &mdash; measured {share:.3f}<br>"
+                f"{html.escape(row['colormap'])}{drop_mark}<br>"
+                f"{html.escape(row['mode'])} &middot; {html.escape(row['partition'])}{fold}"
+                "</div></div>"
+            )
+        out.append(
+            "</div><div class='carriers'><b>reaching 20%:</b> "
+            + _carriers_cell(best, drops, swatch, 0.20)
+            + "</div></div></section>"
+        )
+    out.append("</main>")
+
+    page = directory / "coverage_by_swatch.html"
+    page.write_text("\n".join(out) + "\n", encoding="utf-8", newline="\n")
+    log(f"[sheet] 52 swatches, {made} tiles recolored -> {page}")
+    return page
+
+
 __all__ = [
     "PANEL_CELLS",
     "PANEL_DRAW",
@@ -884,13 +1148,17 @@ __all__ = [
     "SUPERSAMPLE",
     "THRESHOLDS",
     "CoverageError",
+    "CARRIERS_LISTED",
+    "TILE_WIDTH",
     "baked",
     "build_panel",
+    "by_swatch_sheet",
     "candidates",
     "carriers",
     "cell_id",
     "choose",
     "contact_sheet",
+    "scarcity_order",
     "counts",
     "coverage_dir",
     "dump",
