@@ -2710,6 +2710,8 @@ def curate_gallery(args: argparse.Namespace) -> int:
             refine=not args.no_refine,
             margin=args.refine_margin,
             seed=args.seed,
+            draw_seed=args.draw_seed,
+            draw_top_k=args.draw_top_k,
             workers=args.workers,
             device=args.device,
         )
@@ -2742,6 +2744,24 @@ def print_gallery(record: dict) -> None:
     print(
         f"  radius {plan['radius']:g} cosine, quality weight {plan['quality_weight']:g}: "
         f"{record['config']['quality_weight_form']}"
+    )
+    # The seed, always, and whether it was given: a pass that drew its own is
+    # re-runnable only from the number printed here and written to the record.
+    # Tolerant of a record written before the draw took a seed, because
+    # `read_pass` puts any pass back together and this prints what it finds.
+    config = record["config"]
+    if config.get("draw_seed") is not None:
+        print(
+            f"  draw seed {config['draw_seed']} "
+            f"({'given' if config.get('draw_seed_given') else 'drawn'}), first pick out of "
+            f"each partition's top {config.get('draw_top_k')} - re-run it with "
+            f"--draw-seed {config['draw_seed']}"
+        )
+    pool = record.get("pool") or {}
+    print(
+        f"  {pool.get('pass_candidates', 0)} candidate(s) of this pass's own making seated "
+        f"against; {pool.get('standing_rows', 0)} standing pool row(s) not seatable - "
+        f"candidates are per-pass, locations are not"
     )
 
     print("\nRETRO TABLE - the nearest chosen pairs, overall")
@@ -6155,10 +6175,11 @@ def curate_commands(subcommands) -> None:
     gallerying.add_argument(
         "--no-attempts",
         action="store_true",
-        help="seat out of the standing pool alone, making no new candidate. A DEV "
-        "AFFORDANCE for iterating on the selection and never how a pass is really run: "
-        "without the attempt leg the pass is bound to the fraction of the admitted "
-        "population some run happened to colour",
+        help="make no candidate, and so seat nothing: candidates are per-pass, and without "
+        "the attempt leg the pass has none. A DEV AFFORDANCE for iterating on the SELECTION "
+        "- the slot allocation, the head split, the point draw, the retro table and the two "
+        "embedding sheets are all taken whole and cost no render - and never how a pass is "
+        "really run",
     )
     gallerying.add_argument(
         "--no-refine",
@@ -6197,6 +6218,28 @@ def curate_commands(subcommands) -> None:
         default=gallery_module.DEFAULT_SEED,
         help=f"the seed the palette anchors and the mode draws are taken under "
         f"(default: {gallery_module.DEFAULT_SEED})",
+    )
+    gallerying.add_argument(
+        "--draw-seed",
+        type=int,
+        default=None,
+        help="the ROOT seed the point draw is taken under, which is a different seed from "
+        "--seed: this one decides where each partition's draw starts. Absent, one is DRAWN "
+        "and written to the record, so two passes over an unchanged pool choose different "
+        "places and either is re-runnable from what it wrote down. Each partition derives "
+        "its own seed off the root and the record carries the resolved integer",
+    )
+    gallerying.add_argument(
+        "--draw-top-k",
+        type=int,
+        default=gallery_module.DRAW_TOP_K,
+        metavar="K",
+        help=f"how many of a partition's strongest live locations the FIRST pick is drawn "
+        f"from. Every pick after the first is the deterministic gain, so this is the whole "
+        f"of a draw's freedom, and every distance the draw measures is measured against what "
+        f"is already chosen - moving the first pick moves the pass "
+        f"(default: {gallery_module.DRAW_TOP_K}; 1 is the argmax the draw took before the "
+        f"seed existed)",
     )
     gallerying.add_argument(
         "--workers",

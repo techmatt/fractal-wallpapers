@@ -39,10 +39,13 @@ A run's candidates are release rows in the tracked store. A **gallery pass's**
 attempts are rows in [`curation.gallery_store`], under `artifacts/` with a
 tracked manifest, and one pass makes more of them than every run has made in
 total. A re-score that read only the tracked store would leave the larger half of
-the pool carrying a retired head's numbers — and `gallery.pool_candidates` reads
-`scores_current` where a row has one, so the next pass would rank a re-scored run
-row against a stale pass row on two different scales. That is the failure this
-project has already made once, and it is the reason this pass exists at all.
+the pool carrying a retired head's numbers, and everything that reads the pool as
+one population — `gallery.pool_rows` and the `below_floor` sheet it answers,
+`curation.colors`, the palette coverage, `below_bar` — would be comparing a
+re-scored run row against a stale pass row on two different scales. That is the
+failure this project has already made once, and it is the reason this pass exists
+at all. The *seating* no longer needs it: a gallery pass seats only candidates it
+made itself. Every reading taken **across** the pool still does.
 
 A row with **no score** is skipped rather than read: a failed render is a decision
 with a reason and no number, and it has no picture to read either.

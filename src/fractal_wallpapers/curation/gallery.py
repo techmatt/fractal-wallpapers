@@ -86,6 +86,14 @@ chosen, whatever its quality. The weight decides who wins among the eligible; th
 radius decides who is eligible at all, and it is the one of the two that a person
 can read off a sheet.
 
+The **first** pick of a partition is the one place in that arithmetic with any
+freedom in it, and it is drawn rather than taken: uniformly over the partition's
+top [`DRAW_TOP_K`] by the same `quality^gamma` the gain uses, under a seed the
+pass records. An argmax there made a second pass over an unchanged pool a longer
+prefix of the first — the N=150 draw re-chose 142 of gallery3's 150 points — and
+every pick after the first is measured against what is already chosen, so moving
+the first one moves the whole draw. `--draw-top-k 1` is the argmax, exactly.
+
 Both numbers are by eye, and the instrument that calibrates them is the **retro
 table** every pass prints: the nearest chosen pairs, per partition and overall,
 with their distances. A radius that is too tight shows up there as a table full
@@ -104,10 +112,21 @@ locations by `P(>=4)` and tries each of them under `smooth` palette anchors and
 
 Those attempts are **pool rows like any other**, stamped with the pass id. The
 pool grows by every one of them, and the next pass — or the next hand-labelling
-batch — reads them the same way it reads a run's. What is *not* kept is the
-palette head's working: 32 candidate maps are rendered to choose one, and the 31
-that lost are deleted after the verdict, which keeps the pick and the scores and
-throws away the pictures nobody will look at.
+batch, or the next re-score, or the `below_floor` sheet — reads them the same way
+it reads a run's. What is *not* kept is the palette head's working: 32 candidate
+maps are rendered to choose one, and the 31 that lost are deleted after the
+verdict, which keeps the pick and the scores and throws away the pictures nobody
+will look at.
+
+## Locations are cumulative, candidates are per-pass
+
+The one thing the next pass does **not** do with those rows is seat them. A
+location is discovered ground and the pass selects over every one the pool has
+ever admitted; a candidate is a two-second recolour of a location, and a pass
+ships only the recolours it took itself. [`pool_candidates`] is the whole of that
+rule, and [`pool_rows`] is deliberately outside it so the `below_floor` sheet
+keeps answering "did this partition hold something the slot never reached" out of
+the entire pool.
 
 Every chosen point gets both heads' attempts, whichever head owns its slot,
 because a mode draw is not free to repeat and the two heads' rosters are
@@ -143,6 +162,8 @@ the claim stays checked rather than remembered.
 from __future__ import annotations
 
 import json
+import random
+import secrets
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -203,6 +224,22 @@ RADIUS = 0.07
 #: entirely to the radius. The product is the reading that keeps both halves
 #: acting, and the radius is what stops the quality half from clustering.
 QUALITY_WEIGHT = 1.0
+
+#: How many of a partition's strongest live locations the **first pick** of its
+#: draw is drawn from, uniformly, under the pass's own seed.
+#:
+#: Twenty-five. Everything after the first pick is deterministic — `distance x
+#: quality**gamma` over whatever the radius left — so the first pick is the whole
+#: of a draw's freedom, and an argmax there made a pass over an unchanged pool a
+#: longer prefix of the pass before it: the N=150 draw re-chose 142 of gallery3's
+#: 150 points, and the pass then spent its attempts where the last one already
+#: had. Moving the first pick moves every pick after it, because every distance
+#: the draw measures is measured against what is already chosen.
+#:
+#: Twenty-five and not the whole partition, because the first pick is still meant
+#: to be a strong location and not merely a different one. `1` is the argmax this
+#: draw took before the seed existed, exactly.
+DRAW_TOP_K = 25
 
 #: **How many neighbourhoods a slot may try** before it reports `below_bar`.
 #:
@@ -588,13 +625,54 @@ class Choice:
     gain: float | None
 
 
+def resolve_draw_seed(seed: int | None = None) -> int:
+    """The root seed a pass's draws run under: the one given, or one drawn now.
+
+    A pass that was not given one **draws** it rather than defaulting to a fixed
+    number, because a default is how every pass over an unchanged pool comes out
+    the same pass. What makes the run reproducible is not the constant; it is that
+    the resolved integer lands on the record, which is why this returns one and
+    the caller writes it down before it spends anything.
+    """
+    return int(seed) if seed is not None else secrets.randbits(32)
+
+
+def partition_draw_seed(root: int, partition: str) -> int:
+    """The **resolved** seed one partition's draw runs under, off the root.
+
+    Derived and not drawn, so a pass records one number and every partition's
+    draw is recoverable from it — and derived per partition rather than shared,
+    so a partition whose slot count changes does not move any other partition's
+    first pick.
+
+    The pass record carries what this returns, never the recipe: a reader holding
+    the record can re-run one partition's draw without re-deriving anything, and a
+    derivation that later changed would be caught by the recorded integer rather
+    than silently followed.
+    """
+    return random.Random(f"{int(root)}:{partition}").getrandbits(64)
+
+
 class Draw:
     """Quality-weighted farthest point over one partition, **resumable**.
 
     The same arithmetic [`choose`] always did, kept as state instead of run to
-    completion inside one call. The first pick is the strongest by `quality`;
-    every pick after it maximizes `distance x quality^weight` over everything
-    still outside `radius` of the points already drawn.
+    completion inside one call. The first pick is **drawn** from the `top_k`
+    strongest live locations by `quality^weight`; every pick after it maximizes
+    `distance x quality^weight` over everything still outside `radius` of the
+    points already drawn.
+
+    **The draw owns its RNG**, and that is not a detail. A re-seat asks the same
+    draw for its next point, so an RNG the caller held would either have to be
+    threaded through every re-seat round or be re-created — and a re-created one
+    hands back the same first pick to a slot whose whole reason for asking is that
+    the first pick failed. The RNG belongs where `nearest` and `live` belong,
+    which is here.
+
+    Only the first pick is drawn. Everything after it is the arithmetic it always
+    was: the seed decides where a partition starts, and the gain and the radius
+    decide the rest, so a seeded pass is a different walk over the same rule
+    rather than a randomized one.
 
     Resumable because a slot is not married to its first neighbourhood any more.
     When a slot's whole neighbourhood lands below its head's floor it **re-seats**
@@ -609,13 +687,25 @@ class Draw:
     trying to leave.
     """
 
-    def __init__(self, indices, matrix, quality, radius: float, weight: float):
+    def __init__(
+        self,
+        indices,
+        matrix,
+        quality,
+        radius: float,
+        weight: float,
+        seed: int = 0,
+        top_k: int = DRAW_TOP_K,
+    ):
         import numpy
 
         self.order = list(indices)
         self.radius = float(radius)
         self.matrix = matrix
         self.taken = 0
+        self.seed = int(seed)
+        self.top_k = max(1, int(top_k))
+        self.rng = random.Random(self.seed)
         if not self.order:
             self.block = None
             return
@@ -631,6 +721,24 @@ class Draw:
         self.nearest = numpy.full(len(self.order), numpy.inf)
         self.live = numpy.ones(len(self.order), dtype=bool)
 
+    def _first(self):
+        """The first pick: one of the `top_k` strongest live locations, drawn.
+
+        Ranked on `quality**weight` and not on raw quality, so the same `gamma`
+        governs both halves of the draw: at `gamma` of zero — pure farthest point
+        — every location ties and the first pick is uniform over the partition,
+        which is what "the judge is out of this draw" has to mean at the first
+        pick too.
+        """
+        import numpy
+
+        live = numpy.nonzero(self.live)[0]
+        # Stable, so equal scores fall in index order and `top_k=1` is the argmax
+        # this draw took before the seed existed.
+        order = live[numpy.argsort(-self.weighted[live], kind="stable")]
+        top = order[: self.top_k]
+        return int(top[self.rng.randrange(len(top))])
+
     def next(self):
         """The next point this partition offers, or `None` when the radius runs it out."""
         import numpy
@@ -641,7 +749,7 @@ class Draw:
         gains = numpy.where(
             self.live, self.weighted if first else self.nearest * self.weighted, -numpy.inf
         )
-        best = int(numpy.argmax(gains))
+        best = self._first() if first else int(numpy.argmax(gains))
         if not numpy.isfinite(gains[best]):
             return None
         pick = Choice(
@@ -673,6 +781,10 @@ class Draw:
         return {
             "eligible": len(self.order),
             "chosen": self.taken,
+            # The RESOLVED seed, off the draw that actually ran under it, so the
+            # number on the record cannot drift from the number in the RNG.
+            "draw_seed": self.seed,
+            "draw_top_k": self.top_k,
             # What the radius cost: every admitted location of this partition
             # that a chosen point pulled inside the radius, including the chosen
             # points themselves, which is why it is counted as a refusal of the
@@ -683,7 +795,16 @@ class Draw:
         }
 
 
-def choose(indices, matrix, quality, k: int, radius: float, weight: float) -> tuple[list, dict]:
+def choose(
+    indices,
+    matrix,
+    quality,
+    k: int,
+    radius: float,
+    weight: float,
+    seed: int = 0,
+    top_k: int = DRAW_TOP_K,
+) -> tuple[list, dict]:
     """`(picks, tally)` — up to `k` of `indices`, farthest-point under the radius.
 
     `indices` are positions in `matrix`, whose rows are unit vectors, so cosine
@@ -698,8 +819,14 @@ def choose(indices, matrix, quality, k: int, radius: float, weight: float) -> tu
     itself keeps the [`Draw`], because a re-seating slot asks it for one more.
     """
     if k <= 0:
-        return [], {"eligible": len(list(indices)), "chosen": 0, "refused_by_radius": 0}
-    draw = Draw(indices, matrix, quality, radius, weight)
+        return [], {
+            "eligible": len(list(indices)),
+            "chosen": 0,
+            "draw_seed": int(seed),
+            "draw_top_k": max(1, int(top_k)),
+            "refused_by_radius": 0,
+        }
+    draw = Draw(indices, matrix, quality, radius, weight, seed, top_k)
     return draw.take(k), draw.tally()
 
 
@@ -927,7 +1054,19 @@ def reseat_slots(slots: list, bench: Bench, log=print) -> dict:
     }
 
 
-def plan_slots(rows, matrix, scores, n, strange_share, radius, weight, m, log=print):
+def plan_slots(
+    rows,
+    matrix,
+    scores,
+    n,
+    strange_share,
+    radius,
+    weight,
+    m,
+    log=print,
+    draw_seed: int = 0,
+    top_k: int = DRAW_TOP_K,
+):
     """Steps 1, 2 and 4 together: `(slots, plan, bench)`.
 
     One call because the three are one decision. How many slots a partition gets
@@ -938,6 +1077,11 @@ def plan_slots(rows, matrix, scores, n, strange_share, radius, weight, m, log=pr
     The [`Bench`] comes back with them because the draws are not finished: an
     unfilled slot asks its partition for one more point, and [`reseat_slots`] is where
     that happens.
+
+    `draw_seed` is the pass's **root** seed and every partition derives its own
+    off it ([`partition_draw_seed`]). The plan carries the root and each
+    partition's tally carries the resolved integer its draw ran under, because a
+    recipe on a record is a claim and an integer is a fact.
     """
     quality = [quality_of(row, scores) for row in rows]
     by_partition: dict[str, list[int]] = {}
@@ -967,7 +1111,15 @@ def plan_slots(rows, matrix, scores, n, strange_share, radius, weight, m, log=pr
         want = int(allocation.get(name, 0))
         if want <= 0:
             continue
-        draw = Draw(by_partition.get(name, []), matrix, quality, radius, weight)
+        draw = Draw(
+            by_partition.get(name, []),
+            matrix,
+            quality,
+            radius,
+            weight,
+            partition_draw_seed(draw_seed, name),
+            top_k,
+        )
         bench.draws[name] = draw
         picks = draw.take(want)
         for pick in picks:
@@ -991,6 +1143,8 @@ def plan_slots(rows, matrix, scores, n, strange_share, radius, weight, m, log=pr
         "requested": int(n),
         "radius": float(radius),
         "quality_weight": float(weight),
+        "draw_seed": int(draw_seed),
+        "draw_top_k": max(1, int(top_k)),
         "strange_share": float(strange_share),
         "neighbourhood": int(m),
         "population": counts,
@@ -1693,44 +1847,68 @@ def _place(candidate: dict) -> dict:
 
 
 def pool_candidates(slots: list, pass_id: str, rows: list | None = None) -> list[dict]:
-    """Every candidate already in the pool that stands on one of this pass's locations.
+    """The pool rows this pass may **seat**: on one of its locations, and its own.
 
-    The whole reason the pass is worth running over an accumulated store: six runs
-    have already coloured and judged 1,050 candidates, and any of them standing on
-    a chosen point's neighbourhood is a wallpaper the pass can seat without
-    rendering anything first.
+    THE ruling, and it is one predicate: **locations are cumulative, candidates
+    are per-pass**. A location is discovered ground and the pass selects over
+    every one the pool has accumulated; a candidate is a two-second recolour of
+    one, and a pass ships only the recolours it took itself. So a row has to stand
+    on one of this pass's locations *and* have been made by this pass.
 
-    **Two stores, because the pool is in two places.** A run records every scored
-    attempt in the tracked release store, and an earlier *pass* records its
-    attempts in [`curation.gallery_store`] instead — untracked, manifest-described,
-    and every bit as much a coloured judged candidate standing on a location. A
-    reader of the release store alone would silently lose an earlier pass's
-    thousand-odd attempts, which is the largest single block of material a second
-    pass has to seat out of.
+    What that costs and why it is worth it. gallery3 seated 66 of its 150 slots on
+    standing rows, and in 59 of those the standing row simply outranked the pass's
+    own best at the same place — not because the pass had made nothing there. The
+    reason there was so much standing material exactly where it looked is that the
+    draw was deterministic: 98 of its 150 chosen points were points gallery2 had
+    already chosen. A pass that seats another pass's recolours at a point both
+    passes chose is not selecting over a larger pool, it is running half the
+    draws and calling the older half free.
+
+    In the normal path this therefore comes back **empty**: [`pool_rows`] has
+    already set this pass's own rows aside — they arrive in memory as the attempt
+    leg makes them — so nothing left in the pool was made here. That is the rule
+    working, not the function idling, and it is why the predicate lives here
+    rather than at a call site: [`below_floor_sheet`] is handed the *un-narrowed*
+    [`pool_rows`] and must keep seeing every standing row, because its whole claim
+    is about the material a slot's neighbourhoods did not reach.
 
     `rows` is [`pool_rows`] already read, for a caller asking this once a re-seat
     round: the neighbourhoods move between rounds and the pool does not.
-
-    Three exclusions, and each is a different fact. A row this pass wrote is
-    already in hand, so reading it back would double it. A row a person
-    **rejected** was taken out of service deliberately and a pass that re-seated
-    it would be overruling the review. A row with no score never got one — a
-    failed render is a decision with a reason and no number — and ranking it
-    against a wallpaper is the comparison the record exists to prevent.
     """
     wanted = {key for slot in slots for key in slot.locations}
     everything = pool_rows(pass_id) if rows is None else rows
-    return [candidate for candidate in everything if str(candidate["key"]) in wanted]
+    return [
+        candidate
+        for candidate in everything
+        if str(candidate["key"]) in wanted and run_of(candidate) == str(pass_id)
+    ]
 
 
 def pool_rows(pass_id: str) -> list[dict]:
-    """Every seatable candidate in the accumulated pool, one row per PICTURE.
+    """Every judged candidate in the accumulated pool, one row per PICTURE.
 
-    [`pool_candidates`] is this narrowed to the slots' neighbourhoods, and the two
-    are split because the re-seat loop asks the question repeatedly — the
-    neighbourhoods move every round, the pool does not — and because the
-    `below_floor` sheet's whole claim is about the material a slot's
-    neighbourhoods did **not** reach.
+    The pool as it stands, and **not** the set this pass may seat: that is
+    [`pool_candidates`], which is this narrowed to the slots' neighbourhoods and
+    to the rows this pass made itself. The two are split because the re-seat loop
+    asks the seating question repeatedly — the neighbourhoods move every round,
+    the pool does not — and because the `below_floor` sheet is answered out of
+    *this* one. Its whole claim is about the material a slot's neighbourhoods did
+    **not** reach, and a pool cut to what the pass may seat would answer it with
+    the pass's own attempts.
+
+    Three exclusions, and each is a different fact. A row this pass wrote is
+    already in hand, so reading it back would double it. A row a person
+    **rejected** was taken out of service deliberately, and a sheet that offered
+    it as the partition's best unchosen candidate would be re-opening the review.
+    A row with no score never got one — a failed render is a decision with a
+    reason and no number — and ranking it against a wallpaper is the comparison
+    the record exists to prevent.
+
+    **Two stores, because the pool is in two places.** A run records every scored
+    attempt in the tracked release store, and an earlier *pass* records its
+    attempts in [`curation.gallery_store`] instead — untracked,
+    manifest-described, and every bit as much a coloured judged candidate standing
+    on a location.
 
     **Deduped on the picture and not on the row** ([`picture_id`]). One render
     lands on as many rows as there are decisions about it: the run that made it,
@@ -2807,6 +2985,8 @@ def run(
     refine: bool = True,
     margin: float = framing_module.MARGIN,
     seed: int = DEFAULT_SEED,
+    draw_seed: int | None = None,
+    draw_top_k: int = DRAW_TOP_K,
     workers: int = release.DEFAULT_WORKERS,
     device: str = "auto",
     log=print,
@@ -2820,12 +3000,20 @@ def run(
     files and both die on a missing one, several minutes in, with a log that reads
     like one pass behaving strangely.
 
-    `no_attempts` skips step 5 and seats out of the standing pool alone. It is a
-    **dev affordance** and never the default: without the attempt leg the pass is
-    supply-bound on the fraction of the admitted population any run has happened
-    to colour, and every number it reports about how full the gallery is is a
-    number about that fraction rather than about the pool. It exists so somebody
-    iterating on the selection does not pay an hour of renders per change.
+    `no_attempts` skips step 5, and since candidates are per-pass
+    ([`pool_candidates`]) that leaves the pass with nothing to seat: every slot
+    comes back unfilled and the numbers about how full the gallery is are about
+    nothing at all. What it still does whole is steps 1 to 4 and everything read
+    off them — the slot allocation, the head split, the draw, the retro table and
+    the two embedding sheets — which is what somebody iterating on the
+    **selection** is looking at, and it costs no render to get. A **dev
+    affordance** and never how a pass is really run.
+
+    `draw_seed` is the root the point draws run under; absent, one is drawn and
+    written to the record, because a pass nobody seeded is still a pass somebody
+    has to be able to run again. `seed` is the other one and they are not
+    interchangeable: that one is on every pass record already, meaning the palette
+    anchors and the mode draws.
 
     `refine` is step 5a and it is **on**: before a location's attempts render, its
     framing is scanned and the best one adopted if it beats the recorded framing
@@ -2848,6 +3036,8 @@ def run(
             refine=refine,
             margin=margin,
             seed=seed,
+            draw_seed=draw_seed,
+            draw_top_k=draw_top_k,
             workers=workers,
             device=device,
             log=log,
@@ -2870,6 +3060,8 @@ def _take(
     refine: bool,
     margin: float,
     seed: int,
+    draw_seed: int | None,
+    draw_top_k: int,
     workers: int,
     device: str,
     log,
@@ -2878,6 +3070,9 @@ def _take(
     started = time.monotonic()
     share = run_module.STRANGE_SHARE if strange_share is None else float(strange_share)
     m, smooth, strange = parse_attempts(attempts)
+    # Resolved here and written down below, whether it was given or drawn: a pass
+    # nobody seeded is still a pass somebody has to be able to run again.
+    root_seed = resolve_draw_seed(draw_seed)
     # Before anything is spent and before a row is written. A pass run over the
     # pre-split layout would upsert its winners into a release directory still
     # holding every attempt the old code passed over, and the store would come
@@ -2894,6 +3089,10 @@ def _take(
         + (" (SKIPPED: --no-attempts)" if no_attempts else "")
         + (" (no full-size renders)" if not full_size else "")
     )
+    log(
+        f"[pass] draw seed {root_seed} ({'given' if draw_seed is not None else 'drawn'}), "
+        f"first pick out of the top {max(1, int(draw_top_k))} of each partition"
+    )
     scanning = bool(refine) and not no_attempts
     scan_identity = enforce_scan_identity(log) if scanning else None
     scorer = location_scorer(device, log) if scanning else None
@@ -2908,7 +3107,19 @@ def _take(
     rows, matrix, fallen = admitted_only(rows, matrix, scores, log)
 
     # --- steps 1, 2, 4 ----------------------------------------------------- #
-    slots, plan, bench = plan_slots(rows, matrix, scores, n, share, radius, quality_weight, m, log)
+    slots, plan, bench = plan_slots(
+        rows,
+        matrix,
+        scores,
+        n,
+        share,
+        radius,
+        quality_weight,
+        m,
+        log,
+        draw_seed=root_seed,
+        top_k=draw_top_k,
+    )
     plan["attempts"] = {"locations": m, "smooth": smooth, "strange": strange}
     plan["reseat"] = int(reseat)
     by_key = {str(row["key"]): colorize_row(row) for row in rows}
@@ -2975,7 +3186,10 @@ def _take(
         # --- step 6 --------------------------------------------------------- #
         mine = [candidate_of_attempt(row, pass_id) for row in made if row.get("p_ge3") is not None]
         standing = pool_candidates(slots, pass_id, rows=standing_pool)
-        log(f"[seat] {len(mine)} attempt candidate(s) + {len(standing)} already in the pool")
+        log(
+            f"[seat] {len(mine)} attempt candidate(s) + {len(standing)} seatable out of the "
+            f"{len(standing_pool)} standing row(s): candidates are per-pass, locations are not"
+        )
         seating = seat(slots, mine + standing, log)
         rounds.append(
             {
@@ -3102,6 +3316,11 @@ def _take(
             "refine": bool(refine),
             "refine_margin": float(margin),
             "seed": int(seed),
+            # The RESOLVED root, never a recipe and never `null`: a pass that drew
+            # its own seed is reproducible only from what it wrote down.
+            "draw_seed": int(root_seed),
+            "draw_seed_given": draw_seed is not None,
+            "draw_top_k": max(1, int(draw_top_k)),
             "candidates_per_set": colorize.CANDIDATES,
             "colorize_geometry": {
                 "resolution": list(colorize.RESOLUTION),
@@ -3140,7 +3359,13 @@ def _take(
             "identity": scan_identity,
             **framing_module.price(list(framings.values())),
         },
-        "pool": {"standing_candidates": len(standing), "pass_candidates": len(mine)},
+        "pool": {
+            "standing_candidates": len(standing),
+            "pass_candidates": len(mine),
+            # What the pass selected LOCATIONS over and declined to seat out of.
+            # The two numbers beside each other are the whole of the ruling.
+            "standing_rows": len(standing_pool),
+        },
         "seating": seating,
         "render": rendered,
         "slots": [_slot_record(slot) for slot in slots],
@@ -3292,6 +3517,7 @@ __all__ = [
     "ATTEMPTS",
     "DEFAULT_N",
     "DEFAULT_SEED",
+    "DRAW_TOP_K",
     "PASS_PREFIX",
     "QUALITY_WEIGHT",
     "RADIUS",
@@ -3328,6 +3554,7 @@ __all__ = [
     "neighbourhood",
     "next_pass_id",
     "parse_attempts",
+    "partition_draw_seed",
     "partition_index",
     "pass_dir",
     "picture_id",
@@ -3347,6 +3574,7 @@ __all__ = [
     "pass_record_dir",
     "read_pass",
     "read_retro",
+    "resolve_draw_seed",
     "reseat_slots",
     "slots_path",
     "tracked_bytes",

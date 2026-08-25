@@ -96,7 +96,9 @@ def test_the_hard_radius_refuses_a_point_however_good_it_is() -> None:
     # The best location by a distance is the one 0.02 radians from the first —
     # about 0.0002 cosine distance away, well inside any sane radius.
     quality = [0.5, 0.99, 0.1]
-    picks, tally = gallery.choose(range(3), matrix, quality, 3, 0.05, 1.0)
+    # `top_k=1` so the draw starts on the strong point and the radius is the only
+    # thing that can refuse the one beside it.
+    picks, tally = gallery.choose(range(3), matrix, quality, 3, 0.05, 1.0, top_k=1)
     assert [pick.index for pick in picks] == [1, 2]
     assert tally["refused_by_radius"] == 1
 
@@ -112,10 +114,11 @@ def test_a_partition_that_runs_out_of_eligible_points_returns_fewer() -> None:
 
 
 def test_the_first_pick_is_the_strongest_and_the_rest_are_gain_weighted() -> None:
+    """At `top_k=1` — the whole draw is the argmax it was before the seed."""
     angles = [0.0, 0.8, 1.6]
     rows = [location(f"k{i}", angle) for i, angle in enumerate(angles)]
     matrix = matrix_of(rows, angles)
-    picks, _ = gallery.choose(range(3), matrix, [0.1, 0.9, 0.2], 3, 0.01, 1.0)
+    picks, _ = gallery.choose(range(3), matrix, [0.1, 0.9, 0.2], 3, 0.01, 1.0, top_k=1)
     assert picks[0].index == 1  # strongest by quality, with nothing to be far from
     assert picks[0].distance is None
     assert {pick.index for pick in picks} == {0, 1, 2}
@@ -127,9 +130,110 @@ def test_a_zero_quality_weight_is_pure_farthest_point() -> None:
     angles = [0.0, 0.4, 2.4]
     rows = [location(f"k{i}", angle) for i, angle in enumerate(angles)]
     matrix = matrix_of(rows, angles)
-    picks, _ = gallery.choose(range(3), matrix, [0.9, 0.9, 0.001], 2, 0.01, 0.0)
+    picks, _ = gallery.choose(range(3), matrix, [0.9, 0.9, 0.001], 2, 0.01, 0.0, top_k=1)
     # Second pick is the farthest one, not the second-best one.
     assert picks[1].index == 2
+
+
+# --------------------------------------------------------------------------- #
+# Step 4: the seeded first pick.
+# --------------------------------------------------------------------------- #
+def spread(count: int = 8):
+    """A partition of `count` locations a radius apart, strongest first."""
+    angles = [index * 0.4 for index in range(count)]
+    rows = [location(f"k{i}", angle) for i, angle in enumerate(angles)]
+    quality = [1.0 - index * 0.05 for index in range(count)]
+    return matrix_of(rows, angles), quality
+
+
+def test_a_top_k_of_one_is_the_argmax_the_draw_took_before_the_seed() -> None:
+    """The pin that says this change is opt-out: K=1 is the old behaviour, whatever
+    the seed, because a draw out of one candidate is not a draw."""
+    matrix, quality = spread()
+    first = [
+        gallery.choose(range(8), matrix, quality, 4, 0.01, 1.0, seed=seed, top_k=1)[0]
+        for seed in (0, 1, 99, 12345)
+    ]
+    for picks in first:
+        assert [pick.index for pick in picks] == [pick.index for pick in first[0]]
+        assert picks[0].index == 0  # the strongest, argmax
+
+
+def test_one_seed_gives_one_point_sequence() -> None:
+    """Same seed, same points — or a pass is not re-runnable from its record."""
+    matrix, quality = spread()
+    once, _ = gallery.choose(range(8), matrix, quality, 4, 0.01, 1.0, seed=7)
+    again, _ = gallery.choose(range(8), matrix, quality, 4, 0.01, 1.0, seed=7)
+    assert [pick.index for pick in once] == [pick.index for pick in again]
+
+
+def test_a_different_seed_moves_the_first_pick_and_so_the_whole_draw() -> None:
+    """THE point of the change. Every distance the draw measures is measured
+    against what is already chosen, so a different start is a different draw."""
+    matrix, quality = spread()
+    started = {
+        gallery.choose(range(8), matrix, quality, 3, 0.01, 1.0, seed=seed)[0][0].index
+        for seed in range(40)
+    }
+    assert len(started) > 1
+
+
+def test_the_first_pick_is_drawn_from_the_top_k_and_no_further_down() -> None:
+    """Drawn, but still out of the partition's strongest: the seed decides which
+    good location starts a partition, never that a weak one does."""
+    matrix, quality = spread()
+    started = {
+        gallery.choose(range(8), matrix, quality, 1, 0.01, 1.0, seed=seed, top_k=3)[0][0].index
+        for seed in range(60)
+    }
+    assert started == {0, 1, 2}
+
+
+def test_only_the_first_pick_is_drawn_and_the_rest_is_the_arithmetic() -> None:
+    """Two draws that happen to start together finish together. The seed is the
+    start of a partition and not a randomization of the rule."""
+    matrix, quality = spread()
+    by_start: dict[int, list[list[int]]] = {}
+    for seed in range(60):
+        picks, _ = gallery.choose(range(8), matrix, quality, 4, 0.01, 1.0, seed=seed, top_k=4)
+        by_start.setdefault(picks[0].index, []).append([pick.index for pick in picks])
+    assert len(by_start) > 1
+    for sequences in by_start.values():
+        assert all(sequence == sequences[0] for sequence in sequences)
+
+
+def test_a_partitions_resolved_seed_is_derived_from_the_root_and_recorded() -> None:
+    """Derived per partition, so one partition's slot count cannot move another's
+    first pick — and reported as the integer the draw actually ran under."""
+    root = 4242
+    seeds = {name: gallery.partition_draw_seed(root, name) for name in ("mandelbrot", "phoenix")}
+    assert len(set(seeds.values())) == 2
+    assert seeds["phoenix"] == gallery.partition_draw_seed(root, "phoenix")
+    assert gallery.partition_draw_seed(root + 1, "phoenix") != seeds["phoenix"]
+    matrix, quality = spread()
+    _picks, tally = gallery.choose(range(8), matrix, quality, 2, 0.01, 1.0, seed=seeds["phoenix"])
+    assert tally["draw_seed"] == seeds["phoenix"]
+
+
+def test_a_seed_nobody_gave_is_drawn_rather_than_defaulted() -> None:
+    """A pass over an unchanged pool must not be the pass before it by default."""
+    assert gallery.resolve_draw_seed(11) == 11
+    assert gallery.resolve_draw_seed(0) == 0  # a given zero is given, not absent
+    drawn = {gallery.resolve_draw_seed() for _ in range(8)}
+    assert len(drawn) > 1
+
+
+def test_a_re_seat_asks_the_same_draw_and_never_a_fresh_one() -> None:
+    """The draw owns its RNG. A re-created one would hand the slot back the first
+    pick it is re-seating away from."""
+    matrix, quality = spread()
+    draw = gallery.Draw(range(8), matrix, quality, 0.01, 1.0, seed=3, top_k=4)
+    taken = [draw.next().index for _ in range(4)]
+    assert len(set(taken)) == 4
+    assert taken == [
+        pick.index
+        for pick in gallery.choose(range(8), matrix, quality, 4, 0.01, 1.0, seed=3, top_k=4)[0]
+    ]
 
 
 def test_the_retro_table_is_the_nearest_pairs_closest_first() -> None:
@@ -289,8 +393,14 @@ def test_the_pool_wide_denominator_is_every_embedded_location() -> None:
 # --------------------------------------------------------------------------- #
 # The re-seat loop: a slot is not married to one neighbourhood.
 # --------------------------------------------------------------------------- #
-def bench_over(rows, angles, quality, radius=0.05, weight=1.0, m=1):
-    """A [`gallery.Bench`] over one synthetic partition, its draw untouched."""
+def bench_over(rows, angles, quality, radius=0.05, weight=1.0, m=1, top_k=1):
+    """A [`gallery.Bench`] over one synthetic partition, its draw untouched.
+
+    At `top_k=1` by default: the re-seat tests below are about which point a slot
+    is handed *next*, which is the deterministic half of the draw, and a seeded
+    first pick would leave every one of them asserting about the seed instead. The
+    first pick has its own tests, above.
+    """
     matrix = matrix_of(rows, angles)
     indices = list(range(len(rows)))
     by_partition = {str(rows[0]["partition"]): indices}
@@ -299,7 +409,11 @@ def bench_over(rows, angles, quality, radius=0.05, weight=1.0, m=1):
         matrix=matrix,
         quality=list(quality),
         by_partition=by_partition,
-        draws={str(rows[0]["partition"]): gallery.Draw(indices, matrix, quality, radius, weight)},
+        draws={
+            str(rows[0]["partition"]): gallery.Draw(
+                indices, matrix, quality, radius, weight, top_k=top_k
+            )
+        },
         m=m,
         radius=radius,
     )
@@ -760,12 +874,19 @@ def test_every_tracked_file_a_five_hundred_slot_pass_writes_clears_the_history_g
     assert largest < MAX_TRACKED_BYTES, {str(key): size for key, size in files.items()}
 
 
-def test_a_later_pass_can_seat_what_an_earlier_pass_attempted(record_root) -> None:
-    """An earlier pass's attempts are standing pool candidates, out of the new store."""
+def test_an_earlier_passs_attempt_is_a_pool_row_and_not_a_seatable_candidate(
+    record_root,
+) -> None:
+    """THE ruling: locations are cumulative, candidates are per-pass.
+
+    An earlier pass's attempt is in the pool, is read by everything that reads the
+    pool, and is not something this pass may seat. A pass ships only the recolours
+    it took itself.
+    """
     gallery.write_records(
         "gallery1", [], [attempt(3, "a", SMOOTH)], ["mandelbrot"], lambda _l: None
     )
-    standing = gallery.pool_candidates([slot("0000", SMOOTH, ["a"])], "gallery2")
+    standing = gallery.pool_rows("gallery2")
     assert [row["candidate"] for row in standing] == ["gallery1_0003"]
     # `source.key` is the POOL ROW's key, which is what `rescore` joins on — not
     # the location's, which is on the candidate itself.
@@ -774,8 +895,32 @@ def test_a_later_pass_can_seat_what_an_earlier_pass_attempted(record_root) -> No
         "candidate": "0003",
         "key": "gallery1|gate|0003",
     }
-    # Its own attempts are never read back: they are already in hand.
-    assert gallery.pool_candidates([slot("0000", SMOOTH, ["a"])], "gallery1") == []
+    # On one of gallery2's own locations, and still not seatable by gallery2.
+    assert gallery.pool_candidates([slot("0000", SMOOTH, ["a"])], "gallery2") == []
+    # Its own attempts are never read back either: they are already in hand.
+    assert gallery.pool_rows("gallery1") == []
+
+
+def test_the_per_pass_predicate_is_the_makers_name_and_not_the_location(record_root) -> None:
+    """Test-pinned where it lives. A row off a location this pass chose passes the
+    location half and fails the maker half; only a row this pass made survives both.
+
+    Handed the rows directly, because [`pool_rows`] has already set this pass's own
+    aside — which is why the predicate reads empty on the live path and why the
+    `below_floor` sheet, answered out of the un-narrowed pool, still sees everything.
+    """
+    slots = [slot("0000", SMOOTH, ["a"])]
+    mine = candidate("gallery9_0001", "a", SMOOTH, 0.9) | {
+        "source": {"run": "gallery9", "candidate": "0001", "key": "gallery9|gate|0001"}
+    }
+    theirs = candidate("gallery8_0002", "a", SMOOTH, 0.9) | {
+        "source": {"run": "gallery8", "candidate": "0002", "key": "gallery8|gate|0002"}
+    }
+    elsewhere = candidate("gallery9_0003", "z", SMOOTH, 0.9) | {
+        "source": {"run": "gallery9", "candidate": "0003", "key": "gallery9|gate|0003"}
+    }
+    seatable = gallery.pool_candidates(slots, "gallery9", rows=[mine, theirs, elsewhere])
+    assert [row["candidate"] for row in seatable] == ["gallery9_0001"]
 
 
 # --------------------------------------------------------------------------- #
@@ -817,7 +962,11 @@ def test_a_seat_of_a_seat_of_a_seat_is_still_one_picture_with_one_id(record_root
         "gallery1", [], [attempt(3, "a", SMOOTH)], ["mandelbrot"], lambda _l: None
     )
     for pass_id in ("gallery2", "gallery3", "gallery4"):
-        standing = gallery.pool_candidates([slot("0000", SMOOTH, ["a"])], pass_id)
+        # Off [`pool_rows`] and not [`pool_candidates`]: the ruling above is what
+        # each pass may SEAT, and this is about the id a re-stamp writes down —
+        # which is what the pool has to read back as one picture however the row
+        # got there.
+        standing = gallery.pool_rows(pass_id)
         # One row however many passes have shipped it, and the same id every time.
         assert [row["candidate"] for row in standing] == ["gallery1_0003"]
         gallery.write_records(
