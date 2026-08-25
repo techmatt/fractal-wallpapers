@@ -2002,6 +2002,19 @@ def palettes_reference_fields(args: argparse.Namespace) -> int:
     return 0
 
 
+def palettes_carriers(args: argparse.Namespace) -> int:
+    """Rebuild the table of which map can make a picture of which colour."""
+    from fractal_wallpapers.palettes import carriers
+
+    try:
+        report = carriers.run(force=args.force, log=None if args.quiet else print)
+    except carriers.CarrierError as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps(report, indent=2, ensure_ascii=False))
+    return 0
+
+
 def palettes_strip(args: argparse.Namespace) -> int:
     """Draw one map's gradient, or every map a manifest names."""
     if args.name is not None:
@@ -2763,11 +2776,18 @@ def curate_gallery(args: argparse.Namespace) -> int:
             return 1
         return 0
 
+    from fractal_wallpapers.curation import ceiling as ceiling_module
     from fractal_wallpapers.curation import release as release_module
 
     try:
         regime = release_module.regime_of(args.release_regime)
     except ValueError as refusal:
+        print(refusal)
+        return 1
+
+    try:
+        targets = dict(ceiling_module.parse_target(text) for text in (args.target or []))
+    except ceiling_module.TargetRefused as refusal:
         print(refusal)
         return 1
 
@@ -2788,10 +2808,12 @@ def curate_gallery(args: argparse.Namespace) -> int:
             seed=args.seed,
             draw_seed=args.draw_seed,
             draw_top_k=args.draw_top_k,
+            targets=targets,
             workers=args.workers,
             device=args.device,
         )
     except (
+        ceiling_module.TargetRefused,
         gallery.PassRefused,
         gallery_store.LayoutRefused,
         durability.DurableLost,
@@ -4787,7 +4809,8 @@ def library_commands(subcommands) -> None:
             "a drop of authored palettes into the library, `provenance` rebuilds the record "
             "of how the made maps were made, `clusters` regroups the library into sixteen "
             "families, `groups` says which maps are near enough to be one choice, "
-            "`reference-fields` remakes the pictures a palette sheet is judged on, and "
+            "`reference-fields` remakes the pictures a palette sheet is judged on, "
+            "`carriers` says which map can make a picture of which colour, and "
             "`strip` draws one map's gradient the way a render spends it."
         ),
     )
@@ -4882,6 +4905,25 @@ def library_commands(subcommands) -> None:
         "--force", action="store_true", help="re-dump a field that is already on disk"
     )
     pinning.set_defaults(handler=palettes_reference_fields)
+
+    carrying = steps.add_parser(
+        "carriers",
+        help="rebuild the table of which map can make a picture of which colour",
+        description=(
+            "Every map in the library recoloured onto the three pinned reference fields and "
+            "read for the colours it is OF: a map CARRIES a cell when that field's picture "
+            "is dominant in it. Writes the tracked table a colour target draws its carrier "
+            "attempts from, and refuses to launch against. Keyed to the MAP and never to the "
+            "palette group — members of one group disagree on their dominant cell in 120 of "
+            "195 reads, and 96 of those cross a hue family. About ninety seconds; the "
+            "recolours are kept under artifacts/ and a second run is the census alone."
+        ),
+    )
+    carrying.add_argument(
+        "--force", action="store_true", help="re-dump the reference fields before reading"
+    )
+    carrying.add_argument("--quiet", action="store_true", help="do not print progress")
+    carrying.set_defaults(handler=palettes_carriers)
 
     drawing = steps.add_parser(
         "strip",
@@ -6459,6 +6501,19 @@ def curate_commands(subcommands) -> None:
         f"is already chosen - moving the first pick moves the pass "
         f"(default: {gallery_module.DRAW_TOP_K}; 1 is the argmax the draw took before the "
         f"seed existed)",
+    )
+    gallerying.add_argument(
+        "--target",
+        action="append",
+        default=[],
+        metavar="CELL=FRACTION",
+        help="ask the pass for at least ceil(FRACTION x N) pictures DOMINANT in one codebook "
+        "cell, e.g. --target dark_vivid_green=0.05. Repeatable. A target steers the plan — "
+        "one extra carrier attempt per location per targeted cell, coloured by a map drawn "
+        "from the tracked carrier table — and steers the seat, mandating the colour once "
+        "every remaining seat is needed for it. It never lowers a floor and never pads: an "
+        "unmet target is reported SHORT. Refused before anything renders if the fractions "
+        "sum above one or a cell has no carrier this pass can draw",
     )
     gallerying.add_argument(
         "--workers",

@@ -115,7 +115,9 @@ Each invocation is a **pass** with its own id, its own record in
 5a the framings          each location's frame scanned and the best adopted    <-.
                          if it beats the recorded one by --refine-margin        |
 5  the attempts          m locations near each chosen point, judged small       |
-6  the seats             both measured floors ACT; P(>=4), P(>=3) tiebreak    --'
+                         plus one CARRIER attempt per location per --target      |
+6  the seats             both measured floors ACT; P(>=4), P(>=3) tiebreak,   --'
+                         then the COLOUR CEILING and the targets
                          5a, 5 and 6 are a LOOP: an unfilled slot re-seats, up
                          to --reseat (3) neighbourhoods, and everything either
                          side of them happens once
@@ -149,6 +151,82 @@ likely to sit somewhere its head dislikes on principle — and every one sat in 
 partition still holding thousands of admitted locations. What the loop
 deliberately does not do is the other recovery: no floor moves and nothing is
 seated from under one.
+
+### The colour ceiling, and the targets that are the same feature with the sign flipped
+
+A pass used to judge each picture on its own and let the collection come out
+however the pool happened to be coloured. gallery3's did: red at 2.10× uniform in
+the supply *before* a seat was filled and 2.45× after, lime at 0.19×, seven of the
+twelve hue families under one seat in twelve, and one picture in a hundred and
+fifty green. `curation.ceiling` is the two levers that act on that, and they read
+one feature — `palettes.dominance`, what colour a picture is.
+
+Three tests at each seat, in order, the first failure naming the rejection:
+
+```
+group       one seat per palette group, unless this candidate's pixel cloud is
+            more than 0.10 from EVERY picture that group already seated
+dominance   pro rata: with n seats filled including this one, a colour may hold
+            floor(K x t x n) + 1 of them, K = 2, t uniform (1/48 a cell, 1/12 a
+            family) unless a --target moved it. Only a candidate DOMINANT in an
+            over-allowance colour is refused; carrying some of it is fine
+twin        no picture within 0.0586 of two already-shipped ones
+```
+
+The pro-rata form is the fix for what a cumulative whole-gallery budget did: that
+one is denominated in a unit the gallery only fills to 79%, so two thirds of its
+range can never fire, the one setting that does first fires at seat 110 of 150,
+and — because the test is on the after-state — it then refuses everything carrying
+that colour for the rest of the walk. `floor(K·t·n) + 1` has the warm-up in the
+`+ 1`: the first seat may be any colour, and the allowance grows with the walk.
+
+**The order at a seat is: the candidates that exist, then up to `EXTRA_PICKS` (3)
+pictures rendered right there, then the least-violating fallback, flagged.** A
+colour rule that could only refuse would spend its seats on that fallback, because
+the pool it refuses out of was proposed by a quality judge that never had a colour
+in the question. So the seating leg renders: the palette head's next-best maps of
+the set it already scored for that location, screened for a hue family nothing
+tried has been, in the attempt's own mode. Cost lands only on the seats the
+ceiling bit, and it lands as a *render* rather than as an attempt — the field is
+dumped and the thirty-two recolours are already scored. Rendering the same
+material up front would have been 3,632 renders bought to change at most 150
+decisions. They are cached by `(location, mode, map)` in
+`<pass>/on_demand.jsonl`, which is what keeps the re-seat replay free, and they go
+into the attempt store as pool rows like any other, stamped `on_demand`.
+
+The other half is solved one step earlier and for free: when the palette head
+picks a map whose **group another attempt of the plan already picked**, its
+next-ranked candidate takes that attempt instead. A pure identity filter, no
+pixels and no state about pictures, recorded on the row as `group_skipped`.
+
+**A re-seat replays the whole sequence.** The ceiling makes seating
+path-dependent, so a slot that moves invalidates every seat after it in the walk
+order — and only after it, which is why replaying is enough and patching is not.
+Replaying arithmetic is free; replaying renders is not, which is what the
+on-demand cache is for.
+
+### `--target <cell>=<fraction>`
+
+Asks for at least `ceil(fraction × N)` pictures dominant in one codebook cell,
+repeatable. At each seat the pass reads `u = need / seats left`: above 1 the target
+**mandates** — only candidates dominant in the cell are eligible; above 0.5 it
+**prefers** — dominant candidates rank ahead of the rest and the judge's order
+breaks the tie inside each half. Below that the judge decides alone. Setting a
+target also replaces the ceiling's allowance for that cell **and for its family**,
+so both levers are denominated in one vector.
+
+A target never lowers a floor and never pads. An unmet one is reported **SHORT**,
+in the record and in the log. What actually meets a target is the plan: one extra
+**carrier attempt** per location per targeted cell, the map drawn from
+`data/palettes/carriers.jsonl` weighted by mean share and coloured **bypassing the
+palette head** — which is the only way a colour the head declines 83% below base
+rate ever reaches a seat. The attempt's dominance is read on its own render; a
+carrier attempt that comes out grey is an ordinary candidate.
+
+Refused before anything renders if the fractions sum above one, or if a targeted
+cell has no carrier in the pass's own collapsed palette pool. `config.ceiling`,
+`config.targets` and `config.target_feasibility` on the pass record carry every
+constant and every carrier the launch checked.
 
 **The pass selects over the CURRENT admitted population.** The embedding store is
 append-only and the admitted population is not, so the store is a superset rather

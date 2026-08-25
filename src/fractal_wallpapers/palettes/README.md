@@ -4,6 +4,9 @@ Which colors are available: palette assets, palette generation, and palette cura
 fractal-wallpapers palettes ingest --drop rare-colors-2026-08
 fractal-wallpapers palettes provenance --source <archive> --images <pictures>
 fractal-wallpapers palettes clusters
+fractal-wallpapers palettes groups
+fractal-wallpapers palettes reference-fields
+fractal-wallpapers palettes carriers
 fractal-wallpapers palettes strip --name "Bone Vault" --out artifacts/figures/bone.png
 fractal-wallpapers palettes strip --manifest names.txt --width 1600 --height 120
 ```
@@ -71,6 +74,67 @@ gives for both stored sizes — the 640×360 candidate render at ¼ and the 1280
 label crop at ⅛ — so nothing is resampled between the stored pixels and the count.
 Duplicate colours are collapsed before assignment (`distinct`), which is the same
 arithmetic to 6e-15 and about three times faster.
+
+## Which map is which choice, and which map can make which colour
+
+Three records sit beside the library and none of them is a colormap. All three are
+`.jsonl` for the reason above — a `.json` in `data/palettes/` is read as a map.
+
+`groups` says **which maps are near enough to be one choice**: average linkage over
+M1, the sliced Wasserstein-1 distance between two maps' hue-weighted Oklab clouds
+read through the engine's own bake, cut at `0.039735`. 901 maps, 65 groups, 143
+maps in one. The drawable pool collapses through it — one member per group, drawn
+on the run's seed — and the gallery pass's group cap counts seats per group.
+
+The cut's **evidence is tracked beside it**: `data/palettes/groups_marks.jsonl`
+holds the forty-six pairs Matt marked SAME or DIFFERENT by eye on 2026-08-25, and
+`groups.cut_from_marks()` recomputes the committed constant from them. The marks
+do not sort cleanly — two pairs marked SAME sit above the nearest pair marked
+DIFFERENT — so the cut is read by a **one-sided rule**: never merge a pair marked
+DIFFERENT, and pay for it by declining two merges a person would have made. Both
+are named in the record's header, and `groups.jsonl`'s `marks` field points at it.
+
+`reference-fields` dumps the three pictures every palette sheet is judged on —
+one smooth, one the ramp sweeps across several times, one a parameter plane — from
+tracked specs into `artifacts/palettes/reference_fields/`. The spec is twelve
+numbers and is in the history; the field is a megabyte of floats and is not.
+
+`carriers` answers **which map can make a picture of which colour**: every map in
+the library recoloured onto those three fields and read through `dominance`, one
+row per (map, cell) with the cell's share on all three fields and their mean.
+About 90 seconds for 2,703 recolours, which land under
+`artifacts/palettes/carriers/` and are kept, so a second run is the census alone.
+3,220 rows over 901 maps, and every one of the 48 chromatic cells has a carrier.
+
+It is keyed to the **map** and never to the palette group, and that is measured
+rather than preferred: members of one group disagree on their dominant cell in 120
+of 195 (group, field) reads and 96 of those cross a hue family. `twilight` and
+`twilight_shifted` are one group and read `light_muted_azure` and
+`dark_vivid_purple` on the same field, because M1 is order-free over a ramp's
+cloud while dominance is area-weighted over a picture.
+
+It is also a **prior and not a guarantee**. Only 4 of the green carriers and 3 of
+the rose ones dominate on all three fields; green collapses on the `strange` field,
+which is the class that held 90 of gallery3's 150 seats. So a
+`curate gallery --target` draws its carrier attempts from this table and then
+reads each attempt's dominance **on its own render**.
+
+## `dominance` — what colour a picture is, and `pixel_clouds` — whether two are one picture
+
+`dominance` is one definition read everywhere: the codebook's 52-cell census with
+the **neutrals dropped from the numerator and the denominator**, so the shares are
+of the picture's colour rather than of its pixels. A cell is DOMINANT when it leads
+and holds ≥ 0.10, or holds ≥ 0.15 on its own; the same rule over the twelve hue
+families at 0.20 / 0.30. A picture may be dominant in more than one cell and in
+none. There is no floor under the raw share — mean neutral share over gallery3's
+150 is 0.210 — which is deliberate and named in the module.
+
+`pixel_clouds` is the palette metric on **pixels**: the same M1 `groups` uses,
+over 4,096 seeded pixels of a render at census size instead of over a ramp. Two
+pictures at distance 0.0586 are the same wallpaper by the gallery pass's twin test.
+The two instruments do not substitute for each other — same-group pairs in
+gallery3 run 0.0121 to 0.4111, a 34× range whose median sits *above* the median
+nearest-neighbour distance of the gallery at large.
 
 `provenance` recovers how the *made* maps were made and writes one row per map to
 `data/palettes/provenance.jsonl`. It reads two sources of authored briefs — the

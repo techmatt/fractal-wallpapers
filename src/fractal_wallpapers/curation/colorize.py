@@ -87,6 +87,11 @@ CURVE = "linear"
 #: to the strange judge, which is how both corpora were collected.
 SMOOTH_MODE = "smooth"
 
+#: What an id carries when the seating leg asked for the render rather than the
+#: plan. A prefix and not a high range, because the plan grows between re-seat
+#: rounds and a counter shared with it would collide. See [`attempt_id`].
+ON_DEMAND_PREFIX = "d"
+
 
 class ColorizeError(RuntimeError):
     """An attempt cannot be made."""
@@ -407,6 +412,59 @@ def render(
     return output, leveled.stamp
 
 
+def attempt_id(row: dict) -> str:
+    """The candidate id of one attempt row, and the file name of its picture.
+
+    The plan index for an ordinary attempt, `d0007` for one the seating leg asked
+    for on demand. Two namespaces and not one counter, because the plan **grows**
+    between re-seat rounds: an on-demand render numbered off the plan's length in
+    round zero would collide with a planned attempt in round one, and the two rows
+    would be one picture on disk.
+
+    The id **is** the picture's file name under the run's `pictures/`, which is
+    what [`fractal_wallpapers.curation.rescore.picture_of`] assumes of every row
+    in the pool.
+    """
+    if row.get("on_demand"):
+        return f"{ON_DEMAND_PREFIX}{int(row['attempt']):04d}"
+    return f"{int(row['attempt']):04d}"
+
+
+def another_colour(names: list, scores, recolour_of, spent: set, families: set):
+    """The head's next-best map carrying a hue family none of `families` holds.
+
+    The **screen** the seating leg asks for an extra picture by, and it is a screen
+    and never a verdict. Dominance is read here on the recolour of the location's
+    *smooth* field, and the picture that gets made is the mode the attempt drew:
+    over three hundred of gallery3's rows the family-mass difference between the
+    two runs 0.005 for a smooth attempt and **0.396** for a strange one, against a
+    total clamped mass of about 0.79. Half a strange picture's colour is in
+    different families from the one this function looked at. So what it buys is a
+    render that had a *reason* to be a different colour; what says what that render
+    is of is its own picture, read at the seat like any other candidate.
+
+    Walked in the head's own score order and stopped at the first hit: a recolour
+    is an engine call and a census is about twenty milliseconds, so screening all
+    thirty-two would cost more than the render it is choosing.
+    """
+    import numpy
+
+    from fractal_wallpapers.palettes import dominance
+
+    ranked = numpy.argsort(-numpy.asarray(scores, dtype=numpy.float64), kind="stable")
+    for index in ranked:
+        name = names[int(index)]
+        if name in spent:
+            continue
+        picture = recolour_of(name)
+        if picture is None:
+            continue
+        carried = set(dominance.of_picture(picture).families)
+        if carried and not carried <= families:
+            return name
+    return None
+
+
 # --------------------------------------------------------------------------- #
 # The attempt.
 # --------------------------------------------------------------------------- #
@@ -433,6 +491,12 @@ class Colorizer:
         self.palette_transform = palette_head.Transform(train=False)
         self.judges = {}
         self.device = device
+        #: `palette group -> the map an attempt of this plan already picked`. The
+        #: proposal-time group cap, and the whole of its state: an identity table,
+        #: no pictures and no distances. Seeded from the rows a resumed pass
+        #: already recorded, so a resume claims what its own attempts claimed.
+        self.claimed: dict = {}
+        self._groups = None
 
     def judge(self):
         """THE finished-render judge, loaded on first use and kept.
@@ -449,12 +513,48 @@ class Colorizer:
             self.judges[head] = render_train.load_checkpoint(ship.shipped_path(head), self.device)
         return self.judges[head]
 
-    def pick_palette(self, row: dict, names: list[str]) -> tuple[str, list[float]]:
-        """Score every candidate map on this location and return the head's choice."""
+    def pick_palette(self, row: dict, names: list) -> tuple:
+        """Score every candidate map on this location and return the head's choice.
+
+        `(colormap, scores, skipped)`. The pick is the head's argmax, **except**
+        where that map's palette group has already been picked by another attempt
+        of this plan: then the head's next-ranked candidate takes it, and the maps
+        passed over are on the row.
+
+        That filter is a pure identity check — no state about pictures, no pixels,
+        no distances — and it makes the group cap a property of the **plan** rather
+        than only of the seat. gallery3's 150 seats named 91 distinct groups and 59
+        of them sat above one, with `wallhaven_wallhaven-1joljg` seven times: every
+        one of those was a seat spent on a decision the pass had already taken, and
+        none of them could have been undone at seating time because the
+        alternatives were never rendered.
+
+        It degrades rather than failing: a plan makes thousands of attempts and the
+        pool holds hundreds of groups, so once every group in a set is claimed the
+        filter stops acting and the head's own pick stands, recorded as
+        `exhausted`.
+        """
         from fractal_wallpapers.models import palette_head, palette_teacher
 
+        pictures = self.recolours(row, names)
+        scores = palette_teacher.scored_with(
+            self.palette, pictures, self.palette_transform, self.where, 64
+        )
+        top = names[palette_head.top_pick(scores)]
+        colormap, skipped = self.unclaimed(names, scores, top)
+        self.claim(colormap)
+        return colormap, [float(value) for value in scores], skipped
+
+    def recolours(self, row: dict, names: list) -> list:
+        """This location's smooth field through each named map. The head's own pictures.
+
+        Cached on disk under the pass directory and swept after the attempt leg, so
+        the seating leg asking for one again remakes it — which is a recolour and
+        not an iteration pass, and is why an extra pick at a seat costs a render
+        rather than a whole attempt.
+        """
         field = field_of(row, self.directory / "fields")
-        pictures = [
+        return [
             recolored(
                 field,
                 name,
@@ -463,10 +563,41 @@ class Colorizer:
             )
             for name in names
         ]
-        scores = palette_teacher.scored_with(
-            self.palette, pictures, self.palette_transform, self.where, 64
-        )
-        return names[palette_head.top_pick(scores)], [float(value) for value in scores]
+
+    def group_of(self, colormap: str) -> str:
+        """Which palette group a map belongs to; its own name where it is a group of one."""
+        from fractal_wallpapers.palettes import groups as palette_groups
+
+        if self._groups is None:
+            self._groups = palette_groups.member_groups()
+        return palette_groups.group_of(str(colormap), self._groups)
+
+    def unclaimed(self, names: list, scores, top: str) -> tuple:
+        """`(pick, skipped)` — the best-ranked map whose group no attempt has taken.
+
+        `skipped` is `None` where the head's own pick stood, which is the ordinary
+        case and costs the row nothing. Where every group in the set is already
+        claimed the head's pick stands anyway and the block says `exhausted`: a
+        plan that refused to colour an attempt at all would be a plan trading a
+        picture for a property.
+        """
+        import numpy
+
+        if self.group_of(top) not in self.claimed:
+            return top, None
+        passed = []
+        for index in numpy.argsort(-numpy.asarray(scores, dtype=numpy.float64), kind="stable"):
+            name = names[int(index)]
+            group = self.group_of(name)
+            if group not in self.claimed:
+                return name, {"passed": passed, "for": name}
+            passed.append({"map": name, "group": group, "taken_by": self.claimed[group]})
+        return top, {"passed": passed[:1], "for": top, "exhausted": True}
+
+    def claim(self, colormap) -> None:
+        """Record that an attempt has picked this map, so the plan will not pick its group again."""
+        if colormap:
+            self.claimed.setdefault(self.group_of(str(colormap)), str(colormap))
 
     def score_picture(self, picture: Path) -> dict:
         """One finished picture through the judge: every cutpoint, unconditional."""
@@ -480,13 +611,41 @@ class Colorizer:
         row["rank_score"] = float(sum(probabilities[0]))
         return row
 
-    def attempt(self, plan: budget_module.Attempt, row: dict, anchor: str, index: int) -> dict:
+    def attempt(
+        self,
+        plan: budget_module.Attempt,
+        row: dict,
+        anchor: str,
+        index: int,
+        colormap: str | None = None,
+        on_demand: bool = False,
+        mode: str | None = None,
+    ) -> dict:
         """One colorize, end to end, as the durable row it becomes.
 
         A failure is a recorded row with a reason and **no score**, never a zero:
         a crash and a bad wallpaper must not be the same number.
+
+        `colormap`, where it is given, **bypasses the palette head entirely** and
+        colours the attempt with the named map. Two callers want that and both
+        want it for the same reason — the head is the step being routed around.
+        A **carrier attempt** is planned that way because a target names a colour
+        the head declines 83% below the rate it accepts everything else at; an
+        **on-demand pick** is asked for at a seat where the ceiling refused
+        everything the plan proposed. Either way the picture is judged by the same
+        judge and read at the seat by the same rule, so it is a candidate and never
+        a privilege.
+
+        `mode` overrides the draw, for an on-demand pick that is a second colour of
+        an attempt that already happened: it has to be the *same picture in a
+        different palette*, which means the same mode and not a fresh draw.
         """
-        names = candidate_set(anchor, self.pool)
+        # An attempt the caller has named a map for is not built around an anchor
+        # and has no set: the head is not being asked. Skipping the neighbourhood
+        # is not merely an economy — an on-demand pick inherits its anchor from a
+        # standing row, and a row another pass made under another seed names a map
+        # this pass's collapsed pool may not hold at all.
+        names = [] if colormap is not None else candidate_set(anchor, self.pool)
         record = {
             "schema": intake.SCHEMA,
             "attempt": index,
@@ -512,6 +671,8 @@ class Colorizer:
             "curve": CURVE,
             "render": _geometry(row),
         }
+        if on_demand:
+            record["on_demand"] = True
         try:
             # The roster is read out of the engine, so drawing the mode is an
             # engine call like any other and belongs inside the try: "a failed
@@ -519,12 +680,19 @@ class Colorizer:
             # first one, and a killed attempt would take the whole run down.
             # Uniform over the paying head's roster, by Matt's call for the first
             # long run: steering this draw is a future lever, not an unmade decision.
-            mode = modes_drawn_for(plan, self.seed)[plan.mode_index]
-            record.update({"mode": mode, "mode_kind": kind_of(mode)})
-            colormap, scores = self.pick_palette(row, names)
-            picture = self.directory / "pictures" / f"{index:04d}.jpg"
+            drawn = mode or modes_drawn_for(plan, self.seed)[plan.mode_index]
+            record.update({"mode": drawn, "mode_kind": kind_of(drawn)})
+            if colormap is None:
+                colormap, scores, skipped = self.pick_palette(row, names)
+                if skipped is not None:
+                    record["group_skipped"] = skipped
+            else:
+                colormap, scores = str(colormap), []
+                record["named"] = colormap
+                self.claim(colormap)
+            picture = self.directory / "pictures" / f"{attempt_id(record)}.jpg"
             picture, stamp = render(
-                row, mode, colormap, self.cyclic, picture, level=True, band=self.band
+                row, drawn, colormap, self.cyclic, picture, level=True, band=self.band
             )
             verdict = self.score_picture(picture)
         except Exception as failure:  # noqa: BLE001 — a failed attempt is a recorded row
@@ -591,6 +759,7 @@ def annotate(record: dict) -> dict:
 __all__ = [
     "CANDIDATES",
     "CURVE",
+    "ON_DEMAND_PREFIX",
     "RESOLUTION",
     "SMOOTH_MODE",
     "SUPERSAMPLE",
@@ -600,6 +769,8 @@ __all__ = [
     "Colorizer",
     "anchors",
     "annotate",
+    "another_colour",
+    "attempt_id",
     "candidate_set",
     "field_of",
     "kind_of",

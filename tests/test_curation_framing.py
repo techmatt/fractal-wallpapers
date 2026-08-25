@@ -375,7 +375,7 @@ def test_the_plan_can_hold_one_location_at_both_framings() -> None:
     slot.locations = ["a"]
     first = gallery.attempt_plan([slot], {}, 1, 1)
     assert {try_.framing for try_ in first} == {gallery.REFINED}
-    done = {(try_.key, try_.framing) for try_ in first}
+    done = {(try_.key, try_.framing, try_.colormap) for try_ in first}
     # Asking again for the same framing buys nothing; asking for the other one does.
     assert gallery.attempt_plan([slot], {}, 1, 1, already=done) == []
     again = gallery.attempt_plan([slot], {}, 1, 1, already=done, framing=gallery.ORIGINAL)
@@ -419,7 +419,8 @@ class Fake:
         del directory, device, log
         self.seed = seed
 
-    def attempt(self, plan, row, anchor, index):
+    def attempt(self, plan, row, anchor, index, colormap=None, on_demand=False, mode=None):
+        del colormap, on_demand, mode
         Fake.seen.append((index, plan.key, plan.head, plan.mode_index, anchor, row["viewport"]))
         return {
             "schema": 1,
@@ -432,6 +433,9 @@ class Fake:
             "colormap": None,
             "p_ge3": 0.9,
         }
+
+    def claim(self, colormap) -> None:
+        del colormap
 
 
 def refinement(key: str, row: dict, best=None) -> dict:

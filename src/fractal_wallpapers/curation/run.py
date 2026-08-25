@@ -471,18 +471,23 @@ def append_attempt(path: Path, row: dict) -> None:
         handle.write(json.dumps(row, ensure_ascii=False) + "\n")
 
 
-def completed_attempts(path: Path, log) -> dict:
-    """Attempts already made, by index, with a torn tail dropped and the file repaired.
+def completed_rows(path: Path, log) -> list:
+    """Every parseable row of a candidate log, in the order it was written.
 
     A run killed mid-append leaves a partial last line, and a log left in that
     state is not merely one row short: the next append lands on the same line and
     the two rows become one unparseable one. So the repair is a rewrite, here,
     before anything else reads it.
+
+    A **list** and not a table, because one plan index no longer means one row: a
+    gallery pass may render several picks of one attempt and each is a row of its
+    own. What "already done" means over those rows is asked differently on each
+    side — see [`completed_attempts`] and the gallery pass's own resume.
     """
     if not path.is_file():
-        return {}
+        return []
     text = path.read_text(encoding="utf-8")
-    out: dict = {}
+    out: list = []
     kept, torn = [], 0
     for line in text.splitlines():
         if not line.strip():
@@ -492,12 +497,17 @@ def completed_attempts(path: Path, log) -> dict:
         except json.JSONDecodeError:
             torn += 1
             continue
-        out[int(row["attempt"])] = row
+        out.append(row)
         kept.append(line)
     if torn or (text and not text.endswith("\n")):
         log(f"[resume] repairing {path.name}: {torn} torn row(s) dropped, {len(kept)} kept")
         path.write_text("".join(line + "\n" for line in kept), encoding="utf-8", newline="\n")
     return out
+
+
+def completed_attempts(path: Path, log) -> dict:
+    """Attempts already made, by index. One row an index, which is what a run makes."""
+    return {int(row["attempt"]): row for row in completed_rows(path, log)}
 
 
 def _discard_partials(directory: Path, planned: int, done: dict, log) -> dict:
@@ -1084,6 +1094,7 @@ __all__ = [
     "RunRefused",
     "append_attempt",
     "completed_attempts",
+    "completed_rows",
     "curate",
     "head_stamps",
     "run_dir",

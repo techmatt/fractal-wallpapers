@@ -245,3 +245,183 @@ def test_the_recolour_half_is_not_in_a_field_s_name() -> None:
 
     assert "colormap" in renders.RECOLOR_MEMBERS and "recipe" in renders.RECOLOR_MEMBERS
     assert "colormap" not in renders.FIELD_IDENTITY and "recipe" not in renders.FIELD_IDENTITY
+
+
+# --------------------------------------------------------------------------- #
+# One pick an attempt, the group filter on it, and the map a caller may name.
+# --------------------------------------------------------------------------- #
+def stub_colorizer(monkeypatch, tmp_path, made: list, names=None):
+    """A colorizer whose renders and judgements are stated, so the wiring is what runs."""
+    colorizer = object.__new__(colorize.Colorizer)
+    colorizer.seed, colorizer.pool, colorizer.directory = 0, ["a"] * 40, tmp_path
+    colorizer.cyclic, colorizer.band = set(), None
+    colorizer.claimed, colorizer._groups = {}, {}
+    names = names or [f"m{index}" for index in range(4)]
+    monkeypatch.setattr(colorize, "candidate_set", lambda anchor, pool: list(names))
+    monkeypatch.setattr(colorize, "modes_drawn_for", lambda plan, seed: ["smooth"])
+    monkeypatch.setattr(colorize, "kind_of", lambda mode: "field")
+
+    def render(row, mode, colormap, cyclic, output, **kwargs):
+        del row, cyclic, kwargs
+        made.append((str(output.name), mode, colormap))
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_bytes(b"")
+        return output, None
+
+    monkeypatch.setattr(colorize, "render", render)
+    monkeypatch.setattr(
+        colorize.Colorizer, "score_picture", lambda self, picture: {"p_ge3": 0.9, "p_ge4": 0.8}
+    )
+    return colorizer
+
+
+def location_row() -> dict:
+    return {"family": "mandelbrot", "viewport": {}, "maxiter": 500}
+
+
+def plan_for() -> budget.Attempt:
+    return budget.Attempt(head=budget.SMOOTH, partition="mandelbrot", key="k", rank=0)
+
+
+def test_an_attempt_is_one_picture_named_by_its_place_in_the_plan(monkeypatch, tmp_path) -> None:
+    """The id IS the file name, and the file name is what resolves a row to a render."""
+    made: list = []
+    colorizer = stub_colorizer(monkeypatch, tmp_path, made)
+    monkeypatch.setattr(
+        colorize.Colorizer, "pick_palette", lambda self, row, names: ("m0", [1.0], None)
+    )
+    row = colorize.Colorizer.attempt(colorizer, plan_for(), location_row(), "a", 7)
+    assert colorize.attempt_id(row) == "0007"
+    assert row["picture"].endswith("0007.jpg")
+    assert made == [("0007.jpg", "smooth", "m0")]
+    assert "on_demand" not in row and "named" not in row and "group_skipped" not in row
+
+
+def test_a_picture_the_seating_asked_for_is_named_apart_from_the_plan(
+    monkeypatch, tmp_path
+) -> None:
+    """An on-demand render cannot collide with a plan index the next round adds."""
+    made: list = []
+    colorizer = stub_colorizer(monkeypatch, tmp_path, made)
+    row = colorize.Colorizer.attempt(
+        colorizer,
+        plan_for(),
+        location_row(),
+        "a",
+        7,
+        colormap="Green Vault",
+        on_demand=True,
+        mode="exp_smoothing",
+    )
+    assert colorize.attempt_id(row) == "d0007"
+    assert row["picture"].endswith("d0007.jpg")
+    assert row["on_demand"] is True
+    assert made == [("d0007.jpg", "exp_smoothing", "Green Vault")], "the mode was NOT re-drawn"
+
+
+def test_a_named_map_bypasses_the_head_and_is_scored_like_anything_else(
+    monkeypatch, tmp_path
+) -> None:
+    """The carrier attempt and the extra pick: the caller says which map."""
+    made: list = []
+    colorizer = stub_colorizer(monkeypatch, tmp_path, made)
+
+    def refuse(self, row, names):
+        raise AssertionError("a named map must not ask the palette head")
+
+    monkeypatch.setattr(colorize.Colorizer, "pick_palette", refuse)
+    row = colorize.Colorizer.attempt(
+        colorizer, plan_for(), location_row(), "a", 7, colormap="Green Vault"
+    )
+    assert row["colormap"] == row["named"] == "Green Vault"
+    assert row["candidate_scores"] == [], "the head was not asked, so it said nothing"
+    assert row["p_ge3"] == 0.9, "and the judge still judged it"
+    assert colorizer.claimed, "and the plan will not pick its group again"
+
+
+def test_a_group_another_attempt_already_picked_is_passed_over(monkeypatch, tmp_path) -> None:
+    """The proposal-time group cap: a pure identity filter, no pixels and no state."""
+    colorizer = stub_colorizer(monkeypatch, tmp_path, [], names=["m0", "m1", "m2"])
+    colorizer._groups = {"m0": "g1", "m1": "g1", "m2": "g2"}
+    scores = [0.9, 0.8, 0.7]
+    assert colorizer.unclaimed(["m0", "m1", "m2"], scores, "m0") == ("m0", None)
+    colorizer.claim("m0")
+    pick, skipped = colorizer.unclaimed(["m0", "m1", "m2"], scores, "m0")
+    assert pick == "m2", "m1 is the same choice as m0 and the head's next is taken instead"
+    assert [entry["map"] for entry in skipped["passed"]] == ["m0", "m1"]
+    assert skipped["passed"][0]["taken_by"] == "m0"
+
+
+def test_a_set_whose_every_group_is_taken_still_colours_its_attempt(monkeypatch, tmp_path) -> None:
+    """The filter degrades rather than refusing: a plan trading a picture for a
+    property would be a plan that renders less the longer it runs."""
+    colorizer = stub_colorizer(monkeypatch, tmp_path, [], names=["m0", "m1"])
+    colorizer._groups = {"m0": "g1", "m1": "g1"}
+    colorizer.claim("m0")
+    pick, skipped = colorizer.unclaimed(["m0", "m1"], [0.9, 0.8], "m0")
+    assert pick == "m0", "the head's own pick stands"
+    assert skipped["exhausted"] is True
+
+
+# --------------------------------------------------------------------------- #
+# The screen an extra pick is chosen by.
+# --------------------------------------------------------------------------- #
+def test_the_next_pick_is_the_best_ranked_map_carrying_a_colour_nothing_tried_was(
+    monkeypatch,
+) -> None:
+    from fractal_wallpapers.palettes import dominance
+
+    colour = {
+        "one": ("red",),
+        "two": ("red",),
+        "three": ("blue",),
+        "four": (),
+        "five": ("green",),
+    }
+    monkeypatch.setattr(
+        dominance,
+        "of_picture",
+        lambda picture: dominance.Reading((), colour[str(picture)], {}, {}, 0.0),
+    )
+    names = ["one", "two", "three", "four", "five"]
+    scores = [0.9, 0.8, 0.7, 0.6, 0.5]
+
+    def recolour_of(name):
+        return name
+
+    assert colorize.another_colour(names, scores, recolour_of, {"one"}, {"red"}) == "three"
+    assert colorize.another_colour(
+        names, scores, recolour_of, {"one", "three"}, {"red", "blue"}
+    ) == ("five")
+    assert (
+        colorize.another_colour(names, scores, recolour_of, set(), {"red", "blue", "green"}) is None
+    ), "no colour left to try, and nothing is rendered to find that out"
+
+
+def test_a_named_map_needs_no_candidate_set_and_no_anchor_in_the_pool(
+    monkeypatch, tmp_path
+) -> None:
+    """An on-demand pick inherits its anchor from whatever row it was asked beside.
+
+    That row may come from another pass under another seed, whose collapsed pool
+    stood a different member of a group up — so the anchor it names can be a map
+    this pass cannot reach. Building a neighbourhood around it would refuse, and
+    the neighbourhood is not wanted: the caller has already said which map.
+    """
+    made: list = []
+    colorizer = stub_colorizer(monkeypatch, tmp_path, made)
+
+    def refuse(anchor, pool, size=32):
+        raise AssertionError("a named map must not build a candidate set")
+
+    monkeypatch.setattr(colorize, "candidate_set", refuse)
+    row = colorize.Colorizer.attempt(
+        colorizer,
+        plan_for(),
+        location_row(),
+        "a-map-this-pool-does-not-hold",
+        7,
+        colormap="Green Vault",
+    )
+    assert row["candidates"] == []
+    assert row["colormap"] == "Green Vault"

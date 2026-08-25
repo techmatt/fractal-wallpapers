@@ -1,0 +1,47 @@
+{"schema": 1, "kind": "method", "marked": 46, "same": 13, "different": 33, "blocks": ["anchor — Matt says borderline", "anchor — Matt says different", "anchor — Matt says same", "at twice the cut", "far", "straddling the cut", "tightest"], "marked_on": "2026-08-25", "nearest_different": 0.04784, "widest_same_below": 0.03163, "cut": 0.039735, "same_above_the_cut": [{"id": "a02", "m1": 0.05411, "one": "silk-scarves-25", "other": "flamed-25"}, {"id": "s06", "m1": 0.05835, "one": "meditation-25", "other": "transcendence-25"}], "different_below_the_cut": [], "method": "forty-six pairs of colormaps shown side by side and marked SAME or DIFFERENT by eye, in five blocks: the tightest pairs in the library, pairs straddling the candidate cut, pairs at twice it, far pairs as a control, and the anchors Matt named himself. `m1` is the sliced Wasserstein-1 distance the grouping cuts on. The marks do not sort cleanly — two pairs marked SAME sit above the nearest pair marked DIFFERENT, and both are named in `same_above_the_cut` — so the cut is read by a one-sided rule: never merge a pair marked DIFFERENT. It is the midpoint of the nearest DIFFERENT pair and the widest SAME pair below it, which is what `palettes.groups.cut_from_marks` recomputes from these rows."}
+{"schema": 1, "kind": "mark", "id": "t01", "block": "tightest", "one": "cet_rainbow_bgyr_35_85_c72", "other": "cet_rainbow_bgyr_35_85_c73", "m1": 0.00348, "mark": "same"}
+{"schema": 1, "kind": "mark", "id": "t02", "block": "tightest", "one": "cet_linear_bgyw_15_100_c67", "other": "cet_linear_bgyw_15_100_c68", "m1": 0.0036, "mark": "same"}
+{"schema": 1, "kind": "mark", "id": "t03", "block": "tightest", "one": "cet_rainbow_bgyrm_35_85_c69", "other": "cet_rainbow_bgyrm_35_85_c71", "m1": 0.01355, "mark": "same"}
+{"schema": 1, "kind": "mark", "id": "t04", "block": "tightest", "one": "cet_linear_kry_5_95_c72", "other": "cet_linear_kry_5_98_c75", "m1": 0.01624, "mark": "same"}
+{"schema": 1, "kind": "mark", "id": "t05", "block": "tightest", "one": "cet_linear_kry_0_97_c73", "other": "cet_linear_kry_5_95_c72", "m1": 0.02017, "mark": "same"}
+{"schema": 1, "kind": "mark", "id": "a01", "block": "anchor — Matt says same", "one": "smooth-sailing-25", "other": "spirit-of-the-dream-25", "m1": 0.02868, "mark": "same"}
+{"schema": 1, "kind": "mark", "id": "t06", "block": "tightest", "one": "cet_linear_kry_0_97_c73", "other": "cet_linear_kryw_0_100_c71", "m1": 0.01283, "mark": "same"}
+{"schema": 1, "kind": "mark", "id": "t07", "block": "tightest", "one": "Nightbloom Signal", "other": "Sapphire & Coal", "m1": 0.02006, "mark": "same"}
+{"schema": 1, "kind": "mark", "id": "t08", "block": "tightest", "one": "cet_cyclic_wrwbw_40_90_c42_s25", "other": "cet_diverging_bwr_40_95_c42", "m1": 0.03163, "mark": "same"}
+{"schema": 1, "kind": "mark", "id": "t09", "block": "tightest", "one": "cet_linear_kry_0_97_c73", "other": "cet_linear_kry_5_98_c75", "m1": 0.02327, "mark": "same"}
+{"schema": 1, "kind": "mark", "id": "t10", "block": "tightest", "one": "cet_linear_kry_5_95_c72", "other": "cet_linear_kryw_0_100_c71", "m1": 0.02076, "mark": "same"}
+{"schema": 1, "kind": "mark", "id": "s01", "block": "straddling the cut", "one": "Ember in Green Ash", "other": "dynamo-25", "m1": 0.08446, "mark": "different"}
+{"schema": 1, "kind": "mark", "id": "s02", "block": "straddling the cut", "one": "labani", "other": "tapestry-25", "m1": 0.08031, "mark": "different"}
+{"schema": 1, "kind": "mark", "id": "s03", "block": "straddling the cut", "one": "Cirrus & Ember", "other": "Coldhearth", "m1": 0.0559, "mark": "different"}
+{"schema": 1, "kind": "mark", "id": "s04", "block": "straddling the cut", "one": "fractal_abstraction_lines_130499_2560x1600", "other": "wallhaven_wallhaven-398e39", "m1": 0.06084, "mark": "different"}
+{"schema": 1, "kind": "mark", "id": "s05", "block": "straddling the cut", "one": "city_of_lights", "other": "green-dragon-25", "m1": 0.06329, "mark": "different"}
+{"schema": 1, "kind": "mark", "id": "a02", "block": "anchor — Matt says borderline", "one": "silk-scarves-25", "other": "flamed-25", "m1": 0.05411, "mark": "same"}
+{"schema": 1, "kind": "mark", "id": "s06", "block": "straddling the cut", "one": "meditation-25", "other": "transcendence-25", "m1": 0.05835, "mark": "same"}
+{"schema": 1, "kind": "mark", "id": "s07", "block": "straddling the cut", "one": "torque-25", "other": "vibe-25", "m1": 0.06418, "mark": "different"}
+{"schema": 1, "kind": "mark", "id": "s08", "block": "straddling the cut", "one": "795548-3840x2160-desktop-4k-fractal-background", "other": "Cyan Vault", "m1": 0.10219, "mark": "different"}
+{"schema": 1, "kind": "mark", "id": "s09", "block": "straddling the cut", "one": "emergence", "other": "wallhaven_wallhaven-e7v1ll", "m1": 0.06053, "mark": "different"}
+{"schema": 1, "kind": "mark", "id": "s10", "block": "straddling the cut", "one": "Three Candles", "other": "Twin Sconces", "m1": 0.04784, "mark": "different"}
+{"schema": 1, "kind": "mark", "id": "a03", "block": "anchor — Matt says different", "one": "gist_heat", "other": "commons_Ms-0557-0645", "m1": 0.05599, "mark": "different"}
+{"schema": 1, "kind": "mark", "id": "d01", "block": "at twice the cut", "one": "Warm Core in the Deep", "other": "gossamer-25", "m1": 0.08519, "mark": "different"}
+{"schema": 1, "kind": "mark", "id": "d02", "block": "at twice the cut", "one": "Azure, Gold, Oxblood", "other": "Cobalt Against Gold", "m1": 0.108, "mark": "different"}
+{"schema": 1, "kind": "mark", "id": "d03", "block": "at twice the cut", "one": "chronoscope-25", "other": "green-dragon-25", "m1": 0.1057, "mark": "different"}
+{"schema": 1, "kind": "mark", "id": "d04", "block": "at twice the cut", "one": "Aster Bloom", "other": "Green, Cobalt, Amber", "m1": 0.10839, "mark": "different"}
+{"schema": 1, "kind": "mark", "id": "d05", "block": "at twice the cut", "one": "Bone and Deep Green", "other": "Teal Ash", "m1": 0.09532, "mark": "different"}
+{"schema": 1, "kind": "mark", "id": "d06", "block": "at twice the cut", "one": "Rust Lagoon", "other": "Teal Flare, Amber Fall", "m1": 0.06971, "mark": "different"}
+{"schema": 1, "kind": "mark", "id": "d07", "block": "at twice the cut", "one": "cmr.ocean", "other": "wallhaven_wallhaven-m9v5l9", "m1": 0.09409, "mark": "different"}
+{"schema": 1, "kind": "mark", "id": "d08", "block": "at twice the cut", "one": "wallhaven_wallhaven-dg6v93", "other": "wallhaven_wallhaven-g8ev1l", "m1": 0.10068, "mark": "different"}
+{"schema": 1, "kind": "mark", "id": "d09", "block": "at twice the cut", "one": "Bone & Deep Petrol", "other": "ten-leaf-clover-25", "m1": 0.1221, "mark": "different"}
+{"schema": 1, "kind": "mark", "id": "d10", "block": "at twice the cut", "one": "cmr.eclipse", "other": "metal-emblem-25", "m1": 0.10736, "mark": "different"}
+{"schema": 1, "kind": "mark", "id": "a04", "block": "anchor — Matt says different", "one": "Cobalt Furnace Ultra", "other": "Oxblood & Petrol Seam", "m1": 0.07223, "mark": "different"}
+{"schema": 1, "kind": "mark", "id": "a06", "block": "anchor — Matt says different", "one": "Oxblood & Petrol Seam", "other": "Oxblood, One Cold Spark", "m1": 0.05754, "mark": "different"}
+{"schema": 1, "kind": "mark", "id": "a05", "block": "anchor — Matt says different", "one": "Cobalt Furnace Ultra", "other": "Oxblood, One Cold Spark", "m1": 0.08604, "mark": "different"}
+{"schema": 1, "kind": "mark", "id": "f01", "block": "far", "one": "summer", "other": "visions-25", "m1": 0.5866, "mark": "different"}
+{"schema": 1, "kind": "mark", "id": "f02", "block": "far", "one": "fractal_abstraction_lines_130499_2560x1600", "other": "hollow-worlds-25", "m1": 0.57432, "mark": "different"}
+{"schema": 1, "kind": "mark", "id": "f03", "block": "far", "one": "cet_linear_kry_5_98_c75", "other": "watersprite-25", "m1": 0.62072, "mark": "different"}
+{"schema": 1, "kind": "mark", "id": "f04", "block": "far", "one": "wallhaven_wallhaven-1jo7vv", "other": "winter", "m1": 0.65191, "mark": "different"}
+{"schema": 1, "kind": "mark", "id": "f05", "block": "far", "one": "MyFractal01", "other": "wallhaven_wallhaven-ym8rqk", "m1": 0.61989, "mark": "different"}
+{"schema": 1, "kind": "mark", "id": "f06", "block": "far", "one": "carried-away-25", "other": "silk-scarves-25", "m1": 0.62436, "mark": "different"}
+{"schema": 1, "kind": "mark", "id": "f07", "block": "far", "one": "MyFractal03", "other": "MyFractal04", "m1": 0.66136, "mark": "different"}
+{"schema": 1, "kind": "mark", "id": "f08", "block": "far", "one": "autumn", "other": "cet_linear_kbc_5_95_c73", "m1": 0.72367, "mark": "different"}
+{"schema": 1, "kind": "mark", "id": "f09", "block": "far", "one": "cet_linear_bmw_5_95_c86", "other": "mossy-25", "m1": 0.70251, "mark": "different"}
+{"schema": 1, "kind": "mark", "id": "f10", "block": "far", "one": "cet_linear_bmw_5_95_c89", "other": "cet_linear_kgy_5_95_c69", "m1": 0.74807, "mark": "different"}
