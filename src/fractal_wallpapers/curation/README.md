@@ -52,6 +52,7 @@ fractal-wallpapers curate gallery --n 100 --no-refine                   # framin
 fractal-wallpapers curate gallery --n 100 --refine-margin 0.10          # a stricter adoption
 fractal-wallpapers curate gallery --n 100 --reseat 0                    # no re-seat: one draw
 fractal-wallpapers curate gallery --n 100 --no-full-size                # seat, do not render
+fractal-wallpapers curate gallery --n 100 --release-regime 2560x1440ss4 # the regime gallery1-3 shipped at
 fractal-wallpapers curate gallery --pass gallery2                       # ...then make them
 fractal-wallpapers curate gallery-store check --pass gallery1          # is the store whole?
 fractal-wallpapers curate gallery --pass gallery1 --migrate            # out of the old layout
@@ -118,7 +119,9 @@ Each invocation is a **pass** with its own id, its own record in
                          5a, 5 and 6 are a LOOP: an unfilled slot re-seats, up
                          to --reseat (3) neighbourhoods, and everything either
                          side of them happens once
-7  the pictures          2560x1440 ss4 for the winners, and only for them
+7  the pictures          1280x720 ss2 for the winners, and only for them.
+                         --release-regime moves it; the pass record and
+                         every release row say which pixels were made
 ```
 
 **A slot is not married to one neighbourhood.** When every candidate a slot's
@@ -346,9 +349,8 @@ frames. `tests/test_curation_framing.py` pins that, along with the window
 geometry, the margin refusing a planted sub-Δ winner, and the monotonicity abort.
 
 **`--no-full-size` skips step 7 and costs the pass no decision.** Every slot is
-seated on the same candidates; what is not spent is 25 s a winner making a
-2560x1440 picture of a choice that is perfectly judgeable off the 640x360 render
-the head itself read. The seats are recorded **`unrendered`** — took the slot, no
+seated on the same candidates; what is not spent is a release render of a choice
+that is perfectly judgeable off the 640x360 render the head itself read. The seats are recorded **`unrendered`** — took the slot, no
 picture, **nothing failed** — which is a fourth release verdict and not `killed`,
 because `killed` means the render died and a reader has to be able to take a
 verdict at face value. `records.served` still wants a picture, so an unrendered
@@ -568,11 +570,31 @@ will actually plan, instead of restating the attempt multiplier, the share and t
 mode count in `schedule` — three copies that were correct only while all three of
 the originals were fixed.
 
-Everything a run makes at full size is **2560x1440 supersample 4** —
+Everything **a run** makes at full size is **2560x1440 supersample 4** —
 `run.RELEASE_RESOLUTION` and `run.RELEASE_SUPERSAMPLE`, one geometry for every
 partition, every mode and every head, so nothing about a release row's cost or
-its bytes depends on which slot it took, and `checks` re-derives against those
-same two constants.
+its bytes depends on which slot it took.
+
+**A gallery pass is 1280x720 ss2**, from 2026-08-25 on Matt's call, and it is a
+*default* rather than a constant: `gallery.RELEASE_REGIME`, moved by
+`--release-regime <w>x<h>ss<n>`, with `gallery.FORMER_RELEASE_REGIME`
+(2560x1440ss4 — what gallery1 through gallery3 shipped at, and what the website's
+figures are drawn off) still reachable there. A released wallpaper does not need
+the full frame, and step 7 is the slow leg of a pass: a quarter of the pixels at
+half the supersample is a **sixteenth of the field samples**.
+
+So a diagnostic release and a shipped wallpaper are no longer the same picture at
+the same size, and the two regimes are named apart rather than one read off the
+other. What follows from that is the recording rule: the regime a pass used is on
+the pass record (`config.release_geometry`) and on **every release row it writes**
+(`release_geometry`, `null` where there is no picture), because `recipe.render` is
+and always was the *candidate* geometry the verdict was cast on. `checks` reads
+the regime off the row — `checks.regime_of_row`, falling back to
+`checks.UNRECORDED_REGIME` for rows written before the field existed, every one of
+which came from a 2560x1440 ss4 leg — so `parity` and `replay` re-derive the
+pixels the row actually shipped rather than today's default. For the same reason
+step 7 will not reuse a picture already on disk at another frame: it reads the
+frame off the file and makes it again.
 
 What follows is worth reading before changing anything.
 
@@ -1199,8 +1221,12 @@ reproduce. A row [`rejection`](rejection.py) took back afterwards is **kept**:
 this is a question about colour, not about seating.
 
 **Read at the shipped render's own resolution.** A share vector is not
-scale-free, so the census reads the release PNG at 2560x1440 and the two cheap
-instruments are priced against it rather than assumed. The 160x90 decode
+scale-free, so the census reads each release PNG at whatever that picture is —
+`full_shares` takes the size off the file and writes it onto the row — and the two
+cheap instruments are priced against it rather than assumed. The numbers below
+were taken over a population made entirely at 2560x1440; a pass shipping another
+regime is a different population, and the pass record's `release_geometry` is what
+tells them apart. The 160x90 decode
 [`codebook.of_picture`](../palettes/codebook.py) uses moves a swatch by at most
 0.7 of a point over the released population and flips 12 of 12,792 threshold
 cells. The **candidate render is a different picture** — half the supersampling

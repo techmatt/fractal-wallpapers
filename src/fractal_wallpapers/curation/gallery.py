@@ -25,10 +25,17 @@ what each one chose out of what.
 4  the locations         quality-weighted farthest point under a hard radius
 5  the attempts          m locations near each chosen point, judged small   <-.
 6  the seats             floors per head, then P(>=4); unfilled beats padded --'  k times
-7  the pictures          2560x1440 ss4 for the winners, and only for them
+7  the pictures          the release regime for the winners, and only for them
 ```
 
 Steps 5 and 6 are a loop, and everything either side of them happens once.
+
+Step 7's regime is a **per-pass decision** ([`RELEASE_REGIME`], 1280x720 ss2 since
+2026-08-25, moved by `--release-regime`) and no longer the run's own release
+geometry: a diagnostic release and a shipped wallpaper stopped being the same
+picture at the same size. So the regime is written onto the pass record and onto
+every release row, because a census over one regime is a different population from
+a census over another and nothing downstream can tell them apart from the pictures.
 
 Step 7 is the one step that can be **left out without costing a decision**:
 `--no-full-size` seats everything exactly as it would have and spends no release
@@ -284,11 +291,28 @@ ATTEMPTS = (3, 2, 6)
 #: reproducible from it alone.
 DEFAULT_SEED = 0
 
-#: What a winner is rendered at. The run's geometry, read from there rather than
-#: restated: a gallery wallpaper and a diagnostic one are the same picture at the
-#: same size, and two spellings of that is how they come to differ.
-RESOLUTION = run_module.RELEASE_RESOLUTION
-SUPERSAMPLE = run_module.RELEASE_SUPERSAMPLE
+#: What a winner is rendered at, and a **default** rather than a constant: a pass
+#: may be told another with `--release-regime`, and what it actually used is on
+#: every release row and on the pass record.
+#:
+#: **1280x720 ss2 from 2026-08-25**, on Matt's call. A released wallpaper does not
+#: need the full frame, and step 7 is the slow leg of a pass — a quarter of the
+#: pixels at half the supersample is a sixteenth of the field samples, so the leg
+#: that priced at ~25 s a winner is the one this buys back.
+#:
+#: It is deliberately no longer [`run.RELEASE_RESOLUTION`]. A diagnostic release
+#: and a shipped wallpaper used to be the same picture at the same size and are
+#: not any more, so the two are named apart rather than one read off the other —
+#: what a run makes is a night's evidence, and what a pass makes is the
+#: collection.
+RELEASE_REGIME = release.Regime((1280, 720), 2)
+
+#: What gallery1 through gallery3 shipped at, and what `--release-regime
+#: 2560x1440ss4` reaches. Named rather than left as a number in a sentence,
+#: because those pictures are still on disk and the website's figures are drawn
+#: off them: a reader asking what the pass before this ruling made needs a name to
+#: ask with.
+FORMER_RELEASE_REGIME = release.Regime((2560, 1440), 4)
 
 #: How many nearest pairs the retro table lists, per partition and overall.
 RETRO_PAIRS = 8
@@ -1970,14 +1994,17 @@ def pool_rows(pass_id: str) -> list[dict]:
 # --------------------------------------------------------------------------- #
 # Step 7: the winners, at full size, and only the winners.
 # --------------------------------------------------------------------------- #
-def skip_winners(slots: list, log=print) -> dict:
+def skip_winners(slots: list, regime: release.Regime = RELEASE_REGIME, log=print) -> dict:
     """Step 7, not taken. Mark every seat as having no full-size render yet.
 
     The **dev-and-review affordance** the attempt leg's `--no-attempts` is not:
     skipping the release leg costs the pass none of its decisions. Every slot is
-    seated the same way on the same candidates; what is not spent is 25 s a
-    winner making a 2560x1440 picture of a choice a person can judge perfectly
-    well off the 640x360 render the judge itself read.
+    seated the same way on the same candidates; what is not spent is a winner's
+    release render of a choice a person can judge perfectly well off the 640x360
+    render the judge itself read.
+
+    `regime` is carried through so the record still says which pixels the pass
+    *would* have made, which is the one thing a skipped leg can still be asked.
 
     The seats are recorded [`records.UNRENDERED`] — took the slot, no picture,
     nothing failed — and the contact sheets fall back to each winner's candidate
@@ -1993,12 +2020,15 @@ def skip_winners(slots: list, log=print) -> dict:
         seated += 1
         slot.seated["release_picture"] = None
         slot.seated["release_autolevel"] = None
+        # No picture, so no pixels to describe. A geometry here would name a
+        # regime nothing was rendered at.
+        slot.seated["release_geometry"] = None
         # What tells [`_release_row`] this is a choice rather than a dead render.
         slot.seated["release_skipped"] = True
     log(f"[render] SKIPPED: --no-full-size, so {seated} seat(s) have no full-size picture yet")
     return {
         "skipped": "--no-full-size",
-        "geometry": {"resolution": list(RESOLUTION), "supersample": SUPERSAMPLE},
+        "geometry": regime.geometry(),
         "reused": 0,
         "workers": 0,
         "counts": {
@@ -2014,24 +2044,33 @@ def skip_winners(slots: list, log=print) -> dict:
     }
 
 
-def render_winners(slots: list, directory: Path, workers: int, log=print) -> dict:
-    """Render every seated candidate at [`RESOLUTION`]. `(record)`; mutates `slots`.
+def render_winners(
+    slots: list,
+    directory: Path,
+    workers: int,
+    regime: release.Regime = RELEASE_REGIME,
+    log=print,
+) -> dict:
+    """Render every seated candidate at `regime`. `(record)`; mutates `slots`.
 
-    **No re-score.** The full-size picture is the same recipe as the candidate the
-    decision was taken on, at four times the linear size, and reading it through
-    the head again would be a second measurement wearing the first one's number —
-    the floors were fit on 640x360 candidate renders and a height read at one
-    geometry does not transfer to another.
+    **No re-score.** The release picture is the same recipe as the candidate the
+    decision was taken on, at another size, and reading it through the head again
+    would be a second measurement wearing the first one's number — the floors were
+    fit on 640x360 candidate renders and a height read at one geometry does not
+    transfer to another. That is true whichever way the regime moves, and it is
+    why the regime is free to move at all.
 
     The operator runs *inside* the render ([`colorize.render`]), which is a second
-    full-size render wherever it acts. That is why a pass's release leg is not
-    simply `slots x 25 s`, and why the stamp it writes is its own rather than the
-    candidate's: two renders, two measurements, two facts.
+    render at the same regime wherever it acts. That is why a pass's release leg
+    is not simply `slots x one render`, and why the stamp it writes is its own
+    rather than the candidate's: two renders, two measurements, two facts. The
+    stamp is a set of percentiles over the picture's own pixels, so it is measured
+    on what ships and needs nothing from the regime.
     """
     where = directory / "release"
     where.mkdir(parents=True, exist_ok=True)
     stamps = where / "autolevel_stamps.jsonl"
-    geometry = {"resolution": list(RESOLUTION), "supersample": SUPERSAMPLE}
+    geometry = regime.geometry()
     swept = colorize.sweep_writing(where)
     if swept:
         log(f"[render] discarded {swept} unfinished render(s) left by an earlier attempt")
@@ -2042,7 +2081,7 @@ def render_winners(slots: list, directory: Path, workers: int, log=print) -> dic
             continue
         identifier = str(slot.seated["candidate"])
         picture = where / f"{identifier}.png"
-        if picture.is_file():
+        if _at_regime(picture, regime, log):
             done[identifier] = picture
             reused.append(identifier)
             continue
@@ -2060,6 +2099,7 @@ def render_winners(slots: list, directory: Path, workers: int, log=print) -> dic
                 geometry={**geometry, "maxiter": int(slot.seated["maxiter"])},
             )
         )
+    log(f"[render] {len(tasks)} winner(s) at {regime.spelled}, {len(reused)} already there")
     outcomes = {"rendered": 0, "failed": 0}
     written: dict = {}
 
@@ -2102,6 +2142,12 @@ def render_winners(slots: list, directory: Path, workers: int, log=print) -> dic
             str(done[identifier].relative_to(directory)) if identifier in done else None
         )
         slot.seated["release_autolevel"] = written.get(identifier, stamped.get(identifier))
+        # Which pixels this seat's wallpaper is, on the seat, so [`_release_row`]
+        # can put it on the row. A row with no picture gets no geometry: naming
+        # one would describe a render that does not exist.
+        slot.seated["release_geometry"] = (
+            regime.geometry() if slot.seated["release_picture"] else None
+        )
     record["geometry"] = geometry
     record["reused"] = len(reused)
     record["counts"] = {
@@ -2116,6 +2162,40 @@ def render_winners(slots: list, directory: Path, workers: int, log=print) -> dic
         round(seconds / outcomes["rendered"], 1) if outcomes["rendered"] else None
     )
     return record
+
+
+def _at_regime(picture: Path, regime: release.Regime, log=print) -> bool:
+    """Whether a picture already on disk may be carried across as this regime's.
+
+    Presence used to be the whole test, and it stopped being one the day the
+    regime became a parameter: a pass re-run under a different `--release-regime`
+    would keep every picture the earlier regime made and then record the new
+    regime beside it, which is the one failure a per-row geometry exists to make
+    impossible. So the frame is **read off the file**. The supersample is not in a
+    PNG and does not need to be — it is a property of the field under the pixels
+    and cannot differ without the caller having asked for it — but the frame is
+    exactly what a regime change moves.
+
+    A file that cannot be opened is not reuseable either, and says so rather than
+    raising: the render that replaces it is the answer to a truncated picture.
+    """
+    if not Path(picture).is_file():
+        return False
+    from PIL import Image
+
+    try:
+        with Image.open(picture) as opened:
+            size = opened.size
+    except Exception as failure:  # noqa: BLE001 - unreadable is a re-render, not a crash
+        log(f"[render] {Path(picture).name} will not open ({failure!r}); making it again")
+        return False
+    if tuple(size) == tuple(regime.resolution):
+        return True
+    log(
+        f"[render] {Path(picture).name} is {size[0]}x{size[1]} and this pass ships "
+        f"{regime.spelled}; making it again"
+    )
+    return False
 
 
 def _release_stamps(where: Path) -> dict:
@@ -2311,6 +2391,12 @@ def _release_row(pass_id, candidate, slot, first_of, owed) -> dict:
     )
     row["scores_current"] = candidate.get("scores_current")
     row["release_autolevel"] = candidate.get("release_autolevel")
+    # WHICH PIXELS THIS ROW SHIPPED, on the row. `recipe.render` is the candidate
+    # geometry — the 640x360 render the verdict was cast on — and it always was, so
+    # a reader asking what the wallpaper is had nothing to read and no way to know
+    # it. The release regime is a per-pass decision now, which makes the answer
+    # unguessable rather than merely unwritten: `None` on a row with no picture.
+    row["release_geometry"] = candidate.get("release_geometry")
     # Both framings and both of the location head's readings, on the row the
     # collection ships. `location.viewport` is the frame the full-size picture was
     # rendered at — the refined one wherever one was adopted — and this says what
@@ -2482,17 +2568,24 @@ def _slot_card(slot, directory: Path, sheet_module) -> str:
 
 
 def _seated_picture(seated: dict, directory) -> tuple:
-    """`(path, what it is)` for a winner: the full-size render, or the candidate.
+    """`(path, what it is)` for a winner: the release render, or the candidate.
 
     A pass run with `--no-full-size` has taken every decision and made no
     wallpaper, so the sheet shows the 640x360 render the judge actually read and
-    **says which one it is**. Showing a candidate under a caption that implies
-    2560x1440 is the exact confusion `records.UNRENDERED` exists to keep out of
-    the record, and a sheet is read by the same person.
+    **says which one it is**. Showing a candidate under a caption that implies a
+    finished wallpaper is the exact confusion `records.UNRENDERED` exists to keep
+    out of the record, and a sheet is read by the same person.
+
+    The caption is read off the **seat**, never off [`RELEASE_REGIME`]. The
+    default moved once already, and a sheet that captioned every picture with
+    today's default would relabel every wallpaper an earlier pass made.
     """
     picture = seated.get("release_picture")
     if picture:
-        return Path(directory) / picture, f"{RESOLUTION[0]}x{RESOLUTION[1]} ss{SUPERSAMPLE}"
+        regime = release.regime_from_geometry(seated.get("release_geometry"))
+        return Path(directory) / picture, (
+            regime.spelled if regime is not None else "a release render of unrecorded size"
+        )
     candidate = candidate_picture(seated)
     return candidate, (
         f"NO FULL-SIZE RENDER YET - the {colorize.RESOLUTION[0]}x{colorize.RESOLUTION[1]} "
@@ -2998,6 +3091,7 @@ def run(
     reseat: int = RESEAT_TRIES,
     no_attempts: bool = False,
     full_size: bool = True,
+    regime: release.Regime = RELEASE_REGIME,
     refine: bool = True,
     margin: float = framing_module.MARGIN,
     seed: int = DEFAULT_SEED,
@@ -3031,6 +3125,12 @@ def run(
     interchangeable: that one is on every pass record already, meaning the palette
     anchors and the mode draws.
 
+    `regime` is what step 7 renders the winners at, [`RELEASE_REGIME`] unless the
+    caller says otherwise. It is on the pass record and on every release row the
+    pass writes, because a share vector or a census taken over one regime is a
+    different population from one taken over another and nothing downstream can
+    tell them apart from the pictures alone.
+
     `refine` is step 5a and it is **on**: before a location's attempts render, its
     framing is scanned and the best one adopted if it beats the recorded framing
     by `margin` ([`curation.framing`]). `refine=False` is the pass this repository
@@ -3049,6 +3149,7 @@ def run(
             reseat=reseat,
             no_attempts=no_attempts,
             full_size=full_size,
+            regime=regime,
             refine=refine,
             margin=margin,
             seed=seed,
@@ -3073,6 +3174,7 @@ def _take(
     reseat: int,
     no_attempts: bool,
     full_size: bool,
+    regime: release.Regime,
     refine: bool,
     margin: float,
     seed: int,
@@ -3103,7 +3205,7 @@ def _take(
         f"strange_share={share:g} attempts={m},{smooth},{strange} reseat={reseat} "
         + (f"refine at margin {margin:g}" if refine else "NO refine")
         + (" (SKIPPED: --no-attempts)" if no_attempts else "")
-        + (" (no full-size renders)" if not full_size else "")
+        + (f" release {regime.spelled}" if full_size else " (no full-size renders)")
     )
     log(
         f"[pass] draw seed {root_seed} ({'given' if draw_seed is not None else 'drawn'}), "
@@ -3266,7 +3368,9 @@ def _take(
 
     # --- step 7 ------------------------------------------------------------ #
     rendered = (
-        render_winners(slots, directory, workers, log) if full_size else skip_winners(slots, log)
+        render_winners(slots, directory, workers, regime, log)
+        if full_size
+        else skip_winners(slots, regime, log)
     )
 
     # --- what it leaves behind --------------------------------------------- #
@@ -3342,7 +3446,10 @@ def _take(
                 "resolution": list(colorize.RESOLUTION),
                 "supersample": colorize.SUPERSAMPLE,
             },
-            "release_geometry": {"resolution": list(RESOLUTION), "supersample": SUPERSAMPLE},
+            # The pixels every winner in this pass is made of, on the pass record
+            # as well as on each row: a census is taken over a pass and its
+            # population is defined by this field.
+            "release_geometry": regime.geometry(),
             "heads": run_module.head_stamps(),
         },
         "embeddings": {
@@ -3534,16 +3641,16 @@ __all__ = [
     "DEFAULT_N",
     "DEFAULT_SEED",
     "DRAW_TOP_K",
+    "FORMER_RELEASE_REGIME",
     "PASS_PREFIX",
     "QUALITY_WEIGHT",
     "RADIUS",
-    "RESOLUTION",
+    "RELEASE_REGIME",
     "RESEAT_TRIES",
     "CLOSEST_PAIRS",
     "RETRO_PAIRS",
     "RUNNERS_UP",
     "SCHEMA",
-    "SUPERSAMPLE",
     "Bench",
     "Choice",
     "Draw",

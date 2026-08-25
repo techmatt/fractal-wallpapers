@@ -2696,6 +2696,14 @@ def curate_gallery(args: argparse.Namespace) -> int:
             return 1
         return 0
 
+    from fractal_wallpapers.curation import release as release_module
+
+    try:
+        regime = release_module.regime_of(args.release_regime)
+    except ValueError as refusal:
+        print(refusal)
+        return 1
+
     try:
         record = gallery.run(
             pass_id=args.pass_id,
@@ -2707,6 +2715,7 @@ def curate_gallery(args: argparse.Namespace) -> int:
             reseat=args.reseat,
             no_attempts=args.no_attempts,
             full_size=not args.no_full_size,
+            regime=regime,
             refine=not args.no_refine,
             margin=args.refine_margin,
             seed=args.seed,
@@ -2861,9 +2870,13 @@ def print_gallery(record: dict) -> None:
             f"their candidate renders. Re-run this --pass without the flag to make them."
         )
     else:
+        from fractal_wallpapers.curation import release as release_module
+
+        made = release_module.regime_from_geometry(rendered.get("geometry"))
         print(
             f"full size: {rendered['counts']['made']} rendered, {rendered['counts']['resumed']} "
             f"reused, {rendered['counts']['failed']} failed"
+            + (f" at {made.spelled}" if made is not None else "")
             + (
                 f"; {rendered['seconds_per_full_size']:.1f}s each"
                 if rendered.get("seconds_per_full_size")
@@ -6207,10 +6220,23 @@ def curate_commands(subcommands) -> None:
         "--no-full-size",
         action="store_true",
         help="take every seating decision and skip the release leg, so no winner is "
-        "rendered at 2560x1440. The seats are recorded `unrendered` — took the slot, no "
+        "rendered at all. The seats are recorded `unrendered` — took the slot, no "
         "picture, nothing failed — and the sheets show each winner's candidate render and "
         "say so. Re-running the same --pass without this flag makes the pictures and lifts "
         "the rows to `released`",
+    )
+    gallerying.add_argument(
+        "--release-regime",
+        metavar="WxHssN",
+        default=gallery_module.RELEASE_REGIME.spelled,
+        help=f"the pixels step 7 makes a winner out of: the frame it ships at and the field "
+        f"supersample under it (default: {gallery_module.RELEASE_REGIME.spelled}, on Matt's "
+        f"call of 2026-08-25 — a released wallpaper does not need the full frame and step 7 "
+        f"is the slow leg of a pass). "
+        f"{gallery_module.FORMER_RELEASE_REGIME.spelled} is what gallery1 through gallery3 "
+        f"shipped at and is still reachable here. The regime is recorded on the pass record "
+        f"and on every release row, and a picture already on disk at another frame is made "
+        f"again rather than kept",
     )
     gallerying.add_argument(
         "--seed",

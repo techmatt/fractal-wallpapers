@@ -105,6 +105,69 @@ def engine_threads_for(workers: int) -> int | None:
 
 
 @dataclass(frozen=True)
+class Regime:
+    """The pixels one released picture is made of: the frame it ships at, and the
+    field supersample under it.
+
+    A *pair*, and not two loose constants, because the two only mean anything
+    together — a supersample without the frame it reduces to is not a geometry —
+    and because a regime that travels as one value is a regime a record can carry
+    whole. Written `<w>x<h>ss<n>` wherever a person types or reads one, which is
+    the spelling the tile corpus already uses for the same pair.
+    """
+
+    resolution: tuple[int, int]
+    supersample: int
+
+    def __post_init__(self) -> None:
+        width, height = self.resolution
+        if width < 1 or height < 1 or self.supersample < 1:
+            raise ValueError(f"{self!r} is not a geometry anything can be rendered at")
+
+    @property
+    def spelled(self) -> str:
+        """`<w>x<h>ss<n>` — what a flag takes and what a log line says."""
+        return f"{self.resolution[0]}x{self.resolution[1]}ss{self.supersample}"
+
+    def geometry(self) -> dict:
+        """The regime as the engine spec spells it. A fresh dict every call, so a
+        caller may add its row's `maxiter` without editing the regime."""
+        return {
+            "resolution": [int(self.resolution[0]), int(self.resolution[1])],
+            "supersample": int(self.supersample),
+        }
+
+
+def regime_of(text: str) -> Regime:
+    """A regime from `<w>x<h>ss<n>`, as a person writes one on a flag."""
+    stated = str(text).strip().lower().lstrip("_")
+    frame, _, supersample = stated.partition("ss")
+    width, _, height = frame.partition("x")
+    if not (width.isdigit() and height.isdigit() and supersample.isdigit()):
+        raise ValueError(
+            f"{text!r} is not a regime. One is written <w>x<h>ss<n> - the frame a picture "
+            f"ships at and the field supersample under it, as in 1280x720ss2."
+        )
+    return Regime((int(width), int(height)), int(supersample))
+
+
+def regime_from_geometry(geometry: dict | None) -> Regime | None:
+    """The regime a recorded geometry describes, or `None` where it says nothing.
+
+    A record carries the width, the height and the supersample rather than a name,
+    so this is the only reader anything needs: nothing has to know which named
+    regime a past pass was run under to say what its pixels were.
+    """
+    if not geometry:
+        return None
+    resolution = geometry.get("resolution")
+    supersample = geometry.get("supersample")
+    if not resolution or supersample is None:
+        return None
+    return Regime((int(resolution[0]), int(resolution[1])), int(supersample))
+
+
+@dataclass(frozen=True)
 class Task:
     """One release row. Everything in it survives a spawn pickle on any platform.
 
@@ -537,12 +600,15 @@ __all__ = [
     "KILL_GRACE",
     "SUBMIT_AHEAD",
     "THREADS_ENV",
+    "Regime",
     "Result",
     "Task",
     "completed",
     "decodable",
     "engine_threads_for",
     "parity",
+    "regime_from_geometry",
+    "regime_of",
     "render_task",
     "resumable",
     "run_pass",

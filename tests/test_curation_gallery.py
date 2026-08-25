@@ -23,6 +23,7 @@ from fractal_wallpapers.curation import (
     gallery,
     gallery_store,
     records,
+    release,
     selection,
 )
 from fractal_wallpapers.supply import partitions
@@ -750,6 +751,7 @@ def seated_slot(number: int, key: str, head: str, partition: str = "mandelbrot",
         **gallery.candidate_of_attempt(attempt(number, key, head, partition), "gallery1"),
         "group": number,
         "release_picture": f"release/{number:04d}.png",
+        "release_geometry": gallery.RELEASE_REGIME.geometry(),
     }
     filled.record_try()
     return filled
@@ -1230,6 +1232,8 @@ def test_a_skipped_release_leg_records_the_seat_and_not_a_dead_render(record_roo
     report = gallery.skip_winners([filled], log=lambda _line: None)
     assert report["skipped"] == "--no-full-size"
     assert filled.seated["release_picture"] is None
+    # No picture, so no pixels to name.
+    assert filled.seated["release_geometry"] is None
 
     gallery.write_records("gallery1", [filled], [], ["mandelbrot"], lambda _l: None)
     row = records.read_decisions(records.RELEASE, "gallery1")[0]
@@ -1240,6 +1244,76 @@ def test_a_skipped_release_leg_records_the_seat_and_not_a_dead_render(record_roo
     # The seat is real: it is in the gallery collection and it names its slot.
     assert row["collection"] == records.GALLERY
     assert row["slot"]["id"] == filled.id
+
+
+def test_the_release_regime_is_pinned_and_the_former_one_is_reachable() -> None:
+    """The ruling of 2026-08-25, and the escape hatch beside it.
+
+    A gallery pass ships 1280x720 ss2. The regime gallery1 through gallery3 were
+    made at is still a value `--release-regime` takes, because those pictures are
+    on disk and the website's figures are drawn off them.
+    """
+    from fractal_wallpapers import cli
+
+    assert gallery.RELEASE_REGIME.resolution == (1280, 720)
+    assert gallery.RELEASE_REGIME.supersample == 2
+    assert gallery.RELEASE_REGIME.spelled == "1280x720ss2"
+    assert gallery.FORMER_RELEASE_REGIME.spelled == "2560x1440ss4"
+
+    parse = cli.build_parser().parse_args
+    assert parse(["curate", "gallery"]).release_regime == "1280x720ss2"
+    asked = parse(["curate", "gallery", "--release-regime", "2560x1440ss4"]).release_regime
+    assert release.regime_of(asked).spelled == gallery.FORMER_RELEASE_REGIME.spelled
+    with pytest.raises(ValueError):
+        release.regime_of("2560x1440")
+
+
+def test_a_release_row_records_the_pixels_it_shipped(record_root) -> None:
+    """A later reader never has to guess which pixels a census was taken on.
+
+    `recipe.render` is the CANDIDATE geometry and always was, so before this the
+    row said nothing about the wallpaper's own size. Now the regime is a per-pass
+    decision, so an unwritten one would be unguessable rather than merely absent.
+    """
+    filled = seated_slot(0, "k0", SMOOTH)
+    filled.seated["release_geometry"] = gallery.FORMER_RELEASE_REGIME.geometry()
+    gallery.write_records("gallery1", [filled], [], ["mandelbrot"], lambda _l: None)
+    row = records.read_decisions(records.RELEASE, "gallery1")[0]
+    assert row["verdict"] == records.RELEASED
+    assert row["release_geometry"] == {"resolution": [2560, 1440], "supersample": 4}
+    assert release.regime_from_geometry(row["release_geometry"]).spelled == "2560x1440ss4"
+    # A field of its own, beside the candidate geometry rather than instead of it:
+    # `recipe.render` answers a different question and keeps answering it.
+    assert "render" in row["recipe"]
+
+    # A seat with no picture names no regime.
+    empty = seated_slot(1, "k1", SMOOTH)
+    gallery.skip_winners([empty], log=lambda _line: None)
+    assert (
+        gallery._release_row("gallery1", empty.seated, empty, {}, set())["release_geometry"] is None
+    )
+
+
+def test_a_picture_at_another_frame_is_not_this_regimes_picture(tmp_path) -> None:
+    """Reuse used to be `the file is there`, and the frame made that unsafe.
+
+    A pass re-run under a different regime would otherwise keep the earlier
+    regime's pictures and record the new regime beside them.
+    """
+    from PIL import Image
+
+    picture = tmp_path / "0000.png"
+    Image.new("RGB", (1280, 720)).save(picture)
+    said: list[str] = []
+    assert gallery._at_regime(picture, release.Regime((1280, 720), 2), said.append) is True
+    assert said == []
+    assert gallery._at_regime(picture, gallery.FORMER_RELEASE_REGIME, said.append) is False
+    assert "2560x1440ss4" in said[0]
+    # No file is not a reuse either, and it is the quiet case: nothing to say.
+    assert gallery._at_regime(tmp_path / "nothing.png", gallery.RELEASE_REGIME, said.append) is (
+        False
+    )
+    assert len(said) == 1
 
 
 def test_an_unrendered_row_is_not_something_the_collection_serves(record_root) -> None:
@@ -1267,11 +1341,18 @@ def test_a_killed_render_and_a_render_never_asked_for_are_different_rows() -> No
 
 
 def test_a_sheet_falls_back_to_the_candidate_render_and_says_which_it_is() -> None:
-    """A candidate under a caption implying 2560x1440 is the same lie the record
-    refuses to tell."""
+    """A candidate under a caption implying a finished wallpaper is the same lie
+    the record refuses to tell."""
     filled = seated_slot(0, "k0", SMOOTH)
     _full, said = gallery._seated_picture(filled.seated, Path())
-    assert "2560x1440" in said
+    assert said == gallery.RELEASE_REGIME.spelled
+
+    # Off the SEAT, never off today's default: a pass that shipped the former
+    # regime keeps its own caption after the default moved.
+    older = seated_slot(1, "k1", SMOOTH)
+    older.seated["release_geometry"] = gallery.FORMER_RELEASE_REGIME.geometry()
+    _full, said = gallery._seated_picture(older.seated, Path())
+    assert said == "2560x1440ss4"
 
     gallery.skip_winners([filled], log=lambda _line: None)
     _candidate, said = gallery._seated_picture(filled.seated, Path())
