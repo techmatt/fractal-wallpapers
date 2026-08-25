@@ -239,6 +239,22 @@ QUALITY_WEIGHT = 1.0
 #: Twenty-five and not the whole partition, because the first pick is still meant
 #: to be a strong location and not merely a different one. `1` is the argmax this
 #: draw took before the seed existed, exactly.
+#:
+#: Swept over the real pool at gallery3's knobs, n=150, four seeds each — points
+#: re-chosen out of gallery3's 150, and the mean location `P(>=4)` of the points
+#: chosen:
+#:
+#: ```text
+#: top_k    1   142        0.9318   (the argmax)
+#: top_k    5   83-105     0.9354
+#: top_k   25    74-89     0.9365
+#: top_k  100    71-84     0.9258
+#: ```
+#:
+#: The draw does not pay for its freedom in point quality — at 25 it reads
+#: *higher* than the argmax, because a different start lets the radius refuse a
+#: different region and the gain finds stronger points elsewhere. 100 is where it
+#: turns: barely more movement than 25, and the quality falls below the argmax.
 DRAW_TOP_K = 25
 
 #: **How many neighbourhoods a slot may try** before it reports `below_bar`.
