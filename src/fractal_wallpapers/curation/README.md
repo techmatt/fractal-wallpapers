@@ -767,6 +767,86 @@ the head onto the GPU, the ledger read, and the sidecar rewritten whole — whic
 what sets the chunk size. It wrote **1.48 GB / 22,898 files** into
 `artifacts/node_views/384x216ss1/` and nothing anywhere else.
 
+## A standing score is a reading of a picture, and the picture can stop existing
+
+The sidecar row names the view its score was read off — a regime and a file name
+— and for most of this supply that name no longer describes anything. Three ways,
+and `curate redraw` reports the split:
+
+* **regime** — the row states no regime at all, which means it was read at
+  640x360 ss2 before old stock started falling to the node regime. The picture is
+  not lost: all 28,072 of those views are in `artifacts/location_views` on the
+  archive tier, and they measure 640x360. What makes the score stale is that
+  curation deliberately does not read there any more — the deploy cache is
+  frozen, and `_picture_for` sends a regime-less row to the node regime like every
+  walk node;
+* **picture** — the score was read off a walk's own gate render, filed under the
+  run's node id rather than under a digest, or off a view whose digest has since
+  moved. `renders.job_name` digests the spec that goes over the wire and the spec
+  carries the engine's own **mode catalog**, so a catalog entry gaining a field
+  renames every view in the cache without changing a pixel;
+* **engine** — the right file at the right name, with nothing saying which build
+  drew it.
+
+That third one is the one nothing could ask before. A view is addressed by a
+digest of its recipe, and *which program carried the recipe out* is not in the
+recipe. `identity.enforce` pinned four settings — colormap, cyclicity, node
+frame, cap policy — and all four hold while the binary underneath them is a
+different program. `fractal_wallpapers.engine_fingerprint` names the build by
+what it draws: six pinned probes over four family kinds and six modes, rendered
+through `renders.spec_of` at the node regime and digested to sixteen hex
+characters, about 0.35 s and cached per process. It is preferred over a source
+revision because it also catches a rebuild from unchanged source and a moved mode
+catalog.
+
+**Every view written now carries the build beside it.** One `drawn_by.jsonl` per
+view directory — `{schema, view, engine}` a row, appended, last row winning — so
+a re-render under a new build appends rather than rewrites and an interrupted
+refresh has recorded exactly what it finished. A view no row claims is
+`unknown`, which is not a fingerprint and is therefore stale: it is re-rendered
+on read and never scored. That holds for a walk's gate render too
+(`intake.gate_render` checks the stamp), so the ledger's own pictures stop being
+believed on the strength of lying at the right coordinates.
+
+**`curate redraw`** re-renders every stale view at the node regime, reads it
+through the shipped location head, and appends the result to
+`artifacts/curation/score_amendments.jsonl` — append-only, keyed by **(location
+key, engine fingerprint)**, carrying the old score, the new score and the
+fingerprint the old view was drawn under (`unknown` where nothing recorded it).
+The sidecar itself is **never edited**: it is the record of what the seating was
+actually decided on, and a pass that overwrote it would delete the only evidence.
+Serial, because the engine threads inside one render; measured on 2026-08-25 at
+**38 views/s** on the hot tier including the stamp write, so a whole 90k supply is
+about 40 minutes of engine plus the head's own pass. Idempotent and resumable: a
+second call over an unchanged supply through an unchanged engine writes nothing.
+The amendment is regenerable from the sidecar, the engine and the head, so unlike
+the sidecar it gets no durable copy and no manifest.
+
+**Every reader of a seating score prefers the amendment, through one door.**
+`intake.read_scores` overlays it and returns the same row shape, so the five read
+sites need to know nothing: `intake.ranked` (which is `curate plan` and `curate
+run`), the gallery pass's `admitted_only` cut, its `slots_for` guarantee, its
+`quality_of` sort and its `_ranks` table, plus `embeddings.admitted` — the
+denominator that decides which locations the pass can select at all — and
+`manufacture.admitted_locations`. The last two used to open the file directly and
+now do not. `read_scores(amended=False)` exists only for measuring the shift.
+
+**The harvest side is deliberately left alone.** A walk scores the gate render it
+*just made*, so `discovery.scoring`'s floor reads are current by construction and
+have no cached picture to be stale about. What changed there is that those
+renders are now stamped as they are made, which is what lets a later reader tell
+them from a picture some other build drew.
+
+**`curate draw`** is step 4 alone: the point draw, claiming no pass and writing
+nothing. `gallery --no-attempts` is the affordance for iterating on a pass; this
+is the one for *comparing two selections*, which needs a selection that claims
+nothing so both sides can be taken over one pool in either order.
+`--no-amended` takes it over the standing scores, and the difference between the
+two chosen sets is the entry bias the stale readings were buying. On gallery3's
+settings (`-n 150 --radius 0.07 --quality-weight 1 --strange-share 0.6
+--draw-top-k 1`) the standing-score draw reproduces **142 of gallery3's 150
+seated points**; the eight that differ are the slots that re-seated.
+
 **The release budgets the colorize, never the other way round.** A judge's attempt
 budget is a multiple of the slots it is asked to fill, and when the two cannot
 both be afforded they scale down together. Volume that falls out of a spread over

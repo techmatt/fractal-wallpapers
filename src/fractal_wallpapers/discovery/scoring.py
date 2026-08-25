@@ -103,6 +103,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
+from fractal_wallpapers import engine_fingerprint
 from fractal_wallpapers.models import location_view
 
 #: Worker processes a scoring pass uses by default: **one**, which is the serial
@@ -456,6 +457,15 @@ class LocationScorer:
     def stamp(self) -> str:
         return self._stamp
 
+    def stamps(self):
+        """Which engine build drew each picture in this scorer's view cache.
+
+        The digest a view is named by covers the recipe and not the build that
+        carried it out, so a file at the right name is not yet the right picture.
+        See [`fractal_wallpapers.engine_fingerprint`].
+        """
+        return engine_fingerprint.stamps(self.directory)
+
     def head(self):
         """`(model, config, device)` — loaded once, on first use."""
         if self._head is None:
@@ -516,12 +526,19 @@ class LocationScorer:
             if given is not None and Path(given).is_file():
                 self.tally["gate"] += 1
                 made.append(Path(given))
+                # Stamped where it lies, in the run's own views directory. The
+                # engine that drew it is the one this process is holding, and this
+                # is the only moment anybody knows that: a later reader finds a
+                # JPEG at some coordinates and has no way to tell which build made
+                # it. See `curation.intake.gate_render`, which refuses one that
+                # says nothing.
+                engine_fingerprint.stamps(Path(given).parent).record(Path(given).name)
                 continue
             path = location_view.view_path(
                 candidate, self.colormap, self.cyclic, self.directory, self.regime
             )
             made.append(path)
-            if path.is_file():
+            if path.is_file() and self.stamps().is_current(path.name):
                 self.tally["reused"] += 1
                 continue
             wanted.append(len(made) - 1)
@@ -532,14 +549,21 @@ class LocationScorer:
                 )
             )
 
+        # Stamped in the parent and after the batch, never in the worker: the pool
+        # is `spawn`, so a worker appending to the manifest would be several
+        # processes interleaving writes into one file. The results come back here
+        # in order and this is where the successes are known.
+        drawn: list[str] = []
         for index, result in zip(wanted, render_views(tasks, self.workers, self.log), strict=True):
             self.tally["render_seconds"] += result.seconds
             if result.ok:
                 self.tally["rendered"] += 1
+                drawn.append(Path(result.output).name)
             else:
                 self.tally["failed"] += 1
                 made[index] = None
                 errors[index] = result.error
+        self.stamps().record(*drawn)
 
         return self._readings(made, errors, names)
 

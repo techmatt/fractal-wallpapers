@@ -212,23 +212,28 @@ def admitted() -> list[dict]:
 
 
 def _supply() -> list[dict]:
-    """Every row of the supply sidecar, or a refusal naming how to get one.
+    """Every row of the supply sidecar, **amended**, or a refusal naming how to get one.
 
     One reader, because [`admitted`] and [`unreachable`] ask the same file two
     questions and a second opener would be a second answer to whether it is
     there.
+
+    Through [`intake.read_scores`] and not by opening the file, because that is
+    the door [`curation.amend`]'s re-read comes through. This store's denominator
+    is the admitted population and admission is a comparison against a *score*: a
+    reader that opened the sidecar directly would count a location in on a number
+    read off a picture that no longer exists.
     """
     from fractal_wallpapers.curation import intake
 
-    path = intake.scores_path()
-    if not path.is_file():
+    try:
+        return list(intake.read_scores().values())
+    except intake.IntakeError as absent:
         raise StoreRefused(
-            f"{path} is not there, so there is no admitted population to read. Run "
-            f"`fractal-wallpapers curate score`, or `curate sidecar restore` if a durable "
-            f"copy exists."
-        )
-    with path.open(encoding="utf-8") as handle:
-        return [json.loads(line) for line in handle if line.strip()]
+            f"{intake.scores_path()} is not there, so there is no admitted population to "
+            f"read. Run `fractal-wallpapers curate score`, or `curate sidecar restore` if a "
+            f"durable copy exists. ({absent})"
+        ) from absent
 
 
 def judged_pool() -> dict:

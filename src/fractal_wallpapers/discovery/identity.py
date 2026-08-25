@@ -8,7 +8,7 @@ regimes the shipped location head was trained over. Measured, not argued: 0 of
 the gate render, and a second picture of the same place at the deploy geometry
 buys nothing — it was 58.7% of a production run's clean wall.
 
-The identity is not free, though, and it is not one setting. It rests on four,
+The identity is not free, though, and it is not one setting. It rests on five,
 each of which can be moved independently and none of which announces itself:
 
 * the walk's `--colormap` is the tile pool's **floor palette**, which is the map
@@ -22,9 +22,16 @@ each of which can be moved independently and none of which announces itself:
 * the iteration cap the engine gives a width is still the one the tile corpus
   was **recorded** at. The cap decides what counts as interior, so a corpus built
   under one policy and a walk drawn under another are two different pictures of
-  every location, and nothing about either one looks wrong.
+  every location, and nothing about either one looks wrong;
+* and the **engine build itself**, which the four above cannot see at all. Every
+  one of them can hold while the binary is a different program, and a picture
+  that binary drew outlives the run that drew it — a cached view is a picture
+  some build made on some night, scored years later as though it were today's.
+  The build is named by what it draws ([`fractal_wallpapers.engine_fingerprint`])
+  and recorded here; the refusal it buys is on the *read* side, where a view no
+  stamp claims is re-rendered rather than scored.
 
-This module turns all four into a refusal taken *before* a run writes its first
+This module turns the first four into a refusal taken *before* a run writes its first
 row. It is a run-start check on purpose: a harvest is an unattended program of
 several hours, and an identity that failed silently would produce a full ledger
 of scores read off pictures the head was never trained on — a ledger nobody can
@@ -115,9 +122,10 @@ def enforce(colormap: str, node_width: int, regime, log=print) -> dict:
         )
 
     caps = _caps(regime)
+    build = _engine()
     log(
         f"[identity] gate render = {regime.spelled} tile through {colormap} (cyclic); "
-        f"cap policy matched on {len(caps)} recorded location(s)"
+        f"cap policy matched on {len(caps)} recorded location(s); engine {build}"
     )
     return {
         "regime": regime.spelled,
@@ -125,11 +133,38 @@ def enforce(colormap: str, node_width: int, regime, log=print) -> dict:
         "cyclic": True,
         "node_width": int(node_width),
         "caps": caps,
+        "engine": build,
         "holds": (
             "the walk's gate render is byte-identical to this location's tile at this regime, "
             "so the head is asked about the picture it was trained on"
         ),
     }
+
+
+def _engine() -> str:
+    """The build this run's pictures are drawn by, named by what it draws.
+
+    The **fifth** pin, and the one the other four could not see. A colormap, a
+    cyclicity, a frame and a cap policy can all hold while the binary underneath
+    them is a different program — and a picture that binary drew and left in a
+    cache outlives the run that made it. Recorded here rather than compared
+    against anything, because there is nothing to compare it *to* at run start:
+    the gate renders this run is about to make are made by this engine by
+    construction. What it buys is the record — a ledger row's picture now names
+    the build that drew it, which is what lets a later reader tell a view drawn
+    by today's engine from one drawn by a build nobody wrote down. See
+    [`fractal_wallpapers.engine_fingerprint`] and
+    [`fractal_wallpapers.curation.intake.gate_render`], which is the read side.
+    """
+    from fractal_wallpapers import engine_fingerprint
+
+    try:
+        return engine_fingerprint.current()
+    except engine_fingerprint.FingerprintError as refusal:
+        raise IdentityBroken(
+            f"the engine build cannot be named, so nothing this run draws can be told from a "
+            f"picture some other build drew: {refusal}"
+        ) from refusal
 
 
 def _caps(regime) -> dict:

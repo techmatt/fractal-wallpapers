@@ -203,10 +203,11 @@ clock: the deploy-geometry steering view was 8,810 s of one three-hour productio
 leg, 58.7% of the whole run's clean wall, and nothing but the scorer ever read its
 pixels.
 
-**The identity is enforced, not coincidental.** It rests on four settings, none of
+**The identity is enforced, not coincidental.** It rests on five things, none of
 which announces itself when it moves: the run's `--colormap` is the tile pool's
 floor palette, that map is **cyclic**, `--node-width` is the node regime's frame,
-and the engine's iteration cap still matches the cap the tile corpus recorded.
+the engine's iteration cap still matches the cap the tile corpus recorded, and —
+the one the other four cannot see — the **engine build itself**.
 The cyclic requirement is about the *deploy view* rather than the tile: the tile
 build and the walk's own `expand` both load a colormap unbaked, so neither ever
 folds one, but `location_view` bakes `mirror` into any map that does not wrap —
@@ -214,11 +215,26 @@ so a non-cyclic walk colormap would leave the head's node-regime picture and its
 deploy-geometry picture of one place two different pictures. It is refused rather
 than folded.
 
-All four are checked before a run writes its first row, and each refuses with the
-flag to change; the engine also states the geometry it drew every batch at, and a
-report that disagrees ends the run. The cap is *asked* through
+The first four are checked before a run writes its first row, and each refuses
+with the flag to change; the engine also states the geometry it drew every batch
+at, and a report that disagrees ends the run. The cap is *asked* through
 `fractal-engine maxiter` rather than restated here, for the same reason the home
 table is.
+
+**The build is recorded rather than compared, and the refusal it buys is on the
+read side.** There is nothing to compare it against at run start — the gate
+renders this run is about to make are made by this engine by construction — so
+`identity.enforce` puts `engine` on the run header and every view the run writes
+carries the same mark in a `drawn_by.jsonl` beside it. The build is named by what
+it draws (`fractal_wallpapers.engine_fingerprint`: six pinned probes over four
+family kinds and six modes, digested to sixteen hex characters, ~0.35 s and
+cached per process), because byte-identity of output is already this engine's
+contract and a digest of output also catches a rebuild from unchanged source and
+a moved mode catalog, which a revision would not. What that record is *for* is
+`curate score` and `curate redraw`: a cached view or a past run's gate render
+that no stamp claims is `unknown`, which is not a fingerprint, so it is
+re-rendered rather than scored. A picture outlives the run that drew it, and
+until this existed nothing could tell one build's picture from another's.
 
 **With the views gone, the rest of a rung's clock is the focus finder.** Inside
 `expand` the escape-time iteration is the *smaller* half: the focus finder —

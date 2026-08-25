@@ -136,19 +136,28 @@ def view_path(row: dict, colormap: str, cyclic: set[str], directory: Path, regim
 def render_view(
     row: dict, colormap: str, cyclic: set[str], directory: Path, regime=None
 ) -> tuple[Path, bool]:
-    """`(picture, made)` — the location's view, rendered if it is not already there.
+    """`(picture, made)` — the location's view, rendered unless a current one is there.
 
     Addressed by the digest of its own recipe, so two callers asking for the same
     location's view get one file and the second one pays nothing.
+
+    **A file is not enough to be a hit.** The digest says the recipe matches; it
+    says nothing about which engine build carried that recipe out, and the build
+    is not in the recipe. So the cache hit is a file *plus* a stamp saying today's
+    engine drew it ([`fractal_wallpapers.engine_fingerprint`]), and a view drawn
+    by a build nobody wrote down is re-rendered rather than scored — which is
+    every view drawn before that stamp existed.
     """
-    from fractal_wallpapers import engine
+    from fractal_wallpapers import engine, engine_fingerprint
     from fractal_wallpapers.models import renders
 
     output = view_path(row, colormap, cyclic, directory, regime)
-    if output.is_file():
+    marks = engine_fingerprint.stamps(directory)
+    if output.is_file() and marks.is_current(output.name):
         return output, False
     output.parent.mkdir(parents=True, exist_ok=True)
     engine.run("render", renders.spec_of(view_row(row, colormap, cyclic, regime), output))
+    marks.record(output.name)
     return output, True
 
 

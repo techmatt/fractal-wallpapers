@@ -118,3 +118,31 @@ record of what the batch was over. Pictures in a batch are named `<row>_<digest>
 being of everything the engine was told — so a batch is resumable and two records
 that would draw one picture name one file. `renders.jsonl` beside them is the join
 back to the records.
+
+
+## Which engine build drew a picture
+
+`engine.py` is the only door to the renderer. `engine_fingerprint.py` is the
+answer to a question that door could not be asked: *which build*.
+
+A cached picture outlives the run that made it. A view is addressed by a digest
+of its own recipe — the family, the viewport, the geometry, the coloring — and
+the program that carried that recipe out is not in the recipe, so a file at the
+right name has never been evidence that today's engine made it. Every judge in
+this project reads cached pictures.
+
+The build is named by **what it draws**: six pinned probes over four family
+kinds and six modes at the node regime, rendered through `renders.spec_of` — the
+production path, not a second way to ask for pixels — and digested to sixteen hex
+characters. Byte-identity of output is already this engine's contract (native
+&equiv; wasm), so a digest of output *is* the build identity, and it needs no
+build system. It is preferred over a source revision because it also catches a
+rebuild from unchanged source and a moved mode catalog. About 0.35 s, cached per
+process.
+
+Every view directory carries a `drawn_by.jsonl` beside its pictures —
+`{schema, view, engine}` a row, appended, last row winning. A view no row claims
+is `unknown`, which is not a fingerprint and is therefore stale: `location_view.
+render_view` draws it again rather than handing it to a head. That is every
+picture drawn before this existed, and re-reading them is
+`fractal-wallpapers curate redraw`.
