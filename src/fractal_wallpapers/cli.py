@@ -2452,6 +2452,48 @@ def curate_sidecar(args: argparse.Namespace) -> int:
     return 0
 
 
+def curate_redraw(args: argparse.Namespace) -> int:
+    """Re-render every stale location view and amend the score read off it."""
+    from fractal_wallpapers import engine_fingerprint
+    from fractal_wallpapers.curation import amend
+
+    try:
+        report = amend.refresh(device=args.device, limit=args.limit, resume=not args.no_resume)
+    except (amend.AmendError, engine_fingerprint.FingerprintError) as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps(report, indent=2))
+    return 0
+
+
+def curate_draw(args: argparse.Namespace) -> int:
+    """Take step 4's draw over the current pool and print what it chose."""
+    from fractal_wallpapers.curation import amend, gallery, intake
+
+    try:
+        report = gallery.dry_draw(
+            n=args.n,
+            radius=args.radius,
+            quality_weight=args.quality_weight,
+            strange_share=args.strange_share,
+            draw_seed=args.draw_seed,
+            top_k=args.draw_top_k,
+            amended=not args.no_amended,
+        )
+    except (gallery.PassRefused, intake.IntakeError, amend.AmendError) as refusal:
+        print(refusal)
+        return 1
+    if args.out:
+        where = resolve_output(args.out)
+        where.parent.mkdir(parents=True, exist_ok=True)
+        where.write_text(
+            json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8", newline="\n"
+        )
+        print(f"wrote {where}")
+    print(json.dumps({key: value for key, value in report.items() if key != "chosen"}, indent=2))
+    return 0
+
+
 def curate_embed(args: argparse.Namespace) -> int:
     """Embed every admitted location the neutral-render store does not hold yet."""
     from fractal_wallpapers.curation import embeddings, neutral
@@ -5856,6 +5898,90 @@ def curate_commands(subcommands) -> None:
         "manifest records. Those rows are a harvest nobody has saved yet",
     )
     sidecar.set_defaults(handler=curate_sidecar)
+
+    redrawing = steps.add_parser(
+        "redraw",
+        help="re-render every stale location view and amend the score read off it",
+        description=(
+            "A standing seating score is a reading of a picture, and the sidecar row names "
+            "which picture. For tens of thousands of rows that name no longer describes "
+            "anything: the view was drawn at a geometry the read no longer uses, under a "
+            "recipe whose digest has since moved, or by an engine build nobody wrote down — "
+            "and the build is not in the digest, so nothing before this could ask. This "
+            "re-renders every stale view at the node regime, reads it through the shipped "
+            "location head, and appends the result to an APPEND-ONLY amendment keyed by "
+            "(location key, engine fingerprint). The sidecar is never edited. Every reader "
+            "of a seating score prefers the amendment from the moment it lands. Serial "
+            "(the engine threads inside one render) at about 0.03 s a view, so a whole "
+            "supply is the best part of an hour; idempotent and resumable."
+        ),
+    )
+    redrawing.add_argument(
+        "--limit",
+        type=int,
+        help="stop after this many stale locations. A smoke leg, not a scoping flag: the "
+        "amendment is append-only, so a limited pass amends a prefix and leaves the rest "
+        "stale rather than declaring them current",
+    )
+    redrawing.add_argument(
+        "--no-resume",
+        action="store_true",
+        help="re-read locations this engine build has already amended. Off by default, "
+        "which is what makes an interrupted refresh cheap to finish",
+    )
+    redrawing.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
+    redrawing.set_defaults(handler=curate_redraw)
+
+    drawing = steps.add_parser(
+        "draw",
+        help="step 4 alone: which locations a pass would choose, claiming nothing",
+        description=(
+            "The point draw and nothing else — no attempts, no renders, no pass id, no row "
+            "written anywhere. `gallery --no-attempts` is the affordance for iterating on a "
+            "pass; this is the one for COMPARING two selections, which needs a selection "
+            "that claims nothing so the two can be taken over the same pool in either "
+            "order. --no-amended takes the draw over the sidecar as it stands rather than "
+            "over `curate redraw`'s re-read of it, and the difference between the two "
+            "chosen sets is the entry bias the stale readings were buying."
+        ),
+    )
+    drawing.add_argument(
+        "-n",
+        "--n",
+        type=int,
+        default=gallery_module.DEFAULT_N,
+        help=f"locations to choose (default: {gallery_module.DEFAULT_N})",
+    )
+    drawing.add_argument("--radius", type=float, default=gallery_module.RADIUS)
+    drawing.add_argument("--quality-weight", type=float, default=gallery_module.QUALITY_WEIGHT)
+    drawing.add_argument("--strange-share", type=float, default=run_module.STRANGE_SHARE)
+    drawing.add_argument(
+        "--draw-seed",
+        type=int,
+        default=gallery_module.DEFAULT_SEED,
+        help=f"the ROOT seed the draw runs under (default: {gallery_module.DEFAULT_SEED}). "
+        f"Fixed rather than drawn, unlike a pass: a dry selection exists to be compared "
+        f"with another one, and a comparison needs both sides on the same seed",
+    )
+    drawing.add_argument(
+        "--draw-top-k",
+        type=int,
+        default=gallery_module.DRAW_TOP_K,
+        metavar="K",
+        help=f"how many of a partition's strongest locations the first pick is drawn from "
+        f"(default: {gallery_module.DRAW_TOP_K}; 1 is the argmax draw gallery1 through "
+        f"gallery3 took)",
+    )
+    drawing.add_argument(
+        "--no-amended",
+        action="store_true",
+        help="draw over the sidecar's standing scores rather than the amendment",
+    )
+    drawing.add_argument(
+        "--out",
+        help="write the chosen set here as JSON as well as printing the summary",
+    )
+    drawing.set_defaults(handler=curate_draw)
 
     embedding_step = steps.add_parser(
         "embed",

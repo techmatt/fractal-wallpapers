@@ -345,21 +345,25 @@ def admitted_locations(exclude: set[str]) -> list[dict]:
     The curation sidecar, above the junk floor, ranked on the location head's
     `P(>=4)`. It is a rank and never a height: the only cut placed on that scale
     here is the floor, and what this does with the rest of it is order.
+
+    Read through [`intake.read_scores`], which is where [`curation.amend`]'s
+    re-read of a location whose old view no longer exists is preferred. Both the
+    floor and the order turn on the score, so opening the file directly would
+    extend a short quota into places chosen on a number about a lost picture.
     """
     from fractal_wallpapers.curation import floors, intake
     from fractal_wallpapers.supply.partitions import partition_of_family
 
-    path = intake.scores_path()
-    if not path.is_file():
+    try:
+        supply = list(intake.read_scores().values())
+    except intake.IntakeError as absent:
         raise ManufactureError(
-            f"{path} does not exist, so there is no admitted population to extend into. "
-            f"`fractal-wallpapers curate sidecar restore` brings it back."
-        )
+            f"{intake.scores_path()} does not exist, so there is no admitted population to "
+            f"extend into. `fractal-wallpapers curate sidecar restore` brings it back. "
+            f"({absent})"
+        ) from absent
     rows: dict = {}
-    for line in path.read_text(encoding="utf-8").splitlines():
-        if not line.strip():
-            continue
-        row = json.loads(line)
+    for row in supply:
         if row.get("p_ge3") is None or float(row["p_ge3"]) < floors.JUNK_FLOOR:
             continue
         key = row["key"]

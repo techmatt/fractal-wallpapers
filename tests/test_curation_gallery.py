@@ -1410,3 +1410,74 @@ def test_an_embedding_row_reaches_the_colorizer_with_its_ledger_and_its_score() 
     source = Path(colorize.__file__).read_text(encoding="utf-8")
     assert '"ledger": row.get("_ledger")' in source
     assert '"location_score": row.get("score")' in source
+
+
+# --------------------------------------------------------------------------- #
+# Step 4 alone: the dry selection two score sets are compared over.
+# --------------------------------------------------------------------------- #
+@pytest.fixture
+def a_pool(monkeypatch):
+    """Eight locations on a circle in two partitions, and a way to score them.
+
+    Returns a setter: hand it `{key: P(>=4)}` and the next draw runs over those
+    numbers. The whole point of `dry_draw` is comparing two selections over one
+    pool, so a fixture that could not change the scores under a fixed pool would
+    not exercise it.
+    """
+    keys = [f"k{index}" for index in range(8)]
+    angles = [index * 0.4 for index in range(8)]
+    rows = [
+        location(key, angle, "mandelbrot" if index < 4 else "phoenix")
+        for index, (key, angle) in enumerate(zip(keys, angles, strict=True))
+    ]
+    matrix = matrix_of(rows, angles)
+    monkeypatch.setattr(gallery, "load_embeddings", lambda log=print: (rows, matrix, {}))
+
+    def scored(quality: dict) -> None:
+        monkeypatch.setattr(
+            gallery.intake,
+            "read_scores",
+            lambda path=None, amended=True: {
+                key: {"key": key, "p_ge3": 0.9, "p_ge4": quality[key]} for key in keys
+            },
+        )
+
+    return keys, scored
+
+
+def test_the_dry_selection_is_reproducible(a_pool) -> None:
+    """Same pool, same settings, same seed, same set — in that order and any order.
+
+    A selection that could not be re-taken is a selection two of them cannot be
+    compared, which is the only thing this command is for.
+    """
+    keys, scored = a_pool
+    scored({key: 0.9 - index * 0.05 for index, key in enumerate(keys)})
+    once = gallery.dry_draw(n=2, radius=0.01, draw_seed=7, top_k=1, log=lambda _line: None)
+    again = gallery.dry_draw(n=2, radius=0.01, draw_seed=7, top_k=1, log=lambda _line: None)
+    assert once["chosen"] == again["chosen"]
+    # One slot per partition: the release cap is a quarter of a partition's
+    # floor-passing supply, which over four synthetic locations is one.
+    assert once["chosen_count"] == 2
+
+
+def test_the_dry_selection_claims_no_pass_and_writes_nothing(a_pool, tmp_path) -> None:
+    """No pass id, no record, no store: the two draws must not disturb each other."""
+    keys, scored = a_pool
+    scored(dict.fromkeys(keys, 0.9))
+    before = sorted(path.name for path in tmp_path.iterdir())
+    gallery.dry_draw(n=2, radius=0.01, draw_seed=1, top_k=1, log=lambda _line: None)
+    assert sorted(path.name for path in tmp_path.iterdir()) == before
+    assert "pass" not in json.dumps(
+        gallery.dry_draw(n=2, radius=0.01, draw_seed=1, top_k=1, log=lambda _line: None)["config"]
+    )
+
+
+def test_moving_the_scores_moves_the_chosen_set(a_pool) -> None:
+    """The measurement the whole amendment exists to make."""
+    keys, scored = a_pool
+    scored({key: 0.9 - index * 0.05 for index, key in enumerate(keys)})
+    first = gallery.dry_draw(n=2, radius=0.5, draw_seed=3, top_k=1, log=lambda _line: None)
+    scored({key: 0.5 + index * 0.05 for index, key in enumerate(keys)})
+    second = gallery.dry_draw(n=2, radius=0.5, draw_seed=3, top_k=1, log=lambda _line: None)
+    assert first["chosen"] != second["chosen"]

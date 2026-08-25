@@ -236,14 +236,20 @@ def regime_of(row: dict):
 def gate_render(row: dict, colormap: str, cyclic: set[str], regime) -> Path | None:
     """The walk's own picture of this row, where it is still the recipe's picture.
 
-    Three things have to hold, and any of them failing means re-rendering rather
+    Four things have to hold, and any of them failing means re-rendering rather
     than refusing: the row names an image, the digest it recorded still matches
-    what the recipe produces today, and the file is where the run that wrote it
-    left it. The digest is the load-bearing one — it is what tells a gate render
-    apart from a frame that sits at the same coordinates and was drawn some other
-    way, and it is why a recipe that moves costs a re-render instead of putting the
-    wrong picture in front of the head.
+    what the recipe produces today, the file is where the run that wrote it left
+    it, and a stamp beside it says **today's engine** drew it.
+
+    The digest tells a gate render apart from a frame that sits at the same
+    coordinates and was drawn some other way. What it cannot tell apart is two
+    builds of the engine carrying out the same recipe: the build is not in the
+    recipe, so it is not in the digest, and every gate render made before the
+    stamp existed is a picture of the right place at the right size drawn by a
+    program nobody wrote down. Those are re-rendered. See
+    [`fractal_wallpapers.engine_fingerprint`].
     """
+    from fractal_wallpapers import engine_fingerprint
     from fractal_wallpapers.discovery import walk as walk_module
     from fractal_wallpapers.paths import rehome
 
@@ -254,7 +260,9 @@ def gate_render(row: dict, colormap: str, cyclic: set[str], regime) -> Path | No
         return None
     where = rehome(ledger) or Path(ledger)
     picture = walk_module.views_dir(where.parent) / name
-    return picture if picture.is_file() else None
+    if not picture.is_file():
+        return None
+    return picture if engine_fingerprint.stamps(picture.parent).is_current(name) else None
 
 
 # --------------------------------------------------------------------------- #
@@ -510,15 +518,43 @@ def _key_text(row: dict) -> str:
     return json.dumps(key, ensure_ascii=False)
 
 
-def read_scores(path: Path | None = None) -> dict:
-    """`{location key: row}` from the sidecar, schema-checked."""
+def stored_scores(path: Path | None = None) -> list[dict]:
+    """The sidecar exactly as it stands, un-amended, in file order.
+
+    What the head said on the night it said it, joined to the picture it was said
+    about. [`curation.amend`] reads this to decide which of those pictures no
+    longer exists; nothing that *seats* should, because a standing score read off
+    a picture nobody has is the thing the amendment exists to stop being used.
+    """
+    return _stored_scores(scores_path() if path is None else Path(path))
+
+
+def read_scores(path: Path | None = None, amended: bool = True) -> dict:
+    """`{location key: row}` from the sidecar, amended, schema-checked.
+
+    **The one door every seating score comes through.** A row whose standing
+    score was read off a picture that is not today's — another geometry, a recipe
+    whose digest has moved, an engine build nobody wrote down — is replaced by the
+    re-read in [`curation.amend`], which carries what it was in an `amended`
+    block. Overlaid here rather than at each read site, because there are five of
+    them and a preference each of them had to remember is a preference one of them
+    will not.
+
+    `amended=False` is what the *measurement* of the shift is taken against, and
+    is not a way to seat on the old numbers.
+    """
     path = scores_path() if path is None else Path(path)
     if not path.is_file():
         raise IntakeError(
             f"{path} is missing — nothing has read the supply yet. Run "
             f"`fractal-wallpapers curate score` before an intake."
         )
-    return {row["key"]: row for row in _stored_scores(path)}
+    scores = {row["key"]: row for row in _stored_scores(path)}
+    if not amended:
+        return scores
+    from fractal_wallpapers.curation import amend
+
+    return amend.overlay(scores)
 
 
 # --------------------------------------------------------------------------- #
@@ -707,6 +743,7 @@ __all__ = [
     "ranked",
     "regime_of",
     "read_scores",
+    "stored_scores",
     "score",
     "scores_path",
     "slots",

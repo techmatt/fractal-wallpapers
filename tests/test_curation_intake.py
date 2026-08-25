@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from fractal_wallpapers import engine_fingerprint
 from fractal_wallpapers.curation import floors, intake
 from fractal_wallpapers.discovery import ledger as ledger_module
 from fractal_wallpapers.supply.location import key_of_row
@@ -264,7 +265,22 @@ def test_a_limited_pass_upserts_what_it_looked_at_and_clears_nothing(tmp_path, s
 # --------------------------------------------------------------------------- #
 
 
-def node_row(tmp_path, image="node7_c1.jpg", digest=None, made=True) -> dict:
+@pytest.fixture(autouse=True)
+def a_named_engine_build(monkeypatch):
+    """One build, named, for every case in this file.
+
+    The gate renders here are bytes a test wrote, not pictures an engine drew, so
+    the fingerprint is stubbed: what these cases are about is the regime and the
+    digest, and a real probe render would make each of them depend on a built
+    crate to say nothing extra. The one case that IS about the stamp says so.
+    """
+    monkeypatch.setattr(engine_fingerprint, "current", lambda: "testbuild0000000")
+    engine_fingerprint.forget()
+    yield
+    engine_fingerprint.forget()
+
+
+def node_row(tmp_path, image="node7_c1.jpg", digest=None, made=True, stamped=True) -> dict:
     """One node-regime ledger row, with the gate render its run left behind."""
     from fractal_wallpapers.models import location_view
     from fractal_wallpapers.models import tiles as tile_module
@@ -280,6 +296,8 @@ def node_row(tmp_path, image="node7_c1.jpg", digest=None, made=True) -> dict:
         picture = tmp_path / "run" / "views" / image
         picture.parent.mkdir(parents=True, exist_ok=True)
         picture.write_bytes(b"a finished picture")
+        if stamped:
+            engine_fingerprint.stamps(picture.parent).record(image)
     return row
 
 
@@ -309,6 +327,16 @@ def test_a_gate_render_the_run_no_longer_has_costs_a_re_render(tmp_path) -> None
 
     gone = node_row(tmp_path, made=False)
     assert intake.gate_render(gone, "twilight_shifted", set(), tile_module.NODE_REGIME) is None
+
+
+def test_a_gate_render_no_build_claims_costs_a_re_render(tmp_path) -> None:
+    """The right place, the right size, the right digest — and drawn by a program
+    nobody wrote down. Every gate render made before the stamp existed looks like
+    this, which is what `curate redraw` is for."""
+    from fractal_wallpapers.models import tiles as tile_module
+
+    unstamped = node_row(tmp_path, stamped=False)
+    assert intake.gate_render(unstamped, "twilight_shifted", set(), tile_module.NODE_REGIME) is None
 
 
 def test_a_row_states_a_regime_or_it_does_not_and_none_is_not_the_deploy_one(tmp_path) -> None:

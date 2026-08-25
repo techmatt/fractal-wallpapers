@@ -3577,6 +3577,72 @@ def _reseat_readout(slots: list, rounds: list, allowed: int) -> dict:
     }
 
 
+def dry_draw(
+    n: int = DEFAULT_N,
+    radius: float = RADIUS,
+    quality_weight: float = QUALITY_WEIGHT,
+    strange_share: float = run_module.STRANGE_SHARE,
+    draw_seed: int = DEFAULT_SEED,
+    top_k: int = DRAW_TOP_K,
+    amended: bool = True,
+    log=print,
+) -> dict:
+    """Step 4 alone: which locations a pass with these settings would choose.
+
+    The draw and nothing else — no attempts, no renders, no pass id, no row
+    written anywhere. `--no-attempts` is the affordance for iterating on a pass;
+    this is the affordance for **comparing two selections**, which needs a
+    selection that claims nothing so the two can be taken over the same pool in
+    either order.
+
+    Its whole reason for existing is that the seating scores can move under the
+    pool: a location's standing score is a reading of a picture, and a picture
+    can stop being the one the recipe describes. `amended=False` is the draw over
+    the sidecar as it stands, `amended=True` over [`curation.amend`]'s re-read of
+    it, and the difference between the two chosen sets is the entry bias the
+    stale reads were buying.
+
+    Deterministic in every argument: same pool, same settings, same seed, same
+    set. Nothing here consumes randomness that is not derived from `draw_seed`.
+    """
+    rows, matrix, _store = load_embeddings(log)
+    scores = intake.read_scores(amended=amended)
+    log(f"[draw] {len(scores):,} location(s) in the supply sidecar (amended={amended})")
+    rows, matrix, fallen = admitted_only(rows, matrix, scores, log)
+    slots, plan, _bench = plan_slots(
+        rows,
+        matrix,
+        scores,
+        n,
+        strange_share,
+        radius,
+        quality_weight,
+        ATTEMPTS[0],
+        log,
+        draw_seed=int(draw_seed),
+        top_k=int(top_k),
+    )
+    chosen: dict[str, list[str]] = {}
+    for slot in slots:
+        chosen.setdefault(slot.partition, []).append(slot.point)
+    return {
+        "schema": SCHEMA,
+        "amended": bool(amended),
+        "config": {
+            "n": int(n),
+            "radius": float(radius),
+            "quality_weight": float(quality_weight),
+            "strange_share": float(strange_share),
+            "draw_seed": int(draw_seed),
+            "draw_top_k": int(top_k),
+        },
+        "population": {"admitted": len(rows), "below_junk_floor": fallen},
+        "plan": plan,
+        "chosen": {name: chosen.get(name, []) for name in sorted(chosen, key=partition_index)},
+        "chosen_count": len(slots),
+    }
+
+
 def _ranks(rows: list, scores: dict) -> dict:
     """`{location key: rank in its partition by quality}` — best is zero.
 
