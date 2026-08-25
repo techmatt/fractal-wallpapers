@@ -40,7 +40,17 @@ used to dominate and no longer do, in case they come back:
 * **A sweep over every tracked file is a sweep over tens of megabytes.** The
   palette corpus is most of this tree by bytes. Reject cheaply first.
 
-Running the files in four concurrent processes takes about 22s against 50s
-serial — 2.2×, not the 4× the core count suggests, because per-process imports
+Running the files in four concurrent processes takes about **113s against 180s
+serial** — 1.6×, not the 4× the core count suggests, because per-process imports
 are paid again and the slowest single tests cannot be split. That was not judged
-worth a parallel-runner dependency.
+worth a parallel-runner dependency, and the case has got weaker rather than
+stronger: the suite has roughly tripled in wall time since these were last
+measured at 22s/50s, and the speedup fell from 2.2× to 1.6× because one
+round-robin group now runs 111s while the other three finish inside 45s. A split
+that balanced by measured duration rather than by file would recover most of
+that, which is a second reason a runner dependency is not the missing piece.
+
+The twelve slowest are `--durations=12`, and they are the real work rather than a
+long tail: `test_render_head`'s ablation at 14.7s, then a training checkpoint, a
+regenerated picture compared against the one that was judged, and four
+`curation_colors` stage tests, each 3–7.5s. Everything after those is under 3s.
