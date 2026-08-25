@@ -178,6 +178,7 @@ from pathlib import Path
 from fractal_wallpapers import process_control
 from fractal_wallpapers.curation import budget as budget_module
 from fractal_wallpapers.curation import (
+    ceiling,
     colorize,
     durability,
     embeddings,
@@ -313,6 +314,36 @@ RELEASE_REGIME = release.Regime((1280, 720), 2)
 #: off them: a reader asking what the pass before this ruling made needs a name to
 #: ask with.
 FORMER_RELEASE_REGIME = release.Regime((2560, 1440), 4)
+
+#: How many extra pictures **one seat** may ask the renderer for when the ceiling
+#: has refused everything its neighbourhood already held.
+#:
+#: **Three.** The seat cannot choose what the plan never rendered, and the plan
+#: renders one picture an attempt: the palette head's argmax over thirty-two
+#: recolours, with the other thirty-one deleted. That is the right number when the
+#: only question is "which of these is the best wallpaper" and the wrong one the
+#: moment the collection has a colour to answer for — the head is a quality judge,
+#: and its taste is *the* skew, declining the green carriers 83% below the rate it
+#: accepts everything else at.
+#:
+#: Rendering more of them **up front** would be the obvious fix and is the wrong
+#: one: gallery3 made 3,632 attempts and filled 150 seats, so a second pick per
+#: attempt is 3,632 renders bought to change at most 150 decisions. On demand, the
+#: cost lands only where the ceiling actually bit — and it lands as a render
+#: (~1.5 s) rather than as an attempt, because the field is already dumped and the
+#: head has already scored the whole set.
+#:
+#: Three, because the picks are screened by dominant hue family and each one is a
+#: fresh colour rather than a fresh sample: a seat that three different colours
+#: cannot satisfy is a seat the neighbourhood cannot satisfy, and the
+#: least-violating fallback is the honest answer to that.
+EXTRA_PICKS = 3
+
+#: Where the seating leg's own renders are logged, beside `candidates.jsonl`.
+#: A second file and not a second section of the first, because the plan's log is
+#: resumed **by index into the plan** and these rows have no index in it.
+ON_DEMAND_LOG = "on_demand.jsonl"
+
 
 #: How many nearest pairs the retro table lists, per partition and overall.
 RETRO_PAIRS = 8
@@ -1260,6 +1291,13 @@ class Try:
     rank: int
     modes_drawn: int
     mode_index: int
+    #: The map this attempt is coloured with, **bypassing the palette head**, or
+    #: `None` for the ordinary attempt where the head picks. Only a carrier
+    #: attempt sets it: a target names a colour, the table names maps that carry
+    #: it, and the head is the step being routed around — it declines the green
+    #: carriers 83% below base rate, which is why re-ranking its output cannot
+    #: make a green gallery.
+    colormap: str | None = None
     #: [`REFINED`] or [`ORIGINAL`]. Part of the identity of a planned attempt and
     #: not of the [`budget_module.Attempt`] it becomes: the mode draw is seeded off
     #: the location and the head, so the two framings of one location draw the
@@ -1304,17 +1342,22 @@ def attempt_plan(
     between two invocations would resume a killed pass onto other attempts'
     pictures.
 
-    The pair and not the key, because one location can be planned twice: once at
-    the framing the refine leg chose and once, if the slot standing on it came up
-    empty, at the framing the record holds. `keys` narrows the plan to a named
-    set, which is how the fallback asks for those locations and no others.
+    The triple and not the key, because one location can be planned more than
+    once: at the framing the refine leg chose, at the framing the record holds if
+    the slot standing on it came up empty, and once per targeted cell as a
+    **carrier attempt** ([`carrier_plan`]) with the map named rather than picked.
+    The colormap is part of an attempt's identity for exactly the same reason the
+    framing is — two attempts differing in it are two different pictures — and
+    leaving it out would let a carrier attempt's presence cancel the ordinary
+    attempts of the location it stands on. `keys` narrows the plan to a named set,
+    which is how the fallback asks for those locations and no others.
     """
     seen: dict[str, str] = {}
     for slot in slots:
         for key in slot.locations:
             if keys is not None and key not in keys:
                 continue
-            if (key, framing) not in already:
+            if (key, framing, None) not in already:
                 seen.setdefault(key, slot.partition)
     out: list[Try] = []
     for key in sorted(seen):
@@ -1324,11 +1367,115 @@ def attempt_plan(
             # The smooth judge owns one coloring, so its draws are distinct
             # PALETTE ANCHORS rather than distinct modes — `modes_drawn` stays at
             # one, and the anchor is what the two attempts differ in.
-            out.append(Try(key, partition, budget_module.SMOOTH, rank, 1, 0, framing))
+            out.append(Try(key, partition, budget_module.SMOOTH, rank, 1, 0, framing=framing))
             del index
         for index in range(max(0, strange)):
             out.append(
-                Try(key, partition, budget_module.STRANGE, rank, max(1, strange), index, framing)
+                Try(
+                    key,
+                    partition,
+                    budget_module.STRANGE,
+                    rank,
+                    max(1, strange),
+                    index,
+                    framing=framing,
+                )
+            )
+    return out
+
+
+def head_owning(slots: list, keys=None) -> dict:
+    """`{location: head}` — which head's slot put each location into the plan.
+
+    The head of the **first** slot in the pass's own slot order that names the
+    location, which is the same tie-break [`attempt_plan`] takes for the
+    partition. A carrier attempt is one attempt and has to belong to one head, and
+    this is the answer that costs nothing and spreads the carriers across the two
+    heads in the proportion the slots are already split in — rather than putting
+    every one of them on the strange head, which is the field class the green
+    carriers collapse on.
+    """
+    out: dict = {}
+    for slot in slots:
+        for key in slot.locations:
+            if keys is not None and key not in keys:
+                continue
+            out.setdefault(key, slot.head)
+    return out
+
+
+def carrier_plan(
+    slots: list,
+    ranks: dict,
+    strange: int,
+    targets: dict,
+    pool: list,
+    seed: int,
+    already=(),
+    framing: str = REFINED,
+    keys: set | None = None,
+) -> list[Try]:
+    """One extra attempt per location per targeted cell, coloured by a carrier.
+
+    **The plan is where a target is met**, and this is the whole of the mechanism.
+    A seat can only choose among pictures that exist, and the pictures that exist
+    are the palette head's choices: over gallery3 it was offered the green
+    carriers 4,334 times and took 23 of them, 0.17x the base rate, so no amount of
+    re-ranking at the seat produces a green gallery. So the plan names the map
+    itself, drawn from [`palettes.carriers`] weighted by mean share, and the
+    render happens whether the head would have asked for it or not.
+
+    Everything else about the attempt is ordinary: the mode is drawn from the
+    owning head's roster the same way, the picture is judged by the same judge,
+    and its **dominance is read on its own render**. A carrier attempt that comes
+    out grey is a normal candidate that has to win its seat on the judge's number
+    like anything else — the table is a prior about maps, not a verdict about
+    pictures, and the field and the mode carry a real share of the outcome.
+
+    The draw is seeded per (cell, round) and taken without replacement across the
+    locations, re-drawn on a bumped seed where there are more locations than the
+    cell has carriers — so one target does not spend every attempt on the one map
+    with the highest mean share and then lose all but the first of them to the
+    group cap.
+    """
+    from fractal_wallpapers.palettes import carriers as carrier_table
+
+    owner = head_owning(slots, keys)
+    wanted = sorted(
+        {
+            key
+            for key in owner
+            for cell in targets
+            if (key, framing, cell) not in {(k, f, c) for k, f, c in already}
+        }
+    )
+    out: list[Try] = []
+    for position, cell in enumerate(sorted(targets)):
+        fresh = [key for key in wanted if (key, framing, cell) not in already]
+        drawn: list[str] = []
+        round_seed = 0
+        while len(drawn) < len(fresh):
+            more = carrier_table.draw(
+                cell, len(fresh) - len(drawn), (int(seed), cell, round_seed).__hash__(), within=pool
+            )
+            if not more:
+                break
+            drawn += more
+            round_seed += 1
+        for key, colormap in zip(fresh, drawn, strict=False):
+            head = owner[key]
+            modes = 1 if head == budget_module.SMOOTH else max(1, strange)
+            out.append(
+                Try(
+                    key,
+                    next(slot.partition for slot in slots if key in slot.locations),
+                    head,
+                    ranks.get(key, 0),
+                    modes,
+                    position % modes,
+                    colormap=colormap,
+                    framing=framing,
+                )
             )
     return out
 
@@ -1336,6 +1483,68 @@ def attempt_plan(
 # --------------------------------------------------------------------------- #
 # Step 5a: the framing every one of those attempts is rendered at.
 # --------------------------------------------------------------------------- #
+def refuse_targets(targets: dict, pool: list) -> dict:
+    """Refuse a target set that cannot be met, before a render is spent.
+
+    Two refusals and both are about the pass being able to *keep the promise*:
+
+    * **The fractions have to fit.** A target is a share of the gallery and the
+      shares of disjoint cells add up, so a set summing above one is asking for
+      more pictures than there are seats.
+    * **The cell has to have a carrier this pass can reach.** A colour no map in
+      the collapsed palette pool can make is a colour the plan cannot ask for, and
+      a pass that started anyway would run to the end and report SHORT for a
+      reason nothing on the record names.
+
+    Returns the feasibility block the pass record carries: how many carriers each
+    targeted cell has, and the strongest of them.
+    """
+    from fractal_wallpapers.palettes import carriers as carrier_table
+
+    if not targets:
+        return {}
+    total = sum(float(value) for value in targets.values())
+    if total > 1.0:
+        raise ceiling.TargetRefused(
+            f"the targets ask for {total:.3f} of the gallery between them, and there is "
+            "only one gallery. Lower them or drop one."
+        )
+    block = {"sum": round(total, 6), "cells": {}}
+    for cell in sorted(targets):
+        offers = carrier_table.for_cell(cell, within=pool)
+        if not offers:
+            raise ceiling.TargetRefused(
+                f"no map this pass can draw carries {cell}. The carrier table "
+                f"({carrier_table.record_path().name}) is over the whole library and the "
+                "pool is one member per palette group, so either the cell has no carrier "
+                "at all or every one of its carriers stood down for a group-mate."
+            )
+        block["cells"][cell] = {
+            "fraction": float(targets[cell]),
+            "carriers": len(offers),
+            "best": [{"map": name, "mean": round(share, 6)} for name, share in offers[:5]],
+        }
+    return block
+
+
+def lens_for() -> ceiling.Lens:
+    """The ceiling's reader over this pass's candidates: colour, cloud, palette group.
+
+    Both readings are taken off the **candidate render** ([`render_of`]) and never
+    off a release picture, because one geometry for every row is what makes two
+    readings comparable at all. The palette group is the tracked table's
+    ([`palettes.groups`]), read once — a map the table puts in no group is its own
+    group, which is what a singleton is.
+    """
+    from fractal_wallpapers.palettes import groups as palette_groups
+
+    table = palette_groups.member_groups()
+    return ceiling.Lens(
+        render_of,
+        lambda candidate: palette_groups.group_of(str(candidate.get("colormap")), table),
+    )
+
+
 def framing_dir(directory: Path) -> Path:
     """Where the refine leg's node-regime scan pictures live, under the pass."""
     return Path(directory) / "framings"
@@ -1467,6 +1676,12 @@ def make_attempts(
     and it puts the whole before-and-after on every row that comes out. A row a
     later reader picks up therefore carries both viewports and both of the head's
     readings of them, whichever one it was rendered at.
+
+    **The claims are seeded from the rows already on the log** before the loop
+    resumes. The proposal-time group cap ([`colorize.Colorizer.pick_palette`]) is
+    state over the whole plan, so a resumed pass that started claiming from empty
+    would re-pick groups its own earlier attempts had already taken and come out a
+    different pass from the one it is continuing.
     """
     log_path = directory / "candidates.jsonl"
     done = run_module.completed_attempts(log_path, log)
@@ -1489,10 +1704,16 @@ def make_attempts(
             continue
         if colorizer is None:
             colorizer = colorize.Colorizer(directory, seed, device, log)
+            for row in rows:
+                colorizer.claim(row.get("colormap"))
         started = time.monotonic()
         row = colorize.annotate(
             colorizer.attempt(
-                planned.plan(), framed(by_key, framings, planned), anchors[index], index
+                planned.plan(),
+                framed(by_key, framings, planned),
+                anchors[index],
+                index,
+                colormap=planned.colormap,
             )
         )
         row["framing"] = framing_block(framings, planned)
@@ -1518,6 +1739,10 @@ def make_attempts(
     counts["dropped_candidate_jpegs"] = sweep_candidates(directory, _picked(rows, directory))
     counts["seconds"] = round(seconds, 1)
     counts["seconds_per_attempt"] = round(seconds / counts["made"], 2) if counts["made"] else None
+    counts["group_skipped"] = sum(1 for row in rows if row.get("group_skipped"))
+    counts["group_exhausted"] = sum(
+        1 for row in rows if (row.get("group_skipped") or {}).get("exhausted")
+    )
     rows.sort(key=lambda row: row["attempt"])
     return rows, counts
 
@@ -1604,14 +1829,23 @@ def candidate_of_pool_row(row: dict, pool: dict | None = None) -> dict:
     the link, not the destination — because that is what [`rescore.origin_of`]
     walks and what a reader joining a pass to what it decided over needs.
     """
+    from fractal_wallpapers.curation import rescore
+
     location = row.get("location") or {}
     recipe = row.get("recipe") or {}
     palette = row.get("palette") or {}
     read = row.get("scores_current") or row.get("scores") or {}
+    origin_run, origin_candidate = rescore.origin_of(row, pool)
     return {
         "attempt": None,
         "candidate": picture_id(row, pool),
         "source": {"run": row["run"], "candidate": row["candidate"], "key": row["key"]},
+        # The RESOLVED end of that chain, as two fields rather than as the joined
+        # id above. [`render_of`] needs the run and the candidate apart to find the
+        # 640x360 render on disk, and splitting `<run>_<candidate>` back into two
+        # is a string operation that is right until a run id contains the
+        # separator. See [`render_of`], which is the only reader.
+        "origin": {"run": origin_run, "candidate": origin_candidate},
         "head": read.get("head") or (row.get("scores") or {}).get("head"),
         "partition": location.get("partition"),
         "key": location.get("key"),
@@ -1665,10 +1899,12 @@ def candidate_of_attempt(row: dict, pass_id: str) -> dict:
     """
     from fractal_wallpapers.curation import rescore
 
+    identity = colorize.attempt_id(row)
     return {
         **row,
-        "candidate": f"{row['attempt']:04d}",
-        "source": {"run": pass_id, "candidate": f"{row['attempt']:04d}", "key": None},
+        "candidate": identity,
+        "source": {"run": pass_id, "candidate": identity, "key": None},
+        "origin": {"run": pass_id, "candidate": identity},
         "scores_current": rescore.block(row.get("head"), row),
     }
 
@@ -1693,7 +1929,262 @@ def rank_key(candidate: dict):
     )
 
 
-def seat(slots: list, candidates: list, log=print) -> dict:
+class _Offer:
+    """One seat's walk down its candidates: the floor, the location rule, the ceiling.
+
+    A class rather than a closure inside the loop, because the extra-pick leg has
+    to walk further down the *same* seat after the first pass has ended, and a
+    seat's counters have to keep counting across that seam. It holds no policy —
+    every rule it applies is somewhere else — and exists so that "what has this
+    seat already tried" is a thing with a name.
+    """
+
+    def __init__(self, slot, floor, group_of: dict, used: dict, state, blocked: list):
+        self.slot = slot
+        self.floor = floor
+        self.group_of = group_of
+        self.used = used
+        self.state = state
+        self.blocked = blocked
+        self.tried: list = []
+        self.below = self.capped = self.refused = 0
+
+    def take(self, candidate: dict, index: int) -> bool:
+        """Seat this candidate if all three rules let it. `True` when the slot filled."""
+        if not self.floor.acts(candidate.get("p_ge3")):
+            self.below += 1
+            return False
+        name = str(candidate["candidate"])
+        tag = self.group_of.get(name)
+        if tag is None:
+            # An on-demand render, which did not exist when the pass grouped its
+            # candidates. It **inherits** the tag of the row it was made from
+            # rather than being grouped again: the near-duplicate rule keys on the
+            # location and this is the same location in another palette, and a
+            # second call to the grouping would hand back ids from a different
+            # labelling that mean nothing beside these.
+            tag = self.group_of.get(str(candidate.get("asked_by"))) or f"extra:{name}"
+            self.group_of[name] = tag
+        if self.used.get(tag, 0) >= floors.CLUSTER_CAP:
+            self.capped += 1
+            return False
+        self.tried.append(candidate)
+        if self.state is not None:
+            failures = self.state.failures(candidate)
+            if failures:
+                self.refused += 1
+                self.state.reject(candidate, failures)
+                self.blocked.append((ceiling.strain(failures), index, candidate, tag, failures))
+                return False
+        self.used[tag] = self.used.get(tag, 0) + 1
+        self.slot.seated = {**candidate, "group": tag}
+        return True
+
+    def colours(self) -> tuple:
+        """`(maps tried, hue families they turned out to be)` — what an extra pick avoids.
+
+        The families are read off each picture's own render through the ceiling's
+        lens, not off the recolours that screened them: the screen is a prior about
+        a map and this is the record of what the pictures actually were.
+        """
+        spent = {str(row.get("colormap")) for row in self.tried}
+        families: set = set()
+        for row in self.tried:
+            reading = self.state.rule.lens.reading(row)
+            if reading is not None:
+                families |= set(reading.families)
+        return spent, families
+
+
+def place_of(candidate: dict) -> dict | None:
+    """The colorize row for one candidate's own place: family, frame, iteration count.
+
+    Read off the **candidate** and not out of the location table, which is what
+    makes an extra pick the same picture in another palette rather than another
+    picture of roughly the same place. A candidate carries the viewport it was
+    actually rendered at — refined or original, whichever the pass chose for it —
+    and re-deriving that from the table would re-apply a refinement decision the
+    row has already settled.
+    """
+    if not candidate.get("family") or candidate.get("maxiter") is None:
+        return None
+    return {
+        "family": candidate["family"],
+        "viewport": candidate["viewport"],
+        "maxiter": int(candidate["maxiter"]),
+    }
+
+
+class OnDemand:
+    """Extra pictures, rendered **at the seat** and only where the ceiling bit.
+
+    THE answer to what a ceiling costs. A colour rule that can only refuse spends
+    its seats on the least-violating fallback — 60 to 145 of gallery3's 150 at
+    every setting the calibration swept — because the pool it is refusing out of
+    was proposed by a quality judge that never had a colour in the question. The
+    material to seat instead has to be *made*, and the only two places to make it
+    are the plan and the seat.
+
+    The plan is the expensive one and by a factor of twenty-four: gallery3 made
+    3,632 attempts to fill 150 seats, so a second pick per attempt buys 3,632
+    renders to change at most 150 decisions. Here the cost lands on the seats that
+    needed it, and it lands as a **render** rather than as an attempt — the
+    location's field is already dumped, the head has already scored all
+    thirty-two recolours, and what is missing is one picture.
+
+    ## What it renders
+
+    The rejected candidate's own location and its own drawn mode, in a different
+    map: the head's next-best of that set whose **dominant hue family** differs
+    from every candidate already tried at this seat. The screen is read on the
+    smooth-field recolour ([`colorize.another_colour`]) because that is what
+    exists without rendering anything; the verdict is read on the picture that
+    comes out, like every other candidate's.
+
+    ## Why it is cached, and by what
+
+    `(location, mode, map)` — the three things that decide the picture, and none
+    of the things that decide who asked for it. A re-seat replays the whole
+    sequence, so a seat that asked for a green picture in round zero asks for it
+    again in round one and must not pay twice; and the same picture is often what
+    two neighbouring slots would ask for. The cache is a log beside the plan's own
+    ([`ON_DEMAND_LOG`]), so it survives a kill and a resume the same way the
+    attempt leg does, and every row it holds is a **pool row like any other** —
+    stamped `on_demand`, seatable, and in the store the next pass reads.
+    """
+
+    def __init__(self, pass_id: str, directory: Path, seed: int, device: str, log=print):
+        self.pass_id = str(pass_id)
+        self.directory = Path(directory)
+        self.seed = int(seed)
+        self.device = device
+        self.log = log
+        self.path = self.directory / ON_DEMAND_LOG
+        self.rows: dict = {}
+        for row in run_module.completed_rows(self.path, log):
+            self.rows[self._key(row["key"], row["mode"], row["colormap"])] = row
+        self.made = 0
+        self.reused = 0
+        self.refused = 0
+        self.seconds = 0.0
+        self._colorizer = None
+
+    @staticmethod
+    def _key(key: str, mode: str, colormap: str) -> str:
+        return json.dumps([str(key), str(mode), str(colormap)], ensure_ascii=False)
+
+    def colorizer(self):
+        """The heads, loaded on the first seat that needs one and not before.
+
+        A pass whose ceiling refuses nothing never loads them here, which is what
+        keeps "the seating leg is arithmetic" true of the ordinary case.
+        """
+        if self._colorizer is None:
+            self._colorizer = colorize.Colorizer(self.directory, self.seed, self.device, self.log)
+        return self._colorizer
+
+    def spend(self, candidate: dict, spent: set, families: set) -> dict | None:
+        """One more picture at this candidate's place, as a **flat candidate** the seat reads.
+
+        `None` where there is nothing left to try: no map of the set carries a
+        colour this seat has not already seen, or the row it would be made from
+        does not carry the head's scoring.
+
+        `spent` is every map already tried at this seat and `families` every hue
+        family those pictures turned out to be of — read on their own renders,
+        which is the truth, rather than on the recolours, which are the screen.
+        """
+        names = candidate.get("candidates") or []
+        scores = candidate.get("candidate_scores") or []
+        row = place_of(candidate)
+        if row is None or not names or len(scores) != len(names):
+            return None
+        colorizer = self.colorizer()
+
+        def recolour_of(name: str):
+            try:
+                return colorizer.recolours(row, [name])[0]
+            except Exception:  # noqa: BLE001 — a map that will not recolour is one to skip
+                return None
+
+        wanted = colorize.another_colour(names, scores, recolour_of, spent, families)
+        if wanted is None:
+            self.refused += 1
+            return None
+        made = self.render(candidate, row, wanted)
+        return None if made is None else candidate_of_attempt(made, self.pass_id)
+
+    def render(self, candidate: dict, row: dict, colormap: str) -> dict | None:
+        """The picture itself, or the cached row where this pass has made it already."""
+        mode = str(candidate.get("mode"))
+        held = self.rows.get(self._key(candidate["key"], mode, colormap))
+        if held is not None:
+            self.reused += 1
+            return held
+        started = time.monotonic()
+        plan = budget_module.Attempt(
+            head=str(candidate["head"]),
+            partition=str(candidate.get("partition")),
+            key=str(candidate["key"]),
+            rank=0,
+        )
+        made = colorize.annotate(
+            self.colorizer().attempt(
+                plan,
+                row,
+                str(candidate.get("anchor") or colormap),
+                len(self.rows),
+                colormap=colormap,
+                on_demand=True,
+                mode=mode,
+            )
+        )
+        # The frame is the candidate's own and carries across whole, so an extra
+        # pick is the same place as the picture it was asked for beside — never a
+        # re-framing of it, which would make the comparison two pictures of two
+        # places wearing one location's name.
+        made["framing"] = candidate.get("framing")
+        made["asked_by"] = str(candidate["candidate"])
+        self.seconds += time.monotonic() - started
+        self.rows[self._key(candidate["key"], mode, colormap)] = made
+        run_module.append_attempt(self.path, made)
+        self.made += 1
+        self.log(
+            f"[extra] {colorize.attempt_id(made)} {mode}/{colormap} at {plan.partition} "
+            + (
+                f"P(>=3) {made['p_ge3']:.4f}"
+                if made.get("p_ge3") is not None
+                else f"FAILED {made.get('error')}"
+            )
+        )
+        return made
+
+    def candidates(self) -> list:
+        """Every on-demand row this pass has made, as flat candidates the seating reads.
+
+        Read at the END of a pass rather than during one: these rows are pool rows
+        and go into the store with the plan's own, so the next pass — and the
+        `below_floor` sheet, and a re-score — sees them exactly as it sees an
+        attempt.
+        """
+        return [
+            candidate_of_attempt(row, self.pass_id)
+            for row in self.rows.values()
+            if row.get("p_ge3") is not None
+        ]
+
+    def price(self) -> dict:
+        return {
+            "rendered": self.made,
+            "reused_from_cache": self.reused,
+            "nothing_left_to_try": self.refused,
+            "seconds": round(self.seconds, 1),
+            "seconds_per_render": round(self.seconds / self.made, 2) if self.made else None,
+            "log": tracked_name(self.path),
+        }
+
+
+def seat(slots: list, candidates: list, log=print, rule=None, extra=None) -> dict:
     """Fill each slot with the best candidate its head may seat. Mutates `slots`.
 
     Two rules and one order. The **floor** ([`floors.gallery_floor`]) says a
@@ -1707,6 +2198,24 @@ def seat(slots: list, candidates: list, log=print) -> dict:
     The grouping is taken **once**, over every candidate the pass can see, because
     a group id is a position in a connected-components labelling and tags from two
     calls are unrelated.
+
+    `rule` is the **colour ceiling** ([`curation.ceiling.Rule`]), and without one
+    this is the seating exactly as it was: same order, same two rules, same
+    counters. With one, the loop grows a third rule and the walk grows a memory —
+    the seating is sequential either way, but under a ceiling what an earlier seat
+    took changes what a later one may. That is why the whole sequence is replayed
+    from the top on every round rather than patched: a re-seat moves one slot and
+    every seat after it in the order has to be re-decided against a state that
+    moved with it, and replaying arithmetic over rows already in hand is free.
+
+    `extra` is [`OnDemand`], and it is what stands between a refusal and a
+    fallback. The order at a seat is: **the candidates that exist**, then up to
+    [`EXTRA_PICKS`] pictures rendered right here in colours nothing tried has
+    been, then the **least-violating** candidate — fewest tests failed, then least
+    total strain, then the judge's own order — flagged. Falling back is the one
+    place the ceiling is advisory rather than absolute, and it is deliberate: a
+    colour rule that could empty a slot would be a floor, and the floors are the
+    only thing in this pass allowed to leave a seat unfilled.
     """
     tags = selection.groups_of([_place(candidate) for candidate in candidates])
     group_of = {}
@@ -1729,7 +2238,8 @@ def seat(slots: list, candidates: list, log=print) -> dict:
         # that a re-seated slot's new place may now reach first — and a seat left
         # standing from the previous round would be a seat nothing re-decided.
         slot.seated, slot.unfilled, slot.fill = None, None, {}
-    for position in order:
+    state = None if rule is None else rule.begin(len(slots))
+    for step, position in enumerate(order):
         slot = slots[position]
         pool = [
             candidate
@@ -1738,24 +2248,65 @@ def seat(slots: list, candidates: list, log=print) -> dict:
         ]
         pool.sort(key=rank_key)
         floor = floor_of[slot.head]
-        below = capped = 0
-        for candidate in pool:
-            if not floor.acts(candidate.get("p_ge3")):
-                below += 1
-                continue
-            tag = group_of[str(candidate["candidate"])]
-            if used.get(tag, 0) >= floors.CLUSTER_CAP:
-                capped += 1
-                continue
+        steering: dict = {}
+        blocked: list = []
+        sequence = pool
+        if state is not None:
+            state.at(slot.id, len(order) - step)
+            sequence, steering = state.steer(pool)
+        seat_state = _Offer(slot, floor, group_of, used, state, blocked)
+        for index, candidate in enumerate(sequence):
+            if seat_state.take(candidate, index):
+                break
+        # The extra picks, and ONLY where the ceiling refused something: a seat
+        # that filled, or one whose neighbourhood was empty or under the floor,
+        # has nothing here to buy. A colour it has not tried is the only thing
+        # worth rendering, so what it HAS tried is read off the pictures rather
+        # than off the recolours that screened them.
+        asked = 0
+        if slot.seated is None and blocked and extra is not None and state is not None:
+            spent, families = seat_state.colours()
+            for step in range(EXTRA_PICKS):
+                source = min(blocked, key=lambda entry: entry[1])[2]
+                made = extra.spend(source, spent, families)
+                asked += 1
+                if made is None:
+                    break
+                spent.add(str(made.get("colormap")))
+                reading = state.rule.lens.reading(made)
+                if reading is not None:
+                    families |= set(reading.families)
+                if made.get("p_ge3") is not None and seat_state.take(made, len(sequence) + step):
+                    break
+        below, capped, refused = seat_state.below, seat_state.capped, seat_state.refused
+        fallback = None
+        if slot.seated is None and blocked:
+            # Nothing cleared the ceiling, so the least-violating candidate takes
+            # the seat and the record says which and by how much. Ties fall
+            # through to `index`, which is the judge's own order after the targets
+            # steered it, so the fallback is as deterministic as the seating.
+            _, _, candidate, tag, failures = min(blocked, key=lambda entry: (entry[0], entry[1]))
             used[tag] = used.get(tag, 0) + 1
             slot.seated = {**candidate, "group": tag}
-            break
+            fallback = state.fell_back(candidate, failures)
+        if state is not None:
+            if slot.seated is not None:
+                slot.seated["palette_group"] = state.rule.lens.group(slot.seated)
+                state.take(slot.seated)
+            state.done()
         slot.fill = {
             "eligible": len(pool),
             "below_floor": below,
             "location_served": capped,
             "floor": {"name": floor.name, "value": floor.value, "head_sha256": floor.stamp},
         }
+        if state is not None:
+            slot.fill["ceiling"] = {
+                "refused": refused,
+                "extra_picks": asked,
+                "fallback": fallback,
+                **({"targets": steering} if steering else {}),
+            }
         if slot.seated is None:
             slot.unfilled = (
                 "below_bar" if below else selection.LOCATION_SERVED if capped else "no_candidates"
@@ -1789,7 +2340,7 @@ def seat(slots: list, candidates: list, log=print) -> dict:
                 f"{count} {reason}" for reason, count in sorted(cell["reasons"].items())
             )
             log(f"[seat] {name:<32} {cell['filled']}/{cell['slots']} filled · {why}")
-    return {
+    report = {
         "slots": len(slots),
         "filled": filled,
         "unfilled": len(slots) - filled,
@@ -1800,6 +2351,36 @@ def seat(slots: list, candidates: list, log=print) -> dict:
             for head, cut in sorted(floor_of.items())
         },
     }
+    if state is not None:
+        report["ceiling"] = state.report()
+        if extra is not None:
+            report["ceiling"]["on_demand"] = {
+                "bound_per_seat": EXTRA_PICKS,
+                "seats_that_asked": sum(
+                    1 for slot in slots if (slot.fill.get("ceiling") or {}).get("extra_picks")
+                ),
+                "seats_it_filled": sum(
+                    1
+                    for slot in slots
+                    if (slot.fill.get("ceiling") or {}).get("extra_picks")
+                    and (slot.fill.get("ceiling") or {}).get("fallback") is None
+                    and slot.seated is not None
+                ),
+                **extra.price(),
+            }
+        by_test = report["ceiling"]["rejections_by_test"]
+        log(
+            f"[ceiling] {len(state.rejections)} rejection(s): "
+            + " · ".join(f"{count} {name}" for name, count in by_test.items())
+            + f" · {len(state.fallbacks)} fallback(s) · "
+            f"{len(state.exemptions)} group exemption(s)"
+        )
+        for entry in report["ceiling"]["targets"]:
+            log(
+                f"[target] {entry['cell']} at {entry['fraction']:g}: "
+                f"{entry['have']}/{entry['wanted']} {entry['verdict']}"
+            )
+    return report
 
 
 def floor_key(candidate: dict):
@@ -2259,7 +2840,7 @@ def write_records(pass_id, slots, attempts, guaranteed, log=print) -> dict:
             **records.decision(
                 run=pass_id,
                 stage=records.GATE,
-                candidate=f"{row['attempt']:04d}",
+                candidate=colorize.attempt_id(row),
                 verdict="kept" if row.get("p_ge3") is not None else "dropped",
                 row=row,
                 reason=row.get("error"),
@@ -2703,6 +3284,31 @@ def _neutral_card(row: dict, distance: float, neutral_dir: Path, sheet_module, w
     )
 
 
+def render_of(candidate: dict) -> Path | None:
+    """The **candidate render** one candidate was judged on: 640x360 ss2, on disk.
+
+    Not [`candidate_picture`], and the difference is the whole reason both exist.
+    That one answers "where is the picture this row names", which for a seated
+    release row is a full-size PNG at whatever regime shipped it. This answers
+    "where is the render every colour reading in this project is taken over", and
+    the answer has to be one geometry for every row or the readings are not
+    comparable — a census over 1280x720 and a census over 2560x1440 are two
+    populations and nothing downstream can tell them apart from the pixels.
+
+    Off `origin`, the resolved `(run, candidate)` a flat candidate carries, which
+    is [`rescore.origin_of`] already walked. Falls back to `source` for a caller
+    holding a row from before that field existed.
+    """
+    origin = candidate.get("origin") or {}
+    where = origin.get("run") or (candidate.get("source") or {}).get("run")
+    name = origin.get("candidate") or (candidate.get("source") or {}).get("candidate")
+    if not where or not name:
+        return None
+    from fractal_wallpapers.curation import rescore
+
+    return run_module.run_dir(str(where)) / rescore.PICTURES / f"{name}.jpg"
+
+
 def candidate_picture(candidate: dict) -> Path | None:
     """Where one candidate's own picture is, whichever run made it.
 
@@ -3097,6 +3703,7 @@ def run(
     seed: int = DEFAULT_SEED,
     draw_seed: int | None = None,
     draw_top_k: int = DRAW_TOP_K,
+    targets: dict | None = None,
     workers: int = release.DEFAULT_WORKERS,
     device: str = "auto",
     log=print,
@@ -3155,6 +3762,7 @@ def run(
             seed=seed,
             draw_seed=draw_seed,
             draw_top_k=draw_top_k,
+            targets=targets,
             workers=workers,
             device=device,
             log=log,
@@ -3180,6 +3788,7 @@ def _take(
     seed: int,
     draw_seed: int | None,
     draw_top_k: int,
+    targets: dict | None,
     workers: int,
     device: str,
     log,
@@ -3243,6 +3852,26 @@ def _take(
     by_key = {str(row["key"]): colorize_row(row) for row in rows}
     ranks = _ranks(rows, scores)
 
+    # --- the colour ceiling, and the targets on the same feature ------------- #
+    #
+    # Built once and handed to every seating round: the constants and the reader
+    # do not move between rounds, and the STATE does — [`ceiling.Rule.begin`] is
+    # what starts a round with nothing shipped, which is what makes a re-seat a
+    # replay of the whole sequence rather than a patch of one slot.
+    targets = {str(cell): float(value) for cell, value in (targets or {}).items()}
+    palette_pool = colorize.pool(int(seed))
+    feasibility = refuse_targets(targets, palette_pool)
+    rule = ceiling.Rule(lens_for(), targets=targets)
+    log(
+        f"[ceiling] group cap {rule.group_cap} (exempt beyond {rule.tau_group:g}), "
+        f"K={rule.k}, twins {rule.twins} within {rule.tau:g}"
+    )
+    for cell in sorted(targets):
+        log(
+            f"[target] {cell} at {targets[cell]:g} = {rule.wanted(cell, n)} of {n} picture(s), "
+            f"{feasibility['cells'][cell]['carriers']} carrier(s) in the pool"
+        )
+
     # --- steps 5 and 6, k times: attempt, seat, RE-SEAT what came up empty -- #
     #
     # One loop and not two legs, because a re-seat is a slot changing its mind
@@ -3250,6 +3879,10 @@ def _take(
     # seated once already. The plan grows and is never rebuilt, so a resumed pass
     # lands every attempt back on its own index.
     standing_pool = pool_rows(pass_id)
+    # The seating leg's own renderer, built once and empty: it loads no model and
+    # touches no engine until a seat asks it for a picture, so a pass whose
+    # ceiling refuses nothing never pays for it at all.
+    extra = OnDemand(pass_id, directory, seed, device, log)
     planned: list[Try] = []
     made: list[dict] = []
     attempt_counts: dict = {}
@@ -3276,8 +3909,13 @@ def _take(
                 "skipped": "--no-attempts",
             }
         else:
-            done = {(try_.key, try_.framing) for try_ in planned}
+            done = {(try_.key, try_.framing, try_.colormap) for try_ in planned}
             fresh = attempt_plan(slots, ranks, smooth, strange, already=done)
+            # Carrier attempts go in with the ordinary ones and never after, so
+            # the plan is fixed before the first attempt of the round: the anchor
+            # draw is over the whole plan and the resume index is a position in
+            # it, and both would move under a plan that grew mid-leg.
+            fresh += carrier_plan(slots, ranks, strange, targets, palette_pool, seed, already=done)
             if scanning and fresh:
                 # BEFORE the attempts, and only over the locations this round
                 # added: a location already framed keeps its decision, so a
@@ -3308,7 +3946,7 @@ def _take(
             f"[seat] {len(mine)} attempt candidate(s) + {len(standing)} seatable out of the "
             f"{len(standing_pool)} standing row(s): candidates are per-pass, locations are not"
         )
-        seating = seat(slots, mine + standing, log)
+        seating = seat(slots, mine + standing, log, rule=rule, extra=extra)
         rounds.append(
             {
                 "round": round_number,
@@ -3345,13 +3983,19 @@ def _take(
                 f"for {seating['unfilled']} unfilled slot(s)"
             )
             made, attempt_counts = make_attempts(
-                directory, planned, by_key, seed, device, log, framings=framings
+                directory,
+                planned,
+                by_key,
+                seed,
+                device,
+                log,
+                framings=framings,
             )
             mine = [
                 candidate_of_attempt(row, pass_id) for row in made if row.get("p_ge3") is not None
             ]
             before = seating["filled"]
-            seating = seat(slots, mine + standing, log)
+            seating = seat(slots, mine + standing, log, rule=rule, extra=extra)
             rounds[-1]["fallback"] = {
                 "attempts": len(fallback),
                 "locations": len({try_.key for try_ in fallback}),
@@ -3374,7 +4018,12 @@ def _take(
     )
 
     # --- what it leaves behind --------------------------------------------- #
-    written = write_records(pass_id, slots, made, plan["guaranteed"], log)
+    #
+    # The seating leg's own renders go into the store beside the plan's. They are
+    # pool rows in every sense — a location, a recipe, a judged picture — and a
+    # pass that kept them out would be a pass whose most expensive seats left no
+    # evidence, and whose next pass could not seat what this one made.
+    written = write_records(pass_id, slots, [*made, *extra.rows.values()], plan["guaranteed"], log)
     seconds = time.monotonic() - started
     gallery_rows = records.score_rank(
         [
@@ -3442,6 +4091,14 @@ def _take(
             "draw_seed_given": draw_seed is not None,
             "draw_top_k": max(1, int(draw_top_k)),
             "candidates_per_set": colorize.CANDIDATES,
+            # How many pictures ONE SEAT may have rendered for it when the
+            # ceiling has refused what its neighbourhood held.
+            "extra_picks": EXTRA_PICKS,
+            # THE constants, all of them, on the record rather than in a module a
+            # reader of the record does not have.
+            "ceiling": rule.config(),
+            "targets": dict(sorted(targets.items())),
+            "target_feasibility": feasibility,
             # Which maps this pass could reach, and which group every absent one
             # stood down for — the pool a candidate set was drawn out of.
             "palette_pool": colorize.pool_record(int(seed)),
@@ -3467,7 +4124,7 @@ def _take(
             "manifest": store.get("manifest"),
         },
         "plan": plan,
-        "attempts": attempt_counts,
+        "attempts": {**attempt_counts, "on_demand": extra.price()},
         # Step 5a, priced per pass rather than by an A/B leg: what the scan cost,
         # how often it moved a framing, which rung it moved to, and the whole Δ
         # distribution. Aggregates only — the per-location detail is a row each in
@@ -3545,7 +4202,7 @@ def _fallback_leg(
         ranks,
         smooth,
         strange,
-        already={(try_.key, try_.framing) for try_ in planned},
+        already={(try_.key, try_.framing, try_.colormap) for try_ in planned},
         framing=ORIGINAL,
         keys=wanted,
     )
@@ -3710,6 +4367,7 @@ __all__ = [
     "DEFAULT_N",
     "DEFAULT_SEED",
     "DRAW_TOP_K",
+    "EXTRA_PICKS",
     "FORMER_RELEASE_REGIME",
     "PASS_PREFIX",
     "QUALITY_WEIGHT",

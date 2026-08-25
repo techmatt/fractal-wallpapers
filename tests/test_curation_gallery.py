@@ -527,7 +527,7 @@ def test_the_attempt_plan_extends_rather_than_rebuilding() -> None:
     plan = gallery.attempt_plan(first, {}, 1, 1)
     assert sorted({try_.key for try_ in plan}) == ["b", "c"]
     later = [slot("0001", STRANGE, ["a", "c"])]
-    done = {(try_.key, try_.framing) for try_ in plan}
+    done = {(try_.key, try_.framing, try_.colormap) for try_ in plan}
     more = gallery.attempt_plan(later, {}, 1, 1, already=done)
     # `a` is new and `c` was already planned: the extension holds only the new one.
     assert sorted({try_.key for try_ in more}) == ["a"]
