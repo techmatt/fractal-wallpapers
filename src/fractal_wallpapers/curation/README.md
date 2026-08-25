@@ -419,6 +419,25 @@ slots split on partition for the same reason the decision stores do**: a slot ro
 runs about a kilobyte, N=500 is 1.3 MiB, and the history guard acts per file.
 gallery1 at N=50 tracks **337 KB over twenty files, the largest 52 KB**.
 
+**`slot.fill.best` is not the seat's winner.** It is the neighbourhood's top
+P(≥3) whatever the floor said about it — the evidence an unfilled slot is *for* —
+and it is read before the one-wallpaper-per-location cap picks a seat, so it
+routinely names a candidate that lost. On gallery3 it matches `slot.seated` on
+**90 of 150** seats. The winner is `slot.seated`, and three records agree on it
+independently: the seat's `picture` basename, the release row keyed
+`<pass>|release|<candidate>` whose `slot.pass` is the pass, and a step-7 row in
+`artifacts/curation/runs/<pass>/release/timing.jsonl`. That last file is how a
+release picture is told from a leftover — one row per winner, carrying the
+resolution and supersample it was actually made at, which is a per-pass decision
+and not a constant.
+
+**Joining a pass's seats to their colour.** `curate expressed` keys its census the
+same way, so `artifacts/curation/expressed/pictures.jsonl` filtered to
+`run == <pass>` is one row per seat and joins on the candidate id with no path
+matching. Its `picture` field is the absolute release picture the row was computed
+on; comparing that path and re-reading the file with `expressed.full_shares` is
+what proves a census row is about the picture in front of you.
+
 **The attempts are the bulk and they are not in the history.** A pass makes
 `locations x heads x draws` attempts per slot — 1,120 at n=50, ten times that at
 n=500 — and a pool row carrying its whole join runs about 3.8 KB. They get the
