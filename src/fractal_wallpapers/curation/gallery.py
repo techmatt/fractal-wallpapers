@@ -123,11 +123,12 @@ acting here: an empty slot is a statement about where the pool is thin, and it i
 the signal for where to label or walk next. A padded slot is the same statement
 with the evidence removed.
 
-Both measured floors act ([`floors.gallery_floor`]) — the strange head's 0.685
-and the smooth head's 0.385 — which is not what happens at a run's release, where
-only the strange one gates. The two decisions are different: a run's is about how
-much of its own night is worth looking at, and this one is about what the
-collection ships.
+Both measured floors act ([`floors.gallery_floor`]), which is not what happens at
+a run's release, where only the strange one gates. The two decisions are
+different: a run's is about how much of its own night is worth looking at, and
+this one is about what the collection ships. Neither height is quoted here — both
+are restatements that move whenever the judge under them does, and the pass
+record carries the pair it actually seated against.
 
 ## What the pass leaves in the history, and what it leaves beside it
 
@@ -1392,21 +1393,19 @@ def candidate_of_attempt(row: dict, pass_id: str) -> dict:
     attempt was judged by the head that is shipped right now, so the two blocks
     are the same reading and saying so is cheaper than a pass over the pool to
     discover it.
+
+    Through [`rescore.block`] and never spelled out here. This used to build the
+    block itself and left `judge` off it, which made the pool's rows two shapes —
+    a reader asking for the judge got an answer on every row but the ones a
+    gallery pass had made.
     """
+    from fractal_wallpapers.curation import rescore
+
     return {
         **row,
         "candidate": f"{row['attempt']:04d}",
         "source": {"run": pass_id, "candidate": f"{row['attempt']:04d}", "key": None},
-        "scores_current": {
-            "head": row.get("head"),
-            # The KIND is `row["head"]`; the SCALE is the one judge's, so the
-            # stamp is read off that and not off the kind.
-            "head_sha256": floors.live_stamp(floors.SCORING_HEAD) if row.get("head") else None,
-            "p_ge2": row.get("p_ge2"),
-            "p_ge3": row.get("p_ge3"),
-            "p_ge4": row.get("p_ge4"),
-            "rank_score": row.get("rank_score"),
-        },
+        "scores_current": rescore.block(row.get("head"), row),
     }
 
 
@@ -1502,8 +1501,8 @@ def seat(slots: list, candidates: list, log=print) -> dict:
         # The best thing this neighbourhood held, whatever the floor said about
         # it. Kept because it is the evidence an unfilled slot is FOR: the
         # `below_floor` sheet puts it beside the partition's best unchosen
-        # candidate pool-wide, and "0.61 against a 0.685 floor while the partition
-        # holds a 0.74" and "nothing here at all" are different findings.
+        # candidate pool-wide, and "just under the floor while the partition holds
+        # something well over it" and "nothing here at all" are different findings.
         slot.fill["best"] = _best_of(pool)
         slot.record_try()
 
@@ -1546,10 +1545,10 @@ def floor_key(candidate: dict):
     by `P(>=4)` because that is the question a slot asks of a candidate it might
     seat; a **floor** acts on `P(>=3)`, and the two orderings genuinely disagree —
     a candidate at `P(>=4) 0.60, P(>=3) 0.62` outranks one at `0.50, 0.90` and is
-    the one that fails a 0.685 bar.
+    the one that fails a bar between those two `P(>=3)` values.
 
     So the witness an unfilled slot puts on the record is chosen on the floor's
-    own axis. "The best candidate here scored 0.62 against a 0.685 floor" is a
+    own axis. "The best candidate here scored 0.62 against the acting floor" is a
     claim about how close a neighbourhood came, and answering it with the
     highest-ranked row instead would understate the gap — reporting a slot as
     further from its bar than it was.

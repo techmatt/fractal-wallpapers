@@ -185,11 +185,11 @@ def run(device: str = "auto", log=print) -> dict:
             # `head` stays the KIND, because every consumer of this block reads it
             # to pick a floor and a slot, and both of those are still per kind.
             # `judge` and `head_sha256` are the scale it was read on.
-            block = {"head": kind, "judge": judge, "head_sha256": stamp}
-            for index in range(classes - 1):
-                block[f"p_ge{index + 2}"] = float(probability[index])
-            block["rank_score"] = float(sum(probability))
-            read[row["key"]] = block
+            readings = {
+                f"p_ge{index + 2}": float(probability[index]) for index in range(classes - 1)
+            }
+            readings["rank_score"] = float(sum(probability))
+            read[row["key"]] = block(kind, readings)
         per_kind[kind] = {"rows": len(mine), "judge": judge, "head_sha256": stamp}
 
     shift = _shift(rows, read)
@@ -203,6 +203,41 @@ def run(device: str = "auto", log=print) -> dict:
         "shift": shift,
         "wrote": wrote,
     }
+
+
+def block(head: str | None, readings: dict) -> dict:
+    """One `scores_current` block, in the one shape every reader expects.
+
+    Two places write this block. The re-score pass writes it for the whole pool,
+    and the gallery pass writes it for its own attempts as it makes them —
+    those were judged by the head that is shipped right now, so the two blocks
+    are the same reading and re-deriving it would be a pass over the pool to
+    discover something already known.
+
+    Two writers of one record is how a field goes missing from half of it, and
+    that is exactly what happened: the gallery pass's blocks carried no `judge`,
+    so a reader that asked for it got a `KeyError` on the rows one pass had made
+    and an answer on every other. The shape is declared here now, once, and both
+    writers come through it.
+
+    `head` is the KIND — every consumer reads it to pick a floor and a slot, and
+    both are still per kind. `judge` and `head_sha256` are the SCALE it was read
+    on, which is one judge for the whole pool.
+    """
+    out = {
+        "head": head,
+        "judge": floors_scoring_head(),
+        "head_sha256": _live_stamp() if head else None,
+    }
+    for name in ("p_ge2", "p_ge3", "p_ge4", "rank_score"):
+        out[name] = readings.get(name)
+    return out
+
+
+def _live_stamp() -> str:
+    from fractal_wallpapers.curation import floors
+
+    return floors.live_stamp(floors.SCORING_HEAD)
 
 
 def floors_scoring_head() -> str:
@@ -283,4 +318,12 @@ def _write(rows: list[dict], read: dict, log) -> dict:
     return out
 
 
-__all__ = ["BLOCK", "PICTURES", "RescoreError", "picture_of", "run", "scoring_artifact"]
+__all__ = [
+    "BLOCK",
+    "PICTURES",
+    "RescoreError",
+    "block",
+    "picture_of",
+    "run",
+    "scoring_artifact",
+]

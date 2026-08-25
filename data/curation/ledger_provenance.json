@@ -1,18 +1,19 @@
 {
   "schema": 1,
   "note": "which walk ledger each released row was drawn from, and whether that ledger still reads. A row whose ledger is gone still re-renders from its own join and still counts in every rate; what it cannot be is offered to another run. `tier` is a snapshot of where the file was on `read`, not a property of the ledger.",
-  "read": "2026-08-22",
-  "pool_rows": 1192,
+  "read": "2026-08-24",
+  "pool_rows": 1342,
   "ledgers_named": 9,
   "ledgers_absent": 0,
   "rows_on_absent_ledgers": 0,
   "ledgers": [
     {
       "ledger": "artifacts/deep_shakedown/walk.jsonl",
-      "rows": 3,
+      "rows": 6,
       "runs": [
         "gallery1",
-        "gallery2"
+        "gallery2",
+        "gallery3"
       ],
       "resolves": true,
       "at": "artifacts/deep_shakedown/walk.jsonl",
@@ -20,10 +21,11 @@
     },
     {
       "ledger": "artifacts/harvest/walk.jsonl",
-      "rows": 128,
+      "rows": 149,
       "runs": [
         "gallery1",
         "gallery2",
+        "gallery3",
         "run8h"
       ],
       "resolves": true,
@@ -32,10 +34,11 @@
     },
     {
       "ledger": "artifacts/harvest_run10/walk.jsonl",
-      "rows": 361,
+      "rows": 403,
       "runs": [
         "gallery1",
         "gallery2",
+        "gallery3",
         "run10"
       ],
       "resolves": true,
@@ -44,10 +47,11 @@
     },
     {
       "ledger": "artifacts/harvest_run2/walk.jsonl",
-      "rows": 271,
+      "rows": 299,
       "runs": [
         "gallery1",
         "gallery2",
+        "gallery3",
         "run2",
         "run9"
       ],
@@ -57,10 +61,11 @@
     },
     {
       "ledger": "artifacts/harvest_run3/walk.jsonl",
-      "rows": 282,
+      "rows": 298,
       "runs": [
         "gallery1",
         "gallery2",
+        "gallery3",
         "run3",
         "run9"
       ],
@@ -70,9 +75,10 @@
     },
     {
       "ledger": "artifacts/harvest_run9/walk.jsonl",
-      "rows": 38,
+      "rows": 47,
       "runs": [
         "gallery2",
+        "gallery3",
         "run9"
       ],
       "resolves": true,
@@ -81,10 +87,11 @@
     },
     {
       "ledger": "artifacts/mandelbrot_sourcing/walk.jsonl",
-      "rows": 84,
+      "rows": 114,
       "runs": [
         "gallery1",
         "gallery2",
+        "gallery3",
         "run9"
       ],
       "resolves": true,
@@ -103,9 +110,10 @@
     },
     {
       "ledger": "artifacts/walk_j/walk.jsonl",
-      "rows": 9,
+      "rows": 10,
       "runs": [
         "gallery2",
+        "gallery3",
         "release_v1"
       ],
       "resolves": true,

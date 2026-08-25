@@ -38,6 +38,16 @@ locations to the ten pictures a night kept to prove its path worked. One
 wallpaper per location is enforced inside the pass, over the pass's own seats,
 which is the population the gallery is.
 
+## Superseding is enforced here, because "the collection" is defined here
+
+A pass supersedes the previous gallery, and for two passes that was prose with
+nothing behind it: both passes' seats were `released`, so both were served and the
+collection held two galleries at once. [`current_pass`] is what makes the word
+mean something — the newest pass with served seats is the gallery, and an earlier
+pass's rows stay released and on record without being served. Nothing is deleted
+and nothing is rejected; a rejection means a person took a picture back on its
+merits, and being replaced by a later pass is not that.
+
 ## "Same location" is the grouping this repository already had
 
 `labeling.groups.assign`: same plane digit for digit, seed `c` within
@@ -137,7 +147,58 @@ def build(
         if (exclude_run is None or row.get("run") != exclude_run)
         and (collection is None or row.get("collection") == collection)
     ]
+    rows = [row for row in rows if not _superseded(row, current_pass(rows))]
     return ServedLocations(locations=[dict(row.get("location") or {}) for row in rows], rows=rows)
+
+
+def _superseded(row: dict, current: str | None) -> bool:
+    """Is this row a seat of a gallery pass that a later pass has replaced?"""
+    return (
+        current is not None
+        and row.get("collection") == records.GALLERY
+        and str(row.get("run")) != current
+    )
+
+
+def current_pass(rows) -> str | None:
+    """The newest gallery pass **with rendered seats**, which is the gallery.
+
+    A pass chooses the whole gallery at once and supersedes the previous one, so
+    two passes' seats are two galleries rather than one gallery holding both. The
+    older pass's rows stay `released` and stay on record — nothing is deleted, and
+    its own pass record still says what it chose out of what — but they are not
+    what the collection serves any more.
+
+    **Rendered** is load-bearing and is this function's own test rather than
+    something the caller is trusted to have done. `--no-full-size` takes every
+    seating decision and spends no release render: those seats are recorded
+    `unrendered`, which is a seat with no wallpaper at the end of it. A pass like
+    that must never become the collection — it would supersede a gallery that has
+    pictures with one that has none — so the rows are put through
+    [`records.served`] here, and a pass is only a candidate if something survives
+    it. `curate gallery --pass <id>` without the flag later makes the pictures and
+    lifts the rows to `released`, and the pass becomes eligible then and not
+    before.
+
+    Until a third pass this was invisible: gallery2 ran `--no-full-size`, so only
+    one pass had ever rendered its seats. The moment two passes both had
+    wallpapers the collection held two galleries at once, and the
+    one-wallpaper-per-location rule failed on twenty places — not because either
+    pass was wrong, but because nothing said which of them was the gallery.
+
+    Computed AFTER `exclude_run` and off the rows in hand, deliberately: a caller
+    asking what the collection looked like without the newest pass should get the
+    pass before it, not an empty gallery.
+    """
+    from fractal_wallpapers.curation import gallery as gallery_module
+
+    named = {
+        str(row.get("run"))
+        for row in records.served(rows)
+        if row.get("collection") == records.GALLERY
+    }
+    ordered = [name for name in gallery_module.passes() if name in named]
+    return ordered[-1] if ordered else None
 
 
 def repeats(
@@ -187,4 +248,4 @@ def repeats(
     return sorted(out, key=lambda cell: (-len(cell["served"]), cell["group"]))
 
 
-__all__ = ["ServedLocations", "build", "repeats"]
+__all__ = ["ServedLocations", "build", "current_pass", "repeats"]
