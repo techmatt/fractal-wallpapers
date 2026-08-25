@@ -29,8 +29,15 @@ before they reach a pixel and the codebook's assignment is soft, so the same
 recipe at `640x360 x2` and at `2560x1440 x4` produces different numbers — a
 median of two points apart over the pictures this project has released, and up to
 sixty-four where the autolevel operator read the two frames differently. So the
-census here reads the release PNG at full resolution and never the candidate
-render that stands behind it.
+census here reads the release PNG at **its own** resolution — taken off the file
+and written onto the row — and never the candidate render that stands behind it.
+
+That the release regime is now a per-pass decision does not change the definition
+and is exactly why it is worded this way. A share vector taken over pictures made
+at one regime is a **different population** from one taken over another; which
+regime a pass shipped is on its pass record and on each of its release rows, and
+that is what tells two populations apart. Nothing here re-reads a picture at a
+regime it was not made at.
 
 The 160x90 decode [`codebook.of_picture`] uses is checked against that rather
 than assumed: [`agreement`] reports both, and on the released population the
@@ -94,9 +101,13 @@ SCREEN = 0.06
 CANDIDATE_RESOLUTION = (640, 360)
 CANDIDATE_SUPERSAMPLE = 2
 
-#: Where coverage is measured. What a finished wallpaper is.
-RELEASE_RESOLUTION = (2560, 1440)
-RELEASE_SUPERSAMPLE = 4
+#: There is deliberately no release geometry here. Coverage is measured at
+#: **whatever the picture is**, read off the file by [`full_shares`] and written
+#: onto the row as `resolution`; which regime a wallpaper was made under is the
+#: pass's own decision and is on the pass record and on the release row. A
+#: constant here would be a second claim about a population this module measures,
+#: and it would go stale the first time a pass shipped another size — which one
+#: did, on 2026-08-25.
 
 #: A swatch is THIN when at most this many of the finished pictures express it.
 #: A count rather than a rate because the population is small enough to name
@@ -570,8 +581,6 @@ def readout() -> dict:
 __all__ = [
     "CANDIDATE_RESOLUTION",
     "CANDIDATE_SUPERSAMPLE",
-    "RELEASE_RESOLUTION",
-    "RELEASE_SUPERSAMPLE",
     "SCHEMA",
     "SCREEN",
     "THIN_PICTURES",

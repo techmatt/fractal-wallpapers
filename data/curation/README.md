@@ -106,6 +106,16 @@ touched it, which kind of slot it took, and the autolevel stamp of the render th
 decision was taken on — on one line. A row keyed on an identifier whose meaning
 lives in another file is orphaned the day that file moves.
 
+**Which pixels a row shipped is on the row.** `release_geometry` — the frame and
+the field supersample of the picture itself — because `recipe.render` is the
+*candidate* geometry the verdict was cast on and always was, and because a gallery
+pass chooses its regime per pass (`--release-regime`, 1280x720ss2 by default since
+2026-08-25) so the answer cannot be inferred from anything else. `null` on a row
+with no picture: naming a regime there would describe a render that does not
+exist. Rows written before the field existed do not carry it and every one of them
+came out of a 2560x1440 ss4 leg, which is what `curation.checks.UNRECORDED_REGIME`
+says and the only thing it is for.
+
 **There are two autolevel stamps per released row, and only one of them is here.**
 The stamp on the row is the one from the render the *decision* was taken on, at
 candidate geometry. The release render is a second pass and gets its own stamp,

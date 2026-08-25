@@ -5,10 +5,11 @@ from __future__ import annotations
 import subprocess
 from concurrent.futures import TimeoutError as FutureTimeout
 from concurrent.futures.process import BrokenProcessPool
+from pathlib import Path
 
 import pytest
 
-from fractal_wallpapers.curation import pacing, release
+from fractal_wallpapers.curation import checks, pacing, release
 
 
 class Gate:
@@ -309,3 +310,42 @@ def test_an_empty_plan_is_not_a_pass(monkeypatch) -> None:
     )
     record = release.run_pass([], 3, lambda *_a: None, log=lambda _m: None)
     assert record["rows"] == 0
+
+
+def test_a_regime_round_trips_through_the_spelling_a_person_types() -> None:
+    """`<w>x<h>ss<n>`, the same spelling the tile corpus uses for the same pair."""
+    regime = release.regime_of("1280x720ss2")
+    assert regime.resolution == (1280, 720)
+    assert regime.supersample == 2
+    assert regime.spelled == "1280x720ss2"
+    assert regime.geometry() == {"resolution": [1280, 720], "supersample": 2}
+    # A fresh dict every call: a caller stamps its row's maxiter into it.
+    assert regime.geometry() is not regime.geometry()
+    assert release.regime_from_geometry(regime.geometry()).spelled == regime.spelled
+    assert release.regime_from_geometry(None) is None
+    assert release.regime_from_geometry({"resolution": [640, 360]}) is None
+    for refused in ("1280x720", "1280ss2", "", "twelve-eighty"):
+        with pytest.raises(ValueError):
+            release.regime_of(refused)
+    with pytest.raises(ValueError):
+        release.Regime((0, 720), 2)
+
+
+def test_a_check_re_derives_the_pixels_the_row_shipped_and_not_todays_default() -> None:
+    """Both checks compare BYTES, so the geometry has to come off the row.
+
+    Every row written before `release_geometry` existed came out of a 2560x1440
+    ss4 leg, which is the whole of what the fallback claims.
+    """
+    row = {
+        "candidate": "0000",
+        "location": {"family": {}, "viewport": {}, "maxiter": 900},
+        "recipe": {"colormap": "viridis", "mode": "smooth"},
+    }
+    assert checks.regime_of_row(row).spelled == checks.UNRECORDED_REGIME.spelled
+    assert checks.UNRECORDED_REGIME.spelled == "2560x1440ss4"
+
+    shipped = {**row, "release_geometry": {"resolution": [1280, 720], "supersample": 2}}
+    assert checks.regime_of_row(shipped).spelled == "1280x720ss2"
+    task = checks.tasks_of("gallery4", [shipped], Path("out"))[0]
+    assert task.geometry == {"resolution": [1280, 720], "supersample": 2, "maxiter": 900}

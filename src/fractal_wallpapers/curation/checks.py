@@ -52,6 +52,27 @@ def released_rows(run: str) -> list[dict]:
     return rows
 
 
+#: What a row that does not say which pixels it shipped is assumed to have
+#: shipped. Every row written before `release_geometry` existed came out of a run
+#: or a pass whose release leg was 2560x1440 ss4 — there was one regime and it was
+#: not a parameter — so this is a **reading of the store as it stands** and not a
+#: default anything new relies on. A row written since carries its own.
+UNRECORDED_REGIME = release.Regime(
+    tuple(run_module.RELEASE_RESOLUTION), run_module.RELEASE_SUPERSAMPLE
+)
+
+
+def regime_of_row(row: dict) -> release.Regime:
+    """Which pixels one released row is, off the row itself.
+
+    Both checks re-derive a picture and compare **bytes**, so a geometry read from
+    anywhere but the row is a check that passes or fails on what today's default
+    happens to be. Gallery passes choose their regime per pass, so that is no
+    longer a distinction without a difference.
+    """
+    return release.regime_from_geometry(row.get("release_geometry")) or UNRECORDED_REGIME
+
+
 def tasks_of(run: str, rows: list[dict], directory: Path) -> list[release.Task]:
     """Release tasks rebuilt from the records — the join the record exists to carry."""
     out = []
@@ -69,8 +90,7 @@ def tasks_of(run: str, rows: list[dict], directory: Path) -> list[release.Task]:
                 mode=recipe["mode"],
                 output=str(Path(directory) / f"{row['candidate']}.png"),
                 geometry={
-                    "resolution": list(run_module.RELEASE_RESOLUTION),
-                    "supersample": run_module.RELEASE_SUPERSAMPLE,
+                    **regime_of_row(row).geometry(),
                     "maxiter": int(location["maxiter"]),
                 },
             )
@@ -116,8 +136,7 @@ def replay(run: str, log=print) -> dict:
         stamp = stamps.get(identifier)
         recipe = row["recipe"]
         geometry = {
-            "resolution": list(run_module.RELEASE_RESOLUTION),
-            "supersample": run_module.RELEASE_SUPERSAMPLE,
+            **regime_of_row(row).geometry(),
             "maxiter": int(row["location"]["maxiter"]),
         }
         again = directory / f"{identifier}.png"
@@ -189,4 +208,12 @@ def _stamps(run: str) -> dict:
     }
 
 
-__all__ = ["CheckError", "parity", "released_rows", "replay", "tasks_of"]
+__all__ = [
+    "UNRECORDED_REGIME",
+    "CheckError",
+    "parity",
+    "regime_of_row",
+    "released_rows",
+    "replay",
+    "tasks_of",
+]
