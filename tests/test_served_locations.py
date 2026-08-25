@@ -291,6 +291,44 @@ def test_a_second_pass_has_nothing_to_do(tmp_path) -> None:
         records.use(None)
 
 
+def _gallery_row(run: str, verdict: str, candidate: str) -> dict:
+    """One gallery seat, in the shape `records.served` reads."""
+    return {
+        "schema": 1,
+        "key": f"{run}|release|{candidate}",
+        "run": run,
+        "stage": records.RELEASE,
+        "candidate": candidate,
+        "collection": records.GALLERY,
+        "verdict": verdict,
+        "picture": f"release/{candidate}.png" if verdict == records.RELEASED else None,
+        "location": {"partition": "mandelbrot"},
+        "scores": {"head": "smooth_render", "p_ge3": 0.9, "p_ge4": 0.8},
+    }
+
+
+def test_the_gallery_is_the_newest_pass_that_actually_rendered() -> None:
+    """A pass supersedes the previous gallery, and until a third pass that was
+    prose with nothing behind it — both passes' seats were served, so the
+    collection held two galleries at once."""
+    older = _gallery_row("gallery1", records.RELEASED, "0001")
+    newer = _gallery_row("gallery3", records.RELEASED, "0002")
+    assert served_locations.current_pass([older, newer]) == "gallery3"
+    assert served_locations.current_pass([older]) == "gallery1"
+    assert served_locations.current_pass([]) is None
+
+
+def test_a_pass_that_rendered_nothing_never_becomes_the_collection() -> None:
+    """`--no-full-size` takes every seating decision and spends no release render.
+    Those seats are `unrendered` — a seat with no wallpaper at the end of it — and
+    a pass like that superseding one that HAS pictures would empty the gallery.
+    The rendered test belongs to the reader, not to whoever calls it."""
+    rendered = _gallery_row("gallery1", records.RELEASED, "0001")
+    unrendered = _gallery_row("gallery3", records.UNRENDERED, "0002")
+    assert served_locations.current_pass([rendered, unrendered]) == "gallery1"
+    assert served_locations.current_pass([unrendered]) is None
+
+
 def test_each_collection_holds_one_wallpaper_per_location() -> None:
     """The tracked store, after the retirement. This is the rule's whole claim, and
     the only place it can be checked is against the collection itself.

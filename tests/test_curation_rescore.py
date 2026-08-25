@@ -145,6 +145,28 @@ def test_every_pool_row_carries_a_reading_on_the_live_judge() -> None:
         assert 0.0 <= block["p_ge3"] <= 1.0
 
 
+def test_every_writer_of_the_block_writes_the_same_shape() -> None:
+    """Two passes write `scores_current` — the re-score, and the gallery pass for
+    its own attempts — and a field missing from one of them makes the pool two
+    shapes. It did: the gallery writer built the block itself and left `judge`
+    off, so a reader that asked for it worked on every row but the ones one pass
+    had made. Both go through `rescore.block` now, and this is what says so."""
+    from fractal_wallpapers.curation import floors
+
+    built = rescore.block("smooth_render", {"p_ge2": 0.9, "p_ge3": 0.8, "p_ge4": 0.7})
+    assert built["head"] == "smooth_render"
+    assert built["judge"] == floors.SCORING_HEAD
+    assert built["head_sha256"] == floors.live_stamp(floors.SCORING_HEAD)
+    assert built["rank_score"] is None, "a reading the caller did not have stays absent"
+
+    rows = records.read_decisions(records.RELEASE)
+    blocks = [row[rescore.BLOCK] for row in rows if row.get(rescore.BLOCK)]
+    assert blocks
+    shape = set(built)
+    for block in blocks:
+        assert set(block) == shape
+
+
 def test_the_runs_own_scores_are_untouched_provenance() -> None:
     """`scores` is what the decision was actually taken on. A pass that overwrote
     it would delete the only evidence of what the release path decided."""
