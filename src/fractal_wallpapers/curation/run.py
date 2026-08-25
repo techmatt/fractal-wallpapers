@@ -419,7 +419,7 @@ def _colorize(directory: Path, plan, by_key, seed, device, resume, clock, log):
         log(f"[resume] {len(done)} of {len(plan)} attempt(s) already recorded")
         _discard_partials(directory, len(plan), done, log)
     leg = clock.leg(pacing.COLORIZE)
-    picked = colorize.anchors(colorize.pool(), len(plan), seed)
+    picked = colorize.anchors(colorize.pool(seed), len(plan), seed)
     rows = list(done.values())
     counts = {"planned": len(plan), "resumed": len(done), "made": 0, "failed": 0, "killed": 0}
     # Built on the first attempt this run actually makes, not before: loading three
@@ -948,6 +948,10 @@ def _record(**k) -> dict:
         "strange_share": k["strange_share"],
         "modes_per_location": dict(k["modes"]),
         "candidates_per_set": colorize.CANDIDATES,
+        # Which maps this run could reach, and which group every absent one stood
+        # down for. A candidate set is drawn out of the collapsed pool, so a reader
+        # asking why a map never appeared is asking about this and not about luck.
+        "palette_pool": colorize.pool_record(k["seed"]),
         "colorize_geometry": {
             "resolution": list(colorize.RESOLUTION),
             "supersample": colorize.SUPERSAMPLE,

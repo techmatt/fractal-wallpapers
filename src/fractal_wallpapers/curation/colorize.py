@@ -164,18 +164,60 @@ def kind_of(mode: str) -> str:
     return known[mode]["kind"]
 
 
-def pool() -> list[str]:
-    """The maps a colorize may choose between: the shipped pool, as this repo holds it."""
+def _shipped_pool() -> list[str]:
+    """The shipped pool, as this repository holds it — before the collapse."""
     from fractal_wallpapers.models import palette_sets
 
     held = {path.stem for path in _colormap_dir().glob("*.json")}
-    members = [name for name in palette_sets.pool()["pool"] if name in held]
+    return [name for name in palette_sets.pool()["pool"] if name in held]
+
+
+def pool(seed: int = 0) -> list[str]:
+    """The maps a colorize may choose between: the shipped pool, collapsed by group.
+
+    The shipped pool holds maps that are the same choice twice — a ramp and its
+    colour-vision variant, a cyclic map and the same map phase-shifted. A candidate
+    set that holds both asks the head to break a tie nobody can see, and two
+    attempts that land on the two of them spend two slots on one look.
+
+    So the pool is read through [`palettes.groups`]: one member per group, **drawn
+    at random on `seed`**, singletons untouched. Nothing leaves the library and no
+    member is retired — a different seed stands a different member up, which is why
+    the draw is random rather than canonical. [`pool_record`] is what a run writes
+    down about it, and `palettes.groups.COLLAPSE_ENV` turns it off.
+    """
+    from fractal_wallpapers.palettes import groups
+
+    members = _shipped_pool()
+    if groups.enabled():
+        members, _record = groups.collapse(members, seed)
     if len(members) < CANDIDATES:
         raise ColorizeError(
             f"the palette pool holds {len(members)} maps this repository has, and a candidate "
             f"set needs {CANDIDATES}. Bring the pool's maps across before a colorize."
         )
     return members
+
+
+def pool_record(seed: int = 0) -> dict:
+    """What a run's record says about the pool it drew from.
+
+    Names the group every stood-down map stood down for, so the question a reader
+    asks first — *why is this map not in the candidate set* — is answered by the
+    run record rather than by re-running the draw.
+    """
+    from fractal_wallpapers.palettes import groups
+
+    members = _shipped_pool()
+    if not groups.enabled():
+        return {
+            "collapsed": False,
+            "switch": groups.COLLAPSE_ENV,
+            "library": len(members),
+            "pool": len(members),
+        }
+    _members, record = groups.collapse(members, seed)
+    return {**record, "switch": groups.COLLAPSE_ENV}
 
 
 def _colormap_dir() -> Path:
@@ -382,7 +424,7 @@ class Colorizer:
         self.directory = Path(directory)
         self.seed = int(seed)
         self.log = log
-        self.pool = pool()
+        self.pool = pool(self.seed)
         self.cyclic = _cyclic()
         self.band = _band()
         self.palette, self.palette_config, self.where = palette_scoring.load(
@@ -564,6 +606,7 @@ __all__ = [
     "modes_drawn_for",
     "modes_for",
     "pool",
+    "pool_record",
     "recolored",
     "render",
     "render_row",

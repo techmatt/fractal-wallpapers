@@ -1473,7 +1473,7 @@ def make_attempts(
     carried = sum(1 for index in done if index < len(plan))
     if carried:
         log(f"[attempts] {carried} of {len(plan)} already recorded; carrying them across")
-    anchors = colorize.anchors(colorize.pool(), max(1, len(plan)), seed)
+    anchors = colorize.anchors(colorize.pool(seed), max(1, len(plan)), seed)
     # Only what THIS plan asked for. A resumed pass's log already holds the
     # attempts its later re-seat rounds made, and round 0 asking the log what it
     # has would otherwise seat out of a pool the same round could not have seen
@@ -3442,6 +3442,9 @@ def _take(
             "draw_seed_given": draw_seed is not None,
             "draw_top_k": max(1, int(draw_top_k)),
             "candidates_per_set": colorize.CANDIDATES,
+            # Which maps this pass could reach, and which group every absent one
+            # stood down for — the pool a candidate set was drawn out of.
+            "palette_pool": colorize.pool_record(int(seed)),
             "colorize_geometry": {
                 "resolution": list(colorize.RESOLUTION),
                 "supersample": colorize.SUPERSAMPLE,

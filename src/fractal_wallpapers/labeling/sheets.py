@@ -761,7 +761,7 @@ def finished_source(
         name, mirror = unit.get("colormap"), unit.get("mirror")
         if name is None:
             if picked["colorizer"] is None:
-                pool = colorize.pool()
+                pool = colorize.pool(seed)
                 picked["colorizer"] = colorize.Colorizer(directory / "picks", seed=seed)
                 picked["anchors"] = colorize.anchors(pool, unit["_of"], seed)
             candidates = colorize.candidate_set(picked["anchors"][index], picked["colorizer"].pool)

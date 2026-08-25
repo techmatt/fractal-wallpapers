@@ -466,7 +466,7 @@ def refinement(key: str, row: dict, best=None) -> dict:
 
 def attempt_leg(monkeypatch, tmp_path, framings, name: str) -> list:
     """Run the attempt leg over a stubbed colorizer and hand back what it saw."""
-    monkeypatch.setattr(gallery.colorize, "pool", lambda: [f"map{i}" for i in range(40)])
+    monkeypatch.setattr(gallery.colorize, "pool", lambda seed=0: [f"map{i}" for i in range(40)])
     monkeypatch.setattr(gallery.colorize, "annotate", lambda record: record)
     monkeypatch.setattr(gallery.colorize, "Colorizer", Fake)
     monkeypatch.setattr(
