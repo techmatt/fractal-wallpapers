@@ -99,6 +99,25 @@ engine spec. Resolution and supersample are fields of that spec, so a view
 rendered at another geometry gets its own file and three regimes can share one
 directory without colliding.
 
+**The spec carries the engine's own mode catalog, so a catalog change renames
+every cached view.** `spec_of` builds `coloring` by deep-copying `catalog()[mode]`
+— the engine's description of that coloring, as the engine reports it — which is
+right, because that object is literally what goes over the wire. What follows is
+that a catalog entry *gaining a field* re-digests every row that names its mode
+and orphans every picture already on disk, without a pixel having changed. That
+is not a bug to design out: a name that ignored part of the spec would be a name
+two different pictures could share, which is the failure that costs thirty-two
+wrong candidates rather than one stale file.
+
+**The engine fingerprint makes the reverse case visible, and only after the
+fact.** The digest says what the engine was *told*; it cannot say which build
+carried it out, so a rebuilt engine draws different pixels under an unchanged
+name. `engine_fingerprint` names the build by what it draws, and each view
+directory carries a `drawn_by.jsonl` — `{schema, view, engine}` a row, appended,
+last row winning — so a picture whose build nobody recorded reads as `unknown`
+and is re-rendered on read. It is evidence *after* the render, never a guard
+before it: nothing consults a fingerprint to decide what to draw.
+
 The **tile** cache says the same thing in a readable name rather than a digest. A
 tile is
 

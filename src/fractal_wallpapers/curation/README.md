@@ -757,6 +757,19 @@ head is regime-robust* — one scale across all three built regimes, the propert
 the adopted checkpoint was selected for — which is what makes a node-regime read
 of old stock comparable with everything else in the pool.
 
+**"Regime-robust" is a within-tolerance claim, not identity, and the 2026-08-25
+amendment is what that costs.** Re-reading the 28,072 regime-less rows at the node
+regime instead of the 640x360 ss2 they were scored at moved **12.2% of them by
+more than 0.02 on `P(>=4)`** — 42.5% on `P(>=3)` — and **956 of them fell under
+the junk floor** while 330 rose over it, out of 28,576 admitted before the pass and
+27,950 after. The engine is not the cause: the same pass re-rendered 20,985 cached
+node views under one build and found a maximum |ΔP(≥4)| of 8.6e-07, and the 39,514
+gate renders were bit-exact. The geometry is. So the two regimes are near enough to
+rank one pool and not near enough to be one reading, and the rule that follows is
+the operational one: **all seating reads one regime now, and nothing reads across.**
+A number carried from a 640x360 read is amended before it is compared, never
+compared as it stands.
+
 **What the leg cost, measured.** 2026-08-22, RTX 2060 SUPER, hot tier: 22,630
 never-scored rows of those three ledgers in **3,363 s over twelve 2,000-row
 chunks**, one chunk a checkpoint, **0.149 s/row realized** against a 200-row

@@ -20,6 +20,7 @@ from fractal_wallpapers.curation import manufacture as manufacture_module
 from fractal_wallpapers.labeling import sheets as sheets_module
 from fractal_wallpapers.labeling.finished import HEADS as FINISHED_HEADS
 from fractal_wallpapers.palettes import clusters as palette_clusters
+from fractal_wallpapers.palettes import groups as palette_groups
 from fractal_wallpapers.palettes import strip as palette_strip
 from fractal_wallpapers.paths import (
     StorageRefusal,
@@ -1974,6 +1975,30 @@ def palettes_clusters(args: argparse.Namespace) -> int:
         print(refusal)
         return 1
     print(json.dumps(report, indent=2))
+    return 0
+
+
+def palettes_groups(args: argparse.Namespace) -> int:
+    """Recompute which maps are near enough to be one choice, and rewrite the table."""
+    try:
+        report = palette_groups.run(cut=args.cut, log=None if args.quiet else print)
+    except palette_groups.GroupError as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps(report, indent=2))
+    return 0
+
+
+def palettes_reference_fields(args: argparse.Namespace) -> int:
+    """Dump the three fields every palette sheet is rendered on."""
+    from fractal_wallpapers.palettes import reference_fields
+
+    try:
+        report = reference_fields.run(force=args.force)
+    except reference_fields.ReferenceFieldError as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps(report, indent=2, ensure_ascii=False))
     return 0
 
 
@@ -4751,17 +4776,19 @@ def library_commands(subcommands) -> None:
     """The colormap library itself: where its maps came from, how they group, what they look like.
 
     Kept apart from `palette`, which is the *head* that chooses between maps.
-    These three are about the maps: nothing here loads a model and nothing here
-    reads a label.
+    These are about the maps: nothing here loads a model, and the one that reads a
+    label reads it only to decide which of two identical maps a record names.
     """
     group = subcommands.add_parser(
         "palettes",
-        help="the colormap library: ingest, provenance, clusters, and a map's gradient as a strip",
+        help="the colormap library: ingest, provenance, clusters, groups, and a map's gradient",
         description=(
             "The maps themselves, not the head that picks between them. `ingest` densifies "
             "a drop of authored palettes into the library, `provenance` rebuilds the record "
-            "of how the made maps were made, `clusters` regroups the library, and `strip` "
-            "draws one map's gradient the way a render spends it."
+            "of how the made maps were made, `clusters` regroups the library into sixteen "
+            "families, `groups` says which maps are near enough to be one choice, "
+            "`reference-fields` remakes the pictures a palette sheet is judged on, and "
+            "`strip` draws one map's gradient the way a render spends it."
         ),
     )
     steps = group.add_subparsers(dest="step", required=True)
@@ -4815,6 +4842,46 @@ def library_commands(subcommands) -> None:
         help=f"how many groups to cut the tree into (default: {palette_clusters.CLUSTERS})",
     )
     grouping.set_defaults(handler=palettes_clusters)
+
+    collapsing = steps.add_parser(
+        "groups",
+        help="recompute which maps are near enough to be one choice",
+        description=(
+            "Average linkage over M1 — the sliced Wasserstein distance between two maps' "
+            "hue-weighted Oklab clouds, read through the engine's own bake — cut where a "
+            "forty-six pair calibration sheet marked by eye says the line is. Writes the "
+            "tracked table the drawable pool collapses through. A pure function of the "
+            "library, which is what lets a test hold the committed file to this command."
+        ),
+    )
+    collapsing.add_argument(
+        "--cut",
+        type=float,
+        default=palette_groups.CUT,
+        help=(
+            f"the linkage height maps stop being one choice at (default: {palette_groups.CUT}, "
+            "the only cut every mark on the calibration sheet agrees with)"
+        ),
+    )
+    collapsing.add_argument(
+        "--quiet", action="store_true", help="do not print the metric's progress"
+    )
+    collapsing.set_defaults(handler=palettes_groups)
+
+    pinning = steps.add_parser(
+        "reference-fields",
+        help="dump the three fields every palette sheet is rendered on",
+        description=(
+            "Three released gallery3 locations — one coloured once, one the ramp sweeps "
+            "across several times, one a parameter plane — remade from their tracked specs "
+            "into artifacts/. The spec is what the repository keeps; the field is a "
+            "megabyte of floats and is regenerated rather than committed."
+        ),
+    )
+    pinning.add_argument(
+        "--force", action="store_true", help="re-dump a field that is already on disk"
+    )
+    pinning.set_defaults(handler=palettes_reference_fields)
 
     drawing = steps.add_parser(
         "strip",

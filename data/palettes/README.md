@@ -50,6 +50,101 @@ So **this repository ships dense sRGB8 and nothing else**: no OKLCH source, no
 generator state, no baked table. The table is regenerated from these stops on
 every load, which is what keeps one answer to "what colour is this map at 0.4".
 
+## Which maps are the same choice: `groups.jsonl`
+
+Nine hundred maps are not nine hundred choices. `groups.jsonl` says which of them
+are near enough that picking between them is picking nothing — **65 groups over
+143 of the 901 maps, the largest holding 6** — and
+`fractal-wallpapers palettes groups` regenerates it. The metric is M1: the sliced
+Wasserstein-1 distance between two maps' 4096-position **unfolded** Oklab clouds
+read through the engine's own bake, with `a` and `b` scaled by 4 so a hue
+difference counts four times a lightness difference of the same size. Average
+linkage, cut at **0.039735** — the midpoint between the widest pair marked SAME
+and the nearest pair marked DIFFERENT on a forty-six pair calibration sheet ruled
+by eye on 2026-08-25, which the marks leave with no inversions. Every merge in the
+file was reviewed one at a time.
+
+**The pool collapses through it at read time.** `curation.colorize.pool` keeps one
+member per group and stands the rest down — **drawn at random on the run's seed,
+not the canonical member**, because the members are indistinguishable and none of
+them deserves the slot permanently. Singletons are untouched, nothing is deleted
+from this directory, and the run record's `config.palette_pool` names the group
+every absent map stood down for. `FRACTAL_WALLPAPERS_PALETTE_GROUPS=off` turns it
+off for one run. A group's `canonical` member — the one carrying the most
+finished-render label rows — is what a record or a figure *names*; it is
+deliberately not what the pool draws.
+
+The table is worth about a slot in twenty: over gallery3's 150 recorded candidate
+neighbourhoods, **97 held two or more members of one group** and the collapse
+would have freed **199 of the 4,800 candidate places**.
+
+## What a palette sheet is judged on: `reference_fields.jsonl`
+
+A sheet asking "do these two maps look alike" has to show them on something, and
+two sheets rendered through two different fields are two instruments. Three fields
+are pinned here — one coloured once, one the ramp sweeps across several times, one
+a parameter plane — each the released `gallery3` location whose stretched field
+carries the highest 64-bin gradient entropy in its class, with the three
+constrained to three different modes so no coloring speaks twice.
+
+**The spec is tracked and the dump is not.** A `.f32` field is a megabyte of
+little-endian floats, which the history guard keeps out and which
+`fractal-wallpapers palettes reference-fields` remakes into
+`artifacts/palettes/reference_fields/` from the twelve numbers in the record. That
+split is the fix for how these three nearly died: they lived only in a session
+scratchpad through three audit passes, and a cleanup of that directory would have
+taken the calibration sheet's instrument with it. The regenerated dumps were
+checked byte-for-byte against the surviving copies.
+
+## A hue family is twelve 30° spokes, and a spoke is never a category
+
+`codebook.rollup` folds the 52 swatches onto the twelve `HUES` spokes plus
+`neutral`. That is the only colour *family* level this repository has, and it is
+30° wide — so a hue band that drifts across a spoke midpoint reads as a family
+flip when nothing about the picture flipped. Two maps whose pink runs 335–340° and
+340–348° come out one all-`rose` and one all-`magenta`, a full categorical
+difference from eight degrees.
+
+**It is not an edge case.** Reading each map's family *mass* over its cloud and
+calling a family "present" above a soft 2–8% ramp, **473 of the 901 maps sit on at
+least one soft edge** — azure 111, yellow 98, orange 94, cyan 92, rose 90, teal 85,
+red 72, magenta 69, blue 68, lime 64, green 64, purple 61 — with a mean neutral
+mass of 25%. So a rollup is a *reading*, useful for a thin table somebody has to
+rule from, and anything that treats a family as a category needs a wheel-aware
+term rather than a per-family difference. A family-presence gate built on `|Δp|`
+was tried over M1 and rejected: it closed 98.8% of all pairs and, on the
+calibration sheet, separated the pair Matt marked SAME while rescuing nothing.
+
+## A sheet's JPEG settings are part of its recipe
+
+A comparison sheet is an instrument, and its encoder is one of its settings. The
+page the groups cut was ruled on was written at **quality 70, 4:2:0**, and nothing
+said so: the pass that extended it had to recover those numbers by re-encoding the
+page's own pictures and finding where the round trip bottomed out, then match them
+— because a page whose new thumbnails are sharper than its old ones cannot be
+judged by eye. Raw comparison
+read a mean channel difference of 9–15 before the codec was accounted for and 4.36
+after, against the codec's own floor of 11.31 on that content. Record the quality
+and the subsampling beside the pictures; a re-render at another quality is a second
+instrument, not a refresh.
+
+## The ramp as it was actually applied
+
+`palettes.strip` draws a map through the engine's bake, so a strip is the gradient
+the render spent — but on a **levelled** picture the render did not spend the
+tracked map. The autolevel operator writes the map it actually used, under the
+map's own name, into `<run>/release/<stem>.leveled/`, so:
+
+```
+strip.draw(name, out, colormap_dir=Path(run) / "release" / f"{stem}.leveled")
+```
+
+draws the ramp **as applied to that picture**, and the same call without the
+directory draws the library's. The two differ wherever the operator acted, which
+on the reference fields was 551, 546 and 622 of 901 maps — so a figure pairing a
+levelled wallpaper with its library ramp is showing two different gradients and
+captioning them as one.
+
 ## Where the made maps came from: `provenance.jsonl`
 
 Two groups of maps here were *made* rather than converted, and what made them is
