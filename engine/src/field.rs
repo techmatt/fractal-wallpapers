@@ -622,8 +622,12 @@ fn gather<T: Copy + Send>(
 /// so the union of a composite's fields is the texture's own single channel. Two
 /// channels at once is reachable only from a hand-written coloring or a
 /// multi-field dump, and that is what [`Many`](Channels::Many) is for.
+///
+/// **Public because [`sweep_row`] is.** A consumer outside this crate that asks
+/// for the specialized loop has to be able to say which channel set it is asking
+/// for, and [`of`](Channels::of) is how it finds out.
 #[derive(Clone, Copy, Debug, PartialEq)]
-enum Channels {
+pub enum Channels {
     /// The escape and nothing else: the smooth count, the discrete count, the
     /// escape angle. The cheapest loop there is, and the one the specialization
     /// is worth the most on.
@@ -653,7 +657,7 @@ impl Channels {
     /// the whole specialization, so it is checked here rather than reasoned
     /// about: a set whose rebuild is not equal to it is `Many` and takes the
     /// generic loop.
-    fn of(wants: Wants) -> Channels {
+    pub fn of(wants: Wants) -> Channels {
         let single = if let Some(density) = wants.stripe {
             Channels::Stripe(density)
         } else if wants.tia {
@@ -776,7 +780,17 @@ pub fn takes_the_specialized_loop(family: &Family, fields: &[FieldSpec]) -> bool
 ///
 /// A pass outside the table falls through to the generic loop, which is the same
 /// source and the same numbers, slower. Nothing production draws lands there.
-fn sweep_row(
+///
+/// **Public, and the reason is the browser.** The site's wasm module draws a
+/// *band* of rows at a time, one band per worker, so it cannot reach the table
+/// through [`sample`]; while this was private it carried a hand-written copy of
+/// the escape loop instead, and a second copy of the recurrence that nothing
+/// holds to this one is how a page comes to quietly disagree with a render.
+/// Visibility is the whole of what that consumer needs: coordinates are formed
+/// from the **whole** viewport with a global row index, which is exactly what a
+/// band wants, and a row appends to `lanes` rather than filling them, so a caller
+/// may sweep any range of rows into one buffer.
+pub fn sweep_row(
     view: &Viewport,
     family: &Family,
     maxiter: u32,
