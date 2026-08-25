@@ -156,7 +156,8 @@ withdrawn location is invisible to the picker and to the attempt leg at once.
 
 **The draw is `gain = distance x location P(>=4) ** gamma`,** where `distance` is
 cosine distance to the *nearest* already-chosen point. The first pick of a
-partition is its strongest location, with nothing to be far from. `--radius`
+partition is **drawn** from its top `--draw-top-k` (25) by that same
+`quality ** gamma`, with nothing to be far from. `--radius`
 (0.07) is a hard constraint under all of it: nothing that close to a chosen point
 may be chosen, whatever its quality. `--quality-weight` is `gamma` and defaults to
 **1** — a plain product, so a location half as far and twice as good is worth the
@@ -177,15 +178,27 @@ killed pass leaves on disk blocks nothing: the hold dies with the process howeve
 it dies, and the resume that follows takes the id straight back. Delete the file
 only if you enjoy deleting files; nothing reads it.
 
-**The draw takes no seed, and re-choosing the same population re-chooses the same
-points.** The first pick of a partition is `argmax` over quality and every pick
-after it is `argmax` over the gain, so a pass at N=150 over the current pool
-re-chose **all 100** of gallery2's points and 142 of gallery3's 150 — the
+**The FIRST pick is seeded; everything after it is the arithmetic.** The draw
+used to take `argmax` over quality for the first pick and `argmax` over the gain
+for every pick after, and with no seed anywhere a pass at N=150 over the current
+pool re-chose **all 100** of gallery2's points and 142 of gallery3's 150 — the
 difference being gallery3's re-seats, not the draw. That is the whole explanation
-for the 98 of gallery3's 150 chosen points that gallery2 had already chosen: it
-is the deterministic prefix, not the pool's geometry. A pass over an unchanged
-pool is a longer prefix of the pass before it. `--seed` is real but reaches only
-the palette anchors and the mode draws in step 5.
+for the 98 of gallery3's 150 chosen points that gallery2 had already chosen: the
+deterministic prefix, not the pool's geometry. So the first pick of each
+partition is now drawn uniformly from its top `--draw-top-k` (25), and because
+every distance the draw measures is measured against what is already chosen, one
+different start moves the whole partition. `--draw-top-k 1` is the old argmax
+exactly.
+
+`--draw-seed` is the **root**, and absent it is *drawn and recorded* rather than
+defaulted, because a default is how every pass over an unchanged pool comes out
+the same pass again. Each partition derives its own seed off the root and the
+record carries the **resolved integer** for the root and for every partition —
+`config.draw_seed` and `plan.selection.<partition>.draw_seed` — so re-running one
+partition's draw needs no re-derivation. Re-running the pass needs
+`--draw-seed <the number the pass printed>`. `--seed` is the other seed and they
+are not interchangeable: that one reaches the palette anchors and the mode draws
+in step 5, and it is on every pass record already.
 
 Both numbers are by eye, and every pass prints the instrument that calibrates
 them: a **retro table** of the nearest chosen pairs, per partition and overall,
@@ -244,9 +257,10 @@ log resumes on and what the palette anchor is drawn on — so a killed pass resu
 every attempt back onto its own picture. The 31 palette candidates that lost are
 deleted after the verdict — the row keeps the whole candidate set by name and the head's score for
 each, which is what a later reader needs. `--no-attempts` skips the leg and is a
-**dev affordance only**: without it the pass is bound to whatever fraction of the
-admitted population some run happened to colour, which today is 475 locations out
-of 24,843.
+**dev affordance only**: candidates are per-pass, so a pass with no attempt leg
+has nothing at all to seat and every slot comes back unfilled. What it still takes
+whole is the selection — the slots, the head split, the point draw, the retro
+table and the two embedding sheets — for the price of no render.
 
 **Step 5a: the pass decides where a location is framed before it colours it, and
 it is ON.** A walk stops on a frame because the gates let it through and the head
@@ -421,10 +435,21 @@ its passed-over rows into the tracked store, and that is not an inconsistency �
 a run's population is one night that will not exist again, and a pass's is the
 accumulated pool, which is still there.
 
-**A later pass reads both stores.** `gallery.pool_candidates` reads the release
-store *and* every earlier pass's attempt store, because an earlier pass's
-thousand-odd attempts are standing coloured judged candidates and are the largest
-single block of material a second pass can seat without rendering anything.
+**Locations are cumulative, candidates are per-pass.** A later pass selects
+locations over everything the pool has ever admitted, and seats only the recolours
+it took itself: `gallery.pool_candidates` keeps a pool row only where the row's
+maker is this pass, which in the normal path is none of them. gallery3 seated 66
+of its 150 slots on standing rows and in 59 of those the standing row merely
+outranked the pass's own best at the same place — the pass had made something
+there every time. With a deterministic draw putting 98 of its 150 points where
+gallery2 had already looked, seating another pass's recolours was running half the
+draws and calling the older half free.
+
+**`gallery.pool_rows` stays outside that rule and reads both stores** — the
+release store *and* every earlier pass's attempt store — because the
+`below_floor` sheet is answered out of it. Its claim is about the material a
+slot's neighbourhoods did **not** reach, so it needs the whole pool; the predicate
+lives in `pool_candidates` and not at that call site for exactly that reason.
 
 **`curate gallery` refuses the pre-split layout** — a tracked gate directory under
 the pass id, or a passed-over release row in the history — before it spends
