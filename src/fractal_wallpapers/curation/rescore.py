@@ -66,27 +66,21 @@ class RescoreError(RuntimeError):
     """The pool cannot be read, or cannot be scored."""
 
 
-def picture_of(row: dict, pool: dict | None = None):
-    """The candidate render one release row was decided on.
+def origin_of(row: dict, pool: dict | None = None) -> tuple[str, str]:
+    """`(run, candidate)` of the ONE picture a pool row is about. THE identity.
 
-    Off the run and the candidate id rather than off `row["picture"]`, which is
-    the release PNG on a released row, the candidate JPEG on a passed-over one
-    and `None` on a killed one. One geometry for every row or the readings are
-    not comparable.
+    A pool row is not the same thing as a picture. A gallery pass records its own
+    decision about a candidate an earlier run — or an earlier pass — made, under
+    its own pass id and its own candidate id, and `source` names the row it
+    decided over. Two rows, two decisions, one render; this says which render.
 
-    **`source` wins where a row has one, and it is followed all the way down.** A
-    gallery pass records its own decision about a candidate an earlier run made,
-    under its own pass id and its own candidate id — two decisions about one
-    picture — and the picture is still the earlier run's. A row with no `source`
-    is every row written before passes existed, and its candidate is its own.
-
-    A **pass over a pass** makes that chain two links long, and following only the
-    first one resolves to a render nobody ever made. One row in the pool is
-    already like this — a gallery2 seat of a gallery1 seat of a run9 candidate —
-    and a single hop lands on `gallery1/pictures/run9_0008.jpg`, which has never
-    existed, while the picture sits in `run9/pictures/0008.jpg`. So `pool` is
-    threaded in and the chain is walked to its end; without it the walk is one
-    hop, which is what every caller before passes-over-passes needed.
+    **The chain is followed all the way down**, which is why `pool` is threaded
+    in. A pass over a pass makes it two links long — a gallery2 seat of a
+    gallery1 seat of a run9 candidate is on record — and stopping at the first
+    link resolves to `gallery1_run9_0008`, an id nothing ever made a picture of.
+    Without `pool` the walk is one hop, which is what every caller before
+    passes-over-passes needed. A row with no `source` at all is every row written
+    before passes existed, and its candidate is its own.
     """
     seen: set[str] = set()
     while True:
@@ -98,8 +92,26 @@ def picture_of(row: dict, pool: dict | None = None):
         seen.add(key)
         row = nxt
     source = row.get("source") or {}
-    run = str(source.get("run") or row["run"])
-    candidate = str(source.get("candidate") or row["candidate"])
+    return (
+        str(source.get("run") or row["run"]),
+        str(source.get("candidate") or row["candidate"]),
+    )
+
+
+def picture_of(row: dict, pool: dict | None = None):
+    """The candidate render one release row was decided on.
+
+    Off the run and the candidate id rather than off `row["picture"]`, which is
+    the release PNG on a released row, the candidate JPEG on a passed-over one
+    and `None` on a killed one. One geometry for every row or the readings are
+    not comparable.
+
+    Which run and which candidate is [`origin_of`], because the question "whose
+    picture is this" is asked in two places now — here, and by the gallery pass
+    deduping its pool — and two answers to it is the bug that put ninety pictures
+    in one pass's pool twice.
+    """
+    run, candidate = origin_of(row, pool)
     return run_module.run_dir(run) / PICTURES / f"{candidate}.jpg"
 
 
@@ -323,6 +335,7 @@ __all__ = [
     "PICTURES",
     "RescoreError",
     "block",
+    "origin_of",
     "picture_of",
     "run",
     "scoring_artifact",

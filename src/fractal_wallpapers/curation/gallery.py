@@ -147,6 +147,7 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from fractal_wallpapers import process_control
 from fractal_wallpapers.curation import budget as budget_module
 from fractal_wallpapers.curation import (
     colorize,
@@ -267,6 +268,47 @@ def pass_dir(pass_id: str) -> Path:
     re-score refuses to read.
     """
     return run_module.run_dir(pass_id)
+
+
+#: What a pass's launch lock is called inside its own directory. The directory is
+#: under `artifacts/`, so the file is ignored and regenerable like everything else
+#: a pass leaves there.
+LOCK_NAME = "pass.lock"
+
+
+def claim_pass(pass_id: str, log=print) -> int:
+    """Take the pass id for this process, or refuse. The handle, for `let_go`.
+
+    **One launch per pass id.** Everything a pass makes is named by where it sits
+    in the work rather than by which process made it — [`curation.framing.screen`]
+    has the engine write `frame<i>.jpg` by position in its own batch and renames
+    each one afterwards — so two launches of one pass id do not race for a
+    resource, they *rename each other's files*. gallery3 was started twice by
+    hand, and both processes ran several minutes and then died on a
+    `FileNotFoundError` at a rename, which is as far from a legible collision as a
+    failure gets.
+
+    The lock is an operating-system hold on the file rather than the file's
+    existence ([`process_control.hold`]), because a pass's normal shape is to be
+    interrupted and resumed — gallery3 resumed three times — and a lock a killed
+    process leaves behind must not be the thing that stops the resume. The hold
+    dies with the process whatever kills it; the file it was taken on is takeable
+    the moment nobody is inside.
+    """
+    directory = pass_dir(pass_id)
+    directory.mkdir(parents=True, exist_ok=True)
+    lock = directory / LOCK_NAME
+    held = process_control.hold(lock)
+    if held is None:
+        raise PassRefused(
+            f"another process is already running the pass {pass_id} ({lock} is held). Two "
+            f"launches of one pass id write into one framings/ directory, where the frames "
+            f"are named by position in a batch and renamed afterwards, so each process "
+            f"renames the other's files and both die minutes later on a rename that finds "
+            f"nothing. Wait for it, or run a different pass id."
+        )
+    log(f"[pass] {pass_id} claimed; no second launch of it can start while this one runs")
+    return held
 
 
 def record_dir() -> Path:
@@ -1326,7 +1368,28 @@ def _picked(rows: list, directory: Path) -> set:
     return kept
 
 
-def candidate_of_pool_row(row: dict) -> dict:
+def picture_id(row: dict, pool: dict | None = None) -> str:
+    """The id of the PICTURE a pool row is about, `<run>_<candidate>`.
+
+    Not the id of the row. A gallery pass re-records a candidate it seated out of
+    the standing pool under its own pass id, so one render can arrive on three
+    rows — the run that made it, the pass that shipped it, and the pass that
+    shipped it again — and a pool keyed by row is a pool holding that render three
+    times. `<run>_<candidate>` off [`rescore.origin_of`], which is the same walk
+    down `source` that resolves a row to the render on disk, because "whose
+    picture is this" has to have exactly one answer.
+
+    `pool` is every row the caller can see, keyed by `key`, and it is what makes
+    the walk more than one hop. Without it a row two passes deep resolves to the
+    intermediate rather than to the picture — which is how the compounding hid.
+    """
+    from fractal_wallpapers.curation import rescore
+
+    run, candidate = rescore.origin_of(row, pool)
+    return f"{run}_{candidate}"
+
+
+def candidate_of_pool_row(row: dict, pool: dict | None = None) -> dict:
     """A persisted release record as the flat candidate row the pass compares.
 
     THE row-shape adapter. A run's candidate is a flat dict — the shape
@@ -1339,6 +1402,13 @@ def candidate_of_pool_row(row: dict) -> dict:
     live head's reading of the same picture, and a pass that ranked run2's
     three-class numbers against run10's four-class ones would be ordering the
     gallery by which artifact happened to score each row.
+
+    `candidate` is the **picture's** id ([`picture_id`]) and not the row's, which
+    is what stops the name growing a level per pass: this id is what a seat is
+    stamped with, so a re-stamp of a re-stamp resolves back to the same render
+    rather than reading as a new one. `source` stays the row this was read from —
+    the link, not the destination — because that is what [`rescore.origin_of`]
+    walks and what a reader joining a pass to what it decided over needs.
     """
     location = row.get("location") or {}
     recipe = row.get("recipe") or {}
@@ -1346,7 +1416,7 @@ def candidate_of_pool_row(row: dict) -> dict:
     read = row.get("scores_current") or row.get("scores") or {}
     return {
         "attempt": None,
-        "candidate": f"{row['run']}_{row['candidate']}",
+        "candidate": picture_id(row, pool),
         "source": {"run": row["run"], "candidate": row["candidate"], "key": row["key"]},
         "head": read.get("head") or (row.get("scores") or {}).get("head"),
         "partition": location.get("partition"),
@@ -1654,30 +1724,52 @@ def pool_candidates(slots: list, pass_id: str, rows: list | None = None) -> list
 
 
 def pool_rows(pass_id: str) -> list[dict]:
-    """Every seatable candidate in the accumulated pool, whatever location it stands on.
+    """Every seatable candidate in the accumulated pool, one row per PICTURE.
 
     [`pool_candidates`] is this narrowed to the slots' neighbourhoods, and the two
     are split because the re-seat loop asks the question repeatedly — the
     neighbourhoods move every round, the pool does not — and because the
     `below_floor` sheet's whole claim is about the material a slot's
     neighbourhoods did **not** reach.
+
+    **Deduped on the picture and not on the row** ([`picture_id`]). One render
+    lands on as many rows as there are decisions about it: the run that made it,
+    the pass that seated it out of the pool, the pass that seated it again. Those
+    rows carry three different `<run>_<candidate>` names for one wallpaper, and a
+    pool keyed by name ranks the same picture two and three times and can seat it
+    into two slots. The whole store is indexed first so the walk down `source` has
+    every link it needs — a row two passes deep resolves to the picture only if
+    the row between them is in hand.
+
+    Where a picture arrives more than once the row kept is the one that **is** the
+    picture — the run's or the pass's own attempt — rather than a later pass's
+    re-stamp of it. Both carry the same scores, because a re-stamp copies the
+    reading it seated on; what only the original carries is its own candidate
+    render, which is what the `below_floor` sheet shows and what `rescore` reads.
     """
-    seen: set[str] = set()
-    out = []
-    for row in [*records.read_decisions(records.RELEASE), *gallery_store.read()]:
+    everything = [*records.read_decisions(records.RELEASE), *gallery_store.read()]
+    index = {str(row["key"]): row for row in everything}
+    at: dict[str, int] = {}
+    original: set[str] = set()
+    out: list[dict] = []
+    for row in everything:
         if row.get("run") == pass_id or records.is_rejected(row):
             continue
-        candidate = candidate_of_pool_row(row)
+        candidate = candidate_of_pool_row(row, index)
         if candidate.get("p_ge3") is None or candidate.get("head") not in budget_module.KINDS:
             continue
-        # An earlier pass's winner is in both stores — once as the attempt that
-        # was made and once as the seat it took — and the two rows carry the same
-        # `<run>_<candidate>` identity, so the second one read is the same
-        # picture arriving twice into one ranked pool.
-        if candidate["candidate"] in seen:
-            continue
-        seen.add(candidate["candidate"])
-        out.append(candidate)
+        identity = str(candidate["candidate"])
+        # A row IS the picture when its own `<run>_<candidate>` name is the id the
+        # walk resolved to; anything else is a later pass's re-stamp of it.
+        itself = f"{row['run']}_{row['candidate']}" == identity
+        seen = at.get(identity)
+        if seen is None:
+            at[identity] = len(out)
+            out.append(candidate)
+        elif itself and identity not in original:
+            out[seen] = candidate
+        if itself:
+            original.add(identity)
     return out
 
 
@@ -1872,10 +1964,12 @@ def write_records(pass_id, slots, attempts, guaranteed, log=print) -> dict:
     should derive a reservation from.
 
     A seated row that came out of an **earlier run** is written again here, under
-    this pass's own candidate id, with `source` naming the row it was seated from.
-    That is not a duplicate: the earlier row records a run deciding what to keep,
-    and this one records the gallery pass deciding what to ship — two decisions
-    about one picture, taken by two passes out of two populations.
+    the picture's own id ([`picture_id`]) and this pass's `run`, with `source`
+    naming the row it was seated from. That is not a duplicate: the earlier row
+    records a run deciding what to keep, and this one records the gallery pass
+    deciding what to ship — two decisions about one picture, taken by two passes
+    out of two populations. The id does not grow a level per pass, which is what
+    lets the next pass read all three rows back as one wallpaper.
     """
     seated = {str(slot.seated["candidate"]): slot for slot in slots if slot.seated is not None}
     owed = set(guaranteed)
@@ -1982,6 +2076,14 @@ def _release_row(pass_id, candidate, slot, first_of, owed) -> dict:
     [`records.PASSED_OVER`] is a run's verdict, written over a night's population
     that will not exist again, and a pass writing one per losing attempt was
     recording the same rows a second time in the history.
+
+    **The `candidate` this stamps is the picture's id**, never the id of the row
+    the seat was read off ([`picture_id`]). The two used to be the same thing and
+    the difference is a level of prefix per pass: a pass that stamped what it read
+    turned `gallery2_0110` into `gallery3_gallery2_0110`, the pass after it into
+    `gallery4_gallery3_gallery2_0110`, and each of those names read back as a
+    picture of its own. `run` says which pass took the decision and `source` says
+    which row it took it over, so nothing is lost by the id not repeating them.
     """
     picture = candidate.get("release_picture")
     if picture:
@@ -2711,6 +2813,13 @@ def run(
 ) -> dict:
     """One gallery pass, end to end. Returns the pass's own record.
 
+    **Takes the pass id first** ([`claim_pass`]), because two launches of one pass
+    id share one `framings/` directory and the collision is silent for minutes.
+    [`curation.framing.screen`] has the engine name each frame by its position in
+    the batch and renames it afterwards, so two processes rename each other's
+    files and both die on a missing one, several minutes in, with a log that reads
+    like one pass behaving strangely.
+
     `no_attempts` skips step 5 and seats out of the standing pool alone. It is a
     **dev affordance** and never the default: without the attempt leg the pass is
     supply-bound on the fraction of the admitted population any run has happened
@@ -2723,10 +2832,52 @@ def run(
     by `margin` ([`curation.framing`]). `refine=False` is the pass this repository
     took before the step existed, exactly — same plan, same seed, same attempts.
     """
+    pass_id = str(pass_id or next_pass_id())
+    held = claim_pass(pass_id, log)
+    try:
+        return _take(
+            pass_id,
+            n=n,
+            radius=radius,
+            quality_weight=quality_weight,
+            strange_share=strange_share,
+            attempts=attempts,
+            reseat=reseat,
+            no_attempts=no_attempts,
+            full_size=full_size,
+            refine=refine,
+            margin=margin,
+            seed=seed,
+            workers=workers,
+            device=device,
+            log=log,
+        )
+    finally:
+        process_control.let_go(held)
+
+
+def _take(
+    pass_id: str,
+    *,
+    n: int,
+    radius: float,
+    quality_weight: float,
+    strange_share: float | None,
+    attempts,
+    reseat: int,
+    no_attempts: bool,
+    full_size: bool,
+    refine: bool,
+    margin: float,
+    seed: int,
+    workers: int,
+    device: str,
+    log,
+) -> dict:
+    """The pass itself, inside the claim [`run`] took."""
     started = time.monotonic()
     share = run_module.STRANGE_SHARE if strange_share is None else float(strange_share)
     m, smooth, strange = parse_attempts(attempts)
-    pass_id = str(pass_id or next_pass_id())
     # Before anything is spent and before a row is written. A pass run over the
     # pre-split layout would upsert its winners into a release directory still
     # holding every attempt the old code passed over, and the store would come
@@ -3154,12 +3305,14 @@ __all__ = [
     "Bench",
     "Choice",
     "Draw",
+    "LOCK_NAME",
     "PassRefused",
     "Slot",
     "Try",
     "attempt_plan",
     "best_unchosen",
     "below_floor_sheet",
+    "claim_pass",
     "candidate_of_attempt",
     "candidate_of_pool_row",
     "candidate_picture",
@@ -3177,6 +3330,7 @@ __all__ = [
     "parse_attempts",
     "partition_index",
     "pass_dir",
+    "picture_id",
     "passes",
     "plan_slots",
     "pool_candidates",

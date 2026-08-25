@@ -138,4 +138,61 @@ def bind_children_to_parent() -> str:
     return "job:kill-on-close"
 
 
-__all__ = ["IS_WINDOWS", "bind_children_to_parent", "set_background_priority"]
+def hold(path) -> int | None:
+    """Take `path` exclusively until this process ends. The file handle, or `None`.
+
+    A **launch lock** for a leg two of which must not be in one directory at once.
+    `None` means somebody else is already inside; the caller decides what to say
+    about that.
+
+    The lock is the open handle and not the file, which is the whole reason this
+    exists beside [`models.train.claim`]. That one refuses whenever the lock file
+    is *present*, so a process killed with ctrl-c leaves a file that refuses every
+    later launch until a person deletes it — fine for a trainer, wrong for a leg
+    whose normal use is resuming after an interruption. Here the operating system
+    releases the handle when the process ends however it ends, so a lock left on
+    disk by a killed run is taken again by the next one and a stale lock cannot
+    exist. The file's *contents* are nothing, deliberately: anything written in it
+    would be a claim about a process that is usually no longer there.
+
+    The one platform branch: `LockFile` on Windows, `flock` on POSIX. Both are
+    held by the handle rather than by the process, so a second `hold` of the same
+    path inside one process refuses exactly as another process's would.
+    """
+    import os
+
+    handle = os.open(path, os.O_CREAT | os.O_RDWR)
+    try:
+        if IS_WINDOWS:
+            import msvcrt
+
+            # A byte range past the end of an empty file, which Windows allows and
+            # which is why nothing has to be written into it first.
+            msvcrt.locking(handle, msvcrt.LK_NBLCK, 1)
+        else:
+            import fcntl
+
+            fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        os.close(handle)
+        return None
+    return handle
+
+
+def let_go(handle: int | None) -> None:
+    """Release what [`hold`] took. Safe on `None`, so a caller's `finally` is one line."""
+    import os
+
+    if handle is None:
+        return
+    try:
+        if IS_WINDOWS:
+            import msvcrt
+
+            os.lseek(handle, 0, os.SEEK_SET)
+            msvcrt.locking(handle, msvcrt.LK_UNLCK, 1)
+    finally:
+        os.close(handle)
+
+
+__all__ = ["IS_WINDOWS", "bind_children_to_parent", "hold", "let_go", "set_background_priority"]

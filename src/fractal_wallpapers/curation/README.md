@@ -165,6 +165,28 @@ in the pool whatever the judge says. Not k-means, which follows density: this
 pool's density records where the walk spent its budget, so a neighbourhood
 somebody visited a thousand times would take a thousand times the slots.
 
+**One launch per pass id, enforced at the door.** A pass claims
+`artifacts/curation/runs/<pass>/pass.lock` before it reads anything, and a second
+launch of the same id refuses immediately and says so. This is not tidiness: the
+two launches would share one `framings/` directory, where the engine names each
+frame by its position in its own batch and the caller renames it afterwards — so
+each process renames the other's files and both die minutes later on a rename
+that finds nothing. gallery3's first launch did exactly that. The claim is an
+operating-system hold on the file rather than the file's existence, so a lock a
+killed pass leaves on disk blocks nothing: the hold dies with the process however
+it dies, and the resume that follows takes the id straight back. Delete the file
+only if you enjoy deleting files; nothing reads it.
+
+**The draw takes no seed, and re-choosing the same population re-chooses the same
+points.** The first pick of a partition is `argmax` over quality and every pick
+after it is `argmax` over the gain, so a pass at N=150 over the current pool
+re-chose **all 100** of gallery2's points and 142 of gallery3's 150 — the
+difference being gallery3's re-seats, not the draw. That is the whole explanation
+for the 98 of gallery3's 150 chosen points that gallery2 had already chosen: it
+is the deterministic prefix, not the pool's geometry. A pass over an unchanged
+pool is a longer prefix of the pass before it. `--seed` is real but reaches only
+the palette anchors and the mode draws in step 5.
+
 Both numbers are by eye, and every pass prints the instrument that calibrates
 them: a **retro table** of the nearest chosen pairs, per partition and overall,
 read off the points the pass *ended* on rather than the ones its first draw handed
@@ -327,6 +349,20 @@ that refused every place the last pass shipped could not re-choose its own
 gallery, and one that refused every place a run's diagnostic release sits on would
 hand the collection's best locations to the ten pictures a night kept to prove its
 path worked.
+
+**The pool is deduped on the picture, not on the row.** One render lands on as
+many rows as there are decisions about it: the run that made it, the pass that
+seated it out of the pool, the pass that seated it again. Each of those rows
+carries its own `<run>_<candidate>` name, so a pool keyed by name ranks the same
+wallpaper twice and can seat it into two slots. `gallery.picture_id` resolves a
+row to the render it is about by walking `source` all the way down —
+`rescore.origin_of`, the same walk that finds the picture on disk — and a seat is
+stamped with *that* id rather than with the id it was read under, which is what
+stops the name growing a level per pass. It used to: `gallery2_0110` became
+`gallery3_gallery2_0110` and would have become `gallery4_gallery3_gallery2_0110`,
+and on 2026-08-24 that had 90 of the pool's 8,313 seatable rows standing for 87
+pictures, three of them present three times. The rows on record are not rewritten
+— a decision is a decision — the reader resolves them.
 
 **The pass's pictures live in the run tree** (`artifacts/curation/runs/<pass>/`),
 deliberately: `curation.rescore` finds any pool row's candidate render at
