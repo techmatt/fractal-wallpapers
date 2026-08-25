@@ -105,6 +105,14 @@ normalizes against its own 0.5th and 99.5th percentiles, so the outer half perce
 of a strip's width is the end colour held flat; that is the same clip every render
 gets and it cannot be compensated for, because the stretch is affine-invariant.
 
+`--colormap-dir` (`strip.draw(..., colormap_dir=...)`) is what draws the ramp a
+*particular picture* was rendered through rather than the map as shipped. When the
+autolevel operator acts it writes its overriding stops to
+`<run>/release/<stem>.leveled/<colormap>.json`, one directory beside the picture;
+pointing `strip` at that directory and passing the recipe's own `mirror` gives the
+gradient as applied. Pointing it at `data/palettes` instead gives a different
+gradient, and on a levelled picture that is the wrong one.
+
 The same wiring reaches `recolor`, which used to send no palette block at all and
 therefore baked every sequential map through its seam:
 
