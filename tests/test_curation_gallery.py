@@ -15,6 +15,7 @@ from pathlib import Path
 import numpy
 import pytest
 
+from fractal_wallpapers import process_control
 from fractal_wallpapers.curation import colorize as colorize_module
 from fractal_wallpapers.curation import (
     durability,
@@ -775,6 +776,236 @@ def test_a_later_pass_can_seat_what_an_earlier_pass_attempted(record_root) -> No
     }
     # Its own attempts are never read back: they are already in hand.
     assert gallery.pool_candidates([slot("0000", SMOOTH, ["a"])], "gallery1") == []
+
+
+# --------------------------------------------------------------------------- #
+# One picture, one id, however many passes have shipped it.
+# --------------------------------------------------------------------------- #
+def seated_on(number: int, standing: dict, head: str):
+    """One filled slot, seated on a candidate out of the STANDING pool.
+
+    [`seated_slot`]'s other half: that one seats the pass's own attempt, this one
+    seats a row some earlier run or pass already made and judged, which is the
+    case the candidate id has to survive.
+    """
+    filled = slot(f"{number:04d}", head, [str(standing["key"])])
+    filled.point_index = number
+    filled.seated = {
+        **standing,
+        "group": number,
+        "release_picture": f"release/{standing['candidate']}.png",
+    }
+    filled.record_try()
+    return filled
+
+
+def stamped(pass_id: str) -> list[str]:
+    """What one pass's release rows call the pictures they seated."""
+    return [row["candidate"] for row in records.read_decisions(records.RELEASE, pass_id)]
+
+
+def test_a_seat_of_a_seat_of_a_seat_is_still_one_picture_with_one_id(record_root) -> None:
+    """THE compounding pin. Three passes ship one wallpaper; the id does not grow.
+
+    Each pass re-stamps what it seated under its own `run`, and the id it stamps
+    used to be the id it had *read* — which already carried the previous pass's
+    prefix. Three passes turned `gallery1_0003` into
+    `gallery3_gallery2_gallery1_0003`, four different names for one render, and
+    the pool deduped on the name.
+    """
+    gallery.write_records(
+        "gallery1", [], [attempt(3, "a", SMOOTH)], ["mandelbrot"], lambda _l: None
+    )
+    for pass_id in ("gallery2", "gallery3", "gallery4"):
+        standing = gallery.pool_candidates([slot("0000", SMOOTH, ["a"])], pass_id)
+        # One row however many passes have shipped it, and the same id every time.
+        assert [row["candidate"] for row in standing] == ["gallery1_0003"]
+        gallery.write_records(
+            pass_id, [seated_on(0, standing[0], SMOOTH)], [], ["mandelbrot"], lambda _l: None
+        )
+        assert stamped(pass_id) == ["gallery1_0003"]
+    # And `run` is still what says which pass took each decision.
+    rows = records.read_decisions(records.RELEASE)
+    assert sorted(row["run"] for row in rows) == ["gallery2", "gallery3", "gallery4"]
+
+
+def pool_release(run: str, identifier: str, head: str, source: dict | None = None) -> None:
+    """One release row straight into the store, so a test can build a chain by hand."""
+    row = records.decision(
+        run=run,
+        stage=records.RELEASE,
+        candidate=identifier,
+        verdict=records.RELEASED,
+        row=candidate(identifier, "a", head, 0.9),
+        collection=records.GALLERY if source else records.DIAGNOSTIC,
+        picture=f"release/{identifier}.png",
+    )
+    if source is not None:
+        row["source"] = source
+    records.write_decisions(records.RELEASE, run, [row])
+
+
+def test_a_three_level_id_resolves_to_the_same_picture_as_its_base_row(record_root) -> None:
+    """The shape already on record, read back as one wallpaper rather than four.
+
+    A gallery3 seat of a gallery2 seat of a gallery1 seat of run9's candidate. Every
+    row is a real decision and every row stays; what the pass reads out of them is
+    one seatable picture, under the id of the render that actually exists.
+    """
+    pool_release("run9", "0008", SMOOTH)
+    pool_release(
+        "gallery1",
+        "run9_0008",
+        SMOOTH,
+        {"run": "run9", "candidate": "0008", "key": "run9|release|0008"},
+    )
+    pool_release(
+        "gallery2",
+        "gallery1_run9_0008",
+        SMOOTH,
+        {"run": "gallery1", "candidate": "run9_0008", "key": "gallery1|release|run9_0008"},
+    )
+    pool_release(
+        "gallery3",
+        "gallery2_gallery1_run9_0008",
+        SMOOTH,
+        {
+            "run": "gallery2",
+            "candidate": "gallery1_run9_0008",
+            "key": "gallery2|release|gallery1_run9_0008",
+        },
+    )
+    assert [row["candidate"] for row in gallery.pool_rows("gallery4")] == ["run9_0008"]
+    # The row kept is the one that IS the picture, not a later pass's re-stamp of
+    # it: only the original carries its own candidate render, which is what the
+    # `below_floor` sheet shows and what `rescore` reads.
+    assert gallery.pool_rows("gallery4")[0]["source"]["key"] == "run9|release|0008"
+
+
+def test_the_picture_id_of_a_row_with_no_source_is_its_own(record_root) -> None:
+    """Every row written before passes existed, and every gate row of every pass.
+
+    `source` cannot be the signal on its own — a run's rows do not carry one at
+    all — so the resolution has to fall through to the row's own name.
+    """
+    row = records.decision(
+        run="run9",
+        stage=records.RELEASE,
+        candidate="0008",
+        verdict=records.RELEASED,
+        row=candidate("0008", "a", SMOOTH, 0.9),
+        collection=records.DIAGNOSTIC,
+    )
+    row.pop("source", None)
+    assert gallery.picture_id(row) == "run9_0008"
+    assert gallery.picture_id(row, {row["key"]: row}) == "run9_0008"
+
+
+# --------------------------------------------------------------------------- #
+# One launch per pass id.
+# --------------------------------------------------------------------------- #
+@pytest.fixture
+def pass_tree(tmp_path, monkeypatch):
+    """A pass's own directory under `tmp_path`, which is where its lock lives."""
+    monkeypatch.setattr(gallery.run_module, "run_dir", lambda name: tmp_path / str(name))
+    return tmp_path
+
+
+def test_a_second_launch_of_one_pass_id_refuses_immediately(pass_tree) -> None:
+    """The failure this is about is silent for minutes, and the guard is one file.
+
+    Two launches of one pass id share one `framings/` directory, where the engine
+    names each frame by its position in its own batch and the caller renames it
+    afterwards — so the two processes rename each other's files and both die on a
+    `FileNotFoundError` at a rename, several minutes in. gallery3's first launch
+    did exactly this.
+    """
+    held = gallery.claim_pass("gallery9", lambda _line: None)
+    with pytest.raises(gallery.PassRefused, match="already running the pass gallery9"):
+        gallery.claim_pass("gallery9", lambda _line: None)
+    # A different pass id is a different directory and never blocked by this one.
+    process_control.let_go(gallery.claim_pass("gallery10", lambda _line: None))
+    process_control.let_go(held)
+    process_control.let_go(gallery.claim_pass("gallery9", lambda _line: None))
+
+
+def test_a_lock_left_on_disk_by_a_killed_pass_does_not_block_the_resume(pass_tree) -> None:
+    """THE reason this is not [`models.train.claim`]. A pass's normal shape is to
+    be interrupted and resumed — gallery3 resumed three times — so a guard that
+    refused on the lock file's *existence* would turn every ctrl-c into a pass
+    nobody can restart without knowing to delete a file."""
+    lock = gallery.pass_dir("gallery9") / gallery.LOCK_NAME
+    lock.parent.mkdir(parents=True, exist_ok=True)
+    lock.write_bytes(b"whatever a killed process left here")
+    process_control.let_go(gallery.claim_pass("gallery9", lambda _line: None))
+
+
+def test_a_pass_killed_outright_leaves_its_id_takeable(pass_tree) -> None:
+    """The same claim against a real process, killed rather than asked to stop.
+
+    In-process the release is a `finally`, which is the case that was never in
+    doubt. What has to hold is the case where nothing runs on the way out: the
+    hold is the operating system's, and it goes when the process does.
+    """
+    import subprocess
+    import sys
+    import time
+
+    lock = gallery.pass_dir("gallery9") / gallery.LOCK_NAME
+    lock.parent.mkdir(parents=True, exist_ok=True)
+    holder = subprocess.Popen(
+        [
+            sys.executable,
+            "-c",
+            "import sys, time\n"
+            "from fractal_wallpapers import process_control\n"
+            "held = process_control.hold(sys.argv[1])\n"
+            "print('held' if held is not None else 'refused', flush=True)\n"
+            "time.sleep(60)\n",
+            str(lock),
+        ],
+        stdout=subprocess.PIPE,
+        text=True,
+    )
+    try:
+        assert holder.stdout.readline().strip() == "held"
+        with pytest.raises(gallery.PassRefused):
+            gallery.claim_pass("gallery9", lambda _line: None)
+    finally:
+        holder.kill()
+        holder.wait(timeout=30)
+    # Windows can take a moment to tear the handle down after `TerminateProcess`.
+    for _ in range(50):
+        held = process_control.hold(lock)
+        if held is not None:
+            process_control.let_go(held)
+            return
+        time.sleep(0.1)
+    raise AssertionError(f"{lock} was still held after the process holding it was killed")
+
+
+def test_a_pass_takes_its_id_before_it_spends_anything_and_gives_it_back_after(
+    pass_tree, monkeypatch
+) -> None:
+    """The wiring, not the lock: `run` claims, and a `finally` releases.
+
+    The leg itself is stubbed out — what is pinned is that the claim wraps it, so
+    a second launch refuses at the door rather than after the embedding store has
+    been read and the first frames drawn.
+    """
+    inside = []
+
+    def leg(pass_id, **_rest):
+        inside.append(gallery.pass_dir(pass_id) / gallery.LOCK_NAME)
+        with pytest.raises(gallery.PassRefused, match="already running"):
+            gallery.claim_pass(pass_id, lambda _line: None)
+        return {"pass": pass_id}
+
+    monkeypatch.setattr(gallery, "_take", leg)
+    assert gallery.run(pass_id="gallery9", log=lambda _line: None) == {"pass": "gallery9"}
+    assert inside and inside[0].is_file()
+    # Given back, so the resume that follows an interrupted pass is not refused.
+    process_control.let_go(gallery.claim_pass("gallery9", lambda _line: None))
 
 
 def test_a_pass_refuses_to_run_against_the_layout_that_predates_the_split(record_root) -> None:
