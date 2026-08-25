@@ -253,3 +253,12 @@ because the two arms are two draws and a registration is what says how a
 population was drawn. The tier is not: both tiers are the same draw reaching
 further down one ranked list, so it rides on the row rather than splitting the
 registry four ways.
+
+**These rows are the durable half; the sheets that produced them are not.** The
+verdicts live in `data/<kind>/rows/` and the why lives here, both tracked. The
+cut sheets a manufacture pass serves — its `artifacts/<name>/` directories of
+pictures and `sheet.jsonl` — are working material and may be deleted once their
+verdicts are ingested and the cutter has been exercised on the shipped judge.
+Nothing in this repository holds them: no `Durable` names them, no manifest
+counts them, and no reader resolves through them. That is deliberate and it is
+the rule for every sheet directory, not a property of one drop.
