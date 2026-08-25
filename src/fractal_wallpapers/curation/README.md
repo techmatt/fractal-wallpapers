@@ -188,7 +188,10 @@ deterministic prefix, not the pool's geometry. So the first pick of each
 partition is now drawn uniformly from its top `--draw-top-k` (25), and because
 every distance the draw measures is measured against what is already chosen, one
 different start moves the whole partition. `--draw-top-k 1` is the old argmax
-exactly.
+exactly. Swept at gallery3's knobs, four seeds each: **K=1 re-chooses 142 of
+gallery3's 150 points, K=5 83–105, K=25 74–89, K=100 71–84** — and the freedom is
+not paid for in point quality, whose mean `P(>=4)` runs 0.9318 / 0.9354 / **0.9365**
+/ 0.9258 over the same four. K=100 is where it turns.
 
 `--draw-seed` is the **root**, and absent it is *drawn and recorded* rather than
 defaulted, because a default is how every pass over an unchanged pool comes out
