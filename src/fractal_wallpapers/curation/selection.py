@@ -87,13 +87,22 @@ from __future__ import annotations
 
 from fractal_wallpapers.curation import floors
 
-#: Why a slot the allocation planned was not seated, in the order the reasons are
-#: read. One slug per unfilled partition, chosen by the first cause that applies
-#: — the counts beside it in the fill record carry the rest, so nothing is lost
-#: by naming only the binding one.
+#: Why a slot that was planned was not seated. One slug per empty slot, with the
+#: counts that chose it on the record beside it, so nothing is lost by naming only
+#: one. **Two legs choose from this vocabulary and they choose differently**: the
+#: release leg below ([`_fill`]) names the first cause that applies, and a gallery
+#: seat names the constraint that actually bound it
+#: ([`curation.gallery.binding_reason`]) — a stricter question, because a seat has
+#: a colour ceiling above it as well as a bar below and the two have opposite
+#: remedies. `ceiling` and `mixed` are the gallery's alone; the release leg has no
+#: ceiling to name.
 UNFILLED_REASONS = {
     "below_bar": "no remaining candidate cleared the head's acting release bar",
     "location_served": "every remaining candidate was a place the collection has already served",
+    "ceiling": "every candidate that cleared the bar and the location rule was refused by the "
+    "colour ceiling",
+    "mixed": "more than one rule refused candidates and no single one accounts for the seat; "
+    "the counts beside this say which and how many",
     "no_candidates": "the partition ran out of scored candidates",
     "supply_cap": "the thin-supply cap: fewer than four passing candidates per slot",
 }
@@ -325,6 +334,15 @@ def _fill(allotted: int, budget: int, eligible: int, taken: int, below: int, cap
     partition that ran out under the bar also ran out of candidates and listing
     both says less than naming the first. Every count that fed the choice is on
     the record beside it.
+
+    **The precedence here is the order the rules ran, not the depth they reached**,
+    which is a weaker reading than [`curation.gallery.binding_reason`] takes of a
+    seat: a partition with rows under the bar *and* rows at places already served
+    is named `below_bar` here whichever of the two emptied it. This leg has no
+    ceiling above it, so the only pair that can be confused is those two, and the
+    counts are on the record. Left as it is deliberately — the release leg's
+    reason is a field in every tracked run record and re-reading it under a new
+    rule is a decision about those records, not a bug fix.
     """
     unfilled = max(0, allotted - taken)
     reason = None
