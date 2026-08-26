@@ -3074,6 +3074,36 @@ def curate_gallery_store(args: argparse.Namespace) -> int:
     return 0
 
 
+def curate_candidate_ledger(args: argparse.Namespace) -> int:
+    """Backfill the candidate ledger, census it, or keep its two files durable."""
+    from fractal_wallpapers.curation import candidate_ledger, durability
+
+    doing = {
+        "backfill": lambda: candidate_ledger.backfill(recolour=args.recolour),
+        "census": lambda: candidate_ledger.census(n=args.n),
+        "save": candidate_ledger.save,
+        "check": candidate_ledger.check,
+        "restore": lambda: candidate_ledger.restore(force=args.force),
+    }[args.what]
+    try:
+        report = doing()
+    except (candidate_ledger.LedgerError, durability.DurableLost) as refusal:
+        print(refusal)
+        return 1
+    if args.what == "census" and args.out:
+        out = Path(args.out)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8", newline="\n")
+        print(f"{out}")
+        return 0
+    print(json.dumps(report, indent=2))
+    if args.what == "check" and any(
+        part.get("verdict") in {"short", "missing"} for part in report.values()
+    ):
+        return 1
+    return 0
+
+
 def curate_reject(args: argparse.Namespace) -> int:
     """Apply today's acting release bars to a run that was released before they acted."""
     from fractal_wallpapers.curation import floors, records, rejection
@@ -6037,6 +6067,7 @@ def curate_commands(subcommands) -> None:
 
     from fractal_wallpapers.curation import below_bar as below_bar_module
     from fractal_wallpapers.curation import budget as budget_module
+    from fractal_wallpapers.curation import candidate_ledger as candidate_ledger_module
     from fractal_wallpapers.curation import colors as colors_module
     from fractal_wallpapers.curation import embeddings as embeddings_module
     from fractal_wallpapers.curation import framing as framing_module
@@ -6713,6 +6744,54 @@ def curate_commands(subcommands) -> None:
         "records. Those rows are attempts nobody has saved yet",
     )
     pass_store.set_defaults(handler=curate_gallery_store)
+
+    ledger_store = steps.add_parser(
+        "candidate-ledger",
+        help="the durable cache of every candidate ever rendered: build it, census it, keep it",
+        description=(
+            "One row per RECIPE — the frame that was rendered, the mode, the map and every "
+            "palette knob, the regime, and the sha256 of the autolevel band the picture was "
+            "levelled onto — carrying the location it stands on, the colour it turned out "
+            "to be, and where its picture is. It admits everything and filters nothing: a "
+            "floor is a reading of a judge and both move, the recipe and the pixels do not. "
+            "Scores live in a sidecar keyed on (recipe, judge artifact, regime), so a judge "
+            "adoption invalidates scores and nothing else. `backfill` reads the two decision "
+            "stores and renders nothing; `census` is the fill over the axes a constraint "
+            "acts on, and which of them is thin."
+        ),
+    )
+    ledger_store.add_argument(
+        "what",
+        choices=["backfill", "census", "check", "save", "restore"],
+        help="build the ledger from what already exists, take the coverage census, check "
+        "the live files against their manifests, save a fresh copy and manifests, or "
+        "restore the copies",
+    )
+    ledger_store.add_argument(
+        "--recolour",
+        action="store_true",
+        help="with `backfill`: read every picture's colour again instead of carrying the "
+        "reading already on record. About twenty milliseconds a picture",
+    )
+    ledger_store.add_argument(
+        "--n",
+        type=int,
+        default=candidate_ledger_module.FIRST_SOLVE,
+        help=f"with `census`: how many wallpapers the feasibility read is taken against "
+        f"(default {candidate_ledger_module.FIRST_SOLVE})",
+    )
+    ledger_store.add_argument(
+        "--out",
+        metavar="PATH",
+        help="with `census`: write the census there instead of printing it",
+    )
+    ledger_store.add_argument(
+        "--force",
+        action="store_true",
+        help="with `restore`: overwrite live files that hold MORE rows than the manifests "
+        "record. Those rows are recipes nobody has saved yet",
+    )
+    ledger_store.set_defaults(handler=curate_candidate_ledger)
 
     rejecting = steps.add_parser(
         "reject",
