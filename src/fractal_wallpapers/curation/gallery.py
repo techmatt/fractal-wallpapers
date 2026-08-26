@@ -1301,11 +1301,10 @@ class Try:
     modes_drawn: int
     mode_index: int
     #: The map this attempt is coloured with, **bypassing the palette head**, or
-    #: `None` for the ordinary attempt where the head picks. Only a carrier
-    #: attempt sets it: a target names a colour, the table names maps that carry
-    #: it, and the head is the step being routed around — it declines the green
-    #: carriers 83% below base rate, which is why re-ranking its output cannot
-    #: make a green gallery.
+    #: `None` for the ordinary attempt where the head picks. A target's colour is
+    #: bought by naming a map the head would have declined — it takes the green
+    #: carriers at 0.17x the base rate — and where that happens now is
+    #: [`curation.hunt`], whose draw is seeded through `hunt.seed_of`.
     colormap: str | None = None
     #: [`REFINED`] or [`ORIGINAL`]. Part of the identity of a planned attempt and
     #: not of the [`budget_module.Attempt`] it becomes: the mode draw is seeded off
@@ -1352,14 +1351,13 @@ def attempt_plan(
     pictures.
 
     The triple and not the key, because one location can be planned more than
-    once: at the framing the refine leg chose, at the framing the record holds if
-    the slot standing on it came up empty, and once per targeted cell as a
-    **carrier attempt** ([`carrier_plan`]) with the map named rather than picked.
-    The colormap is part of an attempt's identity for exactly the same reason the
-    framing is — two attempts differing in it are two different pictures — and
-    leaving it out would let a carrier attempt's presence cancel the ordinary
-    attempts of the location it stands on. `keys` narrows the plan to a named set,
-    which is how the fallback asks for those locations and no others.
+    once: at the framing the refine leg chose, and at the framing the record holds
+    if the slot standing on it came up empty. The colormap is part of an attempt's
+    identity for the same reason the framing is — two attempts differing in it are
+    two different pictures — and it is in the triple because the seating leg's own
+    renderer ([`OnDemand`]) names a map the head did not pick. `keys` narrows the
+    plan to a named set, which is how the fallback asks for those locations and no
+    others.
     """
     seen: dict[str, str] = {}
     for slot in slots:
@@ -1410,82 +1408,6 @@ def head_owning(slots: list, keys=None) -> dict:
             if keys is not None and key not in keys:
                 continue
             out.setdefault(key, slot.head)
-    return out
-
-
-def carrier_plan(
-    slots: list,
-    ranks: dict,
-    strange: int,
-    targets: dict,
-    pool: list,
-    seed: int,
-    already=(),
-    framing: str = REFINED,
-    keys: set | None = None,
-) -> list[Try]:
-    """One extra attempt per location per targeted cell, coloured by a carrier.
-
-    **The plan is where a target is met**, and this is the whole of the mechanism.
-    A seat can only choose among pictures that exist, and the pictures that exist
-    are the palette head's choices: over gallery3 it was offered the green
-    carriers 4,334 times and took 23 of them, 0.17x the base rate, so no amount of
-    re-ranking at the seat produces a green gallery. So the plan names the map
-    itself, drawn from [`palettes.carriers`] weighted by mean share, and the
-    render happens whether the head would have asked for it or not.
-
-    Everything else about the attempt is ordinary: the mode is drawn from the
-    owning head's roster the same way, the picture is judged by the same judge,
-    and its **dominance is read on its own render**. A carrier attempt that comes
-    out grey is a normal candidate that has to win its seat on the judge's number
-    like anything else — the table is a prior about maps, not a verdict about
-    pictures, and the field and the mode carry a real share of the outcome.
-
-    The draw is seeded per (cell, round) and taken without replacement across the
-    locations, re-drawn on a bumped seed where there are more locations than the
-    cell has carriers — so one target does not spend every attempt on the one map
-    with the highest mean share and then lose all but the first of them to the
-    group cap.
-    """
-    from fractal_wallpapers.palettes import carriers as carrier_table
-
-    owner = head_owning(slots, keys)
-    wanted = sorted(
-        {
-            key
-            for key in owner
-            for cell in targets
-            if (key, framing, cell) not in {(k, f, c) for k, f, c in already}
-        }
-    )
-    out: list[Try] = []
-    for position, cell in enumerate(sorted(targets)):
-        fresh = [key for key in wanted if (key, framing, cell) not in already]
-        drawn: list[str] = []
-        round_seed = 0
-        while len(drawn) < len(fresh):
-            more = carrier_table.draw(
-                cell, len(fresh) - len(drawn), (int(seed), cell, round_seed).__hash__(), within=pool
-            )
-            if not more:
-                break
-            drawn += more
-            round_seed += 1
-        for key, colormap in zip(fresh, drawn, strict=False):
-            head = owner[key]
-            modes = 1 if head == budget_module.SMOOTH else max(1, strange)
-            out.append(
-                Try(
-                    key,
-                    next(slot.partition for slot in slots if key in slot.locations),
-                    head,
-                    ranks.get(key, 0),
-                    modes,
-                    position % modes,
-                    colormap=colormap,
-                    framing=framing,
-                )
-            )
     return out
 
 
@@ -4157,11 +4079,6 @@ def _take(
         else:
             done = {(try_.key, try_.framing, try_.colormap) for try_ in planned}
             fresh = attempt_plan(slots, ranks, smooth, strange, already=done)
-            # Carrier attempts go in with the ordinary ones and never after, so
-            # the plan is fixed before the first attempt of the round: the anchor
-            # draw is over the whole plan and the resume index is a position in
-            # it, and both would move under a plan that grew mid-leg.
-            fresh += carrier_plan(slots, ranks, strange, targets, palette_pool, seed, already=done)
             if scanning and fresh:
                 # BEFORE the attempts, and only over the locations this round
                 # added: a location already framed keeps its decision, so a

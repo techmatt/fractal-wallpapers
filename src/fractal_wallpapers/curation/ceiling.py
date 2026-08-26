@@ -83,17 +83,36 @@ decides alone.
 
 A target is not a floor that moves and not a pad. An unmet target is reported
 **SHORT**, in the record and in the report, and the seats it could not fill are
-filled by the pass's ordinary rule. The lever that actually meets a target is
-upstream, at the plan: a carrier attempt renders a map chosen for the colour,
-which is the only way a colour the palette head declines 83% of the time ever
-reaches a seat at all. The extra picks above are the same lever at the other end
-of the pass — the plan asks for the colours a target named, and the seat asks for
-whatever colour it turns out to be missing.
+filled by the ordinary rule. The lever that actually meets a target is upstream,
+where the pictures are made: something has to render a map chosen for the colour,
+because that is the only way a colour the palette head declines 83% of the time
+reaches a seat at all. [`curation.hunt`]'s conditioned leg is that lever now. The
+extra picks above are the same lever at the other end — the seat asks for whatever
+colour it turns out to be missing.
 
 Setting a target also **replaces the default allowance** for that cell and for
 its family, so the ceiling and the target are denominated in one vector: asking
 for green at 5% says green *should* be 5% of the gallery, and the ceiling then
 lets it run to twice that.
+
+## And it raises what the target implies
+
+A carrier of one cell is dominant in more than one cell: on the reference fields
+a `dark_vivid_lime` delivery lands `dark_muted_lime` 42% of the time and
+`light_muted_lime` 34%. So a target that raised only its own cell's allowance
+sends its own seats against its companions' untargeted allowance of three, and
+the program is refused for a reason nobody chose. A target of `t` therefore also
+raises each companion's share by `t` times that companion's **measured**
+co-dominance rate ([`palettes.carriers.co_dominance`]), and the companion's
+family by the same unless it is the target's own family — which the target has
+already raised, and which counts a picture once however many of its cells that
+picture is dominant in.
+
+The rates come off the record and never off the hue wheel. An adjacency written
+down by hand would say lime borders green and yellow; what the library says is
+that lime's carriers land three other *lime* cells before they land anything
+green, and that they land `dark_vivid_green` more often than
+`dark_vivid_yellow`.
 """
 
 from __future__ import annotations
@@ -267,6 +286,21 @@ class Lens:
         }
 
 
+#: The tracked table's co-dominance, read once a process. The file is three
+#: quarters of a megabyte and a `Rule` is built per solve, per sweep rung and per
+#: test; parsing it at each of them would put a disk read inside the fast lane.
+_CO_DOMINANCE: dict = {}
+
+
+def measured_co_dominance(cell: str) -> dict:
+    """`{companion cell: rate}` off the tracked carrier table, memoized."""
+    from fractal_wallpapers.palettes import carriers
+
+    if cell not in _CO_DOMINANCE:
+        _CO_DOMINANCE[cell] = carriers.co_dominance(cell)
+    return _CO_DOMINANCE[cell]
+
+
 @dataclass
 class Rule:
     """The constants and the targets. One per pass; carries no seating state.
@@ -288,10 +322,19 @@ class Rule:
     k: int = K
     tau: float = TAU
     twins: int = TWINS
+    #: `{cell: {companion cell: rate}}`, the co-dominance a target's implied cells
+    #: are derived from. `None` reads it off the tracked carrier table, which is
+    #: what a solve and a pass both want; a test hands one in so it does not have
+    #: to stand up a table to ask what a target implies.
+    co_dominance: dict | None = None
 
     def __post_init__(self) -> None:
         self.targets = {str(cell): float(value) for cell, value in (self.targets or {}).items()}
         self._share: dict = {}
+        #: `{cell or family: how much a target's companions raised it}`, kept apart
+        #: from `_share` so a record can say which allowances were *asked for* and
+        #: which followed. Read by [`curation.solve.Program.config`].
+        self.implied: dict = {}
         for cell, value in self.targets.items():
             self._share[cell] = value
             family = dominance.family_of(cell)
@@ -301,6 +344,36 @@ class Rule:
                 # to fit under their family's allowance, and a family holding the
                 # larger of the two would refuse the smaller one's last seats.
                 self._share[family] = self._share.get(family, 0.0) + value
+            for companion, rate in self._companions(cell).items():
+                self.implied[companion] = self.implied.get(companion, 0.0) + value * rate
+                kin = dominance.family_of(companion)
+                # A companion in the target's OWN family needs no family raise:
+                # the family row counts a picture once however many of its cells
+                # that picture is dominant in, and the target already raised it.
+                if kin is not None and kin != family:
+                    self.implied[kin] = self.implied.get(kin, 0.0) + value * rate
+        for name, extra in self.implied.items():
+            self._share[name] = self._share.get(name, self._default_share(name)) + extra
+
+    @staticmethod
+    def _default_share(name: str) -> float:
+        return FAMILY_SHARE if name in dominance.families() else CELL_SHARE
+
+    def _companions(self, cell: str) -> dict:
+        """`{cell: rate}` this target's carriers also deliver. **Measured**.
+
+        Off the carrier table's own deliveries and never off the wheel: a hand
+        written adjacency would say lime borders green and yellow, and what the
+        record says is that a `dark_vivid_lime` carrier lands `dark_muted_lime`
+        42% of the time, `light_muted_lime` 34%, and `dark_vivid_green` 8%. The
+        rates are not the wheel's, they are the library's.
+        """
+        if self.co_dominance is not None:
+            return {
+                str(name): float(rate)
+                for name, rate in (self.co_dominance.get(str(cell)) or {}).items()
+            }
+        return measured_co_dominance(str(cell))
 
     def share(self, name: str) -> float:
         """The target rate for one cell or family: the set one, or uniform."""
@@ -352,6 +425,12 @@ class Rule:
             "metric": pixel_clouds.METRIC,
             "targets": dict(sorted(self.targets.items())),
             "target_share": dict(sorted(self._share.items())),
+            "implied": {name: round(share, 6) for name, share in sorted(self.implied.items())},
+            "implied_from": (
+                "the carrier table's measured co-dominance. A carrier of a targeted cell "
+                "is dominant in more than that cell, so a target that raised only its own "
+                "allowance would push its seats against its companions' untargeted three."
+            ),
         }
 
 
@@ -709,6 +788,7 @@ __all__ = [
     "Rule",
     "Seating",
     "TargetRefused",
+    "measured_co_dominance",
     "parse_target",
     "strain",
 ]

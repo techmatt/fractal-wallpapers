@@ -74,13 +74,49 @@ class Table(solve.Pairs):
         super().__init__(candidates)
         self.table = {tuple(sorted(pair)): float(value) for pair, value in distances.items()}
         self.far = float(far)
+        self.seen: set = set()
 
-    def measure(self, order):
+    def measure(self, order, screen=True):
+        self.seen.update(order)
         for at, one in enumerate(order):
             for other in order[at + 1 :]:
                 pair = (min(one, other), max(one, other))
+                if pair in self._distance:
+                    continue
                 self._distance[pair] = self.table.get(pair, self.far)
                 self.measured += 1
+
+    def paid(self):
+        """Everything asked about so far — what the real one holds a signature of."""
+        return sorted(self.seen)
+
+
+class Clouds(solve.Pairs):
+    """A [`Pairs`] whose *signatures* are synthetic, so everything above the
+    picture is the shipped code — the bound, the screen, the exact fallback.
+
+    [`Table`] replaces the whole seam and is what a test about which rule refuses
+    a pair wants. This replaces one method below it, and is what a test about the
+    bound wants: a bound that agreed with a lookup table would be testing the
+    lookup table."""
+
+    def __init__(self, candidates, offsets):
+        super().__init__(candidates)
+        self.offsets = list(offsets)
+
+    def signature(self, at):
+        import numpy
+
+        from fractal_wallpapers.palettes import groups
+
+        if at not in self._signatures:
+            made = numpy.full(
+                groups.QUANTILES * groups.DIRECTIONS, self.offsets[at], dtype=numpy.float32
+            )
+            self.made += 1
+            self._reduced.setdefault(at, solve.reduce_signature(made))
+            self._signatures[at] = made
+        return self._signatures[at]
 
 
 # --------------------------------------------------------------------------- #
@@ -372,11 +408,27 @@ def test_the_loop_stops_on_a_wall_budget_and_says_it_had_no_answer():
 
 
 def test_the_loop_refuses_rather_than_spinning_forever():
+    """The round cap fires, and says how many pairs were standing when it did."""
     candidates = [candidate(str(at), score=1.0 - at / 100) for at in range(6)]
     program = program_of(candidates, 2)
     every = {(one, other): 0.0 for one in range(6) for other in range(one + 1, 6)}
-    with pytest.raises(solve.SolveRefused, match="did not converge"):
-        solve.cutting_plane(program, Table(candidates, every), rounds=2, log=lambda *_: None)
+    with pytest.raises(solve.SolveRefused, match="did not converge in 1 rounds"):
+        solve.cutting_plane(program, Table(candidates, every), rounds=1, log=lambda *_: None)
+
+
+def test_a_round_generates_every_pair_it_has_paid_for_and_not_only_the_seated():
+    """The bound made a wide screen free, so a round no longer costs a round to
+    learn one pair. Two seats, four candidates all too close: the first round cuts
+    the seated pair AND the pairs among everything else it has a signature of."""
+    candidates = [candidate(str(at), score=1.0 - at / 100) for at in range(4)]
+    program = program_of(candidates, 2)
+    every = {(one, other): 0.0 for one in range(4) for other in range(one + 1, 4)}
+    pairs = Table(candidates, every)
+    pairs.measure([0, 1, 2, 3])
+    answer = solve.cutting_plane(program, pairs, rounds=2, log=lambda *_: None)
+    assert not answer["feasible"], "every pair is a twin, so two seats cannot be filled"
+    assert answer["rounds"][0]["rows_added"] == 6, "all six pairs, in one round"
+    assert answer["rounds"][0]["violated_pairs"] == 1, "but only one of them is seated"
 
 
 # --------------------------------------------------------------------------- #
@@ -488,6 +540,209 @@ def test_truncation_offers_the_strongest_places_first():
     assert solve.strongest_locations(candidates, 2) == ["s", "m"]
     assert len(solve.strongest_locations(candidates, None)) == 3
     assert [c.key for c in solve.within(candidates, {"s"})] == ["strong"]
+
+
+# --------------------------------------------------------------------------- #
+# The bound, and what it is allowed to settle.
+# --------------------------------------------------------------------------- #
+def signature_pair(seed):
+    """Two signatures shaped the way the metric makes them, from a seeded draw."""
+    import numpy
+
+    from fractal_wallpapers.palettes import groups
+
+    rng = numpy.random.default_rng(seed)
+    size = groups.QUANTILES * groups.DIRECTIONS
+    return (
+        numpy.sort(rng.normal(size=size).astype(numpy.float32)),
+        numpy.sort(rng.normal(0.3, 1.4, size=size).astype(numpy.float32)),
+    )
+
+
+@pytest.mark.parametrize("seed", range(6))
+def test_the_bound_never_exceeds_the_distance_it_bounds(seed) -> None:
+    """The whole claim. A prune whose premise is false is what this replaced, and
+    the premise here is the triangle inequality and nothing weaker."""
+    import numpy
+
+    from fractal_wallpapers.palettes import groups, pixel_clouds
+
+    one, other = signature_pair(seed)
+    exact = pixel_clouds.distance(one, other)
+    bound = float(
+        numpy.abs(solve.reduce_signature(one) - solve.reduce_signature(other)).sum(
+            dtype=numpy.float64
+        )
+        / (groups.DIRECTIONS * solve.BOUND_BLOCKS)
+    )
+    assert bound <= exact + 1e-9
+    assert bound > 0.5 * exact, "and it is not so slack as to settle nothing"
+
+
+def test_the_bound_at_one_block_is_the_distance_between_the_mean_colours() -> None:
+    """Which is what the design predicted the metric would admit. Four blocks is
+    that statement per band of the cloud; one block is the statement itself."""
+    from fractal_wallpapers.palettes import groups
+
+    one, _other = signature_pair(0)
+    grid = one.reshape(groups.QUANTILES, groups.DIRECTIONS)
+    assert solve.reduce_signature(one).mean(axis=0) == pytest.approx(grid.mean(axis=0), abs=1e-5)
+
+
+def test_a_pair_the_bound_settles_is_never_measured() -> None:
+    """No signature made, no distance stored, and the pair reads as clearing."""
+    import numpy
+
+    from fractal_wallpapers.palettes import groups
+
+    candidates = [candidate("a"), candidate("b")]
+    pairs = solve.Pairs(candidates)
+    shape = (solve.BOUND_BLOCKS, groups.DIRECTIONS)
+    pairs._reduced[0] = numpy.zeros(shape, dtype=numpy.float32)
+    pairs._reduced[1] = numpy.full(shape, 1.0, dtype=numpy.float32)
+    pairs.measure([0, 1])
+    assert pairs.made == 0, "a settled pair opens no picture"
+    assert (0, 1) not in pairs._distance
+    assert pairs.settled == 1
+    assert not pairs.violates(0, 1)
+    assert pairs.price()["settled_share"] == 1.0
+
+
+def test_the_nearest_pairs_are_exact_even_where_the_bound_settled_most() -> None:
+    """The radius's calibration instrument reports measurements and never bounds,
+    and it reaches them without measuring what the bound already settled: the
+    walk is in bound order, and it stops when the next bound is past the worst
+    distance kept."""
+    candidates = [candidate(str(at)) for at in range(5)]
+    pairs = Table(candidates, {(0, 1): 0.01, (0, 2): 0.02}, far=0.9)
+    wanted = [(one, other) for one in range(5) for other in range(one + 1, 5)]
+    for pair in wanted[2:]:
+        pairs._lower[pair] = 0.9
+    assert [gap for _pair, gap in pairs.closest(wanted, 2)] == [0.01, 0.02]
+    assert pairs.measured == 2, "the eight the bound settled were never opened"
+
+
+def test_a_settled_pair_still_answers_when_a_caller_asks_for_the_number() -> None:
+    """Settled means *proven to clear its rule* and not *known to be this far
+    apart*, so the contact sheet asking a settled pair for its distance has to get
+    a measurement rather than a KeyError."""
+    candidates = [candidate("a"), candidate("b")]
+    pairs = Clouds(candidates, [0.0, 0.5])
+    pairs.measure([0, 1])
+    assert pairs.settled == 1 and not pairs.measured_pair(0, 1)
+    assert pairs.distance(0, 1) == pytest.approx(0.5)
+    assert pairs.measured == 1
+
+
+def test_the_screen_and_the_metric_agree_about_which_pairs_violate() -> None:
+    """Over a spread of separations either side of the radius: nothing the bound
+    settles is a violation, and everything the metric refuses is still refused."""
+    offsets = [at * 0.05 for at in range(12)]
+    candidates = [candidate(str(at)) for at in range(12)]
+    every = list(range(12))
+    screened = Clouds(candidates, offsets)
+    exact = Clouds(candidates, offsets)
+    for one in every:
+        for other in every[one + 1 :]:
+            exact.measure([one, other], screen=False)
+    assert {row["pair"] for row in screened.violations(every)} == {
+        row["pair"] for row in exact.violations(every)
+    }
+    assert screened.settled > screened.measured, "and most were never measured at all"
+
+
+# --------------------------------------------------------------------------- #
+# The greedy seed.
+# --------------------------------------------------------------------------- #
+def test_the_seed_keeps_every_pair_it_refused_as_a_row() -> None:
+    """A pair under its threshold can never both be seated, whoever noticed it —
+    so a greedy walk's refusals are valid rows however bad its own answer is."""
+    candidates = [candidate(str(at), score=1.0 - at / 100) for at in range(4)]
+    program = program_of(candidates, 2)
+    pairs = Table(candidates, {(0, 1): 0.0, (0, 2): 0.0}, far=0.9)
+    read = solve.seed_greedily(program, pairs, log=lambda *_: None)
+    assert read["seats"] == 2
+    assert set(read["pairs"]) == {(0, 1), (0, 2)}
+    assert read["feasible"] and read["floor"] == pytest.approx(0.97)
+
+
+def test_a_seed_that_breaks_a_row_it_does_not_read_is_kept_only_for_its_cuts() -> None:
+    """A greedy walk seats by score; a colour target is a demand, and nothing in
+    the walk asks about it. The incumbent is thrown away and the cuts are not."""
+    candidates = [
+        candidate("a", score=1.0),
+        candidate("b", score=0.9, location="two"),
+        candidate("c", score=0.8, location="three", cells=("dark_vivid_lime",)),
+    ]
+    program = program_of(candidates, 2, targets={"dark_vivid_lime": 1.0})
+    read = solve.seed_greedily(
+        program, Table(candidates, {(0, 1): 0.0}, far=0.9), log=lambda *_: None
+    )
+    assert not read["feasible"], "it seated no lime, and the target demands two"
+    assert read["pairs"] == [(0, 1)]
+
+
+def test_a_seed_holding_every_seat_above_the_bar_proves_stage_one() -> None:
+    """`n` seats cannot hold more than `n` above the bar, so a seed that holds `n`
+    attains the optimum and branch-and-bound has nothing left to prove."""
+    candidates = [candidate(str(at), score=1.0) for at in range(4)]
+    program = program_of(candidates, 2)
+    seed = {"feasible": True, "chosen": [0, 1], "above_bar": 2, "floor": 1.0}
+    answer = solve.lexicographic(program, seed=seed, log=lambda *_: None)
+    assert answer["values"]["above_bar"] == 2
+    assert "the seed" in answer["values"]["stage_one_from"]
+
+
+def test_stage_two_reaches_only_what_an_incumbent_admits() -> None:
+    """The whole cost of a round was stage 2 over every column in the ledger. An
+    incumbent's own floor is a proof that the ones below it cannot be seated."""
+    candidates = [candidate("a", score=1.0), candidate("b", score=0.9, location="two")]
+    candidates += [candidate(str(at), score=0.2, location=str(at)) for at in range(6)]
+    program = program_of(candidates, 2)
+    answer = solve.lexicographic(program, log=lambda *_: None)
+    assert answer["values"]["columns_free"] == 2, "the six no floor can reach are fixed off"
+    assert answer["values"]["floor"] == pytest.approx(0.9)
+    assert sorted(answer["chosen"]) == [0, 1]
+
+
+def test_the_column_fix_does_not_move_the_answer() -> None:
+    """The claim the fix stands on, on a program small enough to state by hand:
+    an incumbent that clears the same count cannot rule out a better floor."""
+    candidates = [
+        candidate("a", score=0.99),
+        candidate("b", score=0.98, location="two"),
+        candidate("c", score=0.50, location="three"),
+    ]
+    program = program_of(candidates, 2)
+    answer = solve.lexicographic(program, log=lambda *_: None)
+    assert answer["values"]["floor"] == pytest.approx(0.98)
+    assert sorted(answer["chosen"]) == [0, 1]
+
+
+def test_an_infeasibility_the_lp_cannot_see_is_named_as_one_and_not_as_a_shortage() -> None:
+    """Four candidates no two of which may sit together, and two seats. Every
+    linear row is met at once — the LP puts a quarter-seat in each — so nothing is
+    short, and a readout saying "0.0 candidates short over six irreducible blocks"
+    would be a work order nobody can spend."""
+    candidates = [candidate(str(at), score=1.0 - at / 100) for at in range(4)]
+    program = program_of(candidates, 2)
+    program.cuts += [(one, other) for one in range(4) for other in range(one + 1, 4)]
+    assert solve.relaxation(program, log=lambda *_: None)["feasible"]
+    assert not solve.lexicographic(program, log=lambda *_: None)["feasible"]
+    read = solve.shortage(program, log=lambda *_: None)
+    assert read["total_slack"] == 0.0
+    assert read["irreducible_blocks"] == [], "the filter is over the LP and the LP is fine"
+    assert "NOT a supply shortage" in read["verdict"]
+    assert "6 pairwise row(s)" in read["verdict"]
+
+
+def test_a_real_shortage_still_reads_as_one() -> None:
+    candidates = [candidate("a", score=1.0), candidate("b", score=0.9, location="two")]
+    program = program_of(candidates, 2, targets={"dark_vivid_lime": 1.0})
+    read = solve.shortage(program, log=lambda *_: None)
+    assert read["total_slack"] == 2.0
+    assert "colour_target" in read["irreducible_blocks"]
+    assert "a hunt is what spends it" in read["verdict"]
 
 
 # --------------------------------------------------------------------------- #
