@@ -468,6 +468,33 @@ def another_colour(names: list, scores, recolour_of, spent: set, families: set):
 # --------------------------------------------------------------------------- #
 # The attempt.
 # --------------------------------------------------------------------------- #
+def load_judge(device: str = "auto"):
+    """THE shipped finished-render judge, as a loaded `(model, config, where)`.
+
+    A module function rather than only a method, because two legs want the judge
+    and only one of them wants a palette head with it: a hunt
+    ([`curation.hunt`]) is defined by not asking the palette head anything, and
+    building a whole [`Colorizer`] to reach the judge would load two gigabytes of
+    model to route around one of them.
+    """
+    from fractal_wallpapers.models import render_train, ship
+
+    return render_train.load_checkpoint(ship.shipped_path(floors.SCORING_HEAD), device)
+
+
+def score_picture(judge, picture: Path) -> dict:
+    """One finished picture through a loaded judge: every cutpoint, unconditional."""
+    from fractal_wallpapers.models import scoring, train
+
+    model, config, where = judge
+    classes = int(config["classes"])
+    transform = scoring.transform_of(config)
+    probabilities = train.score(model, [picture], transform, where, classes, {"batch_size": 1})
+    row = {f"p_ge{index + 2}": float(probabilities[0][index]) for index in range(classes - 1)}
+    row["rank_score"] = float(sum(probabilities[0]))
+    return row
+
+
 class Colorizer:
     """The heads, the pool and the caches an attempt needs, loaded once.
 
@@ -483,8 +510,8 @@ class Colorizer:
         self.seed = int(seed)
         self.log = log
         self.pool = pool(self.seed)
-        self.cyclic = _cyclic()
-        self.band = _band()
+        self.cyclic = cyclic()
+        self.band = band()
         self.palette, self.palette_config, self.where = palette_scoring.load(
             ship.shipped_path("palette"), device
         )
@@ -506,11 +533,9 @@ class Colorizer:
         went away is the argument, so a caller can no longer reach the wrong
         model by naming a kind.
         """
-        from fractal_wallpapers.models import render_train, ship
-
         head = floors.SCORING_HEAD
         if head not in self.judges:
-            self.judges[head] = render_train.load_checkpoint(ship.shipped_path(head), self.device)
+            self.judges[head] = load_judge(self.device)
         return self.judges[head]
 
     def pick_palette(self, row: dict, names: list) -> tuple:
@@ -600,16 +625,8 @@ class Colorizer:
             self.claimed.setdefault(self.group_of(str(colormap)), str(colormap))
 
     def score_picture(self, picture: Path) -> dict:
-        """One finished picture through the judge: every cutpoint, unconditional."""
-        from fractal_wallpapers.models import scoring, train
-
-        model, config, where = self.judge()
-        classes = int(config["classes"])
-        transform = scoring.transform_of(config)
-        probabilities = train.score(model, [picture], transform, where, classes, {"batch_size": 1})
-        row = {f"p_ge{index + 2}": float(probabilities[0][index]) for index in range(classes - 1)}
-        row["rank_score"] = float(sum(probabilities[0]))
-        return row
+        """One finished picture through this colorizer's judge."""
+        return score_picture(self.judge(), picture)
 
     def attempt(
         self,
@@ -713,13 +730,15 @@ class Colorizer:
         return record
 
 
-def _cyclic() -> set[str]:
+def cyclic() -> set[str]:
+    """The maps production does NOT fold, off the palette sets' own answer."""
     from fractal_wallpapers.models import palette_sets
 
     return palette_sets.cyclic()
 
 
-def _band() -> dict | None:
+def band() -> dict | None:
+    """The autolevel band every render here levels onto, or `None` with the switch off."""
     from fractal_wallpapers.coloring import band as band_module
 
     return band_module.load() if autolevel.enabled() else None
@@ -771,9 +790,12 @@ __all__ = [
     "annotate",
     "another_colour",
     "attempt_id",
+    "band",
     "candidate_set",
+    "cyclic",
     "field_of",
     "kind_of",
+    "load_judge",
     "modes_drawn_for",
     "modes_for",
     "pool",
@@ -781,6 +803,7 @@ __all__ = [
     "recolored",
     "render",
     "render_row",
+    "score_picture",
     "sweep_writing",
     "writing_path",
 ]

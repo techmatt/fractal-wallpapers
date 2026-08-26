@@ -839,6 +839,94 @@ on the record.
 and its family's ceiling allowance through `ceiling.Rule` — otherwise a demand
 would be refused by the ceiling it asked for.
 
+## `curate hunt` — rendering into a shortage instead of around it
+
+The solve above turns an impossible gallery into a **work order**. This is what
+spends it. A hunt renders candidates at places and in colours that were chosen on
+purpose, writes them into the ledger, and leaves the same solve to be taken again
+so the shortage can be measured against what it cost.
+
+```
+src/fractal_wallpapers/curation/hunt.py             the legs, the budget, the price
+artifacts/curation/hunt/frames.jsonl                the frame index, derived from the scan
+artifacts/curation/hunt/<name>/rows.jsonl           ledger rows, appended as each lands
+artifacts/curation/hunt/<name>/scores.jsonl         sidecar rows, likewise
+artifacts/curation/hunt/<name>/pictures/<key>.jpg   the candidate renders, named by recipe
+artifacts/curation/hunt/<name>/hunt.json            the record: plan, price, coverage
+artifacts/curation/hunt/<name>/contact_sheet.html   what it made, the two legs apart
+```
+
+```
+fractal-wallpapers curate hunt frames --name any         # index the scan's chosen frames
+fractal-wallpapers curate hunt plan   --name h1 --unconditional 600 --conditioned 600     --cell dark_vivid_lime --work-order julia:mandelbrot=19 --work-order mandelbrot=6
+fractal-wallpapers curate hunt run    --name h1 --budget 1200 ...   # same flags, renders
+fractal-wallpapers curate hunt merge  --name h1                     # fold into the ledger
+fractal-wallpapers curate hunt sheet  --name h1                     # redraw the page
+```
+
+**The two legs answer two different questions and are interleaved so a budget
+that runs out truncates both.** *Unconditional* buys breadth: locations from the
+scanned pool that carry no ledger recipe at all, `--per-location` candidates each,
+the palette **stratified across the codebook's 48 cells** rather than picked by
+the palette head. *Conditioned* buys one colour: maps drawn from
+`data/palettes/carriers.jsonl` for `--cell`, the head never asked, the partitions
+spread by `--work-order` — which is the shortage list's own supply table.
+
+**The palette head is bypassed on both legs, and that is the point.** It is
+offered the green carriers as often as anything else and takes them at 0.17x the
+base rate; its argmax is what left the ledger carrying red at 986 locations and
+lime at 248. A conditioned draw routed through `top_pick` would be offered its
+carrier and would decline it, so it would not be conditioned at all.
+
+**The colour is a prior about the map and never a verdict about the picture.** A
+carrier is drawn *for* a cell and the candidate's dominance is read off its own
+render; the record reports the two apart (`drawn_for` against `cells`, and
+`delivery_rate` over them), because the field and the mode carry a real share of
+the outcome.
+
+**The frame is looked up, not recomputed.** Everything renders at the frame the
+pool-wide refinement scan chose at `framing.MARGIN` — the winner where it adopted,
+the recorded frame where it refused. `curate hunt frames` derives a thin index
+(one row a location, 28,090 rows, about two seconds) off the 98 MB scan record, and
+a scan row taken at another margin is **refused** rather than reinterpreted: the
+margin belongs to that record, and re-deciding it is a read of every rung. Because
+the frame is part of the recipe, a candidate stays valid if the margin later
+moves — what a moved margin invalidates is where to draw next, not what was drawn.
+
+**Rows land as candidates land**, one appended ledger row and one appended score
+row per picture, so a killed hunt is a usable partial. `merge` is separate because
+the ledger upserts by rewriting the whole file: forty megabytes a candidate is not
+a write. The merge is idempotent, and a later `candidate-ledger backfill` does not
+drop hunt rows — it upserts too, and a hunt has no decision store to be rebuilt
+from.
+
+**The recipe key is known before the engine runs**, which is what lets a hunt skip
+a picture the ledger already holds instead of finding out afterwards. Every member
+is a lookup or a default, including the autolevel stamp: `stamp_of` keeps the
+operator, the switch and the band's sha256 and drops `acted` on purpose. That
+stamp is built through `autolevel.make_stamp` and never spelled out — the band
+record calls its digest `_sha256` and the stamp calls it `sha256`, and translating
+that by hand is how a hunt comes to name identical pixels differently from the
+pass that made them.
+
+**The budget is render seconds, not wall clock, and it is enforced at the
+candidate boundary** — nothing is started that cannot finish inside what is left,
+priced at the dearest candidate that partition has cost *this run*. Not off
+maxiter: `phoenix` cost 1.7x what its cap tier implied and `mandelbrot` 0.6x, and
+fixed overhead is about 70% of a cheap location, so no power of the cap fits both
+ends. The record's `price` table is the per-partition measurement, and it is what
+sizes the next budget.
+
+**A work order is proportional over every prefix.** Spelled as blocks — nineteen
+`julia:mandelbrot` turns, then six `mandelbrot` — a ten-place leg would spend all
+ten on the first partition and never reach the other eight. Each partition's k-th
+turn is placed at `(k + 0.5) / weight` and the turns sorted on that.
+
+**Seeds are digests and never `hash()`.** Python randomizes string hashing per
+process, so a draw seeded on `hash()` over a tuple holding a cell name is recorded
+as reproducible and is not — and the negative half of its range makes
+`numpy.random.default_rng` refuse outright. `hunt.seed_of` is sha256.
+
 ## What a pass puts in the history, and what it puts beside it
 
 **Everything a pass tracks scales with `n`; nothing tracked scales with the
