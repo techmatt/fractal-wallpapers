@@ -46,7 +46,25 @@ says how the population was drawn and carries two flags: `score_unconditioned` �
 no model score anywhere in the selection — and `anchored` — the page served a
 head's own verdict prefilled, or ordered the rows by its score. Eval-eligibility
 is derived from the two and never stored, and a batch nobody registered fails
-closed to neither. The disqualifying property for an instrument is model-driven
+closed to neither.
+
+**That fail-closed is an object, and a contradiction is worse than an omission.**
+`registry.UNREGISTERED` is what an unregistered batch reads as — not
+score-unconditioned, therefore not eval-eligible, therefore train-side — because
+being unconditioned is a claim about a draw and has to be made explicitly. An
+omission is safe: the one thing it cannot do is put a population into the
+evaluation side by accident. A **contradiction** has no safe side to fail to,
+because the file itself holds both answers, so it aborts instead: registering one
+batch twice is fine while both rows say the same thing — re-running a registration
+step is how anybody finds out it already ran — but a second row disagreeing about
+the method or the flags is refused by `registry.read`, naming both rows, where it
+used to win silently and let a batch change sides between two readings of one file.
+`registry.refuse_contradiction` is the same rule one step earlier, at the
+**writer**, so the contradicting row never reaches the file at all; without it the
+read-side guard is a trap rather than a guard — the append succeeds and every
+later read raises until somebody edits by hand. The fix for a registration that
+really was wrong is to correct the row **in place** and say so in `why`, never to
+append a second answer. The disqualifying property for an instrument is model-driven
 selection, not non-randomness: a systematic sweep qualifies, "the top of the run's
 own ranked queue" does not, and an anchored page's labels measure agreement with
 the head that suggested them however good the draw was.
@@ -64,6 +82,15 @@ plane, near seed, overlapping frame — move whole, and a group with one
 ineligible member goes to the training side entire. `split.json` records the
 seed, the target share and the share that was actually realized; the two are not
 the same number and the second is the one to quote.
+
+**The pin is asserted at LOCATION granularity, and that is the whole of what it
+has to survive.** `finished.pinned()` keys the pinned set on the location rather
+than on the render — deliberately, because a later batch that re-renders a pinned
+place under a fresh identifier would otherwise train on the instrument without
+ever naming it. A render key would pin one picture and leave the place open; the
+location key pins the place and every picture of it. It has fired: the
+manufactured rare-colour drop of 2026-08-24 drew nine of its locations from a
+pinned set, and `label ingest` withheld all nine before writing.
 
 **The trainers are where that pin is enforced, and they assert on the same
 coordinate.** `labeling.pins` owns it, and every training pass routes through it

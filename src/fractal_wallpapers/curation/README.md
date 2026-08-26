@@ -126,6 +126,25 @@ Each invocation is a **pass** with its own id, its own record in
                          every release row say which pixels were made
 ```
 
+**Steps 5 and 6 are two legs, and the names matter because they run whole rather
+than interleaved.** `gallery.make_attempts` renders **every** planned attempt
+first — one palette-head pick per attempt, `colorize.Colorizer.pick_palette` over
+the set's thirty-two smooth-field recolours through `palette_head.top_pick` — and
+only then does `gallery.seat` walk the slots, in `_seat_order` (pick position
+first, then the partition's own order, so the partitions interleave), choosing
+among candidates that **already exist**. A seat renders nothing except where the
+colour ceiling bit and [`gallery.OnDemand`] is asked for one more picture — see
+the ceiling below. That order is what makes a re-seat cheap: the attempts are on disk and
+the second seating is arithmetic over them.
+
+**`gallery.pool_candidates` applies TWO predicates, not one.** A row is seatable
+only where its key is one of the slots' own neighbourhood locations **and**
+`run_of(row) == pass_id`. The second is the ruling — locations are cumulative,
+candidates are per-pass — and the first is what keeps a pass from seating a place
+it never chose. Reading the rule as the maker-predicate alone gets the normal path
+right by accident, because [`pool_rows`] has already set this pass's own rows
+aside, and gets a re-seat round wrong.
+
 **A slot is not married to one neighbourhood.** When every candidate a slot's
 neighbourhood produced lands under its head's floor, the slot **re-seats**: it
 takes the next point its partition's draw offers, under the same radius and the
@@ -190,7 +209,8 @@ tried has been, in the attempt's own mode. Cost lands only on the seats the
 ceiling bit, and it lands as a *render* rather than as an attempt — the field is
 dumped and the thirty-two recolours are already scored. Rendering the same
 material up front would have been 3,632 renders bought to change at most 150
-decisions. They are cached by `(location, mode, map)` in
+decisions. [`gallery.OnDemand`] is the class that does it, and it is the whole of
+what a ceiling costs. Its pictures are cached by `(location, mode, map)` in
 `<pass>/on_demand.jsonl`, which is what keeps the re-seat replay free, and they go
 into the attempt store as pool rows like any other, stamped `on_demand`.
 
@@ -204,6 +224,17 @@ path-dependent, so a slot that moves invalidates every seat after it in the walk
 order — and only after it, which is why replaying is enough and patching is not.
 Replaying arithmetic is free; replaying renders is not, which is what the
 on-demand cache is for.
+
+**There is no dry-replay subcommand, and `curate replay` is not it.** That one is
+[`checks.replay`] — it re-derives every *released picture* from its own record and
+is a claim about pixels. What calibrated the ceiling was a **dry replay of the
+seating**: the pass's recorded candidates fed back through the seating loop at
+swept settings, with the colour readings supplied rather than measured. That is
+what [`ceiling.Lens`] is a class for instead of three functions — a caller can
+hand the seating a different one and answer what a synthetic candidate is dominant
+in without putting a render on disk. The scripts that did it were scratch and are
+untracked; the seam they used is shipped, so the leg re-derives from the seam and
+the pass records, but nothing on the command line runs it.
 
 ### `--target <cell>=<fraction>`
 
@@ -279,10 +310,22 @@ defaulted, because a default is how every pass over an unchanged pool comes out
 the same pass again. Each partition derives its own seed off the root and the
 record carries the **resolved integer** for the root and for every partition —
 `config.draw_seed` and `plan.selection.<partition>.draw_seed` — so re-running one
-partition's draw needs no re-derivation. Re-running the pass needs
+partition's draw needs no re-derivation. Beside them the record carries
+`config.draw_seed_given`, which says whether the root was typed or drawn, and
+`config.draw_top_k`, because K decides how much of the pass the seed can move and
+a reproduction needs both numbers. Re-running the pass needs
 `--draw-seed <the number the pass printed>`. `--seed` is the other seed and they
 are not interchangeable: that one reaches the palette anchors and the mode draws
 in step 5, and it is on every pass record already.
+
+**The `Draw` owns its RNG, and that is what makes a re-seat continuous.** A
+re-seating slot asks the same live [`Draw`] for its *next* point, so the RNG has
+to live where `nearest` and `live` live. A caller holding it would have to thread
+it through every re-seat round or re-create it — and a re-created one hands the
+same first pick back to a slot whose whole reason for asking is that the first
+pick failed. Only the first pick of a partition is drawn; everything after it is
+the gain and the radius, so a seeded pass is a different walk over one rule rather
+than a randomized one.
 
 Both numbers are by eye, and every pass prints the instrument that calibrates
 them: a **retro table** of the nearest chosen pairs, per partition and overall,
@@ -318,14 +361,27 @@ candidate render instead, captioned with the resolution it actually is.
 `floors.gallery_floor` is that seam and it is the one place in this project where
 a head's cut reads differently at two sites: `ACTING_RELEASE_BARS` still answers
 *does this kind gate a run's release* and the smooth answer there is still
-no, while the pass reads `MEASURED_RELEASE_FLOORS` on both kinds — strange 0.620,
-smooth 0.530, both re-fitted on the one `render` judge on 2026-08-23. The two questions are different. A run's release is ten diagnostic
+no, while the pass reads `MEASURED_RELEASE_FLOORS` on both kinds. **The heights
+are not written down on this page.** They are re-fitted at every judge flip and a
+number narrated here goes stale silently — read the stamps: the `Restatement`s in
+`floors.py`, the records they were fitted from at
+`models/render/release_floor_<kind>.json`, and the one live pair in
+[`models/render/README.md`](../../../models/render/README.md). `head floor --head
+<kind>` re-fits and refuses when a standing height does not reproduce. The two
+questions are different. A run's release is ten diagnostic
 pictures out of one night, and a bar there decides how much of that night is worth
 looking at; the pass decides what the collection ships out of everything, and a
 slot it cannot fill above a measured floor **after every re-seat it is allowed**
 is a fact about the pool. **Unfilled beats padded**: an empty slot is output with
 its binding reason named, because it is the signal for where to label or walk
 next.
+
+Whichever cut a site reads, it reads it against a **live** score rather than the
+one the night wrote: `records.live_reading()` prefers a row's `scores_current`
+block, and that block carries `judge` (the artifact that produced the numbers)
+beside `head` (the row's KIND, which is what picks a floor and a slot). Both are
+the [record store](../../../data/curation/README.md)'s to explain and are not
+restated here.
 
 **The pass has a colorize leg, and every chosen point gets both heads' attempts.**
 `--attempts m,smooth,strange` (3,2,6) buys, for each chosen point, the top `m`
@@ -553,6 +609,22 @@ release store *and* every earlier pass's attempt store — because the
 slot's neighbourhoods did **not** reach, so it needs the whole pool; the predicate
 lives in `pool_candidates` and not at that call site for exactly that reason.
 
+What it *does* cut is three things, each a different fact: a row this pass wrote
+(already in hand), a row with no score (a failed render is a decision with a reason
+and no number), and a row a person **rejected**.
+
+**Rejection does not propagate along a `source` chain, and that is worth knowing
+before reading a pool.** The cut is `records.is_rejected(row)` evaluated per row.
+A picture that a later pass seated out of the pool is on record **twice** — the
+original attempt and the pass's re-stamp of it, joined by `source` — and rejecting
+one of those two rows does not reject the other. So a rejected original leaves its
+re-stamp in the pool, seatable, resolving through [`picture_id`] to the very
+picture somebody took out of service. It has never fired: of the release store's
+rows, 292 carry a `source` and 51 carry a `rejected` block, and **no row carries
+both**. So this is a property of the predicate rather than a defect in the records,
+and a reject pass that starts reaching pool rows has to resolve to the picture the
+way the dedup does.
+
 **`curate gallery` refuses the pre-split layout** — a tracked gate directory under
 the pass id, or a passed-over release row in the history — before it spends
 anything, because a pass run over it would upsert its winners into a directory
@@ -749,8 +821,8 @@ decision needs it — a second 150-row body is a labelling batch, not a check.
 **Two cuts act here; everything else annotates.** `floors` owns every threshold.
 The junk floor removes a row at intake, on the location head's scale, saying no
 more than *do not spend colorize compute on this*. The **strange kind's release
-bar** removes one at selection: a strange row below 0.620 is not seated, and a
-strange slot with nothing above it goes unfilled.
+bar** removes one at selection: a strange row below `STRANGE_RELEASE_BAR` is not
+seated, and a strange slot with nothing above it goes unfilled.
 
 Both are [`Restatement`]s now, and so are the supply engine's two — the good floor
 and the great cut, which sit on the same location head and are owned by
@@ -777,12 +849,14 @@ exception taken deliberately, by review rather than by measurement: Matt read
 `run2` on 2026-08-17, and all eleven released strange rows below the advisory were
 bad, the head had been right about every one, and the release path had been
 padding strange slots out of thin passing supply. Its *height* is no longer that
-verdict: the 4-class retrain moved the head's whole probability scale, so the bar
-was restated off the labels — the crossover where the head's own P(>=3) stops
-disagreeing with the people who judged 3,085 pictures — and it landed at 0.685 on
-that head's scale rather than at the advisory it was promoted from. The 2026-08-23
-flip to one judge moved the scale again and the same crossover now reads **0.620**;
-THAT it acts is still the 2026-08-17 verdict. **The smooth kind stays advisory** — its below-advisory rows belong to a mix-ratio decision that has not
+verdict: the bar is restated off the labels at every flip — the crossover where
+the head's own P(>=3) stops disagreeing with the people who judged those pictures
+— and it has moved at each one, because a retrain moves the whole probability
+scale. **THAT it acts is the 2026-08-17 verdict and does not move; WHERE it sits
+is a measurement, and this page does not carry the number.** `head floor --head
+strange_render` re-fits it and refuses on a height that does not reproduce or a
+stamp that has gone stale; `models/render/README.md` is where the live pair is
+written down once. **The smooth kind stays advisory** — its below-advisory rows belong to a mix-ratio decision that has not
 been taken. An `Advisory` and a `Bar` are two classes rather than one class with
 a flag, so which kind a head has is visible at every call site.
 
@@ -950,8 +1024,9 @@ is 4 *locations* a slot: how far into a partition's ranked offer a head reaches.
 `budget.MODES_PER_LOCATION` is how many colorize attempts each of those locations
 costs — 1 for the smooth judge, whose roster is the one smooth coloring, and **2
 for the strange judge**, which draws two different modes per location without
-replacement (`colorize.modes_drawn_for`, seeded off the location and the head so
-a resume re-derives the pair). run10 seated 15 of 40 strange slots with 115
+replacement (`colorize.modes_drawn_for`, seeded on **`(seed, head, key)`** — the
+run's own `--seed` as well as the location and the head — so a resume re-derives
+the pair and two runs over one place draw differently). run10 seated 15 of 40 strange slots with 115
 candidates below the acting bar and seven of nine partitions short, off one
 uniformly drawn mode a location. The second draw reaches no further into the
 offer, so the release cap's arithmetic is untouched and the location rule sees the
@@ -1033,10 +1108,12 @@ which is a rule rather than a list, and re-running it rewrites the same bytes.
 **A ruling that keeps a row in service is a tracked record, or it is not a
 ruling.** That rule is live and idempotent, so it finds the same rows every time
 it is asked — which is why an *unwritten* exception is dangerous rather than
-merely undocumented. Four run8h strange rows sat below the 0.685 bar and stay
+merely undocumented. Four run8h strange rows sat below the bar as it stood when
+they were ruled on (0.685, on the retired artifact the row itself names) and stay
 served on Matt's reading of the sheet — the exception is keyed on the row, so it
-survived the flip that moved the bar to 0.620 and re-scored every score under it; `data/curation/bar_exceptions.jsonl` names
-them one by one, with the bar, the score, who ruled and when, and
+has survived every flip since, each of which moved the bar and re-scored every
+score under it; `data/curation/bar_exceptions.jsonl` names
+them one by one, with the bar as it was, the score, who ruled and when, and
 `rejection.below_acting_bar` passes over exactly those keys. It is per *row*: an
 exception naming a run would go on excusing rows that run has not made yet, and
 one naming a head would retire the bar by the back door. A pass names what it
