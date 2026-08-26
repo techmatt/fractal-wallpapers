@@ -31,6 +31,17 @@ models = [
   "numpy>=2",
   "pillow>=11",
 ]
+# Choosing the gallery by solving for it rather than by walking a ranked list.
+# SciPy's HiGHS binding is the MILP solver `curate solve` hands its program to;
+# numpy and pillow are what reads the ledger's colours and the pixel clouds the
+# pairwise rules act on. Its own extra and not part of `models`: the solve reads
+# scores off a store and never loads a head, so a machine that solves does not
+# need the CUDA wheels, and a machine that only renders needs neither.
+solve = [
+  "scipy>=1.14",
+  "numpy>=2",
+  "pillow>=11",
+]
 
 # The CUDA build, not PyPI's CPU default: a head trains in an hour on a GPU and
 # most of a week without one.

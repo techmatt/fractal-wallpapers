@@ -269,9 +269,17 @@ class Lens:
 
 @dataclass
 class Rule:
-    """The constants and the targets. One per pass; carries no seating state."""
+    """The constants and the targets. One per pass; carries no seating state.
 
-    lens: Lens
+    The **lens is optional** because two readers want the arithmetic without the
+    pictures. A sequential seating needs one — it reads a candidate's colour and
+    its pixel cloud off the render as it walks — but [`curation.solve`] states the
+    same rules as constraint rows over a store that already carries every colour,
+    and a second derivation of `allowed()` would be a second answer to what the
+    allowance is. `begin()` is the half that needs it, and says so.
+    """
+
+    lens: Lens | None = None
     #: `{cell: fraction}` as the caller asked for it. Cells only — a target is
     #: never set on a family, though setting one moves a family's allowance.
     targets: dict = field(default_factory=dict)
@@ -309,7 +317,17 @@ class Rule:
         return int(math.ceil(self.targets[cell] * int(n)))
 
     def begin(self, seats: int) -> Seating:
-        """A fresh sequential seating over `seats` slots. Every round starts here."""
+        """A fresh sequential seating over `seats` slots. Every round starts here.
+
+        The one method that needs a lens, and the reason a lensless rule refuses
+        here rather than at the first candidate it cannot read.
+        """
+        if self.lens is None:
+            raise RuntimeError(
+                "a seating reads each candidate's colour and pixel cloud off its render, so "
+                "it needs a Lens. This Rule was built without one, which is what a reader "
+                "that already has the colours on its rows builds."
+            )
         self.lens.release()
         return Seating(self, int(seats))
 

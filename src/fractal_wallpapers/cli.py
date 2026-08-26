@@ -3104,6 +3104,43 @@ def curate_candidate_ledger(args: argparse.Namespace) -> int:
     return 0
 
 
+def curate_solve(args: argparse.Namespace) -> int:
+    """Solve the gallery, sweep `n`, or measure what truncating the pool costs."""
+    from fractal_wallpapers.curation import ceiling, solve
+
+    try:
+        targets = dict(ceiling.parse_target(text) for text in (args.target or ()))
+    except ceiling.TargetRefused as refusal:
+        print(refusal)
+        return 1
+    name = args.name or f"n{args.n}"
+    try:
+        if args.what == "run":
+            record = solve.solve(n=args.n, targets=targets, locations=args.locations)
+            if record.get("feasible") and not args.no_render:
+                solve.render_seats(name, record, workers=args.workers)
+            path = solve.write_record(name, record)
+            print(f"{path}")
+            if record.get("feasible"):
+                print(f"{solve.contact_sheet(name, record)}")
+            else:
+                print(json.dumps(record.get("shortage"), indent=2))
+            return 0 if record.get("feasible") else 1
+        report = (
+            solve.sweep(seconds=args.sweep_seconds)
+            if args.what == "sweep"
+            else solve.truncation(n=args.n)
+        )
+    except solve.SolveRefused as refusal:
+        print(refusal)
+        return 1
+    out = solve.solve_dir(name) / f"{args.what}.json"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8", newline="\n")
+    print(f"{out}")
+    return 0
+
+
 def curate_reject(args: argparse.Namespace) -> int:
     """Apply today's acting release bars to a run that was released before they acted."""
     from fractal_wallpapers.curation import floors, records, rejection
@@ -6073,6 +6110,7 @@ def curate_commands(subcommands) -> None:
     from fractal_wallpapers.curation import framing as framing_module
     from fractal_wallpapers.curation import gallery as gallery_module
     from fractal_wallpapers.curation import run as run_module
+    from fractal_wallpapers.curation import solve as solve_module
 
     curating = subcommands.add_parser(
         "curate",
@@ -6792,6 +6830,79 @@ def curate_commands(subcommands) -> None:
         "record. Those rows are recipes nobody has saved yet",
     )
     ledger_store.set_defaults(handler=curate_candidate_ledger)
+
+    solving = steps.add_parser(
+        "solve",
+        help="choose the gallery by solving for it: one binary per candidate, the rules "
+        "as constraint rows, HiGHS",
+        description=(
+            "The second half of propose-then-solve. Every candidate in the ledger is a "
+            "binary; one candidate per location, the diversity radius, the palette-group "
+            "cap and the colour ceiling are rows; the objective is lexicographic — how "
+            "many clear the q4 bar, then the floor, then the sum less a soft mode-floor "
+            "penalty. The two pairwise rules are GENERATED rather than materialized: "
+            "solve, look at the incumbent's own pairs, add the violated ones, solve "
+            "again. An infeasible program is not an error — it is a shortage list saying "
+            "which constraint is how many candidates short, and in which partitions. "
+            "`sweep` solves at growing n and says which constraint binds first and where; "
+            "`truncate` solves the same n against a smaller reachable pool and compares."
+        ),
+    )
+    solving.add_argument(
+        "what",
+        choices=["run", "sweep", "truncate"],
+        help="solve one gallery, sweep n upward until something binds, or compare the "
+        "same n against truncated pools",
+    )
+    solving.add_argument(
+        "--n",
+        type=int,
+        default=candidate_ledger_module.FIRST_SOLVE,
+        help=f"how many wallpapers to seat (default {candidate_ledger_module.FIRST_SOLVE})",
+    )
+    solving.add_argument(
+        "--name",
+        help="what to call this solve's output directory (default `n<N>`)",
+    )
+    solving.add_argument(
+        "--target",
+        action="append",
+        metavar="CELL=FRACTION",
+        help="with `run`: demand that at least this fraction of the seats be dominant in "
+        "this colour cell, as a HARD row. A target the pool cannot meet is what produces "
+        "a shortage list; the target also raises that cell's and its family's ceiling "
+        "allowance, so the demand is not refused by the ceiling it asked for",
+    )
+    solving.add_argument(
+        "--locations",
+        type=int,
+        metavar="COUNT",
+        help="with `run`: let the program reach only this many strongest locations, "
+        "ranked by their best candidate. Unset is the whole ledger",
+    )
+    solving.add_argument(
+        "--workers",
+        type=int,
+        default=4,
+        help="with `run`: render processes for the release leg (default 4)",
+    )
+    solving.add_argument(
+        "--no-render",
+        action="store_true",
+        help="with `run`: take every decision and make no release picture. The contact "
+        "sheet falls back to each seat's candidate render and says which it is showing",
+    )
+    solving.add_argument(
+        "--sweep-seconds",
+        type=float,
+        default=solve_module.SWEEP_SECONDS,
+        metavar="SECONDS",
+        help="with `sweep`: how long the whole ladder may take before it stops and "
+        f"records which rung it stopped at (default {int(solve_module.SWEEP_SECONDS)}). The "
+        "round cap bounds rounds and not time, and above n=60 both the rounds and the "
+        "program inside each of them grow",
+    )
+    solving.set_defaults(handler=curate_solve)
 
     rejecting = steps.add_parser(
         "reject",
