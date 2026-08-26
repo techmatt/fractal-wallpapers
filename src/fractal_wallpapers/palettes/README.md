@@ -119,6 +119,40 @@ which is the class that held 90 of gallery3's 150 seats. So a
 `curate gallery --target` draws its carrier attempts from this table and then
 reads each attempt's dominance **on its own render**.
 
+## The ramp bounds the colour, and three things after it leak
+
+A map's ramp gives an **exact upper bound** on what a picture through it can be: a
+picture's chromatic share of a family is `sum_p w_p A(p,f) / sum_p w_p T(p)` over the
+unfolded bake's positions, and by the mediant inequality that is at most
+`max_p A(p,f)/T(p)`, attained by a picture spending the whole ramp at one place. Folding
+never adds colour, so the unfolded read is the right superset.
+
+The bound holds of the **lookup** and not of the **picture this repository stores**, and
+the difference is large enough to matter to anything reading colour off a render:
+
+* **Supersampling and JPEG average colour after the lookup.** A high-frequency field —
+  `gaussian_int`, and the direct traps above all — puts very different ramp positions in
+  neighbouring subsamples, and their mean is a colour the ramp does not hold. Measured:
+  `meloni` under `gaussian_int` reads red `0.458` against a ramp bound of `0.010`; the
+  same recipe at one sample per pixel written as PNG reads `0.000`, exactly on the bound.
+  `ss2` alone accounts for `0.222` of the gap and the JPEG for the rest.
+* **Autolevel rewrites the stops**, so a levelled render is a lookup into a *different*
+  map from the one that was screened. `within-25` under `smooth` reads teal `0.002`
+  unlevelled and `0.266` levelled.
+* The direct traps are the worst offenders and `autolevel.applies_to` excludes their kind,
+  which is what isolates averaging rather than levelling as the dominant leak.
+
+So a ramp read is a **necessary condition on the map, not a prediction about the picture**,
+and it is not one at all for the noisy modes. Over 13,020 (group, mode) pairs rendered
+directly, a ramp that could lead a hue family delivered it **23-33% of the time**, and a
+ramp that could not delivered it in 0.1-0.4% — the bound is nearly one-sided, and loose.
+
+That sweep's record is `artifacts/curation/palette_mass_sweep/rows.jsonl` — one row per
+(palette group, mode, location) with the 48-cell vector and the recipe that made it,
+untracked at 25.7 MB. It is what says the library's colour is not the palette head's: the
+head's own evidence had 5 (group, mode) pairs leading green and 10 leading teal, and
+rendering the pairs it never chose found 1,705 and 1,563.
+
 ## `dominance` — what colour a picture is, and `pixel_clouds` — whether two are one picture
 
 `dominance` is one definition read everywhere: the codebook's 52-cell census with
