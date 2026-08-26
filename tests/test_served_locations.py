@@ -60,6 +60,7 @@ def served_row(candidate: str, viewport: dict, run: str = "earlier") -> dict:
 # --------------------------------------------------------------------------- #
 # The index.
 # --------------------------------------------------------------------------- #
+@pytest.mark.slow
 def test_the_index_reads_the_tracked_store_and_not_this_process_s_root(tmp_path) -> None:
     """`--ephemeral` redirects everything a rehearsal writes. The collection is not
     a thing a rehearsal owns, and an index that read its own empty root would seat
@@ -329,6 +330,7 @@ def test_a_pass_that_rendered_nothing_never_becomes_the_collection() -> None:
     assert served_locations.current_pass([unrendered]) is None
 
 
+@pytest.mark.slow
 def test_each_collection_holds_one_wallpaper_per_location() -> None:
     """The tracked store, after the retirement. This is the rule's whole claim, and
     the only place it can be checked is against the collection itself.

@@ -151,6 +151,7 @@ def rooted(run: Walk) -> Walk:
 # --------------------------------------------------------------------------- #
 # The four settings, each planted red.
 # --------------------------------------------------------------------------- #
+@pytest.mark.slow
 @needs_engine
 def test_the_identity_holds_and_the_run_records_what_it_checked(tmp_path, corpus) -> None:
     """A run that scores its own gate renders is answerable for that claim, so the
@@ -186,6 +187,7 @@ def test_a_non_cyclic_map_refuses_rather_than_folding(tmp_path, corpus, monkeypa
     assert "cyclic" in str(refusal.value)
 
 
+@pytest.mark.slow
 def test_a_node_width_the_head_has_no_tiles_of_refuses(tmp_path, corpus) -> None:
     """`--node-width` is a live flag, and moving it moves the gate render's frame
     out of every regime the corpus was built at."""
@@ -195,6 +197,7 @@ def test_a_node_width_the_head_has_no_tiles_of_refuses(tmp_path, corpus) -> None
     assert NODE.spelled in str(refusal.value)
 
 
+@pytest.mark.slow
 @needs_engine
 def test_a_cap_policy_that_moved_since_the_corpus_was_built_refuses(tmp_path, corpus) -> None:
     """The cap decides what counts as interior, so a corpus built under one policy
@@ -207,6 +210,7 @@ def test_a_cap_policy_that_moved_since_the_corpus_was_built_refuses(tmp_path, co
     assert "12345" in str(refusal.value), "it names the disagreement it found"
 
 
+@pytest.mark.slow
 def test_a_corpus_that_is_not_on_this_machine_refuses_rather_than_assuming(
     tmp_path, monkeypatch
 ) -> None:
@@ -235,6 +239,7 @@ def test_a_scorer_that_declares_no_regime_asserts_nothing(tmp_path) -> None:
 # --------------------------------------------------------------------------- #
 # What the engine actually drew.
 # --------------------------------------------------------------------------- #
+@pytest.mark.slow
 def test_a_batch_drawn_at_another_geometry_is_refused_on_the_engine_s_own_word(
     tmp_path, corpus
 ) -> None:
@@ -249,6 +254,7 @@ def test_a_batch_drawn_at_another_geometry_is_refused_on_the_engine_s_own_word(
     assert NODE.spelled in str(refusal.value)
 
 
+@pytest.mark.slow
 @needs_engine
 def test_the_walk_hands_the_scorer_the_picture_the_engine_already_made(tmp_path, corpus) -> None:
     """The whole change: a survivor's score is read off the gate render, and no
@@ -275,6 +281,7 @@ def test_the_walk_hands_the_scorer_the_picture_the_engine_already_made(tmp_path,
             assert picture.endswith(".jpg")
 
 
+@pytest.mark.slow
 @needs_engine
 def test_a_judge_that_reads_another_geometry_is_offered_nothing(tmp_path, corpus) -> None:
     """The gate render is a real picture of the right place at the wrong size,
@@ -288,6 +295,7 @@ def test_a_judge_that_reads_another_geometry_is_offered_nothing(tmp_path, corpus
     assert all(batch is None for batch in judge.offered), "it was offered a gate render"
 
 
+@pytest.mark.slow
 @needs_engine
 def test_every_scored_row_says_which_picture_its_verdict_came_off(tmp_path, corpus) -> None:
     """A union that holds ledgers scored at two geometries must never have to

@@ -30,8 +30,11 @@ jobs:
       - name: Format check
         run: python -m ruff format --check .
 
+      # The full lane. `--slow` is what CI and a pre-checkpoint run give: the
+      # default run holds back the renders, the training loops and the store
+      # sweeps, which is right for an edit-run loop and wrong for a gate.
       - name: Test
-        run: python -m pytest
+        run: python -m pytest --slow
 
       - uses: dtolnay/rust-toolchain@stable
         with:

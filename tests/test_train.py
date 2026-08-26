@@ -153,6 +153,7 @@ def test_a_pin_the_build_cannot_find_is_a_pin_it_cannot_enforce(a_tiny_corpus) -
         train_module.assert_the_pin_holds(locations)
 
 
+@pytest.mark.slow
 def test_two_epochs_leave_a_checkpoint_that_scores(a_tiny_corpus) -> None:
     from fractal_wallpapers.models import scoring
     from fractal_wallpapers.models import tiles as tile_module

@@ -222,6 +222,7 @@ def _score_rows(directory, run, regime, ids, labels, groups, families, probabili
             handle.write(json.dumps(row) + "\n")
 
 
+@pytest.mark.slow
 def test_the_read_runs_end_to_end_and_gates_on_both_arms(tmp_path, monkeypatch) -> None:
     """A candidate that is the incumbent's equal at the canonical regime and
     keeps its order at the cheap ones passes; the incumbent, whose cheap-regime

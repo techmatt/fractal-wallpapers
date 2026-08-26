@@ -130,6 +130,7 @@ def test_a_dead_worker_finishes_the_release_serially_and_announces_it(monkeypatc
     assert any("POOL BROKEN" in line for line in said)
 
 
+@pytest.mark.slow
 def test_a_row_that_raises_is_a_recorded_row(monkeypatch) -> None:
     """It never crosses the pool boundary, so one bad location cannot take the rest down."""
     from fractal_wallpapers.curation import colorize
@@ -274,6 +275,7 @@ def test_a_hung_worker_is_killed_by_the_parent_and_the_rest_finish_serially(
     assert gate.observed[0] == (1.0 + release.KILL_GRACE, False, True)
 
 
+@pytest.mark.slow
 def test_a_killed_row_is_a_failed_row_that_says_it_was_killed(monkeypatch) -> None:
     """The engine call is where the wall clock goes, so that is where it is cut —
     and a row that failed on its own must not be reported as a kill."""

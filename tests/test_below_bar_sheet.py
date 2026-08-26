@@ -127,6 +127,7 @@ def test_the_sheet_is_one_self_contained_file_that_says_what_it_dropped(
     assert b"\r\n" not in out.read_bytes()
 
 
+@pytest.mark.slow
 def test_the_live_collection_sheet_names_the_rows_curate_reject_would_take() -> None:
     """Against the real record store: the sheet and the pass are one population."""
     rows = records.read_decisions(records.RELEASE)

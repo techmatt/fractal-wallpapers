@@ -34,6 +34,7 @@ def authored() -> list[dict]:
     return rows
 
 
+@pytest.mark.slow
 def test_densifying_an_authored_row_reproduces_its_tracked_map(authored) -> None:
     """The whole claim: this is the archive's densifier, not a second one."""
     pytest.importorskip("numpy")
@@ -42,6 +43,7 @@ def test_densifying_an_authored_row_reproduces_its_tracked_map(authored) -> None
         assert authored_import.densify(row["stops"]) == tracked["stops"], row["name"]
 
 
+@pytest.mark.slow
 def test_the_dense_gradient_agrees_with_the_kind_the_library_ships(authored) -> None:
     """`kind` is what every fold in this repository is read off. Measuring it here
     has to reach the same answer the tracked file carries, or one of the two is

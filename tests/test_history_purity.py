@@ -13,6 +13,8 @@ import re
 import subprocess
 from pathlib import Path
 
+import pytest
+
 MAX_TRACKED_BYTES = 1024 * 1024
 
 # A machine-specific path in source is the other kind of one-way door: it works
@@ -176,6 +178,7 @@ def absolute_paths_in_records() -> tuple[tuple[str, str | None, str], ...]:
     return tuple(found)
 
 
+@pytest.mark.slow
 def test_no_absolute_paths_in_tracked_records() -> None:
     offenders = [
         f"{name}: {key} = {value}"
@@ -185,6 +188,7 @@ def test_no_absolute_paths_in_tracked_records() -> None:
     assert not offenders, f"absolute paths in tracked records: {offenders}"
 
 
+@pytest.mark.slow
 def test_the_record_exemption_is_not_dead() -> None:
     """An exception nobody needs any more is a rule nobody reads.
 

@@ -103,6 +103,7 @@ def test_the_machine_leg_moves_the_deficit_and_both_reads_are_kept() -> None:
     assert held.deficit_labels_only["phoenix"] == pytest.approx(10.0)
 
 
+@pytest.mark.slow
 def test_the_realized_mix_converges_on_the_intent_whatever_a_partition_costs() -> None:
     """The headline property, and the reason the quota measures rather than
     steers: a partition that happens to expand cheaply cannot buy itself a larger

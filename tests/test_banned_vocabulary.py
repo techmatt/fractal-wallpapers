@@ -36,6 +36,8 @@ import re
 import subprocess
 from pathlib import Path
 
+import pytest
+
 # Each term's last character is written as a character class, so this file is not
 # itself a match for the pattern it compiles. The compiled regex is unaffected.
 BANNED_TERMS = (
@@ -154,6 +156,7 @@ def offenders_in(name: str, text: str) -> list[str]:
     ]
 
 
+@pytest.mark.slow
 def test_no_tracked_file_uses_the_old_vocabulary() -> None:
     offenders = []
     for name in tracked_files():

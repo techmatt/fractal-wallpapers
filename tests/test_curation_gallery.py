@@ -833,6 +833,7 @@ def synthetic_pass(extra: int) -> dict:
     return written
 
 
+@pytest.mark.slow
 def test_the_tracked_bytes_of_a_pass_do_not_move_with_the_attempt_count(
     tmp_path, monkeypatch
 ) -> None:
@@ -863,6 +864,7 @@ def test_the_tracked_bytes_of_a_pass_do_not_move_with_the_attempt_count(
     assert abs(sizes[1] - sizes[0]) < 64, (sizes, stores)
 
 
+@pytest.mark.slow
 def test_every_tracked_file_a_five_hundred_slot_pass_writes_clears_the_history_guard(
     record_root,
 ) -> None:

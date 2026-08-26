@@ -71,6 +71,7 @@ def test_a_probe_becomes_a_spec_through_the_production_path() -> None:
     assert spec["colormap"] == engine_fingerprint.COLORMAP
 
 
+@pytest.mark.slow
 @needs_engine
 def test_the_fingerprint_is_stable_and_short() -> None:
     first = engine_fingerprint.current()
@@ -79,6 +80,7 @@ def test_the_fingerprint_is_stable_and_short() -> None:
     assert first == engine_fingerprint.current()
 
 
+@pytest.mark.slow
 @needs_engine
 def test_the_fingerprint_moves_when_a_probe_moves(monkeypatch) -> None:
     """A different probe set is a different number, which is what makes it a digest.
@@ -144,6 +146,7 @@ def a_location() -> dict:
     }
 
 
+@pytest.mark.slow
 @needs_engine
 def test_a_view_no_stamp_claims_is_re_rendered(tmp_path) -> None:
     """The file is there, the digest is right, and it is drawn again anyway.
@@ -169,6 +172,7 @@ def test_a_view_no_stamp_claims_is_re_rendered(tmp_path) -> None:
     assert made_third
 
 
+@pytest.mark.slow
 @needs_engine
 def test_a_gate_render_no_stamp_claims_is_not_offered_to_the_head(tmp_path) -> None:
     """`intake.gate_render` refuses a picture whose build nobody wrote down.

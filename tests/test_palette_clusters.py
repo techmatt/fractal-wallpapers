@@ -16,6 +16,7 @@ from fractal_wallpapers.palettes import clusters
 from fractal_wallpapers.paths import colormap_dir
 
 
+@pytest.mark.slow
 def test_the_committed_grouping_is_what_the_command_writes() -> None:
     """The whole point of the tracked file: it is not a snapshot of a run that
     happened once, it is what `palettes clusters` produces from this library."""

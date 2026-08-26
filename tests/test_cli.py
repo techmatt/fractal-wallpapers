@@ -351,6 +351,7 @@ def test_a_harvest_names_its_minutes_or_derives_them_and_never_both() -> None:
         parse(["harvest", "--minutes", "90", "--finish-by", "07:00"])
 
 
+@pytest.mark.slow
 def test_a_derived_plan_reserves_the_release_the_run_will_actually_ask_for() -> None:
     """`--release-slots` had no default while a release was a number somebody
     chose per night. A run keeps a diagnostic ten now, so the reservation's

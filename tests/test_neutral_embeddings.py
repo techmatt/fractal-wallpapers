@@ -134,14 +134,26 @@ def test_a_stored_row_re_renders_its_own_picture_without_any_ledger() -> None:
 # --------------------------------------------------------------------------- #
 @pytest.fixture
 def store(tmp_path, monkeypatch):
-    """A live store, a durable copy beside it, and the manifest pointed at both."""
+    """A live store, a durable copy beside it, and the manifest pointed at both.
+
+    The picture directory is redirected with them. It is not the subject of any
+    test here, but the manifest counts and sizes every file in it, so a fixture
+    that left it pointed at the real one made each `save` a stat of this
+    machine's thirty thousand neutral renders — two seconds, three times over,
+    to count files nothing asserts anything about. It is also the difference
+    between a test that reads its own directory and one that reads whatever
+    happens to be on the disk it runs on.
+    """
     live = tmp_path / "hot" / "curation" / embeddings.STORE_NAME
     copy = tmp_path / "cold" / durability.BACKUP_UNIT / embeddings.STORE_NAME
     manifest = tmp_path / "neutral_embeddings.manifest.json"
+    pictures = tmp_path / "hot" / "curation" / "neutral"
     live.parent.mkdir(parents=True)
+    pictures.mkdir(parents=True)
     monkeypatch.setattr(embeddings, "store_path", lambda: live)
     monkeypatch.setattr(embeddings, "backup_path", lambda: copy)
     monkeypatch.setattr(embeddings, "manifest_path", lambda: manifest)
+    monkeypatch.setattr(neutral, "neutral_dir", lambda: pictures)
     monkeypatch.setattr(durability, "rehome", lambda stored: None)
     return live, copy, manifest
 

@@ -73,6 +73,7 @@ def addresses_a_finished_store(source: str) -> bool:
     return False
 
 
+@pytest.mark.slow
 def test_only_the_finished_store_addresses_the_finished_records() -> None:
     offenders = [
         name

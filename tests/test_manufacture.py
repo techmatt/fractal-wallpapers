@@ -371,6 +371,7 @@ def test_the_knob_grid_opens_at_the_recipe_production_actually_uses() -> None:
     assert len(set(manufacture.KNOB_GRID)) == len(manufacture.KNOB_GRID)
 
 
+@pytest.mark.slow
 def test_the_probe_says_so_rather_than_returning_a_zero_when_it_can_sweep_nothing(
     tmp_path, monkeypatch
 ) -> None:

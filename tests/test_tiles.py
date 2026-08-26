@@ -60,6 +60,7 @@ def test_an_id_survives_a_json_round_trip_exactly() -> None:
     assert json.loads(json.dumps({"id": identifier}))["id"] == identifier
 
 
+@pytest.mark.slow
 def test_the_ids_of_the_shipped_corpus_do_not_collide(shipped_scored, shipped_tile_plan) -> None:
     assert len(shipped_tile_plan) == len(shipped_scored)
     assert len({row["location_id"] for row in shipped_tile_plan}) == len(shipped_tile_plan)
@@ -257,6 +258,7 @@ def test_the_canonical_regime_writes_the_names_the_corpus_already_has(tmp_path) 
         assert row["path"].endswith(f"/7/{legacy}"), row["path"]
 
 
+@pytest.mark.slow
 @needs_engine
 def test_a_second_regime_cannot_skip_over_the_first_ones_pictures(tmp_path) -> None:
     """The planted red: run this against a build whose names carry no regime and
@@ -286,6 +288,7 @@ def test_a_second_regime_cannot_skip_over_the_first_ones_pictures(tmp_path) -> N
     assert again["locations_skipped"] == 1
 
 
+@pytest.mark.slow
 @needs_engine
 def test_the_canonical_tile_is_the_render_a_deployed_judge_would_make(tmp_path) -> None:
     """The one property the whole evaluation rests on: a location scored out of

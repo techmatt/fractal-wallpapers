@@ -77,6 +77,7 @@ def test_a_map_is_at_no_distance_from_itself() -> None:
     assert numpy.allclose(matrix, matrix.T)
 
 
+@pytest.mark.slow
 def test_a_neighbourhood_opens_on_its_own_anchor() -> None:
     pool = palette_sets.pool()["pool"]
     members = space.neighbourhood(pool[5], pool, 8)
@@ -84,6 +85,7 @@ def test_a_neighbourhood_opens_on_its_own_anchor() -> None:
     assert len(set(members)) == 8
 
 
+@pytest.mark.slow
 def test_a_neighbourhood_is_measurably_tighter_than_a_uniform_draw() -> None:
     """This is the whole reason the module exists. A hard set is meant to ask a
     finer question than a uniform draw does, and the number that says whether it

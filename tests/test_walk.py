@@ -280,6 +280,7 @@ def test_a_smoke_walk_records_coordinates_as_decimal_strings(tmp_path) -> None:
     assert seen, "the walk recorded no candidates, so nothing above was checked"
 
 
+@pytest.mark.slow
 @needs_engine
 def test_a_reframing_inherits_the_root_it_was_triggered_from(tmp_path) -> None:
     """An operator is not a source: it applies to a place the walk found, and it
@@ -334,6 +335,7 @@ def test_a_reframing_inherits_the_root_it_was_triggered_from(tmp_path) -> None:
                 assert triggering["root_id"] == row["root_id"]
 
 
+@pytest.mark.slow
 @needs_engine
 def test_a_reframing_names_the_node_it_pushed(tmp_path) -> None:
     """A chain through a reframing is a lookup, not a reconstruction.

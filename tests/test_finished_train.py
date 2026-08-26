@@ -112,6 +112,7 @@ def test_the_transform_still_runs_with_the_colour_stages_off() -> None:
     assert tuple(tensor.shape) == (3, head.TARGET_HEIGHT, head.TARGET_WIDTH)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("head_name", sorted(finished.HEADS))
 def test_the_split_is_the_pin_and_the_selection_slice_comes_out_of_training(
     head_name: str, shipped_render_cache
