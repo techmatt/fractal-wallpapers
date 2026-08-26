@@ -10,10 +10,12 @@ manufacture/<batch>/<kind>.jsonl what a manufactured row was made FOR, keyed on 
 bar_exceptions.jsonl             rows a ruling keeps in service below an acting bar
 supply_scores.manifest.json      what the untracked supply sidecar is, so a loss shows
 neutral_embeddings.manifest.json what the untracked embedding store is, and under what
+candidate_ledger/rows.manifest.json    what the untracked candidate ledger is
+candidate_ledger/scores.manifest.json  ...and its score sidecar, keyed on the judge
 ledger_provenance.json           which walk ledger each released row was drawn from
 ```
 
-**Three of these describe files that are not here.** `supply_scores.manifest.json`
+**Five of these describe files that are not here.** `supply_scores.manifest.json`
 names `artifacts/curation/supply_scores.jsonl` — the location head's read of the
 standing supply, and the one thing under the regenerable tree that this checkout
 cannot regenerate, because the ledgers it reads are under that tree too. It is
@@ -49,6 +51,21 @@ is the ability to be *offered* to another run, since an intake starts from
 ledgers. Regenerate it with `curate ledgers --write`, which resolves through the
 same tier funnel every reader uses — looking on the hot tier alone reports seven
 of the eight as lost.
+
+`candidate_ledger/rows.manifest.json` and `candidate_ledger/scores.manifest.json`
+are the same arrangement again, over the two files of the **candidate ledger**:
+`artifacts/curation/candidate_ledger/rows.jsonl`, one row per recipe this project
+has ever rendered, and `scores.jsonl` beside it, one row per (recipe, judge
+artifact, regime). The rows are tens of megabytes and the sidecar grows again
+with every judge that ships, so what the history keeps is the row count, the byte
+count, the sha256 and — the ledger's own column — the runs, the partitions and
+the distinct locations the rows stand on. `curate candidate-ledger backfill`
+builds them from the two decision stores without rendering anything, `census`
+reads the fill over the axes a solver's constraints act on, and
+`save|check|restore` keeps them. The module is
+[`curation.candidate_ledger`](../../src/fractal_wallpapers/curation/candidate_ledger.py),
+and the type its rows are keyed by is
+[`curation.recipes`](../../src/fractal_wallpapers/curation/recipes.py).
 
 **A gallery pass writes into two of these and not into the other two.** Its
 attempts are pool rows like any run's, so they land in `gate/<pass>/` and

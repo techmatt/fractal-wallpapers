@@ -17,6 +17,8 @@ intake     the ranked offer, best first per partition
 budget     how many pictures to make, and for which judge
 colorize   a candidate set of maps, the head's pick, a render, a verdict
 framing    where a location's attempts are framed, decided before they render
+recipes    what decides a candidate's pixels, as one value with one key
+candidate_ledger  every recipe ever rendered, one row each, with its colour
 selection  top-N per judge, under the slot and supply caps, the location rule
            — and the bar
 gallery    the second phase: one pass over the whole pool for what ships
@@ -55,6 +57,9 @@ fractal-wallpapers curate gallery --n 100 --no-full-size                # seat, 
 fractal-wallpapers curate gallery --n 100 --release-regime 2560x1440ss4 # the regime gallery1-3 shipped at
 fractal-wallpapers curate gallery --pass gallery2                       # ...then make them
 fractal-wallpapers curate gallery-store check --pass gallery1          # is the store whole?
+fractal-wallpapers curate candidate-ledger backfill    # the cache, from what exists
+fractal-wallpapers curate candidate-ledger census --n 20 --out scratch/ledger_census.json
+fractal-wallpapers curate candidate-ledger save        # both files, made durable
 fractal-wallpapers curate gallery --pass gallery1 --migrate            # out of the old layout
 fractal-wallpapers curate manufacture --step register --write          # BEFORE anything
 fractal-wallpapers curate manufacture --oversample 2.5                 # plan, build, select
@@ -639,6 +644,111 @@ deliberately: `curation.rescore` finds any pool row's candidate render at
 that stored its pictures elsewhere would be a pass whose rows the next re-score
 refuses to read. Both contact sheets are written to `scratch/`, self-contained
 with their thumbnails embedded.
+
+## The candidate ledger: what we have already made
+
+A pass renders candidates, seats a few of them, and keeps a decision about each.
+What it has never kept is an answer to the question a *solver* has to ask before
+it does anything: **have we already made this picture?** The propose-then-solve
+build starts here, and this is its first piece — a type that names a picture, and
+a durable store of every picture named.
+
+```
+src/fractal_wallpapers/curation/recipes.py           the type, and the key
+src/fractal_wallpapers/curation/candidate_ledger.py  the store, the backfill, the census
+artifacts/curation/candidate_ledger/rows.jsonl       one row per recipe
+artifacts/curation/candidate_ledger/scores.jsonl     one row per (recipe, judge, regime)
+data/curation/candidate_ledger/rows.manifest.json    what the history keeps of the first
+data/curation/candidate_ledger/scores.manifest.json  ...and of the second
+<archive>/curation_backup/candidate_ledger/*.jsonl   the durable copies
+```
+
+```
+fractal-wallpapers curate candidate-ledger backfill   # from what already exists
+fractal-wallpapers curate candidate-ledger census --n 20 --out scratch/ledger_census.json
+fractal-wallpapers curate candidate-ledger save       # both files, both manifests
+fractal-wallpapers curate candidate-ledger check      # are they whole
+```
+
+**The key is the pixels and nothing but the pixels.** It is a digest of the
+engine spec — through `renders.spec_of`, so this project has one derivation of
+what a picture's engine input is rather than two — with two members dropped and
+one added.
+
+The dropped members are both paths. `output` is where a render went, and
+`colormap_dir` is an **absolute path into the checkout**: `renders.job_name`
+digests it, so a render-cache file name is different on every machine and
+different again after a clone moves. That is harmless where it lives — a cache
+file name means nothing off the machine that wrote it — and it is not harmless
+for a store keyed forever.
+
+The added member is the **autolevel band's sha256**. `band_autolevel/v1`
+re-renders through a colormap built from `data/coloring/levels_band.json`, so two
+candidates with one engine spec and two bands are two pictures, and no other
+digest here carries it. The band's `acted` flag is deliberately *not* keyed: it is
+derived from the render rather than an input to it.
+
+`palette_group` is carried on the row and never keyed. It decides no pixels, it
+comes from a tracked table a re-clustering can move, and a key that moved with it
+would re-key rows whose pixels never changed.
+
+**The identity is the recipe, never the location key**, and that is what makes a
+superseded framing a re-key rather than a rebuild. Framing refinement is moving
+into harvest, where a refinement **moves** the location key
+(`supply.ledgers.refined_of`) — so when it lands, the rows standing on the old key
+keep their pictures and their colours, and one field changes:
+`location.superseded_by`, beside `location.key`.
+
+Both keys are on every row and neither is reconciled. The gallery pass pins a
+location's identity to the frame on record while rendering somewhere else inside
+it, which is what stops one place taking two seats — so `location.key` is that
+recorded identity and `location.frame_key` is the identity of the frame the
+pixels are of.
+
+**`framing.used`, never `framing.adopted`.** The fallback leg re-renders a
+location at its recorded frame after every refined attempt on a slot lands under
+the bar. A cache keyed on what was adopted would file every one of those under
+the refined frame's name.
+
+**Record everything; filter nothing.** No quality bar admits a row: a floor is a
+reading of a judge and both move, the recipe and the pixels do not. A row a
+person *rejected* is in the ledger with its rejection on it, for a solver to
+honour rather than to rediscover.
+
+**Scores are a sidecar**, keyed `(recipe key, judge artifact, regime)`, because a
+judge adoption invalidates every score in this project and nothing else. It also
+makes the comparison honest: a recipe two passes both drew appears twice if two
+artifacts read it.
+
+**What the backfill found, on 2026-08-26.** 16,029 decision rows over the two
+stores collapse to **15,488 renders** — 90 of the rows are re-stamps of a picture
+another row made, and 451 are one render's gate row and release row, which are
+two decisions and one JPEG. Those 15,488 renders are **15,362 recipes**: 126
+renders were the same recipe drawn twice by two different passes, and every one
+of the 128 pairs is byte-identical on disk. At 2.05-3.1 s an attempt that is four
+to six minutes nothing needed to spend, and it is the number the cache exists to
+drive to zero.
+
+The 128 identical pairs also measure the judge: 59 of them disagree on `P(>=3)`,
+the largest by 2.8e-7. Identical bytes, same artifact, seven decimals of
+agreement and no more.
+
+Every render is at one regime (640x360 ss2), every one still has its picture on
+disk, none is recipe-only, and **no candidate render in any pass or any run
+carries an engine stamp** — `engine_fingerprint` stamps a view directory and
+candidates were never written to one — so the whole backfilled pool is
+pre-stamp material accepted as unknown-engine, by rule.
+
+**The census, at N=20.** Nothing binds. All 48 colour cells, all 12 families, all
+18 production modes and all 822 drawable palette groups are held; none is empty.
+The 20-point draw under the hard radius fills, with 79 locations refused by it.
+
+What is *thin* is places and green. The ledger stands on **1,223 locations** —
+2 recipes at the 25th percentile, 8 at the median, 44 at the deepest — so depth
+per place is not the constraint and breadth of place is. And the green half of
+the wheel is a quarter of the red half: 986 locations carry red, 248 carry lime,
+258 green, 324 teal. The thinnest cell of the 48 is `dark_vivid_lime` at 44
+locations. 227 of the 822 palette groups have exactly one recipe behind them.
 
 ## What a pass puts in the history, and what it puts beside it
 
