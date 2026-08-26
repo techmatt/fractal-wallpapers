@@ -60,6 +60,9 @@ fractal-wallpapers curate gallery-store check --pass gallery1          # is the 
 fractal-wallpapers curate candidate-ledger backfill    # the cache, from what exists
 fractal-wallpapers curate candidate-ledger census --n 20 --out scratch/ledger_census.json
 fractal-wallpapers curate candidate-ledger save        # both files, made durable
+fractal-wallpapers curate solve run --n 20             # THE solve: the gallery as a program
+fractal-wallpapers curate solve sweep                  # which constraint binds first, and at what n
+fractal-wallpapers curate solve truncate --n 20        # what a smaller reachable pool costs
 fractal-wallpapers curate gallery --pass gallery1 --migrate            # out of the old layout
 fractal-wallpapers curate manufacture --step register --write          # BEFORE anything
 fractal-wallpapers curate manufacture --oversample 2.5                 # plan, build, select
@@ -749,6 +752,92 @@ per place is not the constraint and breadth of place is. And the green half of
 the wheel is a quarter of the red half: 986 locations carry red, 248 carry lime,
 258 green, 324 teal. The thinnest cell of the 48 is `dark_vivid_lime` at 44
 locations. 227 of the 822 palette groups have exactly one recipe behind them.
+
+## `curate solve` — the gallery as a program, not as a walk
+
+The ledger above is the proposal side. This is the other half: the selection
+stated as a **mixed-integer program** over it and handed to HiGHS, so the answer
+is optimal under the rules rather than optimal-given-the-order-the-walk-took.
+
+```
+src/fractal_wallpapers/curation/solve.py       the program, the loop, the shortage list
+artifacts/curation/solve/<name>/solve.json     the record: config, rounds, seats, spread
+artifacts/curation/solve/<name>/release/       the seats at release geometry
+artifacts/curation/solve/<name>/contact_sheet.html   the twenty, and what they beat
+```
+
+```
+fractal-wallpapers curate solve run --n 20                   # one gallery, rendered
+fractal-wallpapers curate solve run --n 20 --no-render       # decide, render nothing
+fractal-wallpapers curate solve run --n 20 --locations 40    # only the 40 best places
+fractal-wallpapers curate solve run --n 20 --target dark_vivid_lime=1.0   # a hard colour demand
+fractal-wallpapers curate solve sweep                        # which constraint binds first, and at what n
+fractal-wallpapers curate solve sweep --sweep-seconds 3600   # a longer ladder
+fractal-wallpapers curate solve truncate --n 20              # what a smaller reachable pool costs
+```
+
+It needs SciPy's HiGHS binding, which is the `solve` extra (`pip install -e
+.[solve]`) and not part of the base install. The leg loads no head: every score
+it reads is off the ledger's sidecar, so a machine that solves does not need the
+CUDA wheels.
+
+**The objective is lexicographic**, three solves with each stage's value frozen
+into the next: how many seats clear the q4 bar, then the **floor** — the lowest
+score among the seated, maximized — then the sum, less the mode-floor penalty.
+The floor stage is the one that matters: a gallery of twenty where nineteen are
+excellent and one is a mistake is worse than one where all twenty are merely
+good, and a sum cannot say so.
+
+The q4 bar is **raw `P(>=4)` at 0.50**, which is the natural rank cutpoint of a
+CORN probability and explicitly not a measured crossover — both release heights
+this project has fitted are `P(>=3)` and neither transfers to a different
+cutpoint. It is recorded on every solve so a count taken across the change names
+its own bar.
+
+**The pairwise rules are generated, never materialized.** The diversity radius
+and the group cap are statements about a pair of finished pictures, and the
+ledger holds 118 million pairs at 512 KiB a signature. So: solve without them,
+look at the incumbent's own pairs, add a row for each violated pair, solve again.
+It terminates on an incumbent that violates nothing, and that answer is optimal
+for the whole program — the generated program is a relaxation, so its optimum
+bounds the full one's, and the incumbent attains that bound while being feasible
+for it. At N=20 over the whole pool it converges in **two rounds and one
+generated row**.
+
+**The location-level prune does not work, and this is why.** The design was to
+skip pairs whose *places* are far apart on the ground that they cannot be
+near-duplicate pictures. Measured over 79,621 cross-location pairs drawn from the
+pool's top two thousand: 1,350 of them are closer than 0.07 as pictures, and the
+furthest-apart pair of places that makes one sits at cosine 0.583 — past the 90th
+percentile of location distance. The metric is over a picture's **colour cloud**
+and colour comes from the map rather than from the place, so two unrelated frames
+through similar ramps are near-duplicates by construction. A cut at 0.40 would
+still keep 91% of the pairs and miss 96 real violations. The cutting-plane loop
+is what makes the prune unnecessary rather than merely unsound.
+
+**The sweep carries a clock, and says where it stopped.** A round cap bounds
+rounds and not time, and the two stop being the same thing above about n=60: the
+rounds grow with `n`, and so does the program inside each of them. Measured on the
+pool — 19 s at n=20, 42 s at 30, 31 s at 40, 125 s at 60, 131 s at 80, and n=320
+did not finish in forty minutes. So the shipped ladder stops at **80**, which is
+where this project has measured; the whole run stops at `--sweep-seconds` (1,200 by
+default) and the record names the rung it did not reach. `relaxation_ladder`
+carries the same question to the top in seconds, on every block except the two
+pairwise ones — and its answer is exact: **1,223**, the location count, with
+`one_per_location` the block that runs out.
+
+**Infeasibility is a shortage list.** A program that cannot be solved does not
+raise: an elastic LP gives every relaxable row a slack and minimizes it, so the
+answer says *how many candidates short* each block is, and a deletion filter over
+the blocks says which of them are irreducibly in conflict. The partitions holding
+each short colour are on the readout too, because that is what launches a
+conditioned hunt. Under-fill is the same fact one seat smaller: the cardinality
+row alone goes from `== n` to `<= n`, nothing is relaxed, and the empty seats stay
+on the record.
+
+**`--target <cell>=<fraction>` is a hard demand**, and it also raises that cell's
+and its family's ceiling allowance through `ceiling.Rule` — otherwise a demand
+would be refused by the ceiling it asked for.
 
 ## What a pass puts in the history, and what it puts beside it
 
