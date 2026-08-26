@@ -5,8 +5,20 @@ render time.
 ```
 generator_prompt.md               the brief
 generator_prompt_focus_color.md   the same brief, aimed at one colour region
+generator_prompt_opener.txt       what to hand a run BEFORE either brief
 validate_palettes.py              the mechanical checker both briefs name
 ```
+
+`generator_prompt_opener.txt` is the order of work rather than a second brief, and
+it is what a run is given first: convert the focal hexes to OKLCH and write a small
+colour module before authoring anything, because a large share of plausible chroma
+values are outside sRGB and teals and greens at mid lightness top out near
+`C = 0.075`; lay the whole batch out as a table and confirm the spread before the
+first stop, since retrofitting spread is what costs the most time; author inside a
+build script that clamps to the gamut edge and reports what it clamped; and check
+the aesthetics numerically — ramp coverage densified per focal band, mud detected as
+`C / max_chroma(L, H)` rather than as an absolute chroma. It is `.txt` and not `.md`
+because it is one paragraph pasted ahead of a brief, with no structure to read.
 
 ```
 python data/palette_authoring/validate_palettes.py batch.json
