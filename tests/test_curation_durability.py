@@ -240,3 +240,23 @@ def test_the_ledger_provenance_record_agrees_with_the_release_store() -> None:
     stored = json.loads(path.read_text(encoding="utf-8"))
     assert stored["pool_rows"] == len(records.read_decisions(records.RELEASE))
     assert stored["pool_rows"] == sum(cell["rows"] for cell in stored["ledgers"])
+
+
+def test_every_released_row_names_the_walk_that_found_its_location() -> None:
+    """A released row with no ledger is a wallpaper nothing can say it discovered.
+
+    The one way to get one was an **on-demand render**: the seat's own renderer
+    copied the candidate's framing across and not its ledger, so gallery4 shipped
+    94 of 249 against a ledger named `None` and `curate ledgers` reported them as
+    a tenth, unresolvable ledger. Pinned on the store rather than on the renderer
+    because the claim is about the collection, and because the renderer is only
+    the way it happened to break this time.
+    """
+    from fractal_wallpapers.curation import records
+
+    missing = [
+        row["key"]
+        for row in records.read_decisions(records.RELEASE)
+        if not (row.get("location") or {}).get("ledger")
+    ]
+    assert missing == [], f"{len(missing)} released row(s) name no ledger"

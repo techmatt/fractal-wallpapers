@@ -2144,6 +2144,12 @@ class OnDemand:
         # re-framing of it, which would make the comparison two pictures of two
         # places wearing one location's name.
         made["framing"] = candidate.get("framing")
+        # The ledger travels with the frame and for the same reason: an extra pick
+        # is the same LOCATION in another palette, so the walk that discovered that
+        # location is the walk that discovered this picture's. Without it a seat the
+        # ceiling filled has no provenance at all — gallery4 shipped 94 of 249 that
+        # way, and `curate ledgers` reported them against a ledger named `None`.
+        made["ledger"] = candidate.get("ledger")
         made["asked_by"] = str(candidate["candidate"])
         self.seconds += time.monotonic() - started
         self.rows[self._key(candidate["key"], mode, colormap)] = made
