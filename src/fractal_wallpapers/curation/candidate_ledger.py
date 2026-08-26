@@ -631,14 +631,25 @@ def _colour_for(key: str, picture: Path | None, known: dict, recolour: bool) -> 
         return stored["colour"], "colour_carried"
     if picture is None:
         return None, "colour_missing"
-    reading = dominance.of_picture(picture)
+    return colour_block(dominance.of_picture(picture)), "recoloured"
+
+
+def colour_block(reading) -> dict:
+    """One [`palettes.dominance.Reading`] as a ledger row stores it.
+
+    Its own function because two writers make ledger rows — this backfill, off
+    pictures that already exist, and [`curation.hunt`], off a picture it has just
+    rendered — and a colour block written two ways is two stores wearing one
+    name. What is stored is the rounding and the share floor, and both belong to
+    the *store* rather than to either writer.
+    """
     return {
         "cells": list(reading.cells),
         "families": list(reading.families),
         "cell_shares": _kept(reading.cell_shares),
         "family_shares": _kept(reading.family_shares),
         "neutral": round(reading.neutral, 6),
-    }, "recoloured"
+    }
 
 
 #: The share below which a cell is not stored. The same number
@@ -970,6 +981,7 @@ __all__ = [
     "canonical_artifacts",
     "census",
     "check",
+    "colour_block",
     "durable_rows",
     "durable_scores",
     "feasibility",

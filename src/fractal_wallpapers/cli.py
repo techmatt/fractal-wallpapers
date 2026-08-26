@@ -3141,6 +3141,73 @@ def curate_solve(args: argparse.Namespace) -> int:
     return 0
 
 
+def curate_hunt(args: argparse.Namespace) -> int:
+    """Plan a hunt, run one, merge one into the ledger, or rebuild the frame index."""
+    from fractal_wallpapers.curation import hunt
+
+    try:
+        order = dict(_work_order(text) for text in (args.work_order or ()))
+    except ValueError as refusal:
+        print(refusal)
+        return 1
+    try:
+        if args.what == "frames":
+            path, rows = hunt.build_frames()
+            print(f"{display_path(path)} — {rows:,} frame(s)")
+            return 0
+        if args.what == "merge":
+            print(json.dumps(hunt.merge(args.name), indent=2))
+            return 0
+        if args.what == "sheet":
+            record = json.loads(hunt.record_path(args.name).read_text(encoding="utf-8"))
+            print(f"{display_path(hunt.contact_sheet(args.name, record))}")
+            return 0
+        if args.what == "plan":
+            index = hunt.frames(rebuild=args.rebuild_frames)
+            pools = hunt.drawable(hunt.scanned(), index, hunt.opened_locations())
+            intended = hunt.plan(
+                pools,
+                seed=args.seed,
+                per_location=args.per_location,
+                unconditional=args.unconditional,
+                conditioned=args.conditioned,
+                cell=args.cell,
+                work_order=order,
+            )
+            print(json.dumps(hunt.shape_of(pools, intended), indent=2))
+            return 0
+        if args.rebuild_frames:
+            hunt.build_frames()
+        record = hunt.run(
+            args.name,
+            seed=args.seed,
+            budget=args.budget,
+            per_location=args.per_location,
+            unconditional=args.unconditional,
+            conditioned=args.conditioned,
+            cell=args.cell,
+            work_order=order,
+            device=args.device,
+        )
+    except hunt.HuntRefused as refusal:
+        print(refusal)
+        return 1
+    print(f"{display_path(hunt.contact_sheet(args.name, record))}")
+    print(json.dumps({k: v for k, v in record.items() if k != "made"}, indent=2))
+    return 0
+
+
+def _work_order(text: str) -> tuple:
+    """`PARTITION=WEIGHT`, refused rather than guessed at."""
+    if "=" not in str(text):
+        raise ValueError(f"{text!r} is not PARTITION=WEIGHT, e.g. julia:mandelbrot=19")
+    name, _, weight = str(text).partition("=")
+    try:
+        return name.strip(), int(weight)
+    except ValueError as refusal:
+        raise ValueError(f"{weight!r} is not a whole number of turns") from refusal
+
+
 def curate_reject(args: argparse.Namespace) -> int:
     """Apply today's acting release bars to a run that was released before they acted."""
     from fractal_wallpapers.curation import floors, records, rejection
@@ -6109,6 +6176,7 @@ def curate_commands(subcommands) -> None:
     from fractal_wallpapers.curation import embeddings as embeddings_module
     from fractal_wallpapers.curation import framing as framing_module
     from fractal_wallpapers.curation import gallery as gallery_module
+    from fractal_wallpapers.curation import hunt as hunt_module
     from fractal_wallpapers.curation import run as run_module
     from fractal_wallpapers.curation import solve as solve_module
 
@@ -6903,6 +6971,96 @@ def curate_commands(subcommands) -> None:
         "program inside each of them grow",
     )
     solving.set_defaults(handler=curate_solve)
+
+    hunting = steps.add_parser(
+        "hunt",
+        help="render candidates into the ledger's two shortages: fresh places, and one colour",
+        description=(
+            "The proposal side of propose-then-solve, aimed rather than opportunistic. The "
+            "UNCONDITIONAL leg buys breadth — locations from the scanned pool that carry no "
+            "ledger recipe at all, a shallow spread each, the palette stratified across the "
+            "codebook's cells instead of picked by the palette head, whose argmax is what "
+            "left the ledger at a quarter as much green as red. The CONDITIONED leg buys one "
+            "colour: the maps come from the tracked carrier table for the cell a solve came "
+            "up short in and the palette head is never asked, because it is offered those "
+            "carriers as often as anything else and takes them at 0.17x the base rate. "
+            "Everything renders at the frame the pool-wide refinement scan chose, looked up "
+            "rather than recomputed. Rows land as candidates land, so a killed hunt is a "
+            "usable partial; `merge` is what folds them into the ledger."
+        ),
+    )
+    hunting.add_argument(
+        "what",
+        choices=["plan", "run", "merge", "sheet", "frames"],
+        help="print the plan and render nothing, run the hunt, merge a hunt's rows into the "
+        "ledger, redraw a hunt's contact sheet, or rebuild the frame index off the scan",
+    )
+    hunting.add_argument(
+        "--name",
+        required=True,
+        help="what to call this hunt. Its rows, its pictures and its record live under it, "
+        "and `merge` names it again",
+    )
+    hunting.add_argument(
+        "--budget",
+        type=float,
+        default=hunt_module.BUDGET_SECONDS,
+        metavar="SECONDS",
+        help=f"how long the hunt may spend RENDERING (default {int(hunt_module.BUDGET_SECONDS)}). "
+        "Not the wall clock: the frame lookup, the plan and the merge sit outside it. "
+        "Enforced at the candidate boundary, so nothing is started that cannot finish",
+    )
+    hunting.add_argument(
+        "--unconditional",
+        type=int,
+        default=0,
+        metavar="COUNT",
+        help="how many breadth candidates to plan. The budget still decides how many are "
+        "made; this is the size of the plan the budget is spent against",
+    )
+    hunting.add_argument(
+        "--conditioned",
+        type=int,
+        default=0,
+        metavar="COUNT",
+        help="how many candidates to plan against --cell. Needs --cell",
+    )
+    hunting.add_argument(
+        "--cell",
+        help="the codebook cell the conditioned leg aims at, e.g. dark_vivid_lime. Its maps "
+        "are drawn from the tracked carrier table, weighted by mean share",
+    )
+    hunting.add_argument(
+        "--work-order",
+        action="append",
+        default=[],
+        metavar="PARTITION=WEIGHT",
+        help="how the conditioned leg spreads over the partitions, repeatable — a solve's "
+        "shortage list says where the pool's carriers of that colour already stand, and "
+        "this is that list. Absent, the leg spreads evenly like the breadth one",
+    )
+    hunting.add_argument(
+        "--per-location",
+        type=int,
+        default=hunt_module.PER_LOCATION,
+        metavar="COUNT",
+        help=f"how many candidates one location is given (default {hunt_module.PER_LOCATION}). "
+        "Shallow on purpose: a gallery seats one wallpaper per location, so a fourth "
+        "candidate at a fresh place is worth more than a ninth at a stocked one",
+    )
+    hunting.add_argument(
+        "--seed",
+        type=int,
+        default=hunt_module.DEFAULT_SEED,
+        help=f"the seed every draw here is taken under (default {hunt_module.DEFAULT_SEED})",
+    )
+    hunting.add_argument(
+        "--rebuild-frames",
+        action="store_true",
+        help="derive the frame index off the scan record again before planning",
+    )
+    hunting.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
+    hunting.set_defaults(handler=curate_hunt)
 
     rejecting = steps.add_parser(
         "reject",
