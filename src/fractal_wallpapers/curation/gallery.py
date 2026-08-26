@@ -68,6 +68,14 @@ built out of.
 What the loop deliberately does **not** do is the other recovery. No floor moves
 and nothing is seated from under one: unfilled still beats padded.
 
+And `below_bar` is a claim the record has to earn. An empty seat names the
+**deepest rule a candidate actually reached** ([`binding_reason`]) and not the
+first rule that turned anything away — the difference is a reader deciding
+whether under-fill is a supply problem or a colour problem, and gallery4's seat
+`0153` got that wrong: `below_bar` with 27 of 30 under the floor, while the three
+that cleared it were stopped by one-wallpaper-per-location and its best held
+`P(>=3) 0.881` against a floor of 0.575.
+
 ## The population the pass selects over
 
 The embedding store is append-only and the admitted population is not, so the
@@ -1091,9 +1099,10 @@ def reseat_slots(slots: list, bench: Bench, log=print) -> dict:
     statement about one draw.
 
     **Every unfilled reason moves**, not only `below_bar`. `location_served` is a
-    place a stronger slot took and `no_candidates` is a neighbourhood nothing
-    rendered from, and the recovery from each is the identical one — stand
-    somewhere else. What is never done is the other recovery: nothing is seated
+    place a stronger slot took, `no_candidates` is a neighbourhood nothing
+    rendered from, and `ceiling` and `mixed` are colours this gallery has had
+    enough of; the recovery from each is the identical one — stand somewhere
+    else. What is never done is the other recovery: nothing is seated
     from below a floor, and no floor moves. Unfilled still beats padded.
 
     Slots move in id order, which is pick order, so where two slots of one
@@ -2285,6 +2294,12 @@ def seat(slots: list, candidates: list, log=print, rule=None, extra=None) -> dic
                 if made.get("p_ge3") is not None and seat_state.take(made, len(sequence) + step):
                     break
         below, capped, refused = seat_state.below, seat_state.capped, seat_state.refused
+        # What the ceiling held out of the sequence before any rule tested it: a
+        # mandated cell narrows the pool to its carriers ([`ceiling.State.steer`])
+        # and a candidate dropped there is counted nowhere else. Off the two lists
+        # rather than by subtracting the counters, which the extra picks inflate
+        # past `len(pool)` on exactly the seats this matters for.
+        withheld = len(pool) - len(sequence)
         fallback = None
         if slot.seated is None and blocked:
             # Nothing cleared the ceiling, so the least-violating candidate takes
@@ -2309,14 +2324,22 @@ def seat(slots: list, candidates: list, log=print, rule=None, extra=None) -> dic
         if state is not None:
             slot.fill["ceiling"] = {
                 "refused": refused,
+                # Which of the three tests did it, per candidate, so the seat's own
+                # row answers "which rule" without a join back to the pass record's
+                # rejection list.
+                "refused_by": refused_by(blocked),
+                "withheld": withheld,
                 "extra_picks": asked,
                 "fallback": fallback,
                 **({"targets": steering} if steering else {}),
             }
         if slot.seated is None:
-            slot.unfilled = (
-                "below_bar" if below else selection.LOCATION_SERVED if capped else "no_candidates"
-            )
+            # `refused` is always zero on this branch while the fallback stands
+            # above: a seat with anything in `blocked` was seated by the
+            # least-violating one a few lines up. [`binding_reason`] carries the
+            # case anyway, because the fallback is a policy and a reason rule that
+            # went wrong the day it moved would be this same defect again.
+            slot.unfilled = binding_reason(below, capped, refused, withheld)
             slot.fill["reason"] = slot.unfilled
             slot.fill["why"] = selection.UNFILLED_REASONS[slot.unfilled]
         # The best thing this neighbourhood held, whatever the floor said about
@@ -2387,6 +2410,56 @@ def seat(slots: list, candidates: list, log=print, rule=None, extra=None) -> dic
                 f"{entry['have']}/{entry['wanted']} {entry['verdict']}"
             )
     return report
+
+
+def refused_by(blocked: list) -> dict:
+    """Which ceiling test named each refusal at one seat, in [`ceiling.TESTS`] order.
+
+    The **first** failing test per candidate, which is the one the rejection row
+    names — a candidate that fails all three is one refusal and not three, and a
+    tally that counted every failure would say more refusals happened than
+    candidates were offered.
+    """
+    counts: dict[str, int] = {}
+    for entry in blocked:
+        first = str(entry[4][0]["test"])
+        counts[first] = counts.get(first, 0) + 1
+    return {test: counts[test] for test in ceiling.TESTS if test in counts}
+
+
+def binding_reason(below: int, capped: int, refused: int, withheld: int) -> str:
+    """Which rule actually emptied a seat, from what each one turned away.
+
+    The four counters partition every candidate the seat had, in the order the
+    rules act on them: `withheld` never reached a rule at all — the ceiling's
+    mandate narrowed the sequence to the carriers of a cell it owes and these
+    were not among them — then `below` failed the floor, then `capped` cleared
+    the floor and found the location already served, then `refused` cleared both
+    and failed one of the ceiling's three tests.
+
+    The rule named is the **deepest one a candidate actually reached**, because
+    that is the one whose lifting fills the seat. Naming the first instead — the
+    floor, on any seat that had anything under it — is the defect this function
+    exists to stop, and it is not hypothetical: gallery4's seat `0153` recorded
+    `below_bar` with 27 candidates under the floor while the 3 that cleared it
+    were turned away by the location rule, and its best held `P(>=3) 0.881`
+    against a floor of 0.575. Lowering that floor would not have seated it. The
+    field is what a reader trusts when deciding whether under-fill is a supply
+    problem or a colour problem, and those have opposite remedies.
+
+    `withheld` is the ceiling acting *before* the floor, so it is not in that
+    order and cannot be the deepest anything reached. Where it stands beside
+    another rule's refusals no single rule accounts for the seat — the candidates
+    the mandate held back were never tested against the rule being named — and
+    the honest answer is `mixed` with the counts left to say the rest.
+    """
+    if refused:
+        return "ceiling"
+    if withheld:
+        return "mixed" if (below or capped) else "ceiling"
+    if capped:
+        return selection.LOCATION_SERVED
+    return "below_bar" if below else "no_candidates"
 
 
 def floor_key(candidate: dict):
@@ -4394,6 +4467,7 @@ __all__ = [
     "attempt_plan",
     "best_unchosen",
     "below_floor_sheet",
+    "binding_reason",
     "claim_pass",
     "candidate_of_attempt",
     "candidate_of_pool_row",
@@ -4424,6 +4498,7 @@ __all__ = [
     "contact_sheet",
     "record_dir",
     "record_path",
+    "refused_by",
     "render_winners",
     "runners_up_sheet",
     "manifest_path_of",

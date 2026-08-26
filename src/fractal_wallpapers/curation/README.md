@@ -171,6 +171,41 @@ partition still holding thousands of admitted locations. What the loop
 deliberately does not do is the other recovery: no floor moves and nothing is
 seated from under one.
 
+### What an empty seat names, and why it is not the first rule that refused anything
+
+A slot that goes unfilled records **one slug** and the counts that chose it:
+`eligible`, `below_floor`, `location_served`, and under a ceiling
+`ceiling.refused` / `ceiling.refused_by` / `ceiling.withheld`. The slug is the
+field a reader trusts when asking whether under-fill is a *supply* problem or a
+*colour* problem, and the two have opposite remedies — draw more points and lower
+a floor, or loosen the ceiling.
+
+It names the **deepest rule a candidate actually reached**, because that is the
+one whose lifting would have filled the seat. The rules act in order — the
+ceiling's mandate withholds, then the floor, then one-wallpaper-per-location,
+then the ceiling's three tests — so a candidate counted `location_served` had
+already cleared the floor, and naming the floor because something else was under
+it sends the reader looking for supply that is already there. That is not
+hypothetical: gallery4's seat `0153` recorded `below_bar` with 27 of its 30
+candidates under the floor, while the 3 that cleared it were turned away by the
+location rule and its best held P(≥3) 0.881 against a floor of 0.575. It reads
+`location_served` under `gallery.binding_reason`, and every count that says so
+was already on the tracked record — the pass does not have to be run again to
+re-read it.
+
+Two slugs are the gallery's alone. `ceiling` is every floor-clearer refused by
+the colour ceiling, with `refused_by` naming which of group / dominance / twin
+did it; it cannot be reached through a seating while the least-violating fallback
+stands above it, since a seat with anything refused is seated by that fallback,
+and it is written because the fallback is a policy and not a law. `mixed` is a
+mandated cell having narrowed the sequence before any rule saw the rest, so no
+single rule accounts for the seat and the counts beside it say the whole story.
+
+The **release** leg (`selection._fill`, per partition rather than per seat) still
+names the first cause that applies. It has no ceiling above it, its reason is a
+field in every tracked run record, and re-reading those under a new rule is a
+decision about the records rather than a fix.
+
 ### The colour ceiling, and the targets that are the same feature with the sign flipped
 
 A pass used to judge each picture on its own and let the collection come out
