@@ -752,6 +752,21 @@ figures are drawn off) still reachable there. A released wallpaper does not need
 the full frame, and step 7 is the slow leg of a pass: a quarter of the pixels at
 half the supersample is a **sixteenth of the field samples**.
 
+**Measured, on gallery4's 249 winners:** 3.5 s a row of wall on 3 workers, 8.25 s
+a row of CPU — against gallery3's 44.6 s and 121.5 s at 2560x1440 ss4 on 4. That
+is a **14.7x** cut in row time for a 16x cut in samples, so the leg is very nearly
+sample-linear and the whole of it fell from 6,684 s to 860 s. Per row the CPU
+spread is min 1.6, median 5.2, q75 8.5, max 65.1: the tail is long because a
+gallery draw seats deep locations, and the deep rows come **first** — the opening
+fifty averaged 14.4 s against 7.7 s for rows 100-150, so a rate taken off the
+first block over-reads the leg by about three quarters. Size a leg off the median
+and the row count, never off its opening.
+
+A release row carries no per-row clock. The leg logs one (`[release] <id>
+<verdict> <n>s`), the pass record carries the aggregate (`render.row_seconds`,
+`render.seconds_per_full_size`), and a per-row distribution has to be read back
+off the pass's own stdout — so keep it if you intend to price the next pass.
+
 So a diagnostic release and a shipped wallpaper are no longer the same picture at
 the same size, and the two regimes are named apart rather than one read off the
 other. What follows from that is the recording rule: the regime a pass used is on
