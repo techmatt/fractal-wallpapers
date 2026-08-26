@@ -77,8 +77,9 @@ arithmetic to 6e-15 and about three times faster.
 
 ## Which map is which choice, and which map can make which colour
 
-Three records sit beside the library and none of them is a colormap. All three are
-`.jsonl` for the reason above — a `.json` in `data/palettes/` is read as a map.
+Four records sit beside the library and none of them is a colormap. All four are
+`.jsonl` for the reason above — a `.json` in `data/palettes/` is read as a map, and
+the fourth is a whole subdirectory of them, where that glob cannot reach it at all.
 
 `groups` says **which maps are near enough to be one choice**: average linkage over
 M1, the sliced Wasserstein-1 distance between two maps' hue-weighted Oklab clouds
@@ -147,11 +148,57 @@ and it is not one at all for the noisy modes. Over 13,020 (group, mode) pairs re
 directly, a ramp that could lead a hue family delivered it **23-33% of the time**, and a
 ramp that could not delivered it in 0.1-0.4% — the bound is nearly one-sided, and loose.
 
-That sweep's record is `artifacts/curation/palette_mass_sweep/rows.jsonl` — one row per
-(palette group, mode, location) with the 48-cell vector and the recipe that made it,
-untracked at 25.7 MB. It is what says the library's colour is not the palette head's: the
-head's own evidence had 5 (group, mode) pairs leading green and 10 leading teal, and
-rendering the pairs it never chose found 1,705 and 1,563.
+That sweep is what says the library's colour is not the palette head's: the head's own
+evidence had 5 (group, mode) pairs leading green and 10 leading teal, and rendering the
+pairs it never chose found 1,705 and 1,563.
+
+## `color_mass` — how much of each colour a (group, mode) pair actually makes
+
+The bound above says *can*. This says *does*, and it is tracked:
+`data/palettes/color_mass/<mode>.jsonl`, one row per palette group, the **mean chromatic
+share per codebook cell** over every observation of that pair. All **14,796** pairs —
+822 groups by 18 production modes — with no hole in the grid.
+
+```
+fractal-wallpapers palettes color-mass          cut the map from the two measurements
+fractal-wallpapers curate mass-sweep save       copy the sweep log to the archive tier
+fractal-wallpapers curate mass-sweep restore    bring it back to cut the map again
+```
+
+Two measurements are unioned and **counted apart on every row**, because they are two
+populations: `census` is 15,681 judged pool rows, which is where the palette head chose
+to go and covers 5,075 pairs; `sweep` is 27,053 renders over a seeded two-location panel,
+which covers the grid the head never visited. A reader weighting a pair by how much
+production evidence stands behind it needs the split.
+
+Keyed on **(group, mode)** and nothing finer, off a variance decomposition rather than a
+preference: the pair term carries 75.0% of the variation in the 48-cell vector, the
+partition within a pair 8.0%, the location-and-render residual 17.1%. Stored **sparse** at
+`color_mass.STORED_FLOOR = 0.01` — a cell under one percent of the colour can neither lead
+a cell nor carry a family — so a row holds about nine cells and the residual is
+`1 - sum(cells)`. Every row also carries how many of its observations autolevel **acted**
+on, because a mean whose evidence is all levelled is a different prediction, and how many
+made no chromatic pixel at all (1,793 of 42,734 did, and they are in the denominator).
+
+The four `NOISY_MODES` — `gaussian_int`, `direct_trap_multiply`, `_ring`, `_screen` — are
+**flagged in each file's header and kept**. Their pictures are not lookups into their own
+maps, so the ramp bound does not apply to them; what they read is still what the pipeline
+really produces, which is what a ceiling acts on.
+
+**Eighteen files, one per mode, and that is the guard talking.** The whole map is 6.80 MB
+against `test_history_purity`'s 1 MiB per-file cap, so it splits the way the tracked
+release store splits on partition. Largest file 415 KiB.
+
+The sweep log it was cut from — `artifacts/curation/palette_mass_sweep/rows.jsonl`, one row
+per (group, mode, location) with the recipe and the cost, 25.7 MB — is **not tracked and
+not hot**. It gets the `curation.durability` treatment the supply sidecar gets: a copy
+under `<archive>/curation_backup/palette_mass_sweep/`, a tracked manifest at
+`data/curation/palette_mass_sweep.manifest.json`, and `curate mass-sweep save|check|restore`.
+It is insurance and nothing reads it: re-deriving it is 8.7 h over pictures that were
+censused and deleted, and it is the only thing that would let the map be re-cut on other
+terms — excluding the noisy modes, weighting the panel differently, rolling to families.
+`check` reporting `missing` is its **resting state**, not an alarm; `durability.guard`
+refuses over the supply sidecar and nothing else.
 
 ## `dominance` — what colour a picture is, and `pixel_clouds` — whether two are one picture
 

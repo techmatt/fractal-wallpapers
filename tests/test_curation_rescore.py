@@ -121,6 +121,93 @@ def test_the_scoring_artifact_comes_off_the_run_record_and_not_off_the_row(
         assert rescore.scoring_artifact("never_ran") == {}
     finally:
         records.use(None)
+        rescore._heads_at.cache_clear()
+
+
+def test_a_gallery_passs_scale_comes_off_its_own_summary(tmp_path) -> None:
+    """A pass books no clock and is not filed under `runs/`, so a lookup that knew
+    only that directory read every pass row's provenance as absent — which is a
+    different wrong answer from the one this lookup exists to prevent, and just as
+    quiet. Both places are tried."""
+    records.use(tmp_path)
+    rescore._heads_at.cache_clear()
+    try:
+        directory = tmp_path / "gallery" / "gallery9"
+        directory.mkdir(parents=True)
+        (directory / "pass.json").write_text(
+            json.dumps({"config": {"heads": {"render": "e62e8dbab7f47ffe"}}}),
+            encoding="utf-8",
+            newline="\n",
+        )
+        assert rescore.scoring_artifact("gallery9") == {"render": "e62e8dbab7f47ffe"}
+    finally:
+        records.use(None)
+        rescore._heads_at.cache_clear()
+
+
+def test_a_bar_stamp_is_never_read_as_the_artifact_that_scored_the_row(tmp_path) -> None:
+    """`bar.head_sha256` is the artifact the BAR's height was measured on, which
+    `floors.release_cut` builds that way deliberately. On gallery4's rows it
+    happens to equal the live judge; on run10's it happened to equal that night's.
+    Reading it as score provenance is right by coincidence twice and wrong the
+    first time the two come apart."""
+    records.use(tmp_path)
+    rescore._heads_at.cache_clear()
+    try:
+        runs = tmp_path / "runs"
+        runs.mkdir(parents=True)
+        (runs / "r.json").write_text(
+            json.dumps({"config": {"heads": {"strange_render": "a011188bbcaaeef4"}}}),
+            encoding="utf-8",
+            newline="\n",
+        )
+        row = records.decision(
+            run="r",
+            stage=records.RELEASE,
+            candidate="0001",
+            verdict=records.RELEASED,
+            row={
+                "head": "strange_render",
+                "partition": "mandelbrot",
+                "p_ge3": 0.9,
+                "bar": {"name": "strange_render_release", "value": 0.575, "head_sha256": "z" * 64},
+            },
+        )
+        assert rescore.artifact_of(row) == "a011188bbcaaeef4"
+        assert rescore.reading_on(row, "z" * 64) is None
+        assert rescore.reading_on(row, "a011188bbcaaeef4dead")["p_ge3"] == 0.9
+    finally:
+        records.use(None)
+        rescore._heads_at.cache_clear()
+
+
+def test_a_current_block_outranks_the_run_record(tmp_path) -> None:
+    """A re-scored row says on itself which artifact re-read it, and that is a
+    stronger statement than what the run was scored by on the night it ran."""
+    records.use(tmp_path)
+    rescore._heads_at.cache_clear()
+    try:
+        runs = tmp_path / "runs"
+        runs.mkdir(parents=True)
+        (runs / "r.json").write_text(
+            json.dumps({"config": {"heads": {"smooth_render": "a011188bbcaaeef4"}}}),
+            encoding="utf-8",
+            newline="\n",
+        )
+        row = records.decision(
+            run="r",
+            stage=records.RELEASE,
+            candidate="0001",
+            verdict=records.RELEASED,
+            row={"head": "smooth_render", "partition": "mandelbrot", "p_ge3": 0.1},
+        )
+        row["scores_current"] = {"p_ge3": 0.9, "head_sha256": "e" * 64}
+        assert rescore.artifact_of(row) == "e" * 64
+        assert rescore.reading_on(row, "e" * 64)["p_ge3"] == 0.9
+        assert rescore.reading_on(row, "a011188bbcaaeef4") is None
+    finally:
+        records.use(None)
+        rescore._heads_at.cache_clear()
 
 
 # --------------------------------------------------------------------------- #

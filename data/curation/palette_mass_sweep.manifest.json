@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "path": "artifacts/curation/palette_mass_sweep/rows.jsonl",
+  "copy": "artifacts/curation_backup/palette_mass_sweep/rows.jsonl",
+  "rows": 27054,
+  "bytes": 25674558,
+  "sha256": "fe92d523a17a43536d6cf25ec5fc880c5d14b022232631efa6bcab910aa6c113",
+  "pairs": 13020,
+  "locations": 3,
+  "rows_by_mode": {
+    "curvature": 1486,
+    "direct_trap_lines": 1476,
+    "direct_trap_multiply": 1482,
+    "direct_trap_ring": 1480,
+    "direct_trap_screen": 1484,
+    "exp_smoothing": 1414,
+    "gaussian_int": 1492,
+    "itinerary": 1466,
+    "smooth": 1214,
+    "smooth_angle_min": 1482,
+    "smooth_curvature": 1484,
+    "smooth_mean_angle": 1476,
+    "smooth_stripe": 1458,
+    "smooth_trap_circle": 1492,
+    "stripe": 1832,
+    "threads": 1464,
+    "tia": 1895,
+    "trap_circle": 1476
+  },
+  "failed": 0,
+  "bands": {
+    "1_thin_zero": 7496,
+    "2_never_picked": 231,
+    "3_other_zero": 2132,
+    "4_thin_evidence": 3161
+  },
+  "panel": {
+    "seed": 20260826,
+    "rule": "distinct pool locations with a location head score, interquartile band of that score within each partition, sampled seeded",
+    "keys": [
+      "[\"julia:multibrot5\", 5, [[\"0.22703883150276297\", \"0.7099321279535775\"]], \"0.21328013825213143\", \"-0.040758678337073515\", \"1.2853612761582334\"]",
+      "[\"mandelbrot\", 2, [], \"-0.7420778398275718\", \"-0.1137752237317548\", \"0.00005785591417811585\"]"
+    ],
+    "depth": 2,
+    "note": "The panel was drawn seeded at three and cut to two on cost, on Matt's call: multibrot3 (maxiter 32,679) priced at 5.0 h of the 8.9 h remaining, more than the other two together. The two that remain are julia:multibrot5 (5,467) and mandelbrot (22,794). This is NOT an unbiased draw any more - the member removed is the one with the most iterations, so the panel now leans cheap on the axis a render's cost is set by."
+  },
+  "geometry": {
+    "resolution": [
+      640,
+      360
+    ],
+    "supersample": 2,
+    "leveled": "band_autolevel/v1"
+  },
+  "cut_into": "data/palettes/color_mass",
+  "recorded": "2026-08-26",
+  "why_not_tracked": "25.7 MB of 48-cell vectors over 27,053 renders against a 1 MiB per-file history guard. It is a finished experiment log rather than a record anything reads: what production reads is the map cut from it, which is tracked. The manifest is what the history keeps \u2014 the row count, the bytes, the sha256, the pairs and locations measured, and the panel they were measured on."
+}

@@ -2,29 +2,29 @@
   "schema": 1,
   "path": "artifacts/curation/gallery/gallery3/gate.jsonl",
   "copy": "artifacts/curation_backup/gallery/gallery3/gate.jsonl",
-  "rows": 3632,
-  "bytes": 13390507,
-  "sha256": "de80fa7dee848ca7ea2a0c9626927b0848d7605cffa25d471cbeef7755e6eee0",
+  "rows": 3980,
+  "bytes": 14360608,
+  "sha256": "aeef6ee45b2e168cb9d62978dcf77aeb4486eb8c453f5ec15e46c276d1932f67",
   "stage": "gate",
   "locations": 445,
   "rows_by_partition": {
-    "julia:mandelbrot": 784,
-    "julia:multibrot3": 256,
-    "julia:multibrot4": 272,
-    "julia:multibrot5": 264,
-    "mandelbrot": 800,
-    "multibrot3": 312,
-    "multibrot4": 280,
-    "multibrot5": 304,
-    "phoenix": 360
+    "julia:mandelbrot": 874,
+    "julia:multibrot3": 279,
+    "julia:multibrot4": 296,
+    "julia:multibrot5": 290,
+    "mandelbrot": 876,
+    "multibrot3": 337,
+    "multibrot4": 308,
+    "multibrot5": 336,
+    "phoenix": 384
   },
   "rows_by_head": {
-    "smooth_render": 908,
-    "strange_render": 2724
+    "smooth_render": 1056,
+    "strange_render": 2924
   },
   "rows_by_verdict": {
-    "kept": 3632
+    "kept": 3980
   },
-  "recorded": "2026-08-24",
+  "recorded": "2026-08-26",
   "why_not_tracked": "one pool row per attempt at about 3.8 KB, and a pass makes locations x heads x draws of them per slot \u2014 1,120 rows at n=50 and ten times that at n=500, against a 1 MiB per-file history guard, kept forever per pass. The manifest is what the history keeps: the row count, the bytes, the sha256, and the population the attempts were made over."
 }

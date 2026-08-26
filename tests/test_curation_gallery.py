@@ -1481,3 +1481,150 @@ def test_moving_the_scores_moves_the_chosen_set(a_pool) -> None:
     scored({key: 0.5 + index * 0.05 for index, key in enumerate(keys)})
     second = gallery.dry_draw(n=2, radius=0.5, draw_seed=3, top_k=1, log=lambda _line: None)
     assert first["chosen"] != second["chosen"]
+
+
+# --------------------------------------------------------------------------- #
+# The on-demand log, and the two ways it came apart from the store.
+# --------------------------------------------------------------------------- #
+def on_demand_row(attempt: int, asked_by: str, key: str, **row) -> dict:
+    """One row as `OnDemand.render` appends it: a flat candidate, plus who asked."""
+    candidate = f"{colorize_module.ON_DEMAND_PREFIX}{attempt:04d}"
+    return {
+        "schema": 1,
+        "attempt": attempt,
+        "on_demand": True,
+        "head": "smooth_render",
+        "partition": "mandelbrot",
+        "key": key,
+        "family": {"kind": "mandelbrot", "degree": 2},
+        "viewport": {"center_re": "0", "center_im": "0", "width": "1"},
+        "maxiter": 100,
+        "mode": "smooth",
+        "mode_kind": "field",
+        "colormap": "OrRd",
+        "picture": f"pictures/{candidate}.jpg",
+        "p_ge3": 0.7,
+        "ledger": None,
+        "framing": None,
+        "asked_by": asked_by,
+        **row,
+    }
+
+
+@pytest.fixture
+def a_pass_with_extras(record_root, tmp_path, monkeypatch):
+    """A pass whose store holds one attempt and whose on-demand log holds one pick.
+
+    The pick names the attempt it was asked beside and carries no ledger, which is
+    every on-demand row written before `26c1c6a` taught the renderer to carry one
+    across.
+    """
+    monkeypatch.setattr(gallery.run_module, "run_dir", lambda name: tmp_path / str(name))
+    key = json.dumps(["mandelbrot", 2, [], "0", "0", "1"])
+    asked = {
+        "head": "smooth_render",
+        "partition": "mandelbrot",
+        "key": key,
+        "family": {"kind": "mandelbrot", "degree": 2},
+        "viewport": {"center_re": "0", "center_im": "0", "width": "1"},
+        "maxiter": 100,
+        "mode": "smooth",
+        "colormap": "Blues",
+        "p_ge3": 0.8,
+        "ledger": "artifacts/harvest/walk.jsonl",
+        "framing": {"adopted": False, "used": "original"},
+    }
+    gallery_store.write(
+        "gallery9",
+        [
+            {
+                **records.decision(
+                    run="gallery9",
+                    stage=records.GATE,
+                    candidate="0001",
+                    verdict="kept",
+                    row=asked,
+                ),
+                "framing": asked["framing"],
+            }
+        ],
+    )
+    directory = tmp_path / "gallery9"
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / gallery.ON_DEMAND_LOG).write_text(
+        json.dumps(on_demand_row(0, "0001", key)) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    return directory / gallery.ON_DEMAND_LOG
+
+
+def test_the_on_demand_log_gets_the_ledger_of_the_row_it_was_asked_beside(
+    a_pass_with_extras,
+) -> None:
+    """`OnDemand.__init__` loads its cache out of this log, so a resumed pass
+    re-seats whatever is on disk. `26c1c6a` repaired the store and left the log
+    alone, which left the fix one resume away from being undone — gallery4 had 642
+    rows in that position and every one of them read `ledger: null`."""
+    report = gallery.reconcile_on_demand("gallery9", log=lambda _line: None)
+    assert report["filled"] == {"ledger": 1, "framing": 1}
+    (row,) = [
+        json.loads(line)
+        for line in a_pass_with_extras.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    assert row["ledger"] == "artifacts/harvest/walk.jsonl"
+    assert row["framing"] == {"adopted": False, "used": "original"}
+
+
+def test_an_on_demand_pick_reaches_the_store_the_pool_is_read_from(a_pass_with_extras) -> None:
+    """An extra pick is a pool row like any other — stamped, seatable, and in the
+    store the next pass reads. gallery3's 348 were on disk and in none of that:
+    the pass wrote its plan's attempts to the store and not the ceiling's."""
+    before = len(gallery_store.read("gallery9"))
+    report = gallery.reconcile_on_demand("gallery9", log=lambda _line: None)
+    assert report["store_rows_before"] == before == 1
+    assert report["store_rows_after"] == 2
+    seated = {row["candidate"]: row for row in gallery_store.read("gallery9")}
+    assert set(seated) == {"0001", "d0000"}
+    assert seated["d0000"]["location"]["ledger"] == "artifacts/harvest/walk.jsonl"
+
+
+def test_reconciling_twice_writes_the_same_bytes(a_pass_with_extras) -> None:
+    """The repair is a pure function of the log and the store, so a second call is
+    a no-op. That is what makes it safe to run over a pass nobody is sure about."""
+    gallery.reconcile_on_demand("gallery9", log=lambda _line: None)
+    store = gallery_store.store_path("gallery9")
+    was = (a_pass_with_extras.read_bytes(), store.read_bytes())
+    again = gallery.reconcile_on_demand("gallery9", log=lambda _line: None)
+    assert again["filled"] == {"ledger": 0, "framing": 0}
+    assert again["store_new"] == 0
+    assert (a_pass_with_extras.read_bytes(), store.read_bytes()) == was
+
+
+def test_a_pick_whose_asked_by_is_at_another_location_refuses(a_pass_with_extras) -> None:
+    """An extra pick is the same PLACE in another palette, so the two rows agree on
+    the location by construction. A disagreement means the id resolved to the wrong
+    row, and repairing from it would stamp one location's walk onto another's."""
+    a_pass_with_extras.write_text(
+        json.dumps(on_demand_row(0, "0001", json.dumps(["mandelbrot", 2, [], "9", "9", "1"])))
+        + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    with pytest.raises(gallery.PassRefused, match="same place"):
+        gallery.reconcile_on_demand("gallery9", log=lambda _line: None)
+
+
+def test_a_pick_with_no_candidate_behind_it_refuses(a_pass_with_extras) -> None:
+    """A row whose `asked_by` is in neither the pass's store nor the standing pool
+    has no provenance to repair from, and filling it from the location key would be
+    inventing a walk rather than recording one."""
+    key = json.dumps(["mandelbrot", 2, [], "0", "0", "1"])
+    a_pass_with_extras.write_text(
+        json.dumps(on_demand_row(0, "nobody_9999", key)) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    with pytest.raises(gallery.PassRefused, match="asked_by"):
+        gallery.reconcile_on_demand("gallery9", log=lambda _line: None)

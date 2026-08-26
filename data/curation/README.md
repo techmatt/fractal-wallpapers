@@ -195,6 +195,15 @@ scale the shipped judge emits and `scores` is a point on whatever was shipped th
 night. While one artifact stood behind both those were the same number; the
 2026-08-23 head flip is what made them differ.
 
+**An absent `scores_current` does not mean an absent reading.** A gallery pass
+copies the block onto its release rows and not onto its attempt rows, so
+gallery3's and gallery4's 10,846 attempts carry none on disk — and both passes ran
+*after* the flip, so their `scores` block is already the live judge's reading. The
+proof is the pass's own summary, `data/curation/gallery/<pass>/pass.json`, whose
+`config.heads.render` names the artifact that scored every row it made.
+`rescore.artifact_of` reads that, and `rescore.reading_on` is what a reader
+qualifies on: the artifact, never the field name.
+
 Read on 2026-08-22 against `smooth_render c0ac536d` and `strange_render a011188b`:
 the 925 rows already on those artifacts came back to within 6.8e-06 — identity, as
 it should be, the residue being half-precision and batching. The 125 rows on the
