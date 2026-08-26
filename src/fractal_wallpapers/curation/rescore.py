@@ -53,6 +53,9 @@ with a reason and no number, and it has no picture to read either.
 
 from __future__ import annotations
 
+import functools
+from pathlib import Path
+
 from fractal_wallpapers.curation import records
 from fractal_wallpapers.curation import run as run_module
 
@@ -118,6 +121,28 @@ def picture_of(row: dict, pool: dict | None = None):
     return run_module.run_dir(run) / PICTURES / f"{candidate}.jpg"
 
 
+@functools.cache
+def _heads_at(root: str, run: str) -> tuple[tuple[str, str], ...]:
+    """The cached read. Keyed on the record ROOT as well as the run.
+
+    [`records.use`] repoints the root — the isolated-pool fixtures do it on every
+    test — and a cache keyed on the run name alone would answer a temporary
+    directory's question with the checkout's record, or the other way round, for
+    the rest of the process.
+    """
+    import json
+
+    for path in (
+        Path(root) / "runs" / f"{run}.json",
+        Path(root) / "gallery" / run / "pass.json",
+    ):
+        if not path.is_file():
+            continue
+        heads = json.loads(path.read_text(encoding="utf-8")).get("config", {}).get("heads") or {}
+        return tuple(sorted((str(head), str(stamp)) for head, stamp in heads.items()))
+    return ()
+
+
 def scoring_artifact(run: str) -> dict:
     """Which artifact each head actually was on the night this run was made.
 
@@ -126,13 +151,83 @@ def scoring_artifact(run: str) -> dict:
     of those is the artifact the *bar* was measured against rather than the one
     that scored the row — `floors.release_cut` says so deliberately. Reading bar
     provenance as score provenance is how a scale shift goes unnoticed.
-    """
-    import json
 
-    path = records.root() / "runs" / f"{run}.json"
-    if not path.is_file():
-        return {}
-    return dict(json.loads(path.read_text(encoding="utf-8")).get("config", {}).get("heads") or {})
+    **A gallery pass is asked for the same way a run is.** Its summary is not in
+    `runs/` — a pass books no clock and is filed under its own name — so both
+    places are tried. Without that, every pass row's provenance read as absent,
+    which is a different wrong answer from the one this function was written to
+    prevent and just as quiet.
+
+    Cached, because [`artifact_of`] asks it once per pool row and the pool is
+    sixteen thousand of them: a file read per row is the difference between a
+    census that runs and one nobody waits for.
+    """
+    return dict(_heads_at(str(records.root()), str(run)))
+
+
+def _same_artifact(one, other) -> bool:
+    """Whether two stamps name the same shipped artifact, one possibly abbreviated.
+
+    A run record abbreviates to sixteen hex characters (`run.head_stamps`) and a
+    floor carries all sixty-four, so the two spellings of one artifact are never
+    equal as strings. Sixteen hex is sixty-four bits, which names one of the four
+    render artifacts this project has ever shipped with room to spare; what it
+    must not do is silently match a *prefix of nothing*, so an empty stamp on
+    either side is not a match rather than being a match with everything.
+    """
+    if not one or not other:
+        return False
+    shorter, longer = sorted((str(one), str(other)), key=len)
+    return longer.startswith(shorter)
+
+
+def artifact_of(row: dict) -> str | None:
+    """Which artifact the reading [`records.live_reading`] returns was read on.
+
+    THE question a reader has to ask before it compares a row against a cut, and
+    the reason it is a function: the answer is in two different places depending
+    on the row, and neither place is `scores`.
+
+    * A row carrying [`BLOCK`] was re-read, and that block **says** which artifact
+      it was re-read on. Nothing else needs consulting.
+    * A row without one has never been re-read, and its `scores` block is what the
+      run or pass that made it read on the night it ran. So the answer is that
+      run's own record of which artifact its judge was.
+
+    `None` where neither says — a row whose run left no summary, or whose summary
+    records the head as unshipped. That is not the same as *stale*, and a caller
+    must not treat it as either qualifying or refusing: it is a row nothing can
+    place, and the census counts those apart.
+    """
+    from fractal_wallpapers.curation import floors
+
+    current = row.get(BLOCK) or {}
+    stamp = current.get("head_sha256")
+    if stamp:
+        return str(stamp)
+    heads = scoring_artifact(str(row.get("run")))
+    # The kind first, then the one judge. Both spellings are in the history: the
+    # runs recorded a stamp per KIND, and since the two judges became one on
+    # 2026-08-23 a pass records `render` alone.
+    named = heads.get(records.kind_of(row)) or heads.get(floors.SCORING_HEAD)
+    if not named or str(named).startswith("unshipped:"):
+        return None
+    return str(named)
+
+
+def reading_on(row: dict, stamp: str) -> dict | None:
+    """The row's comparable reading **if** it stands on `stamp`, else `None`.
+
+    The qualification every floor-referenced population wants, in one place. It
+    asks about the artifact and never about which *block* the number is in: the
+    two are independent, and a reader that qualified on the block instead was
+    blind to two thirds of the pool — gallery3's and gallery4's attempt rows carry
+    no [`BLOCK`] on disk, because the gallery pass copies it onto release rows
+    only, and were nonetheless judged by the artifact that is shipped now.
+    """
+    if not _same_artifact(artifact_of(row), stamp):
+        return None
+    return records.live_reading(row)
 
 
 def run(device: str = "auto", log=print) -> dict:
@@ -341,5 +436,7 @@ __all__ = [
     "origin_of",
     "picture_of",
     "run",
+    "artifact_of",
+    "reading_on",
     "scoring_artifact",
 ]

@@ -20,7 +20,7 @@ from pathlib import Path
 
 import pytest
 
-from fractal_wallpapers.curation import colors, floors, records
+from fractal_wallpapers.curation import colors, floors, records, rescore
 from fractal_wallpapers.palettes import codebook
 
 pytest.importorskip("numpy")
@@ -81,12 +81,85 @@ def test_rows_on_the_measured_artifact_are_kept_per_kind() -> None:
             strange,
             current={"p_ge3": 0.7, "head_sha256": floors.gallery_floor(strange).stamp},
         ),
-        pool_row("run9", "0003", smooth),  # never re-scored: no current block at all
     ]
     kept = colors._floor_referenced(rows, index_of(rows), log=lambda *a: None)
     assert len(kept[smooth]) == 1
     assert len(kept[strange]) == 1
     assert kept[smooth][0]["score"] == 0.9
+
+
+# --------------------------------------------------------------------------- #
+# The qualification is the ARTIFACT, and never which block the number is in.
+# --------------------------------------------------------------------------- #
+def written_pass(root: Path, pass_id: str, heads: dict) -> None:
+    """One gallery pass's tracked summary, which is where its rows' scale is recorded."""
+    directory = root / "gallery" / pass_id
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / "pass.json").write_text(
+        json.dumps({"config": {"heads": heads}}), encoding="utf-8", newline="\n"
+    )
+
+
+def test_a_row_with_no_current_block_still_counts_when_its_pass_was_the_live_head(
+    tmp_path,
+) -> None:
+    """The defect this pins cost the floor half two thirds of the pool. A gallery
+    pass writes `scores_current` onto its release rows and not onto its attempts,
+    so gallery3's and gallery4's 10,846 attempt rows carried no such block — while
+    their pass records say `config.heads.render` was the artifact shipped today.
+    Qualifying on the block refused every one of them for a missing field."""
+    kind = "smooth_render"
+    stamp = floors.gallery_floor(kind).stamp
+    records.use(tmp_path)
+    rescore._heads_at.cache_clear()
+    try:
+        written_pass(tmp_path, "gallery9", {"render": stamp[:16]})
+        rows = [pool_row("gallery9", "0001", kind)]
+        assert rows[0].get("scores_current") is None
+        kept = colors._floor_referenced(rows, index_of(rows), log=lambda *a: None)
+        assert len(kept[kind]) == 1, "a row judged by the live head was refused for a field"
+        assert kept[kind][0]["score"] == 0.5
+    finally:
+        records.use(None)
+        rescore._heads_at.cache_clear()
+
+
+def test_a_row_with_no_current_block_from_a_retired_head_is_refused(tmp_path) -> None:
+    """The other half of the same rule, and it is the half that has to keep biting:
+    a row nobody re-scored, made by a judge that has been replaced, is a number on
+    a scale the floor is not on. Silently skipping it is what the old presence
+    test did, and a skip says nothing about why the population shrank."""
+    kind = "smooth_render"
+    records.use(tmp_path)
+    rescore._heads_at.cache_clear()
+    try:
+        written_pass(tmp_path, "gallery9", {"render": "a" * 16})
+        rows = [pool_row("gallery9", "0001", kind)]
+        with pytest.raises(colors.CensusError) as refusal:
+            colors._floor_referenced(rows, index_of(rows), log=lambda *a: None)
+        assert "rescore" in str(refusal.value)
+    finally:
+        records.use(None)
+        rescore._heads_at.cache_clear()
+
+
+def test_a_row_nothing_can_place_is_left_out_rather_than_refused(tmp_path) -> None:
+    """A run that left no summary is not evidence of a scale mix — it is evidence
+    of a missing record — and refusing the whole census over one would make the
+    colour census hostage to something with nothing to do with colour. It is
+    reported instead, so the population still says why it is the size it is."""
+    kind = "smooth_render"
+    records.use(tmp_path)
+    rescore._heads_at.cache_clear()
+    said: list[str] = []
+    try:
+        rows = [pool_row("no_such_run", "0001", kind)]
+        kept = colors._floor_referenced(rows, index_of(rows), log=said.append)
+        assert kept[kind] == []
+        assert any("no artifact" in line for line in said), said
+    finally:
+        records.use(None)
+        rescore._heads_at.cache_clear()
 
 
 def test_an_unscored_row_is_skipped_rather_than_read_as_a_zero() -> None:
@@ -127,7 +200,9 @@ def test_a_pass_over_a_pass_resolves_to_the_run_that_rendered_it() -> None:
     kind = "strange_render"
     stamp = floors.gallery_floor(kind).stamp
     made = pool_row("run9", "0008", kind, current={"p_ge3": 0.7, "head_sha256": stamp})
-    once = pool_row("gallery1", "run9_0008", kind)
+    # Every row on the measured artifact, because the chain is what this pins and a
+    # link on a retired scale is refused by the rule above before the walk starts.
+    once = pool_row("gallery1", "run9_0008", kind, current={"p_ge3": 0.7, "head_sha256": stamp})
     once["source"] = {"key": made["key"], "run": "run9", "candidate": "0008"}
     twice = pool_row(
         "gallery2", "gallery1_0003", kind, current={"p_ge3": 0.7, "head_sha256": stamp}

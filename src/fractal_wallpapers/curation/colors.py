@@ -45,14 +45,17 @@ pooling them anyway would invite exactly that comparison.
 
 So the stage splits in two. Everything **score-free** — which colours the pool's
 candidate renders actually are — runs over the whole pool. Everything that
-references a floor runs over the rows carrying `scores_current` only, and this
-module *asserts* that each such row's score stamp is the very artifact its floor
-was measured on rather than assuming it. A row whose stamps disagree is refused,
-not counted.
+references a floor runs over the rows whose reading stands on the very artifact
+its floor was measured on, and this module *asserts* that rather than assuming
+it. A row on another artifact is refused, not counted.
 
-When the pool is next re-scored, the restricted half widens by itself and the
-census re-run picks it up. That is a later session's decision and this module
-does not take it.
+The qualification is the **artifact** and never the block a number happens to be
+stored in. Reading it as the block cost this stage two thirds of the pool: a
+gallery pass writes `scores_current` onto its release rows and not onto its
+attempt rows, so gallery3's and gallery4's 10,846 attempts carried no such block
+while being judged by the head that is shipped right now. [`rescore.reading_on`]
+asks the question that was meant, off the row's current block where it has one
+and off its pass record where it does not.
 
 ## Re-runnable over a grown pool, and stamped with the population it read
 
@@ -496,12 +499,14 @@ def survival(log=print) -> tuple[dict, list[dict]]:
             "rate with it, and nothing in this stage separates them"
         ),
         "restriction": (
-            f"floor-referenced cells read only rows whose score stamp is the artifact the "
+            f"floor-referenced cells read only rows whose reading stands on the artifact the "
             f"floor was measured on, one row per picture, over both stores; "
             f"{sum(len(cells) for cells in scored.values())} pictures out of "
-            f"{len(pool_rows)} pool rows qualify. A row on a retired scale is refused "
-            f"rather than counted, so a head flip empties this half until `curate rescore` "
-            f"has re-read the pool"
+            f"{len(pool_rows)} pool rows qualify. The test is the ARTIFACT and not which "
+            f"block the number is in — a gallery pass's attempt rows carry no "
+            f"`scores_current` and are read on the head their pass record names. A row on a "
+            f"retired scale is refused rather than counted, so a head flip empties this half "
+            f"until `curate rescore` has re-read the pool"
         ),
     }, rows
 
@@ -509,21 +514,36 @@ def survival(log=print) -> tuple[dict, list[dict]]:
 def _floor_referenced(pool_rows: list[dict], index: dict, log=print) -> dict:
     """The rows a floor may legitimately be read against, per KIND, refusing a scale mix.
 
-    A row qualifies when it carries `scores_current` **and** that reading's own
-    head stamp is the artifact this kind's floor was measured on. The stamp is
-    checked rather than assumed: a row from a different checkpoint carries a
+    A row qualifies when the reading it can be compared on **stands on the
+    artifact this kind's floor was measured on** — [`rescore.reading_on`], which
+    is the one place that answers it. A row from another checkpoint carries a
     number on a different calibration, and a floor applied across that boundary
-    is not a verdict about anything. [`records.live_reading`] is deliberately not
-    what reads the score here — its fallback to `scores` is the very scale mix
-    this refuses, and a fallback is the wrong shape for a question whose answer
-    has to be *no row* rather than *the old number*.
+    is not a verdict about anything.
+
+    **The artifact is the question and the block is not.** This used to qualify a
+    row on carrying `scores_current` at all, and that made it blind to two thirds
+    of the pool: gallery3's and gallery4's attempt rows carry no such block on
+    disk, because the gallery pass copies it onto release rows only, and they were
+    nonetheless judged by the artifact that is shipped now — their pass records
+    say so (`config.heads.render`). 10,846 rows were being refused for a missing
+    field while every one of them was already comparable. `records.live_reading`
+    is still not called directly: its fallback to `scores` is the scale mix this
+    refuses, and `reading_on` is that fallback with the stamp check in front of
+    it.
 
     Read over the **whole pool**, both stores, because the restriction this owns
     is the scale and never the store: a gallery-pass attempt is exactly what a
-    gallery floor is a cut on, and it was only ever absent from here because
-    those rows carried no current score at all. Deduplicated by picture the way
-    the score-free half is — a hundred and some pictures are named by a row in
-    each store, and counting one twice weights it double in its cell.
+    gallery floor is a cut on. Deduplicated by picture the way the score-free half
+    is — a hundred and some pictures are named by a row in each store, and counting
+    one twice weights it double in its cell.
+
+    Two refusals and they are not one. A row on a **known other** artifact raises:
+    that is the scale mix, and a census that quietly dropped it would be reporting
+    a smaller population with no line saying why. A row nothing can **place** — no
+    current block and no run record naming the head — is counted and reported
+    rather than raised: it is not evidence of a scale mix, it is evidence of a run
+    that left no summary, and refusing the whole census over one would make the
+    census hostage to a record that has nothing to do with colour.
     """
     from fractal_wallpapers.curation import budget, floors, records, rescore
 
@@ -531,14 +551,20 @@ def _floor_referenced(pool_rows: list[dict], index: dict, log=print) -> dict:
     out: dict[str, list[dict]] = {kind: [] for kind in wanted}
     seen: set[str] = set()
     mismatched = 0
+    unplaceable = 0
     for row in pool_rows:
-        current = row.get("scores_current") or {}
         kind = records.kind_of(row)
-        score = current.get("p_ge3")
-        if kind not in wanted or score is None:
+        if kind not in wanted:
             continue
-        if current.get("head_sha256") != wanted[kind]:
-            mismatched += 1
+        reading = rescore.reading_on(row, wanted[kind])
+        if reading is None:
+            if rescore.artifact_of(row) is None:
+                unplaceable += 1
+            else:
+                mismatched += 1
+            continue
+        score = reading.get("p_ge3")
+        if score is None:
             continue
         try:
             picture = str(rescore.picture_of(row, index))
@@ -550,9 +576,15 @@ def _floor_referenced(pool_rows: list[dict], index: dict, log=print) -> dict:
         out[kind].append({"row": row, "score": float(score), "picture": picture})
     if mismatched:
         raise CensusError(
-            f"{mismatched} row(s) carry a current score from an artifact that is not the one "
+            f"{mismatched} row(s) carry a reading from an artifact that is not the one "
             f"their kind's floor was measured on. A floor read across that boundary is not a "
             f"floor-pass verdict. Re-run `fractal-wallpapers curate rescore` before censusing."
+        )
+    if unplaceable:
+        log(
+            f"[survival] {unplaceable} row(s) name no artifact at all — no current reading "
+            f"and no run record saying which head scored them. Out of this half, and not a "
+            f"scale mix"
         )
     log("[survival] floor-referenced rows: " + ", ".join(f"{k}={len(v)}" for k, v in out.items()))
     return out

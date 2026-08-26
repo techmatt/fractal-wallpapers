@@ -20,6 +20,7 @@ from fractal_wallpapers.curation import manufacture as manufacture_module
 from fractal_wallpapers.labeling import sheets as sheets_module
 from fractal_wallpapers.labeling.finished import HEADS as FINISHED_HEADS
 from fractal_wallpapers.palettes import clusters as palette_clusters
+from fractal_wallpapers.palettes import color_mass as color_mass_module
 from fractal_wallpapers.palettes import groups as palette_groups
 from fractal_wallpapers.palettes import strip as palette_strip
 from fractal_wallpapers.paths import (
@@ -2015,6 +2016,25 @@ def palettes_carriers(args: argparse.Namespace) -> int:
     return 0
 
 
+def palettes_color_mass(args: argparse.Namespace) -> int:
+    """Cut the tracked colour-mass map out of the census and the sweep."""
+    from fractal_wallpapers.palettes import color_mass
+
+    try:
+        sweep = Path(args.sweep) if args.sweep else color_mass.sweep_log_path()
+        report = color_mass.build(
+            census=Path(args.census),
+            sweep=sweep,
+            floor=args.floor,
+            log=(lambda _line: None) if args.quiet else print,
+        )
+    except (color_mass.ColorMassError, OSError) as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps({key: value for key, value in report.items() if key != "files"}, indent=2))
+    return 0
+
+
 def palettes_strip(args: argparse.Namespace) -> int:
     """Draw one map's gradient, or every map a manifest names."""
     if args.name is not None:
@@ -2487,6 +2507,47 @@ def curate_sidecar(args: argparse.Namespace) -> int:
     # exit code worth reading. A short or missing sidecar is a build failure.
     if args.what == "check" and report.get("verdict") in {"short", "missing"}:
         return 1
+    return 0
+
+
+def curate_mass_sweep(args: argparse.Namespace) -> int:
+    """Record, check or restore the colour-mass sweep log against its tracked manifest."""
+    from fractal_wallpapers.curation import durability
+    from fractal_wallpapers.palettes import color_mass
+
+    doing = {
+        "save": lambda: color_mass.save_sweep_log(),
+        "check": lambda: color_mass.check_sweep_log(),
+        "restore": lambda: color_mass.restore_sweep_log(force=args.force),
+    }[args.what]
+    try:
+        report = doing()
+    except durability.DurableLost as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps(report, indent=2))
+    # `missing` is not a failure here the way it is for the sidecar: the log is
+    # archived on purpose and a checkout with no local copy is the resting state.
+    # `short` still is — a truncated log would cut a different map.
+    if args.what == "check" and report.get("verdict") == "short":
+        return 1
+    return 0
+
+
+def curate_on_demand(args: argparse.Namespace) -> int:
+    """Reconcile a pass's on-demand log and its gate store. Records only."""
+    from fractal_wallpapers.curation import gallery as gallery_module
+
+    try:
+        report = gallery_module.reconcile_on_demand(
+            args.pass_id,
+            dry_run=args.dry_run,
+            log=(lambda _line: None) if args.quiet else print,
+        )
+    except gallery_module.PassRefused as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps(report, indent=2))
     return 0
 
 
@@ -4925,6 +4986,46 @@ def library_commands(subcommands) -> None:
     carrying.add_argument("--quiet", action="store_true", help="do not print progress")
     carrying.set_defaults(handler=palettes_carriers)
 
+    massing = steps.add_parser(
+        "color-mass",
+        help="cut the tracked map of what colour each (palette group, mode) pair makes",
+        description=(
+            "The mean chromatic share per codebook cell for every one of the 14,796 "
+            "(palette group, mode) pairs, unioned over the two measurements that exist: "
+            "the judged pool, which is where the palette head went, and the seeded "
+            "two-location sweep, which covers the grid it never visited. Stored sparse, "
+            "one tracked file per mode. Reads records only and renders nothing; the two "
+            "source files are experiment logs and are named rather than assumed."
+        ),
+    )
+    massing.add_argument(
+        "--census",
+        default=str(Path("scratch") / "palette_mass_census" / "observations.jsonl"),
+        help="the census's per-observation record",
+    )
+    massing.add_argument(
+        # Resolved in the handler and not here. `paths.under` reads the configured
+        # tiers, and building a parser must not touch a disk: `--help` on a machine
+        # whose hot root is unplugged would raise before argparse said anything.
+        "--sweep",
+        default=None,
+        help=(
+            "the sweep's per-render record (default: "
+            "artifacts/curation/palette_mass_sweep/rows.jsonl, on whichever tier holds it)"
+        ),
+    )
+    massing.add_argument(
+        "--floor",
+        type=float,
+        default=color_mass_module.STORED_FLOOR,
+        help=(
+            f"the smallest mean share a cell is stored at (default: "
+            f"{color_mass_module.STORED_FLOOR})"
+        ),
+    )
+    massing.add_argument("--quiet", action="store_true", help="do not print per-mode progress")
+    massing.set_defaults(handler=palettes_color_mass)
+
     drawing = steps.add_parser(
         "strip",
         help="draw one map's gradient as the renderer spends it",
@@ -6007,6 +6108,55 @@ def curate_commands(subcommands) -> None:
         "manifest records. Those rows are a harvest nobody has saved yet",
     )
     sidecar.set_defaults(handler=curate_sidecar)
+
+    mass_sweep = steps.add_parser(
+        "mass-sweep",
+        help="the colour-mass sweep log's durability: record it, check it, restore it",
+        description=(
+            "artifacts/curation/palette_mass_sweep/rows.jsonl is the 25.7 MB experiment log "
+            "the tracked colour-mass map was cut from: one row per (palette group, mode, "
+            "location) with its 48-cell vector, its recipe and whether autolevel acted. It "
+            "is insurance rather than a record anything reads — what production reads is "
+            "the map under data/palettes/color_mass/ — and it is the only thing that would "
+            "let the map be re-cut on other terms. Re-deriving it is 8.7 h of wall over "
+            "27,053 renders whose pictures were deleted, so the bytes go to the archive "
+            "tier and the history keeps the manifest."
+        ),
+    )
+    mass_sweep.add_argument(
+        "what",
+        choices=["check", "save", "restore"],
+        help="check the live log against the manifest, save a fresh copy and manifest, "
+        "or restore the archived copy",
+    )
+    mass_sweep.add_argument(
+        "--force",
+        action="store_true",
+        help="with `restore`: overwrite a live log that holds MORE rows than the manifest records",
+    )
+    mass_sweep.set_defaults(handler=curate_mass_sweep)
+
+    on_demand = steps.add_parser(
+        "on-demand",
+        help="reconcile a pass's on-demand log with its attempt store",
+        description=(
+            "An on-demand pick is the extra picture a seat asks for when the colour ceiling "
+            "refuses everything the plan offered, and it is a pool row like any other. Two "
+            "things went wrong with that and both are repaired here, from the candidate "
+            "each pick was asked beside: the log carries `ledger: null` on every row written "
+            "before the renderer started carrying it across, and gallery3's picks never "
+            "reached the attempt store at all, so no reader of the pool can see them. "
+            "Records only — nothing is rendered, and a second run writes identical bytes."
+        ),
+    )
+    on_demand.add_argument("--pass", dest="pass_id", required=True, help="the pass id")
+    on_demand.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="say what would be filled and how many store rows would be added, writing nothing",
+    )
+    on_demand.add_argument("--quiet", action="store_true", help="do not print progress")
+    on_demand.set_defaults(handler=curate_on_demand)
 
     redrawing = steps.add_parser(
         "redraw",

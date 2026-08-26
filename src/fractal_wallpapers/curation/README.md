@@ -260,6 +260,28 @@ order — and only after it, which is why replaying is enough and patching is no
 Replaying arithmetic is free; replaying renders is not, which is what the
 on-demand cache is for.
 
+**The log and the store have to be reconciled, and there is a subcommand for it.**
+`fractal-wallpapers curate on-demand --pass <id>` reads records only, renders
+nothing, and writes identical bytes on a second run. It repairs two things that
+came apart in opposite directions:
+
+* the log carries `ledger: null` on every row written before `26c1c6a` taught the
+  renderer to carry the asked-beside candidate's walk across. That commit repaired
+  the 94 *shipped wallpapers* and left the log alone — and `OnDemand.__init__`
+  loads its cache **out of the log**, so a resumed pass re-seats the null and
+  re-creates the defect. gallery4 had 642 rows in that state;
+* gallery3's 348 picks never reached the attempt store at all, because
+  `extra.rows.values()` reached `write_records` in `d9a423f`, after that pass ran.
+  They were on disk and invisible to `records.read_decisions(RELEASE) +
+  gallery_store.read()`, which is every reader of the pool.
+
+Both halves join on **`asked_by`** and never on the location key: an extra pick is
+the same place in another palette, so the walk that found the candidate it was
+asked beside is the walk that found this one. Two id namespaces are searched,
+because a pick beside one of the pass's own attempts names it `4181` and a pick
+beside a standing pool row names it `gallery1_0994`. The join is checked, not
+trusted — a source at a different location refuses the whole run.
+
 **There is no dry-replay subcommand, and `curate replay` is not it.** That one is
 [`checks.replay`] — it re-derives every *released picture* from its own record and
 is a claim about pixels. What calibrated the ceiling was a **dry replay of the
@@ -417,6 +439,24 @@ block, and that block carries `judge` (the artifact that produced the numbers)
 beside `head` (the row's KIND, which is what picks a floor and a slot). Both are
 the [record store](../../../data/curation/README.md)'s to explain and are not
 restated here.
+
+**A row without that block is not a row without a reading, and asking the wrong
+one of those questions cost a reader two thirds of the pool.** A gallery pass
+writes `scores_current` onto its release rows only, so gallery3's and gallery4's
+10,846 attempt rows carry no such block — while their pass records say
+`config.heads.render` was the artifact shipped today, which means their `scores`
+block *is* the live reading. `rescore.artifact_of(row)` is the one place that
+answers **which artifact a row's comparable reading stands on**: the current
+block's own `head_sha256` where there is one, and the run's or pass's own summary
+where there is not. `rescore.reading_on(row, stamp)` is that check in front of
+`live_reading`, and it is what a floor-referenced population qualifies on.
+
+Not the row's `bar.head_sha256`. That is the artifact the bar's **height** was
+measured on — `floors.release_cut` builds it that way deliberately — and reading
+bar provenance as score provenance is right by coincidence on today's rows and
+wrong the first time the two come apart. Run summaries abbreviate the stamp to
+sixteen hex characters and floors carry all sixty-four, so the comparison is a
+prefix match on the shorter of the two.
 
 **The pass has a colorize leg, and every chosen point gets both heads' attempts.**
 `--attempts m,smooth,strange` (3,2,6) buys, for each chosen point, the top `m`
@@ -1389,10 +1429,17 @@ a landing, so a *low* landing rate is still a real one.
 **Stage 3 restricts rather than pools, and this is the part to keep straight.** A
 judge's score is calibrated against its own training prior, so a stored number from
 a retired checkpoint is not on the same scale as a committed floor. Everything
-score-free — which colours the pool's renders *are* — runs over the whole pool
-(4,642 renders). Everything floor-referenced runs only over rows whose
-`scores_current` stamp is the very artifact that kind's floor was measured on, and
-a row whose stamps disagree is **refused, not counted**.
+score-free — which colours the pool's renders *are* — runs over the whole pool.
+Everything floor-referenced runs only over rows whose reading stands on the very
+artifact that kind's floor was measured on, and a row on another artifact is
+**refused, not counted**.
+
+The test is the **artifact** and never which block the number is in — see
+`rescore.reading_on` above. It used to be the block, and that made this half blind
+to every gallery-pass attempt row: 4,975 pictures qualified where 15,488 do now,
+smooth 1,557 to 4,307 and strange 3,418 to 11,181. A row nothing can **place** at
+all — no current block and no run summary naming the head — is reported and left
+out rather than refused, because a missing record is not evidence of a scale mix.
 
 Since the 2026-08-23 flip re-read the whole pool onto one artifact, that is 1,423
 smooth and 3,219 strange — every one of the 4,642 renders, so the two halves now

@@ -2199,6 +2199,173 @@ class OnDemand:
         }
 
 
+def on_demand_log_path(pass_id: str) -> Path:
+    """One pass's on-demand log — the cache [`OnDemand`] resumes from."""
+    return run_module.run_dir(str(pass_id)) / ON_DEMAND_LOG
+
+
+def _asked_beside(pass_id: str) -> dict:
+    """`{id: row}` for every candidate an on-demand pick could have been asked beside.
+
+    Two namespaces and both are needed. A pick made beside one of **this pass's
+    own attempts** names it by the attempt id the store keys on (`4181`); a pick
+    made beside a **standing pool row** names it by the picture's id
+    ([`picture_id`], `gallery1_0994`), because that is what the seat was stamped
+    with. gallery4's 642 are all of the first kind and gallery3's 348 are all of
+    the second, so a repair that knew only one namespace would silently fix one
+    pass and find nothing in the other.
+    """
+    store = {str(row["candidate"]): row for row in gallery_store.read(str(pass_id))}
+    pool = [*records.read_decisions(records.RELEASE), *gallery_store.read()]
+    index = {str(row["key"]): row for row in pool if row.get("key")}
+    by_picture: dict = {}
+    for row in pool:
+        by_picture.setdefault(picture_id(row, index), row)
+    # The pass's own attempts win where an id is in both namespaces: an attempt id
+    # is what `asked_by` was written from, and a picture id that happened to spell
+    # the same string would be a different row about a different render.
+    return {**by_picture, **store}
+
+
+def reconcile_on_demand(pass_id: str, dry_run: bool = False, log=print) -> dict:
+    """Make one pass's on-demand log and its gate store say what the renderer says now.
+
+    Records only. Nothing is rendered, no picture is read, and a second call over
+    a reconciled pass writes identical bytes.
+
+    Two repairs, and they are the same repair seen from two sides:
+
+    * **The log loses the ledger.** [`OnDemand.render`] carries the asked-beside
+      candidate's `ledger` onto the row it makes — since `26c1c6a`, which repaired
+      94 shipped wallpapers that named no walk at all. What that commit did not
+      touch is the log those rows were also appended to, so every on-demand row
+      written before it still reads `ledger: null` **on disk**. That matters
+      because [`OnDemand.__init__`] loads its cache out of the log: a resumed pass
+      re-seats the cached row and re-creates the defect the commit fixed.
+    * **The store never got the rows.** An on-demand row is a pool row like any
+      other and goes into the store with the plan's attempts — but only since
+      `d9a423f` put `extra.rows.values()` into what [`write_records`] is handed,
+      which is after gallery3 ran. gallery3's 348 are on disk and invisible to
+      `records.read_decisions(RELEASE) + gallery_store.read()`, which is every
+      reader of the pool.
+
+    Both halves join on **`asked_by`** and not on the location key. An extra pick
+    is the same place in another palette, so the walk that discovered the
+    candidate it was asked beside is the walk that discovered this one; the key
+    would find a row about the same location without saying it is the same
+    *discovery*. The join is checked rather than trusted — a source whose location
+    key disagrees with the log row's is refused, because the two are the same
+    place by construction and a disagreement means the id resolved to the wrong
+    row.
+
+    The **log is the poorer source of the two** and is never allowed to overwrite:
+    a field the log already carries is kept and only a `None` is filled. gallery3's
+    log carries no `framing` on 133 of 348 rows and no `ledger` on any of them.
+    """
+    pass_id = str(pass_id)
+    path = on_demand_log_path(pass_id)
+    if not path.is_file():
+        raise PassRefused(
+            f"{tracked_name(path)} is not there, so pass {pass_id!r} has no on-demand log to "
+            f"reconcile. A pass whose ceiling refused nothing never writes one."
+        )
+    rows = [
+        json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
+    ]
+    beside = _asked_beside(pass_id)
+
+    repaired: list[dict] = []
+    filled = {"ledger": 0, "framing": 0}
+    unresolved: list[str] = []
+    for row in rows:
+        asked = str(row.get("asked_by"))
+        source = beside.get(asked)
+        if source is None:
+            unresolved.append(asked)
+            repaired.append(row)
+            continue
+        location = source.get("location") or {}
+        if str(location.get("key")) != str(row.get("key")):
+            raise PassRefused(
+                f"{tracked_name(path)}: the row asked beside {asked!r} is at location "
+                f"{location.get('key')!r} and the on-demand row is at {row.get('key')!r}. An "
+                f"extra pick is the same place in another palette, so those two are the same "
+                f"string or the id resolved to the wrong row. Nothing was written."
+            )
+        fixed = dict(row)
+        if fixed.get("ledger") is None and location.get("ledger") is not None:
+            fixed["ledger"] = location["ledger"]
+            filled["ledger"] += 1
+        if fixed.get("framing") is None and source.get("framing") is not None:
+            fixed["framing"] = source["framing"]
+            filled["framing"] += 1
+        repaired.append(fixed)
+    if unresolved:
+        raise PassRefused(
+            f"{tracked_name(path)}: {len(unresolved)} row(s) name an `asked_by` that is in "
+            f"neither {pass_id}'s attempt store nor the standing pool — "
+            f"{', '.join(sorted(set(unresolved))[:5])}. A pick with no candidate behind it "
+            f"has no provenance to repair from. Nothing was written."
+        )
+
+    attempts = [
+        {
+            **records.decision(
+                run=pass_id,
+                stage=records.GATE,
+                candidate=colorize.attempt_id(row),
+                verdict="kept" if row.get("p_ge3") is not None else "dropped",
+                row=row,
+                reason=row.get("error"),
+                picture=row.get("picture"),
+            ),
+            "framing": row.get("framing"),
+        }
+        for row in repaired
+    ]
+    store_path = gallery_store.store_path(pass_id)
+    held = {str(row["key"]) for row in gallery_store.read(pass_id)}
+    report = {
+        "pass": pass_id,
+        "log": tracked_name(path),
+        "log_rows": len(rows),
+        "filled": filled,
+        "store": tracked_name(store_path),
+        "store_rows_before": len(held),
+        "store_bytes_before": store_path.stat().st_size if store_path.is_file() else 0,
+    }
+    if dry_run:
+        would = len({str(row["key"]) for row in attempts} - held)
+        report.update(
+            {
+                "dry_run": True,
+                "store_new": would,
+                "store_rows_after": len(held) + would,
+            }
+        )
+        log(f"[on-demand] {pass_id}: DRY RUN, nothing written")
+        return report
+
+    text = "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in repaired)
+    path.write_text(text, encoding="utf-8", newline="\n")
+    log(
+        f"[on-demand] {tracked_name(path)}: {len(repaired)} row(s), filled "
+        f"{filled['ledger']} ledger and {filled['framing']} framing"
+    )
+    _written, total, new = gallery_store.write(pass_id, attempts)
+    report.update(
+        {
+            "store_rows_after": total,
+            "store_new": new,
+            "store_bytes_after": store_path.stat().st_size,
+        }
+    )
+    log(f"[on-demand] {tracked_name(store_path)}: {total:,} row(s), +{new:,}")
+    if new:
+        report["manifest"] = gallery_store.save(pass_id, log=lambda line: log(f"[store] {line}"))
+    return report
+
+
 def seat(slots: list, candidates: list, log=print, rule=None, extra=None) -> dict:
     """Fill each slot with the best candidate its head may seat. Mutates `slots`.
 
