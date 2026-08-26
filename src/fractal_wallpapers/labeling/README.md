@@ -124,9 +124,12 @@ have grown a blind sheet by nine anchored rows and broken every paired compariso
 against it. `tests/test_finished_store.py` holds the invariant this protects: no
 non-`eval_only` row sits on a pinned place. The pin is never the thing that moves.
 
-**The check runs before the write.** It used to run after, so a drop that trespassed
-left the rows behind and raised — a store the suite forbids, produced by the command
-that refuses to produce it.
+**The check runs before the write, and again after it.** It used to run only after,
+so a drop that trespassed left the rows behind and raised — a store the suite
+forbids, produced by the command that refuses to produce it. Both assertions stay:
+the first on the rows as they were handed to a writer, the second on the rows as the
+store read them back, and the report carries `asserted_before_writing` so which
+reading held is on the record.
 
 ## What cutting a sheet costs, and why the number moves so much
 
@@ -268,6 +271,18 @@ page — the end a correction sheet is read from — `P(≥3)` cannot separate t
 and `P(≥4)` still can. Only the ordering moves; `suggestion_score` on a row is the
 expected tier either way.
 
+**Five sites resolve a checkpoint through `floors.SCORING_HEAD`, and a judge
+adoption has to re-check all five.** They are `sheets.score_pictures` (this one —
+the sheet's prefills), `curation.colorize.Colorizer` (a candidate's verdict at
+attempt time), `curation.manufacture` (the screen and confirm cuts),
+`curation.rescore` (the whole pool re-read onto the live scale) and
+`models.release_floor` (the floor fit itself). Each calls
+`render_train.load_checkpoint(ship.shipped_path(judge), …)` off that one constant,
+which is what makes "which model reads finished renders" a single edit — and what
+makes a flip a five-site consequence rather than a one-line one. `models.
+render_glance` is deliberately not on the list: it names `render_train.HEAD`
+directly, because its whole job is reading an incumbent against a candidate.
+
 ## One ingest, two stores
 
 **A page saves to `labels/<head>.<sheet>.json`, and that is the whole
@@ -329,8 +344,13 @@ An ingested row carries the place and the verdict, and deliberately not the fact
 sheet printed under the picture — the arm, the band, the walk fate. Reading a batch
 back is therefore a three-way join, and each side has exactly one right source:
 
-* **verdicts** come from `store.resolved()`, never from the drop and never from the
-  row files directly — latest-wins is the resolver's job. Body rows are the ones whose
+* **verdicts** come from `store.resolved()` — or `finished.resolved(head)` for the
+  two finished-render stores, which is the same rule keyed on the render instead of
+  the place — never from the drop and never from the row files directly; latest-wins
+  is the resolver's job. The order is `store.order_of`: **`(recorded_at, file,
+  line)`**, and **`labeler` is not in it**. Who cast a verdict is on the row and is
+  never part of what supersedes what, so two people labelling one unit resolve by
+  when rather than by whose name sorts first. Body rows are the ones whose
   `batch` is the sheet's own batch; anchors carry somebody else's and are excluded by
   that test rather than by position.
 * **what the page said** — `facts`, `suggestion`, the head's `columns` — comes from the

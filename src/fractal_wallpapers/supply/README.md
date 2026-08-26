@@ -44,6 +44,24 @@ nothing below may eat what is above it:
 3  contest    the deficit-priced rule over the remainder, lineage-discounted
 ```
 
+**What a find is worth, and what a partition is therefore owed.** Currency is
+`n4 + 0.1·n3` — `currency.CLASS_WEIGHT`, one table read by the standing deficit,
+the in-run price and the readout alike, so moving a weight moves all three. A 4 is
+the unit and a 3 is a tenth of one; 1 and 2 are recorded and worth nothing. Stock
+is two legs and a location is in **exactly one**: the human's class where a human
+has looked, and `MACHINE_STOCK_DISCOUNT` (0.2) × the machine's class where nobody
+has. That is **precedence, never addition** — a labelling sheet is cut out of
+ledger rows, so a location can be in both corpora, and adding the legs would count
+it twice at a weight nobody chose. The discount sits well under the ~50% rate at
+which machine-called keepers survive a human look, deliberately: a machine-filled
+partition keeps a mild standing appetite until labels re-anchor it.
+
+**The standing deficit is a launch snapshot.** The quota re-allocates every batch
+because the *prices* move; the censused deficit does not, because human labels do
+not arrive mid-run. So what changes inside a run is the price and the realized
+share of minutes, and nothing else — a run's mix is steered against the stock it
+opened with.
+
 What follows is worth reading before changing anything here.
 
 **A Julia twin's supply is manufactured by serving its parent.** The allocator
@@ -95,10 +113,15 @@ home-view root is the same point every prior run rooted at, so 90%+ of pool and
 twin roots enter already saturated, where a labelled frame enters clean about two
 times in three. Run the leg with `--partition <dynamical> --root-channel proven`.
 
-**Three things about the channel are decided in `proven.py` and nowhere else.**
+**Four things about the channel are decided in `proven.py` and nowhere else.**
 Its **tier floor is `min(currency.CLASS_WEIGHT)`** — the currency's own bottom
-class rather than a fresh cut, so what counts as a proven place is exactly what
-counts as a keeper and moving one moves both. The pool is **interleaved at
+class rather than a fresh cut, which is tier **3**, so what counts as a proven
+place is exactly what counts as a keeper and moving one moves both. It serves
+**nine partitions**: `proven.SERVED` is every registered partition but
+`phoenix:classic`, which is out of this channel as it is out of every other —
+its plane is one pinned parameter point, it has no queue of its own to interleave
+with, and `release_mix.json` carries it as `externally_supplied`. The pool is
+**interleaved at
 `RATIO` (2) proven entries per pool entry**, never substituted: a channel fed by
 this project's own past output cannot open new ground, so the fresh pool has to
 keep coming through it. And the queue is ordered by a **digest of the location

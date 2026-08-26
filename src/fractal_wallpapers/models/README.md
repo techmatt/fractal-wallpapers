@@ -78,6 +78,20 @@ here carries. Reading the raw sigmoids instead cost the location head seven
 points of AUC at its release cutpoint, measured, and the product reading is used
 on both sides of every comparison in this repository.
 
+**A band has to have trained at the backbone its bar was written about, and that
+is checked at both ends.** `render_train.check_declared_backbone` refuses at
+*launch*, before a run spends hours: a named run takes its band's declared value
+and a `--backbone` contradicting it is refused rather than obeyed.
+`render_train.check_written_backbone` refuses at the *read*, and it is what sees
+the failure that already happened — `render_acceptance.read` calls it over the
+band's runs before it compares anything, because a written band read against a bar
+it cannot answer is worse than no read. Two ends are needed because nothing in a
+run directory can catch this on its own: `config.json`, both checkpoints' own
+configs and `head audit` all agree with each other and with the wrong value, since
+the only place that says what the band was *supposed* to be is the declaration.
+`render_train.MISLAUNCHED` names the runs that were kept out of every band on
+exactly those grounds.
+
 **A bar is appended to, never edited.** `prereg.json` carries an `amendments`
 list and `finished_acceptance.amended(bar, arm)` folds it over the arm as
 written — the original stays byte-identical and every amendment sits beside it
@@ -281,6 +295,33 @@ that same draw: junk floor 57.85% → 48.62%, good floor 36.75% → 32.80%, grea
 9.80% → 5.55% — and across the candidate band the junk floor ranges 44.07% to
 63.50%. Every floor is calibrated against the shipped head's scale, so adoption
 means restating them from a measurement, never from one seed's number.
+
+## The read a band cannot give: `renders glance`
+
+`glance` ([`render_glance`](render_glance.py)) is the qualitative half, and it
+exists because a non-inferiority band answers only whether a retrain **costs**
+anything on the blind sheets. It cannot answer what a correction batch was bought
+to answer, and on this project's rules it never will: manufactured rows are
+anchored, incumbent-screened and train-side forever, so every read of them is a
+read of a population enriched twice to produce it, and a rate quoted off one is a
+ceiling.
+
+So the read is a person's. It lays one batch's rows out **twice** — once in the
+incumbent's order, once in the candidate's — with both scores under each picture,
+and names the rows that moved furthest either way. What a reader is looking for is
+whether the pictures the batch was cut for came up, and whether anything they would
+not have promoted came up with them.
+
+```
+fractal-wallpapers renders glance --batch <name> --run <run>
+```
+
+Two things it is careful about. It draws
+`artifacts/renders/<kind>/crops/<name>.jpg` — the picture both heads were trained
+on and read natively — rather than the sheet render a person labelled, because
+asking two heads to order rows at a geometry neither was read at adds a difference
+that belongs to neither of them. And **it decides nothing and writes nothing into
+any record**: one self-contained HTML file into `scratch/`, which is disposable.
 
 ## Adopting a head: `regime restate`, then `regime adopt`
 

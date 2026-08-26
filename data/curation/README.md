@@ -69,14 +69,26 @@ deciding what to ship.
 is a run's own account of itself; this is a verdict about four rows of it. The
 retroactive bar pass (`curate reject`) is a *rule* read live against today's cuts,
 so it finds the same rows every time it is asked — and four run8h strange rows
-below the bar (0.685 when they were ruled on, 0.620 since the 2026-08-23 head
-flip) stay served on Matt's ruling. One row per excused release row,
-keyed on that row's own `run|stage|candidate`, carrying the bar it sits under, the
-score, who ruled and when and why. Per row and never per run or per head: an
-exception naming a run would excuse rows that run has not made yet, and one naming
-a head would retire the bar by the back door. It is read from the checkout rather
-than from the record root, so a rehearsal that redirects the store under `scratch/`
-does not stop the ruling applying.
+below the bar stay served on Matt's ruling. The bar has moved at every judge flip
+since they were ruled on; the row records the height and the artifact it sat under
+at the time (0.685 on the retired strange head) and is not restated, because the
+ruling was about those pictures rather than about a number. One row per excused
+release row, keyed on that row's own `run|stage|candidate`, carrying the bar it sat
+under, the score, who ruled and when and why. Per row and never per run or per
+head: an exception naming a run would excuse rows that run has not made yet, and
+one naming a head would retire the bar by the back door. It is read from the
+checkout rather than from the record root, so a rehearsal that redirects the store
+under `scratch/` does not stop the ruling applying.
+
+**Two modules read this file and nothing else does** — [`rejection.py`] and
+[`below_bar.py`], so the ruling reaches the retroactive pass and the glance sheet
+it is taken from, and reaches them through one predicate
+(`rejection.below_acting_bar`). **The gallery pass honours it indirectly**: it
+never opens this file, and what it does instead is exclude *rejected* rows from
+the pool (`gallery.pool_rows` tests `records.is_rejected` per row). An excused row
+is not a rejected row, so it stays in the pool and stays seatable — which is the
+same outcome by a different route, and the reason nothing here needs a third
+reader.
 
 **The two decision stores are trees, a file per run per partition, and one reader
 over all of them.** `records.read_decisions(stage)` hands back the whole store in
@@ -115,6 +127,16 @@ with no picture: naming a regime there would describe a render that does not
 exist. Rows written before the field existed do not carry it and every one of them
 came out of a 2560x1440 ss4 leg, which is what `curation.checks.UNRECORDED_REGIME`
 says and the only thing it is for.
+
+**And `curate expressed` reads that picture at its own resolution, never at a
+census size.** A share vector is not scale-free, so `expressed.full_shares` takes
+the frame off the release PNG itself and writes it onto the census row — nothing
+is downsampled to count it, and nothing is re-read at a regime it was not made at.
+The 160x90 decode `codebook.of_picture` uses is computed **beside** it as a cheap
+instrument and reported as agreement, not substituted for it: on the released
+population the worst swatch moves 0.7 of a point. Which means a census taken over
+one `release_geometry` and one taken over another are two populations, and the
+field above is what tells them apart.
 
 **There are two autolevel stamps per released row, and only one of them is here.**
 The stamp on the row is the one from the render the *decision* was taken on, at

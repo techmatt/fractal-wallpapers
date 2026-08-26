@@ -22,6 +22,23 @@ row naming a map says nothing about which gradient it got; its recipe does.
 
 `tests/test_colormaps.py` holds these files to that shape.
 
+**Nothing in production draws a palette knob, and exactly one leg in this
+repository draws one at all.** `cycles`, `phase`, `gamma` and `reverse` are the
+engine's, and every colorize this project makes is `finished.recipe()` at the
+identity with `mirror` read off the map's cyclicity. The single exception is
+`curate manufacture --step knobs` (`manufacture.KNOB_GRID`, six cells), which is a
+**diagnostic** — it re-colours attempts that already missed their target swatch and
+reports how many any cell would have rescued, as an upper bound on what a knob draw
+could buy. It sweeps **cyclic maps only**, because `cycles` and `phase` are the two
+the engine honours only on a map that wraps, and it renders nothing that ships.
+
+Worth stating plainly because it is easy to assume otherwise: **no targeted seat
+and no recolor path draws a knob.** A `curate gallery --target` carrier attempt
+bypasses the palette head to pick its *map* and then renders at the identity
+recipe like everything else, and `palettes recolor` / `strip` take the fold and
+nothing more. So a hit rate measured anywhere in this pipeline is a fact about
+where a pinned ramp lands on a field, never about an under-explored recipe.
+
 Most of them were not curated: they arrived by mechanical conversion because a
 labeled corpus row or a vendored candidate set names them, and their `source`
 line says exactly that.
@@ -50,6 +67,54 @@ So **this repository ships dense sRGB8 and nothing else**: no OKLCH source, no
 generator state, no baked table. The table is regenerated from these stops on
 every load, which is what keeps one answer to "what colour is this map at 0.4".
 
+**4096 is the table's width and never a file's.** `colormap.rs`'s `TABLE_SIZE` is
+the bake; what is on disk here is one of four stop counts, and no map ships at
+4096:
+
+```text
+ 33 stops   156 maps        257 stops   334 maps
+ 34 stops    36 maps        512 stops   375 maps
+```
+
+The 512s are what `authored_import` densifies an OKLCH brief to; the rest arrived
+by mechanical conversion at whatever resolution their source carried. A file with
+4096 stops would be somebody's baked table checked in, which is the one thing the
+paragraph above says this directory is not for.
+
+### Reading a Python-side gradient against the Rust bake
+
+The check that the two agree is a strip at the table's own width:
+
+```python
+strip.draw(name, out, 4096, 1, mirror=False)
+```
+
+One pixel per table entry, one row, unfolded. But the strip is not the table read
+off directly, because **the coloring stage stretches every field against its own
+0.5th and 99.5th percentiles** and a ramp is a field like any other. The stretch
+is nearest-rank (`coloring.rs::percentile`, `CLIP_LOW` / `CLIP_HIGH`), so over a
+4096-sample ramp the arithmetic is exact and known: `low` is sample
+`round(0.005 × 4095) = 20`, `high` is sample `round(0.995 × 4095) = 4075`, and
+pixel `i` therefore shows the map at
+
+```text
+t = clamp((i - 20) / 4055, 0, 1)
+```
+
+Undo that and the strip reads the bake. Samples 0–20 are all `t = 0` and
+4075–4095 all `t = 1` — the ends held flat, duplicated rather than lost, which is
+why the stretch is invertible even though it is not avoidable. Measured on
+`viridis`, the flat runs come out 26 and 24 pixels rather than 21 and 21; the
+extra pixels are sRGB8 quantization near the ends, not a wider clip.
+
+**This does not contradict
+[`palettes/README.md`](../../src/fractal_wallpapers/palettes/README.md)'s "cannot
+be compensated for"** — that sentence is about *avoiding* the clip, and it is
+right: the stretch is affine-invariant, so no choice of ramp values dodges it and
+a strip always spends its outer half percent on the end colours. What is
+recoverable is the *mapping*, because the index arithmetic above is fixed. Avoiding
+and inverting are two different questions and only the second one has an answer.
+
 ## Which maps are the same choice: `groups.jsonl`
 
 Nine hundred maps are not nine hundred choices. `groups.jsonl` says which of them
@@ -73,6 +138,21 @@ every absent map stood down for. `FRACTAL_WALLPAPERS_PALETTE_GROUPS=off` turns i
 off for one run. A group's `canonical` member — the one carrying the most
 finished-render label rows — is what a record or a figure *names*; it is
 deliberately not what the pool draws.
+
+**The three counts, and none of them is the same number.** The **library** is 901
+maps — every file in this directory. The **candidate pool** is 900: `pool.json`
+next door, the library less `blue_orange`, the one sequential map held back for the
+tile floor and the labeler's vivid render. What a colorize actually **draws** from
+is 822, because 143 of the 900 collapse into 65 groups and each group stands one
+member up (`757 singletons + 65 = 822`). The count is seed-independent — a
+different `--seed` stands a different member up, never a different number of them
+— so 822 is the width of the drawable pool for every run with the collapse on.
+
+Regenerating the table is not cheap: `fractal-wallpapers palettes groups` is
+**about five minutes** — 279 s measured on this repository's own machine for the
+901 × 901 distance matrix, 1,024 projection directions at 128 quantiles each, plus
+the linkage — and it rewrites `groups.jsonl` when it finishes. It reproduces: the
+same run re-derived 65 groups over 143 maps against the shipped file exactly.
 
 The table is worth about a slot in twenty: over gallery3's 150 recorded candidate
 neighbourhoods, **97 held two or more members of one group** and the collapse

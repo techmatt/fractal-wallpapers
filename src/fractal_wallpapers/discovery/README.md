@@ -113,6 +113,19 @@ budget. Every source that enumerated minibrots from first principles was measure
 and found dead; what a minibrot is good for is being a *marker* of a dense
 neighbourhood, at a scale the search can compute before rendering anything.
 
+**`snap_to_nucleus` is the outward framing ladder**, and it is the operator that
+turns that marker into views. It recenters on the nucleus the view's centre sits
+on — one probe, one Newton pass — and emits a `Reframing` per rung of
+`operators.FRAMINGS`: `None` (keep the view's own width), then **4×** and **16×**
+the atom's own size. Outward and never inward, deliberately: framing *into* an
+atom is solid black, so there is no small rung. `4` is the "is this atom any
+good?" frame, the smallest that is not mostly the atom's own body; `16` is the
+one worth **labeling**, often close to a usable wallpaper by itself, which is the
+material the corpus wants. The verdict is per rung off one solve — a shallow atom
+can take 4× and be refused 16× — and nothing is reframed wider than
+`MAX_WIDTH` (3.0), a whole-set view, because wider than that is a different
+search rather than a reframing of this neighbourhood.
+
 **What the probe costs, measured.** A harvest charges `expand` and
 `trigger_reframings` as one number, so the ledger cannot break the operators out.
 Replaying every firing of a one-active-hour scored run against the four parameter
@@ -185,6 +198,18 @@ guard for that is in `tests/test_home_views.py`. It held one once, `{0, 0, 3.0}`
 which agreed with the engine until the engine's Phoenix row moved: after that a
 phoenix root framed 66% of its own set with both lobes cut, and nothing in either
 half could have noticed.
+
+**Three partitions have no pool here at all, and are harvest-only.**
+`julia:multibrot3`, `julia:multibrot4` and `julia:multibrot5` have no tracked
+`c`-pool and no back-catalogue to draw one from — the two pools in
+`data/discovery/` are degree 2 and Phoenix, and nothing in a walk crosses a
+family. Their roots are **manufactured per run** by
+[`fractal_wallpapers.supply.twins`], which takes the centre of an admitted
+degree-`d` parameter-plane location as a `c` for the degree-`d` Julia family,
+skipping any parameter inside the pool's own c-spacing floor of one already taken.
+That is a supply-engine channel, so `fractal-wallpapers walk` cannot reach these
+three: a harvest is where they get roots, and a run that never serves their parent
+plane never serves them either.
 
 **A seed pool cannot ask for anywhere else.** `JuliaSeed` carries a `c` and
 `PhoenixSeed` a `(c, p, z₋₁)`; both are *parameters*, so every dynamical root
@@ -339,6 +364,17 @@ log-uniform width, screens each draw, and records every attempt with the gate th
 refused it. Measured over the c-plane at widths 1e-3 to 1e-1: **1.4% of uniform
 draws clear every gate** — 13 survivors in 832 attempts, 31 seconds — and the
 refusals are 81% `flat`, 17% `interior_cap`, under 1% `occupancy_floor`.
+
+**It draws from 90% of the home frame, and `boundary.home_box` is the only place
+in this project that shrinks it.** The box is the family's own home view — read
+through `engine.home_view`, because this side keeps no framing literal — with each
+axis scaled by `boundary.HOME_SHARE` (0.9) and the height taken at 16:9 off the
+shrunken width. The reason is that the home framing carries a margin of empty
+plane around the set **on purpose** (the engine contains the measured set at 16:9
+with a tenth of its deciding extent in margin), so a draw spending attempts out
+there would be measuring the margin rather than the set. It is a property of
+*this sampler* and not of the home table: everything else in the project — a walk
+root, a render with no viewport — takes the engine's frame whole.
 
 It writes two files, because one could not be both: `draws.jsonl` is the record
 (a run header, one row per attempt, a summary) and `kept.jsonl` is a plain

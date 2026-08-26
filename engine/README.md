@@ -113,6 +113,34 @@ one; and the fallthrough arms carry `debug_assert`s that fire if something the
 table claims to cover reaches them. The `match` over `Channels` is exhaustive, so
 an arm cannot simply be deleted.
 
+**Those three tests are the whole standing guard, because there is no benchmark
+in this crate.** No `benches/` directory, no bench target in `Cargo.toml`, no
+criterion dependency — the table above was measured by hand, interleaved
+before-and-after, and is a record of one reading on one machine rather than
+something CI re-takes. So a regression in the *numbers* would not be caught here;
+what is caught, on every run of the suite, is the thing that actually costs a
+multiple of the render time — production silently falling into the generic loop.
+Re-taking the measurement means re-running it by hand. Do not go looking for a
+`cargo bench`.
+
+**`field::sweep_row` and `field::Channels` are `pub` under a carve-out, and the
+consumer is the browser.** The site's wasm module draws a *band* of rows at a
+time, one band per worker, so it cannot reach the specialized table through
+[`sample`] — which takes a whole frame. While `sweep_row` was private the wasm
+build carried a hand-written copy of the escape loop instead, and a second copy of
+the recurrence that nothing holds to this one is how a page comes to quietly
+disagree with a render. Visibility is the whole of what that consumer needs:
+coordinates are formed from the **whole** viewport with a global row index, which
+is exactly what a band wants, and a row appends to `lanes` rather than filling
+them, so a caller may sweep any range of rows into one buffer.
+
+Which is also the precise reading of where the specialization lives: **the table
+is `sweep_row`'s**, and `field::sample` is not a second specialized entry point —
+it reaches the same table through `gather`, one row at a time. Anything that calls
+`sweep_row` directly gets the specialization; anything that hands the family or
+the channel set in as a runtime value gets the generic loop, same source and same
+numbers, slower.
+
 **The direct trap's own loop is not specialized and is the obvious next piece.**
 `direct_trap::trace` carries the same runtime `match` over the families, plus
 three more of its own — the trap shape, the transform and the merge — inside the
@@ -186,6 +214,25 @@ identity is therefore derived from the field-side members themselves
 (`renders.FIELD_IDENTITY`) rather than hand-listed at the call site, and
 `tests/test_curation_colorize.py` pins both halves: an added member moves the
 digest, and the digests of the specs already on disk do not move.
+
+**Three lists carry that, and adding an axis means classifying it.**
+`renders.SPEC_MEMBERS` is every row member `spec_of` reads — the whole of what
+the digest is over. `FIELD_IDENTITY` is the half a dumped field is a function of
+(the place, the geometry, the field the mode names and the curve it is read
+through); `RECOLOR_MEMBERS` is the rest (`colormap`, `recipe`), spent after the
+field is on disk, over and over, without iterating anything. Two candidates
+differing only in the second half are one field and thirty-two pictures.
+
+**`field_job_name` refuses rather than proceeds, in both directions**, which is
+what makes the classification mandatory instead of merely conventional. A member
+`spec_of` reads that is in neither list raises — "classify it" — because a field's
+name would otherwise not say whether it depends on that member. And a member
+declared field-side that the caller supplied no value for raises too, because a
+field cached without it would be shared by every value it can take. So an axis
+added to the engine cannot reach the field cache by being forgotten: one of those
+two refusals fires first. The failure being bought off is not one stale file — it
+is thirty-two wrong candidates, every one recoloured off whichever field was
+dumped first under a shared name.
 
 ## The one family that only draws pictures
 

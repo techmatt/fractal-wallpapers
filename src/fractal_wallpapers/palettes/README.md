@@ -167,7 +167,12 @@ renders. The fold defaults to the pipeline's rule — folded unless the map is
 cyclic — and `--no-mirror` asks for the unfolded ramp. The coloring stage
 normalizes against its own 0.5th and 99.5th percentiles, so the outer half percent
 of a strip's width is the end colour held flat; that is the same clip every render
-gets and it cannot be compensated for, because the stretch is affine-invariant.
+gets and it cannot be *avoided*, because the stretch is affine-invariant and no
+choice of ramp values dodges it. It can be **inverted**, which is a different
+question: the stretch is nearest-rank over known sample positions, so which
+gradient position each pixel shows is exact arithmetic — see
+[`data/palettes/README.md`](../../../data/palettes/README.md#reading-a-python-side-gradient-against-the-rust-bake)
+for the 4096-wide recipe and the index it turns on.
 
 `--colormap-dir` (`strip.draw(..., colormap_dir=...)`) is what draws the ramp a
 *particular picture* was rendered through rather than the map as shipped. When the
