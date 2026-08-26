@@ -552,6 +552,47 @@ re-checked. `identity.enforce` pins four settings and the engine build is not on
 of them. Worth chasing; until then the pass measures rather than inherits, and
 reports the agreement on every run.
 
+**The margin was calibrated on the pass's neighbourhoods, and the pool is the
+other end of the same scale.** A scan of every admitted location on 2026-08-26 —
+28,090 of 29,051 embedded, 961 under the junk floor, 196,630 frames in 3.37 h —
+put median `P(>=4)` at the recorded framing at **0.0009**, against the 0.9998 the
+paragraphs above are measured at. Both ends are where log-odds has resolution and
+the probability has none, so the same Δ 2.0 that took 26.9% of gallery4's 751
+seats takes **67.8% of the pool**. Those adoptions are mostly real — the median
+adopted location goes `P(>=4)` 0.00048 to 0.106 — but 30% of them move a location
+from under 0.01 to under 0.01. **A refinement rate quoted off a pass does not
+transfer to the pool, in either direction.**
+
+**Where the pool-wide record lives, and how to make it again.** One row per
+location under `artifacts/curation/frame_refit/scan.jsonl` (untracked, ~98 MB):
+every rung of the window with its gain in nats, `P(>=4)`/`P(>=3)`, gate fate,
+whether it was adoptable, and its viewport and cap — plus the winner, the verdict
+at the standing margin and the refusal reason. Keeping every rung is what lets the
+margin, the rung set and the width policy be re-decided without re-scanning; the
+margin sweep from Δ1.0 (80.6% adopted) to Δ4.0 (41.3%) is a read of that file and
+costs nothing.
+
+```
+python scratch/frame_refit_scan/scan.py            # resumable; --limit N, --out PATH
+```
+
+It is chunked 250 locations, **resumes by subtracting the location identities
+already in the record** — never filenames or chunk indices — and names each chunk
+directory by a digest of its own keys, so two runs at different chunk sizes cannot
+collide. It closes by asserting the measured identities equal the intended
+population and printing per-partition coverage; a shortfall exits non-zero rather
+than reporting success.
+
+**Price per partition, not pool-wide, and measure rather than model.** Render cost
+does not follow the iteration cap: `phoenix` costs **1.7x** what its median maxiter
+implies and `mandelbrot` **0.6x**, and `mandelbrot` at 26,912 median ran at 0.432
+s/location against `julia:mandelbrot`'s 0.344 at 2.5x fewer iterations. Fixed
+per-location overhead — JPEG encode, head read, engine launch — is about **70% of
+a cheap location's cost**, so scaling a whole anchored rate by a power of maxiter
+overstates the dear partitions roughly 2x. Order a long scan cheapest partition
+first and an overrun then costs the dearest partition's tail rather than an
+arbitrary slice of every one.
+
 **`--no-refine` is the leg this repository had before the step existed**, exactly:
 the same plan, the same seed, the same anchors, the same mode draws and the same
 frames. `tests/test_curation_framing.py` pins that, along with the window
