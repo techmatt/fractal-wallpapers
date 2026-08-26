@@ -42,6 +42,7 @@ def test_the_shipped_run_is_read_off_the_weights_manifest() -> None:
         decisions.shipped_run("a head nobody ships")
 
 
+@pytest.mark.slow
 def test_the_family_the_figure_uses_reaches_all_four_outcomes() -> None:
     """The figure's whole content is the ladder, so its family has to have rungs.
     Checked against the shipped head's own tracked read of the held-out side."""

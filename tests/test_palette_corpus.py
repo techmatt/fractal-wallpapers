@@ -145,6 +145,7 @@ def places(rows):
     return [repr(location_key(row["family"], row["viewport"])) for row in rows]
 
 
+@pytest.mark.slow
 class TestTheTrackedCorpus:
     """The machine-labeled rows, held to what they claim about themselves."""
 

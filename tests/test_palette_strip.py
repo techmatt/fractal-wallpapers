@@ -32,6 +32,7 @@ def test_the_ramp_runs_end_to_end_in_every_row() -> None:
         strip.ramp(1, 1)
 
 
+@pytest.mark.slow
 def test_the_fold_follows_the_map_and_a_caller_may_override_it() -> None:
     """The rule is `palette_sets.recipe_for`'s and this only reads it: a sequential
     map folds, a cyclic one does not, and either can be asked for by hand."""
@@ -41,6 +42,7 @@ def test_the_fold_follows_the_map_and_a_caller_may_override_it() -> None:
     assert strip.mirror_for("twilight_shifted", override=True) is True
 
 
+@pytest.mark.slow
 def test_a_folded_strip_is_symmetric_and_an_unfolded_one_is_not(tmp_path) -> None:
     """The whole content of `mirror`: out and back, so the two ends meet. Read off
     the picture the engine made rather than off the recipe that asked for it."""

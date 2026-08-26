@@ -15,6 +15,7 @@ other than what they say:
 
 from __future__ import annotations
 
+import copy
 import json
 from pathlib import Path
 
@@ -304,7 +305,41 @@ def test_a_set_naming_a_map_the_library_does_not_hold_is_skipped_and_counted(mon
 # --------------------------------------------------------------------------- #
 # The artifact.
 # --------------------------------------------------------------------------- #
-def test_the_manifest_describes_the_rows_rather_than_holding_them(tmp_path, monkeypatch) -> None:
+@pytest.fixture(scope="module")
+def censused_library():
+    """Stage 1, run once for the whole file instead of once per `take`.
+
+    It is a pure read of the tracked colormaps — six hundred maps folded onto the
+    codebook — so it is the same table every time and costs two and a half
+    seconds to derive. The five tests below run `take` eight times between them,
+    and every one of those runs recomputed it.
+    """
+    return colors.library(log=lambda *a: None)
+
+
+@pytest.fixture
+def library_once(censused_library, monkeypatch):
+    """Hand `take` a copy of that one reading, per the file's existing habit.
+
+    The same shape the tests here already use for `picks` and `labels`, and a
+    copy rather than the reading itself because `take` puts its rows in the
+    artifact it writes. Every number asserted below is the real stage's.
+
+    Asked for rather than automatic, so the fifteen tests in this file that never
+    run `take` do not pay for a stage they do not use.
+    """
+    table, rows = censused_library
+    monkeypatch.setattr(
+        colors,
+        "library",
+        lambda log=print: (copy.deepcopy(table), copy.deepcopy(rows)),
+    )
+
+
+@pytest.mark.slow
+def test_the_manifest_describes_the_rows_rather_than_holding_them(
+    tmp_path, monkeypatch, library_once
+) -> None:
     """The rows are megabytes against a 1 MiB per-file history guard, so what the
     history keeps is a measurement of them."""
     monkeypatch.setattr(colors, "census_dir", lambda: tmp_path / "artifacts")
@@ -321,7 +356,10 @@ def test_the_manifest_describes_the_rows_rather_than_holding_them(tmp_path, monk
     assert (tmp_path / "data" / "manifest.json").stat().st_size < 1_048_576
 
 
-def test_the_artifact_carries_the_codebook_that_produced_it(tmp_path, monkeypatch) -> None:
+@pytest.mark.slow
+def test_the_artifact_carries_the_codebook_that_produced_it(
+    tmp_path, monkeypatch, library_once
+) -> None:
     monkeypatch.setattr(colors, "census_dir", lambda: tmp_path / "artifacts")
     monkeypatch.setattr(colors, "manifest_path", lambda: tmp_path / "manifest.json")
     colors.take(stages=("library",), log=lambda *a: None)
@@ -335,8 +373,9 @@ def test_an_unknown_stage_is_refused_rather_than_silently_doing_nothing() -> Non
         colors.take(stages=("colour",), log=lambda *a: None)
 
 
+@pytest.mark.slow
 def test_a_partial_run_carries_the_other_stages_instead_of_deleting_them(
-    tmp_path, monkeypatch
+    tmp_path, monkeypatch, library_once
 ) -> None:
     """`--stage library` recomputes a quarter of the census. Writing only that
     quarter would throw the other three away, which is the mistake `intake` upserts
@@ -366,7 +405,10 @@ def test_a_partial_run_carries_the_other_stages_instead_of_deleting_them(
     assert [entry["stage"] for entry in manifest["stages_carried"]] == ["picks"]
 
 
-def test_a_carried_stage_keeps_the_date_it_was_actually_computed(tmp_path, monkeypatch) -> None:
+@pytest.mark.slow
+def test_a_carried_stage_keeps_the_date_it_was_actually_computed(
+    tmp_path, monkeypatch, library_once
+) -> None:
     """A table dated today, derived from a pool that has since grown, with nothing
     on it to say so, is worse than a visibly stale one."""
     monkeypatch.setattr(colors, "census_dir", lambda: tmp_path / "artifacts")
@@ -396,7 +438,10 @@ def _later(real):
     return Clock
 
 
-def test_a_stage_table_is_never_given_metadata_of_its_own(tmp_path, monkeypatch) -> None:
+@pytest.mark.slow
+def test_a_stage_table_is_never_given_metadata_of_its_own(
+    tmp_path, monkeypatch, library_once
+) -> None:
     """The `labels` table is keyed by head and nothing else, so a timestamp written
     into it puts a string where every reader expects a cell. The stamps live in
     `stage_taken_at` beside the tables for exactly that reason."""

@@ -11,6 +11,7 @@ anyway.
 
 from __future__ import annotations
 
+import functools
 import json
 import pathlib
 
@@ -36,6 +37,7 @@ def a_picture(place: str, score: int, kind: str, side: str = "train", **changes)
     return render_train.Picture(**fields)
 
 
+@pytest.mark.slow
 def test_the_forbidden_set_is_the_union_of_both_pins() -> None:
     """The split rule, at its root: a location on EITHER instrument may not train.
 
@@ -237,8 +239,30 @@ def test_the_incumbents_are_the_runs_the_superseded_heads_served_from() -> None:
         )
 
 
+@pytest.fixture(scope="module")
+def laid_out():
+    """`render_train.population`, with each distinct argument answered once.
+
+    Laying the population out stats every judged picture of both stores against
+    its render cache — twenty-odd thousand `is_file` calls, four seconds of them
+    on Windows — and the three tests below want five layouts between them of
+    which only three are distinct: the pooled one, and one per kind. The real
+    function, under a cache, rather than a reimplementation of it: what the
+    ablation test is *about* is that `population(kind)` is the pooled layout
+    intersected with a kind, so a fixture that did the intersecting itself would
+    be asserting its own arithmetic.
+
+    Read-only, like the tracked readings in `conftest.py`: a test that needs to
+    move a picture's side takes its own copy first.
+    """
+    return functools.cache(render_train.population)
+
+
+@pytest.mark.slow
 @pytest.mark.parametrize("kind", sorted(render_train.KINDS))
-def test_the_strict_split_keeps_both_sheets_clean(kind: str, shipped_render_cache) -> None:
+def test_the_strict_split_keeps_both_sheets_clean(
+    kind: str, shipped_render_cache, laid_out
+) -> None:
     """The claim the whole comparison rests on, checked on the split that is built.
 
     Needs the render caches, because a picture with no file is not a training
@@ -252,7 +276,7 @@ def test_the_strict_split_keeps_both_sheets_clean(kind: str, shipped_render_cach
         if shipped_render_cache.missing(name):
             pytest.skip("a render cache is incomplete on this machine")
 
-    pictures, record = render_train.population()
+    pictures, record = laid_out()
     by_side = render_train.sides(pictures)
     forbidden = {repr(place) for place in render_train.pinned_everywhere()}
 
@@ -270,8 +294,9 @@ def test_the_strict_split_keeps_both_sheets_clean(kind: str, shipped_render_cach
     assert record["excluded_pictures"] == len(by_side[render_train.EXCLUDED])
 
 
+@pytest.mark.slow
 def test_the_ablation_is_the_pooled_split_intersected_with_one_kind(
-    shipped_render_cache,
+    shipped_render_cache, laid_out
 ) -> None:
     """Not a second population. If the ablation drew its own selection slice it
     would move two things at once and could not separate either."""
@@ -283,11 +308,11 @@ def test_the_ablation_is_the_pooled_split_intersected_with_one_kind(
         if shipped_render_cache.missing(name):
             pytest.skip("a render cache is incomplete on this machine")
 
-    pooled, _ = render_train.population()
+    pooled, _ = laid_out()
     whole = {(p.kind, p.name): p.side for p in pooled}
     covered: set = set()
     for kind in render_train.KINDS:
-        part, record = render_train.population(kind)
+        part, record = laid_out(kind)
         assert record["only"] == kind
         keys = {(p.kind, p.name) for p in part}
         assert keys <= set(whole)

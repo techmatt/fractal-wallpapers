@@ -464,6 +464,7 @@ def test_a_partition_the_channel_does_not_serve_is_refused_at_the_parser() -> No
     assert parsed.partition == ["julia:mandelbrot"]
 
 
+@pytest.mark.slow
 def test_the_subcommand_emits_the_set_and_compares_it(tmp_path, capsys) -> None:
     from fractal_wallpapers import cli
 

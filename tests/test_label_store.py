@@ -186,6 +186,7 @@ def addresses_the_records(source: str) -> bool:
     return False
 
 
+@pytest.mark.slow
 def test_only_the_store_addresses_the_label_records() -> None:
     offenders = [
         name

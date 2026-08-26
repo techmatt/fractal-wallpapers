@@ -66,6 +66,7 @@ def gradients(model):
     )
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("listwise", [0.0, 1.0])
 def test_a_batch_split_into_pieces_is_the_same_gradient(listwise: float) -> None:
     """The claim the microbatching rests on. The objective is a mean over sets, so
@@ -95,6 +96,7 @@ def test_a_batch_split_into_pieces_is_the_same_gradient(listwise: float) -> None
     assert relative(one_pass, gradients(pieced)) < 1e-5
 
 
+@pytest.mark.slow
 def test_a_ragged_last_piece_is_still_weighted_by_what_it_holds() -> None:
     """The last batch of an epoch is not a whole batch, and neither is its last
     piece. A piece weighted as if it were full would let the tail of an epoch pull

@@ -191,6 +191,7 @@ def test_a_map_named_for_a_colour_censuses_as_that_colour(colormap: str, family:
     assert read in adjacent, f"{colormap} read as {read}, more than one spoke from {family}"
 
 
+@pytest.mark.slow
 def test_the_fold_is_the_maps_own_kind_and_not_a_callers() -> None:
     """`mirror = the map is not cyclic`, the rule `palette_sets.recipe_for` owns.
     A sequential map censused unfolded is a different set of colours."""

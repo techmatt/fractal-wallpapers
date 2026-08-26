@@ -194,6 +194,7 @@ def test_the_ulp_reading_is_the_arithmetic_and_not_a_constant() -> None:
     assert not depth.releasable("1.6", "0.0", 6e-12)
 
 
+@pytest.mark.slow
 @needs_engine
 def test_the_mirror_and_the_engine_refuse_the_same_frames(tmp_path) -> None:
     """The one check that keeps `depth` from being a comment about `viewport.rs`.
@@ -351,6 +352,7 @@ def test_a_ladder_step_asks_only_for_periods_above_the_parent_s() -> None:
     assert floored == [period for period in unfloored if period >= 40]
 
 
+@pytest.mark.slow
 def test_a_ladder_records_every_rung_whether_or_not_it_arrived() -> None:
     anchor = next(row for row in roots.anchors(200) if row["family"]["kind"] == "mandelbrot")
     found, why, ladder = roots.descend(anchor, random.Random(0), max_steps=1)

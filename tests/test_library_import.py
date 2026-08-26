@@ -85,6 +85,7 @@ def test_a_converted_file_is_shaped_like_a_tracked_one() -> None:
     assert json.loads(library_import.text_of(document)) == document
 
 
+@pytest.mark.slow
 def test_the_conversion_reproduces_every_map_that_is_already_tracked() -> None:
     """The one check that says the rule is the same rule.
 

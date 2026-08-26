@@ -203,6 +203,7 @@ def test_a_rehearsal_cannot_be_judged_as_if_it_were_the_study(tmp_path, monkeypa
         regime_flips.read(path=reads)
 
 
+@pytest.mark.slow
 def test_the_read_gates_on_both_arms_and_names_the_cell_that_failed(tmp_path, monkeypatch) -> None:
     """A candidate that is worse at one gate fails the guard, whatever the pooled rate."""
     bar = regime_flips.preregister()

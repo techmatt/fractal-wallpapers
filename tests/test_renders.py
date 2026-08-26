@@ -192,6 +192,7 @@ def test_an_unclassified_spec_member_refuses_rather_than_naming_a_field(monkeypa
         )
 
 
+@pytest.mark.slow
 def test_the_evaluation_side_is_in_the_plan(shipped_render_cache) -> None:
     """A held-out picture is scored through the same renderer the training side
     was learned from, or the number measures the render as much as the head."""
@@ -242,6 +243,7 @@ def test_a_complete_cache_is_measured_against_the_store_and_not_a_stale_plan(
     assert len(renders.missing(head)) == 1, "a plan written before the ingest hid a missing crop"
 
 
+@pytest.mark.slow
 def test_a_regenerated_picture_is_the_picture_that_was_judged(shipped_render_cache) -> None:
     """The check that found the one defect the recipe transfer had.
 

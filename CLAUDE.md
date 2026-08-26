@@ -78,7 +78,7 @@ These were decided once, at the first commit, because each is expensive to rever
 
 ```
 python -m ruff check . && python -m ruff format --check .
-python -m pytest
+python -m pytest --slow
 cargo build --manifest-path engine/Cargo.toml
 cargo test --manifest-path engine/Cargo.toml
 ```
@@ -86,6 +86,30 @@ cargo test --manifest-path engine/Cargo.toml
 CI runs the same thing on Ubuntu and Windows. The Python suite's walk tests need
 a **release** engine (`cargo build --release --manifest-path engine/Cargo.toml`)
 and skip themselves without one.
+
+### The two lanes
+
+`python -m pytest` runs the **fast lane**, about 45 seconds. `python -m pytest
+--slow` runs every test there is, about three minutes, and that is what CI runs
+and what runs before a checkpoint. The fast lane is for the edit-run loop and
+nothing else.
+
+A test earns `@pytest.mark.slow` by costing about a second or more of **real
+work** — a render through the engine, a training loop, or a sweep of a store:
+the render cache, the tracked pool, the distillation corpus. Arithmetic stays in
+the fast lane however much of it there is. **A slow guard moves lanes; it is
+never deleted or weakened to make a lane faster** — the tests are this project's
+memory and every pin in them was bought by an incident.
+
+The fast lane prints how many tests it held back, on every run that holds any
+back. That line is the point of the arrangement rather than a decoration: a lane
+that went quiet would be a set of guards nobody would notice had stopped
+running. `tests/conftest.py` owns the marker, the flag and the line.
+
+One trap worth knowing before marking anything: several of these guards share a
+cached derivation, so moving one to the slow lane can simply hand its cost to
+whichever sibling reads the cache next. Measure the fast lane after marking, not
+before — a mark that bought nothing is a guard given up for nothing.
 
 ## Standing prompt contract
 

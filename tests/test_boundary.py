@@ -66,6 +66,7 @@ def test_a_draw_that_keeps_nothing_or_tries_nothing_is_refused(tmp_path) -> None
             boundary.sample({"kind": "mandelbrot"}, out_dir=tmp_path, **kwargs)
 
 
+@pytest.mark.slow
 @needs_engine
 def test_every_attempt_is_on_the_record_and_the_keepers_are_a_manifest(tmp_path) -> None:
     """Record and rank, never gate and forget — the same rule the ledger holds.
@@ -110,6 +111,7 @@ def test_every_attempt_is_on_the_record_and_the_keepers_are_a_manifest(tmp_path)
     assert report["record"].endswith("draws.jsonl")
 
 
+@pytest.mark.slow
 @needs_engine
 def test_a_kept_frame_really_did_clear_every_gate(tmp_path) -> None:
     """The survivors are the boundary claim: a frame that is not mostly set, not

@@ -15,6 +15,11 @@ handed a reading of the tracked corpus by accident.
 
 Nothing here is written to. A test that needs to mutate one of these readings
 should take its own copy.
+
+The other thing this file owns is the **slow lane** — the `slow` marker, the
+`--slow` flag that runs it, and the line the fast lane prints to say how many
+guards it just held back. A guard that goes quiet is a guard nobody notices
+going missing, so the count is printed on every run that deselects anything.
 """
 
 from __future__ import annotations
@@ -26,6 +31,61 @@ import pytest
 
 from fractal_wallpapers.labeling import registry as registry_module
 from fractal_wallpapers.labeling import store
+
+# --------------------------------------------------------------------------- #
+# The slow lane.
+# --------------------------------------------------------------------------- #
+HELD_BACK = pytest.StashKey[int]()
+
+SLOW = (
+    "slow: real work rather than arithmetic about it — a render through the engine, a "
+    "training loop, or a sweep of a store (the render cache, the tracked pool, the "
+    "distillation corpus). Held back unless --slow is given, which CI and the "
+    "pre-checkpoint run give."
+)
+
+
+def pytest_addoption(parser) -> None:
+    parser.addoption(
+        "--slow",
+        action="store_true",
+        default=False,
+        help="run the slow lane as well, which is every test there is. What CI runs.",
+    )
+
+
+def pytest_configure(config) -> None:
+    config.addinivalue_line("markers", SLOW)
+
+
+def pytest_collection_modifyitems(config, items) -> None:
+    """Hold the slow lane back, and remember how much was held.
+
+    Deselected rather than skipped: a skip is a test that ran and decided not to,
+    and these did not run at all. The count is printed below, which is the half
+    of this that matters — the lane exists to be cheap, not to be quiet.
+    """
+    if config.getoption("--slow"):
+        return
+    held = [item for item in items if item.get_closest_marker("slow") is not None]
+    if not held:
+        return
+    items[:] = [item for item in items if item.get_closest_marker("slow") is None]
+    config.hook.pytest_deselected(items=held)
+    config.stash[HELD_BACK] = len(held)
+
+
+def pytest_terminal_summary(terminalreporter, exitstatus, config) -> None:
+    held = config.stash.get(HELD_BACK, 0)
+    if not held:
+        return
+    tests = "test" if held == 1 else "tests"
+    terminalreporter.write_sep(
+        "=",
+        f"{held} slow {tests} not run - `python -m pytest --slow` runs everything",
+        yellow=True,
+        bold=True,
+    )
 
 
 @pytest.fixture

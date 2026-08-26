@@ -125,6 +125,7 @@ def test_the_vendored_yardstick_lands_on_this_projects_location_ids() -> None:
 CALIBRATION_DRAWS = 100
 
 
+@pytest.mark.slow
 def test_the_bar_accepts_a_head_that_is_the_incumbent(tmp_path, monkeypatch) -> None:
     """The machinery's own calibration: hand the read one of the yardstick's own
     seeds and it must come back ACCEPT. A bar that could not pass the head it was
