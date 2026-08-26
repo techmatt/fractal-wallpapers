@@ -172,6 +172,54 @@ def for_cell(cell: str, within=None, directory: Path | None = None) -> list:
     ]
 
 
+def deliveries(directory: Path | None = None) -> dict:
+    """`{(map, field): {every cell that map is dominant in on that field}}`.
+
+    The table read the other way round. A row says "this map carries this cell on
+    these fields"; a **delivery** is one (map, field) picture, and what it is
+    dominant in is a *set*, because the dominance rule admits more than one cell
+    per picture. Nothing else in this module needs that view — a draw wants one
+    cell's carriers — and [`co_dominance`] is the reader that does.
+    """
+    out: dict = {}
+    for row in read(directory):
+        if row.get("kind") != CARRIER_ROW:
+            continue
+        for klass in row.get("fields") or ():
+            out.setdefault((str(row["map"]), str(klass)), set()).add(str(row["cell"]))
+    return out
+
+
+def co_dominance(cell: str, directory: Path | None = None) -> dict:
+    """`{other cell: the share of this cell's deliveries that also land it}`.
+
+    What a picture of one colour is **also** a picture of. A map drawn to carry
+    `dark_vivid_lime` delivers 2.3 cells on the reference fields, and the extra
+    ones are not noise and not adjacency on the wheel — they are measured, and
+    they are what a colour target spends its neighbours' allowance on. The
+    counterpart in [`curation.ceiling.Rule`] raises those cells' allowances in
+    proportion, which is the difference between a target that can be met and a
+    program that is infeasible for a reason nobody chose.
+
+    Denominated in **deliveries and not maps**: a map that carries the cell on all
+    three reference fields is three chances to land a companion, and a map that
+    carries it on one is one. `{}` where nothing carries the cell at all, which is
+    a fact [`for_cell`] reports better.
+    """
+    landed = [cells for cells in deliveries(directory).values() if str(cell) in cells]
+    if not landed:
+        return {}
+    counts: dict = {}
+    for cells in landed:
+        for other in cells:
+            if other != str(cell):
+                counts[other] = counts.get(other, 0) + 1
+    return {
+        name: round(count / len(landed), PLACES)
+        for name, count in sorted(counts.items(), key=lambda item: (-item[1], item[0]))
+    }
+
+
 def draw(cell: str, count: int, seed: int, within=None, directory: Path | None = None) -> list:
     """`count` maps drawn for one cell, weighted by mean share, without replacement.
 
@@ -298,6 +346,8 @@ __all__ = [
     "RECORD_NAME",
     "SCHEMA",
     "CarrierError",
+    "co_dominance",
+    "deliveries",
     "draw",
     "for_cell",
     "method",

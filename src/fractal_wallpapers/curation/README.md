@@ -309,15 +309,17 @@ repeatable. At each seat the pass reads `u = need / seats left`: above 1 the tar
 **prefers** — dominant candidates rank ahead of the rest and the judge's order
 breaks the tie inside each half. Below that the judge decides alone. Setting a
 target also replaces the ceiling's allowance for that cell **and for its family**,
-so both levers are denominated in one vector.
+and raises the allowance of the cells the target structurally implies (below), so
+all of it is denominated in one vector.
 
 A target never lowers a floor and never pads. An unmet one is reported **SHORT**,
-in the record and in the log. What actually meets a target is the plan: one extra
-**carrier attempt** per location per targeted cell, the map drawn from
-`data/palettes/carriers.jsonl` weighted by mean share and coloured **bypassing the
-palette head** — which is the only way a colour the head declines 83% below base
-rate ever reaches a seat. The attempt's dominance is read on its own render; a
-carrier attempt that comes out grey is an ordinary candidate.
+in the record and in the log. What actually meets a target is something rendering
+a map chosen *for* the colour, bypassing the palette head — the only way a colour
+the head declines 83% below base rate ever reaches a seat. `curate hunt`'s
+conditioned leg is that lever; the pass's own carrier-attempt plan was **deleted**
+rather than repaired, because it seeded its draw on `hash()` over a tuple holding
+a cell name, which Python randomizes per process, so a draw recorded as seeded was
+not reproducible from its record. `hunt.seed_of` is sha256 and is the shape.
 
 Refused before anything renders if the fractions sum above one, or if a targeted
 cell has no carrier in the pass's own collapsed palette pool. `config.ceiling`,
@@ -797,12 +799,11 @@ its own bar.
 **The pairwise rules are generated, never materialized.** The diversity radius
 and the group cap are statements about a pair of finished pictures, and the
 ledger holds 118 million pairs at 512 KiB a signature. So: solve without them,
-look at the incumbent's own pairs, add a row for each violated pair, solve again.
-It terminates on an incumbent that violates nothing, and that answer is optimal
-for the whole program — the generated program is a relaxation, so its optimum
-bounds the full one's, and the incumbent attains that bound while being feasible
-for it. At N=20 over the whole pool it converges in **two rounds and one
-generated row**.
+look at the pairs, add a row for each violated pair, solve again. It terminates on
+an incumbent that violates nothing, and that answer is optimal for the whole
+program — the generated program is a relaxation, so its optimum bounds the full
+one's, and the incumbent attains that bound while being feasible for it. At N=20
+over the whole pool it converges in **two rounds**.
 
 **The location-level prune does not work, and this is why.** The design was to
 skip pairs whose *places* are far apart on the ground that they cannot be
@@ -812,19 +813,71 @@ furthest-apart pair of places that makes one sits at cosine 0.583 — past the 9
 percentile of location distance. The metric is over a picture's **colour cloud**
 and colour comes from the map rather than from the place, so two unrelated frames
 through similar ramps are near-duplicates by construction. A cut at 0.40 would
-still keep 91% of the pairs and miss 96 real violations. The cutting-plane loop
-is what makes the prune unnecessary rather than merely unsound.
+still keep 91% of the pairs and miss 96 real violations. **A correlated proxy is
+not a prune.**
+
+**The metric admits a real one.** It is a mean of absolute differences over
+`DIRECTIONS * QUANTILES` numbers, so the triangle inequality bounds it from below
+out of a summary of each cloud: group the quantiles into `solve.BOUND_BLOCKS`
+blocks and, per direction and per block, the mean of `|a - b|` is at least
+`|mean a - mean b|`. At one block that is exactly the distance between the two
+clouds' **mean colours**; at `QUANTILES` blocks it is the metric itself. A pair the
+bound puts at or beyond its own threshold *provably* cannot violate, so it is
+never measured and never generated. Measured over 79,800 pairs from the same
+population, at the 0.07 radius:
+
+| blocks | bytes a signature | settles | survivors per real violation |
+|---|---|---|---|
+| 1 | 4 KiB | 95.4% | 2.7 |
+| 2 | 8 KiB | 97.4% | 1.6 |
+| **4 (shipped)** | **16 KiB** | **97.9%** | **1.2** |
+| 16 | 64 KiB | 98.3% | 1.0 |
+| 128 (the metric) | 512 KiB | 100% | 1.0 |
+
+What that buys is not mainly the arithmetic. It is that a round can screen every
+pair among **everything a signature has ever been made of** — the greedy seed's
+rejects and every earlier incumbent — instead of the incumbent's own pairs alone,
+so rows arrive many rounds before the incumbent would have found them. It also
+uncouples the signature cache from `n`: a round no longer compares every seat with
+every other one in the full metric.
+
+**A greedy walk seeds the cut pool, and never ships an answer.**
+`solve.seed_greedily` seats down the ranked list and keeps every pair it refuses.
+Those pairs are valid rows of the full program however bad the walk's own gallery
+is — two pictures under their threshold can never both be seated, whoever noticed
+it — and where the walk fills every seat, its own minimum score is what fixes stage
+2's columns. It is never a shipped alternative to the exact solve: sequential
+seating is what this design replaced, and it hides exactly the failure the n=1.1N
+truncation exposed.
+
+**Stage 2 was the whole cost of a round, and an incumbent is what removes it.**
+Measured at n=60, an 11.1 s round was 1.1 s of stage 1, **9.8 s of stage 2** and
+0.2 s of stage 3. Stage 2 maximizes the minimum seated score, and `t` has no lower
+bound in it, so no presolve can tell HiGHS that a candidate scoring 0.4 is not
+going into a gallery whose floor is 0.97. Any feasible solution that clears the
+same count says so: the optimal floor is at least that solution's own, so no
+optimal solution seats anything below it, and every such column can be fixed to
+zero without removing an optimum. 15,955 free columns become 305, and 9.8 s
+becomes 0.36 s for the same floor to twelve places.
+
+**Continuing one live model does not help, and that was measured rather than
+assumed.** The obvious next move is to stop rebuilding: hold one `highspy` model,
+append the generated rows, and continue from the existing basis. HiGHS gives a MIP
+no warm start. Over eight rounds at n=60, one live model with rows appended took
+14.82 s against 14.87 s for a fresh build each round, and handing stage 1 its own
+answer back as a MIP start moved it from 1.36 s to 1.31 s — the time is in proving
+the bound, not in finding the incumbent. `scipy.optimize.milp` has no warm start to
+give, and neither does the C++ interface underneath it, so the solve stays on SciPy
+and takes on no second solver dependency.
 
 **The sweep carries a clock, and says where it stopped.** A round cap bounds
-rounds and not time, and the two stop being the same thing above about n=60: the
-rounds grow with `n`, and so does the program inside each of them. Measured on the
-pool — 19 s at n=20, 42 s at 30, 31 s at 40, 125 s at 60, 131 s at 80, and n=320
-did not finish in forty minutes. So the shipped ladder stops at **80**, which is
-where this project has measured; the whole run stops at `--sweep-seconds` (1,200 by
-default) and the record names the rung it did not reach. `relaxation_ladder`
-carries the same question to the top in seconds, on every block except the two
-pairwise ones — and its answer is exact: **1,223**, the location count, with
-`one_per_location` the block that runs out.
+rounds and not time, and the two are not the same thing: the rounds grow with `n`,
+and so does the pool of pairs each of them screens. The shipped ladder stops at
+**160**, which is where this project has measured; the whole run stops at
+`--sweep-seconds` (1,200 by default) and the record names the rung it did not
+reach. `relaxation_ladder` carries the same question to the top in seconds, on
+every block except the two pairwise ones — and its answer is exact: **1,223**, the
+location count, with `one_per_location` the block that runs out.
 
 **Infeasibility is a shortage list.** A program that cannot be solved does not
 raise: an elastic LP gives every relaxable row a slack and minimizes it, so the
@@ -835,9 +888,33 @@ conditioned hunt. Under-fill is the same fact one seat smaller: the cardinality
 row alone goes from `== n` to `<= n`, nothing is relaxed, and the empty seats stay
 on the record.
 
+**And sometimes it is not a shortage at all**, so `shortage.verdict` says which
+kind it is. Both instruments are LPs, and a program whose LP is feasible while its
+MILP is not has nothing short: the elastic read comes back at zero slack and the
+deletion filter — which can only ever name a conflict the relaxation has — would
+otherwise return every block, a list of six that reads like a finding and is not
+one. It returns `[]` there instead, and the verdict names the integral cause: with
+pairwise rows standing, the diversity radius is refusing the *combinations* rather
+than the pool refusing the colours, and no hunt for more of a colour relieves it.
+
 **`--target <cell>=<fraction>` is a hard demand**, and it also raises that cell's
 and its family's ceiling allowance through `ceiling.Rule` — otherwise a demand
 would be refused by the ceiling it asked for.
+
+**And it raises the allowance of the cells it structurally implies.** A carrier of
+one colour is dominant in more than one: on the reference fields a
+`dark_vivid_lime` delivery lands `dark_muted_lime` 42% of the time,
+`light_muted_lime` 34% and `dark_vivid_green` 8%. So a target that raised only its
+own cell pushes its own seats against its companions' untargeted allowance of
+three, and the program is infeasible for a reason nobody chose — which is exactly
+where the lime hunt's shortage moved once the target itself was met.
+`ceiling.Rule` raises a companion's share by `target x the measured co-dominance
+rate`, and the companion's family by the same unless it is the target's own family
+(which the target already raised, and which counts a picture once however many of
+its cells that picture is dominant in). The rates come from
+`palettes.carriers.co_dominance` over the tracked table's own deliveries, never
+from an adjacency written down off the hue wheel. `config.ceiling.implied` on a
+solve record and on a pass record says what moved.
 
 ## `curate hunt` — rendering into a shortage instead of around it
 

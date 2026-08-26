@@ -467,9 +467,12 @@ class Stratifier:
 def conditioned_maps(cell: str, count: int, pool: list, seed: int) -> list:
     """`count` maps for one target cell, drawn without replacement and re-drawn.
 
-    [`gallery.carrier_plan`]'s draw, with the same re-draw on a bumped seed and
-    for the same reason: a target met by one map is a target met by one picture
-    repeated, and the palette-group cap would refuse all but the first of them.
+    The re-draw on a bumped seed is what stops a target being met by one map,
+    which is a target met by one picture repeated: the palette-group cap would
+    refuse all but the first of them. Seeded through [`seed_of`] and so through
+    sha256 — the retired gallery pass's own version of this draw seeded on
+    `hash()` over a tuple holding a cell name, which is not stable across
+    processes, and it was deleted rather than repaired.
     """
     from fractal_wallpapers.palettes import carriers as carrier_table
 

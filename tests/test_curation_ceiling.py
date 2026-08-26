@@ -224,12 +224,50 @@ def test_the_warm_up_is_the_plus_one_and_the_first_seat_may_be_any_colour() -> N
 
 
 def test_a_target_replaces_the_allowance_for_its_cell_and_for_its_family() -> None:
+    """`red` and not `rose`: green's carriers land a rose cell 1% of the time, and a
+    cell a target's carriers reach at all is one this rule moves. Nothing green
+    carries red on any reference field."""
     rule = ceiling.Rule(Eyes(), targets={"dark_vivid_green": 0.05})
     assert rule.share("dark_vivid_green") == 0.05
     assert rule.share("green") == 0.05, "the family of a targeted cell moves with it"
-    assert rule.share("dark_vivid_rose") == ceiling.CELL_SHARE
-    assert rule.share("rose") == ceiling.FAMILY_SHARE
+    assert rule.share("dark_vivid_red") == ceiling.CELL_SHARE
+    assert rule.share("red") == ceiling.FAMILY_SHARE
     assert rule.allowed("dark_vivid_green", 150) == math.floor(2 * 0.05 * 150) + 1 == 16
+
+
+def test_a_target_raises_the_cells_its_carriers_also_deliver() -> None:
+    """The lime hunt's finding, as a rule.
+
+    A carrier of one cell is dominant in more than that cell, so a target that
+    raised only its own allowance pushes its own seats against its companions'
+    untargeted three. The raise is the target's size times the **measured**
+    co-dominance rate, and never an adjacency written down off the hue wheel.
+    """
+    rule = ceiling.Rule(
+        Eyes(),
+        targets={"dark_vivid_lime": 0.5},
+        co_dominance={"dark_vivid_lime": {"dark_muted_lime": 0.4, "dark_muted_green": 0.1}},
+    )
+    assert rule.share("dark_muted_lime") == pytest.approx(ceiling.CELL_SHARE + 0.5 * 0.4)
+    assert rule.share("dark_muted_green") == pytest.approx(ceiling.CELL_SHARE + 0.5 * 0.1)
+    assert rule.share("green") == pytest.approx(ceiling.FAMILY_SHARE + 0.5 * 0.1), (
+        "a companion in another family raises that family too"
+    )
+    assert rule.share("lime") == 0.5, (
+        "a companion in the target's OWN family does not: the family row counts a "
+        "picture once however many of its cells that picture is dominant in"
+    )
+    assert rule.share("dark_vivid_red") == ceiling.CELL_SHARE, "nothing else moves"
+
+
+def test_the_implied_raise_is_read_off_the_tracked_carrier_table() -> None:
+    """And the numbers are the record's, not the wheel's."""
+    rule = ceiling.Rule(Eyes(), targets={"dark_vivid_lime": 1.0})
+    assert rule.implied["dark_muted_lime"] == pytest.approx(0.4211, abs=1e-3)
+    assert rule.allowed("dark_muted_lime", 60) == 54, (
+        "the cell the n=60 lime solve was thirteen short in, at an allowance of three"
+    )
+    assert rule.allowed("dark_vivid_red", 60) == 3, "an untouched cell keeps the default"
 
 
 def test_two_targets_in_one_family_add_up_under_it() -> None:

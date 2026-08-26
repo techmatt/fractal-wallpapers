@@ -42,24 +42,38 @@ The diversity radius and the group cap are both statements about a **pair** of
 finished pictures, and the ledger holds fifteen thousand: a hundred and eighteen
 million pairs, each costing a 512 KiB pixel-cloud signature to evaluate.
 
-So they are **lazy**. Solve without them, look at the incumbent's own pairs, add
-a row for each violated pair, solve again. It terminates on an incumbent that
-violates nothing, and what it terminates on is optimal for the whole program and
-not only for the rows that were generated: the generated program is a relaxation,
-so its optimum bounds the full program's; the incumbent attains that bound and is
-feasible for the full program; so it is the full program's optimum too.
+So they are **lazy**. Solve without them, look at the pairs, add a row for each
+violated pair, solve again. It terminates on an incumbent that violates nothing,
+and what it terminates on is optimal for the whole program and not only for the
+rows that were generated: the generated program is a relaxation, so its optimum
+bounds the full program's; the incumbent attains that bound and is feasible for
+the full program; so it is the full program's optimum too.
 
-The design this replaces was to **prune** at location level — pairs whose places
-are far apart cannot be near-duplicate pictures, so only close locations need
-their candidates expanded. Measured over 79,621 cross-location pairs drawn from
-the pool's top two thousand, that premise is false: 1,350 of them are closer than
-[`RADIUS`] as pictures, and the furthest-apart pair of *places* that makes one
-sits at cosine 0.583, past the 90th percentile of location distance. It is the
-expected answer once stated plainly — this metric is over a picture's colour
+## Two prunes, one sound and one not
+
+The design this module replaced was to prune at **location** level — pairs whose
+places are far apart cannot be near-duplicate pictures, so only close locations
+need their candidates expanded. Measured over 79,621 cross-location pairs drawn
+from the pool's top two thousand, that premise is false: 1,350 of them are closer
+than [`RADIUS`] as pictures, and the furthest-apart pair of *places* that makes
+one sits at cosine 0.583, past the 90th percentile of location distance. It is
+the expected answer once stated plainly — this metric is over a picture's colour
 cloud, and colour comes from the map rather than from the place, so two unrelated
 frames through similar ramps are near-duplicates by construction. A prune at 0.40
-would still keep 91% of the pairs and miss 96 real violations. There is no sound
-cut, and the cutting-plane loop means there does not need to be one.
+would still keep 91% of the pairs and miss 96 real violations. **A correlated
+proxy is not a prune**, and that one was a correlated proxy.
+
+The metric admits a real one, and the difference is the whole lesson. It is a
+mean of absolute differences, so the triangle inequality lower-bounds it from a
+summary of each cloud: at the coarsest reading the distance between the two
+clouds' **mean colours**, and at finer readings the same statement per band of
+the cloud ([`BOUND_BLOCKS`]). A pair the bound puts at or beyond its own
+threshold *provably* cannot violate, so it is never measured and never generated.
+It settles 98% of pairs at four kibibytes each against the metric's five hundred
+and twelve, and what that buys is not only the arithmetic: a round can screen
+every pair among **everything a signature has ever been made of** — the greedy
+seed's rejects and every earlier incumbent — instead of the incumbent's own pairs
+alone, so the rows arrive many rounds before the incumbent would have found them.
 
 The two rules are one test with two thresholds. Two seated pictures must be at
 least [`RADIUS`] apart in [`pixel_clouds.METRIC`]; two seated pictures of one
@@ -152,19 +166,32 @@ MODE_FLOOR = 1
 #: `n` because the sum does.
 PENALTY_PER_SEAT = 1.0 / 100.0
 
-#: How many cutting-plane rounds before the loop gives up and says so. A backstop
-#: on a loop expected to take a handful, not an operating parameter: each round is
-#: a fresh three-stage solve plus the incumbent's own signatures.
+#: How many candidates the greedy seed walks, as a multiple of `n`.
+#:
+#: **Four.** The walk costs one pixel-cloud signature per candidate that clears
+#: the two arithmetic tests, and the ones it clears are the pool's strongest — so
+#: a walk that ran the whole ledger would spend fifteen thousand signatures to
+#: seat a few hundred. Four `n` is where it stops looking; measured on the pool it
+#: fills every seat well inside that, and a walk that does not is reported as
+#: having filled what it could and keeps its cuts anyway.
+SEED_REACH = 4
+
+#: How many cutting-plane rounds before the loop gives up and says so.
+#:
+#: A backstop and not an operating parameter, but "a handful" was too small a
+#: word for it: measured on the pool the loop takes 2 rounds at n=20, 3 at 40, 8
+#: at 60, 7 at 80 and **18 at 120**, because a larger incumbent lands on more
+#: near-duplicate pairs and each round removes only the ones it landed on. Sixty
+#: is a stop, and a loop that reaches it is reporting a fact about the pool.
 ROUNDS = 60
 
 #: How long [`sweep`] may spend on the whole ladder, in seconds.
 #:
-#: A round cap bounds **rounds** and not time, and those stopped being the same
-#: thing somewhere above n=60: the rounds grow with `n` and so does the MILP
-#: inside each of them. Measured on the pool — 19 s at n=20, 41 s at 30, 31 s at
-#: 40, 125 s at 60, 131 s at 80 — the ladder is superlinear with a ratio that has
-#: been as bad as four between neighbouring rungs, and n=320 did not finish in
-#: forty minutes.
+#: A round cap bounds **rounds** and not time, and the two are not the same thing:
+#: the rounds grow with `n`, and so does the pool of pairs each of them screens.
+#: The ladder is still superlinear — measured on the pool at 5.0 s for n=20, 10.3
+#: at 40, 37.6 at 60, 38.6 at 80 and 151.6 at 120 — it is just a great deal
+#: shallower than the 19/31/125/131 it was before the bound and the column fix.
 #:
 #: So the ladder carries a clock, it stops on it, and the record says which rung
 #: it stopped at and why. Twenty minutes, which is a coffee rather than an
@@ -192,6 +219,53 @@ TIE_BREAK = 0.5
 #: How many signatures [`Pairs`] holds before it forgets the oldest. 512 of them
 #: is a quarter of a gibibyte, which is what an incumbent of a few hundred costs.
 SIGNATURE_CACHE = 512
+
+#: How many blocks of the metric's quantiles [`Pairs`]'s lower bound reads.
+#:
+#: **Four.** The bound is the triangle inequality applied per direction and per
+#: block of quantiles — the mean of `|a - b|` is at least `|mean a - mean b|` —
+#: so one block is the distance between the two clouds' mean colours, and
+#: [`pixel_clouds.QUANTILES`] blocks is the metric itself. Every setting in
+#: between is sound; the question is only how much it settles.
+#:
+#: Measured over 79,800 pairs drawn from the pool's top two thousand, at
+#: [`RADIUS`]: one block settles 95.4% of pairs and leaves 2.7 survivors per real
+#: violation, two settles 97.4% and leaves 1.6, four settles 97.9% and leaves 1.2,
+#: sixteen settles 98.3% and leaves 1.0. Four is where the curve flattens, and it
+#: is a sixteen-kibibyte signature against the metric's five hundred and twelve.
+BOUND_BLOCKS = 4
+
+#: What the bound is, carried in every record that prunes by it. A prune is only
+#: as good as its soundness argument, and this project has shipped a prune whose
+#: premise was false — see the module docstring on the location-level one.
+BOUND = (
+    "a sound lower bound on the pixel-cloud metric: the sorted projections are "
+    f"grouped into {BOUND_BLOCKS} blocks of quantiles, and per direction and per block "
+    "the mean of |a - b| is at least |mean a - mean b|. At one block that is the "
+    "distance between the two clouds' mean colours. A pair the bound puts at or beyond "
+    "its own threshold provably cannot violate, so it is never measured and never "
+    "generated as a row."
+)
+
+
+def reduce_signature(made):
+    """One full signature as its `[BOUND_BLOCKS, DIRECTIONS]` block means.
+
+    The signature is `[QUANTILES, DIRECTIONS]` flattened, and the bound reads it
+    as `BOUND_BLOCKS` contiguous groups of quantiles averaged down. Contiguous
+    because the projections were sorted before they were read: a block of adjacent
+    quantiles is a band of the cloud, and the bound is the triangle inequality
+    over the bands.
+    """
+    import numpy
+
+    from fractal_wallpapers.palettes import groups
+
+    grid = numpy.asarray(made, dtype=numpy.float32).reshape(groups.QUANTILES, groups.DIRECTIONS)
+    return grid.reshape(BOUND_BLOCKS, groups.QUANTILES // BOUND_BLOCKS, groups.DIRECTIONS).mean(
+        axis=1
+    )
+
 
 #: What a near miss is: how many of the strongest unseated candidates the contact
 #: sheet shows beside the gallery, with the rule that refused each one named.
@@ -350,24 +424,56 @@ def within(candidates: list[Candidate], locations) -> list[Candidate]:
 class Pairs:
     """The pixel-cloud distances the cutting-plane loop has had to measure.
 
-    Signatures are half a mebibyte each and a hundred milliseconds to make, so
-    both are kept and kept differently: the **distances** forever, because they
-    are one float and a later round asks for the same pair again, and the
-    **signatures** under a bound, because an incumbent of a few hundred is a few
-    hundred megabytes.
+    Signatures are half a mebibyte each and a tenth of a second to make, and the
+    loop asks for `n^2/2` distances a round, so this holds three things and holds
+    them differently: the **exact distances** forever, because they are one float
+    and a later round asks for the same pair again; the **signatures** under a
+    bound, because an incumbent of a few hundred is a few hundred megabytes; and
+    the **bound signatures** forever, because they are a few kibibytes and they
+    are what stops most pairs from ever needing the other two.
+
+    ## The bound
+
+    [`pixel_clouds.METRIC`] is a mean of absolute differences over
+    `DIRECTIONS * QUANTILES` numbers, so the triangle inequality gives a lower
+    bound on it for nothing: group the quantiles into [`BOUND_BLOCKS`] blocks, and
+    per direction and per block the mean of `|a - b|` is at least
+    `|mean a - mean b|`. At one block that is exactly the distance between the two
+    clouds' **mean colours**; at more blocks it is the same statement read at
+    finer resolution, and at `QUANTILES` blocks it is the metric itself.
+
+    It is a *sound* bound and not a correlated proxy, which is the whole
+    difference from the location-level prune this module's docstring buries: a
+    pair the bound puts at or beyond its own threshold **cannot** violate, so it
+    never needs a signature and never needs generating. Measured over 79,800 pairs
+    drawn from the pool's top two thousand, it recovers 99.0% of the distance at
+    the median and settles 97.9% of pairs at [`RADIUS`], leaving 1.2 survivors per
+    real violation. At one block it recovers 95.5% and settles 95.4%.
     """
 
-    def __init__(self, candidates: list[Candidate], cache: int = SIGNATURE_CACHE, hold: int = 0):
+    def __init__(self, candidates: list[Candidate], cache: int = SIGNATURE_CACHE):
         self.candidates = candidates
-        #: Never smaller than an incumbent, because a round compares every seat
-        #: with every other and a cache that forgot one mid-round would make its
-        #: signature again for the next seat that asked.
-        self.cache = max(1, int(cache), 2 * int(hold))
+        #: How many full signatures are held. It is no longer tied to the size of
+        #: an incumbent: a round used to compare every seat with every other in
+        #: the full metric, so a cache that forgot one mid-round remade it for the
+        #: next seat that asked. The bound does that comparison now, at a fraction
+        #: of the bytes, and only the survivors are measured -- so what the cache
+        #: has to hold is a round's survivors and not its seats.
+        self.cache = max(1, int(cache))
         self._signatures: dict = {}
         self._order: list = []
+        #: The bound signature of every candidate ever looked at, kept for good.
+        self._reduced: dict = {}
         self._distance: dict = {}
+        #: `{pair: its lower bound}` for the pairs the bound settled. Kept apart
+        #: from the exact distances so nothing reports a bound as a measurement:
+        #: the contact sheet's nearest-pair table is the radius's calibration
+        #: instrument, and a bound in it would calibrate against the wrong number.
+        self._lower: dict = {}
         self.made = 0
         self.measured = 0
+        self.settled = 0
+        self.screened = 0
         self.seconds = 0.0
 
     def signature(self, at: int):
@@ -379,18 +485,69 @@ class Pairs:
         made = pixel_clouds.of_picture(picture_of(self.candidates[at]))
         self.seconds += time.monotonic() - started
         self.made += 1
+        self._reduced.setdefault(at, reduce_signature(made))
         self._signatures[at] = made
         self._order.append(at)
         while len(self._order) > self.cache:
             self._signatures.pop(self._order.pop(0), None)
         return made
 
+    def reduced(self, at: int):
+        """This candidate's bound signature, `[BOUND_BLOCKS, DIRECTIONS]`.
+
+        Made from the full signature, because the block means are means of the
+        **sorted** projections and there is no cheaper way to those than sorting
+        them. So the bound saves nothing on the making of a signature and
+        everything on the keeping of one and on the arithmetic between two.
+        """
+        if at not in self._reduced:
+            self.signature(at)
+        return self._reduced[at]
+
+    def bounds(self, one: int, others: list) -> list:
+        """A sound lower bound on the distance from `one` to each of `others`."""
+        return self.bounds_against(self.reduced(one), [self.reduced(other) for other in others])
+
+    def bounds_against(self, mine, stack) -> list:
+        """The same, given the bound signatures already stacked. The screen calls
+        it this way: a whole round is one stack walked with **views**, and
+        re-stacking per row is the copy the seam above this exists to avoid."""
+        import numpy
+
+        from fractal_wallpapers.palettes import groups
+
+        if len(stack) == 0:
+            return []
+        self.screened += len(stack)
+        return [
+            float(value)
+            for value in numpy.abs(numpy.asarray(stack) - mine).sum(
+                axis=(1, 2), dtype=numpy.float64
+            )
+            / (groups.DIRECTIONS * BOUND_BLOCKS)
+        ]
+
+    def known(self, one: int, other: int) -> float:
+        """The best lower bound this holds on a pair: its distance if it was
+        measured, its bound if it was screened, and zero if neither -- which is
+        still a lower bound, and is what a test's lookup table leaves behind."""
+        pair = (min(one, other), max(one, other))
+        if pair in self._distance:
+            return self._distance[pair]
+        return self._lower.get(pair, 0.0)
+
     def distance(self, one: int, other: int) -> float:
-        """One pair, measured if it has not been. Through [`measure`], so there is
-        one place a distance is made and one seam a caller can replace."""
+        """One pair, measured exactly if it has not been. Through [`measure`], so
+        there is one place a distance is made and one seam a caller can replace.
+
+        A pair the bound **settled** is measured here too, which is the whole
+        reason `screen` is a parameter: settled means *proven to clear its rule*
+        and not *known to be this far apart*, so a caller that asked for the
+        number is asking for something the screen never produced.
+        """
         pair = (min(one, other), max(one, other))
         if pair not in self._distance:
-            self.measure(list(pair))
+            self.measure(list(pair), screen=False)
         return self._distance[pair]
 
     def rule_for(self, one: int, other: int) -> tuple[str, float]:
@@ -405,29 +562,19 @@ class Pairs:
             return "group_cap", max(RADIUS, ceiling.TAU_GROUP)
         return "diversity", RADIUS
 
-    def sweep(self, chosen: list[int]) -> dict:
-        """`{(i, j): distance}` over every pair of `chosen`, measuring what is new."""
-        order = list(chosen)
-        wanted = [
-            (min(one, other), max(one, other))
-            for at, one in enumerate(order)
-            for other in order[at + 1 :]
-        ]
-        if any(pair not in self._distance for pair in wanted):
-            self.measure(order)
-        return {pair: self._distance[pair] for pair in wanted}
+    def measure(self, order: list[int], screen: bool = True) -> None:
+        """Decide every undecided pair of `order`. **The seam**, and one call.
 
-    def measure(self, order: list[int]) -> None:
-        """Fill in every unmeasured pair of `order`. **The seam**, and one call.
+        Decided is measured *or* settled: with `screen` on, a pair the bound puts
+        at or beyond its own threshold is recorded as settled and never measured,
+        because it provably cannot violate. Off, every pair is measured exactly,
+        which is what [`distance`] asks for -- a caller asking for a number wants
+        the number and not a bound on it.
 
-        A whole sweep rather than a pair at a time, because at two hundred seats
-        the cost of this is not the arithmetic — it is moving half a mebibyte per
-        signature through memory. Stacking once and walking the stack with
-        **views** makes the traffic `n^2/2` rows; re-stacking per row, which is
-        what a pair-at-a-time seam forces, makes it `n^2/2` copies of the whole
-        stack — at 480 seats, a hundred and twenty gibibytes of memcpy for four
-        gibibytes of subtraction. Measured: it is the difference between a sweep
-        that finishes and one that does not.
+        A whole sweep rather than a pair at a time, because the cost of this was
+        never the arithmetic: it was moving half a mebibyte per signature through
+        memory. The screen stacks a few kibibytes a seat instead of five hundred
+        and twelve, and only the pairs it cannot settle are stacked in full.
 
         It is one method for a second reason. The suite replaces it with a lookup,
         so a test about which rule refuses a pair does not have to put two
@@ -437,77 +584,170 @@ class Pairs:
 
         from fractal_wallpapers.palettes import pixel_clouds
 
-        stack = numpy.stack([self.signature(at) for at in order])
+        # Stacked once, walked with views. The bound signature is small, but a
+        # round screens every pair among everything a signature has been made of,
+        # so a re-stack per row is quadratic in the stack rather than in a row.
+        reduced = numpy.stack([self.reduced(at) for at in order]) if screen else None
         for at, one in enumerate(order):
             tail = order[at + 1 :]
-            keep = [
-                which
+            wanted = [
+                (which, other)
                 for which, other in enumerate(tail)
-                if (min(one, other), max(one, other)) not in self._distance
+                if not (self.decided(one, other) if screen else self.measured_pair(one, other))
             ]
-            if not keep:
+            if not wanted:
                 continue
-            # A whole tail is a VIEW, which is the point. Anything else copies
-            # only the rows still wanted, which is the smaller bill either way.
-            others = (
-                stack[at + 1 :]
-                if len(keep) == len(tail)
-                else stack[[at + 1 + which for which in keep]]
-            )
-            for which, gap in zip(keep, pixel_clouds.distances(stack[at], others), strict=True):
-                other = tail[which]
+            if screen:
+                rows = (
+                    reduced[at + 1 :]
+                    if len(wanted) == len(tail)
+                    else reduced[[at + 1 + which for which, _other in wanted]]
+                )
+                keep = []
+                for (which, other), bound in zip(
+                    wanted, self.bounds_against(reduced[at], rows), strict=True
+                ):
+                    if bound >= self.rule_for(one, other)[1]:
+                        self._lower[(min(one, other), max(one, other))] = float(bound)
+                        self.settled += 1
+                    else:
+                        keep.append((which, other))
+                wanted = keep
+            if not wanted:
+                continue
+            survivors = [other for _which, other in wanted]
+            mine = self.signature(one)
+            others = numpy.stack([self.signature(other) for other in survivors])
+            for other, gap in zip(survivors, pixel_clouds.distances(mine, others), strict=True):
                 self._distance[(min(one, other), max(one, other))] = float(gap)
                 self.measured += 1
+
+    def decided(self, one: int, other: int) -> bool:
+        """Whether this pair has been measured or settled by the bound."""
+        return self.measured_pair(one, other) or (min(one, other), max(one, other)) in self._lower
+
+    def measured_pair(self, one: int, other: int) -> bool:
+        """Whether this pair has an exact distance, which is a stronger thing."""
+        return (min(one, other), max(one, other)) in self._distance
+
+    def violates(self, one: int, other: int) -> bool:
+        """Whether these two are too close for the rule that governs them.
+
+        Deciding it if it is undecided, and reading a settled pair as clearing:
+        the bound only ever settles a pair by proving it at or beyond its own
+        threshold, so there is no third answer to give.
+        """
+        self.measure([one, other])
+        gap = self._distance.get((min(one, other), max(one, other)))
+        return gap is not None and gap < self.rule_for(one, other)[1]
 
     def violations(self, chosen: list[int]) -> list[dict]:
         """Every pair of `chosen` that is too close, nearest first.
 
-        The whole cost of a cutting-plane round: `len(chosen)` signatures and one
-        stacked subtraction per seat over them.
+        The whole cost of a cutting-plane round, and the bound is why it stopped
+        being quadratic in half a mebibyte: a pair the bound settled is known to
+        clear its own rule, and is never looked at again.
         """
+        order = list(chosen)
+        self.measure(order)
         out = []
-        for (one, other), gap in self.sweep(chosen).items():
-            rule, bound = self.rule_for(one, other)
-            if gap < bound:
-                out.append(
-                    {
-                        "a": self.candidates[one].key,
-                        "b": self.candidates[other].key,
-                        "distance": round(gap, 6),
-                        "wanted": bound,
-                        "rule": rule,
-                        "pair": (one, other),
-                    }
-                )
+        for at, one in enumerate(order):
+            for other in order[at + 1 :]:
+                gap = self._distance.get((min(one, other), max(one, other)))
+                if gap is None:
+                    continue
+                rule, bound = self.rule_for(one, other)
+                if gap < bound:
+                    out.append(
+                        {
+                            "a": self.candidates[one].key,
+                            "b": self.candidates[other].key,
+                            "distance": round(gap, 6),
+                            "wanted": bound,
+                            "rule": rule,
+                            "pair": (min(one, other), max(one, other)),
+                        }
+                    )
         out.sort(key=lambda pair: pair["distance"])
         return out
+
+    def closest(self, wanted: list, count: int) -> list[tuple]:
+        """`[(pair, distance)]` -- the `count` nearest of `wanted`, exactly.
+
+        Walked in the order of what is already **known**, which is a lower bound
+        on every pair, and measured down that order until the next pair's bound is
+        at or past the worst distance kept. From there nothing unmeasured can be
+        nearer, so the answer is exact over a set most of which is never measured.
+        """
+        ranked = sorted(wanted, key=lambda pair: self.known(*pair))
+        kept: list = []
+        for pair in ranked:
+            if len(kept) >= int(count) and self.known(*pair) >= kept[-1][1]:
+                break
+            kept.append((pair, self.distance(*pair)))
+            kept.sort(key=lambda row: row[1])
+            del kept[int(count) :]
+        return kept
+
+    def nearest_to(self, one: int, others: list) -> float | None:
+        """How far `one` is from the nearest of `others`, exactly. `None` if none."""
+        if not others:
+            return None
+        self.measure([one, *others])
+        return self.closest([(min(one, other), max(one, other)) for other in others], 1)[0][1]
 
     def nearest(self, chosen: list[int], pairs: int = 10) -> list[dict]:
         """The closest pairs among `chosen`, whether or not any rule refuses them.
 
         The calibration instrument, the same one [`gallery.retro_table`] is: if two
-        of these read as one picture, the radius is too small.
+        of these read as one picture, the radius is too small. Exact distances and
+        never bounds, for that reason -- a threshold read off a lower bound is a
+        threshold read too low.
         """
-        out = [
+        order = list(chosen)
+        self.measure(order)
+        wanted = [
+            (min(one, other), max(one, other))
+            for at, one in enumerate(order)
+            for other in order[at + 1 :]
+        ]
+        return [
             {
                 "a": self.candidates[one].key,
                 "b": self.candidates[other].key,
                 "distance": round(gap, 6),
                 "same_group": self.candidates[one].group == self.candidates[other].group,
             }
-            for (one, other), gap in self.sweep(chosen).items()
+            for (one, other), gap in self.closest(wanted, int(pairs))
         ]
-        out.sort(key=lambda pair: pair["distance"])
-        return out[: int(pairs)]
+
+    def paid(self) -> list[int]:
+        """Every candidate whose signature has been made. What a round screens.
+
+        A cutting-plane round has always looked at the incumbent's own pairs,
+        because looking wider meant a signature per candidate and the signature is
+        the whole bill. The bound changed the second half of that and not the
+        first: a pair of candidates *already paid for* costs the screen and
+        nothing else, so a round can ask about every pair among everything it has
+        ever made a signature of — the seed's rejects, and every earlier
+        incumbent — and pay only for the pairs the bound cannot settle.
+        """
+        return sorted(self._reduced)
 
     def price(self) -> dict:
         from fractal_wallpapers.palettes import pixel_clouds
 
+        decided = self.settled + self.measured
         return {
             "signatures_made": self.made,
             "pairs_measured": self.measured,
+            "pairs_screened": self.screened,
+            "pairs_settled_by_the_bound": self.settled,
+            "settled_share": round(self.settled / decided, 4) if decided else None,
             "seconds_making_signatures": round(self.seconds, 1),
             "cache": self.cache,
+            "bound_blocks": BOUND_BLOCKS,
+            "bound": BOUND,
             "metric": pixel_clouds.METRIC,
         }
 
@@ -629,11 +869,15 @@ class Program:
         """A cell and a family no target has moved, so the record can state the
         **default** allowance through [`ceiling.Rule.allowed`] rather than as a
         second copy of its arithmetic. A target raises the allowance of the cell it
-        names and of that cell's family, so reading either off a targeted name
-        would report the exception as the rule."""
+        names, of that cell's family, and of the cells its carriers *also* deliver,
+        so reading any of those would report the exception as the rule."""
         from fractal_wallpapers.palettes import dominance
 
-        moved = {dominance.family_of(cell) for cell in self.targets} | set(self.targets)
+        moved = (
+            {dominance.family_of(cell) for cell in self.targets}
+            | set(self.targets)
+            | set(self.rule.implied)
+        )
         cell = next(name for name in dominance.cells() if name not in moved)
         family = next(name for name in dominance.families() if name not in moved)
         return cell, family
@@ -667,6 +911,23 @@ class Program:
                 "targeted_allowance": {
                     cell: self.rule.allowed(cell, self.n) for cell in sorted(self.targets)
                 },
+                # What the target *implied*, beside what it asked for. A carrier
+                # of one cell is dominant in others, and those are the rows the
+                # lime hunt's shortage moved onto once the target itself was met.
+                "implied": {
+                    name: round(share, 6) for name, share in sorted(self.rule.implied.items())
+                },
+                "implied_allowance": {
+                    name: self.rule.allowed(name, self.n) for name in sorted(self.rule.implied)
+                },
+                "implied_from": (
+                    "the carrier table's measured co-dominance: of the (map, field) "
+                    "deliveries where a targeted cell is dominant, the share that are "
+                    "also dominant in the companion. A target of t raises a companion's "
+                    "share by t * that rate, and the companion's family by the same "
+                    "unless it is the target's own family, which the target already "
+                    "raised and which counts a picture once."
+                ),
             },
             "group_cap": (
                 f"one seat per palette group, exempt at {ceiling.TAU_GROUP} in the pixel-cloud "
@@ -715,7 +976,7 @@ def matrices(program: Program, skip=None):
 # --------------------------------------------------------------------------- #
 # The three stages.
 # --------------------------------------------------------------------------- #
-def lexicographic(program: Program, log=print) -> dict:
+def lexicographic(program: Program, seed: dict | None = None, log=print) -> dict:
     """The three stages, each frozen into the next.
 
     One column layout throughout — the binaries, then `t`, then one deficit per
@@ -730,6 +991,25 @@ def lexicographic(program: Program, log=print) -> dict:
     Stage 3 adds `sum(x in mode m) + d_m >= MODE_FLOOR` and pays `n *
     PENALTY_PER_SEAT` for each unit of `d`. Those rows exist only in this stage:
     the first two ask questions the penalty is not allowed to trade against.
+
+    ## What an incumbent's own floor is worth
+
+    Stage 2 was the whole cost of this — 9.8 s of an 11.1 s round at n=60, against
+    1.1 s for stage 1 and 0.2 for stage 3 — and the reason is that `t` has no
+    lower bound in it, so no amount of presolve can tell the solver that a
+    candidate scoring 0.4 is not going to be seated in a gallery whose floor is
+    0.97. **An incumbent says so.** Any feasible solution that attains `cleared`
+    has some minimum score `L`, so the optimal floor is at least `L`, so no
+    optimal solution seats anything scoring below `L` — and every such column can
+    be fixed to zero without removing a single optimum. Measured at n=60: 9.8 s to
+    0.36 s, 15,955 free columns to 305, same floor to twelve places.
+
+    `seed` is where a better `L` than stage 1's own comes from: a greedy walk down
+    the ranked list seats the strongest candidates it can, so its floor is
+    normally the higher of the two. It is used **only** when its above-bar count
+    matches the count stage 1 proved, because a solution that clears fewer is not
+    a solution stage 2 is choosing among. When it matches `n` — the trivial upper
+    bound on a count of `n` seats — stage 1 is proved by the seed and skipped.
     """
     import numpy
     from scipy import sparse
@@ -743,33 +1023,52 @@ def lexicographic(program: Program, log=print) -> dict:
     above = numpy.array([1.0 if c.above_bar else 0.0 for c in program.candidates])
     pad = sparse.csr_array((base.shape[0], width - size))
     base = sparse.hstack([base, pad], format="csr")
+    ceiling_of = numpy.concatenate(
+        [numpy.ones(size), [1.0], numpy.full(len(modes), float(MODE_FLOOR))]
+    )
     values: dict = {}
     started = time.monotonic()
 
-    def answer(objective, matrix, lower, upper):
+    def answer(objective, matrix, lower, upper, columns=None):
         return milp(
             c=objective,
             constraints=LinearConstraint(matrix, lower, upper),
             integrality=numpy.concatenate(
                 [numpy.ones(size, dtype=int), numpy.zeros(width - size, dtype=int)]
             ),
-            bounds=Bounds(
-                lb=numpy.zeros(width),
-                ub=numpy.concatenate(
-                    [numpy.ones(size), [1.0], numpy.full(len(modes), float(MODE_FLOOR))]
-                ),
-            ),
+            bounds=Bounds(lb=numpy.zeros(width), ub=ceiling_of if columns is None else columns),
         )
 
+    def below(bar: float):
+        """The column bounds with every candidate under `bar` fixed to zero."""
+        out = ceiling_of.copy()
+        out[:size] = numpy.where(scores >= bar - EPSILON, 1.0, 0.0)
+        return out
+
     # --- stage 1: how many clear the bar ---------------------------------- #
-    objective = numpy.zeros(width)
-    objective[:size] = -(above + (TIE_BREAK / max(1, program.n)) * scores)
-    first = answer(objective, base, low, high)
-    if first.status != 0:
-        return {"feasible": False, "status": int(first.status), "message": str(first.message)}
-    cleared = int(sum(above[at] for at in range(size) if first.x[at] > 0.5))
+    proved = seed if seed and seed.get("feasible") and seed["above_bar"] >= program.n else None
+    if proved is not None:
+        # `n` seats cannot hold more than `n` above the bar, so a seed that holds
+        # `n` attains the optimum and there is nothing for branch-and-bound to do.
+        cleared = int(program.n)
+        held = list(proved["chosen"])
+        values["stage_one_from"] = "the seed, which holds every seat above the bar"
+    else:
+        objective = numpy.zeros(width)
+        objective[:size] = -(above + (TIE_BREAK / max(1, program.n)) * scores)
+        first = answer(objective, base, low, high)
+        if first.status != 0:
+            return {"feasible": False, "status": int(first.status), "message": str(first.message)}
+        cleared = int(sum(above[at] for at in range(size) if first.x[at] > 0.5))
+        held = [at for at in range(size) if first.x[at] > 0.5]
     values["above_bar"] = cleared
     log(f"[solve] stage 1: {cleared} of {program.n} clear the q4 bar")
+
+    # --- what the incumbent proves about the floor ------------------------- #
+    known = min((scores[at] for at in held), default=0.0)
+    if seed and seed.get("feasible") and seed["above_bar"] == cleared:
+        known = max(known, float(seed["floor"]))
+    values["floor_at_least"] = round(float(known), 6)
 
     # --- stage 2: the floor ------------------------------------------------ #
     freeze = numpy.zeros((1, width))
@@ -787,12 +1086,17 @@ def lexicographic(program: Program, log=print) -> dict:
     second_high = numpy.concatenate([high, [float(cleared)], scores + 1.0])
     objective = numpy.zeros(width)
     objective[size] = -1.0
-    second = answer(objective, second_matrix, second_low, second_high)
+    reachable = below(known)
+    values["columns_free"] = int(reachable[:size].sum())
+    second = answer(objective, second_matrix, second_low, second_high, columns=reachable)
     if second.status != 0:
         return {"feasible": False, "status": int(second.status), "message": str(second.message)}
     floor = float(second.x[size])
     values["floor"] = floor
-    log(f"[solve] stage 2: floor {floor:.6f}")
+    log(
+        f"[solve] stage 2: floor {floor:.6f} over {values['columns_free']:,} of {size:,} "
+        f"columns, the rest fixed off by an incumbent floor of {known:.6f}"
+    )
 
     # --- stage 3: the sum, less the mode penalty --------------------------- #
     deficits = sparse.lil_array((len(modes), width))
@@ -813,7 +1117,10 @@ def lexicographic(program: Program, log=print) -> dict:
     objective = numpy.zeros(width)
     objective[:size] = -scores
     objective[size + 1 :] = penalty
-    third = answer(objective, third_matrix, third_low, third_high)
+    # Not an optimality argument this time but an implication of the rows: with
+    # `t >= floor` held and `x_i + t <= score_i + 1`, a candidate scoring under the
+    # floor already has `x_i < 1`, and a binary under one is zero.
+    third = answer(objective, third_matrix, third_low, third_high, columns=below(floor))
     if third.status != 0:
         return {"feasible": False, "status": int(third.status), "message": str(third.message)}
     chosen = [at for at in range(size) if third.x[at] > 0.5]
@@ -856,8 +1163,107 @@ def relaxation(program: Program, log=print) -> dict:
     }
 
 
+def seed_greedily(program: Program, pairs: Pairs, reach: int = SEED_REACH, log=print) -> dict:
+    """Walk the ranked list, seat what nothing refuses, and keep what refused it.
+
+    **A primal heuristic and never a shipped answer.** Sequential seating is what
+    this module replaced: it is order-dependent, it cannot take a seat back, and
+    the whole finding behind the exact solve is that the order hides which rule
+    was really binding. What a greedy walk is good for is the two things an exact
+    solve cannot make for itself before it starts.
+
+    * **Cuts.** Every pair the walk refuses as too close is a *valid row of the
+      full program* — two pictures under their threshold can never both be seated,
+      whoever noticed it — so seeding the pool with them is sound however bad the
+      walk's own answer is. They are the rows the loop would otherwise spend a
+      round each discovering, and they are the same rows: the walk refuses the
+      strongest candidates, which is where the optimum lives too.
+    * **A floor.** A feasible walk hands [`lexicographic`] an incumbent, and an
+      incumbent's own minimum score is what fixes stage 2's columns.
+
+    It walks at most `reach * n` candidates and it walks them in score order, so
+    what it costs is one pixel-cloud signature per candidate that survives the two
+    arithmetic tests — the ones the loop was going to make anyway.
+    """
+    started = time.monotonic()
+    rule, n = program.rule, program.n
+    seated: list = []
+    places: set = set()
+    counts: dict = {}
+    cuts: list = []
+    considered = 0
+    for at, candidate in enumerate(program.candidates):
+        if len(seated) >= n or considered >= max(1, int(reach)) * n:
+            break
+        if candidate.location in places:
+            continue
+        colours = (*candidate.cells, *candidate.families)
+        if any(counts.get(name, 0) + 1 > rule.allowed(name, n) for name in colours):
+            continue
+        considered += 1
+        pairs.measure([at, *seated])
+        close = [other for other in seated if pairs.violates(at, other)]
+        if close:
+            cuts += [(min(at, other), max(at, other)) for other in close]
+            continue
+        seated.append(at)
+        places.add(candidate.location)
+        for name in colours:
+            counts[name] = counts.get(name, 0) + 1
+    read = {
+        "seats": len(seated),
+        "considered": considered,
+        "cuts": len(cuts),
+        "seconds": round(time.monotonic() - started, 2),
+    }
+    if len(seated) == n and satisfies(program, seated):
+        read["feasible"] = True
+        read["chosen"] = seated
+        read["above_bar"] = sum(1 for at in seated if program.candidates[at].above_bar)
+        read["floor"] = round(min(program.candidates[at].score for at in seated), 6)
+    else:
+        # Still worth every cut it found: a cut is a fact about a pair and not
+        # about this walk. Only the incumbent is thrown away.
+        read["feasible"] = False
+        read["why_not"] = (
+            f"filled {len(seated)} of {n} seats"
+            if len(seated) < n
+            else "filled every seat but broke a row a greedy walk does not read, which is "
+            "a colour target: the walk seats by score and a target is a demand"
+        )
+    log(
+        f"[seed] greedy: {read['seats']} seat(s) from {considered} candidate(s), "
+        f"{len(cuts)} cut(s) seeded, feasible={read['feasible']} ({read['seconds']}s)"
+    )
+    return {**read, "pairs": [tuple(pair) for pair in dict.fromkeys(cuts)]}
+
+
+def satisfies(program: Program, chosen: list[int]) -> bool:
+    """Does this seat list clear **every row** of the program as it stands?
+
+    Through [`matrices`] and not through a second reading of the rules, which is
+    the point: a greedy walk knows about the ceiling and the places and the
+    pairwise rules, and a program can carry rows it does not know about at all —
+    a colour target does, and the cuts a previous round generated do. Asked as one
+    sparse product, so a row added later is checked without anything being taught
+    about it.
+    """
+    import numpy
+
+    matrix, low, high, _index = matrices(program)
+    vector = numpy.zeros(program.size)
+    vector[list(chosen)] = 1.0
+    taken = matrix @ vector
+    return bool(numpy.all(taken >= low - EPSILON) and numpy.all(taken <= high + EPSILON))
+
+
 def cutting_plane(
-    program: Program, pairs: Pairs, rounds: int = ROUNDS, deadline: float | None = None, log=print
+    program: Program,
+    pairs: Pairs,
+    rounds: int = ROUNDS,
+    deadline: float | None = None,
+    seed: dict | None = None,
+    log=print,
 ) -> dict:
     """Solve, look at the incumbent's pairs, add the violated ones, solve again.
 
@@ -876,7 +1282,7 @@ def cutting_plane(
                 f"incumbent that still violated a pairwise rule, so there is no answer to "
                 f"report — only how far it got."
             )
-        answer = lexicographic(program, log=log)
+        answer = lexicographic(program, seed=seed, log=log)
         if not answer["feasible"]:
             history.append({"round": round_at, "feasible": False, "cuts": len(program.cuts)})
             return {
@@ -885,7 +1291,14 @@ def cutting_plane(
                 "cuts": len(program.cuts),
                 "message": answer.get("message"),
             }
-        violated = pairs.violations(answer["chosen"])
+        picked = set(answer["chosen"])
+        found = pairs.violations(sorted(set(pairs.paid()) | picked))
+        # The loop terminates on the **incumbent**, and only on it: a violation
+        # between two candidates the solver did not seat is a valid row to hold it
+        # to next time, but it is not a reason to call this answer wrong.
+        violated = [row for row in found if picked.issuperset(row["pair"])]
+        standing = set(program.cuts)
+        fresh = [row for row in found if row["pair"] not in standing]
         history.append(
             {
                 "round": round_at,
@@ -894,12 +1307,15 @@ def cutting_plane(
                 "sum": answer["values"]["sum"],
                 "modes_missing": len(answer["values"]["modes_missing"]),
                 "violated_pairs": len(violated),
+                "screened": len(pairs.paid()),
+                "rows_added": len(fresh),
                 "seconds": answer["seconds"],
             }
         )
         log(
             f"[solve] round {round_at}: floor {answer['values']['floor']:.4f}, "
-            f"{len(violated)} violated pair(s), {len(program.cuts)} cut(s) standing"
+            f"{len(violated)} violated pair(s) among the seated, {len(fresh)} new row(s) "
+            f"over {len(pairs.paid())} screened, {len(program.cuts)} cut(s) standing"
         )
         if not violated:
             return {
@@ -913,8 +1329,8 @@ def cutting_plane(
                     for pair in program.generated
                 ],
             }
-        program.cuts.extend(pair["pair"] for pair in violated)
-        program.generated.extend(violated)
+        program.cuts.extend(row["pair"] for row in fresh)
+        program.generated.extend(fresh)
     raise SolveRefused(
         f"the cutting-plane loop did not converge in {rounds} rounds, with "
         f"{len(program.cuts)} pair(s) cut. That is a finding about the pool rather than a "
@@ -996,7 +1412,16 @@ def deletion_filter(program: Program, log=print) -> list[str]:
     the colour ceiling cannot both hold" is a sentence somebody can act on, and
     "rows 14, 61 and 2,207" is not. Each step is one LP over a program with one
     block removed, so the whole filter is a handful of LPs.
+
+    **Empty where the LP is feasible**, and that is a different answer rather than
+    a missing one. The filter is over the relaxation, so it can only ever name a
+    conflict the relaxation has; a program whose LP is feasible and whose MILP is
+    not is infeasible over the *integers*, and every block would come back in the
+    subset — a list of all six, which reads like a finding and is not one.
     """
+    if relaxation_without(program, set())["feasible"]:
+        log("[solve] no irreducible subset: the LP is feasible with every block held")
+        return []
     keep = [name for name, _kind, block in program.blocks() if block]
     dropped: set = set()
     for name in list(keep):
@@ -1054,6 +1479,7 @@ def shortage(program: Program, log=print) -> dict:
     """
     read = elastic(program, log=log)
     read["irreducible_blocks"] = deletion_filter(program, log=log)
+    read["verdict"] = _verdict(program, read)
     read["supply"] = {}
     for name, rows in read["by_block"].items():
         if name not in {"colour_target", "colour_ceiling_cells", "colour_ceiling_families"}:
@@ -1063,6 +1489,31 @@ def shortage(program: Program, log=print) -> dict:
     if "cardinality" in read["by_block"]:
         read["supply"]["__the_pool__"] = _partitions(program, range(program.size))
     return read
+
+
+def _verdict(program: Program, read: dict) -> str:
+    """Which kind of infeasibility this is, in a sentence.
+
+    A shortage list is only a work order when something is actually **short**, and
+    a slack of zero means nothing is: every linear row can be met at once and what
+    cannot be met is the requirement that a picture is seated or not seated. With
+    pairwise rows standing that is the diversity radius, which no hunt for more of
+    one colour will relieve — it is a statement about how alike the pool already
+    is, and the answer to it is a smaller `n` or a wider pool.
+    """
+    if read["total_slack"] > EPSILON:
+        return (
+            f"{read['total_slack']:.1f} candidate(s) short across "
+            f"{len(read['by_block'])} block(s). This is a supply shortage and a hunt "
+            "is what spends it."
+        )
+    return (
+        "NOT a supply shortage: the LP relaxation is feasible with every block held, so "
+        f"no row is short of candidates. The program is infeasible over the integers, and "
+        f"with {len(program.cuts)} pairwise row(s) standing that is the diversity radius "
+        "refusing the combinations rather than the pool refusing the colours. A hunt for "
+        "more of a colour does not relieve it; a smaller n or a wider pool does."
+    )
 
 
 def _supply_for(program: Program, colour: str) -> dict:
@@ -1146,8 +1597,11 @@ def solve(
         record["seconds"] = round(time.monotonic() - started, 2)
         return record
 
-    pairs = Pairs(available, hold=int(n))
-    answer = cutting_plane(program, pairs, log=log)
+    pairs = Pairs(available)
+    seed = seed_greedily(program, pairs, log=log)
+    program.cuts.extend(seed["pairs"])
+    record["seed"] = {name: seed[name] for name in seed if name not in {"pairs", "chosen"}}
+    answer = cutting_plane(program, pairs, seed=seed, log=log)
     if not answer["feasible"]:
         record["feasible"] = False
         record["rounds"] = answer["rounds"]
@@ -1206,7 +1660,7 @@ def _under_fill(program: Program, pairs: Pairs, log=print) -> dict:
 def _seat(program: Program, at: int, pairs: Pairs, chosen: list[int]) -> dict:
     candidate = program.candidates[at]
     others = [other for other in chosen if other != at]
-    nearest = min((pairs.distance(at, other) for other in others), default=None)
+    nearest = pairs.nearest_to(at, others)
     return {
         "key": candidate.key,
         "location": candidate.location,
@@ -1349,12 +1803,8 @@ def near_misses(
         ):
             why = "colour_ceiling_family"
         else:
-            gaps = pairs.sweep([at, *chosen])
-            close = [
-                other
-                for other in chosen
-                if gaps[(min(at, other), max(at, other))] < pairs.rule_for(at, other)[1]
-            ]
+            pairs.measure([at, *chosen])
+            close = [other for other in chosen if pairs.violates(at, other)]
             if close:
                 same = any(program.candidates[o].group == candidate.group for o in close)
                 why = "same_group_as_a_seat" if same else "too_close_to_a_seat"
@@ -1728,19 +2178,20 @@ def _number(value) -> str:
 #: constraint starts binding rather than at exactly which seat, and a linear walk
 #: to five hundred is four hundred and eighty solves to find out.
 #:
-#: It stops at 80, which is **where this project has actually measured**, and the
-#: reason is the pairwise rules rather than HiGHS. A round holds one 512 KiB
-#: signature per seat and measures every pair of them, so the loop's cost is
-#: quadratic in `n` — and the *number of rounds* grows with `n` too, because a
-#: larger incumbent lands on more near-duplicate pairs. Measured on the pool: 2
-#: rounds and 1 generated row at n=20, 4 and 11 at n=30, 3 and 8 at n=40, 12 and
-#: 68 at n=60. n=320 did not finish in forty minutes.
+#: It stops where **this project has actually measured**, which is the only thing
+#: that has ever set this constant. It used to stop at 80 because a round held one
+#: 512 KiB signature per seat and measured every pair of them; the bound settles
+#: 98% of those pairs at a thirty-second of the bytes, and the stage-2 column fix
+#: took the MILP inside a round from 11 s to under 2. What is left growing is the
+#: **round count** — 2 at n=20, 3 at 40, 8 at 60, 7 at 80, 18 at 120 — because a
+#: larger incumbent lands on more near-duplicate pairs, and a round removes only
+#: the ones the pool it has screened can show it.
 #:
-#: Past here the cost of the read is the finding, and it wants its own study
-#: rather than a longer default. A caller with an afternoon passes its own sizes.
-#: [`relaxation_ladder`] carries the same question to the top in seconds, on every
-#: block except the two pairwise ones.
-SWEEP = (20, 30, 40, 60, 80)
+#: Past the top rung the cost of the read is the finding, and it wants its own
+#: study rather than a longer default. A caller with an afternoon passes its own
+#: sizes. [`relaxation_ladder`] carries the same question to the top in seconds, on
+#: every block except the two pairwise ones.
+SWEEP = (20, 30, 40, 60, 80, 120, 160)
 
 
 def sweep(
@@ -1778,15 +2229,18 @@ def sweep(
             log(f"[sweep] out of wall budget before n={size}")
             break
         program = Program(candidates=candidates, n=int(size), rule=rule_for(), modes=modes)
-        pairs = Pairs(candidates, hold=int(size))
+        pairs = Pairs(candidates)
         started = time.monotonic()
         read = relaxation(program, log=log)
         gave_up = None
+        seeded = None
         if not read["feasible"]:
             answer = {"feasible": False, "rounds": [], "cuts": 0}
         else:
+            seeded = seed_greedily(program, pairs, log=log)
+            program.cuts.extend(seeded["pairs"])
             try:
-                answer = cutting_plane(program, pairs, deadline=deadline, log=log)
+                answer = cutting_plane(program, pairs, deadline=deadline, seed=seeded, log=log)
             except SolveRefused as refusal:
                 # A ladder that lost every rung to the last one's round cap would
                 # report nothing at all, and "the loop did not converge at this n"
@@ -1802,6 +2256,12 @@ def sweep(
             "cuts": answer.get("cuts", 0),
             "signatures": pairs.made,
             "seconds": round(time.monotonic() - started, 1),
+            "seed": (
+                None
+                if seeded is None
+                else {name: seeded[name] for name in seeded if name not in {"pairs", "chosen"}}
+            ),
+            "pairs": pairs.price(),
         }
         if gave_up is not None:
             entry["did_not_converge"] = gave_up
@@ -1913,14 +2373,14 @@ def truncation(n: int = candidate_ledger.FIRST_SOLVE, candidates=None, log=print
         reachable = strongest_locations(candidates, keep)
         available = within(candidates, reachable)
         program = Program(candidates=available, n=int(n), rule=rule_for(), modes=modes)
-        pairs = Pairs(available, hold=int(n))
+        pairs = Pairs(available)
         started = time.monotonic()
         read = relaxation(program, log=log)
-        answer = (
-            cutting_plane(program, pairs, log=log)
-            if read["feasible"]
-            else {"feasible": False, "cuts": 0, "rounds": []}
-        )
+        answer = {"feasible": False, "cuts": 0, "rounds": []}
+        if read["feasible"]:
+            seeded = seed_greedily(program, pairs, log=log)
+            program.cuts.extend(seeded["pairs"])
+            answer = cutting_plane(program, pairs, seed=seeded, log=log)
         entry = {
             "multiple": multiple,
             "locations_offered": len(reachable),
@@ -1960,6 +2420,8 @@ def truncation(n: int = candidate_ledger.FIRST_SOLVE, candidates=None, log=print
 
 
 __all__ = [
+    "BOUND",
+    "BOUND_BLOCKS",
     "Candidate",
     "EPSILON",
     "MODE_FLOOR",
@@ -1973,6 +2435,7 @@ __all__ = [
     "ROUNDS",
     "SCHEMA",
     "SWEEP",
+    "SEED_REACH",
     "SolveRefused",
     "TRUNCATIONS",
     "UNIT",
@@ -1992,10 +2455,13 @@ __all__ = [
     "pool",
     "read_record",
     "relaxation_ladder",
+    "reduce_signature",
     "relaxation",
     "release_regime",
     "render_seats",
     "rule_for",
+    "satisfies",
+    "seed_greedily",
     "shortage",
     "solve",
     "solve_dir",

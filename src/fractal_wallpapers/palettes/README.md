@@ -116,9 +116,20 @@ cloud while dominance is area-weighted over a picture.
 
 It is also a **prior and not a guarantee**. Only 4 of the green carriers and 3 of
 the rose ones dominate on all three fields; green collapses on the `strange` field,
-which is the class that held 90 of gallery3's 150 seats. So a
-`curate gallery --target` draws its carrier attempts from this table and then
-reads each attempt's dominance **on its own render**.
+which is the class that held 90 of gallery3's 150 seats. So `curate hunt`'s
+conditioned leg draws its maps from this table and then reads each candidate's
+dominance **on its own render**.
+
+`co_dominance(cell)` reads the same rows the other way round. A **delivery** is one
+(map, field) picture, and the dominance rule admits more than one cell per picture,
+so a delivery of one colour is usually a delivery of several: `dark_vivid_lime`
+lands `dark_muted_lime` 42% of the time, `light_muted_lime` 34%, `light_vivid_lime`
+18% and `dark_vivid_green` 8%, at 2.29 cells a delivery. That is what
+`curation.ceiling.Rule` raises a target's *implied* allowances by, and the reason it
+is read here rather than written down off the hue wheel: the wheel would say lime
+borders green and yellow, and the library says lime's carriers land three other lime
+cells before they land anything green. Denominated in deliveries and not in maps — a
+map that carries the cell on all three fields is three chances to land a companion.
 
 ## The ramp bounds the colour, and three things after it leak
 

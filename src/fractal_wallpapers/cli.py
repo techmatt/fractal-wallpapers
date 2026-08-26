@@ -6967,8 +6967,8 @@ def curate_commands(subcommands) -> None:
         metavar="SECONDS",
         help="with `sweep`: how long the whole ladder may take before it stops and "
         f"records which rung it stopped at (default {int(solve_module.SWEEP_SECONDS)}). The "
-        "round cap bounds rounds and not time, and above n=60 both the rounds and the "
-        "program inside each of them grow",
+        "round cap bounds rounds and not time, and it is the round count that grows with "
+        "n: a larger incumbent lands on more near-duplicate pairs",
     )
     solving.set_defaults(handler=curate_solve)
 
