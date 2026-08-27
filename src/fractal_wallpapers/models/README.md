@@ -323,6 +323,92 @@ asking two heads to order rows at a geometry neither was read at adds a differen
 that belongs to neither of them. And **it decides nothing and writes nothing into
 any record**: one self-contained HTML file into `scratch/`, which is disposable.
 
+## Screening a retrain: `renders cv`
+
+The shipped render judge is a **gate rather than a top-end ranker** — inside its own
+`P(≥4)` band `[0.60, 0.95)` it barely orders a 3 against a 4 — and
+[`render_cv`](render_cv.py) is the harness that says whether anything fixes that. It
+fits the same trainer on a grouped holdout of rows this project already owns, so
+the evidence is the ordinary train-test discipline rather than another blind sheet.
+**Nothing here adopts anything**: no weights ship, no floor moves, everything lands
+in the ignored tree under `artifacts/render_cv/`.
+
+```
+fractal-wallpapers renders cv plan                        # deal the lineages, write it down
+fractal-wallpapers renders cv shipped                     # the incumbent's own read, in-sample
+fractal-wallpapers renders cv fit  --arm baseline --fold 0
+fractal-wallpapers renders cv read --arm baseline
+fractal-wallpapers renders cv compare --arm <arm> --baseline baseline --band-on shipped
+```
+
+**The fold is drawn over LINEAGES**, and that is the only unit that does not leak. A
+location recurs across palettes and modes, so a row-level split puts the same place
+on both sides; frames a hair apart on one plane are the same picture twice, so a
+location-level split leaks too. `labeling.groups.assign` is the rule, and it is
+reachable from a stored label row without any join — a finished-render row carries
+its whole `family` and `viewport`, which is exactly what that function reads. It is
+*not* the walk's sense of the word (`ledger|root_id`), which would need a join by
+location and is a different question. **The grouping is assigned over the pooled
+corpus**: 295 groups hold rows of both kinds and carry 4,181 rows between them, so a
+per-store grouping would leak a lineage across the kind boundary silently.
+
+The deal, 2026-08-27: **8,977 rows over 2,939 lineages**, nothing ungrouped, dealt
+five ways to within nine rows of each other. Two exclusions and one non-exclusion:
+40 `smooth`-routed rows the strange store should not be holding, and 235
+`under_seen_modes` rows past position 269 — the swept suffix, which is the head's own
+decode restated and would train a model on its own output. The third candidate,
+retired three-class rows with a null `P(≥4)`, is a **candidate-pool** fact and not a
+label-store one; no label row carries that column, so nothing is dropped for it.
+
+**The pin is obeyed rather than worked around.** A pinned location is test-side in
+the fold that owns its lineage and `excluded` everywhere else, which is the side the
+trainer already has for a row pinned in the other store. Every pinned row still gets
+one reading from a model that never saw it, and the trainer's own pin guard is left
+armed and passes untouched. Folds are derived at read time and the registry is never
+opened for writing.
+
+**A screen is not a band, and the asymmetry is the first thing to say about it.**
+Five parts is a 20% holdout; fitting one is a screen and fitting five is what an
+adoption run would do, and `parts_read` on every record says which happened. On one
+part a positive result is informative and a null one is not — so every read carries
+the positive and negative counts inside the motivating slice, because that pair is
+what says whether a null was worth anything.
+
+**Name which arm's score cuts the band.** The slice is thin and it moves: on fold 0
+the shipped head puts **43** strange rows in `[0.60, 0.95)` — 25 fours against 18 —
+where the refit puts **13**. Thirteen rows is not a measurement, so `--band-on` makes
+the population a stated choice rather than a consequence of argument order.
+
+**The `shipped` column is IN-SAMPLE and every table says so.** The artifact that
+serves today trained on nearly all of these rows, which is exactly why the baseline
+arm is a refit and not that artifact's own scores. Read against it, an out-of-sample
+arm gives up about 0.05 AUC on every whole-population number, and that gap is what
+memorizing the training rows buys rather than a regression. What the comparison *is*
+good for is separating rows from recipe.
+
+Measured on this machine, 2026-08-27:
+
+| leg | cost |
+|---|---|
+| render cache top-up, 750 pictures | 624 strange in 1,858 s (2.98 s each), 126 smooth in 197 s — serial, one engine |
+| one fold, 40 epochs at 384×224 | ~2,400 s alone, ~60 s an epoch |
+| one fold at 512×288 | ~68 s an epoch, 13% over the shipped input size |
+| two folds at once | ~90 s an epoch each — the same data-loading-bound arithmetic a band pays |
+
+The deal itself is seconds and re-derives exactly; it is written to
+`artifacts/render_cv/assignment.json` anyway, because "reproduces" is a claim a
+reader should not have to take on faith. `fold_of_row` and `group_of_row` are in it,
+so every arm's rows resample the same clusters — group ids are assigned over whatever
+population was current when they were made, and a read that re-derived them per arm
+would draw its interval over a partition nobody holds.
+
+**An arm declares its own backbone, and the fold's written config is checked against
+it.** `render_train.RECIPE` still carries the first joint candidate's medium, so an
+arm that did not re-ask the value would fit at a backbone no declaration names —
+internally consistent, consistently wrong, and invisible in every record the fold
+writes. That is [`render_train.MISLAUNCHED`]'s failure, and `render_cv` is held to
+both ends of the same discipline.
+
 ## Adopting a head: `regime restate`, then `regime adopt`
 
 Those two steps are the priced flip, and they run in that order once — **between

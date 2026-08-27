@@ -128,11 +128,18 @@ def data_config(model) -> dict:
     }
 
 
-def resize(image, interpolation: str = "bicubic"):
+def resize(image, interpolation: str = "bicubic", target: tuple | None = None):
     """The deterministic core: a source picture to the head's input size.
 
     Identical in training and at deploy, which is the whole point of it being a
     function of its own.
+
+    `target` is the input size, and it defaults to the one every head here reads
+    at. It is a parameter rather than a constant only because a study can ask
+    whether the answer is in the detail that size throws away — a 1280x720
+    picture arrives here as 384x224 and loses fourteen pixels in fifteen, and
+    3-against-4 is a finer judgement than junk-against-not. A caller that passes
+    nothing gets exactly what every shipped head was trained and read at.
     """
     from PIL import Image
 
@@ -142,7 +149,10 @@ def resize(image, interpolation: str = "bicubic"):
         "bicubic": Image.BICUBIC,
         "lanczos": Image.LANCZOS,
     }
-    return image.resize((TARGET_WIDTH, TARGET_HEIGHT), filters.get(interpolation, Image.BICUBIC))
+    return image.resize(
+        tuple(target) if target else (TARGET_WIDTH, TARGET_HEIGHT),
+        filters.get(interpolation, Image.BICUBIC),
+    )
 
 
 @dataclass
@@ -160,6 +170,8 @@ class Transform:
     #: How far brightness and contrast may move. Zero skips the stage.
     brightness: float = BRIGHTNESS
     contrast: float = CONTRAST
+    #: The input size, or `None` for the one every shipped head reads at.
+    target: tuple | None = None
 
     def __call__(self, image, rng: random.Random | None = None):
         from PIL import Image
@@ -167,7 +179,7 @@ class Transform:
         if image.mode != "RGB":
             image = image.convert("RGB")
         if not self.train:
-            tensor = _to_tensor(resize(image, self.interpolation))
+            tensor = _to_tensor(resize(image, self.interpolation, self.target))
             return self._normalize(tensor)
 
         draw = rng or random
@@ -178,7 +190,7 @@ class Transform:
         bottom = round(draw.uniform(0, self.border_crop) * height)
         if left + right < width - 8 and top + bottom < height - 8:
             image = image.crop((left, top, width - right, height - bottom))
-        image = resize(image, self.interpolation)
+        image = resize(image, self.interpolation, self.target)
         # Both flips, because the set is symmetric about the real axis and a
         # mirrored fractal is a fractal — this is a free doubling twice over,
         # not a distortion the head has to be robust to.
