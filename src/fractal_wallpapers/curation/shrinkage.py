@@ -183,7 +183,7 @@ def _render_one(payload: tuple) -> dict:
     row, ledger_row, directory, resolution, supersample = payload
     from fractal_wallpapers.curation import colorize
 
-    recipe = (ledger_row.get("recipe") or {})
+    recipe = ledger_row.get("recipe") or {}
     place = ledger_row.get("location") or {}
     here = {
         "family": place.get("family") or recipe.get("family"),
@@ -272,9 +272,7 @@ def reread(
                 **row,
                 "label_p_ge4": round(float(verdict.get("p_ge4") or 0.0), 6),
                 "label_p_ge3": round(float(verdict.get("p_ge3") or 0.0), 6),
-                "delta_p_ge4": round(
-                    float(verdict.get("p_ge4") or 0.0) - float(row["p_ge4"]), 6
-                ),
+                "delta_p_ge4": round(float(verdict.get("p_ge4") or 0.0) - float(row["p_ge4"]), 6),
                 "picture": tracked_name(Path(row["picture"])),
             }
         )
@@ -344,9 +342,7 @@ def curves(pairs: list, sequence: list, bars, checkpoints=CHECKPOINTS) -> dict:
                         "raw_rate": round(raw_hits[bar] / max(1, alive), 5),
                         "calibrated_primed": cooked[bar],
                         "calibrated_rate": round(cooked[bar] / max(1, alive), 5),
-                        "ratio": (
-                            round(cooked[bar] / raw_hits[bar], 4) if raw_hits[bar] else None
-                        ),
+                        "ratio": (round(cooked[bar] / raw_hits[bar], 4) if raw_hits[bar] else None),
                     }
                     for bar in bars
                 },
