@@ -56,7 +56,9 @@ rather than at each of its callers.
 from __future__ import annotations
 
 import json
+import os
 import random
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -254,14 +256,75 @@ def anchors(members: list[str], count: int, seed: int) -> list[str]:
 
 
 # --------------------------------------------------------------------------- #
-# The field, dumped once per location.
+# The field, dumped once per (location, mode).
 # --------------------------------------------------------------------------- #
-def field_of(row: dict, directory: Path) -> Path:
-    """The location's smooth field at candidate geometry, dumped once and reused.
+#: The one coloring kind that has a single scalar field behind it, and therefore
+#: the only one a dump can serve. The engine's own word — `renders.catalog` reads
+#: it out of the catalog — and the composites, the modulate and the direct traps
+#: are the other three. See [`shareable`].
+FIELD_KIND = "field"
 
-    The one iteration pass an attempt pays for. Every candidate map is a recolor
-    of this, which is what makes a thirty-two-wide set cost about as much as one
-    render instead of thirty-two.
+#: Modes whose dump the engine has refused in this process, so the refusal is
+#: paid once rather than once a candidate. A refusal is a fact about the mode's
+#: coloring and not about the location, which is what makes it cacheable here.
+_UNSHAREABLE: set[str] = set()
+
+
+def shareable(mode: str) -> bool:
+    """Whether one iteration pass at this mode can serve every palette at it.
+
+    A property of the *coloring*, asked of the engine's catalog: only a mode that
+    maps one scalar field through the map has a field to dump, and the engine
+    refuses the rest. Callers do not ask this — [`render`] does, which is what
+    keeps the fallback automatic rather than a decision each site remembers.
+    """
+    return mode not in _UNSHAREABLE and kind_of(mode) == FIELD_KIND
+
+
+def field_row(row: dict, mode: str, curve: str, render_geometry: dict | None = None) -> dict:
+    """One location as the render-cache row its **field** is dumped from.
+
+    The recolour half is pinned to the constants [`renders.field_job_name`] names
+    the field by, because a dump spends nothing on it: what a `dump-field` reads
+    of this row is the place, the geometry and the coloring, and the coloring is
+    built by the same [`renders.coloring_of`] a render is built by. That identity
+    is the whole of why a recolour can be byte-identical to a render — the curve
+    curation renders through **replaces** the mode's catalogued one, and a field
+    dumped by mode *name* would carry the catalogued curve into its record and
+    recolour every `trap_circle` through a curve nobody rendered.
+    """
+    from fractal_wallpapers.models import renders
+
+    return {
+        "family": row["family"],
+        "viewport": row["viewport"],
+        "mode": mode,
+        "mode_params": {},
+        "curve": curve,
+        "colormap": renders.FIELD_COLORMAP,
+        "recipe": _plain_recipe(False),
+        "render": render_geometry or _geometry(row),
+    }
+
+
+def field_of(
+    row: dict,
+    directory: Path,
+    mode: str = SMOOTH_MODE,
+    curve: str = CURVE,
+    render_geometry: dict | None = None,
+) -> Path:
+    """The location's field in one mode at candidate geometry, dumped once and reused.
+
+    The one iteration pass a whole candidate set pays for. Every map at this
+    (location, mode) is a recolor of this, which is what makes a thirty-two-wide
+    set cost about as much as one render instead of thirty-two.
+
+    `mode` used to be pinned to [`SMOOTH_MODE`], because the only caller was the
+    palette head's own pictures and those are smooth by definition. It is the
+    row's own mode now, so the same one pass serves the candidate the attempt
+    actually renders — and the smooth default keeps the head's call reading as
+    what it is.
     """
     from fractal_wallpapers.models import renders
 
@@ -269,31 +332,30 @@ def field_of(row: dict, directory: Path) -> Path:
     # members a dumped field depends on are declared once, beside `spec_of`, so a
     # field-side axis added to the engine cannot be left out of this cache's name
     # by being forgotten at this call site. It used to be spelled out here.
+    geometry = render_geometry or _geometry(row)
     name = renders.field_job_name(
         family=row["family"],
         viewport=row["viewport"],
-        render=_geometry(row),
-        mode=SMOOTH_MODE,
-        curve=CURVE,
+        render=geometry,
+        mode=mode,
+        curve=curve,
     )
+    directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
     path = directory / f"{name}.f32"
     if path.is_file() and path.with_suffix(".json").is_file():
+        # Touched on the way past, so [`sweep_fields`] can read *last used* off
+        # the file rather than *last written*. Without this the field a run is
+        # in the middle of spending forty palettes on is the oldest thing in the
+        # directory by the second palette, and the sweep would drop it.
+        os.utime(path, None)
         return path
-    engine.dump_field(
-        {
-            "schema": 1,
-            "family": row["family"],
-            "viewport": row["viewport"],
-            "resolution": list(RESOLUTION),
-            "supersample": SUPERSAMPLE,
-            "maxiter": int(row["maxiter"]),
-            "mode": SMOOTH_MODE,
-            "colormap": "twilight_shifted",
-            "colormap_dir": str(_colormap_dir()),
-            "output": str(path),
-        }
-    )
+    # The spec goes through `renders.spec_of`, so the coloring a field is dumped
+    # for is built by the one derivation a render's coloring is built by. The
+    # binary lands first and its record second, which is what lets the pair's
+    # presence mean *complete*: a dump killed halfway leaves a field with no
+    # record, and the check above re-dumps it.
+    engine.dump_field(renders.spec_of(field_row(row, mode, curve, geometry), path))
     return path
 
 
@@ -311,8 +373,26 @@ def _plain_recipe(mirror: bool) -> dict:
     return finished.recipe(mirror=mirror)
 
 
-def recolored(field: Path, colormap: str, mirror: bool, output: Path) -> Path:
-    """One candidate picture: the dumped field through one map, no re-iteration."""
+def recolored(
+    field: Path,
+    colormap: str,
+    mirror: bool,
+    output: Path,
+    colormap_dir: Path | None = None,
+) -> Path:
+    """One candidate picture: the dumped field through one map, no re-iteration.
+
+    `colormap_dir` is what the autolevel pass needs and nothing else does: the
+    operator's second render is the same spec with the map's *stops* re-baked,
+    so pointed at the levelled directory this is that render without the second
+    iteration pass behind it. The transform is left unsaid, so the recolor reads
+    the curve out of the dump's own record — which [`field_row`] put there.
+
+    A file already at `output` is left alone: the candidate recolours the palette
+    head reads are cached that way and remaking one would spend a render for a
+    picture that exists. A caller that means to overwrite unlinks first, which
+    is what [`render`] does.
+    """
     output.parent.mkdir(parents=True, exist_ok=True)
     if not output.is_file():
         engine.recolor(
@@ -320,12 +400,56 @@ def recolored(field: Path, colormap: str, mirror: bool, output: Path) -> Path:
                 "schema": 1,
                 "field": str(field),
                 "colormap": colormap,
-                "colormap_dir": str(_colormap_dir()),
+                "colormap_dir": str(colormap_dir or _colormap_dir()),
                 "palette": _plain_recipe(mirror),
                 "output": str(output),
             }
         )
     return output
+
+
+#: How many dumped fields a unit of work keeps on disk. One field at candidate
+#: geometry is 3.5 MiB — 1280×720 `f32` — so an unswept mine would leave several
+#: gigabytes behind, and it needs none of them: a plan is grouped by location
+#: within each arm, so only a handful are live at once. Sixty-four is two hundred
+#: megabytes and about twenty times what the woven plan actually holds open.
+FIELDS_KEPT = 64
+
+#: How often an attempt leg sweeps its render fields. Not every attempt: the
+#: sweep stats the whole directory, and the half of it a pass protects runs to
+#: thousands of files. Fifty is under [`FIELDS_KEPT`], so nothing accumulates
+#: between two of them.
+FIELDS_SWEPT_EVERY = 50
+
+
+def sweep_fields(directory: Path, keep: int = FIELDS_KEPT, protect: set | None = None) -> int:
+    """Drop all but the `keep` most recently used fields here. Returns how many went.
+
+    A field is worth keeping exactly as long as there are palettes left to spend
+    at its (location, mode), and nothing knows that better than when it was last
+    read — which [`field_of`] records by touching it. Called from the loop rather
+    than at the end of it, because the point is the high-water mark and not the
+    leftovers.
+
+    `protect` names fields that are the *pass's* rather than one candidate's, and
+    it exists for one of them: the palette head's smooth field at each location is
+    read again after the attempt leg is over — a re-seat asks for another colour at
+    a seat, and [`curation.gallery`] resolves a candidate recolour's name through
+    it. Sweeping those would turn a name lookup into an iteration pass, thousands
+    of times.
+    """
+    directory = Path(directory)
+    if not directory.is_dir():
+        return 0
+    protect = protect or set()
+    held = [path for path in directory.glob("*.f32") if path.name not in protect]
+    held.sort(key=lambda path: path.stat().st_mtime, reverse=True)
+    dropped = 0
+    for path in held[int(keep) :]:
+        path.unlink(missing_ok=True)
+        path.with_suffix(".json").unlink(missing_ok=True)
+        dropped += 1
+    return dropped
 
 
 # --------------------------------------------------------------------------- #
@@ -353,6 +477,53 @@ writing_path = paths.writing_path
 sweep_writing = paths.sweep_writing
 
 
+#: The stages [`render`] will attribute its wall clock to when a caller hands it
+#: a meter. Declared as a tuple so a reader of a profile knows the whole set, and
+#: so a stage added here cannot be one a summing caller silently drops.
+#:
+#: `paint` is the first colouring — a full iteration pass on the built path, a
+#: colormap lookup on the shared one. `dump` is the iteration pass a shared field
+#: pays once per (location, mode) and nothing after it pays again. `measure` is
+#: the autolevel operator reading the tone of the picture it was handed, which is
+#: **Python** — a JPEG decode and an Oklab pass — and is the one stage here the
+#: engine has nothing to do with. `repaint` is the operator's second colouring.
+METER_STAGES = ("dump", "paint", "measure", "repaint")
+
+
+#: What a stage is timed on. **`perf_counter`, not `monotonic`**: `monotonic` is
+#: `GetTickCount64` on Windows and its resolution is 15.6 ms, which was invisible
+#: while a candidate was a 1.3 s render and is most of the answer now that one is
+#: a 31 ms recolour. It is not a wall clock and nothing schedules on it — a budget
+#: still reads `time.monotonic` — it only measures how long something took.
+def tick() -> float:
+    """Now, on the clock a duration here is measured against."""
+    return time.perf_counter()
+
+
+def _shared_field(
+    row: dict, mode: str, render_geometry: dict | None, fields: Path | None
+) -> Path | None:
+    """The dumped field this candidate can be a recolour of, or `None`.
+
+    `None` twice over, for two reasons and neither of them a caller's: **no field
+    cache was offered** — a one-off picture at a seat has no second palette to
+    amortise a dump over — or **this coloring has no single scalar field**, which
+    is the engine's word and covers the composites, the modulate and the direct
+    traps. A dump the engine refuses costs nothing but the crossing, because it
+    refuses before it iterates; the refusal is remembered against the mode anyway,
+    so a mine that draws `threads` four hundred times pays it once.
+    """
+    if fields is None or not shareable(mode):
+        return None
+    try:
+        return field_of(row, Path(fields), mode=mode, render_geometry=render_geometry)
+    except (RuntimeError, OSError):
+        # A refusal is a fact about the mode, so it is remembered against the
+        # mode. The candidate is still made — by the path that was there before.
+        _UNSHAREABLE.add(mode)
+        return None
+
+
 def render(
     row: dict,
     mode: str,
@@ -362,6 +533,8 @@ def render(
     render_geometry: dict | None = None,
     level: bool = True,
     band: dict | None = None,
+    fields: Path | None = None,
+    meter: dict | None = None,
 ) -> tuple[Path, dict | None]:
     """Render one candidate and level it. `(picture, stamp)`; the stamp may be `None`.
 
@@ -370,10 +543,35 @@ def render(
     direct-trap family is excluded here, where the kind is known, and not by a
     test inside the operator.
 
+    ## The field is iterated once and spent many times
+
+    `fields` names a directory the unit of work owns, and where one is given this
+    largely stops being a render: the location's field **in this mode** is dumped
+    there the first time it is asked for, and every later map at it — and the
+    autolevel operator's second pass, which is the same field through a re-baked
+    map — is a `recolor`, a colormap lookup over an array on disk. `curate mine
+    bench` prices the two against each other.
+
+    Which path serves a candidate is **not a caller's decision**. A composite, a
+    modulate and a direct trap have no single scalar field behind them, the engine
+    refuses to dump one, and those take the render path exactly as they did. A
+    caller asks for a candidate; [`_shared_field`] decides, once per mode.
+
+    The two paths are held to producing the *same bytes* — not a similar picture,
+    the same file — by `test_a_recolour_is_the_render_byte_for_byte`, because a
+    recolour that were merely close would move every judge score in the ledger
+    without moving anything a reader could see.
+
+    `meter`, where a caller hands one over, is added to rather than replaced, and
+    the stages are [`METER_STAGES`]. It exists because the profile that sent this
+    leg had `render` at 97% of a mine's clock and could say nothing about what was
+    inside it — and now that the iteration pass is gone from most candidates, what
+    is inside it is the whole question.
+
     **Nothing exists at `output` until the row is finished.** Every render lands
     on a temporary and is renamed into place at the end, which makes the file's
     presence mean *complete* rather than *started*. That is not a nicety: the
-    autolevel path is two full-resolution renders to one path, and the first
+    autolevel path is two full-resolution passes to one path, and the first
     production run lost four rows to it — the deadline killed the second render,
     the first one's decodable picture stayed on disk, and the resume counted all
     four as finished. Every number balanced and four pictures carried no operator
@@ -386,15 +584,34 @@ def render(
     scratch = writing_path(output)
     recipe = render_row(row, mode, colormap, cyclic, render_geometry)
     spec = renders.spec_of(recipe, scratch)
+    mirror = bool(recipe["recipe"]["mirror"])
     output.parent.mkdir(parents=True, exist_ok=True)
-    scratch.unlink(missing_ok=True)
-    engine.run("render", spec)
+    ticks = meter if meter is not None else {}
+
+    def spent(stage: str, since: float) -> None:
+        ticks[stage] = ticks.get(stage, 0.0) + (tick() - since)
+
+    at = tick()
+    field = _shared_field(row, mode, render_geometry, fields)
+    spent("dump", at)
+
+    def paint(stage: str, colormap_dir: Path | None = None) -> None:
+        """This candidate onto the temporary, by whichever path is serving it."""
+        at = tick()
+        scratch.unlink(missing_ok=True)
+        if field is None:
+            here = spec if colormap_dir is None else {**spec, "colormap_dir": str(colormap_dir)}
+            engine.run("render", here)
+        else:
+            recolored(field, colormap, mirror, scratch, colormap_dir=colormap_dir)
+        spent(stage, at)
+
+    paint("paint")
     if not level or not autolevel.applies_to(kind_of(mode)):
         scratch.replace(output)
         return output, None
 
     entry = json.loads((_colormap_dir() / f"{colormap}.json").read_text(encoding="utf-8"))
-    mirror = bool(recipe["recipe"]["mirror"])
 
     def rerender(stops):
         # Named for the FINAL picture, not the temporary: the levelled colormap is
@@ -402,12 +619,20 @@ def render(
         # it under the row's own name.
         directory = output.parent / f"{output.stem}.leveled"
         autolevel.overriding_colormap(colormap, stops, entry.get("kind"), directory)
-        engine.run("render", {**spec, "colormap_dir": str(directory)})
+        paint("repaint", directory)
         return scratch
 
+    at = tick()
+    repainted = ticks.get("repaint", 0.0)
     leveled = autolevel.maybe_level(
         scratch, {"name": colormap, "stops": entry["stops"], "mirror": mirror}, rerender, band
     )
+    # The operator's own share is what it took MINUS the colouring it asked for,
+    # which `paint` has already booked to `repaint`. Measured this way round
+    # because the alternative is a timer inside `maybe_level`, and the operator
+    # would then have to know it is being profiled.
+    spent("measure", at)
+    ticks["measure"] -= ticks.get("repaint", 0.0) - repainted
     Path(leveled.image).replace(output)
     return output, leveled.stamp
 
@@ -524,6 +749,22 @@ class Colorizer:
         #: already recorded, so a resume claims what its own attempts claimed.
         self.claimed: dict = {}
         self._groups = None
+        #: The smooth fields the palette head has been asked for this pass. They
+        #: outlive the attempt that made them — the seating leg reads a candidate
+        #: recolour's name through one — so [`sweep_fields`] is told to leave them
+        #: alone. Everything else under `fields/` belongs to one candidate.
+        self._head_fields: set = set()
+
+    @property
+    def fields(self) -> Path:
+        """Where this pass's dumped fields live: one per (location, mode).
+
+        The palette head's own recolours were always read off a field under here;
+        what changed is that the attempt's *rendered* candidate is read off one
+        too, so a location the head was asked about in `smooth` and then rendered
+        in `smooth` iterates once for both.
+        """
+        return self.directory / "fields"
 
     def judge(self):
         """THE finished-render judge, loaded on first use and kept.
@@ -578,7 +819,8 @@ class Colorizer:
         not an iteration pass, and is why an extra pick at a seat costs a render
         rather than a whole attempt.
         """
-        field = field_of(row, self.directory / "fields")
+        field = field_of(row, self.fields)
+        self._head_fields.add(field.name)
         return [
             recolored(
                 field,
@@ -708,8 +950,22 @@ class Colorizer:
                 record["named"] = colormap
                 self.claim(colormap)
             picture = self.directory / "pictures" / f"{attempt_id(record)}.jpg"
+            # A pass makes one picture per (location, mode) and thousands of
+            # locations, so the render's own fields are working and not record:
+            # swept down as the leg goes, with the head's own left standing.
+            # Every fiftieth attempt and not every one, because the sweep stats
+            # the whole directory and the head's half of it is thousands of files.
+            if index % FIELDS_SWEPT_EVERY == 0:
+                sweep_fields(self.fields, protect=self._head_fields)
             picture, stamp = render(
-                row, drawn, colormap, self.cyclic, picture, level=True, band=self.band
+                row,
+                drawn,
+                colormap,
+                self.cyclic,
+                picture,
+                level=True,
+                band=self.band,
+                fields=self.fields,
             )
             verdict = self.score_picture(picture)
         except Exception as failure:  # noqa: BLE001 — a failed attempt is a recorded row
@@ -793,7 +1049,12 @@ __all__ = [
     "band",
     "candidate_set",
     "cyclic",
+    "FIELDS_KEPT",
+    "FIELDS_SWEPT_EVERY",
+    "METER_STAGES",
+    "FIELD_KIND",
     "field_of",
+    "field_row",
     "kind_of",
     "load_judge",
     "modes_drawn_for",
@@ -801,6 +1062,9 @@ __all__ = [
     "pool",
     "pool_record",
     "recolored",
+    "shareable",
+    "tick",
+    "sweep_fields",
     "render",
     "render_row",
     "score_picture",

@@ -244,19 +244,45 @@ def test_an_arm_with_nothing_planned_does_not_break_the_weave():
 # --------------------------------------------------------------------------- #
 # The stopwatch.
 # --------------------------------------------------------------------------- #
+def a_render(seconds: float) -> dict:
+    """A meter for one candidate whose whole render was a single colouring."""
+    return {"dump": 0.0, "paint": seconds, "measure": 0.0, "repaint": 0.0}
+
+
 def test_the_stages_of_one_candidate_sum_to_its_seconds():
-    stages = mine.Stages(render=1.5, judge=0.25, colour=0.1, write=0.01, overhead=0.04)
+    stages = mine.Stages(judge=0.25, colour=0.1, write=0.01, overhead=0.04)
+    stages.take({"dump": 0.5, "paint": 0.6, "measure": 0.3, "repaint": 0.1})
+    assert stages.render == pytest.approx(1.5)
     assert stages.total() == pytest.approx(1.9)
     assert sum(stages.named().values()) == pytest.approx(1.9)
 
 
+def test_the_render_total_is_derived_from_its_parts_and_never_measured_beside_them():
+    """The old profile had one `render` number and could say nothing about what was
+    inside it. A total measured separately from its parts is one that can disagree
+    with them, which is the way a profile stops being checkable."""
+    assert "render" not in mine.Stages().named()
+    stages = mine.Stages()
+    stages.take({"dump": 1.0, "paint": 2.0, "measure": 0.5, "repaint": 0.25})
+    assert stages.render == pytest.approx(3.75)
+    from fractal_wallpapers.curation import colorize
+
+    assert set(colorize.METER_STAGES) <= set(mine.Stages().named()), (
+        "a stage the render meters is one the profile has to be able to name"
+    )
+
+
 def test_the_clock_attributes_the_same_seconds_to_every_cut_it_is_given():
     clock = mine.Clock()
-    clock.add(mine.Stages(render=2.0, judge=0.5), {"arm": "deepen", "partition": "phoenix"})
-    clock.add(mine.Stages(render=1.0, judge=0.5), {"arm": "deepen", "partition": "mandelbrot"})
+    first = mine.Stages(judge=0.5)
+    first.take(a_render(2.0))
+    second = mine.Stages(judge=0.5)
+    second.take(a_render(1.0))
+    clock.add(first, {"arm": "deepen", "partition": "phoenix"})
+    clock.add(second, {"arm": "deepen", "partition": "mandelbrot"})
     table = clock.table()
     assert table["total_seconds"] == pytest.approx(4.0)
-    assert table["by_stage"]["render"]["share"] == pytest.approx(0.75)
+    assert table["by_stage"]["paint"]["share"] == pytest.approx(0.75)
     assert table["by_cut"]["arm=deepen"]["candidates"] == 2
     assert table["by_cut"]["arm=deepen"]["seconds"] == pytest.approx(4.0)
     assert table["by_cut"]["partition=phoenix"]["per_candidate"] == pytest.approx(2.5)

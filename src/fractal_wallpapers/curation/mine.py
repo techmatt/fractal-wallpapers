@@ -74,6 +74,7 @@ SCORES_NAME = hunt.SCORES_NAME
 RECORD_NAME = "mine.json"
 PROFILE_NAME = "profile.jsonl"
 PICTURES = hunt.PICTURES
+FIELDS = hunt.FIELDS
 
 #: Where a candidate is PRIMED. Read at read time off the sidecar and stored
 #: nowhere, so a judge retrain moves the boundary with no migration.
@@ -152,6 +153,11 @@ def profile_path(name: str) -> Path:
 def record_path(name: str) -> Path:
     """What the mine reports about itself: the plan, the price, the arms."""
     return mine_dir(name) / RECORD_NAME
+
+
+def fields_dir(name: str) -> Path:
+    """Where this mine's dumped fields are, one per (location, mode)."""
+    return mine_dir(name) / FIELDS
 
 
 def pictures_dir(name: str) -> Path:
@@ -405,20 +411,57 @@ def weave(plans: dict, shares: dict | None = None) -> list:
 # --------------------------------------------------------------------------- #
 @dataclass
 class Stages:
-    """What one candidate's wall clock went on, in the order it was spent."""
+    """What one candidate's wall clock went on, in the order it was spent.
 
-    render: float = 0.0
+    The first mine reported five stages and `render` was 97.2% of them, which is
+    a profile that names the loop's cost and says nothing about it. Four of these
+    are inside what used to be that one number, and they are [`colorize`]'s own
+    [`METER_STAGES`](colorize.METER_STAGES) rather than a second reading of them:
+
+    * `dump` — the iteration pass a shared field pays **once** per (location,
+      mode), and which every palette after the first at that pair pays nothing
+      for. Zero on a coloring the engine will not dump.
+    * `paint` — the colouring itself: a full iteration pass on the built path, a
+      colormap lookup over a dumped field on the shared one.
+    * `measure` — the autolevel operator reading the tone of the picture it was
+      handed. **Python, not the engine**: a JPEG decode and an Oklab pass.
+    * `repaint` — the operator's second colouring, on the levelled map. Zero
+      where the curve did not act.
+
+    `render` is kept as the sum of those four so the two profiles can be read
+    against each other, and it is derived rather than measured for exactly that
+    reason: a total that could disagree with its own parts is a total nobody can
+    check.
+    """
+
+    dump: float = 0.0
+    paint: float = 0.0
+    measure: float = 0.0
+    repaint: float = 0.0
     judge: float = 0.0
     colour: float = 0.0
     write: float = 0.0
     overhead: float = 0.0
+
+    @property
+    def render(self) -> float:
+        """Everything that used to be called `render`, so the old total still exists."""
+        return self.dump + self.paint + self.measure + self.repaint
+
+    def take(self, meter: dict) -> None:
+        """Read one candidate's meter off [`colorize.render`]."""
+        for stage in colorize_module().METER_STAGES:
+            setattr(self, stage, float(meter.get(stage) or 0.0))
 
     def total(self) -> float:
         return self.render + self.judge + self.colour + self.write + self.overhead
 
     def named(self) -> dict:
         return {
-            "render": round(self.render, 4),
+            "dump": round(self.dump, 4),
+            "paint": round(self.paint, 4),
+            "measure": round(self.measure, 4),
+            "repaint": round(self.repaint, 4),
             "judge": round(self.judge, 4),
             "colour": round(self.colour, 4),
             "write": round(self.write, 4),
@@ -466,11 +509,13 @@ class Clock:
 def make(maker: hunt.Maker, unit: Unit, place: dict, frame: dict, key: str) -> dict:
     """Render one candidate through the unchanged loop, with a stopwatch on each stage.
 
-    [`hunt.Maker.make`] with the single `seconds` split five ways and nothing else
-    altered: the same [`colorize.render`], the same judge, the same colour read,
-    in the same order and at the same recipe. The split is the profile's whole
-    substance — a mine reporting one number a candidate could name no
-    optimization, and naming them is half of what it was sent to do.
+    [`hunt.Maker.make`] with the single `seconds` split eight ways and nothing
+    else altered: the same [`colorize.render`], the same judge, the same colour
+    read, in the same order and at the same recipe. The split is the profile's
+    whole substance — a mine reporting one number a candidate could name no
+    optimization, and naming them is half of what it was sent to do. Four of the
+    eight come off the render's own meter rather than off a stopwatch here, so
+    the parts of a colouring are attributed where they are spent.
     """
     from fractal_wallpapers.curation import colorize
     from fractal_wallpapers.palettes import dominance
@@ -481,7 +526,7 @@ def make(maker: hunt.Maker, unit: Unit, place: dict, frame: dict, key: str) -> d
         "maxiter": int(frame["maxiter"]),
     }
     stages = Stages()
-    at = time.monotonic()
+    meter = dict.fromkeys(colorize.METER_STAGES, 0.0)
     picture, stamp = colorize.render(
         row,
         unit.mode,
@@ -490,14 +535,16 @@ def make(maker: hunt.Maker, unit: Unit, place: dict, frame: dict, key: str) -> d
         pictures_dir(maker.name) / f"{key}.jpg",
         level=True,
         band=maker.band,
+        fields=maker.fields,
+        meter=meter,
     )
-    stages.render = time.monotonic() - at
-    at = time.monotonic()
+    stages.take(meter)
+    at = colorize.tick()
     verdict = colorize.score_picture(maker.judge(), picture)
-    stages.judge = time.monotonic() - at
-    at = time.monotonic()
+    stages.judge = colorize.tick() - at
+    at = colorize.tick()
     reading = dominance.of_picture(picture)
-    stages.colour = time.monotonic() - at
+    stages.colour = colorize.tick() - at
     return {
         "picture": picture,
         "stages": stages,
@@ -657,9 +704,15 @@ def run(
             "its record reports."
         )
     intended, shape = build_plan(
-        world, seed=seed, rate=rate, budget=budget, k=k, per_location=per_location, log=log
+        world,
+        seed=seed,
+        rate=rate,
+        budget=budget,
+        k=k,
+        per_location=per_location,
+        log=log,
     )
-    maker = hunt.Maker(name, device=device, log=log)
+    maker = hunt.Maker(name, device=device, log=log, fields=fields_dir(name))
     price = hunt.Price()
     clock = Clock()
     rows_file = rows_path(name)
@@ -676,10 +729,12 @@ def run(
         "failed": 0,
         "stopped_for_budget": 0,
         "autolevel_acted": 0,
+        "shared_field": 0,
+        "fields_swept": 0,
     }
     spent = 0.0
     for at, unit in enumerate(intended, start=1):
-        loop = time.monotonic()
+        loop = colorize_module().tick()
         place = world["by_key"].get(unit.location)
         frame = world["index"].get(unit.location)
         if place is None or frame is None:
@@ -705,7 +760,7 @@ def run(
             log(f"[mine] {key} failed: {failure!r}")
             continue
         stages = result["stages"]
-        write_at = time.monotonic()
+        write_at = colorize_module().tick()
         source = hunt.source_for(name, unit, place, frame, at)
         stored = candidate_ledger.row(
             recipe=recipe,
@@ -725,13 +780,14 @@ def run(
         )
         hunt._append(rows_file, stored)
         hunt._append(scores_file, scored)
-        stages.write = time.monotonic() - write_at
-        stages.overhead = max(0.0, (time.monotonic() - loop) - stages.total())
+        stages.write = colorize_module().tick() - write_at
+        stages.overhead = max(0.0, (colorize_module().tick() - loop) - stages.total())
         spent += stages.total()
         price.add(unit.partition, stages.total())
         known.add(key)
         counts["made"] += 1
         counts["autolevel_acted"] += int(result["acted"])
+        counts["shared_field"] += int(colorize_module().shareable(unit.mode))
         row = {
             "key": key,
             "arm": unit.arm,
@@ -766,6 +822,7 @@ def run(
             },
         )
         if counts["made"] % 100 == 0:
+            counts["fields_swept"] += colorize_module().sweep_fields(maker.fields)
             log(
                 f"[mine] {counts['made']:,} made, {spent:.0f}s of {budget:.0f}s "
                 f"({spent / max(1, counts['made']):.2f}s each) — "
@@ -818,10 +875,15 @@ def run(
     return record
 
 
-def _kind_of(mode: str) -> str:
+def colorize_module():
+    """[`curation.colorize`], imported at call time like everything else here."""
     from fractal_wallpapers.curation import colorize
 
-    return colorize.kind_of(mode)
+    return colorize
+
+
+def _kind_of(mode: str) -> str:
+    return colorize_module().kind_of(mode)
 
 
 # --------------------------------------------------------------------------- #
@@ -875,21 +937,36 @@ BENCH_MAPS = 8
 #: dumped field needs one scalar field behind the picture.
 BENCH_KINDS = ("field", "composite")
 
+#: The widths a candidate's cost is reported at. `1` is the fixed cost with
+#: nothing to amortise it over, `40` is the depth a shareable field makes
+#: affordable, and the two between them are where the curve bends.
+BENCH_K = (1, 8, 20, 40)
 
-def bench(seed: int = DEFAULT_SEED, maps: int = BENCH_MAPS, world: dict | None = None, log=print):
-    """Price the built path against the two cheaper shapes it could have had.
 
-    Three measurements at one location and one mode, over the same `maps`:
+def bench(
+    seed: int = DEFAULT_SEED,
+    maps: int = BENCH_MAPS,
+    world: dict | None = None,
+    ks=BENCH_K,
+    log=print,
+):
+    """Price one candidate against the width of the set it is drawn in.
 
-    * **built** — [`colorize.render`] once a map, which is what the loop does:
-      one engine process, one full iteration pass and one colouring per
-      candidate, plus a second full render wherever the autolevel curve fires.
-    * **shared field** — one `dump-field` and then one `recolor` a map, which is
-      what [`colorize.field_of`] and [`colorize.recolored`] already do for the
-      palette head's own pictures. Available only where the mode has a single
-      scalar field behind it: the engine refuses a dump for the composites and
-      the direct traps, and that refusal is recorded here rather than worked
-      around, because it is what bounds the saving.
+    Four measurements at one location and one mode, over the same `maps`:
+
+    * **built** — [`colorize.render`] with no field cache offered, once a map:
+      one engine process and one full iteration pass per candidate.
+    * **built, levelled** — the same with the autolevel operator on, which is a
+      **second** full iteration pass wherever the curve fires. This is what the
+      loop actually paid before this leg.
+    * **shared field** — one `dump-field`, then [`colorize.render`] with the
+      field cache offered, which makes every map after the first a `recolor`.
+      Available only where the mode has a single scalar field behind it: the
+      engine refuses a dump for the composites, the modulate and the direct
+      traps, and that refusal is recorded here rather than worked around,
+      because it is what bounds the saving.
+    * **shared field, levelled** — the same with the operator on, where its
+      second pass is a recolour too.
     * **judged in one batch** — the same pictures through the judge at
       `batch_size` = `maps` against one at a time, which is the only stage whose
       cost is a Python-side choice rather than an engine one.
@@ -897,8 +974,15 @@ def bench(seed: int = DEFAULT_SEED, maps: int = BENCH_MAPS, world: dict | None =
     Plus the **boundary itself**: an engine call that renders nothing, which is
     the floor under every one of the loop's crossings.
 
+    ### Why the k table is derived rather than measured at every k
+
+    The measurement is taken at `maps` maps and the table is computed from its
+    unit costs — a dump spread over k, plus k colourings. Measuring 40 maps at
+    every partition would be an hour of renders to re-derive an identity, and
+    `maps = 8` is one of the reported widths, so the derivation is checked
+    against a direct measurement at every location rather than assumed.
+
     Nothing here is written into the ledger and nothing here changes the loop.
-    It exists so an optimization can be proposed with a number beside it.
     """
     import shutil
     import tempfile
@@ -908,22 +992,71 @@ def bench(seed: int = DEFAULT_SEED, maps: int = BENCH_MAPS, world: dict | None =
 
     world = population(log=log) if world is None else world
     pool = list(colorize.pool(seed))
-    out: dict = {"schema": SCHEMA, "maps": int(maps), "locations": []}
-    at = time.monotonic()
+    out: dict = {"schema": SCHEMA, "maps": int(maps), "k": list(ks), "locations": []}
+    at = colorize.tick()
     for family in ({"kind": "mandelbrot"}, {"kind": "phoenix"}, {"kind": "multibrot", "degree": 3}):
         engine.home_view(family)
-    out["boundary_seconds"] = round((time.monotonic() - at) / 3, 4)
+    out["boundary_seconds"] = round((colorize.tick() - at) / 3, 4)
     log(f"[bench] one engine crossing that renders nothing: {out['boundary_seconds']:.3f}s")
     picks = _bench_picks(world, seed)
     scratch = Path(tempfile.mkdtemp(prefix="mine-bench-"))
     try:
         for place, frame, mode in picks:
             out["locations"].append(
-                _bench_one(place, frame, mode, pool[:maps], scratch, world, log=log)
+                _bench_one(place, frame, mode, pool[:maps], scratch, world, ks=ks, log=log)
             )
     finally:
         shutil.rmtree(scratch, ignore_errors=True)
+    out["per_candidate"] = bench_table(out["locations"], ks)
     return out
+
+
+def per_candidate_at(block: dict, k: int) -> dict:
+    """What one candidate costs at set width `k`, before and after, for one block.
+
+    Before is the built path with the operator on — one iteration pass a
+    candidate and a second one wherever the curve fires — and does not move with
+    `k`, which is the whole complaint. After is one dump spread over `k` plus
+    one colouring a candidate, and where the mode has no field to dump it is the
+    before, unchanged and honestly so.
+    """
+    before = float(block["built_leveled_per_map"])
+    shared = block["shared_field"]
+    if not shared.get("available"):
+        return {"before": round(before, 4), "after": round(before, 4), "saving": 0.0}
+    after = float(shared["dump_seconds"]) / max(1, int(k)) + float(
+        shared["leveled_recolour_per_map"]
+    )
+    return {
+        "before": round(before, 4),
+        "after": round(after, 4),
+        "saving": round(1.0 - after / before, 4) if before else 0.0,
+    }
+
+
+def bench_table(blocks: list, ks=BENCH_K) -> dict:
+    """The bench's headline: seconds a candidate against `k`, split by mode kind.
+
+    Split rather than pooled because the two kinds are not one population any
+    more — the whole of the saving lands on one of them, and a pooled mean would
+    report a number no candidate is ever charged.
+    """
+    table: dict = {}
+    for kind in sorted({str(block["mode_kind"]) for block in blocks}):
+        held = [block for block in blocks if str(block["mode_kind"]) == kind]
+        table[kind] = {
+            "locations": len(held),
+            "k": {
+                str(k): {
+                    stage: round(
+                        sum(per_candidate_at(block, k)[stage] for block in held) / len(held), 4
+                    )
+                    for stage in ("before", "after", "saving")
+                }
+                for k in ks
+            },
+        }
+    return table
 
 
 def _bench_picks(world: dict, seed: int, kinds=BENCH_KINDS) -> list:
@@ -956,93 +1089,99 @@ def _bench_picks(world: dict, seed: int, kinds=BENCH_KINDS) -> list:
     return picks
 
 
-def _bench_one(place, frame, mode, maps, scratch: Path, world: dict, log=print) -> dict:
-    """One location, one mode, `maps` maps, priced three ways."""
+def _bench_one(place, frame, mode, maps, scratch: Path, world: dict, ks=BENCH_K, log=print) -> dict:
+    """One location, one mode, `maps` maps, priced four ways."""
     from fractal_wallpapers import engine
     from fractal_wallpapers.curation import colorize
-    from fractal_wallpapers.models import renders
 
+    del world, engine
     row = {
         "family": place["family"],
         "viewport": frame["viewport"],
         "maxiter": int(frame["maxiter"]),
     }
     kind = colorize.kind_of(mode)
+    cyclic = colorize.cyclic()
+    band = colorize.band()
     here = scratch / str(hunt.seed_of(str(place["key"]), mode))
     here.mkdir(parents=True, exist_ok=True)
-    built: list = []
-    pictures = []
-    for at, colormap in enumerate(maps):
-        started = time.monotonic()
-        picture, _stamp = colorize.render(
-            row, mode, colormap, colorize.cyclic(), here / f"built{at}.jpg", level=False
-        )
-        built.append(time.monotonic() - started)
-        pictures.append(picture)
-    shared: dict = {"available": False, "why": None}
-    if kind == "field":
-        try:
-            started = time.monotonic()
-            field = here / "field.f32"
-            engine.dump_field(
-                {
-                    "schema": 1,
-                    "family": row["family"],
-                    "viewport": row["viewport"],
-                    "resolution": list(colorize.RESOLUTION),
-                    "supersample": colorize.SUPERSAMPLE,
-                    "maxiter": int(row["maxiter"]),
-                    "mode": mode,
-                    "colormap": maps[0],
-                    "colormap_dir": str(renders.colormap_dir()),
-                    "output": str(field),
-                }
+
+    def leg(tag: str, level: bool, fields: Path | None) -> tuple:
+        """`maps` candidates one way. `(seconds a map, how many the curve acted on)`."""
+        seconds, acted = [], 0
+        for at, colormap in enumerate(maps):
+            started = colorize.tick()
+            _picture, stamp = colorize.render(
+                row,
+                mode,
+                colormap,
+                cyclic,
+                here / f"{tag}{at}.jpg",
+                level=level,
+                band=band if level else None,
+                fields=fields,
             )
-            dumped = time.monotonic() - started
-            cyclic = colorize.cyclic()
-            recolours = []
-            for at, colormap in enumerate(maps):
-                started = time.monotonic()
-                colorize.recolored(
-                    field, colormap, colormap not in cyclic, here / f"recolour{at}.jpg"
-                )
-                recolours.append(time.monotonic() - started)
+            seconds.append(colorize.tick() - started)
+            acted += int(bool((stamp or {}).get("acted")))
+        return sum(seconds) / len(seconds), acted
+
+    built_per_map, _ = leg("built", level=False, fields=None)
+    built_leveled_per_map, built_acted = leg("builtlevel", level=True, fields=None)
+    pictures = [here / f"built{at}.jpg" for at in range(len(maps))]
+
+    shared: dict = {"available": False, "why": None}
+    if colorize.shareable(mode):
+        fields = here / "fields"
+        try:
+            started = colorize.tick()
+            colorize.field_of(row, fields, mode=mode)
+            dumped = colorize.tick() - started
+            recolour_per_map, _ = leg("recolour", level=False, fields=fields)
+            leveled_per_map, shared_acted = leg("recolourlevel", level=True, fields=fields)
             shared = {
                 "available": True,
-                "dump_seconds": round(dumped, 3),
-                "recolour_seconds": round(sum(recolours) / len(recolours), 3),
-                "total_seconds": round(dumped + sum(recolours), 3),
+                "dump_seconds": round(dumped, 4),
+                "recolour_per_map": round(recolour_per_map, 4),
+                "leveled_recolour_per_map": round(leveled_per_map, 4),
+                "leveled_acted": shared_acted,
             }
         except Exception as refusal:  # noqa: BLE001 — a refused dump is the measurement
             shared = {"available": False, "why": repr(refusal)[:200]}
+    else:
+        shared = {"available": False, "why": f"{mode} is a {kind} coloring: no single scalar field"}
+
     judge = colorize.load_judge()
-    started = time.monotonic()
+    started = colorize.tick()
     for picture in pictures:
         colorize.score_picture(judge, picture)
-    one_at_a_time = time.monotonic() - started
-    started = time.monotonic()
+    one_at_a_time = colorize.tick() - started
+    started = colorize.tick()
     _batched(judge, pictures)
-    batched = time.monotonic() - started
+    batched = colorize.tick() - started
     block = {
         "partition": str(place["partition"]),
         "mode": mode,
         "mode_kind": kind,
         "maxiter": int(row["maxiter"]),
-        "built_seconds": round(sum(built), 3),
-        "built_per_map": round(sum(built) / len(built), 3),
+        "built_per_map": round(built_per_map, 4),
+        "built_leveled_per_map": round(built_leveled_per_map, 4),
+        "built_leveled_acted": built_acted,
         "shared_field": shared,
         "judge_one_at_a_time": round(one_at_a_time, 3),
         "judge_batched": round(batched, 3),
     }
+    block["per_candidate"] = {str(k): per_candidate_at(block, k) for k in ks}
     log(
-        f"[bench] {block['partition']}/{mode}: built {block['built_per_map']:.2f}s a map, "
-        f"shared "
+        f"[bench] {block['partition']}/{mode} ({kind}): built {built_leveled_per_map:.2f}s a map "
+        f"levelled ({built_acted}/{len(maps)} acted), shared "
         + (
-            f"{shared['recolour_seconds']:.2f}s a map after a {shared['dump_seconds']:.2f}s dump"
+            f"{shared['leveled_recolour_per_map']:.3f}s a map after a "
+            f"{shared['dump_seconds']:.2f}s dump"
             if shared.get("available")
             else "refused"
         )
-        + f"; judge {one_at_a_time:.2f}s one at a time against {batched:.2f}s batched"
+        + f"; a candidate at k=40 {block['per_candidate']['40']['after']:.3f}s "
+        f"against {block['per_candidate']['40']['before']:.3f}s"
     )
     return block
 
@@ -1462,6 +1601,7 @@ def _spread(values: list) -> dict:
 
 __all__ = [
     "ARMS",
+    "BENCH_K",
     "BENCH_KINDS",
     "BENCH_MAPS",
     "BOOTSTRAP_DRAWS",
@@ -1469,6 +1609,7 @@ __all__ = [
     "DEEPEN",
     "DEEPEN_K",
     "DEFAULT_SEED",
+    "FIELDS",
     "FLAT",
     "NEAR_BAND",
     "OVER_BAND",
@@ -1492,17 +1633,20 @@ __all__ = [
     "Unit",
     "arm_readout",
     "bench",
+    "bench_table",
     "best_by_location",
     "build_plan",
     "compare",
     "contact_sheet",
     "deepen_places",
     "extrapolate",
+    "fields_dir",
     "flat_places",
     "make",
     "marginal",
     "merge",
     "mine_dir",
+    "per_candidate_at",
     "pictures_dir",
     "plan_breadth",
     "plan_deepen",

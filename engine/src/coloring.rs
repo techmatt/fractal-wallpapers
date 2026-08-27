@@ -953,17 +953,29 @@ pub fn paint(
     colormap: &Colormap,
 ) -> Result<Painted, String> {
     let mut painted = paint_untoned(view, family, maxiter, coloring, palette, colormap)?;
-    if palette.rolloff != Rolloff::None {
-        // Last, on the finished color and before anything averages it: rolling
-        // off after the resample would bend a highlight the resample had already
-        // blended into its neighbours.
-        painted.linear = painted
-            .linear
-            .par_iter()
-            .map(|&pixel| palette.rolloff.shade(pixel))
-            .collect();
-    }
+    painted.linear = toned(painted.linear, palette);
     Ok(painted)
+}
+
+/// The recipe's last stage, applied to a buffer of finished linear-light color.
+///
+/// Last, on the finished color and before anything averages it: rolling off
+/// after the resample would bend a highlight the resample had already blended
+/// into its neighbours.
+///
+/// Public, and called by `recolor` as well as by [`paint`], because a recolor of
+/// a dumped field has to be the render it came from **byte for byte**. It skipped
+/// this stage while every recipe curation renders through happened to carry
+/// `Rolloff::None`, which is a property of today's recipe rather than of the two
+/// paths — and the day one carried a knee, the two would have parted silently.
+pub fn toned(linear: Vec<[f64; 3]>, palette: &Palette) -> Vec<[f64; 3]> {
+    if palette.rolloff == Rolloff::None {
+        return linear;
+    }
+    linear
+        .par_iter()
+        .map(|&pixel| palette.rolloff.shade(pixel))
+        .collect()
 }
 
 fn paint_untoned(

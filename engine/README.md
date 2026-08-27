@@ -234,6 +234,19 @@ two refusals fires first. The failure being bought off is not one stale file —
 is thirty-two wrong candidates, every one recoloured off whichever field was
 dumped first under a shared name.
 
+**A recolor is the render, through EVERY stage of the recipe.** `recolor` used to
+call `coloring::shade` and stop, and `shade` ends at the colormap lookup — so the
+recipe's last stage, `Rolloff`, which acts on the colour rather than on the index
+into the map, was applied by `render` and not by `recolor`. Nothing caught it,
+because every recipe this project renders through carries `rolloff: none`, which
+is a fact about today's recipes and not about the two paths. `coloring::toned` is
+now the single owner of that stage and `paint` and `recolor` both call it. It
+matters more than it did: `curation.colorize.render` serves a candidate out of a
+dumped field wherever the coloring has one, so "a recolour is the render byte for
+byte" is load-bearing for the candidate ledger rather than only for exploration.
+`tests/test_modes.py` pins all four curves, each held to *moving* the picture so
+the test cannot pass by testing nothing.
+
 ## The one family that only draws pictures
 
 `fractional_multibrot` is `z ← z^d + c` at a **non-integer** `d`, on the
