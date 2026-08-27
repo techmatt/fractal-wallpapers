@@ -223,6 +223,41 @@ field mode amortises its dump over the operator's second pass, a composite has n
 pays two iteration passes, and the composite tail alone took the marginal rate from 0.8 to
 1.8 s/unit. Budget the second render too: the build leg cost about the same again.
 
+**A direct-trap unit is one render and not two**, because `autolevel.applies_to` is `field`
+and `composite` — a direct trap is a figure over a flat ground, its tone statistics describe
+the ground, and the operator is excluded at the site that decides. Four of
+`under_seen_modes`' nine modes are direct traps, so 224 of its 504 units skipped the
+operator entirely and 108 of the remaining 280 were actually levelled. Estimate a mixed
+sheet by kind, not by unit count.
+
+**The render pool is three workers at below-normal priority** — `CLAUDE.md`'s rule, and the
+priority half is now `engine.run`'s rather than a caller's. Measured on `under_seen_modes`,
+2026-08-27: the measure pass at six workers ran 297 units in **880 s** (2.96 s/unit wall);
+the same pass at three ran its 207 remaining units in **712 s** (3.44 s/unit). Two thirds
+of the workers for a sixth more per unit, which is what a leg that has to share a desktop
+should be paying. `label build` is serial and is one engine whatever the pool is.
+
+
+### A blind page is cut and then stripped
+
+The page renders three things that describe a picture rather than being it, and a sheet
+that must not editorialize has to lose all three: **`facts`** (the partition, the frame,
+`mode · colormap`), **`columns`** (the judge's three cutpoints, printed in the meta line)
+and the **caption** on each picture. `finished_source` writes them unconditionally, and
+there is no flag — so a blind sheet is cut normally and `sheet.jsonl` is rewritten with
+`facts: []`, `columns: {}` and empty captions afterwards.
+
+What that costs is nothing, and the reason is worth stating: `intake._finished_row` reads
+only the row's `join`, its `batch` and its `suggestion`, so the display fields are not part
+of any verdict. The `join` stays complete and untouched on every row, which is what keeps
+the ingest a join rather than a lookup. The manifest carries a `withheld` sentence saying
+what came off, because a page with no facts on it and a page whose facts were never cut
+look identical a month later.
+
+**The batch name is on the page too**, in the section line, and so is `order`. Neither is
+strippable and neither should be: they are what a labeler needs to know which sheet is in
+front of them. A batch named after the thing being tested is how a blind sheet stops being
+blind — `under_seen_modes` names a population, not a mode or a score.
 
 ## A rule answers the mostly-black frames, and nobody is asked again
 
