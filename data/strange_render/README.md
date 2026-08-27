@@ -52,6 +52,19 @@ leaves them in the export. It has happened once: the manufactured rare-colour dr
 2026-08-24 drew nine of its locations from this store's pinned set, and nine of its
 246 verdicts are in `labels/` and not here.
 
+**Forty rows in here are `smooth`, which this judge does not answer for.** They came
+in with the `rare_palette` batch, and `hunt.kind_of` routes `smooth` to
+`smooth_render` — every other mode is this store's. Originals are never modified, so
+they stay exactly where they are: what changed on 2026-08-27 is that
+`finished.check` now refuses a row whose mode routes elsewhere, so the writer cannot
+make another one, and `finished_train.population` derives the exclusion at the read
+rather than in the data. They cost this store's per-mode table a `smooth` row at 40
+verdicts and second place by P(human>=3) — 0.625, behind `exp_smoothing`'s 0.631 —
+and 7 of their 40 locations also carry a `smooth_render` row, which double-weights
+those places across the two stores. Pooled, they move `>=3` from 0.2670 to 0.2628 and
+`>=4` from 0.0636 to 0.0635. No render key of theirs is in both stores and no eval
+pin holds one, so the evaluation side was never touched.
+
 **What a registration does not say is in
 [`../batch_caveats.md`](../batch_caveats.md)**: how a live population was actually
 assembled, and what a rate quoted off it without that is wrong about. Three of this

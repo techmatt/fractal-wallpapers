@@ -1997,6 +1997,17 @@ one of a place. One of the four ruled rows was retired by it — the ruling sett
 whether failing a bar takes a row out of service, which is not the question the
 location rule asks — and a pass names any such row rather than skipping it.
 
+**The pass runs inside one collection at a time**, since 2026-08-27. The rule is per
+collection and always was — a group holding a run's `diagnostic` picture and a
+gallery seat of the same place is two collections agreeing about a location — but the
+pass read the store unscoped, and by the time gallery4 shipped that read found 28
+groups of which 27 were exactly that agreement. Running it as it stood would have
+retired 27 wallpapers the rule does not reach. Scoped, it found the one real repeat:
+`group#225` in `multibrot5`, two gallery4 seats of one place, `4758` retired behind
+`d0094` on Matt's ruling of 2026-08-27 (`P(>=4)` 0.159 against 0.015, and the pass's
+own `P(>=3)` ranking agrees). `curate repeats` still reads the whole store at once,
+which is what it is for.
+
 **A release can be wrong, and taking a row back adds to the record.** `rejection`
 stamps a released row with who rejected it, when, and against which bar and
 artifact; `verdict` stays `released`, the scores are untouched, nothing is
