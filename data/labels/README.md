@@ -42,11 +42,17 @@ is a location somebody looked at and did not judge; it is read past rather than
 counted, which is how a label is withdrawn.
 
 **A batch is registered before it has rows** (`batches.jsonl`). The registration
-says how the population was drawn and carries two flags: `score_unconditioned` —
-no model score anywhere in the selection — and `anchored` — the page served a
-head's own verdict prefilled, or ordered the rows by its score. Eval-eligibility
-is derived from the two and never stored, and a batch nobody registered fails
-closed to neither.
+says how the population was drawn and carries three fields. Two are independent
+facts, one about the draw and one about the page: `score_unconditioned` — no model
+score anywhere in the selection — and `anchored` — the page served a head's own
+verdict prefilled, or ordered the rows by its score. The third is not a fact about
+the draw at all but a pin: `eval_only` says a batch was bought as an instrument and
+may never train, and it outranks whatever the other two imply. Eval-eligibility is
+derived from all three and never stored — `eval_only or (score_unconditioned and
+not anchored)` — and a batch nobody registered fails closed to neither. Both
+shipped instruments, `blind_minibrot` and `blind_modes`, are eligible by the pin
+alone: neither draw was score-unconditioned, so the two flags on their own would
+put both of them train-side.
 
 **That fail-closed is an object, and a contradiction is worse than an omission.**
 `registry.UNREGISTERED` is what an unregistered batch reads as — not

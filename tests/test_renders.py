@@ -172,6 +172,45 @@ def test_spec_members_is_what_spec_of_actually_reads() -> None:
     )
 
 
+#: Every key `spec_of` hands the engine, and the keys of the palette object
+#: inside it. Written down because that object *is* the digest material behind
+#: every name in the render cache: a key renamed here is not one wrong picture,
+#: it is every cached picture and every dumped field renamed at once, and the
+#: files they used to be called are left beside them unread. `SPEC_MEMBERS` above
+#: is the other side of the same translation — what is read from the row, where
+#: this is what is written for the engine — and the two move independently.
+SPEC_KEYS = (
+    "schema",
+    "family",
+    "viewport",
+    "resolution",
+    "supersample",
+    "maxiter",
+    "coloring",
+    "palette",
+    "colormap",
+    "colormap_dir",
+    "output",
+)
+SPEC_PALETTE_KEYS = (
+    "gamma",
+    "cycles",
+    "phase",
+    "reverse",
+    "mirror",
+    "transfer",
+    "rolloff",
+)
+
+
+def test_no_spec_key_has_been_renamed_added_or_dropped() -> None:
+    """The names in `tests/test_curation_colorize.py` are digests of this object,
+    so they answer the same question with a hex string. This one names what moved."""
+    spec = renders.spec_of(a_row(), "out.jpg")
+    assert sorted(spec) == sorted(SPEC_KEYS)
+    assert sorted(spec["palette"]) == sorted(SPEC_PALETTE_KEYS)
+
+
 def test_the_two_halves_cover_every_spec_member_exactly_once() -> None:
     field, recolor = set(renders.FIELD_IDENTITY), set(renders.RECOLOR_MEMBERS)
     assert not field & recolor, "a member cannot be both field-side and recolour-side"

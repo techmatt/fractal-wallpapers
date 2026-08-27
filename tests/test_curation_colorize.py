@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+import contextlib
+from pathlib import Path, PurePosixPath
 
 import pytest
 
@@ -157,17 +158,28 @@ def test_an_attempt_killed_at_its_deadline_is_a_recorded_row_and_not_a_dead_run(
 # --------------------------------------------------------------------------- #
 # The field cache's identity.
 # --------------------------------------------------------------------------- #
-#: Three real places, and the field names the shipped cache holds them under.
-#: Recorded rather than derived, because the whole property is that the derivation
-#: may be rewritten and these must not move: `artifacts/curation/runs/*/fields/`
-#: is named by them, and a name that moved would re-dump every field this project
-#: has ever paid for while the old ones sat beside them unread.
+#: The colormap directory the names below are digested against, standing in for
+#: this machine's. `spec_of` reads the real one as an absolute path, so a name
+#: digested through it is a function of where the checkout happens to sit: the
+#: same field is one name here and another on either CI runner. That directory is
+#: a location rather than anything about the picture, so it is the one member
+#: held still for these pins; every other member is left free to move the name.
+DIGEST_COLORMAP_DIR = PurePosixPath("/pinned/data/palettes")
+
+#: Three real places, and the names this project's derivation gives their fields.
+#: Recorded rather than re-derived, because the whole property is that the
+#: derivation may be rewritten and these must not move: `artifacts/curation/runs/
+#: */fields/` is named by it, and a name that moved would re-dump every field this
+#: project has ever paid for while the old ones sat beside them unread. They are
+#: the derivation's output at [`DIGEST_COLORMAP_DIR`] rather than the literal file
+#: names on any one disk, so a member renamed, added or dropped still moves them
+#: and a `git clone` to a different directory does not.
 SHIPPED_FIELD_NAMES = (
     (
         {"kind": "mandelbrot"},
         {"center_re": "-0.5", "center_im": "0.0", "width": "3.0"},
         3000,
-        "38981183c194fb38",
+        "daa28f5f490237ca",
     ),
     (
         {"kind": "multibrot", "degree": 3},
@@ -177,15 +189,31 @@ SHIPPED_FIELD_NAMES = (
             "width": "4.056617606305728e-05",
         },
         23409,
-        "47af459a402683a0",
+        "ebdf1212526126e3",
     ),
     (
         {"kind": "julia", "degree": 2, "c": ["-0.4", "0.6"]},
         {"center_re": "0.1", "center_im": "0.2", "width": "0.5"},
         8000,
-        "9637d66376fed937",
+        "4371b0b3100432b2",
     ),
 )
+
+
+@contextlib.contextmanager
+def a_pinned_colormap_dir():
+    """Hold `spec_of`'s one absolute path still, so a digest names the field
+    rather than the checkout. Every name in this section goes through it — a
+    perturbation compared against a pinned base while itself reading the real
+    directory would differ for the wrong reason and pass whatever happened."""
+    from fractal_wallpapers.models import renders
+
+    original = renders.colormap_dir
+    renders.colormap_dir = lambda: DIGEST_COLORMAP_DIR
+    try:
+        yield
+    finally:
+        renders.colormap_dir = original
 
 
 def a_field_name(family, viewport, maxiter, changes=None) -> str:
@@ -203,10 +231,14 @@ def a_field_name(family, viewport, maxiter, changes=None) -> str:
         "mode": colorize.SMOOTH_MODE,
         "curve": colorize.CURVE,
     }
-    return renders.field_job_name(**{**call, **(changes or {})})
+    with a_pinned_colormap_dir():
+        return renders.field_job_name(**{**call, **(changes or {})})
 
 
 def test_the_shipped_field_names_have_not_moved() -> None:
+    """A field name is a digest of every field-side member, so this fails when
+    one of them is renamed, added, dropped or given a different default — which
+    is the whole reason to write the numbers down rather than derive them."""
     for family, viewport, maxiter, expected in SHIPPED_FIELD_NAMES:
         assert a_field_name(family, viewport, maxiter) == expected, family
 

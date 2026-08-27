@@ -1,4 +1,4 @@
-"""Batch registration: fail-closed, and eval-eligibility derived from two flags.
+"""Batch registration: fail-closed, and eval-eligibility derived from two flags and a pin.
 
 The registry answers one question — may anything measured on this population be
 read as a rate about the world? — and it answers it conservatively when nobody
