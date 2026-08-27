@@ -9,10 +9,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
+import unittest.mock
+from pathlib import Path
 
 import pytest
 
-from fractal_wallpapers import cli, engine, paths
+from fractal_wallpapers import cli, engine, paths, process_control
 from fractal_wallpapers.paths import anchors_file
 
 try:
@@ -158,6 +161,44 @@ def test_a_rejected_spec_surfaces_the_engine_s_complaint() -> None:
                 "output": "unreachable.png",
             }
         )
+
+
+# --------------------------------------------------------------------------- #
+# The priority the engine is started at.
+# --------------------------------------------------------------------------- #
+def test_every_engine_call_is_started_below_normal() -> None:
+    """The render pool's priority half, and it holds for calls nobody wrote a leg for.
+
+    Asserted on the spawn rather than on a running process: what a caller can get
+    wrong is forgetting to drop itself first, and this is the arrangement where
+    there is nothing to forget. Both `subprocess.run` sites are checked, because
+    the logged one is the path a bulk build takes and it is the one that runs for
+    hours.
+    """
+    calls = []
+
+    def spawn(command, **keywords):
+        calls.append(keywords)
+        raise subprocess.TimeoutExpired(command, 0.0)
+
+    for log in (None, Path("scratch") / "unwritten.log"):
+        calls.clear()
+        with (
+            unittest.mock.patch.object(subprocess, "run", spawn),
+            pytest.raises(engine.EngineTimeout),
+            engine.deadline(5.0),
+        ):
+            engine.run("render", {"schema": 1}, log=log)
+        assert calls, "the engine was never spawned"
+        assert calls[0]["creationflags"] == process_control.child_priority_flags()
+
+
+def test_the_priority_flag_is_a_windows_argument_and_nothing_elsewhere() -> None:
+    flags = process_control.child_priority_flags()
+    if process_control.IS_WINDOWS:
+        assert flags == subprocess.BELOW_NORMAL_PRIORITY_CLASS
+    else:
+        assert flags == 0
 
 
 # --------------------------------------------------------------------------- #
