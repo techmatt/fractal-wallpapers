@@ -1795,6 +1795,39 @@ Every number here is train-side and anchored: the batches are registered
 `eval_eligible: false`, they measure agreement with the incumbent, any rate off them
 is a ceiling, and a retrain moves the whole probability scale under all of it.
 
+### Nine modes the judge has barely seen, and the sheet that asks about them
+
+`gaussian_int` · `curvature` · `smooth_curvature` · `smooth_mean_angle` ·
+`smooth_trap_circle` · `direct_trap_lines` · `direct_trap_ring` ·
+`direct_trap_multiply` · `direct_trap_screen`. Everything the pipeline believes about
+these is a reading of `SCORING_HEAD`, which has seen almost no human verdict in any of
+them, and the readings that look like a verdict are not one: `gaussian_int` cleared 0
+of 332 at proven locations and `curvature` 0 of 1,604 in breadth, both at
+`P(>=4) >= 0.50`, which says nothing about whether the pictures are human 3s. Every
+one of the nine routes to `strange_render` — `hunt.kind_of` sends everything but
+`smooth` there — so the population is one sheet and one batch.
+
+**The material is not thin; the judgement is.** The ledger holds 14,415 rows across the
+nine and, after excluding the labelled, the person-rejected and anything on a pinned
+evaluation location, **630 to 894 distinct locations a mode**. `under_seen_modes` takes
+the top 56 of each by `P(>=4)`, one row per (location, mode), unfiltered and
+unstratified — the best material each mode owns rather than a band around a bar.
+
+**What the top of a mode actually looks like is the finding.** Even taking the whole
+ledger's best, the 56th row of a mode sits at a `P(>=4)` of **0.012 to 0.092**: the
+scored supply runs out long before the draw does, and five of the nine top out under
+0.90. At label geometry only **45 of the 504** rows reach 0.50, and the nine modes'
+means run 0.12 to 0.30. That is the incumbent's own opinion of its own best, and it is
+what makes the sheet evidence for a retrain rather than a demotion: no bar is read off
+it and none should be.
+
+**The geometry noise is smaller here than the calibration sheet measured.** Over the 396
+rows whose levelling was identical at both sizes, `P(>=4)` moves by mean **+0.011**, sd
+**0.065** — against `p_ge4_calibration_*`'s -0.009 / 0.087 — and rank is largely
+preserved, Spearman **0.915** over all 504. Not a contradiction: this draw spans the
+whole score range and most of its rows sit low, where the judge is confident, while the
+calibration sheet deliberately took a 0.35-wide band in the middle where it is not.
+
 **What the leg cost, measured.** 2026-08-22, RTX 2060 SUPER, hot tier: 22,630
 never-scored rows of those three ledgers in **3,363 s over twelve 2,000-row
 chunks**, one chunk a checkpoint, **0.149 s/row realized** against a 200-row
