@@ -98,11 +98,34 @@ number is not the body's rate and rescaling it needs the band populations, which
 are in the sidecar rather than in these rows. Read the bands; the pool is a
 convenience.
 
+## `under_seen_modes` was swept from position 270, and the sweep leaves no mark
+
+*Registry: `strange_render/batches.jsonl`. 504 rows = 9 modes x 56, one page,
+ordered by the head's `P(>=4)` descending.*
+
+The page's sweep accepts the head's suggested tier for every unlabeled row from
+the current position to the end, and it writes the tier alone. Nothing in the
+drop, the sheet or the stored row says which button produced a verdict — the
+stored `suggested` is the only column that can disagree with `score`, so a row
+where they differ was adjudicated and a row where they match may be either.
+**161 of these 504 rows carry an override; the last of them is at position 269,
+and all 235 rows after it agree with the suggestion exactly.** Read the first 269
+as human and the rest as the head's own decode restated.
+
+Two consequences. The prefix is not half the draw at random: the page is ordered
+by score, so positions 1-269 are the 269 highest-`P(>=4)` rows of the whole sheet
+and each mode contributes its own top — 14 rows for `direct_trap_lines`, 51 for
+`smooth_mean_angle`. Any per-mode rate off this batch is a rate at that mode's
+top and is a ceiling twice over. And the suffix's tier distribution is the head's:
+the head suggested no 1 anywhere on this sheet, so all 12 of the batch's 1s are
+inside the prefix and the pooled `>=3` rate over all 504 is diluted by 235 rows
+nobody judged.
+
 ---
 
 ### Reading this file from code
 
 Nothing parses it. It is prose beside the registries on purpose: a caveat that a
-reader has to obey is a caveat a reader has to *read*, and encoding these four as
+reader has to obey is a caveat a reader has to *read*, and encoding these five as
 flags would invite a downstream check to satisfy the flag and skip the paragraph.
 The registration flags stay the two questions they have always been.

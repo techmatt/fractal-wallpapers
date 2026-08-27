@@ -435,6 +435,33 @@ ceiling is a misread file and the import refuses it; a row cast here is held to
 `finished.SCALE`. Which is why 145 of the strange store's rows are tier 4 and not
 one of them was imported.
 
+### A swept row and an agreeing verdict are the same row afterwards
+
+The sweep is the only path by which a suggestion becomes a label, and it writes
+`scores[unit] = row.suggestion` — the *tier*, with nothing beside it. So the drop
+carries `{"u0137": {"score": 3}}` whether a person looked at that picture and
+agreed or accepted it from a hundred rows away, `intake.rows_of` stamps one
+`recorded_at` on the whole ingest, and the stored row's `suggested` is the only
+column that can disagree with `score`. **A row where they differ was adjudicated;
+a row where they match is not evidence about the head**, and no count of
+agreements read off a swept sheet is an agreement rate.
+
+What survives is a bound, and it is worth taking because it is free. The sweep
+fills unlabeled rows from the current position **to the end** and never
+overwrites, so on a page a labeler walked top-down the swept rows are a
+contiguous **suffix**. The last position carrying an override is therefore a
+floor on the hand-cast prefix, and every row after it is indistinguishable from a
+default. On `under_seen_modes` that is position 269 of 504: 161 overrides, none
+below 269, and all 235 rows after it agreeing exactly. A page ordered by a score
+makes the prefix the head's own top, which is the population a statistic about
+the head wants anyway — and it makes the suffix's tier distribution the head's
+rather than a person's, so a sheet whose head never suggests a 1 comes back with
+every 1 it holds inside the prefix.
+
+The fix, when a session needs to be able to tell them apart, is a second sheet
+or a second pass and not a flag: nothing in the drop, the sheet or the store
+records which button produced a tier.
+
 ### Reading a labelled batch back afterwards
 
 An ingested row carries the place and the verdict, and deliberately not the facts the
