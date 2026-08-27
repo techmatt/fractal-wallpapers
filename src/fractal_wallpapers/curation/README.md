@@ -1262,6 +1262,42 @@ modes a census says are short of seats. `deficient_modes` counts a seat as a
 distinct location and not a clearing candidate, because a collection seats a
 location once.
 
+**The two draws take their own width, because they are priced apart.** `--near-width`
+overrides `--width` for the near band alone. It usually should: a near-band location
+holds its mode and pays one dump over the whole set, and a breadth location cycles the
+roster and pays one per mode, so the width at which the marginal candidate stops paying
+is not one number.
+
+**What two runs measured**, `dc1` (90 min, 12,869 candidates, 323 locations) and `dc2`
+(4 h 55 m, 48,994 candidates, 2,108 locations), both on 2026-08-27:
+
+* **Cost.** 0.417 s a candidate on six cycled field modes at k=40, 0.356 s on three at
+  k=20, **0.260 s on the near band** where the mode is held. Per-candidate dump by mode
+  in breadth: stripe .378 · gaussian_int .285 · curvature .268 · tia .147 ·
+  exp_smoothing .147 · **smooth .056** — stripe's field costs seven times smooth's to
+  dump, which is why it is the dearest field mode to draw.
+* **Yield a location at k=40**, primed at 0.90: near band **46.3%**, breadth 13.8%.
+  Near-band ore is 26.5 s a newly primed location against breadth's 101 s.
+* **The per-candidate clear rate is flat in k out to 40.** Palettes are exchangeable at
+  a place and the palette head's ordering does nothing a depth run can see.
+* **The head's rank decays shallowly with depth.** Ten equal-count bands of each
+  partition's never-opened pool, 1,845 locations at k=20: fitted odds ratio **0.842 a
+  band**, .192 at the top and .048 at the bottom, a 4.0x spread end to end and a 2.4x
+  ratio between the top four bands and the bottom six. Weighting the draw toward the top
+  half pays; abandoning the bottom half does not.
+* **`curvature` and `gaussian_int` are dead in breadth** — 3 clears at 0.50 in 3,212
+  candidates, 0 at 0.90 — and `gaussian_int` cleared nothing in 332 further candidates
+  at locations already over the seating bar. `tia` needs depth: level with `smooth` at
+  k=40 and less than half of it at k=20.
+* **Disk.** 163-186 KB a picture, about 2 MB a cached field, 64 fields kept. `dc2` used
+  9.7 GB against a 9.6 GB projection.
+
+**What the winner's-curse read said**, `curate shrinkage` on `dc1`, 200 re-renders over
+60 locations in 15 minutes: the mean drop in `P(>=4)` on a second reading is **-0.003 at
+k=1** — indistinguishable from zero, which is what an unbiased judge gives when nothing
+was selected — and **-0.042 at k=40**, with two thirds of winners falling. Prime rates
+at k=40 are overstated by about **1.4x at both bars**. Quote a raw prime count as raw.
+
 ## `curate shrinkage` — what the winner of a wide set loses on a second look
 
 A location is PRIMED on the **maximum of k noisy readings**, so a prime rate
