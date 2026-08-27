@@ -8,7 +8,7 @@ split.py          the seeded draw over those groups, shipped as data
 pins.py           the evaluation pin, asserted on the location coordinate
 finished.py       the finished-render stores: one per judge, keyed on the picture
 sheets.py         THE generator: two row sources, one cut, one manifest, one page
-server.py         serve one sheet, to one browser, on one exclusively-bound port
+server.py         serve one sheet, to one browser, on the first free port at or above
 page.html         the page: the row's pictures, the sheet's tiers, one export
 export_control.js what an export is called and where it goes — one file, every page
 intake.py         THE ingest: a page's export resolved against its sheet, into either store
@@ -58,12 +58,25 @@ artifacts/twin_top_slices           location · twin_top_slices · 96 units
 saves to.
 
 **2. Serve it.** One sheet, one port, and pick the port explicitly whenever more than one
-sheet is open — the bind is exclusive, so a clash fails loudly instead of serving half the
-images out of the other sheet's directory:
+sheet is open:
 
 ```
 fractal-wallpapers label serve --sheet artifacts/graduation_sheet --port 8021
 ```
+
+**`--port` is where it starts looking, not where it lands.** The bind is exclusive — a
+server will not co-host a port another process holds, so no sheet ever serves half its
+images out of another sheet's directory — but a clash does **not** fail. `server.serve`
+walks upward from the port it was given and prints the one it got. So a sheet asked for
+on 8020 while a forgotten server from another session still holds it comes up on 8021,
+and a second sheet asked for on 8021 comes up on 8022. Both are correct; neither is where
+you asked.
+
+Which makes the printed line the only thing that says where a sheet is, and reading the
+port back off your own command line the way to hand somebody the wrong sheet. That is not
+hypothetical: it happened cutting `p_ge4_calibration_*`, where 8020 was still held by a
+`run10_novel_ground` server nobody had stopped, and the URL the launch command implied was
+serving a location sheet from a different batch on the same host.
 
 It runs until stopped, so launch it in the background. It prints, flushed so a redirected
 log shows it immediately, the URL and what it is serving:
@@ -169,6 +182,47 @@ applying it to the deep sheet above underestimated by **6.9×** — the steering
 was measured on were shallow, gate-passing stock. Scale off a *built sheet* of similar
 material instead, and when the material is deep or ungated, budget an hour per
 hundred rows.
+
+### Cutting a finished-render sheet out of the candidate pool
+
+The pool in [`curation.candidate_ledger`] is 22,029 pictures that already exist, which
+reads like a sheet nobody has to render. It is not, and three things are worth knowing
+before estimating one.
+
+**A sheet is cut for a KIND, and the kind names the store.** `finished_source` takes one
+head and every verdict on that page lands in that head's store, so a population spanning
+both kinds is **two sheets and two batches**, never one page. `p_ge4_calibration_*` is the
+case: mode `smooth` is the smooth store, every other mode is the strange one, and a draw
+banded across both had to be cut, registered, served and ingested twice.
+
+**`--reuse-renders` misses every pool row, and it is not a near miss.** Candidates are
+rendered at 640x360 ss2 and a finished sheet serves 1280x720 ss2; the cache keys a picture
+by a digest of the whole engine spec, so the geometry alone makes it a different name.
+Checked over all 1,144 rows eligible for that draw: **zero hits**, in both crop caches. The
+render cache holds the *corpus* renders — 5,180 smooth and 3,322 strange — and nothing else.
+
+**A levelled row cannot be re-served by naming its recipe.** The ledger keeps
+[`curation.recipes.stamp_of`]'s reduced stamp, which deliberately drops `acted` because
+whether the operator fired is a function of the picture rather than an input to it. So the
+row cannot say whether it was levelled, and a sheet that rendered it through the base map
+would serve a different picture under the same identity. The way through is
+[`curation.manufacture`]'s: render at sheet geometry through `colorize.render` with
+`level=True`, which writes `<stem>.leveled` beside the picture, then point the plan unit at
+that directory by name. The plan's own `leveled` key is the whole mechanism.
+
+**So it is two renders a unit, and the second one is the check.** The measure pass makes the
+picture and the levelled map; `label build` renders again from the plan; and comparing the
+two byte for byte is the only thing that proves the page serves what was measured. On
+`p_ge4_calibration_*` that held on **246 of 246 rows, worst score gap 0.0** — which also
+re-proves `field_sharing`'s recolour-is-the-render claim on a population outside its own
+tests, since the measure pass recoloured a dumped field and the build did a full render.
+
+**Measured cost**, 2026-08-26, six workers, post-`field_sharing`: 246 units at 1280x720 ss2
+in **654 s**, 2.7 s/unit wall and 13.3 s/unit of work. The mix is what moves it — a
+field mode amortises its dump over the operator's second pass, a composite has no field and
+pays two iteration passes, and the composite tail alone took the marginal rate from 0.8 to
+1.8 s/unit. Budget the second render too: the build leg cost about the same again.
+
 
 ## A rule answers the mostly-black frames, and nobody is asked again
 

@@ -1593,6 +1593,27 @@ the operational one: **all seating reads one regime now, and nothing reads acros
 A number carried from a 640x360 read is amended before it is compared, never
 compared as it stands.
 
+**The RENDER judge has no such property, and the number is five times worse.**
+Nothing had ever measured it: `SCORING_HEAD` reads candidates at 640x360 ss2 and
+reads the pictures a person judges at the 1280x720 ss2 both corpora were collected
+at, and those two readings had never been put side by side. Cutting
+`p_ge4_calibration_*` did it for free — 246 pool candidates rendered again at label
+geometry through their own recipes, scored through the same shipped artifact. On
+the **133 rows whose levelling was identical at both sizes**, so that the only
+thing that moved was the geometry, `P(>=4)` shifts by a mean of **-0.009** and a
+standard deviation of **0.087**, and **61 of the 133 land in a different one of the
+three 0.10-wide calibration bands than they were drawn into**. Re-levelling at the
+new size adds to it rather than causing it: the 113 rows the operator acted on at
+sheet geometry spread 0.114, which is the 0.087 with about 0.07 more in quadrature.
+
+So the render judge is **unbiased and imprecise across regimes** — there is no
+correction to carry, because the mean is already zero, and there is no reading
+across either, because a single row's number moves by most of a band. Which is a
+sharper rule than the location head's: a candidate's 640x360 `P(>=4)` ranks a pool
+and must not be quoted as the score of the picture a person will see. A threshold
+that acts — a floor, a bar, a screen — has to act on the regime it was measured
+on, and `curation.floors`' stamps are what say which that is.
+
 **What the leg cost, measured.** 2026-08-22, RTX 2060 SUPER, hot tier: 22,630
 never-scored rows of those three ledgers in **3,363 s over twelve 2,000-row
 chunks**, one chunk a checkpoint, **0.149 s/row realized** against a 200-row
