@@ -25,8 +25,11 @@ def a_row(head: str = "strange_render", **changes) -> dict:
         "score": 2,
         "family": {"kind": "julia", "degree": 2, "c": ["-0.4", "0.6"]},
         "viewport": {"center_re": "0.1", "center_im": "0.2", "width": "0.5"},
-        "mode": "direct_trap_ring",
-        "mode_params": {"opacity": 0.3, "threshold": 0.05},
+        # The mode follows the head, because the store a row may enter is decided
+        # by its mode: `smooth` is the smooth judge's whole roster and every other
+        # mode is the strange judge's.
+        "mode": "smooth" if head == "smooth_render" else "direct_trap_ring",
+        "mode_params": {} if head == "smooth_render" else {"opacity": 0.3, "threshold": 0.05},
         "curve": "linear",
         "colormap": "twilight_shifted",
         "recipe_": finished.recipe(),
@@ -124,6 +127,40 @@ def test_the_pin_passes_when_nothing_touches_it(tmp_path, monkeypatch) -> None:
     finished.write_pin("smooth_render", [a_row("smooth_render", batch="blind_minibrot")], {})
     elsewhere = a_row("smooth_render", viewport={"center_re": "9", "center_im": "9", "width": "1"})
     assert finished.assert_pin_holds("smooth_render", [elsewhere])["ok"]
+
+
+def test_a_row_whose_mode_belongs_to_the_other_store_is_refused() -> None:
+    """The routing guard, planted from both sides.
+
+    Forty resolved `smooth` rows reached `strange_render` through the
+    `rare_palette` batch, where they inflated its per-mode tables and put a
+    non-strange mode second-highest in a store that does not answer for it.
+    Nothing rewrites those originals; this is what stops the next forty.
+    """
+    with pytest.raises(finished.FinishedError, match="routed to the smooth_render store"):
+        a_row("strange_render", mode="smooth", mode_params={})
+    with pytest.raises(finished.FinishedError, match="routed to the strange_render store"):
+        a_row("smooth_render", mode="tia", mode_params={})
+
+
+def test_the_guard_asks_the_router_rather_than_holding_its_own_answer() -> None:
+    """Two spellings of one routing rule agree until one of them is edited."""
+    from fractal_wallpapers.curation import hunt
+
+    for mode in ("smooth", "tia", "direct_trap_ring", "exp_smoothing"):
+        assert finished.routed_to(mode) == hunt.kind_of(mode)
+
+
+def test_the_guard_bites_at_the_writer_and_not_only_at_the_builder(tmp_path, monkeypatch) -> None:
+    """`append` is the other door into a store, and a checked row is checked there
+    too — otherwise a row built for one head could be appended to the other."""
+    monkeypatch.setattr(finished, "repo_root", lambda: tmp_path)
+    finished.register(
+        "strange_render", registry_module.Registration(batch="mode_sweep", method="a draw")
+    )
+    smooth = a_row("smooth_render", batch="mode_sweep")
+    with pytest.raises(finished.FinishedError, match="routed to the smooth_render store"):
+        finished.append("strange_render", [smooth])
 
 
 def test_a_batch_with_no_registration_cannot_be_written(tmp_path, monkeypatch) -> None:

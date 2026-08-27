@@ -201,6 +201,33 @@ def current_pass(rows) -> str | None:
     return ordered[-1] if ordered else None
 
 
+def by_collection(index: ServedLocations) -> list[tuple]:
+    """One index per collection the served set holds, in name order.
+
+    The population the one-wallpaper-per-location rule acts over is **one
+    collection**, and [`build`] already knows it — but a caller holding a whole
+    index has no way to cut it without reading the store a second time. This is
+    that cut, off the rows in hand.
+
+    A row whose `collection` is `None` is its own population rather than a member
+    of every one: nothing tracked carries that, and folding it into a named
+    collection would be this function guessing which.
+    """
+    seen: dict = {}
+    for place, row in enumerate(index.rows):
+        seen.setdefault(row.get("collection"), []).append(place)
+    return [
+        (
+            name,
+            ServedLocations(
+                locations=[index.locations[place] for place in places],
+                rows=[index.rows[place] for place in places],
+            ),
+        )
+        for name, places in sorted(seen.items(), key=lambda item: str(item[0]))
+    ]
+
+
 def repeats(
     index: ServedLocations | None = None, under=None, collection: str | None = None
 ) -> list[dict]:
@@ -248,4 +275,4 @@ def repeats(
     return sorted(out, key=lambda cell: (-len(cell["served"]), cell["group"]))
 
 
-__all__ = ["ServedLocations", "build", "current_pass", "repeats"]
+__all__ = ["ServedLocations", "build", "by_collection", "current_pass", "repeats"]

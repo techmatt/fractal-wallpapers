@@ -325,6 +325,13 @@ def retire_repeats(
     index over the tracked store feeding writes into a redirected one would stamp
     rows that store does not have.
 
+    **Scoped to one collection at a time**, because that is where the rule acts.
+    There are two of them — the runs' `diagnostic` pictures and the gallery
+    pass's — and a group holding one of each is two collections agreeing about a
+    location rather than one collection holding it twice. The unscoped read finds
+    those and is meant to; a pass that retired off it would have taken back
+    twenty-seven wallpapers the rule does not reach.
+
     Idempotent, and not by re-deriving the same answer: a retired row leaves the
     served set, so a second pass finds every group holding one wallpaper and has
     nothing to do. One pass is enough for the same reason — dropping rows can only
@@ -332,31 +339,34 @@ def retire_repeats(
     exactly its survivor.
     """
     index = served_locations.build(under=records.root())
-    cells = served_locations.repeats(index)
     order = _run_order()
     excused = exceptions()
 
     groups: list[dict] = []
     retired: dict[str, tuple[dict, dict]] = {}
-    for cell in cells:
-        ranked = sorted(cell["served"], key=_best_first(order))
-        survivor, losers = ranked[0], ranked[1:]
-        groups.append(
-            {
-                "group": cell["group"],
-                "partition": cell["partition"],
-                "runs": cell["runs"],
-                "survivor": survivor,
-                "retired": losers,
-            }
-        )
-        log(
-            f"[retire] {cell['group']} {cell['partition']}: keeping {survivor['key']} "
-            f"({survivor['head']} {_reading(survivor)}) over "
-            + ", ".join(f"{entry['key']} ({entry['head']} {_reading(entry)})" for entry in losers)
-        )
-        for entry in losers:
-            retired[str(entry["key"])] = (entry, survivor)
+    for collection, scoped in served_locations.by_collection(index):
+        for cell in served_locations.repeats(scoped):
+            ranked = sorted(cell["served"], key=_best_first(order))
+            survivor, losers = ranked[0], ranked[1:]
+            groups.append(
+                {
+                    "collection": collection,
+                    "group": cell["group"],
+                    "partition": cell["partition"],
+                    "runs": cell["runs"],
+                    "survivor": survivor,
+                    "retired": losers,
+                }
+            )
+            log(
+                f"[retire] {collection} {cell['group']} {cell['partition']}: keeping "
+                f"{survivor['key']} ({survivor['head']} {_reading(survivor)}) over "
+                + ", ".join(
+                    f"{entry['key']} ({entry['head']} {_reading(entry)})" for entry in losers
+                )
+            )
+            for entry in losers:
+                retired[str(entry["key"])] = (entry, survivor)
 
     per_run: dict[str, list[str]] = {}
     for key, (entry, _) in retired.items():
@@ -410,7 +420,12 @@ def retire_repeats(
 
     remaining = None
     if not dry_run:
-        remaining = served_locations.repeats(served_locations.build(under=records.root()))
+        settled = served_locations.build(under=records.root())
+        remaining = [
+            cell
+            for _collection, scoped in served_locations.by_collection(settled)
+            for cell in served_locations.repeats(scoped)
+        ]
 
     report = {
         "rejector": str(rejector),

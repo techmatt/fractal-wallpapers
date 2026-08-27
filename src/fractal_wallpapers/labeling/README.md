@@ -195,6 +195,14 @@ both kinds is **two sheets and two batches**, never one page. `p_ge4_calibration
 case: mode `smooth` is the smooth store, every other mode is the strange one, and a draw
 banded across both had to be cut, registered, served and ingested twice.
 
+Since 2026-08-27 that is enforced rather than remembered: `finished.check` asks
+`hunt.kind_of` which store a row's mode routes to and refuses the row if it is not the
+store being written. `rare_palette` is the batch that bought the guard — 40 of its
+resolved rows are `smooth` and sit in `strange_render`. They stay there, because an
+original is never modified; `finished_train.population` derives the exclusion at the
+read instead. The numbers are in
+[`data/strange_render/README.md`](../../../data/strange_render/README.md).
+
 **`--reuse-renders` misses every pool row, and it is not a near miss.** Candidates are
 rendered at 640x360 ss2 and a finished sheet serves 1280x720 ss2; the cache keys a picture
 by a digest of the whole engine spec, so the geometry alone makes it a different name.

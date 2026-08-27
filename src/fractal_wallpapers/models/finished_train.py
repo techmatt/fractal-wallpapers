@@ -323,12 +323,24 @@ def population(head_name: str) -> tuple[list[Picture], dict]:
     The evaluation side is the pin and only the pin. The selection slice is
     carved out of the training side afterwards, by a seeded draw over **places**
     so that a place's pictures cannot straddle the two.
+
+    A row whose mode routes to the *other* store never reaches any side. That is
+    derived here rather than repaired in the corpus — originals are never
+    modified — and the count is on the record rather than silent.
     """
     import random
 
     head_name = finished.head_of(head_name)
     known = finished.registry(head_name)
     rows = finished.resolved(head_name).scored()
+    # Eligibility is derived and never stored, so a row this store should not be
+    # holding is excluded at the read rather than rewritten in the corpus. The
+    # `rare_palette` batch put forty resolved `smooth` rows into `strange_render`
+    # before the writer's routing guard existed; the originals stay exactly where
+    # they are and this head does not train on a mode it does not answer for.
+    kept = [row for row in rows if finished.routed_to(row["mode"]) == head_name]
+    off_kind = len(rows) - len(kept)
+    rows = kept
     crops = renders.crop_dir(head_name)
 
     pictures, absent = [], []
@@ -370,6 +382,7 @@ def population(head_name: str) -> tuple[list[Picture], dict]:
             picture.side = SELECTION
 
     record = {
+        "off_kind_rows_excluded": off_kind,
         "share": SELECTION_SHARE,
         "seed": SELECTION_SEED,
         "drawn_over": "places on the training side, so a place's pictures cannot straddle",

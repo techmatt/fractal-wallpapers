@@ -52,6 +52,22 @@ classes and could not suggest a 4 while its store was already collecting them,
 and the retrain that widened it to four could only happen because the store had
 been free to grow the tier first. A capped store could never have collected it.
 
+## Which store a row belongs in is decided by its mode, at the writer
+
+`smooth` is the smooth judge's whole roster and every other mode is the strange
+judge's, and [`curation.hunt.kind_of`] is what says so — it is the router the
+pipeline already offers candidates through. [`routed_to`] asks that same function
+rather than restating the answer, and [`check`] refuses a row whose mode routes to
+the other store. A second spelling of a routing rule agrees with the first until
+one of them is edited.
+
+It is a guard and not a repair. Forty resolved `smooth` rows reached
+`strange_render` through the `rare_palette` batch before this existed, and they
+stay there: an original is never modified. What a store should not be holding is
+excluded where it is **read** — [`fractal_wallpapers.models.finished_train`]
+derives it at the training read, the same way eval-eligibility is derived and
+never stored.
+
 ## Eligibility, and why it is not the location store's rule
 
 Over there, a batch may be an instrument if its draw carried no model score and
@@ -210,6 +226,24 @@ def place_of(row: dict) -> tuple | None:
     return location_key(row.get("family") or {}, row.get("viewport") or {})
 
 
+def routed_to(mode: str) -> str:
+    """Which store a mode's rows belong in, asked of the thing that does the routing.
+
+    [`curation.hunt.kind_of`] is the router: everything the pipeline draws is
+    offered to one of these two judges by mode, and this is that same call rather
+    than a second copy of the answer. A second copy is precisely how a store ends
+    up holding a mode it does not own — the two spellings agree until one of them
+    is edited.
+
+    Imported at the call rather than at the top: this module is on the base
+    install's labeling path and the router sits in `curation`, which imports back
+    here.
+    """
+    from fractal_wallpapers.curation import hunt
+
+    return hunt.kind_of(mode)
+
+
 def check(head: str, row: dict) -> dict:
     """Return `row`, having proved it is a finished-render row for this judge."""
     if row.get("schema") != SCHEMA:
@@ -237,6 +271,14 @@ def check(head: str, row: dict) -> dict:
             "the mode with its own settings and its curve, the map, and every knob of the "
             "palette pass on the same line, or it is a verdict about a picture nobody can "
             "rebuild"
+        )
+    routed = routed_to(row["mode"])
+    if routed != head:
+        raise FinishedError(
+            f"mode {row['mode']!r} is routed to the {routed} store and this row is being "
+            f"written to {head}. A store that holds a mode it does not own inflates its own "
+            f"per-mode tables, double-weights the places that carry the mode in both, and "
+            f"reads as evidence about a population it is not from. Write it to {routed}."
         )
     return row
 
@@ -489,6 +531,7 @@ __all__ = [
     "render_row",
     "resolve",
     "resolved",
+    "routed_to",
     "row_dir",
     "row_paths",
     "split_recipe_path",

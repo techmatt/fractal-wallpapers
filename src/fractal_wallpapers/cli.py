@@ -3423,7 +3423,7 @@ def curate_repeats(args: argparse.Namespace) -> int:
 
 
 def curate_retire_repeats(args: argparse.Namespace) -> int:
-    """Retire every wallpaper past the best one at a location, collection-wide."""
+    """Retire every wallpaper past the best one at a location, inside each collection."""
     from fractal_wallpapers.curation import records, rejection
 
     if args.ephemeral:
@@ -7535,9 +7535,13 @@ def curate_commands(subcommands) -> None:
         help="retire every wallpaper past the best one at a location",
         description=(
             "One wallpaper per location acts at selection and cannot reach backwards, so "
-            "this applies it once to the collection that predates it. Each near-duplicate "
-            "group keeps the highest P(>=3) on its own head's scale — ties to the later run "
-            "— and every other wallpaper of that place is stamped rejected with the reason "
+            "this applies it once to the collection that predates it. It runs inside ONE "
+            "collection at a time, which is where the rule acts: a group holding a run's "
+            "diagnostic picture and a gallery seat of the same place is two collections "
+            "agreeing about a location, not one collection holding it twice. Each "
+            "near-duplicate group keeps the highest P(>=3) on its own head's scale — ties "
+            "to the later run — and every other wallpaper of that place is stamped "
+            "rejected with the reason "
             "`location_served` and the survivor's key on the row. Nothing is deleted, no "
             "score is touched, and no bar is read: a retired row is a second picture of a "
             "place, not a bad picture. Run `repeats` first to read what it will do."

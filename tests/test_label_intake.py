@@ -66,8 +66,11 @@ def a_sheet(directory, units: int = 3, head: str = HEAD, batch: str = "a_batch")
             "unit": f"u{index:04d}",
             "batch": batch,
             "suggestion": 2,
+            # A mode the sheet's own head owns: the store a row may enter is
+            # decided by its mode, so a strange sheet cannot carry `smooth`.
             "join": a_join(
-                viewport={"center_re": f"0.{index}", "center_im": "0.2", "width": "0.5"}
+                viewport={"center_re": f"0.{index}", "center_im": "0.2", "width": "0.5"},
+                mode="smooth" if head == "smooth_render" else "tia",
             ),
         }
         for index in range(1, units + 1)
@@ -221,7 +224,7 @@ def test_the_store_takes_the_corpus_scale_and_not_the_shipped_model_s(tmp_path, 
 
 def test_the_writer_itself_takes_a_four_for_the_strange_head(tmp_path, head_store) -> None:
     """The plainest statement of the same decision, at the writer."""
-    join = a_join()
+    join = a_join(mode="tia")
     join.pop("partition")
     row = finished.render_row(
         head="strange_render", batch="a_batch", score=4, recipe_=join.pop("recipe"), **join
