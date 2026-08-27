@@ -48,6 +48,28 @@ def set_background_priority() -> str:
     return "below-normal"
 
 
+def child_priority_flags() -> int:
+    """`creationflags` that start a child below normal priority. `0` off Windows.
+
+    The priority half of the render-pool rule, spelled where every other priority
+    class in this project is spelled. [`set_background_priority`] drops the
+    *calling* process and a child then inherits it — which works only for a leg
+    that remembered to call it, and the engine is launched from a dozen places
+    that did not. So the flag travels on the spawn instead: `engine.run` passes
+    it on every call, and a render started by a test, a one-off script or a
+    subcommand nobody thought about is below-normal anyway.
+
+    Nothing here for POSIX, and that is not an omission: `creationflags` is a
+    Windows argument, `subprocess` refuses a non-zero one elsewhere, and a POSIX
+    machine that needs a leg to yield has `nice(1)` in front of it.
+    """
+    if not IS_WINDOWS:
+        return 0
+    import subprocess
+
+    return subprocess.BELOW_NORMAL_PRIORITY_CLASS
+
+
 def bind_children_to_parent() -> str:
     """Put this process in a job object its children inherit, killed when it closes.
 

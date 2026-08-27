@@ -25,6 +25,7 @@ from functools import cache
 from pathlib import Path
 from typing import Any
 
+from fractal_wallpapers import process_control
 from fractal_wallpapers.paths import colormap_dir, repo_root
 
 __all__ = [
@@ -160,8 +161,17 @@ def run(subcommand: str, spec: dict | None = None, log: Path | None = None) -> A
     Inside a [`deadline`] block the call is killed rather than waited on. The
     child dies with the timeout — `subprocess.run` kills it before it raises —
     and the engine starts no grandchildren, so there is nothing left behind.
+
+    **Every engine this project starts is below-normal priority, and it is set
+    here** rather than by each leg dropping itself first. A leg that forgot made
+    the desktop unusable for as long as it ran, and forgetting is the normal
+    case: the engine is reached from subcommands, from tests and from one-off
+    scripts, and only two passes in the tree ever called
+    [`process_control.set_background_priority`]. The flag is a `creationflags`
+    value and is `0` off Windows, which is what `subprocess` wants there.
     """
     command = [str(engine_path()), subcommand]
+    priority = process_control.child_priority_flags()
     text = "" if spec is None else json.dumps(spec)
     remaining = _remaining()
     if remaining is not None and remaining <= 0:
@@ -177,6 +187,7 @@ def run(subcommand: str, spec: dict | None = None, log: Path | None = None) -> A
                 cwd=repo_root(),
                 check=False,
                 timeout=remaining,
+                creationflags=priority,
             )
             if done.returncode != 0:
                 raise RuntimeError(f"engine failed: {done.stderr.strip() or done.stdout.strip()}")
@@ -193,6 +204,7 @@ def run(subcommand: str, spec: dict | None = None, log: Path | None = None) -> A
                 cwd=repo_root(),
                 check=False,
                 timeout=remaining,
+                creationflags=priority,
             )
     except subprocess.TimeoutExpired:
         raise _expire(subcommand, time.monotonic() - started) from None

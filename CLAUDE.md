@@ -66,6 +66,15 @@ These were decided once, at the first commit, because each is expensive to rever
   text file opens it `newline="\n"`: `.gitattributes` normalizes what git
   stores, and this is what stops a Windows run dirtying every line of a file it
   rewrote.
+- **The render pool is three workers at below-normal priority.** That is the
+  standard shape of every leg that drives the engine — a measure pass, a sheet
+  build, a hunt, a mine — and it is a rule about this machine rather than a
+  tuning knob: more than three `fractal-engine.exe` at once, or any of them at
+  normal priority, makes the desktop unusable while the leg runs. `engine.run`
+  spawns below-normal by construction through
+  [`process_control.child_priority_flags`], so the priority half is not
+  something a caller has to remember; the worker count is the caller's and
+  three is the number.
 - **The base install stays torch-free on the `fetch-weights` path.** `pip install
   -e .` buys the engine, the walk, the supply engine and the labeling rig; the
   `models` extra is two gigabytes of CUDA wheels a clone that only renders should
