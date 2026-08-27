@@ -3197,6 +3197,64 @@ def curate_hunt(args: argparse.Namespace) -> int:
     return 0
 
 
+def curate_mine(args: argparse.Namespace) -> int:
+    """Plan a mine, run one, or redraw its autopsy sheet."""
+    from fractal_wallpapers.curation import mine
+
+    try:
+        if args.what == "sheet":
+            record = json.loads(mine.record_path(args.name).read_text(encoding="utf-8"))
+            print(f"{display_path(mine.contact_sheet(args.name, record))}")
+            return 0
+        if args.what == "merge":
+            print(json.dumps(mine.merge(args.name), indent=2))
+            return 0
+        if args.what == "bench":
+            report = mine.bench(seed=args.seed)
+            path = mine.mine_dir(args.name) / "bench.json"
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8", newline="\n")
+            print(json.dumps(report, indent=2))
+            print(f"{display_path(path)}")
+            return 0
+        if args.what == "plan":
+            _intended, shape = mine.build_plan(
+                mine.population(),
+                seed=args.seed,
+                rate=args.rate,
+                budget=args.budget,
+                k=args.k,
+                per_location=args.per_location,
+            )
+            print(json.dumps(shape, indent=2))
+            return 0
+        record = mine.run(
+            args.name,
+            seed=args.seed,
+            budget=args.budget,
+            rate=args.rate,
+            k=args.k,
+            per_location=args.per_location,
+            device=args.device,
+        )
+    except mine.MineRefused as refusal:
+        print(refusal)
+        return 1
+    except hunt_refused() as refusal:
+        print(refusal)
+        return 1
+    print(f"{display_path(mine.contact_sheet(args.name, record))}")
+    print(json.dumps({k: v for k, v in record.items() if k != "made"}, indent=2))
+    return 0
+
+
+def hunt_refused():
+    """[`hunt.HuntRefused`], reached without importing the module at parse time."""
+    from fractal_wallpapers.curation import hunt
+
+    return hunt.HuntRefused
+
+
 def _work_order(text: str) -> tuple:
     """`PARTITION=WEIGHT`, refused rather than guessed at."""
     if "=" not in str(text):
@@ -6177,6 +6235,7 @@ def curate_commands(subcommands) -> None:
     from fractal_wallpapers.curation import framing as framing_module
     from fractal_wallpapers.curation import gallery as gallery_module
     from fractal_wallpapers.curation import hunt as hunt_module
+    from fractal_wallpapers.curation import mine as mine_module
     from fractal_wallpapers.curation import run as run_module
     from fractal_wallpapers.curation import solve as solve_module
 
@@ -7061,6 +7120,79 @@ def curate_commands(subcommands) -> None:
     )
     hunting.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
     hunting.set_defaults(handler=curate_hunt)
+
+    mine_step = steps.add_parser(
+        "mine",
+        help="price a PRIMED location three ways, and profile what one candidate costs",
+        description=(
+            "A measurement pass over the unchanged render loop. A location is PRIMED when "
+            "it holds at least one candidate the render judge scores at or above the bar, "
+            "derived at read time off the score sidecar and stored in no row. Three arms "
+            "are woven together so a budget that runs out truncates all of them alike: "
+            "DEEPEN adds palettes at a place that already showed something, holding the "
+            "frame and the mode, and reports what the k-th palette is worth; "
+            "BREADTH-RANKED opens never-opened admitted locations top-down on the location "
+            "head's rank WITHIN partition, never pooled across one; BREADTH-FLAT opens "
+            "them with no quality conditioning, matched to the ranked arm's per-partition "
+            "counts, and is the base rate that says whether the rank bought anything. "
+            "Candidates land as candidates land and `merge` folds them into the ledger, "
+            "and a stopwatch on each stage lands beside them."
+        ),
+    )
+    mine_step.add_argument(
+        "what",
+        choices=["plan", "run", "merge", "bench", "sheet"],
+        help="print the plan and render nothing, run the mine, merge its rows into the "
+        "ledger, price the loop against the cheaper shapes it could have had, or redraw "
+        "the autopsy sheet",
+    )
+    mine_step.add_argument(
+        "--name",
+        required=True,
+        help="what to call this mine. Its rows, its pictures, its profile and its record "
+        "live under it, and `merge` names it again",
+    )
+    mine_step.add_argument(
+        "--budget",
+        type=float,
+        default=mine_module.BUDGET_SECONDS,
+        metavar="SECONDS",
+        help=f"how long the mine may spend RENDERING (default "
+        f"{int(mine_module.BUDGET_SECONDS)}). Enforced at the candidate boundary",
+    )
+    mine_step.add_argument(
+        "--rate",
+        type=float,
+        metavar="SECONDS",
+        help="seconds a candidate, measured on THIS mine's target population, which is "
+        "what sizes the arms. Required by `plan` and `run` and by nothing else. Take it "
+        "off a short run first and pass the figure that run reported — a rate carried in "
+        "from another pass prices another population",
+    )
+    mine_step.add_argument(
+        "--k",
+        type=int,
+        default=mine_module.DEEPEN_K,
+        metavar="COUNT",
+        help=f"how many fresh palettes the DEEPEN arm offers one location (default "
+        f"{mine_module.DEEPEN_K}). Wide enough that the marginal clear rate can die",
+    )
+    mine_step.add_argument(
+        "--per-location",
+        type=int,
+        default=mine_module.PER_LOCATION,
+        metavar="COUNT",
+        help=f"how many candidates a breadth arm gives one location (default "
+        f"{mine_module.PER_LOCATION}), the same on both so they differ only in the draw",
+    )
+    mine_step.add_argument(
+        "--seed",
+        type=int,
+        default=mine_module.DEFAULT_SEED,
+        help=f"the seed every draw here is taken under (default {mine_module.DEFAULT_SEED})",
+    )
+    mine_step.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
+    mine_step.set_defaults(handler=curate_mine)
 
     rejecting = steps.add_parser(
         "reject",

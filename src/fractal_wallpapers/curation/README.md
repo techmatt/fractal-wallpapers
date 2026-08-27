@@ -1004,6 +1004,101 @@ process, so a draw seeded on `hash()` over a tuple holding a cell name is record
 as reproducible and is not — and the negative half of its range makes
 `numpy.random.default_rng` refuse outright. `hunt.seed_of` is sha256.
 
+## `curate mine` — what a PRIMED location costs, and by which route
+
+A hunt renders into a shortage the solve named. This asks the question one level
+up: **what does it cost to manufacture a place good enough to seat, and which
+route is cheapest?** It renders through the unchanged loop and puts a stopwatch
+on each stage, so the same run answers that and produces a cost profile.
+
+```
+src/fractal_wallpapers/curation/mine.py              the arms, the clock, the readout
+artifacts/curation/mine/<name>/rows.jsonl            ledger rows, appended as each lands
+artifacts/curation/mine/<name>/scores.jsonl          sidecar rows, likewise
+artifacts/curation/mine/<name>/profile.jsonl         one row a candidate: the stopwatch
+artifacts/curation/mine/<name>/pictures/<key>.jpg    the renders, named by recipe
+artifacts/curation/mine/<name>/mine.json             the record: plan, price, profile, arms
+artifacts/curation/mine/<name>/autopsy.html          primed and rejected, sorted by P(>=4)
+artifacts/curation/mine/<name>/bench.json            the loop against its cheaper shapes
+```
+
+```
+fractal-wallpapers curate mine run   --name pilot --rate 1.84 --budget 480   # measure the rate
+fractal-wallpapers curate mine merge --name pilot                            # fold into the ledger
+fractal-wallpapers curate mine run   --name m1 --rate <measured> --budget 7200
+fractal-wallpapers curate mine plan  --name m1 --rate <measured> --budget 7200   # renders nothing
+fractal-wallpapers curate mine bench --name m1     # price the loop's alternatives
+fractal-wallpapers curate mine sheet --name m1     # redraw the autopsy page
+```
+
+**PRIMED is derived at read time and stored in no row.** A location is primed
+when it holds at least one candidate whose render-judge `P(>=4)` clears the bar.
+`mine.primed` takes the bar as an argument and the record reports every arm at
+two of them, because a judge retrain moves every probability and a boundary
+written beside the candidates would need a migration to follow it.
+
+**Two bars, because the prompt's and the code's disagree.** `solve.Q4_BAR` is
+`floors.RELEASE_ADVISORY` at **0.50**, and that is what the seating stage counts
+against today. This module reports there and at **0.90**, and the difference is
+not cosmetic: it is a factor of four in how many locations the same candidates
+prime.
+
+**Three arms, woven rather than concatenated.** Each arm's j-th candidate is
+placed at `(j + 0.5) / share` and the whole plan sorted on that, so every prefix
+holds the arms in their intended proportion — a mine killed at any point has
+spent its budget the way a mine that finished would have. Which is not a nicety:
+the flat arm is the ranked arm's only control, and a concatenated plan that ran
+out would have bought the treatment and none of the control.
+
+**The plan is 35% longer than the budget prices it at** (`PLAN_HEADROOM`). The
+budget is what stops a mine; the plan is only what it stops in the middle of, and
+a plan sized exactly to a measured mean stops the mine early whenever the mean
+came in high — which it does, because every partition's median is under half its
+mean. The surplus is never started and costs nothing.
+
+**The rate is measured on the mine's own target population and is required.**
+`run` refuses without `--rate`. A rate carried in from another pass prices another
+population; the recommended shape is a short run first, then its measured figure.
+
+**The two breadth arms differ in the draw and in nothing else.** Same
+`per_location`, same `hunt.modes_for` roster, same `hunt.Stratifier` on the same
+seed, matched on partition by construction, and no location in both. The ranked
+arm sorts on the location head's `P(>=3)` **within** a partition and never across
+one; a location the sidecar cannot score sorts last rather than being dropped, so
+both arms draw from the same pool.
+
+**The comparison is stratified and its interval is a cluster bootstrap.** Pooled
+is reported and is not the answer: matching is a property of the plan, realised
+counts drift, and a pooled rate over drifted counts mixes the arms' difference
+with the partitions'. `mine.compare` reports a Mantel-Haenszel weighted mean of
+the per-partition differences at weights `n_B * n_C / (n_B + n_C)`, with a
+percentile interval resampling **locations** inside partition inside arm — a
+location is the unit that was drawn and its candidates are not independent.
+
+**The DEEPEN arm holds the mode and moves the palette alone**, at the mode its
+best incumbent was drawn in, and it is offered no map that place already carries
+in that mode. It draws from two bands reported apart: `[0.50, 0.90)`, the only
+band a palette can *convert*, and `[0.90, ...]`, which can only say what a further
+palette is worth where one already cleared. The near band is planned first, so a
+truncated arm keeps the deliverable and loses the reference.
+
+**`merge` is separate and idempotent**, for `curate hunt merge`'s reason: the
+ledger is rewritten whole on every upsert.
+
+**What one mine measured**, `mine1` on 2026-08-26: 5,684 candidates in 7,169 s, at
+**1.26 s a candidate**. Seconds per PRIMED location at 0.90 — deepen a near-band place
+**38.7 s**, ranked breadth with deepening **114.6 s**, ranked breadth alone **143.9 s**,
+flat breadth **593.3 s**. The ranked arm beats the flat one by a stratified **+1.66
+points** at 0.90 (95% CI [+0.21, +3.23]) and renders 1.6x cheaper besides.
+
+**The clock is one thing: render, 97.2% of it.** Judge 1.5%, colour read 1.1%, row
+write 0.15%, Python 0.06%. Inside the render, **the autolevel second pass is 46% of the
+whole mine** — 47.7% of candidates level, and levelling is a second full render at the
+same geometry. A dumped field recoloured through another map costs **0.037 s** against
+**1.26 s** for the render that made it, and the recoloured picture is **byte-identical**;
+`curate mine bench` measures that, and an engine crossing that renders nothing costs
+**0.0053 s**, so the Python-to-Rust boundary is not where anything went.
+
 ## What a pass puts in the history, and what it puts beside it
 
 **Everything a pass tracks scales with `n`; nothing tracked scales with the
