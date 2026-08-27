@@ -43,9 +43,25 @@ used to be a third of the measurement and is now a 256-entry table, which is exa
 because the input is `uint8` (`palettes.space._srgb_to_linear`). Before the table the
 same three release pictures measured 1.42–1.48 s, so the rate was 0.39–0.43 s/Mpx.
 The application is size-independent, because it works on the stops rather than on
-pixels. What the operator really costs is the *second render*: on the release rows
-profiled so far it acted on 42% of them, and an acting row pays a full second pass at
-release size.
+pixels.
+
+**The second pass is a colormap swap over the same field**, which is why
+`curation.colorize.render` routes it through the shared field wherever the mode
+has one: the spec is identical but for `colormap_dir`, so on a `field` coloring
+the operator's second pass costs a `recolor` (0.04 s at candidate size) rather
+than a second iteration pass. On a composite, the modulate and the direct traps
+there is no field to dump and it is still a full second render. On the release
+rows profiled so far the curve acted on 42% of them, and on curation candidates
+on 47.7%.
+
+**Which leaves the measurement as the operator's own cost, and on a shareable
+mode it is now the larger half.** A candidate whose colouring is a 0.04 s lookup
+pays about 0.15 s to be *read* — a JPEG decode and an Oklab pass in Python, over
+a picture the engine had in memory as linear light a moment earlier and threw
+away. That is the shape of the next optimization here and it is written down
+rather than taken: the engine would have to report the three statistics
+`tone_stats` derives, at which point the operator would read a number instead of
+a picture.
 
 **Which colorings a run may draw is a function, not a rule each site remembers.**
 The engine's catalog tiers every named mode, and this side reads that tiering at

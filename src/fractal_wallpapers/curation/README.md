@@ -1004,6 +1004,75 @@ process, so a draw seeded on `hash()` over a tuple holding a cell name is record
 as reproducible and is not — and the negative half of its range makes
 `numpy.random.default_rng` refuse outright. `hunt.seed_of` is sha256.
 
+## One field, many palettes — how a candidate is made
+
+**`colorize.render` is still THE one place a curation picture is made, and it now
+has two ways of making one.** Which one serves a candidate is not a caller's
+decision and no caller can see it:
+
+* a **field** coloring — seven of the eighteen production modes — is dumped once
+  per `(location, mode)` into the unit of work's own `fields/` directory, and
+  every palette at that pair is an `engine recolor`: a colormap lookup over an
+  array on disk, with no iteration behind it;
+* a **composite**, the **modulate** and the **direct traps** have no single scalar
+  field, the engine refuses to dump one, and those take the full render they
+  always did. The refusal is remembered against the mode, so a mine that draws
+  `threads` four hundred times pays for it once.
+
+A caller opts in by naming a `fields=` directory — `hunt.Maker` and every mine
+through it do, `colorize.Colorizer` uses the same directory its palette head's
+own recolours already lived in — and what it is opting into is *where the cache
+goes*, never *which path runs*. `colorize.sweep_fields` keeps the newest
+`FIELDS_KEPT` (64, about 200 MB at 3.5 MB a field) and `field_of` touches on the
+way past, so a field being spent on its tenth palette is not the oldest thing in
+the directory.
+
+**The recoloured picture is the rendered picture, byte for byte.** That is a test
+and not a claim: `test_a_recolour_is_the_render_byte_for_byte` renders every
+shareable mode on two planes through a folded map and a cyclic one, with the
+autolevel operator on, and compares file digests. Over thirty candidates the
+ledger already held, re-made through the new path: **30/30 recipe keys identical,
+30/30 pictures byte-identical, 24/30 judge scores bit-identical and the other six
+within 2.7e-7** — GPU inference noise over identical input bytes.
+
+Two things had to be right for that:
+
+* **The dump goes through `renders.spec_of`, not through a mode name.** A field
+  dumped by name carries the *catalogue's* curve into its record, and
+  `trap_circle` names `log` where curation renders through `linear` — so a
+  recolour that inherited the record's curve would be a different picture for
+  that one mode and for no other. The field's cache name (`renders.field_job_name`)
+  and the spec it is dumped from are held to being one derivation by a test.
+* **`engine recolor` applies the recipe's rolloff.** It used to call `shade` and
+  stop, which was the render for exactly as long as every recipe in this project
+  carried `rolloff: none` — a property of today's recipes rather than of the two
+  paths. `coloring::toned` is now the one owner of that stage and both halves call
+  it; `test_a_recolor_reproduces_the_render_through_every_stage_of_the_recipe`
+  pins all four curves.
+
+**The autolevel operator's second pass is a colormap swap over the same field**,
+so on a shareable mode it is a second *recolour* rather than a second iteration
+pass. That is where most of the saving lands, because 47.7% of candidates level.
+
+**What it is worth, measured by `curate mine bench`** on nine never-opened
+locations, eight maps each, the same location priced both ways:
+
+| k | field before | field after | saving | composite |
+|---|---|---|---|---|
+| 1 | 0.976 s | 0.673 s | 14.1% | no change |
+| 8 | 0.976 s | 0.217 s | 51.8% | no change |
+| 20 | 0.976 s | 0.178 s | 55.0% | no change |
+| 40 | 0.976 s | 0.165 s | 56.1% | no change |
+
+A bare recolour is **0.041 s and flat in maxiter** where the render that made it
+ranges 0.06–1.54 s. There is a saving even at k=1, and it is the autolevel pass
+alone; everything above k=1 is the dump amortising.
+
+**And on production's own mix**, `val2` against `mine1` at k=1, with the untouched
+code paths correcting for the population: **field colorings 42.7% cheaper a
+candidate** (54.0% on the 57% the curve fires on), **the whole loop 22.7%**. What
+cannot share a field is 44.5% of candidates and 64.1% of the clock.
+
 ## `curate mine` — what a PRIMED location costs, and by which route
 
 A hunt renders into a shortage the solve named. This asks the question one level
@@ -1017,6 +1086,8 @@ artifacts/curation/mine/<name>/rows.jsonl            ledger rows, appended as ea
 artifacts/curation/mine/<name>/scores.jsonl          sidecar rows, likewise
 artifacts/curation/mine/<name>/profile.jsonl         one row a candidate: the stopwatch
 artifacts/curation/mine/<name>/pictures/<key>.jpg    the renders, named by recipe
+artifacts/curation/mine/<name>/fields/<name>.f32     one dumped field a (location, mode),
+                                                     swept to 64 as the run goes
 artifacts/curation/mine/<name>/mine.json             the record: plan, price, profile, arms
 artifacts/curation/mine/<name>/autopsy.html          primed and rejected, sorted by P(>=4)
 artifacts/curation/mine/<name>/bench.json            the loop against its cheaper shapes
@@ -1085,19 +1156,29 @@ truncated arm keeps the deliverable and loses the reference.
 **`merge` is separate and idempotent**, for `curate hunt merge`'s reason: the
 ledger is rewritten whole on every upsert.
 
-**What one mine measured**, `mine1` on 2026-08-26: 5,684 candidates in 7,169 s, at
-**1.26 s a candidate**. Seconds per PRIMED location at 0.90 — deepen a near-band place
-**38.7 s**, ranked breadth with deepening **114.6 s**, ranked breadth alone **143.9 s**,
-flat breadth **593.3 s**. The ranked arm beats the flat one by a stratified **+1.66
-points** at 0.90 (95% CI [+0.21, +3.23]) and renders 1.6x cheaper besides.
+**What one mine measured**, `mine1` on 2026-08-26, before the field was shared:
+5,684 candidates in 7,169 s, at **1.26 s a candidate**. Seconds per PRIMED location at
+0.90 — deepen a near-band place **38.7 s**, ranked breadth with deepening **114.6 s**,
+ranked breadth alone **143.9 s**, flat breadth **593.3 s**. The ranked arm beats the
+flat one by a stratified **+1.66 points** at 0.90 (95% CI [+0.21, +3.23]) and renders
+1.6x cheaper besides. Its clock was one thing — render, **97.2%** of it — which named
+the cost and said nothing about it.
 
-**The clock is one thing: render, 97.2% of it.** Judge 1.5%, colour read 1.1%, row
-write 0.15%, Python 0.06%. Inside the render, **the autolevel second pass is 46% of the
-whole mine** — 47.7% of candidates level, and levelling is a second full render at the
-same geometry. A dumped field recoloured through another map costs **0.037 s** against
-**1.26 s** for the render that made it, and the recoloured picture is **byte-identical**;
-`curate mine bench` measures that, and an engine crossing that renders nothing costs
-**0.0053 s**, so the Python-to-Rust boundary is not where anything went.
+**The profile is eight stages now, and four of them are inside what used to be
+`render`.** `Stages` takes them off `colorize.render`'s own meter: `dump` (the
+iteration pass a shared field pays once a (location, mode)), `paint` (the colouring),
+`measure` (the autolevel operator reading the picture's tone, in Python), `repaint`
+(the operator's second colouring). `render` is kept as their sum and is derived, never
+measured beside them.
+
+**They are timed on `perf_counter` and not on `monotonic`.** `time.monotonic` is
+`GetTickCount64` on Windows: 15.6 ms of resolution, which was invisible against a
+1.26 s render and is half a stage now that a recolour is 31 ms.
+
+**A validation mine against `mine1`'s own mix.** The two runs draw different
+locations, so `composite`, `direct` and `modulate` — code paths this change does not
+touch — are the control that prices the population, and the `field` cells are read
+against them.
 
 ## What a pass puts in the history, and what it puts beside it
 

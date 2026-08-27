@@ -104,6 +104,11 @@ RECORD_NAME = "hunt.json"
 #: rather than draw it a second time.
 PICTURES = "pictures"
 
+#: Where a unit of work's dumped fields live, under its own directory. One per
+#: (location, mode), and every palette at that pair is a recolour of it — see
+#: [`colorize.render`]. Swept down to [`colorize.FIELDS_KEPT`] as the run goes.
+FIELDS = "fields"
+
 #: The pool-wide refinement scan a hunt looks its frames up in.
 SCAN_UNIT = "frame_refit"
 SCAN_NAME = "scan.jsonl"
@@ -201,6 +206,11 @@ def record_path(name: str) -> Path:
 def pictures_dir(name: str) -> Path:
     """Where this hunt's candidate renders are, one per recipe key."""
     return hunt_dir(name) / PICTURES
+
+
+def fields_dir(name: str) -> Path:
+    """Where this hunt's dumped fields are, one per (location, mode)."""
+    return hunt_dir(name) / FIELDS
 
 
 def scan_path() -> Path:
@@ -708,7 +718,7 @@ class Maker:
     defined by not asking it anything.
     """
 
-    def __init__(self, name: str, device: str = "auto", log=print):
+    def __init__(self, name: str, device: str = "auto", log=print, fields: Path | None = None):
         from fractal_wallpapers.curation import colorize
         from fractal_wallpapers.palettes import groups as groups_module
 
@@ -718,6 +728,12 @@ class Maker:
         self.cyclic = colorize.cyclic()
         self.band = colorize.band()
         self.groups = groups_module.member_groups()
+        #: Where this maker's dumped fields go, so one (location, mode) iterates
+        #: once however many palettes are asked of it. Named by the caller
+        #: because a mine keeps its own subtree and a hunt keeps this one; what
+        #: is *in* it, and whether a given candidate can be served out of it, is
+        #: [`colorize.render`]'s decision and not a caller's.
+        self.fields = Path(fields) if fields is not None else fields_dir(self.name)
         self._judge = None
 
     def judge(self):
@@ -796,7 +812,7 @@ class Maker:
             "viewport": frame["viewport"],
             "maxiter": int(frame["maxiter"]),
         }
-        started = time.monotonic()
+        started = colorize.tick()
         picture, stamp = colorize.render(
             row,
             plan.mode,
@@ -805,12 +821,13 @@ class Maker:
             pictures_dir(self.name) / f"{key}.jpg",
             level=True,
             band=self.band,
+            fields=self.fields,
         )
         verdict = colorize.score_picture(self.judge(), picture)
         reading = dominance.of_picture(picture)
         return {
             "picture": picture,
-            "seconds": round(time.monotonic() - started, 3),
+            "seconds": round(colorize.tick() - started, 3),
             "verdict": verdict,
             "acted": bool((stamp or {}).get("acted")),
             "colour": candidate_ledger.colour_block(reading),
@@ -952,6 +969,7 @@ def run(
         "failed": 0,
         "stopped_for_budget": 0,
         "autolevel_acted": 0,
+        "fields_swept": 0,
     }
     spent = 0.0
     for at, intent in enumerate(intended, start=1):
@@ -1019,6 +1037,11 @@ def run(
             }
         )
         if counts["made"] % 25 == 0:
+            from fractal_wallpapers.curation import colorize
+
+            # A hunt gives one location a handful of candidates and opens
+            # hundreds of them, so its dumped fields are working and not record.
+            counts["fields_swept"] += colorize.sweep_fields(maker.fields)
             log(
                 f"[hunt] {counts['made']:,} made, {spent:.0f}s of {budget:.0f}s spent "
                 f"({spent / max(1, counts['made']):.2f}s each)"
@@ -1284,6 +1307,7 @@ __all__ = [
     "FRAMES_NAME",
     "FROM_HUNT",
     "PER_LOCATION",
+    "FIELDS",
     "PICTURES",
     "PRICE_AFTER",
     "PRIOR_SECONDS",
@@ -1307,6 +1331,7 @@ __all__ = [
     "drawable",
     "frames",
     "frames_path",
+    "fields_dir",
     "hunt_dir",
     "kind_of",
     "merge",

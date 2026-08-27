@@ -215,6 +215,58 @@ def test_a_dumped_field_recolors_to_exactly_the_render_it_came_from(tmp_path) ->
         assert again.read_bytes() == rendered.read_bytes(), name
 
 
+#: The four rolloffs, as a recipe states them. The identity first, so a failure
+#: says which of the three curves parted rather than only that one did.
+ROLLOFFS = (
+    {"kind": "none"},
+    {"kind": "soft_knee", "knee": 0.5},
+    {"kind": "reinhard"},
+    {"kind": "aces"},
+)
+
+
+@needs_engine
+def test_a_recolor_reproduces_the_render_through_every_stage_of_the_recipe(tmp_path) -> None:
+    """The recipe's LAST stage is the one a recolor could skip and nearly did.
+
+    A rolloff acts on the colour after the map rather than on the index into it,
+    which put it outside the shading pass a recolor calls — so a recolor was the
+    render for as long as every recipe in this project carried `none`. That is a
+    fact about today's recipes and not about the two paths, and curation's whole
+    candidate loop now leans on the two being one picture. Each curve is also
+    held to *moving* the picture, or this would pass by testing nothing.
+    """
+    from fractal_wallpapers.labeling import finished
+
+    field = tmp_path / "field.f32"
+    engine.dump_field(spec("stripe", field, supersample=2))
+    plain = None
+    for at, rolloff in enumerate(ROLLOFFS):
+        recipe = finished.recipe(rolloff=rolloff)
+        palette = {key: value for key, value in recipe.items()}
+        rendered = tmp_path / f"render{at}.png"
+        engine.render_report(
+            spec("stripe", rendered, supersample=2, palette=palette),
+        )
+        again = tmp_path / f"recolor{at}.png"
+        engine.recolor(
+            {
+                "schema": 1,
+                "field": str(field),
+                "colormap": ANCHOR["colormap"],
+                "palette": palette,
+                "output": str(again),
+            }
+        )
+        assert again.read_bytes() == rendered.read_bytes(), rolloff["kind"]
+        if at == 0:
+            plain = rendered.read_bytes()
+        else:
+            assert rendered.read_bytes() != plain, (
+                f"{rolloff['kind']} moved nothing, so this pins nothing"
+            )
+
+
 @needs_engine
 def test_recoloring_through_another_colormap_changes_the_picture(tmp_path) -> None:
     field = tmp_path / "stripe.f32"

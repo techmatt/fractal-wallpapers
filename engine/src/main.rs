@@ -429,7 +429,12 @@ fn recolor(spec_path: Option<&str>) -> Result<(), String> {
     let transform = spec.transform.unwrap_or(record.transform);
 
     let started = Instant::now();
-    let linear = coloring::shade(&field, transform, &spec.palette, &colormap);
+    // Through `toned` for the same reason `paint` is: a recolor is the render
+    // its field came from, and the recipe's last stage belongs to both.
+    let linear = coloring::toned(
+        coloring::shade(&field, transform, &spec.palette, &colormap),
+        &spec.palette,
+    );
     let [out_width, out_height] = record.resolution;
     let pixels = resample::downsample(
         &linear,

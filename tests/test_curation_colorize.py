@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from fractal_wallpapers import engine
@@ -425,3 +427,248 @@ def test_a_named_map_needs_no_candidate_set_and_no_anchor_in_the_pool(
     )
     assert row["candidates"] == []
     assert row["colormap"] == "Green Vault"
+
+
+# --------------------------------------------------------------------------- #
+# One field, every palette: the two paths, and that they are one picture.
+# --------------------------------------------------------------------------- #
+#: Where the pixel-exactness pin is taken. One place per plane, both dear enough
+#: that the two paths have arithmetic to disagree about and neither so dear that
+#: the pin costs a minute.
+EXACTNESS_PLACES = (
+    {
+        "family": {"kind": "mandelbrot"},
+        "viewport": {"center_re": "-0.75", "center_im": "0.1", "width": "0.05"},
+        "maxiter": 4000,
+    },
+    {
+        "family": {"kind": "julia", "degree": 2, "c": ["-0.4", "0.6"]},
+        "viewport": {"center_re": "0.1", "center_im": "0.2", "width": "0.5"},
+        "maxiter": 3000,
+    },
+)
+
+#: One folded map and one cyclic one, so the recolour is held to reproducing the
+#: render's **bake** as well as its arithmetic. A mirror applied on one path and
+#: not the other is the failure this pair would catch and a single map would not.
+EXACTNESS_MAPS = ("viridis", "twilight_shifted")
+
+
+def digest_of(path) -> str:
+    import hashlib
+
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()[:16]
+
+
+def shareable_modes() -> list:
+    return [mode for mode in engine.production_modes() if colorize.shareable(mode)]
+
+
+@needs_engine
+def test_the_shareable_roster_is_the_engine_s_field_colorings() -> None:
+    """Which modes can share a field is the engine's answer and not a list here: a
+    coloring that maps one scalar through the map has a field to dump and every
+    other shape does not."""
+    from fractal_wallpapers.models import renders
+
+    catalog = renders.catalog()
+    for mode in engine.production_modes():
+        assert colorize.shareable(mode) == (catalog[mode]["kind"] == colorize.FIELD_KIND), mode
+    assert shareable_modes(), "no production mode has a field, which cannot be true"
+
+
+@needs_engine
+@pytest.mark.slow
+def test_a_recolour_is_the_render_byte_for_byte(tmp_path) -> None:
+    """THE property leg one rests on. A recolour that were merely *close* would move
+    every judge score in the ledger without moving anything a reader could see, so
+    this is held to the file's bytes and not to the picture's look.
+
+    Over every shareable mode, both planes and both bakes, with the autolevel
+    operator on — which is where the two paths differ most, because on the shared
+    path the operator's second pass is a recolour of the same field rather than a
+    second iteration of it.
+    """
+    cyclic = colorize.cyclic()
+    band = colorize.band()
+    checked = 0
+    for at, row in enumerate(EXACTNESS_PLACES):
+        for mode in shareable_modes():
+            for colormap in EXACTNESS_MAPS:
+                plain = tmp_path / f"plain{at}-{mode}-{colormap}.jpg"
+                shared = tmp_path / f"shared{at}-{mode}-{colormap}.jpg"
+                _, plain_stamp = colorize.render(
+                    row, mode, colormap, cyclic, plain, level=True, band=band
+                )
+                _, shared_stamp = colorize.render(
+                    row,
+                    mode,
+                    colormap,
+                    cyclic,
+                    shared,
+                    level=True,
+                    band=band,
+                    fields=tmp_path / "fields",
+                )
+                assert digest_of(plain) == digest_of(shared), f"{mode}/{colormap} at {at}"
+                assert plain_stamp == shared_stamp, f"{mode}/{colormap} at {at}: the stamp"
+                checked += 1
+    assert checked == len(EXACTNESS_PLACES) * len(shareable_modes()) * len(EXACTNESS_MAPS)
+
+
+@needs_engine
+@pytest.mark.slow
+def test_a_coloring_with_no_field_is_served_by_the_render_path_without_being_asked(
+    tmp_path,
+) -> None:
+    """The fallback is automatic. A composite, a modulate and a direct trap have no
+    single scalar field; the caller offers the same field cache and gets the same
+    picture, made the way it always was."""
+    row = dict(EXACTNESS_PLACES[0])
+    cyclic = colorize.cyclic()
+    from fractal_wallpapers.models import renders
+
+    catalog = renders.catalog()
+    kinds = {catalog[mode]["kind"]: mode for mode in engine.production_modes()}
+    unshareable = [mode for kind, mode in sorted(kinds.items()) if kind != colorize.FIELD_KIND]
+    assert len(unshareable) == 3, f"the engine grew a shape: {sorted(kinds)}"
+    fields = tmp_path / "fields"
+    for mode in unshareable:
+        plain = tmp_path / f"plain-{mode}.jpg"
+        shared = tmp_path / f"shared-{mode}.jpg"
+        colorize.render(row, mode, "viridis", cyclic, plain, level=True, band=colorize.band())
+        colorize.render(
+            row, mode, "viridis", cyclic, shared, level=True, band=colorize.band(), fields=fields
+        )
+        assert digest_of(plain) == digest_of(shared), mode
+    assert not list(fields.glob("*.f32")), "a dump was written for a coloring that has no field"
+
+
+@needs_engine
+@pytest.mark.slow
+def test_one_location_and_mode_iterate_once_however_many_palettes_are_asked_for(
+    tmp_path, monkeypatch
+) -> None:
+    """The saving, stated as the property that buys it: k palettes at one (location,
+    mode) are one `dump-field` and k `recolor`s, and never a second iteration pass."""
+    row = dict(EXACTNESS_PLACES[0])
+    calls: list = []
+    real = engine.run
+
+    def counted(subcommand, spec=None, log=None):
+        calls.append(subcommand)
+        return real(subcommand, spec, log=log)
+
+    monkeypatch.setattr(engine, "run", counted)
+    maps = ["viridis", "magma", "twilight_shifted", "cividis"]
+    for colormap in maps:
+        colorize.render(
+            row,
+            "smooth",
+            colormap,
+            colorize.cyclic(),
+            tmp_path / f"{colormap}.jpg",
+            level=False,
+            fields=tmp_path / "fields",
+        )
+    assert calls.count("dump-field") == 1
+    assert calls.count("recolor") == len(maps)
+    assert calls.count("render") == 0
+    assert len(list((tmp_path / "fields").glob("*.f32"))) == 1
+
+
+def test_a_field_is_dumped_from_the_spec_a_render_is_built_from() -> None:
+    """A field dumped by mode *name* would carry the catalogue's own curve into its
+    record, and `trap_circle`'s is a log where curation renders through a linear.
+    Every later recolour would read the record's curve and make a picture nobody
+    rendered, so the dump goes through `renders.spec_of` like everything else."""
+    from fractal_wallpapers.models import renders
+
+    row = {"family": {"kind": "mandelbrot"}, "viewport": {}, "maxiter": 500}
+    spec = renders.spec_of(colorize.field_row(row, "trap_circle", colorize.CURVE), Path("x"))
+    assert spec["coloring"]["transform"] == colorize.CURVE
+    assert renders.catalog()["trap_circle"]["transform"] == "log", (
+        "trap_circle stopped being the mode whose catalogued curve differs from "
+        "curation's, so this test is pinning nothing — pick the one that does"
+    )
+
+
+def test_a_field_s_name_and_the_spec_it_is_dumped_from_are_one_derivation() -> None:
+    """The cache name is a digest of what the engine is told, so the row the dump
+    goes through has to be the row the name was taken over. Two derivations that
+    agreed today would be one field under two names the day one of them moved."""
+    from fractal_wallpapers.models import renders
+
+    row = {
+        "family": {"kind": "multibrot", "degree": 3},
+        "viewport": {"center_re": "0.0", "center_im": "0.0", "width": "3.0"},
+        "maxiter": 2500,
+    }
+    for mode in ("smooth", "tia", "trap_circle"):
+        by_hand = renders.field_job_name(
+            family=row["family"],
+            viewport=row["viewport"],
+            render={
+                "resolution": list(colorize.RESOLUTION),
+                "supersample": colorize.SUPERSAMPLE,
+                "maxiter": row["maxiter"],
+            },
+            mode=mode,
+            curve=colorize.CURVE,
+        )
+        assert renders.job_name(colorize.field_row(row, mode, colorize.CURVE)) == by_hand, mode
+
+
+def test_a_mode_moves_a_field_s_name_so_two_modes_are_never_one_field() -> None:
+    """`field_of` took the row's own mode when it used to be pinned to smooth. A name
+    that did not move with it would serve a `tia` candidate a smooth field, which is
+    a wrong picture rather than a slow one."""
+    row = {"family": {"kind": "mandelbrot"}, "viewport": {}, "maxiter": 500}
+    from fractal_wallpapers.models import renders
+
+    names = {
+        mode: renders.job_name(colorize.field_row(row, mode, colorize.CURVE))
+        for mode in ("smooth", "tia", "stripe", "curvature")
+    }
+    assert len(set(names.values())) == len(names), names
+
+
+def test_the_field_sweep_keeps_what_was_used_last_and_not_what_was_written_last(
+    tmp_path,
+) -> None:
+    """A run spends forty palettes on one field, so *last written* is the wrong
+    order: the field being spent is the oldest thing in the directory by the second
+    palette. `field_of` touches on the way past and the sweep reads that."""
+    import os
+
+    directory = tmp_path / "fields"
+    directory.mkdir()
+    for index in range(6):
+        (directory / f"f{index}.f32").write_bytes(b"x")
+        (directory / f"f{index}.json").write_text("{}", encoding="utf-8")
+        os.utime(directory / f"f{index}.f32", (1_700_000_000 + index, 1_700_000_000 + index))
+    os.utime(directory / "f0.f32", None)
+    assert colorize.sweep_fields(directory, keep=2) == 4
+    left = sorted(path.stem for path in directory.glob("*.f32"))
+    assert left == ["f0", "f5"], left
+    assert sorted(path.stem for path in directory.glob("*.json")) == left, (
+        "a field's record outlived the field it names"
+    )
+
+
+def test_the_palette_head_s_own_fields_are_not_swept(tmp_path) -> None:
+    """They outlive the attempt that made them: a re-seat asks for another colour at
+    a seat, and the gallery resolves a candidate recolour's NAME through one. A swept
+    head field turns that lookup into an iteration pass, thousands of times."""
+    import os
+
+    directory = tmp_path / "fields"
+    directory.mkdir()
+    for index in range(6):
+        (directory / f"f{index}.f32").write_bytes(b"x")
+        (directory / f"f{index}.json").write_text("{}", encoding="utf-8")
+        os.utime(directory / f"f{index}.f32", (1_700_000_000 + index, 1_700_000_000 + index))
+    protect = {"f0.f32", "f1.f32"}
+    assert colorize.sweep_fields(directory, keep=1, protect=protect) == 3
+    left = sorted(path.name for path in directory.glob("*.f32"))
+    assert left == ["f0.f32", "f1.f32", "f5.f32"], left
