@@ -92,6 +92,14 @@ cargo build --manifest-path engine/Cargo.toml
 cargo test --manifest-path engine/Cargo.toml
 ```
 
+Run the Python suite with the checkout's own interpreter — `.venv` — rather than
+whatever `python` resolves to on the path. `pythonpath = ["src"]` in
+`pyproject.toml` gets pytest itself importing the package from any interpreter,
+but one gallery guard spawns `sys.executable` and imports `fractal_wallpapers`
+inside it, which needs an interpreter carrying the editable install. The wrong
+one fails that single test and nothing else, so it reads as a process-control
+bug rather than as the environment it is.
+
 CI runs the same thing on Ubuntu and Windows. The Python suite's walk tests need
 a **release** engine (`cargo build --release --manifest-path engine/Cargo.toml`)
 and skip themselves without one.

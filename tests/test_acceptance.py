@@ -101,6 +101,8 @@ def test_the_vendored_yardstick_lands_on_this_projects_location_ids() -> None:
         pytest.skip("no yardstick has been vendored yet")
     from fractal_wallpapers.models import tiles as tile_module
 
+    if not tile_module.locations_path().is_file():
+        pytest.skip("no location store has been built in this checkout")
     control = acceptance.incumbent()
     rows = [row for row in tile_module.read_locations() if row["side"] == "eval"]
     covered = [row for row in rows if row["location_id"] in control]
@@ -137,6 +139,8 @@ def test_the_bar_accepts_a_head_that_is_the_incumbent(tmp_path, monkeypatch) -> 
     from fractal_wallpapers.models import scoring, train
     from fractal_wallpapers.models import tiles as tile_module
 
+    if not tile_module.locations_path().is_file():
+        pytest.skip("no location store has been built in this checkout")
     shipped = acceptance.prereg_path("location")
     vendored = acceptance.yardstick_path("location")
     monkeypatch.setattr(train, "head_dir", lambda name="location", run=None: tmp_path)

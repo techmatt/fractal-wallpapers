@@ -1809,8 +1809,10 @@ the other store is -0.086 (95% [-0.270, +0.102]) and is not resolvable. Both are
 cluster-bootstrapped on location and neither pools the two stores.
 
 Every number here is train-side and anchored: the batches are registered
-`eval_eligible: false`, they measure agreement with the incumbent, any rate off them
-is a ceiling, and a retrain moves the whole probability scale under all of it.
+`anchored: true`, so their labels measure agreement with the incumbent and are
+train-side however the draw was made. Nothing is registered `eval_eligible` —
+that is derived from the registration and never stored — and any rate off these
+batches is a ceiling, under a probability scale a retrain moves whole.
 
 ### Nine modes the judge has barely seen, and the sheet that asks about them
 
