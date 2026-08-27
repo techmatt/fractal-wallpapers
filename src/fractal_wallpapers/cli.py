@@ -1704,6 +1704,103 @@ def renders_build(args: argparse.Namespace) -> int:
     return 0
 
 
+def renders_cv_plan(args: argparse.Namespace) -> int:
+    """Derive the cross-validation folds and write them down."""
+    from fractal_wallpapers.models import render_cv
+
+    try:
+        path, document = render_cv.write_assignment(
+            seed=render_cv.FOLD_SEED if args.seed is None else args.seed,
+            folds=render_cv.FOLDS if args.folds is None else args.folds,
+        )
+    except render_cv.CrossValidationError as refusal:
+        print(refusal)
+        return 1
+    shown = {key: value for key, value in document.items() if not key.endswith("_of_row")}
+    print(json.dumps({**shown, "wrote": str(path)}, indent=2))
+    return 0
+
+
+def renders_cv_fit(args: argparse.Namespace) -> int:
+    """Fit one arm on one fold, through the trainer the shipped band used."""
+    from fractal_wallpapers.models import render_cv, render_train
+
+    try:
+        record = render_cv.fit(args.arm, args.fold, device=args.device, epochs=args.epochs)
+    except (render_cv.CrossValidationError, render_train.TrainingError) as refusal:
+        print(refusal)
+        return 1
+    print(
+        json.dumps(
+            {key: value for key, value in record.items() if key != "history"},
+            indent=2,
+            default=str,
+        )
+    )
+    return 0
+
+
+def renders_cv_read(args: argparse.Namespace) -> int:
+    """Read one fold's held-out rows through its own checkpoint."""
+    from fractal_wallpapers.models import render_cv
+
+    try:
+        if args.fold is None:
+            fitted = sorted(
+                int(path.parent.name.removeprefix("fold"))
+                for path in render_cv.arm_dir(args.arm).glob("fold*/best.pt")
+            )
+            if not fitted:
+                print(f"{args.arm} has no fitted part to read")
+                return 1
+            reports = [render_cv.read_out_of_fold(args.arm, fold, args.device) for fold in fitted]
+            reports.append({"pooled": str(render_cv.write_pooled(args.arm))})
+        else:
+            reports = [render_cv.read_out_of_fold(args.arm, args.fold, args.device)]
+    except render_cv.CrossValidationError as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps(reports, indent=2))
+    return 0
+
+
+def renders_cv_shipped(args: argparse.Namespace) -> int:
+    """The shipped artifact's own read of the held-out rows. In-sample, and said so."""
+    from fractal_wallpapers.models import render_cv
+
+    try:
+        fold = render_cv.HOLDOUT_FOLD if args.fold is None else args.fold
+        report = render_cv.read_shipped(fold, args.device)
+    except render_cv.CrossValidationError as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps(report, indent=2))
+    return 0
+
+
+def renders_cv_compare(args: argparse.Namespace) -> int:
+    """One arm against the baseline, on every arm of the declared bar."""
+    from fractal_wallpapers.models import render_cv
+
+    try:
+        if args.arm == args.baseline:
+            document = render_cv.standing(args.arm)
+            print(json.dumps(document, indent=2))
+            return 0
+        path, document = render_cv.write_comparison(args.arm, args.baseline, args.band_on)
+    except render_cv.CrossValidationError as refusal:
+        print(refusal)
+        return 1
+    print(
+        json.dumps(
+            {key: value for key, value in document.items() if key != "bar"},
+            indent=2,
+        )
+    )
+    print(f"wrote {path}")
+    return 0
+
+
 def renders_verify(args: argparse.Namespace) -> int:
     """Compare regenerated pictures against the ones the verdicts were cast on."""
     from fractal_wallpapers.models import renders
@@ -4939,6 +5036,97 @@ def render_commands(subcommands) -> None:
     checking.add_argument("--sample", type=int, default=60, help="how many pairs to compare")
     checking.add_argument("--seed", type=int, default=0, help="the sample's seed (default: 0)")
     checking.set_defaults(handler=renders_verify)
+
+    crossing = steps.add_parser(
+        "cv",
+        help="grouped cross-validation over the rows this project already owns",
+        description=(
+            "The shipped judge is a gate rather than a top-end ranker, and the evidence for "
+            "a retrain is the ordinary train-test discipline done with the groupings this "
+            "corpus needs. Folds are drawn over LINEAGES — near-duplicate neighbourhoods — "
+            "because a location recurs across palettes and modes and even a location-level "
+            "split leaks. Nothing here adopts anything."
+        ),
+    )
+    crossings = crossing.add_subparsers(dest="cv_step", required=True)
+
+    dealing = crossings.add_parser(
+        "plan",
+        help="derive the folds and write them down",
+        description=(
+            "Lineages are shuffled by the seed and taken by whichever fold holds the fewest "
+            "rows. Written as an artifact so every arm is fitted on one partition and a "
+            "later run reproduces it exactly."
+        ),
+    )
+    dealing.add_argument("--seed", type=int, default=None, help="the deal's seed")
+    dealing.add_argument("--folds", type=int, default=None, help="how many folds")
+    dealing.set_defaults(handler=renders_cv_plan)
+
+    fitting = crossings.add_parser(
+        "fit",
+        help="fit one arm on one fold",
+        description=(
+            "Runs the shipped trainer over this fold's split, so the baseline is a refit of "
+            "the shipped recipe rather than a second implementation of it. Lands in the "
+            "regenerable tree, never in a run directory beside the shipped bands."
+        ),
+    )
+    fitting.add_argument("--arm", required=True, help="which arm")
+    fitting.add_argument("--fold", type=int, required=True, help="which fold")
+    fitting.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
+    fitting.add_argument("--epochs", type=int, help="override the recipe's epoch count")
+    fitting.set_defaults(handler=renders_cv_fit)
+
+    reading_out = crossings.add_parser(
+        "read",
+        help="read a fold's held-out rows through its own checkpoint",
+        description=(
+            "Every row is scored by the one model that never saw its lineage. Omit --fold to "
+            "read all of them and write the arm's pooled out-of-fold file."
+        ),
+    )
+    reading_out.add_argument("--arm", required=True, help="which arm")
+    reading_out.add_argument(
+        "--fold", type=int, help="one part, or every part that has been fitted if omitted"
+    )
+    reading_out.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
+    reading_out.set_defaults(handler=renders_cv_read)
+
+    incumbent = crossings.add_parser(
+        "shipped",
+        help="read the held-out rows through the artifact that serves today",
+        description=(
+            "The column that separates rows from recipe. It is IN-SAMPLE — the shipped head "
+            "trained on most of these rows — which is why the baseline arm is a refit and "
+            "not this, and why a refit that beats it has beaten it the hard way."
+        ),
+    )
+    incumbent.add_argument(
+        "--fold", type=int, default=None, help="which part of the deal (default: the holdout)"
+    )
+    incumbent.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
+    incumbent.set_defaults(handler=renders_cv_shipped)
+
+    contesting = crossings.add_parser(
+        "compare",
+        help="one arm against the baseline, on the declared bar",
+        description=(
+            "The motivating slice and the four arms that must not move, each with n and a "
+            "95% paired interval resampling whole lineages. Per-mode numbers are printed as "
+            "description and decide nothing. Naming the baseline as the arm prints that "
+            "arm's own standing numbers instead."
+        ),
+    )
+    contesting.add_argument("--arm", required=True, help="which arm")
+    contesting.add_argument("--baseline", default="baseline", help="what it is read against")
+    contesting.add_argument(
+        "--band-on",
+        dest="band_on",
+        help="whose score cuts the motivating slice (default: the baseline). The declared cut "
+        "is the baseline's; naming another arm makes the population a stated choice",
+    )
+    contesting.set_defaults(handler=renders_cv_compare)
 
     registering = steps.add_parser(
         "preregister",

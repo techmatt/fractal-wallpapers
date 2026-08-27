@@ -740,6 +740,11 @@ def run(
     only: str | None = None,
     per_kind: bool = False,
     backbone: str | None = None,
+    split=None,
+    directory: Path | None = None,
+    target_dims=None,
+    selection=None,
+    selection_says: str | None = None,
     log=train.say,
 ) -> dict:
     """Train the candidate at one seed, and write its checkpoints and records.
@@ -750,6 +755,29 @@ def run(
     or about one of the two things pooling changed along with it — the corpus the
     smooth incumbent trained on has grown since, and the strange incumbent's
     backbone is not this one.
+
+    **`split` and `directory` are how a caller re-uses this loop over a different
+    partition of the same corpus, and they exist for one caller.**
+    [`fractal_wallpapers.models.render_cv`] fits this recipe on cross-validation
+    folds — the same recipe over a different split, which must not become a
+    second implementation of it, because a baseline that is a re-typed trainer
+    measures the re-typing. `split` is called instead of [`population`] and
+    returns what it returns; `directory` is where the checkpoints and records
+    land, so a fold does not claim a run directory beside the shipped bands.
+    Both default to what every band on the record was trained under, and the
+    recipe, the loop, the selection objective and the records are untouched by
+    either.
+
+    **`selection` moves the one thing an arm may want to move about how the epoch
+    is chosen**, and `selection_says` is the sentence that goes into the written
+    recipe beside it — an unlabelled objective would leave two runs whose configs
+    agree and whose epochs were chosen by different rules. It takes
+    `(labels, probabilities, classes)` and returns a number to MINIMIZE, which is
+    what [`finished_train.validation_loss`] is and what the default stays.
+
+    **`target_dims` moves the input size**, which the recipe has always carried
+    as a record of what the head reads at and which is now read as well as
+    written. `None` keeps the value every band on the record trained under.
     """
     import numpy
     import torch
@@ -772,6 +800,10 @@ def run(
         recipe["backbone"] = backbone
     if run_name:
         check_declared_backbone(run_name, recipe)
+    if target_dims is not None:
+        recipe["target_dims"] = [int(value) for value in target_dims]
+    if selection_says is not None:
+        recipe["selection"] = selection_says
     if per_kind:
         recipe["per_kind"] = True
         recipe["conditioning"] = (
@@ -782,7 +814,7 @@ def run(
 
     where = train.device_of(device)
     train.set_seed(int(recipe["seed"]))
-    pictures, split_record = population(only)
+    pictures, split_record = split() if split is not None else population(only)
     by_side = sides(pictures)
     training, choosing = by_side["train"], by_side[SELECTION]
     holdout, dropped = by_side["eval"], by_side[EXCLUDED]
@@ -845,6 +877,11 @@ def run(
 
     # Geometric only. The coloring is the label for both kinds, so the colour
     # stages are off here exactly as they are off in both incumbent recipes.
+    # `target_dims` has always been in the recipe as a record of what the head
+    # reads at; here it is read rather than only written, so an arm may ask
+    # whether the answer is in the detail that size discards. Every band on the
+    # record carries the shipped value and is unmoved by this.
+    target = tuple(recipe["target_dims"])
     train_transform = head.Transform(
         data_config["mean"],
         data_config["std"],
@@ -854,9 +891,14 @@ def run(
         jpeg=None,
         brightness=0.0,
         contrast=0.0,
+        target=target,
     )
     deploy_transform = head.Transform(
-        data_config["mean"], data_config["std"], data_config["interpolation"], train=False
+        data_config["mean"],
+        data_config["std"],
+        data_config["interpolation"],
+        train=False,
+        target=target,
     )
     examples, loader, mass = _loader(training, train_transform, recipe, where, per_kind)
     log(f"sampled mass {json.dumps(mass['sampled_mass'])} over {mass['places']} places")
@@ -866,7 +908,7 @@ def run(
     choosing_kinds = numpy.array([picture.kind for picture in choosing])
     cutpoint = min(int(recipe["selection_cutpoint"]), classes) - 2
 
-    directory = head_dir(run_name)
+    directory = directory or head_dir(run_name)
     directory.mkdir(parents=True, exist_ok=True)
     try:
         lock = train.claim(directory)
@@ -934,7 +976,9 @@ def run(
             if per_kind
             else train.score(model, choosing_paths, deploy_transform, where, classes, recipe)
         )
-        objective = finished_train.validation_loss(choosing_labels, probabilities, classes)
+        objective = (selection or finished_train.validation_loss)(
+            choosing_labels, probabilities, classes
+        )
         record = {
             "epoch": epoch,
             "loss": running / max(seen, 1),
@@ -1019,8 +1063,8 @@ def run(
         "split": split_record,
         "precision": "fp32",
     }
-    torch.save({"state_dict": best_state, "config": config}, checkpoint_path("best", run_name))
-    torch.save({"state_dict": last_state, "config": config}, checkpoint_path("last", run_name))
+    torch.save({"state_dict": best_state, "config": config}, directory / "best.pt")
+    torch.save({"state_dict": last_state, "config": config}, directory / "last.pt")
     if resume.is_file():
         resume.unlink()
 
@@ -1061,14 +1105,14 @@ def run(
         "sampled_mass": mass,
         "history": history,
         "checkpoints": {
-            "best": tracked_name(checkpoint_path("best", run_name)),
-            "last": tracked_name(checkpoint_path("last", run_name)),
+            "best": tracked_name(directory / "best.pt"),
+            "last": tracked_name(directory / "last.pt"),
         },
     }
-    config_path(run_name).write_text(
+    (directory / "config.json").write_text(
         json.dumps(config, indent=2) + "\n", encoding="utf-8", newline="\n"
     )
-    metrics_path(run_name).write_text(
+    (directory / "metrics.json").write_text(
         json.dumps(record, indent=2, default=str) + "\n", encoding="utf-8", newline="\n"
     )
     return record
@@ -1094,7 +1138,11 @@ def score(
     model, config, where = load(which, run_name, device)
     per_kind = bool(config.get("per_kind"))
     transform = head.Transform(
-        tuple(config["mean"]), tuple(config["std"]), config["interpolation"], train=False
+        tuple(config["mean"]),
+        tuple(config["std"]),
+        config["interpolation"],
+        train=False,
+        target=tuple(config["target_dims"]),
     )
 
     own = set(finished.pinned(kind))
