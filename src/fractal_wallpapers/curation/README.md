@@ -1180,6 +1180,124 @@ locations, so `composite`, `direct` and `modulate` — code paths this change do
 touch — are the control that prices the population, and the `field` cells are read
 against them.
 
+## `curate depth` — how deep a location goes, and where on the head's rank it stops paying
+
+A mine prices a location at three candidates. This asks what a location is worth
+when width is nearly free: **forty candidates at one place**, on the modes a
+dumped field can serve, across the whole of the location head's rank range rather
+than the top of it.
+
+```
+src/fractal_wallpapers/curation/depth.py             the draws, the curves, the route
+artifacts/curation/depth/<name>/rows.jsonl           ledger rows, appended as each lands
+artifacts/curation/depth/<name>/scores.jsonl         sidecar rows, likewise
+artifacts/curation/depth/<name>/sequence.jsonl       one row a candidate, IN THE ORDER MADE
+artifacts/curation/depth/<name>/pictures/<key>.jpg   the renders, named by recipe
+artifacts/curation/depth/<name>/fields/<name>.f32    one dumped field a (location, mode)
+artifacts/curation/depth/<name>/depth.json           the record: plan, price, curves, route
+artifacts/curation/depth/<name>/autopsy.html         primed and rejected, sorted by P(>=4)
+```
+
+```
+fractal-wallpapers curate depth plan  --name d1 --rate 0.35 --budget 5400   # renders nothing
+fractal-wallpapers curate depth run   --name d1 --rate 0.35 --budget 5400
+fractal-wallpapers curate depth merge --name d1                             # fold into the ledger
+fractal-wallpapers curate depth sheet --name d1                             # redraw the autopsy
+```
+
+**Field modes only, and every conclusion is conditional on that.** A composite at
+forty candidates is about 175 s a location — one arm's worth of places would eat
+a ninety-minute budget — so the roster is `depth.field_modes()`: the shareable
+production modes less `DEMOTED`. Nothing a depth run reports says what a
+composite would have done.
+
+**`trap_circle` is out of the draw and still in the catalogue.** The demotion to
+niche is a ruling (checkpoint 84: 2 threes and 0 fours in 117 labeled rows) and
+the engine's tier still says production, so it is applied at the draw through
+`depth.DEMOTED`. Existing material in it stands.
+
+**The rank bands are equal counts, not equal scores.** `ranked_bands` sorts each
+partition's never-opened pool on the location head's `P(>=3)` **within** that
+partition and cuts it into `--bands` equal-sized bands; `banded_places` then draws
+round-robin over every (partition, band) cell. That even spread is the point — a
+draw proportional to stock would put nine tenths of itself in the fat bands and
+leave the ends, which are the question, with two locations each. Every row that
+comes back carries its `rank` and its `rank_fraction`, because a rank is not
+comparable across partitions of different sizes and a fraction is.
+
+**The near band reads the best FIELD candidate, not the best one.** A place whose
+best candidate is a composite has no field to dump, so `best_field_by_location`
+takes the best candidate in a mode this run can afford and the band is read off
+that. It is a selection this run makes and not a fact about the place.
+
+**The modes are cycled inside a location and never blocked.** Seven of one mode
+and then seven of another would move a location's own clear rate with `k` for a
+reason that is not depth. Cycling makes the k-th candidate a draw from the same
+mixture at every k, which is the only shape in which "is the clear rate flat in
+k" is a question about palettes.
+
+**The dump amortises over the mode and not over the width.** One field a
+(location, mode): a near-band location holding its mode pays `dump/40`, a breadth
+location cycling six modes pays `dump/6.7`. That is most of the difference
+between the two arms' per-candidate cost, and it is a reason to hold the mode
+wherever the question allows it.
+
+**A location that never reached a width is out of that width's denominator.**
+`curves` counts a location at `k` only if it made `k` candidates. Without that
+rule a run stopped by its budget would report every curve bending down at the
+width it stopped at, which is the clock and not the ore.
+
+**The sequence file is the deliverable.** Every candidate is appended to
+`sequence.jsonl` as it lands, carrying location, rank, band, mode and `k`, so a
+cumulative curve at any width below the one reached is arithmetic over that file
+rather than another run. `depth.read_sequence` is what a killed run is read back
+through, and `merge` folds the partial rows in exactly as a finished run's.
+
+**Production knobs, and what they are for.** Unsaid, a run takes the three
+measuring draws with every band on equal turns. `--shares` re-weights the draws,
+`--band-weights` gives a band extra turns a round (a weight of 0 keeps it out),
+and `--floor-modes`/`--floor-width` turn on a fourth draw, `mode_floor`, which
+holds a **proven** location — one already over the seating bar — and cycles the
+modes a census says are short of seats. `deficient_modes` counts a seat as a
+distinct location and not a clearing candidate, because a collection seats a
+location once.
+
+## `curate shrinkage` — what the winner of a wide set loses on a second look
+
+A location is PRIMED on the **maximum of k noisy readings**, so a prime rate
+captures noise as well as quality and does so more the wider the set is. The
+calibration sheet measured the noise across one doubling of geometry: `P(>=4)`
+moves by mean **-0.009** with sd **0.087**, and 46% of rows land in a different
+0.10-wide band than the one they were drawn into. Unbiased, and imprecise — and
+an unbiased-but-imprecise score fed into a maximum comes out biased upward.
+
+```
+src/fractal_wallpapers/curation/shrinkage.py         the draw, the re-read, the two curves
+artifacts/curation/shrinkage/<name>/pairs.jsonl      one row a re-read candidate, both readings
+artifacts/curation/shrinkage/<name>/pictures/        the label-geometry renders
+artifacts/curation/shrinkage/<name>/shrinkage.json   the record: drop by width, both curves
+```
+
+```
+fractal-wallpapers curate shrinkage --name d1 --per-arm 20 --workers 6
+```
+
+It takes the candidate that was the running best of the first `k` at each of
+`CHECKPOINTS`, re-renders **that** candidate at label geometry (1280x720 ss2)
+through its own recipe, and scores it on the same shipped artifact. A candidate
+that won at several checkpoints is rendered once and carries every width it won
+at, which is most of the saving.
+
+**Both curves are reported and neither replaces the other.** The raw curve is the
+640x360 reading, which is what every prime count this project has quoted is; the
+calibrated curve is the same locations and the same winners counted on the second
+reading. They share a denominator by construction — a candidate the re-render
+refused leaves both columns rather than scoring zero in one.
+
+**It corrects nothing.** The label-geometry read is another single noisy reading,
+not a truth. What it removes is the *selection*, by drawing the noise again after
+the winner was chosen.
+
 ## What a pass puts in the history, and what it puts beside it
 
 **Everything a pass tracks scales with `n`; nothing tracked scales with the
@@ -1613,6 +1731,33 @@ sharper rule than the location head's: a candidate's 640x360 `P(>=4)` ranks a po
 and must not be quoted as the score of the picture a person will see. A threshold
 that acts — a floor, a bar, a screen — has to act on the regime it was measured
 on, and `curation.floors`' stamps are what say which that is.
+
+**And inside the band a bar would sit in, the score barely ranks at all.** The
+labelled half of `p_ge4_calibration_*` — 246 rows, Matt's verdicts, fitted on the
+label-geometry column — measures how much a `P(>=4)` between 0.60 and 0.95 actually
+says about whether he calls a picture a 4. The answer is: very little. The logistic
+slope is **+2.5 on smooth, +2.3 on colour·strange, +1.8 on composite and -0.7 on
+colour·smooth**, so a 0.10 rise in the judge moves the human keep rate by about four
+to six points, and in one stratum the wrong way; point-biserial `r` runs +0.18,
++0.15, +0.11, -0.05. The isotonic crossover is therefore **not identified** in any
+stratum — 90% intervals 0.20 to 0.45 wide against a design priced at ±0.022, because
+that pricing assumed a slope near 12 and the real one is five to seven times flatter.
+
+That is a statement about **this band**, not about the judge overall: the sheet
+deliberately excluded the tails where the judge is obviously right, so a flat
+response in the middle is partly by construction. What it rules out is the thing a
+bar needs — a place in [0.60,0.95) where the score separates keepers from the rest.
+
+**What does separate them is which population a row is from.** At matched score and
+within one store, a composite reads **+0.249 (95% [+0.051, +0.446])** higher on
+P(human>=4) than a thin-colour candidate — the same judge number meaning materially
+different things across two populations of the same corpus. Colour against smooth in
+the other store is -0.086 (95% [-0.270, +0.102]) and is not resolvable. Both are
+cluster-bootstrapped on location and neither pools the two stores.
+
+Every number here is train-side and anchored: the batches are registered
+`eval_eligible: false`, they measure agreement with the incumbent, any rate off them
+is a ceiling, and a retrain moves the whole probability scale under all of it.
 
 **What the leg cost, measured.** 2026-08-22, RTX 2060 SUPER, hot tier: 22,630
 never-scored rows of those three ledgers in **3,363 s over twelve 2,000-row
