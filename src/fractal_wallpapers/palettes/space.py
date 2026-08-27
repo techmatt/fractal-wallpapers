@@ -87,6 +87,31 @@ def _srgb_to_linear(channel):
     return _linearise(values)
 
 
+def _oklab_of_linear(red, green, blue):
+    """Linear-light R, G, B to Oklab's three channels, as three separate arrays.
+
+    Ottosson's matrices, unmodified, and **the one copy of them**. [`oklab`] is
+    this plus a stack; [`lightness_and_chroma`] is this without one, because a
+    caller that wants two of the three channels should not pay to build an array
+    it immediately takes apart again.
+
+    Every step is elementwise, which is the property the fast reader is built on:
+    the result for a pixel is a function of that pixel alone, so how the caller
+    sliced, strided or chunked its input cannot move a bit of the answer.
+    """
+    import numpy
+
+    long = 0.4122214708 * red + 0.5363325363 * green + 0.0514459929 * blue
+    medium = 0.2119034982 * red + 0.6806995451 * green + 0.1073969566 * blue
+    short = 0.0883024619 * red + 0.2817188376 * green + 0.6299787005 * blue
+    long, medium, short = numpy.cbrt(long), numpy.cbrt(medium), numpy.cbrt(short)
+    return (
+        0.2104542553 * long + 0.7936177850 * medium - 0.0040720468 * short,
+        1.9779984951 * long - 2.4285922050 * medium + 0.4505937099 * short,
+        0.0259040371 * long + 0.7827717662 * medium - 0.8086757660 * short,
+    )
+
+
 def oklab(rgb):
     """sRGB8 `[..., 3]` to Oklab `[..., 3]`. Ottosson's matrices, unmodified.
 
@@ -96,19 +121,89 @@ def oklab(rgb):
     import numpy
 
     linear = _srgb_to_linear(rgb)
-    red, green, blue = linear[..., 0], linear[..., 1], linear[..., 2]
-    long = 0.4122214708 * red + 0.5363325363 * green + 0.0514459929 * blue
-    medium = 0.2119034982 * red + 0.6806995451 * green + 0.1073969566 * blue
-    short = 0.0883024619 * red + 0.2817188376 * green + 0.6299787005 * blue
-    long, medium, short = numpy.cbrt(long), numpy.cbrt(medium), numpy.cbrt(short)
-    return numpy.stack(
-        [
-            0.2104542553 * long + 0.7936177850 * medium - 0.0040720468 * short,
-            1.9779984951 * long - 2.4285922050 * medium + 0.4505937099 * short,
-            0.0259040371 * long + 0.7827717662 * medium - 0.8086757660 * short,
-        ],
-        axis=-1,
-    )
+    return numpy.stack(_oklab_of_linear(linear[..., 0], linear[..., 1], linear[..., 2]), axis=-1)
+
+
+#: Pixels below which a tone reading is one pass. A thread pool costs a couple of
+#: tenths of a millisecond to raise and a picture this small is about that long
+#: in total, so splitting it would be most of the work.
+READ_SERIAL_BELOW = 1 << 15
+
+#: The most threads one picture's tone reading is split over.
+#:
+#: It is a share of the machine rather than the whole of it, because this runs
+#: *beside* the render pool's three workers — `curation.manufacture` builds
+#: candidates over three processes, and four threads in each of three is a
+#: twelve-core desktop exactly. A machine with fewer cores gets proportionally
+#: fewer threads and, below six, none at all, which is the same rule and not a
+#: special case. Correctness does not depend on the number: every chunk's
+#: arithmetic is elementwise, so one thread and four reach the same bytes.
+READ_THREAD_CAP = 4
+
+#: How many workers the reading assumes are beside it. The render pool's own
+#: width, restated rather than imported: a palette module that reached into
+#: `curation` to learn a number would be the wrong direction of dependency.
+READ_POOL_WIDTH = 3
+
+
+@lru_cache(maxsize=1)
+def _read_threads() -> int:
+    """How many threads this machine gives one tone reading."""
+    import os
+
+    return max(1, min(READ_THREAD_CAP, (os.cpu_count() or 1) // READ_POOL_WIDTH))
+
+
+def lightness_and_chroma(rgb):
+    """A picture's Oklab lightness and chroma, flat and contiguous, read in parallel.
+
+    Exactly `oklab(rgb)[..., 0]` and the hypot of the other two, flattened —
+    and *exactly* is the word, not *near*. Every operation between a pixel's
+    three bytes and its two numbers is elementwise ([`_oklab_of_linear`]), so a
+    chunk of the picture read on its own thread produces the bytes that one pass
+    over the whole of it would. The tone band an autolevel row projects onto is
+    part of that render's identity, so a reading that were merely close would
+    rename every cached candidate.
+
+    What the split buys is the cube roots. Three `cbrt` calls over a candidate's
+    pixels are about sixty percent of this conversion and numpy runs them one
+    element at a time; they are also what a thread can carry away, because a
+    numpy ufunc drops the GIL for the length of its loop.
+
+    Flat rather than `[H, W]` because every statistic read off it — a
+    percentile, a median over a mask, a mask's own share — is a fact about the
+    multiset of pixels and not about where they sat.
+    """
+    from concurrent.futures import ThreadPoolExecutor
+
+    import numpy
+
+    pixels = numpy.asarray(rgb).reshape(-1, 3)
+    count = int(pixels.shape[0])
+    lightness = numpy.empty(count, dtype=numpy.float64)
+    chroma = numpy.empty(count, dtype=numpy.float64)
+
+    def read(low: int, high: int) -> None:
+        part = pixels[low:high]
+        lit, green_red, blue_yellow = _oklab_of_linear(
+            _srgb_to_linear(part[:, 0]),
+            _srgb_to_linear(part[:, 1]),
+            _srgb_to_linear(part[:, 2]),
+        )
+        lightness[low:high] = lit
+        numpy.hypot(green_red, blue_yellow, out=chroma[low:high])
+
+    threads = _read_threads() if count >= READ_SERIAL_BELOW else 1
+    if threads <= 1:
+        read(0, count)
+    else:
+        edges = [(count * index) // threads for index in range(threads + 1)]
+        with ThreadPoolExecutor(max_workers=threads) as pool:
+            for done in [
+                pool.submit(read, edges[index], edges[index + 1]) for index in range(threads)
+            ]:
+                done.result()
+    return lightness, chroma
 
 
 def srgb(lab):
@@ -267,9 +362,13 @@ def tightness(names) -> dict:
 
 
 __all__ = [
+    "READ_POOL_WIDTH",
+    "READ_SERIAL_BELOW",
+    "READ_THREAD_CAP",
     "SAMPLES",
     "SpaceError",
     "distances",
+    "lightness_and_chroma",
     "neighbourhood",
     "oklab",
     "ramp",

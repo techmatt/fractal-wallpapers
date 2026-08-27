@@ -36,14 +36,16 @@ re-measurement. Without that, a release record could say which row shipped and n
 which *image* that row was, which after the operator ships on is no longer a
 record of the decision.
 
-**What the operator costs, measured.** The measurement is linear in the picture:
-0.27 s per megapixel, which is 0.063 s on a candidate and 1.01 s on a release
-render. Most of that is still the sRGB→Oklab conversion; the linearisation inside it
-used to be a third of the measurement and is now a 256-entry table, which is exact
-because the input is `uint8` (`palettes.space._srgb_to_linear`). Before the table the
-same three release pictures measured 1.42–1.48 s, so the rate was 0.39–0.43 s/Mpx.
-The application is size-independent, because it works on the stops rather than on
-pixels.
+**What the operator costs, measured.** The measurement is linear in the picture.
+On a 640x360 candidate it is 30 ms and it used to be 67 ms, of which the
+sRGB→Oklab conversion was 52 ms and three `numpy.cbrt` calls were 31 ms of
+*that* — numpy runs a cube root one element at a time. It is now read through
+[`palettes.space.lightness_and_chroma`], which is the same arithmetic split over
+threads: every step between a pixel's three bytes and its two numbers is
+elementwise, so a chunk read on its own thread reaches the bytes one pass would.
+The linearisation inside it is a 256-entry table, exact because the input is
+`uint8` (`palettes.space._srgb_to_linear`). The application is size-independent,
+because it works on the stops rather than on pixels.
 
 **The second pass is a colormap swap over the same field**, which is why
 `curation.colorize.render` routes it through the shared field wherever the mode
@@ -54,14 +56,33 @@ there is no field to dump and it is still a full second render. On the release
 rows profiled so far the curve acted on 42% of them, and on curation candidates
 on 47.7%.
 
-**Which leaves the measurement as the operator's own cost, and on a shareable
-mode it is now the larger half.** A candidate whose colouring is a 0.04 s lookup
-pays about 0.15 s to be *read* — a JPEG decode and an Oklab pass in Python, over
-a picture the engine had in memory as linear light a moment earlier and threw
-away. That is the shape of the next optimization here and it is written down
-rather than taken: the engine would have to report the three statistics
-`tone_stats` derives, at which point the operator would read a number instead of
-a picture.
+**The picture the operator reads is not the buffer the engine held, and that
+closes the obvious optimization.** Supersampling and JPEG both average colour
+*after* the colormap lookup, so what `tone_stats` measures has been through the
+resample filter and a lossy encoder. Recoloured to both formats on twenty-four
+real candidates, the JPEG round trip moves all three statistics on **24 of 24**
+and moves the levelled stop list itself on **17 of 24** — white point by 2.0e-3
+at the median. So having the engine report the three numbers off its own
+pre-encode buffer would draw a different picture on about seven firing
+candidates in ten, and the band's sha is in the recipe key, so those pictures
+would keep the names of the old ones. The route is closed unless a decoder in
+the engine reproduces libjpeg-turbo bit for bit, which is a bigger claim than the
+saving: the **decode is 4.5 ms, 6.7% of the measurement.** `tests/test_autolevel_identity.py`
+is the pin that keeps this honest — every mode the operator applies to, drawn
+through `colorize.render`, with both the levelled colormap and the picture
+digested.
+
+**What is left of the stage is the curve, not the measurement.** Over 200 real
+firing candidates `curved_stops` is 15 ms at the median and 100 ms at P90; the
+top decile is 47% of its total. That tail is `cap_lightness`, whose chroma
+bisection calls the gamut bisection inside it — up to 540 sRGB↔Oklab round trips
+over 257 densified stops, each about ninety numpy calls on an array too small
+for any of them to be work rather than dispatch. `densify` and its position
+rounding are cached per map (`_densified`), which took two fifths off a levelled
+candidate; the bisections are untouched, because the only way to make ninety
+dispatches cheap is to stop dispatching, and a reimplementation would have to
+agree with numpy's `pow` and `cbrt` to the last bit on every platform this
+builds on.
 
 **Which colorings a run may draw is a function, not a rule each site remembers.**
 The engine's catalog tiers every named mode, and this side reads that tiering at

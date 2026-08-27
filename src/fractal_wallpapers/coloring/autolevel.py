@@ -60,6 +60,7 @@ from __future__ import annotations
 import json
 import os
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 
 from fractal_wallpapers.palettes import space
@@ -185,20 +186,25 @@ def tone_stats(image) -> dict:
     # conversion linearise by table instead of by `**2.4` — see
     # `palettes.space._srgb_to_linear`. Widening it here would cost a third
     # of this measurement and change nothing else.
-    lab = space.oklab(numpy.asarray(image))
-    lightness = lab[..., 0]
-    chroma = numpy.hypot(lab[..., 1], lab[..., 2])
+    #
+    # Through [`space.lightness_and_chroma`] rather than `space.oklab`, which is
+    # the same arithmetic on the same bytes: it hands back the two channels this
+    # reads instead of an array of three to slice, and splits the cube roots over
+    # threads. Every count below is taken once and spent twice — a share and an
+    # emptiness test are the same sum — and both percentiles come off one pass.
+    lightness, chroma = space.lightness_and_chroma(numpy.asarray(image))
     mask = lightness > MASK_L
+    structure = int(mask.sum())
 
-    all_black = float(numpy.percentile(lightness, CLIP_LO))
-    white = float(numpy.percentile(lightness, CLIP_HI))
-    middle = float(numpy.median(lightness[mask] if mask.any() else lightness))
+    all_black, white = (float(edge) for edge in numpy.percentile(lightness, [CLIP_LO, CLIP_HI]))
+    middle = float(numpy.median(lightness[mask] if structure else lightness))
 
     neutral = chroma <= CHROMA_NEUTRAL
-    share = float(neutral.mean())
+    neutrals = int(neutral.sum())
+    share = neutrals / neutral.size
     neutral_black = (
         float(numpy.percentile(lightness[neutral], CLIP_LO))
-        if int(neutral.sum()) > NEUTRAL_PIXELS_MIN
+        if neutrals > NEUTRAL_PIXELS_MIN
         else None
     )
     if neutral_black is None or share < NEUTRAL_FRACTION_MIN:
@@ -219,7 +225,7 @@ def tone_stats(image) -> dict:
         "neutral_fraction": share,
         "white_pt": white,
         "mid": middle,
-        "mask_fraction": float(mask.mean()),
+        "mask_fraction": structure / mask.size,
         "mean_L": float(lightness.mean()),
     }
 
@@ -465,18 +471,42 @@ def cap_lightness(before, after, green_red, blue_yellow, retain: float = CHROMA_
     return out, capped
 
 
+def _densify_key(stops: list) -> tuple:
+    """A colormap's stops as something hashable, in the order [`densify`] reads them."""
+    return tuple((float(position), tuple(int(value) for value in rgb)) for position, rgb in stops)
+
+
+@lru_cache(maxsize=64)
+def _densified(key: tuple) -> tuple:
+    """`(rounded positions, Oklab)` for one map, held between candidates.
+
+    [`densify`] and the rounding of its positions are functions of the **map**
+    alone — nothing about the render, the curve or the band reaches them — and a
+    candidate loop draws from a pool of about thirty maps and levels the same one
+    over and over. Both halves are Python loops over 257 densified stops and
+    together they were two fifths of a levelled candidate's curve.
+
+    The Oklab array is handed back read-only, because it is the cached copy and
+    a caller that wrote to it would level every later candidate through a map it
+    had quietly edited. The positions are already a tuple of floats.
+    """
+    import numpy
+
+    positions, lab = densify([[position, list(rgb)] for position, rgb in key])
+    lab = numpy.asarray(lab)
+    lab.flags.writeable = False
+    return tuple(round(float(position), 9) for position in positions), lab
+
+
 def curved_stops(stops: list, curve: dict) -> tuple[list, int]:
     """`(stops, how many the chroma cap held back)` — the leveled colour ramp."""
     import numpy
 
-    positions, lab = densify(stops)
+    positions, lab = _densified(_densify_key(stops))
     moved = apply_curve(lab[:, 0], curve)
     capped_lightness, capped = cap_lightness(lab[:, 0], moved, lab[:, 1], lab[:, 2])
     rgb = gamut_fit(numpy.stack([capped_lightness, lab[:, 1], lab[:, 2]], axis=-1))
-    out = [
-        [round(float(position), 9), [int(value) for value in row]]
-        for position, row in zip(positions, rgb, strict=True)
-    ]
+    out = [[position, colour] for position, colour in zip(positions, rgb.tolist(), strict=True)]
     return out, int(capped.sum())
 
 
