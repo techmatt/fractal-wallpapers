@@ -601,13 +601,14 @@ def build_plan(
     rate: float,
     budget: float,
     width: int = WIDTH,
+    near_width: int | None = None,
     bands: int = RANK_BANDS,
     roster: list | None = None,
     shares: dict | None = None,
     band_weights: dict | None = None,
     floor_modes: list | None = None,
-    floor_width: int = FLOOR_WIDTH,
     floor_seats: int = 10,
+    floor_width: int = FLOOR_WIDTH,
     log=print,
 ) -> tuple:
     """The draws sized off a per-candidate rate. `(plan, shape)`.
@@ -638,8 +639,14 @@ def build_plan(
     # draw's candidates to the end where nothing would ever start them, but the
     # plan would still say it holds them and the record would report locations
     # this run never intended to open.
+    # The two draws are priced apart because they *are* priced apart: a near-band
+    # location holds its mode and pays one dump over the whole set, and a breadth
+    # location cycles the roster and pays one dump per mode. The width at which
+    # the marginal candidate stops paying is therefore not the same number for
+    # the two of them, and a run sized off a measurement may say so.
+    near_width = int(width if near_width is None else near_width)
     near = (
-        near_places(best_field, world["index"], seed, max(1, want[NEAR] // max(1, width)))
+        near_places(best_field, world["index"], seed, max(1, want[NEAR] // max(1, near_width)))
         if want.get(NEAR)
         else []
     )
@@ -661,7 +668,7 @@ def build_plan(
         else []
     )
     plans = {
-        NEAR: plan_held_mode(near, world["taken"], maps, seed, width),
+        NEAR: plan_held_mode(near, world["taken"], maps, seed, near_width),
         RANKED: plan_cycled_modes(RANKED, ranked, roster, maps, seed, width),
         FLAT: plan_cycled_modes(FLAT, flat, roster, maps, seed, width),
         FLOOR: plan_floor(proven, wanted_floor_modes, world["taken"], maps, seed, floor_width),
@@ -678,6 +685,7 @@ def build_plan(
         "plan_headroom": PLAN_HEADROOM,
         "budget_seconds": float(budget),
         "width": int(width),
+        "near_width": int(near_width),
         "rank_bands": int(bands),
         "roster": roster,
         "demoted": list(DEMOTED),
@@ -734,6 +742,7 @@ def run(
     budget: float = BUDGET_SECONDS,
     rate: float,
     width: int = WIDTH,
+    near_width: int | None = None,
     bands: int = RANK_BANDS,
     roster: list | None = None,
     shares: dict | None = None,
@@ -761,6 +770,7 @@ def run(
         rate=rate,
         budget=budget,
         width=width,
+        near_width=near_width,
         bands=bands,
         roster=roster,
         shares=shares,
@@ -898,6 +908,7 @@ def run(
             "budget_seconds": float(budget),
             "rate_seconds": float(rate),
             "width": int(width),
+            "near_width": shape["near_width"],
             "rank_bands": int(bands),
             "shares": shape["shares"],
             "primed_bar": PRIMED_BAR,
