@@ -37,7 +37,7 @@ years ago rather than about this store, so it lives on the importer as
 **The evaluation side is pinned, not drawn.** Every batch here conditions on
 quality through the location head before its page exists, so none of them is an
 unbiased draw and no rate read on one is a base rate. What separates them is
-whether the page served a head's own verdict prefilled: 7 of 8 did,
+whether the page served a head's own verdict prefilled: 11 of 12 did,
 and their labels measure agreement with that head. `blind_modes` is the one that did
 not, and it is registered `eval_only` — bought to referee two heads on unanchored
 labels, and spent the moment it enters a training split. The pin is asserted on
@@ -65,10 +65,24 @@ those places across the two stores. Pooled, they move `>=3` from 0.2670 to 0.262
 `>=4` from 0.0636 to 0.0635. No render key of theirs is in both stores and no eval
 pin holds one, so the evaluation side was never touched.
 
+**The newest batch buys the modes with the fewest keepers.** `under_seen_modes`,
+2026-08-27: 504 verdicts, 56 on each of nine modes, drawn as the render judge's own
+unfiltered top of each mode over the whole candidate ledger. All 504 route here —
+`hunt.kind_of` sends everything but `smooth` to this store — and the ingest resolved
+504 of 504 with nothing withheld and nothing already stored. It is registered
+`score_unconditioned=false`, so it is training material and no rate off it is an eval
+rate. It moved this store from 3,573 rows to 4,077 and from 1,149 locations to 1,524,
+and it lifted `smooth_mean_angle`, `gaussian_int`, `smooth_curvature` and
+`smooth_trap_circle` — the four thinnest by stored `>=3` count — by about 40% each.
+Under-seen here means keepers, not rows: `direct_trap_multiply` was already this
+store's largest mode at 338 rows and had 73 of them at `>=3`.
+
 **What a registration does not say is in
 [`../batch_caveats.md`](../batch_caveats.md)**: how a live population was actually
-assembled, and what a rate quoted off it without that is wrong about. Three of this
-store's batches have an entry there.
+assembled, and what a rate quoted off it without that is wrong about. Four of this
+store's batches have an entry there — including `under_seen_modes`, whose page was
+swept from position 270 and whose last 235 rows are the head's own decode restated
+rather than a verdict.
 
 **The source corpus is complete here, and no fourth tier was collectable over there.**
 All 2,810 verdicts of the five batches are in these rows, checked on 2026-08-18 by
