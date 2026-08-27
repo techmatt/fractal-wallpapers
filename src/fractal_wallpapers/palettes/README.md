@@ -42,6 +42,21 @@ picture as it was decoded and a tone measurement runs about 30% faster; hand it
 fractional values, as a gradient sampled between its stops gives, and it does the
 arithmetic.
 
+`lightness_and_chroma` is that arithmetic for a **picture**, and it exists because
+a whole render is where the conversion stops being free: on a 640x360 candidate
+`oklab` is 52 ms, and 31 ms of it is three `numpy.cbrt` calls run one element at a
+time. It hands back the two channels a tone reading actually wants instead of an
+array of three to slice, and splits the pixels over threads — a numpy ufunc drops
+the GIL, so the cube roots are what a thread can carry away. **The split cannot
+move a bit**: every step from a pixel's three bytes to its two numbers is
+elementwise (`_oklab_of_linear`, the one copy of Ottosson's matrices, which
+`oklab` is now a stack on top of), so a chunk read on its own thread is the bytes
+one pass would have produced. That matters more than speed here — the tone band an
+autolevel row projects onto is part of that render's identity, and a reading that
+were merely close would rename every cached candidate. The thread count is a share
+of the machine rather than the whole of it, because a build pass runs three worker
+processes beside it (`READ_THREAD_CAP`, `READ_POOL_WIDTH`).
+
 `codebook` is the colour vocabulary: **52 swatches** — 12 hues × {dark, light} ×
 {muted, vivid} plus 4 neutrals — as points in Oklab, and one soft assignment that
 turns any ramp or picture into a share vector over them. It is what

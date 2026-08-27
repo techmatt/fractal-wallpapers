@@ -1242,6 +1242,23 @@ location cycling six modes pays `dump/6.7`. That is most of the difference
 between the two arms' per-candidate cost, and it is a reason to hold the mode
 wherever the question allows it.
 
+**Where the two arms' clocks stand now.** `dc1` measured `measure` at 33.5% of
+the whole run and 53.4% of a near-band candidate, which made the autolevel
+operator's Python half the ceiling. Re-priced over 640 real candidates at the
+candidate regime, eight places an arm, after that half was rewritten:
+
+| arm | per candidate | dump | paint | measure | repaint |
+|---|---|---|---|---|---|
+| near-band, one mode over 40 | 168 → **129 ms** | 6.7% | 31.9% | 58.3% → **41.4%** | 20.0% |
+| breadth, six modes over 40 | 305 → **257 ms** | 61.8% | 15.1% | 29.5% → **16.2%** | 7.0% |
+
+`measure` itself went 98.0 → 53.3 ms near-band and 90.2 → 41.6 ms on breadth, on
+the same pictures byte for byte. The two arms load it differently because they
+fire the operator differently — 203 of 320 near-band against 148 of 320 on
+breadth — and firing is what costs the curve. The shares are the new run's own,
+so `paint` and `repaint` rise as a share of a loop that got shorter without them
+moving.
+
 **A location that never reached a width is out of that width's denominator.**
 `curves` counts a location at `k` only if it made `k` candidates. Without that
 rule a run stopped by its budget would report every curve bending down at the
