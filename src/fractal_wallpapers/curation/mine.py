@@ -506,8 +506,15 @@ class Clock:
         }
 
 
-def make(maker: hunt.Maker, unit: Unit, place: dict, frame: dict, key: str) -> dict:
+def make(
+    maker: hunt.Maker, unit, place: dict, frame: dict, key: str, pictures: Path | None = None
+) -> dict:
     """Render one candidate through the unchanged loop, with a stopwatch on each stage.
+
+    `pictures` names the directory the picture lands in, so a unit of work that
+    keeps its own subtree — [`curation.depth`] does — makes candidates through
+    this same call rather than through a second copy of it. Unnamed, it is this
+    mine's own.
 
     [`hunt.Maker.make`] with the single `seconds` split eight ways and nothing
     else altered: the same [`colorize.render`], the same judge, the same colour
@@ -532,7 +539,7 @@ def make(maker: hunt.Maker, unit: Unit, place: dict, frame: dict, key: str) -> d
         unit.mode,
         unit.colormap,
         maker.cyclic,
-        pictures_dir(maker.name) / f"{key}.jpg",
+        (pictures_dir(maker.name) if pictures is None else Path(pictures)) / f"{key}.jpg",
         level=True,
         band=maker.band,
         fields=maker.fields,

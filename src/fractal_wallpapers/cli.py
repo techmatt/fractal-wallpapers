@@ -3248,6 +3248,95 @@ def curate_mine(args: argparse.Namespace) -> int:
     return 0
 
 
+def curate_shrinkage(args: argparse.Namespace) -> int:
+    """Re-read one depth run's winners at label geometry and write both curves."""
+    from fractal_wallpapers.curation import candidate_ledger, depth, hunt, shrinkage
+
+    try:
+        sequence = depth.read_sequence(args.name)
+        # The run's own rows overlay the ledger rather than being read out of it,
+        # so a read can be taken before `curate depth merge` and on a run that was
+        # killed before it could be merged at all.
+        ledger = {str(row["recipe_key"]): row for row in candidate_ledger.read()}
+        ledger.update(
+            {str(row["recipe_key"]): row for row in hunt._read(depth.rows_path(args.name))}
+        )
+        record = shrinkage.measure(
+            args.name,
+            sequence,
+            ledger,
+            bars=(depth.SEATING_BAR, depth.PRIMED_BAR),
+            per_arm=args.per_arm,
+            seed=args.seed,
+            workers=args.workers,
+            device=args.device,
+        )
+    except shrinkage.ShrinkageRefused as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps(record, indent=2))
+    return 0
+
+
+def curate_depth(args: argparse.Namespace) -> int:
+    """Plan a depth run, run one, merge it, or redraw its autopsy sheet."""
+    from fractal_wallpapers.curation import depth
+
+    try:
+        if args.what == "sheet":
+            record = json.loads(depth.record_path(args.name).read_text(encoding="utf-8"))
+            print(f"{display_path(depth.contact_sheet(args.name, record))}")
+            return 0
+        if args.what == "merge":
+            print(json.dumps(depth.merge(args.name), indent=2))
+            return 0
+        if args.rate is None:
+            print(
+                "a depth run is sized off a rate measured at ITS width, and none was given. "
+                "Pass --rate the seconds a candidate a short run at this width reported."
+            )
+            return 1
+        knobs = {
+            "shares": json.loads(args.shares) if args.shares else None,
+            "band_weights": json.loads(args.band_weights) if args.band_weights else None,
+            "floor_modes": args.floor_modes,
+            "floor_width": args.floor_width,
+            "floor_seats": args.floor_seats,
+            "roster": args.modes,
+        }
+        if args.what == "plan":
+            _intended, shape = depth.build_plan(
+                depth.population(),
+                seed=args.seed,
+                rate=args.rate,
+                budget=args.budget,
+                width=args.width,
+                bands=args.bands,
+                **knobs,
+            )
+            print(json.dumps(shape, indent=2))
+            return 0
+        record = depth.run(
+            args.name,
+            seed=args.seed,
+            budget=args.budget,
+            rate=args.rate,
+            width=args.width,
+            bands=args.bands,
+            device=args.device,
+            **knobs,
+        )
+    except depth.DepthRefused as refusal:
+        print(refusal)
+        return 1
+    except hunt_refused() as refusal:
+        print(refusal)
+        return 1
+    print(f"{display_path(depth.contact_sheet(args.name, record))}")
+    print(json.dumps(record, indent=2))
+    return 0
+
+
 def hunt_refused():
     """[`hunt.HuntRefused`], reached without importing the module at parse time."""
     from fractal_wallpapers.curation import hunt
@@ -6231,12 +6320,14 @@ def curate_commands(subcommands) -> None:
     from fractal_wallpapers.curation import budget as budget_module
     from fractal_wallpapers.curation import candidate_ledger as candidate_ledger_module
     from fractal_wallpapers.curation import colors as colors_module
+    from fractal_wallpapers.curation import depth as depth_module
     from fractal_wallpapers.curation import embeddings as embeddings_module
     from fractal_wallpapers.curation import framing as framing_module
     from fractal_wallpapers.curation import gallery as gallery_module
     from fractal_wallpapers.curation import hunt as hunt_module
     from fractal_wallpapers.curation import mine as mine_module
     from fractal_wallpapers.curation import run as run_module
+    from fractal_wallpapers.curation import shrinkage as shrinkage_module
     from fractal_wallpapers.curation import solve as solve_module
 
     curating = subcommands.add_parser(
@@ -7193,6 +7284,162 @@ def curate_commands(subcommands) -> None:
     )
     mine_step.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
     mine_step.set_defaults(handler=curate_mine)
+
+    depth_step = steps.add_parser(
+        "depth",
+        help="buy width at one place, and measure what it buys against the head's rank",
+        description=(
+            "Forty candidates a location on the modes a dumped field can serve, over three "
+            "draws woven together so a budget that runs out truncates all of them alike. "
+            "NEAR-BAND deepens a place whose best FIELD candidate already sits between the "
+            "two bars, holding the incumbent's mode so only the palette moves. "
+            "RANKED-BANDS opens never-opened locations across the WHOLE of the location "
+            "head's rank range inside each partition, in equal-count bands, which is the "
+            "curve the earlier passes are two points on. FLAT opens them with no quality "
+            "conditioning, matched on partition. Every candidate is written to the "
+            "sequence file in the order it was made, so a cumulative curve at any width "
+            "below the one reached is arithmetic rather than another run. Field modes "
+            "only: a composite at this width is about 175s a location."
+        ),
+    )
+    depth_step.add_argument(
+        "what",
+        choices=["plan", "run", "merge", "sheet"],
+        help="print the plan and render nothing, run it, merge its rows into the ledger, "
+        "or redraw the autopsy sheet",
+    )
+    depth_step.add_argument(
+        "--name",
+        required=True,
+        help="what to call this run. Its rows, its pictures, its sequence and its record "
+        "live under it, and `merge` names it again",
+    )
+    depth_step.add_argument(
+        "--budget",
+        type=float,
+        default=depth_module.BUDGET_SECONDS,
+        metavar="SECONDS",
+        help=f"how long it may spend RENDERING (default "
+        f"{int(depth_module.BUDGET_SECONDS)}). Enforced at the candidate boundary",
+    )
+    depth_step.add_argument(
+        "--rate",
+        type=float,
+        metavar="SECONDS",
+        help="seconds a candidate at this width, which is what sizes the draws. Required "
+        "by `plan` and `run`. A rate carried in from a pass that ran at another width "
+        "prices another loop: most of a candidate's cost here is amortised over the width",
+    )
+    depth_step.add_argument(
+        "--width",
+        type=int,
+        default=depth_module.WIDTH,
+        metavar="COUNT",
+        help=f"how many candidates one location is offered (default {depth_module.WIDTH})",
+    )
+    depth_step.add_argument(
+        "--bands",
+        type=int,
+        default=depth_module.RANK_BANDS,
+        metavar="COUNT",
+        help=f"how many equal-count bands the head's rank range inside one partition is "
+        f"cut into (default {depth_module.RANK_BANDS})",
+    )
+    depth_step.add_argument(
+        "--seed",
+        type=int,
+        default=depth_module.DEFAULT_SEED,
+        help=f"the seed every draw here is taken under (default {depth_module.DEFAULT_SEED})",
+    )
+    depth_step.add_argument(
+        "--shares",
+        metavar="JSON",
+        help='what share of the budget each draw takes, as JSON, e.g. \'{"near_band": 0.3, '
+        '"ranked_bands": 0.4, "flat": 0.0, "mode_floor": 0.3}\'. Unsaid, the three measuring '
+        "draws take their own shares and the mode-floor draw takes nothing",
+    )
+    depth_step.add_argument(
+        "--band-weights",
+        metavar="JSON",
+        help="how many turns a round each rank band gets in the ranked draw, as JSON keyed "
+        'by band name, e.g. \'{"band00": 3, "band09": 0}\'. A band left out gets one turn. '
+        "This is how a production run spends what a measuring run learned; a measuring run "
+        "leaves it alone and every band draws alike",
+    )
+    depth_step.add_argument(
+        "--modes",
+        metavar="MODE",
+        nargs="+",
+        help="the roster the two breadth draws cycle at each location. Unsaid, every "
+        "shareable production mode less the demoted ones. Narrowing it is how a run at a "
+        "small width keeps the dump amortised: one field is dumped per (location, mode), "
+        "so six modes at twelve candidates pays six dumps and three modes pays three",
+    )
+    depth_step.add_argument(
+        "--floor-modes",
+        metavar="MODE",
+        nargs="+",
+        help="the modes the mode-floor draw serves. Unsaid, it serves every mode the ledger "
+        "says is short of --floor-seats seats today, worst first",
+    )
+    depth_step.add_argument(
+        "--floor-width",
+        type=int,
+        default=depth_module.FLOOR_WIDTH,
+        metavar="COUNT",
+        help=f"palettes per (proven location, mode) in the mode-floor draw (default "
+        f"{depth_module.FLOOR_WIDTH})",
+    )
+    depth_step.add_argument(
+        "--floor-seats",
+        type=int,
+        default=10,
+        metavar="COUNT",
+        help="how many distinct locations over the seating bar a mode needs before it is "
+        "no longer short (default 10, which is about N/100 at N=1000)",
+    )
+    depth_step.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
+    depth_step.set_defaults(handler=curate_depth)
+
+    shrinkage_step = steps.add_parser(
+        "shrinkage",
+        help="re-read a candidate set's winner at label geometry, and price the winner's curse",
+        description=(
+            "A location is PRIMED on the MAXIMUM of k noisy readings, so the prime rate "
+            "captures noise as well as quality and does so more the wider the set is. The "
+            "calibration sheet measured the noise: across one doubling of geometry P(>=4) "
+            "moves by mean -0.009 with sd 0.087. This re-renders the candidate that was "
+            "the running best of the first k, at each of a few checkpoints, at label "
+            "geometry (1280x720 ss2) through its own recipe, and scores it on the same "
+            "shipped artifact. It writes BOTH curves - the raw one every prime count so "
+            "far is, and the calibrated one - and never replaces one with the other."
+        ),
+    )
+    shrinkage_step.add_argument(
+        "--name",
+        required=True,
+        help="the depth run to re-read. Its sequence is the input and this read's own "
+        "subtree is named for it",
+    )
+    shrinkage_step.add_argument(
+        "--per-arm",
+        type=int,
+        default=shrinkage_module.PER_ARM,
+        metavar="COUNT",
+        help=f"how many locations each draw contributes (default {shrinkage_module.PER_ARM}). "
+        f"A correction term, not a second experiment",
+    )
+    shrinkage_step.add_argument(
+        "--workers",
+        type=int,
+        default=shrinkage_module.WORKERS,
+        metavar="COUNT",
+        help=f"render workers (default {shrinkage_module.WORKERS}). The judge stays in this "
+        f"process and runs once over everything they made",
+    )
+    shrinkage_step.add_argument("--seed", type=int, default=0, help="the sample's seed")
+    shrinkage_step.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
+    shrinkage_step.set_defaults(handler=curate_shrinkage)
 
     rejecting = steps.add_parser(
         "reject",
