@@ -3303,6 +3303,7 @@ def curate_depth(args: argparse.Namespace) -> int:
             "floor_width": args.floor_width,
             "floor_seats": args.floor_seats,
             "roster": args.modes,
+            "near_width": args.near_width,
         }
         if args.what == "plan":
             _intended, shape = depth.build_plan(
@@ -7336,6 +7337,15 @@ def curate_commands(subcommands) -> None:
         default=depth_module.WIDTH,
         metavar="COUNT",
         help=f"how many candidates one location is offered (default {depth_module.WIDTH})",
+    )
+    depth_step.add_argument(
+        "--near-width",
+        type=int,
+        metavar="COUNT",
+        help="how many candidates the NEAR-BAND draw offers one location, where that "
+        "differs from --width. It usually does: a near-band location holds its mode and "
+        "pays one dump over the whole set where a breadth location pays one per mode, so "
+        "the width at which the marginal candidate stops paying is not the same number",
     )
     depth_step.add_argument(
         "--bands",
