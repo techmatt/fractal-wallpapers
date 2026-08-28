@@ -13,6 +13,7 @@ import json
 import urllib.request
 from collections.abc import Sequence
 from pathlib import Path
+from typing import NamedTuple
 
 from fractal_wallpapers import engine, paths
 from fractal_wallpapers import schedule as schedule_module
@@ -3443,28 +3444,109 @@ def _twin_sweep(candidates, radius) -> dict:
 
 def curate_seat(args: argparse.Namespace) -> int:
     """Seat a gallery off the ledger with a greedy, and keep every refusal."""
-    from fractal_wallpapers.curation import headroom, seating
+    from fractal_wallpapers.curation import headroom, rank_key, seating
 
     candidates, _costs, _refused = headroom.population()
+    order = None
+    if args.key == "rank-key":
+        order, coverage = rank_key.order_for(candidates)
+        print(json.dumps(coverage, indent=2))
     record = seating.seat(
         candidates,
         n=args.n,
         floor=args.mode_floor,
         radius=None if args.no_preselection else args.neutral_radius,
         twin=not args.no_twin,
+        group_cap=args.group_cap,
+        order=order,
     )
     name = args.name or f"n{args.n}"
     path = seating.write_record(name, record)
     print(f"{path}")
     if not args.no_sheet:
-        print(f"{seating.contact_sheet(name, record, rejected=record['samples'])}")
+        sheet = None if args.sheet_out is None else resolve_output(args.sheet_out)
+        print(f"{seating.contact_sheet(name, record, rejected=record['samples'], output=sheet)}")
     print(
         f"{record['filled']} of {args.n} seat(s); "
         f"{record['shortfalls']['modes']['represented']} of "
         f"{record['shortfalls']['modes']['of']} mode(s) represented, at a floor of "
-        f"{record['shortfalls']['modes']['floor']}"
+        f"{record['shortfalls']['modes']['floor']}; palette-group cap "
+        f"{record['config']['ceiling']['group_cap']} "
+        f"({record['config']['ceiling']['group_cap_rule']}), sorted on "
+        f"{record['config']['sort_key']}"
     )
     print(json.dumps(record["rejection"]["reasons"], indent=2))
+    return 0
+
+
+class _PictureOf(NamedTuple):
+    """The two fields `flatness.missing` reads, for a population that is not a pool.
+
+    `--all` sweeps every ledger row with a picture rather than the pool, and a
+    ledger row is not a [`solve.Candidate`] — it has no score, and rows a person
+    rejected have no place in a pool and are still pictures the fit needs read.
+    """
+
+    key: str
+    picture: str
+
+
+def curate_flatness(args: argparse.Namespace) -> int:
+    """Sweep the dead-space column over the pool, or keep the sidecar it lands in."""
+    from fractal_wallpapers.curation import durability, flatness, headroom
+
+    if args.what in ("save", "check", "restore"):
+        durable = flatness.durable()
+        if args.what == "save":
+            print(json.dumps(durability.save(durable), indent=2))
+            return 0
+        if args.what == "check":
+            report = durability.check(durable)
+            print(json.dumps(report, indent=2))
+            return 0 if report["verdict"] in ("ok", "grown", "unrecorded") else 1
+        print(json.dumps(durability.restore(durable, force=args.force), indent=2))
+        return 0
+
+    if args.all:
+        from fractal_wallpapers.curation import candidate_ledger
+
+        rows = candidate_ledger.read()
+        present = candidate_ledger.present_pictures(rows)
+        candidates = [
+            _PictureOf(str(row["key"]), str(row["picture"]))
+            for row in rows
+            if row.get("picture") and str(row["key"]) in present
+        ]
+        print(f"[flatness] every ledger row with a picture on disk: {len(candidates):,}")
+    else:
+        candidates, _costs, _refused = headroom.population()
+    if args.what == "coverage":
+        print(json.dumps(flatness.coverage(candidates), indent=2))
+        return 0
+    record = flatness.sweep(candidates, workers=args.workers, recompute=args.recompute)
+    print(json.dumps(record, indent=2))
+    print(json.dumps(flatness.coverage(candidates), indent=2))
+    return 0
+
+
+def curate_rank_key(args: argparse.Namespace) -> int:
+    """Fit the seating's sort key, or print the one that is shipped."""
+    from fractal_wallpapers.curation import rank_key
+
+    if args.what == "show":
+        document = json.loads(rank_key.artifact_path().read_text(encoding="utf-8"))
+        print(json.dumps(document, indent=2))
+        return 0
+    document = rank_key.fit()
+    print(
+        json.dumps(
+            {
+                name: document[name]
+                for name in ("coefficients", "standardization", "population", "out_of_fold")
+            },
+            indent=2,
+        )
+    )
     return 0
 
 
@@ -6950,6 +7032,7 @@ def curate_commands(subcommands) -> None:
     from fractal_wallpapers.curation import depth as depth_module
     from fractal_wallpapers.curation import distinct as distinct_module
     from fractal_wallpapers.curation import embeddings as embeddings_module
+    from fractal_wallpapers.curation import flatness as flatness_module
     from fractal_wallpapers.curation import framing as framing_module
     from fractal_wallpapers.curation import gallery as gallery_module
     from fractal_wallpapers.curation import headroom as headroom_module
@@ -7881,7 +7964,111 @@ def curate_commands(subcommands) -> None:
         action="store_true",
         help="take every decision and build no contact sheet",
     )
+    seating_step.add_argument(
+        "--sheet-out",
+        metavar="PATH",
+        help="write the contact sheet there instead of beside the record, which is what "
+        "a before/after over several variants wants — one directory of sheets to look at",
+    )
+    seating_step.add_argument(
+        "--group-cap",
+        choices=list(ceiling_module.GROUP_CAP_RULES),
+        default=ceiling_module.IDENTITY,
+        help=f"which palette-group cap to seat under. `{ceiling_module.IDENTITY}` is "
+        f"ceiling.GROUP_CAP = {ceiling_module.GROUP_CAP}, one seat a map, which is what "
+        f"every gallery this project has shipped was seated under and is still the "
+        f"default. `{ceiling_module.PROPORTIONAL}` is "
+        f"max(1, floor({ceiling_module.GROUP_CAP_RATE:g} * n)) — 1 up to n=40, 3 at n=150, "
+        f"25 at n=1000, so a before/after has to be taken at a size where the two differ",
+    )
+    seating_step.add_argument(
+        "--key",
+        choices=["p_ge4", "rank-key"],
+        default="p_ge4",
+        help="the sort key the pool is walked in. `p_ge4` is the render judge alone, "
+        "which is the incumbent. `rank-key` is the fitted form in "
+        "`curate rank-key` — the location head, both judge cutpoints, the calibration "
+        "stratum and the flatness column. IT MOVES THE ORDER AND NOTHING ELSE: every bar, "
+        "the clearing rule and the neutral pre-selection still read the judge's own columns",
+    )
     seating_step.set_defaults(handler=curate_seat)
+
+    flatness_step = steps.add_parser(
+        "flatness",
+        help="the dead-space column, swept over the pool into a sidecar beside the scores",
+        description=(
+            "Tile each picture into 16-pixel cells, fit a plane to every cell, and count "
+            "the cells with nothing left over — a candidate that is mostly dead space is a "
+            "candidate with less in it. The plane term is what makes it more than a "
+            "variance screen: a smooth ramp across a cell is not detail. It ranks "
+            "BACKWARDS on its own (AUC 0.407 smooth / 0.480 strange) and earns its place "
+            "on top of the judge on both kinds, which is why it is a column of the fitted "
+            "rank key and never a bar. One row per recipe key in a sidecar beside "
+            "`scores.jsonl`; NO LEDGER ROW IS EDITED. About 7.5 ms a picture, incremental "
+            "— a store already swept costs one read and no decodes."
+        ),
+    )
+    flatness_step.add_argument(
+        "what",
+        nargs="?",
+        default="sweep",
+        choices=["sweep", "coverage", "save", "check", "restore"],
+        help="read every pool candidate the sidecar does not hold, report how much of the "
+        "pool it can answer for, or save, check and restore the sidecar against its manifest",
+    )
+    flatness_step.add_argument(
+        "--workers",
+        type=int,
+        default=flatness_module.WORKERS,
+        metavar="N",
+        help=f"how many processes decode at once (default {flatness_module.WORKERS}, the "
+        "render pool's number and for the same reason: this should not make the desktop "
+        "unusable while it runs)",
+    )
+    flatness_step.add_argument(
+        "--all",
+        action="store_true",
+        help="sweep every ledger row whose picture is on disk rather than the pool. The "
+        "pool excludes a row a person rejected and a row off the candidate regime, and "
+        "the rank key has to be FITTED on some of those — a label row is a label row "
+        "whatever the pool later did with its recipe",
+    )
+    flatness_step.add_argument(
+        "--recompute",
+        action="store_true",
+        help="re-read every candidate rather than only the ones with no row yet",
+    )
+    flatness_step.add_argument(
+        "--force",
+        action="store_true",
+        help="with `restore`: overwrite a live sidecar holding MORE rows than the manifest",
+    )
+    flatness_step.set_defaults(handler=curate_flatness)
+
+    rank_key_step = steps.add_parser(
+        "rank-key",
+        help="the fitted sort key a seating may rank on instead of the judge alone",
+        description=(
+            "Fit the form `rank_key_fit` selected — the location head's P(>=4), the render "
+            "judge at both cutpoints, the calibration stratum and the flatness column — "
+            "over every human label row that joins the candidate ledger, with SHARED "
+            "weights over both stores because per-kind bought +0.000 [-.011,+.012] on "
+            "smooth. Five folds at 20% grouped on lineage and assigned ONCE over the "
+            "pooled corpus, since 96 groups span both stores. It ships two tracked files: "
+            "the coefficients with their standardization constants, and EVERY LABEL ROW "
+            "THE FIT CONSUMED — the store, the batch, the file and line, the tier, the "
+            "lineage group and the fold. A selection rule fit on human labels is a "
+            "category no eligibility guard covers, so the record is the guard."
+        ),
+    )
+    rank_key_step.add_argument(
+        "what",
+        nargs="?",
+        default="fit",
+        choices=["fit", "show"],
+        help="re-fit the key and rewrite both tracked files, or print the shipped one",
+    )
+    rank_key_step.set_defaults(handler=curate_rank_key)
 
     distinct_step = steps.add_parser(
         "distinct",

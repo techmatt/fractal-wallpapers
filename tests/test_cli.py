@@ -497,3 +497,38 @@ def test_the_focus_report_is_off_on_both_commands_that_walk() -> None:
     assert parse(["harvest"]).foci is False
     assert parse(["walk", "--foci"]).foci is True
     assert parse(["harvest", "--foci"]).foci is True
+
+
+def test_the_two_seating_changes_are_flags_and_the_incumbent_is_what_you_get_unasked() -> None:
+    """Both were built and neither is flipped. `curate seat` with no flag seats
+    the walk this project has always seated, and the flags are how a before/after
+    is taken — one at a time, on one command line."""
+    from fractal_wallpapers.curation import ceiling
+
+    parse = cli.build_parser().parse_args
+    incumbent = parse(["curate", "seat", "--n", "150"])
+    assert incumbent.handler is cli.curate_seat
+    assert incumbent.group_cap == ceiling.IDENTITY
+    assert incumbent.key == "p_ge4"
+    both = parse(
+        ["curate", "seat", "--n", "150", "--group-cap", "proportional", "--key", "rank-key"]
+    )
+    assert (both.group_cap, both.key) == (ceiling.PROPORTIONAL, "rank-key")
+    with pytest.raises(SystemExit):
+        parse(["curate", "seat", "--group-cap", "whatever_matt_meant"])
+
+
+def test_the_flatness_sweep_and_the_rank_key_fit_are_subcommands_with_defaults() -> None:
+    """There is no `scripts/`, so the sidecar and the fitted artifact are both
+    rebuilt by a named verb and the default verb is the one that does the work."""
+    from fractal_wallpapers.curation import flatness
+
+    parse = cli.build_parser().parse_args
+    swept = parse(["curate", "flatness"])
+    assert swept.handler is cli.curate_flatness
+    assert (swept.what, swept.workers, swept.all) == ("sweep", flatness.WORKERS, False)
+    assert parse(["curate", "flatness", "check"]).what == "check"
+    fitted = parse(["curate", "rank-key"])
+    assert fitted.handler is cli.curate_rank_key
+    assert fitted.what == "fit"
+    assert parse(["curate", "rank-key", "show"]).what == "show"
