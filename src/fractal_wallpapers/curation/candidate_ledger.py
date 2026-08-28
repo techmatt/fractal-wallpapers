@@ -59,6 +59,22 @@ recorded identity; `location.frame_key` is the identity of the frame the pixels
 are of. A reader that wants "the same place" takes the first; a reader that wants
 "the same picture" takes the recipe key.
 
+## The `hunt` block says what the draw intended
+
+A row made by a hunt, a mine or a depth run carries the intention beside the
+outcome: which leg drew it, which mode and colormap, which band or cell it was
+drawn *for*, and **`k` — which candidate at its location it was**. That last one
+is here rather than only in the run's own `sequence.jsonl` because those live
+under the regenerable tree and the ledger does not, and the corrections a reader
+has to make are `k`-dependent: a prime rate read off the maximum of `k` noisy
+judgements is a winner's-curse estimate, and the multiplier that turns it into a
+calibrated one is a function of `k`.
+
+The field is **additive**, and every row written before the stamp existed has no
+`k` at all. [`k_of`] returns `None` for those rather than 1, because a reader
+that took a missing `k` for a first draw would report that whole history as
+unselected and under-correct every estimate over it.
+
 ## Where it lives
 
 The rows are megabytes and the history guard acts at 1 MiB a file, so this gets
@@ -288,6 +304,23 @@ def row(
         "picture": picture,
         "rejected": rejected,
     }
+
+
+def k_of(row: dict) -> int | None:
+    """Which candidate at its location this row was, or `None` where it cannot say.
+
+    The `k` a planner stamps in the row's `hunt` block. It is **additive**: the
+    85,129 rows written before the stamp existed carry no `k` at all, and a
+    reader that treated a missing one as 1 would report the whole of that history
+    as unselected first draws and under-correct every winner's-curse estimate
+    over it. `None` is the honest answer and a caller has to decide what to do
+    with it.
+    """
+    held = (row.get("hunt") or {}).get("k")
+    try:
+        return None if held is None else int(held)
+    except (TypeError, ValueError):
+        return None
 
 
 def _frame_key(recipe: recipes.Recipe) -> str | None:
@@ -985,6 +1018,7 @@ __all__ = [
     "durable_rows",
     "durable_scores",
     "feasibility",
+    "k_of",
     "manifest_dir",
     "read",
     "read_scores",

@@ -697,6 +697,18 @@ derived from the render rather than an input to it.
 comes from a tracked table a re-clustering can move, and a key that moved with it
 would re-key rows whose pixels never changed.
 
+**The `hunt` block says what the draw intended, `k` included.** A row made by a
+hunt, a mine or a depth run carries its leg, its mode and colormap, the band or
+cell it was drawn *for*, and `k` — which candidate at its location it was. `k`
+is on the ledger row and not only in the run's own `sequence.jsonl` because
+those live under `artifacts/` and the ledger does not, and the corrections a
+reader has to make to a prime count are `k`-dependent: a rate read off the
+maximum of `k` noisy judgements is a winner's-curse estimate and its multiplier
+is a function of `k`. The field is **additive** — none of the 85,129 rows
+written before it exists carries one — and `candidate_ledger.k_of` answers
+`None` there rather than 1, because a missing `k` read as a first draw would
+report that whole history as unselected and under-correct every estimate over it.
+
 **The identity is the recipe, never the location key**, and that is what makes a
 superseded framing a re-key rather than a rebuild. Framing refinement is moving
 into harvest, where a refinement **moves** the location key

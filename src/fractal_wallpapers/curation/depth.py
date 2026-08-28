@@ -236,8 +236,23 @@ class Shot:
     rank_fraction: float | None = None
 
     def named(self) -> dict:
-        """This intention as the ledger row carries it."""
-        return {"leg": self.arm, "mode": self.mode, "colormap": self.colormap, "band": self.band}
+        """This intention as the ledger row carries it.
+
+        `k` and the two rank members ride along for [`mine.Unit.named`]'s
+        reason: this run's `sequence.jsonl` lives under the regenerable tree and
+        the ledger does not, and a `k`-dependent correction — the winner's-curse
+        multiplier above all — cannot be applied to a row that has forgotten
+        which candidate at its location it was.
+        """
+        return {
+            "leg": self.arm,
+            "mode": self.mode,
+            "colormap": self.colormap,
+            "band": self.band,
+            "k": self.k,
+            "rank": self.rank,
+            "rank_fraction": self.rank_fraction,
+        }
 
 
 # --------------------------------------------------------------------------- #
