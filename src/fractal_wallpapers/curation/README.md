@@ -2381,6 +2381,28 @@ the head onto the GPU, the ledger read, and the sidecar rewritten whole — whic
 what sets the chunk size. It wrote **1.48 GB / 22,898 files** into
 `artifacts/node_views/384x216ss1/` and nothing anywhere else.
 
+## The archive tier
+
+The archive tier named throughout this file is
+`E:\FractalStorage\fractal-wallpapers\artifacts\`, and it mirrors the hot tree's
+shape one level down: a run archived out of `artifacts/<name>/` lands at
+`E:\FractalStorage\fractal-wallpapers\artifacts\<name>\`. `location_views` — the
+frozen deploy cache above — lives there, and so do closed harvest runs
+(`harvest_run2`, `3`, `9`, `10`), superseded gallery passes, and the smoke trees.
+
+Restoring one is a copy back under the same name:
+
+```
+robocopy "E:\FractalStorage\fractal-wallpapers\artifacts\<name>" ^
+         "C:\Code\fractal-wallpapers\artifacts\<name>" /E
+```
+
+Two rules hold on the way out. **`artifacts/curation/` never goes** — it stays on
+the hot tier entire, pictures pruned in place under the retention policy rather
+than moved. And a tree only leaves after a copy is verified equal on **both** file
+count and byte sum, because the sources are deleted afterwards and a short copy is
+silent.
+
 ## A standing score is a reading of a picture, and the picture can stop existing
 
 The sidecar row names the view its score was read off — a regime and a file name

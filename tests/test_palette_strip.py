@@ -16,8 +16,20 @@ from fractal_wallpapers import engine
 from fractal_wallpapers.palettes import strip
 from fractal_wallpapers.paths import colormap_dir
 
+
+def engine_is_built() -> bool:
+    # Through the exception rather than `is_file`: `engine_path` RAISES when
+    # nothing is built, so asking it bare turns a skip into a collection error
+    # and takes the whole lane down with this one file.
+    try:
+        engine.engine_path()
+    except FileNotFoundError:
+        return False
+    return True
+
+
 pytestmark = pytest.mark.skipif(
-    not engine.engine_path().is_file(),
+    not engine_is_built(),
     reason="the strip is drawn by the engine; build it in release first",
 )
 

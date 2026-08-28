@@ -102,7 +102,13 @@ bug rather than as the environment it is.
 
 CI runs the same thing on Ubuntu and Windows. The Python suite's walk tests need
 a **release** engine (`cargo build --release --manifest-path engine/Cargo.toml`)
-and skip themselves without one.
+and skip themselves without one. They skip only because each of them asks
+whether the engine is built through a `try`/`except FileNotFoundError` —
+`engine.engine_path` **raises** rather than returning None, so a guard that
+asks it bare (`not engine.engine_path().is_file()`) explodes while pytest is
+still collecting and interrupts the **whole lane**, not just its own file.
+`tests/test_palette_strip.py` was that guard once. So `cargo clean` costs a
+rebuild *and* the fast lane until you do it.
 
 ### The two lanes
 
