@@ -87,27 +87,29 @@ is a class the release path prefers where it finds one, not a second floor.
 
 ## Measured is not the same as acting, and there are now two of each
 
-The measurement that set 0.685 was a paragraph of prose in a `method` string for
-five days: `grep -rn isotonic` reached one assertion in the suite and nothing
-else, so the one cut in this project that removes a finished picture was the one
-nobody could re-derive. It is a command now —
-`fractal-wallpapers head floor --head <head>` — and running it on the strange
-head **reproduces 0.685**: crossing 0.680898 against the 0.6809 the method
-states, which is 0.685 rounded up on the 0.005 grid it was rounded on.
+The measurement that once set the strange bar to 0.685 was a paragraph of prose
+in a `method` string for five days: `grep -rn isotonic` reached one assertion in
+the suite and nothing else, so the one cut in this project that removes a
+finished picture was the one nobody could re-derive. It is a command now —
+`fractal-wallpapers head floor --head <head>` — and the heights below are what it
+last produced, on the shipped four-class judge and the stores as they stood on
+2026-08-24: **0.575** on the strange head (crossing 0.573085) and **0.540** on
+the smooth one (crossing 0.535952). Both records are under
+`models/render/release_floor_<kind>.json`.
 
-The same command on the smooth head produced [`SMOOTH_RELEASE_FLOOR`], 0.385, and
-that one **does not act**. [`ACTING_RELEASE_BARS`] is still the single place that
-answers whether a head gates, and the smooth head's cut is still the advisory;
-what the measurement adds is that the advisory's 0.50 can now be read against a
-number somebody measured — the head stops disagreeing with its labelers at 0.385,
-not at the midpoint of its own scale. Promoting it is a decision of the kind Matt
-took for the strange head, off a sheet rather than off a curve.
+The smooth height is [`SMOOTH_RELEASE_FLOOR`] and it **does not act**.
+[`ACTING_RELEASE_BARS`] is still the single place that answers whether a head
+gates, and the smooth head's cut is still the advisory; what the measurement adds
+is that the advisory's 0.50 can now be read against a number somebody measured —
+the head stops disagreeing with its labelers at 0.540, not at the midpoint of its
+own scale. Promoting it is a decision of the kind Matt took for the strange head,
+off a sheet rather than off a curve.
 
-**Both measured floors are on one 0.005 grid** (Matt's ruling, 2026-08-22). The
-smooth fit was recorded at 0.381 for a day — the same crossing rounded up at three
-places — and two floors reported on two grids is a comparison that says nothing.
-The crossing did not move and no curve was re-fitted; only which of the record's
-two roundings the declared height reads.
+**Both measured floors are on one 0.005 grid** (Matt's ruling, 2026-08-22): two
+floors reported on two grids is a comparison that says nothing, so the crossing is
+rounded up on 0.005 and never at three places. That is a rounding rule and not a
+re-fit; what moved the heights themselves was the 2026-08-24 re-measurement on the
+shipped judge, and each `Restatement` below carries its own crossing.
 
 That split is why there are two types, and they live in [`fractal_wallpapers.cuts`]
 rather than here: three of the four acting cuts sit on the location head's scale
@@ -276,14 +278,13 @@ STRANGE_RELEASE_BAR = Restatement(
 #: midpoint of a probability scale and answers "would this head call the picture a
 #: wallpaper", where this answers "above what score does this head stop disagreeing
 #: with the people who judged it". Those are different questions and they have
-#: different answers — 0.50 against 0.385.
+#: different answers — 0.50 against 0.540.
 #:
-#: **On the 0.005 grid, which is now the only grid.** The fit crossed at 0.380325
-#: and was recorded at 0.381, the crossing rounded up at three places; the strange
-#: bar beside it was rounded up on 0.005. Matt ruled the two onto one grid on
-#: 2026-08-22, which moves this height to 0.385 and leaves 0.685 where it was.
-#: That is a rounding and not a re-fit: the crossing, the corpus, the bootstrap
-#: and the head sha below are the fit's, untouched.
+#: **On the 0.005 grid, which is now the only grid** (Matt's ruling, 2026-08-22).
+#: The fit below crossed at 0.535952 and the declared height is that crossing
+#: rounded up on 0.005; the strange bar beside it reads the same grid. Rounding at
+#: three places, which this height carried for a day under the retired fit, is not
+#: a grid two floors can be compared on.
 #:
 #: **It is recorded and not wired.** Nothing reads it at selection; the smooth
 #: head's cut is still [`release_advisory`], and promoting it is a decision of the

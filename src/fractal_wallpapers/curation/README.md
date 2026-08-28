@@ -863,6 +863,30 @@ whole way up, while ≥3 precision climbs 0.913 → 1.000. Read `P(>=4)` as a *t
 doing real work — it is the ≥3 floor it protects — and the q4 bar is not an
 ordering over the seats it admits.
 
+**Where `P(>=4)` is read at all, and where it only orders.** Traced end to end on
+2026-08-28, ledger row → admission → `curate seat` → `curate solve` → release.
+The column **acts as a bar in exactly one place**: `headroom.clearing`, at
+`solve.Q4_BAR` — and only for the seven of eighteen production modes that can
+field twenty-five distinct clearing locations there. The other eleven clear on
+`P(>=3) >= 0.50` (`headroom.FALLBACK_BAR`), so more than half the mode roster
+never meets a `P(>=4)` bar. `curation.depth.mode_bars` and `clears_its_bar` read
+the same rule and re-state nothing.
+
+Everywhere else on that path the column is an **ordering** and never a gate:
+`solve.pool` (presence only — a row with no `p_ge4` is refused `no_score`),
+`solve.strongest_locations`, the MILP's stage-1 count and tie-break,
+`distinct.preselect` (which place represents a near-cluster, and the walk order),
+`seating.scarcity` and `seating.seat`'s ranked walk, `curation.mine`'s
+`best_by_location`, `curation.framing`'s reframe choice.
+
+**Every acting bar in the release path is on `P(>=3)`, not `P(>=4)`.**
+`selection.entries` builds its rank key from `p_ge3`; `floors.release_bar`,
+`floors.gallery_floor` (`gallery._Offer`) and `curation.rejection` all call
+`.acts()` on `p_ge3`. The supply engine's `GOOD_FLOOR` and `GREAT_CUT` are on the
+**location** head and are reached by a run's harvest, not by the render judge's
+column at all. So the sentence to carry is: *`P(>=4)` decides who is in the pool
+for seven modes and decides the order for everybody; nothing at release reads it.*
+
 **The pairwise rules are generated, never materialized.** The diversity distance
 and the group cap are statements about a pair of finished pictures, and the
 ledger holds 118 million pairs at 512 KiB a signature. So: solve without them,
