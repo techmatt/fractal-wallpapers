@@ -745,6 +745,9 @@ def run(
     target_dims=None,
     selection=None,
     selection_says: str | None = None,
+    second_selection=None,
+    second_selection_says: str | None = None,
+    patience: int | None = None,
     log=train.say,
 ) -> dict:
     """Train the candidate at one seed, and write its checkpoints and records.
@@ -778,6 +781,19 @@ def run(
     **`target_dims` moves the input size**, which the recipe has always carried
     as a record of what the head reads at and which is now read as well as
     written. `None` keeps the value every band on the record trained under.
+
+    **`second_selection` keeps a SECOND checkpoint under a second rule**, and it
+    exists so that two stopping rules can be read off one run rather than two.
+    It takes and returns what `selection` does — minimize — and the epoch it
+    likes is saved as `best_second.pt` beside `best.pt`. Neither rule sees the
+    other and neither changes what is trained: the loop, the optimizer and the
+    epoch order are the same run, read twice.
+
+    **`patience` stops the loop when NO rule has improved for that many epochs.**
+    Every rule, not the first one: the two rules here peak several epochs apart,
+    so a patience read off one of them would truncate the other's search and the
+    comparison would be between a rule and a budget. `None` runs the recipe's
+    full epoch count, which is what every band on the record did.
     """
     import numpy
     import torch
@@ -804,6 +820,10 @@ def run(
         recipe["target_dims"] = [int(value) for value in target_dims]
     if selection_says is not None:
         recipe["selection"] = selection_says
+    if second_selection_says is not None:
+        recipe["second_selection"] = second_selection_says
+    if patience is not None:
+        recipe["patience"] = int(patience)
     if per_kind:
         recipe["per_kind"] = True
         recipe["conditioning"] = (
@@ -917,6 +937,7 @@ def run(
     resume = directory / "resume.pt"
 
     best_metric, best_state, best_epoch, history = float("inf"), None, -1, []
+    second_metric, second_state, second_epoch = float("inf"), None, -1
     segments, start = [], 0
     if resume.is_file():
         saved = torch.load(resume, map_location="cpu", weights_only=False)
@@ -925,6 +946,9 @@ def run(
         schedule.load_state_dict(saved["schedule"])
         best_metric, best_epoch = saved["best_metric"], saved["best_epoch"]
         best_state, history = saved["best_state"], saved["history"]
+        second_metric = saved.get("second_metric", float("inf"))
+        second_epoch = saved.get("second_epoch", -1)
+        second_state = saved.get("second_state")
         segments = list(saved.get("segments") or [])
         start = saved["epoch"] + 1
         torch.set_rng_state(saved["torch_rng"].cpu().to(torch.uint8))
@@ -936,6 +960,7 @@ def run(
         log(f"resumed at epoch {start} (best {best_metric:.4f} at epoch {best_epoch})")
 
     began = time.time()
+    stopped_early: dict | None = None
 
     def launched(through: int) -> list[dict]:
         if through < start:
@@ -979,11 +1004,17 @@ def run(
         objective = (selection or finished_train.validation_loss)(
             choosing_labels, probabilities, classes
         )
+        second = (
+            second_selection(choosing_labels, probabilities, classes)
+            if second_selection is not None
+            else None
+        )
         record = {
             "epoch": epoch,
             "loss": running / max(seen, 1),
             "seconds": round(time.time() - clock, 1),
             "selection_loss": objective,
+            "second_selection_loss": second,
             f"selection_ap_ge{cutpoint + 2}": metrics.average_precision(
                 (choosing_labels >= cutpoint + 2).astype(int), probabilities[:, cutpoint]
             ),
@@ -1020,6 +1051,9 @@ def run(
         if objective is not None and objective < best_metric:
             best_metric, best_epoch = objective, epoch
             best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
+        if second is not None and second < second_metric:
+            second_metric, second_epoch = second, epoch
+            second_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
 
         temporary = directory / "resume.pt.partial"
         torch.save(
@@ -1031,6 +1065,9 @@ def run(
                 "best_metric": best_metric,
                 "best_epoch": best_epoch,
                 "best_state": best_state,
+                "second_metric": second_metric,
+                "second_epoch": second_epoch,
+                "second_state": second_state,
                 "history": history,
                 "segments": launched(epoch),
                 "torch_rng": torch.get_rng_state(),
@@ -1040,6 +1077,27 @@ def run(
             temporary,
         )
         temporary.replace(resume)
+
+        # NO rule has improved for `patience` epochs. Every rule, because the
+        # two peak several epochs apart on this corpus and a patience read off
+        # the earlier one would truncate the later one's search.
+        if patience is not None:
+            stalled = [epoch - best_epoch]
+            if second_selection is not None:
+                stalled.append(epoch - second_epoch)
+            if min(stalled) >= int(patience):
+                stopped_early = {
+                    "at_epoch": epoch,
+                    "of_epochs": recipe["epochs"],
+                    "patience": int(patience),
+                    "best_epoch": best_epoch,
+                    "second_epoch": second_epoch,
+                }
+                log(
+                    f"stopping at epoch {epoch}: no rule improved in {patience} epochs "
+                    f"(best {best_epoch}, second {second_epoch})"
+                )
+                break
 
     lock.unlink(missing_ok=True)
     last_state = {k: v.detach().cpu() for k, v in model.state_dict().items()}
@@ -1053,6 +1111,8 @@ def run(
         "only": only,
         "classifier_width": width,
         **recipe,
+        "second_selection_epoch": second_epoch,
+        "stopped_early": stopped_early,
         "kinds": [only] if only else list(KINDS),
         "mean": list(data_config["mean"]),
         "std": list(data_config["std"]),
@@ -1065,6 +1125,17 @@ def run(
     }
     torch.save({"state_dict": best_state, "config": config}, directory / "best.pt")
     torch.save({"state_dict": last_state, "config": config}, directory / "last.pt")
+    if second_state is not None:
+        # The second rule's own checkpoint, carrying a config whose `best_epoch`
+        # is the epoch THIS file holds. A reader that opened the file and got the
+        # other rule's epoch back would have no way to tell the two apart.
+        torch.save(
+            {
+                "state_dict": second_state,
+                "config": {**config, "best_epoch": second_epoch, "selected_by": "second"},
+            },
+            directory / "best_second.pt",
+        )
     if resume.is_file():
         resume.unlink()
 
@@ -1076,9 +1147,14 @@ def run(
         "two_head": per_kind,
         "device": where,
         "wall_seconds": round(time.time() - began, 1),
-        "segments": launched(recipe["epochs"] - 1),
+        # The epoch actually reached, not the one the recipe declared: a run
+        # that stopped on patience did not launch through the recipe's last.
+        "segments": launched(history[-1]["epoch"] if history else recipe["epochs"] - 1),
         "best_epoch": best_epoch,
         "best_selection_objective": best_metric,
+        "second_selection_epoch": second_epoch,
+        "best_second_selection_objective": second_metric if second_state is not None else None,
+        "stopped_early": stopped_early,
         "selection_metric": "validation loss (minimized), pooled over both kinds",
         "pictures": {
             "total": len(pictures),
