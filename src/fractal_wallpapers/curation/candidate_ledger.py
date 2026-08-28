@@ -306,6 +306,57 @@ def row(
     }
 
 
+def live_artifact() -> str:
+    """The sha256 of the judge shipped right now. What a score has to be read on."""
+    from fractal_wallpapers.curation import floors
+
+    return floors.live_stamp(floors.SCORING_HEAD)
+
+
+def scores_by_recipe(scores=None, artifact: str | None = None, regime: str | None = None) -> dict:
+    """`{recipe key: score row}` for **one** judge artifact, refusing a mixed read.
+
+    The sidecar is keyed `(recipe key, artifact, regime)` precisely because a
+    number is comparable only inside that triple. A join that flattened it to the
+    recipe key alone would be last-row-wins across artifacts: two judges' scales
+    in one ordering, with nothing anywhere saying so. Today the store holds one
+    artifact and one regime, so such a join is right by luck; the first adoption
+    is what turns luck into a silent wrong answer, and an adoption is a thing
+    this project plans to do.
+
+    So the artifact is named — `None` means the live head — and a row read on any
+    other is **left out**, counted, and reported by [`stale_scores`]. Omitted and
+    not silently rescaled: a recipe with no reading on the live judge has no
+    score, which is a different and honest thing from having an old one.
+    """
+    read = read_scores() if scores is None else list(scores)
+    want = live_artifact() if artifact is None else str(artifact)
+    return {
+        str(row["recipe_key"]): row
+        for row in read
+        if str(row.get("judge_artifact")) == want
+        and (regime is None or str(row.get("regime")) == str(regime))
+    }
+
+
+def stale_scores(scores=None, artifact: str | None = None) -> dict:
+    """What a join on the live judge leaves behind: `{artifact: rows}`.
+
+    A census and not a warning. A store holding two artifacts is the ordinary
+    state after an adoption — the old readings are kept, because a picture read
+    by two judges is two facts — and this is how a caller says how much of its
+    population it is about to have no score for.
+    """
+    read = read_scores() if scores is None else list(scores)
+    want = live_artifact() if artifact is None else str(artifact)
+    out: dict = {}
+    for row in read:
+        held = str(row.get("judge_artifact"))
+        if held != want:
+            out[held] = out.get(held, 0) + 1
+    return dict(sorted(out.items(), key=lambda item: -item[1]))
+
+
 def colours_by_render(rows=None) -> dict:
     """`{tracked render path: colour block}` over the rows that have both.
 
@@ -1053,6 +1104,7 @@ __all__ = [
     "durable_scores",
     "feasibility",
     "k_of",
+    "live_artifact",
     "manifest_dir",
     "read",
     "read_scores",
@@ -1063,8 +1115,10 @@ __all__ = [
     "rows_path",
     "save",
     "score_row",
+    "scores_by_recipe",
     "scores_path",
     "sources",
+    "stale_scores",
     "store_root",
     "write",
     "write_scores",

@@ -321,7 +321,7 @@ class Candidate:
         return self.score >= Q4_BAR
 
 
-def pool(rows=None, scores=None, log=print) -> tuple[list[Candidate], dict]:
+def pool(rows=None, scores=None, artifact=None, log=print) -> tuple[list[Candidate], dict]:
     """`(candidates, what was refused)` — everything the solve may seat.
 
     Four exclusions, each a fact about the candidate rather than a quality bar. A
@@ -342,7 +342,11 @@ def pool(rows=None, scores=None, log=print) -> tuple[list[Candidate], dict]:
             "`fractal-wallpapers curate candidate-ledger backfill` first."
         )
     read = candidate_ledger.read_scores() if scores is None else list(scores)
-    by_key = {str(row["recipe_key"]): row for row in read}
+    # On the LIVE judge only, for [`candidate_ledger.scores_by_recipe`]'s reason:
+    # the sidecar is keyed on the artifact and a flattened join would put two
+    # judges' scales into one objective. A recipe read on an older artifact falls
+    # into `no_score` below, which is where a recipe with no reading belongs.
+    by_key = candidate_ledger.scores_by_recipe(read, artifact=artifact)
     out: list[Candidate] = []
     refused = {"rejected": 0, "off_regime": 0, "no_picture": 0, "no_score": 0}
     for row in stored:

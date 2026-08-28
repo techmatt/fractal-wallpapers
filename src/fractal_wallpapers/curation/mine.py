@@ -605,10 +605,21 @@ def population(margin: float = framing.MARGIN, log=print) -> dict:
     index = hunt.frames(margin, log=log)
     places = hunt.scanned(log=log)
     stored = candidate_ledger.read()
+    # On the LIVE judge only. The sidecar is keyed on the artifact because a
+    # score is comparable inside one and not across two, and a join flattened to
+    # the recipe key would be last-row-wins over whatever an adoption left behind.
+    # A recipe with no reading on the live judge is left out and counted.
+    read = candidate_ledger.read_scores()
     scores = {
-        str(row["recipe_key"]): float(row.get("p_ge4") or 0.0)
-        for row in candidate_ledger.read_scores()
+        key: float(row.get("p_ge4") or 0.0)
+        for key, row in candidate_ledger.scores_by_recipe(read).items()
     }
+    stale = candidate_ledger.stale_scores(read)
+    if stale:
+        log(
+            f"[mine] {sum(stale.values()):,} sidecar row(s) read on {len(stale)} other judge "
+            f"artifact(s) are out of this draw: {stale}"
+        )
     opened = hunt.opened_locations(stored)
     pools = hunt.drawable(places, index, opened)
     best = best_by_location(stored, scores)
