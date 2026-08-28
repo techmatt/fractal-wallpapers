@@ -106,16 +106,23 @@ and skip themselves without one.
 
 ### The two lanes
 
-`python -m pytest` runs the **fast lane**, about 45 seconds. `python -m pytest
---slow` runs every test there is, about nine and a half minutes, and that is
+`python -m pytest` runs the **fast lane**, about a minute. `python -m pytest
+--slow` runs every test there is, about eleven minutes, and that is
 what CI runs and what runs before a checkpoint. The fast lane is for the
 edit-run loop and nothing else.
 
-The nine minutes is measured, not estimated: 3,058 tests in **9:52** on this
-machine at `d32102e` plus the correction-sheet work, 2026-08-28, with the fast
-lane at 55.6 s over the 2,952 it holds. It has been climbing with the suite —
-7:20, 8:05, 8:45, 9:25 and 9:46 were the five runs before it — so read it as the
-order of magnitude and re-measure rather than trusting the digit.
+The eleven minutes is measured, not estimated: 3,058 tests in **11:08** on this
+machine at `fcad496`, 2026-08-28, with the fast lane at 53.4 s over the 2,952 it
+holds. It has been climbing — 7:20, 8:05, 8:45, 9:25, 9:46 and 9:52 were the six
+runs before it — so read it as the order of magnitude and re-measure rather than
+trusting the digit.
+
+**The last step up is the one worth reading, because the suite did not move.**
+9:52 and 11:08 are the *same 3,058 tests*; what grew in between was the store
+they sweep, by 5,200 rows of candidate ledger. Nothing here proves the ledger is
+the whole of it, but a lane that slows with no test added is a lane pricing data
+rather than code — so re-measure after a **merge**, not only after writing
+tests, and suspect the stores first when the digit moves on its own.
 Measure it on an **idle** machine: the same lane sharing this one with a render
 leg crawled to 41% in the time it normally takes to finish.
 
