@@ -111,10 +111,12 @@ and skip themselves without one.
 and what runs before a checkpoint. The fast lane is for the edit-run loop and
 nothing else.
 
-The eight minutes is measured, not estimated: 2,875 tests in **8:05** on this
-machine at `a208cb6`, 2026-08-27. It has been climbing with the suite — 6:54 and
-7:20 were the two runs before it — so read it as the order of magnitude and
-re-measure rather than trusting the digit.
+The eight minutes is measured, not estimated: 2,931 tests in **8:45** on this
+machine at `b529d58`, 2026-08-27, with the fast lane at 47.9 s. It has been
+climbing with the suite — 6:54, 7:20 and 8:05 were the three runs before it — so
+read it as the order of magnitude and re-measure rather than trusting the digit.
+Measure it on an **idle** machine: the same lane sharing this one with a render
+leg crawled to 41% in the time it normally takes to finish.
 
 A test earns `@pytest.mark.slow` by costing about a second or more of **real
 work** — a render through the engine, a training loop, or a sweep of a store:
