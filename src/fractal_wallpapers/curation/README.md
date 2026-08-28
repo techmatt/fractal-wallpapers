@@ -24,8 +24,7 @@ seating    the trivial greedy that is the other bound, and every refusal it made
 distinct   which places are visibly different places, decided before any colour
 selection  top-N per judge, under the slot and supply caps, the location rule
            — and the bar
-gallery    the second phase: one pass over the whole pool for what ships
-gallery_store  a pass's attempt rows: under artifacts/, manifest-tracked
+gallery_store  four retired passes' attempt rows and pass records, still read
 release    the selected rows again at full size, workers rendering
 pacing     the wall clock: what may still start, and what is killed
 records    what the run decided, and out of what population
@@ -52,14 +51,7 @@ fractal-wallpapers curate below-bar                    # the read to take BEFORE
 fractal-wallpapers curate reject --run v1 --rejector matt_review --date 2026-08-17
 fractal-wallpapers curate reach --write scratch/unreached_keys.jsonl   # the gap, as a manifest
 fractal-wallpapers curate score --ledger <l> --key-file scratch/unreached_keys.jsonl
-fractal-wallpapers curate gallery --n 100                              # THE gallery pass
-fractal-wallpapers curate gallery --n 100 --no-refine                   # framings as recorded
-fractal-wallpapers curate gallery --n 100 --refine-margin 0.10          # a stricter adoption
-fractal-wallpapers curate gallery --n 100 --reseat 0                    # no re-seat: one draw
-fractal-wallpapers curate gallery --n 100 --no-full-size                # seat, do not render
-fractal-wallpapers curate gallery --n 100 --release-regime 2560x1440ss4 # the regime gallery1-3 shipped at
-fractal-wallpapers curate gallery --pass gallery2                       # ...then make them
-fractal-wallpapers curate gallery-store check --pass gallery1          # is the store whole?
+fractal-wallpapers curate gallery-store check --pass gallery1          # is a retired pass's store whole?
 fractal-wallpapers curate candidate-ledger backfill    # the cache, from what exists
 fractal-wallpapers curate candidate-ledger census --n 20 --out scratch/ledger_census.json
 fractal-wallpapers curate candidate-ledger save        # both files, made durable
@@ -71,121 +63,44 @@ fractal-wallpapers curate distinct --no-premise        # the join and the sheet,
 fractal-wallpapers curate solve run --n 20             # THE solve: the gallery as a program
 fractal-wallpapers curate solve sweep                  # which constraint binds first, and at what n
 fractal-wallpapers curate solve truncate --n 20        # what a smaller reachable pool costs
-fractal-wallpapers curate gallery --pass gallery1 --migrate            # out of the old layout
+fractal-wallpapers curate seat --n 150 --release                       # the greedy, then the pictures
 fractal-wallpapers curate manufacture --step register --write          # BEFORE anything
 fractal-wallpapers curate manufacture --oversample 2.5                 # plan, build, select
 fractal-wallpapers curate manufacture --step verify --sheet artifacts/<sheet>
 ```
 
-## A run accumulates; the gallery pass chooses
+## The pre-solver gallery pass, and what took its place
 
-The two halves used to be one command, and Matt split them on 2026-08-22. The two
-phases have names: **the pool phase** is `curate run`, and **the GALLERY PASS** is
-`curate gallery` — one global selection over everything the pool holds, re-runnable,
-each pass a record, the previous gallery superseded rather than deleted.
+**Deleted on 2026-08-28**, ruled at ckpt 87. `curate gallery` was the second
+phase: a quality-weighted farthest-point draw over the neutral embeddings picked
+N locations, each chosen point bought a small judged attempt on its own
+neighbourhood, and a sequential walk seated the winners under two floors, the
+one-wallpaper-per-location rule and the colour ceiling. Four passes ran under it —
+`gallery1` through `gallery4` — and everything they wrote is still here and still
+read: the pass records and slot rows in `data/curation/gallery/<pass>/`, the
+winners in `data/curation/release/<pass>/`, the attempt rows behind
+[`gallery_store`], and 14,316 of the candidate ledger's rows.
 
-**A run is the pool phase.** It reads the offer, colorizes, records every candidate
-it made and every verdict on it, and keeps a **diagnostic** release of ten pictures —
-enough to see that the path works, that the heads are reading the material and
-that the palette pass is not producing one look. It does not try to decide what is
-worth shipping: that is a judgement over the whole accumulated pool, and one
-night's attempts are a few hundred rows of it.
+**What replaced it is the propose-then-solve pair.** `curate seat` is the
+sequential seating now — off the candidate ledger rather than off a draw's own
+attempts, so it chooses among pictures that already exist — and `curate solve`
+is the exact answer the greedy bounds. Neither draws points: the ledger is the
+proposal side and `curate hunt`, `curate mine` and `curate depth` are what add
+to it. `curate seat --release` renders the seats, at
+[`release.RELEASE_REGIME`], which is the geometry the pass shipped at and is now
+named where every leg that ships a wallpaper reads it.
 
-Three things follow, and all three are in this stage now:
+Three commands went with the phase: `curate gallery`, `curate draw` (its step-4
+point draw alone) and `curate on-demand` (the reconciliation of a pass's
+extra-pick log with its attempt store, which had already run on every pass it was
+written for). `curate gallery-store` stays, because the four passes' attempt rows
+are a third of the ledger's backfill.
 
-* **A run never refuses a place because an earlier run released it.** `curate run`
-  used to build the served index and veto every candidate whose place the
-  collection already had — one run's seats deciding the next run's coverage, out
-  of the fraction of the pool it happened to hold. One wallpaper per location
-  still acts *inside* a run, through the counter both heads share, and
-  `served_locations` is now read only by the collection-level passes.
-* **Every release row says which collection it is in.** `records.DIAGNOSTIC` for a
-  run's own, `records.GALLERY` for what the collection ships. A field and not a
-  fourth verdict: the three verdicts answer whether there is a wallpaper at the
-  end of the row, and this answers which set it belongs to.
-* **Nothing released so far is the collection's.** All 1,050 rows on record are
-  `diagnostic`, backfilled in the same commit, because none of them was ever
-  chosen against a pool.
-
-## `curate gallery` — the seven steps, and the two knobs that are by eye
-
-One command, and **not a run type**: no ledger binding, no pacing clock, no
-harvest state, because a selection over an accumulated pool has none of those.
-Each invocation is a **pass** with its own id, its own record in
-`data/curation/gallery/`, and its own slice of the pool's decision store.
-
-```
-1  slots per partition   release_mix over a POOL-WIDE denominator (24,843 admitted
-                         locations, not one binding's offer); release_caps and the
-                         guarantee re-derived over it. The thin-supply cap is
-                         thousands wide at that denominator and binds nothing —
-                         computed and reported anyway, so a pass and a run are
-                         comparable.
-2  head split            per PARTITION, by --strange-share (0.6). The heads are
-                         dealt across a partition's picks by largest deficit, so
-                         neither judge gets the whole top of a partition.
-3  the distance          artifacts/curation/neutral_embeddings.jsonl, refused
-                         unless `curate embeddings check` says it is whole, then
-                         CUT to the currently admitted population
-4  the locations         quality-weighted farthest point under a HARD RADIUS
-5a the framings          each location's frame scanned and the best adopted    <-.
-                         if it beats the recorded one by --refine-margin        |
-5  the attempts          m locations near each chosen point, judged small       |
-                         plus one CARRIER attempt per location per --target      |
-6  the seats             both measured floors ACT; P(>=4), P(>=3) tiebreak,   --'
-                         then the COLOUR CEILING and the targets
-                         5a, 5 and 6 are a LOOP: an unfilled slot re-seats, up
-                         to --reseat (3) neighbourhoods, and everything either
-                         side of them happens once
-7  the pictures          1280x720 ss2 for the winners, and only for them.
-                         --release-regime moves it; the pass record and
-                         every release row say which pixels were made
-```
-
-**Steps 5 and 6 are two legs, and the names matter because they run whole rather
-than interleaved.** `gallery.make_attempts` renders **every** planned attempt
-first — one palette-head pick per attempt, `colorize.Colorizer.pick_palette` over
-the set's thirty-two smooth-field recolours through `palette_head.top_pick` — and
-only then does `gallery.seat` walk the slots, in `_seat_order` (pick position
-first, then the partition's own order, so the partitions interleave), choosing
-among candidates that **already exist**. A seat renders nothing except where the
-colour ceiling bit and [`gallery.OnDemand`] is asked for one more picture — see
-the ceiling below. That order is what makes a re-seat cheap: the attempts are on disk and
-the second seating is arithmetic over them.
-
-**`gallery.pool_candidates` applies TWO predicates, not one.** A row is seatable
-only where its key is one of the slots' own neighbourhood locations **and**
-`run_of(row) == pass_id`. The second is the ruling — locations are cumulative,
-candidates are per-pass — and the first is what keeps a pass from seating a place
-it never chose. Reading the rule as the maker-predicate alone gets the normal path
-right by accident, because [`pool_rows`] has already set this pass's own rows
-aside, and gets a re-seat round wrong.
-
-**A slot is not married to one neighbourhood.** When every candidate a slot's
-neighbourhood produced lands under its head's floor, the slot **re-seats**: it
-takes the next point its partition's draw offers, under the same radius and the
-same weighting and with the abandoned point still excluded, its new
-neighbourhood is attempted, and the whole seating is taken again. `--reseat`
-(default 3) is how many neighbourhoods a slot may stand on, and the slot record
-keeps every one of them and what each held. So **`below_bar` means *k
-neighbourhoods in a row failed*, not one did.**
-
-**`--reseat` is this project's seat-to-budget lever, and it lives here rather
-than in the supply engine.** The supply engine's levers are about a *clock* — the
-per-partition floor, the exploration share, the discounted contest — and none of
-them can move a seat, because a pass books no clock at all. What a re-seat spends
-is attempts against a slot that is already allocated: the slot count never
-changes, the partition never gains or loses one, and the only thing that moves is
-which chosen point the slot stands on. Reaching for a supply flag to fill a
-gallery slot is reaching for the wrong stage.
-
-That gap was gallery1's whole shortfall. Every one of its eight unfilled slots
-was `below_bar`; every one was the LAST slot of its partition — which is the
-point of the draw most remote from everything already chosen, and so the one most
-likely to sit somewhere its head dislikes on principle — and every one sat in a
-partition still holding thousands of admitted locations. What the loop
-deliberately does not do is the other recovery: no floor moves and nothing is
-seated from under one.
+What the pass established and the rest of this file still rests on is below: the
+**colour ceiling** and its targets, which `curate seat` and `curate solve` both
+read; the **binding reason** an empty seat records, which is how the four passes'
+slot rows are still re-read; and the **framing refinement**, whose live home is
+the walk's own close-of-run leg (`supply/harvest.py`) rather than a seating.
 
 ### What an empty seat names, and why it is not the first rule that refused anything
 
@@ -205,7 +120,7 @@ it sends the reader looking for supply that is already there. That is not
 hypothetical: gallery4's seat `0153` recorded `below_bar` with 27 of its 30
 candidates under the floor, while the 3 that cleared it were turned away by the
 location rule and its best held P(≥3) 0.881 against a floor of 0.575. It reads
-`location_served` under `gallery.binding_reason`, and every count that says so
+`location_served` under [`selection.binding_reason`], and every count that says so
 was already on the tracked record — the pass does not have to be run again to
 re-read it.
 
@@ -260,10 +175,12 @@ tried has been, in the attempt's own mode. Cost lands only on the seats the
 ceiling bit, and it lands as a *render* rather than as an attempt — the field is
 dumped and the thirty-two recolours are already scored. Rendering the same
 material up front would have been 3,632 renders bought to change at most 150
-decisions. [`gallery.OnDemand`] is the class that does it, and it is the whole of
-what a ceiling costs. Its pictures are cached by `(location, mode, map)` in
-`<pass>/on_demand.jsonl`, which is what keeps the re-seat replay free, and they go
-into the attempt store as pool rows like any other, stamped `on_demand`.
+decisions. The class that did it went with the pass on 2026-08-28 and nothing
+implements it now: `curate seat` and `curate solve` both choose among pictures
+that already exist, so a seat with no acceptable colour is a shortage in the
+ledger and the answer to it is `curate hunt`'s conditioned leg. The four passes'
+on-demand rows are in their attempt stores, stamped `on_demand`, and are part of
+the ledger like any other pool row.
 
 The other half is solved one step earlier and for free: when the palette head
 picks a map whose **group another attempt of the plan already picked**, its
@@ -275,39 +192,6 @@ path-dependent, so a slot that moves invalidates every seat after it in the walk
 order — and only after it, which is why replaying is enough and patching is not.
 Replaying arithmetic is free; replaying renders is not, which is what the
 on-demand cache is for.
-
-**The log and the store have to be reconciled, and there is a subcommand for it.**
-`fractal-wallpapers curate on-demand --pass <id>` reads records only, renders
-nothing, and writes identical bytes on a second run. It repairs two things that
-came apart in opposite directions:
-
-* the log carries `ledger: null` on every row written before `26c1c6a` taught the
-  renderer to carry the asked-beside candidate's walk across. That commit repaired
-  the 94 *shipped wallpapers* and left the log alone — and `OnDemand.__init__`
-  loads its cache **out of the log**, so a resumed pass re-seats the null and
-  re-creates the defect. gallery4 had 642 rows in that state;
-* gallery3's 348 picks never reached the attempt store at all, because
-  `extra.rows.values()` reached `write_records` in `d9a423f`, after that pass ran.
-  They were on disk and invisible to `records.read_decisions(RELEASE) +
-  gallery_store.read()`, which is every reader of the pool.
-
-Both halves join on **`asked_by`** and never on the location key: an extra pick is
-the same place in another palette, so the walk that found the candidate it was
-asked beside is the walk that found this one. Two id namespaces are searched,
-because a pick beside one of the pass's own attempts names it `4181` and a pick
-beside a standing pool row names it `gallery1_0994`. The join is checked, not
-trusted — a source at a different location refuses the whole run.
-
-**There is no dry-replay subcommand, and `curate replay` is not it.** That one is
-[`checks.replay`] — it re-derives every *released picture* from its own record and
-is a claim about pixels. What calibrated the ceiling was a **dry replay of the
-seating**: the pass's recorded candidates fed back through the seating loop at
-swept settings, with the colour readings supplied rather than measured. That is
-what [`ceiling.Lens`] is a class for instead of three functions — a caller can
-hand the seating a different one and answer what a synthetic candidate is dominant
-in without putting a render on disk. The scripts that did it were scratch and are
-untracked; the seam they used is shipped, so the leg re-derives from the seam and
-the pass records, but nothing on the command line runs it.
 
 ### `--target <cell>=<fraction>`
 
@@ -334,330 +218,25 @@ cell has no carrier in the pass's own collapsed palette pool. `config.ceiling`,
 `config.targets` and `config.target_feasibility` on the pass record carry every
 constant and every carrier the launch checked.
 
-**The pass selects over the CURRENT admitted population.** The embedding store is
-append-only and the admitted population is not, so the store is a superset rather
-than a picture: 29,051 rows against 29,046 admitted, the five being locations
-`curate score` re-read at the node regime and put under the junk floor.
-`gallery.admitted_only` cuts the rows before anything looks at them, so a
-withdrawn location is invisible to the picker and to the attempt leg at once.
+## Three different things are called a ledger
 
-**The draw is `gain = distance x location P(>=4) ** gamma`,** where `distance` is
-cosine distance to the *nearest* already-chosen point. The first pick of a
-partition is **drawn** from its top `--draw-top-k` (25) by that same
-`quality ** gamma`, with nothing to be far from. `--radius`
-(0.07) is a hard constraint under all of it: nothing that close to a chosen point
-may be chosen, whatever its quality. `--quality-weight` is `gamma` and defaults to
-**1** — a plain product, so a location half as far and twice as good is worth the
-same; `0` is pure farthest point, which spends slots on the most isolated places
-in the pool whatever the judge says. Not k-means, which follows density: this
-pool's density records where the walk spent its budget, so a neighbourhood
-somebody visited a thousand times would take a thousand times the slots.
+The word does three jobs in this stage and they are not versions of one another.
+A reader who conflates them will look for a row in the wrong file:
 
-**One launch per pass id, enforced at the door.** A pass claims
-`artifacts/curation/runs/<pass>/pass.lock` before it reads anything, and a second
-launch of the same id refuses immediately and says so. This is not tidiness: the
-two launches would share one `framings/` directory, where the engine names each
-frame by its position in its own batch and the caller renames it afterwards — so
-each process renames the other's files and both die minutes later on a rename
-that finds nothing. gallery3's first launch did exactly that. The claim is an
-operating-system hold on the file rather than the file's existence, so a lock a
-killed pass leaves on disk blocks nothing: the hold dies with the process however
-it dies, and the resume that follows takes the id straight back. Delete the file
-only if you enjoy deleting files; nothing reads it.
-
-**The FIRST pick is seeded; everything after it is the arithmetic.** The draw
-used to take `argmax` over quality for the first pick and `argmax` over the gain
-for every pick after, and with no seed anywhere a pass at N=150 over the current
-pool re-chose **all 100** of gallery2's points and 142 of gallery3's 150 — the
-difference being gallery3's re-seats, not the draw. That is the whole explanation
-for the 98 of gallery3's 150 chosen points that gallery2 had already chosen: the
-deterministic prefix, not the pool's geometry. So the first pick of each
-partition is now drawn uniformly from its top `--draw-top-k` (25), and because
-every distance the draw measures is measured against what is already chosen, one
-different start moves the whole partition. `--draw-top-k 1` is the old argmax
-exactly. Swept at gallery3's knobs, four seeds each: **K=1 re-chooses 142 of
-gallery3's 150 points, K=5 83–105, K=25 74–89, K=100 71–84** — and the freedom is
-not paid for in point quality, whose mean `P(>=4)` runs 0.9318 / 0.9354 / **0.9365**
-/ 0.9258 over the same four. K=100 is where it turns.
-
-`--draw-seed` is the **root**, and absent it is *drawn and recorded* rather than
-defaulted, because a default is how every pass over an unchanged pool comes out
-the same pass again. Each partition derives its own seed off the root and the
-record carries the **resolved integer** for the root and for every partition —
-`config.draw_seed` and `plan.selection.<partition>.draw_seed` — so re-running one
-partition's draw needs no re-derivation. Beside them the record carries
-`config.draw_seed_given`, which says whether the root was typed or drawn, and
-`config.draw_top_k`, because K decides how much of the pass the seed can move and
-a reproduction needs both numbers. Re-running the pass needs
-`--draw-seed <the number the pass printed>`. `--seed` is the other seed and they
-are not interchangeable: that one reaches the palette anchors and the mode draws
-in step 5, and it is on every pass record already.
-
-**The `Draw` owns its RNG, and that is what makes a re-seat continuous.** A
-re-seating slot asks the same live [`Draw`] for its *next* point, so the RNG has
-to live where `nearest` and `live` live. A caller holding it would have to thread
-it through every re-seat round or re-create it — and a re-created one hands the
-same first pick back to a slot whose whole reason for asking is that the first
-pick failed. Only the first pick of a partition is drawn; everything after it is
-the gain and the radius, so a seeded pass is a different walk over one rule rather
-than a randomized one.
-
-Both numbers are by eye, and every pass prints the instrument that calibrates
-them: a **retro table** of the nearest chosen pairs, per partition and overall,
-read off the points the pass *ended* on rather than the ones its first draw handed
-out. If two rows of it read as one picture, the radius is too small.
-
-**Five sheets a pass, all in `scratch/<pass>_*.html`,** self-contained and
-disposable:
-
-```
-<pass>_sheet.html          the gallery: partition then rank, slot-labelled,
-                           unfilled slots in place, retro table at the top
-<pass>_refined_pairs.html  up to 40 framings before and after, at the NODE
-                           regime the head read them at, both scores under
-                           each. Adopted first, then what the margin refused
-<pass>_runners_up.html     per chosen point, what the radius refused, at the
-                           NEUTRAL render the distance was measured on
-<pass>_below_floor.html    per UNFILLED slot: the best candidate every
-                           neighbourhood it tried produced, scored against the
-                           floor, plus the partition's best unchosen candidate
-                           on the same head POOL-WIDE — the proof of whether the
-                           partition held supply the slot never reached
-<pass>_closest_pairs.html  the 12 closest chosen pairs across ALL partitions,
-                           side by side with their cosine distance. The retro
-                           table's eye-check; a filled slot shows its wallpaper
-                           and an unfilled one its point's neutral render
-```
-
-Under `--no-full-size` the two sheets that show wallpapers show each winner's
-candidate render instead, captioned with the resolution it actually is.
-
-**Both measured floors act here, and only one of them acts at a run's release.**
-`floors.gallery_floor` is that seam and it is the one place in this project where
-a head's cut reads differently at two sites: `ACTING_RELEASE_BARS` still answers
-*does this kind gate a run's release* and the smooth answer there is still
-no, while the pass reads `MEASURED_RELEASE_FLOORS` on both kinds. **The heights
-are not written down on this page.** They are re-fitted at every judge flip and a
-number narrated here goes stale silently — read the stamps: the `Restatement`s in
-`floors.py`, the records they were fitted from at
-`models/render/release_floor_<kind>.json`, and the one live pair in
-[`models/render/README.md`](../../../models/render/README.md). `head floor --head
-<kind>` re-fits and refuses when a standing height does not reproduce. The two
-questions are different. A run's release is ten diagnostic
-pictures out of one night, and a bar there decides how much of that night is worth
-looking at; the pass decides what the collection ships out of everything, and a
-slot it cannot fill above a measured floor **after every re-seat it is allowed**
-is a fact about the pool. **Unfilled beats padded**: an empty slot is output with
-its binding reason named, because it is the signal for where to label or walk
-next.
-
-Whichever cut a site reads, it reads it against a **live** score rather than the
-one the night wrote: `records.live_reading()` prefers a row's `scores_current`
-block, and that block carries `judge` (the artifact that produced the numbers)
-beside `head` (the row's KIND, which is what picks a floor and a slot). Both are
-the [record store](../../../data/curation/README.md)'s to explain and are not
-restated here.
-
-**A row without that block is not a row without a reading, and asking the wrong
-one of those questions cost a reader two thirds of the pool.** A gallery pass
-writes `scores_current` onto its release rows only, so gallery3's and gallery4's
-10,846 attempt rows carry no such block — while their pass records say
-`config.heads.render` was the artifact shipped today, which means their `scores`
-block *is* the live reading. `rescore.artifact_of(row)` is the one place that
-answers **which artifact a row's comparable reading stands on**: the current
-block's own `head_sha256` where there is one, and the run's or pass's own summary
-where there is not. `rescore.reading_on(row, stamp)` is that check in front of
-`live_reading`, and it is what a floor-referenced population qualifies on.
-
-Not the row's `bar.head_sha256`. That is the artifact the bar's **height** was
-measured on — `floors.release_cut` builds it that way deliberately — and reading
-bar provenance as score provenance is right by coincidence on today's rows and
-wrong the first time the two come apart. Run summaries abbreviate the stamp to
-sixteen hex characters and floors carry all sixty-four, so the comparison is a
-prefix match on the shorter of the two.
-
-**The pass has a colorize leg, and every chosen point gets both heads' attempts.**
-`--attempts m,smooth,strange` (3,2,6) buys, for each chosen point, the top `m`
-locations in its own radius by `P(>=4)`, each under `smooth` attempts on distinct
-palette anchors and `strange` attempts on distinct modes — 24 attempts a slot,
-about a minute. The attempts are **pool rows**, stamped with the pass id, so the
-pool grows by every one of them; the plan is taken over the *union* of every
-slot's locations, because two overlapping neighbourhoods asking for one location
-would otherwise render the same pictures twice (the mode draw is seeded off the
-location and the head). A re-seat **extends** that plan rather than rebuilding it
-— an attempt's identity is its position in the plan, which is what the candidate
-log resumes on and what the palette anchor is drawn on — so a killed pass resumes
-every attempt back onto its own picture. The 31 palette candidates that lost are
-deleted after the verdict — the row keeps the whole candidate set by name and the head's score for
-each, which is what a later reader needs. `--no-attempts` skips the leg and is a
-**dev affordance only**: candidates are per-pass, so a pass with no attempt leg
-has nothing at all to seat and every slot comes back unfilled. What it still takes
-whole is the selection — the slots, the head split, the point draw, the retro
-table and the two embedding sheets — for the price of no render.
-
-**Step 5a: the pass decides where a location is framed before it colours it, and
-it is ON.** A walk stops on a frame because the gates let it through and the head
-liked it, not because that is the best crop of what is there. So before a
-location's attempts render, `curation.framing` scans a small window around the
-frame the pool records — width `x{0.707, 1.0, 1.414}` at the current centre, then
-at the best of those a recentring of `+-0.25` frame one axis at a time — draws
-every one of them through `engine.screen` at the **node regime**, reads them
-through the shipped location head, and adopts the best **only if it beats the
-recorded framing by `--refine-margin` on `P(>=4)`**. Seven frames a location. It
-is a strict improvement and never an argmax: an unmargined best-of-seven over
-correlated reads of one place wins by construction whether or not the head can
-tell the seven apart. Monotonicity is asserted rather than assumed, and a
-violation raises and stops the pass.
-
-**Only the frames that go on to attempts move.** The slot allocation, the
-farthest-point draw, the hard radius and the neighbourhoods are all decided on
-unrefined geometry, because the embedding store holds one vector per location at
-its *recorded* framing and a picker choosing off refined geometry would be
-choosing distances nobody has measured. The location's identity does not move
-either: the key is unchanged, and one-wallpaper-per-location and the
-near-duplicate grouping both still key on the **original** viewport, so a
-location the pass widened by half cannot take a second seat beside itself. Every
-attempt row and every gallery row carries **both viewports and both of the head's
-readings**, under `framing`, and step 7 renders the refined one.
-
-**The fallback, before an empty slot is allowed to count as failed.** A slot whose
-every attempt landed under the bar was attempted on frames the pass *moved*, so
-its refined locations are attempted once more at the framing the record holds —
-same modes, seeded off the same location and head, so the two are a comparison
-rather than a second roll — and the whole seating is taken again. Only then does
-the slot re-seat. It costs nothing on a pass whose framings did not move.
-
-**Priced per pass and never by an A/B leg**, the way the audit that proposed this
-insisted: locations scanned, frames, seconds, the winner-not-original share, the
-chosen-width and chosen-move histograms and the whole Δ distribution go in the
-pass record under `refine`, and the per-location detail is a row each in the pass
-directory's `framings.jsonl` — untracked, resumable, and never re-scanned by a
-later re-seat round. `<pass>_refined_pairs.html` is the verdict that actually
-matters: up to forty framings before and after at the node regime, adopted first,
-then the ones the margin refused, which is the only way to see whether Δ is set
-where it should be.
-
-**Δ is in log-odds, and that is a measurement rather than a taste.** The margin
-acts on `P(>=4)` — the statistic the pass seats by — but on the **log-odds** of it,
-because the population this step actually sees is the pass's own neighbourhoods
-and those are the strongest locations the pool holds. Over the first twenty
-scanned, `P(>=4)` at the recorded framing ran **0.9285 to 1.0000, median 0.9998**.
-An absolute margin there refuses everything however much better a framing is: a
-Δ of 0.05 on the probability adopted **0 of 20**, and so did every Δ down to
-0.005. The same twenty framings spread **-1.69 to +6.05 nats**. It is a monotone
-re-scale, so the ordering, the `P(>=3)` tie-break and the monotonicity assertion
-are the same claims they were.
-
-**The default is 2.0 nats — a factor of 7.4 in the odds — and the flip rate is why
-it is not lower.** The shipped location head is the **regime-robust** one adopted
-on 2026-08-20 (`seed0_all_regimes`, `f8f80511...`, `weights-v2`), whose pooled
-node-regime flip rate is **4.56%** and whose great-cut flip rate is **1.58%**. The
-10.36% figure beside it in `src/fractal_wallpapers/models/README.md` is the head
-that *retired* that day. On the first twenty, 2.0 nats took 7, 3.0 took 3 and 1.0
-took 8.
-
-**The `x1.0` rung is rendered rather than taken free, and the first scan is why.**
-The design counted it free because the supply sidecar already holds that frame's
-score at that regime. It does not agree: over the first twenty locations the
-scan's own read of the recorded framing matched the sidecar on **6**, and the
-largest gap was **0.0288 on `P(>=4)`** — more than the whole probability margin
-that was originally proposed. The head is deterministic (batch shape moves a read
-by 1e-7), the artifact is the same, and a fresh `location_view` render of the
-frame is **byte-identical** to the scan's and scores identically. So the gap is a
-fact about the picture the sidecar's number was read off — for 19 of the 20 a
-walk's own gate render, which is not on the view-cache path and cannot be
-re-checked. `identity.enforce` pins four settings and the engine build is not one
-of them. Worth chasing; until then the pass measures rather than inherits, and
-reports the agreement on every run.
-
-**The margin was calibrated on the pass's neighbourhoods, and the pool is the
-other end of the same scale.** A scan of every admitted location on 2026-08-26 —
-28,090 of the 29,051 rows the store held that day, 961 under the junk floor,
-196,630 frames in 3.37 h —
-put median `P(>=4)` at the recorded framing at **0.0009**, against the 0.9998 the
-paragraphs above are measured at. Both ends are where log-odds has resolution and
-the probability has none, so the same Δ 2.0 that took 26.9% of gallery4's 751
-seats takes **67.8% of the pool**. Those adoptions are mostly real — the median
-adopted location goes `P(>=4)` 0.00048 to 0.106 — but 30% of them move a location
-from under 0.01 to under 0.01. **A refinement rate quoted off a pass does not
-transfer to the pool, in either direction.**
-
-**Where the pool-wide record lives, and how to make it again.** One row per
-location under `artifacts/curation/frame_refit/scan.jsonl` (untracked, ~98 MB):
-every rung of the window with its gain in nats, `P(>=4)`/`P(>=3)`, gate fate,
-whether it was adoptable, and its viewport and cap — plus the winner, the verdict
-at the standing margin and the refusal reason. Keeping every rung is what lets the
-margin, the rung set and the width policy be re-decided without re-scanning; the
-margin sweep from Δ1.0 (80.6% adopted) to Δ4.0 (41.3%) is a read of that file and
-costs nothing.
-
-```
-python scratch/frame_refit_scan/scan.py            # resumable; --limit N, --out PATH
-```
-
-It is chunked 250 locations, **resumes by subtracting the location identities
-already in the record** — never filenames or chunk indices — and names each chunk
-directory by a digest of its own keys, so two runs at different chunk sizes cannot
-collide. It closes by asserting the measured identities equal the intended
-population and printing per-partition coverage; a shortfall exits non-zero rather
-than reporting success.
-
-**Price per partition, not pool-wide, and measure rather than model.** Render cost
-does not follow the iteration cap: `phoenix` costs **1.7x** what its median maxiter
-implies and `mandelbrot` **0.6x**, and `mandelbrot` at 26,912 median ran at 0.432
-s/location against `julia:mandelbrot`'s 0.344 at 2.5x fewer iterations. Fixed
-per-location overhead — JPEG encode, head read, engine launch — is about **70% of
-a cheap location's cost**, so scaling a whole anchored rate by a power of maxiter
-overstates the dear partitions roughly 2x. Order a long scan cheapest partition
-first and an overrun then costs the dearest partition's tail rather than an
-arbitrary slice of every one.
-
-**`--no-refine` is the leg this repository had before the step existed**, exactly:
-the same plan, the same seed, the same anchors, the same mode draws and the same
-frames. `tests/test_curation_framing.py` pins that, along with the window
-geometry, the margin refusing a planted sub-Δ winner, and the monotonicity abort.
-
-**`--no-full-size` skips step 7 and costs the pass no decision.** Every slot is
-seated on the same candidates; what is not spent is a release render of a choice
-that is perfectly judgeable off the 640x360 render the head itself read. The seats are recorded **`unrendered`** — took the slot, no
-picture, **nothing failed** — which is a fourth release verdict and not `killed`,
-because `killed` means the render died and a reader has to be able to take a
-verdict at face value. `records.served` still wants a picture, so an unrendered
-seat can never become a link to nothing. Re-running the same `--pass` without the
-flag renders the winners and lifts the rows to `released`: the attempts are all
-still on disk, so the second invocation costs the release leg and nothing else.
-Contrast `--no-attempts`, which removes material the pass would have decided over
-and so changes every number it reports.
-
-**One wallpaper per location acts inside the pass and the served index is not
-read.** A run is excused from the index because it has the wrong population; the
-pass has exactly the right one and is excused for a different reason — a pass
-chooses the whole gallery at once and **supersedes** the previous one, so a pass
-that refused every place the last pass shipped could not re-choose its own
-gallery, and one that refused every place a run's diagnostic release sits on would
-hand the collection's best locations to the ten pictures a night kept to prove its
-path worked.
-
-**The pool is deduped on the picture, not on the row.** One render lands on as
-many rows as there are decisions about it: the run that made it, the pass that
-seated it out of the pool, the pass that seated it again. Each of those rows
-carries its own `<run>_<candidate>` name, so a pool keyed by name ranks the same
-wallpaper twice and can seat it into two slots. `gallery.picture_id` resolves a
-row to the render it is about by walking `source` all the way down —
-`rescore.origin_of`, the same walk that finds the picture on disk — and a seat is
-stamped with *that* id rather than with the id it was read under, which is what
-stops the name growing a level per pass. It used to: `gallery2_0110` became
-`gallery3_gallery2_0110` and would have become `gallery4_gallery3_gallery2_0110`,
-and on 2026-08-24 that had 90 of the pool's 8,313 seatable rows standing for 87
-pictures, three of them present three times. The rows on record are not rewritten
-— a decision is a decision — the reader resolves them.
-
-**The pass's pictures live in the run tree** (`artifacts/curation/runs/<pass>/`),
-deliberately: `curation.rescore` finds any pool row's candidate render at
-`runs/<run>/pictures/<candidate>.jpg` off the row's own `run` field, and a pass
-that stored its pictures elsewhere would be a pass whose rows the next re-score
-refuses to read. Both contact sheets are written to `scratch/`, self-contained
-with their thumbnails embedded.
+* **The candidate ledger** — `artifacts/curation/candidate_ledger/rows.jsonl`,
+  one row per *recipe ever rendered*, with its colour and where its picture is.
+  Manifest-tracked, written only through [`candidate_ledger.merge`]. This is what
+  `curate candidate-ledger` and `curate solve` mean by "the ledger", and it is the
+  one below.
+* **The supply ledgers** — a walk's own output, `walk.jsonl` under a harvest, one
+  row per *location* the search found and scored. Plural because there are many
+  of them, one per run, hot or archived; `--ledgers` and `--ledger` on the CLI
+  always mean these. `curation.binding` is what declares which ones a curation
+  reads. Nothing here writes one.
+* **The rejection ledger** — [`seating.rejection`], the block on a seating's
+  record naming, for every candidate the walk did **not** seat, the first rule
+  that refused it. A partition of the pool rather than a store: it is written
+  inside `artifacts/curation/seat/<name>/seat.json` and nowhere else.
 
 ## The candidate ledger: what we have already made
 
@@ -909,7 +488,7 @@ Everywhere else on that path the column is an **ordering** and never a gate:
 
 **Every acting bar in the release path is on `P(>=3)`, not `P(>=4)`.**
 `selection.entries` builds its rank key from `p_ge3`; `floors.release_bar`,
-`floors.gallery_floor` (`gallery._Offer`) and `curation.rejection` all call
+`floors.gallery_floor` and `curation.rejection` all call
 `.acts()` on `p_ge3`. The supply engine's `GOOD_FLOOR` and `GREAT_CUT` are on the
 **location** head and are reached by a run's harvest, not by the render judge's
 column at all. So the sentence to carry is: *`P(>=4)` decides who is in the pool
@@ -1192,7 +771,7 @@ stamp and the resume rule live in one place rather than two. Pictures and
 gains `release_picture`, `release_geometry` and `release_autolevel`, and the record is
 rewritten after the leg.
 
-* **Regime is `gallery.RELEASE_REGIME`, 1280x720 ss2**, moved by `--release-regime`.
+* **Regime is `release.RELEASE_REGIME`, 1280x720 ss2**, moved by `--release-regime`.
   Full wallpaper resolution is not this.
 * **Three workers**, `release.DEFAULT_WORKERS`, each below-normal with its engine in a
   job object. Not four: `render_seats` carried a literal 4 at its signature until
@@ -1220,7 +799,7 @@ about are the four `direct_trap_*` seats and the two `itinerary` seats, whose ki
 Worth writing down because it is easy to assume otherwise. The rule *select on the
 candidate score, then re-score the shortlist at shipping geometry and let that be the
 floor* is **not implemented**, in this path or in any other, and the two release legs
-say so in their own docstrings: `gallery.render_winners` and `solve.render_seats` both
+say so in their own docstrings: `seating.release_seats` and `solve.render_seats` both
 refuse to re-score, on the reasoning that the heads' floors were fitted on 640x360
 candidate renders and a height read at one geometry does not transfer to another.
 
@@ -1230,7 +809,7 @@ What acts instead, and all of it on the **candidate** column:
 |---|---|---|
 | `headroom.clearing`, pool construction | `solve.Q4_BAR` = `floors.RELEASE_ADVISORY` = 0.50 | the candidate's `P(>=4)` |
 | the same, for a mode with fewer than `FALLBACK_LOCATIONS`=25 clearing places | `floors.RELEASE_ADVISORY` = 0.50 | the candidate's `P(>=3)` |
-| `selection.py` (a run) and `gallery.py` (a pass) | `floors.STRANGE_RELEASE_BAR` = 0.575, strange only | the candidate's `P(>=3)` |
+| `selection.py` (a run) | `floors.STRANGE_RELEASE_BAR` = 0.575, strange only | the candidate's `P(>=3)` |
 
 The third does not act on the `curate seat` path at all — a seating's only bar is the
 first two. `headroom.bars` already carries this on its own record under `provisional`,
@@ -1371,7 +950,7 @@ both were answering "do these two read as one wallpaper", so a pair one refused 
 the other passed was a disagreement between two numbers nobody had chosen between.
 Every reader now reads `ceiling.TAU`, which is the one somebody set by eye. Note that
 the seating and the solve refuse on the **first** neighbour inside tau, where the
-shipped `curate gallery` pass refuses on the second (`ceiling.TWINS = 2`); the two
+shipped seating refuses on the second (`ceiling.TWINS = 2`); the two
 are different policies and both records say which they applied.
 
 **A quarter of the ledger has no picture, and both readers of one now fail closed.**
@@ -1434,7 +1013,7 @@ twin test. They are near-orthogonal, so one rule cannot be both, and both are pl
 
 `RADII` stays a set of candidates to look at, and the sheet — near pairs at each
 radius, ordered by distance, as pictures — is the instrument. That is how
-`ceiling.TAU`, `ceiling.TAU_GROUP` and `gallery.RADIUS` were all set, and every one
+`ceiling.TAU`, `ceiling.TAU_GROUP` and the retired pass's draw radius were all set, and every one
 of them is recorded with who set it.
 
 The pre-selection is a greedy suppression over **places**, each represented by its
@@ -2029,8 +1608,14 @@ artifacts/curation/shrinkage/<name>/shrinkage.json   the record: drop by width, 
 ```
 
 ```
-fractal-wallpapers curate shrinkage --name d1 --per-arm 20 --workers 6
+fractal-wallpapers curate shrinkage --name d1 --per-arm 20
 ```
+
+**Three render workers**, `shrinkage.WORKERS`, like every other leg here. It was
+six until 2026-08-28 — the one leg in this stage that disagreed with the locked
+rule — and three is a rule about this machine rather than a tuning knob: more
+than three engines at once makes the desktop unusable while the leg runs.
+`--workers` still takes another number.
 
 It takes the candidate that was the running best of the first `k` at each of
 `CHECKPOINTS`, re-renders **that** candidate at label geometry (1280x720 ss2)
@@ -2117,7 +1702,7 @@ the module contains no delete at all.
 
 **Everything a pass tracks scales with `n`; nothing tracked scales with the
 attempts.** That is a rule, it is measured on every pass, and
-`tests/test_curation_gallery.py` pins it on a synthetic N=500 plan by writing the
+`tests/test_storage_tiers.py` pins the tier rule the store rests on; the N=500 plan that pinned the tracked bytes went with the pass, and the
 same 500 seats under two attempt counts an order of magnitude apart and demanding
 the tracked bytes come out the same to within the manifest's own digits.
 
@@ -2136,7 +1721,7 @@ artifacts/curation/gallery/<pass>/gate.jsonl        every attempt, one pool row 
 <archive>/curation_backup/gallery/<pass>/gate.jsonl the durable copy
 ```
 
-`gallery.read_pass` puts the record back together — the summary with its slots
+`records.root() / "gallery" / <pass>` holds the record — the summary with its slots
 re-attached in slot order — so nothing has to know about the file axis. **The
 slots split on partition for the same reason the decision stores do**: a slot row
 runs about a kilobyte, N=500 is 1.3 MiB, and the history guard acts per file.
@@ -2184,7 +1769,7 @@ accumulated pool, which is still there.
 
 **Locations are cumulative, candidates are per-pass.** A later pass selects
 locations over everything the pool has ever admitted, and seats only the recolours
-it took itself: `gallery.pool_candidates` keeps a pool row only where the row's
+it took itself: the pass's pool predicate kept a row only where the row's
 maker is this pass, which in the normal path is none of them. gallery3 seated 66
 of its 150 slots on standing rows and in 59 of those the standing row merely
 outranked the pass's own best at the same place — the pass had made something
@@ -2192,7 +1777,7 @@ there every time. With a deterministic draw putting 98 of its 150 points where
 gallery2 had already looked, seating another pass's recolours was running half the
 draws and calling the older half free.
 
-**`gallery.pool_rows` stays outside that rule and reads both stores** — the
+**The pass's own pool reader stayed outside that rule and read both stores** — the
 release store *and* every earlier pass's attempt store — because the
 `below_floor` sheet is answered out of it. Its claim is about the material a
 slot's neighbourhoods did **not** reach, so it needs the whole pool; the predicate
@@ -2213,14 +1798,6 @@ rows, 292 carry a `source` and 51 carry a `rejected` block, and **no row carries
 both**. So this is a property of the predicate rather than a defect in the records,
 and a reject pass that starts reaching pool rows has to resolve to the picture the
 way the dedup does.
-
-**`curate gallery` refuses the pre-split layout** — a tracked gate directory under
-the pass id, or a passed-over release row in the history — before it spends
-anything, because a pass run over it would upsert its winners into a directory
-still holding every attempt the old code passed over. `curate gallery --pass <id>
---migrate` moves one pass across: attempt rows into the new store with its
-manifest, the release directory rewritten to the winners alone. It reads and
-writes records only and renders nothing. It is idempotent.
 
 ## `curate manufacture` — the one population here that is made rather than found
 
@@ -2338,8 +1915,8 @@ partition, every mode and every head, so nothing about a release row's cost or
 its bytes depends on which slot it took.
 
 **A gallery pass is 1280x720 ss2**, from 2026-08-25 on Matt's call, and it is a
-*default* rather than a constant: `gallery.RELEASE_REGIME`, moved by
-`--release-regime <w>x<h>ss<n>`, with `gallery.FORMER_RELEASE_REGIME`
+*default* rather than a constant: `release.RELEASE_REGIME`, moved by
+`--release-regime <w>x<h>ss<n>`, with `release.FORMER_RELEASE_REGIME`
 (2560x1440ss4 — what gallery1 through gallery3 shipped at, and what the website's
 figures are drawn off) still reachable there. A released wallpaper does not need
 the full frame, and step 7 is the slow leg of a pass: a quarter of the pixels at
@@ -2720,16 +2297,6 @@ now do not. `read_scores(amended=False)` exists only for measuring the shift.
 have no cached picture to be stale about. What changed there is that those
 renders are now stamped as they are made, which is what lets a later reader tell
 them from a picture some other build drew.
-
-**`curate draw`** is step 4 alone: the point draw, claiming no pass and writing
-nothing. `gallery --no-attempts` is the affordance for iterating on a pass; this
-is the one for *comparing two selections*, which needs a selection that claims
-nothing so both sides can be taken over one pool in either order.
-`--no-amended` takes it over the standing scores, and the difference between the
-two chosen sets is the entry bias the stale readings were buying. On gallery3's
-settings (`-n 150 --radius 0.07 --quality-weight 1 --strange-share 0.6
---draw-top-k 1`) the standing-score draw reproduces **142 of gallery3's 150
-seated points**; the eight that differ are the slots that re-seated.
 
 **The release budgets the colorize, never the other way round.** A judge's attempt
 budget is a multiple of the slots it is asked to fill, and when the two cannot

@@ -355,12 +355,11 @@ def opened_locations(rows=None) -> set:
 def scanned(log=print) -> list[dict]:
     """The admitted, embedded locations — the population the scan was taken over.
 
-    Through [`gallery.admitted_only`], so a location the sidecar has since put
+    Through [`embeddings.admitted_only`], so a location the sidecar has since put
     under the junk floor is out of a hunt's reach for the same reason it is out of
-    a pass's: it is not a place this collection may ship.
+    a solve's: it is not a place this collection may ship.
     """
     from fractal_wallpapers.curation import embeddings, intake
-    from fractal_wallpapers.curation import gallery as gallery_module
 
     rows, matrix = embeddings.load()
     if not rows:
@@ -369,7 +368,7 @@ def scanned(log=print) -> list[dict]:
             "Run `fractal-wallpapers curate embed`."
         )
     scores = intake.read_scores(amended=True)
-    rows, _matrix, fallen = gallery_module.admitted_only(rows, matrix, scores, log)
+    rows, _matrix, fallen = embeddings.admitted_only(rows, matrix, scores, log)
     for row in rows:
         row.pop("vector", None)
     log(f"[hunt] {len(rows):,} admitted location(s); {fallen:,} now under the junk floor")
@@ -1163,6 +1162,9 @@ def merge(name: str, log=print) -> dict:
     store here is: [`records.upsert_file`] keys on the recipe, so merging a hunt
     twice writes the same bytes and merging a killed hunt's partial is the same
     operation as merging a finished one's.
+
+    Through [`candidate_ledger.merge`] and never the two writers under it, so the
+    manifests move with the rows. `recorded` on the report is what they now say.
     """
     rows = _read(rows_path(name))
     scores = _read(scores_path(name))
@@ -1171,14 +1173,15 @@ def merge(name: str, log=print) -> dict:
             f"{tracked_name(rows_path(name))} holds no row, so there is nothing to merge. "
             f"A hunt writes its rows as it makes them; an empty file means none landed."
         )
-    _rows_file, total, new = candidate_ledger.write(rows)
-    _scores_file, score_total, score_new = candidate_ledger.write_scores(scores)
+    written = candidate_ledger.merge(rows, scores, log=log)
+    total, new = written["ledger"]["rows"], written["ledger"]["new"]
     report = {
         "schema": SCHEMA,
         "name": name,
         "merged": len(rows),
-        "ledger": {"rows": total, "new": new},
-        "scores": {"rows": score_total, "new": score_new},
+        "ledger": written["ledger"],
+        "scores": written["scores"],
+        "recorded": written["recorded"],
         "locations_added": len({str((row.get("location") or {})["key"]) for row in rows}),
     }
     log(

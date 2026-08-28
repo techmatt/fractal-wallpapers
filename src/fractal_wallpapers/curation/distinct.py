@@ -264,36 +264,27 @@ def radius_table(keys, matrix, radii=RADII) -> dict:
 # --------------------------------------------------------------------------- #
 # The pre-selection.
 # --------------------------------------------------------------------------- #
-def preselect(candidates, radius: float = PRESELECT_RADIUS, rows=None, log=print) -> tuple:
-    """`(the candidates whose place survived, the record)`. Geometric distinctness only.
+def suppress(order, radius: float = PRESELECT_RADIUS, rows=None) -> dict:
+    """`{kept, refused, unembedded, asked}` — the greedy, over location keys alone.
 
-    A greedy suppression over places and not over rows: each location is
-    represented by its **strongest** clearing candidate, the places are walked in
-    that order, and a place closer than `radius` to a place already kept is
-    refused and told which one took it. Strongest first because the choice inside
-    a near-cluster is arbitrary otherwise, and the strongest place is the one a
-    seating would have reached for anyway.
+    THE walk, and the only implementation of it. `order` is the places in the
+    order they are offered, and the first of a near-cluster to be offered is the
+    one that survives it — so the caller's ordering *is* the rule about which
+    place represents a cluster, and there is nowhere else for that decision to
+    hide. [`preselect`] offers them strongest-candidate-first;
+    [`candidate_ledger.feasibility`] has no score to offer them by and says so.
 
-    **A location with no neutral descriptor is admitted, not dropped.** The store
-    is built from a neutral render per place and a place can be newer than the
-    last embedding leg; refusing on a missing row would make the pre-filter a
-    silent function of when the store was last built. It is counted, and the count
-    is on the record whether or not it is zero.
+    A place with no neutral descriptor is **kept** and counted, for the reason on
+    [`preselect`]: refusing on a missing row would make the filter a silent
+    function of when the embedding store was last built.
 
-    What this refuses is a *place*, so the whole of that place's ledger goes with
-    it — which is why the record reports both, and why the share to read is the
-    share of **locations**. It is not the near-pair count: a cluster of five
-    places inside the radius loses four, and both numbers are on the record.
+    Each refusal names the place that took it and how far apart the two are, and
+    nothing else — a caller that knows more about a place decorates its own rows.
     """
     import numpy
 
     radius = float(radius)
-    best: dict = {}
-    for candidate in candidates:
-        held = best.get(candidate.location)
-        if held is None or (-candidate.score, candidate.key) < (-held.score, held.key):
-            best[candidate.location] = candidate
-    order = sorted(best, key=lambda key: (-best[key].score, best[key].key))
+    order = [str(key) for key in order]
     keys, matrix = matrix_for(order, rows)
     at = {key: index for index, key in enumerate(keys)}
     held_rows: list = []
@@ -315,14 +306,53 @@ def preselect(candidates, radius: float = PRESELECT_RADIUS, rows=None, log=print
                         "location": key,
                         "lost_to": keys[held_rows[nearest_at]],
                         "distance": round(float(gaps[nearest_at]), 6),
-                        "p_ge4": round(best[key].score, 6),
-                        "picture": best[key].picture,
-                        "lost_to_picture": best[keys[held_rows[nearest_at]]].picture,
                     }
                 )
                 continue
         held_rows.append(index)
         kept.add(key)
+    return {"kept": kept, "refused": refused, "unembedded": unembedded, "asked": order}
+
+
+def preselect(candidates, radius: float = PRESELECT_RADIUS, rows=None, log=print) -> tuple:
+    """`(the candidates whose place survived, the record)`. Geometric distinctness only.
+
+    A greedy suppression over places and not over rows: each location is
+    represented by its **strongest** clearing candidate, the places are walked in
+    that order, and a place closer than `radius` to a place already kept is
+    refused and told which one took it. Strongest first because the choice inside
+    a near-cluster is arbitrary otherwise, and the strongest place is the one a
+    seating would have reached for anyway.
+
+    **A location with no neutral descriptor is admitted, not dropped.** The store
+    is built from a neutral render per place and a place can be newer than the
+    last embedding leg; refusing on a missing row would make the pre-filter a
+    silent function of when the store was last built. It is counted, and the count
+    is on the record whether or not it is zero.
+
+    What this refuses is a *place*, so the whole of that place's ledger goes with
+    it — which is why the record reports both, and why the share to read is the
+    share of **locations**. It is not the near-pair count: a cluster of five
+    places inside the radius loses four, and both numbers are on the record.
+    """
+    radius = float(radius)
+    best: dict = {}
+    for candidate in candidates:
+        held = best.get(candidate.location)
+        if held is None or (-candidate.score, candidate.key) < (-held.score, held.key):
+            best[candidate.location] = candidate
+    order = sorted(best, key=lambda key: (-best[key].score, best[key].key))
+    walk = suppress(order, radius=radius, rows=rows)
+    kept, unembedded = walk["kept"], walk["unembedded"]
+    refused = [
+        {
+            **row,
+            "p_ge4": round(best[row["location"]].score, 6),
+            "picture": best[row["location"]].picture,
+            "lost_to_picture": best[row["lost_to"]].picture,
+        }
+        for row in walk["refused"]
+    ]
     surviving = [candidate for candidate in candidates if candidate.location in kept]
     refused.sort(key=lambda row: row["distance"])
     log(
@@ -926,6 +956,7 @@ __all__ = [
     "scatter",
     "sheet",
     "sheet_path",
+    "suppress",
     "twins",
     "write_record",
 ]

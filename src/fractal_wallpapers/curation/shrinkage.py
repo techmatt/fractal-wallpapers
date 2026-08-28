@@ -74,7 +74,12 @@ PER_ARM = 20
 
 #: How many render workers the re-read spreads over. The judge stays in the
 #: parent — one load of it, one batch at the end.
-WORKERS = 6
+#:
+#: **Three**, which is the locked render-pool shape rather than a tuning knob:
+#: more than three `fractal-engine` processes at once makes this machine's
+#: desktop unusable while the leg runs, and this leg drives the engine like any
+#: other. It was six, which was the one leg here disagreeing with the rule.
+WORKERS = 3
 
 
 class ShrinkageRefused(RuntimeError):

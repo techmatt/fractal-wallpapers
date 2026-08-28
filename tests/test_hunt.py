@@ -431,9 +431,22 @@ def test_merging_a_hunt_twice_writes_the_same_ledger(monkeypatch, tmp_path):
     monkeypatch.setattr(hunt, "hunt_dir", lambda name: tmp_path / str(name))
     monkeypatch.setattr(candidate_ledger, "rows_path", lambda: tmp_path / "ledger.jsonl")
     monkeypatch.setattr(candidate_ledger, "scores_path", lambda: tmp_path / "scores.jsonl")
+    # The copies and the manifests too: `candidate_ledger.merge` records what it
+    # wrote, and an unredirected one lands on this machine's real archive tier
+    # and in the tracked history. `tests/test_ledger_tracking.py` owns that rule.
+    monkeypatch.setattr(candidate_ledger, "backup_path", lambda name: tmp_path / f"copy-{name}")
+    monkeypatch.setattr(candidate_ledger, "manifest_dir", lambda: tmp_path / "manifests")
     (tmp_path / "one").mkdir()
     hunt.rows_path("one").write_text(
-        json.dumps({"key": "aaaa", "location": {"key": "place-a"}}) + "\n",
+        json.dumps(
+            {
+                "key": "aaaa",
+                "location": {"key": "place-a"},
+                "partition": "mandelbrot",
+                "provenance": {"run": "one", "candidate": "00001", "store": "hunt"},
+            }
+        )
+        + "\n",
         encoding="utf-8",
         newline="\n",
     )

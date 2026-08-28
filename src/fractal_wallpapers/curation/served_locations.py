@@ -190,14 +190,14 @@ def current_pass(rows) -> str | None:
     asking what the collection looked like without the newest pass should get the
     pass before it, not an empty gallery.
     """
-    from fractal_wallpapers.curation import gallery as gallery_module
+    from fractal_wallpapers.curation import gallery_store
 
     named = {
         str(row.get("run"))
         for row in records.served(rows)
         if row.get("collection") == records.GALLERY
     }
-    ordered = [name for name in gallery_module.passes() if name in named]
+    ordered = [name for name in gallery_store.passes() if name in named]
     return ordered[-1] if ordered else None
 
 

@@ -76,6 +76,15 @@ STORE_NAME = "gate.jsonl"
 #: not a run and the two trees are read by different things.
 UNIT = "gallery"
 
+#: What a pass's own summary is called inside its tracked directory: the knobs it
+#: ran under, the plan, the retro table, the geometry it released at. Nothing
+#: writes one any more — the pass that wrote them is deleted — and four of them
+#: are on record, so this is the name a reader opens one by.
+RECORD_NAME = "pass.json"
+
+#: What a pass id starts with, and the prefix the ordinal is read off.
+PASS_PREFIX = "gallery"
+
 
 class LayoutRefused(RuntimeError):
     """A pass's records are in the layout that predates the store split."""
@@ -107,7 +116,7 @@ def backup_path(pass_id: str) -> Path:
 
 
 def manifest_dir(pass_id: str) -> Path:
-    """The pass's own tracked directory, which `curation.gallery` also writes into."""
+    """The pass's own tracked directory: its summary, its slot rows, this manifest."""
     return records.root() / UNIT / str(pass_id)
 
 
@@ -197,6 +206,35 @@ def read(pass_id: str | None = None) -> list[dict]:
     names = [str(pass_id)] if pass_id is not None else stored_passes()
     rows = [row for name in names for row in _rows_of(store_path(name))]
     return sorted(rows, key=lambda row: str(row["key"]))
+
+
+def record_path(pass_id: str) -> Path:
+    """One pass's own summary, in the tracked tree beside its slot rows."""
+    return manifest_dir(pass_id) / RECORD_NAME
+
+
+def passes() -> list[str]:
+    """Every pass on record, oldest ordinal first.
+
+    Off the **tracked** records and not off the stores: a store lives under the
+    regenerable tree and can be archived or absent, and the question every caller
+    asks here — which passes exist, in which order — is a question about the
+    history. [`stored_passes`] is the other one and they are not the same list.
+    """
+    directory = records.root() / UNIT
+    if not directory.is_dir():
+        return []
+    return sorted(
+        (entry.name for entry in directory.iterdir() if (entry / RECORD_NAME).is_file()),
+        key=_ordinal,
+    )
+
+
+def _ordinal(name: str) -> tuple:
+    """Sort key over pass names: the numbered ones in order, anything else last."""
+    if name.startswith(PASS_PREFIX) and name[len(PASS_PREFIX) :].isdigit():
+        return (0, int(name[len(PASS_PREFIX) :]), name)
+    return (1, 0, name)
 
 
 def stored_passes() -> list[str]:

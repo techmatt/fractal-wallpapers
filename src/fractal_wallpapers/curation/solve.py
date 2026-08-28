@@ -738,8 +738,8 @@ class Pairs:
     def nearest(self, chosen: list[int], pairs: int = 10) -> list[dict]:
         """The closest pairs among `chosen`, whether or not any rule refuses them.
 
-        The calibration instrument, the same one [`gallery.retro_table`] is: if two
-        of these read as one picture, the radius is too small. Exact distances and
+        THE calibration instrument: if two of these read as one picture, the
+        radius is too small. Exact distances and
         never bounds, for that reason -- a threshold read off a lower bound is a
         threshold read too low.
         """
@@ -1911,19 +1911,19 @@ def read_record(name: str) -> dict:
 # --------------------------------------------------------------------------- #
 # What a solve ships.
 # --------------------------------------------------------------------------- #
-#: What the twenty are rendered at. [`gallery.RELEASE_REGIME`] and not a second
-#: opinion about it: a solved gallery and a walked one ship the same pixels, and
+#: What the seats are rendered at. [`release.RELEASE_REGIME`] and not a second
+#: opinion about it: every leg that ships a wallpaper ships the same pixels, and
 #: the whole claim of this module is that only the *choosing* changed.
 def release_regime():
-    from fractal_wallpapers.curation import gallery
+    from fractal_wallpapers.curation import release
 
-    return gallery.RELEASE_REGIME
+    return release.RELEASE_REGIME
 
 
 #: How long one release row gets before the worker kills it. **A backstop and
 #: never a budget.**
 #:
-#: A gallery pass has no clock: every row it plans is rendered to completion and
+#: The release leg has no clock: every row it plans is rendered to completion and
 #: there is no knob that stops the leg early. What this bounds is the row that has
 #: stopped making progress at all — a quarter of an hour against a leg whose
 #: median row at 1280x720 ss2 is measured in single-digit seconds and whose worst
@@ -2069,8 +2069,8 @@ def render_seats(
 def _already(picture: Path, regime, log=print) -> bool:
     """Whether a picture on disk may be carried across as this regime's.
 
-    The frame is read off the file, [`gallery._at_regime`]'s rule: presence
-    stopped being the whole test the day the regime became a parameter.
+    Presence stopped being the whole test the day the regime became a
+    parameter, so the frame is read off the file.
     """
     if not Path(picture).is_file():
         return False

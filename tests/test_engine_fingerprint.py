@@ -365,39 +365,27 @@ def test_the_un_amended_read_is_available_for_the_measurement(amended_supply) ->
     assert intake.read_scores(amended=False)["high"]["p_ge4"] == 0.90
 
 
-def test_the_gallery_quality_sort_reverses_under_the_amendment(amended_supply) -> None:
-    from fractal_wallpapers.curation import gallery
+def test_the_admission_cut_drops_a_location_the_amendment_calls_junk(amended_supply) -> None:
+    """The cut every leg that draws from the embedding store reads through.
 
-    scores = intake.read_scores()
-    rows = [{"key": "high", "partition": "mandelbrot"}, {"key": "low", "partition": "mandelbrot"}]
-    assert gallery.quality_of(rows[0], scores) < gallery.quality_of(rows[1], scores)
-    assert gallery._ranks(rows, scores) == {"low": 0, "high": 1}
-
-
-def test_the_gallery_admission_cut_drops_a_location_the_amendment_calls_junk(
-    amended_supply,
-) -> None:
+    Two readers of the amendment used to be pinned beside this one — the retired
+    gallery pass's quality sort and its slot guarantee — and both went with that
+    pass on 2026-08-28. The cut moved to [`embeddings.admitted_only`], where the
+    hunt reaches it, and this follows it there rather than being deleted with the
+    seating: it is the reader that can spend renders on a place the supply phase
+    has already withdrawn.
+    """
     import numpy
 
-    from fractal_wallpapers.curation import floors, gallery
+    from fractal_wallpapers.curation import embeddings, floors
 
     assert not floors.passes_junk_floor(0.01)
     rows = [{"key": "high", "partition": "mandelbrot"}, {"key": "low", "partition": "mandelbrot"}]
     matrix = numpy.eye(2, dtype=numpy.float32)
-    kept, _matrix, dropped = gallery.admitted_only(
+    kept, _matrix, dropped = embeddings.admitted_only(
         rows, matrix, intake.read_scores(), log=lambda _line: None
     )
     assert dropped == 1 and [row["key"] for row in kept] == ["low"]
-
-
-def test_the_slot_guarantee_counts_the_amended_population(amended_supply) -> None:
-    from fractal_wallpapers.curation import floors, gallery
-
-    rows = [{"key": "high", "partition": "mandelbrot"}, {"key": "low", "partition": "mandelbrot"}]
-    _slots, _caps, guaranteed = gallery.slots_for({"mandelbrot": 2}, 1, intake.read_scores(), rows)
-    # `high` was over the good floor on its standing score and is under it now, so
-    # the partition is owed a slot only if `low` is over it.
-    assert guaranteed == (["mandelbrot"] if floors.passes_good_floor(0.30) else [])
 
 
 def test_the_embedding_denominator_reads_the_amendment(amended_supply) -> None:

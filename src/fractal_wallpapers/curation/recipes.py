@@ -2,22 +2,20 @@
 
 Until now there was no such value. A candidate travelled as five different
 shapes — the flat row [`curation.colorize`] makes, the nested decision
-[`curation.records`] writes, the flat row [`curation.gallery`] reads a decision
-back as, the render-cache row [`models.renders`] takes, and the engine spec that
-row becomes — and the join between them lived in three adapters
-([`renders._row_of`], [`gallery.candidate_of_pool_row`],
-[`gallery.candidate_of_attempt`]) plus [`renders.SPEC_MEMBERS`], an untyped
-tuple of member names. Nothing could be asked *have we already made this
-picture*, because there was nothing to ask it of.
+[`curation.records`] writes, the flat row a reader takes a decision back as, the
+render-cache row [`models.renders`] takes, and the engine spec that row becomes —
+and the join between them lived in three adapters plus [`renders.SPEC_MEMBERS`],
+an untyped tuple of member names. Nothing could be asked *have we already made
+this picture*, because there was nothing to ask it of.
 
 This is that value. A [`Recipe`] carries everything the picture is a function of
 and nothing else, and [`key_of`] is its stable name.
 
 ## The frame is the one that was rendered
 
-`framing.used`, never `framing.adopted`. A gallery pass scans a location's
-framings and adopts the best; the **fallback leg** then re-renders some of those
-locations at the framing on record, and the row says which of the two it was
+`framing.used`, never `framing.adopted`. A scan over a location's framings
+adopts the best; a **fallback leg** then re-renders some of those locations at
+the framing on record, and the row says which of the two it was
 drawn at. 305 of the pool's 3,208 adopted pictures are fallback renders at the
 original frame. A cache keyed on what was adopted misfiles every one of them —
 it would hand a solver the refined frame's name for the original frame's pixels.
@@ -274,21 +272,20 @@ def frame_used(row: dict) -> tuple[dict, int]:
     """`(viewport, maxiter)` of the frame this row was **rendered** at.
 
     The row's own `location.viewport` — which is already the used frame, because
-    [`gallery.framed`] re-frames the row it hands the colorizer and the fallback
-    leg hands it the unrefined one. This exists so that fact is asserted rather
-    than assumed: where the row carries a framing block, the viewport must be the
-    side the block's `used` names, and a row that disagrees is a row whose
-    picture nothing can identify.
+    a leg that adopts a refinement re-frames the row before it hands it to the
+    colorizer. This exists so that fact is asserted rather than assumed: where the
+    row carries a framing block, the viewport must be the side the block's `used`
+    names, and a row that disagrees is a row whose picture nothing can identify.
     """
     location = row.get("location") or {}
     viewport = location.get("viewport")
     maxiter = location.get("maxiter")
     if not isinstance(viewport, dict) or maxiter is None:
         raise RecipeError(f"{row.get('key')!r} carries no frame, so it names no picture")
-    from fractal_wallpapers.curation import gallery
+    from fractal_wallpapers.curation import framing
 
     block = row.get("framing") or {}
-    if block.get("used") == gallery.ORIGINAL and block.get("adopted"):
+    if block.get("used") == framing.ORIGINAL and block.get("adopted"):
         original = (block.get("original") or {}).get("viewport")
         if original and original != viewport:
             raise RecipeError(

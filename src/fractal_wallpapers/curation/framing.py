@@ -165,6 +165,14 @@ SCAN_THE_ORIGINAL = True
 #: What the record calls a framing that was not moved.
 UNMOVED = "w1_c"
 
+#: Which of a location's two framings a row was rendered at, as [`block`] stamps
+#: it. [`REFINED`] is whatever this leg decided for that location — which is the
+#: original framing wherever it adopted nothing; [`ORIGINAL`] is the recorded
+#: framing, always, and it is what a caller asks for when it wants the frame the
+#: walk wrote down rather than the frame the scan chose.
+REFINED = "refined"
+ORIGINAL = "original"
+
 #: Why a location's framing did not move. Not one reason: a window that held
 #: nothing scoreable and a window whose best did not clear the margin are
 #: different facts about the same location, and only the second one says the

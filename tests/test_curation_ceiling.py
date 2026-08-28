@@ -6,6 +6,16 @@ than measured, and what is pinned is the arithmetic the seating takes over them.
 What a real picture reads as is pinned off the committed carrier table in
 `tests/test_palette_carriers.py`, which is the other half of the same claim.
 
+**Everything below drives [`ceiling.Seating`] itself**, through [`offer`]. It
+used to drive the pre-solver gallery pass's `seat`, which was the only caller the
+state machine ever had; that pass was deleted on 2026-08-28 and [`offer`] is its
+order restated at the level the ceiling defines it. Three groups of claims went
+with the driver rather than being restated, because their subject is the driver
+and not the ceiling: what a seating does with **no** rule at all, that a floor
+still empties a seat under one, and the on-demand **extra picks** — the loop that
+asked the renderer for up to three unseen colours before falling back lived in
+that `seat` and nothing in `ceiling.py` implements it.
+
 The last section pins the **literals**. Everything above it is arithmetic in
 terms of the constants and would pass unchanged if one of them moved, and these
 were calibrated by eye off sheets that are not in the tree — so there is nowhere
@@ -19,7 +29,7 @@ import math
 import numpy
 import pytest
 
-from fractal_wallpapers.curation import ceiling, floors, gallery
+from fractal_wallpapers.curation import ceiling
 from fractal_wallpapers.palettes import dominance, groups, pixel_clouds
 
 SMOOTH, STRANGE = "smooth_render", "strange_render"
@@ -102,14 +112,50 @@ def candidate(identifier: str, key: str = "a", head: str = SMOOTH, p_ge4: float 
     }
 
 
-def slot(identifier: str, keys: list, head: str = SMOOTH, partition: str = "mandelbrot"):
-    return gallery.Slot(
-        id=identifier, partition=partition, head=head, point=keys[0], locations=list(keys)
-    )
+def offer(state, seat_id: str, pool: list, remaining: int | None = None):
+    """One seat decided through [`ceiling.Seating`]'s own surface. Returns the seated row.
+
+    The sequential order the ceiling is written for: steer the pool, take the
+    first candidate no test refuses, and where nothing clears, record the
+    **least-violating** one as a fallback and seat it anyway — because a colour
+    rule never empties a seat, and only a floor may.
+
+    `remaining` is how many seats are left including this one, which is what the
+    mandate reads; it defaults to one, the urgency at which every target that can
+    still be met is mandated.
+    """
+    state.at(seat_id, 1 if remaining is None else remaining)
+    sequence, _note = state.steer(pool)
+    blocked = []
+    for row in sequence:
+        failures = state.failures(row)
+        if not failures:
+            state.take(row)
+            state.done()
+            return row
+        state.reject(row, failures)
+        blocked.append((ceiling.strain(failures), row, failures))
+    state.done()
+    if not blocked:
+        return None
+    _cost, row, failures = min(blocked, key=lambda entry: entry[0])
+    state.fell_back(row, failures)
+    state.take(row)
+    return row
 
 
-def quiet(_line) -> None:
-    return None
+def seat_them(rule: ceiling.Rule, seats: list) -> tuple:
+    """`(the report, what each seat took)` — one [`ceiling.Seating`] over `seats`.
+
+    `seats` is `[(seat id, the candidates that seat may have)]`, in walk order,
+    which is the one thing about a sequential seating the ceiling cares about:
+    what an earlier seat took is what a later one is tested against.
+    """
+    state = rule.begin(len(seats))
+    taken = {}
+    for index, (seat_id, pool) in enumerate(seats):
+        taken[seat_id] = offer(state, seat_id, list(pool), remaining=len(seats) - index)
+    return state.report(), taken
 
 
 # --------------------------------------------------------------------------- #
@@ -171,24 +217,21 @@ def test_one_seat_per_palette_group_unless_the_pictures_are_far_apart() -> None:
             clouds={"a": 0.0, "b": gap},
             palettes={"a": "m01", "b": "m01"},
         )
-        slots = [slot("0000", ["k"]), slot("0001", ["k"], partition="phoenix")]
-        report = gallery.seat(
-            slots,
-            [candidate("a", "k", p_ge4=0.9), candidate("b", "k", p_ge4=0.8)],
-            log=quiet,
-            rule=ceiling.Rule(eyes),
+        report, taken = seat_them(
+            ceiling.Rule(eyes),
+            [("0000", [candidate("a", "k")]), ("0001", [candidate("b", "k")])],
         )
-        assert report["filled"] == 2, "both slots filled; only one of them honestly"
-        assert report["ceiling"]["rejections_by_test"]["group"] == refusals, f"gap {gap}"
+        assert all(taken.values()), "both seats filled; only one of them honestly"
+        assert report["rejections_by_test"]["group"] == refusals, f"gap {gap}"
         if refusals:
-            refusal = report["ceiling"]["rejections"][0]
+            refusal = report["rejections"][0]
             assert refusal["test"] == "group"
             assert refusal["margin"]["which"] == "m01"
             assert refusal["margin"]["nearest"] == pytest.approx(gap, abs=1e-6)
-            assert len(report["ceiling"]["fallbacks"]) == 1
+            assert len(report["fallbacks"]) == 1
         else:
-            assert len(report["ceiling"]["exemptions"]) == 1
-            assert report["ceiling"]["fallbacks"] == []
+            assert len(report["exemptions"]) == 1
+            assert report["fallbacks"] == []
 
 
 def test_the_group_cap_is_measured_against_that_group_alone() -> None:
@@ -198,15 +241,12 @@ def test_the_group_cap_is_measured_against_that_group_alone() -> None:
         clouds={"a": 0.0, "b": 0.0005, "c": 0.001},
         palettes={"a": "m01", "b": "m02", "c": "m03"},
     )
-    slots = [slot(f"{index:04d}", ["k"], partition=name) for index, name in enumerate("abc")]
-    report = gallery.seat(
-        slots,
-        [candidate(name, "k", p_ge4=0.9 - index / 10) for index, name in enumerate("abc")],
-        log=quiet,
-        rule=ceiling.Rule(eyes),
+    report, _taken = seat_them(
+        ceiling.Rule(eyes),
+        [(f"{index:04d}", [candidate(name, "k")]) for index, name in enumerate("abc")],
     )
-    assert report["ceiling"]["rejections_by_test"]["group"] == 0
-    assert report["ceiling"]["rejections_by_test"]["twin"] == 1, "the third is a twin of two"
+    assert report["rejections_by_test"]["group"] == 0
+    assert report["rejections_by_test"]["twin"] == 1, "the third is a twin of two"
 
 
 # --------------------------------------------------------------------------- #
@@ -295,23 +335,20 @@ def test_only_a_candidate_dominant_in_the_over_allowance_colour_is_refused() -> 
         clouds={"a": 0.0, "b": 1.0, "c": 2.0},
         palettes={name: f"m{index:02d}" for index, name in enumerate("abc")},
     )
-    # One candidate a slot, so no slot is offered another slot's rejected row and
+    # One candidate a seat, so no seat is offered another seat's rejected row and
     # every refusal on the record is a refusal the walk actually took.
-    slots = [slot(f"{index:04d}", [name], partition=name) for index, name in enumerate("abc")]
-    report = gallery.seat(
-        slots,
-        [candidate(name, name, p_ge4=0.9 - index / 10) for index, name in enumerate("abc")],
-        log=quiet,
-        rule=ceiling.Rule(eyes),
+    report, taken = seat_them(
+        ceiling.Rule(eyes),
+        [(f"{index:04d}", [candidate(name, name)]) for index, name in enumerate("abc")],
     )
-    refusals = report["ceiling"]["rejections"]
+    refusals = report["rejections"]
     assert [row["candidate"] for row in refusals] == ["b"]
     assert refusals[0]["test"] == "dominance"
     assert refusals[0]["margin"]["which"] == "dark_vivid_red"
     assert refusals[0]["margin"]["allowed"] == 1
-    assert slots[1].seated["candidate"] == "b", "refused, then seated as the fallback"
-    assert slots[2].seated["candidate"] == "c", "a seventh red, not a red picture"
-    assert report["ceiling"]["fallbacks"][0]["candidate"] == "b"
+    assert taken["0001"]["candidate"] == "b", "refused, then seated as the fallback"
+    assert taken["0002"]["candidate"] == "c", "a seventh red, not a red picture"
+    assert report["fallbacks"][0]["candidate"] == "b"
 
 
 # --------------------------------------------------------------------------- #
@@ -324,16 +361,14 @@ def test_a_twin_is_m_pictures_inside_tau_and_not_one() -> None:
         clouds={"a": 0.0, "b": inside, "c": 2 * inside},
         palettes={name: f"m{index:02d}" for index, name in enumerate("abc")},
     )
-    slots = [slot(f"{index:04d}", ["k"], partition=name) for index, name in enumerate("abc")]
-    report = gallery.seat(
-        slots,
-        [candidate(name, "k", p_ge4=0.9 - index / 10) for index, name in enumerate("abc")],
-        log=quiet,
-        rule=ceiling.Rule(eyes),
+    report, taken = seat_them(
+        ceiling.Rule(eyes),
+        [(f"{index:04d}", [candidate(name, "k")]) for index, name in enumerate("abc")],
     )
     assert ceiling.TWINS == 2
-    assert slots[1].seated is not None, "one near neighbour is a pair, not a twin"
-    refusal = report["ceiling"]["rejections"][0]
+    assert report["rejections_by_test"]["twin"] == 1, "one near neighbour is a pair, not a twin"
+    assert taken["0001"] is not None
+    refusal = report["rejections"][0]
     assert refusal["test"] == "twin"
     assert refusal["margin"]["which"] == 2
     assert refusal["margin"]["tau"] == ceiling.TAU
@@ -350,15 +385,12 @@ def test_a_picture_just_outside_tau_is_not_a_twin_of_anything() -> None:
         clouds={"a": 0.0, "b": ceiling.TAU * 1.01, "c": ceiling.TAU * 2.02},
         palettes={name: f"m{index:02d}" for index, name in enumerate("abc")},
     )
-    slots = [slot(f"{index:04d}", ["k"], partition=name) for index, name in enumerate("abc")]
-    report = gallery.seat(
-        slots,
-        [candidate(name, "k", p_ge4=0.9 - index / 10) for index, name in enumerate("abc")],
-        log=quiet,
-        rule=ceiling.Rule(eyes),
+    report, taken = seat_them(
+        ceiling.Rule(eyes),
+        [(f"{index:04d}", [candidate(name, "k")]) for index, name in enumerate("abc")],
     )
-    assert report["filled"] == 3
-    assert report["ceiling"]["rejections"] == []
+    assert len(taken) == 3 and all(taken.values())
+    assert report["rejections"] == []
 
 
 # --------------------------------------------------------------------------- #
@@ -419,14 +451,11 @@ def test_an_unmet_target_is_reported_short_and_never_padded() -> None:
         clouds={"a": None, "b": None},
         palettes={"a": "m01", "b": "m02"},
     )
-    slots = [slot("0000", ["k"]), slot("0001", ["k"], partition="phoenix")]
-    report = gallery.seat(
-        slots,
-        [candidate("a", "k", p_ge4=0.9), candidate("b", "k", p_ge4=0.8)],
-        log=quiet,
-        rule=ceiling.Rule(eyes, targets={"dark_vivid_green": 0.5}),
+    report, _taken = seat_them(
+        ceiling.Rule(eyes, targets={"dark_vivid_green": 0.5}),
+        [("0000", [candidate("a", "k")]), ("0001", [candidate("b", "k")])],
     )
-    entry = report["ceiling"]["targets"][0]
+    entry = report["targets"][0]
     assert entry == {
         "cell": "dark_vivid_green",
         "fraction": 0.5,
@@ -435,10 +464,8 @@ def test_an_unmet_target_is_reported_short_and_never_padded() -> None:
         "verdict": "SHORT",
         "short_by": 1,
     }
-    assert [entry["cell"] for entry in report["ceiling"]["targets"]] == ["dark_vivid_green"]
-    assert not any("dark_vivid_green" in report["ceiling"]["dominance"]["cells"] for _ in [0]), (
-        "no seat was invented to hit it"
-    )
+    assert [entry["cell"] for entry in report["targets"]] == ["dark_vivid_green"]
+    assert "dark_vivid_green" not in report["dominance"]["cells"], "no seat was invented to hit it"
 
 
 # --------------------------------------------------------------------------- #
@@ -453,18 +480,15 @@ def test_a_seat_nothing_clears_takes_the_least_violating_and_says_so() -> None:
         clouds={"a": 0.0, "b": ceiling.TAU_GROUP / 2},
         palettes={"a": "m01", "b": "m01"},
     )
-    slots = [slot("0000", ["k"]), slot("0001", ["j"], partition="phoenix")]
-    report = gallery.seat(
-        slots,
-        [candidate("a", "k"), candidate("b", "j", p_ge4=0.8)],
-        log=quiet,
-        rule=ceiling.Rule(eyes),
+    report, taken = seat_them(
+        ceiling.Rule(eyes),
+        [("0000", [candidate("a", "k")]), ("0001", [candidate("b", "j")])],
     )
-    assert report["filled"] == 2, "a colour rule never leaves a seat empty; only a floor does"
-    fell = report["ceiling"]["fallbacks"]
+    assert all(taken.values()), "a colour rule never leaves a seat empty; only a floor does"
+    fell = report["fallbacks"]
     assert [row["candidate"] for row in fell] == ["b"]
     assert set(fell[0]["failed"]) == {"group"}, "far apart in colour, same map, same picture"
-    assert slots[1].fill["ceiling"]["fallback"]["candidate"] == "b"
+    assert fell[0]["seat"] == "0001"
 
 
 def test_the_least_violating_is_fewest_tests_then_least_strain() -> None:
@@ -474,40 +498,8 @@ def test_the_least_violating_is_fewest_tests_then_least_strain() -> None:
     assert ceiling.strain(twin_only) < ceiling.strain(group_only) < ceiling.strain(both)
 
 
-def test_a_re_seat_replays_the_sequence_and_the_seats_before_it_do_not_move() -> None:
-    """The whole sequence is retaken, so a slot that moved cannot change its elders.
-
-    Path dependence is what the ceiling adds, and it only ever runs forwards: the
-    state a seat is tested against is what the seats BEFORE it in the walk took.
-    So re-deciding a later slot leaves every earlier one on the candidate it had.
-    """
-    colours = {name: red() for name in "abcd"}
-    eyes = Eyes(
-        colours=colours,
-        clouds={"a": 0.0, "b": 1.0, "c": 2.0, "d": 3.0},
-        palettes={name: f"m{index:02d}" for index, name in enumerate("abcd")},
-    )
-    rule = ceiling.Rule(eyes)
-    pool = [
-        candidate("a", "k"),
-        candidate("b", "j", p_ge4=0.8),
-        candidate("c", "j", p_ge4=0.7),
-        candidate("d", "i", p_ge4=0.6),
-    ]
-    slots = [slot("0000", ["k"]), slot("0001", ["j"], partition="phoenix")]
-    first = gallery.seat(slots, pool, log=quiet, rule=rule)
-    before = slots[0].seated["candidate"]
-
-    # The second slot stands somewhere else and the whole seating is taken again.
-    slots[1].locations = ["i"]
-    second = gallery.seat(slots, pool, log=quiet, rule=rule)
-    assert slots[0].seated["candidate"] == before
-    assert slots[1].seated["candidate"] == "d"
-    assert first["ceiling"]["seats"] == second["ceiling"]["seats"] == 2
-
-
 def test_two_seatings_of_one_state_agree_exactly() -> None:
-    """A replay is a replay: same slots, same pool, same rule, same answer."""
+    """A replay is a replay: same seats, same pool, same rule, same answer."""
     eyes = Eyes(
         colours={name: red() for name in "abc"},
         clouds={"a": 0.0, "b": ceiling.TAU / 3, "c": 2 * ceiling.TAU / 3},
@@ -515,33 +507,11 @@ def test_two_seatings_of_one_state_agree_exactly() -> None:
     )
     rule = ceiling.Rule(eyes)
     pool = [candidate(name, "k", p_ge4=0.9 - index / 10) for index, name in enumerate("abc")]
-    slots = [slot(f"{index:04d}", ["k"], partition=name) for index, name in enumerate("abc")]
-    once = gallery.seat(slots, pool, log=quiet, rule=rule)
-    twice = gallery.seat(slots, pool, log=quiet, rule=rule)
-    assert once["ceiling"]["rejections"] == twice["ceiling"]["rejections"]
-    assert once["ceiling"]["fallbacks"] == twice["ceiling"]["fallbacks"]
-
-
-# --------------------------------------------------------------------------- #
-# 7. Without a rule, the seating is the seating it was.
-# --------------------------------------------------------------------------- #
-def test_no_rule_means_no_ceiling_anywhere_on_the_record() -> None:
-    slots = [slot("0000", ["k"])]
-    report = gallery.seat(slots, [candidate("a", "k")], log=quiet)
-    assert "ceiling" not in report
-    assert "ceiling" not in slots[0].fill
-    assert "palette_group" not in slots[0].seated
-    assert floors.CLUSTER_CAP == 1
-
-
-def test_the_floors_still_act_under_a_ceiling_and_nothing_is_seated_from_under_one() -> None:
-    low = dict(candidate("a", "k", head=STRANGE))
-    low["p_ge3"] = 0.1
-    slots = [slot("0000", ["k"], head=STRANGE)]
-    report = gallery.seat(slots, [low], log=quiet, rule=ceiling.Rule(Eyes()))
-    assert slots[0].seated is None
-    assert slots[0].unfilled == "below_bar"
-    assert report["ceiling"]["fallbacks"] == []
+    seats = [(f"{index:04d}", [row]) for index, row in enumerate(pool)]
+    once, _first = seat_them(rule, seats)
+    twice, _again = seat_them(rule, seats)
+    assert once["rejections"] == twice["rejections"]
+    assert once["fallbacks"] == twice["fallbacks"]
 
 
 # --------------------------------------------------------------------------- #
@@ -559,137 +529,20 @@ def test_a_target_naming_something_that_is_not_a_cell_is_refused() -> None:
     assert ceiling.parse_target("dark_vivid_green=0.05") == ("dark_vivid_green", 0.05)
 
 
-def test_targets_that_ask_for_more_than_one_gallery_are_refused() -> None:
-    with pytest.raises(ceiling.TargetRefused, match="only one gallery"):
-        gallery.refuse_targets({"dark_vivid_green": 0.6, "dark_vivid_rose": 0.6}, ["viridis"])
+def test_targets_that_ask_for_more_than_one_collection_are_refused() -> None:
+    with pytest.raises(ceiling.TargetRefused, match="only one collection"):
+        ceiling.refuse_targets({"dark_vivid_green": 0.6, "dark_vivid_rose": 0.6}, ["viridis"])
 
 
 def test_a_cell_with_no_carrier_this_pass_can_draw_is_refused_by_name() -> None:
     with pytest.raises(ceiling.TargetRefused, match="dark_vivid_green"):
-        gallery.refuse_targets({"dark_vivid_green": 0.05}, ["gray"])
+        ceiling.refuse_targets({"dark_vivid_green": 0.05}, ["gray"])
 
 
 def test_a_feasible_target_reports_what_it_may_draw_from() -> None:
-    block = gallery.refuse_targets({"dark_vivid_green": 0.05}, ["Green Vault", "gray"])
+    block = ceiling.refuse_targets({"dark_vivid_green": 0.05}, ["Green Vault", "gray"])
     assert block["cells"]["dark_vivid_green"]["carriers"] == 1
     assert block["cells"]["dark_vivid_green"]["best"][0]["map"] == "Green Vault"
-
-
-# --------------------------------------------------------------------------- #
-# 9. The extra picks: what stands between a refusal and a fallback.
-# --------------------------------------------------------------------------- #
-class Renderer:
-    """An `OnDemand` that states its pictures instead of making them."""
-
-    def __init__(self, offers: dict):
-        #: `map -> (colour share vector, cloud value)` this fake will hand back.
-        self.offers = dict(offers)
-        self.asked: list = []
-
-    def spend(self, candidate: dict, spent: set, families: set):
-        self.asked.append((str(candidate["candidate"]), frozenset(spent), frozenset(families)))
-        for name, (_share, _cloud) in self.offers.items():
-            if name not in spent:
-                return {**candidate, "candidate": f"d-{name}", "colormap": name, "p_ge3": 0.99}
-        return None
-
-    def price(self) -> dict:
-        return {"rendered": len(self.asked)}
-
-
-def test_a_refused_seat_asks_for_a_colour_it_has_not_tried_before_falling_back() -> None:
-    """The whole shape of the addendum: refuse, render, seat — and only then fall back."""
-    eyes = Eyes(
-        colours={"a": red(), "b": red(), "d-Green Vault": green()},
-        clouds={"a": 0.0, "b": 1.0, "d-Green Vault": 2.0},
-        palettes={"a": "m01", "b": "m02", "d-Green Vault": "m03"},
-    )
-    slots = [slot("0000", ["k"]), slot("0001", ["j"], partition="phoenix")]
-    report = gallery.seat(
-        slots,
-        [candidate("a", "k"), candidate("b", "j", p_ge4=0.8)],
-        log=quiet,
-        rule=ceiling.Rule(eyes),
-        extra=Renderer({"Green Vault": (green(), 2.0)}),
-    )
-    assert report["ceiling"]["rejections_by_test"]["dominance"] == 1, "the second red"
-    assert report["ceiling"]["fallbacks"] == [], "and it did not have to fall back"
-    assert slots[1].seated["candidate"] == "d-Green Vault"
-    assert slots[1].fill["ceiling"]["extra_picks"] == 1
-    assert report["ceiling"]["on_demand"]["seats_that_asked"] == 1
-    assert report["ceiling"]["on_demand"]["seats_it_filled"] == 1
-
-
-def test_the_extra_picks_are_bounded_and_then_the_fallback_takes_the_seat() -> None:
-    """Three colours a seat cannot use is a seat the neighbourhood cannot fill."""
-    extras = {f"map{index}": (red(), 3.0 + index) for index in range(9)}
-    eyes = Eyes(
-        colours={"a": red(), "b": red(), **{f"d-{name}": red() for name in extras}},
-        clouds={
-            "a": 0.0,
-            "b": 1.0,
-            **{f"d-{name}": 3.0 + index for index, name in enumerate(extras)},
-        },
-        palettes={
-            "a": "m01",
-            "b": "m02",
-            **{f"d-{name}": f"g{index}" for index, name in enumerate(extras)},
-        },
-    )
-    renderer = Renderer(extras)
-    slots = [slot("0000", ["k"]), slot("0001", ["j"], partition="phoenix")]
-    report = gallery.seat(
-        slots,
-        [candidate("a", "k"), candidate("b", "j", p_ge4=0.8)],
-        log=quiet,
-        rule=ceiling.Rule(eyes),
-        extra=renderer,
-    )
-    assert gallery.EXTRA_PICKS == 3
-    assert len(renderer.asked) == 3, "bounded per seat, and it is the seat that is bounded"
-    assert slots[1].fill["ceiling"]["extra_picks"] == 3
-    assert len(report["ceiling"]["fallbacks"]) == 1, "and then the least-violating one"
-    assert report["ceiling"]["on_demand"]["seats_it_filled"] == 0
-
-
-def test_a_seat_that_filled_or_that_was_empty_never_asks_for_a_render() -> None:
-    """The cost lands on the seats the ceiling bit, and on no others."""
-    eyes = Eyes(colours={"a": red()}, clouds={"a": 0.0}, palettes={"a": "m01"})
-    renderer = Renderer({"Green Vault": (green(), 2.0)})
-    filled = [slot("0000", ["k"])]
-    gallery.seat(filled, [candidate("a", "k")], log=quiet, rule=ceiling.Rule(eyes), extra=renderer)
-    assert renderer.asked == [], "it seated on the first candidate"
-
-    empty = [slot("0000", ["nobody"])]
-    gallery.seat(empty, [], log=quiet, rule=ceiling.Rule(eyes), extra=renderer)
-    assert empty[0].unfilled == "no_candidates"
-    assert renderer.asked == [], "nothing was refused, so there is nothing to render around"
-
-
-def test_what_the_seat_has_already_tried_is_read_off_the_pictures() -> None:
-    """The screen avoids colours the seat's own renders turned out to be.
-
-    Not the colours the recolours predicted: the recolour is a smooth field and
-    the attempt drew a mode, and over gallery3's strange rows half the picture's
-    colour lands in different families from the one the screen looked at.
-    """
-    eyes = Eyes(
-        colours={"a": red(), "b": {"dark_vivid_blue": 1.0}},
-        clouds={"a": 0.0, "b": ceiling.TAU_GROUP / 2},
-        palettes={"a": "m01", "b": "m01"},
-    )
-    renderer = Renderer({"Green Vault": (green(), 2.0)})
-    slots = [slot("0000", ["k"]), slot("0001", ["j"], partition="phoenix")]
-    gallery.seat(
-        slots,
-        [candidate("a", "k"), candidate("b", "j", p_ge4=0.8)],
-        log=quiet,
-        rule=ceiling.Rule(eyes),
-        extra=renderer,
-    )
-    _who, spent, families = renderer.asked[0]
-    assert families == frozenset({"blue"}), "what the refused picture WAS, not what its map is"
-    assert "map-b" in spent
 
 
 # --------------------------------------------------------------------------- #

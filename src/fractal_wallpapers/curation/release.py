@@ -138,6 +138,30 @@ class Regime:
         }
 
 
+#: What a shipped wallpaper is rendered at, and a **default** rather than a
+#: constant: a leg may be told another with `--release-regime`, and what it
+#: actually used is on every release row and on the leg's own record.
+#:
+#: **1280x720 ss2 from 2026-08-25**, on Matt's call. A released wallpaper does not
+#: need the full frame, and the release leg is the slow one — a quarter of the
+#: pixels at half the supersample is a sixteenth of the field samples, so the leg
+#: that priced at ~25 s a winner is the one this buys back.
+#:
+#: It is deliberately not [`run.RELEASE_RESOLUTION`]. A diagnostic release and a
+#: shipped wallpaper used to be the same picture at the same size and are not any
+#: more, so the two are named apart rather than one read off the other — what a
+#: run makes is a night's evidence, and what the selection makes is the
+#: collection.
+RELEASE_REGIME = Regime((1280, 720), 2)
+
+#: What the first three gallery passes shipped at, and what `--release-regime
+#: 2560x1440ss4` reaches. Named rather than left as a number in a sentence,
+#: because those pictures are still on disk and the website's figures are drawn
+#: off them: a reader asking what was made before the 2026-08-25 ruling needs a
+#: name to ask with.
+FORMER_RELEASE_REGIME = Regime((2560, 1440), 4)
+
+
 def regime_of(text: str) -> Regime:
     """A regime from `<w>x<h>ss<n>`, as a person writes one on a flag."""
     stated = str(text).strip().lower().lstrip("_")
@@ -596,6 +620,8 @@ def parity(tasks, workers: int, directory: Path, log=print) -> dict:
 
 __all__ = [
     "DEFAULT_WORKERS",
+    "FORMER_RELEASE_REGIME",
+    "RELEASE_REGIME",
     "ENGINE_THREADS_PER_WORKER",
     "KILL_GRACE",
     "SUBMIT_AHEAD",
