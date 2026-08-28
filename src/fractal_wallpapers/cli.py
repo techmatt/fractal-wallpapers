@@ -3443,13 +3443,13 @@ def _twin_sweep(candidates, radius) -> dict:
 
 
 def curate_seat(args: argparse.Namespace) -> int:
-    """Seat a gallery off the ledger with a greedy, and keep every refusal."""
-    from fractal_wallpapers.curation import headroom, rank_key, seating
+    """Seat a gallery off the ledger with a greedy, keep every refusal, release it."""
+    from fractal_wallpapers.curation import headroom, seating
+    from fractal_wallpapers.curation import release as release_module
 
     candidates, _costs, _refused = headroom.population()
-    order = None
-    if args.key == "rank-key":
-        order, coverage = rank_key.order_for(candidates)
+    order, coverage = seating.ranking_for(candidates, args.key)
+    if coverage is not None:
         print(json.dumps(coverage, indent=2))
     record = seating.seat(
         candidates,
@@ -3458,11 +3458,19 @@ def curate_seat(args: argparse.Namespace) -> int:
         radius=None if args.no_preselection else args.neutral_radius,
         twin=not args.no_twin,
         group_cap=args.group_cap,
+        key=args.key,
         order=order,
+        coverage=coverage,
     )
     name = args.name or f"n{args.n}"
     path = seating.write_record(name, record)
     print(f"{path}")
+    if args.release:
+        regime = release_module.regime_of(args.release_regime)
+        made = seating.release_seats(name, record, workers=args.workers, regime=regime)
+        path = seating.write_record(name, record)
+        print(json.dumps({**made, "timings": f"{len(made['timings'])} row(s), not restated"}))
+        print(json.dumps(seating.autolevel_rate(record), indent=2))
     if not args.no_sheet:
         sheet = None if args.sheet_out is None else resolve_output(args.sheet_out)
         print(f"{seating.contact_sheet(name, record, rejected=record['samples'], output=sheet)}")
@@ -7038,8 +7046,10 @@ def curate_commands(subcommands) -> None:
     from fractal_wallpapers.curation import headroom as headroom_module
     from fractal_wallpapers.curation import hunt as hunt_module
     from fractal_wallpapers.curation import mine as mine_module
+    from fractal_wallpapers.curation import release as release_module
     from fractal_wallpapers.curation import retention as retention_module
     from fractal_wallpapers.curation import run as run_module
+    from fractal_wallpapers.curation import seating as seating_module
     from fractal_wallpapers.curation import shrinkage as shrinkage_module
     from fractal_wallpapers.curation import solve as solve_module
 
@@ -7973,23 +7983,52 @@ def curate_commands(subcommands) -> None:
     seating_step.add_argument(
         "--group-cap",
         choices=list(ceiling_module.GROUP_CAP_RULES),
-        default=ceiling_module.IDENTITY,
-        help=f"which palette-group cap to seat under. `{ceiling_module.IDENTITY}` is "
-        f"ceiling.GROUP_CAP = {ceiling_module.GROUP_CAP}, one seat a map, which is what "
-        f"every gallery this project has shipped was seated under and is still the "
-        f"default. `{ceiling_module.PROPORTIONAL}` is "
+        default=seating_module.DEFAULT_GROUP_CAP,
+        help=f"which palette-group cap to seat under. `{ceiling_module.PROPORTIONAL}` is "
         f"max(1, floor({ceiling_module.GROUP_CAP_RATE:g} * n)) — 1 up to n=40, 3 at n=150, "
-        f"25 at n=1000, so a before/after has to be taken at a size where the two differ",
+        f"25 at n=1000 — and is THE DEFAULT since 2026-08-28, the ckpt-88 ruling. "
+        f"`{ceiling_module.IDENTITY}` is ceiling.GROUP_CAP = {ceiling_module.GROUP_CAP}, one "
+        f"seat a map, which every gallery before that date was seated under and which is "
+        f"still reachable here. The two agree below n=40, so a before/after has to be taken "
+        f"at a size where they differ",
     )
     seating_step.add_argument(
         "--key",
-        choices=["p_ge4", "rank-key"],
-        default="p_ge4",
-        help="the sort key the pool is walked in. `p_ge4` is the render judge alone, "
-        "which is the incumbent. `rank-key` is the fitted form in "
+        choices=list(seating_module.KEYS),
+        default=seating_module.DEFAULT_KEY,
+        help="the sort key the pool is walked in. `rank-key` is the fitted form in "
         "`curate rank-key` — the location head, both judge cutpoints, the calibration "
-        "stratum and the flatness column. IT MOVES THE ORDER AND NOTHING ELSE: every bar, "
-        "the clearing rule and the neutral pre-selection still read the judge's own columns",
+        "stratum and the flatness column — and is THE DEFAULT since 2026-08-28, on Matt's "
+        "acceptance by eye against the incumbent. `p_ge4` is the render judge alone, which "
+        "is what every earlier gallery was ordered by and is still reachable here. IT MOVES "
+        "THE ORDER AND NOTHING ELSE: every bar, the clearing rule and the neutral "
+        "pre-selection still read the judge's own columns",
+    )
+    seating_step.add_argument(
+        "--release",
+        action="store_true",
+        help="render every seat at release geometry after the walk, into the seating's own "
+        "`release/` directory, and put the released pictures on the contact sheet. NO BAR "
+        "ACTS in this leg: it re-scores nothing and refuses nothing, so every seat the walk "
+        "chose is rendered. A row that hangs is killed at "
+        f"{solve_module.ROW_BACKSTOP:.0f}s and the leg carries on; there is no budget gate "
+        "and the leg runs to completion",
+    )
+    seating_step.add_argument(
+        "--release-regime",
+        default=gallery_module.RELEASE_REGIME.spelled,
+        metavar="WxHssN",
+        help=f"the geometry --release renders at (default {gallery_module.RELEASE_REGIME.spelled}, "
+        f"the gallery pass's; {gallery_module.FORMER_RELEASE_REGIME.spelled} is what "
+        f"gallery1 through gallery3 shipped at)",
+    )
+    seating_step.add_argument(
+        "--workers",
+        type=int,
+        default=release_module.DEFAULT_WORKERS,
+        help=f"worker processes the release leg renders over (default "
+        f"{release_module.DEFAULT_WORKERS}, which is this machine's render pool; each "
+        f"spawns below-normal by construction)",
     )
     seating_step.set_defaults(handler=curate_seat)
 

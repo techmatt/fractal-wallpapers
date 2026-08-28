@@ -1920,8 +1920,28 @@ def release_regime():
     return gallery.RELEASE_REGIME
 
 
-def render_seats(name: str, record: dict, workers: int = 4, regime=None, log=print) -> dict:
-    """Render every seat of a solve at release geometry. Mutates `record`.
+#: How long one release row gets before the worker kills it. **A backstop and
+#: never a budget.**
+#:
+#: A gallery pass has no clock: every row it plans is rendered to completion and
+#: there is no knob that stops the leg early. What this bounds is the row that has
+#: stopped making progress at all — a quarter of an hour against a leg whose
+#: median row at 1280x720 ss2 is measured in single-digit seconds and whose worst
+#: recorded row at four times the samples per axis was 799 s. A row that reaches
+#: it comes back failed and named, and the leg carries on.
+ROW_BACKSTOP = 900.0
+
+
+def render_seats(
+    name: str,
+    record: dict,
+    workers: int | None = None,
+    regime=None,
+    where: Path | None = None,
+    timeout: float | None = ROW_BACKSTOP,
+    log=print,
+) -> dict:
+    """Render every seat of a solve or a seating at release geometry. Mutates `record`.
 
     The same two facts a pass's release leg records and for the same reasons: the
     **geometry lands on each seat**, because the default has moved once already
@@ -1933,13 +1953,29 @@ def render_seats(name: str, record: dict, workers: int = 4, regime=None, log=pri
 
     No re-score. The release picture is the same recipe as the candidate the
     decision was taken on, at another size, and the judge's floors were fit on
-    640x360 candidate renders.
+    640x360 candidate renders. **Nothing here applies a bar of any kind**: every
+    seat the walk chose is rendered and every render that succeeds is released.
+
+    `where` is the directory the pictures and the stamp log land in, defaulting to
+    the solve's own. [`curation.seating`] passes its seat directory: the two
+    records carry the same `seated` shape, and a second copy of this leg beside
+    it would be a second place for the geometry and the stamp rule to drift.
+
+    `workers` is [`release.DEFAULT_WORKERS`] unless a caller says otherwise —
+    the machine's three-at-below-normal render pool, read from the module that
+    owns it. It was a literal 4 at this signature, which is one more engine than
+    the desktop survives.
+
+    `timeout` is [`ROW_BACKSTOP`], stamped onto every task so the **worker**
+    imposes it. It is not a [`pacing.Leg`] and there is no gate: no row is ever
+    declined, so the leg still runs to completion.
     """
     from fractal_wallpapers.curation import release
 
     regime = release_regime() if regime is None else regime
+    workers = release.DEFAULT_WORKERS if workers is None else int(workers)
     rows = {str(row["key"]): row for row in candidate_ledger.read()}
-    where = solve_dir(name) / "release"
+    where = (solve_dir(name) / "release") if where is None else Path(where)
     where.mkdir(parents=True, exist_ok=True)
     stamps = where / "autolevel_stamps.jsonl"
     tasks, done, reused = [], {}, []
@@ -1963,6 +1999,7 @@ def render_seats(name: str, record: dict, workers: int = 4, regime=None, log=pri
                 mode=recipe["mode"],
                 output=str(picture),
                 geometry={**regime.geometry(), "maxiter": int(recipe["maxiter"])},
+                timeout=None if timeout is None else float(timeout),
             )
         )
     log(f"[solve] {len(tasks)} seat(s) to render at {regime.spelled}, {len(reused)} already there")
@@ -2006,7 +2043,12 @@ def render_seats(name: str, record: dict, workers: int = 4, regime=None, log=pri
     record["render"] = {
         "regime": regime.spelled,
         "geometry": regime.geometry(),
+        "where": tracked_name(where),
         "workers": int(workers),
+        "row_backstop_seconds": None if timeout is None else float(timeout),
+        "killed": leg.get("killed", 0),
+        "no_bar": "nothing in this leg re-scores and nothing in it refuses: every seat the "
+        "walk chose is rendered, and a floor at shipping geometry does not exist",
         "planned": len(tasks) + len(reused),
         "reused": len(reused),
         "made": outcomes["rendered"],
@@ -2486,6 +2528,7 @@ __all__ = [
     "Pairs",
     "Program",
     "Q4_BAR",
+    "ROW_BACKSTOP",
     "Q4_BASIS",
     "SEATS_PER_MODE_FLOOR",
     "ROUNDS",
