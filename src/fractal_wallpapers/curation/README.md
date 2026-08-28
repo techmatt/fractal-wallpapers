@@ -1057,6 +1057,21 @@ render pool is three workers. The realized per-mode render cost is on the ledger
 (`hunt.seconds`, 69,767 of the 85,129 rows carry one), and the median is used rather
 than the mean because every mode's p90 is two to five times its median.
 
+**There are aimed rows in that denominator now, and nothing filters them out.**
+`_row` divides by every candidate on record without asking how any of them was
+drawn, and since 2026-08-28 the ledger carries a conditioned arm: 3,042 rows drawn
+*for* `light_vivid_teal`, merged beside their own 3,041-row flat control. So a
+census taken after that date reports an unconditioned rate on every cell except the
+one an arm aimed at, and on that one it reports an aimed leg's rate under the
+estimator's name. The separator is **`hunt.drawn_for`**, and it is exact: it is
+present on the aimed row alone and absent on every other row in the store — the
+control arm's included, which is what makes the control still readable as base
+rate. Drop those rows *before* the census to read the true rate; there is no
+correction to apply afterwards, because the aimed rows move the numerator and the
+denominator by different factors. The same caveat rides on `depth.mode_bars`'
+`ledger_clear_rate`, which is the base rate the next arm's clear rate will be
+quoted against.
+
 ### The greedy fills by scarcity, not by score
 
 Ordering by score alone converts satisfiable problems into apparent infeasibility.
@@ -1172,6 +1187,17 @@ it as the **constructive** lower bound. The relation is measured over one pictur
 place — that place's strongest clearing candidate — so the upper bound is a necessary
 condition for the program restricted to those pictures and a flag rather than a proof
 for the unrestricted one. The block says so.
+
+**Where the bound stands, and what a merge does to it.** Over the merged ledger on
+2026-08-28: 1,791 places, 10,642 twin pairs, maximal matching 753, **upper bound
+1,038**, greedy independent set 532. The sweep costs about ten minutes — a signature
+a picture at ~116 ms, then the exact metric on the few thousand pairs the bound cannot
+refuse (13,708 of 1,602,945 screened here). Merging `teal_conditioned` moved it
+1,013 -> 1,038, so 25 of that merge's 40 new places survived as non-twin. It is the
+tightest block that is not provably short: at n=1000 its slack is 38, where
+`palette_group_cap` is at -240 and `mode_floors` sits exactly on its needs. The greedy
+lower bound stays far below 1,000, so a thousand-seat gallery is bounded from above and
+unproven from below.
 
 ## `curate hunt` — rendering into a shortage instead of around it
 
@@ -1537,6 +1563,23 @@ are empty when it has no share — so `--shares '{"flat": 0.5, "conditioned":
 `spread_over_partitions` sizes them round-robin off their own shares instead
 where there is no ranked draw to inherit a mix from, and `plan.matched_mix_agrees`
 says on the record that the arm and its control asked for the same one.
+
+**`merge` upserts, and the incoming row wins.** `candidate_ledger.write` keys on
+the recipe, so a recipe some earlier leg already made is *re-attributed* to the
+run being merged — its `provenance.run`, its `hunt` block and its `drawn_for` all
+become this run's. `records._carry` holds back exactly one field, a human
+`rejected` verdict, because that was never one of the row's inputs. Read
+`merge`'s `new` against `merged` to see how much of a run was collision: a run
+planned on never-opened locations can still collide, because the pool it was
+planned against is the pool at *plan* time and other legs merge in between.
+
+**Merging an arm changes the never-opened pool as well as the ledger.**
+`hunt.opened_locations` calls a place open the moment it carries one recipe, so
+every location an arm touched leaves the pool a later *unconditioned* breadth
+draw is taken from — and which locations the arm touched was decided in part by
+a colour ask. That is a selection effect on the population and not on a rate, so
+no `drawn_for` filter reaches it; it is the reason a conditioned arm is merged on
+a ruling rather than by default.
 
 **`record.dominant_and_clearing` is the readout the arm exists for, and it
 reports the factors before it multiplies them.** The census's marginal cost for a
