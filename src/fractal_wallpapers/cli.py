@@ -3724,6 +3724,7 @@ def curate_depth(args: argparse.Namespace) -> int:
                 depth.BREADTH_DEMOTED if args.breadth_demoted is None else args.breadth_demoted
             ),
             "near_width": args.near_width,
+            "top_bands": args.top_bands,
         }
         if args.what == "plan":
             _intended, shape = depth.build_plan(
@@ -8163,6 +8164,16 @@ def curate_commands(subcommands) -> None:
         metavar="COUNT",
         help=f"how many equal-count bands the head's rank range inside one partition is "
         f"cut into (default {depth_module.RANK_BANDS})",
+    )
+    depth_step.add_argument(
+        "--top-bands",
+        type=int,
+        default=None,
+        metavar="COUNT",
+        help="restrict the FLAT and CONDITIONED draws to the strongest COUNT rank bands, so "
+        "the two matched arms stand on one stretch of the head's rank axis. Unsaid, they "
+        "draw over the whole of it. The ranked draw is never cut: measuring the curve end "
+        "to end is its whole job",
     )
     depth_step.add_argument(
         "--seed",

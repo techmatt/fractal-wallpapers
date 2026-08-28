@@ -225,6 +225,33 @@ two byte for byte is the only thing that proves the page serves what was measure
 re-proves `field_sharing`'s recolour-is-the-render claim on a population outside its own
 tests, since the measure pass recoloured a dumped field and the build did a full render.
 
+**How much of a pool sheet the operator actually moves: 43%.** On
+`seated_and_head_top` (2026-08-27, 200 candidate-ledger rows at 1280x720 ss2) the
+operator was *offered* 192 of the 200 — the other eight are direct traps, which
+`autolevel.applies_to` excludes at the site that decides — and it **acted on 85**.
+Those 85 are rows a sheet built straight off the plan would have served as a
+different picture under the same identity, and no number on the ledger row says
+which 85 they are. So a measure pass is not optional on a sheet cut out of the
+candidate pool: skipping it is not a rounding error, it is two fifths of the page.
+
+**Measured cost of a correction sheet cut over the candidate pool**, 2026-08-27,
+`seated_and_head_top`: the measure pass ran 200 units in **301 s wall** at three
+workers (1.50 s/unit wall, 4.46 s/unit of work) and the two `label build` legs cut
+103 + 97 units in about **250 s** between them. That is ~2.8 s/unit for the whole
+two-pass arrangement against the 5.4 s/unit `p_ge4_calibration_*` cost below, and
+the difference is the material rather than the machine: these are field-mode rows
+at a mean 16,541 maxiter, so the operator's second pass is a recolour off a dumped
+field and the eleven composite modes that dominate the older number are barely
+present. **Estimate a sheet by its mode mix, not by its unit count** — the same
+claim the four-row table above makes about maxiter.
+
+Both renders verified byte for byte on **200 of 200 rows**, and the two readings
+of the same picture at the two geometries are on every row (`selected_on` against
+`columns`): mean shift `-0.0035` on `P(>=4)` over the seats and `-0.0000` over the
+top-scored control, with single rows moving as far as `+0.27` and `-0.20`. The
+judge is regime-stable in the *mean* and not per row, which is exactly why both
+readings travel rather than one.
+
 **Measured cost**, 2026-08-26, six workers, post-`field_sharing`: 246 units at 1280x720 ss2
 in **654 s**, 2.7 s/unit wall and 13.3 s/unit of work. The mix is what moves it — a
 field mode amortises its dump over the operator's second pass, a composite has no field and

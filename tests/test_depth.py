@@ -554,3 +554,167 @@ def test_the_floor_draw_stands_on_places_that_already_cleared_the_seating_bar():
     )
     world = a_world()
     assert {shot.location for shot in plan} <= set(world["best"])
+
+
+# --------------------------------------------------------------------------- #
+# The matched pair: one band cut, one partition mix, no ranked draw to lean on.
+# --------------------------------------------------------------------------- #
+MATCHED_SHARES = {depth.NEAR: 0.0, depth.RANKED: 0.0, depth.FLAT: 0.5, depth.AIMED: 0.5}
+
+
+def test_the_two_matched_arms_are_drawn_when_the_ranked_draw_takes_no_share():
+    """A run that is only the arm and its control is the shape a colour question
+    wants, and it used to plan nothing at all: both breadth draws were sized off
+    the ranked draw's realized partition counts, which are empty when it has no
+    share."""
+    plan, shape = build_a_plan(shares=MATCHED_SHARES, cell="dark_vivid_green")
+    assert {shot.arm for shot in plan} == {depth.FLAT, depth.AIMED}
+    assert shape["matched_arms_sized_from"] == "their own shares"
+    assert shape["ranked_by_partition"] == {}
+    assert shape["matched_mix_agrees"], "the arm and its control ask for one mix"
+
+
+def test_the_matched_mix_agrees_whichever_draw_sized_it():
+    for shares in (MATCHED_SHARES, AIMED_SHARES):
+        _plan, shape = build_a_plan(shares=shares, cell="dark_vivid_green")
+        assert shape["matched_mix_agrees"]
+
+
+def test_top_bands_cuts_both_matched_arms_and_leaves_the_ranked_draw_whole():
+    """The curve is measured end to end and the comparison is measured in one
+    band, so the cut lands on the two arms and never on the draw that is the
+    curve."""
+    plan, shape = build_a_plan(shares=AIMED_SHARES, cell="dark_vivid_green", top_bands=2)
+    assert shape["top_bands"] == 2
+    for arm in (depth.FLAT, depth.AIMED):
+        held = {shot.band for shot in plan if shot.arm == arm}
+        assert held <= {"band00", "band01"}, f"{arm} stands in the strongest two bands"
+    ranked = {shot.band for shot in plan if shot.arm == depth.RANKED}
+    assert len(ranked) > 2, "the ranked draw still spans the bands it was cut at"
+
+
+def test_unsaid_top_bands_leaves_every_draw_over_the_whole_rank_axis():
+    _plan, shape = build_a_plan(shares=AIMED_SHARES, cell="dark_vivid_green")
+    assert shape["top_bands"] is None
+    plan, _shape = build_a_plan(shares=MATCHED_SHARES, cell="dark_vivid_green")
+    assert len({shot.band for shot in plan}) > 1
+
+
+def test_strongest_bands_keeps_the_head_of_every_partition_and_none_of_the_tail():
+    banded = {"mandelbrot": [["a"], ["b"], ["c"]], "phoenix": [["d"], ["e"], ["f"]]}
+    assert depth.strongest_bands(banded, None) == banded
+    assert depth.strongest_bands(banded, 2) == {
+        "mandelbrot": [["a"], ["b"]],
+        "phoenix": [["d"], ["e"]],
+    }
+
+
+def test_a_partition_spread_is_round_robin_and_never_asks_for_stock_that_is_not_there():
+    banded = {"mandelbrot": [[1, 2, 3, 4]], "phoenix": [[5]], "multibrot3": [[6, 7]]}
+    assert depth.spread_over_partitions(banded, 3) == {
+        "mandelbrot": 1,
+        "multibrot3": 1,
+        "phoenix": 1,
+    }
+    # phoenix holds one place and multibrot3 two, so the remainder can only go to
+    # mandelbrot however many rounds are walked.
+    assert depth.spread_over_partitions(banded, 99) == {
+        "mandelbrot": 4,
+        "multibrot3": 2,
+        "phoenix": 1,
+    }
+    assert depth.spread_over_partitions({"mandelbrot": [[]]}, 5) == {}
+
+
+def test_every_draw_records_the_seeds_it_was_taken_under():
+    """A conditioned run is a measurement and a measurement nobody can re-take is
+    an anecdote. The place draw and the palette draw at one arm are seeded apart,
+    so one number on the record would not be the answer."""
+    _plan, shape = build_a_plan(shares=AIMED_SHARES, cell="dark_vivid_green")
+    seeds = shape["seeds"]
+    assert seeds["base"] == 11
+    assert seeds[depth.FLAT] == {"places": 12, "candidates": 11}
+    assert seeds[depth.AIMED] == {"places": 13, "candidates": 13}
+    assert set(seeds) == {"base", *depth.DRAWS}
+
+
+# --------------------------------------------------------------------------- #
+# The readout the conditioned arm exists for.
+# --------------------------------------------------------------------------- #
+def a_bars_table():
+    return {
+        "modes": {
+            "smooth": {"column": "p_ge4", "bar": 0.5},
+            "curvature": {"column": "p_ge3", "bar": 0.5},
+        },
+        "on_default": ["smooth"],
+        "on_fallback": ["curvature"],
+        "ledger_candidates": 1000,
+        "ledger_clearing": 70,
+        "ledger_clear_rate": 0.07,
+    }
+
+
+def a_made_row(arm, mode="smooth", p4=0.9, p3=0.99, cells=(), location="L", seconds=0.4):
+    return {
+        "arm": arm,
+        "mode": mode,
+        "p_ge4": p4,
+        "p_ge3": p3,
+        "cells": list(cells),
+        "location": location,
+        "seconds": seconds,
+    }
+
+
+def test_a_thin_mode_clears_on_its_own_fallback_column_and_not_on_the_default():
+    table = a_bars_table()
+    assert depth.clears_its_bar(a_made_row("flat", "curvature", p4=0.1, p3=0.8), table)
+    assert not depth.clears_its_bar(a_made_row("flat", "smooth", p4=0.1, p3=0.8), table)
+
+
+def test_a_mode_the_table_never_heard_of_falls_to_the_strict_column():
+    table = a_bars_table()
+    assert not depth.clears_its_bar(a_made_row("flat", "threads", p4=0.1, p3=0.99), table)
+    assert depth.clears_its_bar(a_made_row("flat", "threads", p4=0.7, p3=0.99), table)
+
+
+def test_the_three_factors_are_reported_apart_before_they_are_multiplied():
+    """The composed price hides the one risk the arm exists to test — whether the
+    maps that carry a colour make worse pictures — so the clear rate has to be
+    readable on its own."""
+    made = (
+        [a_made_row(depth.AIMED, cells=["teal"], location=f"a{i}") for i in range(8)]
+        + [a_made_row(depth.AIMED, p4=0.1, cells=["teal"], location=f"a{i}") for i in range(2)]
+        + [a_made_row(depth.FLAT, cells=["teal"], location="f0")]
+        + [a_made_row(depth.FLAT, location=f"f{i}") for i in range(1, 10)]
+    )
+    out = depth.dominant_and_clearing(made, "teal", a_bars_table())
+    assert out["cell"] == "teal"
+    assert out["ledger_clear_rate"] == 0.07
+    assert out[depth.AIMED]["cell_hit_rate"] == 1.0
+    assert out[depth.AIMED]["clear_rate"] == 0.8
+    assert out[depth.AIMED]["dominant_and_clearing"] == 8
+    assert out[depth.AIMED]["renders_per_win"] == 1.25
+    assert out[depth.FLAT]["cell_hit_rate"] == 0.1
+    assert out[depth.FLAT]["clear_rate"] == 1.0
+    assert out[depth.FLAT]["renders_per_win"] == 10.0
+    assert out["lift"]["cell_hit_rate"] == 10.0
+    assert out["lift"]["clear_rate"] == 0.8
+    assert out["renders_per_win_ratio"] == 8.0
+
+
+def test_the_renders_per_place_is_reported_because_the_census_factor_needs_it():
+    made = [a_made_row(depth.AIMED, location=f"a{i // 4}") for i in range(12)]
+    made += [a_made_row(depth.FLAT, location=f"f{i // 6}") for i in range(12)]
+    out = depth.dominant_and_clearing(made, "teal", a_bars_table())
+    assert out[depth.AIMED]["renders_per_place"] == 4.0
+    assert out[depth.FLAT]["renders_per_place"] == 6.0
+
+
+def test_an_arm_that_never_hit_the_cell_reports_no_price_rather_than_infinity():
+    made = [a_made_row(depth.AIMED), a_made_row(depth.FLAT)]
+    out = depth.dominant_and_clearing(made, "teal", a_bars_table())
+    assert out[depth.AIMED]["renders_per_win"] is None
+    assert out["renders_per_win_ratio"] is None
+    assert depth.dominant_and_clearing(made, None, a_bars_table()) is None
