@@ -1464,6 +1464,28 @@ niche is a ruling (checkpoint 84: 2 threes and 0 fours in 117 labeled rows) and
 the engine's tier still says production, so it is applied at the draw through
 `depth.DEMOTED`. Existing material in it stands.
 
+**A composite mode reaches a depth run only through its own leg.** `--modes` is not
+checked against `colorize.shareable`, so a composite named there *runs* — it simply
+pays a full render a candidate, because `colorize.field_for` answers `None` for a
+coloring with no single scalar field. Do not put one on a roster beside field modes:
+`plan_cycled_modes` cycles the roster **uniformly**, so the dear modes take an equal
+count and the great majority of the budget, and the single `--rate` that sizes the
+plan is then a mean over per-candidate costs that differ by an order of magnitude.
+Give them a separate run with `--modes <composite> ...` and their own rate.
+
+Measured 2026-08-28 at `--width 24 --top-bands 5`, seed 20260827, this machine:
+
+| roster | s/candidate | what it is |
+|---|---|---|
+| 6 breadth field modes | **0.497** | one dump a (location, mode), 4 palettes off each |
+| 2 composites, no sharing | **0.696** | a full render every candidate |
+
+The composite leg is only 1.4× the field leg a *candidate* — the gap is nothing like
+the 175 s a location the forty-wide figure above implies, because that figure is a
+composite at forty and this is a composite at twelve. **Budget seconds are wall
+seconds**: `spent` accumulates `stages.total()` and both legs measured wall/spent at
+1.01–1.09, so a run sized to a deadline can subtract straight.
+
 **The conditioned colour ask, ported from the hunt.** `mine.plan_breadth`
 stratified its palette ask over all 48 cells through `hunt.Stratifier`; depth
 replaced that with a flat `random.sample` over the pool and the ask was dropped

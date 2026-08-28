@@ -144,6 +144,32 @@ the first on the rows as they were handed to a writer, the second on the rows as
 store read them back, and the report carries `asserted_before_writing` so which
 reading held is on the record.
 
+### Ingesting a NEW `eval_only` batch does not refresh the pin, and the store notices
+
+`label ingest` asserts the pin it *finds*; it never rewrites it. The pin document
+(`data/<head>/split.json`) and the evaluation side (`data/<head>/eval_split.jsonl`)
+are written by the one-time corpus import and by nothing else, so landing the first
+rows of a newly registered `eval_only` batch leaves the store in a state
+`tests/test_finished_store.py` rejects two different ways:
+
+* leave the document alone and `eval_only_batches` no longer equals the batches of
+  the rows the registry calls pinned;
+* extend the pin to every place the new batch touches and the older **training**
+  rows already sitting on some of those places are stranded on the wrong side.
+
+A batch registered `eval_only` pins at **batch** granularity here — every row of it is
+the evaluation side. That is not the location head's rule, where a seeded draw over
+groups decides and registration alone changes nothing; do not carry one store's
+intuition to the other.
+
+The resolution is the one the store's own refusal names — *fix the split, never the
+pin*. Pin the places that carry no training row, and leave the rest **contested and
+unpinned**: an instrument is only pinnable where it is not already spent. Rebuild the
+side from the registry with `finished.write_pin`, and assert the new side is a
+**superset** of the old before writing, because `write_pin` truncates and a pin that
+can shrink is not a pin. Measured on a 200-unit two-store drop: 150 places pinnable,
+50 contested.
+
 ## What cutting a sheet costs, and why the number moves so much
 
 A location unit is **two renders at 1280×720 ss2**, and that is the whole bill —
