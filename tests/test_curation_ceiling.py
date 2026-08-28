@@ -3,8 +3,13 @@
 Every claim here is one that decides which wallpaper ships. Nothing renders — the
 lens is synthetic, so a candidate's colour and its pixel cloud are stated rather
 than measured, and what is pinned is the arithmetic the seating takes over them.
-The feature itself is pinned in `tests/test_colour_dominance.py`, over real
-pictures, which is the other half of the same claim.
+What a real picture reads as is pinned off the committed carrier table in
+`tests/test_palette_carriers.py`, which is the other half of the same claim.
+
+The last section pins the **literals**. Everything above it is arithmetic in
+terms of the constants and would pass unchanged if one of them moved, and these
+were calibrated by eye off sheets that are not in the tree — so there is nowhere
+else a wrong value could be caught.
 """
 
 from __future__ import annotations
@@ -685,3 +690,66 @@ def test_what_the_seat_has_already_tried_is_read_off_the_pictures() -> None:
     _who, spent, families = renderer.asked[0]
     assert families == frozenset({"blue"}), "what the refused picture WAS, not what its map is"
     assert "map-b" in spent
+
+
+# --------------------------------------------------------------------------- #
+# The calibrated literals.
+# --------------------------------------------------------------------------- #
+def test_every_ceiling_constant_is_pinned_at_the_value_it_was_calibrated_to():
+    """These were read off sheets by eye and cannot be re-derived from anything
+    in the tree. The rest of this file pins the *arithmetic* over them, and would
+    pass unchanged on a moved threshold — so a change to one of these numbers is
+    a change to which wallpapers ship that no other test would report."""
+    assert ceiling.GROUP_CAP == 1, "gallery3: 59 of 91 groups sat above one seat"
+    assert ceiling.TAU_GROUP == 0.10, "the twins sheet's three reference pairs, 0.0999-0.1000"
+    assert ceiling.K == 2, (
+        "family red at 2.45x uniform and dark_vivid_blue at 3.25x are what it acts on"
+    )
+    assert ceiling.CELL_SHARE == 1.0 / 48.0, "uniform over the codebook's chromatic cells"
+    assert ceiling.FAMILY_SHARE == 1.0 / 12.0, "uniform over its hue families"
+    assert ceiling.TAU == 0.0586, "Matt's, off the twins ladder, in the ALL-PIXEL metric"
+    assert ceiling.TWINS == 2, "one near neighbour is a pair; three of a kind is noticed"
+    assert ceiling.MANDATE == 1.0, (
+        "u = 1 is every remaining seat, so anything less concedes the target"
+    )
+    assert ceiling.PREFER == 0.5, "half the remaining seats"
+    assert ceiling.TESTS == ("group", "dominance", "twin"), "the order that names a rejection"
+
+
+def test_the_two_pixel_cloud_thresholds_stay_the_distance_apart_they_were_set():
+    """[`TAU_GROUP`] is the *exemption* from the group cap and not a twin test at
+    another number, so it has to be a distance nobody would argue about. If the
+    two ever converged the exemption would stop being a real gate."""
+    assert ceiling.TAU < ceiling.TAU_GROUP
+    assert pytest.approx(1.706, abs=0.001) == ceiling.TAU_GROUP / ceiling.TAU
+
+
+def test_every_calibrated_constant_reaches_the_pass_record():
+    """A run compared against an older one on a moved constant is comparing two
+    policies, so the record has to carry them rather than name the module."""
+    config = ceiling.Rule().config()
+    assert config["group_cap"] == ceiling.GROUP_CAP
+    assert config["tau_group"] == ceiling.TAU_GROUP
+    assert config["k"] == ceiling.K
+    assert config["cell_share"] == ceiling.CELL_SHARE
+    assert config["family_share"] == ceiling.FAMILY_SHARE
+    assert config["tau"] == ceiling.TAU
+    assert config["twins"] == ceiling.TWINS
+    assert config["mandate"] == ceiling.MANDATE
+    assert config["prefer"] == ceiling.PREFER
+    assert config["tests"] == list(ceiling.TESTS)
+
+
+def test_the_dominance_thresholds_are_pinned_and_the_family_pair_is_twice_the_cell_pair():
+    """The rule that decides what a picture is *of*. Nothing else in the tree
+    fixes these literals, and the ceiling refuses only a DOMINANT candidate — so
+    a moved threshold moves what the ceiling acts on at all."""
+    assert dominance.CELL_LEAD == 0.10
+    assert dominance.CELL_ALONE == 0.15
+    assert dominance.FAMILY_LEAD == 0.20
+    assert dominance.FAMILY_ALONE == 0.30
+    assert pytest.approx(2 * dominance.CELL_LEAD) == dominance.FAMILY_LEAD
+    assert pytest.approx(2 * dominance.CELL_ALONE) == dominance.FAMILY_ALONE
+    assert dominance.CELL_LEAD < dominance.CELL_ALONE, "lead-and-be-worth-naming, or be large alone"
+    for value in (dominance.CELL_LEAD, dominance.CELL_ALONE, dominance.FAMILY_LEAD):
+        assert str(value) in dominance.RULE, "the record spells the rule out, and has to stay right"
