@@ -95,7 +95,14 @@ from fractal_wallpapers.curation import (
 #: rather than a constant, and the mode block counts representation separately
 #: from the floor. A schema 1 record was taken under a flat floor of one and no
 #: pairwise rule at all, and the two are not comparable seatings.
-SCHEMA = 2
+#:
+#: **3**: [`attribution`] joined the record — every seat's rank percentile inside
+#: the clearing pool and the leg that placed it — and the release leg's own block
+#: lands under `render`. The seatings either side of the bump are comparable: what
+#: moved is what is *written down*, not what the walk did. The two defaults flipped
+#: at the same commit and that is **not** what the bump is for — `config` has named
+#: the cap and the key since schema 2, so a reader compares those and never a date.
+SCHEMA = 3
 
 #: The subtree a seating's record and its sheet land in.
 UNIT = "seat"
@@ -167,6 +174,44 @@ TWIN_NEIGHBOURS = 1
 #: so the only thing this buys is the second offer of a candidate the scarcity leg
 #: already tested — a few dozen, not a few thousand.
 SIGNATURE_CACHE = 256
+
+#: The render judge's fourth cutpoint alone, which is what every gallery this
+#: project shipped before 2026-08-28 was ordered by. Still reachable by name.
+JUDGE_KEY = "p_ge4"
+
+#: [`curation.rank_key`]'s fitted five-column form — the location head, both judge
+#: cutpoints, the calibration stratum and the flatness column.
+RANK_KEY = "rank-key"
+
+#: The keys a caller may name.
+KEYS = (RANK_KEY, JUDGE_KEY)
+
+#: **The sort key a seating walks unasked**, since 2026-08-28: the fitted one.
+#:
+#: Matt's, off the contact sheets — the four-arm before/after at `n = 150` put the
+#: fitted order beside the judge alone on one pool and he accepted it by eye. It
+#: is an acceptance and not a measurement, and the record says which key a seating
+#: ran under either way, so a later reading can be taken against the incumbent
+#: without re-deciding anything.
+#:
+#: It moves the **order** and nothing else. Every bar, the clearing rule and the
+#: neutral pre-selection still read the judge's own columns.
+DEFAULT_KEY = RANK_KEY
+
+#: **The palette-group cap rule a seating runs under unasked**, since 2026-08-28:
+#: the proportional one, `max(1, floor(GROUP_CAP_RATE * n))`.
+#:
+#: The ckpt-88 ruling. [`ceiling.IDENTITY`] — one seat a map — is still the
+#: constant [`ceiling.GROUP_CAP`] and is still what a caller gets by naming it;
+#: what moved is which of the two an unflagged seating applies. Below
+#: `1 / ceiling.GROUP_CAP_RATE` seats the two rules produce the same cap, so a
+#: debug gallery at n=20 is unaffected by the flip.
+DEFAULT_GROUP_CAP = ceiling.PROPORTIONAL
+
+#: How many of the seats the bottom-quartile attribution block is cut at. A
+#: quarter, of the seats and never of the pool: the question it answers is "which
+#: legs are placing the weakest wallpapers this gallery ships".
+BOTTOM_QUARTILE = 0.25
 
 
 class SeatingRefused(RuntimeError):
@@ -406,6 +451,29 @@ class Seats:
         return len(self.chosen) >= self.n
 
 
+def ranking_for(candidates, key: str = DEFAULT_KEY, log=print) -> tuple[dict | None, dict | None]:
+    """`(the order a seating walks, what the key could read)` for one pool.
+
+    `(None, None)` on [`JUDGE_KEY`], where the order is the candidate's own
+    `P(>=4)` and there is nothing to resolve. On [`RANK_KEY`] it is
+    [`rank_key.order_for`]'s mapping and its coverage record, and resolving it
+    reads two stores — the flatness sidecar and the location readings — so this is
+    the one place a seating pays for its key and it is paid once per pool.
+
+    Named apart from [`seat`] because [`seat`] is arithmetic over candidates it is
+    handed and this is I/O. A caller with an order already in hand passes it
+    straight to `seat(order=...)` and never reaches here.
+    """
+    named = str(key)
+    if named == JUDGE_KEY:
+        return None, None
+    if named != RANK_KEY:
+        raise SeatingRefused(f"the sort key is one of {KEYS}, not {key!r}")
+    from fractal_wallpapers.curation import rank_key
+
+    return rank_key.order_for(candidates, log=log)
+
+
 def _ranking(order: dict | None):
     """The sort key one seating walks its pool in. Strongest first, ties by key.
 
@@ -459,8 +527,10 @@ def seat(
     floor: int | None = None,
     radius: float | None = distinct.PRESELECT_RADIUS,
     twin: bool = True,
-    group_cap: str = ceiling.IDENTITY,
+    group_cap: str = DEFAULT_GROUP_CAP,
+    key: str = DEFAULT_KEY,
     order: dict | None = None,
+    coverage: dict | None = None,
     log=print,
 ) -> dict:
     """Fill `n` seats by scarcity then by the rank key, and keep every refusal.
@@ -477,19 +547,24 @@ def seat(
     scarcity leg at a size where [`solve.mode_floor`] asks for nothing. Unset, the
     floor is the real one and the record says so.
 
-    ## The two flags, and why the incumbent is still the default
+    ## The two decisions, both flipped on 2026-08-28, both still reachable
 
     `group_cap` names the rule the palette-group cap runs under —
-    [`ceiling.IDENTITY`], one seat a group, or [`ceiling.PROPORTIONAL`],
-    `max(1, floor(0.025 n))`. `order` is `{candidate key: rank value}`, the sort
-    key the pool is walked in; `None` is the render judge's `P(>=4)`, which is
-    what every gallery this project has seated was ordered by.
+    [`ceiling.PROPORTIONAL`], `max(1, floor(0.025 n))`, which is
+    [`DEFAULT_GROUP_CAP`], or [`ceiling.IDENTITY`], one seat a group, which is
+    what every gallery before that date was seated under. `key` names the sort key
+    the pool is walked in — [`RANK_KEY`], which is [`DEFAULT_KEY`], or
+    [`JUDGE_KEY`], the render judge's `P(>=4)` alone.
 
-    Both default to the incumbent so that a caller who does not ask gets the
-    seating this project has always taken. **Neither touches the pool**: the bars,
-    the clearing rule and the neutral pre-selection all read the judge's own
-    columns, so two seatings differing in a flag differ in the sort order and in
-    the cap and in nothing else, which is what makes a before/after exact.
+    `order` is the resolved `{candidate key: rank value}` and **overrides `key`**:
+    a caller that already holds the mapping — a sweep seating one pool four ways —
+    passes it and never pays [`ranking_for`]'s two store reads again. `coverage`
+    is what that resolution reported, carried onto the record beside it.
+
+    **Neither decision touches the pool**: the bars, the clearing rule and the
+    neutral pre-selection all read the judge's own columns, so two seatings
+    differing in one of them differ in the sort order and in the cap and in
+    nothing else, which is what makes a before/after exact.
 
     A candidate `order` has no value for is ranked **last** and counted. It is not
     refused — no rule acted on it — and it has not earned a place ahead of the
@@ -497,6 +572,8 @@ def seat(
     """
     from fractal_wallpapers import engine
 
+    if order is None and str(key) != JUDGE_KEY:
+        order, coverage = ranking_for(candidates, key, log=log)
     modes = list(engine.production_modes())
     cap = ceiling.group_cap(n, group_cap)
     if rule is None:
@@ -563,6 +640,11 @@ def seat(
         if candidate.key not in picked and candidate.key not in refused:
             refused[candidate.key] = BELOW_BAR
 
+    seated_rows = [
+        _seated(candidate, why, None if order is None else order.get(candidate.key))
+        for candidate, why in seats.chosen
+    ]
+    placement = attribution(seated_rows, cleared, order, seats, rule, modes, n, floor)
     record = {
         "schema": SCHEMA,
         "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -576,6 +658,7 @@ def seat(
             "ranked": len(kept) - unranked,
             "unranked": unranked,
             "unranked_are": "sorted last and never refused: no rule acted on them",
+            "coverage": coverage,
         },
         "preselection": preselection,
         "population": {
@@ -588,10 +671,8 @@ def seat(
         },
         "filled": len(seats.chosen),
         "unfilled": n - len(seats.chosen),
-        "seated": [
-            _seated(candidate, why, None if order is None else order.get(candidate.key))
-            for candidate, why in seats.chosen
-        ],
+        "seated": seated_rows,
+        "attribution": placement,
         "shortfalls": _shortfalls(seats, rule, modes, n, floor),
         "twins": None if twins is None else twins.record(),
         "twin_refusals": dict(sorted(seats.twin_of.items())),
@@ -784,6 +865,238 @@ def _shortfalls(seats: Seats, rule: ceiling.Rule, modes: list, n: int, floor: in
 
 
 # --------------------------------------------------------------------------- #
+# The leg attribution — where each seat came from, and how strong it was.
+# --------------------------------------------------------------------------- #
+#: The two legs [`seat`] fills from, spelled as the walk itself spells them.
+#:
+#: There is no third. A "cell fill" leg does not exist: the cell allowance is a
+#: ceiling applied *inside* the ranked walk and never a stage that places a seat,
+#: and naming it here would put a leg on the record that no code implements.
+LEGS = {
+    "mode_floor": "the scarcity leg: each mandated mode from its own subpool, scarcest "
+    "first, taking that mode's best candidate nothing refuses",
+    "general_pool": "the ranked walk down whatever the scarcity leg left, in the "
+    "seating's own sort key, with every soft ceiling applied as it goes",
+}
+
+
+def leg_of(seated_for: str) -> str:
+    """Which of [`LEGS`] placed a seat, off the `seated_for` the walk stamped."""
+    return "mode_floor" if str(seated_for).startswith("mode_floor:") else "general_pool"
+
+
+def _value_of(candidate, order: dict | None):
+    """One candidate's value under the seating's own key, or `None` if it has none."""
+    if order is None:
+        return float(candidate.score)
+    held = order.get(candidate.key)
+    return None if held is None else float(held)
+
+
+def _percentiles(cleared, order: dict | None):
+    """`(value -> percentile, readable, unreadable)` over the clearing pool.
+
+    A candidate the key could not read sorts **last** in the walk, so it counts as
+    below every readable row here too — anything else would quietly inflate every
+    percentile by the size of the hole.
+    """
+    import bisect
+
+    values = sorted(value for value in (_value_of(c, order) for c in cleared) if value is not None)
+    unreadable = len(cleared) - len(values)
+    total = max(1, len(cleared))
+
+    def of(value) -> float:
+        if value is None:
+            return 0.0
+        return round(100.0 * (unreadable + bisect.bisect_left(values, float(value))) / total, 2)
+
+    return of, len(values), unreadable
+
+
+def _spread(values) -> dict:
+    held = sorted(values)
+    if not held:
+        return {"seats": 0, "min": None, "median": None, "max": None}
+    return {"seats": len(held), "min": held[0], "median": held[len(held) // 2], "max": held[-1]}
+
+
+def attribution(seated, cleared, order, seats, rule, modes, n: int, floor: int) -> dict:
+    """Where every seat came from and how strong it was. **Mutates `seated`.**
+
+    Three questions, and together they are the mining list rather than a summary
+    of one:
+
+    * for each seat, its **rank percentile inside the clearing pool** and which of
+      [`LEGS`] placed it — so a leg spending seats on the tail is visible as a leg
+      rather than as a handful of weak pictures;
+    * which legs hold the bottom [`BOTTOM_QUARTILE`] of the seats by that
+      percentile;
+    * per mode and per cell, **how strong the best candidate the pool could
+      offer was** — because a cell whose best available row sits at the fortieth
+      percentile is a cell to go and make candidates for, and a cell merely at its
+      allowance is a cell the gallery is already full of. Those are two different
+      instructions and they are reported apart, in `best_available` and
+      `binding`.
+
+    The percentile is against the **clearing pool** and not the pre-selected one:
+    the pre-selection refuses places, so a percentile against what survived it
+    would be measured against a population no mine can aim at.
+    """
+    percentile_of, readable, unreadable = _percentiles(cleared, order)
+    for row in seated:
+        row["leg"] = leg_of(row["seated_for"])
+        row["rank_percentile"] = percentile_of(_rank_of(row))
+
+    by_leg: dict = {}
+    for row in seated:
+        by_leg.setdefault(row["leg"], []).append(row["rank_percentile"])
+    cut = max(1, int(round(BOTTOM_QUARTILE * len(seated)))) if seated else 0
+    weakest = sorted(seated, key=lambda row: (row["rank_percentile"], row["key"]))[:cut]
+
+    def tally(rows, values_of) -> dict:
+        out: dict = {}
+        for row in rows:
+            for value in values_of(row):
+                out[str(value)] = out.get(str(value), 0) + 1
+        return dict(sorted(out.items(), key=lambda item: -item[1]))
+
+    return {
+        "percentile_of": "the seat's own rank value against every candidate that cleared "
+        "its mode's bar, before the neutral pre-selection",
+        "clearing_pool": {
+            "candidates": len(cleared),
+            "readable_by_the_key": readable,
+            "unreadable_by_the_key": unreadable,
+            "unreadable_sit_at": "the bottom, which is where the walk sorts them",
+        },
+        "legs": LEGS,
+        "by_leg": {name: _spread(values) for name, values in sorted(by_leg.items())},
+        "by_seated_for": tally(seated, lambda row: (row["seated_for"],)),
+        "bottom_quartile": {
+            "share": BOTTOM_QUARTILE,
+            "seat_count": len(weakest),
+            "percentile_at_or_below": weakest[-1]["rank_percentile"] if weakest else None,
+            "by_leg": tally(weakest, lambda row: (row["leg"],)),
+            "by_seated_for": tally(weakest, lambda row: (row["seated_for"],)),
+            "by_mode": tally(weakest, lambda row: (row["mode"],)),
+            "by_cell": tally(weakest, lambda row: row["cells"]),
+            "seats": [
+                {
+                    "key": row["key"],
+                    "rank_percentile": row["rank_percentile"],
+                    "leg": row["leg"],
+                    "seated_for": row["seated_for"],
+                    "mode": row["mode"],
+                    "cells": row["cells"],
+                    "p_ge4": row["p_ge4"],
+                }
+                for row in weakest
+            ],
+        },
+        "best_available": _best_available(cleared, order, percentile_of, seats),
+        "unmet": _unmet(seats, modes, n, floor),
+        "binding": _binding(seats, rule, n),
+    }
+
+
+def _best_available(cleared, order, percentile_of, seats: Seats) -> dict:
+    """Per mode and per cell, how strong the pool's **best** candidate was. Weakest first.
+
+    The whole of the "go and make more of this" list. A mode or a cell whose best
+    available candidate sits low in the clearing pool is one where the gallery had
+    nothing good to seat, whatever it seated; ranked by how weak, so the list has
+    an order somebody can work down.
+    """
+    axes = {"modes": lambda held: (held.mode,), "cells": lambda held: held.cells}
+    out: dict = {}
+    for axis, values_of in axes.items():
+        best: dict = {}
+        for candidate in cleared:
+            value = _value_of(candidate, order)
+            for name in values_of(candidate):
+                held = best.setdefault(
+                    str(name), {"rows": 0, "locations": set(), "best": None, "key": None}
+                )
+                held["rows"] += 1
+                held["locations"].add(candidate.location)
+                if value is not None and (held["best"] is None or value > held["best"]):
+                    held["best"], held["key"] = value, candidate.key
+        rows = [
+            {
+                "name": name,
+                "cleared_rows": held["rows"],
+                "cleared_locations": len(held["locations"]),
+                "best_rank": None if held["best"] is None else round(held["best"], 6),
+                "best_percentile": percentile_of(held["best"]),
+                "best_candidate": held["key"],
+                "seated": (seats.modes if axis == "modes" else seats.cells).get(name, 0),
+            }
+            for name, held in best.items()
+        ]
+        out[axis] = sorted(rows, key=lambda row: (row["best_percentile"], row["name"]))
+    return out
+
+
+def _unmet(seats: Seats, modes, n: int, floor: int) -> list:
+    """Every constraint the seating asked for and did not get, and how far short.
+
+    Only the two that **can** go unmet. The cell and family allowances and the
+    palette-group cap are ceilings: a seating cannot fall short of one, it can only
+    bind against it, and that is [`_binding`] and a different instruction.
+    """
+    short = [
+        {
+            "constraint": "seats",
+            "asked": int(n),
+            "held": len(seats.chosen),
+            "short": int(n) - len(seats.chosen),
+        }
+    ]
+    for name in modes:
+        held = seats.modes.get(name, 0)
+        if held < floor:
+            short.append(
+                {
+                    "constraint": f"mode_floor:{name}",
+                    "asked": int(floor),
+                    "held": held,
+                    "short": int(floor) - held,
+                }
+            )
+    return [row for row in short if row["short"] > 0]
+
+
+def _binding(seats: Seats, rule: ceiling.Rule, n: int) -> dict:
+    """Every ceiling that was actually spent to its last seat. Not a shortfall.
+
+    A cell at its allowance means the gallery is already as full of that colour as
+    the ceiling permits, so more candidates there buy nothing; a cell whose best
+    available row is weak is the opposite instruction. Both lists exist so that a
+    mine is not aimed at the first one.
+    """
+    return {
+        "cells_at_the_allowance": {
+            cell: count
+            for cell, count in sorted(seats.cells.items(), key=lambda item: -item[1])
+            if count >= rule.allowed(cell, n)
+        },
+        "families_at_the_allowance": {
+            family: count
+            for family, count in sorted(seats.families.items(), key=lambda item: -item[1])
+            if count >= rule.allowed(family, n)
+        },
+        "groups_at_the_cap": {
+            group: count
+            for group, count in sorted(seats.groups.items(), key=lambda item: (-item[1], item[0]))
+            if count >= rule.group_cap
+        },
+        "read": "a ceiling spent to its last seat, which is the OPPOSITE instruction to a "
+        "weak `best_available` row: more candidates here cannot be seated",
+    }
+
+
+# --------------------------------------------------------------------------- #
 # The rejection ledger — the product.
 # --------------------------------------------------------------------------- #
 def rejection(candidates, refused: dict, log=print) -> dict:
@@ -883,6 +1196,58 @@ def seat_dir(name: str):
     return under("curation", UNIT, str(name))
 
 
+def release_seats(name: str, record: dict, workers=None, regime=None, timeout=None, log=print):
+    """Render every seat of this seating at release geometry. Mutates `record`.
+
+    [`solve.render_seats`] with this seating's own directory, and deliberately not
+    a second copy of it: a seat row and a solve's seat row carry the same fields,
+    and two legs would be two places for the geometry, the autolevel stamp and the
+    resume rule to drift apart.
+
+    **No bar acts here and none is invented here.** The leg renders every seat the
+    walk chose, records what each one cost, and refuses nothing. The rule that a
+    shortlist should be re-scored at shipping geometry and floored on *that*
+    reading is not implemented anywhere in this project, and this is not the place
+    to improvise one: a floor is a ruling.
+    """
+    from fractal_wallpapers.curation import solve
+
+    return solve.render_seats(
+        name,
+        record,
+        workers=workers,
+        regime=regime,
+        where=seat_dir(name) / "release",
+        timeout=solve.ROW_BACKSTOP if timeout is None else timeout,
+        log=log,
+    )
+
+
+def autolevel_rate(record: dict) -> dict:
+    """The release leg's autolevel act rate **with its denominator**.
+
+    Three numbers and not one, because the operator has three outcomes and a bare
+    percentage hides two of them. A seat gets a stamp when the operator was asked;
+    `acted` is the subset where the curve was not the identity. A seat with no
+    stamp at all was **never asked** — its mode is a direct-trap kind, which
+    [`autolevel.applies_to`] answers no for at the one place that decides — and it
+    belongs in neither the numerator nor the denominator.
+    """
+    seated = record.get("seated") or []
+    stamped = [row for row in seated if row.get("release_autolevel")]
+    acted = [row for row in stamped if (row.get("release_autolevel") or {}).get("acted")]
+    return {
+        "seats": len(seated),
+        "asked": len(stamped),
+        "acted": len(acted),
+        "rate": None if not stamped else round(len(acted) / len(stamped), 4),
+        "not_asked": len(seated) - len(stamped),
+        "denominator": "the seats the operator was ASKED about — a stamp on the release "
+        "render. A seat whose mode is a direct-trap kind is never asked and is in "
+        "neither half",
+    }
+
+
 def write_record(name: str, record: dict):
     import json
 
@@ -930,21 +1295,38 @@ def contact_sheet(name: str, record: dict, rejected=None, output=None):
     )
 
     def frame(picture) -> str:
-        source = None if not picture else Path(rehome(picture))
+        # `rehome` answers None for a name with no artifacts component, and a
+        # release picture written outside the tree is exactly that. Keep the name
+        # the record carried rather than crashing on it.
+        source = None if not picture else (rehome(picture) or Path(picture))
         return (
             f'<img src="{sheet_module.thumbnail(source)}" alt="">'
             if source is not None and source.is_file()
             else '<div class="missing">no picture on disk</div>'
         )
 
-    def card(row: dict, caption: str) -> str:
+    def shown(row: dict) -> str:
+        """The release render where the leg made one, the candidate otherwise.
+
+        A sheet of a *released* gallery has to show the pictures that were
+        released: the candidate is 640x360 through the unmodified map and the
+        release render is the shipping geometry with the autolevel operator inside
+        it, so the two are different pictures of one recipe. Which one a card is
+        showing is on the card, because a page that showed one and captioned the
+        other would say something false with every field on it true.
+        """
+        return frame(row.get("release_picture") or row.get("picture"))
+
+    def card(row: dict, caption: str, seat: bool = False) -> str:
         lost_to = row.get("lost_to") or {}
-        body = frame(row.get("picture"))
+        body = shown(row)
         if lost_to.get("picture"):
             body = (
                 f"<div class='pair'><div class='frame'>{body}</div>"
                 f"<div class='frame'>{frame(lost_to['picture'])}</div></div>"
             )
+        released = row.get("release_picture")
+        geometry = row.get("release_geometry") or {}
         facts = [
             f"mode <b>{html.escape(str(row.get('mode')))}</b>",
             f"P(&ge;4) {row.get('p_ge4')} &middot; P(&ge;3) {row.get('p_ge3')}",
@@ -952,6 +1334,22 @@ def contact_sheet(name: str, record: dict, rejected=None, output=None):
             f"group {html.escape(str(row.get('palette_group')))}",
             f"partition {html.escape(str(row.get('partition')))}",
         ]
+        if row.get("rank_percentile") is not None:
+            facts.append(
+                f"pool percentile <b>{row['rank_percentile']}</b> &middot; leg "
+                f"{html.escape(str(row.get('leg')))}"
+            )
+        if released:
+            frame_at = "x".join(str(at) for at in (geometry.get("resolution") or []))
+            facts.append(
+                f"shown at <b>{html.escape(frame_at)}ss{geometry.get('supersample')}</b> "
+                f"&middot; {sheet_module.autolevel_line(row.get('release_autolevel'))}"
+            )
+        elif seat:
+            # Only a SEAT can be missing a release picture; a refused candidate was
+            # never going to have one, and saying so on every refusal card would be
+            # noise that reads as a fault.
+            facts.append("shown as the <b>candidate</b> render: this seat has no release picture")
         if lost_to:
             gap = lost_to.get("pixel_cloud", lost_to.get("neutral"))
             facts.append(f"lost to the picture beside it at <b>{gap}</b>")
@@ -986,7 +1384,7 @@ def contact_sheet(name: str, record: dict, rejected=None, output=None):
         f"<h2>Seated ({record['filled']}), best first by <code>{html.escape(key_name)}</code></h2>",
         "<div class='grid'>"
         + "".join(
-            card(row, f"{at}. {key_name} {_rank_of(row):.4f} — {row['seated_for']}")
+            card(row, f"{at}. {key_name} {_rank_of(row):.4f} — {row['seated_for']}", seat=True)
             for at, row in enumerate(ranked_seats, start=1)
         )
         + "</div>",
@@ -1005,6 +1403,13 @@ def contact_sheet(name: str, record: dict, rejected=None, output=None):
 
 __all__ = [
     "BELOW_BAR",
+    "BOTTOM_QUARTILE",
+    "DEFAULT_GROUP_CAP",
+    "DEFAULT_KEY",
+    "JUDGE_KEY",
+    "KEYS",
+    "LEGS",
+    "RANK_KEY",
     "RULES",
     "SAME_PLACE",
     "SCHEMA",
@@ -1016,10 +1421,15 @@ __all__ = [
     "SeatingRefused",
     "Seats",
     "Twins",
+    "attribution",
+    "autolevel_rate",
     "clouds_for",
     "contact_sheet",
+    "leg_of",
     "lens_for",
+    "ranking_for",
     "rejection",
+    "release_seats",
     "samples",
     "scarcity",
     "seat",

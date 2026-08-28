@@ -1137,17 +1137,27 @@ wallpaper per location, and the twin test; the cell and family allowances, the m
 floors and the group cap are soft with the shortfall recorded. No fallback leg, no
 least-violating rescue: unfilled beats padded.
 
-### Two flags on the seating, and the incumbent is still the default
+### Both seating decisions flipped on 2026-08-28, and the incumbent is still reachable
 
-Both were built at ckpt 88 and **neither is flipped**. `curate seat` seats the walk
-this project has always seated unless a flag says otherwise, and the record says which
-rule and which key it ran under, by name.
+Built at ckpt 88 behind flags; **both are the default since 2026-08-28**. The cap is
+the ckpt-88 ruling, the key is Matt's acceptance by eye on the four-arm contact sheets
+at `n = 150`. `curate seat` with no flag now seats the proportional cap on the fitted
+key; the walk every earlier gallery took is two named flags away and the record says
+which rule and which key it ran under, by name, either way.
 
 ```
+curate seat --n 150                                       proportional + rank-key
+curate seat --n 150 --group-cap identity --key p_ge4      the incumbent, whole
 curate seat --n 150 --group-cap {identity,proportional}   the palette-group cap
-curate seat --n 150 --key {p_ge4,rank-key}                the sort key
+curate seat --n 150 --key {rank-key,p_ge4}                the sort key
 curate seat --n 150 --sheet-out <path>                    the contact sheet, elsewhere
+curate seat --n 150 --release [--release-regime WxHssN] [--workers 3]
 ```
+
+`seating.DEFAULT_KEY` and `seating.DEFAULT_GROUP_CAP` are the two constants, and
+`seating.ranking_for` is the one place a seating pays for its key — it reads the
+flatness sidecar and the location scores, once per pool. `seat(order=...)` overrides
+it, which is what a sweep seating one pool four ways passes.
 
 **`--group-cap proportional` is `max(1, floor(0.025 n))`** — 1 up to n=40, 3 at n=150,
 25 at n=1000 — against `ceiling.GROUP_CAP = 1`, the identity cap. The `max(1, ...)` is
@@ -1168,7 +1178,91 @@ and counted under `order.unranked`; it is not a refusal, because no rule acted o
 
 The contact sheet is sorted **good to bad by the seating's own key** and captioned with
 it. A sheet in seating order is in *scarcity* order for its first seats, which reads as
-a quality claim it is not making.
+a quality claim it is not making. Where the release leg has run it shows the **released**
+picture and says so on the card; the candidate render is 640x360 ss2 through the
+unmodified map and the release render is shipping geometry with the autolevel operator
+inside it, so showing one under the other's caption would say something false with every
+field on the card true.
+
+### `curate seat --release` — the seats at shipping geometry, and no bar anywhere in it
+
+`solve.render_seats` with the seating's own directory, so the geometry, the autolevel
+stamp and the resume rule live in one place rather than two. Pictures and
+`autolevel_stamps.jsonl` land in `artifacts/curation/seat/<name>/release/`, each seat
+gains `release_picture`, `release_geometry` and `release_autolevel`, and the record is
+rewritten after the leg.
+
+* **Regime is `gallery.RELEASE_REGIME`, 1280x720 ss2**, moved by `--release-regime`.
+  Full wallpaper resolution is not this.
+* **Three workers**, `release.DEFAULT_WORKERS`, each below-normal with its engine in a
+  job object. Not four: `render_seats` carried a literal 4 at its signature until
+  2026-08-28, which is one more engine than this desktop survives.
+* **No clock.** There is no `pacing.Leg`, no gate and no budget knob: every planned row
+  is started and the leg runs to completion. What bounds it is `solve.ROW_BACKSTOP`,
+  900 s stamped on each task so the *worker* imposes it — the hang detector, and a row
+  that reaches it comes back failed and named while the leg carries on.
+* **No bar, and no re-score.** Every seat the walk chose is rendered and every render
+  that succeeds is released. See below.
+
+**Measured, on the 150 seats of `g1_n150` at 1280x720 ss2 on 3 workers, 2026-08-28.**
+150 cold rows, 0 failed, 0 killed, 0 not started: **566 s of wall, 3.8 s a row**, against
+1,348 s of CPU and 8.99 s a row — a **2.38x** concurrency gain, which is gallery4's 2.39x
+on the same regime to two places. Per row the CPU spread is min 1.61, q1 3.75, median 6.22,
+q3 10.19, p90 21.28, max 52.03 s. 233 MB of PNG for 150 pictures. Estimating a leg off the
+gallery pass's own 3.45 s a row over-priced this one by 9%; both numbers are wall on three
+workers and both are the right shape to size the next leg with. The autolevel operator
+**acted on 60 of the 144 seats it was asked about (41.7%)**; the six it was never asked
+about are the four `direct_trap_*` seats and the two `itinerary` seats, whose kinds
+`autolevel.applies_to` answers no for.
+
+#### No floor is read at shipping geometry, anywhere in this project
+
+Worth writing down because it is easy to assume otherwise. The rule *select on the
+candidate score, then re-score the shortlist at shipping geometry and let that be the
+floor* is **not implemented**, in this path or in any other, and the two release legs
+say so in their own docstrings: `gallery.render_winners` and `solve.render_seats` both
+refuse to re-score, on the reasoning that the heads' floors were fitted on 640x360
+candidate renders and a height read at one geometry does not transfer to another.
+
+What acts instead, and all of it on the **candidate** column:
+
+| where | cut | column |
+|---|---|---|
+| `headroom.clearing`, pool construction | `solve.Q4_BAR` = `floors.RELEASE_ADVISORY` = 0.50 | the candidate's `P(>=4)` |
+| the same, for a mode with fewer than `FALLBACK_LOCATIONS`=25 clearing places | `floors.RELEASE_ADVISORY` = 0.50 | the candidate's `P(>=3)` |
+| `selection.py` (a run) and `gallery.py` (a pass) | `floors.STRANGE_RELEASE_BAR` = 0.575, strange only | the candidate's `P(>=3)` |
+
+The third does not act on the `curate seat` path at all — a seating's only bar is the
+first two. `headroom.bars` already carries this on its own record under `provisional`,
+and that block is the honest statement of the position: the bars here are
+candidate-column bars, nothing re-scores at shipping geometry, and no crossover fitted
+at label geometry is transported onto this column. **Moving that is a ruling, not a
+fix**, and nothing in the release leg should improvise one.
+
+### The leg attribution on the record, which is the mining list
+
+Schema 3. Every seat carries **`rank_percentile`** — its own rank value against the
+whole clearing pool, before the neutral pre-selection — and **`leg`**, which of the two
+legs placed it. There are exactly two and they are spelled as the walk spells them:
+`mode_floor` (the scarcity leg, each mandated mode from its own subpool, scarcest first)
+and `general_pool` (the ranked walk). There is no `cell fill` leg; the cell allowance is
+a ceiling applied *inside* the ranked walk and never a stage that places a seat.
+
+`attribution` then aggregates three things a mine can be aimed with:
+
+* **`bottom_quartile`** — the weakest quarter of the *seats* by percentile, tallied by
+  leg, by mode and by cell.
+* **`best_available`** — per mode and per cell, how strong the pool's **best** candidate
+  was, weakest first. This is the "go and make more of this" list.
+* **`unmet`** against **`binding`**, and they are opposite instructions. Only seats and
+  mode floors can go *unmet*; an allowance and a cap are ceilings, which a seating binds
+  against and cannot fall short of. A cell at its allowance is a cell the gallery is
+  already as full of as the rule permits, and aiming a mine there buys nothing; a cell
+  whose `best_available` row is weak is the one to aim at.
+
+A candidate the key could not read sorts last in the walk, and it counts at the
+**bottom** of every percentile here for the same reason — anything else would inflate
+every percentile by the size of the hole.
 
 ### `curate flatness` — the dead-space column, in a sidecar beside the scores
 

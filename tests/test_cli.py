@@ -499,23 +499,39 @@ def test_the_focus_report_is_off_on_both_commands_that_walk() -> None:
     assert parse(["harvest", "--foci"]).foci is True
 
 
-def test_the_two_seating_changes_are_flags_and_the_incumbent_is_what_you_get_unasked() -> None:
-    """Both were built and neither is flipped. `curate seat` with no flag seats
-    the walk this project has always seated, and the flags are how a before/after
-    is taken — one at a time, on one command line."""
-    from fractal_wallpapers.curation import ceiling
+def test_both_seating_changes_are_the_default_and_the_incumbent_is_still_reachable() -> None:
+    """Flipped on 2026-08-28. `curate seat` with no flag now seats the
+    proportional cap on the fitted key, and the walk every earlier gallery took is
+    two named flags away — reachable, and never what you get by not asking."""
+    from fractal_wallpapers.curation import ceiling, seating
 
     parse = cli.build_parser().parse_args
-    incumbent = parse(["curate", "seat", "--n", "150"])
-    assert incumbent.handler is cli.curate_seat
-    assert incumbent.group_cap == ceiling.IDENTITY
-    assert incumbent.key == "p_ge4"
-    both = parse(
-        ["curate", "seat", "--n", "150", "--group-cap", "proportional", "--key", "rank-key"]
-    )
-    assert (both.group_cap, both.key) == (ceiling.PROPORTIONAL, "rank-key")
+    unflagged = parse(["curate", "seat", "--n", "150"])
+    assert unflagged.handler is cli.curate_seat
+    assert unflagged.group_cap == seating.DEFAULT_GROUP_CAP == ceiling.PROPORTIONAL
+    assert unflagged.key == seating.DEFAULT_KEY == seating.RANK_KEY
+    incumbent = parse(["curate", "seat", "--n", "150", "--group-cap", "identity", "--key", "p_ge4"])
+    assert (incumbent.group_cap, incumbent.key) == (ceiling.IDENTITY, seating.JUDGE_KEY)
     with pytest.raises(SystemExit):
         parse(["curate", "seat", "--group-cap", "whatever_matt_meant"])
+    with pytest.raises(SystemExit):
+        parse(["curate", "seat", "--key", "whatever_matt_meant"])
+
+
+def test_the_seating_release_leg_is_opt_in_and_carries_the_gallery_regime() -> None:
+    """A seating chooses and renders nothing unless asked. When it is asked, it
+    renders at the gallery pass's regime over this machine's render pool — not at
+    a geometry or a worker count this subcommand invented for itself."""
+    from fractal_wallpapers.curation import gallery, release
+
+    parse = cli.build_parser().parse_args
+    quiet = parse(["curate", "seat", "--n", "150"])
+    assert quiet.release is False
+    asked = parse(["curate", "seat", "--n", "150", "--release"])
+    assert asked.release is True
+    assert asked.release_regime == gallery.RELEASE_REGIME.spelled == "1280x720ss2"
+    assert asked.workers == release.DEFAULT_WORKERS == 3
+    assert release.regime_of(asked.release_regime) == gallery.RELEASE_REGIME
 
 
 def test_the_flatness_sweep_and_the_rank_key_fit_are_subcommands_with_defaults() -> None:
