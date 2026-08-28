@@ -192,3 +192,51 @@ def test_the_grouping_record_points_at_its_own_evidence() -> None:
     assert head["marks"] == groups.MARKS_RECORD_NAME
     assert groups.MARKS_RECORD_NAME in head["method"]
     assert groups.marks_path().is_file()
+
+
+# --------------------------------------------------------------------------- #
+# The read, held.
+# --------------------------------------------------------------------------- #
+def test_the_table_is_parsed_once_per_file_and_not_once_per_draw():
+    """A draw reads the table, and a conditioned arm draws once per (location,
+    mode). Re-parsing three quarters of a megabyte of JSONL at each of them put
+    minutes of planning into an answer that never changed."""
+    from fractal_wallpapers.palettes import carriers
+
+    carriers.table()
+    reads = 0
+    real = carriers.read
+
+    def counted(directory=None):
+        nonlocal reads
+        reads += 1
+        return real(directory)
+
+    carriers.read = counted
+    try:
+        for at in range(20):
+            carriers.draw("dark_vivid_green", 4, at)
+    finally:
+        carriers.read = real
+    assert reads == 0, f"{reads} re-parses over twenty draws of one cell"
+
+
+def test_a_rebuilt_table_is_picked_up_rather_than_served_from_the_hold(tmp_path):
+    """The cache is keyed on the file's own stamp, because `palettes carriers`
+    rewrites the record in-process and a hold keyed on the path alone would go on
+    answering out of the table it replaced."""
+    from fractal_wallpapers.palettes import carriers
+
+    header = carriers.method(maps=1, rows=1, seconds=0.0)
+    first = {
+        "schema": carriers.SCHEMA,
+        "kind": carriers.CARRIER_ROW,
+        "map": "one",
+        "cell": "dark_vivid_green",
+        "mean": 0.5,
+        "fields": ["smooth"],
+    }
+    carriers.write([header, first], tmp_path)
+    assert carriers.for_cell("dark_vivid_green", directory=tmp_path) == [("one", 0.5)]
+    carriers.write([header, {**first, "map": "two", "mean": 0.25}], tmp_path)
+    assert carriers.for_cell("dark_vivid_green", directory=tmp_path) == [("two", 0.25)]

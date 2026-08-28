@@ -439,6 +439,99 @@ def test_a_breadth_demotion_that_empties_the_cycle_is_refused():
         build_a_plan(roster=["smooth"], breadth_demoted=["smooth"])
 
 
+# --------------------------------------------------------------------------- #
+# The conditioned draw.
+# --------------------------------------------------------------------------- #
+AIMED_SHARES = {depth.NEAR: 0.0, depth.RANKED: 0.3, depth.FLAT: 0.35, depth.AIMED: 0.35}
+
+
+def test_the_aimed_arm_is_the_flat_draw_with_one_thing_changed():
+    """The comparison is the point. If the aimed arm drew its places differently,
+    or at a different width, its hit rate would not be readable against the flat
+    arm's and the run would answer a question nobody asked."""
+    plan, shape = build_a_plan(shares=AIMED_SHARES, cell="dark_vivid_green")
+    aimed = [shot for shot in plan if shot.arm == depth.AIMED]
+    flat = [shot for shot in plan if shot.arm == depth.FLAT]
+    assert aimed and flat
+    assert {shot.mode for shot in aimed} == {shot.mode for shot in flat}, "one roster"
+    assert max(shot.k for shot in aimed) == max(shot.k for shot in flat), "one width"
+    assert not ({shot.location for shot in aimed} & {shot.location for shot in flat}), (
+        "the two draws are disjoint, so no location is in both the arm and its control"
+    )
+    assert shape["cell"] == "dark_vivid_green"
+
+
+def test_the_aimed_arm_draws_its_maps_through_the_carrier_table_and_the_flat_arm_does_not():
+    plan, _shape = build_a_plan(shares=AIMED_SHARES, cell="dark_vivid_green")
+    aimed = {shot.colormap for shot in plan if shot.arm == depth.AIMED}
+    flat = {shot.colormap for shot in plan if shot.arm == depth.FLAT}
+    from fractal_wallpapers.curation import colorize
+    from fractal_wallpapers.palettes import carriers
+
+    pool = list(colorize.pool(11))
+    offers = {name for name, _share in carriers.for_cell("dark_vivid_green", within=pool)}
+    assert offers, "the tracked table carries this cell inside the run's own pool"
+    assert aimed <= offers, "every aimed map is one the table offers for the cell"
+    assert not flat <= offers, "and the control is drawing from the whole pool"
+
+
+def test_every_aimed_shot_says_what_it_was_drawn_for_and_no_other_shot_does():
+    """A prior about the map, on the row, so a reader can tell an aimed candidate
+    from a lucky one. It is never read as a claim about the picture."""
+    plan, _shape = build_a_plan(shares=AIMED_SHARES, cell="dark_vivid_green")
+    for shot in plan:
+        if shot.arm == depth.AIMED:
+            assert shot.cell == "dark_vivid_green"
+            assert shot.named()["drawn_for"] == "dark_vivid_green"
+        else:
+            assert shot.cell is None
+            assert "drawn_for" not in shot.named()
+
+
+def test_a_conditioned_share_with_no_cell_is_refused_rather_than_drawn_flat():
+    with pytest.raises(depth.DepthRefused, match="no --cell"):
+        build_a_plan(shares=AIMED_SHARES)
+
+
+def test_a_cell_with_no_share_is_refused_rather_than_silently_ignored():
+    with pytest.raises(depth.DepthRefused, match="no share of the budget"):
+        build_a_plan(cell="dark_vivid_green")
+
+
+def test_a_misspelt_cell_is_refused_at_the_plan_and_not_at_the_last_candidate():
+    with pytest.raises(depth.DepthRefused, match="not a codebook cell"):
+        build_a_plan(shares=AIMED_SHARES, cell="dark_vivid_grene")
+
+
+def test_the_hit_rate_counts_the_verdict_and_never_the_carrier_table():
+    """Draw-biased, verdict-measured. A candidate drawn for green that came out
+    rose is a miss; one drawn flat that came out green is a hit. The table is not
+    consulted here at all."""
+    made = [
+        {"arm": depth.AIMED, "location": "a", "colormap": "m1", "cells": ["dark_vivid_green"]},
+        {"arm": depth.AIMED, "location": "a", "colormap": "m2", "cells": ["dark_muted_rose"]},
+        {"arm": depth.AIMED, "location": "b", "colormap": "m1", "cells": []},
+        {"arm": depth.FLAT, "location": "c", "colormap": "m9", "cells": ["dark_vivid_green"]},
+        {"arm": depth.FLAT, "location": "d", "colormap": "m8", "cells": ["blue"]},
+        {"arm": depth.FLAT, "location": "e", "colormap": "m7", "cells": []},
+        {"arm": depth.FLAT, "location": "f", "colormap": "m6", "cells": []},
+    ]
+    out = depth.hit_rate(made, "dark_vivid_green")
+    assert out["cell"] == "dark_vivid_green"
+    assert out[depth.AIMED]["candidates"] == 3
+    assert out[depth.AIMED]["dominant"] == 1
+    assert out[depth.AIMED]["rate"] == pytest.approx(1 / 3, abs=1e-5)
+    assert out[depth.AIMED]["locations_with_a_hit"] == 1
+    assert out[depth.AIMED]["maps_that_hit"] == 1
+    assert out[depth.FLAT]["rate"] == pytest.approx(0.25)
+    assert out["lift"] == pytest.approx(1.333, abs=0.001)
+    assert out["renders_per_hit"] == pytest.approx(3.0)
+
+
+def test_a_run_with_no_cell_reports_no_hit_rate_rather_than_an_empty_one():
+    assert depth.hit_rate([{"arm": depth.FLAT, "location": "a", "cells": []}], None) is None
+
+
 def test_a_production_plan_spends_its_floor_share_on_the_modes_that_are_short():
     plan, shape = build_a_plan(
         shares={depth.NEAR: 0.3, depth.RANKED: 0.4, depth.FLAT: 0.0, depth.FLOOR: 0.3},

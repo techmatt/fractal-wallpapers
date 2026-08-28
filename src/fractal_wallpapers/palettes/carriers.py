@@ -141,17 +141,46 @@ def read(directory: Path | None = None) -> list:
     ]
 
 
+#: The parsed table, held per file and invalidated by the file. Keyed on
+#: `(path, mtime, size)`: [`table`] is three quarters of a megabyte of JSONL and
+#: a *draw* reads it, so a conditioned arm asking for one (location, mode)'s
+#: maps at a time was re-parsing the whole record thousands of times — 17.7 ms
+#: each, minutes of planning for an answer that never changed. [`ceiling`] holds
+#: its own read of this same file for the same reason. The stat is what makes it
+#: safe to hold: `palettes carriers` rewrites the record in-process during a
+#: build, and a cache keyed on the path alone would serve the old table after it.
+_TABLES: dict = {}
+
+
 def table(directory: Path | None = None) -> dict:
-    """`{cell: {map: mean share}}`, largest mean first. What a draw reads."""
+    """`{cell: {map: mean share}}`, largest mean first. What a draw reads.
+
+    Memoized on the record's own `(path, mtime, size)`, so a rebuild is picked up
+    and a sweep of draws is not a sweep of parses. The dict handed back is the
+    cached one: **a caller must not write to it**, and none does — every reader
+    here builds a new list or dict out of it.
+    """
+    path = record_path(directory)
+    try:
+        stamp = path.stat()
+        key = (str(path), stamp.st_mtime_ns, stamp.st_size)
+    except OSError:
+        key = None
+    if key is not None and key in _TABLES:
+        return _TABLES[key]
     out: dict = {}
     for row in read(directory):
         if row.get("kind") != CARRIER_ROW:
             continue
         out.setdefault(str(row["cell"]), {})[str(row["map"])] = float(row["mean"])
-    return {
+    built = {
         cell: dict(sorted(maps.items(), key=lambda item: (-item[1], item[0])))
         for cell, maps in out.items()
     }
+    if key is not None:
+        _TABLES.clear()
+        _TABLES[key] = built
+    return built
 
 
 def for_cell(cell: str, within=None, directory: Path | None = None) -> list:

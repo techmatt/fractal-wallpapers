@@ -84,7 +84,8 @@ NEAR = "near_band"
 RANKED = "ranked_bands"
 FLAT = "flat"
 FLOOR = "mode_floor"
-DRAWS = (NEAR, RANKED, FLAT, FLOOR)
+AIMED = "conditioned"
+DRAWS = (NEAR, RANKED, FLAT, FLOOR, AIMED)
 
 #: The draws a *measuring* run takes. [`FLOOR`] is deliberately not one of them:
 #: it goes to the modes a census says are short of seats, which is a production
@@ -95,7 +96,7 @@ MEASURING = (NEAR, RANKED, FLAT)
 #: half because it is the only one that produces a *curve* — its answer is
 #: spread over [`RANK_BANDS`] bands inside each partition and every one of them
 #: needs locations — where the other two each report a single rate.
-SHARES = {NEAR: 0.25, RANKED: 0.50, FLAT: 0.25, FLOOR: 0.0}
+SHARES = {NEAR: 0.25, RANKED: 0.50, FLAT: 0.25, FLOOR: 0.0, AIMED: 0.0}
 
 #: How many palettes one (location, mode) pair gets in the [`FLOOR`] draw. Small
 #: on purpose: that draw is short of *modes* and not of width, and the whole
@@ -234,6 +235,11 @@ class Shot:
     #: the curve is drawn against — ranks are not comparable across partitions
     #: of different sizes and fractions are.
     rank_fraction: float | None = None
+    #: The codebook cell the palette was drawn **for** on the [`AIMED`] arm, and
+    #: `None` on every other. [`hunt.Try.cell`]'s member and its warning: a prior
+    #: about the map, never a claim about the picture, whose colour is read off
+    #: its own render like every other candidate's.
+    cell: str | None = None
 
     def named(self) -> dict:
         """This intention as the ledger row carries it.
@@ -244,7 +250,7 @@ class Shot:
         multiplier above all — cannot be applied to a row that has forgotten
         which candidate at its location it was.
         """
-        return {
+        out = {
             "leg": self.arm,
             "mode": self.mode,
             "colormap": self.colormap,
@@ -253,6 +259,9 @@ class Shot:
             "rank": self.rank,
             "rank_fraction": self.rank_fraction,
         }
+        if self.cell is not None:
+            out["drawn_for"] = self.cell
+        return out
 
 
 # --------------------------------------------------------------------------- #
@@ -563,7 +572,47 @@ def plan_held_mode(places: list, taken: dict, maps: list, seed: int, width: int)
     return out
 
 
-def plan_cycled_modes(arm: str, places: list, roster: list, maps: list, seed: int, width: int):
+def flat_maps(seed: int, mode: str, width: int, maps: list) -> list:
+    """`width` palettes for one (location, mode), uniform over the pool.
+
+    What every breadth arm has always drawn. The mode is taken and unused: a map
+    supply is a function of the pair, and [`aimed_maps`] would need it if the
+    carrier table were ever read per mode.
+    """
+    return random.Random(seed).sample(maps, min(len(maps), int(width)))
+
+
+def aimed_maps(cell: str):
+    """A map supply for [`plan_cycled_modes`] biased toward one codebook cell.
+
+    [`hunt.conditioned_maps`] over the **same pool** the flat draw samples: the
+    carrier table weights the draw by each map's mean share of the cell, and the
+    re-draw on a bumped seed is what stops one map meeting a target alone. A
+    filter over the pool and not a second pool.
+
+    **Draw-biased, verdict-measured.** The carrier table is a prior about a map
+    and never a claim about a picture: group members disagree on their dominant
+    cell in 120 of 195 reads, and `PRGn` has made a green seat as a non-carrier.
+    So nothing here gates on the table — the candidate is rendered, the dominance
+    is read off its own pixels like every other candidate's, and what came out
+    dominant is what counts. A 60% hit rate costs 1.6x the renders on this arm
+    and nothing anywhere else.
+
+    A cell no map in the pool carries falls back to the flat draw rather than
+    planning nothing: an arm that silently emptied would be reported as a share
+    that bought no candidates, which reads as a budget that ran out.
+    """
+
+    def draw(seed: int, mode: str, width: int, maps: list) -> list:
+        drawn = hunt.conditioned_maps(str(cell), int(width), list(maps), seed)
+        return drawn or flat_maps(seed, mode, width, maps)
+
+    return draw
+
+
+def plan_cycled_modes(
+    arm: str, places: list, roster: list, maps: list, seed: int, width: int, draw=None, cell=None
+):
     """`width` candidates at each place, **cycling the roster** rather than blocking it.
 
     Cycled and not blocked, and that is the whole of it. A location given seven
@@ -577,9 +626,17 @@ def plan_cycled_modes(arm: str, places: list, roster: list, maps: list, seed: in
     The palettes are drawn without replacement **within** a (location, mode), so
     no recipe collides, and the roster is walked from a per-location offset so
     that `k = 1` is not the same mode everywhere.
+
+    `draw(key, mode, width, maps)` is the palette ask, and the **whole** of what a
+    conditioned run changes. Unsaid it is [`flat_maps`], the uniform sample this
+    arm has always taken; [`aimed_maps`] biases the same pool toward one cell.
+    Everything else about the arm — the places, the cycle, the width, the seed —
+    is the same draw, which is what makes an aimed arm and a flat arm comparable
+    at all.
     """
     out: list = []
     roster = list(roster)
+    draw = flat_maps if draw is None else draw
     for row in places:
         key = str(row["key"])
         rng = random.Random(hunt.seed_of(seed, key))
@@ -588,8 +645,7 @@ def plan_cycled_modes(arm: str, places: list, roster: list, maps: list, seed: in
         for at in range(int(width)):
             mode = roster[(offset + at) % len(roster)]
             if mode not in per_mode:
-                pick = random.Random(hunt.seed_of(seed, key, mode))
-                per_mode[mode] = pick.sample(maps, min(len(maps), int(width)))
+                per_mode[mode] = draw(hunt.seed_of(seed, key, mode), mode, int(width), maps)
             spent = per_mode[mode]
             turn = at // len(roster)
             if turn >= len(spent):
@@ -605,6 +661,7 @@ def plan_cycled_modes(arm: str, places: list, roster: list, maps: list, seed: in
                     band=f"band{int(row.get('rank_band', -1)):02d}",
                     rank=row.get("rank"),
                     rank_fraction=row.get("rank_fraction"),
+                    cell=None if cell is None else str(cell),
                 )
             )
     return out
@@ -639,6 +696,7 @@ def build_plan(
     bands: int = RANK_BANDS,
     roster: list | None = None,
     breadth_demoted: tuple | list = BREADTH_DEMOTED,
+    cell: str | None = None,
     shares: dict | None = None,
     band_weights: dict | None = None,
     floor_modes: list | None = None,
@@ -656,6 +714,7 @@ def build_plan(
     of seats.
     """
     from fractal_wallpapers.curation import colorize
+    from fractal_wallpapers.palettes import dominance
 
     roster = list(roster if roster is not None else field_modes())
     if not roster:
@@ -676,6 +735,22 @@ def build_plan(
         )
     maps = list(colorize.pool(seed))
     shares = {**SHARES, **dict(shares or {})}
+    if shares.get(AIMED) and not cell:
+        raise DepthRefused(
+            f"a {AIMED!r} share of {shares[AIMED]} was given and no --cell to aim it at. "
+            f"The arm is the flat draw with its palette ask biased toward one codebook "
+            f"cell; without the cell it would be a second flat draw wearing another name."
+        )
+    if cell and not shares.get(AIMED):
+        raise DepthRefused(
+            f"--cell {cell} was given and the {AIMED!r} draw has no share of the budget, "
+            f"so nothing would be aimed at it. Pass --shares with a {AIMED!r} entry."
+        )
+    if cell and str(cell) not in set(dominance.cells()):
+        raise DepthRefused(
+            f"{cell!r} is not a codebook cell. A misspelt cell would plan an aimed arm "
+            f"no map carries and report it as a draw that bought nothing."
+        )
     planned = PLAN_HEADROOM * float(budget) / max(float(rate), 1e-6)
     want = {arm: int(planned * float(share)) for arm, share in shares.items()}
     short = deficient_modes(world["rows"], world["ledger_scores"], floor=int(floor_seats))
@@ -707,6 +782,16 @@ def build_plan(
     picked = {str(row["key"]) for row in ranked}
     flat_want = {name: max(1, round(count * scale)) for name, count in counts.items()}
     flat = flat_places(banded, picked, seed + 1, flat_want) if want.get(FLAT) else []
+    # The aimed arm's places are drawn exactly as the flat arm's are and out of
+    # the same pools, disjoint from both draws above. That is the point: the two
+    # differ in the palette ask and in nothing else, so the flat arm is the
+    # control the aimed arm's dominance hit rate is read against.
+    aimed_want = {name: max(1, round(count * scale)) for name, count in counts.items()}
+    aimed = (
+        flat_places(banded, picked | {str(row["key"]) for row in flat}, seed + 2, aimed_want)
+        if want.get(AIMED)
+        else []
+    )
     per_place = max(1, int(floor_width) * max(1, len(wanted_floor_modes)))
     proven = (
         proven_places(world["best"], world["index"], seed, max(1, want[FLOOR] // per_place))
@@ -718,6 +803,11 @@ def build_plan(
         RANKED: plan_cycled_modes(RANKED, ranked, breadth, maps, seed, width),
         FLAT: plan_cycled_modes(FLAT, flat, breadth, maps, seed, width),
         FLOOR: plan_floor(proven, wanted_floor_modes, world["taken"], maps, seed, floor_width),
+        AIMED: plan_cycled_modes(
+            AIMED, aimed, breadth, maps, seed + 2, width, draw=aimed_maps(cell), cell=cell
+        )
+        if aimed
+        else [],
     }
     for arm, held in plans.items():
         if not held:
@@ -733,6 +823,7 @@ def build_plan(
         "width": int(width),
         "near_width": int(near_width),
         "rank_bands": int(bands),
+        "cell": None if cell is None else str(cell),
         "roster": roster,
         "breadth_roster": breadth,
         "demoted": list(DEMOTED),
@@ -794,6 +885,7 @@ def run(
     bands: int = RANK_BANDS,
     roster: list | None = None,
     breadth_demoted: tuple | list = BREADTH_DEMOTED,
+    cell: str | None = None,
     shares: dict | None = None,
     band_weights: dict | None = None,
     floor_modes: list | None = None,
@@ -823,6 +915,7 @@ def run(
         bands=bands,
         roster=roster,
         breadth_demoted=breadth_demoted,
+        cell=cell,
         shares=shares,
         band_weights=band_weights,
         floor_modes=floor_modes,
@@ -967,6 +1060,7 @@ def run(
             "regime": recipes.CANDIDATE_REGIME.spelled,
             "judge_artifact": artifact,
             "field_modes_only": True,
+            "cell": shape.get("cell"),
         },
         "plan": shape,
         "counts": counts,
@@ -979,6 +1073,7 @@ def run(
         "price": price.table(),
         "profile": clock.table(),
         "curves": curves(made),
+        "hit_rate": hit_rate(made, shape.get("cell")),
         "by_mode": by_mode(made),
         "rank": rank_readout(made),
         "route": None,
@@ -1092,6 +1187,43 @@ def curves(made: list, bars=(SEATING_BAR, PRIMED_BAR)) -> dict:
                 previous = cumulative
             block[tag] = curve
         out[arm] = block
+    return out
+
+
+def hit_rate(made: list, cell: str | None) -> dict | None:
+    """What the aimed arm actually came out as, against the flat arm's base rate.
+
+    **The verdict and not the draw.** The carrier table biased which maps the
+    [`AIMED`] arm was offered; whether a picture is dominant in the cell is read
+    off that picture's own pixels, and this counts the reads. A candidate hits
+    when the cell is in the `cells` its row carries — nothing here consults the
+    table a second time to decide whether it should have.
+
+    [`FLAT`] is the control: the same places drawn the same way out of the same
+    pools, at the same width, differing in the palette ask alone. `lift` is the
+    ratio, and it is the number that says whether biasing the draw bought
+    anything — a lift near 1 means the cell was as easy to hit by accident.
+    """
+    if not cell:
+        return None
+    out: dict = {"cell": str(cell)}
+    for arm in (AIMED, FLAT):
+        held = [row for row in made if row["arm"] == arm]
+        hits = [row for row in held if str(cell) in (row.get("cells") or ())]
+        out[arm] = {
+            "candidates": len(held),
+            "dominant": len(hits),
+            "rate": round(len(hits) / len(held), 5) if held else None,
+            "locations": len({row["location"] for row in held}),
+            "locations_with_a_hit": len({row["location"] for row in hits}),
+            "maps_drawn": len({row["colormap"] for row in held}),
+            "maps_that_hit": len({row["colormap"] for row in hits}),
+        }
+    aimed, flat = out[AIMED]["rate"], out[FLAT]["rate"]
+    out["lift"] = round(aimed / flat, 3) if aimed is not None and flat else None
+    # What a hit rate below 1 costs: the renders on this arm and nothing else,
+    # because every candidate is a candidate whatever colour it came out.
+    out["renders_per_hit"] = round(1.0 / aimed, 3) if aimed else None
     return out
 
 
@@ -1338,6 +1470,7 @@ def _tag(bar: float) -> str:
 
 
 __all__ = [
+    "AIMED",
     "BUDGET_SECONDS",
     "DEFAULT_SEED",
     "BREADTH_DEMOTED",
@@ -1371,9 +1504,12 @@ __all__ = [
     "by_mode",
     "contact_sheet",
     "curves",
+    "hit_rate",
     "deficient_modes",
     "depth_dir",
+    "aimed_maps",
     "field_modes",
+    "flat_maps",
     "fields_dir",
     "flat_places",
     "merge",
