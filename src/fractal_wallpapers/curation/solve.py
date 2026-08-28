@@ -343,12 +343,24 @@ def pool(rows=None, scores=None, artifact=None, log=print) -> tuple[list[Candida
     row a **person rejected** is refused: the ledger keeps it and carries the
     rejection precisely so that a solver honours it. A row at a regime other than
     the one the pool was made at is refused, because a score read at one geometry
-    does not transfer to another. A row with **no picture on disk** is refused —
+    does not transfer to another. A row that **names no picture** is refused —
     its recipe is complete and it could be drawn again, but the diversity rule and
     the group cap are read off pixels, and a candidate no pairwise rule can
     evaluate is one that would be seated untested. A row with no score is refused
     because the objective *is* the score: such a row does not lose, there is
     simply nothing to rank it by.
+
+    **Naming a picture is not having one, and this exclusion only checks the
+    name.** `rank_key_fit` measured 30,040 of the ledger's 128,368 rows (23.4%)
+    naming a JPEG that is not on disk, and every one of them is admitted here.
+    They then reach the twin rule, which reads pixels and *admits* what it cannot
+    read — so the rows the diversity rule cannot evaluate are exactly the rows it
+    stops applying to, which is the failure this paragraph used to claim was
+    excluded. It is visible in a replay: re-seating `p2b_n150` on the same pool,
+    the same bars and the same scores reproduces 147 of its 150 seats, and the
+    three it takes instead are three the record refused as twins whose files have
+    since gone. Stating the behaviour rather than the intent, because closing it
+    is a change to what a seating admits and that is Matt's call, not a fix.
     """
     stored = candidate_ledger.read() if rows is None else list(rows)
     if not stored:

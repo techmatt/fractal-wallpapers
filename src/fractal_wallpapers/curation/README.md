@@ -1171,6 +1171,26 @@ the seating and the solve refuse on the **first** neighbour inside tau, where th
 shipped `curate gallery` pass refuses on the second (`ceiling.TWINS = 2`); the two
 are different policies and both records say which they applied.
 
+**The twin rule stops applying to exactly the rows it cannot read, and that is a
+quarter of the ledger.** `clouds_for` reads a candidate's picture off disk and a row
+whose file is absent reads as `None`, which `Twins` *admits* rather than refuses —
+deliberately, because a missing file is a fact about the checkout and not about the
+wallpaper. What was never checked is how many such rows reach it. `rank_key_fit`
+measured it on 2026-08-28: **30,040 of the ledger's 128,368 rows (23.4%) name a JPEG
+that is not on disk**, and `solve.pool` admits every one of them — its `no_picture`
+exclusion tests that the row *names* a picture, never that the file exists, whatever
+its docstring used to say. Inside one seat's pre-selected pool the share is **908 of
+5,324 (17%)**.
+
+So it is not a corner case, and it is visible in a replay: re-seating `p2b_n150` on
+the same pool, the same bars, the same pre-selection and bit-identical scores
+reproduces **147 of its 150 seats**, and the three it takes instead are three the
+record refused as twins whose files have since gone. A candidate is therefore
+seated *because* its picture is missing. Nothing here is changed — closing it alters
+what a seating admits and is Matt's call — but a seat record taken before a picture
+was swept is not exactly reproducible after, and a replay that reproduces 147 of 150
+has found this rather than a reconstruction error.
+
 **The rejection ledger is the product.** For every candidate not seated, the first
 rule that refused it, aggregated by cell, family, mode and partition — a cell whose
 whole refusal column is `cell_allowance` is a cell the gallery is already full of,
