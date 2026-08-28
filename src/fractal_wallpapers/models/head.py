@@ -76,12 +76,82 @@ from dataclasses import dataclass
 #: scale and the head cannot disagree about how many cutpoints there are.
 CLASSES = 4
 
-#: The timm backbone. Pretrained on ImageNet-12k at 384 pixels, which is the
-#: resolution these tiles are read at, and small enough that a training run is an
-#: hour. A comparison against five alternatives — two vision transformers, a
-#: larger convolutional net, a hybrid, and an EfficientNet — kept it: nothing was
-#: better outside noise, and it was the fastest and the smallest.
+#: The timm backbone **the location head trains on**, and [`build`]'s default.
+#: Pretrained on ImageNet-12k at 384 pixels, which is the resolution these tiles
+#: are read at, and small enough that a training run is an hour. A comparison
+#: against five alternatives — two vision transformers, a larger convolutional
+#: net, a hybrid, and an EfficientNet — kept it: nothing was better outside
+#: noise, and it was the fastest and the smallest.
+#:
+#: **It is not "the" backbone, and reading it as one is how the render head came
+#: to be described wrongly for four days.** Three heads ship and they do not
+#: agree — see [`SHIPPED_BACKBONES`]. Every loader already builds from
+#: `config["backbone"]` off the checkpoint, so nothing was ever built wrong; what
+#: was wrong was the documentation, which is the harder kind to notice.
 BACKBONE = "mobilenetv4_conv_medium.e250_r384_in12k"
+
+#: What each **shipped** artifact actually carries, read off the three
+#: `models/<head>/<head>.fp16.pt` files on 2026-08-28 and asserted at load by
+#: [`assert_shipped_backbone`].
+#:
+#: `render` disagrees with [`BACKBONE`] because the render head's own band
+#: comparison chose the small one — `render_train`'s `small_backbone` arm, at the
+#: backbone the strange corpus is not starving at — and the pooled head that
+#: shipped came out of it. `palette` is distilled and was small from the start
+#: (`palette_head.BACKBONE`). Only `location` is [`BACKBONE`].
+#:
+#: **Experiment checkpoints are deliberately not covered.** `render_train` trains
+#: bands at *both* backbones on purpose, so asserting over every file under
+#: `models/render/` would refuse the comparison that picks the winner. The claim
+#: this pins is only about what ships.
+SHIPPED_BACKBONES = {
+    "location": BACKBONE,
+    "render": "mobilenetv4_conv_small.e2400_r224_in1k",
+    "palette": "mobilenetv4_conv_small.e2400_r224_in1k",
+}
+
+
+class BackboneMismatch(RuntimeError):
+    """A shipped artifact was built on a backbone the roster does not claim."""
+
+
+def shipped_head_of(path) -> str | None:
+    """Which head a path is the **shipped artifact** of, or `None`.
+
+    Only `<...>/<head>/<head>.fp16.pt` answers. A run's checkpoint answers `None`
+    on purpose — see [`SHIPPED_BACKBONES`] on why a band must stay free to try a
+    backbone the roster does not ship.
+    """
+    from pathlib import Path
+
+    from fractal_wallpapers.models import roster
+
+    name = Path(path).name
+    for candidate in roster.HEADS:
+        if name == f"{candidate}.fp16.pt":
+            return candidate
+    return None
+
+
+def assert_shipped_backbone(path, config) -> None:
+    """Refuse a shipped artifact whose backbone is not the one written down.
+
+    Called by every loader, so the constant and the file cannot drift apart
+    silently again. A checkpoint carrying no `backbone` is left alone: that is a
+    different fault and this is not the check that should report it.
+    """
+    name = shipped_head_of(path)
+    expected = SHIPPED_BACKBONES.get(str(name))
+    found = (config or {}).get("backbone")
+    if expected is None or not found:
+        return
+    if str(found) != expected:
+        raise BackboneMismatch(
+            f"{path} is the shipped {name!r} head and was built on {found!r}, but "
+            f"models.head.SHIPPED_BACKBONES claims {expected!r}. One of the two is "
+            f"wrong: re-cut the release, or correct the constant — do not silence this."
+        )
+
 
 #: What the head is handed, in pixels. Wider than it is tall because the pictures
 #: are, and a square input would mean padding or cropping away a third of each.

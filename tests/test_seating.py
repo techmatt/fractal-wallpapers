@@ -398,6 +398,50 @@ class Signatures:
         pass
 
 
+class EveryPicture(Signatures):
+    """A [`Signatures`] that answers for any key, each far beyond [`ceiling.TAU`].
+
+    So the twin rule runs, reads every candidate, and refuses none of them.
+    """
+
+    def __init__(self, candidates=()):
+        super().__init__({})
+        self._spread: dict = {}
+        for held in candidates:
+            self.of(getattr(held, "key", held))
+
+    def of(self, name):
+        import numpy
+
+        from fractal_wallpapers.palettes import groups
+
+        key = str(name)
+        if key not in self.values:
+            self._spread[key] = len(self._spread) * 1.0
+            self.values[key] = numpy.full(
+                groups.QUANTILES * groups.DIRECTIONS, self._spread[key], dtype="float32"
+            )
+        return super().of(key)
+
+
+@pytest.fixture(autouse=True)
+def every_candidate_has_a_picture(monkeypatch):
+    """Every fixture candidate reads back a signature, spread far apart.
+
+    Until 2026-08-28 the twin rule **admitted** a candidate whose picture it
+    could not open. These fixtures name pictures that were never on disk, so the
+    rule was silently inert through most of this file and nothing said so — the
+    same reliance that let three seats of `p2b_n150` be taken by candidates whose
+    JPEGs had been swept. It refuses now, and that made the reliance visible.
+
+    This fixture states the assumption instead of leaning on a bug: the rule
+    runs, every candidate is readable, and none is a twin. A test that wants a
+    twin, an unreadable candidate, or a signature count installs its own
+    `clouds_for` after this one and wins.
+    """
+    monkeypatch.setattr(seating, "clouds_for", lambda candidates, **_rest: EveryPicture(candidates))
+
+
 def twins_over(values):
     """A [`Twins`] over flat signatures, so a pair's distance is `|a - b|`."""
     return seating.Twins(Signatures(values))
@@ -435,12 +479,48 @@ def test_a_pair_the_bound_cannot_settle_is_measured_in_full():
     assert held.measured == 1
 
 
-def test_a_candidate_with_no_picture_on_disk_is_admitted_and_counted():
-    """A missing file is a fact about this checkout, not about the wallpaper."""
+def test_a_candidate_with_no_picture_on_disk_is_refused_and_not_called_a_twin():
+    """PLANTED: the file is missing, and the rule must fail closed.
+
+    This pinned the opposite until 2026-08-28 — "a missing file is a fact about
+    this checkout, not about the wallpaper", which is true and is still the wrong
+    direction to fail in. Admitting meant the diversity rule stopped applying to
+    exactly the candidates nothing could check, and `p2b_n150` seated three of
+    them. The refusal carries its own name: "I could not read this" is not "this
+    is a duplicate", and the rejection ledger must not conflate them.
+    """
     held = twins_over({"seated": 0.0})
     held.hold("seated")
-    assert held.refuses("nothing_on_disk") is None
+    found = held.refuses("nothing_on_disk")
+    assert found is not None
+    assert found["unreadable"] is True
+    assert "twin_of" not in found
     assert held.without_a_picture == 1
+    assert held.record()["refused_without_a_picture_on_disk"] == 1
+
+
+def test_a_seating_refuses_a_candidate_whose_picture_vanishes_mid_pass(monkeypatch):
+    """PLANTED: the file is there when the pool is built and gone when it is read.
+
+    The pool guard cannot catch this one — it is the race the twin rule has to
+    fail closed on — so the refusal is recorded under `picture_unreadable` and
+    the seat is left unfilled rather than given away untested.
+    """
+    clouds = EveryPicture()
+    vanished = {"b"}
+    original = clouds.of
+    monkeypatch.setattr(
+        clouds, "of", lambda name: None if str(name) in vanished else original(name)
+    )
+    monkeypatch.setattr(seating, "clouds_for", lambda *_args, **_rest: clouds)
+
+    pool = [candidate("a", score=0.99, location="one"), candidate("b", score=0.98, location="two")]
+    record = seating.seat(pool, n=5, log=quiet)
+
+    assert [seat["key"] for seat in record["seated"]] == ["a"]
+    assert record["rejection"]["reasons"]["picture_unreadable"] == 1
+    assert "twin" not in record["rejection"]["reasons"]  # it was never called one
+    assert record["twins"]["refused_without_a_picture_on_disk"] == 1
 
 
 def test_a_seat_with_no_picture_is_not_held_and_cannot_refuse_anything():

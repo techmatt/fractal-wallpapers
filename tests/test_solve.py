@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import pytest
 
+from fractal_wallpapers import paths
 from fractal_wallpapers.curation import candidate_ledger, ceiling, solve
 
 pytest.importorskip("scipy", reason="the solve leg needs SciPy's HiGHS binding")
@@ -130,7 +131,31 @@ class Clouds(solve.Pairs):
 # --------------------------------------------------------------------------- #
 # The pool.
 # --------------------------------------------------------------------------- #
-def ledger_row(key, **overrides):
+@pytest.fixture(autouse=True)
+def artifacts_on_disk(tmp_path, monkeypatch):
+    """A hot root these fixtures can actually plant a picture in.
+
+    [`solve.pool`] asks whether a row's picture is **on disk**, not whether the
+    row names one, so a fixture that only names a path is a fixture the pool now
+    refuses. Planting is what makes the exclusion testable in both directions.
+    """
+    root = tmp_path / "artifacts"
+    root.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv(paths.HOT_ROOT_VARIABLE, str(root))
+    return root
+
+
+def ledger_row(key, on_disk: bool = True, **overrides):
+    """One ledger row, with its picture planted unless `on_disk` is False.
+
+    Existence is all [`solve.pool`] asks, so the planted file is empty. A test
+    that wants the file *read* plants a real picture instead.
+    """
+    named = f"artifacts/{key}.jpg"
+    if on_disk:
+        made = paths.hot_root() / f"{key}.jpg"
+        made.parent.mkdir(parents=True, exist_ok=True)
+        made.touch()
     row = {
         "key": key,
         "partition": "mandelbrot",
@@ -139,7 +164,7 @@ def ledger_row(key, **overrides):
         "palette_group": "map:one",
         "at_candidate_regime": True,
         "colour": {"cells": ["dark_vivid_blue"], "families": ["blue"]},
-        "picture": f"artifacts/{key}.jpg",
+        "picture": named,
         "rejected": None,
     }
     row.update(overrides)
@@ -178,9 +203,19 @@ def test_pool_refuses_a_rejected_row_and_says_so():
     [
         ({"at_candidate_regime": False}, "off_regime"),
         ({"picture": None}, "no_picture"),
+        ({"on_disk": False}, "picture_absent"),
     ],
 )
 def test_pool_refuses_what_no_rule_could_evaluate(overrides, counter):
+    """PLANTED, for `picture_absent`: the row names a JPEG that is not there.
+
+    `curate retention` drops pictures and never rows, so this is permanent,
+    expected state over about a quarter of the ledger — and until 2026-08-28
+    every one of those rows was admitted and then seated untested, because the
+    twin rule is the only thing that opens a picture and it admitted what it
+    could not read. Named apart from `no_picture`: never drawn and drawn-then-
+    swept are different facts, and only the second grows.
+    """
     rows = [ledger_row("a"), ledger_row("b", **overrides)]
     candidates, refused = solve.pool(
         rows=rows,
