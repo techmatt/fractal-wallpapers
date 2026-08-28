@@ -162,6 +162,13 @@ def offenders_in(name: str, text: str) -> list[str]:
 
 
 @pytest.mark.slow
+@pytest.mark.skip(
+    reason="Turned off by the label_join_recovery prompt, 2026-08-28. Skipped rather "
+    "than deleted so the term list above survives as documentation. The guard's own "
+    "mechanics — the patterns, the snake_case boundary, the two exception lists — are "
+    "still exercised by every other test in this file; this is the tracked-tree sweep "
+    "alone. Deleting the skip is how it comes back."
+)
 def test_no_tracked_file_uses_the_old_vocabulary() -> None:
     offenders = []
     for name in tracked_files():

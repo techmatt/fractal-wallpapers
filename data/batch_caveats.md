@@ -162,12 +162,50 @@ Quote them **by block or not at all**: the 150 seats are `1/12/91/46` (tier 4
 matching on head score and on store, so the whole-batch 39% describes neither
 population.
 
-**Both readings are on the row and they are not interchangeable.** `selected_on`
-is the `640x360 ss2` reading the row was *selected* on; `columns` is the judge's
-reading of the `1280x720 ss2` picture the page actually serves. Over the seats the
-two differ by `-0.0020` in the mean and by as much as `0.27` on 14 individual
-rows, so a per-row agreement rate computed against the wrong one is wrong by more
-than it looks.
+**Both readings are on the SHEET row, not on the stored one, and they are not
+interchangeable.** `selected_on` is the `640x360 ss2` reading the row was
+*selected* on; `columns` is the judge's reading of the `1280x720 ss2` picture the
+page actually serves. Over the seats the two differ by `-0.0020` in the mean and
+by as much as `0.27` on 14 individual rows, so a per-row agreement rate computed
+against the wrong one is wrong by more than it looks. Both live on the sheet row
+under `artifacts/`, which is ignored; the stored row here carries neither, and
+reaches them only through its own `sheet` and `unit`. This batch is the only one
+in either store whose sheet carries `selected_on` at all — 200 rows of 9,427 —
+so it is the only place the pair can be read per row rather than reconstructed.
+Reconstructing it off the ledger is exact where it is possible: today's ledger
+`P(>=4)` equals `selected_on` on all 200, to the last digit.
+
+---
+
+## Five batches reach the candidate ledger; the other twenty-one do not
+
+*Registries: both. Measured 2026-08-28 over the 9,427 resolved scored rows.*
+
+A finished-render row carries its whole recipe, so nothing about the *picture* is
+missing from any of these batches. What is missing from most of them is the
+**model column**: `P(>=4)` exists only for rows whose recipe is a row of the
+candidate ledger, and only four batches were drawn over that ledger —
+`p_ge4_calibration_smooth` (123), `p_ge4_calibration_strange` (115),
+`released_top_end` (116), `under_seen_modes` (496) and `seated_and_head_top`
+(200), which join at 100%. Everything else was drawn over the **location
+supply**, whose places mostly never became candidates: 1,051 of 9,427 join by
+recipe key, 1,045 of those are in today's pool and 667 clear the production
+screen.
+
+Two consequences a rate would get wrong. First, **the joining rows are the
+selected top**: their tier mix is `1/2/3/4 = 1.2 / 31.1 / 41.7 / 26.0%` against
+the non-joining `26.8 / 38.8 / 24.6 / 9.8%`, so any base rate read off the
+joinable corpus is a rate over draws that were already cut on the judge. Second,
+**a batch's reach is not about its age but about its source**: the ten batches
+registered 2026-08-15 and the July imports reach neither the ledger nor the
+supply sidecar — 0 rows of 7,552 — because those places have since been
+superseded out of the standing pool, while `threads_promotion`,
+`itinerary_promotion` and `release_bar_band` reach the supply at 100% and the
+ledger at 20/110, 22/110 and 9/55.
+
+It is not a key problem and no re-keying fixes it; the geometry axis people reach
+for first accounts for **0 rows**. See
+[the recipe key's note](../src/fractal_wallpapers/curation/README.md).
 
 ---
 
