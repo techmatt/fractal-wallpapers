@@ -1801,6 +1801,152 @@ def renders_cv_compare(args: argparse.Namespace) -> int:
     return 0
 
 
+def renders_grade_split(args: argparse.Namespace) -> int:
+    """What one fold's split holds, before anything is fitted on it."""
+    from fractal_wallpapers.models import render_cv, render_grade
+
+    try:
+        _rows, _pictures, split = render_grade.sides_for(args.fold)
+    except (render_cv.CrossValidationError, render_grade.GradingError) as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps({key: value for key, value in split.items() if key != "population"}, indent=2))
+    return 0
+
+
+def renders_grade_fit(args: argparse.Namespace) -> int:
+    """Fit one arm on one fold at one seed, under both stopping rules at once."""
+    from fractal_wallpapers.models import render_cv, render_grade, render_train
+
+    try:
+        record = render_grade.fit(
+            args.arm, args.fold, args.seed, device=args.device, epochs=args.epochs
+        )
+    except (
+        render_cv.CrossValidationError,
+        render_grade.GradingError,
+        render_train.TrainingError,
+    ) as refusal:
+        print(refusal)
+        return 1
+    print(
+        json.dumps(
+            {key: value for key, value in record.items() if key != "history"},
+            indent=2,
+            default=str,
+        )
+    )
+    return 0
+
+
+def renders_grade_read(args: argparse.Namespace) -> int:
+    """Read one run's held-out rows through each stopping rule's own checkpoint."""
+    from fractal_wallpapers.models import render_cv, render_grade
+
+    rules = [args.rule] if args.rule else sorted(render_grade.CHECKPOINTS)
+    reports = []
+    try:
+        for rule in rules:
+            reports.append(
+                render_grade.read_out_of_fold(
+                    args.arm, args.fold, args.seed, rule=rule, device=args.device
+                )
+            )
+    except (render_cv.CrossValidationError, render_grade.GradingError) as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps(reports, indent=2))
+    return 0
+
+
+def renders_grade_readout(args: argparse.Namespace) -> int:
+    """Leg 1's whole table: the primary comparison, the decomposition, the standings."""
+    from fractal_wallpapers.models import render_cv, render_grade
+
+    folds = [int(value) for value in args.folds.split(",")] if args.folds else None
+    seeds = [int(value) for value in args.seeds.split(",")]
+    try:
+        document = render_grade.readout(seeds, folds)
+    except (render_cv.CrossValidationError, render_grade.GradingError) as refusal:
+        print(refusal)
+        return 1
+    path = render_grade.root() / "readout.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8", newline="\n")
+    for comparison in document["comparisons"]:
+        motivating = comparison["motivating"]
+        print(
+            f"{comparison['candidate']:>32} vs {comparison['reference']:<32} "
+            f"n {motivating['n']:4d} (+{motivating['positives']}) "
+            f"{motivating['candidate']:.4f} vs {motivating['reference']:.4f}  "
+            f"delta {motivating['delta']:+.4f} [{motivating['lo']:+.4f}, {motivating['hi']:+.4f}] "
+            f"{motivating['verdict']}  clears={comparison['clears_the_bar']}"
+        )
+    print(f"wrote {path}")
+    return 0
+
+
+def renders_grade_crossovers(args: argparse.Namespace) -> int:
+    """The isotonic crossovers off pooled out-of-fold predictions, at LABEL geometry."""
+    from fractal_wallpapers.models import render_cv, render_grade
+
+    folds = [int(value) for value in args.folds.split(",")] if args.folds else None
+    try:
+        rows = render_grade.pooled(args.arm, args.rule, args.seed, folds)
+        document = render_grade.crossovers(rows, args.kind)
+    except (render_cv.CrossValidationError, render_grade.GradingError) as refusal:
+        print(refusal)
+        return 1
+    document = {
+        **document,
+        "arm": args.arm,
+        "rule": args.rule,
+        "seed": args.seed,
+        "folds": folds if folds is not None else "every fold read",
+    }
+    path = render_grade.root() / f"crossovers_{args.arm}_{args.rule}_{args.kind}.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    print(
+        json.dumps(
+            {key: value for key, value in document.items() if key != "per_mode_ge3"}, indent=2
+        )
+    )
+    path.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8", newline="\n")
+    print(f"wrote {path}")
+    return 0
+
+
+def renders_grade_autopsy(args: argparse.Namespace) -> int:
+    """The pictures the two readings rank furthest apart, both ways, as one page."""
+    from fractal_wallpapers.models import render_cv, render_grade
+
+    folds = [int(value) for value in args.folds.split(",")] if args.folds else None
+    seeds = [int(value) for value in args.seeds.split(",")]
+    candidate_arm, candidate_rule = args.candidate.split("@")
+    reference_arm, reference_rule = args.reference.split("@")
+    try:
+        document = render_grade.disagreements(
+            render_grade.reading(candidate_arm, candidate_rule, seeds, folds),
+            render_grade.reading(reference_arm, reference_rule, seeds, folds),
+            tier=args.tier,
+            rows=args.rows or render_grade.AUTOPSY_ROWS,
+        )
+        path = render_grade.autopsy_sheet(
+            document,
+            (args.candidate, args.reference),
+            Path(args.output),
+            note=f"Seed-averaged over {seeds}.",
+        )
+    except (render_cv.CrossValidationError, render_grade.GradingError) as refusal:
+        print(refusal)
+        return 1
+    print(
+        json.dumps({key: value for key, value in document.items() if "above" not in key}, indent=2)
+    )
+    print(f"wrote {path}")
+    return 0
+
+
 def renders_verify(args: argparse.Namespace) -> int:
     """Compare regenerated pictures against the ones the verdicts were cast on."""
     from fractal_wallpapers.models import renders
@@ -5127,6 +5273,118 @@ def render_commands(subcommands) -> None:
         "is the baseline's; naming another arm makes the population a stated choice",
     )
     contesting.set_defaults(handler=renders_cv_compare)
+
+    grading = steps.add_parser(
+        "grade",
+        help="grade two arms on a statistic that can resolve, over the folds already dealt",
+        description=(
+            "The screen's folds re-used rather than re-dealt, graded on AUC(>=4) over every "
+            "strange row a person scored 3 or 4 rather than on the band-restricted slice "
+            "that could not resolve. Two arms — the shipped recipe and the same recipe at "
+            "twice the input resolution — and two stopping rules read off one run each. "
+            "Nothing here adopts anything."
+        ),
+    )
+    gradings = grading.add_subparsers(dest="grade_step", required=True)
+
+    splitting = gradings.add_parser(
+        "split",
+        help="what one fold's split holds, before anything is fitted on it",
+        description=(
+            "Holdout, training side and stop slice, with the stop slice's own draw. The "
+            "slice is 20% of the training side's LINEAGE GROUPS rather than the trainer's "
+            "share of its places, and it comes out of the training side and never out of "
+            "the graded holdout."
+        ),
+    )
+    splitting.add_argument("--fold", type=int, required=True, help="which part of the deal")
+    splitting.set_defaults(handler=renders_grade_split)
+
+    grade_fitting = gradings.add_parser(
+        "fit",
+        help="fit one arm on one fold at one seed",
+        description=(
+            "Runs the shipped trainer over this fold's split and keeps TWO checkpoints: the "
+            "epoch the pooled cutpoint cross-entropy likes and the epoch stop-slice "
+            "AUC(>=4) likes. One run, read twice, so the second stopping rule costs no "
+            "training."
+        ),
+    )
+    grade_fitting.add_argument("--arm", required=True, help="which arm: A or B")
+    grade_fitting.add_argument("--fold", type=int, required=True, help="which part of the deal")
+    grade_fitting.add_argument("--seed", type=int, required=True, help="the run's seed")
+    grade_fitting.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
+    grade_fitting.add_argument("--epochs", type=int, help="override the epoch ceiling")
+    grade_fitting.set_defaults(handler=renders_grade_fit)
+
+    grade_reading = gradings.add_parser(
+        "read",
+        help="read a run's held-out rows through each stopping rule's checkpoint",
+        description=(
+            "Every held-out row scored by the one model that never saw its lineage, once "
+            "per stopping rule. Omit --rule for both."
+        ),
+    )
+    grade_reading.add_argument("--arm", required=True, help="which arm")
+    grade_reading.add_argument("--fold", type=int, required=True, help="which part of the deal")
+    grade_reading.add_argument("--seed", type=int, required=True, help="the run's seed")
+    grade_reading.add_argument("--rule", help="one stopping rule, or both if omitted")
+    grade_reading.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
+    grade_reading.set_defaults(handler=renders_grade_read)
+
+    grade_readout = gradings.add_parser(
+        "readout",
+        help="the primary comparison, the decomposition and the standings",
+        description=(
+            "Arm B under the AUC stopping rule against arm A under the shipped one — the "
+            "true incumbent — on the seed-AVERAGED reading, plus the two descriptive "
+            "comparisons that separate the stopping-rule effect from the resolution effect."
+        ),
+    )
+    grade_readout.add_argument("--seeds", default="0,1", help="the seed band, comma separated")
+    grade_readout.add_argument("--folds", help="which folds, comma separated (default: all read)")
+    grade_readout.set_defaults(handler=renders_grade_readout)
+
+    grade_crossovers = gradings.add_parser(
+        "crossovers",
+        help="the isotonic P(>=3) and P(>=4) crossovers, at LABEL geometry",
+        description=(
+            "Isotonic regression of P(the human agreed) against the head's own probability, "
+            "over pooled out-of-fold predictions. NOT seating floors: these are fitted at "
+            "label geometry, the judge is not regime-robust, and re-scoring at shipping "
+            "geometry is a separate act."
+        ),
+    )
+    grade_crossovers.add_argument("--arm", required=True, help="which arm")
+    grade_crossovers.add_argument("--rule", required=True, help="which stopping rule")
+    grade_crossovers.add_argument("--seed", type=int, default=0, help="the run's seed")
+    grade_crossovers.add_argument("--kind", default="strange_render", help="which store")
+    grade_crossovers.add_argument("--folds", help="which folds, comma separated (default: all)")
+    grade_crossovers.set_defaults(handler=renders_grade_crossovers)
+
+    grade_autopsy = gradings.add_parser(
+        "autopsy",
+        help="the pictures the two readings rank furthest apart, both ways",
+        description=(
+            "Numbers alone do not close a comparison between two judges. This is the two "
+            "halves an eye has to look at: the human fours one reading ranks far above the "
+            "other, and the same the other way. Ranked by percentile within the strange "
+            "held-out population, because the two probability scales differ by construction."
+        ),
+    )
+    grade_autopsy.add_argument("--candidate", required=True, help="arm@rule, e.g. B@...")
+    grade_autopsy.add_argument("--reference", required=True, help="arm@rule")
+    grade_autopsy.add_argument("--seeds", default="0,1", help="the seed band, comma separated")
+    grade_autopsy.add_argument("--folds", help="which folds, comma separated (default: all read)")
+    grade_autopsy.add_argument("--tier", type=int, default=4, help="which human verdict")
+    grade_autopsy.add_argument(
+        "--rows",
+        type=int,
+        default=None,
+        help="how many pictures per half (default: render_grade.AUTOPSY_ROWS)",
+    )
+    grade_autopsy.add_argument("--output", required=True, help="where the page is written")
+    grade_autopsy.set_defaults(handler=renders_grade_autopsy)
 
     registering = steps.add_parser(
         "preregister",

@@ -409,6 +409,103 @@ internally consistent, consistently wrong, and invisible in every record the fol
 writes. That is [`render_train.MISLAUNCHED`]'s failure, and `render_cv` is held to
 both ends of the same discipline.
 
+## Grading a retrain: `renders grade`
+
+`renders cv` screened three arms and came back null, and its own report named why:
+the declared slice was **band-restricted on top of a 20% holdout** and came to 43
+strange rows, where a 95% interval on an AUC is about ±0.19. The machinery was
+sound; the statistic could not resolve. [`render_grade`](render_grade.py) re-runs
+the comparison on the same question **unbanded** — `AUC(≥4)` over every strange
+holdout row a person scored 3 or 4, which is 209 rows on fold 0 and 1,021 over the
+whole store — and fits the release crossovers off the same artifact. **Nothing here
+adopts anything** either: no weights ship, `curation.floors.SCORING_HEAD` does not
+move, `models/` is not written, and everything lands under `artifacts/render_grade/`.
+
+```
+fractal-wallpapers renders grade split  --fold 0                    # what the split holds
+fractal-wallpapers renders grade fit    --arm A --fold 0 --seed 0   # one arm, one fold, one seed
+fractal-wallpapers renders grade read   --arm A --fold 0 --seed 0   # both rules' held-out reads
+fractal-wallpapers renders grade readout --seeds 0,1                # the primary comparison
+fractal-wallpapers renders grade crossovers --arm A --rule <rule> --seed 0
+fractal-wallpapers renders grade autopsy --candidate B@<rule> --reference A@<rule> --output <path>
+```
+
+**The folds are `render_cv`'s, re-used rather than re-dealt.** Same
+`artifacts/render_cv/assignment.json`, same lineage grouping over the pooled corpus,
+same two exclusions and same non-exclusion. What moves is the **stop slice**:
+`render_train`'s own rule draws 10% of the training side's *places*, and a place is
+finer than a lineage, so this draws 20% of the training side's **lineage groups**,
+seeded per fold. Every arm on a fold therefore stops against one population, and the
+comparison is between arms rather than between slices. The slice comes out of the
+training side and never out of the holdout — a run that early-stopped on the graded
+split would make the graded number optimistic and could not also be the grading
+statistic.
+
+**Two stopping rules come off one run, and the second is free.** `render_train.run`
+takes a `second_selection` and keeps a checkpoint at each rule's own best epoch:
+`best.pt` for the shipped rule (pooled cutpoint cross-entropy) and `best_second.pt`
+for stop-slice `AUC(≥4)`. `patience` stops the loop only when **no** rule has
+improved for that many epochs — the two peak several epochs apart on this corpus, so
+a patience read off the earlier one would truncate the later one's search and the
+comparison would be between a rule and a budget.
+
+⚠ **Selecting on stop-slice `AUC(≥4)` is not `render_cv`'s `top_cutpoint_selection`,
+which failed.** That was a *proper scoring rule* read at one rare cutpoint, and an
+under-confident head minimizes it by never committing — it chose epoch 1. An AUC is
+rank-only: shrinking every score toward the prior does not reorder them.
+
+**The realized preprocessing, read off the shipped artifact rather than a
+declaration:** `geometry: stretch`, `source_dims [1280, 720]`, `target_dims
+[384, 224]`. There is **no crop at deploy** — `head.resize` is a whole-frame
+anisotropic `image.resize`, so 16:9 arrives as 12:7 and the head has never seen this
+material at its own aspect ratio. 384×224 is 9.3% of the source pixels. Arm B doubles
+both axes to 768×448, which keeps that convention exactly and changes nothing else.
+
+Measured on this machine, 2026-08-27, one fold of 5,608 training pictures:
+
+| arm | input | per epoch |
+|---|---|---|
+| A | 384×224 | 70.8 s |
+| B | 768×448 | 104.0 s |
+
+**Four times the pixels costs 1.47× the wall, not 4×** — the loop is data-loading
+bound (the GPU sits near 10% while a worker decodes a 1280×720 JPEG), which is the
+same arithmetic the `renders cv` table already shows for two folds at once. What 2×
+linear *does* cost is card memory: arm B holds about **4.8 GB of an 8 GB card**, so
+two arm-B runs cannot share it and a concurrent pair has to be one A and one B.
+
+**What the first full run of this found, 2026-08-27.** Arm B — 2× linear — did not
+clear the declared bar: seed-averaged `AUC(≥4)` over the 209-row unbanded 3-vs-4
+slice is +0.0414 against arm A, 95% [−0.0103, +0.0945]. But the same arm is
+**significantly better on the whole strange population's ≥4 boundary**, +0.0393
+[+0.0048, +0.0776] over 714 rows — the same effect size, resolved only because that
+population is 3.4× larger. **The miss is power, not substance**, and the lesson is
+that even unbanded, one fold's 3-vs-4 slice is too small: pooling all five folds puts
+1,021 rows behind it. The AUC stopping rule bought +0.0064 on the mean and its
+premise did not hold — `AUC(≥4)` peaked at epoch 5–6 in all four runs rather than
+11–13. What it did buy is **stability**: epoch 5–6 every run, where the
+cross-entropy rule chose 2, 7, 6 and 4.
+
+**The `P(≥4)` crossover does not exist, and that is worth not re-deriving.** Over
+pooled out-of-fold predictions across all five folds (8,977 rows), the `P(≥3)`
+crossover is **0.5693**, 95% over lineages [0.504, 0.642] — which reproduces
+`curation.floors.STRANGE_RELEASE_BAR`'s in-sample 0.575 to within 0.006, the first
+independent check that height has had. The `P(≥4)` crossover reads 0.9853 with **370
+of 1,000 resamples finding no crossing at all**, and under the AUC stopping rule there
+is no crossing whatever (902 of 1,000). The precision curve says why: 30.6% at
+`P(≥4) ≥ 0.50`, 41.0% at 0.90, 40.0% at 0.99. Against a 6.7% base rate that is a real
+6× lift, but **no height on this scale admits a majority-four population at any
+volume**. `curation.mine.PRIMED_BAR` at 0.90 admits 39 strange rows of which 16 are
+human fours.
+
+**The crossovers are at LABEL geometry and are not seating floors.** They are
+`release_floor`'s fit — isotonic, PAVA, ties pooled, the lowest score whose fitted
+agreement reaches a half — run over pooled out-of-fold predictions instead of a
+shipped artifact's in-sample read, at both `P(≥3)` and `P(≥4)`. The store's rows are
+1280×720 renders from this repository's own coloring path; what the supply engine
+scores is a different regime and this judge is not regime-robust. Re-scoring at
+shipping geometry is a separate act and no bar is set on these numbers.
+
 ## Adopting a head: `regime restate`, then `regime adopt`
 
 Those two steps are the priced flip, and they run in that order once — **between
