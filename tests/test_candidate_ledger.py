@@ -396,3 +396,65 @@ def test_the_recipe_dataclass_says_what_a_ledger_row_stores():
     assert members == set(recipes.KEYED) | set(recipes.CARRIED)
     stored = recipes.of_decision(decision()).record()
     assert members <= set(stored)
+
+
+# --------------------------------------------------------------------------- #
+# The stored colour, and the lens served off it.
+# --------------------------------------------------------------------------- #
+@pytest.mark.slow
+def test_the_stored_colour_block_is_what_the_picture_still_reads_as():
+    """The lens serves the stored block instead of decoding, so the two paths
+    have to be one answer. A sample rather than all 85,129 because a decode is
+    16 ms a row: this is the guard that catches a drift, not a re-census."""
+    import random
+    from pathlib import Path
+
+    from fractal_wallpapers.palettes import dominance
+    from fractal_wallpapers.paths import rehome
+
+    rows = [
+        row
+        for row in candidate_ledger.read()
+        if row.get("picture") and row.get("colour") and not row.get("rejected")
+    ]
+    assert rows, "the ledger has rows with a picture and a colour"
+    sample = random.Random(20260827).sample(rows, min(80, len(rows)))
+    checked, wrong = 0, []
+    for row in sample:
+        picture = Path(rehome(row["picture"]))
+        if not picture.is_file():
+            continue
+        checked += 1
+        live = candidate_ledger.colour_block(dominance.of_picture(picture))
+        if live != row["colour"]:
+            wrong.append(row["key"])
+    assert checked, "the sample found no picture on this machine"
+    assert wrong == [], f"{len(wrong)} of {checked} stored readings disagree with the pixels"
+
+
+@pytest.mark.slow
+def test_the_reading_source_answers_by_render_path_and_says_nothing_about_the_rest():
+    rows = candidate_ledger.read()
+    source = candidate_ledger.reading_source(rows)
+    with_picture = next(row for row in rows if row.get("picture") and row.get("colour"))
+    assert source(with_picture["picture"]) == with_picture["colour"]
+    assert source("artifacts/curation/runs/nowhere/pictures/0.jpg") is None
+
+
+@pytest.mark.slow
+def test_a_ledger_backed_lens_serves_every_row_it_has_without_a_decode():
+    """The saving, over the real store. A seating that gets a stored block for
+    every candidate it tests decodes nothing."""
+    from fractal_wallpapers.curation import ceiling
+
+    rows = candidate_ledger.read()[:200]
+    lens = ceiling.Lens(
+        lambda candidate: candidate["picture"],
+        lambda _candidate: "group",
+        stored_of=candidate_ledger.reading_source(rows),
+    )
+    for at, row in enumerate(rows):
+        assert lens.reading({"candidate": str(at), "picture": row["picture"]}) is not None
+    price = lens.price()
+    assert price["readings_decoded"] == 0
+    assert price["readings_stored"] == len(rows)

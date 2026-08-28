@@ -1458,7 +1458,7 @@ def refuse_targets(targets: dict, pool: list) -> dict:
     return block
 
 
-def lens_for() -> ceiling.Lens:
+def lens_for(stored_of=None) -> ceiling.Lens:
     """The ceiling's reader over this pass's candidates: colour, cloud, palette group.
 
     Both readings are taken off the **candidate render** ([`render_of`]) and never
@@ -1466,6 +1466,12 @@ def lens_for() -> ceiling.Lens:
     readings comparable at all. The palette group is the tracked table's
     ([`palettes.groups`]), read once — a map the table puts in no group is its own
     group, which is what a singleton is.
+
+    `stored_of` is passed straight to [`ceiling.Lens`]. A pass seating its own
+    fresh candidates has nothing to give it — the pictures are minutes old and no
+    row about them exists yet — so it is unsaid there and the pictures are read.
+    A seating driven off the candidate ledger hands it
+    [`candidate_ledger.reading_source`] and decodes nothing it has already read.
     """
     from fractal_wallpapers.palettes import groups as palette_groups
 
@@ -1473,6 +1479,7 @@ def lens_for() -> ceiling.Lens:
     return ceiling.Lens(
         render_of,
         lambda candidate: palette_groups.group_of(str(candidate.get("colormap")), table),
+        stored_of=stored_of,
     )
 
 

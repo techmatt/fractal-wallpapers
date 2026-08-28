@@ -235,11 +235,25 @@ class Lens:
     picture on both readings. A candidate whose render is not on disk reads as no
     colour and no cloud, and the seating lets it through untested rather than
     refusing it: a colour decision taken on no evidence is not a colour decision.
+
+    `stored_of(render)` is the optional short circuit for the colour half. Every
+    ledger row already carries the reading in its `colour` block, so a seating
+    driven off the ledger — [`curation.solve`]'s, and anything that seats rows
+    rather than a pass's own fresh candidates — would otherwise decode a JPEG to
+    be told what the row already says. Given one, this asks it before decoding
+    and takes what it returns; unsaid, or where it returns `None`, the picture is
+    read. **It is a lookup and never a second derivation**: what comes back is
+    the stored block through [`dominance.of_block`], which carries the dominant
+    names outright, so a threshold that moved since the row was written cannot
+    quietly re-decide an old row here.
     """
 
-    def __init__(self, render_of, group_of, cache: int = pixel_clouds.CACHE):
+    def __init__(self, render_of, group_of, cache: int = pixel_clouds.CACHE, stored_of=None):
         self.render_of = render_of
         self.group_of = group_of
+        self.stored_of = stored_of
+        #: How the readings were come by, for the price.
+        self.taken = {"stored": 0, "decoded": 0}
         #: `name -> render`, filled the first time a candidate is looked at, so
         #: the cloud cache can be addressed by the caller's own ids.
         self._paths: dict = {}
@@ -262,14 +276,25 @@ class Lens:
         """This candidate's [`dominance.Reading`], or `None` if it has no picture."""
         name = self.see(candidate)
         if name not in self._readings:
-            picture = self._paths[name]
-            try:
-                self._readings[name] = None if picture is None else dominance.of_picture(picture)
-            except dominance.DominanceError:
-                self._readings[name] = None
+            self._readings[name] = self._read(self._paths[name])
             if self._readings[name] is None:
                 self.unreadable.add(name)
         return self._readings[name]
+
+    def _read(self, picture):
+        """One render's reading: the store's, if the caller has one; else the pixels."""
+        if picture is None:
+            return None
+        stored = None if self.stored_of is None else self.stored_of(picture)
+        if stored:
+            self.taken["stored"] += 1
+            return dominance.of_block(stored)
+        try:
+            reading = dominance.of_picture(picture)
+        except dominance.DominanceError:
+            return None
+        self.taken["decoded"] += 1
+        return reading
 
     def cloud(self, candidate: dict):
         """This candidate's pixel-cloud signature, or `None` if it has no picture."""
@@ -291,6 +316,8 @@ class Lens:
         return {
             **self.clouds.price(),
             "readings": len(self._readings),
+            "readings_stored": self.taken["stored"],
+            "readings_decoded": self.taken["decoded"],
             "unreadable": len(self.unreadable),
         }
 

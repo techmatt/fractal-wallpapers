@@ -538,6 +538,20 @@ def make(
     optimization, and naming them is half of what it was sent to do. Four of the
     eight come off the render's own meter rather than off a stopwatch here, so
     the parts of a colouring are attributed where they are spent.
+
+    **The colour read does not reuse the judge's decode, and should not.** It
+    looks like a double decode of one JPEG and is not one. The judge reads the
+    full 640x360, resizes it to the head's input size and normalizes it, so its
+    buffer is not the picture's pixels; the census needs a nearest-neighbour path
+    on purpose, to keep every sample a colour that is really in the picture
+    rather than an average of two that are not. And the census never does a full
+    decode to begin with — [`codebook.pixels`] asks libjpeg for a quarter-scale
+    draft straight to the census size, which measures at **1.8 ms** against the
+    judge's own full decode at 2.4 ms, on a 60-picture sample. Handing over the
+    judge's buffer would cost more than it saves and change a stored reading to
+    do it. The `colour` stage's 12.3 ms is `codebook.shares` — a soft assignment
+    of about six thousand distinct colours onto the 52 swatches, 10 ms of it —
+    and the decode is 15%.
     """
     from fractal_wallpapers.curation import colorize
     from fractal_wallpapers.palettes import dominance

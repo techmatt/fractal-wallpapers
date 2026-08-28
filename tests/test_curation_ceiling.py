@@ -753,3 +753,77 @@ def test_the_dominance_thresholds_are_pinned_and_the_family_pair_is_twice_the_ce
     assert dominance.CELL_LEAD < dominance.CELL_ALONE, "lead-and-be-worth-naming, or be large alone"
     for value in (dominance.CELL_LEAD, dominance.CELL_ALONE, dominance.FAMILY_LEAD):
         assert str(value) in dominance.RULE, "the record spells the rule out, and has to stay right"
+
+
+# --------------------------------------------------------------------------- #
+# The stored reading.
+# --------------------------------------------------------------------------- #
+def a_block(cells=("dark_vivid_green",), families=("green",)):
+    """A ledger row's `colour` block, in the store's own spelling."""
+    return {
+        "cells": list(cells),
+        "families": list(families),
+        "cell_shares": {"dark_vivid_green": 0.42, "dark_muted_rose": 0.0301},
+        "family_shares": {"green": 0.42, "rose": 0.0301},
+        "neutral": 0.210567,
+    }
+
+
+def test_a_stored_colour_block_round_trips_through_a_reading_exactly():
+    """The store's five members out and back with nothing moved. If this drifted,
+    a lens served off the ledger would be answering a different question from a
+    lens served off the picture and nothing would say so."""
+    from fractal_wallpapers.curation import candidate_ledger
+
+    block = a_block()
+    assert candidate_ledger.colour_block(dominance.of_block(block)) == block
+
+
+def test_of_block_carries_the_names_and_does_not_re_derive_them():
+    """A threshold that moved since a row was written must not quietly re-decide
+    that row. The block holds the dominant names outright, so it cannot."""
+    absurd = dict(a_block(), cells=["dark_muted_rose"], families=["rose"])
+    reading = dominance.of_block(absurd)
+    assert reading.cells == ("dark_muted_rose",), "the stored name, not the largest share"
+    assert reading.families == ("rose",)
+    assert reading.carries("dark_muted_rose") and not reading.carries("dark_vivid_green")
+
+
+def test_a_lens_given_a_store_reads_it_and_never_touches_the_picture():
+    """The saving. A ledger-driven seating holds the reading already; decoding
+    the JPEG to be told what the row says is the whole of what this removes."""
+    seen: list = []
+
+    def render_of(candidate):
+        return f"{candidate['candidate']}.jpg"
+
+    def stored_of(picture):
+        seen.append(picture)
+        return a_block()
+
+    lens = ceiling.Lens(render_of, lambda _candidate: "group", stored_of=stored_of)
+    reading = lens.reading({"candidate": "one"})
+    assert reading.cells == ("dark_vivid_green",)
+    assert seen == ["one.jpg"], "asked the store, by render path"
+    assert lens.price()["readings_stored"] == 1
+    assert lens.price()["readings_decoded"] == 0
+
+
+def test_a_lens_whose_store_has_never_seen_the_render_falls_back_to_the_picture(tmp_path):
+    """A pass seating its own fresh candidates has no row about them yet, so the
+    store misses and the seating is exactly what it was."""
+    picture = tmp_path / "nothing.jpg"
+    lens = ceiling.Lens(
+        lambda candidate: picture,
+        lambda _candidate: "group",
+        stored_of=lambda _picture: None,
+    )
+    assert lens.reading({"candidate": "one"}) is None, "no picture on disk, and no stored block"
+    assert lens.price()["readings_stored"] == 0
+    assert "one" in lens.unreadable
+
+
+def test_a_lens_with_no_store_at_all_is_the_lens_that_was_there_before():
+    lens = ceiling.Lens(lambda _candidate: None, lambda _candidate: "group")
+    assert lens.stored_of is None
+    assert lens.reading({"candidate": "one"}) is None
