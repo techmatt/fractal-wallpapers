@@ -1137,6 +1137,115 @@ wallpaper per location, and the twin test; the cell and family allowances, the m
 floors and the group cap are soft with the shortfall recorded. No fallback leg, no
 least-violating rescue: unfilled beats padded.
 
+### Two flags on the seating, and the incumbent is still the default
+
+Both were built at ckpt 88 and **neither is flipped**. `curate seat` seats the walk
+this project has always seated unless a flag says otherwise, and the record says which
+rule and which key it ran under, by name.
+
+```
+curate seat --n 150 --group-cap {identity,proportional}   the palette-group cap
+curate seat --n 150 --key {p_ge4,rank-key}                the sort key
+curate seat --n 150 --sheet-out <path>                    the contact sheet, elsewhere
+```
+
+**`--group-cap proportional` is `max(1, floor(0.025 n))`** — 1 up to n=40, 3 at n=150,
+25 at n=1000 — against `ceiling.GROUP_CAP = 1`, the identity cap. The `max(1, ...)` is
+not a rounding convenience: `floor(0.025 n)` is zero below forty seats and a cap of
+zero is a program with no seats in it, **so a debug gallery at n=20 keeps the identity
+cap under either rule and a before/after has to be taken at n=150 or above.** The cap
+of 1 was a quality mechanism as well as a ceiling — it forced an n-seat gallery onto n
+distinct maps and pushed the seating down the map-quality tail by construction — so
+the realized maximum per map is a number the record now **reports** rather than
+assumes: `shortfalls.groups.realized_max` and `at_the_cap` beside the cap itself.
+
+**`--key rank-key` moves the ORDER and nothing else.** Every bar on the path stays on
+the judge's own columns — `headroom.bars` chooses a mode's rule on `p_ge4`,
+`headroom.clearing` applies it, and the neutral pre-selection is about places — so two
+seatings differing in this flag differ in the sort order and in no other thing, which
+is what makes a before/after exact. A candidate the key cannot read is sorted **last**
+and counted under `order.unranked`; it is not a refusal, because no rule acted on it.
+
+The contact sheet is sorted **good to bad by the seating's own key** and captioned with
+it. A sheet in seating order is in *scarcity* order for its first seats, which reads as
+a quality claim it is not making.
+
+### `curate flatness` — the dead-space column, in a sidecar beside the scores
+
+```
+curate flatness sweep [--workers 3] [--all] [--recompute]
+curate flatness coverage
+curate flatness {save,check,restore}
+```
+
+Tile each picture into 16-pixel cells, fit `z = a x + b y + c` to every cell by least
+squares, and count the cells whose residual RMS is under 1.0 on the 0-255 luminance
+scale. **The plane term is the whole of it**: a smooth ramp across a cell is not
+detail, and a variance screen would score that cell as the busiest thing in the pool.
+
+`flat16_1.0`, and the constants are not a knob — the cell size and the threshold were
+chosen by a nested selection that never saw the fold it scored, unanimously across all
+five outer folds, out of two cell sizes and three thresholds. It ranks **backwards** on
+its own (AUC 0.407 smooth / 0.480 strange: more dead space is a worse picture) and
+earns its place on top of the judge on both kinds, which is why it is a column of the
+rank key and never a bar.
+
+One row per recipe key in `artifacts/curation/candidate_ledger/flatness.jsonl`, beside
+`scores.jsonl`, with its own manifest under `data/curation/candidate_ledger/`. **No
+ledger row is edited.** About 7.5 ms a picture and incremental: a store already swept
+costs one read of the sidecar and no decodes at all. `--all` sweeps every ledger row
+whose picture is on disk rather than the pool — the pool excludes a row a person
+rejected and a row off the candidate regime, and the rank key has to be *fitted* on
+some of those.
+
+### `curate rank-key` — what a seating may rank on instead of the judge alone
+
+```
+curate rank-key fit     re-fit and rewrite both tracked files
+curate rank-key show    print the shipped one
+```
+
+```text
+sigmoid( b0 + b1 loc_p_ge4 + b2 p_ge3 + b3 p_ge4 + b4 stratum + b5 flat16_1.0 )
+```
+
+the location head's `P(>=4)` for the place, the render judge at **both** cutpoints, the
+calibration stratum (`composite` 2 / `other` 1 / `thin_colour` 0) and the flatness
+column, each standardized by the fit's own constants.
+
+Fitted on 2026-08-28 over the **1,051** label rows that join the ledger (342 smooth /
+709 strange, 625 lineage groups, tier mix 1.2 / 31.1 / 41.7 / 26.0%), it reads out of
+fold **0.779 smooth against the incumbent's 0.671** and **0.850 strange against
+0.826**. Those are the shared-weight figures; `rank_key_fit`'s headline 0.797 / 0.852
+is the *per-kind* arm with a nested inner selection and is not what ships.
+
+**Shared weights over both stores**, and per-kind is unresolved on every arm tried. On
+this five-column form specifically it is `+0.018 [-.002,+.039]` on smooth and
+`+0.005 [-.005,+.014]` on strange — the `+0.000 [-.011,+.012]` the ruling cites is the
+*three-column base* arm. Shared is also the only fit the folds support, since 96 of the
+625 lineage groups span both stores and carry 348 of the rows.
+
+Two cutpoints and not an expected tier: `1 + p2 + p3 + p4` as a single column **loses**
+(`-0.030*` on strange), and the fit weights `p_ge3` above `p_ge4` on smooth, which an
+expected tier cannot express. No colormap identity, no palette group and no label
+history aggregated by map — a key reading a map's own human history would be a
+selection rule fit on the thing it selects. Nothing derived from `hunt.seconds` either:
+it is on 44% of rows, and a form that has to score the whole ledger cannot carry a
+column most of the ledger does not have.
+
+It ships **two** tracked files under `data/curation/rank_key/`:
+
+```
+rank_key.json      the coefficients, the standardization constants, the population
+population.jsonl   EVERY label row the fit consumed
+```
+
+The second is the point. A selection rule fit on human labels is a category no
+eligibility guard covers — the eligibility rule is about judge *training* — so the
+record is the guard: per row the store, the batch, the source file and line, the recipe
+key, the tier, the lineage group and the fold it landed in. It costs nothing now and
+would be expensive to reconstruct later.
+
 ### The mode floor scales with the gallery: `floor(n / 100)`
 
 `solve.mode_floor(n)` — 0 at 20 seats, 1 at 150, 10 at 1000, replacing a flat one per

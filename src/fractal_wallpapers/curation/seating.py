@@ -406,7 +406,24 @@ class Seats:
         return len(self.chosen) >= self.n
 
 
-def scarcity(kept, modes) -> list:
+def _ranking(order: dict | None):
+    """The sort key one seating walks its pool in. Strongest first, ties by key.
+
+    `None` is the incumbent: the render judge's `P(>=4)` off the candidate. A
+    mapping is [`curation.rank_key`]'s, and a candidate it has no value for sorts
+    **last** rather than at zero — zero is a real rank value under a fitted key,
+    and a row nobody could read is not a row that scored badly.
+    """
+    if order is None:
+        return lambda candidate: (0, -candidate.score, candidate.key)
+    return lambda candidate: (
+        (0, -float(order[candidate.key]), candidate.key)
+        if candidate.key in order
+        else (1, 0.0, candidate.key)
+    )
+
+
+def scarcity(kept, modes, rank=None) -> list:
     """The mandated constraints, scarcest first. `[(mode, its subpool)]`.
 
     The only mandate the **default** target vector produces is the mode floor:
@@ -417,7 +434,13 @@ def scarcity(kept, modes) -> list:
 
     A mode with nothing at all is kept in the list rather than dropped, so the
     record says it was asked for and could not be met.
+
+    Each subpool is ordered by the **same** `rank` the general leg walks, so a
+    seating on a fitted key is on that key in both legs. A mode floor spent by the
+    judge's order while everything else went by another key would be a gallery
+    seated two ways.
     """
+    rank = _ranking(None) if rank is None else rank
     by_mode: dict = {name: [] for name in modes}
     for candidate in kept:
         if candidate.mode in by_mode:
@@ -426,7 +449,7 @@ def scarcity(kept, modes) -> list:
         by_mode.items(),
         key=lambda item: (len({c.location for c in item[1]}), item[0]),
     )
-    return [(name, sorted(members, key=lambda c: (-c.score, c.key))) for name, members in ranked]
+    return [(name, sorted(members, key=rank)) for name, members in ranked]
 
 
 def seat(
@@ -436,9 +459,11 @@ def seat(
     floor: int | None = None,
     radius: float | None = distinct.PRESELECT_RADIUS,
     twin: bool = True,
+    group_cap: str = ceiling.IDENTITY,
+    order: dict | None = None,
     log=print,
 ) -> dict:
-    """Fill `n` seats by scarcity then by score, and keep every refusal.
+    """Fill `n` seats by scarcity then by the rank key, and keep every refusal.
 
     Pool construction first: the bars, then the neutral pre-selection at `radius`
     — `None` for no pre-selection at all, which is what a caller comparing against
@@ -451,11 +476,32 @@ def seat(
     `floor` is the **artificial** mode floor a debug gallery uses to exercise the
     scarcity leg at a size where [`solve.mode_floor`] asks for nothing. Unset, the
     floor is the real one and the record says so.
+
+    ## The two flags, and why the incumbent is still the default
+
+    `group_cap` names the rule the palette-group cap runs under —
+    [`ceiling.IDENTITY`], one seat a group, or [`ceiling.PROPORTIONAL`],
+    `max(1, floor(0.025 n))`. `order` is `{candidate key: rank value}`, the sort
+    key the pool is walked in; `None` is the render judge's `P(>=4)`, which is
+    what every gallery this project has seated was ordered by.
+
+    Both default to the incumbent so that a caller who does not ask gets the
+    seating this project has always taken. **Neither touches the pool**: the bars,
+    the clearing rule and the neutral pre-selection all read the judge's own
+    columns, so two seatings differing in a flag differ in the sort order and in
+    the cap and in nothing else, which is what makes a before/after exact.
+
+    A candidate `order` has no value for is ranked **last** and counted. It is not
+    refused — no rule acted on it — and it has not earned a place ahead of the
+    rows the key could read.
     """
     from fractal_wallpapers import engine
 
     modes = list(engine.production_modes())
-    rule = solve.rule_for() if rule is None else rule
+    cap = ceiling.group_cap(n, group_cap)
+    if rule is None:
+        rule = solve.rule_for()
+        rule.group_cap = cap
     natural = solve.mode_floor(n)
     floor = natural if floor is None else int(floor)
     table = headroom.bars(candidates)
@@ -471,11 +517,13 @@ def seat(
         for candidate in cleared:
             if candidate.key not in survived:
                 refused[candidate.key] = SAME_PLACE
-    kept.sort(key=lambda candidate: (-candidate.score, candidate.key))
+    rank = _ranking(order)
+    unranked = 0 if order is None else sum(1 for c in kept if c.key not in order)
+    kept.sort(key=rank)
     twins = Twins(clouds_for(kept)) if twin else None
     seats = Seats(rule, n, floor=floor, twins=twins)
 
-    mandated = scarcity(kept, modes)
+    mandated = scarcity(kept, modes, rank=rank)
     picked: set = set()
     for mode, members in mandated:
         if seats.full:
@@ -518,7 +566,17 @@ def seat(
     record = {
         "schema": SCHEMA,
         "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "config": _config(n, rule, modes, table, floor, natural, twins),
+        "config": _config(n, rule, modes, table, floor, natural, twins, group_cap, order),
+        "order": {
+            "key": "p_ge4" if order is None else "rank_key",
+            "of": "the render judge's P(>=4) on the candidate"
+            if order is None
+            else "a fitted rank key, applied to the ORDER only — every bar, the clearing "
+            "rule and the neutral pre-selection still read the judge's own columns",
+            "ranked": len(kept) - unranked,
+            "unranked": unranked,
+            "unranked_are": "sorted last and never refused: no rule acted on them",
+        },
         "preselection": preselection,
         "population": {
             "candidates": len(candidates),
@@ -530,12 +588,17 @@ def seat(
         },
         "filled": len(seats.chosen),
         "unfilled": n - len(seats.chosen),
-        "seated": [_seated(candidate, why) for candidate, why in seats.chosen],
+        "seated": [
+            _seated(candidate, why, None if order is None else order.get(candidate.key))
+            for candidate, why in seats.chosen
+        ],
         "shortfalls": _shortfalls(seats, rule, modes, n, floor),
         "twins": None if twins is None else twins.record(),
         "twin_refusals": dict(sorted(seats.twin_of.items())),
         "rejection": rejection(candidates, refused, log=log),
-        "samples": samples(candidates, refused, against=_lost_to(seats, preselection, cleared)),
+        "samples": samples(
+            candidates, refused, against=_lost_to(seats, preselection, cleared), rank=rank
+        ),
     }
     log(
         f"[seat] {record['filled']} of {n} seat(s); "
@@ -554,6 +617,8 @@ def _config(
     floor: int,
     natural: int,
     twins: Twins | None,
+    group_cap: str = ceiling.IDENTITY,
+    order: dict | None = None,
 ) -> dict:
     return {
         "n": n,
@@ -586,9 +651,14 @@ def _config(
             "family_share": ceiling.FAMILY_SHARE,
             "allowance": "floor(k * t * n) + 1",
             "group_cap": rule.group_cap,
+            "group_cap_rule": str(group_cap),
+            "group_cap_from": "ceiling.GROUP_CAP"
+            if str(group_cap) == ceiling.IDENTITY
+            else f"max(1, floor({ceiling.GROUP_CAP_RATE} * n))",
             "tau_group": rule.tau_group,
             "targets": dict(sorted(rule.targets.items())),
         },
+        "sort_key": "p_ge4" if order is None else "rank_key",
         "mode_floor": floor,
         "mode_floor_rule": f"floor(n / {solve.SEATS_PER_MODE_FLOOR})",
         "mode_floor_natural": natural,
@@ -629,10 +699,15 @@ def _lost_to(seats: Seats, preselection: dict, cleared: list) -> dict:
     return out
 
 
-def _seated(candidate, why: str) -> dict:
+def _seated(candidate, why: str, rank: float | None = None) -> dict:
+    """One seat's row. `rank` is the value the seating's own sort key gave it,
+    written beside `p_ge4` and never over it: a sheet sorted good-to-bad has to
+    sort by the key the seating actually walked, and a reader comparing two
+    seatings has to be able to see both numbers."""
     return {
         "key": candidate.key,
         "seated_for": why,
+        "rank": None if rank is None else round(float(rank), 6),
         "location": candidate.location,
         "partition": candidate.partition,
         "mode": candidate.mode,
@@ -689,6 +764,13 @@ def _shortfalls(seats: Seats, rule: ceiling.Rule, modes: list, n: int, floor: in
         "groups": {
             "held": len(seats.groups),
             "cap": rule.group_cap,
+            # What the cap ACTUALLY bound to, which is the number the ruling that
+            # raised it asked to see rather than assume: a cap of three is only a
+            # cap of three if something spent it, and a key that prefers good maps
+            # will want to spend its whole allowance on the best of them.
+            "realized_max": max(seats.groups.values(), default=0),
+            "at_the_cap": sum(1 for count in seats.groups.values() if count >= rule.group_cap),
+            "counts": dict(sorted(seats.groups.items(), key=lambda item: (-item[1], item[0]))[:20]),
             "over_cap": {
                 group: count
                 for group, count in sorted(seats.groups.items())
@@ -762,7 +844,9 @@ def rejection(candidates, refused: dict, log=print) -> dict:
     }
 
 
-def samples(candidates, refused: dict, count: int = SHOWN, against: dict | None = None) -> dict:
+def samples(
+    candidates, refused: dict, count: int = SHOWN, against: dict | None = None, rank=None
+) -> dict:
     """`{rule: the strongest few it refused}` — the visual half of the ledger.
 
     Strongest first inside each rule, because a refusal of a weak candidate says
@@ -774,8 +858,9 @@ def samples(candidates, refused: dict, count: int = SHOWN, against: dict | None 
     its own is unreadable: the whole question is whether the picture it was
     refused against is the same wallpaper, and that is a two-picture question.
     """
+    rank = _ranking(None) if rank is None else rank
     held: dict = {}
-    for candidate in sorted(candidates, key=lambda c: (-c.score, c.key)):
+    for candidate in sorted(candidates, key=rank):
         why = refused.get(candidate.key)
         if why is None:
             continue
@@ -807,6 +892,16 @@ def write_record(name: str, record: dict):
     return path
 
 
+def _rank_of(row: dict) -> float:
+    """The value the seating's own sort key gave one seat.
+
+    `rank` where the seating carried one and `p_ge4` where it did not, which is
+    the same number under the incumbent key and the right one under any other.
+    """
+    held = row.get("rank")
+    return float(row.get("p_ge4") or 0.0) if held is None else float(held)
+
+
 def contact_sheet(name: str, record: dict, rejected=None, output=None):
     """The seated, and a sample of the refused with the rule that refused each.
 
@@ -825,6 +920,14 @@ def contact_sheet(name: str, record: dict, rejected=None, output=None):
     output = seat_dir(name) / "contact_sheet.html" if output is None else Path(output)
     config = record["config"]
     shortfalls = record["shortfalls"]
+    # Sorted by the seating's OWN key, best first, and never shuffled. A sheet in
+    # seating order is in scarcity order for its first seats, which reads as a
+    # quality claim it is not making; and a sheet sorted by `p_ge4` under a
+    # seating that ranked on something else is a picture of a different walk.
+    key_name = str(config.get("sort_key") or "p_ge4")
+    ranked_seats = sorted(
+        record.get("seated") or [], key=lambda row: (-_rank_of(row), str(row.get("key")))
+    )
 
     def frame(picture) -> str:
         source = None if not picture else Path(rehome(picture))
@@ -875,12 +978,16 @@ def contact_sheet(name: str, record: dict, rejected=None, output=None):
         f"clear their mode's bar and survive the neutral pre-selection. "
         f"{shortfalls['modes']['represented']} of {shortfalls['modes']['of']} modes "
         f"represented, against a floor of {shortfalls['modes']['floor']}. "
-        "A greedy: fill by scarcity, then by score. Nothing here is optimal and a "
+        f"Sorted on <b>{html.escape(key_name)}</b>, palette-group cap "
+        f"<b>{config['ceiling']['group_cap']}</b> "
+        f"({html.escape(str(config['ceiling'].get('group_cap_rule', 'identity')))}). "
+        "A greedy: fill by scarcity, then by the key. Nothing here is optimal and a "
         "shortfall is not infeasibility.</p>",
-        f"<h2>Seated ({record['filled']})</h2>",
+        f"<h2>Seated ({record['filled']}), best first by <code>{html.escape(key_name)}</code></h2>",
         "<div class='grid'>"
         + "".join(
-            card(row, f"{row['seated_for']} — {row['mode']}") for row in record.get("seated") or []
+            card(row, f"{at}. {key_name} {_rank_of(row):.4f} — {row['seated_for']}")
+            for at, row in enumerate(ranked_seats, start=1)
         )
         + "</div>",
     ]

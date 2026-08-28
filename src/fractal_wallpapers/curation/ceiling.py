@@ -130,6 +130,48 @@ from fractal_wallpapers.palettes import dominance, pixel_clouds
 #: decision taken twelve times.
 GROUP_CAP = 1
 
+#: The **proportional** cap's rate: a group may take this share of the seats.
+#:
+#: **0.025**, Matt's, at ckpt 88 — `max(1, floor(0.025 * n))`, so 1 up to n=40,
+#: 3 at n=150 and 25 at n=1000. It is not shipped: [`GROUP_CAP`] above is still
+#: the default everywhere, and this is what [`group_cap`] returns when a caller
+#: asks for the proportional rule by name.
+#:
+#: What the identity cap was doing beside being a ceiling is the reason to have
+#: both. A cap of one forces an n-seat gallery onto n distinct maps, which pushes
+#: the seating down the map-quality tail by construction; it is also the only
+#: block a census proves short at n=1000, where 822 maps cannot fill 1000 seats.
+#: At 2.5% that ceiling is 20,550 and the block retires — and the cap turns from
+#: slack into something a good-map-seeking key will want to spend, so the
+#: **realized** maximum per map becomes a number to report rather than assume.
+GROUP_CAP_RATE = 0.025
+
+#: The two rules a caller may name, and the default. Spelled rather than passed
+#: as a boolean because a record has to say which one a seating ran under, and
+#: `group_cap=False` on a record is not an answer to "what was the cap".
+IDENTITY = "identity"
+PROPORTIONAL = "proportional"
+GROUP_CAP_RULES = (IDENTITY, PROPORTIONAL)
+
+
+def group_cap(n: int, rule: str = IDENTITY) -> int:
+    """How many seats one palette group may take out of `n`, under `rule`.
+
+    [`IDENTITY`] is [`GROUP_CAP`] whatever `n` is — the cap this project has
+    always seated under. [`PROPORTIONAL`] is `max(1, floor(GROUP_CAP_RATE * n))`.
+
+    The `max(1, ...)` is not a rounding convenience: below `1 / GROUP_CAP_RATE`
+    seats the floor is zero, and a cap of zero is a program with no seats in it.
+    So a debug gallery at n=20 keeps the identity cap under either rule, which is
+    why a before/after on this has to be taken at a size where the two differ.
+    """
+    if str(rule) == IDENTITY:
+        return GROUP_CAP
+    if str(rule) != PROPORTIONAL:
+        raise ValueError(f"the group cap rule is one of {GROUP_CAP_RULES}, not {rule!r}")
+    return max(1, int(math.floor(GROUP_CAP_RATE * max(0, int(n)))))
+
+
 #: How far apart two pictures of one palette group have to be for the second to
 #: be seated anyway, in the pixel-cloud metric.
 #:
@@ -813,9 +855,13 @@ __all__ = [
     "CELL_SHARE",
     "FAMILY_SHARE",
     "GROUP_CAP",
+    "GROUP_CAP_RATE",
+    "GROUP_CAP_RULES",
+    "IDENTITY",
     "K",
     "MANDATE",
     "PREFER",
+    "PROPORTIONAL",
     "TAU",
     "TAU_GROUP",
     "TESTS",
@@ -824,6 +870,7 @@ __all__ = [
     "Rule",
     "Seating",
     "TargetRefused",
+    "group_cap",
     "measured_co_dominance",
     "parse_target",
     "strain",

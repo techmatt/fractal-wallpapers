@@ -146,16 +146,25 @@ def manifest_dir() -> Path:
     return records.default_root() / UNIT
 
 
-def _backup(name: str) -> Path:
+def backup_path(name: str) -> Path:
     """The durable copy, beside the gate store's and the sidecar's.
 
     Off a root rather than through `under()`, for [`durability`]'s reason: a copy
     that resolved through the tiers would land on the tier the original is
     already on, which is the one place a second copy is no use.
+
+    Public because the sidecars beside this store are not all owned by it:
+    [`curation.flatness`] keeps its own file in the same subtree and must put its
+    copy in the same place, and a second spelling of this path is how one of them
+    ends up backed up somewhere nothing looks.
     """
     archive = archive_root()
     root = hot_root() if archive is None else archive
     return Path(root) / durability.BACKUP_UNIT / UNIT / name
+
+
+def _backup(name: str) -> Path:
+    return backup_path(name)
 
 
 def _facts(path: Path) -> dict:

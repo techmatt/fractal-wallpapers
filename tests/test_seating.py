@@ -127,6 +127,48 @@ def test_the_group_cap_refuses_a_second_seat_in_one_group():
     assert record["rejection"]["reasons"]["group_cap"] >= 1
 
 
+def test_the_proportional_cap_seats_three_of_one_group_at_n_150():
+    """`max(1, floor(0.025 * 150))` is three, and the flag is what selects it.
+
+    One group, forty places, and nothing else in the pool: under the identity cap
+    the gallery is one seat wide, under the proportional one it is three. Both
+    numbers come out of the same walk over the same rows.
+    """
+    pool = [candidate(f"c{at}", group="map:one") for at in range(40)]
+    incumbent = seating.seat(pool, n=150, log=quiet)
+    proportional = seating.seat(pool, n=150, group_cap=ceiling.PROPORTIONAL, log=quiet)
+    assert incumbent["filled"] == 1
+    assert proportional["filled"] == 3
+    assert proportional["config"]["ceiling"]["group_cap"] == 3
+
+
+def test_the_record_says_what_the_cap_actually_bound_to_and_not_only_what_it_was():
+    """A cap of three is only a cap of three if something spent it. The ruling
+    that raised it asked for the realized maximum to be reported rather than
+    assumed, because a key that prefers good maps will want to spend it all."""
+    pool = [candidate(f"c{at}", group="map:one") for at in range(40)]
+    pool += [candidate("solo", group="map:two")]
+    record = seating.seat(pool, n=150, group_cap=ceiling.PROPORTIONAL, log=quiet)
+    groups = record["shortfalls"]["groups"]
+    assert (groups["realized_max"], groups["cap"]) == (3, 3)
+    assert groups["at_the_cap"] == 1
+    assert groups["over_cap"] == {}
+
+
+def test_the_cap_a_seating_ran_under_is_on_its_record_by_name():
+    """`group_cap: 1` on a record does not say which rule produced it, and at
+    n=20 both rules produce it."""
+    record = seating.seat([candidate("a")], n=20, group_cap=ceiling.PROPORTIONAL, log=quiet)
+    assert record["config"]["ceiling"]["group_cap"] == 1
+    assert record["config"]["ceiling"]["group_cap_rule"] == ceiling.PROPORTIONAL
+
+
+def test_the_default_cap_is_still_the_one_this_project_has_always_seated_under():
+    record = seating.seat([candidate("a")], n=150, log=quiet)
+    assert record["config"]["ceiling"]["group_cap"] == ceiling.GROUP_CAP
+    assert record["config"]["ceiling"]["group_cap_rule"] == ceiling.IDENTITY
+
+
 def test_the_cell_allowance_refuses_past_the_ceilings_own_arithmetic():
     # At n=20 the per-cell allowance is one, so twenty candidates all dominant in
     # one cell seat exactly one of themselves.
@@ -286,6 +328,82 @@ def test_the_config_states_the_ceilings_own_constants_and_not_a_copy():
     assert record["config"]["ceiling"]["group_cap"] == ceiling.GROUP_CAP
     assert record["config"]["mode_floor"] == solve.mode_floor(20)
     assert record["config"]["mode_floor_artificial"] is False
+
+
+# --------------------------------------------------------------------------- #
+# The sort key.
+# --------------------------------------------------------------------------- #
+def test_an_order_walks_the_pool_in_its_own_key_and_not_the_judges():
+    """The whole of what the flag does: the same pool, the same rules, one seat,
+    and which candidate takes it is the key's answer rather than `P(>=4)`'s."""
+    # `p_ge3` high on both, so the fallback bar admits them and this test is
+    # about the ORDER rather than about which of them cleared.
+    pool = [candidate("weak", score=0.10, p_ge3=0.99), candidate("strong", score=0.99)]
+    assert [seat["key"] for seat in seating.seat(pool, n=1, log=quiet)["seated"]] == ["strong"]
+    flipped = seating.seat(pool, n=1, order={"weak": 0.9, "strong": 0.1}, log=quiet)
+    assert [seat["key"] for seat in flipped["seated"]] == ["weak"]
+
+
+def test_the_key_moves_the_order_and_never_the_bars():
+    """A candidate below its mode's bar stays below it however the key ranks it.
+    Every bar in this project reads the judge's own columns, and that is what
+    makes a before/after on the key exact in the sort order alone."""
+    pool = [candidate(f"c{at}", score=0.9) for at in range(5)]
+    pool += [candidate("under", score=0.01)]
+    record = seating.seat(pool, n=6, order={"under": 1.0}, log=quiet)
+    assert "under" not in {seat["key"] for seat in record["seated"]}
+    assert record["rejection"]["reasons"][seating.BELOW_BAR] == 1
+
+
+def test_a_candidate_the_key_cannot_read_is_ranked_last_and_counted_never_refused():
+    """It broke no rule, so it is not a refusal; and it did not score badly, so it
+    is not a zero. Sorted last, and the count is on the record."""
+    pool = [candidate("read", score=0.5), candidate("unread", score=0.99)]
+    record = seating.seat(pool, n=1, order={"read": 0.01}, log=quiet)
+    assert [seat["key"] for seat in record["seated"]] == ["read"]
+    assert record["order"]["unranked"] == 1
+    assert record["rejection"]["reasons"].get("group_cap") is None
+
+
+def test_the_mode_floor_leg_walks_the_same_key_as_the_general_leg():
+    """A mode floor spent by the judge's order while everything else went by
+    another key would be a gallery seated two ways."""
+    pool = [candidate(f"deep{at}", mode="smooth", score=0.99) for at in range(5)]
+    pool += [candidate("thin_weak", mode="stripe", score=0.60)]
+    pool += [candidate("thin_strong", mode="stripe", score=0.95)]
+    order = {"thin_weak": 0.99, "thin_strong": 0.01}
+    record = seating.seat(pool, n=3, floor=1, order=order, log=quiet)
+    taken = {seat["key"]: seat["seated_for"] for seat in record["seated"]}
+    assert taken.get("thin_weak") == "mode_floor:stripe"
+
+
+def test_each_seat_carries_the_value_its_own_key_gave_it_beside_p_ge4():
+    record = seating.seat([candidate("a", score=0.5)], n=1, order={"a": 0.25}, log=quiet)
+    seat = record["seated"][0]
+    assert (seat["rank"], seat["p_ge4"]) == (0.25, 0.5)
+    assert record["config"]["sort_key"] == "rank_key"
+
+
+def test_a_seating_on_the_judge_alone_says_so_and_carries_no_rank():
+    record = seating.seat([candidate("a", score=0.5)], n=1, log=quiet)
+    assert record["config"]["sort_key"] == "p_ge4"
+    assert record["seated"][0]["rank"] is None
+    assert record["order"]["key"] == "p_ge4"
+
+
+def test_the_contact_sheet_is_sorted_good_to_bad_by_the_seatings_own_key(tmp_path):
+    """A sheet in seating order is in SCARCITY order for its first seats, which
+    reads as a quality claim it is not making."""
+    pool = [candidate(f"c{at}", score=0.5 + at / 100.0) for at in range(4)]
+    order = {"c0": 0.9, "c1": 0.1, "c2": 0.8, "c3": 0.2}
+    record = seating.seat(pool, n=4, order=order, log=quiet)
+    where = seating.contact_sheet("under-test", record, output=tmp_path / "sheet.html")
+    page = where.read_text(encoding="utf-8")
+    captions = [f"{at}. rank_key {value:.4f}" for at, value in enumerate([0.9, 0.8, 0.2, 0.1], 1)]
+    assert all(caption in page for caption in captions)
+    assert [page.index(caption) for caption in captions] == sorted(
+        page.index(caption) for caption in captions
+    )
 
 
 def test_the_default_seat_count_is_the_first_solve():

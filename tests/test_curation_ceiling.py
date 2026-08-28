@@ -714,6 +714,38 @@ def test_every_ceiling_constant_is_pinned_at_the_value_it_was_calibrated_to():
     )
     assert ceiling.PREFER == 0.5, "half the remaining seats"
     assert ceiling.TESTS == ("group", "dominance", "twin"), "the order that names a rejection"
+    assert ceiling.GROUP_CAP_RATE == 0.025, "Matt, ckpt 88: 1 up to n=40, 3 at n=150, 25 at n=1000"
+
+
+# --------------------------------------------------------------------------- #
+# The two group-cap rules.
+# --------------------------------------------------------------------------- #
+def test_the_identity_cap_is_one_seat_a_group_at_every_size():
+    """The rule every gallery this project has shipped was seated under, and still
+    the default. It does not read `n` at all."""
+    assert [ceiling.group_cap(n) for n in (1, 20, 150, 1000)] == [1, 1, 1, 1]
+
+
+@pytest.mark.parametrize(("seats", "cap"), [(20, 1), (39, 1), (40, 1), (150, 3), (1000, 25)])
+def test_the_proportional_cap_is_the_three_sizes_the_ruling_names(seats, cap):
+    assert ceiling.group_cap(seats, ceiling.PROPORTIONAL) == cap
+
+
+def test_the_proportional_cap_never_reaches_zero():
+    """`floor(0.025 * n)` is zero below forty seats, and a cap of zero is a
+    program with no seats in it. So a debug gallery keeps the identity cap under
+    either rule, which is why a before/after has to be taken where they differ."""
+    assert ceiling.group_cap(0, ceiling.PROPORTIONAL) == 1
+    assert ceiling.group_cap(20, ceiling.PROPORTIONAL) == ceiling.group_cap(20)
+
+
+def test_an_unknown_cap_rule_is_refused_rather_than_read_as_the_default():
+    with pytest.raises(ValueError):
+        ceiling.group_cap(150, "whatever_matt_meant")
+
+
+def test_the_two_rules_are_the_two_the_flag_offers():
+    assert ceiling.GROUP_CAP_RULES == (ceiling.IDENTITY, ceiling.PROPORTIONAL)
 
 
 def test_the_two_pixel_cloud_thresholds_stay_the_distance_apart_they_were_set():
