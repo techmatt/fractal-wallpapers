@@ -179,6 +179,15 @@ TESTS = ("group", "dominance", "twin")
 
 #: `u = need / seats left` at or above this and only dominant candidates are
 #: eligible; at or above [`PREFER`] and they merely rank first.
+#:
+#: Unlike the six above, these two are **read off the definition of `u`** rather
+#: than calibrated against a sheet. `u = 1` is exactly the point at which every
+#: remaining seat has to carry the cell or the target cannot be met, so anything
+#: but a mandate there is a target the pass has already decided to miss. `0.5` is
+#: half the remaining seats, which is where a preference is worth paying the
+#: judge's ordering for. Both are pinned all the same: they are on the record in
+#: [`Rule.record`] and a run compared against an older one on a moved threshold
+#: is comparing two policies.
 MANDATE = 1.0
 PREFER = 0.5
 
