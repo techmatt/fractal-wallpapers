@@ -19,6 +19,9 @@ colorize   a candidate set of maps, the head's pick, a render, a verdict
 framing    where a location's attempts are framed, decided before they render
 recipes    what decides a candidate's pixels, as one value with one key
 candidate_ledger  every recipe ever rendered, one row each, with its colour
+headroom   what each selection constraint needs, holds, and costs to buy — no solver
+seating    the trivial greedy that is the other bound, and every refusal it made
+distinct   which places are visibly different places, decided before any colour
 selection  top-N per judge, under the slot and supply caps, the location rule
            — and the bar
 gallery    the second phase: one pass over the whole pool for what ships
@@ -60,6 +63,11 @@ fractal-wallpapers curate gallery-store check --pass gallery1          # is the 
 fractal-wallpapers curate candidate-ledger backfill    # the cache, from what exists
 fractal-wallpapers curate candidate-ledger census --n 20 --out scratch/ledger_census.json
 fractal-wallpapers curate candidate-ledger save        # both files, made durable
+fractal-wallpapers curate headroom                     # the census: what is short, and what one more costs
+fractal-wallpapers curate headroom --n 20 --n 150      # only these rungs of the ladder
+fractal-wallpapers curate seat --n 20                  # the greedy: the lower bound, and the rejection ledger
+fractal-wallpapers curate distinct                     # the neutral pre-selection read, and the radius sheet
+fractal-wallpapers curate distinct --no-premise        # the join and the sheet, measuring no pixel cloud
 fractal-wallpapers curate solve run --n 20             # THE solve: the gallery as a program
 fractal-wallpapers curate solve sweep                  # which constraint binds first, and at what n
 fractal-wallpapers curate solve truncate --n 20        # what a smaller reachable pool costs
@@ -965,6 +973,131 @@ its cells that picture is dominant in). The rates come from
 `palettes.carriers.co_dominance` over the tracked table's own deliveries, never
 from an adjacency written down off the hue wheel. `config.ceiling.implied` on a
 solve record and on a pass record says what moved.
+
+## `curate headroom` and `curate seat` — the two bounds either side of the answer
+
+The solve above is expensive and it is the wrong instrument for one question. Before
+another leg spends hours making candidates, somebody has to know **which selection
+constraints the pool cannot satisfy and how much each shortfall costs to buy**, and a
+twenty-minute solve that reports "there are no light greens at all" spent twenty
+minutes on a fact one pass over the rows already knew.
+
+So the pair. `curate headroom` is O(rows) necessary conditions and no solver: the
+**upper bound**. `curate seat` is the simplest greedy that fills seats: the **lower
+bound**. Close together, the answer is known and the money goes on making candidates.
+Far apart, the gap is what exact optimization is competing for.
+
+```
+src/fractal_wallpapers/curation/headroom.py   the census, the bars, the marginal cost
+src/fractal_wallpapers/curation/seating.py    the greedy, and the rejection ledger
+src/fractal_wallpapers/curation/distinct.py   the neutral pre-selection, and its premise
+```
+
+**Counts are distinct locations and never rows.** One wallpaper per location is
+absolute, so a cell fifty recipes carry at one place is a cell a gallery can seat
+exactly once. Every supply figure in both modules is a count of `location.key`.
+
+### The bars, and why they are per mode
+
+A candidate is supply only if it is worth seating. The default is `solve.Q4_BAR` on
+raw `P(>=4)` — 0.50, the same bar the solver's first objective stage counts against.
+Eleven of the eighteen production modes have fewer than twenty-five distinct
+locations clearing that, so those fall back to `P(>=3) >= 0.50` and the table
+**says which rule each mode landed on**: a mode censused under a lower bar is not
+comparable to one censused under the default.
+
+Both bars are flags on the arithmetic. Neither is a measured crossover, and the one
+ACTING release bar — `P(>=3) >= 0.575` on strange_render — is *above* the fallback.
+Nothing here re-scores at shipping geometry.
+
+Read on 2026-08-27 over 85,078 candidates at 4,956 places: seven modes on the
+default (`smooth`, `exp_smoothing`, `tia`, `stripe`, `smooth_stripe`, `threads`,
+`itinerary`), eleven on the fallback, and **four the fallback does not rescue** —
+`trap_circle` at 2 distinct places, `gaussian_int` at 18, `direct_trap_ring` at 20,
+`smooth_trap_circle` at 23. Those four are the standing mine instruction. 5,924
+candidates over 1,427 places clear.
+
+### The census is a covering condition, stated in one direction
+
+A cap can never be infeasible on its own — nothing forces a gallery to use it. What
+*is* a necessary condition is that the caps between them can hold `n` seats:
+
+```text
+n <= sum over the axis of min(its allowance, its distinct locations)
+     + the locations dominant in nothing on the axis
+```
+
+A location dominant in three cells is counted in all three, so the sum is an
+**over-count** and the condition is necessary and never sufficient. That is the
+direction that makes it safe: a short row is provable infeasibility, and a row with
+slack is not a claim that the selection is possible.
+
+### What one more costs
+
+Slack alone is not a work order, because headroom is not equally purchasable. Every
+row carries
+
+```text
+renders per win = renders on record / distinct clearing locations satisfying it
+seconds per win = that x the median realized `hunt.seconds` of the modes that won
+```
+
+which is the **unconditioned** rate — what this project's whole render history
+happened to produce, not what an aimed leg gets. Wall clock is a third of it: the
+render pool is three workers. The realized per-mode render cost is on the ledger row
+(`hunt.seconds`, 69,767 of the 85,129 rows carry one), and the median is used rather
+than the mean because every mode's p90 is two to five times its median.
+
+### The greedy fills by scarcity, not by score
+
+Ordering by score alone converts satisfiable problems into apparent infeasibility. At
+`n = 20` the mode floors ask for eighteen of the twenty seats, and the five strongest
+candidates in the pool are all one mode — so a ranked walk seats five `smooth` and
+reports fifteen modes it could have held. Every one of them could have been seated.
+
+So the mandated constraints are seated from their own subpools first, **scarcest
+first**, and only what is left over is drawn by score. One wallpaper per location is
+hard; the cell and family allowances, the mode floors and the group cap are soft with
+the shortfall recorded. No fallback leg, no least-violating rescue: unfilled beats
+padded.
+
+**The rejection ledger is the product.** For every candidate not seated, the first
+rule that refused it, aggregated by cell, family, mode and partition — a cell whose
+whole refusal column is `cell_allowance` is a cell the gallery is already full of,
+and one whose column is `location` exists only at places something else already took.
+Those are not the same instruction. A greedy shortfall is "this walk did not find
+it" and never "the pool does not hold it"; the census's necessary conditions are the
+only infeasibility claims this project makes.
+
+### `curate distinct` — pairwise diversity moved to pool construction
+
+The diversity radius is a rule about finished pictures, which makes colour a coupled
+constraint in the seating. `distinct` is the other placement: pre-select
+geometrically distinct **locations** off the neutral descriptors, and let the seating
+choose freely inside what survives.
+
+**No radius is chosen there.** `RADII` is a set of candidates to look at, and the
+sheet — near pairs at each radius, ordered by distance, as pictures — is the
+instrument. That is how `ceiling.TAU`, `ceiling.TAU_GROUP` and `gallery.RADIUS` were
+all set, and every one of them is recorded with who set it.
+
+The premise the whole decoupling rests on is that far in the neutral descriptor
+implies far in the coloured pixels, and it is **measured** rather than assumed: this
+project has already shipped one prune whose premise was false, and a correlated proxy
+is not a prune. The sample is stratified over a ladder whose low bands are the
+candidate radii themselves, because an equal-width ladder over this store's own
+spread puts every radius inside the first band and never measures the region a
+decision is in.
+
+**It does not hold.** Over the 1,427 places of the clearing pool on 2026-08-27:
+Pearson 0.034 and Spearman 0.063 across 1,200 stratified pairs, and the exact sweep
+over all 1,017,451 pairs finds **6,720 twin pairs** at a median neutral distance of
+0.226 — a pre-filter at 0.10, which already refuses 98% of the pool, removes 413 of
+them. So **pairwise diversity does not move to pool construction**, the pixel-cloud
+twin test is not demotable to a residual, and a neutral radius is a different rule
+answering a different question. `curate seat` therefore applies no pairwise rule at
+all today, and says so on its record: its bounds are bounds on a program without
+one.
 
 ## `curate hunt` — rendering into a shortage instead of around it
 
