@@ -794,6 +794,17 @@ workers and both are the right shape to size the next leg with. The autolevel op
 about are the four `direct_trap_*` seats and the two `itinerary` seats, whose kinds
 `autolevel.applies_to` answers no for.
 
+**Releasing only the seats that changed is a copy, not a flag.** `solve._already`
+carries a picture across when `<seat key>.png` is on disk in the leg's own `release/`
+at the regime's resolution, so the way to re-seat and pay for the delta alone is:
+seat once with `--no-sheet` to learn the delta, copy the unchanged seats' PNGs — and
+their lines of `autolevel_stamps.jsonl`, which is where `render_seats` reads a reused
+seat's stamp back from — into the new seating's `release/`, then seat again with
+`--release`. Measured re-seating `g1_n150` as `g2_n150` after `mine1h`: **23 rendered,
+127 reused, 53.4 s of render and 110 s for the whole pass**, against 566 s for the
+same 150 cold. Seat keys are recipe keys, so an unchanged seat's file name is
+unchanged by construction and nothing has to be matched up by hand.
+
 #### No floor is read at shipping geometry, anywhere in this project
 
 Worth writing down because it is easy to assume otherwise. The rule *select on the
@@ -870,6 +881,19 @@ costs one read of the sidecar and no decodes at all. `--all` sweeps every ledger
 whose picture is on disk rather than the pool — the pool excludes a row a person
 rejected and a row off the candidate regime, and the rank key has to be *fitted* on
 some of those.
+
+**A merged leg is invisible to a rank-key seating until this has been swept.** The
+sidecar is keyed on the recipe, so every candidate a hunt, a mine or a depth run
+merges arrives without a reading — and `rank_key` needs the column, so those rows
+come back **unranked**, which the walk sorts *last* and never refuses. They are in
+the pool, they clear their bars, they are counted in the clearing population, and
+none of them can win a seat while a ranked row is left. `mine1h` merged 8,192 rows
+and seated **none** of them: the record said `unranked: 8192, no_flatness: 8192` and
+1,326 of the 7,353 clearing candidates were `unreadable_by_the_key`. A sweep
+afterwards cost **33.3 s** for those 8,192 pictures and the same seating then moved
+23 seats. So the order is `merge` → `flatness sweep` → `seat`, and the two places
+that say whether it was done are `order.coverage.no_flatness` on the seat record and
+`curate flatness coverage`.
 
 ### `curate rank-key` — what a seating may rank on instead of the judge alone
 
@@ -1387,6 +1411,28 @@ Measured 2026-08-28 at `--width 24 --top-bands 5`, seed 20260827, this machine:
 |---|---|---|
 | 6 breadth field modes | **0.497** | one dump a (location, mode), 4 palettes off each |
 | 2 composites, no sharing | **0.696** | a full render every candidate |
+| 2 field modes, near-heavy | **0.278** | `mine1h`, `--near-width 127` over 22 places |
+| 4 direct traps, near-heavy | **0.743** | `mine1h`, `--near-width 136` over 11 places |
+
+**A 150 s pilot over-reads the rate, and by a knowable amount.** Budget seconds are
+`stages.total()` and exclude the fixed start — the population read, the judge load and
+the plan build, about 50 s — so a short run's *wall* carries it and a long run's does
+not: `mine1h`'s two pilots measured wall/spent at **1.28** where the legs they sized
+came in at **1.03 and 1.02**. Read the pilot's `spent / made` and never its wall.
+Against those pilots the field leg realized **0.278 s** against 0.379 planned (27%
+under, because the pilot's near band ran at width 24 and the leg's at 127, so the dump
+amortised five times better) and the composite leg **0.743** against 0.653 (14% over).
+Both spent over 99% of their budget, so the plan headroom absorbed the miss in both
+directions.
+
+**`--near-width` is the only way to spend a share on the near band, because the pool
+is tiny.** `near_places` draws from the locations whose best candidate *in this run's
+roster* sits in `[0.50, 0.90)`, and a narrow roster leaves very few: **25 places** for
+`{gaussian_int, curvature}` and **19** for the four `direct_trap_*` modes, against
+2,974 and 1,904 places that hold the roster at all. A share sized in candidates and
+divided by `--width 24` asks for more places than exist, the draw comes back short and
+the budget goes unspent. Size it the other way — `near_width ≈ share × budget / rate ×
+PLAN_HEADROOM / places` — which is where `mine1h`'s 127 and 136 came from.
 
 The composite leg is only 1.4× the field leg a *candidate* — the gap is nothing like
 the 175 s a location the forty-wide figure above implies, because that figure is a
@@ -1467,6 +1513,28 @@ candidates) before the composed renders-per-(dominant ∧ clearing) price. Every
 count in that block is **raw**: one read of one candidate against its own mode's
 bar, never a maximum over `k`, so none of it needs a prime count's k-dependent
 multiplier.
+
+**The arm rates are a property of the roster, not constants.** `teal_conditioned`'s
+4.70% flat against 1.41% conditioned is the figure everything since has been sized
+off, and it was measured on a six-mode field roster whose bulk is `smooth` and
+`exp_smoothing`. Aimed at weak modes the same three arms come apart. `mine1h`, both
+legs at `--cell dark_vivid_lime`:
+
+| leg | near band | flat | conditioned |
+|---|---|---|---|
+| 2 field modes | 460/2,687 = **17.1%** | 12/1,343 = **0.89%** | 32/1,343 = **2.38%** |
+| 4 direct traps | 957/1,409 = **67.9%** | 35/705 = **4.96%** | 13/705 = **1.84%** |
+
+The composite leg reproduced the reference points to within a fifth of a point; the
+field leg **inverted** them, its conditioned arm clearing 2.7× its own control. So the
+0.301 lift is not a fact about conditioning — on a roster whose modes are weak
+everywhere, breadth is what buys nothing and the carriers happen to be maps those
+modes survive. And the near band beats both by an order of magnitude on every roster
+tried, which is a statement about where clearing candidates are and not about
+palettes: on a mode that runs on the `p_ge3` fallback, a place chosen for holding a
+candidate at `P(>=4) >= 0.50` clears that fallback with almost any map. Read the near
+band's rate as "this place was already good", never as a yield a fresh place would
+repeat.
 
 **Draw-biased, verdict-measured, and it does not gate on the table.** The carrier
 table is a prior about a map and never a claim about a picture — group members
