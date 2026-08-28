@@ -306,6 +306,39 @@ def row(
     }
 
 
+def colours_by_render(rows=None) -> dict:
+    """`{tracked render path: colour block}` over the rows that have both.
+
+    The join a [`ceiling.Lens`] needs to stop decoding a picture the store has
+    already read. The **render path** is the key rather than the recipe key
+    because that is what a lens is holding when it asks: it resolves a candidate
+    to a render and nothing downstream of that knows a recipe key. One geometry
+    for every row is what makes the readings comparable at all, and the ledger's
+    `picture` is that geometry by construction — the candidate render.
+
+    A row with no picture or no colour is left out, so a lens over it decodes and
+    the seating is unchanged.
+    """
+    stored = read() if rows is None else rows
+    return {
+        str(row["picture"]): row["colour"]
+        for row in stored
+        if row.get("picture") and row.get("colour")
+    }
+
+
+def reading_source(rows=None):
+    """A `stored_of` for [`ceiling.Lens`]: a render path in, a colour block out.
+
+    Built over [`colours_by_render`] and closed over it, so the ledger is read
+    once for a whole seating however many candidates it tests. Answers `None`
+    for a render the ledger has never seen, which is the signal for the lens to
+    decode.
+    """
+    table = colours_by_render(rows)
+    return lambda picture: table.get(tracked_name(picture))
+
+
 def k_of(row: dict) -> int | None:
     """Which candidate at its location this row was, or `None` where it cannot say.
 
@@ -1015,6 +1048,7 @@ __all__ = [
     "census",
     "check",
     "colour_block",
+    "colours_by_render",
     "durable_rows",
     "durable_scores",
     "feasibility",
@@ -1022,6 +1056,7 @@ __all__ = [
     "manifest_dir",
     "read",
     "read_scores",
+    "reading_source",
     "renders_of",
     "restore",
     "row",

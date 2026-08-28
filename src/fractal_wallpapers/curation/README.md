@@ -697,6 +697,29 @@ derived from the render rather than an input to it.
 comes from a tracked table a re-clustering can move, and a key that moved with it
 would re-key rows whose pixels never changed.
 
+**The `colour` block is the reading, and a lens can be served off it.** Every
+one of the 85,129 rows carries one. `ceiling.Lens` takes an optional
+`stored_of(render) -> block`, and `candidate_ledger.reading_source()` is that
+callable over the ledger, keyed on the tracked render path because that is what
+a lens is holding when it asks. A seating driven off the ledger then decodes
+nothing it has already read; a pass seating its own fresh candidates has no row
+about them yet, passes nothing, and reads the pictures exactly as before. It is
+a **lookup and never a second derivation** — `dominance.of_block` carries the
+dominant names outright, so a threshold moved since a row was written cannot
+quietly re-decide that row. Verified on 400 rows sampled at seed 20260827: the
+block round-trips exactly, and a live decode of the picture reproduces all five
+members on 400 of 400.
+
+**The colour read does NOT reuse the judge's decode**, and the resemblance to a
+double decode is the trap. The judge reads the full 640x360, resizes it to the
+head's input size and normalizes it; the census wants nearest-neighbour on
+purpose, so every sample is a colour really in the picture. And the census never
+does a full decode — `codebook.pixels` asks libjpeg for a quarter-scale draft
+straight to 160x90, **1.8 ms** against the judge's own full decode at 2.4 ms
+over a 60-picture sample. Handing the judge's buffer over would cost more than
+it saves. The `colour` stage's 12.3 ms is `codebook.shares`, 10 ms of it; the
+decode is 15%.
+
 **The `hunt` block says what the draw intended, `k` included.** A row made by a
 hunt, a mine or a depth run carries its leg, its mode and colormap, the band or
 cell it was drawn *for*, and `k` — which candidate at its location it was. `k`
