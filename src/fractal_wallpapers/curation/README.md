@@ -706,6 +706,34 @@ derived from the render rather than an input to it.
 comes from a tracked table a re-clustering can move, and a key that moved with it
 would re-key rows whose pixels never changed.
 
+**Joining a labeled row to this ledger: the geometry is not what stops you, the
+place is.** A finished-render row is always a fresh 1280x720 ss2 render and a
+candidate is 640x360 ss2, so the obvious guess is that the render block makes the
+keys unequal by construction. It does — of a key nothing here computes. Every
+reader that has actually joined the two builds the label side with
+`regime=recipes.CANDIDATE_REGIME` rather than the row's own geometry, and every
+one of the ledger's rows is at that regime anyway (`headroom.population` refuses
+`off_regime` and the count is 0), so there is no geometry axis on either side to
+relax. Measured 2026-08-28 over 9,427 labeled rows: a key with `resolution` and
+`supersample` dropped from `Recipe.pixels()` joins **exactly** the rows the exact
+key joins — 1,051 — merges nothing, and loses nothing.
+
+What separates the rest is that their **place was never a candidate**. 1,129 of
+the 9,427 sit at a location this ledger holds; 5,278 name a family it holds at a
+frame it does not, and 2,961 name a family it has never seen. A further 59 are
+reachable only by moving to the other side of a `location.framing` block, which
+is a different crop and therefore a different picture. So **12.0% is the ceiling
+of any reader-side place-based join**, and the join is not blocked by decimal
+text: the raw viewport strings and the Decimal-canonicalised
+`supply.location.key_of_row` agree on all 9,427 rows.
+
+The consequence for a reader is that a labeled row without a ledger row has **no
+`P(>=4)` to be compared against, and never had one** — the reading was not lost,
+it was never taken. Getting one is a render leg, not a re-key: one 640x360 ss2
+render each for the 8,382 rows that lack it costs about 48 core-minutes at the
+per-mode medians the ledger's own `hunt.seconds` stamps carry, or roughly 16
+minutes over the standard three-worker pool.
+
 **A score is joined on ONE judge artifact, and the join says so.** The sidecar is
 keyed `(recipe key, artifact, regime)` because a number is comparable only inside
 that triple. Both readers that mattered — `mine.population` and `solve.pool` —
