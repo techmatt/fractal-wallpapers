@@ -410,6 +410,11 @@ class Try:
     #: map and never a claim about the picture, whose colour is read off its own
     #: render like every other candidate's.
     cell: str
+    #: Which candidate this is at its location, counting only this hunt's own,
+    #: from 1. A hunt does not vary `k` deliberately the way a depth run does,
+    #: but the ledger row is corrected on it downstream all the same — see
+    #: [`mine.Unit.named`] — so it is stamped rather than inferred.
+    k: int = 1
 
     def named(self) -> dict:
         """This intention as the ledger row carries it."""
@@ -418,6 +423,7 @@ class Try:
             "mode": self.mode,
             "colormap": self.colormap,
             "drawn_for": self.cell,
+            "k": self.k,
         }
 
 
@@ -620,7 +626,7 @@ def _leg(leg, places, per_location, seed, roster, draw, want) -> list:
     """One leg's candidates: each place tried in `per_location` modes and colours."""
     out: list = []
     for row in places:
-        for mode in modes_for(str(row["key"]), per_location, seed, roster):
+        for k, mode in enumerate(modes_for(str(row["key"]), per_location, seed, roster), start=1):
             if len(out) >= want:
                 return out
             picked = draw()
@@ -635,6 +641,7 @@ def _leg(leg, places, per_location, seed, roster, draw, want) -> list:
                     mode=str(mode),
                     colormap=str(colormap),
                     cell=str(cell),
+                    k=k,
                 )
             )
     return out

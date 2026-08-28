@@ -507,3 +507,65 @@ def test_the_leg_readout_separates_what_was_asked_for_from_what_landed():
     assert legs[hunt.CONDITIONED]["drawn_for_delivered"] == 1
     assert legs[hunt.CONDITIONED]["delivery_rate"] == 0.5
     assert legs[hunt.CONDITIONED]["cells_delivered"] == 2
+
+
+# --------------------------------------------------------------------------- #
+# What the ledger row remembers about the draw.
+# --------------------------------------------------------------------------- #
+def test_every_planner_stamps_k_on_the_block_the_ledger_row_carries():
+    """The run's own `sequence.jsonl` lives under the regenerable tree; the
+    ledger does not. A correction that is a function of `k` — the winner's-curse
+    multiplier above all — cannot be applied to a row that forgot it."""
+    from fractal_wallpapers.curation import depth, mine
+
+    intents = [
+        hunt.Try(
+            leg="a", location="p", partition="m", mode="smooth", colormap="viridis", cell="red", k=3
+        ),
+        mine.Unit(
+            arm="a", location="p", partition="m", mode="smooth", colormap="viridis", k=3, band="b"
+        ),
+        depth.Shot(
+            arm="a",
+            location="p",
+            partition="m",
+            mode="smooth",
+            colormap="viridis",
+            k=3,
+            band="b",
+            rank=7,
+            rank_fraction=0.25,
+        ),
+    ]
+    for intent in intents:
+        assert intent.named()["k"] == 3, type(intent).__name__
+
+
+def test_a_hunt_counts_k_from_one_within_a_location_and_restarts_at_the_next():
+    places = [
+        {"key": "one", "partition": "mandelbrot"},
+        {"key": "two", "partition": "mandelbrot"},
+    ]
+    drawn = hunt._leg(
+        "leg",
+        places,
+        3,
+        seed=4,
+        roster=("smooth", "stripe", "threads", "itinerary"),
+        draw=lambda: ("red", "viridis"),
+        want=99,
+    )
+    by_place: dict = {}
+    for intent in drawn:
+        by_place.setdefault(intent.location, []).append(intent.k)
+    assert by_place == {"one": [1, 2, 3], "two": [1, 2, 3]}
+
+
+def test_k_is_additive_so_a_row_written_before_the_stamp_reads_none():
+    """Treating a missing `k` as 1 would report the whole of the pre-stamp
+    history as unselected first draws and under-correct every estimate over it."""
+    assert candidate_ledger.k_of({"hunt": {"leg": "a", "mode": "smooth"}}) is None
+    assert candidate_ledger.k_of({}) is None
+    assert candidate_ledger.k_of({"hunt": {"k": None}}) is None
+    assert candidate_ledger.k_of({"hunt": {"k": "12"}}) == 12
+    assert candidate_ledger.k_of({"hunt": {"k": 4}}) == 4

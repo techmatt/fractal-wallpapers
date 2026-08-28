@@ -313,8 +313,23 @@ class Unit:
     band: str
 
     def named(self) -> dict:
-        """This intention as the ledger row carries it."""
-        return {"leg": self.arm, "mode": self.mode, "colormap": self.colormap, "band": self.band}
+        """This intention as the ledger row carries it.
+
+        `k` is here rather than only in the run's own `sequence.jsonl` because
+        the ledger outlives the run's `artifacts/` tree and the corrections a
+        reader has to make to it are `k`-dependent: a prime rate read off the
+        maximum of `k` noisy judgements is a winner's-curse estimate, and the
+        multiplier that turns it into a calibrated one is a function of `k`.
+        A row that does not say which candidate at its location it was cannot
+        be corrected at all.
+        """
+        return {
+            "leg": self.arm,
+            "mode": self.mode,
+            "colormap": self.colormap,
+            "band": self.band,
+            "k": self.k,
+        }
 
 
 def plan_deepen(places: list, taken: dict, maps: list, seed: int, k: int, band: str) -> list:
