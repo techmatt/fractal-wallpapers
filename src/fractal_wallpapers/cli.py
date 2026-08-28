@@ -3390,10 +3390,19 @@ def curate_headroom(args: argparse.Namespace) -> int:
 
     candidates, costs, refused = headroom.population()
     ladder = tuple(args.n) if args.n else headroom.LADDER
-    record = headroom.census(candidates, ladder=ladder, costs=costs)
+    radius = None if args.no_preselection else args.neutral_radius
+    swept = None
+    if args.twin_from:
+        swept = json.loads(Path(args.twin_from).read_text(encoding="utf-8"))
+    elif args.twin:
+        swept = _twin_sweep(candidates, radius)
+        held = headroom.write_sweep(args.name, swept)
+        print(f"{held}")
+    record = headroom.census(candidates, ladder=ladder, costs=costs, radius=radius, twins=swept)
     record["pool"] = {"refused": refused}
     path = headroom.write_record(args.name, record)
     print(f"{path}")
+    print(json.dumps(record["twin_constraint"], indent=2))
     for size, block in record["curve"].items():
         short = [name for name, held in block["blocks"].items() if held["short"]]
         print(
@@ -3403,12 +3412,46 @@ def curate_headroom(args: argparse.Namespace) -> int:
     return 0
 
 
+def _twin_sweep(candidates, radius) -> dict:
+    """Every twin pair among the census population, exactly. Minutes, and opt-in.
+
+    One picture per place — that place's strongest clearing candidate — because
+    the twin relation the census bounds is a relation between places, and a place
+    is represented by the picture a seating would reach for first.
+    """
+    from fractal_wallpapers.curation import distinct, headroom
+    from fractal_wallpapers.paths import rehome
+
+    kept = headroom.clearing(candidates)
+    if radius is not None:
+        kept, _record = distinct.preselect(kept, radius=float(radius))
+    best: dict = {}
+    for candidate in sorted(kept, key=lambda held: (-held.score, held.key)):
+        best.setdefault(candidate.location, candidate)
+
+    def picture_of(key):
+        held = best.get(key)
+        if held is None:
+            return None
+        where = Path(rehome(held.picture))
+        return where if where.is_file() else None
+
+    keys, matrix = distinct.matrix_for(sorted(best))
+    return distinct.twins(keys, matrix, picture_of)
+
+
 def curate_seat(args: argparse.Namespace) -> int:
     """Seat a gallery off the ledger with a greedy, and keep every refusal."""
     from fractal_wallpapers.curation import headroom, seating
 
     candidates, _costs, _refused = headroom.population()
-    record = seating.seat(candidates, n=args.n)
+    record = seating.seat(
+        candidates,
+        n=args.n,
+        floor=args.mode_floor,
+        radius=None if args.no_preselection else args.neutral_radius,
+        twin=not args.no_twin,
+    )
     name = args.name or f"n{args.n}"
     path = seating.write_record(name, record)
     print(f"{path}")
@@ -3416,8 +3459,9 @@ def curate_seat(args: argparse.Namespace) -> int:
         print(f"{seating.contact_sheet(name, record, rejected=record['samples'])}")
     print(
         f"{record['filled']} of {args.n} seat(s); "
-        f"{record['shortfalls']['modes']['held']} of "
-        f"{record['shortfalls']['modes']['of']} mode(s) held"
+        f"{record['shortfalls']['modes']['represented']} of "
+        f"{record['shortfalls']['modes']['of']} mode(s) represented, at a floor of "
+        f"{record['shortfalls']['modes']['floor']}"
     )
     print(json.dumps(record["rejection"]["reasons"], indent=2))
     return 0
@@ -6899,6 +6943,7 @@ def curate_commands(subcommands) -> None:
     from fractal_wallpapers.curation import below_bar as below_bar_module
     from fractal_wallpapers.curation import budget as budget_module
     from fractal_wallpapers.curation import candidate_ledger as candidate_ledger_module
+    from fractal_wallpapers.curation import ceiling as ceiling_module
     from fractal_wallpapers.curation import colors as colors_module
     from fractal_wallpapers.curation import depth as depth_module
     from fractal_wallpapers.curation import distinct as distinct_module
@@ -7718,7 +7763,9 @@ def curate_commands(subcommands) -> None:
             "the slack, and the marginal cost of buying one more — estimated off the "
             "ledger's own realized attempt-to-success rate times the realized per-mode "
             "render cost. A short row is provable infeasibility; a row with slack is NOT "
-            "a claim that the selection is possible."
+            "a claim that the selection is possible. The census is taken over the pool the "
+            "seating will see, neutral pre-selection included. One block is not arithmetic "
+            "and is opt-in: `--twin`."
         ),
     )
     headroom_step.add_argument(
@@ -7734,6 +7781,37 @@ def curate_commands(subcommands) -> None:
         default="latest",
         help="what to call this census's output directory (default `latest`)",
     )
+    headroom_step.add_argument(
+        "--neutral-radius",
+        type=float,
+        default=distinct_module.PRESELECT_RADIUS,
+        metavar="COSINE",
+        help="the neutral pre-selection the census is taken over "
+        f"(default {distinct_module.PRESELECT_RADIUS:g}). A place closer than this to a "
+        "place already kept is refused before anything is counted",
+    )
+    headroom_step.add_argument(
+        "--no-preselection",
+        action="store_true",
+        help="census the whole clearing pool, with no neutral pre-selection. The only way "
+        "to read a schema 1 census against this one",
+    )
+    headroom_step.add_argument(
+        "--twin",
+        action="store_true",
+        help="also count the twin constraint: every twin pair among the population's "
+        "strongest picture per place, found exactly, and the bounds it puts on how many "
+        "mutually non-twin places the pool holds. MINUTES — one pixel-cloud signature per "
+        "place plus the pairs the sound bound cannot settle — which is why it is opt-in. "
+        "The sweep is written beside the census as `twins.json`",
+    )
+    headroom_step.add_argument(
+        "--twin-from",
+        metavar="PATH",
+        help="count the twin constraint off a sweep already taken — the `twins.json` a "
+        "`--twin` run wrote. Re-reading a census at a different ladder is arithmetic and "
+        "should not cost the sweep again",
+    )
     headroom_step.set_defaults(handler=curate_headroom)
 
     seating_step = steps.add_parser(
@@ -7743,13 +7821,17 @@ def curate_commands(subcommands) -> None:
             "The lower bound `headroom` is the upper bound on. Fill by SCARCITY and not "
             "by score — the mandated constraints from their own subpools first, scarcest "
             "first, then the general pool by score, because ordering by score alone turns "
-            "satisfiable problems into apparent infeasibility. One wallpaper per location "
-            "is hard and everything else is soft with the shortfall recorded: no fallback "
-            "leg, no least-violating rescue, unfilled beats padded. It only chooses — it "
-            "proposes nothing, renders nothing and opens no picture. The REJECTION LEDGER "
-            "is the product: for every candidate not seated, which rule killed it, "
-            "aggregated by cell, family, mode and partition. A greedy shortfall is `this "
-            "walk did not find it` and never `the pool does not hold it`."
+            "satisfiable problems into apparent infeasibility. TWO HARD RULES: one "
+            "wallpaper per location, and the twin test — nothing is seated within "
+            "ceiling.TAU of a picture already seated, sequentially, as the last and only "
+            "expensive rule of the walk. The other half of what `diversity` used to mean, "
+            "are these two the same place, is the neutral pre-selection at pool "
+            "construction. Everything else is soft with the shortfall recorded: no "
+            "fallback leg, no least-violating rescue, unfilled beats padded. It proposes "
+            "nothing and renders nothing. The REJECTION LEDGER is the product: for every "
+            "candidate not seated, which rule killed it, aggregated by cell, family, mode "
+            "and partition. A greedy shortfall is `this walk did not find it` and never "
+            "`the pool does not hold it`."
         ),
     )
     seating_step.add_argument(
@@ -7763,6 +7845,36 @@ def curate_commands(subcommands) -> None:
         help="what to call this seating's output directory (default `n<N>`)",
     )
     seating_step.add_argument(
+        "--mode-floor",
+        type=int,
+        metavar="SEATS",
+        help="an ARTIFICIAL mode floor, so a debug gallery can exercise the scarcity leg "
+        f"at a size where the real floor asks for nothing. Unset is "
+        f"floor(n / {solve_module.SEATS_PER_MODE_FLOOR}) — 0 at n=20, 1 at 150, 10 at 1000 "
+        "— and a record taken under an artificial floor says so",
+    )
+    seating_step.add_argument(
+        "--neutral-radius",
+        type=float,
+        default=distinct_module.PRESELECT_RADIUS,
+        metavar="COSINE",
+        help="the neutral pre-selection radius applied at pool construction "
+        f"(default {distinct_module.PRESELECT_RADIUS:g}). Geometric distinctness only: it "
+        "asks whether two places are the same place, and it is NOT the diversity rule",
+    )
+    seating_step.add_argument(
+        "--no-preselection",
+        action="store_true",
+        help="seat from the whole clearing pool, with no neutral pre-selection",
+    )
+    seating_step.add_argument(
+        "--no-twin",
+        action="store_true",
+        help="seat without the twin test, which is the only rule that opens a picture. A "
+        f"seating without it is a bound on a program that does not refuse inside "
+        f"{ceiling_module.TAU}, and its record says so",
+    )
+    seating_step.add_argument(
         "--no-sheet",
         action="store_true",
         help="take every decision and build no contact sheet",
@@ -7773,7 +7885,7 @@ def curate_commands(subcommands) -> None:
         "distinct",
         help="the neutral pre-selection read: which places are visibly different places",
         description=(
-            "Pairwise diversity moved to pool construction. The join FIRST — how many of "
+            "The instrument the pre-selection radius was set off. The join FIRST — how many of "
             "the pool's locations have a neutral descriptor and how many do not, because "
             "a lossy pre-filter is a finding rather than a detail to work around — then "
             "the nearest-neighbour distribution, then the near pairs at each candidate "
@@ -7781,7 +7893,10 @@ def curate_commands(subcommands) -> None:
             "choice is a person's. The premise the whole decoupling rests on — that far "
             "in the neutral descriptor implies far in the coloured pixels — is MEASURED "
             "against the pixel-cloud metric over a stratified sample, because a "
-            "correlated proxy is not a prune and this project has shipped one that was."
+            "correlated proxy is not a prune and this project has shipped one that was. It "
+            "does not hold, which is why there are TWO rules: this radius asks whether two "
+            "places are the same place, and the twin test in `seat` asks whether two "
+            "pictures are one wallpaper."
         ),
     )
     distinct_step.add_argument(

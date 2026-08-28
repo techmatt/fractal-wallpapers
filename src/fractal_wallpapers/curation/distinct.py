@@ -1,7 +1,7 @@
 """Which places are visibly different places, decided before anything is coloured.
 
 The diversity rule this project has shipped is a rule about **finished pictures**:
-two seated wallpapers must be at least [`solve.RADIUS`] apart in the pixel-cloud
+two seated wallpapers must be at least [`ceiling.TAU`] apart in the pixel-cloud
 metric. That makes colour a coupled constraint in the seating — whether a
 candidate may take a seat depends on the map every other seated candidate happened
 to get — and it makes the rule expensive, because the metric costs half a mebibyte
@@ -44,15 +44,23 @@ taken over pairs drawn to span the range, and twins are seven in a thousand of
 those, so a scatter can only ever put a handful of them on the page. The sweep
 finds all of them and asks the question a pre-filter actually has to answer.
 
-## No radius is chosen here
+## Both rules act, and they are not the same rule
 
-[`RADII`] is a set of **candidates to look at** and not a setting. The instrument
-is [`sheet`]: the near pairs at each radius, ordered by distance, as pictures. The
-radius is a judgement about whether two pictures are two pictures, and this
-project sets those by eye off a sheet — [`ceiling.TAU`], [`ceiling.TAU_GROUP`] and
-[`gallery.RADIUS`] were all set that way and every one of them is recorded with
-who set it. Nothing here writes one down, and after the measurement above nothing
-should write one down *as a diversity rule* at all.
+The measurement above did not kill the neutral radius; it killed the *substitution*.
+So both are placed, in the two places their questions belong:
+
+* **Are these two the same place?** [`preselect`] at [`PRESELECT_RADIUS`], over
+  the neutral descriptors, at pool construction. Geometric distinctness only. It
+  errs toward over-admitting on purpose.
+* **Do these two read as one wallpaper?** The twin test at [`ceiling.TAU`], over
+  the pixel clouds, sequential inside [`curation.seating`]'s walk. That is the
+  rule the 6,720 twin pairs are a statement about, and nothing here weakens it.
+
+[`RADII`] stays a set of **candidates to look at** rather than a setting: it is
+what [`sheet`] draws the near pairs at, and a person reads the page and decides.
+[`PRESELECT_RADIUS`] is the one number this module writes down, it is a
+distinctness radius and not a diversity radius, and it is justified on its own
+terms below rather than by anything it substitutes for.
 """
 
 from __future__ import annotations
@@ -99,6 +107,20 @@ PREMISE_PAIRS = 800
 #: pairs are mostly far apart would spend the whole sample past 0.2 and say
 #: nothing about the range a radius would ever sit in.
 PREMISE_BANDS = 10
+
+#: The radius the pool's pre-selection refuses inside, in [`METRIC`].
+#:
+#: **0.02**, just above the clearing pool's p10 nearest-neighbour distance of
+#: 0.0155 — 425 pairs touching 250 of its 1,427 places. It is deliberately at the
+#: loose end of [`RADII`]: this is a rule about *places*, and a place refused here
+#: is one no colouring can bring back, so it only fires where two neutral renders
+#: are as close as the closest tenth of the pool ever gets.
+#:
+#: It buys **nothing** towards the diversity rule and is not asked to. The sweep
+#: above says a filter here removes 6 of the pool's 6,720 twin pairs; the twin
+#: test at [`ceiling.TAU`] is what rejects, and over-admitting is the safe
+#: direction for a rule that runs first.
+PRESELECT_RADIUS = 0.02
 
 #: The seed every draw in this module is taken under, recorded with it.
 SEED = 0
@@ -237,6 +259,95 @@ def radius_table(keys, matrix, radii=RADII) -> dict:
             "share_of_the_pool": round(len(touched) / max(1, len(keys)), 4),
         }
     return out
+
+
+# --------------------------------------------------------------------------- #
+# The pre-selection.
+# --------------------------------------------------------------------------- #
+def preselect(candidates, radius: float = PRESELECT_RADIUS, rows=None, log=print) -> tuple:
+    """`(the candidates whose place survived, the record)`. Geometric distinctness only.
+
+    A greedy suppression over places and not over rows: each location is
+    represented by its **strongest** clearing candidate, the places are walked in
+    that order, and a place closer than `radius` to a place already kept is
+    refused and told which one took it. Strongest first because the choice inside
+    a near-cluster is arbitrary otherwise, and the strongest place is the one a
+    seating would have reached for anyway.
+
+    **A location with no neutral descriptor is admitted, not dropped.** The store
+    is built from a neutral render per place and a place can be newer than the
+    last embedding leg; refusing on a missing row would make the pre-filter a
+    silent function of when the store was last built. It is counted, and the count
+    is on the record whether or not it is zero.
+
+    What this refuses is a *place*, so the whole of that place's ledger goes with
+    it — which is why the record reports both, and why the share to read is the
+    share of **locations**. It is not the near-pair count: a cluster of five
+    places inside the radius loses four, and both numbers are on the record.
+    """
+    import numpy
+
+    radius = float(radius)
+    best: dict = {}
+    for candidate in candidates:
+        held = best.get(candidate.location)
+        if held is None or (-candidate.score, candidate.key) < (-held.score, held.key):
+            best[candidate.location] = candidate
+    order = sorted(best, key=lambda key: (-best[key].score, best[key].key))
+    keys, matrix = matrix_for(order, rows)
+    at = {key: index for index, key in enumerate(keys)}
+    held_rows: list = []
+    kept: set = set()
+    refused: list = []
+    unembedded: list = []
+    for key in order:
+        index = at.get(key)
+        if index is None:
+            unembedded.append(key)
+            kept.add(key)
+            continue
+        if held_rows:
+            gaps = 1.0 - (matrix[held_rows] @ matrix[index])
+            nearest_at = int(numpy.argmin(gaps))
+            if float(gaps[nearest_at]) < radius:
+                refused.append(
+                    {
+                        "location": key,
+                        "lost_to": keys[held_rows[nearest_at]],
+                        "distance": round(float(gaps[nearest_at]), 6),
+                        "p_ge4": round(best[key].score, 6),
+                        "picture": best[key].picture,
+                        "lost_to_picture": best[keys[held_rows[nearest_at]]].picture,
+                    }
+                )
+                continue
+        held_rows.append(index)
+        kept.add(key)
+    surviving = [candidate for candidate in candidates if candidate.location in kept]
+    refused.sort(key=lambda row: row["distance"])
+    log(
+        f"[distinct] pre-selection at {radius}: {len(kept):,} of {len(order):,} place(s) kept, "
+        f"{len(refused):,} refused"
+    )
+    return surviving, {
+        "radius": radius,
+        "metric": METRIC,
+        "store": tracked_name(embeddings.store_path()),
+        "order": "each place's strongest clearing candidate, P(>=4) descending, ties by key",
+        "rule": "a place closer than the radius to a place already kept is refused. "
+        "Geometric distinctness only: this asks whether two places are the same place, and "
+        "it is NOT the diversity rule — the twin test at ceiling.TAU is",
+        "places_asked": len(order),
+        "places_kept": len(kept),
+        "places_refused": len(refused),
+        "share_of_places_refused": round(len(refused) / max(1, len(order)), 4),
+        "admitted_without_a_descriptor": len(unembedded),
+        "unembedded": unembedded,
+        "candidates_asked": len(candidates),
+        "candidates_kept": len(surviving),
+        "candidates_refused": len(candidates) - len(surviving),
+        "refusals": refused,
+    }
 
 
 # --------------------------------------------------------------------------- #
@@ -795,6 +906,7 @@ __all__ = [
     "PLOT",
     "PREMISE_BANDS",
     "PREMISE_PAIRS",
+    "PRESELECT_RADIUS",
     "RADII",
     "PAIR_MATRIX_LIMIT",
     "SCHEMA",
@@ -808,6 +920,7 @@ __all__ = [
     "near_pairs",
     "nearest",
     "premise",
+    "preselect",
     "radius_table",
     "read",
     "scatter",

@@ -854,7 +854,7 @@ this project has fitted are `P(>=3)` and neither transfers to a different
 cutpoint. It is recorded on every solve so a count taken across the change names
 its own bar.
 
-**The pairwise rules are generated, never materialized.** The diversity radius
+**The pairwise rules are generated, never materialized.** The diversity distance
 and the group cap are statements about a pair of finished pictures, and the
 ledger holds 118 million pairs at 512 KiB a signature. So: solve without them,
 look at the pairs, add a row for each violated pair, solve again. It terminates on
@@ -952,7 +952,7 @@ MILP is not has nothing short: the elastic read comes back at zero slack and the
 deletion filter — which can only ever name a conflict the relaxation has — would
 otherwise return every block, a list of six that reads like a finding and is not
 one. It returns `[]` there instead, and the verdict names the integral cause: with
-pairwise rows standing, the diversity radius is refusing the *combinations* rather
+pairwise rows standing, the diversity rule is refusing the *combinations* rather
 than the pool refusing the colours, and no hunt for more of a colour relieves it.
 
 **`--target <cell>=<fraction>` is a hard demand**, and it also raises that cell's
@@ -1050,16 +1050,50 @@ than the mean because every mode's p90 is two to five times its median.
 
 ### The greedy fills by scarcity, not by score
 
-Ordering by score alone converts satisfiable problems into apparent infeasibility. At
-`n = 20` the mode floors ask for eighteen of the twenty seats, and the five strongest
-candidates in the pool are all one mode — so a ranked walk seats five `smooth` and
-reports fifteen modes it could have held. Every one of them could have been seated.
+Ordering by score alone converts satisfiable problems into apparent infeasibility.
+Wherever the mode floors ask for most of the gallery — as the flat one-per-mode did at
+`n = 20`, eighteen of twenty seats — a ranked walk seats five `smooth` and reports
+fifteen modes it could have held. Every one of them could have been seated.
 
 So the mandated constraints are seated from their own subpools first, **scarcest
-first**, and only what is left over is drawn by score. One wallpaper per location is
-hard; the cell and family allowances, the mode floors and the group cap are soft with
-the shortfall recorded. No fallback leg, no least-violating rescue: unfilled beats
-padded.
+first**, and only what is left over is drawn by score. Two rules are hard — one
+wallpaper per location, and the twin test; the cell and family allowances, the mode
+floors and the group cap are soft with the shortfall recorded. No fallback leg, no
+least-violating rescue: unfilled beats padded.
+
+### The mode floor scales with the gallery: `floor(n / 100)`
+
+`solve.mode_floor(n)` — 0 at 20 seats, 1 at 150, 10 at 1000, replacing a flat one per
+mode. The flat floor spent eighteen of a twenty-seat gallery on representation, which
+is a survey of the roster rather than a debug gallery, and it forced `trap_circle` —
+2 clearing places, the better at `P(>=4) = 0.066` — into every gallery this project
+would ever seat. `curate seat --mode-floor N` puts an artificial floor back so a debug
+gallery still exercises the scarcity leg, and the record says when one was used.
+
+Measured on 2026-08-27, the same twenty seats under the two policies: at floor 0 the
+gallery is `smooth` 14, `exp_smoothing` 4, `smooth_trap_circle` 1, `smooth_curvature`
+1 — **4 modes**; at an artificial floor of 1 it is 18 modes, one seat each but for
+`smooth` at 3. That is the whole cost of the old policy in one line.
+
+### The twin test is in the seating, and it is the last rule
+
+`ceiling.TAU = 0.0586` in the pixel-cloud metric, against every already-seated
+picture, sequentially. It is **not** in the solve and the solve's complexity does not
+change: a rule that reads the seats already taken costs one signature per surviving
+candidate, where a solver carries it as a quadratic family of rows.
+
+It runs last of the five because it is the only one that opens a picture. Every
+candidate the four counting rules refuse is a signature not made, and each comparison
+against a seat is screened by `solve.BOUND` — the same sound lower bound the cutting
+plane uses — so a seat the bound puts at or beyond tau is never measured.
+
+**`solve.RADIUS` (0.07) is retired.** Two spellings of one fact is a silent null:
+both were answering "do these two read as one wallpaper", so a pair one refused and
+the other passed was a disagreement between two numbers nobody had chosen between.
+Every reader now reads `ceiling.TAU`, which is the one somebody set by eye. Note that
+the seating and the solve refuse on the **first** neighbour inside tau, where the
+shipped `curate gallery` pass refuses on the second (`ceiling.TWINS = 2`); the two
+are different policies and both records say which they applied.
 
 **The rejection ledger is the product.** For every candidate not seated, the first
 rule that refused it, aggregated by cell, family, mode and partition — a cell whose
@@ -1069,17 +1103,31 @@ Those are not the same instruction. A greedy shortfall is "this walk did not fin
 it" and never "the pool does not hold it"; the census's necessary conditions are the
 only infeasibility claims this project makes.
 
-### `curate distinct` — pairwise diversity moved to pool construction
+### `curate distinct` — two rules under one word, and where each went
 
-The diversity radius is a rule about finished pictures, which makes colour a coupled
-constraint in the seating. `distinct` is the other placement: pre-select
-geometrically distinct **locations** off the neutral descriptors, and let the seating
-choose freely inside what survives.
+"Diversity" was hiding two questions. *Are these two the same place*, answered by the
+neutral descriptors; *do these two read as one wallpaper*, answered by the pixel-cloud
+twin test. They are near-orthogonal, so one rule cannot be both, and both are placed:
 
-**No radius is chosen there.** `RADII` is a set of candidates to look at, and the
-sheet — near pairs at each radius, ordered by distance, as pictures — is the
-instrument. That is how `ceiling.TAU`, `ceiling.TAU_GROUP` and `gallery.RADIUS` were
-all set, and every one of them is recorded with who set it.
+| question | rule | where it acts |
+|---|---|---|
+| the same place? | cosine `distinct.PRESELECT_RADIUS = 0.02` over the neutral descriptors | pool construction, before the walk |
+| one wallpaper? | `ceiling.TAU = 0.0586` in the pixel cloud | sequential, last rule of `curate seat` |
+
+`RADII` stays a set of candidates to look at, and the sheet — near pairs at each
+radius, ordered by distance, as pictures — is the instrument. That is how
+`ceiling.TAU`, `ceiling.TAU_GROUP` and `gallery.RADIUS` were all set, and every one
+of them is recorded with who set it.
+
+The pre-selection is a greedy suppression over **places**, each represented by its
+strongest clearing candidate, strongest first; a place inside the radius of a place
+already kept is refused and everything that place carries goes with it. A location
+with no neutral descriptor is **admitted**, never dropped — a place can be newer than
+the last embedding leg, and refusing on that would make the pre-filter a function of
+when the store was last built. Measured 2026-08-27 over the 1,427 clearing places:
+425 near pairs touch 250 of them (17.5%), and the greedy refuses **139 places, 9.7%**
+— the suppression keeps one of each cluster, so the share refused is not the share
+touched. In rows that is 600 of 5,924.
 
 The premise the whole decoupling rests on is that far in the neutral descriptor
 implies far in the coloured pixels, and it is **measured** rather than assumed: this
@@ -1095,9 +1143,26 @@ over all 1,017,451 pairs finds **6,720 twin pairs** at a median neutral distance
 0.226 — a pre-filter at 0.10, which already refuses 98% of the pool, removes 413 of
 them. So **pairwise diversity does not move to pool construction**, the pixel-cloud
 twin test is not demotable to a residual, and a neutral radius is a different rule
-answering a different question. `curate seat` therefore applies no pairwise rule at
-all today, and says so on its record: its bounds are bounds on a program without
-one.
+answering a different question — which is the one it now answers, on its own terms,
+at 0.02. The twin test stays where a pairwise rule about pictures has to be: in the
+seating walk.
+
+### `curate headroom --twin` — the one block that opens a picture
+
+Every other block is arithmetic over the ledger. The twin constraint cannot be
+answered from a row, so its sweep is **opt-in** and a census taken without it says
+the block was not counted. What it reports is a bound on a bound:
+
+```text
+n <= (places) - (the size of any matching in the twin graph)
+```
+
+necessary, because any set of pairwise non-twin places takes at most one endpoint of
+each matched edge. A greedy independent set walked strongest-first is reported beside
+it as the **constructive** lower bound. The relation is measured over one picture per
+place — that place's strongest clearing candidate — so the upper bound is a necessary
+condition for the program restricted to those pictures and a flag rather than a proof
+for the unrestricted one. The block says so.
 
 ## `curate hunt` — rendering into a shortage instead of around it
 

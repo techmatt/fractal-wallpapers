@@ -6,13 +6,34 @@ is to buy. That answer has to come from arithmetic over the ledger and never fro
 an optimizer: a solve that runs for twenty minutes and reports "there are no light
 greens at all" spent twenty minutes on a fact one pass over the rows already knew.
 
-So this module is O(rows) necessary conditions and nothing else. It decides
-nothing, seats nothing, and opens no picture. It is the **upper bound** half of
+So this module is O(rows) necessary conditions and one opt-in sweep. It decides
+nothing and seats nothing. It is the **upper bound** half of
 the pair [`curation.seating`] completes: a census says what could not possibly be
 seated, a greedy says what a trivial rule actually seats, and the gap between the
 two is the only place exact optimization can buy anything. Close together, the
 answer is known and the money goes on making more candidates. Far apart, the gap
 is what a solver is for.
+
+## The one block that opens a picture, and it is opt-in
+
+Everything here is arithmetic over the ledger except the twin block, which is a
+statement about pairs of finished **pictures** and cannot be answered from a row.
+It costs one pixel-cloud signature per place plus the pairs [`solve.BOUND`] cannot
+settle — minutes over a pool of a thousand places — so it is off unless a caller
+asks for it, and a census taken without it says so rather than reporting a
+constraint it never counted.
+
+What it reports is a bound on a bound. The largest set of mutually non-twin places
+is a maximum independent set, which is not something to compute exactly; but any
+such set takes **at most one endpoint of each edge of a matching**, so
+
+```text
+n <= (places) - (the size of any matching in the twin graph)
+```
+
+is a necessary condition and a greedy maximal matching is enough to state it. The
+constructive side — a greedy independent set walked strongest-first — is reported
+beside it as a **lower** bound, and the two together say where the answer is.
 
 ## Necessary conditions are the only infeasibility claims allowed
 
@@ -73,10 +94,14 @@ from __future__ import annotations
 import statistics
 from datetime import UTC, datetime
 
-from fractal_wallpapers.curation import candidate_ledger, ceiling, floors, solve
+from fractal_wallpapers.curation import candidate_ledger, ceiling, distinct, floors, solve
 
 #: The schema every record this module writes carries.
-SCHEMA = 1
+#:
+#: **2**: the mode-floor block became a function of `n` rather than a flat one per
+#: mode, the population is the neutral pre-selection's, and the twin constraint
+#: has a block. A schema 1 census counted none of those.
+SCHEMA = 2
 
 #: The subtree a census lands in, under the regenerable tree.
 UNIT = "headroom"
@@ -282,6 +307,77 @@ def clearing(candidates, table: dict | None = None) -> list:
 
 
 # --------------------------------------------------------------------------- #
+# The twin constraint.
+# --------------------------------------------------------------------------- #
+def twin_bound(places, pairs, order=None) -> dict:
+    """How many mutually non-twin places the pool holds: an upper bound and a lower.
+
+    `pairs` is the twin relation as `[(a, b)]` — [`distinct.twins`]' output,
+    which is exact over every pair through [`solve.BOUND`]. The upper bound is
+    `places - |matching|` over a greedy maximal matching, which is the only claim
+    here that is a **necessary condition**: an independent set takes at most one
+    endpoint of each matched edge, so it misses at least one place per edge. The
+    lower bound is a greedy independent set walked in `order` — a construction, so
+    it proves the pool holds at least that many and never that it holds no more.
+
+    Both are bounds on the relation as measured, and the relation was measured
+    over **one candidate per place**. A place refused as a twin here may carry a
+    different candidate that is not a twin of anything, so the upper bound is a
+    necessary condition for the program restricted to those pictures and a flag
+    rather than a proof for the unrestricted one. That is stated on the block.
+    """
+    inside = {str(place) for place in places}
+    edges = sorted(
+        {
+            (str(one), str(other)) if str(one) < str(other) else (str(other), str(one))
+            for one, other in pairs
+        }
+    )
+    edges = [(one, other) for one, other in edges if one in inside and other in inside]
+    neighbours: dict = {}
+    for one, other in edges:
+        neighbours.setdefault(one, set()).add(other)
+        neighbours.setdefault(other, set()).add(one)
+
+    matched: set = set()
+    matching = 0
+    for one, other in edges:
+        if one not in matched and other not in matched:
+            matched.add(one)
+            matched.add(other)
+            matching += 1
+
+    walk = [str(place) for place in (order if order is not None else sorted(inside))]
+    walk += sorted(inside - set(walk))
+    taken: set = set()
+    for place in walk:
+        if place in inside and not (neighbours.get(place, set()) & taken):
+            taken.add(place)
+
+    degrees = sorted((len(mine) for mine in neighbours.values()), reverse=True)
+    return {
+        "places": len(inside),
+        "twin_pairs": len(edges),
+        "places_in_a_twin_pair": len(neighbours),
+        "matching": matching,
+        "upper_bound": len(inside) - matching,
+        "greedy_independent_set": len(taken),
+        "max_degree": degrees[0] if degrees else 0,
+        "mean_degree_among_the_touched": (
+            round(sum(degrees) / len(degrees), 2) if degrees else 0.0
+        ),
+        "bounds": "upper = places - |a maximal matching|, which is NECESSARY: any set of "
+        "pairwise non-twin places takes at most one endpoint of each matched edge. Lower = "
+        "a greedy independent set walked strongest-first, which is CONSTRUCTIVE and proves "
+        "only that the pool holds at least that many",
+        "measured_over": "one picture per place — that place's strongest clearing "
+        "candidate. A place refused here may carry another candidate that is not a twin of "
+        "anything, so the upper bound is necessary for the program restricted to those "
+        "pictures and a flag rather than a proof for the unrestricted one",
+    }
+
+
+# --------------------------------------------------------------------------- #
 # The census.
 # --------------------------------------------------------------------------- #
 def _places(candidates) -> set:
@@ -321,18 +417,52 @@ def _row(
     }
 
 
-def census(candidates, ladder=LADDER, costs: dict | None = None, log=print) -> dict:
+def census(
+    candidates,
+    ladder=LADDER,
+    costs: dict | None = None,
+    radius: float | None = distinct.PRESELECT_RADIUS,
+    twins: dict | None = None,
+    log=print,
+) -> dict:
     """The whole curve: every constraint at every `n` of `ladder`. No solver.
 
-    Runs the bars once, restricts to the clearing population once, and then walks
-    the ladder over counts already tallied — so the whole curve costs what one
-    rung costs, which is why it is reported even though one rung is exercised.
+    Runs the bars once, restricts to the clearing population once, applies the
+    neutral pre-selection once, and then walks the ladder over counts already
+    tallied — so the whole curve costs what one rung costs, which is why it is
+    reported even though one rung is exercised.
+
+    `radius` is the neutral pre-selection the seating will run under; `None`
+    censuses the pool without it, which is the only way to read a schema 1 census
+    against this one. `twins` is [`distinct.twins`]' sweep, and the twin block is
+    empty without it — see the module docstring on why that block is opt-in.
     """
     costs = {} if costs is None else costs
     table = bars(candidates)
-    kept = clearing(candidates, table)
+    cleared = clearing(candidates, table)
     renders = len(candidates)
-    log(f"[headroom] {len(kept):,} of {len(candidates):,} candidates clear their mode's bar")
+    log(f"[headroom] {len(cleared):,} of {len(candidates):,} candidates clear their mode's bar")
+    if radius is None:
+        kept = list(cleared)
+        preselection = {"skipped": "no neutral pre-selection was applied"}
+    else:
+        kept, preselection = distinct.preselect(cleared, radius=float(radius), log=log)
+    best: dict = {}
+    for candidate in sorted(kept, key=lambda held: (-held.score, held.key)):
+        best.setdefault(candidate.location, candidate)
+    strongest = sorted(best, key=lambda key: (-best[key].score, best[key].key))
+    twin = (
+        {"skipped": "no twin sweep was handed in; `curate headroom --twin` runs one"}
+        if twins is None
+        else {
+            **twin_bound(
+                strongest, [(pair["a"], pair["b"]) for pair in twins["pairs"]], order=strongest
+            ),
+            "tau": twins.get("tau"),
+            "swept_places": twins.get("places"),
+            "pairs_screened": twins.get("pairs_screened"),
+        }
+    )
     by_cell: dict = {}
     by_family: dict = {}
     by_mode: dict = {}
@@ -357,11 +487,15 @@ def census(candidates, ladder=LADDER, costs: dict | None = None, log=print) -> d
         "reads": "necessary conditions only. A short row is provable infeasibility; a row "
         "with slack is NOT a claim that the selection is possible, jointly or at all",
         "bars": table,
+        "preselection": preselection,
+        "twin_constraint": twin,
         "population": {
             "candidates": len(candidates),
-            "clearing": len(kept),
+            "clearing": len(cleared),
+            "after_the_preselection": len(kept),
             "locations": len(_places(candidates)),
-            "clearing_locations": len(_places(kept)),
+            "clearing_locations": len(_places(cleared)),
+            "locations_after_the_preselection": len(_places(kept)),
             "dominant_in_no_cell": len(_places(colourless)),
             "cells_held": len(by_cell),
             "families_held": len(by_family),
@@ -390,6 +524,7 @@ def census(candidates, ladder=LADDER, costs: dict | None = None, log=print) -> d
                 by_group=by_group,
                 colourless=colourless,
                 renders_by_mode=renders_by_mode,
+                twin=twin,
             )
             for size in ladder
         },
@@ -409,6 +544,7 @@ def _at(
     by_group,
     colourless,
     renders_by_mode,
+    twin=None,
 ) -> dict:
     """Every block at one `n`."""
     from fractal_wallpapers import engine
@@ -462,24 +598,33 @@ def _at(
         ),
     )
     modes = list(engine.production_modes())
+    floor = solve.mode_floor(n)
+    # Each mode needs `floor` distinct places of its own, so the supply the demand
+    # is read against is the sum of what each mode can actually put towards its
+    # own floor — NOT the count of modes that hold anything. Those two are the
+    # same number only while the floor is one, which is how a flat floor of one
+    # hid the difference.
+    usable = sum(min(floor, len(_places(by_mode.get(name, [])))) for name in modes)
     out["blocks"]["mode_floors"] = {
         "kind": DEMAND,
-        "needs": solve.MODE_FLOOR * len(modes),
-        "supply": sum(1 for name in modes if by_mode.get(name)),
-        "slack": sum(1 for name in modes if by_mode.get(name)) - solve.MODE_FLOOR * len(modes),
-        "short": sum(1 for name in modes if by_mode.get(name)) < solve.MODE_FLOOR * len(modes),
-        "rule": f"soft in the solve; {solve.MODE_FLOOR} seat per production mode",
-        # The one block whose block-level supply is not a count of locations: it
-        # is how many modes can field anything at all, against how many seats the
-        # floors ask for between them. The per-mode rows below are in locations
-        # like every other row here.
-        "supply_counts": "modes with at least one clearing location",
-        "fits_in_n": solve.MODE_FLOOR * len(modes) <= n,
+        "floor": floor,
+        "needs": floor * len(modes),
+        "supply": usable,
+        "slack": usable - floor * len(modes),
+        "short": usable < floor * len(modes),
+        "modes_holding_anything": sum(1 for name in modes if by_mode.get(name)),
+        "rule": f"soft in the solve; floor(n / {solve.SEATS_PER_MODE_FLOOR}) = {floor} seat(s) "
+        f"per production mode, {floor * len(modes)} between them. Supply is the sum over modes "
+        "of min(floor, its distinct clearing locations). At a floor of zero the block asks for "
+        "nothing and the per-mode rows below are a supply table rather than a demand",
+        "supply_counts": "the sum over modes of min(the floor, that mode's distinct "
+        "clearing locations) — in locations, like every other row here",
+        "fits_in_n": floor * len(modes) <= n,
         "rows": [
             _row(
                 about=name,
                 kind=DEMAND,
-                needs=solve.MODE_FLOOR,
+                needs=floor,
                 members=by_mode.get(name, []),
                 costs=costs,
                 renders=renders_by_mode.get(name, 0),
@@ -490,6 +635,35 @@ def _at(
         ],
         "empty": [name for name in modes if not by_mode.get(name)],
     }
+    out["blocks"]["twin_diversity"] = (
+        {
+            "kind": DEMAND,
+            "needs": n,
+            "supply": 0,
+            "slack": 0,
+            "short": False,
+            "rule": "NOT COUNTED. The twin rule is the one constraint here that cannot be "
+            "answered from a row, and its sweep is opt-in: `curate headroom --twin`",
+            "rows": [],
+            **(twin or {}),
+        }
+        if not twin or "upper_bound" not in twin
+        else {
+            "kind": DEMAND,
+            "needs": n,
+            "supply": twin["upper_bound"],
+            "slack": twin["upper_bound"] - n,
+            "short": twin["upper_bound"] < n,
+            "rule": f"n <= places - |a maximal matching| over the twin graph at tau = "
+            f"{twin.get('tau')}. Necessary and never sufficient",
+            "greedy_independent_set": twin["greedy_independent_set"],
+            "greedy_is_short": twin["greedy_independent_set"] < n,
+            "twin_pairs": twin["twin_pairs"],
+            "places_in_a_twin_pair": twin["places_in_a_twin_pair"],
+            "measured_over": twin["measured_over"],
+            "rows": [],
+        }
+    )
     out["blocks"]["colour_targets"] = {
         "kind": DEMAND,
         "needs": 0,
@@ -598,6 +772,24 @@ def _cover(
     }
 
 
+def write_sweep(name: str, swept: dict):
+    """The twin sweep, beside the census it was taken for.
+
+    Kept because it is the only part of a census that costs minutes rather than
+    seconds: re-reading the curve at a different ladder is arithmetic over counts
+    already tallied, and paying for the sweep again to do it would be paying for
+    the one thing that did not change.
+    """
+    import json
+
+    from fractal_wallpapers.paths import under
+
+    path = under("curation", UNIT, str(name)) / "twins.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(swept, indent=2) + "\n", encoding="utf-8", newline="\n")
+    return path
+
+
 def write_record(name: str, record: dict):
     """The census as JSON, under the regenerable tree."""
     import json
@@ -629,5 +821,7 @@ __all__ = [
     "clearing",
     "population",
     "render_cost",
+    "twin_bound",
     "write_record",
+    "write_sweep",
 ]
