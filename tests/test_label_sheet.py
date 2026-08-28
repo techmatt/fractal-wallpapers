@@ -645,3 +645,41 @@ def test_a_finished_sheet_is_scored_by_the_one_shipped_judge_and_not_by_its_kind
     assert classes == 3 and probabilities == [[0.9, 0.1]]
     # The kind is not the judge, and the check is that the two names differ.
     assert floors.SCORING_HEAD not in finished.HEADS
+
+
+# --------------------------------------------------------------------------- #
+# Both readings on the row.
+# --------------------------------------------------------------------------- #
+def test_a_plan_unit_carries_the_reading_its_population_was_selected_on(tmp_path) -> None:
+    """A sheet cut over a selection made at another geometry has two numbers about
+    one picture and they are not interchangeable. The `columns` are read off the
+    picture the page serves; `selected_on` is what the row was drawn on, and a
+    disagreement between them is a fact about the regime, not about the labeler."""
+    drawn = {"regime": "640x360ss2", "p_ge3": 0.99, "p_ge4": 0.87}
+    sheet = finished_sheet(tmp_path, [finished_unit(0, selected_on=drawn)])
+    row = sheet.rows[0]
+    assert row["selected_on"] == drawn
+    assert row["columns"] and row["columns"] != drawn, "the served picture's own reading"
+
+
+def test_a_sheet_that_states_no_second_reading_grows_no_column_for_one(tmp_path) -> None:
+    """A key written as null on every sheet that never had one is a column a
+    reader has to learn to ignore."""
+    sheet = finished_sheet(tmp_path, [finished_unit(0)])
+    assert "selected_on" not in sheet.rows[0]
+    written = json.loads((sheet.directory / "sheet.jsonl").read_text(encoding="utf-8").strip())
+    assert "selected_on" not in written
+
+
+def test_the_second_reading_survives_the_reorder_onto_its_own_row(tmp_path) -> None:
+    """The id is assigned after the order is fixed, so a reading that travelled by
+    position would land on the neighbour it outscored."""
+    units = [
+        finished_unit(0, selected_on={"p_ge4": 0.1}),
+        finished_unit(1, selected_on={"p_ge4": 0.9}),
+    ]
+    sheet = finished_sheet(tmp_path, units, probabilities=[[0.1, 0.1], [0.9, 0.9]])
+    first, second = sheet.rows
+    assert first["suggestion_score"] > second["suggestion_score"], "good to bad"
+    assert first["selected_on"] == {"p_ge4": 0.9}
+    assert second["selected_on"] == {"p_ge4": 0.1}

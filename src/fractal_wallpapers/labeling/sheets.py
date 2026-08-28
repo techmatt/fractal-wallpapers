@@ -837,6 +837,13 @@ def finished_source(
             "pictures": [{"caption": f"{unit['mode']} · {map_name}", "path": f"full/{name}.jpg"}],
             "thumb": f"thumb/{name}.jpg",
             "facts": facts,
+            # The reading the row was DRAWN on, where the plan states one. The
+            # `columns` this sheet writes are read off the picture the page
+            # serves; a population selected at another geometry was selected on
+            # another number, and a sheet that carried only one of the two would
+            # let a reader attribute a disagreement to the labeler that belongs
+            # to the regime. Passed through untouched — nothing here re-reads it.
+            "selected_on": unit.get("selected_on") or None,
             "_picture": picture,
             "_thumb": directory / "thumb" / f"{name}.jpg",
         }
@@ -1014,6 +1021,12 @@ def units_from_plan(path: Path) -> list[dict]:
     is recorded in the batch's registration. Every unit names its place, its mode
     and its iteration cap; a `section` groups it on the page and a `colormap`
     fixes its map where the plan already decided one.
+
+    A unit may also carry `selected_on` — the reading its population was drawn
+    on, at whatever geometry that was. It travels onto the row beside the
+    `columns` this sheet reads off the picture it serves, and it is the only way
+    a sheet cut over a selection made at another regime can be read as a
+    comparison rather than as one number with a footnote.
     """
     path = Path(path)
     if not path.is_file():
@@ -1131,6 +1144,10 @@ def build(
                 "suggestion": row["suggestion"],
                 "suggestion_score": row["suggestion_score"],
                 "columns": row.get("columns") or {},
+                # Only where the plan stated one: a key written as null on every
+                # sheet that never had a second reading is a column a reader has
+                # to learn to ignore.
+                **({"selected_on": row["selected_on"]} if row.get("selected_on") else {}),
             }
         )
 

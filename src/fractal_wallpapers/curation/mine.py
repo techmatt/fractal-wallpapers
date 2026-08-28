@@ -1580,7 +1580,11 @@ def contact_sheet(name: str, record: dict, output: Path | None = None, rows: int
         ),
         (
             f"Rejected — P(&ge;4) &lt; {SEATING_BAR}",
-            [row for row in made if row["p_ge4"] < SEATING_BAR][:rows],
+            # NOT sliced here: every band's heading says "N of M", and a band
+            # that arrived pre-cut says "24 of 24" — which reads as *everything
+            # was rejected and all of it is shown*, on the one band where the
+            # denominator is the whole run.
+            [row for row in made if row["p_ge4"] < SEATING_BAR],
             "The strongest of what neither bar admits. If these look like the band above "
             "them, the judge is the thing to look at next and not the draw.",
         ),
@@ -1590,7 +1594,10 @@ def contact_sheet(name: str, record: dict, output: Path | None = None, rows: int
         f"<title>mine {html.escape(name)}</title>",
         f"<style>{sheet_module.STYLE}</style>",
         f"<h1>mine {html.escape(name)} — reject autopsy</h1>",
-        f"<p class='lede'>{counts.get('made', 0):,} candidate(s) over three arms, sorted by "
+        # The arms this run actually holds, not a fixed three: a page that says
+        # three over a two-arm comparison reads as an arm that bought nothing.
+        f"<p class='lede'>{counts.get('made', 0):,} candidate(s) over "
+        f"{', '.join(sorted({str(row['arm']) for row in made})) or 'no arm'}, sorted by "
         f"P(&ge;4). No quality bar admitted any of them; the bands below are read off the "
         f"scores at page time and are stored in no row.</p>",
     ]

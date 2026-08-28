@@ -123,9 +123,46 @@ nobody judged.
 
 ---
 
+## TWO-BLOCKS-ONE-BATCH — `seated_and_head_top`
+
+*Registries: both. 200 rows over 200 distinct locations, cut as two sheets —
+`smooth_render` 103, `strange_render` 97 — because the batch spans both kinds.*
+
+One batch name, **two populations drawn by two different rules**, told apart on the
+row by `section` and nowhere else. Block one is the 150 seats of the `p2b_n150`
+program: the clearing pool walked strongest-first under five selection rules after
+a neutral pre-selection. Block two is 50 rows drawn strongest-first by the shipped
+judge's `P(>=4)`, one per location, under **no** selection rule. Any rate quoted
+over all 200 mixes a heavily-constrained selection with an unconstrained one and is
+a rate about neither.
+
+**The control block is not the naive top 50.** Drawn with no exclusion at all, 36
+of the strongest 50 places are already seated and 29 are the *identical* ledger
+row, so the block would have been 58% a copy of the block it exists to control. It
+therefore skips places any seat holds and takes the next 50 — the one rule the
+"no selection rule" block obeys. Its floor is `P(>=4) = 0.99789` and its top is
+`1.0`: fifty places inside two thousandths, so "strongest-first" barely orders it
+and a rank read off its position on the page means very little.
+
+**Pinned, and only half of it can actually be pinned.** `eval_only` is asserted,
+but 108 of the 200 places already carry train-side rows from
+`p_ge4_calibration_smooth`/`_strange`, `under_seen_modes`, `released_top_end`,
+`itinerary_promotion` and `threads_promotion`. Those places' groups are not
+eval-eligible, so a seeded split will not draw them however the batch is
+registered. Treat the pinnable instrument as the other 92 places.
+
+**Both readings are on the row and they are not interchangeable.** `selected_on`
+is the `640x360 ss2` reading the row was *selected* on; `columns` is the judge's
+reading of the `1280x720 ss2` picture the page actually serves. Over the seats the
+two differ by `-0.0020` in the mean and by as much as `0.27` on 14 individual
+rows, so a per-row agreement rate computed against the wrong one is wrong by more
+than it looks.
+
+---
+
 ### Reading this file from code
 
 Nothing parses it. It is prose beside the registries on purpose: a caveat that a
-reader has to obey is a caveat a reader has to *read*, and encoding these five as
+reader has to obey is a caveat a reader has to *read*, and encoding these six as
 flags would invite a downstream check to satisfy the flag and skip the paragraph.
 The registration flags stay the two questions they have always been.

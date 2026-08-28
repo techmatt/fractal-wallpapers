@@ -1475,14 +1475,51 @@ fractal-wallpapers curate depth run --name d2 --rate 0.35 --budget 5400   --cell
 ```
 
 The arm is the **flat draw with one thing changed**. Same pools, same
-`flat_places` draw, same roster, same width, same seeds — only the palette ask
-differs: `aimed_maps` sends it through `hunt.conditioned_maps` and so through
-the carrier table's mean-share weighting, where `flat_maps` samples the pool
-uniformly. That is what makes the flat arm the *control*: `record.hit_rate`
-reads both arms' rate of coming out dominant in the cell and reports the `lift`
-between them. A share with no `--cell`, a `--cell` with no share, and a misspelt
-cell are all refused at the plan rather than reported afterwards as a draw that
-bought nothing.
+`flat_places` draw, same roster, same width — only the palette ask differs:
+`aimed_maps` sends it through `hunt.conditioned_maps` and so through the carrier
+table's mean-share weighting, where `flat_maps` samples the pool uniformly. That
+is what makes the flat arm the *control*: `record.hit_rate` reads both arms' rate
+of coming out dominant in the cell and reports the `lift` between them. A share
+with no `--cell`, a `--cell` with no share, and a misspelt cell are all refused
+at the plan rather than reported afterwards as a draw that bought nothing.
+
+**The two arms do not share a seed, and `plan.seeds` is where the four numbers
+are.** They cannot: the arms are drawn *disjoint*, so the place draws are offset
+(`seed + 1` for flat, `seed + 2` for conditioned) and the conditioned arm's
+palette cycle runs at `seed + 2` against the flat arm's `seed`. Everything a
+comparison needs held fixed is held fixed and the seeds are not one of those
+things — but a measurement nobody can re-take is an anecdote, so every draw's
+place seed and candidate seed are on the record.
+
+**`--top-bands N` stands both matched arms in the strongest N rank bands.** The
+head's rank spreads the prime rate end to end, so an arm and a control drawn
+over the whole axis are comparing two colour asks *and* two accidental rank
+mixes. The cut is by band and not by rank, so it lands on the same boundary in
+every partition however differently they are stocked: at the default ten bands,
+`--top-bands 5` is each partition's own top half. **It never cuts the ranked
+draw** — measuring the curve end to end is that draw's whole job.
+
+**A run that is only the arm and its control needs no ranked draw.** Both breadth
+arms used to be sized off the ranked draw's *realized* partition counts, which
+are empty when it has no share — so `--shares '{"flat": 0.5, "conditioned":
+0.5}'` planned nothing at all and reported two arms that bought no candidates.
+`spread_over_partitions` sizes them round-robin off their own shares instead
+where there is no ranked draw to inherit a mix from, and `plan.matched_mix_agrees`
+says on the record that the arm and its control asked for the same one.
+
+**`record.dominant_and_clearing` is the readout the arm exists for, and it
+reports the factors before it multiplies them.** The census's marginal cost for a
+cell (`940 s` for `light_vivid_teal`) is *unconditioned* and decomposes into
+three independent things: renders per place explored (17.2), places per place
+yielding any clearing candidate (3.47), and clearing places per clearing place
+dominant in the cell (40.8). Conditioning the palette ask attacks the third
+factor alone. The risk it carries is in the second — whether the maps that carry
+a colour make *worse pictures* — so the clear rate is reported per arm against
+the ledger-wide base rate (`headroom.bars`' per-mode rule, 7.0% of all 85,078
+candidates) before the composed renders-per-(dominant ∧ clearing) price. Every
+count in that block is **raw**: one read of one candidate against its own mode's
+bar, never a maximum over `k`, so none of it needs a prime count's k-dependent
+multiplier.
 
 **Draw-biased, verdict-measured, and it does not gate on the table.** The carrier
 table is a prior about a map and never a claim about a picture — group members

@@ -431,6 +431,57 @@ def flat_places(banded: dict, taken: set, seed: int, want: dict) -> list:
     return _interleave_by_partition(out)
 
 
+def strongest_bands(banded: dict, keep: int | None) -> dict:
+    """`banded` cut to its `keep` strongest rank bands. `None` keeps every band.
+
+    What restricts the two **matched** draws — [`FLAT`] and [`AIMED`] — to one
+    stretch of the head's rank axis. The ranked draw is deliberately not cut:
+    its whole job is the curve end to end, and a curve measured over half the
+    axis is a different measurement wearing the same name.
+
+    The cut is by band and not by rank, so it lands on the same boundary in
+    every partition however differently the partitions are stocked: with ten
+    bands, `keep=5` is each partition's own top half.
+    """
+    if keep is None:
+        return banded
+    keep = max(1, int(keep))
+    return {name: list(held)[:keep] for name, held in banded.items()}
+
+
+def spread_over_partitions(banded: dict, places: int) -> dict:
+    """`places` locations spread round-robin over the partitions that hold stock.
+
+    The partition mix a matched draw takes when there is **no ranked draw to
+    inherit one from**. Sizing the two breadth controls off the ranked draw's
+    realized counts is right while a run is measuring the curve and buying the
+    controls beside it; a run that is only the two matched arms would size them
+    off a draw it did not take, which is a mix of zero.
+
+    Round-robin and not proportional, for [`banded_places`]'s reason: what is
+    being bought is a comparison between two arms, and a draw proportional to
+    stock would put most of both arms in whichever partition the pool happens to
+    be fat in and read as a fact about the colour.
+    """
+    stock = {name: sum(len(band) for band in held) for name, held in banded.items()}
+    out: dict = dict.fromkeys(sorted(name for name, held in stock.items() if held), 0)
+    if not out:
+        return {}
+    given = 0
+    while given < int(places):
+        took = False
+        for name in list(out):
+            if given >= int(places):
+                break
+            if out[name] < stock[name]:
+                out[name] += 1
+                given += 1
+                took = True
+        if not took:
+            break
+    return {name: count for name, count in out.items() if count}
+
+
 def proven_places(best: dict, index: dict, seed: int, count: int, bar: float = SEATING_BAR):
     """`count` locations that already hold a candidate over `bar`, spread over partitions.
 
@@ -694,6 +745,7 @@ def build_plan(
     width: int = WIDTH,
     near_width: int | None = None,
     bands: int = RANK_BANDS,
+    top_bands: int | None = None,
     roster: list | None = None,
     breadth_demoted: tuple | list = BREADTH_DEMOTED,
     cell: str | None = None,
@@ -778,17 +830,27 @@ def build_plan(
         else []
     )
     counts = collections.Counter(str(row["partition"]) for row in ranked)
-    scale = float(shares[FLAT]) / max(1e-9, float(shares[RANKED]))
     picked = {str(row["key"]) for row in ranked}
-    flat_want = {name: max(1, round(count * scale)) for name, count in counts.items()}
-    flat = flat_places(banded, picked, seed + 1, flat_want) if want.get(FLAT) else []
+    # The two matched arms draw out of one band cut, so `--top-bands` moves both
+    # or neither: a control taken from a different stretch of the rank axis than
+    # the arm it controls is not a control.
+    matched = strongest_bands(banded, top_bands)
+    if ranked:
+        # Sized off the ranked draw's realized partition counts, which is what a
+        # run measuring the curve and buying the controls beside it wants.
+        scale = float(shares[FLAT]) / max(1e-9, float(shares[RANKED]))
+        flat_want = {name: max(1, round(count * scale)) for name, count in counts.items()}
+        aimed_want = {name: max(1, round(count * scale)) for name, count in counts.items()}
+    else:
+        flat_want = spread_over_partitions(matched, max(1, want.get(FLAT, 0) // max(1, width)))
+        aimed_want = spread_over_partitions(matched, max(1, want.get(AIMED, 0) // max(1, width)))
+    flat = flat_places(matched, picked, seed + 1, flat_want) if want.get(FLAT) else []
     # The aimed arm's places are drawn exactly as the flat arm's are and out of
     # the same pools, disjoint from both draws above. That is the point: the two
     # differ in the palette ask and in nothing else, so the flat arm is the
     # control the aimed arm's dominance hit rate is read against.
-    aimed_want = {name: max(1, round(count * scale)) for name, count in counts.items()}
     aimed = (
-        flat_places(banded, picked | {str(row["key"]) for row in flat}, seed + 2, aimed_want)
+        flat_places(matched, picked | {str(row["key"]) for row in flat}, seed + 2, aimed_want)
         if want.get(AIMED)
         else []
     )
@@ -823,6 +885,19 @@ def build_plan(
         "width": int(width),
         "near_width": int(near_width),
         "rank_bands": int(bands),
+        "top_bands": None if top_bands is None else int(top_bands),
+        "matched_arms_sized_from": RANKED if ranked else "their own shares",
+        # Every draw here is seeded and the seeds are not one seed: a place draw
+        # and a palette draw at the same arm are taken under different ones, and
+        # a run nobody can re-take is a measurement nobody can check.
+        "seeds": {
+            "base": int(seed),
+            NEAR: {"places": int(seed), "candidates": int(seed)},
+            RANKED: {"places": int(seed), "candidates": int(seed)},
+            FLAT: {"places": int(seed) + 1, "candidates": int(seed)},
+            FLOOR: {"places": int(seed), "candidates": int(seed)},
+            AIMED: {"places": int(seed) + 2, "candidates": int(seed) + 2},
+        },
         "cell": None if cell is None else str(cell),
         "roster": roster,
         "breadth_roster": breadth,
@@ -843,6 +918,8 @@ def build_plan(
         ),
         "ranked_by_partition": dict(sorted(counts.items())),
         "flat_wanted_by_partition": dict(sorted(flat_want.items())),
+        "conditioned_wanted_by_partition": dict(sorted(aimed_want.items())),
+        "matched_mix_agrees": dict(sorted(flat_want.items())) == dict(sorted(aimed_want.items())),
         "arms": {
             arm: {
                 "candidates": len(held),
@@ -883,6 +960,7 @@ def run(
     width: int = WIDTH,
     near_width: int | None = None,
     bands: int = RANK_BANDS,
+    top_bands: int | None = None,
     roster: list | None = None,
     breadth_demoted: tuple | list = BREADTH_DEMOTED,
     cell: str | None = None,
@@ -913,6 +991,7 @@ def run(
         width=width,
         near_width=near_width,
         bands=bands,
+        top_bands=top_bands,
         roster=roster,
         breadth_demoted=breadth_demoted,
         cell=cell,
@@ -1053,6 +1132,8 @@ def run(
             "width": int(width),
             "near_width": shape["near_width"],
             "rank_bands": int(bands),
+            "top_bands": shape["top_bands"],
+            "seeds": shape["seeds"],
             "shares": shape["shares"],
             "primed_bar": PRIMED_BAR,
             "seating_bar": SEATING_BAR,
@@ -1074,6 +1155,9 @@ def run(
         "profile": clock.table(),
         "curves": curves(made),
         "hit_rate": hit_rate(made, shape.get("cell")),
+        "dominant_and_clearing": dominant_and_clearing(
+            made, shape.get("cell"), mode_bars(world["rows"])
+        ),
         "by_mode": by_mode(made),
         "rank": rank_readout(made),
         "route": None,
@@ -1224,6 +1308,117 @@ def hit_rate(made: list, cell: str | None) -> dict | None:
     # What a hit rate below 1 costs: the renders on this arm and nothing else,
     # because every candidate is a candidate whatever colour it came out.
     out["renders_per_hit"] = round(1.0 / aimed, 3) if aimed else None
+    return out
+
+
+def mode_bars(rows=None, log=lambda *_args: None) -> dict:
+    """The per-mode clearing rule, read off the whole ledger. `{mode: {column, bar}}`.
+
+    [`curation.headroom.bars`]' policy and not a second copy of it: `P(>=4) >=
+    0.50` for a mode that can field twenty-five distinct locations there, and
+    `P(>=3) >= 0.50` for one that cannot. Derived over the **ledger**, never over
+    the arm being measured — a rule refitted on a few hundred fresh candidates
+    would move with the thing it is supposed to be measuring, and two arms would
+    then be scored against two bars.
+
+    Beside the table, `clear_rate` is what share of every candidate ever rendered
+    clears its own mode's rule. It is the base rate an arm's clear rate is the
+    interesting number *against*: the judge taxes every draw alike, so a
+    conditioned arm that holds it has cost the pipeline nothing.
+    """
+    from fractal_wallpapers.curation import headroom
+
+    candidates, _cost, _refused = headroom.population(rows=rows, log=log)
+    table = headroom.bars(candidates)
+    clearing = headroom.clearing(candidates, table)
+    return {
+        "modes": {
+            name: {"column": block["rule"], "bar": block["bar"]}
+            for name, block in table["modes"].items()
+        },
+        "on_default": list(table["on_default"]),
+        "on_fallback": list(table["on_fallback"]),
+        "ledger_candidates": len(candidates),
+        "ledger_clearing": len(clearing),
+        "ledger_clear_rate": round(len(clearing) / max(1, len(candidates)), 5),
+    }
+
+
+def clears_its_bar(row: dict, table: dict) -> bool:
+    """Whether one made candidate clears its own mode's rule.
+
+    A mode the table has never heard of falls to the default column, which is the
+    same direction [`curation.labeling.registry`] fails in: the strict reading is
+    the safe one when the population cannot answer for itself.
+    """
+    rule = (table.get("modes") or {}).get(str(row["mode"])) or {
+        "column": "p_ge4",
+        "bar": SEATING_BAR,
+    }
+    return float(row.get(str(rule["column"])) or 0.0) >= float(rule["bar"])
+
+
+def dominant_and_clearing(made: list, cell: str | None, table: dict) -> dict | None:
+    """The conditioned arm and its control, factor by factor, ending in one price.
+
+    The census's marginal cost for a cell is **unconditioned** and it composes
+    three independent things: renders per place explored, places per place that
+    yields any clearing candidate, and clearing places per clearing place
+    dominant in the cell. Conditioning the palette ask attacks the third factor
+    alone. So this reports the factors apart before it multiplies them, because
+    the risk the arm exists to test lives in the second one — whether the maps
+    that carry a colour make *worse pictures* — and a single composed number
+    hides exactly that.
+
+    Every count here is **raw**: one read of one candidate's own render against
+    its own mode's bar. Nothing here is a maximum over `k`, so nothing here needs
+    the k-dependent multiplier a prime count does.
+    """
+    if not cell:
+        return None
+    out: dict = {
+        "cell": str(cell),
+        "bars": {
+            "from": "headroom.bars over the whole ledger",
+            "on_fallback": table.get("on_fallback"),
+        },
+        "ledger_clear_rate": table.get("ledger_clear_rate"),
+    }
+    for arm in (AIMED, FLAT):
+        held = [row for row in made if row["arm"] == arm]
+        places = {row["location"] for row in held}
+        clearing = [row for row in held if clears_its_bar(row, table)]
+        dominant = [row for row in held if str(cell) in (row.get("cells") or ())]
+        both = [row for row in clearing if str(cell) in (row.get("cells") or ())]
+        seconds = sum(float(row["seconds"]) for row in held)
+        out[arm] = {
+            "candidates": len(held),
+            "locations": len(places),
+            "renders_per_place": round(len(held) / len(places), 3) if places else None,
+            "seconds": round(seconds, 1),
+            "seconds_per_candidate": round(seconds / len(held), 4) if held else None,
+            "clearing": len(clearing),
+            "clear_rate": round(len(clearing) / len(held), 5) if held else None,
+            "dominant": len(dominant),
+            "cell_hit_rate": round(len(dominant) / len(held), 5) if held else None,
+            "dominant_and_clearing": len(both),
+            "rate": round(len(both) / len(held), 5) if held else None,
+            "renders_per_win": round(len(held) / len(both), 2) if both else None,
+            "seconds_per_win": round(seconds / len(both), 2) if both else None,
+            "places_with_a_win": len({row["location"] for row in both}),
+        }
+    aimed, flat = out[AIMED], out[FLAT]
+    out["lift"] = {
+        name: (round(aimed[name] / flat[name], 3) if aimed.get(name) and flat.get(name) else None)
+        for name in ("clear_rate", "cell_hit_rate", "rate")
+    }
+    # The one that decides. Below 1 the conditioned arm is dearer per win than
+    # drawing uniformly and the whole arm is a loss, whatever the hit rate did.
+    out["renders_per_win_ratio"] = (
+        round(flat["renders_per_win"] / aimed["renders_per_win"], 3)
+        if aimed.get("renders_per_win") and flat.get("renders_per_win")
+        else None
+    )
     return out
 
 
