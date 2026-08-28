@@ -53,13 +53,21 @@ def candidate(
     )
 
 
-def program_of(candidates, n, modes=("smooth", "stripe"), targets=None):
+def program_of(candidates, n, modes=("smooth", "stripe"), targets=None, floor=1):
+    """A program at `n`, with an **artificial** mode floor of one by default.
+
+    `solve.mode_floor` is `floor(n / 100)`, so every program small enough to solve
+    in a unit test asks for no floors at all and stage 3's rows would never be
+    exercised. `floor=1` is what these tests are about; `floor=None` reads the
+    real one, and one test below pins that it is zero at these sizes.
+    """
     return solve.Program(
         candidates=list(candidates),
         n=int(n),
         rule=solve.rule_for(targets),
         modes=tuple(modes),
         targets=dict(targets or {}),
+        floor=floor,
     )
 
 
@@ -372,12 +380,12 @@ def test_the_group_cap_is_the_larger_of_the_two_thresholds():
         candidate("c", group="map:two"),
     ]
     pairs = Table(candidates, {})
-    assert pairs.rule_for(0, 1) == ("group_cap", max(solve.RADIUS, ceiling.TAU_GROUP))
-    assert pairs.rule_for(0, 2) == ("diversity", solve.RADIUS)
+    assert pairs.rule_for(0, 1) == ("group_cap", max(ceiling.TAU, ceiling.TAU_GROUP))
+    assert pairs.rule_for(0, 2) == ("diversity", ceiling.TAU)
 
 
 def test_a_pair_between_the_two_thresholds_is_refused_only_inside_one_group():
-    between = (solve.RADIUS + ceiling.TAU_GROUP) / 2
+    between = (ceiling.TAU + ceiling.TAU_GROUP) / 2
     same = [candidate("a", group="map:one"), candidate("b", group="map:one")]
     apart = [candidate("a", group="map:one"), candidate("b", group="map:two")]
     assert Table(same, {(0, 1): between}).violations([0, 1])
@@ -776,8 +784,28 @@ def test_the_q4_bar_is_the_advisory_and_says_it_is_not_a_crossover():
     assert "NOT a measured crossover" in solve.Q4_BASIS
 
 
-def test_the_diversity_radius_sits_between_the_two_thresholds_already_set():
-    assert ceiling.TAU < solve.RADIUS < ceiling.TAU_GROUP
+def test_the_diversity_distance_is_the_twin_threshold_and_has_only_one_name():
+    """`solve.RADIUS` is retired. Two spellings of one fact is a silent null."""
+    assert not hasattr(solve, "RADIUS")
+    assert "RADIUS" not in solve.__all__
+    assert ceiling.TAU < ceiling.TAU_GROUP
+
+
+def test_the_mode_floor_scales_with_the_gallery_and_is_zero_below_a_hundred():
+    assert solve.mode_floor(20) == 0
+    assert solve.mode_floor(99) == 0
+    assert solve.mode_floor(150) == 1
+    assert solve.mode_floor(1000) == 10
+    assert not hasattr(solve, "MODE_FLOOR")
+
+
+def test_a_program_reads_the_real_floor_unless_a_caller_puts_one_back():
+    """The artificial floor is a debug affordance and the record says which it was."""
+    plain = program_of([candidate("a")], 20, floor=None)
+    assert plain.mode_floor == 0
+    assert plain.config()["mode_floor_artificial"] is False
+    assert program_of([candidate("a")], 20).mode_floor == 1
+    assert program_of([candidate("a")], 20).config()["mode_floor_artificial"] is True
 
 
 def test_a_lensless_rule_carries_the_constants_and_refuses_to_seat():

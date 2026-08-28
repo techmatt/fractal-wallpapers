@@ -55,7 +55,7 @@ The design this module replaced was to prune at **location** level — pairs who
 places are far apart cannot be near-duplicate pictures, so only close locations
 need their candidates expanded. Measured over 79,621 cross-location pairs drawn
 from the pool's top two thousand, that premise is false: 1,350 of them are closer
-than [`RADIUS`] as pictures, and the furthest-apart pair of *places* that makes
+than 0.07 as pictures, and the furthest-apart pair of *places* that makes
 one sits at cosine 0.583, past the 90th percentile of location distance. It is
 the expected answer once stated plainly — this metric is over a picture's colour
 cloud, and colour comes from the map rather than from the place, so two unrelated
@@ -76,9 +76,10 @@ seed's rejects and every earlier incumbent — instead of the incumbent's own pa
 alone, so the rows arrive many rounds before the incumbent would have found them.
 
 The two rules are one test with two thresholds. Two seated pictures must be at
-least [`RADIUS`] apart in [`pixel_clouds.METRIC`]; two seated pictures of one
-**palette group** must be at least [`ceiling.TAU_GROUP`] apart, which is that
-cap's own exemption distance and the larger of the two.
+least [`ceiling.TAU`] apart in [`pixel_clouds.METRIC`] — the same distance
+[`curation.seating`]'s twin test refuses inside, because it is the same question —
+and two seated pictures of one **palette group** at least [`ceiling.TAU_GROUP`]
+apart, which is that cap's own exemption distance and the larger of the two.
 
 ## Infeasibility is an answer, and it is the useful one
 
@@ -137,25 +138,26 @@ Q4_BASIS = (
     "crossover replaces this, and a count taken across the change names its own bar."
 )
 
-#: How far apart two seated **pictures** must be, in [`pixel_clouds.METRIC`].
-#:
-#: 0.07, and it is a *picture* distance, not the location-embedding cosine
-#: [`gallery.RADIUS`] happens to share a number with. The two measure different
-#: things: that one asks whether two places are the same place, before anything is
-#: coloured; this asks whether two finished wallpapers are the same wallpaper.
-#:
-#: Loose on purpose, and readable against the two thresholds already set in this
-#: metric. [`ceiling.TAU`] is 0.0586 — Matt's, off the twins ladder, where two
-#: pictures *are* one wallpaper — and [`ceiling.TAU_GROUP`] is 0.10, where two
-#: pictures are plainly different ones. This sits between them and nearer the
-#: first: a collection-wide rule can afford to refuse a pair a twin test would
-#: pass, because there are fifteen thousand candidates and twenty seats.
-RADIUS = 0.07
+# The diversity distance this module used to spell `RADIUS = 0.07` is **retired**.
+# Every reader of it now reads [`ceiling.TAU`], 0.0586, Matt's, off the twins
+# ladder. Two spellings of one fact is a silent null: both were answering "do
+# these two read as one wallpaper", so a pair one refused and the other passed was
+# a disagreement between two numbers nobody had chosen between. There is one
+# number and it is the one somebody set by eye. A caller needing a different
+# distance for a different question names the caller and the question rather than
+# reviving a second constant.
 
-#: How many seats one production mode's floor asks for. **One** — the floor is
-#: "this mode is represented at all", which is the accounting gallery4 did not
-#: have when it seated 13 of 18 modes and nothing anywhere said so.
-MODE_FLOOR = 1
+#: How many seats of a gallery one production mode's floor is worth: **a
+#: hundredth**, so the floor is `floor(n / 100)` — 0 at n=20, 1 at 150, 10 at 1000.
+#:
+#: The flat one-per-mode it replaces asked eighteen of a twenty-seat gallery to be
+#: spent on representation, which is not a debug gallery of the strongest pictures
+#: but a survey of the modes. It also forced `trap_circle` — 2 clearing locations,
+#: the better of them at `P(>=4) = 0.066` — into every gallery this project would
+#: ever seat. A floor that scales says what the flat one meant, "this mode is
+#: represented at all", at the sizes where representation is affordable, and says
+#: nothing at the sizes where it is not.
+SEATS_PER_MODE_FLOOR = 100
 
 #: The mode-floor penalty, **per seat of the gallery**: `lambda = n * this`.
 #:
@@ -165,6 +167,19 @@ MODE_FLOOR = 1
 #: swapping a seat to cover a mode costs thousandths and buys 0.2. It scales with
 #: `n` because the sum does.
 PENALTY_PER_SEAT = 1.0 / 100.0
+
+
+def mode_floor(n: int) -> int:
+    """How many seats each production mode's floor asks for, at `n`.
+
+    `floor(n / SEATS_PER_MODE_FLOOR)`, by integer division rather than a float
+    times a rate, so the value at a rung is the value every reader computes.
+    **Zero is a real answer**: below a hundred seats no mode is mandated at all,
+    and a seating there is the strongest pictures the pool holds rather than a
+    survey of the roster.
+    """
+    return int(n) // SEATS_PER_MODE_FLOOR
+
 
 #: How many candidates the greedy seed walks, as a multiple of `n`.
 #:
@@ -228,8 +243,8 @@ SIGNATURE_CACHE = 512
 #: [`pixel_clouds.QUANTILES`] blocks is the metric itself. Every setting in
 #: between is sound; the question is only how much it settles.
 #:
-#: Measured over 79,800 pairs drawn from the pool's top two thousand, at
-#: [`RADIUS`]: one block settles 95.4% of pairs and leaves 2.7 survivors per real
+#: Measured over 79,800 pairs drawn from the pool's top two thousand, at the
+#: retired 0.07: one block settles 95.4% of pairs and leaves 2.7 survivors per real
 #: violation, two settles 97.4% and leaves 1.6, four settles 97.9% and leaves 1.2,
 #: sixteen settles 98.3% and leaves 1.0. Four is where the curve flattens, and it
 #: is a sixteen-kibibyte signature against the metric's five hundred and twelve.
@@ -451,7 +466,7 @@ class Pairs:
     pair the bound puts at or beyond its own threshold **cannot** violate, so it
     never needs a signature and never needs generating. Measured over 79,800 pairs
     drawn from the pool's top two thousand, it recovers 99.0% of the distance at
-    the median and settles 97.9% of pairs at [`RADIUS`], leaving 1.2 survivors per
+    the median and settles 97.9% of pairs at that distance, leaving 1.2 survivors per
     real violation. At one block it recovers 95.5% and settles 95.4%.
     """
 
@@ -557,14 +572,14 @@ class Pairs:
     def rule_for(self, one: int, other: int) -> tuple[str, float]:
         """`(which rule, how far apart this pair has to be)`.
 
-        [`RADIUS`] for any two seated pictures; [`ceiling.TAU_GROUP`] where they
-        are two pictures of one palette group, which is that cap's own exemption
-        distance and the larger of the two. One test, so a pair is measured once
-        whichever rule ends up naming it.
+        [`ceiling.TAU`] for any two seated pictures; [`ceiling.TAU_GROUP`] where
+        they are two pictures of one palette group, which is that cap's own
+        exemption distance and the larger of the two. One test, so a pair is
+        measured once whichever rule ends up naming it.
         """
         if self.candidates[one].group == self.candidates[other].group:
-            return "group_cap", max(RADIUS, ceiling.TAU_GROUP)
-        return "diversity", RADIUS
+            return "group_cap", max(ceiling.TAU, ceiling.TAU_GROUP)
+        return "diversity", ceiling.TAU
 
     def measure(self, order: list[int], screen: bool = True) -> None:
         """Decide every undecided pair of `order`. **The seam**, and one call.
@@ -788,6 +803,16 @@ class Program:
     generated: list = field(default_factory=list)
     #: Whether cardinality is `== n` or `<= n`. The under-fill re-solve sets it.
     exact_cardinality: bool = True
+    #: An **artificial** mode floor, replacing [`mode_floor`]. `None` is the real
+    #: one. It is here for the same reason [`curation.seating`] takes one: the
+    #: real floor is zero below a hundred seats, so a small program exercises
+    #: stage 3's rows only if something puts a floor back.
+    floor: int | None = None
+
+    @property
+    def mode_floor(self) -> int:
+        """How many seats each production mode's floor asks for in this program."""
+        return mode_floor(self.n) if self.floor is None else int(self.floor)
 
     def __post_init__(self) -> None:
         self.locations = by_location(self.candidates)
@@ -897,13 +922,16 @@ class Program:
                 f"1. count of seats with raw P(>=4) >= {Q4_BAR}",
                 "2. the minimum score among the seated, maximized",
                 f"3. the sum of the seated scores, less {PENALTY_PER_SEAT} * n per "
-                f"production mode below its floor of {MODE_FLOOR}",
+                f"production mode below its floor of {self.mode_floor}",
             ],
             "q4_bar": Q4_BAR,
             "q4_basis": Q4_BASIS,
-            "radius": RADIUS,
+            "radius": ceiling.TAU,
+            "radius_from": "ceiling.TAU. `solve.RADIUS` is retired: one distance, one name",
             "tau_group": ceiling.TAU_GROUP,
-            "mode_floor": MODE_FLOOR,
+            "mode_floor": self.mode_floor,
+            "mode_floor_rule": f"floor(n / {SEATS_PER_MODE_FLOOR})",
+            "mode_floor_artificial": self.floor is not None,
             "mode_penalty": round(self.n * PENALTY_PER_SEAT, 6),
             "modes": list(self.modes),
             "ceiling": {
@@ -992,7 +1020,7 @@ def lexicographic(program: Program, seed: dict | None = None, log=print) -> dict
     score is a probability — an unseated candidate's row reads `t <= score + 1`,
     which cannot bind on a `t` already bounded above by one.
 
-    Stage 3 adds `sum(x in mode m) + d_m >= MODE_FLOOR` and pays `n *
+    Stage 3 adds `sum(x in mode m) + d_m >= mode_floor(n)` and pays `n *
     PENALTY_PER_SEAT` for each unit of `d`. Those rows exist only in this stage:
     the first two ask questions the penalty is not allowed to trade against.
 
@@ -1028,7 +1056,7 @@ def lexicographic(program: Program, seed: dict | None = None, log=print) -> dict
     pad = sparse.csr_array((base.shape[0], width - size))
     base = sparse.hstack([base, pad], format="csr")
     ceiling_of = numpy.concatenate(
-        [numpy.ones(size), [1.0], numpy.full(len(modes), float(MODE_FLOOR))]
+        [numpy.ones(size), [1.0], numpy.full(len(modes), float(program.mode_floor))]
     )
     values: dict = {}
     started = time.monotonic()
@@ -1114,7 +1142,11 @@ def lexicographic(program: Program, seed: dict | None = None, log=print) -> dict
         [second_matrix, sparse.csr_array(hold_floor), sparse.csr_array(deficits)], format="csr"
     )
     third_low = numpy.concatenate(
-        [second_low, [floor - EPSILON], numpy.full(len(modes), float(MODE_FLOOR))]
+        [
+            second_low,
+            [floor - EPSILON],
+            numpy.full(len(modes), float(program.mode_floor)),
+        ]
     )
     third_high = numpy.concatenate([second_high, [numpy.inf], numpy.full(len(modes), numpy.inf)])
     penalty = program.n * PENALTY_PER_SEAT
@@ -2063,8 +2095,9 @@ def contact_sheet(name: str, record: dict, output: Path | None = None) -> Path:
         )
         lines += [
             "<h2>The nearest seated pairs</h2>",
-            f"<p class='lede'>The calibration instrument. The radius refuses anything under "
-            f"{RADIUS} in the pixel-cloud metric, and {ceiling.TAU_GROUP} inside one palette "
+            f"<p class='lede'>The calibration instrument. The rule refuses anything under "
+            f"{ceiling.TAU} in the pixel-cloud metric, and {ceiling.TAU_GROUP} inside one "
+            f"palette "
             f"group. If two of these read as one wallpaper, the radius is too small.</p>",
             f"<table>{rows}</table>",
         ]
@@ -2428,14 +2461,13 @@ __all__ = [
     "BOUND_BLOCKS",
     "Candidate",
     "EPSILON",
-    "MODE_FLOOR",
     "NEAR_MISSES",
     "PENALTY_PER_SEAT",
     "Pairs",
     "Program",
     "Q4_BAR",
     "Q4_BASIS",
-    "RADIUS",
+    "SEATS_PER_MODE_FLOOR",
     "ROUNDS",
     "SCHEMA",
     "SWEEP",
@@ -2453,6 +2485,7 @@ __all__ = [
     "elastic",
     "lexicographic",
     "matrices",
+    "mode_floor",
     "near_misses",
     "picture_of",
     "picture_of_row",

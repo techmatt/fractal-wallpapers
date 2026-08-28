@@ -7,25 +7,37 @@ the answer is known; far apart and that gap is the size of the prize an exact
 solve is competing for, which is usually the signal to go and make more candidates
 instead.
 
-It only chooses. It proposes nothing, renders nothing, and opens no picture: every
-reading it needs — the colour, the palette group, the mode, the score — is already
-on the ledger row, so a [`ceiling.Lens`] here is a **lookup** and never a second
+It only chooses. It proposes nothing and renders nothing: every reading about a
+candidate — the colour, the palette group, the mode, the score — is already on the
+ledger row, so a [`ceiling.Lens`] here is a **lookup** and never a second
 derivation. Nothing here re-decodes a JPEG to be told what the row already says.
+
+It does open pictures, for one rule and only for it. The twin test is a statement
+about two *finished pictures* and there is no reading on the row that answers it,
+so a candidate that has cleared every arithmetic test pays one pixel-cloud
+signature. That is why the twin test runs **last** of the five: the four rules
+above it are counts, they refuse most of what they see, and each one they refuse
+is a signature not made.
 
 ## Fill by scarcity, not by score
 
 Ordering by score alone converts satisfiable problems into apparent infeasibility.
-At `n = 20` the mode floors alone ask for eighteen of the twenty seats, and eleven
-of those eighteen modes can field only a handful of places between them — so a
-walk down the ranked list spends its first seats on `smooth` and `exp_smoothing`,
-which have thousands of candidates each, and then reports that fifteen modes could
-not be seated. Every one of them could have been.
+Where the mode floors ask for most of the gallery — as the flat one-per-mode did
+at `n = 20`, eighteen of twenty seats over eleven modes that can field a handful
+of places between them — a walk down the ranked list spends its first seats on
+`smooth` and `exp_smoothing`, which have thousands of candidates each, and then
+reports that fifteen modes could not be seated. Every one of them could have been.
 
 So the mandated constraints are seated **from their own subpools first, scarcest
 first**, and only what is left over is drawn from the general pool by score. The
 order is a fact about supply and not a preference: a mode with three eligible
 places is seated before a mode with eight hundred because the three can only be
 spent one way.
+
+[`solve.mode_floor`] is now `floor(n / 100)`, so below a hundred seats there is no
+mandate at all and this leg does nothing — which is the honest shape of a
+twenty-seat debug gallery. `--mode-floor` puts an artificial floor back so the leg
+is still exercised, and a record taken under one says so.
 
 ## One rule is hard and every other is soft
 
@@ -35,14 +47,25 @@ on: the cell and family allowances, the mode floors, the palette-group cap. Ther
 is no fallback leg, no least-violating rescue and no padding. An unfilled seat is
 the honest output, and it is the number the census is a bound on.
 
-The pairwise diversity radius is deliberately **not** here, and after
-[`curation.distinct`]'s premise check that is a gap rather than a design. Moving
-it to pool construction over the neutral descriptors was the plan; the measurement
-says the two metrics are near-orthogonal, so nothing in a neutral pre-filter
-substitutes for it. Until the rule is placed somewhere a seating from this module
-is a lower bound on a program **without** it — measured at n=20, the twenty seated
-hold no pair under [`ceiling.TAU`] and two under [`solve.RADIUS`] — and the record
-says so rather than leaving a reader to assume the rule was applied.
+## Two rules under one word, in the two places they belong
+
+[`curation.distinct`] measured what "diversity" was hiding: *are these two the
+same place* and *do these two read as one wallpaper* are near-orthogonal
+questions — Pearson 0.034 — and one rule cannot answer both. So there are two, and
+neither is in the solve.
+
+**Are these two the same place** is [`distinct.preselect`], at pool construction,
+before this module is called: a greedy suppression at [`distinct.PRESELECT_RADIUS`]
+over the neutral descriptors. It refuses a *place*, so everything that place
+carries goes with it, and it is recorded here as [`SAME_PLACE`] rather than as a
+seating rule, because that is what it is.
+
+**Do these two read as one wallpaper** is the twin test, at [`ceiling.TAU`], and
+it is sequential state in this walk. It is the last of [`RULES`] and the only one
+that opens a picture. It does not enter the solve and the solve's complexity does
+not change: a rule that reads the seats already taken is a rule a greedy can apply
+for the cost of one signature per surviving candidate, where a solver would have
+to carry it as a quadratic family of rows.
 
 ## A greedy shortfall is not infeasibility
 
@@ -58,10 +81,21 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from fractal_wallpapers.curation import candidate_ledger, ceiling, headroom, solve
+from fractal_wallpapers.curation import (
+    candidate_ledger,
+    ceiling,
+    distinct,
+    headroom,
+    solve,
+)
 
 #: The schema every record this module writes carries.
-SCHEMA = 1
+#:
+#: **2**: the twin rule joined [`RULES`], the mode floor became a function of `n`
+#: rather than a constant, and the mode block counts representation separately
+#: from the floor. A schema 1 record was taken under a flat floor of one and no
+#: pairwise rule at all, and the two are not comparable seatings.
+SCHEMA = 2
 
 #: The subtree a seating's record and its sheet land in.
 UNIT = "seat"
@@ -75,11 +109,18 @@ SHOWN = 6
 #: refusal, which is what makes the rejection ledger a partition of the pool
 #: rather than a tally that double-counts.
 #:
-#: `location` is hard. The three after it are soft: a candidate that fails one is
-#: passed over while a seat is still being chosen, and the shortfall is recorded —
-#: but nothing is ever seated by relaxing a rule it failed, so a soft rule that
-#: nothing can satisfy leaves the seat empty.
-RULES = ("location", "group_cap", "cell_allowance", "family_allowance")
+#: `location` is hard and so is `twin` — both are statements about the identity
+#: of the thing being chosen rather than preferences about it. The three between
+#: them are soft: a candidate that fails one is passed over while a seat is still
+#: being chosen, and the shortfall is recorded — but nothing is ever seated by
+#: relaxing a rule it failed, so a soft rule that nothing can satisfy leaves the
+#: seat empty.
+#:
+#: `twin` is **last** because it is the only one that costs anything. The four
+#: above it are dictionary lookups over counts already held; this one decodes a
+#: JPEG, builds half a mebibyte of pixel cloud and compares it to every seat
+#: already taken. Every candidate the cheap rules refuse is a signature not made.
+RULES = ("location", "group_cap", "cell_allowance", "family_allowance", "twin")
 
 #: What a candidate that broke no rule and simply lost is recorded as. It is a far
 #: weaker statement than any of [`RULES`] and is kept apart for that reason: a
@@ -89,6 +130,30 @@ UNSEATED = "the_greedy_had_no_seat_left"
 #: What a candidate below its own mode's bar is recorded as. Not a refusal by any
 #: selection rule — it never entered the population the seating chooses from.
 BELOW_BAR = "below_its_mode_bar"
+
+#: What a candidate whose **place** the neutral pre-selection refused is recorded
+#: as. Kept apart from [`RULES`] for the same reason [`BELOW_BAR`] is: it is pool
+#: construction and not a seat this walk declined to give. The place lost to
+#: another place inside [`distinct.PRESELECT_RADIUS`], and no colouring of it
+#: could have changed that.
+SAME_PLACE = "another_place_is_the_same_place"
+
+#: How many seated pictures inside [`ceiling.TAU`] it takes to refuse. **One.**
+#:
+#: Deliberately stricter than [`ceiling.TWINS`], which is 2 and is the shipped
+#: gallery pass's setting — there the argument is that one near neighbour is a
+#: collection with a pair in it and three of a kind is what a person notices. A
+#: seating is choosing from fifteen thousand candidates for twenty seats and can
+#: afford the strict form, and the lazy pairwise rule in [`curation.solve`] is
+#: already the strict form, so this matches the solve rather than the pass. The
+#: two are on the record wherever they meet.
+TWIN_NEIGHBOURS = 1
+
+#: How many signatures the seating's pixel-cloud cache holds before it forgets the
+#: oldest. 256 is 128 MiB. The seated are **held** and never counted against it,
+#: so the only thing this buys is the second offer of a candidate the scarcity leg
+#: already tested — a few dozen, not a few thousand.
+SIGNATURE_CACHE = 256
 
 
 class SeatingRefused(RuntimeError):
@@ -107,16 +172,139 @@ def lens_for(rows=None) -> ceiling.Lens:
     be told what the row says. [`candidate_ledger.reading_source`] is that lookup,
     built over the whole store once however many candidates are tested.
 
-    The pixel-cloud half is left unwired on purpose: nothing in this seating is a
-    pairwise rule, so a cloud would be half a mebibyte made to answer no question.
-    A caller that wants the twin check as a **residual** over the small surviving
-    set builds a lens with a real `render_of` and pays for the survivors only.
+    The pixel-cloud half stays unwired here even though the twin rule is now
+    applied: [`Twins`] holds that state itself, keyed by candidate key and with
+    the seated pictures **held** rather than cached, which is a different lifetime
+    from anything a lens knows about.
     """
     return ceiling.Lens(
         render_of=lambda candidate: None,
         group_of=lambda candidate: str(candidate.get("palette_group")),
         stored_of=candidate_ledger.reading_source(rows),
     )
+
+
+def clouds_for(candidates, cache: int = SIGNATURE_CACHE):
+    """A [`pixel_clouds.Clouds`] over the pool, addressed by **candidate key**.
+
+    By key and not by path because the twin test is per candidate: one place may
+    carry fifty rows, they are fifty different pictures, and the rule is about the
+    pictures. A row whose picture is not on disk reads as `None` and is admitted —
+    [`Twins`] counts those rather than refusing on them, because a missing file is
+    a fact about this checkout and not about the wallpaper.
+    """
+    from pathlib import Path
+
+    from fractal_wallpapers.palettes import pixel_clouds
+    from fractal_wallpapers.paths import rehome
+
+    pictures = {candidate.key: candidate.picture for candidate in candidates}
+
+    def path_of(name):
+        held = pictures.get(str(name))
+        if not held:
+            return None
+        where = Path(rehome(held))
+        return where if where.is_file() else None
+
+    return pixel_clouds.Clouds(path_of, cache=int(cache))
+
+
+class Twins:
+    """The twin rule's sequential state: is this picture one of the seated ones?
+
+    Two stores, and the split is [`solve.BOUND`]'s. Every seated picture is kept
+    twice — once as its full signature, held in the [`pixel_clouds.Clouds`], and
+    once as [`solve.reduce_signature`]'s four blocks of quantiles, sixteen
+    kibibytes against half a mebibyte. A candidate is screened against the reduced
+    stack first, which is a sound *lower* bound on the metric, so a seat the bound
+    puts at or beyond [`ceiling.TAU`] provably cannot be a twin and is never
+    measured. Only the survivors cost a full comparison.
+
+    The bound settles almost everything — 99.2% of the pairs in the sweep that
+    measured this pool — but the saving is arithmetic and not I/O: the candidate's
+    own signature has to be made either way, and that is the tenth of a second.
+    What the bound buys is that the cost of the rule does not grow with the number
+    of seats already taken.
+    """
+
+    def __init__(self, clouds, tau: float | None = None, neighbours: int = TWIN_NEIGHBOURS):
+        self.clouds = clouds
+        self.tau = ceiling.TAU if tau is None else float(tau)
+        self.neighbours = int(neighbours)
+        #: The seated, in seating order. Parallel to the reduced stack.
+        self.keys: list = []
+        self._reduced: list = []
+        self._stack = None
+        self.tested = 0
+        self.settled_by_the_bound = 0
+        self.measured = 0
+        self.without_a_picture = 0
+
+    def refuses(self, key: str) -> dict | None:
+        """The seated picture this candidate is a twin of, or `None`."""
+        import numpy
+
+        from fractal_wallpapers.palettes import groups, pixel_clouds
+
+        made = self.clouds.of(str(key))
+        if made is None:
+            self.without_a_picture += 1
+            return None
+        if not self._reduced:
+            return None
+        self.tested += 1
+        if self._stack is None:
+            self._stack = numpy.stack(self._reduced)
+        mine = solve.reduce_signature(made).reshape(-1)
+        width = groups.DIRECTIONS * solve.BOUND_BLOCKS
+        lower = numpy.abs(self._stack - mine).sum(axis=1, dtype=numpy.float64) / width
+        close = [int(at) for at in numpy.nonzero(lower < self.tau)[0]]
+        self.settled_by_the_bound += len(self._reduced) - len(close)
+        near = []
+        for at in close:
+            self.measured += 1
+            gap = pixel_clouds.distance(made, self.clouds.of(self.keys[at]))
+            if gap < self.tau:
+                near.append((gap, self.keys[at]))
+        if len(near) < self.neighbours:
+            return None
+        near.sort()
+        return {
+            "twin_of": near[0][1],
+            "pixel_cloud": round(near[0][0], 6),
+            "seated_within_tau": len(near),
+        }
+
+    def hold(self, key: str) -> bool:
+        """Keep one seated picture's signature, in both forms. `False` if it has none."""
+        import numpy
+
+        made = self.clouds.of(str(key))
+        if made is None:
+            return False
+        self.clouds.hold(str(key))
+        self.keys.append(str(key))
+        self._reduced.append(numpy.asarray(solve.reduce_signature(made).reshape(-1)))
+        self._stack = None
+        return True
+
+    def record(self) -> dict:
+        """What the rule cost and what it settled, for the pass record."""
+        return {
+            "tau": self.tau,
+            "tau_from": "ceiling.TAU",
+            "neighbours": self.neighbours,
+            "metric": "pixel-cloud sliced Wasserstein-1 between two finished pictures",
+            "bound": solve.BOUND,
+            "candidates_tested": self.tested,
+            "seat_comparisons_settled_by_the_bound": self.settled_by_the_bound,
+            "seat_comparisons_measured": self.measured,
+            "signatures_made": self.clouds.made,
+            "signature_cache_hits": self.clouds.hits,
+            "tested_without_a_picture_on_disk": self.without_a_picture,
+            "seated_pictures_held": len(self.keys),
+        }
 
 
 # --------------------------------------------------------------------------- #
@@ -130,9 +318,13 @@ class Seats:
     it does not.
     """
 
-    def __init__(self, rule: ceiling.Rule, n: int):
+    def __init__(self, rule: ceiling.Rule, n: int, floor: int = 0, twins: Twins | None = None):
         self.rule = rule
         self.n = int(n)
+        #: How many seats each production mode's floor asks for, at this `n`.
+        self.floor = int(floor)
+        #: The twin rule's state, or `None` where the rule is not applied.
+        self.twins = twins
         self.chosen: list = []
         self.places: set = set()
         self.cells: dict = {}
@@ -141,9 +333,16 @@ class Seats:
         self.modes: dict = {}
         #: `{rule: how many times it was the reason}`, over every candidate tested.
         self.refusals: dict = {name: 0 for name in RULES}
+        #: `{key: which seated picture it was a twin of}`, for the record.
+        self.twin_of: dict = {}
 
     def refuses(self, candidate) -> str | None:
-        """The first rule this candidate fails, or `None`. [`RULES`] order."""
+        """The first rule this candidate fails, or `None`. [`RULES`] order.
+
+        The four arithmetic rules first and the twin test last, because that one
+        costs a pixel-cloud signature and the four above it refuse most of what
+        they see.
+        """
         if candidate.location in self.places:
             return "location"
         if self.groups.get(candidate.group, 0) >= self.rule.group_cap:
@@ -154,6 +353,11 @@ class Seats:
         for family in candidate.families:
             if self.families.get(family, 0) + 1 > self.rule.allowed(family, self.n):
                 return "family_allowance"
+        if self.twins is not None:
+            found = self.twins.refuses(candidate.key)
+            if found is not None:
+                self.twin_of[candidate.key] = found
+                return "twin"
         return None
 
     def seat(self, candidate, why: str) -> dict:
@@ -166,6 +370,8 @@ class Seats:
             self.cells[cell] = self.cells.get(cell, 0) + 1
         for family in candidate.families:
             self.families[family] = self.families.get(family, 0) + 1
+        if self.twins is not None:
+            self.twins.hold(candidate.key)
         return {"key": candidate.key, "seated_for": why}
 
     @property
@@ -177,10 +383,10 @@ def scarcity(kept, modes) -> list:
     """The mandated constraints, scarcest first. `[(mode, its subpool)]`.
 
     The only mandate the **default** target vector produces is the mode floor:
-    every production mode wants one seat, and no colour cell is demanded because
-    no `--target` is set. So the order is by how many distinct locations each mode
-    can field, ascending — a mode with three is spent before a mode with eight
-    hundred, because the three can only be spent one way.
+    every production mode wants [`solve.mode_floor`] seats and no colour cell is
+    demanded, because no `--target` is set. So the order is by how many distinct
+    locations each mode can field, ascending — a mode with three is spent before a
+    mode with eight hundred, because the three can only be spent one way.
 
     A mode with nothing at all is kept in the list rather than dropped, so the
     record says it was asked for and could not be met.
@@ -200,34 +406,54 @@ def seat(
     candidates,
     n: int = candidate_ledger.FIRST_SOLVE,
     rule: ceiling.Rule | None = None,
+    floor: int | None = None,
+    radius: float | None = distinct.PRESELECT_RADIUS,
+    twin: bool = True,
     log=print,
 ) -> dict:
     """Fill `n` seats by scarcity then by score, and keep every refusal.
 
-    Two legs over one [`Seats`]. The first walks the mandated constraints in
-    scarcity order and takes each one's best candidate that nothing refuses; the
-    second walks whatever is left of the ranked pool. A candidate refused in the
-    first leg is offered again in the second, because the state it was refused
-    against has moved on.
+    Pool construction first: the bars, then the neutral pre-selection at `radius`
+    — `None` for no pre-selection at all, which is what a caller comparing against
+    a schema 1 record wants. Then two legs over one [`Seats`]. The first walks the
+    mandated constraints in scarcity order and takes each one's best candidate
+    that nothing refuses; the second walks whatever is left of the ranked pool. A
+    candidate refused in the first leg is offered again in the second, because the
+    state it was refused against has moved on.
+
+    `floor` is the **artificial** mode floor a debug gallery uses to exercise the
+    scarcity leg at a size where [`solve.mode_floor`] asks for nothing. Unset, the
+    floor is the real one and the record says so.
     """
     from fractal_wallpapers import engine
 
     modes = list(engine.production_modes())
     rule = solve.rule_for() if rule is None else rule
+    natural = solve.mode_floor(n)
+    floor = natural if floor is None else int(floor)
     table = headroom.bars(candidates)
-    kept = headroom.clearing(candidates, table)
-    kept.sort(key=lambda candidate: (-candidate.score, candidate.key))
-    seats = Seats(rule, n)
+    cleared = headroom.clearing(candidates, table)
+    log(f"[seat] {len(cleared):,} of {len(candidates):,} candidates clear their mode's bar")
     #: `{key: the rule that refused it, the last time it was offered}`.
     refused: dict = {}
-    log(f"[seat] {len(kept):,} of {len(candidates):,} candidates clear their mode's bar")
+    if radius is None:
+        kept, preselection = list(cleared), {"skipped": "no neutral pre-selection was applied"}
+    else:
+        kept, preselection = distinct.preselect(cleared, radius=float(radius), log=log)
+        survived = {candidate.key for candidate in kept}
+        for candidate in cleared:
+            if candidate.key not in survived:
+                refused[candidate.key] = SAME_PLACE
+    kept.sort(key=lambda candidate: (-candidate.score, candidate.key))
+    twins = Twins(clouds_for(kept)) if twin else None
+    seats = Seats(rule, n, floor=floor, twins=twins)
 
     mandated = scarcity(kept, modes)
     picked: set = set()
     for mode, members in mandated:
         if seats.full:
             break
-        if seats.modes.get(mode, 0) >= solve.MODE_FLOOR:
+        if seats.modes.get(mode, 0) >= floor:
             continue
         for candidate in members:
             why = seats.refuses(candidate)
@@ -265,31 +491,46 @@ def seat(
     record = {
         "schema": SCHEMA,
         "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "config": _config(n, rule, modes, table),
+        "config": _config(n, rule, modes, table, floor, natural, twins),
+        "preselection": preselection,
         "population": {
             "candidates": len(candidates),
-            "clearing": len(kept),
+            "clearing": len(cleared),
+            "after_the_preselection": len(kept),
             "locations": len({c.location for c in candidates}),
-            "clearing_locations": len({c.location for c in kept}),
+            "clearing_locations": len({c.location for c in cleared}),
+            "locations_after_the_preselection": len({c.location for c in kept}),
         },
         "filled": len(seats.chosen),
         "unfilled": n - len(seats.chosen),
         "seated": [_seated(candidate, why) for candidate, why in seats.chosen],
-        "shortfalls": _shortfalls(seats, rule, modes, n),
+        "shortfalls": _shortfalls(seats, rule, modes, n, floor),
+        "twins": None if twins is None else twins.record(),
+        "twin_refusals": dict(sorted(seats.twin_of.items())),
         "rejection": rejection(candidates, refused, log=log),
-        "samples": samples(candidates, refused),
+        "samples": samples(candidates, refused, against=_lost_to(seats, preselection, cleared)),
     }
     log(
         f"[seat] {record['filled']} of {n} seat(s); "
-        f"{record['shortfalls']['modes']['missing_count']} mode(s) unseated"
+        f"{record['shortfalls']['modes']['represented']} of "
+        f"{record['shortfalls']['modes']['of']} mode(s) represented, "
+        f"{record['shortfalls']['modes']['below_the_floor_count']} below a floor of {floor}"
     )
     return record
 
 
-def _config(n: int, rule: ceiling.Rule, modes: list, table: dict) -> dict:
+def _config(
+    n: int,
+    rule: ceiling.Rule,
+    modes: list,
+    table: dict,
+    floor: int,
+    natural: int,
+    twins: Twins | None,
+) -> dict:
     return {
         "n": n,
-        "hard": ["one wallpaper per location"],
+        "hard": ["one wallpaper per location", "the twin test"],
         "soft": [
             "the palette group cap",
             "the per-cell allowance",
@@ -301,11 +542,16 @@ def _config(n: int, rule: ceiling.Rule, modes: list, table: dict) -> dict:
         "rules": list(RULES),
         "no_fallback": "nothing is seated by relaxing a rule it failed, and no seat is "
         "padded. Unfilled beats padded",
-        "pairwise": "NOT applied, and nothing here reads a pixel cloud. Moving the "
-        "diversity radius to pool construction over the neutral descriptors was the plan; "
-        "the premise check refutes it (6,720 twin pairs at a median neutral distance of "
-        "0.226, a radius of 0.10 removing 413 of them), so the rule is unplaced and these "
-        "seats are a bound on a program WITHOUT it",
+        "pairwise": (
+            "APPLIED, sequentially, as the last of the rules: no candidate is seated "
+            f"within {ceiling.TAU} of an already-seated picture in the pixel-cloud metric. "
+            "It is not in the solve and the solve's complexity does not change. The other "
+            "half of what `diversity` used to mean — are these two the same place — is the "
+            "neutral pre-selection at pool construction, recorded under `preselection`"
+        )
+        if twins is not None
+        else "NOT applied: this seating was asked for without the twin test, so it is a "
+        "bound on a program without it",
         "bars": {name: block["rule"] for name, block in sorted(table["modes"].items())},
         "ceiling": {
             "k": rule.k,
@@ -316,9 +562,44 @@ def _config(n: int, rule: ceiling.Rule, modes: list, table: dict) -> dict:
             "tau_group": rule.tau_group,
             "targets": dict(sorted(rule.targets.items())),
         },
-        "mode_floor": solve.MODE_FLOOR,
+        "mode_floor": floor,
+        "mode_floor_rule": f"floor(n / {solve.SEATS_PER_MODE_FLOOR})",
+        "mode_floor_natural": natural,
+        "mode_floor_artificial": floor != natural,
         "modes": modes,
     }
+
+
+def _lost_to(seats: Seats, preselection: dict, cleared: list) -> dict:
+    """`{candidate key: the picture it lost to}` for the two pairwise refusals.
+
+    Both are keyed by **candidate**, because that is what the rejection ledger and
+    the sheet are keyed by — but the two rules do not refuse the same kind of
+    thing. The twin test names a seated candidate. The pre-selection names a
+    *place*, and every row that place carries went with it, so each of them is
+    given the picture the place lost to.
+    """
+    pictures = {candidate.key: candidate.picture for candidate in cleared}
+    at_place: dict = {}
+    for candidate in cleared:
+        at_place.setdefault(candidate.location, []).append(candidate.key)
+    out = {
+        key: {
+            "picture": pictures.get(found["twin_of"]),
+            "pixel_cloud": found["pixel_cloud"],
+            "rule": f"twin: under {ceiling.TAU} of a seated picture",
+        }
+        for key, found in seats.twin_of.items()
+    }
+    for row in preselection.get("refusals") or []:
+        lost = {
+            "picture": row["lost_to_picture"],
+            "neutral": row["distance"],
+            "rule": f"the same place: under {preselection['radius']} in the neutral descriptor",
+        }
+        for key in at_place.get(row["location"], ()):
+            out[key] = lost
+    return out
 
 
 def _seated(candidate, why: str) -> dict:
@@ -338,17 +619,26 @@ def _seated(candidate, why: str) -> dict:
     }
 
 
-def _shortfalls(seats: Seats, rule: ceiling.Rule, modes: list, n: int) -> dict:
-    """Every soft rule's shortfall, recorded rather than repaired."""
-    missing = [name for name in modes if seats.modes.get(name, 0) < solve.MODE_FLOOR]
+def _shortfalls(seats: Seats, rule: ceiling.Rule, modes: list, n: int, floor: int) -> dict:
+    """Every soft rule's shortfall, recorded rather than repaired.
+
+    The mode block counts two different things and says which is which. `floor`
+    is what the policy asked for at this `n`, and below a hundred seats it asks
+    for nothing — so `below_the_floor` is empty there and says nothing about the
+    gallery. `represented` is how many modes actually took a seat, which is the
+    number a reader of a small gallery wants and the one a vacuous floor would
+    otherwise have hidden behind an eighteen-of-eighteen.
+    """
+    missing = [name for name in modes if seats.modes.get(name, 0) < floor]
     return {
         "seats": {"asked": n, "filled": len(seats.chosen), "unfilled": n - len(seats.chosen)},
         "modes": {
-            "floor": solve.MODE_FLOOR,
-            "held": len(modes) - len(missing),
+            "floor": floor,
+            "asked": floor * len(modes),
+            "represented": sum(1 for name in modes if seats.modes.get(name, 0)),
             "of": len(modes),
-            "missing": missing,
-            "missing_count": len(missing),
+            "below_the_floor": missing,
+            "below_the_floor_count": len(missing),
             "counts": dict(sorted(seats.modes.items(), key=lambda item: -item[1])),
         },
         "cells": {
@@ -439,16 +729,23 @@ def rejection(candidates, refused: dict, log=print) -> dict:
         },
         "read": "the rule that refused each candidate the LAST time it was offered, in "
         f"{list(RULES)} order. `{UNSEATED}` broke no rule and simply arrived after the "
-        f"seats ran out; `{BELOW_BAR}` never entered the population at all",
+        f"seats ran out; `{BELOW_BAR}` never entered the population at all, and "
+        f"`{SAME_PLACE}` was refused at pool construction because another place inside "
+        "the neutral pre-selection radius took it",
     }
 
 
-def samples(candidates, refused: dict, count: int = SHOWN) -> dict:
+def samples(candidates, refused: dict, count: int = SHOWN, against: dict | None = None) -> dict:
     """`{rule: the strongest few it refused}` — the visual half of the ledger.
 
     Strongest first inside each rule, because a refusal of a weak candidate says
     nothing: the question a sheet answers is whether the rule is throwing away
     pictures a person would have kept.
+
+    `against` is `{key: what it lost to}` for the two rules where the refusal is
+    about a *pair* — the twin test and the pre-selection. A twin refusal shown on
+    its own is unreadable: the whole question is whether the picture it was
+    refused against is the same wallpaper, and that is a two-picture question.
     """
     held: dict = {}
     for candidate in sorted(candidates, key=lambda c: (-c.score, c.key)):
@@ -457,7 +754,11 @@ def samples(candidates, refused: dict, count: int = SHOWN) -> dict:
             continue
         mine = held.setdefault(why, [])
         if len(mine) < int(count):
-            mine.append(_seated(candidate, why))
+            row = _seated(candidate, why)
+            lost_to = (against or {}).get(candidate.key)
+            if lost_to is not None:
+                row["lost_to"] = lost_to
+            mine.append(row)
     return held
 
 
@@ -498,14 +799,22 @@ def contact_sheet(name: str, record: dict, rejected=None, output=None):
     config = record["config"]
     shortfalls = record["shortfalls"]
 
-    def card(row: dict, caption: str) -> str:
-        picture = row.get("picture")
+    def frame(picture) -> str:
         source = None if not picture else Path(rehome(picture))
-        body = (
+        return (
             f'<img src="{sheet_module.thumbnail(source)}" alt="">'
             if source is not None and source.is_file()
             else '<div class="missing">no picture on disk</div>'
         )
+
+    def card(row: dict, caption: str) -> str:
+        lost_to = row.get("lost_to") or {}
+        body = frame(row.get("picture"))
+        if lost_to.get("picture"):
+            body = (
+                f"<div class='pair'><div class='frame'>{body}</div>"
+                f"<div class='frame'>{frame(lost_to['picture'])}</div></div>"
+            )
         facts = [
             f"mode <b>{html.escape(str(row.get('mode')))}</b>",
             f"P(&ge;4) {row.get('p_ge4')} &middot; P(&ge;3) {row.get('p_ge3')}",
@@ -513,8 +822,13 @@ def contact_sheet(name: str, record: dict, rejected=None, output=None):
             f"group {html.escape(str(row.get('palette_group')))}",
             f"partition {html.escape(str(row.get('partition')))}",
         ]
+        if lost_to:
+            gap = lost_to.get("pixel_cloud", lost_to.get("neutral"))
+            facts.append(f"lost to the picture beside it at <b>{gap}</b>")
         return (
-            f"<figure><div class='frame'>{body}</div><figcaption>"
+            "<figure>"
+            + (body if lost_to.get("picture") else f"<div class='frame'>{body}</div>")
+            + "<figcaption>"
             f"<b>{html.escape(caption)}</b><ul>"
             + "".join(f"<li>{fact}</li>" for fact in facts)
             + "</ul></figcaption></figure>"
@@ -523,12 +837,17 @@ def contact_sheet(name: str, record: dict, rejected=None, output=None):
     lines = [
         "<!doctype html><meta charset='utf-8'>",
         f"<title>seat {html.escape(name)}</title>",
-        f"<style>{sheet_module.STYLE}</style>",
+        f"<style>{sheet_module.STYLE}"
+        ".pair { display: grid; gap: .4rem; grid-template-columns: 1fr 1fr; }"
+        "</style>",
         f"<h1>seat {html.escape(name)}</h1>",
         f"<p class='lede'>{record['filled']} of {config['n']} seat(s) filled from "
-        f"{record['population']['clearing']:,} clearing candidates over "
-        f"{record['population']['clearing_locations']:,} locations. "
-        f"{shortfalls['modes']['held']} of {shortfalls['modes']['of']} modes held. "
+        f"{record['population'].get('after_the_preselection', record['population']['clearing']):,}"
+        f" candidates over "
+        f"{record['population'].get('locations_after_the_preselection', 0):,} locations that "
+        f"clear their mode's bar and survive the neutral pre-selection. "
+        f"{shortfalls['modes']['represented']} of {shortfalls['modes']['of']} modes "
+        f"represented, against a floor of {shortfalls['modes']['floor']}. "
         "A greedy: fill by scarcity, then by score. Nothing here is optimal and a "
         "shortfall is not infeasibility.</p>",
         f"<h2>Seated ({record['filled']})</h2>",
@@ -553,12 +872,17 @@ def contact_sheet(name: str, record: dict, rejected=None, output=None):
 __all__ = [
     "BELOW_BAR",
     "RULES",
+    "SAME_PLACE",
     "SCHEMA",
     "SHOWN",
+    "SIGNATURE_CACHE",
+    "TWIN_NEIGHBOURS",
     "UNIT",
     "UNSEATED",
     "SeatingRefused",
     "Seats",
+    "Twins",
+    "clouds_for",
     "contact_sheet",
     "lens_for",
     "rejection",

@@ -111,10 +111,10 @@ and skip themselves without one.
 what CI runs and what runs before a checkpoint. The fast lane is for the
 edit-run loop and nothing else.
 
-The nine minutes is measured, not estimated: 3,011 tests in **9:25** on this
-machine at `c041014` plus the selection-alignment work, 2026-08-27, with the fast
-lane at 48.0 s over the 2,905 it holds. It has been climbing with the suite —
-6:54, 7:20, 8:05 and 8:45 were the four runs before it — so read it as the order
+The nine minutes is measured, not estimated: 3,043 tests in **9:46** on this
+machine at `d86f2b1` plus the diversity-placement work, 2026-08-27, with the fast
+lane at 50.0 s over the 2,937 it holds. It has been climbing with the suite —
+7:20, 8:05, 8:45 and 9:25 were the four runs before it — so read it as the order
 of magnitude and re-measure rather than trusting the digit.
 Measure it on an **idle** machine: the same lane sharing this one with a render
 leg crawled to 41% in the time it normally takes to finish.
