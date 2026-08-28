@@ -2,9 +2,9 @@
   "schema": 1,
   "path": "artifacts/curation/neutral_embeddings.jsonl",
   "copy": "artifacts/curation_backup/neutral_embeddings.jsonl",
-  "rows": 29051,
-  "bytes": 50685669,
-  "sha256": "8f408445af70128a3ca86c50d2013bd77559652576678613434ca55e624e65a4",
+  "rows": 29381,
+  "bytes": 51263321,
+  "sha256": "e280654619bc5035fd0665c55992ab65da9a0b1dc12bd75d3a37eb5bf2cab132",
   "stamp": "bf03db95ce61",
   "choices": {
     "colormap": "twilight_shifted",
@@ -18,22 +18,22 @@
     "mirror": false
   },
   "rows_by_partition": {
-    "julia:mandelbrot": 5387,
-    "julia:multibrot3": 4639,
-    "julia:multibrot4": 3929,
-    "julia:multibrot5": 3817,
-    "mandelbrot": 4016,
-    "multibrot3": 1799,
-    "multibrot4": 1635,
-    "multibrot5": 2111,
-    "phoenix": 1718
+    "julia:mandelbrot": 5412,
+    "julia:multibrot3": 4712,
+    "julia:multibrot4": 3980,
+    "julia:multibrot5": 3866,
+    "mandelbrot": 4045,
+    "multibrot3": 1840,
+    "multibrot4": 1658,
+    "multibrot5": 2125,
+    "phoenix": 1743
   },
   "pictures": {
     "directory": "artifacts/curation/neutral",
-    "files": 29051,
-    "bytes": 2724151873,
+    "files": 29381,
+    "bytes": 2755798919,
     "regenerable": "yes, from this store's own rows: every row carries the family, the viewport and the maxiter its neutral render is made from. About a tenth of a second each, so they are counted here and not copied."
   },
-  "recorded": "2026-08-22",
+  "recorded": "2026-08-27",
   "why_not_tracked": "one kilobyte of vector per location over twenty-five thousand locations, which is tens of megabytes against a 1 MiB per-file history guard, and it grows by an append every time a harvest adds admissions. The manifest is what the history keeps: the row count, the bytes, the sha256, the frozen choices every vector was made under, and the population it was counted against."
 }

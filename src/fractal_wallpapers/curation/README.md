@@ -564,7 +564,8 @@ reports the agreement on every run.
 
 **The margin was calibrated on the pass's neighbourhoods, and the pool is the
 other end of the same scale.** A scan of every admitted location on 2026-08-26 —
-28,090 of 29,051 embedded, 961 under the junk floor, 196,630 frames in 3.37 h —
+28,090 of the 29,051 rows the store held that day, 961 under the junk floor,
+196,630 frames in 3.37 h —
 put median `P(>=4)` at the recorded framing at **0.0009**, against the 0.9998 the
 paragraphs above are measured at. Both ends are where log-odds has resolution and
 the probability has none, so the same Δ 2.0 that took 26.9% of gallery4's 751
@@ -1582,8 +1583,12 @@ pool.
 The gallery pass picks by **quality-weighted farthest point with a hard radius**,
 which needs to know how far apart two locations look. `curate embed` is what
 answers that: for every location the location judge admits over the junk floor
-(**24,779** today), one **neutral render** through one fixed cyclic map at one
-fixed small geometry, and the unit vector a frozen DINOv2 reads off it.
+(**28,420** on 2026-08-27), one **neutral render** through one fixed cyclic map at
+one fixed small geometry, and the unit vector a frozen DINOv2 reads off it. The
+store holds **29,381** rows against that: it is append-only and keyed on the
+location, so a location a later harvest re-framed or a later judge dropped keeps
+the vector it was given. `curate embed` is the number that matters — it subtracts
+what is stored and reports `complete` when nothing admitted is missing.
 
 * **Locations, never candidates.** A candidate is a location already coloured,
   and the gallery pass chooses the colouring afterwards. Palette diversity is the
