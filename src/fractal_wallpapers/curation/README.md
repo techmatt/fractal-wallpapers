@@ -854,6 +854,15 @@ this project has fitted are `P(>=3)` and neither transfers to a different
 cutpoint. It is recorded on every solve so a count taken across the change names
 its own bar.
 
+**What the bar buys, measured.** The `seated_and_head_top` correction sheet put
+200 human tiers against this bar. Over the 150 seats of a `--n 150` solve the bar
+buys **tier ≥3 at 91.3%** and **tier 4 at 30.7%**, and raising it buys nothing on
+the fourth cutpoint: tier-4 precision is 0.31 at 0.50 and 0.30 at 0.999, flat the
+whole way up, while ≥3 precision climbs 0.913 → 1.000. Read `P(>=4)` as a *third*
+-cutpoint screen with a fourth-cutpoint name. The floor stage above is therefore
+doing real work — it is the ≥3 floor it protects — and the q4 bar is not an
+ordering over the seats it admits.
+
 **The pairwise rules are generated, never materialized.** The diversity distance
 and the group cap are statements about a pair of finished pictures, and the
 ledger holds 118 million pairs at 512 KiB a signature. So: solve without them,
