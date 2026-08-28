@@ -144,12 +144,23 @@ therefore skips places any seat holds and takes the next 50 — the one rule the
 `1.0`: fifty places inside two thousandths, so "strongest-first" barely orders it
 and a rank read off its position on the page means very little.
 
-**Pinned, and only half of it can actually be pinned.** `eval_only` is asserted,
-but 108 of the 200 places already carry train-side rows from
-`p_ge4_calibration_smooth`/`_strange`, `under_seen_modes`, `released_top_end`,
-`itinerary_promotion` and `threads_promotion`. Those places' groups are not
-eval-eligible, so a seeded split will not draw them however the batch is
-registered. Treat the pinnable instrument as the other 92 places.
+**Pinned, and 150 of the 200 rows actually are.** `eval_only` pins at *batch*
+granularity in a finished store, so the whole batch is evaluation-side by
+registration. The realized pin took the 150 rows whose place carries no
+training-side row and left **50 contested and unpinned**, because pinning those
+would have stranded older training rows on the wrong side of the split. The
+earlier estimate of 92 was counted off the candidate *ledger* — 108 places carry
+a ledger row from an earlier draw, which is what the render cache reads — and not
+off the labeled stores, which hold a prior same-store row at 66 of the 200
+places. A ledger row is not a train-side label; do not read one for the other.
+
+**The verdicts, and the one rate to quote off them.** 200 human tiers came in
+`1 / 13 / 108 / 78` against a page that prefilled tier 4 on 199 of 200 rows.
+Quote them **by block or not at all**: the 150 seats are `1/12/91/46` (tier 4
+**30.7%**, tier ≥3 91.3%) and the 50 control rows are `0/1/17/32` (tier 4
+**64.0%**, tier ≥3 98.0%). The two differ at `p = 5e-5` and the gap survives
+matching on head score and on store, so the whole-batch 39% describes neither
+population.
 
 **Both readings are on the row and they are not interchangeable.** `selected_on`
 is the `640x360 ss2` reading the row was *selected* on; `columns` is the judge's
