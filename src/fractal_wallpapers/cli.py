@@ -3491,6 +3491,48 @@ def curate_mine(args: argparse.Namespace) -> int:
     return 0
 
 
+def curate_retention(args: argparse.Namespace) -> int:
+    """Report what the retention policy would keep, or build the three aggregates."""
+    from fractal_wallpapers.curation import candidate_ledger, colorize, retention
+
+    if args.what == "report":
+        out = retention.prune_report(
+            keep=args.keep, one_in=args.reservoir_one_in, log=lambda line: print(line)
+        )
+    else:
+        rows = candidate_ledger.read()
+        scores = {
+            key: float(row.get("p_ge4") or 0.0)
+            for key, row in candidate_ledger.scores_by_recipe().items()
+        }
+        out = retention.aggregates(rows, scores, retention.pool_stamp(colorize.pool(0)))
+        # The rows themselves are tens of thousands of tuple keys and JSON has no
+        # tuple, so what is printed is the shape and the sizes; --out writes the
+        # whole thing with the keys joined.
+        out = {
+            **out,
+            **{name: _sized(out[name]) for name in ("place_mode", "map_mode", "place_cell")},
+        }
+    text = json.dumps(out, indent=2)
+    print(text)
+    if args.out:
+        path = Path(args.out)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text + "\n", encoding="utf-8", newline="\n")
+        print(display_path(path))
+    return 0
+
+
+def _sized(block: dict) -> dict:
+    """One aggregate as JSON carries it: tuple keys joined, and the count kept."""
+    return {
+        "pairs": block["pairs"],
+        "rows": {
+            " | ".join(str(part) for part in key): value for key, value in block["rows"].items()
+        },
+    }
+
+
 def curate_shrinkage(args: argparse.Namespace) -> int:
     """Re-read one depth run's winners at label geometry and write both curves."""
     from fractal_wallpapers.curation import candidate_ledger, depth, hunt, shrinkage
@@ -6777,6 +6819,7 @@ def curate_commands(subcommands) -> None:
     from fractal_wallpapers.curation import gallery as gallery_module
     from fractal_wallpapers.curation import hunt as hunt_module
     from fractal_wallpapers.curation import mine as mine_module
+    from fractal_wallpapers.curation import retention as retention_module
     from fractal_wallpapers.curation import run as run_module
     from fractal_wallpapers.curation import shrinkage as shrinkage_module
     from fractal_wallpapers.curation import solve as solve_module
@@ -7920,6 +7963,45 @@ def curate_commands(subcommands) -> None:
     shrinkage_step.add_argument("--seed", type=int, default=0, help="the sample's seed")
     shrinkage_step.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
     shrinkage_step.set_defaults(handler=curate_shrinkage)
+
+    retention_step = steps.add_parser(
+        "retention",
+        help="what the picture-retention policy keeps, and the three aggregates that "
+        "survive what it does not",
+        description=(
+            "At ten million attempts the ledger's rows are about 5 GB and the pictures "
+            "they name are about 600 GB, so storage has to scale with the locations "
+            "explored and not with the attempts made. The policy keeps the top N per "
+            "(location, mode) ranked WITHIN the pair, every row that ever carried a human "
+            "label, and one in 200 of the rest as a flagged reservoir. ROWS ARE NEVER "
+            "DROPPED — only pictures — so recipe-key dedup is untouched. `report` says "
+            "what a prune of the ledger as it stands WOULD delete and deletes nothing; "
+            "`aggregates` builds the three counts that a discard must not destroy."
+        ),
+    )
+    retention_step.add_argument(
+        "what", choices=("report", "aggregates"), help="what to compute. Neither writes"
+    )
+    retention_step.add_argument(
+        "--keep",
+        type=int,
+        default=retention_module.KEEP_PER_PAIR,
+        metavar="COUNT",
+        help=f"pictures kept per (location, mode), ranked within the pair (default "
+        f"{retention_module.KEEP_PER_PAIR})",
+    )
+    retention_step.add_argument(
+        "--reservoir-one-in",
+        type=int,
+        default=retention_module.RESERVOIR_ONE_IN,
+        metavar="N",
+        help=f"one in N of what the ranking drops is kept anyway, flagged (default "
+        f"{retention_module.RESERVOIR_ONE_IN})",
+    )
+    retention_step.add_argument(
+        "--out", metavar="PATH", help="write the JSON here as well as printing it"
+    )
+    retention_step.set_defaults(handler=curate_retention)
 
     rejecting = steps.add_parser(
         "reject",
