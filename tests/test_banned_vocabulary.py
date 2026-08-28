@@ -59,7 +59,12 @@ def spelled_out(term: str) -> str:
 #: A letter on either side means this is a longer word and not the term. Anything
 #: else — `_`, `-`, `/`, `.`, a digit, a space, the end of the line — means the
 #: term is there, wearing the clothes the names in this repository actually wear.
-BANNED = [re.compile(rf"(?<![a-z]){term}(?![a-z])", re.IGNORECASE) for term in BANNED_TERMS]
+#:
+#: A trailing `s` is the one letter that does **not** make it a longer word: the
+#: plural of a banned name is the banned name. Left out, this guard read a whole
+#: paragraph about the old vocabulary and saw nothing, because the sentence
+#: happened to be about two of them rather than one.
+BANNED = [re.compile(rf"(?<![a-z]){term}s?(?![a-z])", re.IGNORECASE) for term in BANNED_TERMS]
 
 #: Appended record files. Not exceptions to the naming rule: the rule governs what
 #: this repository *names* things, and these hold what a past run wrote down. The
@@ -196,7 +201,7 @@ def test_the_pre_check_cannot_reject_a_file_the_patterns_would_convict() -> None
     substring search could not find — a character class doing real work, an
     alternation — would pass this guard while never being looked for."""
     for term, spelled, pattern in zip(BANNED_TERMS, SPELLED, BANNED, strict=True):
-        assert pattern.pattern == rf"(?<![a-z]){term}(?![a-z])", term
+        assert pattern.pattern == rf"(?<![a-z]){term}s?(?![a-z])", term
         # The term is the spelled name with one character wrapped in a class, and
         # what is left over holds nothing a regex reads as anything but itself.
         assert not set(spelled) & set(r".^$*+?{}|()[]\\"), term
@@ -206,8 +211,12 @@ def test_the_pre_check_cannot_reject_a_file_the_patterns_would_convict() -> None
 def test_the_guard_would_actually_catch_something() -> None:
     """A guard that cannot fire is not a guard."""
     for term, pattern in zip(BANNED_TERMS, BANNED, strict=True):
-        line = f"the {spelled_out(term)} stage"
-        assert pattern.search(line), f"{pattern.pattern} missed '{line}'"
+        for line in (
+            f"the {spelled_out(term)} stage",
+            # The plural, which is the same name and used to walk straight past.
+            f"65% of those {spelled_out(term)}s' rows",
+        ):
+            assert pattern.search(line), f"{pattern.pattern} missed '{line}'"
 
 
 def test_the_guard_catches_the_snake_case_form_word_boundaries_missed() -> None:

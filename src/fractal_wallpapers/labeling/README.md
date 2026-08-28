@@ -155,7 +155,7 @@ rows of a newly registered `eval_only` batch leaves the store in a state
 * leave the document alone and `eval_only_batches` no longer equals the batches of
   the rows the registry calls pinned;
 * extend the pin to every place the new batch touches and the older **training**
-  rows already sitting on some of those places are stranded on the wrong side.
+  rows already on some of those places are stranded on the wrong side.
 
 A batch registered `eval_only` pins at **batch** granularity here — every row of it is
 the evaluation side. That is not the location head's rule, where a seeded draw over
@@ -328,7 +328,7 @@ verdict is settled. Over the 306 human verdicts of `run9_plane_depth` and
 scored 1, and the highest-scoring keeper anywhere in them sits at 0.0960. So the location
 sheet builder excludes a unit at **`interior_fraction ≥ 0.12`** — `sheets.INTERIOR_THRESHOLD`,
 rule id `interior_ge12_v1` — before the cut, which on that evidence removes 65% of those
-sittings' 1s and not one row a person scored 2 or better, at two renders saved each.
+batches' 1s and not one row a person scored 2 or better, at two renders saved each.
 
 * **It reads a cached statistic and computes nothing.** `units_from_ledger` carries the
   walk's own `interior_fraction` across, and a location plan carries whatever its drawer
