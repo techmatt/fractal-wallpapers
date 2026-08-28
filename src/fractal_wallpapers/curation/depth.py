@@ -28,6 +28,11 @@ arm's worth of places, so the roster is [`field_modes`] — the shareable modes,
 less what standing rulings have taken out of the standard draw. Nothing here
 says what a composite would have done.
 
+**The near band and the breadth draws do not run the same roster.** The near
+band holds an incumbent's mode; the breadth draws cycle. So a mode that pays at
+depth and not at width is dropped from breadth alone, by [`BREADTH_DEMOTED`],
+and keeps its near-band seat.
+
 ## The sequence is recorded whole
 
 Every candidate is written to [`SEQUENCE_NAME`] as it lands, carrying its
@@ -113,6 +118,20 @@ RANK_BANDS = 10
 #: 0 fours in 117 labeled rows — and the catalogue still calls it production, so
 #: the ruling is applied at the draw. Its existing material stands.
 DEMOTED = ("trap_circle",)
+
+#: Modes the **near band** may hold but the two breadth draws do not cycle. A
+#: mode lands here when it pays at depth and not at width, which is a different
+#: ruling from [`DEMOTED`]: the location whose incumbent is one of these still
+#: enters the near-band draw and still gets its forty palettes.
+#:
+#: `tia` is the first. Measured on `dc1`/`dc2` (2026-08-27): in breadth at k=20
+#: it cleared the seating bar at .0208 against `smooth`'s .0515 and
+#: `exp_smoothing`'s .0539, and at k=40 it cleared .0559 — level with them. Its
+#: clears concentrate at few places, so a narrow set at many places wastes it.
+#: It is also the dearest dump on the three-mode roster, 0.898 s against
+#: `smooth`'s 0.354, and the field is dumped once per (location, mode): over an
+#: eight-hour run at this shape that is about an hour of dumping bought back.
+BREADTH_DEMOTED = ("tia",)
 
 #: The seed every draw here is taken under unless a caller names another.
 DEFAULT_SEED = 20260827
@@ -604,6 +623,7 @@ def build_plan(
     near_width: int | None = None,
     bands: int = RANK_BANDS,
     roster: list | None = None,
+    breadth_demoted: tuple | list = BREADTH_DEMOTED,
     shares: dict | None = None,
     band_weights: dict | None = None,
     floor_modes: list | None = None,
@@ -627,6 +647,17 @@ def build_plan(
         raise DepthRefused(
             "no shareable production mode survives the demotions, so a depth run has "
             "nothing it can afford to render forty of."
+        )
+    # The near band holds an incumbent's mode and the two breadth draws cycle a
+    # roster, so they do not have to be the same set. [`BREADTH_DEMOTED`] is the
+    # difference: a mode that pays at depth and not at width stays eligible as an
+    # incumbent and stops being cycled at forty fresh places.
+    breadth = [mode for mode in roster if mode not in set(breadth_demoted)]
+    if not breadth:
+        raise DepthRefused(
+            f"every mode on the roster {sorted(roster)} is demoted out of breadth by "
+            f"{sorted(breadth_demoted)}, so the ranked and flat draws have nothing to "
+            f"cycle. Narrow the demotion or widen --modes."
         )
     maps = list(colorize.pool(seed))
     shares = {**SHARES, **dict(shares or {})}
@@ -669,8 +700,8 @@ def build_plan(
     )
     plans = {
         NEAR: plan_held_mode(near, world["taken"], maps, seed, near_width),
-        RANKED: plan_cycled_modes(RANKED, ranked, roster, maps, seed, width),
-        FLAT: plan_cycled_modes(FLAT, flat, roster, maps, seed, width),
+        RANKED: plan_cycled_modes(RANKED, ranked, breadth, maps, seed, width),
+        FLAT: plan_cycled_modes(FLAT, flat, breadth, maps, seed, width),
         FLOOR: plan_floor(proven, wanted_floor_modes, world["taken"], maps, seed, floor_width),
     }
     for arm, held in plans.items():
@@ -688,7 +719,9 @@ def build_plan(
         "near_width": int(near_width),
         "rank_bands": int(bands),
         "roster": roster,
+        "breadth_roster": breadth,
         "demoted": list(DEMOTED),
+        "breadth_demoted": list(breadth_demoted),
         "maps_in_pool": len(maps),
         "shares": {arm: float(value) for arm, value in shares.items()},
         "band_weights": dict(band_weights or {}),
@@ -745,6 +778,7 @@ def run(
     near_width: int | None = None,
     bands: int = RANK_BANDS,
     roster: list | None = None,
+    breadth_demoted: tuple | list = BREADTH_DEMOTED,
     shares: dict | None = None,
     band_weights: dict | None = None,
     floor_modes: list | None = None,
@@ -773,6 +807,7 @@ def run(
         near_width=near_width,
         bands=bands,
         roster=roster,
+        breadth_demoted=breadth_demoted,
         shares=shares,
         band_weights=band_weights,
         floor_modes=floor_modes,
@@ -1290,6 +1325,7 @@ def _tag(bar: float) -> str:
 __all__ = [
     "BUDGET_SECONDS",
     "DEFAULT_SEED",
+    "BREADTH_DEMOTED",
     "DEMOTED",
     "DRAWS",
     "FIELDS",

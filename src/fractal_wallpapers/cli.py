@@ -3546,6 +3546,9 @@ def curate_depth(args: argparse.Namespace) -> int:
             "floor_width": args.floor_width,
             "floor_seats": args.floor_seats,
             "roster": args.modes,
+            "breadth_demoted": (
+                depth.BREADTH_DEMOTED if args.breadth_demoted is None else args.breadth_demoted
+            ),
             "near_width": args.near_width,
         }
         if args.what == "plan":
@@ -7826,10 +7829,20 @@ def curate_commands(subcommands) -> None:
         "--modes",
         metavar="MODE",
         nargs="+",
-        help="the roster the two breadth draws cycle at each location. Unsaid, every "
-        "shareable production mode less the demoted ones. Narrowing it is how a run at a "
-        "small width keeps the dump amortised: one field is dumped per (location, mode), "
-        "so six modes at twelve candidates pays six dumps and three modes pays three",
+        help="the modes this run can afford at all — what the breadth draws cycle, and "
+        "what a near-band incumbent must be in to enter that draw. Unsaid, every shareable "
+        "production mode less the demoted ones. Narrowing it is how a run at a small width "
+        "keeps the dump amortised: one field is dumped per (location, mode), so six modes "
+        "at twelve candidates pays six dumps and three modes pays three. To drop a mode "
+        "from breadth alone and keep it on the near band, use --breadth-demoted",
+    )
+    depth_step.add_argument(
+        "--breadth-demoted",
+        metavar="MODE",
+        nargs="*",
+        help="modes the near band may hold but the two breadth draws do not cycle. Unsaid, "
+        f"{' '.join(depth_module.BREADTH_DEMOTED)}, which pays at depth and not at width. "
+        "Pass it empty to cycle the whole roster",
     )
     depth_step.add_argument(
         "--floor-modes",

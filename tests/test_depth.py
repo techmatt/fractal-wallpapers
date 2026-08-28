@@ -409,6 +409,36 @@ def build_a_plan(**knobs):
     )
 
 
+def test_a_breadth_demoted_mode_keeps_its_near_band_seat_and_loses_the_cycle():
+    """The two rulings are not the same ruling. `--modes` narrows the set a
+    near-band incumbent must be in; this narrows only what breadth cycles."""
+    plan, shape = build_a_plan(breadth_demoted=["smooth"])
+    breadth = {shot.mode for shot in plan if shot.arm in (depth.RANKED, depth.FLAT)}
+    near = [shot for shot in plan if shot.arm == depth.NEAR]
+    assert "smooth" not in breadth
+    assert near and {shot.mode for shot in near} == {"smooth"}, (
+        "every seated place in the fixture holds smooth, and the near band holds "
+        "the incumbent's mode"
+    )
+    assert shape["breadth_roster"] == [mode for mode in depth.field_modes() if mode != "smooth"]
+    assert shape["breadth_demoted"] == ["smooth"]
+
+
+def test_tia_is_the_standing_breadth_demotion_and_trap_circle_is_the_standing_one():
+    """Two constants, and swapping them would quietly change which draw a mode
+    is missing from."""
+    assert depth.BREADTH_DEMOTED == ("tia",)
+    assert depth.DEMOTED == ("trap_circle",)
+    assert "tia" in depth.field_modes(), "still affordable, still an eligible incumbent"
+    _plan, shape = build_a_plan()
+    assert "tia" not in shape["breadth_roster"]
+
+
+def test_a_breadth_demotion_that_empties_the_cycle_is_refused():
+    with pytest.raises(depth.DepthRefused, match="nothing to cycle"):
+        build_a_plan(roster=["smooth"], breadth_demoted=["smooth"])
+
+
 def test_a_production_plan_spends_its_floor_share_on_the_modes_that_are_short():
     plan, shape = build_a_plan(
         shares={depth.NEAR: 0.3, depth.RANKED: 0.4, depth.FLAT: 0.0, depth.FLOOR: 0.3},
