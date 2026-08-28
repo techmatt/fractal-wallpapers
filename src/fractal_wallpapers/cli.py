@@ -2778,23 +2778,6 @@ def curate_mass_sweep(args: argparse.Namespace) -> int:
     return 0
 
 
-def curate_on_demand(args: argparse.Namespace) -> int:
-    """Reconcile a pass's on-demand log and its gate store. Records only."""
-    from fractal_wallpapers.curation import gallery as gallery_module
-
-    try:
-        report = gallery_module.reconcile_on_demand(
-            args.pass_id,
-            dry_run=args.dry_run,
-            log=(lambda _line: None) if args.quiet else print,
-        )
-    except gallery_module.PassRefused as refusal:
-        print(refusal)
-        return 1
-    print(json.dumps(report, indent=2))
-    return 0
-
-
 def curate_redraw(args: argparse.Namespace) -> int:
     """Re-render every stale location view and amend the score read off it."""
     from fractal_wallpapers import engine_fingerprint
@@ -2806,34 +2789,6 @@ def curate_redraw(args: argparse.Namespace) -> int:
         print(refusal)
         return 1
     print(json.dumps(report, indent=2))
-    return 0
-
-
-def curate_draw(args: argparse.Namespace) -> int:
-    """Take step 4's draw over the current pool and print what it chose."""
-    from fractal_wallpapers.curation import amend, gallery, intake
-
-    try:
-        report = gallery.dry_draw(
-            n=args.n,
-            radius=args.radius,
-            quality_weight=args.quality_weight,
-            strange_share=args.strange_share,
-            draw_seed=args.draw_seed,
-            top_k=args.draw_top_k,
-            amended=not args.no_amended,
-        )
-    except (gallery.PassRefused, intake.IntakeError, amend.AmendError) as refusal:
-        print(refusal)
-        return 1
-    if args.out:
-        where = resolve_output(args.out)
-        where.parent.mkdir(parents=True, exist_ok=True)
-        where.write_text(
-            json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8", newline="\n"
-        )
-        print(f"wrote {where}")
-    print(json.dumps({key: value for key, value in report.items() if key != "chosen"}, indent=2))
     return 0
 
 
@@ -3055,247 +3010,6 @@ def curate_run(args: argparse.Namespace) -> int:
     # pictures and lost track of which, and that is a failure whatever the
     # release looks like.
     return 0 if summary["reconciliation"]["holds"] else 1
-
-
-def curate_gallery(args: argparse.Namespace) -> int:
-    """One gallery pass: choose N wallpapers over the whole pool, and render them."""
-    from fractal_wallpapers.curation import (
-        durability,
-        embeddings,
-        floors,
-        gallery,
-        gallery_store,
-    )
-
-    if args.migrate:
-        if not args.pass_id:
-            print(
-                "--migrate acts on one named pass, so it needs --pass. There is no ordinal to "
-                "guess: a pass that has never run has nothing in the old layout to move."
-            )
-            return 1
-        try:
-            print(json.dumps(gallery_store.migrate(args.pass_id), indent=2))
-        except durability.DurableLost as refusal:
-            print(refusal)
-            return 1
-        return 0
-
-    from fractal_wallpapers.curation import ceiling as ceiling_module
-    from fractal_wallpapers.curation import release as release_module
-
-    try:
-        regime = release_module.regime_of(args.release_regime)
-    except ValueError as refusal:
-        print(refusal)
-        return 1
-
-    try:
-        targets = dict(ceiling_module.parse_target(text) for text in (args.target or []))
-    except ceiling_module.TargetRefused as refusal:
-        print(refusal)
-        return 1
-
-    try:
-        record = gallery.run(
-            pass_id=args.pass_id,
-            n=args.n,
-            radius=args.radius,
-            quality_weight=args.quality_weight,
-            strange_share=args.strange_share,
-            attempts=args.attempts,
-            reseat=args.reseat,
-            no_attempts=args.no_attempts,
-            full_size=not args.no_full_size,
-            regime=regime,
-            refine=not args.no_refine,
-            margin=args.refine_margin,
-            seed=args.seed,
-            draw_seed=args.draw_seed,
-            draw_top_k=args.draw_top_k,
-            targets=targets,
-            workers=args.workers,
-            device=args.device,
-        )
-    except (
-        ceiling_module.TargetRefused,
-        gallery.PassRefused,
-        gallery_store.LayoutRefused,
-        durability.DurableLost,
-        embeddings.StoreRefused,
-        floors.HeadStampMismatch,
-    ) as refusal:
-        print(refusal)
-        return 1
-    print_gallery(record)
-    return 0
-
-
-def print_gallery(record: dict) -> None:
-    """The pass's numbers, the retro table, and where the two sheets landed.
-
-    The pass record is written whole and is far too long to read on a terminal —
-    fifty slots with their neighbourhoods on them — so what is printed here is the
-    three things a person acts on: whether the radius is set right, which cells the
-    pool could not fill, and where to look at the pictures.
-    """
-    plan, seating = record["plan"], record["seating"]
-    print(
-        f"\ngallery {record['pass']}: {seating['filled']}/{seating['slots']} slot(s) filled "
-        f"of {plan['requested']} asked for, in {record['seconds']:.0f}s"
-    )
-    print(
-        f"  radius {plan['radius']:g} cosine, quality weight {plan['quality_weight']:g}: "
-        f"{record['config']['quality_weight_form']}"
-    )
-    # The seed, always, and whether it was given: a pass that drew its own is
-    # re-runnable only from the number printed here and written to the record.
-    # Tolerant of a record written before the draw took a seed, because
-    # `read_pass` puts any pass back together and this prints what it finds.
-    config = record["config"]
-    if config.get("draw_seed") is not None:
-        print(
-            f"  draw seed {config['draw_seed']} "
-            f"({'given' if config.get('draw_seed_given') else 'drawn'}), first pick out of "
-            f"each partition's top {config.get('draw_top_k')} - re-run it with "
-            f"--draw-seed {config['draw_seed']}"
-        )
-    pool = record.get("pool") or {}
-    print(
-        f"  {pool.get('pass_candidates', 0)} candidate(s) of this pass's own making seated "
-        f"against; {pool.get('standing_rows', 0)} standing pool row(s) not seatable - "
-        f"candidates are per-pass, locations are not"
-    )
-
-    print("\nRETRO TABLE - the nearest chosen pairs, overall")
-    for cell in plan["retro"]["overall"]:
-        print(f"  {cell['cosine_distance']:.4f}  {cell['a']['partition']:<18} {cell['a']['key']}")
-        print(f"  {'':>6}  {cell['b']['partition']:<18} {cell['b']['key']}")
-    for name, table in sorted(plan["retro"]["by_partition"].items()):
-        if not table:
-            continue
-        print(f"\nRETRO TABLE - {name}")
-        for cell in table:
-            print(f"  {cell['cosine_distance']:.4f}  {cell['a']['key']}")
-            print(f"  {'':>6}  {cell['b']['key']}")
-
-    print("\nSLOTS - filled, unfilled, and why")
-    for name, cell in sorted(seating["by_partition_head"].items()):
-        why = ", ".join(f"{count} {reason}" for reason, count in sorted(cell["reasons"].items()))
-        print(
-            f"  {name:<34} {cell['filled']:>3}/{cell['slots']:<3} filled"
-            + (f"  ({why})" if why else "")
-        )
-
-    # What the re-seat loop recovered. Printed as its own block because it is the
-    # one number that says whether an unfilled slot is a fact about the pool or a
-    # fact about where one draw happened to look.
-    loop = seating.get("reseat") or {}
-    if loop:
-        by_try = ", ".join(
-            f"{count} on try {number}" for number, count in sorted(loop["filled_on_try"].items())
-        )
-        print(
-            f"\nRE-SEAT: {loop['recovered']} slot(s) filled on a neighbourhood the first draw "
-            f"did not give them, {loop['allowed']} tries allowed"
-        )
-        print(f"  {by_try}")
-        if loop["unfilled"]:
-            print(
-                f"  {loop['unfilled']} still unfilled after "
-                f"{loop['unfilled_tries']} neighbourhood(s) each"
-                + (
-                    f"; {loop['exhausted']} ran their partition's draw out"
-                    if loop["exhausted"]
-                    else ""
-                )
-            )
-
-    refine = record.get("refine") or {}
-    if refine.get("locations"):
-        widths = ", ".join(f"x{name}: {count}" for name, count in refine["chosen_width"].items())
-        moves = ", ".join(f"{name}: {count}" for name, count in refine["chosen_move"].items())
-        gain = refine.get("gain_adopted") or {}
-        print(
-            f"\nREFINE: {refine['adopted']}/{refine['locations']} location(s) took a new framing "
-            f"at margin {refine['margin']:g} ({refine['adopted_share'] * 100:.1f}%), "
-            f"{refine['frames']} frame(s) in {refine['seconds']:.0f}s "
-            f"({refine['seconds_per_location']:.2f}s a location)"
-        )
-        if widths:
-            print(f"  width {widths}   move {moves}")
-        if gain:
-            print(
-                f"  gain where adopted, nats of log-odds on P(>=4): median {gain['median']:.2f}, "
-                f"q25 {gain['q25']:.2f}, q75 {gain['q75']:.2f}, max {gain['max']:.2f}"
-            )
-        refused = ", ".join(f"{count} {name}" for name, count in refine["refused"].items())
-        if refused:
-            print(f"  kept the recorded framing: {refused}")
-        agreement = refine.get("sidecar_agreement") or {}
-        if agreement.get("compared"):
-            print(
-                f"  the scan's read of the recorded framing against the sidecar's: "
-                f"{agreement['exact']}/{agreement['compared']} exact, "
-                f"largest gap {agreement['max_abs_delta_p_ge4']:g}"
-            )
-    elif not refine.get("on", True):
-        print("\nREFINE: off (--no-refine); every attempt is framed where the pool records it")
-
-    attempts, rendered = record["attempts"], record["render"]
-    print(
-        f"\nattempts: {attempts.get('made', 0)} made, {attempts.get('resumed', 0)} resumed, "
-        f"{attempts.get('failed', 0)} failed of {attempts.get('planned', 0)} planned"
-        + (
-            f"; {attempts['seconds_per_attempt']:.2f}s each"
-            if attempts.get("seconds_per_attempt")
-            else ""
-        )
-        + (
-            f"; {attempts['dropped_candidate_jpegs']:,} palette-candidate JPEG(s) dropped"
-            if attempts.get("dropped_candidate_jpegs")
-            else ""
-        )
-    )
-    if rendered.get("skipped"):
-        print(
-            f"full size: SKIPPED ({rendered['skipped']}) — "
-            f"{rendered['counts']['not_started']} seat(s) recorded `unrendered`, judged off "
-            f"their candidate renders. Re-run this --pass without the flag to make them."
-        )
-    else:
-        from fractal_wallpapers.curation import release as release_module
-
-        made = release_module.regime_from_geometry(rendered.get("geometry"))
-        print(
-            f"full size: {rendered['counts']['made']} rendered, {rendered['counts']['resumed']} "
-            f"reused, {rendered['counts']['failed']} failed"
-            + (f" at {made.spelled}" if made is not None else "")
-            + (
-                f"; {rendered['seconds_per_full_size']:.1f}s each"
-                if rendered.get("seconds_per_full_size")
-                else ""
-            )
-        )
-    store = record["records"]["attempts"]
-    print(
-        f"\nattempt store: {store['rows']:,} pool row(s) in {store['store']}, untracked"
-        + (f", {store['bytes']:,} bytes" if store.get("bytes") else "")
-    )
-    if store.get("copy"):
-        print(f"               copy {store['copy']}, manifest {store['manifest']}")
-    # Read off the disk here rather than recorded inside the pass record: a total
-    # written into the files it measures would change the number it reported.
-    from fractal_wallpapers.curation import gallery
-
-    tracked = gallery.tracked_bytes(record["pass"])
-    print(
-        f"tracked bytes: {tracked['total']:,} over {len(tracked['files'])} file(s), "
-        f"largest {tracked['largest']:,}"
-    )
-    print(f"\nrecord {record['record']}")
-    for name, where in record["sheets"].items():
-        print(f"sheet  {name:<14} {where}")
 
 
 def curate_gallery_store(args: argparse.Namespace) -> int:
@@ -3608,6 +3322,7 @@ def curate_distinct(args: argparse.Namespace) -> int:
 
 def curate_hunt(args: argparse.Namespace) -> int:
     """Plan a hunt, run one, merge one into the ledger, or rebuild the frame index."""
+    from fractal_wallpapers.curation import embeddings as embeddings_module
     from fractal_wallpapers.curation import hunt
 
     try:
@@ -3654,7 +3369,7 @@ def curate_hunt(args: argparse.Namespace) -> int:
             work_order=order,
             device=args.device,
         )
-    except hunt.HuntRefused as refusal:
+    except (hunt.HuntRefused, embeddings_module.StoreRefused) as refusal:
         print(refusal)
         return 1
     print(f"{display_path(hunt.contact_sheet(args.name, record))}")
@@ -7030,8 +6745,6 @@ def coloring_commands(subcommands) -> None:
 
 def curate_commands(subcommands) -> None:
     """The last stage: harvest supply in, released wallpapers out."""
-    import math
-
     from fractal_wallpapers.curation import below_bar as below_bar_module
     from fractal_wallpapers.curation import budget as budget_module
     from fractal_wallpapers.curation import candidate_ledger as candidate_ledger_module
@@ -7041,8 +6754,6 @@ def curate_commands(subcommands) -> None:
     from fractal_wallpapers.curation import distinct as distinct_module
     from fractal_wallpapers.curation import embeddings as embeddings_module
     from fractal_wallpapers.curation import flatness as flatness_module
-    from fractal_wallpapers.curation import framing as framing_module
-    from fractal_wallpapers.curation import gallery as gallery_module
     from fractal_wallpapers.curation import headroom as headroom_module
     from fractal_wallpapers.curation import hunt as hunt_module
     from fractal_wallpapers.curation import mine as mine_module
@@ -7146,28 +6857,6 @@ def curate_commands(subcommands) -> None:
     )
     mass_sweep.set_defaults(handler=curate_mass_sweep)
 
-    on_demand = steps.add_parser(
-        "on-demand",
-        help="reconcile a pass's on-demand log with its attempt store",
-        description=(
-            "An on-demand pick is the extra picture a seat asks for when the colour ceiling "
-            "refuses everything the plan offered, and it is a pool row like any other. Two "
-            "things went wrong with that and both are repaired here, from the candidate "
-            "each pick was asked beside: the log carries `ledger: null` on every row written "
-            "before the renderer started carrying it across, and gallery3's picks never "
-            "reached the attempt store at all, so no reader of the pool can see them. "
-            "Records only — nothing is rendered, and a second run writes identical bytes."
-        ),
-    )
-    on_demand.add_argument("--pass", dest="pass_id", required=True, help="the pass id")
-    on_demand.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="say what would be filled and how many store rows would be added, writing nothing",
-    )
-    on_demand.add_argument("--quiet", action="store_true", help="do not print progress")
-    on_demand.set_defaults(handler=curate_on_demand)
-
     redrawing = steps.add_parser(
         "redraw",
         help="re-render every stale location view and amend the score read off it",
@@ -7200,57 +6889,6 @@ def curate_commands(subcommands) -> None:
     )
     redrawing.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
     redrawing.set_defaults(handler=curate_redraw)
-
-    drawing = steps.add_parser(
-        "draw",
-        help="step 4 alone: which locations a pass would choose, claiming nothing",
-        description=(
-            "The point draw and nothing else — no attempts, no renders, no pass id, no row "
-            "written anywhere. `gallery --no-attempts` is the affordance for iterating on a "
-            "pass; this is the one for COMPARING two selections, which needs a selection "
-            "that claims nothing so the two can be taken over the same pool in either "
-            "order. --no-amended takes the draw over the sidecar as it stands rather than "
-            "over `curate redraw`'s re-read of it, and the difference between the two "
-            "chosen sets is the entry bias the stale readings were buying."
-        ),
-    )
-    drawing.add_argument(
-        "-n",
-        "--n",
-        type=int,
-        default=gallery_module.DEFAULT_N,
-        help=f"locations to choose (default: {gallery_module.DEFAULT_N})",
-    )
-    drawing.add_argument("--radius", type=float, default=gallery_module.RADIUS)
-    drawing.add_argument("--quality-weight", type=float, default=gallery_module.QUALITY_WEIGHT)
-    drawing.add_argument("--strange-share", type=float, default=run_module.STRANGE_SHARE)
-    drawing.add_argument(
-        "--draw-seed",
-        type=int,
-        default=gallery_module.DEFAULT_SEED,
-        help=f"the ROOT seed the draw runs under (default: {gallery_module.DEFAULT_SEED}). "
-        f"Fixed rather than drawn, unlike a pass: a dry selection exists to be compared "
-        f"with another one, and a comparison needs both sides on the same seed",
-    )
-    drawing.add_argument(
-        "--draw-top-k",
-        type=int,
-        default=gallery_module.DRAW_TOP_K,
-        metavar="K",
-        help=f"how many of a partition's strongest locations the first pick is drawn from "
-        f"(default: {gallery_module.DRAW_TOP_K}; 1 is the argmax draw gallery1 through "
-        f"gallery3 took)",
-    )
-    drawing.add_argument(
-        "--no-amended",
-        action="store_true",
-        help="draw over the sidecar's standing scores rather than the amendment",
-    )
-    drawing.add_argument(
-        "--out",
-        help="write the chosen set here as JSON as well as printing the summary",
-    )
-    drawing.set_defaults(handler=curate_draw)
 
     embedding_step = steps.add_parser(
         "embed",
@@ -7503,193 +7141,6 @@ def curate_commands(subcommands) -> None:
         "the run that its class is slow",
     )
     running.set_defaults(handler=curate_run)
-
-    gallerying = steps.add_parser(
-        "gallery",
-        help="one pass over the whole pool: choose N wallpapers and render them",
-        description=(
-            "THE second phase. A run accumulates candidates and keeps a small diagnostic "
-            "release; this chooses what the collection ships, once, over everything the pool "
-            "holds. Slots per partition come off the release mix over a pool-wide "
-            "denominator; the locations come off a quality-weighted farthest-point draw with "
-            "a hard cosine radius over the neutral-render embeddings; each chosen point buys "
-            "a small judged attempt on its own neighbourhood; and the winners are rendered "
-            "at full size. Both measured floors ACT here, and a slot with nothing above its "
-            "head's floor is output UNFILLED with the reason named - unfilled beats padded, "
-            "because an empty slot is the signal for where to label or walk next. Each "
-            "invocation is a PASS with its own id and its own record; a new pass supersedes "
-            "the previous gallery and deletes nothing."
-        ),
-    )
-    gallerying.add_argument(
-        # Both spellings. `-n` is what every other count in this CLI is called and
-        # `--n` is what a person types when the flag beside it is `--radius`;
-        # refusing one of them is a typo that costs a run's setup to discover.
-        "-n",
-        "--n",
-        type=int,
-        default=gallery_module.DEFAULT_N,
-        help=f"wallpapers to choose (default: {gallery_module.DEFAULT_N})",
-    )
-    gallerying.add_argument(
-        "--pass-id",
-        help="the name this pass's records carry (default: the next unused ordinal, "
-        f"{gallery_module.PASS_PREFIX}N). Naming a pass that already has a record re-runs it "
-        "in place, reusing whatever attempts and full-size renders it already finished",
-    )
-    gallerying.add_argument(
-        "--radius",
-        type=float,
-        default=gallery_module.RADIUS,
-        help=f"the HARD radius, in cosine distance over the neutral-render embedding: "
-        f"nothing this close to an already-chosen point may be chosen "
-        f"(default: {gallery_module.RADIUS:g})",
-    )
-    gallerying.add_argument(
-        "--quality-weight",
-        type=float,
-        default=gallery_module.QUALITY_WEIGHT,
-        metavar="GAMMA",
-        help=f"the exponent on location quality in the farthest-point gain, which is the "
-        f"cosine distance to the nearest chosen point times location P(>=4) to the GAMMA "
-        f"(default: {gallery_module.QUALITY_WEIGHT:g}; 0 is pure farthest point)",
-    )
-    gallerying.add_argument(
-        "--strange-share",
-        type=float,
-        default=run_module.STRANGE_SHARE,
-        help=f"share of each partition's slots the strange judge fills "
-        f"(default: {run_module.STRANGE_SHARE:g})",
-    )
-    gallerying.add_argument(
-        "--attempts",
-        metavar="M,SMOOTH,STRANGE",
-        default=",".join(str(part) for part in gallery_module.ATTEMPTS),
-        help="locations tried near each chosen point, then the smooth attempts each of them "
-        "gets on distinct palette anchors and the strange attempts each gets on distinct "
-        f"modes (default: {','.join(str(part) for part in gallery_module.ATTEMPTS)})",
-    )
-    gallerying.add_argument(
-        "--reseat",
-        type=int,
-        default=gallery_module.RESEAT_TRIES,
-        metavar="K",
-        help="how many NEIGHBOURHOODS a slot may try before it reports below_bar. A slot "
-        "whose candidates all land under its head's floor takes the next farthest point "
-        "under the same radius and weighting and tries again, so below_bar means k "
-        "neighbourhoods in a row failed rather than one "
-        f"(default: {gallery_module.RESEAT_TRIES}; 0 is one neighbourhood and no re-seat)",
-    )
-    gallerying.add_argument(
-        "--no-attempts",
-        action="store_true",
-        help="make no candidate, and so seat nothing: candidates are per-pass, and without "
-        "the attempt leg the pass has none. A DEV AFFORDANCE for iterating on the SELECTION "
-        "- the slot allocation, the head split, the point draw, the retro table and the two "
-        "embedding sheets are all taken whole and cost no render - and never how a pass is "
-        "really run",
-    )
-    gallerying.add_argument(
-        "--no-refine",
-        action="store_true",
-        help="do not scan a location's framing before its attempts render. Refining is ON: "
-        "before the attempt leg colours a location, a small window of framings around the one "
-        "the pool records is drawn at the node regime and read through the location head, and "
-        "the best is adopted if it beats the recorded framing by --refine-margin. Seating and "
-        "the radius are decided on unrefined geometry either way, so this changes what the "
-        "attempts are pictures OF and nothing about which places the pass chose",
-    )
-    gallerying.add_argument(
-        "--refine-margin",
-        type=float,
-        default=framing_module.MARGIN,
-        metavar="DELTA",
-        help=f"how much better a framing has to read before it is adopted, in NATS of log-odds "
-        f"on P(>=4) - strict improvement, never argmax, so a window whose best does not clear "
-        f"it keeps the recorded framing. Log-odds and not probability because the locations "
-        f"this step sees read P(>=4) near 1 at every framing, where an absolute margin refuses "
-        f"everything (default: {framing_module.MARGIN:g} nats, a factor of "
-        f"{math.exp(framing_module.MARGIN):.1f} in the odds)",
-    )
-    gallerying.add_argument(
-        "--no-full-size",
-        action="store_true",
-        help="take every seating decision and skip the release leg, so no winner is "
-        "rendered at all. The seats are recorded `unrendered` — took the slot, no "
-        "picture, nothing failed — and the sheets show each winner's candidate render and "
-        "say so. Re-running the same --pass without this flag makes the pictures and lifts "
-        "the rows to `released`",
-    )
-    gallerying.add_argument(
-        "--release-regime",
-        metavar="WxHssN",
-        default=gallery_module.RELEASE_REGIME.spelled,
-        help=f"the pixels step 7 makes a winner out of: the frame it ships at and the field "
-        f"supersample under it (default: {gallery_module.RELEASE_REGIME.spelled}, on Matt's "
-        f"call of 2026-08-25 — a released wallpaper does not need the full frame and step 7 "
-        f"is the slow leg of a pass). "
-        f"{gallery_module.FORMER_RELEASE_REGIME.spelled} is what gallery1 through gallery3 "
-        f"shipped at and is still reachable here. The regime is recorded on the pass record "
-        f"and on every release row, and a picture already on disk at another frame is made "
-        f"again rather than kept",
-    )
-    gallerying.add_argument(
-        "--seed",
-        type=int,
-        default=gallery_module.DEFAULT_SEED,
-        help=f"the seed the palette anchors and the mode draws are taken under "
-        f"(default: {gallery_module.DEFAULT_SEED})",
-    )
-    gallerying.add_argument(
-        "--draw-seed",
-        type=int,
-        default=None,
-        help="the ROOT seed the point draw is taken under, which is a different seed from "
-        "--seed: this one decides where each partition's draw starts. Absent, one is DRAWN "
-        "and written to the record, so two passes over an unchanged pool choose different "
-        "places and either is re-runnable from what it wrote down. Each partition derives "
-        "its own seed off the root and the record carries the resolved integer",
-    )
-    gallerying.add_argument(
-        "--draw-top-k",
-        type=int,
-        default=gallery_module.DRAW_TOP_K,
-        metavar="K",
-        help=f"how many of a partition's strongest live locations the FIRST pick is drawn "
-        f"from. Every pick after the first is the deterministic gain, so this is the whole "
-        f"of a draw's freedom, and every distance the draw measures is measured against what "
-        f"is already chosen - moving the first pick moves the pass "
-        f"(default: {gallery_module.DRAW_TOP_K}; 1 is the argmax the draw took before the "
-        f"seed existed)",
-    )
-    gallerying.add_argument(
-        "--target",
-        action="append",
-        default=[],
-        metavar="CELL=FRACTION",
-        help="ask the pass for at least ceil(FRACTION x N) pictures DOMINANT in one codebook "
-        "cell, e.g. --target dark_vivid_green=0.05. Repeatable. A target steers the plan — "
-        "one extra carrier attempt per location per targeted cell, coloured by a map drawn "
-        "from the tracked carrier table — and steers the seat, mandating the colour once "
-        "every remaining seat is needed for it. It never lowers a floor and never pads: an "
-        "unmet target is reported SHORT. Refused before anything renders if the fractions "
-        "sum above one or a cell has no carrier this pass can draw",
-    )
-    gallerying.add_argument(
-        "--workers",
-        type=int,
-        default=3,
-        help="worker processes for the full-resolution pass (1 is the serial path)",
-    )
-    gallerying.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
-    gallerying.add_argument(
-        "--migrate",
-        action="store_true",
-        help="move --pass out of the layout that predates the store split — attempt rows "
-        "into the untracked gate store beside its manifest, the release store rewritten to "
-        "the winners alone — and stop. Reads and writes records only; renders nothing",
-    )
-    gallerying.set_defaults(handler=curate_gallery)
 
     pass_store = steps.add_parser(
         "gallery-store",
@@ -8016,11 +7467,12 @@ def curate_commands(subcommands) -> None:
     )
     seating_step.add_argument(
         "--release-regime",
-        default=gallery_module.RELEASE_REGIME.spelled,
+        default=release_module.RELEASE_REGIME.spelled,
         metavar="WxHssN",
-        help=f"the geometry --release renders at (default {gallery_module.RELEASE_REGIME.spelled}, "
-        f"the gallery pass's; {gallery_module.FORMER_RELEASE_REGIME.spelled} is what "
-        f"gallery1 through gallery3 shipped at)",
+        help=f"the geometry --release renders at (default "
+        f"{release_module.RELEASE_REGIME.spelled}, which is what every leg that ships a "
+        f"wallpaper ships; {release_module.FORMER_RELEASE_REGIME.spelled} is what the "
+        f"first three gallery passes shipped at)",
     )
     seating_step.add_argument(
         "--workers",

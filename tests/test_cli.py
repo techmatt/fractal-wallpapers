@@ -518,20 +518,23 @@ def test_both_seating_changes_are_the_default_and_the_incumbent_is_still_reachab
         parse(["curate", "seat", "--key", "whatever_matt_meant"])
 
 
-def test_the_seating_release_leg_is_opt_in_and_carries_the_gallery_regime() -> None:
+def test_the_seating_release_leg_is_opt_in_and_carries_the_shipping_regime() -> None:
     """A seating chooses and renders nothing unless asked. When it is asked, it
-    renders at the gallery pass's regime over this machine's render pool — not at
-    a geometry or a worker count this subcommand invented for itself."""
-    from fractal_wallpapers.curation import gallery, release
+    renders at the regime every leg that ships a wallpaper ships at, over this
+    machine's render pool — not at a geometry or a worker count this subcommand
+    invented for itself. Both live in `curation.release` now; they were the
+    retired gallery pass's until it was deleted on 2026-08-28."""
+    from fractal_wallpapers.curation import release
 
     parse = cli.build_parser().parse_args
     quiet = parse(["curate", "seat", "--n", "150"])
     assert quiet.release is False
     asked = parse(["curate", "seat", "--n", "150", "--release"])
     assert asked.release is True
-    assert asked.release_regime == gallery.RELEASE_REGIME.spelled == "1280x720ss2"
+    assert asked.release_regime == release.RELEASE_REGIME.spelled == "1280x720ss2"
     assert asked.workers == release.DEFAULT_WORKERS == 3
-    assert release.regime_of(asked.release_regime) == gallery.RELEASE_REGIME
+    assert release.regime_of(asked.release_regime) == release.RELEASE_REGIME
+    assert release.FORMER_RELEASE_REGIME.spelled == "2560x1440ss4"
 
 
 def test_the_flatness_sweep_and_the_rank_key_fit_are_subcommands_with_defaults() -> None:

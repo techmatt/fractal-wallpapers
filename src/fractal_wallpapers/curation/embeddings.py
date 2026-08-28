@@ -211,6 +211,48 @@ def admitted() -> list[dict]:
     return rows
 
 
+def admitted_only(rows: list, matrix, scores: dict, log=print) -> tuple:
+    """`(rows, matrix, dropped)` — the store cut down to the CURRENT population.
+
+    The store is **append-only**: a location embedded once keeps its vector
+    forever, and re-scoring is free to move the reading underneath it. So the
+    store is a superset of the admitted population rather than a picture of it —
+    29,051 rows against 29,046 admitted on 2026-08-22, the five being locations
+    `curate score` re-read at the node regime and put under the junk floor.
+
+    A location the sidecar now calls junk is not a place the collection may ship,
+    and a leg that draws from the store is the reader for whom that is expensive
+    rather than cosmetic: it could spend a location's renders on somewhere the
+    supply phase has already withdrawn. Cutting the rows here — before anything
+    is planned off them — is what makes it invisible to every stage at once
+    rather than a filter each of them has to remember.
+
+    The cut is [`floors.passes_junk_floor`] over the sidecar's live `P(>=3)`, the
+    same comparison [`admitted`] makes; a key the sidecar does not hold at all is
+    dropped for the same reason, since a location with no current reading has no
+    current standing either.
+    """
+    keep = [
+        index
+        for index, row in enumerate(rows)
+        if floors.passes_junk_floor((scores.get(str(row["key"])) or {}).get("p_ge3"))
+    ]
+    dropped = len(rows) - len(keep)
+    if not dropped:
+        return rows, matrix, 0
+    log(
+        f"[embed] {dropped} embedded location(s) are below the junk floor now and are "
+        f"out of this population: {len(keep):,} left to draw from"
+    )
+    if not keep:
+        raise StoreRefused(
+            f"none of the {len(rows):,} embedded location(s) is in the admitted population "
+            f"any more, so there is nothing to draw from. Run `fractal-wallpapers curate "
+            f"score` and `curate embed`."
+        )
+    return [rows[index] for index in keep], matrix[keep], dropped
+
+
 def _supply() -> list[dict]:
     """Every row of the supply sidecar, **amended**, or a refusal naming how to get one.
 
@@ -734,6 +776,7 @@ __all__ = [
     "UNIT_SECONDS",
     "StoreRefused",
     "admitted",
+    "admitted_only",
     "background",
     "backup_path",
     "build",

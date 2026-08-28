@@ -954,14 +954,15 @@ def merge(name: str, log=print) -> dict:
             f"{tracked_name(rows_path(name))} holds no row, so there is nothing to merge. "
             f"A mine writes its rows as it makes them; an empty file means none landed."
         )
-    _rows_file, total, new = candidate_ledger.write(rows)
-    _scores_file, score_total, score_new = candidate_ledger.write_scores(scores)
+    written = candidate_ledger.merge(rows, scores, log=log)
+    total, new = written["ledger"]["rows"], written["ledger"]["new"]
     report = {
         "schema": SCHEMA,
         "name": name,
         "merged": len(rows),
-        "ledger": {"rows": total, "new": new},
-        "scores": {"rows": score_total, "new": score_new},
+        "ledger": written["ledger"],
+        "scores": written["scores"],
+        "recorded": written["recorded"],
         "locations_added": len({str((row.get("location") or {})["key"]) for row in rows}),
     }
     log(

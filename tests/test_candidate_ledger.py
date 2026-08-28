@@ -244,9 +244,18 @@ def test_the_row_records_both_keys_and_never_reconciles_them():
 # --------------------------------------------------------------------------- #
 @pytest.fixture
 def isolated(tmp_path, monkeypatch):
-    """The ledger and its sidecar in a temporary directory, and nothing else touched."""
+    """The ledger and its sidecar in a temporary directory, and nothing else touched.
+
+    Four paths and not two. A backfill goes through [`candidate_ledger.merge`],
+    which records what it wrote — so an unredirected copy lands on this machine's
+    real archive tier and an unredirected manifest lands in the tracked history.
+    `tests/test_ledger_tracking.py` owns the rule that makes recording part of the
+    write; this is what keeps it inside `tmp_path`.
+    """
     monkeypatch.setattr(candidate_ledger, "rows_path", lambda: tmp_path / "rows.jsonl")
     monkeypatch.setattr(candidate_ledger, "scores_path", lambda: tmp_path / "scores.jsonl")
+    monkeypatch.setattr(candidate_ledger, "backup_path", lambda name: tmp_path / f"copy-{name}")
+    monkeypatch.setattr(candidate_ledger, "manifest_dir", lambda: tmp_path / "manifests")
     monkeypatch.setattr(candidate_ledger, "_picture_of", lambda source: tmp_path / "nothing.jpg")
     return tmp_path
 

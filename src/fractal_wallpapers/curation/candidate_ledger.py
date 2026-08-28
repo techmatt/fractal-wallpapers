@@ -583,11 +583,16 @@ def _rows_of(path: Path) -> list[dict]:
 
 
 def write(rows) -> tuple[Path, int, int]:
-    """Merge `rows` into the ledger by key. `(path, total, new)`.
+    """Merge `rows` into the ledger by key. `(path, total, new)`. **Internal.**
 
     [`records.upsert_file`], which is what every other flat store here is written
     with: same key, same ordering, and a re-backfill over an unchanged pool
     writes byte-identical output.
+
+    Every caller outside this module goes through [`merge`] instead, and
+    `tests/test_ledger_tracking.py` is what holds that: this writes the bytes and
+    says nothing about them, and a store written without being recorded is the
+    era this module just spent.
     """
     path = rows_path()
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -596,10 +601,54 @@ def write(rows) -> tuple[Path, int, int]:
 
 
 def write_scores(rows) -> tuple[Path, int, int]:
+    """Merge score readings into the sidecar by key. `(path, total, new)`. **Internal.**"""
     path = scores_path()
     path.parent.mkdir(parents=True, exist_ok=True)
     total, new = records.upsert_file(path, rows)
     return path, total, new
+
+
+def merge(rows, scores, log=print) -> dict:
+    """Upsert rows and score readings into the two files, and **record both**.
+
+    THE door. Every leg that adds to the ledger — a hunt, a mine, a depth run,
+    the backfill — comes through here, and there is one body rather than four
+    copies of an upsert followed by a save each of them has to remember.
+
+    **The tracking is the point.** The manifests are the only thing about this
+    store the history keeps, and they went stale for an era: three merge legs and
+    the backfill all wrote the rows and none of them recorded what they wrote, so
+    the manifest said 16,006 rows against 128,368 live and `curate
+    candidate-ledger check` could only ever answer `grown`. A writer that has to
+    remember to record is a writer that will stop, so the record is not something
+    a caller does afterwards — it is the second half of the write.
+
+    The **copy** goes with the manifest, because that is what the manifest is a
+    claim about: [`durability.save`] writes both or neither, and a manifest naming
+    a count no copy holds would make [`durability.restore`] believe a stale file.
+    That is the whole cost of this — one copy of each file per leg, at the end of
+    a leg measured in minutes or hours.
+    """
+    rows_file, total, new = write(rows)
+    scores_file, score_total, score_new = write_scores(scores)
+    saved = {
+        "rows": durability.save(durable_rows(), log=log),
+        "scores": durability.save(durable_scores(), log=log),
+    }
+    return {
+        "rows_path": tracked_name(rows_file),
+        "scores_path": tracked_name(scores_file),
+        "ledger": {"rows": total, "new": new},
+        "scores": {"rows": score_total, "new": score_new},
+        "recorded": {
+            "rows": saved["rows"]["rows"],
+            "scores": saved["scores"]["rows"],
+            "manifests": [
+                tracked_name(durable_rows().manifest),
+                tracked_name(durable_scores().manifest),
+            ],
+        },
+    }
 
 
 def save(log=print) -> dict:
@@ -802,14 +851,19 @@ def backfill(recolour: bool = False, log=print) -> dict:
     counts["locations"] = len({str((stored["location"] or {})["key"]) for stored in rows})
     counts["with_picture"] = sum(1 for stored in rows if stored["picture"])
     counts["recipe_only"] = counts["recipes"] - counts["with_picture"]
-    rows_file, total, new = write(rows)
-    scores_file, score_total, score_new = write_scores(scores)
+    written = merge(rows, scores, log=log)
     return {
         "schema": SCHEMA,
         "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "rows_path": tracked_name(rows_file),
-        "scores_path": tracked_name(scores_file),
-        "stored": {"rows": total, "new": new, "scores": score_total, "scores_new": score_new},
+        "rows_path": written["rows_path"],
+        "scores_path": written["scores_path"],
+        "stored": {
+            "rows": written["ledger"]["rows"],
+            "new": written["ledger"]["new"],
+            "scores": written["scores"]["rows"],
+            "scores_new": written["scores"]["new"],
+        },
+        "recorded": written["recorded"],
         **counts,
     }
 
@@ -1102,7 +1156,7 @@ def feasibility(stored: list, n: int = FIRST_SOLVE, log=print) -> dict:
             "binds": len(locations) < n,
             "read": "marginal",
         },
-        "diversity_radius": _radius_read(locations, n, log=log),
+        "distinct_places": _distinct_read(locations, n, log=log),
         "group_cap": {
             "cap": ceiling_module.GROUP_CAP,
             "needs": n,
@@ -1142,42 +1196,44 @@ def _mode_count(stored: list, mode: str) -> int:
     return sum(1 for row in stored if (row.get("recipe") or {}).get("mode") == mode)
 
 
-def _radius_read(locations: set, n: int, log=print) -> dict:
-    """Whether `n` of the ledger's locations can be drawn under the hard radius.
+def _distinct_read(locations: set, n: int, log=print) -> dict:
+    """Whether the ledger holds `n` places the pre-selection would call different.
 
-    The real draw and not an estimate: [`gallery.choose`] over the embedding
-    store, at [`gallery.RADIUS`], with quality flat so the answer is about the
-    radius alone. A location the embedding store does not hold is one no pass
-    could ever have chosen, and it is counted rather than dropped quietly.
+    The rule itself and not an estimate: [`distinct.suppress`] at
+    [`distinct.PRESELECT_RADIUS`] over the neutral descriptors, which is the walk
+    a solve's pool is actually built through. It used to be the retired gallery
+    pass's quality-weighted draw at its own wider radius, which asked about a rule
+    nothing runs any more — a necessary condition has to be a condition of the
+    program that will be solved.
+
+    **The order is by key**, and that is a statement rather than a default. The
+    walk keeps whichever of a near-cluster it is offered first, so an order
+    changes *which* place survives but not how many do, and a census has no score
+    to offer them by — it is a read over the whole ledger and a rank would have to
+    pick a judge. [`distinct.preselect`] does have one and orders by it.
     """
-    import numpy
+    from fractal_wallpapers.curation import distinct, embeddings
 
-    from fractal_wallpapers.curation import embeddings
-    from fractal_wallpapers.curation import gallery as gallery_module
-
-    rows, matrix = embeddings.load()
-    if not rows:
-        return {"radius": gallery_module.RADIUS, "embedded": 0, "read": "no embedding store"}
-    at = {str(row["key"]): index for index, row in enumerate(rows)}
-    indices = [at[key] for key in sorted(locations) if key in at]
-    log(f"[census] {len(indices):,}/{len(locations):,} ledger locations are embedded")
-    picks, tally = gallery_module.choose(
-        indices,
-        matrix,
-        numpy.ones(len(matrix), dtype=numpy.float32),
-        n,
-        gallery_module.RADIUS,
-        0.0,
-    )
+    stored = embeddings.read()
+    if not stored:
+        return {
+            "radius": distinct.PRESELECT_RADIUS,
+            "embedded": 0,
+            "read": "no embedding store",
+        }
+    embedded = {str(row["key"]) for row in stored}
+    log(f"[census] {len(locations & embedded):,}/{len(locations):,} ledger locations are embedded")
+    walk = distinct.suppress(sorted(locations), rows=stored)
     return {
-        "radius": gallery_module.RADIUS,
-        "embedded": len(indices),
-        "unembedded": len(locations) - len(indices),
+        "radius": distinct.PRESELECT_RADIUS,
+        "metric": distinct.METRIC,
+        "embedded": len(locations & embedded),
+        "unembedded": len(walk["unembedded"]),
         "needs": n,
-        "drawn": len(picks),
-        "binds": len(picks) < n,
-        "refused_by_radius": tally.get("refused_by_radius"),
-        "read": "the draw itself, quality flat",
+        "distinct": len(walk["kept"]),
+        "binds": len(walk["kept"]) < n,
+        "refused_as_the_same_place": len(walk["refused"]),
+        "read": "the pre-selection itself, over the ledger's places in key order",
     }
 
 
@@ -1204,6 +1260,7 @@ __all__ = [
     "k_of",
     "live_artifact",
     "manifest_dir",
+    "merge",
     "read",
     "read_scores",
     "reading_source",

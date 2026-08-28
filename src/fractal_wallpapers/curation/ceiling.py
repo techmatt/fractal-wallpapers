@@ -264,6 +264,50 @@ def parse_target(text: str) -> tuple:
     return cell, value
 
 
+def refuse_targets(targets: dict, pool: list) -> dict:
+    """Refuse a target set that cannot be met, before a render is spent.
+
+    Two refusals and both are about being able to *keep the promise*:
+
+    * **The fractions have to fit.** A target is a share of the collection and
+      the shares of disjoint cells add up, so a set summing above one is asking
+      for more pictures than there are seats.
+    * **The cell has to have a carrier the leg can reach.** A colour no map in
+      the collapsed palette pool can make is a colour the plan cannot ask for,
+      and a leg that started anyway would run to the end and report SHORT for a
+      reason nothing on the record names.
+
+    Returns the feasibility block the record carries: how many carriers each
+    targeted cell has, and the strongest of them.
+    """
+    from fractal_wallpapers.palettes import carriers as carrier_table
+
+    if not targets:
+        return {}
+    total = sum(float(value) for value in targets.values())
+    if total > 1.0:
+        raise TargetRefused(
+            f"the targets ask for {total:.3f} of the collection between them, and there is "
+            "only one collection. Lower them or drop one."
+        )
+    block = {"sum": round(total, 6), "cells": {}}
+    for cell in sorted(targets):
+        offers = carrier_table.for_cell(cell, within=pool)
+        if not offers:
+            raise TargetRefused(
+                f"no map this leg can draw carries {cell}. The carrier table "
+                f"({carrier_table.record_path().name}) is over the whole library and the "
+                "pool is one member per palette group, so either the cell has no carrier "
+                "at all or every one of its carriers stood down for a group-mate."
+            )
+        block["cells"][cell] = {
+            "fraction": float(targets[cell]),
+            "carriers": len(offers),
+            "best": [{"map": name, "mean": round(share, 6)} for name, share in offers[:5]],
+        }
+    return block
+
+
 class Lens:
     """What the ceiling needs to know about a candidate, read once and kept.
 
@@ -873,5 +917,6 @@ __all__ = [
     "group_cap",
     "measured_co_dominance",
     "parse_target",
+    "refuse_targets",
     "strain",
 ]

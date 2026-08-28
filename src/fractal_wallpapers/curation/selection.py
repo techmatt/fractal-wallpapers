@@ -89,13 +89,12 @@ from fractal_wallpapers.curation import floors
 
 #: Why a slot that was planned was not seated. One slug per empty slot, with the
 #: counts that chose it on the record beside it, so nothing is lost by naming only
-#: one. **Two legs choose from this vocabulary and they choose differently**: the
-#: release leg below ([`_fill`]) names the first cause that applies, and a gallery
-#: seat names the constraint that actually bound it
-#: ([`curation.gallery.binding_reason`]) — a stricter question, because a seat has
-#: a colour ceiling above it as well as a bar below and the two have opposite
-#: remedies. `ceiling` and `mixed` are the gallery's alone; the release leg has no
-#: ceiling to name.
+#: one. **Two readings choose from this vocabulary and they choose differently**:
+#: the release leg below ([`_fill`]) names the first cause that applies, and
+#: [`binding_reason`] names the constraint that actually bound a seat — a stricter
+#: question, because a seat can have a colour ceiling above it as well as a bar
+#: below and the two have opposite remedies. `ceiling` and `mixed` are the
+#: ceiling's alone; the release leg has no ceiling to name.
 UNFILLED_REASONS = {
     "below_bar": "no remaining candidate cleared the head's acting release bar",
     "location_served": "every remaining candidate was a place the collection has already served",
@@ -327,6 +326,46 @@ def select(
     return selected, log, fills
 
 
+def binding_reason(below: int, capped: int, refused: int, withheld: int) -> str:
+    """Which rule actually emptied a seat, from what each one turned away.
+
+    The four counters partition every candidate the seat had, in the order the
+    rules act on them: `withheld` never reached a rule at all — a colour
+    ceiling's mandate narrowed the sequence to the carriers of a cell it owes and
+    these were not among them — then `below` failed the floor, then `capped`
+    cleared the floor and found the location already served, then `refused`
+    cleared both and failed one of the ceiling's three tests.
+
+    The rule named is the **deepest one a candidate actually reached**, because
+    that is the one whose lifting fills the seat. Naming the first instead — the
+    floor, on any seat that had anything under it — is the defect this function
+    exists to stop, and it is not hypothetical: the tracked pass `gallery4`'s
+    seat `0153` recorded `below_bar` with 27 candidates under the floor while the
+    3 that cleared it were turned away by the location rule, and its best held
+    `P(>=3) 0.881` against a floor of 0.575. Lowering that floor would not have
+    seated it. The field is what a reader trusts when deciding whether under-fill
+    is a supply problem or a colour problem, and those have opposite remedies.
+
+    `withheld` is the ceiling acting *before* the floor, so it is not in that
+    order and cannot be the deepest anything reached. Where it stands beside
+    another rule's refusals no single rule accounts for the seat — the candidates
+    the mandate held back were never tested against the rule being named — and
+    the honest answer is `mixed` with the counts left to say the rest.
+
+    **The sequential seating that wrote these counters was deleted on 2026-08-28
+    with the pre-solver gallery pass.** This stays because four passes' slot rows
+    are in the history and are still read: it is how a `below_bar` on one of them
+    is checked against the counts beside it.
+    """
+    if refused:
+        return "ceiling"
+    if withheld:
+        return "mixed" if (below or capped) else "ceiling"
+    if capped:
+        return LOCATION_SERVED
+    return "below_bar" if below else "no_candidates"
+
+
 def _fill(allotted: int, budget: int, eligible: int, taken: int, below: int, capped: int) -> dict:
     """One partition's slot arithmetic, and the binding reason it fell short.
 
@@ -336,7 +375,7 @@ def _fill(allotted: int, budget: int, eligible: int, taken: int, below: int, cap
     the record beside it.
 
     **The precedence here is the order the rules ran, not the depth they reached**,
-    which is a weaker reading than [`curation.gallery.binding_reason`] takes of a
+    which is a weaker reading than [`binding_reason`] takes of a
     seat: a partition with rows under the bar *and* rows at places already served
     is named `below_bar` here whichever of the two emptied it. This leg has no
     ceiling above it, so the only pair that can be confused is those two, and the
@@ -367,6 +406,7 @@ def _fill(allotted: int, budget: int, eligible: int, taken: int, below: int, cap
 __all__ = [
     "LOCATION_SERVED",
     "UNFILLED_REASONS",
+    "binding_reason",
     "entries",
     "grouped",
     "groups_of",

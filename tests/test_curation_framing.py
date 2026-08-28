@@ -1,12 +1,17 @@
 """The refine-framing step: the window, the margin, and what it may not move.
 
-Four claims a wrong answer would cost real money or a wrong gallery. The window
+Three claims a wrong answer would cost real money or a wrong gallery. The window
 geometry, because it is the whole search and the archive it came from never swept
 it. The margin, because without it the step is an argmax over correlated reads of
-one place and adopts noise. The monotonicity assertion, because it is the one
-thing that turns an arithmetic bug into a stopped pass instead of a whole
-gallery framed on the result. And that `--no-refine` is the leg this repository
-had before the step existed, exactly — same plan, same seed, same rows.
+one place and adopts noise. And the monotonicity assertion, because it is the one
+thing that turns an arithmetic bug into a stopped leg instead of a whole
+collection framed on the result.
+
+There was a fourth — that `--no-refine` reproduced the pre-step attempt leg
+exactly — and it went with the pre-solver gallery pass on 2026-08-28, along with
+the two plan tests beside it. The claim it left behind, that a re-framed row
+still stands on its **recorded** place, is pinned where the identity now lives:
+`tests/test_candidate_ledger.py` and `tests/test_hunt.py`.
 
 Nothing here renders: [`framing.screen`] is the seam and the tests stand on it.
 """
@@ -14,11 +19,10 @@ Nothing here renders: [`framing.screen`] is the seam and the tests stand on it.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
 
 import pytest
 
-from fractal_wallpapers.curation import framing, gallery
+from fractal_wallpapers.curation import framing
 
 SMOOTH, STRANGE = "smooth_render", "strange_render"
 
@@ -292,10 +296,10 @@ def test_the_leg_re_frames_the_colorizers_row_and_leaves_the_key_alone(
     assert moved["key"] == "the-key"
     assert moved["viewport"] != row["viewport"]
     assert float(moved["viewport"]["width"]) == pytest.approx(1.414)
-    block = framing.block(record, gallery.REFINED)
+    block = framing.block(record, framing.REFINED)
     assert block["original"]["viewport"] == row["viewport"]
     assert block["refined"]["viewport"] == moved["viewport"]
-    assert block["used"] == gallery.REFINED
+    assert block["used"] == framing.REFINED
 
 
 def test_a_location_whose_own_frame_would_not_draw_is_not_scanned_further(
@@ -349,188 +353,6 @@ def test_the_log_is_resumable_and_a_torn_tail_is_repaired(tmp_path) -> None:
     done = framing.completed(path, log=lambda _line: None)
     assert sorted(done) == ["a"]
     assert path.read_text(encoding="utf-8").endswith("\n")
-
-
-# --------------------------------------------------------------------------- #
-# What the pass does with it.
-# --------------------------------------------------------------------------- #
-def test_the_near_duplicate_grouping_keys_on_the_framing_the_pool_records() -> None:
-    """One wallpaper per location has to count a re-framed attempt against the same
-    place."""
-    original = {"center_re": "0", "center_im": "0", "width": "1e-3"}
-    candidate = {
-        "family": {"kind": "mandelbrot", "degree": 2},
-        "viewport": {"center_re": "0.0002", "center_im": "0", "width": "1.414e-3"},
-        "framing": {"original": {"viewport": original}, "refined": {"viewport": {}}},
-    }
-    assert gallery._place(candidate)["viewport"] == original
-    # A row with no refinement on it groups on the frame it was rendered at, which
-    # is what every row in the pool before this step existed does.
-    assert gallery._place({**candidate, "framing": None})["viewport"] == candidate["viewport"]
-
-
-def test_the_plan_can_hold_one_location_at_both_framings() -> None:
-    """The fallback's whole shape: the same location, planned again, framed as recorded."""
-    slot = gallery.Slot(id="0000", partition="mandelbrot", head=STRANGE, point="a")
-    slot.locations = ["a"]
-    first = gallery.attempt_plan([slot], {}, 1, 1)
-    assert {try_.framing for try_ in first} == {gallery.REFINED}
-    done = {(try_.key, try_.framing, try_.colormap) for try_ in first}
-    # Asking again for the same framing buys nothing; asking for the other one does.
-    assert gallery.attempt_plan([slot], {}, 1, 1, already=done) == []
-    again = gallery.attempt_plan([slot], {}, 1, 1, already=done, framing=gallery.ORIGINAL)
-    assert [try_.key for try_ in again] == ["a", "a"]
-    assert {try_.framing for try_ in again} == {gallery.ORIGINAL}
-    # The two framings draw the SAME modes, which is what makes the fallback a
-    # comparison rather than a second roll.
-    assert [try_.mode_index for try_ in first] == [try_.mode_index for try_ in again]
-
-
-def test_the_fallback_asks_only_for_unfilled_slots_locations_that_actually_moved() -> None:
-    filled = gallery.Slot(id="0000", partition="mandelbrot", head=STRANGE, point="a")
-    filled.locations, filled.seated = ["a"], {"candidate": "x"}
-    empty = gallery.Slot(id="0001", partition="mandelbrot", head=STRANGE, point="b")
-    empty.locations = ["b", "c"]
-    slots = [filled, empty]
-    planned = gallery.attempt_plan(slots, {}, 1, 1)
-    framings = {
-        "a": {"adopted": True},
-        "b": {"adopted": True},
-        "c": {"adopted": False},
-    }
-    fallback = gallery._fallback_leg(slots, planned, framings, {}, 1, 1, enabled=True)
-    # `a` is on a slot that filled and `c` was never moved: only `b` is owed one.
-    assert {try_.key for try_ in fallback} == {"b"}
-    assert {try_.framing for try_ in fallback} == {gallery.ORIGINAL}
-    # Nothing adopted anywhere costs the fallback nothing at all.
-    assert gallery._fallback_leg(slots, planned, {}, {}, 1, 1, enabled=True) == []
-    assert gallery._fallback_leg(slots, planned, framings, {}, 1, 1, enabled=False) == []
-
-
-# --------------------------------------------------------------------------- #
-# `--no-refine` is the leg this repository had before the step existed.
-# --------------------------------------------------------------------------- #
-class Fake:
-    """A colorizer that records what it was asked for and renders nothing."""
-
-    seen: list = []
-
-    def __init__(self, directory, seed, device, log):
-        del directory, device, log
-        self.seed = seed
-
-    def attempt(self, plan, row, anchor, index, colormap=None, on_demand=False, mode=None):
-        del colormap, on_demand, mode
-        Fake.seen.append((index, plan.key, plan.head, plan.mode_index, anchor, row["viewport"]))
-        return {
-            "schema": 1,
-            "attempt": index,
-            "key": plan.key,
-            "head": plan.head,
-            "viewport": row["viewport"],
-            "family": row["family"],
-            "maxiter": row["maxiter"],
-            "colormap": None,
-            "p_ge3": 0.9,
-        }
-
-    def claim(self, colormap) -> None:
-        del colormap
-
-
-def refinement(key: str, row: dict, best=None) -> dict:
-    """A refinement record the way the leg writes one, adopted or not."""
-    return {
-        "schema": framing.SCHEMA,
-        "key": key,
-        "adopted": best is not None,
-        "refused": None if best is not None else framing.BELOW_MARGIN,
-        "why": None,
-        "margin": 2.0,
-        "gain": 3.0 if best is not None else 0.5,
-        "gain_p_ge4": 0.4 if best is not None else 0.01,
-        "width_scale": 1.414 if best is not None else 1.0,
-        "dx": 1 if best is not None else 0,
-        "dy": 0,
-        "slug": "w1.414_xp" if best is not None else framing.UNMOVED,
-        "original": {
-            "viewport": row["viewport"],
-            "maxiter": row["maxiter"],
-            "p_ge4": 0.2,
-            "p_ge3": 0.6,
-            "picture": None,
-            "fate": "survived",
-        },
-        "best": best,
-        "scanned": 7,
-        "seconds": 0.5,
-        "sidecar": None,
-    }
-
-
-def attempt_leg(monkeypatch, tmp_path, framings, name: str) -> list:
-    """Run the attempt leg over a stubbed colorizer and hand back what it saw."""
-    monkeypatch.setattr(gallery.colorize, "pool", lambda seed=0: [f"map{i}" for i in range(40)])
-    monkeypatch.setattr(gallery.colorize, "annotate", lambda record: record)
-    monkeypatch.setattr(gallery.colorize, "Colorizer", Fake)
-    monkeypatch.setattr(
-        gallery.colorize, "field_of", lambda row, directory: Path(directory) / "f.f32"
-    )
-    rows = [location("a"), location("b", width="2.0")]
-    by_key = {row["key"]: row for row in rows}
-    slot = gallery.Slot(id="0000", partition="mandelbrot", head=STRANGE, point="a")
-    slot.locations = ["a", "b"]
-    plan = gallery.attempt_plan([slot], {}, 1, 1)
-    Fake.seen = []
-    directory = tmp_path / name
-    directory.mkdir()
-    gallery.make_attempts(directory, plan, by_key, 0, "cpu", lambda _line: None, framings=framings)
-    return list(Fake.seen)
-
-
-def test_no_refine_reproduces_the_attempt_leg_exactly_on_a_fixed_seed(
-    monkeypatch, tmp_path
-) -> None:
-    """The regression the flag exists to make checkable.
-
-    With nothing refined the leg is what it was before the step: the same plan
-    positions, the same palette anchors off the same seed, the same mode draws and
-    — the point — the same frames. A refinement record that adopted nothing has to
-    be indistinguishable from no record at all.
-    """
-    off = attempt_leg(monkeypatch, tmp_path, None, "off")
-    nothing_adopted = attempt_leg(
-        monkeypatch,
-        tmp_path,
-        {
-            "a": refinement("a", location("a")),
-            "b": refinement("b", location("b", width="2.0")),
-        },
-        "kept",
-    )
-    assert off == nothing_adopted
-    assert [seen[-1]["width"] for seen in off] == ["1.0", "1.0", "2.0", "2.0"]
-    assert len({seen[4] for seen in off}) >= 1
-
-
-def test_an_adopted_refinement_is_what_the_colorizer_is_handed(monkeypatch, tmp_path) -> None:
-    """And only for the location it was adopted for."""
-    moved = {"center_re": "0.5", "center_im": "0.0", "width": "1.414"}
-    seen = attempt_leg(
-        monkeypatch,
-        tmp_path,
-        {
-            "a": refinement(
-                "a",
-                location("a"),
-                best={"viewport": moved, "maxiter": 999, "p_ge4": 0.6, "p_ge3": 0.95},
-            ),
-            "b": refinement("b", location("b", width="2.0")),
-        },
-        "moved",
-    )
-    kept = location("b", width="2.0")["viewport"]
-    assert [cell[-1] for cell in seen] == [moved, moved, kept, kept]
 
 
 # --------------------------------------------------------------------------- #
