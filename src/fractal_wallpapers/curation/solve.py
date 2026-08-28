@@ -343,24 +343,28 @@ def pool(rows=None, scores=None, artifact=None, log=print) -> tuple[list[Candida
     row a **person rejected** is refused: the ledger keeps it and carries the
     rejection precisely so that a solver honours it. A row at a regime other than
     the one the pool was made at is refused, because a score read at one geometry
-    does not transfer to another. A row that **names no picture** is refused —
+    does not transfer to another. A row with **no picture on disk** is refused —
     its recipe is complete and it could be drawn again, but the diversity rule and
     the group cap are read off pixels, and a candidate no pairwise rule can
     evaluate is one that would be seated untested. A row with no score is refused
     because the objective *is* the score: such a row does not lose, there is
     simply nothing to rank it by.
 
-    **Naming a picture is not having one, and this exclusion only checks the
-    name.** `rank_key_fit` measured 30,040 of the ledger's 128,368 rows (23.4%)
-    naming a JPEG that is not on disk, and every one of them is admitted here.
-    They then reach the twin rule, which reads pixels and *admits* what it cannot
-    read — so the rows the diversity rule cannot evaluate are exactly the rows it
-    stops applying to, which is the failure this paragraph used to claim was
-    excluded. It is visible in a replay: re-seating `p2b_n150` on the same pool,
-    the same bars and the same scores reproduces 147 of its 150 seats, and the
-    three it takes instead are three the record refused as twins whose files have
-    since gone. Stating the behaviour rather than the intent, because closing it
-    is a change to what a seating admits and that is Matt's call, not a fix.
+    **Naming a picture and having one are two questions, and this asks both.**
+    Until 2026-08-28 it asked only the first, and the gap is not small: `curate
+    retention` drops the picture of everything outside the top five per (location,
+    mode), which at this store is **30,040 of 128,368 rows (23.4%)**. All of them
+    were admitted, and the twin rule — the one rule that opens a picture — could
+    not read them and so *admitted* them too. Rows the diversity rule could not
+    evaluate were exactly the rows it stopped applying to. Measured: re-seating
+    `p2b_n150` on the same pool, the same bars and bit-identical scores reproduced
+    147 of its 150 seats, and the three it took instead were three the record had
+    refused as twins whose files had since gone — seated *because* their pictures
+    were missing.
+
+    The two are counted apart, `no_picture` against `picture_absent`, because they
+    are different facts about a row: one was never drawn, the other was drawn and
+    swept. Only the second is expected to grow.
     """
     stored = candidate_ledger.read() if rows is None else list(rows)
     if not stored:
@@ -374,8 +378,9 @@ def pool(rows=None, scores=None, artifact=None, log=print) -> tuple[list[Candida
     # judges' scales into one objective. A recipe read on an older artifact falls
     # into `no_score` below, which is where a recipe with no reading belongs.
     by_key = candidate_ledger.scores_by_recipe(read, artifact=artifact)
+    present = candidate_ledger.present_pictures(stored)
     out: list[Candidate] = []
-    refused = {"rejected": 0, "off_regime": 0, "no_picture": 0, "no_score": 0}
+    refused = {"rejected": 0, "off_regime": 0, "no_picture": 0, "picture_absent": 0, "no_score": 0}
     for row in stored:
         if row.get("rejected"):
             refused["rejected"] += 1
@@ -385,6 +390,9 @@ def pool(rows=None, scores=None, artifact=None, log=print) -> tuple[list[Candida
             continue
         if not row.get("picture"):
             refused["no_picture"] += 1
+            continue
+        if str(row["key"]) not in present:
+            refused["picture_absent"] += 1
             continue
         reading = by_key.get(str(row["key"]))
         if reading is None or reading.get("p_ge4") is None:

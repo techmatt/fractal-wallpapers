@@ -120,7 +120,20 @@ SHOWN = 6
 #: above it are dictionary lookups over counts already held; this one decodes a
 #: JPEG, builds half a mebibyte of pixel cloud and compares it to every seat
 #: already taken. Every candidate the cheap rules refuse is a signature not made.
-RULES = ("location", "group_cap", "cell_allowance", "family_allowance", "twin")
+#:
+#: `picture_unreadable` sits immediately before it and is the same rule's other
+#: outcome: a candidate whose JPEG cannot be opened is refused rather than
+#: admitted. It should be unreachable from a pool `solve.pool` built, which now
+#: excludes an absent picture itself — it is here for the file that disappears
+#: mid-pass, and because a rule that reads pixels must fail closed.
+RULES = (
+    "location",
+    "group_cap",
+    "cell_allowance",
+    "family_allowance",
+    "picture_unreadable",
+    "twin",
+)
 
 #: What a candidate that broke no rule and simply lost is recorded as. It is a far
 #: weaker statement than any of [`RULES`] and is kept apart for that reason: a
@@ -242,7 +255,19 @@ class Twins:
         self.without_a_picture = 0
 
     def refuses(self, key: str) -> dict | None:
-        """The seated picture this candidate is a twin of, or `None`."""
+        """The seated picture this candidate is a twin of, or `None`.
+
+        **A candidate whose picture cannot be read is REFUSED, not admitted.**
+        It used to be admitted, on the reasoning that a missing file is a fact
+        about the checkout rather than about the wallpaper — which is true, and
+        is still the wrong direction to fail in. Admitting means the diversity
+        rule silently stops applying to exactly the candidates nothing can check,
+        and that put untested rows in a gallery: three seats of `p2b_n150` were
+        taken by candidates whose files had been swept. Refusing costs a seat to
+        a candidate that might have been fine; admitting costs the rule itself.
+        The refusal is reported under its own name and never as a twin, because
+        "I could not read this" is not "this is a duplicate".
+        """
         import numpy
 
         from fractal_wallpapers.palettes import groups, pixel_clouds
@@ -250,7 +275,7 @@ class Twins:
         made = self.clouds.of(str(key))
         if made is None:
             self.without_a_picture += 1
-            return None
+            return {"unreadable": True, "why": "the candidate's picture is not on disk"}
         if not self._reduced:
             return None
         self.tested += 1
@@ -302,7 +327,7 @@ class Twins:
             "seat_comparisons_measured": self.measured,
             "signatures_made": self.clouds.made,
             "signature_cache_hits": self.clouds.hits,
-            "tested_without_a_picture_on_disk": self.without_a_picture,
+            "refused_without_a_picture_on_disk": self.without_a_picture,
             "seated_pictures_held": len(self.keys),
         }
 
@@ -356,6 +381,8 @@ class Seats:
         if self.twins is not None:
             found = self.twins.refuses(candidate.key)
             if found is not None:
+                if found.get("unreadable"):
+                    return "picture_unreadable"
                 self.twin_of[candidate.key] = found
                 return "twin"
         return None

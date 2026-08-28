@@ -161,3 +161,60 @@ def test_a_head_is_shipped_on_its_decisions_rather_than_its_probabilities() -> N
     assert head.decode([0.99, 0.98, 0.51], 3) == 4
     assert head.decode([0.99, 0.98, 0.49], 3) == 3
     assert head.decode([0.99, 0.60, 0.49], 3) == 3, "a big move that changes nothing"
+
+
+# --------------------------------------------------------------------------- #
+# The shipped backbone, and the assertion that keeps the constant honest.
+# --------------------------------------------------------------------------- #
+def test_the_roster_of_shipped_backbones_covers_every_head_that_ships():
+    from fractal_wallpapers.models import head, roster
+
+    assert set(head.SHIPPED_BACKBONES) == set(roster.HEADS)
+
+
+def test_only_the_shipped_artifact_is_claimed_and_a_run_checkpoint_is_not():
+    """A band must stay free to train at a backbone the roster does not ship."""
+    from pathlib import Path
+
+    from fractal_wallpapers.models import head
+
+    assert head.shipped_head_of(Path("models/render/render.fp16.pt")) == "render"
+    assert head.shipped_head_of(Path("models/render/small_backbone_seed1/head_best.pt")) is None
+    assert head.shipped_head_of(Path("models/location/location.fp16.pt")) == "location"
+
+
+def test_a_shipped_artifact_on_the_wrong_backbone_is_refused():
+    """PLANTED: the constant and the file disagree, and the load must not proceed.
+
+    `head.BACKBONE` named the medium backbone while the shipped render head was
+    built on the small one, and nothing anywhere noticed for four days — every
+    loader builds from `config["backbone"]`, so the model was always right and
+    only the documentation was wrong. This is what makes that kind of drift loud.
+    """
+    from pathlib import Path
+
+    import pytest
+
+    from fractal_wallpapers.models import head
+
+    with pytest.raises(head.BackboneMismatch) as refusal:
+        head.assert_shipped_backbone(Path("models/render/render.fp16.pt"), {"backbone": "resnet50"})
+    assert "resnet50" in str(refusal.value)
+    assert head.SHIPPED_BACKBONES["render"] in str(refusal.value)
+
+
+def test_the_assertion_passes_on_what_each_head_actually_ships():
+    from pathlib import Path
+
+    from fractal_wallpapers.models import head
+
+    for name, backbone in head.SHIPPED_BACKBONES.items():
+        head.assert_shipped_backbone(Path(f"models/{name}/{name}.fp16.pt"), {"backbone": backbone})
+
+
+def test_a_checkpoint_carrying_no_backbone_is_left_to_a_different_check():
+    from pathlib import Path
+
+    from fractal_wallpapers.models import head
+
+    head.assert_shipped_backbone(Path("models/render/render.fp16.pt"), {})

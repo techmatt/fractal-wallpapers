@@ -46,7 +46,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from fractal_wallpapers.models import metrics, palette_corpus, palette_head, palette_sets
+from fractal_wallpapers.models import head, metrics, palette_corpus, palette_head, palette_sets
 
 #: The schema every score row carries.
 SCHEMA = 1
@@ -83,6 +83,7 @@ def load(path: Path, device: str = "auto"):
     where = train.device_of(device)
     saved = torch.load(path, map_location="cpu", weights_only=False)
     config = saved["config"]
+    head.assert_shipped_backbone(path, config)
     model = palette_head.build(backbone=config["backbone"], pretrained=False)
     model.load_state_dict({key: value.float() for key, value in saved["state_dict"].items()})
     return model.to(where).eval(), config, where

@@ -458,3 +458,63 @@ def test_a_ledger_backed_lens_serves_every_row_it_has_without_a_decode():
     price = lens.price()
     assert price["readings_decoded"] == 0
     assert price["readings_stored"] == len(rows)
+
+
+# --------------------------------------------------------------------------- #
+# Naming a picture against having one.
+# --------------------------------------------------------------------------- #
+def _picture_row(key, name):
+    return {
+        "key": key,
+        "picture": name,
+        "recipe": {"mode": "smooth"},
+        "provenance": {"run": "run1"},
+    }
+
+
+def test_present_pictures_answers_the_disk_and_not_the_row(tmp_path, monkeypatch):
+    """PLANTED: two rows name a picture and only one of them has one.
+
+    `curate retention` drops pictures and never rows, so this is the store's
+    normal state over about a quarter of it — and a reader that trusted the name
+    is what let `solve.pool` admit 30,040 rows nothing could open.
+    """
+    from fractal_wallpapers import paths
+    from fractal_wallpapers.curation import candidate_ledger
+
+    root = tmp_path / "artifacts"
+    (root / "run1").mkdir(parents=True)
+    (root / "run1" / "here.jpg").touch()
+    monkeypatch.setenv(paths.HOT_ROOT_VARIABLE, str(root))
+
+    rows = [
+        _picture_row("a", "artifacts/run1/here.jpg"),
+        _picture_row("b", "artifacts/run1/swept.jpg"),
+        _picture_row("c", None),
+    ]
+    assert candidate_ledger.present_pictures(rows) == {"a"}
+
+
+def test_the_picture_census_counts_the_absent_by_mode_and_by_run(tmp_path, monkeypatch):
+    from fractal_wallpapers import paths
+    from fractal_wallpapers.curation import candidate_ledger
+
+    root = tmp_path / "artifacts"
+    (root / "run1").mkdir(parents=True)
+    (root / "run1" / "here.jpg").touch()
+    monkeypatch.setenv(paths.HOT_ROOT_VARIABLE, str(root))
+
+    rows = [
+        _picture_row("a", "artifacts/run1/here.jpg"),
+        _picture_row("b", "artifacts/run1/swept.jpg"),
+    ]
+    rows[1]["recipe"]["mode"] = "stripe"
+    rows[1]["provenance"]["run"] = "run2"
+
+    census = candidate_ledger.picture_census(rows)
+    assert census["rows"] == 2
+    assert census["with_a_picture_on_disk"] == 1
+    assert census["naming_a_picture_that_is_absent"] == 1
+    assert census["by_mode"]["stripe"]["absent"] == 1
+    assert census["by_mode"]["smooth"]["absent"] == 0
+    assert census["by_run"]["run2"]["absent"] == 1

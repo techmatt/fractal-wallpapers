@@ -3326,6 +3326,7 @@ def curate_candidate_ledger(args: argparse.Namespace) -> int:
         "census": lambda: candidate_ledger.census(n=args.n),
         "save": candidate_ledger.save,
         "check": candidate_ledger.check,
+        "pictures": candidate_ledger.picture_census,
         "restore": lambda: candidate_ledger.restore(force=args.force),
     }[args.what]
     try:
@@ -7647,10 +7648,10 @@ def curate_commands(subcommands) -> None:
     )
     ledger_store.add_argument(
         "what",
-        choices=["backfill", "census", "check", "save", "restore"],
+        choices=["backfill", "census", "check", "pictures", "save", "restore"],
         help="build the ledger from what already exists, take the coverage census, check "
-        "the live files against their manifests, save a fresh copy and manifests, or "
-        "restore the copies",
+        "the live files against their manifests, report which rows name a picture that is "
+        "no longer on disk, save a fresh copy and manifests, or restore the copies",
     )
     ledger_store.add_argument(
         "--recolour",

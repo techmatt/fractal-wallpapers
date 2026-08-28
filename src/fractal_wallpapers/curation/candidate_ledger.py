@@ -378,6 +378,95 @@ def colours_by_render(rows=None) -> dict:
     }
 
 
+def present_pictures(rows=None) -> set:
+    """`{key}` for every row whose picture is **on disk**, as one batched pass.
+
+    THE answer to "does this row still have a picture", and the only one: naming
+    a picture and having one are different questions, and `curate retention` made
+    the difference 30,040 rows wide by design — rows are never dropped, pictures
+    are. A reader that asks the row is asking the wrong half.
+
+    Two things make this affordable enough to sit in `solve.pool`, which every
+    seating and every headroom census runs. `rehome` is called with one shared
+    [`Tiers`] snapshot rather than resolving the settings per row — 1.0 s over
+    the store against 215 s. And existence is answered by listing each pictures
+    directory once instead of stat-ing each file: the 128,368 rows live in 21
+    directories, which is 2.6 s of `scandir` against 12.8 s of `is_file`. Both
+    numbers are this store on this machine, 2026-08-28.
+
+    A row that names nothing, or whose name has no artifacts component for
+    `rehome` to read, is absent — there is no picture either way.
+    """
+    import os
+    from collections import defaultdict
+
+    from fractal_wallpapers.paths import Tiers, rehome
+
+    stored = read() if rows is None else rows
+    tiers = Tiers.current()
+    homed: dict = {}
+    wanted: dict = defaultdict(set)
+    for row in stored:
+        named = row.get("picture")
+        if not named:
+            continue
+        where = rehome(named, tiers)
+        if where is None:
+            continue
+        homed[str(row["key"])] = where
+        wanted[where.parent].add(where.name)
+
+    listing: dict = {}
+    for directory in wanted:
+        try:
+            listing[directory] = {entry.name for entry in os.scandir(directory)}
+        except OSError:
+            listing[directory] = set()
+    return {key for key, where in homed.items() if where.name in listing.get(where.parent, ())}
+
+
+def picture_census(rows=None) -> dict:
+    """How many rows name a picture that is not there, by mode and by run.
+
+    Permanent, expected state rather than damage: [`curation.retention`] keeps
+    every row and drops the picture of everything outside the top five per
+    (location, mode), the labeled, and a one-in-200 reservoir. This is the reader
+    that state was missing — without it the only way to notice was a seating
+    behaving oddly, which is how it was in fact noticed.
+    """
+    stored = read() if rows is None else rows
+    present = present_pictures(stored)
+    by_mode: dict = {}
+    by_run: dict = {}
+    absent = 0
+    for row in stored:
+        gone = str(row["key"]) not in present
+        absent += gone
+        mode = str((row.get("recipe") or {}).get("mode") or "?")
+        run = str((row.get("provenance") or {}).get("run") or "?")
+        for table, name in ((by_mode, mode), (by_run, run)):
+            seen = table.setdefault(name, {"rows": 0, "absent": 0})
+            seen["rows"] += 1
+            seen["absent"] += gone
+    for table in (by_mode, by_run):
+        for seen in table.values():
+            seen["share"] = round(seen["absent"] / seen["rows"], 4) if seen["rows"] else 0.0
+    return {
+        "schema": SCHEMA,
+        "rows": len(stored),
+        "with_a_picture_on_disk": len(present),
+        "naming_a_picture_that_is_absent": absent,
+        "share_absent": round(absent / len(stored), 4) if stored else 0.0,
+        "policy": (
+            "expected: `curate retention` drops pictures and never rows. An absent "
+            "picture is not damage, and `curate candidate-ledger backfill` will not "
+            "bring it back — only a re-render will."
+        ),
+        "by_mode": dict(sorted(by_mode.items(), key=lambda item: -item[1]["absent"])),
+        "by_run": dict(sorted(by_run.items(), key=lambda item: -item[1]["absent"])),
+    }
+
+
 def reading_source(rows=None):
     """A `stored_of` for [`ceiling.Lens`]: a render path in, a colour block out.
 

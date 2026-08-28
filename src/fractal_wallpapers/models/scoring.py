@@ -65,6 +65,7 @@ def load(path: Path, device: str = "auto"):
     where = train.device_of(device)
     saved = torch.load(path, map_location="cpu", weights_only=False)
     config = saved["config"]
+    head.assert_shipped_backbone(path, config)
     model = head.build(
         num_classes=int(config["classes"]),
         backbone=config["backbone"],

@@ -1171,25 +1171,44 @@ the seating and the solve refuse on the **first** neighbour inside tau, where th
 shipped `curate gallery` pass refuses on the second (`ceiling.TWINS = 2`); the two
 are different policies and both records say which they applied.
 
-**The twin rule stops applying to exactly the rows it cannot read, and that is a
-quarter of the ledger.** `clouds_for` reads a candidate's picture off disk and a row
-whose file is absent reads as `None`, which `Twins` *admits* rather than refuses —
-deliberately, because a missing file is a fact about the checkout and not about the
-wallpaper. What was never checked is how many such rows reach it. `rank_key_fit`
-measured it on 2026-08-28: **30,040 of the ledger's 128,368 rows (23.4%) name a JPEG
-that is not on disk**, and `solve.pool` admits every one of them — its `no_picture`
-exclusion tests that the row *names* a picture, never that the file exists, whatever
-its docstring used to say. Inside one seat's pre-selected pool the share is **908 of
-5,324 (17%)**.
+**A quarter of the ledger has no picture, and both readers of one now fail closed.**
+`curate retention` drops the picture of everything outside the top five per (location,
+mode), the labeled and a one-in-200 reservoir — rows are never dropped, so **30,040 of
+the ledger's 128,368 rows (23.4%) name a JPEG that is not there**, permanently and by
+design. No reader had been checked against that. `solve.pool`'s `no_picture` exclusion
+tested that a row *named* a picture and never that the file existed, so it admitted all
+of them; they then reached the twin rule, which reads pixels and **admitted** what it
+could not read, on the reasoning that a missing file is a fact about the checkout
+rather than about the wallpaper. True, and the wrong direction to fail in: the
+diversity rule stopped applying to exactly the candidates nothing could check.
 
-So it is not a corner case, and it is visible in a replay: re-seating `p2b_n150` on
-the same pool, the same bars, the same pre-selection and bit-identical scores
-reproduces **147 of its 150 seats**, and the three it takes instead are three the
-record refused as twins whose files have since gone. A candidate is therefore
-seated *because* its picture is missing. Nothing here is changed — closing it alters
-what a seating admits and is Matt's call — but a seat record taken before a picture
-was swept is not exactly reproducible after, and a replay that reproduces 147 of 150
-has found this rather than a reconstruction error.
+It is visible in a replay. Re-seating `p2b_n150` on the same pool, the same bars, the
+same pre-selection and bit-identical scores reproduced **147 of its 150 seats**, and
+the three it took instead were three the record had refused as twins whose files had
+since gone — seated *because* their pictures were missing.
+
+**Closed on 2026-08-28, in both places.** `solve.pool` excludes a row whose picture is
+not on disk and counts it apart as `picture_absent` — drawn-then-swept is a different
+fact from never-drawn, and only the first grows. `Twins.refuses` refuses a candidate it
+cannot read, under its own rule name `picture_unreadable` rather than as a twin, which
+is what the file that vanishes mid-pass needs. Both are pinned by planted-failure
+tests. Existence is answered once per pool by `candidate_ledger.present_pictures`, which
+shares one `Tiers` snapshot and lists each pictures directory once — 21 directories,
+3.6 s over the whole store, against 215 s for a naive `rehome`-and-stat per row.
+
+**What it cost the pool, measured before it was closed:** at the `p2b_n150` pool,
+clearing rows fall **5,924 → 4,851** and distinct clearing places **1,427 → 1,427**.
+Zero places lost, because retention keeps the top five *per (location, mode)* and every
+location therefore keeps its best. No mode goes short of its floor at n=150 or n=1000
+on missing files alone. Two colour cells do, and only at n=1000: `dark_vivid_lime`
+(46 → 30 places against an allowance of 42) and `dark_vivid_yellow` (45 → 37) — the
+thin cells, where this was always going to bite first. Re-rendering the 17 rows that
+would restore both is **3.9 core-seconds** at the ledger's own per-mode median. Not
+spent; the number is here so the decision is one.
+
+`fractal-wallpapers curate candidate-ledger pictures` is the reader for this state,
+counted and grouped by mode and by run.
+
 
 **The rejection ledger is the product.** For every candidate not seated, the first
 rule that refused it, aggregated by cell, family, mode and partition — a cell whose
@@ -2403,18 +2422,24 @@ what sets the chunk size. It wrote **1.48 GB / 22,898 files** into
 
 ## The archive tier
 
-The archive tier named throughout this file is
-`E:\FractalStorage\fractal-wallpapers\artifacts\`, and it mirrors the hot tree's
-shape one level down: a run archived out of `artifacts/<name>/` lands at
-`E:\FractalStorage\fractal-wallpapers\artifacts\<name>\`. `location_views` — the
-frozen deploy cache above — lives there, and so do closed harvest runs
-(`harvest_run2`, `3`, `9`, `10`), superseded gallery passes, and the smoke trees.
+The archive tier mirrors the hot tree's shape one level down: a run archived out
+of `<hot>/<name>/` lands at `<archive>/<name>/`. `location_views` — the frozen
+deploy cache above — lives there, and so do closed harvest runs (`harvest_run2`,
+`3`, `9`, `10`), superseded gallery passes, and the smoke trees.
+
+**`<hot>` and `<archive>` are placeholders on purpose.** They are this machine's
+two artifacts roots, and a drive letter written into tracked source is exactly
+what `tests/test_history_purity.py::test_no_absolute_paths_in_source` refuses —
+this paragraph is the one place it has ever been broken, and spelling the roots
+out here would also make the file wrong on any other checkout. Ask the settings
+instead: `paths.hot_root()` and `paths.archive_root()` are the answer,
+`paths.HOT_ROOT_KEY` and `paths.ARCHIVE_ROOT_KEY` name the settings that hold
+them, and `fractal-wallpapers storage status` prints every subtree with its tier.
 
 Restoring one is a copy back under the same name:
 
 ```
-robocopy "E:\FractalStorage\fractal-wallpapers\artifacts\<name>" ^
-         "C:\Code\fractal-wallpapers\artifacts\<name>" /E
+robocopy "<archive>\<name>" "<hot>\<name>" /E
 ```
 
 Two rules hold on the way out. **`artifacts/curation/` never goes** — it stays on
