@@ -3384,6 +3384,93 @@ def curate_solve(args: argparse.Namespace) -> int:
     return 0
 
 
+def curate_headroom(args: argparse.Namespace) -> int:
+    """Census the ledger's headroom: what each constraint needs, holds, and costs."""
+    from fractal_wallpapers.curation import headroom
+
+    candidates, costs, refused = headroom.population()
+    ladder = tuple(args.n) if args.n else headroom.LADDER
+    record = headroom.census(candidates, ladder=ladder, costs=costs)
+    record["pool"] = {"refused": refused}
+    path = headroom.write_record(args.name, record)
+    print(f"{path}")
+    for size, block in record["curve"].items():
+        short = [name for name, held in block["blocks"].items() if held["short"]]
+        print(
+            f"n={size:>5}  {len(block['flagged'])} flagged; "
+            f"{'short: ' + ', '.join(short) if short else 'nothing provably short'}"
+        )
+    return 0
+
+
+def curate_seat(args: argparse.Namespace) -> int:
+    """Seat a gallery off the ledger with a greedy, and keep every refusal."""
+    from fractal_wallpapers.curation import headroom, seating
+
+    candidates, _costs, _refused = headroom.population()
+    record = seating.seat(candidates, n=args.n)
+    name = args.name or f"n{args.n}"
+    path = seating.write_record(name, record)
+    print(f"{path}")
+    if not args.no_sheet:
+        print(f"{seating.contact_sheet(name, record, rejected=record['samples'])}")
+    print(
+        f"{record['filled']} of {args.n} seat(s); "
+        f"{record['shortfalls']['modes']['held']} of "
+        f"{record['shortfalls']['modes']['of']} mode(s) held"
+    )
+    print(json.dumps(record["rejection"]["reasons"], indent=2))
+    return 0
+
+
+def curate_distinct(args: argparse.Namespace) -> int:
+    """The neutral pre-selection read: the join, the distribution, the premise, the sheet."""
+    from fractal_wallpapers.curation import distinct, headroom
+    from fractal_wallpapers.paths import rehome
+
+    candidates, _costs, _refused = headroom.population()
+    kept = headroom.clearing(candidates)
+    best: dict = {}
+    for candidate in sorted(kept, key=lambda held: (-held.score, held.key)):
+        best.setdefault(candidate.location, candidate)
+
+    def picture_of(key):
+        held = best.get(key)
+        if held is None:
+            return None
+        where = Path(rehome(held.picture))
+        return where if where.is_file() else None
+
+    try:
+        record = distinct.read(
+            sorted(best),
+            picture_of=None if args.no_premise else picture_of,
+            pairs=args.premise_pairs,
+            sweep=not args.no_sweep,
+        )
+    except distinct.DistinctRefused as refusal:
+        print(refusal)
+        return 1
+    print(f"{distinct.write_record(args.name, record)}")
+    out = resolve_output(args.out) if args.out else distinct.sheet_path(args.name)
+    print(f"{distinct.sheet(record, out)}")
+    join = record["join"]
+    print(
+        f"{join['embedded']:,} of {join['asked']:,} pool locations are embedded; "
+        f"{join['unembedded']:,} are not"
+    )
+    print(json.dumps(record["nearest"], indent=2))
+    if "pearson" in record["premise"]:
+        print(
+            f"premise: pearson {record['premise']['pearson']}, "
+            f"spearman {record['premise']['spearman']} over "
+            f"{record['premise']['pairs']} pair(s)"
+        )
+    if record["twins"].get("twin_pairs") is not None:
+        print(json.dumps(record["twins"]["removed_by_radius"], indent=2))
+    return 0
+
+
 def curate_hunt(args: argparse.Namespace) -> int:
     """Plan a hunt, run one, merge one into the ledger, or rebuild the frame index."""
     from fractal_wallpapers.curation import hunt
@@ -6814,9 +6901,11 @@ def curate_commands(subcommands) -> None:
     from fractal_wallpapers.curation import candidate_ledger as candidate_ledger_module
     from fractal_wallpapers.curation import colors as colors_module
     from fractal_wallpapers.curation import depth as depth_module
+    from fractal_wallpapers.curation import distinct as distinct_module
     from fractal_wallpapers.curation import embeddings as embeddings_module
     from fractal_wallpapers.curation import framing as framing_module
     from fractal_wallpapers.curation import gallery as gallery_module
+    from fractal_wallpapers.curation import headroom as headroom_module
     from fractal_wallpapers.curation import hunt as hunt_module
     from fractal_wallpapers.curation import mine as mine_module
     from fractal_wallpapers.curation import retention as retention_module
@@ -7615,6 +7704,118 @@ def curate_commands(subcommands) -> None:
         "n: a larger incumbent lands on more near-duplicate pairs",
     )
     solving.set_defaults(handler=curate_solve)
+
+    headroom_step = steps.add_parser(
+        "headroom",
+        help="census what each selection constraint needs, what the ledger holds, and "
+        "what one more would cost",
+        description=(
+            "O(rows) necessary conditions over the candidate ledger, at several gallery "
+            "sizes. No solver: a slow solve that reports `there are no light greens at "
+            "all` spent twenty minutes on a fact one pass over the rows already knew. "
+            "Counts are DISTINCT LOCATIONS and never rows, because one wallpaper per "
+            "location is absolute. Each row says what it needs at n, what the pool holds, "
+            "the slack, and the marginal cost of buying one more — estimated off the "
+            "ledger's own realized attempt-to-success rate times the realized per-mode "
+            "render cost. A short row is provable infeasibility; a row with slack is NOT "
+            "a claim that the selection is possible."
+        ),
+    )
+    headroom_step.add_argument(
+        "--n",
+        type=int,
+        action="append",
+        metavar="SEATS",
+        help="census at this gallery size; repeatable. Unset is the whole ladder "
+        f"({', '.join(str(size) for size in headroom_module.LADDER)})",
+    )
+    headroom_step.add_argument(
+        "--name",
+        default="latest",
+        help="what to call this census's output directory (default `latest`)",
+    )
+    headroom_step.set_defaults(handler=curate_headroom)
+
+    seating_step = steps.add_parser(
+        "seat",
+        help="seat a gallery off the ledger with a greedy, and keep every refusal",
+        description=(
+            "The lower bound `headroom` is the upper bound on. Fill by SCARCITY and not "
+            "by score — the mandated constraints from their own subpools first, scarcest "
+            "first, then the general pool by score, because ordering by score alone turns "
+            "satisfiable problems into apparent infeasibility. One wallpaper per location "
+            "is hard and everything else is soft with the shortfall recorded: no fallback "
+            "leg, no least-violating rescue, unfilled beats padded. It only chooses — it "
+            "proposes nothing, renders nothing and opens no picture. The REJECTION LEDGER "
+            "is the product: for every candidate not seated, which rule killed it, "
+            "aggregated by cell, family, mode and partition. A greedy shortfall is `this "
+            "walk did not find it` and never `the pool does not hold it`."
+        ),
+    )
+    seating_step.add_argument(
+        "--n",
+        type=int,
+        default=candidate_ledger_module.FIRST_SOLVE,
+        help=f"how many wallpapers to seat (default {candidate_ledger_module.FIRST_SOLVE})",
+    )
+    seating_step.add_argument(
+        "--name",
+        help="what to call this seating's output directory (default `n<N>`)",
+    )
+    seating_step.add_argument(
+        "--no-sheet",
+        action="store_true",
+        help="take every decision and build no contact sheet",
+    )
+    seating_step.set_defaults(handler=curate_seat)
+
+    distinct_step = steps.add_parser(
+        "distinct",
+        help="the neutral pre-selection read: which places are visibly different places",
+        description=(
+            "Pairwise diversity moved to pool construction. The join FIRST — how many of "
+            "the pool's locations have a neutral descriptor and how many do not, because "
+            "a lossy pre-filter is a finding rather than a detail to work around — then "
+            "the nearest-neighbour distribution, then the near pairs at each candidate "
+            "radius as a sheet. NO RADIUS IS CHOSEN: the sheet is the instrument and the "
+            "choice is a person's. The premise the whole decoupling rests on — that far "
+            "in the neutral descriptor implies far in the coloured pixels — is MEASURED "
+            "against the pixel-cloud metric over a stratified sample, because a "
+            "correlated proxy is not a prune and this project has shipped one that was."
+        ),
+    )
+    distinct_step.add_argument(
+        "--name",
+        default="latest",
+        help="what to call this read's output directory (default `latest`)",
+    )
+    distinct_step.add_argument(
+        "--out",
+        metavar="PATH",
+        help="where the near-pair sheet goes (default beside the record)",
+    )
+    distinct_step.add_argument(
+        "--premise-pairs",
+        type=int,
+        default=distinct_module.PREMISE_PAIRS,
+        metavar="PAIRS",
+        help="how many pairs the premise check measures "
+        f"(default {distinct_module.PREMISE_PAIRS}). Two pixel-cloud signatures a pair at "
+        "about a tenth of a second each, cached per picture",
+    )
+    distinct_step.add_argument(
+        "--no-premise",
+        action="store_true",
+        help="the join, the distribution and the sheet, and measure no pixel cloud",
+    )
+    distinct_step.add_argument(
+        "--no-sweep",
+        action="store_true",
+        help="the scatter but not the exact twin sweep. The sweep is one signature per "
+        "picture plus the pairs the sound bound cannot settle, which is minutes over a "
+        "pool of a thousand places — and it is the half that decides the design",
+    )
+    distinct_step.set_defaults(handler=curate_distinct)
 
     hunting = steps.add_parser(
         "hunt",

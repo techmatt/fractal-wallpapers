@@ -107,14 +107,15 @@ and skip themselves without one.
 ### The two lanes
 
 `python -m pytest` runs the **fast lane**, about 45 seconds. `python -m pytest
---slow` runs every test there is, about eight minutes, and that is what CI runs
-and what runs before a checkpoint. The fast lane is for the edit-run loop and
-nothing else.
+--slow` runs every test there is, about nine and a half minutes, and that is
+what CI runs and what runs before a checkpoint. The fast lane is for the
+edit-run loop and nothing else.
 
-The eight minutes is measured, not estimated: 2,931 tests in **8:45** on this
-machine at `b529d58`, 2026-08-27, with the fast lane at 47.9 s. It has been
-climbing with the suite — 6:54, 7:20 and 8:05 were the three runs before it — so
-read it as the order of magnitude and re-measure rather than trusting the digit.
+The nine minutes is measured, not estimated: 3,011 tests in **9:25** on this
+machine at `c041014` plus the selection-alignment work, 2026-08-27, with the fast
+lane at 48.0 s over the 2,905 it holds. It has been climbing with the suite —
+6:54, 7:20, 8:05 and 8:45 were the four runs before it — so read it as the order
+of magnitude and re-measure rather than trusting the digit.
 Measure it on an **idle** machine: the same lane sharing this one with a render
 leg crawled to 41% in the time it normally takes to finish.
 
