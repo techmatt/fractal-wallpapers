@@ -1252,6 +1252,36 @@ niche is a ruling (checkpoint 84: 2 threes and 0 fours in 117 labeled rows) and
 the engine's tier still says production, so it is applied at the draw through
 `depth.DEMOTED`. Existing material in it stands.
 
+**The conditioned colour ask, ported from the hunt.** `mine.plan_breadth`
+stratified its palette ask over all 48 cells through `hunt.Stratifier`; depth
+replaced that with a flat `random.sample` over the pool and the ask was dropped
+in the move without anything recording it. It is back as a fifth draw,
+`conditioned`, on a share of zero unless a run asks for one:
+
+```
+fractal-wallpapers curate depth run --name d2 --rate 0.35 --budget 5400   --cell dark_vivid_green   --shares '{"near_band": 0.2, "ranked_bands": 0.25, "flat": 0.275, "conditioned": 0.275}'
+```
+
+The arm is the **flat draw with one thing changed**. Same pools, same
+`flat_places` draw, same roster, same width, same seeds — only the palette ask
+differs: `aimed_maps` sends it through `hunt.conditioned_maps` and so through
+the carrier table's mean-share weighting, where `flat_maps` samples the pool
+uniformly. That is what makes the flat arm the *control*: `record.hit_rate`
+reads both arms' rate of coming out dominant in the cell and reports the `lift`
+between them. A share with no `--cell`, a `--cell` with no share, and a misspelt
+cell are all refused at the plan rather than reported afterwards as a draw that
+bought nothing.
+
+**Draw-biased, verdict-measured, and it does not gate on the table.** The carrier
+table is a prior about a map and never a claim about a picture — group members
+disagree on their dominant cell in 120 of 195 reads, and `PRGn` once made a green
+seat as a non-carrier. So the table decides only which maps are *offered*; the
+candidate is rendered, its dominance is read off its own pixels like every other
+candidate's, and what came out dominant is what counts. A 60% hit rate costs
+1.6x the renders on that arm and nothing anywhere else — every candidate is a
+candidate whatever colour it turned out to be. The shot carries `drawn_for` on
+its ledger row so a reader can tell an aimed candidate from a lucky one.
+
 **`tia` is out of BREADTH and still on the near band.** Two rulings, two
 constants: `DEMOTED` takes a mode out of the run entirely, `BREADTH_DEMOTED`
 takes it out of the ranked and flat draws and leaves it eligible as a near-band

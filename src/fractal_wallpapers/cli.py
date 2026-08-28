@@ -3546,6 +3546,7 @@ def curate_depth(args: argparse.Namespace) -> int:
             "floor_width": args.floor_width,
             "floor_seats": args.floor_seats,
             "roster": args.modes,
+            "cell": args.cell,
             "breadth_demoted": (
                 depth.BREADTH_DEMOTED if args.breadth_demoted is None else args.breadth_demoted
             ),
@@ -7815,7 +7816,7 @@ def curate_commands(subcommands) -> None:
         metavar="JSON",
         help='what share of the budget each draw takes, as JSON, e.g. \'{"near_band": 0.3, '
         '"ranked_bands": 0.4, "flat": 0.0, "mode_floor": 0.3}\'. Unsaid, the three measuring '
-        "draws take their own shares and the mode-floor draw takes nothing",
+        "draws take their own shares; the mode-floor and conditioned draws take nothing",
     )
     depth_step.add_argument(
         "--band-weights",
@@ -7835,6 +7836,16 @@ def curate_commands(subcommands) -> None:
         "keeps the dump amortised: one field is dumped per (location, mode), so six modes "
         "at twelve candidates pays six dumps and three modes pays three. To drop a mode "
         "from breadth alone and keep it on the near band, use --breadth-demoted",
+    )
+    depth_step.add_argument(
+        "--cell",
+        metavar="CELL",
+        help="the codebook cell the CONDITIONED draw aims its palette ask at, e.g. "
+        "dark_vivid_green. The arm is the flat draw with its maps drawn through the "
+        "carrier table instead of uniformly, so the flat draw is its control. It is "
+        "draw-biased and verdict-measured: the table decides which maps are offered and "
+        "nothing else, and what a candidate is dominant in is read off its own render. "
+        "Needs a share — pass --shares with a 'conditioned' entry",
     )
     depth_step.add_argument(
         "--breadth-demoted",
