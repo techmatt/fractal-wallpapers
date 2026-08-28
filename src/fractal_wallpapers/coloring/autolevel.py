@@ -476,15 +476,21 @@ def _densify_key(stops: list) -> tuple:
     return tuple((float(position), tuple(int(value) for value in rgb)) for position, rgb in stops)
 
 
-@lru_cache(maxsize=64)
+@lru_cache(maxsize=1024)
 def _densified(key: tuple) -> tuple:
     """`(rounded positions, Oklab)` for one map, held between candidates.
 
     [`densify`] and the rounding of its positions are functions of the **map**
     alone — nothing about the render, the curve or the band reaches them — and a
-    candidate loop draws from a pool of about thirty maps and levels the same one
-    over and over. Both halves are Python loops over 257 densified stops and
-    together they were two fifths of a levelled candidate's curve.
+    candidate loop levels the same map over and over. Both halves are Python
+    loops over 257 densified stops and together they were two fifths of a
+    levelled candidate's curve.
+
+    The size is 1024 because a run draws from the **whole** library — 822 maps,
+    not the thirty this cache was first sized for. Measured on one run's own
+    colormap sequence, a 64-slot cache hit 0.072 of its lookups and a 1024-slot
+    cache hit 0.983: at 64 the sequence evicts a map before it comes round
+    again, which is the cache doing nothing but pay for itself.
 
     The Oklab array is handed back read-only, because it is the cached copy and
     a caller that wrote to it would level every later candidate through a map it
