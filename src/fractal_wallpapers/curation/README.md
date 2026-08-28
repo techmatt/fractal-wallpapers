@@ -1216,6 +1216,20 @@ niche is a ruling (checkpoint 84: 2 threes and 0 fours in 117 labeled rows) and
 the engine's tier still says production, so it is applied at the draw through
 `depth.DEMOTED`. Existing material in it stands.
 
+**`tia` is out of BREADTH and still on the near band.** Two rulings, two
+constants: `DEMOTED` takes a mode out of the run entirely, `BREADTH_DEMOTED`
+takes it out of the ranked and flat draws and leaves it eligible as a near-band
+incumbent. `tia` is the whole of the second list. It cleared the seating bar at
+.0208 in breadth at k=20 against `smooth`'s .0515, and at k=40 it cleared .0559,
+level with them (`dc1`/`dc2`, 2026-08-27) — its clears concentrate at few places,
+so a narrow set at many places wastes it. It is also the dearest dump of the
+three-mode roster, 0.898 s against `smooth`'s 0.354, and the field is dumped once
+per (location, mode): about an hour bought back over an eight-hour run.
+`--breadth-demoted` overrides it; `--breadth-demoted` with no values cycles the
+whole roster. Note that `--modes` is the wrong instrument here — it is the roster
+a near-band incumbent must also be in, so narrowing it drops the mode from both
+draws.
+
 **The rank bands are equal counts, not equal scores.** `ranked_bands` sorts each
 partition's never-opened pool on the location head's `P(>=3)` **within** that
 partition and cuts it into `--bands` equal-sized bands; `banded_places` then draws
