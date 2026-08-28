@@ -138,15 +138,29 @@ def ledger_row(key, **overrides):
     return row
 
 
-def score_row(key, p_ge4=0.9):
-    return {"recipe_key": key, "p_ge4": p_ge4, "p_ge3": 0.99, "head": "smooth_render"}
+#: The judge these fixtures are read on. The sidecar is keyed on the artifact and
+#: [`solve.pool`] joins on one, so a fixture that left it off would be testing a
+#: join that cannot happen.
+ARTIFACT = "judge-under-test"
+
+
+def score_row(key, p_ge4=0.9, artifact=ARTIFACT):
+    return {
+        "recipe_key": key,
+        "p_ge4": p_ge4,
+        "p_ge3": 0.99,
+        "head": "smooth_render",
+        "judge_artifact": artifact,
+    }
 
 
 def test_pool_refuses_a_rejected_row_and_says_so():
     """A person's rejection travels on the ledger row so a solver honours it."""
     rows = [ledger_row("a"), ledger_row("b", rejected={"by": "matt"})]
     scores = [score_row("a"), score_row("b")]
-    candidates, refused = solve.pool(rows=rows, scores=scores, log=lambda *_: None)
+    candidates, refused = solve.pool(
+        rows=rows, scores=scores, artifact=ARTIFACT, log=lambda *_: None
+    )
     assert [c.key for c in candidates] == ["a"]
     assert refused["rejected"] == 1
 
@@ -161,7 +175,10 @@ def test_pool_refuses_a_rejected_row_and_says_so():
 def test_pool_refuses_what_no_rule_could_evaluate(overrides, counter):
     rows = [ledger_row("a"), ledger_row("b", **overrides)]
     candidates, refused = solve.pool(
-        rows=rows, scores=[score_row("a"), score_row("b")], log=lambda *_: None
+        rows=rows,
+        scores=[score_row("a"), score_row("b")],
+        artifact=ARTIFACT,
+        log=lambda *_: None,
     )
     assert [c.key for c in candidates] == ["a"]
     assert refused[counter] == 1
@@ -170,7 +187,9 @@ def test_pool_refuses_what_no_rule_could_evaluate(overrides, counter):
 def test_pool_refuses_a_row_with_no_score_apart_from_the_others():
     """Nothing to rank it by is a different fact from losing on the rank."""
     rows = [ledger_row("a"), ledger_row("b")]
-    candidates, refused = solve.pool(rows=rows, scores=[score_row("a")], log=lambda *_: None)
+    candidates, refused = solve.pool(
+        rows=rows, scores=[score_row("a")], artifact=ARTIFACT, log=lambda *_: None
+    )
     assert [c.key for c in candidates] == ["a"]
     assert refused["no_score"] == 1
 
@@ -178,7 +197,9 @@ def test_pool_refuses_a_row_with_no_score_apart_from_the_others():
 def test_pool_comes_back_strongest_first():
     rows = [ledger_row("a"), ledger_row("b"), ledger_row("c")]
     scores = [score_row("a", 0.2), score_row("b", 0.9), score_row("c", 0.5)]
-    candidates, _refused = solve.pool(rows=rows, scores=scores, log=lambda *_: None)
+    candidates, _refused = solve.pool(
+        rows=rows, scores=scores, artifact=ARTIFACT, log=lambda *_: None
+    )
     assert [c.key for c in candidates] == ["b", "c", "a"]
 
 

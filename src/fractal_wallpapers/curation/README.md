@@ -698,6 +698,20 @@ derived from the render rather than an input to it.
 comes from a tracked table a re-clustering can move, and a key that moved with it
 would re-key rows whose pixels never changed.
 
+**A score is joined on ONE judge artifact, and the join says so.** The sidecar is
+keyed `(recipe key, artifact, regime)` because a number is comparable only inside
+that triple. Both readers that mattered — `mine.population` and `solve.pool` —
+flattened it to the recipe key alone, which is last-row-wins across artifacts:
+two judges' scales in one ordering with nothing anywhere saying so. Today the
+store holds **one** artifact and one regime and 0 of 85,129 keys are duplicated,
+so those joins were right by luck; the first adoption is what turns luck into a
+silent wrong answer, and an adoption is a thing this project plans to do.
+`candidate_ledger.scores_by_recipe` is the join now — the live head unless a
+caller names an artifact — and a row read on any other is **omitted**, not
+rescaled. `stale_scores` is the census of what was left behind, so a caller can
+say how much of its population it has no score for. A recipe with no reading on
+the live judge has no score, which is honest and different from having an old one.
+
 **The `colour` block is the reading, and a lens can be served off it.** Every
 one of the 85,129 rows carries one. `ceiling.Lens` takes an optional
 `stored_of(render) -> block`, and `candidate_ledger.reading_source()` is that
@@ -1430,6 +1444,71 @@ refused leaves both columns rather than scoring zero in one.
 **It corrects nothing.** The label-geometry read is another single noisy reading,
 not a truth. What it removes is the *selection*, by drawing the noise again after
 the winner was chosen.
+
+## `curate retention` — which pictures are worth the disk, and what survives the rest
+
+```
+src/fractal_wallpapers/curation/retention.py   the policy, the aggregates, the report
+```
+
+```
+fractal-wallpapers curate retention report      # what a prune WOULD delete. Deletes nothing
+fractal-wallpapers curate retention aggregates  # the three counts a discard must not destroy
+```
+
+**Storage has to scale with the locations explored, not with the attempts made.**
+At ten million attempts the ledger's rows are about 5 GB and the 640x360 JPEGs
+they name are about 600 GB. The rows are the cheap half and the half that answers
+questions; the pictures are the dear half and almost none of them will be looked
+at again.
+
+**Rows are never dropped. Only pictures are.** Every attempt keeps its recipe row
+and its `colour` block forever — recipe-key dedup is the ledger's whole reason for
+existing, and a pass that could not tell it had already made a picture would
+re-render it. What goes is the JPEG the row points at.
+
+**What is kept, and why each rule is the rule it is:**
+
+* **Top 5 per (location, mode), ranked WITHIN the pair.** Not against an absolute
+  probability: CORN's scale is train-prior calibrated so every retrain moves the
+  probability axis under a fixed cut, and the per-mode crossovers already span
+  0.367 to 0.950 — one number cannot be the bar for all of them. A rank inside a
+  pair asks the same question at every mode and survives a retrain. A row with no
+  score ranks last rather than being dropped outright: a picture nothing has an
+  opinion about is not a picture something thinks little of.
+* **Every row that ever carried a HUMAN label, unconditionally.** Outside the
+  ranking entirely. A labeled picture is instrument — what a judge was trained or
+  measured against — and losing it costs a number nobody can re-derive. The join
+  is `labeling.finished.render_key` and it is on the *recipe*, never the regime:
+  a person who judged this colouring at 1280x720 judged this colouring.
+* **One in 200 of the rest, flagged.** A store holding only its winners cannot
+  answer why anything lost. `in_reservoir` is a sha256 of the recipe key and not a
+  draw, so the same set is kept in every process that asks — the builtin `hash()`
+  is salted per process and would keep a different tenth of a percent every run.
+
+**Three aggregates, all bounded by their key space and not by the attempts.** A
+count over the kept rows is a count over the winners, so these are taken over
+every attempt:
+
+* `(location, mode) -> attempts`, **with the pool stamp**. The draw is a seeded
+  permutation over the palette pool, so the count is a *cursor* into it — change
+  the library or the group collapse and the same count names different maps, which
+  is why the stamp travels with it rather than being assumed.
+* `(colormap, mode) -> attempts, scored, successes`. 822 by 18. This is the "which
+  palettes never work anywhere" signal and it is the one thing a discard genuinely
+  destroys: drop colormap identity with the picture and the question stops being
+  askable. An unscored row is an attempt and not a failure, which is why `scored`
+  is a separate denominator.
+* `(location, cell) -> attempts, dominant`. Read off each row's stored `colour`
+  block and never off the carrier table — the table is a prior about a *map* and
+  this is the record of what a *place* produced. Only pairs with a hit are rows: a
+  colour a place has never delivered is the **absence** of a row, which is what a
+  targeted mine tests for.
+
+**No retroactive prune.** The policy is going-forward. `report` measures what
+applying it backwards would cost so that the decision, if it is ever taken, is
+taken against a number; it writes nothing and `tests/test_retention.py` pins that
+the module contains no delete at all.
 
 ## What a pass puts in the history, and what it puts beside it
 
