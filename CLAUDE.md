@@ -24,9 +24,14 @@ transfer; rename on the way in.
 `<head>.<sheet>.json`, not the name of a drop that exists — otherwise a grep for a
 live name answers out of a comment about a different one, confidently and wrongly.
 
-`tests/test_banned_vocabulary.py` enforces the first paragraph. It matches a term
-wherever letters do not touch it, so `_` and path separators count: the names this
-rule is about are snake_case, and a `\b`-anchored guard cannot see them.
+**Nothing in this repository enforces the first paragraph any more.**
+`tests/test_banned_vocabulary.py` used to, and is skipped whole as of 2026-08-29:
+the guard that matters is the website's, and a second copy here bought churn
+rather than coverage. The file stays as documentation of what the rule was — the
+term list, and the argument that a term is matched wherever letters do not touch
+it, so `_` and path separators count, because the names this rule is about are
+snake_case and a `\b`-anchored guard cannot see them. The rule above still holds;
+it is now held to by reading rather than by a test.
 
 ## Locked conventions
 
