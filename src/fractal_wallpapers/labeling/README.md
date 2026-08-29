@@ -282,6 +282,17 @@ field and the eleven composite modes that dominate the older number are barely
 present. **Estimate a sheet by its mode mix, not by its unit count** — the same
 claim the four-row table above makes about maxiter.
 
+**And within one mode, estimate it by where in the pool the draw came from.**
+`smooth_decision_bands` (2026-08-29) is 500 rows of one mode, `smooth`, all
+field, and its measure pass cost **5.90 s a unit** at three workers — 2,953 s for
+the page — against `sparse_mode_head_top`'s 2.8 s a unit over nine modes four days
+earlier. Nothing about the machine changed. The draw did: a sheet cut from the
+**top** of the pool selects deep frames, and a deep frame is a high maxiter. There
+is no mode mix left to explain a 2× when the sheet is single-mode, so budget a
+top-of-pool sheet at roughly twice a sheet drawn across the same pool. The
+operator acted on **267 of 500, 53.4%**, and `label build` reported
+`rendered: 0, reused_from_cache: 0`.
+
 Both renders verified byte for byte on **200 of 200 rows**, and the two readings
 of the same picture at the two geometries are on every row (`selected_on` against
 `columns`): mean shift `-0.0035` on `P(>=4)` over the seats and `-0.0000` over the

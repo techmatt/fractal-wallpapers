@@ -38,6 +38,22 @@ from pathlib import Path
 
 import pytest
 
+#: The whole module is off, by the `smooth_500` prompt's ruling, 2026-08-29. The
+#: tracked-tree sweep had already been skipped since 2026-08-28; this turns off
+#: the rest of the file, which is the guard's own mechanics and its two exception
+#: lists. The vocabulary rule this file was written for is now the website's to
+#: enforce, and a second copy of it here bought churn rather than coverage.
+#:
+#: Skipped and not deleted, for the reason the sweep's own skip gives: the term
+#: list, the snake_case boundary argument and the two exception lists below are
+#: the documentation of a rule that still exists somewhere. Deleting this line is
+#: how the whole file comes back.
+pytest.skip(
+    "the old-vocabulary guard is the website's, not this repository's (smooth_500, "
+    "2026-08-29); the file stays as documentation of what the rule was",
+    allow_module_level=True,
+)
+
 # Each term's last character is written as a character class, so this file is not
 # itself a match for the pattern it compiles. The compiled regex is unaffected.
 BANNED_TERMS = (

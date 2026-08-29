@@ -1539,7 +1539,42 @@ gets a ranked draw over the *whole* axis, because that flag reaches only the mat
 arms. `--band-weights` with the lower bands at `0` is what does it —
 `_weighted_order` drops a zero-weight cell from the round entirely — so the top half
 at the default ten bands is `'{"band05":0,"band06":0,"band07":0,"band08":0,"band09":0}'`.
-`sparse_mode_harvest` (2026-08-29) wanted the top half and used that.
+`sparse_mode_harvest` (2026-08-29) wanted the top half and used that. A leg that
+wants the **whole** of itself in the top half passes both: `--band-weights` for
+the ranked draw and `--top-bands` for the two matched ones.
+
+**The `conditioned` share gates the arm and does not size it.** `build_plan`
+computes one `scale` — `shares[FLAT] / shares[RANKED]` — and applies it to the
+ranked draw's realized per-partition counts for **both** matched arms, so
+`aimed_want` is `flat_want` and the conditioned arm comes out exactly the size of
+its control however large its own share is written. That share is read twice and
+only twice: a non-zero one with no `--cell` is refused, and a `--cell` with a zero
+one is refused. It also sizes the arm in the one case there is no ranked draw to
+inherit a mix from. Anything else written there is a number with no effect.
+
+**The matched arms cap on the thin partitions; the ranked draw does not.**
+`flat_places` asks every partition for the same count — `round(ranked_in_partition
+× scale)`, and the ranked draw is round-robin, so that count is near-uniform —
+while the never-opened stock is **6:1** unequal across the nine partitions (2,071
+places in `julia:mandelbrot` against 339 in `multibrot4`, top half, 2026-08-29).
+The thin partitions run out, the fat ones keep stock nobody asked for, and both
+matched arms come back short. `banded_places` is the only draw here that drains a
+bounded pool gracefully, because it round-robins over (partition, band) cells and
+keeps taking from whichever still hold something. **So a leg that has to consume a
+bounded location pool gives the ranked draw the bulk of the share**: at
+`0.5 / 0.25 / 0.25` the three arms planned 7,007 / 2,079 / 624 places and between
+them took all 9,710.
+
+**On a breadth leg the never-opened pool caps the plan, not the clock.**
+2026-08-29: 28,420 admitted locations, 8,714 of them already opened, **19,415
+never opened**, and the top half of the head's rank inside each partition is
+**9,710** of those. One field mode on three workers costs about `0.55 + 0.29 × k`
+seconds a location, so at `k = 4` that whole top half is spent in **2h11m** and at
+`k = 12` in 3h44m. `k` on such a leg is therefore not chosen for its own sake — it
+is set by the pool and the deadline together — and a pilot that **over**-prices
+the leg costs **wall clock** rather than candidates, which is the inverse of the
+usual failure and happens for the same reason: the plan is bounded by places
+rather than by the rate.
 
 **A run that is only the arm and its control needs no ranked draw.** Both breadth
 arms used to be sized off the ranked draw's *realized* partition counts, which
