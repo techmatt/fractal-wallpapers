@@ -86,6 +86,7 @@ from fractal_wallpapers.curation import (
     ceiling,
     distinct,
     headroom,
+    mode_policy,
     solve,
 )
 
@@ -367,7 +368,7 @@ class Seats:
     def __init__(self, rule: ceiling.Rule, n: int, floor: int = 0, twins: Twins | None = None):
         self.rule = rule
         self.n = int(n)
-        #: How many seats each production mode's floor asks for, at this `n`.
+        #: How many seats each accepted mode's floor asks for, at this `n`.
         self.floor = int(floor)
         #: The twin rule's state, or `None` where the rule is not applied.
         self.twins = twins
@@ -471,7 +472,7 @@ def scarcity(kept, modes, rank=None) -> list:
     """The mandated constraints, scarcest first. `[(mode, its subpool)]`.
 
     The only mandate the **default** target vector produces is the mode floor:
-    every production mode wants [`solve.mode_floor`] seats and no colour cell is
+    every accepted mode wants [`solve.mode_floor`] seats and no colour cell is
     demanded, because no `--target` is set. So the order is by how many distinct
     locations each mode can field, ascending — a mode with three is spent before a
     mode with eight hundred, because the three can only be spent one way.
@@ -562,11 +563,13 @@ def seat(
     one would otherwise be unseatable forever. It is not the flag for "the sweep
     has not been run" — that is the refusal doing its job.
     """
-    from fractal_wallpapers import engine
-
     if order is None and str(key) != JUDGE_KEY:
         order, coverage = ranking_for(candidates, key, log=log)
-    modes = list(engine.production_modes())
+    # The accepted roster, not the engine's production one: a mode
+    # [`curation.mode_policy`] weights 0 has no rows in [`solve.pool`] at all, so a
+    # floor over it would be a mandate nothing could meet and an `unmet` row that
+    # is a policy decision wearing the shape of a shortfall.
+    modes = mode_policy.accepted()
     cap = ceiling.group_cap(n, group_cap)
     if rule is None:
         rule = solve.rule_for()
@@ -756,6 +759,7 @@ def _config(
         "mode_floor_natural": natural,
         "mode_floor_artificial": floor != natural,
         "modes": modes,
+        "mode_policy": mode_policy.record(),
     }
 
 

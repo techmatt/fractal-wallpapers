@@ -637,10 +637,11 @@ exactly once. Every supply figure in both modules is a count of `location.key`.
 
 A candidate is supply only if it is worth seating. The default is `solve.Q4_BAR` on
 raw `P(>=4)` — 0.50, the same bar the solver's first objective stage counts against.
-Eleven of the eighteen production modes have fewer than twenty-five distinct
-locations clearing that, so those fall back to `P(>=3) >= 0.50` and the table
-**says which rule each mode landed on**: a mode censused under a lower bar is not
-comparable to one censused under the default.
+Six of the thirteen modes `mode_policy` accepts have fewer than twenty-five
+distinct locations clearing that, so those fall back to `P(>=3) >= 0.50` and the
+table **says which rule each mode landed on**: a mode censused under a lower bar
+is not comparable to one censused under the default. The roster is `accepted()`
+and not the engine's eighteen — a weight-0 mode has no row in the pool to bar.
 
 Both bars are flags on the arithmetic. Neither is a measured crossover, and the one
 ACTING release bar — `P(>=3) >= 0.575` on strange_render — is *above* the fallback.
@@ -711,6 +712,16 @@ first**, and only what is left over is drawn by score. Two rules are hard — on
 wallpaper per location, and the twin test; the cell and family allowances, the mode
 floors and the group cap are soft with the shortfall recorded. No fallback leg, no
 least-violating rescue: unfilled beats padded.
+
+**The scarcity leg seats at most ONE seat per mandated mode, whatever the floor
+says.** It visits each mode once and `break`s on the first candidate nothing refuses,
+so a floor above 1 is recorded as `unmet` and never acted on by this walk. Measured
+2026-08-29: `curate seat --n 150 --mode-floor 2` returns a **bit-identical** gallery to
+`--mode-floor 1` — 0 seats different, the same 13 mode counts, `cell_allowance` 4,570
+either way — and adds three `unmet` rows. `solve` does carry the floor properly, as
+`sum(x in m) + d_m >= mode_floor` with a penalty; the greedy does not. So a floor is
+a real lever only at 1, and `n >= 200` will under-serve every mode here until the leg
+loops. Not fixed: it is a change to how a gallery is chosen, not a wiring detail.
 
 ### Both seating decisions flipped on 2026-08-28, and the incumbent is still reachable
 
@@ -1180,6 +1191,45 @@ process, so a draw seeded on `hash()` over a tuple holding a cell name is record
 as reproducible and is not — and the negative half of its range makes
 `numpy.random.default_rng` refuse outright. `hunt.seed_of` is sha256.
 
+## `mode_policy` — what standing each mode has, in one table
+
+`curation/mode_policy.py` is the only place a mode's standing is written.
+`MODE_POLICY` maps every one of the engine's eighteen **production** modes to a
+weight in `{0, 1, 2}` — five niche, seven normal, six promoted — and
+`mode_policy.check()` refuses unless the table and the engine's catalog name the
+same roster.
+
+```
+fractal-wallpapers curate seat --n 150 --name n150     # seats over accepted() only
+python -c "from fractal_wallpapers.curation import mode_policy; print(mode_policy.check())"
+```
+
+**Only the 0 is wired, and it is wired in three places.** A weight-0 mode is out of
+the **labeling rosters** and the **default mining rosters** (both through
+`colorize.modes_for`, `mine._accepted_modes` and `hunt.plan`, so the mode draw, the
+mine, the hunt and `manufacture` all honour it), out of the **depth roster**
+(`depth.field_modes`), and out of **gallery emission** — `solve.pool` refuses the
+row and counts it as `niche_mode`, which is the one pool both the greedy seating
+and the exact solver read. The mode floors in `seating`, `solve`, `headroom` and
+`candidate_ledger.feasibility` are asked of `accepted()` for the same reason: a
+floor over a mode with no rows in the pool is a mandate nothing could meet.
+
+**Weights 1 and 2 are recorded and read the same.** There is no MODE-side cap
+anywhere — `seating.RULES` has none — and the only mode-side floor is
+`solve.mode_floor(n) = n // 100`, which is 1 at `n = 150`. So a promoted mode has
+nothing to bind on at the seat that would move more than a seat or two; what a 2
+buys is a decision still to make, and the table records it rather than pretending.
+
+**Nothing is deleted.** A niche mode keeps its labels, its ledger rows and its
+pictures; it renders by name; `--modes` names it and is taken as given; and a
+verdict already exported on it still ingests, which matters because 632 of the
+671 pending `strange_render` verdicts belong to the five.
+
+**Two layers, one word.** The engine's `Tier::Niche` (`de`) is a claim about what
+the finished-render corpora were collected over and lives in Rust; this table is a
+claim about what is worth collecting next, and it has to express a third value a
+two-valued tier cannot. `check()` refuses if a mode carries both.
+
 ## One field, many palettes — how a candidate is made
 
 **`colorize.render` is still THE one place a curation picture is made, and it now
@@ -1384,13 +1434,20 @@ fractal-wallpapers curate depth sheet --name d1                             # re
 **Field modes only, and every conclusion is conditional on that.** A composite at
 forty candidates is about 175 s a location — one arm's worth of places would eat
 a ninety-minute budget — so the roster is `depth.field_modes()`: the shareable
-production modes less `DEMOTED`. Nothing a depth run reports says what a
-composite would have done.
+modes `mode_policy` accepts. Nothing a depth run reports says what a composite
+would have done.
 
-**`trap_circle` is out of the draw and still in the catalogue.** The demotion to
-niche is a ruling (checkpoint 84: 2 threes and 0 fours in 117 labeled rows) and
-the engine's tier still says production, so it is applied at the draw through
-`depth.DEMOTED`. Existing material in it stands.
+**That roster is four modes now, and it was six.** `smooth`, `tia`, `stripe`,
+`exp_smoothing`. Three of the seven field modes — `trap_circle`, `gaussian_int`,
+`curvature` — are `mode_policy` weight 0, and they were three of the four cheapest
+things a depth run could render. A depth leg is now a narrower instrument than the
+one the curves were measured on; size one off a fresh rate rather than off `dc1`'s.
+
+**`trap_circle` is out of the draw and still in the catalogue.** Niche by
+`mode_policy` (never given a 4 in 118 labeled rows) and production by the engine's
+tier, so it is applied at the draw. Existing material in it stands: its labels,
+its ledger rows and its pictures, and a verdict already exported on it still
+ingests.
 
 **A composite mode reaches a depth run only through its own leg.** `--modes` is not
 checked against `colorize.shareable`, so a composite named there *runs* — it simply
@@ -1647,19 +1704,18 @@ candidate's, and what came out dominant is what counts. A 60% hit rate costs
 candidate whatever colour it turned out to be. The shot carries `drawn_for` on
 its ledger row so a reader can tell an aimed candidate from a lucky one.
 
-**`tia` is out of BREADTH and still on the near band.** Two rulings, two
-constants: `DEMOTED` takes a mode out of the run entirely, `BREADTH_DEMOTED`
-takes it out of the ranked and flat draws and leaves it eligible as a near-band
-incumbent. `tia` is the whole of the second list. It cleared the seating bar at
-.0208 in breadth at k=20 against `smooth`'s .0515, and at k=40 it cleared .0559,
-level with them (`dc1`/`dc2`, 2026-08-27) — its clears concentrate at few places,
-so a narrow set at many places wastes it. It is also the dearest dump of the
-three-mode roster, 0.898 s against `smooth`'s 0.354, and the field is dumped once
-per (location, mode): about an hour bought back over an eight-hour run.
-`--breadth-demoted` overrides it; `--breadth-demoted` with no values cycles the
-whole roster. Note that `--modes` is the wrong instrument here — it is the roster
-a near-band incumbent must also be in, so narrowing it drops the mode from both
-draws.
+**`BREADTH_DEMOTED` is empty, and it is a per-run knob rather than a standing.**
+It takes a mode out of the ranked and flat draws and leaves it eligible as a
+near-band incumbent, which is the one thing a `mode_policy` weight cannot say.
+`tia` was the whole of it — it cleared the seating bar at .0208 in breadth at
+k=20 against `smooth`'s .0515, level with them only by k=40 (`dc1`/`dc2`,
+2026-08-27), and it is the dearest dump of that three-mode roster at 0.898 s
+against `smooth`'s 0.354. `mode_policy` supersedes that: `tia` is weight 2 on 31
+fours in 310 labeled rows, and a standing that keeps a promoted mode out of the
+draw which would buy more of it confirms itself. Set `--breadth-demoted` per run
+for a mode that pays at depth and not at width. Note that `--modes` is the wrong
+instrument here — it is the roster a near-band incumbent must also be in, so
+narrowing it drops the mode from both draws.
 
 **The rank bands are equal counts, not equal scores.** `ranked_bands` sorts each
 partition's never-opened pool on the location head's `P(>=3)` **within** that
@@ -1725,10 +1781,11 @@ distinct location and not a clearing candidate, because a collection seats a
 location once.
 
 **`--modes` is not filtered to what `field_modes()` returns, and that is how a
-demoted or non-shareable mode gets mined at all.** The roster defaults to the
-shareable production modes less `DEMOTED`, but a named `--modes` is taken as given:
+niche or non-shareable mode gets mined at all.** The roster defaults to the
+shareable modes `mode_policy` accepts, but a named `--modes` is taken as given:
 a composite, a modulate or a direct trap simply takes the render path, and
-`trap_circle` can be drawn despite its standing demotion. Two consequences worth
+`trap_circle` can be drawn despite its weight of 0 — a standing is a default and
+never a prohibition. Two consequences worth
 knowing before sizing one. A non-shareable partition pays a full render per
 candidate rather than one dump per (location, mode), so `k` buys nothing there and
 the width should go to coverage instead. And **the cost axis is per-mode, not

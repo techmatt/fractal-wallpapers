@@ -576,12 +576,14 @@ def plan(
     have bought all of one leg and none of the other, which answers neither of the
     two questions it was sent to ask.
     """
-    from fractal_wallpapers import engine
-    from fractal_wallpapers.curation import colorize
+    from fractal_wallpapers.curation import colorize, mode_policy
     from fractal_wallpapers.palettes import dominance
 
     maps = list(colorize.pool(seed) if pool is None else pool)
-    roster = tuple(engine.production_modes())
+    # The accepted roster, not the engine's production one: a hunt buys more of a
+    # mode, and [`curation.mode_policy`] weight 0 is the ruling that this project
+    # has stopped buying that one. Its existing material stands.
+    roster = tuple(mode_policy.accepted())
     breadth = _leg(
         UNCONDITIONAL,
         spread(pools, -(-int(unconditional) // max(1, per_location)), seed),

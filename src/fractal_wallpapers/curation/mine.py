@@ -374,7 +374,7 @@ def plan_breadth(arm: str, places: list, maps: list, seed: int, per_location: in
     from fractal_wallpapers.palettes import dominance
 
     stratifier = hunt.Stratifier(list(dominance.cells()), maps, seed)
-    roster = tuple(_production_modes())
+    roster = tuple(_accepted_modes())
     out: list = []
     for row in places:
         key = str(row["key"])
@@ -397,10 +397,17 @@ def plan_breadth(arm: str, places: list, maps: list, seed: int, per_location: in
     return out
 
 
-def _production_modes() -> list:
-    from fractal_wallpapers import engine
+def _accepted_modes() -> list:
+    """The roster a default mine draws from: production, less what is weighted 0.
 
-    return list(engine.production_modes())
+    [`curation.mode_policy.accepted`] and not `engine.production_modes`, because a
+    mine is the leg that *buys more of* a mode and a niche mode is one this project
+    has decided to stop buying. A caller naming `--modes` is taken as given, here
+    as everywhere: the standing is a default and not a prohibition.
+    """
+    from fractal_wallpapers.curation import mode_policy
+
+    return mode_policy.accepted()
 
 
 def weave(plans: dict, shares: dict | None = None) -> list:
@@ -1119,7 +1126,7 @@ def _bench_picks(world: dict, seed: int, kinds=BENCH_KINDS) -> list:
     from fractal_wallpapers.curation import colorize
 
     wanted: dict = {}
-    for mode in _production_modes():
+    for mode in _accepted_modes():
         kind = colorize.kind_of(mode)
         if kind in kinds:
             wanted.setdefault(kind, mode)

@@ -86,16 +86,17 @@ def test_the_roster_is_only_modes_a_dumped_field_can_serve():
         assert colorize.shareable(mode), f"{mode} cannot be served out of a dumped field"
 
 
-def test_the_demoted_mode_is_out_of_the_draw_while_the_catalogue_still_ships_it():
-    """`trap_circle` is niche by a ruling and production by the catalogue.
+def test_a_niche_mode_is_out_of_the_draw_while_the_catalogue_still_ships_it():
+    """`trap_circle` is niche by [`mode_policy`] and production by the catalogue.
 
     Both halves matter. The draw must not offer it, and it must still resolve —
-    the ruling demoted the mode, it did not delete the material already made in
-    it.
+    the ruling took the mode out of what is bought next, it did not delete the
+    material already made in it.
     """
     from fractal_wallpapers import engine
+    from fractal_wallpapers.curation import mode_policy
 
-    assert "trap_circle" in depth.DEMOTED
+    assert mode_policy.weight_of("trap_circle") == mode_policy.NICHE
     assert "trap_circle" not in depth.field_modes()
     assert "trap_circle" in engine.production_modes()
 
@@ -424,14 +425,20 @@ def test_a_breadth_demoted_mode_keeps_its_near_band_seat_and_loses_the_cycle():
     assert shape["breadth_demoted"] == ["smooth"]
 
 
-def test_tia_is_the_standing_breadth_demotion_and_trap_circle_is_the_standing_one():
-    """Two constants, and swapping them would quietly change which draw a mode
-    is missing from."""
-    assert depth.BREADTH_DEMOTED == ("tia",)
-    assert depth.DEMOTED == ("trap_circle",)
-    assert "tia" in depth.field_modes(), "still affordable, still an eligible incumbent"
+def test_no_mode_is_standing_demoted_out_of_breadth_any_more():
+    """`tia` was the one standing breadth demotion and [`mode_policy`] supersedes
+    it: a mode weighted 2 that the draw which would buy more of it cannot reach is
+    a demotion that confirms itself. The mechanism stays a per-run knob, because
+    *drop from breadth and keep the near-band seat* is the one thing a weight in
+    {0, 1, 2} cannot say.
+    """
+    from fractal_wallpapers.curation import mode_policy
+
+    assert depth.BREADTH_DEMOTED == ()
+    assert mode_policy.weight_of("tia") == mode_policy.PROMOTED
+    assert "tia" in depth.field_modes(), "affordable, and an eligible incumbent"
     _plan, shape = build_a_plan()
-    assert "tia" not in shape["breadth_roster"]
+    assert "tia" in shape["breadth_roster"]
 
 
 def test_a_breadth_demotion_that_empties_the_cycle_is_refused():

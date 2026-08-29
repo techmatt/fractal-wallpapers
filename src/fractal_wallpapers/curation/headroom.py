@@ -55,7 +55,7 @@ the pool stands on each place.
 
 A candidate is only supply if it is worth seating, and what "worth seating" means
 is a bar on the ledger's own score column. The default is [`solve.Q4_BAR`] on raw
-`P(>=4)`. Eleven of the eighteen production modes have fewer than
+`P(>=4)`. Most of the modes [`curation.mode_policy`] accepts have fewer than
 [`FALLBACK_LOCATIONS`] distinct locations clearing that, so for those the census
 falls back to [`FALLBACK_BAR`] on `P(>=3)` and **says which rule each mode landed
 on**. A mode censused under a lower bar is not comparable to one censused under
@@ -94,7 +94,14 @@ from __future__ import annotations
 import statistics
 from datetime import UTC, datetime
 
-from fractal_wallpapers.curation import candidate_ledger, ceiling, distinct, floors, solve
+from fractal_wallpapers.curation import (
+    candidate_ledger,
+    ceiling,
+    distinct,
+    floors,
+    mode_policy,
+    solve,
+)
 
 #: The schema every record this module writes carries.
 #:
@@ -230,17 +237,20 @@ def _mixed_cost(costs: dict, candidates) -> float | None:
 # The bars, per mode.
 # --------------------------------------------------------------------------- #
 def bars(candidates) -> dict:
-    """Which rule each production mode's rows clear under, and the counts behind it.
+    """Which rule each **accepted** mode's rows clear under, and the counts behind it.
 
     The default bar on `P(>=4)` unless fewer than [`FALLBACK_LOCATIONS`] distinct
     locations clear it, in which case that mode's rows clear on `P(>=3)` instead.
     Both counts are reported for every mode whichever rule it landed on, so a
     reader can see how far a fallback mode is from the default and whether the
     fallback bought it anything at all.
-    """
-    from fractal_wallpapers import engine
 
-    modes = list(engine.production_modes())
+    The roster is [`curation.mode_policy.accepted`]. A row in a mode weighted 0 is
+    already out of [`solve.pool`] and so cannot arrive here; if one does — a caller
+    handing in its own list — it lands in `off_roster` and [`clearing`] drops it,
+    which is the same answer by a second route rather than a second rule.
+    """
+    modes = mode_policy.accepted()
     held: dict = {name: [] for name in modes}
     off_roster: dict = {}
     for candidate in candidates:
@@ -547,7 +557,6 @@ def _at(
     twin=None,
 ) -> dict:
     """Every block at one `n`."""
-    from fractal_wallpapers import engine
     from fractal_wallpapers.palettes import dominance
 
     out: dict = {"n": n, "blocks": {}}
@@ -597,7 +606,7 @@ def _at(
             "exemptions the pixels grant — which is not knowable without decoding them"
         ),
     )
-    modes = list(engine.production_modes())
+    modes = mode_policy.accepted()
     floor = solve.mode_floor(n)
     # Each mode needs `floor` distinct places of its own, so the supply the demand
     # is read against is the sum of what each mode can actually put towards its
@@ -614,7 +623,7 @@ def _at(
         "short": usable < floor * len(modes),
         "modes_holding_anything": sum(1 for name in modes if by_mode.get(name)),
         "rule": f"soft in the solve; floor(n / {solve.SEATS_PER_MODE_FLOOR}) = {floor} seat(s) "
-        f"per production mode, {floor * len(modes)} between them. Supply is the sum over modes "
+        f"per accepted mode, {floor * len(modes)} between them. Supply is the sum over modes "
         "of min(floor, its distinct clearing locations). At a floor of zero the block asks for "
         "nothing and the per-mode rows below are a supply table rather than a demand",
         "supply_counts": "the sum over modes of min(the floor, that mode's distinct "
