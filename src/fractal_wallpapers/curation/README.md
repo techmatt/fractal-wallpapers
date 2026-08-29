@@ -1533,6 +1533,14 @@ every partition however differently they are stocked: at the default ten bands,
 `--top-bands 5` is each partition's own top half. **It never cuts the ranked
 draw** — measuring the curve end to end is that draw's whole job.
 
+**So `--top-bands` is not how a production run aims at the top of the rank.** A leg
+told to draw from the strongest half of the head's rank and given `--top-bands 5`
+gets a ranked draw over the *whole* axis, because that flag reaches only the matched
+arms. `--band-weights` with the lower bands at `0` is what does it —
+`_weighted_order` drops a zero-weight cell from the round entirely — so the top half
+at the default ten bands is `'{"band05":0,"band06":0,"band07":0,"band08":0,"band09":0}'`.
+`sparse_mode_harvest` (2026-08-29) wanted the top half and used that.
+
 **A run that is only the arm and its control needs no ranked draw.** Both breadth
 arms used to be sized off the ranked draw's *realized* partition counts, which
 are empty when it has no share — so `--shares '{"flat": 0.5, "conditioned":
@@ -1680,6 +1688,29 @@ holds a **proven** location — one already over the seating bar — and cycles 
 modes a census says are short of seats. `deficient_modes` counts a seat as a
 distinct location and not a clearing candidate, because a collection seats a
 location once.
+
+**`--modes` is not filtered to what `field_modes()` returns, and that is how a
+demoted or non-shareable mode gets mined at all.** The roster defaults to the
+shareable production modes less `DEMOTED`, but a named `--modes` is taken as given:
+a composite, a modulate or a direct trap simply takes the render path, and
+`trap_circle` can be drawn despite its standing demotion. Two consequences worth
+knowing before sizing one. A non-shareable partition pays a full render per
+candidate rather than one dump per (location, mode), so `k` buys nothing there and
+the width should go to coverage instead. And **the cost axis is per-mode, not
+per-kind**: on `sparse_mode_harvest` (2026-08-29) `smooth_curvature` cost 5.903 s a
+candidate against `itinerary`'s 1.429 *inside one partition*, and `plan_cycled_modes`
+cycles uniformly, so the dear mode took an equal count at four times the price and
+ate the partition's breadth. Splitting field from composite is necessary and not
+sufficient.
+
+**Pilot to a fraction of the leg, not to a fixed wall.** `--rate` has to come from a
+run at this width on this population, and a *short* one still under-reads: on
+`sparse_mode_harvest` a 180 s pilot priced its direct partition 13.6% low and its
+composite partition **67%** low (1.8397 against 3.0803), every per-mode rate moving
+the same direction, because 180 s reaches only the cheap head of the draw. The field
+pilot, whose 852 candidates were a fifth of its leg, priced it to 0.4%. A low rate
+costs *candidates* and never minutes — `--budget` is wall and the leg stops at it
+either way, booking the shortfall to `counts.stopped_for_budget`.
 
 **The two draws take their own width, because they are priced apart.** `--near-width`
 overrides `--width` for the near band alone. It usually should: a near-band location
