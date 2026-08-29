@@ -718,3 +718,115 @@ def test_an_arm_that_never_hit_the_cell_reports_no_price_rather_than_infinity():
     assert out[depth.AIMED]["renders_per_win"] is None
     assert out["renders_per_win_ratio"] is None
     assert depth.dominant_and_clearing(made, None, a_bars_table()) is None
+
+
+# --------------------------------------------------------------------------- #
+# Three workers: the unit of work, the sizing, and the starvation case.
+# --------------------------------------------------------------------------- #
+def test_the_plan_is_sized_off_the_worker_count_because_the_rate_is_per_engine():
+    """`--budget` is wall and `--rate` is one engine's seconds a candidate, so a
+    leg on three engines can buy three times the plan in the same clock. Sizing
+    off one engine plans a third of the hour and the leg stops having run out of
+    plan rather than out of time — which reads on the record as a budget that was
+    not spent and is really a plan that was not written."""
+    one, shape_one = build_a_plan(workers=1)
+    three, shape_three = build_a_plan(workers=3)
+    assert shape_three["workers_sized_for"] == 3
+    assert len(three) > len(one), "three engines buy more plan in the same wall clock"
+    # Not exactly 3x: each draw's candidate count is floored into whole locations
+    # at its own width before the weave, so the ratio lands near three and not on
+    # it. What is pinned is the direction and the order of magnitude.
+    assert 2.5 <= len(three) / max(1, len(one)) <= 3.5
+
+
+def test_the_unit_of_work_is_a_location_so_one_dump_serves_one_worker():
+    """The hazard the whole design is built around. A field is dumped once per
+    (location, mode) and every palette at that pair is a recolour of it — 56% of
+    a candidate at width 40 — so a plan cut per *candidate* would hand one place
+    to three workers and each would dump the same field. Cut at the location and
+    the dump is paid once, by whoever owns the place.
+
+    Which means: every shot at a location is in exactly one block, and no
+    location appears in two.
+    """
+    plan, _shape = build_a_plan()
+    world = a_world()
+    maker = _StubMaker()
+    blocks, _skipped, _unresolvable = depth.blocks_of(
+        plan, world, maker, set(), log=lambda *_a: None
+    )
+    seen = [{shot.location for _at, shot, *_rest in block} for block in blocks]
+    for block in seen:
+        assert len(block) == 1, "a block is ONE location, never a mix"
+    assert len(set().union(*seen)) == len(seen), "and no location is in two blocks"
+    assert sum(len(block) for block in blocks) == len(plan)
+
+
+def test_a_block_order_follows_the_weave_so_a_truncated_leg_keeps_its_proportions():
+    """The weave exists so a leg that runs out of clock has spent it on the arms
+    in the proportions it intended. Cutting into blocks keeps that one location
+    coarser: blocks come back in the order each location FIRST appears in the
+    weave, so a prefix of the blocks is a prefix of the weave rounded to whole
+    places rather than an arbitrary reordering."""
+    plan, _shape = build_a_plan()
+    blocks, _skipped, _unresolvable = depth.blocks_of(
+        plan, a_world(), _StubMaker(), set(), log=lambda *_a: None
+    )
+    first_appearance = [block[0][0] for block in blocks]
+    assert first_appearance == sorted(first_appearance), "blocks are in weave order"
+
+
+def test_a_recipe_the_ledger_already_holds_is_dropped_in_the_parent():
+    """Before a worker is handed anything, for two reasons. The skip count is
+    exact up front rather than three workers racing to discover the same thing;
+    and `known` is a hundred and thirty thousand keys that would otherwise be
+    pickled to every worker with every block."""
+    plan, _shape = build_a_plan()
+    maker = _StubMaker()
+    world = a_world()
+    every, _s, _u = depth.blocks_of(plan, world, maker, set(), log=lambda *_a: None)
+    keys = {key for block in every for *_head, key in block}
+    none_left, skipped, _u = depth.blocks_of(
+        plan, world, _StubMaker(), set(keys), log=lambda *_a: None
+    )
+    assert none_left == [], "a plan the ledger already holds whole is no blocks at all"
+    assert skipped == len(plan)
+
+
+def test_a_leg_with_fewer_places_than_workers_runs_on_fewer_and_says_so():
+    """The narrow legs here really are narrow — the near-band pool held 25
+    locations for the two-mode field roster and 19 for the four direct traps —
+    so this is not a theoretical branch. Three is the machine's ceiling and not
+    a floor, and a worker with no place to take is a process spawned to idle."""
+    said = []
+    assert depth.workers_for([["a"], ["b"]], 3, log=said.append) == 2
+    assert said and "fewer than the 3 worker(s)" in said[0]
+    assert depth.workers_for([["a"], ["b"], ["c"], ["d"]], 3, log=said.append) == 3
+    assert depth.workers_for([], 3, log=said.append) == 1, "never zero"
+
+
+class _StubRecipe:
+    """Enough of a recipe for [`recipes.key_of`], which digests `pixels()`."""
+
+    def __init__(self, shot):
+        self._pixels = {
+            "location": shot.location,
+            "mode": shot.mode,
+            "colormap": shot.colormap,
+            "k": shot.k,
+        }
+
+    def pixels(self) -> dict:
+        return dict(self._pixels)
+
+
+class _StubMaker:
+    """`recipe_for` alone, which is all [`depth.blocks_of`] asks of a maker.
+
+    A real one loads the band, the map table and the group table; none of that
+    decides which block a shot lands in, and the judge — the expensive half — is
+    the workers' and never the parent's.
+    """
+
+    def recipe_for(self, shot, place, frame):
+        return _StubRecipe(shot)

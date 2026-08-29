@@ -140,3 +140,60 @@ def test_every_merge_leg_reaches_the_ledger_through_the_door(leg: str) -> None:
     """The three legs that add rows, named, so a fourth one arriving is a visible edit."""
     text = (SOURCE / "curation" / f"{leg}.py").read_text(encoding="utf-8")
     assert "candidate_ledger.merge(" in text
+
+
+def test_the_one_door_fills_the_flatness_sidecar_as_well_as_the_two_files(
+    tmp_path, monkeypatch
+) -> None:
+    """The `mine1h` failure at its cause. The sidecar is keyed on the recipe and
+    nothing else filled it, so a leg that merged and stopped left every row it
+    wrote unranked to the fitted key — in the pool, clearing its bars, counted in
+    every denominator, and unable to win a seat. 8,192 rows, none seated, silent.
+
+    `merge` is already the one door for the rows and the manifests, so it is the
+    one door for the reading too, and the report it returns says what it swept.
+    A row whose picture this checkout cannot resolve is simply not swept, which is
+    the sweep's own rule and not a special case here.
+    """
+    from PIL import Image
+
+    from fractal_wallpapers.curation import flatness
+
+    monkeypatch.setattr(candidate_ledger, "rows_path", lambda: tmp_path / "rows.jsonl")
+    monkeypatch.setattr(candidate_ledger, "scores_path", lambda: tmp_path / "scores.jsonl")
+    monkeypatch.setattr(candidate_ledger, "backup_path", lambda name: tmp_path / f"copy-{name}")
+    monkeypatch.setattr(candidate_ledger, "manifest_dir", lambda: tmp_path / "manifests")
+    monkeypatch.setattr(flatness, "sidecar_path", lambda: tmp_path / "flatness.jsonl")
+
+    def _row() -> dict:
+        return {
+            "schema": 1,
+            "key": "aaaa",
+            "recipe_key": "aaaa",
+            "picture": "artifacts/one.jpg",
+            "provenance": {"run": "a_leg"},
+            "partition": "mandelbrot",
+            "location": {"key": "a_place"},
+            "colour": {"cells": [], "families": []},
+        }
+
+    picture = tmp_path / "one.jpg"
+    Image.new("RGB", (64, 64), (30, 90, 160)).save(picture)
+    monkeypatch.setattr("fractal_wallpapers.paths.rehome", lambda name: picture if name else None)
+
+    report = candidate_ledger.merge(
+        [_row()],
+        [],
+        log=lambda *_a, **_k: None,
+    )
+    assert report["flatness"]["swept"] == 1, "the merged row was read"
+    assert report["flatness"]["read"] == 1
+    assert report["flatness"]["column"] == flatness.COLUMN
+    assert flatness.by_recipe(flatness.read())["aaaa"] is not None, "and landed in the sidecar"
+
+    again = candidate_ledger.merge(
+        [_row()],
+        [],
+        log=lambda *_a, **_k: None,
+    )
+    assert again["flatness"]["swept"] == 0, "incremental: a row already read costs no decode"

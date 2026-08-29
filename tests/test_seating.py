@@ -371,7 +371,7 @@ def test_the_key_moves_the_order_and_never_the_bars():
     makes a before/after on the key exact in the sort order alone."""
     pool = [candidate(f"c{at}", score=0.9) for at in range(5)]
     pool += [candidate("under", score=0.01)]
-    record = seating.seat(pool, n=6, order={"under": 1.0}, log=quiet)
+    record = seating.seat(pool, n=6, order={"under": 1.0}, allow_unranked=True, log=quiet)
     assert "under" not in {seat["key"] for seat in record["seated"]}
     assert record["rejection"]["reasons"][seating.BELOW_BAR] == 1
 
@@ -380,7 +380,7 @@ def test_a_candidate_the_key_cannot_read_is_ranked_last_and_counted_never_refuse
     """It broke no rule, so it is not a refusal; and it did not score badly, so it
     is not a zero. Sorted last, and the count is on the record."""
     pool = [candidate("read", score=0.5), candidate("unread", score=0.99)]
-    record = seating.seat(pool, n=1, order={"read": 0.01}, log=quiet)
+    record = seating.seat(pool, n=1, order={"read": 0.01}, allow_unranked=True, log=quiet)
     assert [seat["key"] for seat in record["seated"]] == ["read"]
     assert record["order"]["unranked"] == 1
     assert record["rejection"]["reasons"].get("group_cap") is None
@@ -393,7 +393,7 @@ def test_the_mode_floor_leg_walks_the_same_key_as_the_general_leg():
     pool += [candidate("thin_weak", mode="stripe", score=0.60)]
     pool += [candidate("thin_strong", mode="stripe", score=0.95)]
     order = {"thin_weak": 0.99, "thin_strong": 0.01}
-    record = seating.seat(pool, n=3, floor=1, order=order, log=quiet)
+    record = seating.seat(pool, n=3, floor=1, order=order, allow_unranked=True, log=quiet)
     taken = {seat["key"]: seat["seated_for"] for seat in record["seated"]}
     assert taken.get("thin_weak") == "mode_floor:stripe"
 
@@ -489,7 +489,7 @@ def test_a_candidate_the_key_cannot_read_counts_at_the_bottom_of_every_percentil
     """It sorts last in the walk, so anything else here would inflate every
     percentile by the size of the hole."""
     pool = [candidate(f"c{at}", score=0.9) for at in range(4)]
-    record = seating.seat(pool, n=1, radius=None, order={"c0": 0.5}, log=quiet)
+    record = seating.seat(pool, n=1, radius=None, order={"c0": 0.5}, allow_unranked=True, log=quiet)
     assert record["attribution"]["clearing_pool"]["unreadable_by_the_key"] == 3
     assert record["seated"][0]["rank_percentile"] == 75.0
 
@@ -972,3 +972,42 @@ def test_a_preselection_refusal_carries_the_place_it_lost_to_onto_the_sheet(monk
 def test_a_seating_asked_for_without_the_preselection_says_it_was_skipped():
     record = seating.seat([candidate("a")], n=5, radius=None, key=seating.JUDGE_KEY, log=quiet)
     assert "skipped" in record["preselection"]
+
+
+def test_a_clearing_pool_the_key_cannot_read_is_refused_rather_than_seated_around() -> None:
+    """The `mine1h` failure, written down. A leg that merges without a flatness
+    sweep leaves every row it wrote unreadable by the fitted key; those rows sort
+    last, which is the right order and the wrong silence — they cannot win a seat
+    while any readable row is left, and nothing in the output said so. 8,192 rows
+    merged, 1,326 of them clearing, none seated, no warning.
+
+    The refusal names the count and the command, because the reader of it is
+    somebody who has just merged and is about to conclude the ore was worthless.
+    """
+    pool = [candidate("read"), candidate("blind1"), candidate("blind2")]
+    with pytest.raises(seating.SeatingRefused) as refusal:
+        seating.seat(pool, n=3, order={"read": 0.9}, log=quiet)
+    said = str(refusal.value)
+    assert "2 of 3" in said, "the count is the point: how much of the pool is invisible"
+    assert "curate flatness sweep" in said, "and the command that fixes it"
+
+
+def test_allow_unranked_is_the_way_past_it_and_the_record_says_it_was_used() -> None:
+    """For the one case a sweep cannot fix: a picture on disk that will not decode
+    has no reading and never will, so a pool holding one would be unseatable
+    forever. The record carries the flag so a later reader can tell a seating that
+    had a whole pool from one that was told to proceed without one."""
+    pool = [candidate("read"), candidate("blind")]
+    record = seating.seat(pool, n=2, order={"read": 0.9}, allow_unranked=True, log=quiet)
+    assert record["order"]["unranked"] == 1
+    assert record["order"]["unranked_allowed"] is True
+    assert record["filled"] == 2, "an unranked row still seats once the readable ones are spent"
+
+
+def test_the_judge_key_needs_no_flatness_and_is_never_refused_for_one() -> None:
+    """`p_ge4` is read off the candidate, so there is no store to be short of and
+    no pool it cannot read. The refusal is a property of a *fitted* key."""
+    pool = [candidate("a"), candidate("b")]
+    record = seating.seat(pool, n=2, key=seating.JUDGE_KEY, log=quiet)
+    assert record["order"]["unranked"] == 0
+    assert record["order"]["unranked_allowed"] is False

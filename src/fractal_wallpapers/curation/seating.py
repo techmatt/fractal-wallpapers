@@ -507,6 +507,7 @@ def seat(
     key: str = DEFAULT_KEY,
     order: dict | None = None,
     coverage: dict | None = None,
+    allow_unranked: bool = False,
     log=print,
 ) -> dict:
     """Fill `n` seats by scarcity then by the rank key, and keep every refusal.
@@ -545,6 +546,21 @@ def seat(
     A candidate `order` has no value for is ranked **last** and counted. It is not
     refused — no rule acted on it — and it has not earned a place ahead of the
     rows the key could read.
+
+    ## An unreadable clearing pool is a refusal, not a seating
+
+    Sorting last is the right *order* and the wrong thing to be quiet about. A leg
+    that merged without a flatness sweep left every row it wrote unreadable by
+    [`RANK_KEY`], and rows that sort last behind a full pool cannot win a seat at
+    all: `mine1h` merged 8,192 rows, cleared 1,326 of them into the pool, and
+    seated **none**, with nothing in the output saying so. So a clearing candidate
+    the active key cannot read raises [`SeatingRefused`] naming the count and the
+    command that fills the gap.
+
+    `allow_unranked` is the way past it and exists for one case: a picture that is
+    on disk and will not decode has no reading and never will, so a pool holding
+    one would otherwise be unseatable forever. It is not the flag for "the sweep
+    has not been run" — that is the refusal doing its job.
     """
     from fractal_wallpapers import engine
 
@@ -571,6 +587,24 @@ def seat(
             if candidate.key not in survived:
                 refused[candidate.key] = SAME_PLACE
     rank = _ranking(order)
+    if order is not None:
+        blind = [c for c in cleared if c.key not in order]
+        if blind and not allow_unranked:
+            raise SeatingRefused(
+                f"{len(blind):,} of {len(cleared):,} clearing candidate(s) carry no "
+                f"{key!r} value, so they sort last and cannot win a seat while a readable "
+                "row is left — which is a seating that silently ignores them rather than "
+                "one that refuses them. The usual cause is a leg merged before its "
+                "pictures were swept: run `fractal-wallpapers curate flatness sweep`, "
+                "then seat again. Pass allow_unranked=True (`--allow-unranked`) only for "
+                "a picture that is on disk and will not decode, which has no reading to "
+                f"take. First few: {[c.key for c in blind[:3]]}"
+            )
+        if blind:
+            log(
+                f"[seat] {len(blind):,} clearing candidate(s) are unreadable by {key!r} and "
+                "were allowed through: they sort last and no rule acts on them"
+            )
     unranked = 0 if order is None else sum(1 for c in kept if c.key not in order)
     kept.sort(key=rank)
     twins = Twins(clouds_for(kept)) if twin else None
@@ -634,6 +668,7 @@ def seat(
             "ranked": len(kept) - unranked,
             "unranked": unranked,
             "unranked_are": "sorted last and never refused: no rule acted on them",
+            "unranked_allowed": bool(allow_unranked),
             "coverage": coverage,
         },
         "preselection": preselection,

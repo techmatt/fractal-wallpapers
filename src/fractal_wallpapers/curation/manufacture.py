@@ -800,6 +800,54 @@ def _geometry(maxiter: int, resolution, supersample: int) -> dict:
     }
 
 
+def field_for(
+    row: dict,
+    directory: Path,
+    resolution=CANDIDATE_RESOLUTION,
+    supersample: int = CANDIDATE_SUPERSAMPLE,
+) -> Path:
+    """This row's group field at candidate geometry, **dumped if it is not there**.
+
+    [`colorize.field_of`]'s contract over this batch's own cache name: present is
+    reused, absent is made. The two rules that matter are that it is keyed on the
+    `group` — every attempt in a group is one (location, mode) and shares one
+    dump — and that absence is a *rebuild* rather than a refusal.
+
+    That second half is the durable half. `probe_knobs` used to select the rows it
+    could sweep with `(fields / f"{group}.f32").is_file()`, so once the batch's
+    `fields/` tree was swept for disk the whole step raised "nothing to sweep" —
+    a working command turned into a broken one by deleting a cache, which is what
+    a cache must never be able to do. A one-off rebuild of the tree would have
+    left the same trap for the next prune.
+
+    Callers must still ask [`colorize.kind_of`] whether the mode has a field at
+    all: a composite and a direct trap have none and the engine refuses to dump
+    one.
+    """
+    from fractal_wallpapers import engine, paths
+
+    directory = Path(directory)
+    field = directory / "fields" / f"{row['group']}.f32"
+    if field.is_file() and field.with_suffix(".json").is_file():
+        return field
+    field.parent.mkdir(parents=True, exist_ok=True)
+    engine.dump_field(
+        {
+            "schema": 1,
+            "family": row["family"],
+            "viewport": row["viewport"],
+            "resolution": list(resolution),
+            "supersample": int(supersample),
+            "maxiter": int(row["maxiter"]),
+            "mode": row["mode"],
+            "colormap": "twilight_shifted",
+            "colormap_dir": str(paths.colormap_dir()),
+            "output": str(field),
+        }
+    )
+    return field
+
+
 def _leveled_recolor(
     field: Path, colormap: str, mirror: bool, output: Path, band, recipe: dict | None = None
 ) -> dict | None:
@@ -899,7 +947,6 @@ def _build_group(payload: tuple) -> list[dict]:
     """
     import time
 
-    from fractal_wallpapers import engine, paths
     from fractal_wallpapers.curation import colorize
 
     rows, directory, resolution, supersample = payload
@@ -918,26 +965,10 @@ def _build_group(payload: tuple) -> list[dict]:
     field = None
     dump_failure = None
     if colorize.kind_of(first["mode"]) == "field":
-        field = directory / "fields" / f"{first['group']}.f32"
         try:
-            if not (field.is_file() and field.with_suffix(".json").is_file()):
-                field.parent.mkdir(parents=True, exist_ok=True)
-                engine.dump_field(
-                    {
-                        "schema": 1,
-                        "family": first["family"],
-                        "viewport": first["viewport"],
-                        "resolution": list(resolution),
-                        "supersample": int(supersample),
-                        "maxiter": int(first["maxiter"]),
-                        "mode": first["mode"],
-                        "colormap": "twilight_shifted",
-                        "colormap_dir": str(paths.colormap_dir()),
-                        "output": str(field),
-                    }
-                )
+            field = field_for(first, directory, resolution, supersample)
         except Exception as failure:  # noqa: BLE001 — a failed dump is a recorded row
-            dump_failure = repr(failure)[:400]
+            field, dump_failure = None, repr(failure)[:400]
 
     out = []
     for row in rows:
@@ -1457,33 +1488,44 @@ def probe_knobs(sample: int = 120, batch: str = BATCH, seed: int = SEED, log=pri
     """
     import time
 
+    from fractal_wallpapers.curation import colorize
     from fractal_wallpapers.labeling import finished
 
     band, cyclic = _band_and_cyclic()
     directory = work_dir(batch) / "candidate"
-    fields = directory / "fields"
+    # A row is probeable on what it IS, never on what is still cached: the field
+    # is re-dumped on absence by `field_for`. Selecting on `.f32` presence made
+    # `fields/` load-bearing, so sweeping that tree for disk turned this step into
+    # "nothing to sweep" — a deleted cache breaking a command.
     missed = [
         row
         for row in _read_jsonl(screened_path(batch))
         if row.get("picture")
         and float(row["share"]) < REACHED
         and row["colormap"] in cyclic
-        and (fields / f"{row['group']}.f32").is_file()
+        and colorize.kind_of(row["mode"]) == "field"
     ]
     if not missed:
         raise ManufactureError(
-            "no attempt missed its target on a cyclic map with a dumped field, so there is "
-            "nothing for the knob probe to sweep. It reads the screen's own rows."
+            "no attempt missed its target on a cyclic map in a mode with a field to sweep, "
+            "so there is nothing for the knob probe to do. It reads the screen's own rows."
         )
     draw = random.Random((seed, "knobs").__str__())
     drawn = draw.sample(missed, min(sample, len(missed)))
     where_pictures = directory / "knobs"
     started = time.time()
-    log(f"[knobs] {len(drawn)} missed attempts x {len(KNOB_GRID)} cells")
+    log(
+        f"[knobs] {len(drawn)} missed attempts x {len(KNOB_GRID)} cells; "
+        "any group whose field is gone is re-dumped as it comes up"
+    )
 
     rescued = 0
     rows = []
+    dumped = 0
     for index, row in enumerate(drawn, start=1):
+        before = (directory / "fields" / f"{row['group']}.f32").is_file()
+        field = field_for(row, directory)
+        dumped += not before
         best, cell = float(row["share"]), None
         for step, (cycles, phase) in enumerate(KNOB_GRID):
             if (cycles, phase) == (1.0, 0.0):
@@ -1494,9 +1536,7 @@ def probe_knobs(sample: int = 120, batch: str = BATCH, seed: int = SEED, log=pri
             # happens when a tight loop rewrites one filename a thousand times.
             output = where_pictures / f"{row['attempt']:06d}_{step}.jpg"
             recipe = finished.recipe(cycles=cycles, phase=phase, mirror=bool(row["mirror"]))
-            _leveled_recolor(
-                fields / f"{row['group']}.f32", row["colormap"], row["mirror"], output, band, recipe
-            )
+            _leveled_recolor(field, row["colormap"], row["mirror"], output, band, recipe)
             share = float((codebook.of_picture(output)["shares"] or {}).get(row["target"], 0.0))
             if share > best:
                 best, cell = share, {"cycles": cycles, "phase": round(phase, 4)}
@@ -1527,6 +1567,9 @@ def probe_knobs(sample: int = 120, batch: str = BATCH, seed: int = SEED, log=pri
             if row.get("picture") and float(row["share"]) < REACHED
         ),
         "sampled": len(drawn),
+        "fields_redumped": dumped,
+        "fields_redumped_are": "the batch's field cache is regenerable, so a swept `fields/` "
+        "tree costs one dump a group here and never the step",
         "rescued": rescued,
         "rescue_rate": round(rescued / len(drawn), 4),
         "median_gain": round(

@@ -3175,6 +3175,7 @@ def curate_seat(args: argparse.Namespace) -> int:
         key=args.key,
         order=order,
         coverage=coverage,
+        allow_unranked=args.allow_unranked,
     )
     name = args.name or f"n{args.n}"
     path = seating.write_record(name, record)
@@ -3531,6 +3532,7 @@ def curate_depth(args: argparse.Namespace) -> int:
             ),
             "near_width": args.near_width,
             "top_bands": args.top_bands,
+            "workers": args.workers,
         }
         if args.what == "plan":
             _intended, shape = depth.build_plan(
@@ -7426,6 +7428,16 @@ def curate_commands(subcommands) -> None:
         help="take every decision and build no contact sheet",
     )
     seating_step.add_argument(
+        "--allow-unranked",
+        action="store_true",
+        help="seat even though the key cannot read every clearing candidate. Unsaid, that "
+        "is REFUSED: an unreadable row sorts last and cannot win a seat while a readable "
+        "one is left, so a pool holding any is a seating that ignores them silently. The "
+        "usual cause is a leg merged before its pictures were swept, and the fix is "
+        "`curate flatness sweep`. This flag is for the other case — a picture on disk that "
+        "will not decode, which has no reading to take and never will",
+    )
+    seating_step.add_argument(
         "--sheet-out",
         metavar="PATH",
         help="write the contact sheet there instead of beside the record, which is what "
@@ -7809,16 +7821,19 @@ def curate_commands(subcommands) -> None:
         type=float,
         default=depth_module.BUDGET_SECONDS,
         metavar="SECONDS",
-        help=f"how long it may spend RENDERING (default "
-        f"{int(depth_module.BUDGET_SECONDS)}). Enforced at the candidate boundary",
+        help=f"how long the leg may run, in WALL seconds (default "
+        f"{int(depth_module.BUDGET_SECONDS)}), however many engines are spending it. "
+        "Checked before every candidate, so a wide near-band block stops inside itself",
     )
     depth_step.add_argument(
         "--rate",
         type=float,
         metavar="SECONDS",
-        help="seconds a candidate at this width, which is what sizes the draws. Required "
-        "by `plan` and `run`. A rate carried in from a pass that ran at another width "
-        "prices another loop: most of a candidate's cost here is amortised over the width",
+        help="seconds a candidate at this width on ONE engine, which is what sizes the "
+        "draws: the plan is `workers * budget / rate`. Required by `plan` and `run`. A rate "
+        "carried in from a pass that ran at another width prices another loop, most of a "
+        "candidate's cost here being amortised over the width. Read a pilot's "
+        "`budget.seconds_per_candidate` — per engine — and never its wall over its count",
     )
     depth_step.add_argument(
         "--width",
@@ -7926,6 +7941,17 @@ def curate_commands(subcommands) -> None:
         metavar="COUNT",
         help="how many distinct locations over the seating bar a mode needs before it is "
         "no longer short (default 10, which is about N/100 at N=1000)",
+    )
+    depth_step.add_argument(
+        "--workers",
+        type=int,
+        default=depth_module.DEFAULT_WORKERS,
+        metavar="COUNT",
+        help=f"engines this leg renders on (default {depth_module.DEFAULT_WORKERS}, this "
+        "machine's render pool). The unit of work is a LOCATION, because one field is "
+        "dumped per (location, mode) and cutting per candidate would make three workers "
+        "dump the same field. A plan with fewer location blocks than workers runs on "
+        "fewer and the record says so",
     )
     depth_step.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
     depth_step.set_defaults(handler=curate_depth)
@@ -8214,8 +8240,10 @@ def curate_commands(subcommands) -> None:
     covering.add_argument(
         "--workers",
         type=int,
-        default=6,
-        help="how many cells are probed at once (default: 6)",
+        default=release_module.DEFAULT_WORKERS,
+        help=f"how many cells are probed at once (default {release_module.DEFAULT_WORKERS}, "
+        "this machine's render pool). Every probe is a recolor through the engine, so this "
+        "is the locked three and not a tuning knob",
     )
     covering.add_argument(
         "--sheet",
@@ -8228,7 +8256,7 @@ def curate_commands(subcommands) -> None:
         action="store_true",
         help="also write the by-swatch sheet to scratch/ — all 52, ordered by scarcity on "
         "pixels, each with its counts against the pre-existing library, a picture of every "
-        "rung, and the maps reaching 20% with the drop's members marked",
+        "rung, and the maps reaching 20%% with the drop's members marked",
     )
     covering.set_defaults(handler=curate_coverage)
 
@@ -8299,7 +8327,12 @@ def curate_commands(subcommands) -> None:
         "--seed", type=int, default=manufacture_module.SEED, help="the draw's seed"
     )
     manufacturing.add_argument(
-        "--workers", type=int, default=6, help="how many groups are built at once (default: 6)"
+        "--workers",
+        type=int,
+        default=release_module.DEFAULT_WORKERS,
+        help=f"how many groups are built at once (default {release_module.DEFAULT_WORKERS}, "
+        "this machine's render pool). A group is built by rendering, so this is the locked "
+        "three and not a tuning knob",
     )
     manufacturing.add_argument("--device", default="auto", help="cuda, cpu, or auto")
     manufacturing.add_argument(

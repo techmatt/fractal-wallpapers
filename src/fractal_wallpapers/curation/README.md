@@ -1410,6 +1410,68 @@ Measured 2026-08-28 at `--width 24 --top-bands 5`, seed 20260827, this machine:
 | 2 field modes, near-heavy | **0.278** | `mine1h`, `--near-width 127` over 22 places |
 | 4 direct traps, near-heavy | **0.743** | `mine1h`, `--near-width 136` over 11 places |
 
+Every rate above is **one engine's**, which is what `--rate` wants. All four were
+measured single-engine; a rate read off a three-worker leg carries that leg's
+contention in it and would over-price a serial one by about 1.6x.
+
+### Three workers, cut at the location
+
+`curate depth run --workers N`, **three** by default off `release.DEFAULT_WORKERS`.
+It was single-engine until 2026-08-28, so an hour of mining spent one of the three
+the locked rule allows.
+
+**The unit of work is a LOCATION and that is the whole design.** A field is dumped
+once per (location, mode) and every palette at that pair is a recolour of it — 56%
+of a candidate at width 40 — so a plan cut per *candidate* hands one place to three
+workers and each dumps the same field. That is not a smaller win, it is a **loss**:
+the parallel leg would come out slower than the serial one. `blocks_of` cuts the
+woven plan into one block a location, in the order each location first appears in
+the weave, so the arm proportions the weave exists to hold survive one location
+coarser.
+
+**`--budget` is wall seconds and `--rate` is per engine.** Matt's ruling, and the
+two only work read together: the plan is sized `PLAN_HEADROOM * workers * budget /
+rate`, and sizing off one engine on a three-worker leg plans a third of the hour
+and stops having run out of *plan*. The clock starts at the **first block**, not
+at the call — the population read is a ledger sweep and a scan index, about 50 s
+on this store, and charging it to a render budget made a 25 s pilot render nothing
+at all. The record carries `render_wall` (what the budget governs), `wall_seconds`
+(the whole call), `engine_seconds`, and `seconds_per_candidate`, which is **per
+engine** and is the number a later `--rate` is read off.
+
+**Workers render, the parent writes**, [`curation.release`]'s rule for its reason:
+an append-only log with three writers has no order and `sequence.jsonl` is read
+back as an ordered stream. Every row, score and sequence line is written by the
+parent from `pool.map`'s plan order, so a three-worker leg writes the three files
+a serial leg would have, in the same order, whatever order the workers finished in.
+
+**Measured 2026-08-28**, one plan of 2,416 candidates at seed 20260901, `--width
+24 --near-width 40 --top-bands 5` on `{gaussian_int, curvature}`, 180 wall seconds
+each arm. The serial arm is given `rate/3` so `workers * budget / rate` lands on
+the same plan and the two schedulers walk the same draws:
+
+| arm | engine threads | made | candidates a wall second | against serial | s a candidate, per engine |
+|---|---|---|---|---|---|
+| 1 worker | default | 649 | 3.60 | 1.00x | 0.270 |
+| 3 workers | default | 1,076 | 5.93 | 1.65x | 0.496 |
+| 3 workers | **7** | **1,254** | **6.92** | **1.92x** | 0.424 |
+| 3 workers | 4 | 1,219 | 6.62 | 1.84x | 0.442 |
+
+**They do not saturate, and the record's `concurrency` figure says they do.** That
+column is engine seconds over wall and reads 2.94x on the same leg that is really
+1.92x faster: an engine sharing the machine costs 1.57x more per candidate, and
+that inflation is counted as work. Candidates a wall second against a serial arm is
+the only number here that means anything, and the record says so in
+`concurrency_is`. The gap is contention and not starvation — this plan had 86
+location blocks for 3 workers. `release.ENGINE_THREADS_PER_WORKER` (7) is worth
+2.7 points of throughput over letting three engines each take the whole machine,
+and it was **measured** here rather than assumed: 4 threads is worse than 7.
+
+**Starvation is a real case on the narrow legs.** `workers_for` runs the leg on
+`min(workers, blocks)` and says so: the near-band pool held **25 locations** for
+the two-mode field roster and **19** for the four direct traps, and a worker with
+no place to take is a process spawned to idle.
+
 **A 150 s pilot over-reads the rate, and by a knowable amount.** Budget seconds are
 `stages.total()` and exclude the fixed start — the population read, the judge load and
 the plan build, about 50 s — so a short run's *wall* carries it and a long run's does
@@ -2743,7 +2805,7 @@ nowhere.
 ```
 fractal-wallpapers curate coverage                    # panel, probe, read
 fractal-wallpapers curate coverage --step panel       # draw and choose the panel only
-fractal-wallpapers curate coverage --step probe --workers 6
+fractal-wallpapers curate coverage --step probe --workers 3
 fractal-wallpapers curate coverage --step read        # tables off rows already written
 fractal-wallpapers curate coverage --sheet            # + the contact sheet
 fractal-wallpapers curate coverage --by-swatch        # + all 52 by scarcity on pixels
@@ -2813,8 +2875,11 @@ states it, and the rule is the general one: a recolor spec that does not name it
 transform is a picture nobody can join back to a render.
 
 **Runtime.** 16 cells x 901 maps, plus the unfolded arm for the 156 sequential
-maps, is 16,912 recolors at about 75 ms each: 21 minutes serial, about 6 with
-`--workers 6`. The panel's own dumps are 56 iteration passes, about 40 seconds.
+maps, is 16,912 recolors at about 75 ms each: 21 minutes serial, and about 6 was
+measured at `--workers 6`. That default is **three** since 2026-08-28 — every
+probe is a recolor through the engine, so it is the locked render pool and not a
+tuning knob — which puts it near 9 minutes at the release leg's measured 2.38x
+concurrency gain on three. Re-measure rather than trusting that arithmetic. The panel's own dumps are 56 iteration passes, about 40 seconds.
 Each recolor is censused and its JPEG overwritten rather than kept — keeping them
 would be a gigabyte of pictures answering four hundred bytes each — so the contact
 sheet re-makes the sixteen tiles it shows.

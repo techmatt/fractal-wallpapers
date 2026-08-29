@@ -2259,9 +2259,19 @@ def _miss_card(miss: dict, sheet_module) -> str:
 
 
 def picture_of_row(row: dict) -> Path | None:
-    """Where a seat's or a near miss's candidate render is, off the stored name."""
+    """Where a seat's or a near miss's candidate render is, off the stored name.
+
+    `None` for a row with no name **and** for a name this checkout cannot resolve:
+    `rehome` answers `None` for a name with no artifacts component, and the
+    unguarded `Path(None)` raised `TypeError` from inside a sheet build rather
+    than showing the "no picture on disk" tile both callers already draw. The
+    same shape crashed `seating.contact_sheet` on 2026-08-28.
+    """
     name = row.get("picture")
-    return None if not name else Path(rehome(name))
+    if not name:
+        return None
+    where = rehome(name)
+    return None if where is None else Path(where)
 
 
 def _number(value) -> str:
