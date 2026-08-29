@@ -244,6 +244,17 @@ would serve a different picture under the same identity. The way through is
 `level=True`, which writes `<stem>.leveled` beside the picture, then point the plan unit at
 that directory by name. The plan's own `leveled` key is the whole mechanism.
 
+**A measure pass can BE the sheet's render, at three workers instead of one.** The
+build renders serially in-process, and `cut` skips a unit whose picture is already on
+disk — that is the resume path, and it is also a way to do the whole page in
+parallel. Render each plan unit at label geometry through `colorize.render(level=True)`
+into `<sheet dir>/full/<sheets.cut_name(i)>.jpg`, where `i` is the unit's index in
+the plan **file**; `finished_source` sets no `screen`, so nothing reorders or drops a
+unit before the cut and that index is stable. `label build` then reports
+`rendered: 0` and serves exactly what was measured. `sparse_mode_head_top`
+(2026-08-29) did 998 units this way in 47 min at three workers against about 35 min
+serial for the wrong pictures, and the operator acted on **301 of 998, 30.2%**.
+
 **So it is two renders a unit, and the second one is the check.** The measure pass makes the
 picture and the levelled map; `label build` renders again from the plan; and comparing the
 two byte for byte is the only thing that proves the page serves what was measured. On
