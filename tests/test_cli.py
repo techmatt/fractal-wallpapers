@@ -551,3 +551,42 @@ def test_the_flatness_sweep_and_the_rank_key_fit_are_subcommands_with_defaults()
     assert fitted.handler is cli.curate_rank_key
     assert fitted.what == "fit"
     assert parse(["curate", "rank-key", "show"]).what == "show"
+
+
+def test_every_subcommands_help_renders() -> None:
+    """`--help` on any verb, at any depth. It is not a formality: argparse
+    `%`-expands a help string as it prints it, so one unescaped `%` in one
+    option's text raises `ValueError` and takes down that whole parser's help
+    and nothing else — no import fails, no other command notices, and the only
+    symptom is a verb whose `--help` crashes. `curate coverage --help` was in
+    that state for as long as `--by-swatch` has named a threshold in percent.
+    """
+    import argparse
+
+    def walk(parser, path):
+        try:
+            parser.format_help()
+        except Exception as failure:  # noqa: BLE001 — the point is which verb, not the type
+            raise AssertionError(f"`{path} --help` does not render: {failure!r}") from failure
+        for action in parser._actions:
+            if isinstance(action, argparse._SubParsersAction):
+                for name, child in action.choices.items():
+                    walk(child, f"{path} {name}")
+
+    walk(cli.build_parser(), "fractal-wallpapers")
+
+
+def test_every_leg_that_drives_the_engine_defaults_to_the_locked_three() -> None:
+    """The render pool is three workers. Two `--workers` defaults sat at 6 —
+    `curate coverage --step probe`, whose every probe is a recolor through the
+    engine, and `curate manufacture`, which builds a group by rendering — and
+    both are the locked number now, read off the module that owns it rather
+    than restated."""
+    from fractal_wallpapers.curation import flatness, release
+
+    parse = cli.build_parser().parse_args
+    assert release.DEFAULT_WORKERS == 3
+    assert parse(["curate", "coverage"]).workers == release.DEFAULT_WORKERS
+    assert parse(["curate", "manufacture"]).workers == release.DEFAULT_WORKERS
+    assert parse(["curate", "seat"]).workers == release.DEFAULT_WORKERS
+    assert parse(["curate", "flatness"]).workers == flatness.WORKERS == 3

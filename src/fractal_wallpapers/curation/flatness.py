@@ -57,6 +57,7 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import NamedTuple
 
 from fractal_wallpapers.curation import candidate_ledger, durability
 
@@ -231,6 +232,29 @@ def write(rows) -> tuple[Path, int, int]:
 # --------------------------------------------------------------------------- #
 # The sweep.
 # --------------------------------------------------------------------------- #
+class PictureOf(NamedTuple):
+    """The two fields [`missing`] reads, for a population that is not a pool.
+
+    A [`solve.Candidate`] carries both and so does a raw ledger row, under other
+    names and with a score this does not want. Two callers need the adapter now —
+    `curate flatness --all` sweeping every row with a picture, and
+    [`candidate_ledger.merge`] sweeping the rows one leg just wrote — so it lives
+    here rather than in either of them.
+    """
+
+    key: str
+    picture: str
+
+
+def of_rows(rows) -> list:
+    """[`PictureOf`] for every ledger row naming a picture. Order preserved.
+
+    A row with no picture is left out rather than carried with a `None`: it has
+    no reading to take and [`missing`] would drop it a step later anyway.
+    """
+    return [PictureOf(str(row["key"]), str(row["picture"])) for row in rows if row.get("picture")]
+
+
 def missing(candidates, held=None) -> list:
     """`[(key, path)]` for the candidates the sidecar has no reading for.
 

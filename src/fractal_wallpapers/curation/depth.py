@@ -54,7 +54,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
-from fractal_wallpapers.curation import candidate_ledger, framing, hunt, mine, recipes
+from fractal_wallpapers.curation import candidate_ledger, framing, hunt, mine, recipes, release
 from fractal_wallpapers.paths import tracked_name, under
 
 #: The schema every record and every row this module writes carries.
@@ -139,6 +139,12 @@ DEFAULT_SEED = 20260827
 
 #: How long a depth run may spend **rendering**, in seconds.
 BUDGET_SECONDS = 5400.0
+
+#: How many workers a leg renders on. **Three**, read off the module that owns
+#: this machine's render pool rather than restated, because that is the rule and
+#: not a tuning knob: more than three engines at once makes the desktop unusable.
+#: A leg with fewer location blocks than this runs on fewer ([`workers_for`]).
+DEFAULT_WORKERS = release.DEFAULT_WORKERS
 
 #: How much longer the plan is than the budget prices it at. [`mine.PLAN_HEADROOM`]'s
 #: reason, and more of it: the rate this run is sized off is a per-candidate mean
@@ -754,9 +760,17 @@ def build_plan(
     floor_modes: list | None = None,
     floor_seats: int = 10,
     floor_width: int = FLOOR_WIDTH,
+    workers: int = 1,
     log=print,
 ) -> tuple:
     """The draws sized off a per-candidate rate. `(plan, shape)`.
+
+    **`budget` is wall seconds and `rate` is per ENGINE**, which is the one place
+    those two have to be multiplied together correctly. A leg on `workers`
+    engines makes `workers / rate` candidates a wall second, so the plan is sized
+    at `PLAN_HEADROOM * workers * budget / rate`. Sizing it off one engine on a
+    three-worker leg plans a third of what the hour can buy and the leg stops
+    having run out of plan rather than out of clock.
 
     `shares`, `band_weights` and `floor_modes` are what turn a **measuring** run
     into a **production** one. Unsaid, this takes the three measuring draws with
@@ -803,7 +817,7 @@ def build_plan(
             f"{cell!r} is not a codebook cell. A misspelt cell would plan an aimed arm "
             f"no map carries and report it as a draw that bought nothing."
         )
-    planned = PLAN_HEADROOM * float(budget) / max(float(rate), 1e-6)
+    planned = PLAN_HEADROOM * max(1, int(workers)) * float(budget) / max(float(rate), 1e-6)
     want = {arm: int(planned * float(share)) for arm, share in shares.items()}
     short = deficient_modes(world["rows"], world["ledger_scores"], floor=int(floor_seats))
     wanted_floor_modes = list(floor_modes if floor_modes is not None else short)
@@ -881,6 +895,9 @@ def build_plan(
     shape = {
         "rate_seconds": round(float(rate), 4),
         "plan_headroom": PLAN_HEADROOM,
+        "workers_sized_for": max(1, int(workers)),
+        "sized_as": "PLAN_HEADROOM * workers * budget / rate — budget is WALL seconds and "
+        "rate is per engine",
         "budget_seconds": float(budget),
         "width": int(width),
         "near_width": int(near_width),
@@ -934,6 +951,152 @@ def build_plan(
 
 
 # --------------------------------------------------------------------------- #
+# The workers.
+# --------------------------------------------------------------------------- #
+#: One [`hunt.Maker`] per worker **process**, keyed on what makes two of them
+#: different. Built on the first block a process is handed and kept for every
+#: block after it: the judge is 2 s to load and 9.7 MiB on the card, so three of
+#: them are free and loading one per block would be most of a short leg.
+_MAKER: dict = {}
+
+
+def _worker_init(threads) -> None:
+    """Cap this worker's engine threads and put it below normal, once per process.
+
+    [`release._worker_init`]'s body and its reason. Three engines each helping
+    themselves to every core of a twelve-thread machine is oversubscription, and
+    it shows up as the *per engine* cost rising rather than as a failure: the
+    first three-worker leg measured here ran each candidate at **0.496 s against
+    the serial 0.270**, an 1.83x inflation that ate most of what the concurrency
+    bought. The cap is [`release.ENGINE_THREADS_PER_WORKER`], deliberately more
+    than a fair share because a worker in its `measure` stage — 28% of a
+    candidate, and Python — leaves cores only an over-provisioned sibling engine
+    can take.
+    """
+    import os
+
+    from fractal_wallpapers import process_control
+
+    if threads is not None:
+        os.environ[release.THREADS_ENV] = str(int(threads))
+    process_control.set_background_priority()
+    process_control.bind_children_to_parent()
+
+
+def _maker_for(name: str, device: str, fields: str):
+    key = (str(name), str(device), str(fields))
+    if key not in _MAKER:
+        _MAKER[key] = hunt.Maker(name, device=device, log=lambda *_a: None, fields=Path(fields))
+    return _MAKER[key]
+
+
+def _render_block(payload: tuple) -> list:
+    """One LOCATION's shots, start to finish, in one worker. `[(at, result)]`.
+
+    **The location is the unit of work and that is the whole design.** One field
+    is dumped per (location, mode) and every palette at that pair is a recolour
+    of it, so a plan cut per *candidate* would hand the same location to three
+    workers and each of them would dump the same field: the shared-field saving —
+    56% of a candidate at width 40 — is spent three times over and the leg comes
+    out slower than serial. Cut at the location and the dump is paid once, by
+    whichever worker owns the place.
+
+    `deadline` is [`time.monotonic`] in the parent's clock, and it is checked
+    **before** each candidate rather than only between blocks: a near-band block
+    is `--near-width` candidates deep, 127 last run, and a block that could not
+    stop inside itself would overrun a budget by minutes.
+    """
+    import time
+
+    name, device, fields, pictures, shots, deadline = payload
+    maker = _maker_for(name, device, fields)
+    out = []
+    for at, shot, place, frame, recipe, key in shots:
+        if time.monotonic() >= deadline:
+            break
+        try:
+            result = mine.make(maker, shot, place, frame, key, pictures=Path(pictures))
+        except Exception as failure:  # noqa: BLE001 — a failed candidate is a recorded fact
+            out.append((at, {"failed": repr(failure)[:400], "key": key}))
+            continue
+        stages = result["stages"]
+        out.append(
+            (
+                at,
+                {
+                    "key": key,
+                    "recipe": recipe,
+                    "picture": str(result["picture"]),
+                    "verdict": result["verdict"],
+                    "colour": result["colour"],
+                    "cells": result["cells"],
+                    "acted": bool(result["acted"]),
+                    # The `Stages` dataclass itself, not a dict of it: the parent
+                    # feeds it straight to `mine.Clock.add`, and a second spelling
+                    # of the eight stage names is a second thing to keep in step.
+                    "stages": stages,
+                },
+            )
+        )
+    return out
+
+
+def blocks_of(intended: list, world: dict, maker, known: set, log=print) -> tuple:
+    """`(blocks, skipped, unresolvable)` — the woven plan cut into location blocks.
+
+    Every recipe is resolved **here**, in the parent, for two reasons. A recipe
+    that the ledger already holds is dropped before a worker is ever handed it,
+    so the skip count is exact up front rather than a race between three workers
+    discovering the same thing; and `known` is a hundred and thirty thousand keys
+    that would otherwise be pickled to every worker with every block.
+
+    Blocks come back in the order each location **first appears in the weave**, so
+    the arm proportions the weave exists to hold survive being cut into blocks:
+    a truncated leg keeps whole locations rather than a proportional prefix, which
+    is the same guarantee one location coarser.
+    """
+    order: dict = {}
+    skipped, unresolvable = 0, 0
+    for at, shot in enumerate(intended, start=1):
+        place = world["by_key"].get(shot.location)
+        frame = world["index"].get(shot.location)
+        if place is None or frame is None:
+            unresolvable += 1
+            continue
+        recipe = maker.recipe_for(shot, place, frame)
+        key = recipes.key_of(recipe)
+        if key in known:
+            skipped += 1
+            continue
+        known.add(key)
+        order.setdefault(shot.location, []).append((at, shot, place, frame, recipe, key))
+    log(
+        f"[depth] {len(order):,} location block(s), {sum(len(v) for v in order.values()):,} "
+        f"candidate(s) after {skipped:,} already in the ledger"
+    )
+    return list(order.values()), skipped, unresolvable
+
+
+def workers_for(blocks: list, asked: int, log=print) -> int:
+    """How many workers this plan can actually feed, and it says when that is fewer.
+
+    A worker with no block to take is a process spawned to idle, and the narrow
+    legs here really are narrow: the near-band pool held **25 locations** for the
+    two-mode field roster last run and **19** for the four direct traps. Three
+    workers is the machine's rule and not a floor, so a plan with fewer blocks
+    than workers gets one worker a block and the record says so.
+    """
+    held = max(1, min(int(asked), len(blocks)))
+    if held < int(asked):
+        log(
+            f"[depth] {len(blocks)} location block(s) is fewer than the {int(asked)} worker(s) "
+            f"asked for, so this leg runs on {held}: a worker with no place to take is a "
+            "process spawned to idle"
+        )
+    return held
+
+
+# --------------------------------------------------------------------------- #
 # The population.
 # --------------------------------------------------------------------------- #
 def population(margin: float = framing.MARGIN, log=print) -> dict:
@@ -969,6 +1132,7 @@ def run(
     floor_modes: list | None = None,
     floor_width: int = FLOOR_WIDTH,
     floor_seats: int = 10,
+    workers: int = DEFAULT_WORKERS,
     device: str = "auto",
     margin: float = framing.MARGIN,
     world: dict | None = None,
@@ -976,10 +1140,36 @@ def run(
 ) -> dict:
     """One depth run, end to end. Rows land as candidates land; the record is returned.
 
-    The budget is enforced at the candidate boundary through [`hunt.Price`], so
-    nothing is started that cannot finish inside what is left. A killed run keeps
-    everything it made: the two ledger files and the sequence are appended to as
-    each candidate lands and the record is the only thing written at the end.
+    ## The budget is WALL seconds and the rate is per engine
+
+    Matt's ruling, and the two halves have to be read together. `--budget 3600`
+    is an hour of clock however many engines are spending it; `--rate` is what
+    one candidate costs one engine, which is what a pilot measures. So the plan is
+    sized at `workers * budget / rate` ([`build_plan`]) and the leg stops on the
+    clock rather than on accumulated engine seconds. The record reports both —
+    `budget.wall_seconds` against `budget.engine_seconds` — and their ratio is
+    the concurrency this leg actually got.
+
+    ## The location is the unit of work
+
+    [`_render_block`] renders one location start to finish in one worker, because
+    a field is dumped once per (location, mode) and every palette at that pair is
+    a recolour of it. Cut per candidate and three workers dump the same field
+    three times: the sharing is 56% of a candidate at width 40, so the parallel
+    leg would come out **slower** than the serial one. Cut at the location and the
+    dump is paid once by whoever owns the place.
+
+    ## Workers render, the parent writes
+
+    [`curation.release`]'s rule, and for its reason: an append-only log with three
+    writers has no order, and `sequence.jsonl` is read back as an ordered stream.
+    Every row, score and sequence line here is written by this function from
+    `pool.map`'s **plan order**, so the three files a three-worker leg writes are
+    the three files a serial leg would have written, in the same order, whatever
+    order the workers actually finished in.
+
+    A killed run keeps everything it made: all three files are appended to as each
+    block lands and the record is the only thing written at the end.
     """
     started = time.monotonic()
     world = population(margin, log=log) if world is None else world
@@ -1000,8 +1190,11 @@ def run(
         floor_modes=floor_modes,
         floor_width=floor_width,
         floor_seats=floor_seats,
+        workers=workers,
         log=log,
     )
+    # The parent's own Maker resolves recipes and sweeps the field cache; it never
+    # judges, so it never loads the judge. The workers hold theirs.
     maker = hunt.Maker(name, device=device, log=log, fields=fields_dir(name))
     price = hunt.Price()
     clock = mine.Clock()
@@ -1021,42 +1214,43 @@ def run(
         "autolevel_acted": 0,
         "fields_swept": 0,
     }
+    blocks, skipped, unresolvable = blocks_of(intended, world, maker, known, log=log)
+    counts["already_in_ledger"] = skipped
+    counts["failed"] = unresolvable
+    held = workers_for(blocks, workers, log=log)
+    counts["workers"] = held
+    counts["location_blocks"] = len(blocks)
+    # The clock starts at the FIRST BLOCK and not at the call. Reading the
+    # population is a ledger sweep and a scan index — about 50 s on this store —
+    # and charging it to a render budget makes a short pilot render nothing at
+    # all: a 25 s budget was already 17 s past its deadline before a worker was
+    # handed anything. `budget` is wall seconds of MINING, the way every prompt
+    # here already prices an hour; `wall_seconds` on the record is the whole call
+    # and `render_wall` is the part the budget governs.
+    render_started = time.monotonic()
+    deadline = render_started + float(budget)
     spent = 0.0
-    for at, shot in enumerate(intended, start=1):
-        loop = mine.colorize_module().tick()
-        place = world["by_key"].get(shot.location)
-        frame = world["index"].get(shot.location)
-        if place is None or frame is None:
+    by_at = {}
+    for block in blocks:
+        for at, shot, place, frame, recipe, key in block:
+            by_at[at] = (shot, place, frame, recipe, key)
+
+    def take(at: int, result: dict) -> None:
+        """One landed candidate, written by the PARENT. Never by a worker."""
+        nonlocal spent
+        if "failed" in result:
             counts["failed"] += 1
-            continue
-        recipe = maker.recipe_for(shot, place, frame)
-        key = recipes.key_of(recipe)
-        if key in known:
-            counts["already_in_ledger"] += 1
-            continue
-        reserve = price.of(shot.partition)
-        if spent + reserve > float(budget):
-            counts["stopped_for_budget"] = len(intended) - at + 1
-            log(
-                f"[depth] stopping at candidate {at}: {shot.partition} is priced at "
-                f"{reserve:.2f}s and {float(budget) - spent:.2f}s remain of {budget:.0f}s"
-            )
-            break
-        try:
-            result = mine.make(maker, shot, place, frame, key, pictures=pictures_dir(name))
-        except Exception as failure:  # noqa: BLE001 — a failed candidate is a recorded fact
-            counts["failed"] += 1
-            log(f"[depth] {key} failed: {failure!r}")
-            continue
+            log(f"[depth] {result['key']} failed: {result['failed']}")
+            return
+        shot, place, frame, recipe, key = by_at[at]
         stages = result["stages"]
-        write_at = mine.colorize_module().tick()
         source = hunt.source_for(name, shot, place, frame, at)
         stored = candidate_ledger.row(
             recipe=recipe,
             key=key,
             source=source,
             colour=result["colour"],
-            picture=tracked_name(result["picture"]),
+            picture=tracked_name(Path(result["picture"])),
         )
         stored["hunt"] = {"name": name, "seconds": round(stages.total(), 3), **shot.named()}
         scored = candidate_ledger.score_row(
@@ -1069,11 +1263,8 @@ def run(
         )
         hunt._append(rows_file, stored)
         hunt._append(scores_file, scored)
-        stages.write = mine.colorize_module().tick() - write_at
-        stages.overhead = max(0.0, (mine.colorize_module().tick() - loop) - stages.total())
         spent += stages.total()
         price.add(shot.partition, stages.total())
-        known.add(key)
         counts["made"] += 1
         counts["autolevel_acted"] += int(result["acted"])
         row = {
@@ -1096,7 +1287,7 @@ def run(
             "p_ge3": round(float(result["verdict"].get("p_ge3") or 0.0), 6),
             "seconds": round(stages.total(), 3),
             "stages": stages.named(),
-            "picture": tracked_name(result["picture"]),
+            "picture": tracked_name(Path(result["picture"])),
         }
         made.append(row)
         hunt._append(sequence_file, {"schema": SCHEMA, "at": at, **row})
@@ -1113,14 +1304,49 @@ def run(
         if counts["made"] % 200 == 0:
             counts["fields_swept"] += mine.colorize_module().sweep_fields(maker.fields)
             log(
-                f"[depth] {counts['made']:,} made, {spent:.0f}s of {budget:.0f}s "
-                f"({spent / max(1, counts['made']):.3f}s each) — "
-                + " ".join(
-                    f"{arm}:{sum(1 for r in made if r['arm'] == arm)}"
-                    for arm in DRAWS
-                    if any(r["arm"] == arm for r in made)
-                )
+                f"[depth] {counts['made']:,} made, "
+                f"{time.monotonic() - render_started:.0f}s of {budget:.0f}s wall "
+                f"({spent / max(1, counts['made']):.3f}s an engine each)"
             )
+
+    def payload_of(block: list) -> tuple:
+        return (name, device, str(fields_dir(name)), str(pictures_dir(name)), block, deadline)
+
+    if held <= 1:
+        # The serial path is the fallback and must not be a branch of the pool it
+        # falls back FOR: no pool, no pickling, no second Maker. `release.parity`
+        # holds the two to each other for the release leg and this is the same
+        # rule one leg over.
+        for block in blocks:
+            if time.monotonic() >= deadline:
+                counts["stopped_for_budget"] += len(block)
+                continue
+            for at, result in _render_block(payload_of(block)):
+                take(at, result)
+    else:
+        from concurrent.futures import ProcessPoolExecutor
+
+        with ProcessPoolExecutor(
+            max_workers=held,
+            initializer=_worker_init,
+            initargs=(release.engine_threads_for(held),),
+        ) as pool:
+            for done, pairs in enumerate(
+                pool.map(_render_block, [payload_of(block) for block in blocks]), start=1
+            ):
+                for at, result in pairs:
+                    take(at, result)
+                if done % 25 == 0:
+                    counts["fields_swept"] += mine.colorize_module().sweep_fields(maker.fields)
+    wall = time.monotonic() - render_started
+    counts["stopped_for_budget"] = max(
+        0, len(intended) - skipped - unresolvable - counts["made"] - counts["failed"]
+    )
+    log(
+        f"[depth] {counts['made']:,} candidate(s) in {wall:.0f}s of wall on {held} worker(s); "
+        f"{spent:.0f}s of engine time, {spent / max(1e-9, wall):.2f}x concurrency"
+    )
+
     record = {
         "schema": SCHEMA,
         "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -1139,6 +1365,8 @@ def run(
             "seating_bar": SEATING_BAR,
             "margin": float(margin),
             "regime": recipes.CANDIDATE_REGIME.spelled,
+            "workers": counts["workers"],
+            "workers_asked": int(workers),
             "judge_artifact": artifact,
             "field_modes_only": True,
             "cell": shape.get("cell"),
@@ -1146,10 +1374,25 @@ def run(
         "plan": shape,
         "counts": counts,
         "budget": {
+            "is": "WALL seconds, spent by however many engines are on the leg",
             "allowed": float(budget),
-            "spent": round(spent, 2),
-            "share": round(spent / float(budget), 4) if budget else None,
+            "render_wall": round(wall, 2),
+            "share": round(wall / float(budget), 4) if budget else None,
             "wall_seconds": round(time.monotonic() - started, 2),
+            "wall_seconds_is": "the whole call, setup included. `render_wall` is what the "
+            "budget governs and it starts at the first block",
+            "engine_seconds": round(spent, 2),
+            "workers": counts["workers"],
+            "location_blocks": counts["location_blocks"],
+            "concurrency": round(spent / max(1e-9, wall), 3),
+            "concurrency_is": "engine seconds over wall, which OVER-READS the benefit: an "
+            "engine sharing the machine is slower per candidate, so some of this ratio is "
+            "inflation rather than work. Candidates a wall second against a serial leg is "
+            "the number that means something",
+            "engine_threads": release.engine_threads_for(counts["workers"]),
+            "seconds_per_candidate": round(spent / max(1, counts["made"]), 4),
+            "seconds_per_candidate_is": "per ENGINE, which is what --rate is and what a "
+            "pilot measures. Wall a candidate is this over `concurrency`",
         },
         "price": price.table(),
         "profile": clock.table(),

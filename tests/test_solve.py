@@ -906,3 +906,14 @@ def test_every_candidate_the_solver_may_seat_has_its_picture(tracked_pool):
     [`solve.pool`], so a missing picture here is a store that moved under it."""
     missing = [c.key for c in tracked_pool[:400] if not solve.picture_of(c).is_file()]
     assert missing == []
+
+
+def test_a_sheet_row_naming_an_unresolvable_picture_reads_as_no_picture(monkeypatch) -> None:
+    """`rehome` answers None for a name with no artifacts component, and the
+    unguarded `Path(None)` raised `TypeError` from inside a sheet build — the same
+    shape that crashed `seating.contact_sheet`. Both callers of this already draw
+    a "no picture on disk" tile for None; they just never got one."""
+    monkeypatch.setattr("fractal_wallpapers.curation.solve.rehome", lambda name: None)
+    assert solve.picture_of_row({"picture": "somewhere/outside/the/tree.jpg"}) is None
+    assert solve.picture_of_row({"picture": None}) is None
+    assert solve.picture_of_row({}) is None

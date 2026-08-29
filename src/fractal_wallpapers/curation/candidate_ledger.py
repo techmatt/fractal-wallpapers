@@ -590,14 +590,27 @@ def merge(rows, scores, log=print) -> dict:
     remember to record is a writer that will stop, so the record is not something
     a caller does afterwards — it is the second half of the write.
 
+    **And the flatness sidecar is filled here, for the same reason.** It is keyed
+    on the recipe and nothing else fills it, so a leg that merged and stopped left
+    every row it wrote **unranked** to [`curation.rank_key`] — which is what
+    `curate seat` orders on by default. Unranked rows sort last and are never
+    refused, so they sat in the pool, cleared their bars, counted in every
+    denominator, and could not win a seat while a ranked row was left:
+    `mine1h` merged 8,192 rows and seated none of them, silently. The sweep is
+    incremental and reads only pictures the sidecar has never seen — 33 s for
+    those 8,192 — so a merge with nothing new to read pays one file read.
+
     The **copy** goes with the manifest, because that is what the manifest is a
     claim about: [`durability.save`] writes both or neither, and a manifest naming
     a count no copy holds would make [`durability.restore`] believe a stale file.
     That is the whole cost of this — one copy of each file per leg, at the end of
     a leg measured in minutes or hours.
     """
+    from fractal_wallpapers.curation import flatness
+
     rows_file, total, new = write(rows)
     scores_file, score_total, score_new = write_scores(scores)
+    swept = flatness.sweep(flatness.of_rows(rows), log=log)
     saved = {
         "rows": durability.save(durable_rows(), log=log),
         "scores": durability.save(durable_scores(), log=log),
@@ -607,6 +620,13 @@ def merge(rows, scores, log=print) -> dict:
         "scores_path": tracked_name(scores_file),
         "ledger": {"rows": total, "new": new},
         "scores": {"rows": score_total, "new": score_new},
+        "flatness": {
+            "column": swept["column"],
+            "swept": swept["swept"],
+            "read": swept["read"],
+            "unreadable": swept["unreadable"],
+            "seconds": swept["seconds"],
+        },
         "recorded": {
             "rows": saved["rows"]["rows"],
             "scores": saved["scores"]["rows"],
