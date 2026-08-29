@@ -48,9 +48,10 @@ The smooth judge owns the one smooth coloring; the strange judge owns every othe
 catalog at call time, so a mode cannot exist on one side of the boundary and not
 the other, and the draw is seeded per attempt and recorded.
 
-A mode the catalog tiers as *niche* is renderable by name and can never be drawn
-here. That exclusion lives in [`modes_for`] — the one place a mode is drawn —
-rather than at each of its callers.
+A mode the catalog tiers as *niche*, or that [`curation.mode_policy`] weights 0,
+is renderable by name and can never be drawn here. Both exclusions live in
+[`modes_for`] — the one place a mode is drawn — rather than at each of its
+callers.
 """
 
 from __future__ import annotations
@@ -122,12 +123,16 @@ def modes_for(kind: str) -> list[str]:
     else is the other, which is a fact about the engine rather than about how
     many judges there are.
 
-    The **production** roster only: a niche mode is renderable by name and is
-    excluded from every draw, and the exclusion happens here because this is the
-    one place a curation mode is drawn. Asking the engine for the production names
-    rather than filtering the catalog keeps the tier's meaning in one place.
+    The **accepted** roster only: a mode the engine tiers niche, or that
+    [`mode_policy`] weights 0, is renderable by name and is excluded from every
+    draw. The exclusion happens here because this is the one place a curation mode
+    is drawn, and it is read off [`mode_policy.accepted`] rather than filtered here
+    so that both halves of the ruling — the engine's tier and this project's
+    standing — keep their meaning in one place each.
     """
-    names = engine.production_modes()
+    from fractal_wallpapers.curation import mode_policy
+
+    names = mode_policy.accepted()
     if kind == budget_module.SMOOTH:
         return [SMOOTH_MODE]
     return [name for name in names if name != SMOOTH_MODE]

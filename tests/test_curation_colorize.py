@@ -28,14 +28,19 @@ needs_engine = pytest.mark.skipif(
 
 @needs_engine
 def test_the_two_judges_own_disjoint_modes_and_between_them_the_whole_roster() -> None:
-    """The roster is the engine's own, so a mode cannot exist on one side of the
-    boundary and not the other."""
+    """The roster is the engine's own less what the policy weights 0, so a mode
+    cannot exist on one side of the boundary and not the other, and a mode nobody
+    has ruled on cannot arrive by default."""
+    from fractal_wallpapers.curation import mode_policy
+
     smooth = colorize.modes_for(budget.SMOOTH)
     strange = colorize.modes_for(budget.STRANGE)
-    roster = set(engine.production_modes())
+    roster = set(mode_policy.accepted())
     assert smooth == [colorize.SMOOTH_MODE]
     assert not set(smooth) & set(strange)
     assert set(smooth) | set(strange) == roster
+    assert roster < set(engine.production_modes()), "the policy takes something out"
+    assert not roster & set(mode_policy.niche()), "and what it takes out is not drawn"
 
 
 @needs_engine

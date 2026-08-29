@@ -24,14 +24,15 @@ Forty candidates at a location, three draws:
 
 **Every conclusion here is conditional on field modes.** A composite at forty
 candidates is about 175 s a location and would spend the whole budget on one
-arm's worth of places, so the roster is [`field_modes`] — the shareable modes,
-less what standing rulings have taken out of the standard draw. Nothing here
-says what a composite would have done.
+arm's worth of places, so the roster is [`field_modes`] — the shareable modes
+[`curation.mode_policy`] accepts. Nothing here says what a composite would have
+done.
 
 **The near band and the breadth draws do not run the same roster.** The near
 band holds an incumbent's mode; the breadth draws cycle. So a mode that pays at
-depth and not at width is dropped from breadth alone, by [`BREADTH_DEMOTED`],
-and keeps its near-band seat.
+depth and not at width can be dropped from breadth alone, by [`BREADTH_DEMOTED`],
+and keep its near-band seat. That is a knob one run sets and no longer a standing:
+which modes are worth spending on at all is [`curation.mode_policy`]'s table.
 
 ## The sequence is recorded whole
 
@@ -114,25 +115,23 @@ WIDTH = 40
 #: a cut on the score would put most of a partition in one band.
 RANK_BANDS = 10
 
-#: Modes out of the standard draw by a standing ruling rather than by the
-#: engine's own tier. `trap_circle` is niche as of checkpoint 84 — 2 threes and
-#: 0 fours in 117 labeled rows — and the catalogue still calls it production, so
-#: the ruling is applied at the draw. Its existing material stands.
-DEMOTED = ("trap_circle",)
-
-#: Modes the **near band** may hold but the two breadth draws do not cycle. A
-#: mode lands here when it pays at depth and not at width, which is a different
-#: ruling from [`DEMOTED`]: the location whose incumbent is one of these still
-#: enters the near-band draw and still gets its forty palettes.
+#: Modes the **near band** may hold but the two breadth draws do not cycle,
+#: **empty**, and a per-run knob rather than a standing.
 #:
-#: `tia` is the first. Measured on `dc1`/`dc2` (2026-08-27): in breadth at k=20
-#: it cleared the seating bar at .0208 against `smooth`'s .0515 and
-#: `exp_smoothing`'s .0539, and at k=40 it cleared .0559 — level with them. Its
-#: clears concentrate at few places, so a narrow set at many places wastes it.
-#: It is also the dearest dump on the three-mode roster, 0.898 s against
-#: `smooth`'s 0.354, and the field is dumped once per (location, mode): over an
-#: eight-hour run at this shape that is about an hour of dumping bought back.
-BREADTH_DEMOTED = ("tia",)
+#: There was a standing one here — `tia`, on the depth curves of 2026-08-27:
+#: in breadth at k=20 it cleared the seating bar at .0208 against `smooth`'s
+#: .0515, level with them only by k=40, and it is the dearest dump on the
+#: three-mode roster at 0.898 s against `smooth`'s 0.354. [`curation.mode_policy`]
+#: supersedes it. `tia` is weight 2 there, on 31 fours in 310 labeled rows, and a
+#: standing that keeps a promoted mode out of the draw that would buy more of it
+#: is self-confirming — `trap_circle` was demoted on the same kind of argument and
+#: then moved its best `P(>=4)` from 0.1176 to 0.8237 the first time it was mined
+#: anyway.
+#:
+#: The **mechanism** stays, because it says something a weight cannot: *drop this
+#: mode from breadth and keep its near-band seat*. It is now a knob one run sets
+#: (`--breadth-demoted`) and never a table anything inherits.
+BREADTH_DEMOTED: tuple[str, ...] = ()
 
 #: The seed every draw here is taken under unless a caller names another.
 DEFAULT_SEED = 20260827
@@ -198,18 +197,19 @@ def pictures_dir(name: str) -> Path:
 # --------------------------------------------------------------------------- #
 # The roster.
 # --------------------------------------------------------------------------- #
-def field_modes(demoted=DEMOTED) -> list[str]:
-    """Every production mode a dumped field can serve, less the demoted ones.
+def field_modes() -> list[str]:
+    """Every **accepted** mode a dumped field can serve.
 
-    Asked of [`colorize.shareable`] rather than filtered on a kind spelled here,
-    because whether a coloring has one scalar field behind it is the engine's
-    word and a mode added to the catalogue must not need an edit here to be
-    drawn.
+    Two filters and neither is spelled here. Whether a coloring has one scalar
+    field behind it is [`colorize.shareable`]'s question, because that is the
+    engine's word and a mode added to the catalogue must not need an edit here to
+    be drawn; whether a mode is worth spending on at all is
+    [`curation.mode_policy`]'s, which is where the ruling that used to be this
+    module's `DEMOTED` now lives.
     """
     from fractal_wallpapers.curation import colorize
 
-    out = [mode for mode in mine._production_modes() if colorize.shareable(mode)]
-    return [mode for mode in out if mode not in set(demoted)]
+    return [mode for mode in mine._accepted_modes() if colorize.shareable(mode)]
 
 
 # --------------------------------------------------------------------------- #
@@ -562,9 +562,7 @@ def deficient_modes(rows: list, scores: dict, floor: int = 10, bar: float = SEAT
             continue
         seats.setdefault(mode, set()).add(str((row.get("location") or {})["key"]))
     out: dict = {}
-    for mode in mine._production_modes():
-        if mode in set(DEMOTED):
-            continue
+    for mode in mine._accepted_modes():
         short = int(floor) - len(seats.get(mode) or ())
         if short > 0:
             out[mode] = short
@@ -779,13 +777,13 @@ def build_plan(
     [`FLOOR`] draw takes a deliberate slice for the modes a census says are short
     of seats.
     """
-    from fractal_wallpapers.curation import colorize
+    from fractal_wallpapers.curation import colorize, mode_policy
     from fractal_wallpapers.palettes import dominance
 
     roster = list(roster if roster is not None else field_modes())
     if not roster:
         raise DepthRefused(
-            "no shareable production mode survives the demotions, so a depth run has "
+            "no shareable mode survives curation.mode_policy, so a depth run has "
             "nothing it can afford to render forty of."
         )
     # The near band holds an incumbent's mode and the two breadth draws cycle a
@@ -918,7 +916,7 @@ def build_plan(
         "cell": None if cell is None else str(cell),
         "roster": roster,
         "breadth_roster": breadth,
-        "demoted": list(DEMOTED),
+        "mode_policy": mode_policy.record(),
         "breadth_demoted": list(breadth_demoted),
         "maps_in_pool": len(maps),
         "shares": {arm: float(value) for arm, value in shares.items()},
@@ -1913,7 +1911,6 @@ __all__ = [
     "BUDGET_SECONDS",
     "DEFAULT_SEED",
     "BREADTH_DEMOTED",
-    "DEMOTED",
     "DRAWS",
     "FIELDS",
     "FLAT",

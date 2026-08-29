@@ -1096,10 +1096,22 @@ def _fill(stored: list, axis, values_of) -> dict:
 
 
 def _production_modes() -> tuple:
-    """The eighteen modes a candidate can be drawn in, off the engine's own tiers."""
+    """Every mode a candidate row can be *in*, off the engine's own tiers.
+
+    The census axis, and deliberately wider than [`_accepted_modes`]: a mode ruled
+    niche keeps every row it ever made, and a census that stopped counting them
+    would report the ledger shrinking on the day of a policy decision.
+    """
     from fractal_wallpapers import engine
 
     return tuple(engine.production_modes())
+
+
+def _accepted_modes() -> tuple:
+    """Every mode a gallery may seat: what a mode floor is asked of."""
+    from fractal_wallpapers.curation import mode_policy
+
+    return tuple(mode_policy.accepted())
 
 
 def _drawable_groups() -> tuple:
@@ -1172,8 +1184,12 @@ def feasibility(stored: list, n: int = FIRST_SOLVE, log=print) -> dict:
         },
         "mode_floors": {
             "acts": "soft",
-            "modes": len(_production_modes()),
-            "modes_held": sum(1 for name in _production_modes() if _mode_count(stored, name)),
+            # The floor is asked of the modes a gallery may seat, which is
+            # [`curation.mode_policy.accepted`] and not the whole production
+            # roster. The `modes` axis above stays at the full roster on purpose:
+            # a niche mode keeps its rows and a census of the ledger counts them.
+            "modes": len(_accepted_modes()),
+            "modes_held": sum(1 for name in _accepted_modes() if _mode_count(stored, name)),
             "binds": False,
         },
     }

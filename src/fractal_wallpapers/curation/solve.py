@@ -105,7 +105,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 
-from fractal_wallpapers.curation import candidate_ledger, ceiling, floors
+from fractal_wallpapers.curation import candidate_ledger, ceiling, floors, mode_policy
 from fractal_wallpapers.paths import rehome, tracked_name, under
 
 #: The schema every record this module writes carries.
@@ -170,13 +170,17 @@ PENALTY_PER_SEAT = 1.0 / 100.0
 
 
 def mode_floor(n: int) -> int:
-    """How many seats each production mode's floor asks for, at `n`.
+    """How many seats each **accepted** mode's floor asks for, at `n`.
 
     `floor(n / SEATS_PER_MODE_FLOOR)`, by integer division rather than a float
     times a rate, so the value at a rung is the value every reader computes.
     **Zero is a real answer**: below a hundred seats no mode is mandated at all,
     and a seating there is the strongest pictures the pool holds rather than a
     survey of the roster.
+
+    Which modes it is asked *of* is [`curation.mode_policy.accepted`] and not the
+    engine's production roster: a mode weighted 0 has no rows in the pool at all
+    ([`pool`]), so a floor over it would be a mandate nothing could ever meet.
     """
     return int(n) // SEATS_PER_MODE_FLOOR
 
@@ -339,11 +343,15 @@ class Candidate:
 def pool(rows=None, scores=None, artifact=None, log=print) -> tuple[list[Candidate], dict]:
     """`(candidates, what was refused)` — everything the solve may seat.
 
-    Four exclusions, each a fact about the candidate rather than a quality bar. A
-    row a **person rejected** is refused: the ledger keeps it and carries the
-    rejection precisely so that a solver honours it. A row at a regime other than
-    the one the pool was made at is refused, because a score read at one geometry
-    does not transfer to another. A row with **no picture on disk** is refused —
+    Five exclusions, each a fact about the candidate rather than a quality bar. A
+    row in a mode [`curation.mode_policy`] weights **0** is refused: the standing
+    is that this project has stopped buying that mode, and a gallery is the last
+    place it would be spent — its labels, its ledger rows and its pictures all
+    stand, and it renders by name. A row a **person rejected** is refused: the
+    ledger keeps it and carries the rejection precisely so that a solver honours
+    it. A row at a regime other than the one the pool was made at is refused,
+    because a score read at one geometry does not transfer to another. A row with
+    **no picture on disk** is refused —
     its recipe is complete and it could be drawn again, but the diversity rule and
     the group cap are read off pixels, and a candidate no pairwise rule can
     evaluate is one that would be seated untested. A row with no score is refused
@@ -380,8 +388,18 @@ def pool(rows=None, scores=None, artifact=None, log=print) -> tuple[list[Candida
     by_key = candidate_ledger.scores_by_recipe(read, artifact=artifact)
     present = candidate_ledger.present_pictures(stored)
     out: list[Candidate] = []
-    refused = {"rejected": 0, "off_regime": 0, "no_picture": 0, "picture_absent": 0, "no_score": 0}
+    refused = {
+        "niche_mode": 0,
+        "rejected": 0,
+        "off_regime": 0,
+        "no_picture": 0,
+        "picture_absent": 0,
+        "no_score": 0,
+    }
     for row in stored:
+        if not mode_policy.is_accepted((row.get("recipe") or {}).get("mode")):
+            refused["niche_mode"] += 1
+            continue
         if row.get("rejected"):
             refused["rejected"] += 1
             continue
@@ -942,7 +960,7 @@ class Program:
                 f"1. count of seats with raw P(>=4) >= {Q4_BAR}",
                 "2. the minimum score among the seated, maximized",
                 f"3. the sum of the seated scores, less {PENALTY_PER_SEAT} * n per "
-                f"production mode below its floor of {self.mode_floor}",
+                f"accepted mode below its floor of {self.mode_floor}",
             ],
             "q4_bar": Q4_BAR,
             "q4_basis": Q4_BASIS,
@@ -1617,7 +1635,6 @@ def solve(
     program hard enough to be infeasible on purpose.
     """
     _scipy()
-    from fractal_wallpapers import engine
 
     started = time.monotonic()
     if candidates is None:
@@ -1630,7 +1647,7 @@ def solve(
         candidates=available,
         n=int(n),
         rule=rule_for(targets),
-        modes=tuple(engine.production_modes()),
+        modes=tuple(mode_policy.accepted()),
         targets=dict(targets or {}),
     )
     record = {
@@ -2319,11 +2336,10 @@ def sweep(
     colour allowances move with `n`, so a different incumbent is reached.
     """
     _scipy()
-    from fractal_wallpapers import engine
 
     if candidates is None:
         candidates, _refused = pool(log=log)
-    modes = tuple(engine.production_modes())
+    modes = tuple(mode_policy.accepted())
     out = []
     first_infeasible = None
     deadline = time.monotonic() + float(seconds)
@@ -2469,11 +2485,10 @@ def truncation(n: int = candidate_ledger.FIRST_SOLVE, candidates=None, log=print
     withheld.
     """
     _scipy()
-    from fractal_wallpapers import engine
 
     if candidates is None:
         candidates, _refused = pool(log=log)
-    modes = tuple(engine.production_modes())
+    modes = tuple(mode_policy.accepted())
     out = []
     for multiple in TRUNCATIONS:
         keep = None if multiple is None else max(int(n), int(round(multiple * n)))

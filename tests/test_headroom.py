@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import pytest
 
-from fractal_wallpapers.curation import ceiling, embeddings, headroom, solve
+from fractal_wallpapers.curation import ceiling, embeddings, headroom, mode_policy, solve
 
 
 @pytest.fixture(autouse=True)
@@ -215,13 +215,15 @@ def test_the_floor_block_counts_places_towards_the_floor_and_not_modes():
     Each mode needs `floor` distinct places of its own, so the supply the demand
     is read against is the sum over modes of `min(floor, its places)`. Counting
     modes-that-hold-anything instead is the same number only while the floor is
-    one — at n=500 it read 18 against a demand of 90 and called a pool short that
-    is nowhere near it.
+    one — at n=500 it read one row per mode against a demand of five times the
+    roster, and called a pool short that is nowhere near it.
     """
     read = headroom.census(clearing_pool(3), ladder=(500,), log=lambda *_: None)
     block = read["curve"]["500"]["blocks"]["mode_floors"]
     assert block["floor"] == 5
-    assert block["needs"] == 5 * 18
+    # The floor is asked of the modes a gallery may seat, not of the whole
+    # production roster: a mode weighted 0 has no row in the pool to meet it with.
+    assert block["needs"] == 5 * len(mode_policy.accepted())
     # One mode, three places, so three of the five it is asked for.
     assert block["supply"] == 3
     assert block["modes_holding_anything"] == 1
@@ -229,13 +231,15 @@ def test_the_floor_block_counts_places_towards_the_floor_and_not_modes():
 
 
 def test_the_scaled_floor_always_fits_in_n_and_the_flat_one_did_not():
-    # 18 modes at floor(n / 100) is at most 0.18n, so the block can never fail to
-    # fit — which the flat floor of one did at every n below eighteen.
+    # A roster of r modes at floor(n / 100) asks for at most 0.01*r*n, and r is
+    # nowhere near a hundred, so the block can never fail to fit — which the flat
+    # floor of one did at every n below the roster's size.
+    roster = len(mode_policy.accepted())
     read = headroom.census(clearing_pool(3), ladder=(5, 150, 1000), log=lambda *_: None)
     for size in ("5", "150", "1000"):
         assert read["curve"][size]["blocks"]["mode_floors"]["fits_in_n"] is True
-    assert solve.mode_floor(5) * 18 == 0
-    assert solve.mode_floor(1000) * 18 == 180
+    assert solve.mode_floor(5) * roster == 0
+    assert solve.mode_floor(1000) * roster == 10 * roster
 
 
 # --------------------------------------------------------------------------- #

@@ -7896,7 +7896,7 @@ def curate_commands(subcommands) -> None:
         nargs="+",
         help="the modes this run can afford at all — what the breadth draws cycle, and "
         "what a near-band incumbent must be in to enter that draw. Unsaid, every shareable "
-        "production mode less the demoted ones. Narrowing it is how a run at a small width "
+        "mode curation.mode_policy accepts. Narrowing it is how a run at a small width "
         "keeps the dump amortised: one field is dumped per (location, mode), so six modes "
         "at twelve candidates pays six dumps and three modes pays three. To drop a mode "
         "from breadth alone and keep it on the near band, use --breadth-demoted",
@@ -7916,8 +7916,9 @@ def curate_commands(subcommands) -> None:
         metavar="MODE",
         nargs="*",
         help="modes the near band may hold but the two breadth draws do not cycle. Unsaid, "
-        f"{' '.join(depth_module.BREADTH_DEMOTED)}, which pays at depth and not at width. "
-        "Pass it empty to cycle the whole roster",
+        "NONE: which modes are worth spending on at all is curation.mode_policy's table, "
+        "and this is the one thing a weight cannot say — drop a mode from breadth and keep "
+        "its near-band seat. Set it per run, for a mode that pays at depth and not at width",
     )
     depth_step.add_argument(
         "--floor-modes",
