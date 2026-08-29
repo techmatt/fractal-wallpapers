@@ -1717,6 +1717,49 @@ k=1** — indistinguishable from zero, which is what an unbiased judge gives whe
 was selected — and **-0.042 at k=40**, with two thirds of winners falling. Prime rates
 at k=40 are overstated by about **1.4x at both bars**. Quote a raw prime count as raw.
 
+**Measured rates per arm shape, `mine_weak_modes` 2026-08-28, three engines.** These
+replace every earlier per-candidate figure, which was single-engine and priced another
+population. Read them as **per engine**, which is what `--rate` is:
+
+| arm shape | s/cand per engine | cand/wall s | clear@0.50 | renders/clear |
+|---|---|---|---|---|
+| breadth k=3, 5-mode field roster | 4.377 | 0.684 | 1.72% | 58.0 |
+| breadth k=40, same roster | 0.680 | 4.353 | 1.73% | 57.9 |
+| near band, width 96 | 0.285 | 10.378 | 10.66% | 9.4 |
+| composite breadth, width 24 | 2.843 | 1.053 | 0.57% | 175.6 |
+
+* **The dump is the whole cost curve.** Solving the two breadth rates gives a **0.74 s
+  render and a 3.43 s field dump**. At k=3 every candidate pays a whole dump, so k=3 is
+  6.4x the per-render cost of k=40 while clearing at the same rate. Buy width unless
+  locations, not candidates, are the scarce thing.
+* **The near-band pool is opened by `--modes`, not by `--near-width`.** Near-band
+  eligibility filters on the roster, so a two-mode roster saw **25** places and the full
+  six-mode field roster sees **798** — 32x, at the same width. Mining also *consumes* the
+  pool: 798 fell to 645 in one leg as places were primed past the upper bar.
+* **The near band cannot be aimed at a mode.** `plan_held_mode` holds the *incumbent's*
+  mode, so the mix is whatever the primed places already are. One 35,306-candidate leg
+  spent 26,954 of them on `smooth` and `exp_smoothing` and 480 on `curvature` and
+  `gaussian_int`. `--modes` decides who is *eligible*, never the mix.
+* **`--rate` sizes the plan only, so under-quote it.** A leg whose realized rate beats
+  its pilot by more than `PLAN_HEADROOM` (1.6) runs out of *plan* and stops early with
+  budget left. Quote a rate below the pilot's and the leg spends its budget to the
+  second: measured 100.1% of budget on three legs quoted low, against a plan-limited leg
+  that spent 1,038 s of 1,108.
+* **Pilot the roster the leg will actually run**, and do not pilot unlike shapes
+  concurrently. A k=40 pilot sharing the machine with a dump-heavy k=3 pilot came out
+  **42% dear**; a composite pilot including the cheap `direct_trap_lines` under-priced a
+  leg that dropped it and kept the dear `direct_trap_ring` by **89%**.
+* **Three engines are 1.690x the wall throughput of one, not the record's
+  `concurrency`.** Measured by re-running a leg's seed on one engine alone, which
+  reproduces its draw exactly (440 of 440 identical recipes) so the comparison is
+  location-matched: 0.4707 s/cand on three against 0.2652 on one. Contention costs
+  1.775x per engine. The record's `concurrency` field read **2.958x** on that leg and
+  over-reads by 1.75x. It is engine-seconds over wall and is not a speedup.
+* **`config.field_modes_only` is stamped `true` unconditionally** and is not enforced:
+  `build_plan` takes `--modes` verbatim with no `colorize.shareable()` check, so a
+  wholly composite roster runs and its record still claims field modes only. Do not read
+  that field.
+
 ## `curate shrinkage` — what the winner of a wide set loses on a second look
 
 A location is PRIMED on the **maximum of k noisy readings**, so a prime rate
