@@ -165,22 +165,18 @@ and — because the test is on the after-state — it then refuses everything ca
 that colour for the rest of the walk. `floor(K·t·n) + 1` has the warm-up in the
 `+ 1`: the first seat may be any colour, and the allowance grows with the walk.
 
-**The order at a seat is: the candidates that exist, then up to `EXTRA_PICKS` (3)
-pictures rendered right there, then the least-violating fallback, flagged.** A
-colour rule that could only refuse would spend its seats on that fallback, because
-the pool it refuses out of was proposed by a quality judge that never had a colour
-in the question. So the seating leg renders: the palette head's next-best maps of
-the set it already scored for that location, screened for a hue family nothing
-tried has been, in the attempt's own mode. Cost lands only on the seats the
-ceiling bit, and it lands as a *render* rather than as an attempt — the field is
-dumped and the thirty-two recolours are already scored. Rendering the same
-material up front would have been 3,632 renders bought to change at most 150
-decisions. The class that did it went with the pass on 2026-08-28 and nothing
-implements it now: `curate seat` and `curate solve` both choose among pictures
+**A seat used to be allowed to ask for more pictures, and that is gone.** The
+pre-solver pass ordered a seat as: the candidates that exist, then up to three
+rendered right there, then the least-violating fallback, flagged — because a
+colour rule that can only refuse spends its seats on the fallback, the pool
+having been proposed by a quality judge that never had colour in the question.
+The pass and its `ceiling.Seating` both went on 2026-08-28; the **idea** is kept
+as a design note in the handoff docs and no code implements it. `curate seat` and `curate solve` both choose among pictures
 that already exist, so a seat with no acceptable colour is a shortage in the
-ledger and the answer to it is `curate hunt`'s conditioned leg. The four passes'
-on-demand rows are in their attempt stores, stamped `on_demand`, and are part of
-the ledger like any other pool row.
+ledger, and the answer to it is `curate hunt`'s conditioned leg or
+`curate depth`'s conditioned draw. The four passes' on-demand rows are still in
+their attempt stores, stamped `on_demand`, and are part of the ledger like any
+other pool row.
 
 The other half is solved one step earlier and for free: when the palette head
 picks a map whose **group another attempt of the plan already picked**, its
@@ -327,13 +323,13 @@ rescaled. `stale_scores` is the census of what was left behind, so a caller can
 say how much of its population it has no score for. A recipe with no reading on
 the live judge has no score, which is honest and different from having an old one.
 
-**The `colour` block is the reading, and a lens can be served off it.** Every
-one of the 85,129 rows carries one. `ceiling.Lens` takes an optional
-`stored_of(render) -> block`, and `candidate_ledger.reading_source()` is that
-callable over the ledger, keyed on the tracked render path because that is what
-a lens is holding when it asks. A seating driven off the ledger then decodes
-nothing it has already read; a pass seating its own fresh candidates has no row
-about them yet, passes nothing, and reads the pictures exactly as before. It is
+**The `colour` block is the reading, and every reader takes it off the row.**
+Every one of the 85,129 rows carries one, so nothing downstream opens a picture
+to ask what colour it is. There used to be a lens for the case where the reader
+had no row — `ceiling.Lens` with a `stored_of` served by
+`candidate_ledger.reading_source()`, which decoded a JPEG when the store had
+never seen the render — and it went on 2026-08-28 with the pass that was its
+only caller: both surviving readers walk rows. The block is
 a **lookup and never a second derivation** — `dominance.of_block` carries the
 dominant names outright, so a threshold moved since a row was written cannot
 quietly re-decide that row. Verified on 400 rows sampled at seed 20260827: the

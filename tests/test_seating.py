@@ -333,30 +333,6 @@ def test_a_seating_asked_for_without_the_twin_test_says_so():
     assert record["twins"] is None
 
 
-def test_the_lens_reads_the_row_and_never_decodes_a_picture():
-    stored = [
-        {
-            "key": "a",
-            "picture": "artifacts/a.jpg",
-            "colour": {"cells": ["dark_vivid_blue"], "families": ["blue"]},
-        }
-    ]
-    lens = seating.lens_for(stored)
-    reading = lens._read("artifacts/a.jpg")
-    assert reading is not None
-    assert lens.taken == {"stored": 1, "decoded": 0}
-
-
-def test_a_lens_over_a_row_the_ledger_never_saw_decodes_nothing_either():
-    # `render_of` answers None for every candidate here, so an unknown picture
-    # reads as no colour rather than sending a seating to a JPEG it has no path to.
-    lens = seating.lens_for([])
-    assert lens._read(None) is None
-
-
-# --------------------------------------------------------------------------- #
-# The record.
-# --------------------------------------------------------------------------- #
 def test_the_config_names_the_bar_each_mode_landed_on():
     record = seating.seat([candidate("a")], n=20, key=seating.JUDGE_KEY, log=quiet)
     assert record["config"]["bars"]["smooth"] in {

@@ -9,7 +9,7 @@ instead.
 
 It only chooses. It proposes nothing and renders nothing: every reading about a
 candidate — the colour, the palette group, the mode, the score — is already on the
-ledger row, so a [`ceiling.Lens`] here is a **lookup** and never a second
+ledger row, so the colour a rule reads is a **lookup** and never a second
 derivation. Nothing here re-decodes a JPEG to be told what the row already says.
 
 It does open pictures, for one rule and only for it. The twin test is a statement
@@ -216,30 +216,6 @@ BOTTOM_QUARTILE = 0.25
 
 class SeatingRefused(RuntimeError):
     """The seating cannot be run."""
-
-
-# --------------------------------------------------------------------------- #
-# The lens, off the rows.
-# --------------------------------------------------------------------------- #
-def lens_for(rows=None) -> ceiling.Lens:
-    """A [`ceiling.Lens`] that reads the ledger and never a picture.
-
-    [`ceiling.Lens.reading`] decodes a JPEG unless it is handed a `stored_of`, and
-    every ledger row already carries the reading in its `colour` block — so a
-    seating driven off the ledger would otherwise spend a decode per candidate to
-    be told what the row says. [`candidate_ledger.reading_source`] is that lookup,
-    built over the whole store once however many candidates are tested.
-
-    The pixel-cloud half stays unwired here even though the twin rule is now
-    applied: [`Twins`] holds that state itself, keyed by candidate key and with
-    the seated pictures **held** rather than cached, which is a different lifetime
-    from anything a lens knows about.
-    """
-    return ceiling.Lens(
-        render_of=lambda candidate: None,
-        group_of=lambda candidate: str(candidate.get("palette_group")),
-        stored_of=candidate_ledger.reading_source(rows),
-    )
 
 
 def clouds_for(candidates, cache: int = SIGNATURE_CACHE):
@@ -1426,7 +1402,6 @@ __all__ = [
     "clouds_for",
     "contact_sheet",
     "leg_of",
-    "lens_for",
     "ranking_for",
     "rejection",
     "release_seats",
