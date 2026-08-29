@@ -571,6 +571,45 @@ data but the refusal order showing through: the frame was thrown out before anyt
 measured it. Any rate computed over occupancy has a smaller denominator than the sheet,
 and the rows it drops are the interior-heavy ones.
 
+## Re-rendering a stored row is `renders.spec_of`, never `colorize.render`
+
+A finished-render row carries its whole join, so drawing its picture again is
+`models.renders.spec_of` handed that join and nothing else.
+[`curation.colorize.render`] is **not** that path and cannot be made into it: it
+builds its own recipe — `colorize.CURVE`, `finished.recipe(mirror=colormap not in
+cyclic)`, empty `mode_params` — because it exists to *make* a candidate rather
+than to reproduce one, and a caller cannot hand it a curve or a palette pass.
+Over the `strange_render` store **2,302 of 3,990 rows (58%)** name a curve, a
+trap setting or a palette pass that is not the one it would build, so a page that
+re-renders through it serves a different picture under the same identity for well
+over half its rows. Measured 2026-08-29; the shape of it is that the maker-era
+corpora swept trap settings and gammas and this repository's own hunts do not.
+
+The **operator** half of `colorize.render` is still the thing to copy, and it is
+short: `autolevel.maybe_level` around the render, with
+`autolevel.overriding_colormap` writing the re-baked map into a directory the
+second `engine.run("render", …)` is pointed at through `colormap_dir`. Note what
+it does not cover — `autolevel.applies_to` is `field` and `composite` only, so
+the four `direct_trap_*` modes and `itinerary` get no operator pass **by kind**,
+which is a third of the strange roster and is not a measurement about those
+pictures.
+
+Every one of those 3,990 rows resolves through `spec_of`, and every one of the
+671 colormaps they name is in the library. A row that will not resolve is
+therefore a real fault rather than a standing gap in the imported corpora.
+
+## A label store and the candidate ledger barely overlap
+
+**709 of the 4,030 resolved `strange_render` renders join a candidate-ledger row**
+(2026-08-29), and the join is [`curation.retention.render_key_of`] — the recipe,
+never the regime. The other 3,321 are the maker-era import and the separately
+manufactured sheets, which were never candidates here. Two things follow. A
+per-mode reading that needs the judge's `P(≥4)` on a *labeled* row cannot get it
+off the ledger sidecar for five rows in six, and has to re-score the picture. And
+`curate retention`'s promise — every row that ever carried a human label keeps its
+picture — is a promise about the rows that join: on the 709 that do, none is
+missing its picture, and the remaining 3,321 have no ledger picture to keep.
+
 ## The scale is the corpus's; the class count is the model's
 
 Every judge here is cast on **1..4**, `strange_render` included. Its corpus was
