@@ -843,13 +843,11 @@ def test_a_program_reads_the_real_floor_unless_a_caller_puts_one_back():
     assert program_of([candidate("a")], 20).config()["mode_floor_artificial"] is True
 
 
-def test_a_lensless_rule_carries_the_constants_and_refuses_to_seat():
-    """[`solve`] wants the allowance arithmetic without the pictures; a seating
-    wants both, and says so rather than failing at the first candidate."""
+def test_the_rule_a_solve_builds_carries_the_allowance_arithmetic():
+    """[`solve`] wants the allowance without the pictures, and that is now all
+    [`ceiling.Rule`] is: the seating half it used to refuse to do is deleted."""
     rule = solve.rule_for()
     assert rule.allowed("rose", 20) == 4
-    with pytest.raises(RuntimeError, match="needs a Lens"):
-        rule.begin(20)
 
 
 def test_a_record_round_trips_through_its_own_directory(tmp_path, monkeypatch):

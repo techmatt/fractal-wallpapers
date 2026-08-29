@@ -1593,16 +1593,14 @@ def _partitions(program: Program, members) -> dict:
 # One solve, end to end.
 # --------------------------------------------------------------------------- #
 def rule_for(targets: dict | None = None) -> ceiling.Rule:
-    """The ceiling's constants and targets, with no lens.
+    """The ceiling's constants and targets.
 
     [`ceiling.Rule`] holds the allowance arithmetic and the target-to-family
     summation, and both are wanted here — a target raises the allowance of the
     cell it names and of that cell's family, and a second derivation of that
-    would be a second answer. The **lens** is what a sequential seating uses to
-    read a candidate's colour off its picture, and this program already has every
-    colour on its rows, so there is nothing for one to do.
+    would be a second answer.
     """
-    return ceiling.Rule(lens=None, targets=dict(targets or {}))
+    return ceiling.Rule(targets=dict(targets or {}))
 
 
 def solve(

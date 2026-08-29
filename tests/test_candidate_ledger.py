@@ -441,37 +441,6 @@ def test_the_stored_colour_block_is_what_the_picture_still_reads_as():
     assert wrong == [], f"{len(wrong)} of {checked} stored readings disagree with the pixels"
 
 
-@pytest.mark.slow
-def test_the_reading_source_answers_by_render_path_and_says_nothing_about_the_rest():
-    rows = candidate_ledger.read()
-    source = candidate_ledger.reading_source(rows)
-    with_picture = next(row for row in rows if row.get("picture") and row.get("colour"))
-    assert source(with_picture["picture"]) == with_picture["colour"]
-    assert source("artifacts/curation/runs/nowhere/pictures/0.jpg") is None
-
-
-@pytest.mark.slow
-def test_a_ledger_backed_lens_serves_every_row_it_has_without_a_decode():
-    """The saving, over the real store. A seating that gets a stored block for
-    every candidate it tests decodes nothing."""
-    from fractal_wallpapers.curation import ceiling
-
-    rows = candidate_ledger.read()[:200]
-    lens = ceiling.Lens(
-        lambda candidate: candidate["picture"],
-        lambda _candidate: "group",
-        stored_of=candidate_ledger.reading_source(rows),
-    )
-    for at, row in enumerate(rows):
-        assert lens.reading({"candidate": str(at), "picture": row["picture"]}) is not None
-    price = lens.price()
-    assert price["readings_decoded"] == 0
-    assert price["readings_stored"] == len(rows)
-
-
-# --------------------------------------------------------------------------- #
-# Naming a picture against having one.
-# --------------------------------------------------------------------------- #
 def _picture_row(key, name):
     return {
         "key": key,
