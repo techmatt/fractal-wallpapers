@@ -23,6 +23,7 @@ from fractal_wallpapers.curation import (
     distinct,
     embeddings,
     headroom,
+    mode_policy,
     seating,
     solve,
 )
@@ -652,6 +653,202 @@ def test_an_artificial_floor_puts_the_leg_back_and_the_record_says_it_was_one():
     assert record["config"]["mode_floor_natural"] == 0
     assert record["config"]["mode_floor_artificial"] is True
     assert any(seat["seated_for"].startswith("mode_floor:") for seat in record["seated"])
+
+
+def floors_of(record) -> dict:
+    """`{mode: seats the scarcity leg placed for it}` — the floor leg's own tally.
+
+    Read off `seated_for` rather than off the mode counts, because a mode can also
+    pick up seats from the general walk and the question here is what the floor
+    itself bought.
+    """
+    out: dict = {}
+    for seat in record["seated"]:
+        if seat["seated_for"].startswith("mode_floor:"):
+            out[seat["mode"]] = out.get(seat["mode"], 0) + 1
+    return out
+
+
+def three_modes_four_deep():
+    """Four candidates in each of three modes, one place and one group apiece."""
+    pool = [candidate(f"s{at}", mode="stripe", score=0.99) for at in range(4)]
+    pool += [candidate(f"t{at}", mode="threads", score=0.98) for at in range(4)]
+    pool += [candidate(f"d{at}", mode="smooth", score=0.97) for at in range(4)]
+    return pool
+
+
+def test_a_floor_of_two_seats_two_of_each_mode_and_not_one():
+    """The leg keeps seating a mode until its floor is met, not until it seats once.
+
+    [`seating.scarcity`] yields **one** `(mode, subpool)` per mode, so a leg that
+    stopped at its first success capped every mode at one seat however high the
+    floor was. Floor 1 and floor 2 returned a bit-identical gallery while the
+    exact solver honoured the difference — a greedy silently seating less of the
+    roster than it was asked for.
+    """
+    record = seating.seat(
+        three_modes_four_deep(),
+        n=6,
+        floor=2,
+        twin=False,
+        radius=None,
+        key=seating.JUDGE_KEY,
+        log=quiet,
+    )
+    assert floors_of(record) == {"smooth": 2, "stripe": 2, "threads": 2}
+
+
+def test_a_floor_of_one_and_a_floor_of_two_are_no_longer_the_same_gallery():
+    """The observable half of the same bug: the two floors used to agree exactly."""
+    pool = three_modes_four_deep()
+    asked = {"n": 6, "twin": False, "radius": None, "key": seating.JUDGE_KEY, "log": quiet}
+    one = seating.seat(pool, floor=1, **asked)
+    two = seating.seat(pool, floor=2, **asked)
+    assert floors_of(one) == {"smooth": 1, "stripe": 1, "threads": 1}
+    assert floors_of(two) == {"smooth": 2, "stripe": 2, "threads": 2}
+    assert {seat["key"] for seat in one["seated"]} != {seat["key"] for seat in two["seated"]}
+
+
+def test_a_floor_can_be_set_per_mode_and_the_record_says_it_was():
+    """The shape [`mode_policy.seat_floors`] builds. Nothing that ships passes one."""
+    pool = three_modes_four_deep()
+    record = seating.seat(
+        pool,
+        n=7,
+        floor={"stripe": 3, "threads": 2, "smooth": 1},
+        twin=False,
+        radius=None,
+        key=seating.JUDGE_KEY,
+        log=quiet,
+    )
+    assert floors_of(record) == {"stripe": 3, "threads": 2, "smooth": 1}
+    assert record["config"]["mode_floor"] is None
+    assert record["config"]["mode_floors"]["stripe"] == 3
+    assert record["config"]["mode_floors"]["curvature"] == 0
+    assert record["shortfalls"]["modes"]["floors_are"] == "per mode"
+
+
+def test_the_policys_own_floors_are_a_floor_the_seating_accepts():
+    """The rule and the leg meet, without anything that ships putting them together.
+
+    The point of building it inert is that enabling it is one call, not a project.
+    """
+    floors = mode_policy.seat_floors(1000)
+    record = seating.seat(
+        three_modes_four_deep(),
+        n=7,
+        floor=floors,
+        twin=False,
+        radius=None,
+        key=seating.JUDGE_KEY,
+        log=quiet,
+    )
+    assert record["config"]["mode_floors"]["stripe"] == floors["stripe"]
+    assert record["config"]["mode_floors"]["smooth"] == 0
+    assert record["filled"] == 7
+
+
+def test_the_ceiling_wins_the_collision_and_the_floor_goes_unfilled():
+    """A bar outranks a guarantee, and an unfilled floor beats a padded gallery.
+
+    Three `stripe` candidates in one colour cell whose allowance is one, against a
+    floor of three. The seating takes the one the ceiling permits, leaves the
+    floor two short, and says so — it does not relax the cell to fill a mandate.
+    """
+    pool = [
+        candidate(f"s{at}", mode="stripe", score=0.99, cells=("dark_vivid_blue",))
+        for at in range(3)
+    ]
+    pool += [candidate(f"t{at}", mode="threads", score=0.98) for at in range(2)]
+    record = seating.seat(
+        pool,
+        n=6,
+        floor={"stripe": 3, "threads": 2},
+        twin=False,
+        radius=None,
+        key=seating.JUDGE_KEY,
+        log=quiet,
+    )
+    block = record["shortfalls"]["modes"]
+    assert block["per_mode"]["stripe"] == {
+        "floor": 3,
+        "seated": 1,
+        "short": 2,
+        "clearing": 3,
+        "refused_by": {"cell_allowance": 2},
+    }
+    assert block["per_mode"]["threads"]["short"] == 0
+    assert block["starved"] == ["stripe"]
+    assert {row["constraint"] for row in record["attribution"]["unmet"]} == {
+        "seats",
+        "mode_floor:stripe",
+    }
+
+
+def test_a_floor_of_zero_is_never_needed_and_is_not_a_starved_mode():
+    """The two facts the old single list conflated.
+
+    A mode nobody asked for cannot have gone short, and a real starvation hiding
+    inside a list most of whose entries were never at risk is a shortfall nobody
+    reads.
+    """
+    record = seating.seat(
+        three_modes_four_deep(),
+        n=6,
+        floor={"stripe": 4},
+        twin=False,
+        radius=None,
+        key=seating.JUDGE_KEY,
+        log=quiet,
+    )
+    block = record["shortfalls"]["modes"]
+    assert block["starved"] == []
+    assert "smooth" in block["floor_never_needed"]
+    assert "stripe" not in block["floor_never_needed"]
+    assert block["floor_never_needed_count"] == len(block["floors"]) - 1
+
+
+def test_the_greedy_and_the_exact_solver_seat_the_same_rows_at_a_floor_of_two():
+    """Solver against solver, so the claim stands whatever the real pool holds.
+
+    Seven candidates and six seats, every score equal, so the exact solver's first
+    two stages — the count above the bar and the worst seated score — are tied on
+    every feasible gallery and its **mode penalty** is what decides. `s1` and `c2`
+    share a place, so the one-per-location rule leaves exactly two galleries: two
+    of each mode, or one `stripe` and three `smooth`. The first carries no mode
+    deficit, so it is the unique optimum, and a greedy honouring the floor has to
+    land on it.
+
+    It is worth saying what this test does **not** claim. The exact solver's mode
+    floor is soft and third in a lexicographic objective, so a floor that costs it
+    a point of the worst seated score is a floor it declines to fill. This pool is
+    built so the floor costs nothing, which is the case where the two solvers are
+    answering the same question at all.
+    """
+    pool = [
+        candidate("c0", mode="smooth", score=0.90, location="C0"),
+        candidate("c1", mode="smooth", score=0.90, location="C1"),
+        candidate("c2", mode="smooth", score=0.90, location="SHARED"),
+        candidate("s0", mode="stripe", score=0.90, location="S0"),
+        candidate("s1", mode="stripe", score=0.90, location="SHARED"),
+        candidate("t0", mode="threads", score=0.90, location="T0"),
+        candidate("t1", mode="threads", score=0.90, location="T1"),
+    ]
+    record = seating.seat(
+        pool, n=6, floor=2, twin=False, radius=None, key=seating.JUDGE_KEY, log=quiet
+    )
+    program = solve.Program(
+        candidates=list(pool),
+        n=6,
+        rule=solve.rule_for(),
+        modes=tuple(mode_policy.accepted()),
+        floor=2,
+    )
+    answer = solve.lexicographic(program, log=quiet)
+    assert answer.get("feasible", True)
+    exact = sorted(pool[at].key for at in answer["chosen"])
+    assert sorted(seat["key"] for seat in record["seated"]) == exact
+    assert exact == ["c0", "c1", "s0", "s1", "t0", "t1"]
 
 
 # --------------------------------------------------------------------------- #

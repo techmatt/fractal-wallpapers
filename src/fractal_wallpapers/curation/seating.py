@@ -365,11 +365,15 @@ class Seats:
     it does not.
     """
 
-    def __init__(self, rule: ceiling.Rule, n: int, floor: int = 0, twins: Twins | None = None):
+    def __init__(self, rule: ceiling.Rule, n: int, floor=0, twins: Twins | None = None):
         self.rule = rule
         self.n = int(n)
-        #: How many seats each accepted mode's floor asks for, at this `n`.
-        self.floor = int(floor)
+        #: `{mode: how many seats its floor asks for}`, at this `n`. A number is
+        #: the same floor for every mode, which is what every caller passes today.
+        self.floors: dict = dict(floor) if isinstance(floor, dict) else {}
+        #: The largest floor any mode asked for. The three soft tests do not read
+        #: it; [`seat`]'s scarcity leg reads [`floors`] per mode.
+        self.floor = max(self.floors.values(), default=0) if self.floors else int(floor)
         #: The twin rule's state, or `None` where the rule is not applied.
         self.twins = twins
         self.chosen: list = []
@@ -468,6 +472,21 @@ def _ranking(order: dict | None):
     )
 
 
+def floors_for(floor, modes) -> dict:
+    """`{mode: its floor}` over `modes`, from either a number or a mapping.
+
+    A number is the same floor for every accepted mode, which is the shape every
+    caller passes today and the shape [`solve.mode_floor`] returns. A mapping is
+    per mode — what [`curation.mode_policy.seat_floors`] builds — and a mode it
+    does not name asks for nothing rather than inheriting a default, because a
+    floor rule that silently floors a mode it never mentioned is not a rule
+    anybody can read off its own table.
+    """
+    if isinstance(floor, dict):
+        return {name: max(0, int(floor.get(name, 0))) for name in modes}
+    return dict.fromkeys(modes, max(0, int(floor)))
+
+
 def scarcity(kept, modes, rank=None) -> list:
     """The mandated constraints, scarcest first. `[(mode, its subpool)]`.
 
@@ -501,7 +520,7 @@ def seat(
     candidates,
     n: int = candidate_ledger.FIRST_SOLVE,
     rule: ceiling.Rule | None = None,
-    floor: int | None = None,
+    floor: int | dict | None = None,
     radius: float | None = distinct.PRESELECT_RADIUS,
     twin: bool = True,
     group_cap: str = DEFAULT_GROUP_CAP,
@@ -516,12 +535,16 @@ def seat(
     Pool construction first: the bars, then the neutral pre-selection at `radius`
     — `None` for no pre-selection at all, which is what a caller comparing against
     a schema 1 record wants. Then two legs over one [`Seats`]. The first walks the
-    mandated constraints in scarcity order and takes each one's best candidate
-    that nothing refuses; the second walks whatever is left of the ranked pool. A
-    candidate refused in the first leg is offered again in the second, because the
-    state it was refused against has moved on.
+    mandated constraints in scarcity order and takes each one's best candidates
+    that nothing refuses, **down its subpool until the floor is met or the subpool
+    is spent**; the second walks whatever is left of the ranked pool. A candidate
+    refused in the first leg is offered again in the second, because the state it
+    was refused against has moved on.
 
-    `floor` is the **artificial** mode floor a debug gallery uses to exercise the
+    `floor` is a **mapping** of mode to the seats its floor asks for, or a number
+    meaning the same floor for every accepted mode. The mapping is the shape
+    [`curation.mode_policy.seat_floors`] builds and nothing that ships passes one;
+    a number is the **artificial** mode floor a debug gallery uses to exercise the
     scarcity leg at a size where [`solve.mode_floor`] asks for nothing. Unset, the
     floor is the real one and the record says so.
 
@@ -575,7 +598,10 @@ def seat(
         rule = solve.rule_for()
         rule.group_cap = cap
     natural = solve.mode_floor(n)
-    floor = natural if floor is None else int(floor)
+    asked = natural if floor is None else floor
+    floors = floors_for(asked, modes)
+    #: The uniform floor, where the caller passed one. `None` says it was per mode.
+    floor = None if isinstance(asked, dict) else int(asked)
     table = headroom.bars(candidates)
     cleared = headroom.clearing(candidates, table)
     log(f"[seat] {len(cleared):,} of {len(candidates):,} candidates clear their mode's bar")
@@ -611,24 +637,30 @@ def seat(
     unranked = 0 if order is None else sum(1 for c in kept if c.key not in order)
     kept.sort(key=rank)
     twins = Twins(clouds_for(kept)) if twin else None
-    seats = Seats(rule, n, floor=floor, twins=twins)
+    seats = Seats(rule, n, floor=floors, twins=twins)
 
     mandated = scarcity(kept, modes, rank=rank)
     picked: set = set()
     for mode, members in mandated:
         if seats.full:
             break
-        if seats.modes.get(mode, 0) >= floor:
-            continue
+        # Keep taking from this mode's subpool until its floor is met or the
+        # subpool is spent. [`scarcity`] yields **one** entry per mode, so a leg
+        # that stopped at its first success would cap every mode at one seat and
+        # quietly turn a floor of two into a floor of one — a greedy that
+        # disagreed with the exact solver on the same program, in the direction
+        # of seating less of the roster than was asked for.
         for candidate in members:
+            if seats.full or seats.modes.get(mode, 0) >= floors.get(mode, 0):
+                break
             why = seats.refuses(candidate)
             if why is None:
                 seats.seat(candidate, f"mode_floor:{mode}")
                 picked.add(candidate.key)
                 refused.pop(candidate.key, None)
-                break
-            refused[candidate.key] = why
-            seats.refusals[why] += 1
+            else:
+                refused[candidate.key] = why
+                seats.refusals[why] += 1
 
     for candidate in kept:
         if seats.full:
@@ -657,11 +689,11 @@ def seat(
         _seated(candidate, why, None if order is None else order.get(candidate.key))
         for candidate, why in seats.chosen
     ]
-    placement = attribution(seated_rows, cleared, order, seats, rule, modes, n, floor)
+    placement = attribution(seated_rows, cleared, order, seats, rule, modes, n, floors)
     record = {
         "schema": SCHEMA,
         "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "config": _config(n, rule, modes, table, floor, natural, twins, group_cap, order),
+        "config": _config(n, rule, modes, table, floor, floors, natural, twins, group_cap, order),
         "order": {
             "key": "p_ge4" if order is None else "rank_key",
             "of": "the render judge's P(>=4) on the candidate"
@@ -687,7 +719,7 @@ def seat(
         "unfilled": n - len(seats.chosen),
         "seated": seated_rows,
         "attribution": placement,
-        "shortfalls": _shortfalls(seats, rule, modes, n, floor),
+        "shortfalls": _shortfalls(seats, rule, modes, n, floors, cleared, refused),
         "twins": None if twins is None else twins.record(),
         "twin_refusals": dict(sorted(seats.twin_of.items())),
         "rejection": rejection(candidates, refused, log=log),
@@ -695,11 +727,12 @@ def seat(
             candidates, refused, against=_lost_to(seats, preselection, cleared), rank=rank
         ),
     }
+    block = record["shortfalls"]["modes"]
     log(
         f"[seat] {record['filled']} of {n} seat(s); "
-        f"{record['shortfalls']['modes']['represented']} of "
-        f"{record['shortfalls']['modes']['of']} mode(s) represented, "
-        f"{record['shortfalls']['modes']['below_the_floor_count']} below a floor of {floor}"
+        f"{block['represented']} of {block['of']} mode(s) represented, "
+        f"{block['below_the_floor_count']} below a floor "
+        f"{'of ' + str(floor) if floor is not None else 'set per mode'}"
     )
     return record
 
@@ -709,7 +742,8 @@ def _config(
     rule: ceiling.Rule,
     modes: list,
     table: dict,
-    floor: int,
+    floor: int | None,
+    floors: dict,
     natural: int,
     twins: Twins | None,
     group_cap: str = ceiling.IDENTITY,
@@ -754,8 +788,13 @@ def _config(
             "targets": dict(sorted(rule.targets.items())),
         },
         "sort_key": "p_ge4" if order is None else "rank_key",
+        # The uniform floor, or `None` where the caller set one per mode. Both
+        # shapes are always in `mode_floors`, which is what a reader should take.
         "mode_floor": floor,
-        "mode_floor_rule": f"floor(n / {solve.SEATS_PER_MODE_FLOOR})",
+        "mode_floors": dict(floors),
+        "mode_floor_rule": f"floor(n / {solve.SEATS_PER_MODE_FLOOR})"
+        if floor is not None
+        else "set per mode by the caller",
         "mode_floor_natural": natural,
         "mode_floor_artificial": floor != natural,
         "modes": modes,
@@ -817,26 +856,94 @@ def _seated(candidate, why: str, rank: float | None = None) -> dict:
     }
 
 
-def _shortfalls(seats: Seats, rule: ceiling.Rule, modes: list, n: int, floor: int) -> dict:
+def _per_mode(seats: Seats, modes: list, floors: dict, cleared: list, refused: dict) -> dict:
+    """`{mode: what its floor asked for and what it got}` — the floor, seat by seat.
+
+    Three facts per mode, because a mode short of its floor is short for one of
+    two unrelated reasons and a single list conflates them. `clearing` is how many
+    of that mode's candidates cleared their bar at all, and `refused_by` is which
+    rules acted on the ones that were not seated — so a mode the **ceiling** beat
+    reads apart from a mode the **pool** never held. The ceiling winning is the
+    designed outcome, not a fault: a bar outranks a guarantee, and an unfilled
+    floor beats a padded gallery.
+    """
+    supply: dict = {}
+    for candidate in cleared:
+        if candidate.mode in floors:
+            supply[candidate.mode] = supply.get(candidate.mode, 0) + 1
+    acted: dict = {}
+    for candidate in cleared:
+        why = refused.get(candidate.key)
+        if why is not None and candidate.mode in floors:
+            acted.setdefault(candidate.mode, {})
+            acted[candidate.mode][why] = acted[candidate.mode].get(why, 0) + 1
+    out: dict = {}
+    for name in modes:
+        asked = int(floors.get(name, 0))
+        held = int(seats.modes.get(name, 0))
+        out[name] = {
+            "floor": asked,
+            "seated": held,
+            "short": max(0, asked - held),
+            "clearing": supply.get(name, 0),
+            "refused_by": dict(sorted(acted.get(name, {}).items(), key=lambda item: -item[1])),
+        }
+    return out
+
+
+def _shortfalls(
+    seats: Seats,
+    rule: ceiling.Rule,
+    modes: list,
+    n: int,
+    floors: dict,
+    cleared: list,
+    refused: dict,
+) -> dict:
     """Every soft rule's shortfall, recorded rather than repaired.
 
-    The mode block counts two different things and says which is which. `floor`
-    is what the policy asked for at this `n`, and below a hundred seats it asks
-    for nothing — so `below_the_floor` is empty there and says nothing about the
-    gallery. `represented` is how many modes actually took a seat, which is the
+    The mode block counts things that are not the same thing and says which is
+    which. `floors` is what the policy asked of each mode at this `n`, and below a
+    hundred seats it asks for nothing — so `starved` is empty there and says
+    nothing about the gallery, while every mode is in `floor_never_needed`
+    instead. `represented` is how many modes actually took a seat, which is the
     number a reader of a small gallery wants and the one a vacuous floor would
-    otherwise have hidden behind an eighteen-of-eighteen.
+    otherwise have hidden behind a fourteen-of-fourteen.
+
+    **A mode nobody asked for is not a mode that went short.** `starved` is a
+    floor above zero that went unfilled; `floor_never_needed` is a floor of zero,
+    which no gallery can fail. Conflating them is how a floor rule reads as
+    working when it is switched off — and how a real starvation hides inside a
+    list most of whose entries were never at risk.
     """
-    missing = [name for name in modes if seats.modes.get(name, 0) < floor]
+    per_mode = _per_mode(seats, modes, floors, cleared, refused)
+    starved = [name for name in modes if per_mode[name]["short"] > 0]
+    never = [name for name in modes if per_mode[name]["floor"] == 0]
+    # One number where every mode asked for the same thing — which is every
+    # seating that ships today — and `None` where they did not, so a reader of
+    # `floor` is never handed one mode's figure as if it were the gallery's.
+    asked = {per_mode[name]["floor"] for name in modes}
+    uniform = next(iter(asked)) if len(asked) == 1 else None
     return {
         "seats": {"asked": n, "filled": len(seats.chosen), "unfilled": n - len(seats.chosen)},
         "modes": {
-            "floor": floor,
-            "asked": floor * len(modes),
+            "floor": uniform,
+            "floors": {name: per_mode[name]["floor"] for name in modes},
+            "floors_are": "one floor for every mode" if uniform is not None else "per mode",
+            "asked": sum(per_mode[name]["floor"] for name in modes),
             "represented": sum(1 for name in modes if seats.modes.get(name, 0)),
             "of": len(modes),
-            "below_the_floor": missing,
-            "below_the_floor_count": len(missing),
+            "per_mode": per_mode,
+            "starved": starved,
+            "starved_count": len(starved),
+            "starved_are": "a floor above zero that went unfilled. Read `per_mode` for "
+            "which: a mode with `clearing` above `seated` lost its seats to a rule named "
+            "in `refused_by`, and one with `clearing` at `seated` had nothing left to seat",
+            "floor_never_needed": never,
+            "floor_never_needed_count": len(never),
+            "floor_never_needed_are": "asked for nothing, so they cannot have gone short",
+            "below_the_floor": starved,
+            "below_the_floor_count": len(starved),
             "counts": dict(sorted(seats.modes.items(), key=lambda item: -item[1])),
         },
         "cells": {
@@ -936,7 +1043,7 @@ def _spread(values) -> dict:
     return {"seats": len(held), "min": held[0], "median": held[len(held) // 2], "max": held[-1]}
 
 
-def attribution(seated, cleared, order, seats, rule, modes, n: int, floor: int) -> dict:
+def attribution(seated, cleared, order, seats, rule, modes, n: int, floors: dict) -> dict:
     """Where every seat came from and how strong it was. **Mutates `seated`.**
 
     Three questions, and together they are the mining list rather than a summary
@@ -1010,7 +1117,7 @@ def attribution(seated, cleared, order, seats, rule, modes, n: int, floor: int) 
             ],
         },
         "best_available": _best_available(cleared, order, percentile_of, seats),
-        "unmet": _unmet(seats, modes, n, floor),
+        "unmet": _unmet(seats, modes, n, floors),
         "binding": _binding(seats, rule, n),
     }
 
@@ -1053,7 +1160,7 @@ def _best_available(cleared, order, percentile_of, seats: Seats) -> dict:
     return out
 
 
-def _unmet(seats: Seats, modes, n: int, floor: int) -> list:
+def _unmet(seats: Seats, modes, n: int, floors: dict) -> list:
     """Every constraint the seating asked for and did not get, and how far short.
 
     Only the two that **can** go unmet. The cell and family allowances and the
@@ -1070,13 +1177,14 @@ def _unmet(seats: Seats, modes, n: int, floor: int) -> list:
     ]
     for name in modes:
         held = seats.modes.get(name, 0)
-        if held < floor:
+        asked = int(floors.get(name, 0))
+        if held < asked:
             short.append(
                 {
                     "constraint": f"mode_floor:{name}",
-                    "asked": int(floor),
+                    "asked": asked,
                     "held": held,
-                    "short": int(floor) - held,
+                    "short": asked - held,
                 }
             )
     return [row for row in short if row["short"] > 0]
@@ -1390,7 +1498,8 @@ def contact_sheet(name: str, record: dict, rejected=None, output=None):
         f"{record['population'].get('locations_after_the_preselection', 0):,} locations that "
         f"clear their mode's bar and survive the neutral pre-selection. "
         f"{shortfalls['modes']['represented']} of {shortfalls['modes']['of']} modes "
-        f"represented, against a floor of {shortfalls['modes']['floor']}. "
+        f"represented, against a floor of {shortfalls['modes']['floor']}"
+        f"{'' if shortfalls['modes']['floor'] is not None else ' set per mode'}. "
         f"Sorted on <b>{html.escape(key_name)}</b>, palette-group cap "
         f"<b>{config['ceiling']['group_cap']}</b> "
         f"({html.escape(str(config['ceiling'].get('group_cap_rule', 'identity')))}). "

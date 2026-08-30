@@ -234,6 +234,99 @@ def check() -> dict:
     }
 
 
+#: The share of a gallery's seats the **strange** side is meant to hold, and the
+#: denominator every mode floor is computed against.
+#:
+#: **Declared, not measured, and six tenths.** It is the size of the pie the floors
+#: divide and nothing else: no rule anywhere asks a finished gallery whether it
+#: realized this share, and adding one is a separate decision.
+#:
+#: **It is not [`curation.run.STRANGE_SHARE`]**, which carries the same number and
+#: answers a different question — how a release's *mining slots* split between the
+#: two heads, at [`curation.budget.head_slots`]. That one is about attempts bought
+#: before anything is rendered; this one is about seats in a finished gallery. The
+#: two are free to move apart, and one name over two stages is the confusion this
+#: repository keeps paying for, so the name here says `SEAT`.
+STRANGE_SEAT_SHARE = 0.60
+
+
+def strange_modes() -> list[str]:
+    """The accepted modes on the strange side, in catalog order.
+
+    Read from [`curation.colorize.modes_for`] rather than filtered here: that is
+    where the two-way split of the roster is defined, and a second copy of it is
+    what the naming rule exists to stop.
+    """
+    from fractal_wallpapers.curation import budget, colorize
+
+    return list(colorize.modes_for(budget.STRANGE))
+
+
+def strange_seats(n: int, share: float = STRANGE_SEAT_SHARE) -> int:
+    """How many of `n` seats the strange side is declared to hold."""
+    n = max(0, int(n))
+    return max(0, min(n, int(round(n * float(share)))))
+
+
+def seat_floors(n: int, share: float = STRANGE_SEAT_SHARE) -> dict[str, int]:
+    """`{strange mode: the seats its floor asks for}` at `n`. **Nothing reads this.**
+
+    ## The rule
+
+    Weight is a claim about how much of a gallery a mode is worth, so it is the
+    thing a target is proportional to. Over the accepted strange modes, `2 *
+    promoted + 1 * normal` distributes [`strange_seats`] fully: each mode's
+    *target* is its share of that budget. Each mode's **floor is half its
+    target**, so the floors sum to exactly half the strange budget by construction
+    and the other half is the gallery's to spend on whatever is strongest.
+
+    Every accepted strange mode is floored by that one formula. There is no bare-1
+    exception for a weight-1 mode and none for `direct_trap_multiply`: a floor
+    that is a special case for somebody is a table pretending to be a rule.
+
+    ## Two things it is not
+
+    **Smooth is not in it.** [`curation.colorize.modes_for`] returns
+    `[SMOOTH_MODE]` unconditionally on the smooth branch, so the smooth side is
+    one mode by construction and has no distribution problem to solve. Floors
+    concern the strange side; the smooth side's seats are `n` less
+    [`strange_seats`].
+
+    **A floor is not a ceiling.** Where one collides with the per-cell allowance or
+    the palette-group cap, the ceiling wins and the floor goes unfilled — a bar
+    outranks a guarantee, and an unfilled floor beats a padded gallery. The
+    seating records the shortfall per mode rather than repairing it.
+
+    ## Why largest remainder
+
+    Half a target is fractional, and the halves have to add back up to the half
+    budget or the construction above is not what shipped. So the integer part
+    first and the leftover seats to the largest fractional remainders, ties by
+    weight then by name so the answer is a pure function of `n`. Truncating each
+    mode's half instead would quietly lose a seat per mode with a remainder, which
+    over thirteen modes is most of them.
+
+    Note this is **not** the rule [`supply.apportion`] uses. That one is
+    largest-*deficit* sequencing, and its subject is every prefix of a batch that
+    may stop early. Here nothing stops early: the whole house is handed out at
+    once and the only property asked of it is that it sums.
+    """
+    modes = strange_modes()
+    budget = strange_seats(n, share)
+    house = (budget + 1) // 2
+    weight = {name: weight_of(name) for name in modes}
+    total = sum(weight.values())
+    if house <= 0 or total <= 0:
+        return dict.fromkeys(modes, 0)
+    exact = {name: house * weight[name] / total for name in modes}
+    out = {name: int(exact[name]) for name in modes}
+    left = house - sum(out.values())
+    order = sorted(modes, key=lambda name: (-(exact[name] - out[name]), -weight[name], name))
+    for name in order[:left]:
+        out[name] += 1
+    return out
+
+
 def record() -> dict:
     """What a run writes down about the policy it drew under."""
     return {
@@ -242,7 +335,8 @@ def record() -> dict:
         "niche": niche(),
         "promoted": promoted(),
         "wired": "weight 0 only: out of the labeling rosters, the default mining rosters "
-        "and gallery emission. Weights 1 and 2 are recorded and read the same.",
+        "and gallery emission. Weights 1 and 2 are recorded and read the same: "
+        "`seat_floors` is what would make them differ and nothing calls it.",
     }
 
 
@@ -251,6 +345,7 @@ __all__ = [
     "NICHE",
     "NORMAL",
     "PROMOTED",
+    "STRANGE_SEAT_SHARE",
     "WEIGHTS",
     "PolicyRefused",
     "accepted",
@@ -260,5 +355,8 @@ __all__ = [
     "niche",
     "promoted",
     "record",
+    "seat_floors",
+    "strange_modes",
+    "strange_seats",
     "weight_of",
 ]

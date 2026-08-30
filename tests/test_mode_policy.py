@@ -10,6 +10,8 @@ old constants.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from fractal_wallpapers import engine
@@ -170,3 +172,111 @@ def _ledger_row(key: str, mode: str) -> dict:
         "at_candidate_regime": True,
         "rejected": None,
     }
+
+
+# --------------------------------------------------------------------------- #
+# The seat floors. Built, and nothing enables them.
+# --------------------------------------------------------------------------- #
+def test_the_seat_share_is_its_own_knob_and_not_the_mining_one(monkeypatch):
+    """One name for two stages is the confusion this repository keeps paying for.
+
+    The two carry the same number today and answer different questions — how a
+    release's mining slots split between the heads, against how many of a
+    gallery's seats the strange side is meant to hold. They are free to move
+    apart, so neither may be defined as the other, and moving one must not move
+    the other.
+    """
+    from fractal_wallpapers.curation import run
+
+    assert mode_policy.STRANGE_SEAT_SHARE == 0.60
+    monkeypatch.setattr(run, "STRANGE_SHARE", 0.05)
+    assert mode_policy.STRANGE_SEAT_SHARE == 0.60
+    assert mode_policy.strange_seats(1000) == 600
+
+
+@needs_engine
+def test_the_floors_sum_to_half_the_strange_budget():
+    """The whole construction: half the budget floored, half left to spend.
+
+    Largest remainder is what makes the sum exact. Truncating each mode's half
+    would lose a seat per mode with a remainder, which over thirteen modes is
+    most of them.
+    """
+    for n in (100, 150, 500, 999, 1000):
+        budget = mode_policy.strange_seats(n)
+        assert sum(mode_policy.seat_floors(n).values()) == (budget + 1) // 2
+
+
+@needs_engine
+def test_a_promoted_mode_is_floored_at_twice_a_normal_one():
+    """What makes the weights load-bearing: `2 * promoted + 1 * normal`."""
+    floors = mode_policy.seat_floors(1000)
+    promoted = {name for name in mode_policy.promoted()} & set(floors)
+    normal = set(floors) - promoted
+    assert promoted and normal
+    assert len({floors[name] for name in promoted}) == 1
+    assert len({floors[name] for name in normal}) == 1
+    assert next(iter(floors[name] for name in promoted)) == 2 * next(
+        iter(floors[name] for name in normal)
+    )
+
+
+@needs_engine
+def test_no_mode_gets_a_bare_one_by_exception():
+    """`direct_trap_multiply` included. A floor that special-cases somebody is a
+    table pretending to be a rule."""
+    floors = mode_policy.seat_floors(1000)
+    assert "direct_trap_multiply" in floors
+    normal = [name for name in floors if mode_policy.weight_of(name) == mode_policy.NORMAL]
+    assert floors["direct_trap_multiply"] == floors[normal[0]]
+    assert set(floors.values()) != {1}
+
+
+@needs_engine
+def test_smooth_is_not_in_the_floors_because_the_smooth_side_is_one_mode():
+    """Read off the colouring split rather than asserted here, which is the point."""
+    from fractal_wallpapers.curation import budget, colorize
+
+    assert colorize.modes_for(budget.SMOOTH) == [colorize.SMOOTH_MODE]
+    assert colorize.SMOOTH_MODE not in mode_policy.seat_floors(1000)
+    assert set(mode_policy.strange_modes()) == set(mode_policy.accepted()) - {colorize.SMOOTH_MODE}
+
+
+@needs_engine
+def test_a_gallery_too_small_to_floor_anything_asks_for_nothing():
+    """Zero is a real answer, the same way [`solve.mode_floor`]'s is."""
+    assert set(mode_policy.seat_floors(0).values()) == {0}
+    assert sum(mode_policy.seat_floors(1).values()) == 1
+
+
+@needs_engine
+def test_the_floors_are_a_pure_function_of_n():
+    """Ties are broken by weight then by name, so two readers get one answer."""
+    assert mode_policy.seat_floors(150) == mode_policy.seat_floors(150)
+    assert mode_policy.seat_floors(150) != mode_policy.seat_floors(200)
+
+
+@needs_engine
+def test_nothing_that_ships_calls_the_floor_rule_yet():
+    """It ships inert. Enabling it is a deliberate act against a pre-registered
+    bar, and this test is what turns that from an intention into a fact.
+
+    Over the Python under `src` only. The tests below and in [`test_seating`] do
+    call it, which is how anyone knows it works, and the curation README spells the
+    call in a code fence. What must stay true is that no shipped leg builds a
+    gallery under it — the default is still one floor for every mode.
+    """
+    import subprocess
+
+    root = Path(__file__).resolve().parents[1]
+    found = subprocess.run(
+        ["git", "grep", "-l", "seat_floors(", "--", "src/**/*.py"],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    reached = {line for line in found.stdout.split() if line}
+    assert reached <= {"src/fractal_wallpapers/curation/mode_policy.py"}, (
+        f"the floor rule is no longer inert: {sorted(reached)}"
+    )

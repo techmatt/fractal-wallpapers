@@ -3213,11 +3213,12 @@ def curate_seat(args: argparse.Namespace) -> int:
     if not args.no_sheet:
         sheet = None if args.sheet_out is None else resolve_output(args.sheet_out)
         print(f"{seating.contact_sheet(name, record, rejected=record['samples'], output=sheet)}")
+    modes = record["shortfalls"]["modes"]
     print(
         f"{record['filled']} of {args.n} seat(s); "
-        f"{record['shortfalls']['modes']['represented']} of "
-        f"{record['shortfalls']['modes']['of']} mode(s) represented, at a floor of "
-        f"{record['shortfalls']['modes']['floor']}; palette-group cap "
+        f"{modes['represented']} of {modes['of']} mode(s) represented, at a floor "
+        f"{'of ' + str(modes['floor']) if modes['floor'] is not None else 'set per mode'}"
+        f"; palette-group cap "
         f"{record['config']['ceiling']['group_cap']} "
         f"({record['config']['ceiling']['group_cap_rule']}), sorted on "
         f"{record['config']['sort_key']}"

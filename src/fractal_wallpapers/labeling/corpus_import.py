@@ -88,8 +88,13 @@ class Imported:
 #: only names here the naming rule does not reach: renaming one does not rename a
 #: directory in a repository this one may not write to, it breaks the read. The
 #: values are where the rule applies, and every one of them is renamed on the way
-#: in. `tests/test_banned_vocabulary.py` names the two keys carrying old
-#: vocabulary, as literals, so the exception is that wide and no wider.
+#: in, and two of them are why this is written down. The batch that lands as
+#: `guided_descent_v3_recolors` — one guided-descent population rendered through
+#: several colormaps — and the one that lands as `screened_queue_v2` — a
+#: record-and-rank queue, tier-sorted and cut by three filters — are keyed under
+#: source directory names carrying vocabulary this project does not ship. Those
+#: two keys are the whole of the exception and it is no wider: the batch each
+#: becomes is where the rule applies, and both were renamed on the way in.
 SOURCES: dict[str, tuple[Imported, ...]] = {
     "2026-06-23_flat_generate_loose0_v3": (
         Imported(
