@@ -197,7 +197,7 @@ def _render_one(payload: tuple) -> dict:
     recipe = ledger_row.get("recipe") or {}
     place = ledger_row.get("location") or {}
     here = {
-        "family": place.get("family") or recipe.get("family"),
+        "family": recipe.get("family") or place.get("family"),
         "viewport": recipe.get("viewport") or place.get("viewport"),
         "maxiter": int(recipe.get("maxiter") or place.get("maxiter") or 0),
     }

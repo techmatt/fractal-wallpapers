@@ -233,10 +233,13 @@ def test_the_row_records_both_keys_and_never_reconciles_them():
         rejected=None,
     )
     assert stored["location"]["key"] == refined["location"]["key"]
-    assert stored["location"]["frame_key"] != stored["location"]["key"]
+    # The frame's own key is no longer stored beside the recorded one — nothing
+    # read it, and it is `_frame_key(recipe)` — so what the row keeps is the one
+    # bit of the comparison: they disagree. The claim is the same claim.
     assert stored["location"]["agrees"] is False
-    assert stored["location"]["superseded_by"] is None
-    assert stored["provenance"]["engine"] == candidate_ledger.UNKNOWN_ENGINE
+    assert stored["location"]["key"] != candidate_ledger._frame_key(recipe)
+    assert "frame_key" not in stored["location"]
+    assert stored["recipe"]["viewport"] == dict(REFINED_VIEWPORT)
 
 
 # --------------------------------------------------------------------------- #
@@ -507,3 +510,233 @@ def test_the_picture_census_counts_the_absent_by_mode_and_by_run(tmp_path, monke
     assert census["by_mode"]["stripe"]["absent"] == 1
     assert census["by_mode"]["smooth"]["absent"] == 0
     assert census["by_run"]["run2"]["absent"] == 1
+
+
+# --------------------------------------------------------------------------- #
+# The compact row, and the two invariants it is cut against.
+# --------------------------------------------------------------------------- #
+#: Every member a ledger row may carry, at every level. A field that came back
+#: would be a field no reader asked for — the whole row was derived from the
+#: reader sites — so this is spelled out rather than counted, and adding to it
+#: is a decision.
+ROW_MEMBERS = {
+    "": {
+        "schema",
+        "key",
+        "partition",
+        "location",
+        "recipe",
+        "at_candidate_regime",
+        "colour",
+        "provenance",
+        "picture",
+        "rejected",
+        "hunt",
+    },
+    "location": {"key", "agrees"},
+    "colour": {"cells", "families"},
+    "provenance": {"run", "candidate", "also_rendered", "also_recorded"},
+    "hunt": {"seconds", "k"},
+}
+
+
+def test_the_row_carries_only_the_members_the_readers_consume():
+    """The row is 3,027 bytes of history cut to about 1,300 of readers.
+
+    Spelled out and not counted, because the failure this catches is a field
+    quietly rejoining: the set was derived by tracing every reader site, and a
+    member nobody derived is a member nobody reads.
+    """
+    source = decision()
+    recipe = recipes.of_decision(source)
+    stored = candidate_ledger.row(
+        recipe=recipe,
+        key=recipes.key_of(recipe),
+        source={**source, "_store": candidate_ledger.FROM_GALLERY},
+        colour={"cells": ["dark_vivid_green"], "families": ["green"], "neutral": 0.1},
+        picture="artifacts/x.jpg",
+    )
+    stored["hunt"] = candidate_ledger.hunt_block({"seconds": 1.0, "k": 3, "leg": "flat"})
+    assert set(stored) == ROW_MEMBERS[""]
+    for block in ("location", "colour", "provenance", "hunt"):
+        assert set(stored[block]) == ROW_MEMBERS[block], block
+
+
+def test_the_colour_block_keeps_the_verdict_and_not_the_shares():
+    """`cells` and `families` are the reading; the share vectors were the same
+    reading in a form nothing could act on, at 678 bytes a row."""
+    wide = {
+        "cells": ["dark_vivid_green"],
+        "families": ["green"],
+        "cell_shares": {"dark_vivid_green": 0.42},
+        "family_shares": {"green": 0.42},
+        "neutral": 0.21,
+    }
+    assert candidate_ledger.colour_kept(wide) == {
+        "cells": ["dark_vivid_green"],
+        "families": ["green"],
+    }
+    assert candidate_ledger.colour_kept(None) is None
+    assert candidate_ledger.colour_kept({}) is None
+
+
+def test_the_hunt_block_keeps_the_seconds_and_the_draw_and_nothing_else():
+    """Two fields of nine. `seconds` prices a leg and `k` corrects the winner's
+    curse; the other seven were the recipe's or the run's, spelled again."""
+    block = candidate_ledger.hunt_block(
+        {
+            "name": "a_leg",
+            "seconds": 0.09,
+            "leg": "conditioned",
+            "mode": "stripe",
+            "colormap": "winter",
+            "band": "band00",
+            "k": 10,
+            "rank": 14,
+            "drawn_for": "light_vivid_teal",
+        }
+    )
+    assert block == {"seconds": 0.09, "k": 10}
+    assert candidate_ledger.k_of({"hunt": block}) == 10
+
+
+def test_a_recipe_read_back_off_a_stored_row_recomputes_the_row_s_own_key():
+    """**Invariant one.** The store's name for a picture is derivable from the
+    row rather than trusted off it, which is what lets the row drop the rest."""
+    source = decision()
+    recipe = recipes.of_decision(source)
+    key = recipes.key_of(recipe)
+    stored = candidate_ledger.row(
+        recipe=recipe, key=key, source={**source, "_store": candidate_ledger.FROM_GALLERY}
+    )
+    assert recipes.key_of(recipes.of_record(stored["recipe"])) == key
+
+
+def test_a_recipe_read_back_off_a_stored_row_is_an_engine_spec():
+    """**Invariant two.** The picture is re-renderable from the row alone."""
+    source = decision()
+    recipe = recipes.of_decision(source)
+    stored = candidate_ledger.row(
+        recipe=recipe, key=recipes.key_of(recipe), source={**source, "_store": "gallery"}
+    )
+    spec = recipes.of_record(stored["recipe"]).row()
+    assert spec["family"] == stored["recipe"]["family"]
+    assert spec["viewport"] == stored["recipe"]["viewport"]
+    assert spec["render"]["resolution"] and spec["render"]["maxiter"]
+
+
+def test_a_stored_recipe_missing_a_member_refuses_rather_than_defaulting_one():
+    """A recipe read back with a guessed knob digests to a key that names a
+    different picture, and a silently wrong identity is worse than none."""
+    source = decision()
+    block = recipes.of_decision(source).record()
+    with pytest.raises(recipes.RecipeError, match="curve"):
+        recipes.of_record({**block, "curve": None})
+
+
+def test_the_two_ledgers_are_named_apart_and_live_points_at_one_of_them():
+    """The wide ledger is left on disk and the retained one is what the readers
+    read. Reverting is this constant and nothing else."""
+    assert candidate_ledger.LIVE in (candidate_ledger.WIDE, candidate_ledger.RETAINED)
+    assert candidate_ledger.rows_path(candidate_ledger.WIDE) != candidate_ledger.rows_path(
+        candidate_ledger.RETAINED
+    )
+    assert candidate_ledger.rows_path() == candidate_ledger.rows_path(candidate_ledger.LIVE)
+    assert candidate_ledger.manifest_dir(candidate_ledger.WIDE) != candidate_ledger.manifest_dir(
+        candidate_ledger.RETAINED
+    )
+    assert candidate_ledger.backup_path("x", candidate_ledger.WIDE) != candidate_ledger.backup_path(
+        "x", candidate_ledger.RETAINED
+    )
+
+
+def test_by_key_reads_only_the_rows_it_was_asked_for(tmp_path):
+    """The lookup a release render makes: a hundred and fifty recipes out of
+    hundreds of thousands, without holding the rest."""
+    path = tmp_path / "rows.jsonl"
+    path.write_text(
+        "".join(
+            json.dumps({"schema": 1, "key": f"{at:04x}", "picture": None}) + "\n"
+            for at in range(50)
+        ),
+        encoding="utf-8",
+        newline="\n",
+    )
+    found = candidate_ledger.by_key(["0002", "0021"], path)
+    assert set(found) == {"0002", "0021"}
+    assert candidate_ledger.by_key(["nope"], path) == {}
+
+
+def test_a_streamed_read_and_a_whole_read_are_the_same_rows(tmp_path):
+    """`read` is `stream` collected, so there is one parser and not two."""
+    path = tmp_path / "rows.jsonl"
+    rows = [{"schema": 1, "key": f"{at:04x}"} for at in range(5)]
+    path.write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8", newline="\n")
+    assert list(candidate_ledger.stream(path)) == rows == candidate_ledger.read(path)
+    assert list(candidate_ledger.stream(tmp_path / "absent.jsonl")) == []
+
+
+#: How many stored rows the invariant guard below reads back, and the seed it
+#: draws them with. A budget rather than the store, for `tests/README.md`'s
+#: reason and with the same arithmetic as `test_hunt.SAMPLE` beside it: reading a
+#: recipe back and digesting it is about 0.45 ms, so the whole retained ledger
+#: was **55.7 s** on 2026-08-29 over its 122,516 rows — and the store has no
+#: ceiling, so that figure grows with every leg. Twenty thousand rows spread over
+#: every mode on record is about nine seconds and is the same guard: a `record`
+#: and an `of_record` that have drifted have drifted for a whole mode.
+RECORD_SAMPLE = 20_000
+RECORD_SAMPLE_SEED = 20260829
+
+
+@pytest.mark.slow
+def test_a_sample_of_the_live_ledger_recomputes_each_row_s_own_key(tracked_ledger):
+    """**Invariant one, over the store.** `Recipe.record` and `recipes.of_record`
+    are inverses on every row that exists, so the store's name for a picture is
+    derivable from the row rather than trusted off it.
+
+    This is what lets the row drop `recipe_key`, `regime`, `palette_group` and
+    `location`'s copy of the frame: each of them is in the recipe already, and
+    this is the assertion that says so over the real store rather than over a
+    fixture. `RECORD_SAMPLE` rows at a fixed seed, stratified by mode.
+    """
+    import random
+
+    by_mode: dict = {}
+    for stored in tracked_ledger.rows:
+        by_mode.setdefault(str((stored.get("recipe") or {}).get("mode")), []).append(stored)
+    draw = random.Random(RECORD_SAMPLE_SEED)
+    share = RECORD_SAMPLE / max(1, len(tracked_ledger.rows))
+    sampled = [
+        stored
+        for mode in sorted(by_mode)
+        for stored in draw.sample(
+            by_mode[mode], min(len(by_mode[mode]), max(1, round(len(by_mode[mode]) * share)))
+        )
+    ]
+    for stored in sampled:
+        rebuilt = recipes.of_record(stored["recipe"])
+        assert recipes.key_of(rebuilt) == str(stored["key"]), stored["key"]
+        # Invariant two rides on the same rebuild: what comes back is an engine
+        # spec, so the picture is re-renderable from the row and nothing else.
+        assert recipes.of_record(stored["recipe"]).row()["render"]["resolution"]
+    assert len(sampled) >= min(RECORD_SAMPLE, len(tracked_ledger.rows)) * 0.9, (
+        f"{len(sampled):,} rows drawn against a budget of {RECORD_SAMPLE:,} — a budget that "
+        f"is not being filled is coverage given up for nothing"
+    )
+    assert len(by_mode) > 5, "every mode on record is in the draw"
+
+
+@pytest.mark.slow
+def test_the_live_ledger_s_sidecars_hold_no_row_that_joins_to_nothing(tracked_ledger):
+    """A sidecar pruned against a ledger it does not match is rows nothing reads.
+
+    Both sidecars are keyed on the recipe key, and the retention writes all three
+    in one transaction precisely so this cannot drift.
+    """
+    from fractal_wallpapers.curation import flatness
+
+    keys = {str(stored["key"]) for stored in tracked_ledger.rows}
+    orphan_scores = {str(row["recipe_key"]) for row in tracked_ledger.scores} - keys
+    assert not orphan_scores, f"{len(orphan_scores)} score row(s) join no ledger row"
+    orphan_flat = set(flatness.by_recipe()) - keys
+    assert not orphan_flat, f"{len(orphan_flat)} flatness row(s) join no ledger row"

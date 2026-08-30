@@ -137,9 +137,12 @@ def test_the_ledger_identity_is_the_label_stores_own_render_key():
         "colormap": "Aster Bloom",
         "recipe": recipe,
     }
+    # The frame comes off the RECIPE. `location` carried a copy of it — byte
+    # identical on all 366,236 rows on record — and does not any more.
     row = {
-        "location": {"family": family, "viewport": viewport},
         "recipe": {
+            "family": family,
+            "viewport": viewport,
             "mode": "smooth",
             "mode_params": {},
             "curve": "linear",
