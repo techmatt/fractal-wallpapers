@@ -782,6 +782,71 @@ def test_a_prune_reads_the_store_through_the_accessors_and_never_off_the_root(
     assert candidate_ledger.rows_path().parent == isolated
 
 
+# --------------------------------------------------------------------------- #
+# Putting a picture back.
+# --------------------------------------------------------------------------- #
+def test_the_re_render_selects_on_the_retention_rule_and_nothing_else(isolated, monkeypatch):
+    """A row is in the work list because it survived the prune and its JPEG is
+    gone. No bar, no mode roster, no clearing test — a second implicit picture
+    policy is exactly what collapsing `KEEP_PER_PAIR` into the row rule deleted,
+    and it would grow back here first if anything filtered this list."""
+    here = isolated / "pictures"
+    here.mkdir()
+    (here / "kept.jpg").write_bytes(b"x")
+    rows = []
+    for key, picture in (("kept", here / "kept.jpg"), ("gone", here / "gone.jpg")):
+        source = decision()
+        rows.append(
+            candidate_ledger.row(
+                recipe=recipes.of_decision(source), key=key, source=source, picture=str(picture)
+            )
+        )
+    candidate_ledger.write(rows)
+
+    monkeypatch.setattr(candidate_ledger, "present_pictures", lambda stored: {"kept"})
+    wanted = candidate_ledger.missing_pictures()
+    assert [str(row["key"]) for row in wanted] == ["gone"]
+
+
+def test_a_row_naming_no_picture_is_not_something_to_render():
+    """`None` is not a missing file. A row that never named a picture has nothing
+    to put back, and rendering one would invent a name the store never chose."""
+    import inspect
+
+    source = inspect.getsource(candidate_ledger.missing_pictures)
+    assert 'row.get("picture")' in source
+
+
+def test_the_re_render_refuses_a_row_it_cannot_reproduce_exactly():
+    """**The guard the whole leg rests on.** The recipe the render path derives —
+    palette knobs off the cyclic set, the autolevel stamp off the shipped band —
+    is digested, and the row is rendered only if that digest is the row's own key.
+
+    A row where the two disagree would get DIFFERENT pixels under its own name,
+    which is worse than having no picture: every score and every flatness reading
+    in the sidecars was read on the pixels that used to be there."""
+    import inspect
+
+    source = inspect.getsource(candidate_ledger.re_render)
+    assert "recipes.key_of(" in source
+    assert 'if again != str(row["key"]):' in source
+    assert source.index("refused.append") < source.index("jobs.append"), (
+        "the key check has to come before the job is queued, not after it is rendered"
+    )
+
+
+def test_the_re_render_writes_pictures_and_nothing_else(isolated):
+    """It repairs the disk, never the store. A leg that also touched the rows,
+    a sidecar or a manifest would be a repair nobody asked for running inside one
+    that was — and the sidecars' numbers were read on the pixels it is restoring,
+    so they are already right."""
+    import inspect
+
+    source = inspect.getsource(candidate_ledger.re_render)
+    for forbidden in ("write(", "write_scores(", "durability.save", "upsert", "prune("):
+        assert forbidden not in source, forbidden
+
+
 def test_nothing_but_the_ledger_deletes_a_candidate_picture():
     """One delete in this project, in one module, reachable from one function."""
     import inspect

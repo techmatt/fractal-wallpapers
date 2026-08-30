@@ -86,12 +86,13 @@ saying how many rows, how many bytes and which sha256 that copy is.
 from __future__ import annotations
 
 import json
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 
 from fractal_wallpapers import engine_fingerprint
 from fractal_wallpapers.curation import durability, gallery_store, recipes, records
-from fractal_wallpapers.paths import archive_root, hot_root, tracked_name, under
+from fractal_wallpapers.paths import archive_root, hot_root, rehome, tracked_name, under
 
 #: The schema every ledger and sidecar row carries.
 SCHEMA = 1
@@ -436,6 +437,273 @@ def present_pictures(rows=None) -> set:
         except OSError:
             listing[directory] = set()
     return {key for key, where in homed.items() if where.name in listing.get(where.parent, ())}
+
+
+# --------------------------------------------------------------------------- #
+# Putting back a picture the row still names.
+# --------------------------------------------------------------------------- #
+#: Where a re-render leg dumps the fields it shares inside one (location, mode),
+#: and writes its record. Its own subtree under the regenerable tree rather than
+#: a directory inside the store, because the store holds three files and a fourth
+#: thing living beside them is how a sweep comes to read one.
+RE_RENDER_UNIT = "re_render"
+
+#: How many engines a re-render drives at once. **Three**, this machine's render
+#: pool — the same number every leg here takes, and a rule about the desktop
+#: rather than a tuning knob. The priority half is [`engine.run`]'s and needs
+#: nothing here.
+RE_RENDER_WORKERS = 3
+
+
+def re_render_dir() -> Path:
+    """The subtree one re-render leg owns: its dumped fields and its record."""
+    return under("curation", RE_RENDER_UNIT)
+
+
+def missing_pictures(rows=None) -> list[dict]:
+    """Every row whose picture the store names and the disk does not have.
+
+    **The rule and nothing but the rule.** A row is here because it survived
+    [`prune`] and its JPEG is gone, and for no other reason — no bar, no mode
+    roster, no clearing test. A picture is kept if and only if its row is, so a
+    retained row with no picture is a store that disagrees with itself, whatever
+    the row's score happens to be.
+    """
+    stored = read() if rows is None else list(rows)
+    present = present_pictures(stored)
+    return [row for row in stored if str(row["key"]) not in present and row.get("picture")]
+
+
+#: One worker process's copy of the cyclic-colormap set, built on first use.
+#: A module global because that is what a spawned worker keeps between tasks.
+_CYCLIC: set | None = None
+
+
+def _re_render_pair(payload: dict) -> dict:
+    """One (location, mode) pair's missing pictures, in a worker. **Module level.**
+
+    A Windows pool *spawns*, so a closure over the work list would not pickle;
+    this takes a plain dict and re-imports what it needs once per worker.
+
+    The pair is the unit rather than the row because a shareable mode's field is
+    dumped once per (location, mode) and every map at it after that is a recolour
+    — so two rows of one pair rendered in two workers would each pay the dump,
+    and would race to write it. One pair, one worker, one dump.
+    """
+    from fractal_wallpapers.curation import colorize, recipes
+
+    # Read once per WORKER and not once per pair. A pool task is one (location,
+    # mode) and there are thirty-two thousand of them; the cyclic set is a read
+    # of the colormap library, and paying it per task put the pool's concurrency
+    # at 1.42 of three workers — half the machine idle behind a file read.
+    global _CYCLIC
+    if _CYCLIC is None:
+        _CYCLIC = colorize.cyclic()
+    cyclic = _CYCLIC
+    fields = Path(payload["fields"]) if payload.get("fields") else None
+    out = {"made": 0, "failed": 0, "seconds": 0.0, "why": []}
+    started = time.time()
+    for job in payload["rows"]:
+        stored = job["recipe"]
+        row = {
+            "family": stored["family"],
+            "viewport": stored["viewport"],
+            "maxiter": int(stored["maxiter"]),
+        }
+        try:
+            colorize.render(
+                row,
+                str(stored["mode"]),
+                str(stored["colormap"]),
+                cyclic,
+                Path(job["picture"]),
+                level=True,
+                fields=fields,
+            )
+        except Exception as failure:  # noqa: BLE001 — a failed render is a recorded fact
+            out["failed"] += 1
+            out["why"].append(f"{job['key']}: {failure!r}"[:200])
+            continue
+        out["made"] += 1
+    out["seconds"] = round(time.time() - started, 3)
+    out["recipes"] = recipes.SCHEMA
+    return out
+
+
+def re_render(
+    limit: int | None = None,
+    workers: int = RE_RENDER_WORKERS,
+    share_fields: bool = True,
+    log=print,
+) -> dict:
+    """Render every picture the store names and cannot find. Writes no row.
+
+    The ledger's second invariant, run as a repair: **the picture stays
+    re-renderable from the row alone**. `recipes.of_record` rebuilds the recipe
+    off the row and `Recipe.row` is the engine spec, so a row that survived
+    [`prune`] can always have its pixels put back — which is the argument the
+    prune was taken on, and this is the first thing to ever test it at scale.
+
+    **The same pixels, not similar ones.** Each row is checked before it is
+    rendered: the recipe the render path derives — the palette knobs from the
+    cyclic set, the autolevel stamp from the shipped band — is digested, and the
+    row is rendered only if that digest is the row's own key. A row whose stored
+    recipe and the live checkout disagree would otherwise get *different* pixels
+    under its own name, which is worse than having no picture. Those are counted
+    and reported, never rendered.
+
+    Nothing here writes to the ledger, its sidecars or their manifests. The
+    pictures are the only thing that moves, which is what makes this safe to run
+    beside anything except another leg driving the same three engines.
+    """
+    import shutil
+    from concurrent.futures import ProcessPoolExecutor
+
+    from fractal_wallpapers.curation import colorize, recipes
+    from fractal_wallpapers.labeling import finished
+    from fractal_wallpapers.palettes import groups as groups_module
+
+    started = time.time()
+    wanted = missing_pictures()
+    log(f"[re-render] {len(wanted):,} row(s) name a picture that is not on disk")
+
+    # ---- the guard, before any engine runs ---------------------------------- #
+    cyclic = colorize.cyclic()
+    band = colorize.band()
+    table = groups_module.member_groups()
+    jobs = []
+    refused = []
+    for row in wanted:
+        stored = row["recipe"]
+        mode, colormap = str(stored["mode"]), str(stored["colormap"])
+        try:
+            again = recipes.key_of(
+                recipes.Recipe(
+                    family=stored["family"],
+                    viewport=stored["viewport"],
+                    maxiter=int(stored["maxiter"]),
+                    regime=recipes.CANDIDATE_REGIME,
+                    mode=mode,
+                    mode_params={},
+                    curve=colorize.CURVE,
+                    colormap=colormap,
+                    palette=finished.recipe(mirror=colormap not in cyclic),
+                    autolevel=_live_stamp(mode, band),
+                    palette_group=groups_module.group_of(colormap, table),
+                )
+            )
+        except Exception as failure:  # noqa: BLE001
+            refused.append({"key": str(row["key"]), "why": repr(failure)[:160]})
+            continue
+        if again != str(row["key"]):
+            refused.append({"key": str(row["key"]), "the_render_path_would_make": again})
+            continue
+        where = rehome(str(row["picture"]))
+        if where is None:
+            refused.append({"key": str(row["key"]), "why": "the stored name is not under the tree"})
+            continue
+        jobs.append(
+            {
+                "key": str(row["key"]),
+                "picture": str(where),
+                "recipe": stored,
+                "pair": (str((row.get("location") or {}).get("key")), mode),
+            }
+        )
+    log(f"[re-render] {len(jobs):,} reproduce their own key; {len(refused):,} refused")
+    # ---- one task per (location, mode) -------------------------------------- #
+    fields = re_render_dir() / "fields"
+    if share_fields:
+        fields.mkdir(parents=True, exist_ok=True)
+    grouped: dict = {}
+    for job in jobs:
+        grouped.setdefault(job["pair"], []).append(job)
+    if limit is not None:
+        # **Whole pairs.** A pilot that sliced the job list in row order would take
+        # one picture from each of many pairs, and a dumped field pays for itself
+        # only across the maps that follow it — so such a pilot pays every dump
+        # and amortises none of them, and prices a leg that does not exist. The
+        # first pilot did exactly that and read 2.23 s a picture at 1.03 pictures
+        # a pair against the leg's real 1.78.
+        held: dict = {}
+        taken = 0
+        for pair, rows_of in grouped.items():
+            if taken >= int(limit):
+                break
+            held[pair] = rows_of
+            taken += len(rows_of)
+        grouped = held
+        jobs = [job for rows_of in grouped.values() for job in rows_of]
+        log(f"[re-render] limited to {len(jobs):,} over {len(grouped):,} whole pair(s)")
+    payloads = [
+        {"fields": str(fields) if share_fields else None, "rows": held} for held in grouped.values()
+    ]
+    log(
+        f"[re-render] {len(payloads):,} (location, mode) pair(s) over {int(workers)} worker(s); "
+        f"{len(jobs) / max(1, len(payloads)):.2f} picture(s) a pair"
+    )
+
+    made = 0
+    failed = 0
+    why: list = []
+    engine_seconds = 0.0
+    with ProcessPoolExecutor(max_workers=int(workers)) as pool:
+        for done, out in enumerate(pool.map(_re_render_pair, payloads), start=1):
+            made += out["made"]
+            failed += out["failed"]
+            engine_seconds += out["seconds"]
+            why += out["why"][: max(0, 20 - len(why))]
+            if done % 250 == 0 or done == len(payloads):
+                wall = time.time() - started
+                rate = made / max(1e-9, wall)
+                left = (len(jobs) - made) / max(1e-9, rate)
+                log(
+                    f"[re-render] {made:,} of {len(jobs):,} made in {wall / 60:.1f} min "
+                    f"({rate:.1f}/s, ~{left / 60:.0f} min left), {failed:,} failed"
+                )
+
+    shutil.rmtree(fields, ignore_errors=True)
+    wall = time.time() - started
+    record = {
+        "schema": SCHEMA,
+        "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "share_fields": bool(share_fields),
+        "named_but_absent": len(wanted),
+        "reproduce_their_own_key": len(jobs) if limit is None else None,
+        "refused": refused[:20],
+        "refused_count": len(refused),
+        "asked": len(jobs),
+        "made": made,
+        "failed": failed,
+        "why": why,
+        "pairs": len(payloads),
+        "workers": int(workers),
+        "wall_seconds": round(wall, 1),
+        "engine_seconds": round(engine_seconds, 1),
+        "seconds_per_picture": round(engine_seconds / max(1, made), 4),
+        "seconds_per_picture_is": "per ENGINE. Wall a picture is this over the concurrency",
+        "concurrency": round(engine_seconds / max(1e-9, wall), 2),
+    }
+    path = re_render_dir() / "re_render.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8", newline="\n")
+    log(f"[re-render] {made:,} made, {failed:,} failed in {wall / 60:.1f} min")
+    return record
+
+
+def _live_stamp(mode: str, band: dict | None):
+    """The autolevel identity a render in this mode will carry, right now.
+
+    [`hunt.Maker.stamp_for`]'s body, and deliberately the same one: the stamp is
+    a member of the recipe key, so a second derivation of it here would be a
+    second answer to what picture a row names.
+    """
+    from fractal_wallpapers.coloring import autolevel
+    from fractal_wallpapers.curation import colorize, recipes
+
+    if not autolevel.enabled() or not recipes.autolevel_applies(colorize.kind_of(mode)):
+        return recipes.NO_AUTOLEVEL
+    return recipes.stamp_of(autolevel.make_stamp(band or {}, {}, {}, 0, 0, acted=False))
 
 
 def picture_census(rows=None) -> dict:
@@ -1710,11 +1978,13 @@ __all__ = [
     "k_of",
     "live_artifact",
     "manifest_dir",
+    "missing_pictures",
     "merge",
     "read",
     "read_scores",
     "stream",
     "stream_scores",
+    "re_render",
     "renders_of",
     "prune",
     "restore",

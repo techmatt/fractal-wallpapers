@@ -259,6 +259,7 @@ fractal-wallpapers curate candidate-ledger census --n 20 --out scratch/ledger_ce
 fractal-wallpapers curate candidate-ledger prune      # back to the rule, ~35 s. RUNS FROM `merge`
 fractal-wallpapers curate candidate-ledger prune --dry-run   # THE dry run. Touches nothing
 fractal-wallpapers curate candidate-ledger pictures   # rows naming a picture that is not there
+fractal-wallpapers curate candidate-ledger re-render  # ...and put them back. ~1.5 pictures/s
 fractal-wallpapers curate candidate-ledger save       # the live files, their manifests
 fractal-wallpapers curate candidate-ledger check      # are they whole
 fractal-wallpapers curate flatness save               # the sidecar's own durable
@@ -310,6 +311,48 @@ names, which no reader can find and no run can free. A crash after the deletes
 leaves rows naming absent pictures, which `curate candidate-ledger pictures`
 reports, `solve.pool` refuses, and a second `prune` repairs — the ranking is a
 deterministic function of the rows.
+
+### Putting a picture back
+
+The prune was taken on an argument — **everything it removes is either retained
+already or re-renderable from a retained recipe** — and `curate candidate-ledger
+re-render` is that argument run as a command. It renders every picture the rows
+still name and the disk does not have, and it selects on the retention rule and
+nothing else: no bar, no mode roster, no clearing test. A second implicit picture
+policy is what collapsing `KEEP_PER_PAIR` into the row rule deleted, and this is
+the first place it would grow back.
+
+**The same pixels, not similar ones.** Before any engine runs, each row's recipe
+is rebuilt the way the *render path* builds it — palette knobs from the cyclic
+set, the autolevel stamp from the shipped band — and digested. A row is rendered
+only if that digest is the row's own key, because the scores and the flatness
+reading in the sidecars were read on the pixels that used to be there, and
+different pixels under the same name would silently invalidate both. Over the
+57,135 rows this was first run on, **all 57,135 reproduced their own key** and
+none was refused.
+
+It writes pictures and nothing else — no row, no sidecar, no manifest.
+
+Three numbers, measured on this machine on 2026-08-30 at three workers:
+
+| | pictures a pair | wall | a picture |
+|---|---|---|---|
+| shared fields, sliced by row | 1.03 | 8.9 min / 240 | 2.23 s |
+| **no** fields, same slice | 1.03 | 11.4 min / 240 | 2.85 s |
+| shared fields, whole pairs | 2.49 | 6.6 min / 401 | 0.99 s |
+
+**A shared field pays even for a pair with one picture**, which is the opposite
+of what the mine's own numbers suggest — because the autolevel operator *paints
+twice*, so one dumped field is amortised over two colourings before a second
+picture is involved. So the leg takes whole pairs, and `--limit` slices by pair
+rather than by row: a pilot that took one picture from each of many pairs pays
+every dump and amortises none, and prices a leg that does not exist.
+
+Two costs worth knowing. The cyclic-colormap set is read **once per worker** and
+not once per task — there are thirty-two thousand tasks, and paying it per task
+left half the pool idle behind a file read. And three engines already saturate
+twelve cores, so effective concurrency tops out near **2.0**, not 3.0; that is
+the three-worker rule doing its job rather than headroom going unused.
 
 ### What the rule costs
 
