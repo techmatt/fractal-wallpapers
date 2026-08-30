@@ -961,6 +961,15 @@ def merge(rows, scores, log=print) -> dict:
     It is written **after** the prune and not before: a manifest recording the
     pre-prune count would make [`durability.check`] read `short` on a store that
     is exactly what the rule says it should be.
+
+    **All three files are recorded, not two.** The flatness sidecar is written by
+    the sweep above and rewritten by the prune below, and for an era it was saved
+    only when somebody ran `curate flatness save` by hand — so the one file whose
+    absence silently unranks a merge's whole output was the one file the door did
+    not record. Note what this does *not* buy: `curate candidate-ledger check`
+    still reads the rows and the scores alone, so a short or missing sidecar is
+    not what makes that command exit 1. Extending it is a decision about what a
+    build failure is, and it has not been taken here.
     """
     from fractal_wallpapers.curation import colorize, flatness, retention
 
@@ -982,6 +991,17 @@ def merge(rows, scores, log=print) -> dict:
         "rows": durability.save(durable_rows(), log=log),
         "scores": durability.save(durable_scores(), log=log),
     }
+    # The flatness sidecar is the third file of this store and the prune above
+    # rewrites it, so it is recorded here with the other two rather than left to
+    # `curate flatness save` by hand — which is the only reason its manifest was
+    # ever current. Conditional where they are not, and the reason is not the
+    # sweep: `flatness.sweep` writes no file when it read nothing, but `prune`
+    # rewrites all three and runs between them, so the sidecar is here by now and
+    # a merge that swept nothing records it empty. The test is what keeps
+    # [`durability.save`]'s refusal — it raises on a file that is not there —
+    # from turning a checkout that has never swept into a failed merge.
+    if flatness.sidecar_path().is_file():
+        saved["flatness"] = durability.save(flatness.durable(), log=log)
     return {
         "rows_path": tracked_name(rows_file),
         "scores_path": tracked_name(scores_file),
@@ -999,9 +1019,11 @@ def merge(rows, scores, log=print) -> dict:
         "recorded": {
             "rows": saved["rows"]["rows"],
             "scores": saved["scores"]["rows"],
+            "flatness": saved["flatness"]["rows"] if "flatness" in saved else None,
             "manifests": [
                 tracked_name(durable_rows().manifest),
                 tracked_name(durable_scores().manifest),
+                *([tracked_name(flatness.durable().manifest)] if "flatness" in saved else []),
             ],
         },
     }
