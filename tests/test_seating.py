@@ -606,12 +606,10 @@ def test_the_release_leg_lands_in_the_seatings_own_directory_and_bounds_each_row
 # --------------------------------------------------------------------------- #
 # The tracked ledger. Real rows, the real greedy.
 # --------------------------------------------------------------------------- #
-@pytest.fixture(scope="module")
-def tracked_pool():
-    if not candidate_ledger.rows_path().is_file():
-        pytest.skip("the candidate ledger has not been backfilled on this machine")
-    candidates, _costs, _refused = headroom.population(log=quiet)
-    return candidates
+@pytest.fixture
+def tracked_pool(tracked_ledger):
+    """The session's one reading of the ledger. See `conftest.tracked_ledger`."""
+    return tracked_ledger.pool
 
 
 @pytest.mark.slow

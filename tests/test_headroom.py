@@ -374,14 +374,10 @@ def test_the_estimator_names_itself_as_unconditioned():
 # --------------------------------------------------------------------------- #
 # The tracked ledger. Real rows, the real bars, the real curve.
 # --------------------------------------------------------------------------- #
-@pytest.fixture(scope="module")
-def tracked_pool():
-    from fractal_wallpapers.curation import candidate_ledger
-
-    if not candidate_ledger.rows_path().is_file():
-        pytest.skip("the candidate ledger has not been backfilled on this machine")
-    candidates, costs, _refused = headroom.population(log=lambda *_: None)
-    return candidates, costs
+@pytest.fixture
+def tracked_pool(tracked_ledger):
+    """The session's one reading of the ledger. See `conftest.tracked_ledger`."""
+    return tracked_ledger.pool, tracked_ledger.costs
 
 
 @pytest.mark.slow

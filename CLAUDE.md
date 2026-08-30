@@ -118,24 +118,32 @@ rebuild *and* the fast lane until you do it.
 ### The two lanes
 
 `python -m pytest` runs the **fast lane**, about a minute. `python -m pytest
---slow` runs every test there is, about eleven minutes, and that is
+--slow` runs every test there is, about seven minutes, and that is
 what CI runs and what runs before a checkpoint. The fast lane is for the
 edit-run loop and nothing else.
 
-The eleven minutes is measured, not estimated: 3,058 tests in **11:08** on this
-machine at `fcad496`, 2026-08-28, with the fast lane at 53.4 s over the 2,952 it
-holds. It has been climbing — 7:20, 8:05, 8:45, 9:25, 9:46 and 9:52 were the six
-runs before it — so read it as the order of magnitude and re-measure rather than
-trusting the digit.
+The seven minutes is measured, not estimated: 3,044 tests in **7:20** on this
+machine at `0b53e15`, 2026-08-29, with the fast lane at 64.3 s over the 2,943 it
+holds. Measure it on an **idle** machine: the same lane sharing this one with a
+render leg crawled to 41% in the time it normally takes to finish.
 
-**The last step up is the one worth reading, because the suite did not move.**
-9:52 and 11:08 are the *same 3,058 tests*; what grew in between was the store
-they sweep, by 5,200 rows of candidate ledger. Nothing here proves the ledger is
-the whole of it, but a lane that slows with no test added is a lane pricing data
-rather than code — so re-measure after a **merge**, not only after writing
-tests, and suspect the stores first when the digit moves on its own.
-Measure it on an **idle** machine: the same lane sharing this one with a render
-leg crawled to 41% in the time it normally takes to finish.
+**A lane that slows with no test added is a lane pricing data rather than code**,
+and this one has done it twice. It was 160 s on 2026-08-26 and **18:07** on
+2026-08-29 over the same tests, because `artifacts/curation/candidate_ledger/`
+went from 15,362 rows and 41 MB to 366,236 rows and 1.11 GB in those three days —
+and seven guards each read the whole of it. So: re-measure after a **merge**, not
+only after writing tests, and suspect the stores first when the digit moves on
+its own.
+
+Two rules came out of that and `tests/README.md` argues both. **The candidate
+ledger is read once a session**, through `conftest.tracked_ledger`; a test that
+calls `candidate_ledger.read()` itself is a test adding forty seconds to the
+lane. And **a guard that sweeps it takes a budget rather than the store** — the
+two that did not had each lost their own docstring's cost estimate by an order of
+magnitude, and both now state the constant, the measurement behind it, and an
+assertion that the budget was filled. That is the one place this suite trades
+coverage for time, it is written down at each site, and it is not a licence
+elsewhere: the rule below still stands.
 
 A test earns `@pytest.mark.slow` by costing about a second or more of **real
 work** — a render through the engine, a training loop, or a sweep of a store:

@@ -27,6 +27,15 @@ from fractal_wallpapers.curation import candidate_ledger, hunt, recipes
 ORIGINAL = {"center_re": "0.1", "center_im": "0.2", "width": "0.5"}
 REFINED = {"center_re": "0.1", "center_im": "0.2", "width": "0.707"}
 
+#: How many levelled rows the key-agreement guard below re-derives, and the seed
+#: it draws them with. A budget rather than the store, because the store has no
+#: ceiling: it went from 15,362 rows to 366,236 in the three days to 2026-08-29
+#: and the guard went from seconds to 175 s with it. Twenty thousand rows spread
+#: over every `(mode, colormap)` on record is about ten seconds, and it is the
+#: same guard — a recipe builder that has drifted has drifted for a whole mode.
+SAMPLE = 20_000
+SAMPLE_SEED = 20260829
+
 
 def scan_row(key="place-a", *, adopted=True, partition="mandelbrot", margin=None):
     """One row of the pool-wide refinement scan, thinned to what a hunt reads."""
@@ -352,19 +361,33 @@ def test_the_stamp_a_hunt_derives_is_the_one_a_pass_writes():
 
 
 @pytest.mark.slow
-def test_a_hunt_names_a_pass_s_pictures_the_way_the_pass_did():
+def test_a_hunt_names_a_pass_s_pictures_the_way_the_pass_did(tracked_ledger):
     """The strongest available check that a hunt's rows join the ledger's.
 
-    Every levelled recipe already on record is re-derived from its own fields
-    through the hunt's own recipe builder, and the two keys have to agree. If they
-    do not, a hunt would re-render pictures the ledger already holds and file them
-    under names nothing else uses.
+    A levelled recipe already on record is re-derived from its own fields through
+    the hunt's own recipe builder, and the two keys have to agree. If they do not,
+    a hunt would re-render pictures the ledger already holds and file them under
+    names nothing else uses.
+
+    **A sample and no longer a re-census, deliberately.** 344,923 of the 366,236
+    rows on record are levelled and a rebuild is about half a millisecond, so the
+    whole store was 175 s of hashing on 2026-08-29 — a sixth of the entire slow
+    lane, growing with every mine leg and with no ceiling anywhere. `SAMPLE` rows
+    drawn at a fixed seed, stratified over `(mode, colormap)` so no coloring can
+    fall out of the draw, catch a systematic disagreement just as surely: this
+    guard has never found one row wrong, it has found a *builder* wrong, and a
+    builder that is wrong is wrong for a whole mode at a time.
+
+    The count is asserted below so a stratification that silently collapsed to
+    nothing fails here rather than passing quietly.
     """
+    import random
+
     from fractal_wallpapers.coloring import autolevel
     from fractal_wallpapers.curation import colorize
     from fractal_wallpapers.palettes import groups as groups_module
 
-    stored = candidate_ledger.read()
+    stored = tracked_ledger.rows
     if not stored:
         pytest.skip("the candidate ledger is empty on this machine")
     maker = hunt.Maker.__new__(hunt.Maker)
@@ -373,11 +396,23 @@ def test_a_hunt_names_a_pass_s_pictures_the_way_the_pass_did():
     maker.groups = groups_module.member_groups()
     if not autolevel.enabled():
         pytest.skip("the autolevel switch is off, so no render here carries a stamp")
-    checked, disagreed = 0, []
+    strata: dict = {}
     for row in stored:
         recipe = row["recipe"]
         if not recipe.get("autolevel"):
             continue
+        strata.setdefault((str(recipe["mode"]), str(recipe["colormap"])), []).append(row)
+    assert strata, "no levelled recipe on record to check against"
+    draw = random.Random(SAMPLE_SEED)
+    per_stratum = max(1, SAMPLE // len(strata))
+    sample = [
+        row
+        for rows_ in (strata[key] for key in sorted(strata))
+        for row in draw.sample(rows_, min(per_stratum, len(rows_)))
+    ]
+    checked, disagreed = 0, []
+    for row in sample:
+        recipe = row["recipe"]
         rebuilt = maker.recipe_for(
             hunt.Try(
                 leg=hunt.UNCONDITIONAL,
@@ -393,7 +428,11 @@ def test_a_hunt_names_a_pass_s_pictures_the_way_the_pass_did():
         checked += 1
         if recipes.key_of(rebuilt) != str(row["key"]):
             disagreed.append(row["key"])
-    assert checked, "no levelled recipe on record to check against"
+    # Every stratum reached the draw and every drawn row reached the builder. A
+    # sample is only a guard while both hold: a filter that quietly emptied one
+    # would leave a coloring unchecked and this test still green.
+    assert checked == len(sample)
+    assert checked >= len(strata), f"{len(strata)} strata drew only {checked} rows"
     assert not disagreed[:5]
 
 

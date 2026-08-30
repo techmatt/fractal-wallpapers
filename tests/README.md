@@ -3,8 +3,8 @@
 The test suite, including the guard that keeps this history text-only and small.
 
 ```
-python -m pytest                                    # the fast lane, ~45s
-python -m pytest --slow                             # every test, ~160s
+python -m pytest                                    # the fast lane, ~65s
+python -m pytest --slow                             # every test, ~7m20s
 cargo test --manifest-path engine/Cargo.toml        # ~7s warm, ~28s cold
 ```
 
@@ -42,29 +42,62 @@ marking, not before.
 
 `conftest.py` holds session-scoped fixtures over the records this repository
 tracks — `shipped_labels`, `shipped_scored`, `shipped_tile_plan`,
-`shipped_render_cache`, `distillation_rows`. Each is a second or more to derive
-and the same every time it is asked, and more than one file asks. They are
-fixtures rather than module caches so the sharing is opt-in: a test that
-redirects a store to `tmp_path` does not ask for them and cannot be handed a
-reading of the tracked corpus by accident. Nothing writes to them.
+`shipped_render_cache`, `distillation_rows`, and `tracked_ledger`. Each is a
+second or more to derive and the same every time it is asked, and more than one
+file asks. They are fixtures rather than module caches so the sharing is opt-in:
+a test that redirects a store to `tmp_path` does not ask for them and cannot be
+handed a reading of the tracked corpus by accident. Nothing writes to them.
+
+`tracked_ledger` is the dear one and the one to reach for by reflex. It carries
+`.rows`, `.scores`, `.pool`, `.costs` and `.refused` — one reading, about 40s and
+about 6 GB resident, serving `test_solve`, `test_seating`, `test_headroom`,
+`test_distinct`, `test_retention`, `test_hunt` and `test_candidate_ledger`. It
+unsets the hot root while it lays the pool out, so a module that has redirected
+the root at its own `tmp_path` cannot have this read an empty tree and report
+every picture missing. It skips where the ledger has not been backfilled, which
+is every machine but Matt's — CI included, so none of this costs CI anything.
 
 ## Where the time goes
 
-Measured over the whole suite by wrapping the calls, so these are shares of real
-wall clock rather than a guess:
+The lane is a handful of tests and never a broad tax. At 2026-08-29, `--slow` is
+440s and its `--durations` list is:
 
-| cause | share |
+| s | what |
 | --- | --- |
-| `is_file` / `stat` / `glob` sweeps | 33% |
-| in-process compute — JSON, digests, numpy, torch | 50% |
-| process launches (22.6s of 23.0s is the engine) | 12% |
-| bulk file reads and writes | 5% |
-| image codec, checkpoint load | under 1% each |
+| 104 | `test_curation_colorize`'s byte-identity leg — 28 real renders through both paths |
+| 40 | **the one reading of the candidate ledger**, wherever it lands first |
+| 31 | `test_autolevel_identity`'s 28 pinned probes |
+| 25 | `test_curation_colorize`'s fallback leg |
+| 17, 7 | `test_retention`'s two whole-store sweeps |
+| ~10 each | `test_hunt`, `test_candidate_ledger`, `test_distinct` |
 
-**The stat sweeps are the surprise and they are a Windows tax.** Laying out a
-head's training population calls `Path.is_file` once per judged picture — twenty
-thousand of them — and that one loop was 21s of a 195s suite. Nothing about it
-is wasted work; it is just far dearer here than on Linux.
+Everything else — three thousand tests — is about two minutes between them. So
+the question to ask of a slow lane that has grown is never "what got slower"; it
+is **which store grew**, and then whether one more guard started reading it.
+
+### The candidate ledger is the thing that grows
+
+It went from 15,362 rows and 41 MB on 2026-08-26 to **366,236 rows and 1.11 GB on
+2026-08-29** — 24x in three days, and it grows with every mine, hunt and depth
+leg. Nothing caps it. One `candidate_ledger.read()` is 21.9s, `read_scores()` is
+4.2s, `present_pictures()` is 13.0s and laying the pool out over them is 13.4s,
+so a cold `headroom.population()` is about 46 seconds.
+
+Two rules follow, and they are why this lane is 7 minutes instead of 18:
+
+* **The ledger is read once a session.** `conftest.tracked_ledger` holds the
+  rows, the sidecar and the pool laid out over them. Seven guards used to derive
+  that independently — four module fixtures at ~46s each and three more that read
+  the rows again to census them. Ask the fixture; never call `read()` in a test.
+* **A guard that sweeps the ledger takes a budget, not the store.** Two did not,
+  and both had lost their own docstring's estimate by an order of magnitude:
+  `test_solve`'s cutting plane is super-linear (1.3s at 2,000 candidates, 1.9s at
+  20,000, 18.8s at 100,000, **185.6s at 275,822**), and `test_hunt` rebuilt a
+  recipe key for all 344,923 levelled rows at half a millisecond each. Both now
+  state a constant — `SOLVE_SLICE`, `SAMPLE` — with the measurement that set it
+  and an assertion that the budget was actually filled. This is the one place the
+  suite trades coverage for time, and it is written down at each site rather than
+  implied.
 
 Four things that used to dominate and no longer do, in case they come back:
 
@@ -85,23 +118,33 @@ Four things that used to dominate and no longer do, in case they come back:
 
 ## On a parallel runner
 
-`pytest-xdist` was measured rather than argued about, and the answer is **no**:
+`pytest-xdist` was measured rather than argued about, and the answer is still
+**no** — but the reasons have changed, so here is both the old measurement and
+what is left of it.
 
-| | serial | `-n 4` | `-n 8` |
+| 2026-08-26 | serial | `-n 4` | `-n 8` |
 | --- | --- | --- | --- |
 | fast lane | 44.7s | 37.3s | 39.7s |
 | full lane | 160.3s | 79.4s | 76.4s |
 
-The fast lane — the one that gets run all day — gains seven seconds at four
-workers and gets *slower* at eight, because per-process imports are paid again
-and torch is most of them. The full lane genuinely halves, but it is the lane
-that runs in CI and before a checkpoint, where 80s against 160s buys nobody's
-attention back.
+The fast lane gains seven seconds at four workers and gets *slower* at eight,
+because per-process imports are paid again and torch is most of them. That has
+not changed and it is the lane that gets run all day.
 
-The deciding fact is not the clock. Under xdist the held-back count **does not
+The deciding fact was never the clock. Under xdist the held-back count **does not
 print**, and neither does the deselection: `pytest_collection_modifyitems` and
 the stash live in the workers, so the controller reports `4 passed` where the
 serial run reports `4 passed, 2 deselected` and names the number. A runner that
 makes the lane go quiet is buying seven seconds with the one property the lane
-exists for, and getting it back would mean a worker-to-controller channel —
-complexity a new dependency ought to be removing.
+exists for.
+
+That objection does not reach `--slow`, which deselects nothing and so has
+nothing to go quiet about — which is why it was worth asking again at 18 minutes.
+The answer is still no, for a new reason: **what is left of the lane does not
+parallelise.** 160s of the 440s is `colorize` and `autolevel_identity` driving the
+engine, and the engine is rayon across all twelve cores already — three concurrent
+`fractal-engine.exe` were measured at 126s against 105s, a fifth and not a third,
+because they contend rather than spread. Another 40s is one ledger read that every
+worker would simply pay again, and 6 GB apiece with it. A dependency that bought a
+fifth of a third of the lane, at four copies of a six-gigabyte read, is not a
+trade.
