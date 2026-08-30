@@ -1195,7 +1195,7 @@ as reproducible and is not — and the negative half of its range makes
 
 `curation/mode_policy.py` is the only place a mode's standing is written.
 `MODE_POLICY` maps every one of the engine's eighteen **production** modes to a
-weight in `{0, 1, 2}` — five niche, seven normal, six promoted — and
+weight in `{0, 1, 2}` — four niche, seven normal, seven promoted — and
 `mode_policy.check()` refuses unless the table and the engine's catalog name the
 same roster.
 
@@ -1222,8 +1222,9 @@ buys is a decision still to make, and the table records it rather than pretendin
 
 **Nothing is deleted.** A niche mode keeps its labels, its ledger rows and its
 pictures; it renders by name; `--modes` names it and is taken as given; and a
-verdict already exported on it still ingests, which matters because 632 of the
-671 pending `strange_render` verdicts belong to the five.
+verdict already exported on it still ingests — which is what let the head-top drop
+be counted against the standings it was collected to test, and moved `curvature`
+out of the niche set on 2026-08-29.
 
 **Two layers, one word.** The engine's `Tier::Niche` (`de`) is a claim about what
 the finished-render corpora were collected over and lives in Rust; this table is a

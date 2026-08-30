@@ -56,29 +56,59 @@ WEIGHTS = (NICHE, NORMAL, PROMOTED)
 
 #: **Mode to weight, and the only place a mode's standing is written.**
 #:
-#: The five at 0 are the modes a round of human labels could not make a case for,
-#: counted over the ingested `strange_render` store: `trap_circle` has never been
-#: given a 4 in 118 rows, `gaussian_int` has 4 in 209, `curvature` 5 in 217,
-#: `smooth_trap_circle` 6 in 200 and `direct_trap_ring` 5 in 273.
+#: Counted over the ingested `strange_render` store as it stood on 2026-08-29 —
+#: 5,110 rows resolving to 4,656 renders — and counted as the **tier-4 rate**,
+#: because a 4 is the unit of currency and a standing is a claim about how often a
+#: mode buys one.
 #:
-#: The six at 2 are the ones that did: `tia` 31 fours in 310 rows, `stripe` 26 in
-#: 203, `threads` 36 in 167, `smooth_stripe` 34 in 239, `smooth_mean_angle` 34 in
-#: 193 and `smooth_angle_min` 30 in 159.
+#: The four at 0 are the modes a round of human labels could not make a case for:
+#: `gaussian_int` 7 fours in 296 rows (2.4%), `smooth_trap_circle` 10 in 256 (3.9%),
+#: `trap_circle` 12 in 260 (4.6%) and `direct_trap_ring` 20 in 342 (5.8%).
+#:
+#: **The cut is not a pure ranking on that rate and cannot be read as one.**
+#: `direct_trap_multiply` (2.0%) and `direct_trap_lines` (2.8%) are accepted and read
+#: below all four. What separates the four is tier-3-or-better, where they are the
+#: bottom four at 9.1%, 17.5%, 19.2% and 19.9% and no accepted mode reads under 25.9%:
+#: the two `direct_trap_*` modes rarely buy a 4 but reliably return a usable picture,
+#: and a mode that returns neither is the one there is no case for.
+#:
+#: The seven at 2 are the ones that did: `itinerary` 44 fours in 201 rows (21.9%),
+#: `threads` 36 in 167 (21.6%), `smooth_angle_min` 30 in 159 (18.9%),
+#: `smooth_mean_angle` 34 in 193 (17.6%), `smooth_stripe` 34 in 239 (14.2%),
+#: `stripe` 26 in 203 (12.8%) and `tia` 31 in 310 (10.0%).
+#:
+#: **A pooled rate for a mode that was aimed at is not a base rate.** Nine of the
+#: seventeen were drawn by a head-top leg — per mode, the best rows the rank key
+#: could find after a leg aimed at that mode, which is a best-of draw and not a
+#: sample of what the mode returns unprompted. That arm is a quarter to a third of
+#: every row the store holds about six of the nine and 55% of `trap_circle`'s, and it
+#: is the whole of the difference: `curvature` reads 10.3% pooled (31 fours in 301)
+#: but 28.3% on the arm against 2.4% on the 209 rows outside it, and
+#: `smooth_curvature` 21.6% on the arm against **no fours at all** in 183. Read the
+#: pooled figure for `curvature`, `smooth_curvature`, `itinerary`,
+#: `direct_trap_screen`, `direct_trap_lines` and the four niche modes as a ceiling
+#: rather than as a rate.
+#:
+#: The two that moved on 2026-08-29 moved on that arm. `itinerary` 1 → 2: the highest
+#: pooled tier-4 rate of the seventeen, and 38 of the 60 rows the aimed leg drew for
+#: it came back a 4 (63.3%), the best yield of the nine. `curvature` 0 → 1: 31 fours
+#: pooled, level with `tia`'s 31, on the third-best aimed yield of the nine. Neither
+#: is a base rate; a mode promoted on a best-of draw is a mode to re-count once it
+#: has been drawn flat.
 MODE_POLICY: dict[str, int] = {
     # --- 0: niche ---
     "trap_circle": NICHE,
     "gaussian_int": NICHE,
-    "curvature": NICHE,
     "smooth_trap_circle": NICHE,
     "direct_trap_ring": NICHE,
     # --- 1: normal ---
     "smooth": NORMAL,
     "exp_smoothing": NORMAL,
+    "curvature": NORMAL,
     "smooth_curvature": NORMAL,
     "direct_trap_screen": NORMAL,
     "direct_trap_multiply": NORMAL,
     "direct_trap_lines": NORMAL,
-    "itinerary": NORMAL,
     # --- 2: promoted ---
     "tia": PROMOTED,
     "stripe": PROMOTED,
@@ -86,6 +116,7 @@ MODE_POLICY: dict[str, int] = {
     "smooth_stripe": PROMOTED,
     "smooth_mean_angle": PROMOTED,
     "smooth_angle_min": PROMOTED,
+    "itinerary": PROMOTED,
 }
 
 
