@@ -2387,6 +2387,59 @@ applying it backwards would cost so that the decision, if it is ever taken, is
 taken against a number; it writes nothing and `tests/test_retention.py` pins that
 the module contains no delete at all.
 
+### What retention does not reach, and the levelled colormaps swept on 2026-08-30
+
+`prune` rewrites three files against one key set and unlinks the pictures of the rows
+it dropped. Three things beside a candidate are outside that transaction, and two of
+them were the largest per-candidate artifacts on this disk.
+
+**The levelled colormap was the biggest, and it is gone.** `colorize.render` writes the
+autolevel operator's overriding colormap to `<key>.leveled/` beside every acted
+candidate, `delete_pictures` unlinks the JPEG and leaves it, and it had reached
+**206,147 directories / 14.93 GiB** — half again what the candidate JPEGs cost. Two
+things were established before deleting any:
+
+* **Nothing reads a candidate's for content.** Every `colormap_dir` override in the
+  package is either the tracked palette directory, or a directory written moments
+  earlier in the same call, or `sheets.render_finished(..., colormaps=unit["leveled"])`
+  — and that unit's name is set by `manufacture` to its own **sheet** subtree. A sweep
+  of every `.jsonl`/`.json` under the tree finds `.leveled` paths named in exactly four
+  places: `manufacture/*/sheet`, `calibration/measure`, `correction/*/screen` and
+  `mode_sheet/measure`. `run._discard_partials` is the only other caller and it only
+  deletes one.
+* **They are regenerable, by re-rendering and not by replay.** The file is
+  `curved_stops(the map's stops, the curve)`; the map is tracked, and the curve is
+  `derive_curve(stats_of(the base render), the tracked band)` whose sha256 is on every
+  ledger row. So the recipe on the row re-derives it exactly — through
+  `colorize.render(level=True)`, one candidate render. It is **not** replayable from
+  the row, because `recipes.stamp_of` deliberately drops the derived curve: a
+  manufacture row carries the whole curve and can be replayed from it, a ledger row
+  cannot.
+
+**194,058 directories were swept, 12,089 excluded** — those four named subtrees, the
+released and parity pictures, the label sheets' own `full/` renders, and everything
+belonging to a leg the ledger cannot answer for.
+
+**The orphan JPEG pile is not what it looks like.** 6,529 pictures in the candidate
+directories carry no ledger row, but **none of them is unnamed**: 7,466 more are
+`manufacture/`'s own live products (named relatively, `pictures 002.jpg`, by
+`screened.jsonl` and the plan files), 4,535 belong to unmerged legs, 11,028 are run
+*attempt* pictures named by index rather than by recipe key, and the 1,775 left are
+named by a study's own record — `depth/breadth_strange`, `depth/wm1_serial`,
+`depth/smooth500_pilot` by their `sequence.jsonl`, and `shrinkage/dc1` by the
+`pairs.jsonl` those 200 label-geometry re-reads *are*. Nothing was deleted here.
+
+**A leg's `sequence.jsonl` / `profile.jsonl` is a measurement record, not a feature
+store, and it must not be pruned row by row.** 361,221 rows over 43 legs, 295 MB, 69%
+of them naming a key the ledger no longer holds — but `depth`'s own module docstring
+says the sequence *is recorded whole* on purpose, because a cumulative prime curve at
+any `k` is arithmetic over that file. Retention keeps the top few per pair, which is
+exactly the winners, so dropping the rows whose candidate was pruned would leave every
+curve in `depth.curves` computed over survivors and reading far too high. If these are
+ever to shrink it is by retiring a finished leg's record **whole**, which is a decision
+per leg. 285,250 of the picture paths these records name are already absent from disk,
+so anything reading one — `depth.contact_sheet` does — already tolerates that.
+
 ### A per-cell retention arm cannot prune this store, and the shape says why
 
 Replayed 2026-08-29 over 366,236 rows at 18,424 locations: a rule keeping the top
