@@ -623,9 +623,11 @@ never the regime. The other 3,321 are the maker-era import and the separately
 manufactured sheets, which were never candidates here. Two things follow. A
 per-mode reading that needs the judge's `P(≥4)` on a *labeled* row cannot get it
 off the ledger sidecar for five rows in six, and has to re-score the picture. And
-`curate retention`'s promise — every row that ever carried a human label keeps its
-picture — is a promise about the rows that join: on the 709 that do, none is
-missing its picture, and the remaining 3,321 have no ledger picture to keep.
+the ledger's third protection — `candidate_ledger.RETAINED_LABELED`, a row a
+label row joins to survives the prune whatever the rank says, and now keeps its
+picture with it — is a promise about the rows that join: on the 709 that do,
+none is missing its picture, and the remaining 3,321 have no ledger picture to
+keep.
 
 ## The scale is the corpus's; the class count is the model's
 

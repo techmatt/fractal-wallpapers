@@ -1,41 +1,59 @@
-"""Which candidate pictures are worth the disk, and the counts that survive the rest.
+"""Which candidates are worth the disk, and the counts that survive the rest.
 
 At ten million attempts the ledger's rows are about 5 GB and the 640x360 JPEGs
-they name are about 600 GB. The rows are the cheap half and they are the half
-that answers questions; the pictures are the dear half and almost none of them
-will ever be looked at again. **Storage has to scale with the locations
-explored, not with the attempts made**, and this is the rule that makes it.
+they name are about 600 GB. Both halves grow with the attempts made, and neither
+answers a question about the tenth-best palette at a place nothing will ever
+ship. **Storage has to scale with the locations explored, not with the attempts
+made**, and this is the rule that makes it.
 
-## Rows are never dropped. Only pictures are
+## One rule, for the row and for the picture it names
 
-Every attempt keeps its recipe row and its `colour` block, forever. That is not
-a courtesy — recipe-key dedup is the ledger's whole reason for existing, and a
-pass that could not tell it had already made a picture would re-render it. What
-this drops is the JPEG the row points at, and the row then says so.
+A picture is kept **if and only if its row is kept**. That is one sentence now
+and it was two until 2026-08-29: a row rule at three per (location, mode) by the
+shipped rank key, and a picture rule at five per pair by raw `P(>=4)`. The two
+were not nested — a row in the top three by rank could be sixth by `P(>=4)` and
+have lost its picture already — and 41 rows were in exactly that position, held
+small by luck rather than by rule. One ranking, one constant, and a row on disk
+is a row whose pixels a reader can still open.
 
 ## What is kept
 
-* **The top [`KEEP_PER_PAIR`] per (location, mode)**, ranked **within** the pair
-  and never against an absolute probability. CORN's scale is train-prior
-  calibrated, so every retrain moves the probability axis under a fixed cut; the
-  per-mode crossovers already span 0.367 to 0.950, which means one number cannot
-  be the bar for all of them. A rank inside a (location, mode) group asks the
-  same question at every mode and survives a retrain.
-* **Every row that ever carried a human label**, unconditionally and outside the
-  ranking. A labeled picture is instrument: it is what a judge was trained or
-  measured against, and losing it costs a number nobody can re-derive.
-* **A reservoir sample, one in [`RESERVOIR_ONE_IN`] of the rest**, flagged as
-  such. A store holding only its winners cannot answer why anything lost —
-  reject autopsy and any future stratified sheet need material from the middle
-  of the distribution, and 1 in 200 is enough to have some at every score.
+* **The top [`candidate_ledger.RETAIN_PER_PAIR`] per (location, mode)**, ranked
+  **within** the pair by the shipped [`curation.rank_key`] and never against an
+  absolute probability. CORN's scale is train-prior calibrated, so every retrain
+  moves the probability axis under a fixed cut; the per-mode crossovers already
+  span 0.367 to 0.950, which means one number cannot be the bar for all of them.
+  A rank inside a (location, mode) group asks the same question at every mode and
+  survives a retrain.
+* **Four protections**, each keeping a row the rank let go: a seat in a live
+  release row, a human rejection, a human label joining it, and a row named by
+  the rank key's own fitted population. They are spelled and applied in
+  [`candidate_ledger.RETAINED_REASONS`], beside the transaction that acts on
+  them.
 
-Everything else keeps its row and loses its picture.
+Everything else loses its row and its picture together.
+
+## What that costs, and it is not nothing
+
+A dropped row is a recipe the `known` dedup in [`curation.hunt`] and
+[`curation.mine`] can no longer see, so a later draw can pay again for a render
+this project already made. That is the price of the rule rather than an
+oversight — the alternative is an index of every recipe ever drawn, which grows
+with the attempts, which is the thing being removed. [`repeat_draws`] prices it
+off the `k` the surviving rows carry, and it **reports and never prevents**.
+
+## This module decides. It does not delete
+
+[`candidate_ledger.prune`] applies, in one transaction, and it is the only thing
+in this project that removes a candidate. `tests/test_retention.py` pins that
+there is no `unlink` in here: a report that can become a prune by accident is the
+one failure mode a policy module has.
 
 ## Three aggregates, and why each one is not derivable from the survivors
 
 A count over the kept rows is a count over the winners. These are computed over
 **every** attempt, are bounded by their own key spaces, and are what is left
-when the pictures are gone.
+when the rest is gone.
 
 * **`(location, mode) -> attempts`, with the pool stamp.** The draw is a seeded
   permutation over the palette pool, so an attempt count is a *cursor* into that
@@ -60,24 +78,12 @@ from fractal_wallpapers.curation import candidate_ledger
 #: The schema every record here carries.
 SCHEMA = 1
 
-#: How many pictures one (location, mode) pair keeps, ranked within the pair.
-#:
-#: **Five.** Enough that a place has a set to choose a seat from and to draw a
-#: sheet out of, and few enough that the total scales with pairs rather than
-#: with attempts.
-KEEP_PER_PAIR = 5
-
-#: One in this many of the rest is kept anyway, flagged. **200**, which over the
-#: ledger as it stands is a few hundred pictures — cheap enough to be free and
-#: dense enough that a reject autopsy has material at every score.
-RESERVOIR_ONE_IN = 200
-
-#: Why a picture was kept, in the spelling the record and the row use.
+#: What the rank says about one row, in the spelling the record uses. The four
+#: protections are [`candidate_ledger.RETAINED_REASONS`] and are applied there;
+#: this is the ranking's own verdict, and there are only two of them.
 RANKED = "ranked"
-LABELED = "labeled"
-RESERVOIR = "reservoir"
 DROPPED = "dropped"
-REASONS = (RANKED, LABELED, RESERVOIR, DROPPED)
+REASONS = (RANKED, DROPPED)
 
 #: The bar a candidate is counted a success at in [`by_map_mode`]. The seating
 #: bar, named here rather than imported so this module stays readable off a
@@ -146,60 +152,50 @@ def labeled_renders() -> set:
 # --------------------------------------------------------------------------- #
 # The decision.
 # --------------------------------------------------------------------------- #
-def in_reservoir(key: str, one_in: int = RESERVOIR_ONE_IN) -> bool:
-    """Is this recipe key in the reservoir sample?
+def keep_per_pair() -> int:
+    """The one constant, read from the store that owns it.
 
-    A hash of the key and not a random draw, so the answer is the same in every
-    process that asks and a row's membership does not depend on the order a
-    sweep reached it. sha256 rather than the builtin, which is salted per
-    process and would put a different tenth of a percent in the sample on every
-    run.
+    Read through a call rather than re-exported, so this module carries no second
+    spelling of a number whose value is a settled decision recorded beside the
+    replay that settled it.
     """
-    digest = hashlib.sha256(str(key).encode("utf-8")).digest()
-    return int.from_bytes(digest[:8], "big") % max(1, int(one_in)) == 0
+    return int(candidate_ledger.RETAIN_PER_PAIR)
 
 
-def decide(
-    rows: list,
-    scores: dict | None = None,
-    labeled: set | None = None,
-    keep: int = KEEP_PER_PAIR,
-    one_in: int = RESERVOIR_ONE_IN,
-) -> dict:
+def decide(rows: list, scores: dict | None = None, keep: int | None = None) -> dict:
     """`{recipe key: reason}` over every row. Decides; deletes nothing.
 
-    `scores` is `{recipe key: p_ge4}` **on one judge artifact** — through
-    [`candidate_ledger.scores_by_recipe`], because a ranking that mixed two
-    judges' scales would order pictures by which judge happened to read them. A
-    row with no score on that judge ranks last within its pair rather than being
-    dropped outright: a picture nothing has an opinion about is not the same as
-    a picture something thinks little of.
+    `scores` is `{recipe key: rank value}` **on one basis** — the shipped rank key
+    through [`candidate_ledger.prune`], or `P(>=4)` on a single judge artifact
+    through [`candidate_ledger.scores_by_recipe`]. A ranking that mixed two bases
+    would order rows by which basis happened to reach them. A row with no value
+    ranks last within its pair rather than being dropped outright: a row nothing
+    has an opinion about is not the same as a row something thinks little of,
+    which is [`curation.seating`]'s own convention for the same case.
+
+    Two verdicts and no protections. The protections are applied by the caller
+    that holds the stores which answer them, which keeps this a pure function of
+    the rows and their values — and so a thing that can be pinned on arithmetic.
     """
     scored = {} if scores is None else scores
-    marked = set() if labeled is None else labeled
     by_pair: dict = {}
     for row in rows:
         by_pair.setdefault(_pair_of(row), []).append(str(row["key"]))
+    limit = keep_per_pair() if keep is None else int(keep)
     out: dict = {}
     for keys in by_pair.values():
         # Ranked WITHIN the pair. A tie falls to the key, so the decision is the
         # same on every machine and after any re-sort of the file.
         ordered = sorted(keys, key=lambda key: (-float(scored.get(key) or -1.0), key))
         for at, key in enumerate(ordered):
-            out[key] = RANKED if at < int(keep) else DROPPED
-    for row in rows:
-        key = str(row["key"])
-        if out.get(key) != DROPPED:
-            continue
-        if marked and render_key_of(row) in marked:
-            out[key] = LABELED
-        elif in_reservoir(key, one_in):
-            out[key] = RESERVOIR
+            out[key] = RANKED if at < limit else DROPPED
     return out
 
 
 def kept(reason: str) -> bool:
-    """Does this reason keep a picture? Every reason but [`DROPPED`] does."""
+    """Does this reason keep the row, and the picture on it? Everything but
+    [`DROPPED`] does — the four protections included, which is why this takes a
+    reason rather than testing against [`RANKED`]."""
     return reason != DROPPED
 
 
@@ -310,105 +306,139 @@ def aggregates(rows: list, scores: dict | None = None, stamp: str | None = None)
 
 
 # --------------------------------------------------------------------------- #
+# What the rule costs. It prices; it does not prevent.
+# --------------------------------------------------------------------------- #
+def drawn_before(rows: list) -> dict:
+    """`{location: {retained, deepest_k, invisible}}` — the cursor the survivors carry.
+
+    A leg stamps every candidate with **`k`, which candidate at its location it
+    was** ([`candidate_ledger.hunt_block`]), and the compacted row keeps it. So a
+    location that shows three surviving rows and a deepest `k` of forty has had
+    thirty-seven recipes rendered and dropped, and the count survives the drop
+    that made it — which is the whole reason this can be priced at all without an
+    index of every recipe ever drawn.
+
+    `invisible` is that difference, floored at zero. A location whose rows all
+    predate the stamp reads `deepest_k` `None` and `invisible` 0: **no `k` is not
+    a `k` of one**, and a reader that took it for one would report the whole
+    pre-stamp history as never deepened.
+
+    **It is a lower bound and it is meant to be read as one.** `k` counts within
+    one leg, so a place two legs have worked has had more attempts than the
+    deepest single `k`, and 32.0% of the rows standing on 2026-08-29 predate the
+    stamp entirely. Over the store as it stands this reads 116,097 invisible
+    recipes against 243,720 actually dropped — a floor at 47.6% of the truth. A
+    floor is the right shape for the question: it says the price is *at least*
+    this, and an exact answer needs the index this rule exists to not keep.
+    """
+    out: dict = {}
+    for row in rows:
+        place = str((row.get("location") or {}).get("key"))
+        held = out.setdefault(place, {"retained": 0, "deepest_k": None, "invisible": 0})
+        held["retained"] += 1
+        k = (row.get("hunt") or {}).get("k")
+        if k is not None:
+            held["deepest_k"] = max(held["deepest_k"] or 0, int(k))
+    for held in out.values():
+        held["invisible"] = max(0, (held["deepest_k"] or 0) - held["retained"])
+    return out
+
+
+def repeat_draws(drawn: list, standing: dict, pool: int) -> dict:
+    """What one leg re-rendered because the rule had already deleted it.
+
+    `drawn` is the rows a leg is merging, `standing` is [`drawn_before`] over the
+    ledger **as it stood before the merge**, and `pool` is how many maps the draw
+    could choose between ([`curation.colorize.pool`]).
+
+    Two numbers rather than one, because only one of them is exact. **`bound`**
+    is how many of this leg's rows *could* be repeats — a draw at a location with
+    no invisible recipes cannot be one, and a location cannot repeat more than it
+    has hidden — and it is a fact about the rows. **`expected`** is how many
+    probably are: a draw at a location lands on one of its `invisible` recipes
+    with probability `invisible / (pool - retained)` if the maps left over are
+    exchangeable, which is the draw's own assumption and not a new one.
+
+    Both are floors, because [`drawn_before`] is: a location's `invisible` count
+    is what one leg's `k` can prove and not what the store has actually dropped.
+    The exact count needs the set of dropped recipe keys, which is the index this
+    rule exists to not keep. So this **reports and never prevents**: it is here to
+    say whether the price is worth building something for, and that is a later
+    decision.
+    """
+    at_risk = 0
+    bound = 0
+    expected = 0.0
+    per_place: dict = {}
+    for row in drawn:
+        place = str((row.get("location") or {}).get("key"))
+        held = standing.get(place)
+        if not held or held["invisible"] <= 0:
+            continue
+        at_risk += 1
+        seen = per_place.setdefault(place, 0)
+        per_place[place] = seen + 1
+        bound += 1 if seen < held["invisible"] else 0
+        left = max(1, int(pool) - int(held["retained"]))
+        expected += min(1.0, held["invisible"] / left)
+    return {
+        "rows": len(drawn),
+        "at_locations_with_deleted_rows": at_risk,
+        "locations": len(per_place),
+        "bound": bound,
+        "bound_is": "how many of these rows COULD be a repeat: a draw at a location "
+        "with nothing invisible cannot be, and a location cannot repeat more than it hides",
+        "expected": round(expected, 2),
+        "expected_is": "the sum over drawn rows of invisible / (pool - retained), which is "
+        "the repeat rate if the maps a location has not been offered are exchangeable",
+        "pool": int(pool),
+    }
+
+
+# --------------------------------------------------------------------------- #
 # What a prune would do. It does not do it.
 # --------------------------------------------------------------------------- #
-def prune_report(
-    rows: list | None = None,
-    scores: dict | None = None,
-    labeled: set | None = None,
-    keep: int = KEEP_PER_PAIR,
-    one_in: int = RESERVOIR_ONE_IN,
-    log=print,
-) -> dict:
-    """What a prune of the ledger as it stands **would** delete. Deletes nothing.
+def prune_report(rows: list, values: dict, keep: int | None = None) -> dict:
+    """What [`candidate_ledger.prune`] would drop, off rows and rank values already read.
 
-    The policy is going-forward, and this is the number that says what applying
-    it backwards would cost — so that the decision to apply it backwards, if it
-    is ever taken, is taken against a measurement. Sizes are a `stat` of each
-    picture that is on this machine; a row whose picture is already gone is
-    counted apart and contributes no bytes.
+    Arithmetic and no store: the caller has done the reads, and this is the
+    ranking's own arithmetic over them. `candidate_ledger.prune(apply=False)` is
+    the door that does the reads and calls this, so there is one dry run in this
+    project and not two.
     """
-    from pathlib import Path
-
-    from fractal_wallpapers.paths import rehome
-
-    stored = candidate_ledger.read() if rows is None else list(rows)
-    if scores is None:
-        read = candidate_ledger.read_scores()
-        scores = {
-            key: float(row.get("p_ge4") or 0.0)
-            for key, row in candidate_ledger.scores_by_recipe(read).items()
-        }
-    marked = labeled_renders() if labeled is None else labeled
-    log(f"[retention] {len(stored):,} row(s), {len(marked):,} human-labeled render key(s)")
-    verdicts = decide(stored, scores, marked, keep=keep, one_in=one_in)
+    verdicts = decide(rows, values, keep=keep)
     tally = dict.fromkeys(REASONS, 0)
     by_mode: dict = {}
-    bytes_dropped = 0
-    bytes_kept = 0
-    missing = 0
-    no_picture = 0
-    for row in stored:
-        key = str(row["key"])
-        reason = verdicts.get(key, DROPPED)
+    pictures = 0
+    unnamed = 0
+    for row in rows:
+        reason = verdicts.get(str(row["key"]), DROPPED)
         tally[reason] += 1
         mode = str((row.get("recipe") or {}).get("mode"))
-        held = by_mode.setdefault(mode, {**dict.fromkeys(REASONS, 0), "bytes_dropped": 0})
+        held = by_mode.setdefault(mode, dict.fromkeys(REASONS, 0))
         held[reason] += 1
         if not row.get("picture"):
-            no_picture += 1
-            continue
-        # `rehome` answers None for a stored name with no artifacts component,
-        # which is not a name it knows anything about — the caller keeps what it
-        # had. Every ledger picture is under the tree today; a fixture's is not.
-        stored_name = str(row["picture"])
-        path = rehome(stored_name) or Path(stored_name)
-        try:
-            size = path.stat().st_size
-        except OSError:
-            missing += 1
-            continue
-        if reason == DROPPED:
-            bytes_dropped += size
-            held["bytes_dropped"] += size
-        else:
-            bytes_kept += size
+            unnamed += 1
+        elif reason == DROPPED:
+            pictures += 1
     return {
         "schema": SCHEMA,
         "applied": False,
-        "policy": {
-            "keep_per_location_mode": int(keep),
-            "ranked": "within the (location, mode) pair, never against an absolute probability",
-            "labeled": "every row that ever carried a HUMAN label, unconditionally",
-            "reservoir_one_in": int(one_in),
-            "rows_dropped": "never — only pictures",
-        },
-        "rows": len(stored),
-        "pairs": len({_pair_of(row) for row in stored}),
-        "locations": len({str((row.get("location") or {}).get("key")) for row in stored}),
+        "keep_per_location_mode": keep_per_pair() if keep is None else int(keep),
+        "rows": len(rows),
+        "pairs": len({_pair_of(row) for row in rows}),
+        "locations": len({str((row.get("location") or {}).get("key")) for row in rows}),
         "verdicts": tally,
-        "would_keep": sum(count for reason, count in tally.items() if kept(reason)),
-        "would_delete": tally[DROPPED],
-        "bytes": {
-            "would_delete": bytes_dropped,
-            "would_keep": bytes_kept,
-            "would_delete_gib": round(bytes_dropped / 2**30, 3),
-            "would_keep_gib": round(bytes_kept / 2**30, 3),
-            "share_deleted": round(bytes_dropped / max(1, bytes_dropped + bytes_kept), 4),
-        },
-        "pictures": {"row_names_none": no_picture, "named_but_absent": missing},
+        "pictures_named_by_a_dropped_row": pictures,
+        "rows_naming_no_picture": unnamed,
         "by_mode": dict(sorted(by_mode.items(), key=lambda item: -item[1][DROPPED])),
     }
 
 
 __all__ = [
     "DROPPED",
-    "KEEP_PER_PAIR",
-    "LABELED",
     "RANKED",
     "REASONS",
-    "RESERVOIR",
-    "RESERVOIR_ONE_IN",
     "SCHEMA",
     "SUCCESS_BAR",
     "RetentionError",
@@ -417,10 +447,12 @@ __all__ = [
     "by_place_cell",
     "by_place_mode",
     "decide",
-    "in_reservoir",
+    "drawn_before",
+    "keep_per_pair",
     "kept",
     "labeled_renders",
     "pool_stamp",
     "prune_report",
     "render_key_of",
+    "repeat_draws",
 ]

@@ -634,20 +634,169 @@ def test_a_stored_recipe_missing_a_member_refuses_rather_than_defaulting_one():
         recipes.of_record({**block, "curve": None})
 
 
-def test_the_two_ledgers_are_named_apart_and_live_points_at_one_of_them():
-    """The wide ledger is left on disk and the retained one is what the readers
-    read. Reverting is this constant and nothing else."""
-    assert candidate_ledger.LIVE in (candidate_ledger.WIDE, candidate_ledger.RETAINED)
-    assert candidate_ledger.rows_path(candidate_ledger.WIDE) != candidate_ledger.rows_path(
-        candidate_ledger.RETAINED
+def test_there_is_one_ledger_and_the_three_files_sit_together_in_it():
+    """The store held two ledgers side by side while the wide one was being
+    replaced, addressed by a `which` on five functions and a `LIVE` constant. The
+    wide one was deleted on 2026-08-29; a constant naming a file that is not there
+    is the kind of name this repository renames on the way in."""
+    from fractal_wallpapers.curation import flatness
+
+    for gone in ("WIDE", "RETAINED", "LIVE", "ledger_root"):
+        assert not hasattr(candidate_ledger, gone), gone
+    root = candidate_ledger.store_root()
+    assert candidate_ledger.rows_path().parent == root
+    assert candidate_ledger.scores_path().parent == root
+    assert flatness.sidecar_path().parent == root
+    assert flatness.durable().manifest.parent == candidate_ledger.manifest_dir()
+
+
+# --------------------------------------------------------------------------- #
+# The rule the merge holds the store to.
+# --------------------------------------------------------------------------- #
+def pruned_rows(rows, values, keep, protected=()):
+    """What `prune` keeps, as its own two-step composition over given rows.
+
+    `prune` itself reads the rank key, the release index, the label stores and the
+    fitted population, none of which a fast test has. What it *does* with them is
+    this: a ranking, then a union with the protections. So that composition is
+    what is pinned here, and `test_the_prune_is_the_only_thing_that_deletes`
+    below holds that `prune` has no second rule in it.
+    """
+    from fractal_wallpapers.curation import retention
+
+    verdicts = retention.decide(rows, values, keep=keep)
+    return {
+        str(row["key"])
+        for row in rows
+        if retention.kept(verdicts[str(row["key"])]) or str(row["key"]) in set(protected)
+    }
+
+
+def paired(place, mode, count, start=0):
+    return [
+        {
+            "key": f"{place}-{mode}-{at}",
+            "location": {"key": place},
+            "recipe": {"mode": mode},
+            "picture": f"artifacts/curation/hunt/h/pictures/{place}-{mode}-{at}.jpg",
+        }
+        for at in range(start, start + count)
+    ]
+
+
+def test_rows_per_location_mode_cannot_exceed_the_constant_unless_a_protection_names_them():
+    """**The growth law.** Without this the file is back where it started in a
+    few weeks: a rule nothing enforces is not a rule.
+
+    The bound is `RETAIN_PER_PAIR` *plus whatever the four protections carry*, and
+    it is stated that way because the protections genuinely do exceed it — over
+    the store on 2026-08-29, 395 of 48,154 pairs held more than three rows and the
+    425 rows beyond the constant are exactly the 425 the protections saved. A
+    guard that asserted a flat ceiling would be asserting the protections do not
+    work."""
+    keep = candidate_ledger.RETAIN_PER_PAIR
+    rows = paired("p", "smooth", 20) + paired("p", "stripe", 20) + paired("q", "smooth", 20)
+    values = {row["key"]: at for at, row in enumerate(rows)}
+    protected = {"p-smooth-0", "p-smooth-1"}
+
+    kept = pruned_rows(rows, values, keep, protected)
+    per_pair: dict = {}
+    for row in rows:
+        if str(row["key"]) in kept:
+            pair = (row["location"]["key"], row["recipe"]["mode"])
+            per_pair[pair] = per_pair.get(pair, 0) + 1
+    assert per_pair[("p", "stripe")] == keep
+    assert per_pair[("q", "smooth")] == keep
+    assert per_pair[("p", "smooth")] == keep + len(protected)
+    unprotected = {pair: count for pair, count in per_pair.items() if pair != ("p", "smooth")}
+    assert max(unprotected.values()) <= keep
+
+
+def test_the_rows_and_the_pictures_agree_in_both_directions():
+    """One rule means the two sets are the same set. A dropped row's picture is on
+    the delete list, and a kept row's picture is not — the failure the two-K era
+    had was the second half, a row inside the rank whose picture another ranking
+    had already taken."""
+    keep = candidate_ledger.RETAIN_PER_PAIR
+    rows = paired("p", "smooth", 10)
+    values = {row["key"]: at for at, row in enumerate(rows)}
+    kept = pruned_rows(rows, values, keep)
+
+    doomed = {row["picture"] for row in rows if str(row["key"]) not in kept}
+    standing = {row["picture"] for row in rows if str(row["key"]) in kept}
+    assert doomed & standing == set(), "a picture cannot be kept and deleted at once"
+    assert doomed | standing == {row["picture"] for row in rows}, "every picture is decided"
+    assert len(standing) == keep
+
+
+def test_the_prune_is_the_only_thing_that_deletes_and_it_runs_from_the_merge():
+    """The wiring itself, because everything above this is a one-time cleanup
+    without it. `merge` is THE door every leg comes through, so it is the only
+    place the rule has to stand."""
+    import inspect
+
+    source = inspect.getsource(candidate_ledger.merge)
+    assert "prune(" in source, "a merge that does not prune lets the store grow again"
+    assert "repeat_draws" in source, "the price of the rule is reported per leg"
+
+    body = inspect.getsource(candidate_ledger.prune)
+    assert "delete_pictures(" in body, "the rows and their pictures go in one call"
+    assert body.index("delete_pictures(") < body.index("_prune_file("), (
+        "pictures first: a crash after the record transaction leaves pictures nothing "
+        "names, which no reader can find and no run can free"
     )
-    assert candidate_ledger.rows_path() == candidate_ledger.rows_path(candidate_ledger.LIVE)
-    assert candidate_ledger.manifest_dir(candidate_ledger.WIDE) != candidate_ledger.manifest_dir(
-        candidate_ledger.RETAINED
-    )
-    assert candidate_ledger.backup_path("x", candidate_ledger.WIDE) != candidate_ledger.backup_path(
-        "x", candidate_ledger.RETAINED
-    )
+
+
+def test_a_prune_reads_the_store_through_the_accessors_and_never_off_the_root(
+    isolated, monkeypatch
+):
+    """**The guard this cost 266 pictures to learn.** A test redirects this store
+    by patching `rows_path`, `scores_path` and `flatness.sidecar_path` by name.
+    `prune` rebuilt all three off `store_root()`, which the fixture does not
+    move, so a three-row merge in a temporary directory read the real hundred-
+    thousand-row ledger, ranked it against its own empty sidecars, and rewrote
+    it — deleting the pictures of the rows the broken ranking dropped.
+
+    Two failures in one shape, and this catches either: reading past the
+    redirect, and reading a path that does not exist. `_stream_of` answers a
+    missing file with nothing, so a prune that built the wrong path decided over
+    an empty store and wrote three empty files rather than raising."""
+    rows = []
+    for at in range(3):
+        source = decision(key=f"gallery9|gate|{at:04d}", candidate=f"{at:04d}")
+        recipe = recipes.of_decision(source)
+        rows.append(
+            candidate_ledger.row(
+                recipe=recipe,
+                key=f"k{at}",
+                source={**source, "_store": candidate_ledger.FROM_GALLERY},
+                picture=None,
+            )
+        )
+    candidate_ledger.write(rows)
+    record = candidate_ledger.prune(log=lambda *_: None)
+
+    assert record["rows_read"] == 3, "the prune read past the redirect, or read nothing at all"
+    assert record["rows_kept"] == 3
+    assert len(candidate_ledger.read()) == 3
+    assert candidate_ledger.rows_path().parent == isolated
+
+
+def test_nothing_but_the_ledger_deletes_a_candidate_picture():
+    """One delete in this project, in one module, reachable from one function."""
+    import inspect
+
+    from fractal_wallpapers.curation import retention
+
+    assert "unlink(" not in inspect.getsource(retention)
+    unlinks = [
+        name
+        for name, held in vars(candidate_ledger).items()
+        if inspect.isfunction(held)
+        and held.__module__ == candidate_ledger.__name__
+        and "unlink(" in inspect.getsource(held)
+    ]
+    assert sorted(unlinks) == ["delete_pictures", "prune"], unlinks
 
 
 def test_by_key_reads_only_the_rows_it_was_asked_for(tmp_path):

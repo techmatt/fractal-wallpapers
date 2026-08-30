@@ -66,6 +66,49 @@ def test_nothing_imports_the_raw_writers_under_a_bare_name() -> None:
     assert offenders == []
 
 
+def a_row(key: str = "aaaa", place: str = "place-a", **over) -> dict:
+    """One ledger row carrying a **whole recipe**, which is the store's contract.
+
+    A row thinned to its key and its provenance was enough while `merge` only
+    upserted it. `merge` prunes now, and the prune joins every row back to the
+    label store through `retention.render_key_of` — which reads the recipe and
+    raises on a family it cannot place. A row that cannot be keyed could never be
+    found to carry a label and would be dropped as unlabeled with nothing saying
+    so, which is why that raise is loud rather than a `None`, and why a fixture
+    row has to be a real one.
+    """
+    from tests.test_candidate_ledger import decision
+
+    from fractal_wallpapers.curation import recipes
+
+    source = decision(location={**decision()["location"], "key": place})
+    recipe = recipes.of_decision(source)
+    return {
+        **candidate_ledger.row(recipe=recipe, key=key, source=source, picture=None),
+        **over,
+    }
+
+
+def redirect(monkeypatch, live, copies, manifests) -> None:
+    """Point the whole store at a temporary one. **All four names, every time.**
+
+    `flatness.sidecar_path` is the one a caller forgets, because it is reached
+    through another module — and `merge` both fills that sidecar and prunes it.
+    A test that redirected three of the four rewrote this machine's real sidecar
+    to hold the keys of a temporary ledger. `candidate_ledger.prune` refuses a
+    store whose three files are in more than one directory now, so the same
+    mistake is a raise rather than a loss; this is what makes the redirect one
+    thing to get right rather than four.
+    """
+    from fractal_wallpapers.curation import flatness
+
+    monkeypatch.setattr(candidate_ledger, "rows_path", lambda: live / "rows.jsonl")
+    monkeypatch.setattr(candidate_ledger, "scores_path", lambda: live / "scores.jsonl")
+    monkeypatch.setattr(flatness, "sidecar_path", lambda: live / flatness.SIDECAR_NAME)
+    monkeypatch.setattr(candidate_ledger, "backup_path", lambda name: copies / name)
+    monkeypatch.setattr(candidate_ledger, "manifest_dir", lambda: manifests)
+
+
 def test_the_door_records_both_files_and_says_what_it_recorded(monkeypatch, tmp_path) -> None:
     """One merge, and both manifests move with it.
 
@@ -77,17 +120,9 @@ def test_the_door_records_both_files_and_says_what_it_recorded(monkeypatch, tmp_
     live, copies, manifests = tmp_path / "live", tmp_path / "copy", tmp_path / "manifests"
     for directory in (live, copies, manifests):
         directory.mkdir()
-    monkeypatch.setattr(candidate_ledger, "rows_path", lambda: live / "rows.jsonl")
-    monkeypatch.setattr(candidate_ledger, "scores_path", lambda: live / "scores.jsonl")
-    monkeypatch.setattr(candidate_ledger, "backup_path", lambda name: copies / name)
-    monkeypatch.setattr(candidate_ledger, "manifest_dir", lambda: manifests)
+    redirect(monkeypatch, live, copies, manifests)
 
-    row = {
-        "key": "aaaa",
-        "location": {"key": "place-a"},
-        "partition": "mandelbrot",
-        "provenance": {"run": "hunt1", "candidate": "00001", "store": "hunt"},
-    }
+    row = a_row()
     report = candidate_ledger.merge(
         [row], [{"key": "aaaa|art|640x360ss2", "recipe_key": "aaaa"}], log=lambda _line: None
     )
@@ -112,19 +147,9 @@ def test_a_second_merge_of_the_same_rows_leaves_the_manifest_saying_the_same_thi
     live, copies, manifests = tmp_path / "live", tmp_path / "copy", tmp_path / "manifests"
     for directory in (live, copies, manifests):
         directory.mkdir()
-    monkeypatch.setattr(candidate_ledger, "rows_path", lambda: live / "rows.jsonl")
-    monkeypatch.setattr(candidate_ledger, "scores_path", lambda: live / "scores.jsonl")
-    monkeypatch.setattr(candidate_ledger, "backup_path", lambda name: copies / name)
-    monkeypatch.setattr(candidate_ledger, "manifest_dir", lambda: manifests)
+    redirect(monkeypatch, live, copies, manifests)
 
-    rows = [
-        {
-            "key": "aaaa",
-            "location": {"key": "place-a"},
-            "partition": "mandelbrot",
-            "provenance": {"run": "hunt1", "candidate": "00001", "store": "hunt"},
-        }
-    ]
+    rows = [a_row()]
     scores = [{"key": "aaaa|art|640x360ss2", "recipe_key": "aaaa"}]
     first = candidate_ledger.merge(rows, scores, log=lambda _line: None)
     written = (manifests / "rows.manifest.json").read_bytes()
@@ -159,23 +184,10 @@ def test_the_one_door_fills_the_flatness_sidecar_as_well_as_the_two_files(
 
     from fractal_wallpapers.curation import flatness
 
-    monkeypatch.setattr(candidate_ledger, "rows_path", lambda: tmp_path / "rows.jsonl")
-    monkeypatch.setattr(candidate_ledger, "scores_path", lambda: tmp_path / "scores.jsonl")
-    monkeypatch.setattr(candidate_ledger, "backup_path", lambda name: tmp_path / f"copy-{name}")
-    monkeypatch.setattr(candidate_ledger, "manifest_dir", lambda: tmp_path / "manifests")
-    monkeypatch.setattr(flatness, "sidecar_path", lambda: tmp_path / "flatness.jsonl")
+    redirect(monkeypatch, tmp_path, tmp_path, tmp_path / "manifests")
 
     def _row() -> dict:
-        return {
-            "schema": 1,
-            "key": "aaaa",
-            "recipe_key": "aaaa",
-            "picture": "artifacts/one.jpg",
-            "provenance": {"run": "a_leg"},
-            "partition": "mandelbrot",
-            "location": {"key": "a_place"},
-            "colour": {"cells": [], "families": []},
-        }
+        return a_row(picture="artifacts/one.jpg", colour={"cells": [], "families": []})
 
     picture = tmp_path / "one.jpg"
     Image.new("RGB", (64, 64), (30, 90, 160)).save(picture)

@@ -246,43 +246,52 @@ a durable store of every picture named.
 ```
 src/fractal_wallpapers/curation/recipes.py            the type, the key, and `of_record`
 src/fractal_wallpapers/curation/candidate_ledger.py   the store, the backfill, the census
-artifacts/curation/candidate_ledger/rows.jsonl        the WIDE ledger — every recipe, wide row
+artifacts/curation/candidate_ledger/rows.jsonl        one row per recipe
 artifacts/curation/candidate_ledger/scores.jsonl      ...and its scores
 artifacts/curation/candidate_ledger/flatness.jsonl    ...and its dead-space column
-artifacts/curation/candidate_ledger/retained/*.jsonl  the RETAINED ledger — what the readers read
-data/curation/candidate_ledger/*.manifest.json        what the history keeps of the wide three
-data/curation/candidate_ledger/retained/*.json        ...and of the retained three
-<archive>/curation_backup/candidate_ledger/**/*.jsonl the durable copies of both
+data/curation/candidate_ledger/*.manifest.json        what the history keeps of the three
+<archive>/curation_backup/candidate_ledger/*.jsonl    the durable copies
 ```
 
 ```
 fractal-wallpapers curate candidate-ledger backfill   # from what already exists
 fractal-wallpapers curate candidate-ledger census --n 20 --out scratch/ledger_census.json
-fractal-wallpapers curate candidate-ledger retain     # build the retained ledger, ~72 s
+fractal-wallpapers curate candidate-ledger prune      # back to the rule, ~35 s. RUNS FROM `merge`
+fractal-wallpapers curate candidate-ledger prune --dry-run   # THE dry run. Touches nothing
+fractal-wallpapers curate candidate-ledger pictures   # rows naming a picture that is not there
 fractal-wallpapers curate candidate-ledger save       # the live files, their manifests
 fractal-wallpapers curate candidate-ledger check      # are they whole
-fractal-wallpapers curate flatness save               # the sidecar's own durable, per ledger
+fractal-wallpapers curate flatness save               # the sidecar's own durable
 ```
 
-### The two ledgers
+### The growth law
 
-`candidate_ledger.LIVE` names which of them every reader reads, and it is the one
-line that reverts the arrangement:
+**Rows per location are bounded by `RETAIN_PER_PAIR` times the modes tried
+there, plus the four protections. They are no longer a function of the attempts
+made.** That sentence is the whole point of the store, and it holds because
+`candidate_ledger.prune` runs inside `candidate_ledger.merge` — THE door every
+leg comes through. A rule that ran anywhere else would be a rule the store
+stopped obeying between the times somebody remembered it.
 
-| | rows | on disk | what it is |
-|---|---|---|---|
-| **wide** (`rows.jsonl`) | 366,236 | 1,057.3 MiB | every recipe ever rendered, at 3,027 B a row. Frozen on 2026-08-29 — nothing writes to it any more |
-| **retained** (`retained/rows.jsonl`) | 122,516 | 150.8 MiB | the top three per (location, `recipe.mode`) by the shipped rank key, plus four protections, at 1,291 B a row |
+| | rows | on disk |
+|---|---|---|
+| before, 2026-08-29 | 366,236 | 1,057.3 MiB |
+| after | 122,516 | 150.8 MiB |
 
-The wide ledger is **not deleted and not superseded as a record** — it is the
-revert path, and it is the only place the 243,720 rows the retention let go still
-exist. What it is not any more is the file a reader opens: reading it was 46.5 s
-and several gigabytes a session, fourteen times over.
+Re-running the rule over the store is a fixed point: 122,516 of 122,516 rows
+kept, nothing dropped, 18.4 s to decide. The 243,720 rows the rule let go were
+**deleted** rather than archived, with their pictures, on Matt's ruling: everything removed is either retained already
+or re-renderable from a retained recipe, and a second copy nobody could explain
+later is worse than none. What that costs is real and is measured rather than
+assumed — see *what the rule costs* below.
 
-Two numbers that are easy to confuse. `retention.KEEP_PER_PAIR` is **five** and
-is how many *pictures* a (location, mode) pair keeps. `candidate_ledger.RETAIN_PER_PAIR`
-is **three** and is how many *rows* it keeps. A row is a twentieth of a picture's
-bytes and it is what recipe dedup reads, so the two are allowed to differ.
+`RETAIN_PER_PAIR` is **three** and it is **the** constant: a picture is kept if
+and only if its row is. It was one of two until 2026-08-29, when
+`retention.KEEP_PER_PAIR` kept five *pictures* a pair on a different ranking
+(raw `P(>=4)`, not the rank key). The two were not nested, so a row in the top
+three by rank could be sixth by `P(>=4)` and have lost its picture already — 41
+rows were in exactly that position, and it stayed small by luck. One ranking,
+one constant, one delete.
 
 The row itself was cut against the reader sites and against two invariants: the
 recipe key stays recomputable (`recipes.of_record` then `recipes.key_of`) and the
@@ -292,8 +301,33 @@ store in the slow lane.
 
 **Every sidecar is pruned in the same transaction as the rows.** `scores.jsonl`
 and `flatness.jsonl` are keyed on the recipe key, so a ledger written without them
-is two stores of rows nothing joins to. `candidate_ledger.retain` writes all three
+is two stores of rows nothing joins to. `candidate_ledger.prune` writes all three
 to `.writing` names and renames only once all three are whole.
+
+**And the pictures go first.** The order inside `prune` is a safety property, not
+a preference: a crash after the record transaction would leave pictures nothing
+names, which no reader can find and no run can free. A crash after the deletes
+leaves rows naming absent pictures, which `curate candidate-ledger pictures`
+reports, `solve.pool` refuses, and a second `prune` repairs — the ranking is a
+deterministic function of the rows.
+
+### What the rule costs
+
+A dropped row is a recipe the `known` dedup in `hunt.run` and `mine.population`
+can no longer see, so a later draw can pay again for a render this project
+already made. That was the choice rather than an oversight: preventing it needs
+an index of every recipe ever drawn, which grows with the attempts, which is the
+thing being removed.
+
+So it is **priced and never prevented**. Every merge reports `repeat_draws`,
+read off the `k` each surviving row carries: a location showing three rows and a
+deepest `k` of forty has had thirty-seven recipes rendered and dropped, and that
+count survives the drop that made it. Over the store on 2026-08-29 it reads
+116,097 invisible recipes across 12,774 of 18,424 locations — **a floor**, at
+47.6% of the 243,720 actually dropped, because `k` counts within one leg and
+32.0% of the rows predate the stamp. A floor is the right shape: the price is at
+least this, and an exact figure needs the index this rule exists to not keep. If
+the number turns out embarrassing, that is when something gets built.
 
 **The key is the pixels and nothing but the pixels.** It is a digest of the
 engine spec — through `renders.spec_of`, so this project has one derivation of
@@ -1054,8 +1088,9 @@ shipped seating refuses on the second (`ceiling.TWINS = 2`); the two
 are different policies and both records say which they applied.
 
 **A quarter of the ledger has no picture, and both readers of one now fail closed.**
-`curate retention` drops the picture of everything outside the top five per (location,
-mode), the labeled and a one-in-200 reservoir — rows are never dropped, so **30,040 of
+While the picture rule ran on its own ranking at its own K, the store dropped the
+picture of everything outside the top five per (location, mode) and kept the row — so
+**30,040 of
 the ledger's 128,368 rows (23.4%) name a JPEG that is not there**, permanently and by
 design. No reader had been checked against that. `solve.pool`'s `no_picture` exclusion
 tested that a row *named* a picture and never that the file existed, so it admitted all
@@ -2184,15 +2219,15 @@ refused leaves both columns rather than scoring zero in one.
 not a truth. What it removes is the *selection*, by drawing the noise again after
 the winner was chosen.
 
-## `curate retention` — which pictures are worth the disk, and what survives the rest
+## `curate retention` — what survives what the rule drops
 
 ```
 src/fractal_wallpapers/curation/retention.py   the policy, the aggregates, the report
 ```
 
 ```
-fractal-wallpapers curate retention report      # what a prune WOULD delete. Deletes nothing
-fractal-wallpapers curate retention aggregates  # the three counts a discard must not destroy
+fractal-wallpapers curate retention             # the three counts a discard must not destroy
+fractal-wallpapers curate candidate-ledger prune --dry-run   # what a prune WOULD do. THE dry run
 ```
 
 **Storage has to scale with the locations explored, not with the attempts made.**

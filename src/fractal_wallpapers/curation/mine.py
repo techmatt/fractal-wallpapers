@@ -972,6 +972,11 @@ def merge(name: str, log=print) -> dict:
         "ledger": written["ledger"],
         "scores": written["scores"],
         "recorded": written["recorded"],
+        # What this leg re-rendered because the retention rule had already
+        # deleted it: a floor, reported and never prevented. See
+        # [`retention.repeat_draws`].
+        "repeat_draws": written["repeat_draws"],
+        "pruned": written["pruned"],
         "locations_added": len({str((row.get("location") or {})["key"]) for row in rows}),
     }
     log(

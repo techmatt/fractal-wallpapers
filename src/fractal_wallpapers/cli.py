@@ -3042,7 +3042,7 @@ def curate_candidate_ledger(args: argparse.Namespace) -> int:
         "save": candidate_ledger.save,
         "check": candidate_ledger.check,
         "pictures": candidate_ledger.picture_census,
-        "retain": lambda: candidate_ledger.retain(keep=args.keep),
+        "prune": lambda: candidate_ledger.prune(keep=args.keep, apply=not args.dry_run),
         "restore": lambda: candidate_ledger.restore(force=args.force),
     }[args.what]
     try:
@@ -3431,27 +3431,22 @@ def curate_mine(args: argparse.Namespace) -> int:
 
 
 def curate_retention(args: argparse.Namespace) -> int:
-    """Report what the retention policy would keep, or build the three aggregates."""
+    """Build the three aggregates the retention rule must not destroy."""
     from fractal_wallpapers.curation import candidate_ledger, colorize, retention
 
-    if args.what == "report":
-        out = retention.prune_report(
-            keep=args.keep, one_in=args.reservoir_one_in, log=lambda line: print(line)
-        )
-    else:
-        rows = candidate_ledger.read()
-        scores = {
-            key: float(row.get("p_ge4") or 0.0)
-            for key, row in candidate_ledger.scores_by_recipe().items()
-        }
-        out = retention.aggregates(rows, scores, retention.pool_stamp(colorize.pool(0)))
-        # The rows themselves are tens of thousands of tuple keys and JSON has no
-        # tuple, so what is printed is the shape and the sizes; --out writes the
-        # whole thing with the keys joined.
-        out = {
-            **out,
-            **{name: _sized(out[name]) for name in ("place_mode", "map_mode", "place_cell")},
-        }
+    rows = candidate_ledger.read()
+    scores = {
+        key: float(row.get("p_ge4") or 0.0)
+        for key, row in candidate_ledger.scores_by_recipe().items()
+    }
+    out = retention.aggregates(rows, scores, retention.pool_stamp(colorize.pool(0)))
+    # The rows themselves are tens of thousands of tuple keys and JSON has no
+    # tuple, so what is printed is the shape and the sizes; --out writes the
+    # whole thing with the keys joined.
+    out = {
+        **out,
+        **{name: _sized(out[name]) for name in ("place_mode", "map_mode", "place_cell")},
+    }
     text = json.dumps(out, indent=2)
     print(text)
     if args.out:
@@ -6759,7 +6754,6 @@ def curate_commands(subcommands) -> None:
     from fractal_wallpapers.curation import hunt as hunt_module
     from fractal_wallpapers.curation import mine as mine_module
     from fractal_wallpapers.curation import release as release_module
-    from fractal_wallpapers.curation import retention as retention_module
     from fractal_wallpapers.curation import run as run_module
     from fractal_wallpapers.curation import seating as seating_module
     from fractal_wallpapers.curation import shrinkage as shrinkage_module
@@ -7193,19 +7187,26 @@ def curate_commands(subcommands) -> None:
     )
     ledger_store.add_argument(
         "what",
-        choices=["backfill", "census", "check", "pictures", "retain", "save", "restore"],
+        choices=["backfill", "census", "check", "pictures", "prune", "save", "restore"],
         help="build the ledger from what already exists, take the coverage census, check "
         "the live files against their manifests, report which rows name a picture that is "
-        "no longer on disk, build the retained ledger beside the wide one, save a fresh "
-        "copy and manifests, or restore the copies",
+        "no longer on disk, bring the store back to the retention rule, save a fresh copy "
+        "and manifests, or restore the copies",
     )
     ledger_store.add_argument(
         "--keep",
         type=int,
         default=candidate_ledger_module.RETAIN_PER_PAIR,
-        help="with `retain`: how many rows one (location, mode) pair keeps, ranked by the "
+        help="with `prune`: how many rows one (location, mode) pair keeps, ranked by the "
         f"shipped rank key (default: {candidate_ledger_module.RETAIN_PER_PAIR}). Four "
-        "protections keep a row outside the rank whatever it says",
+        "protections keep a row outside the rank whatever it says, and a picture is kept "
+        "if and only if its row is",
+    )
+    ledger_store.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="with `prune`: read, decide, and touch nothing. THE dry run — there is no "
+        "second command that says what a prune would do",
     )
     ledger_store.add_argument(
         "--recolour",
@@ -8007,37 +8008,19 @@ def curate_commands(subcommands) -> None:
 
     retention_step = steps.add_parser(
         "retention",
-        help="what the picture-retention policy keeps, and the three aggregates that "
-        "survive what it does not",
+        help="the three aggregates that survive what the retention rule drops",
         description=(
             "At ten million attempts the ledger's rows are about 5 GB and the pictures "
             "they name are about 600 GB, so storage has to scale with the locations "
-            "explored and not with the attempts made. The policy keeps the top N per "
-            "(location, mode) ranked WITHIN the pair, every row that ever carried a human "
-            "label, and one in 200 of the rest as a flagged reservoir. ROWS ARE NEVER "
-            "DROPPED — only pictures — so recipe-key dedup is untouched. `report` says "
-            "what a prune of the ledger as it stands WOULD delete and deletes nothing; "
-            "`aggregates` builds the three counts that a discard must not destroy."
+            "explored and not with the attempts made. The rule keeps the top "
+            f"{candidate_ledger_module.RETAIN_PER_PAIR} per (location, mode) ranked WITHIN "
+            "the pair by the shipped rank key, plus four protections, and a picture is "
+            "kept if and only if its row is. This builds the three counts that dropping "
+            "the rest must not destroy: the (location, mode) cursor into the palette draw, "
+            "the (colormap, mode) success table, and what each place has been made to look "
+            "like. What a prune WOULD do is `curate candidate-ledger prune --dry-run`, "
+            "which is the only dry run there is."
         ),
-    )
-    retention_step.add_argument(
-        "what", choices=("report", "aggregates"), help="what to compute. Neither writes"
-    )
-    retention_step.add_argument(
-        "--keep",
-        type=int,
-        default=retention_module.KEEP_PER_PAIR,
-        metavar="COUNT",
-        help=f"pictures kept per (location, mode), ranked within the pair (default "
-        f"{retention_module.KEEP_PER_PAIR})",
-    )
-    retention_step.add_argument(
-        "--reservoir-one-in",
-        type=int,
-        default=retention_module.RESERVOIR_ONE_IN,
-        metavar="N",
-        help=f"one in N of what the ranking drops is kept anyway, flagged (default "
-        f"{retention_module.RESERVOIR_ONE_IN})",
     )
     retention_step.add_argument(
         "--out", metavar="PATH", help="write the JSON here as well as printing it"

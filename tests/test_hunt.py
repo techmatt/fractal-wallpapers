@@ -19,7 +19,7 @@ import json
 
 import pytest
 
-from fractal_wallpapers.curation import candidate_ledger, hunt, recipes
+from fractal_wallpapers.curation import candidate_ledger, flatness, hunt, recipes
 
 # --------------------------------------------------------------------------- #
 # Material.
@@ -465,6 +465,23 @@ def test_the_judge_kind_is_the_spelling_every_record_already_uses():
 # --------------------------------------------------------------------------- #
 # The merge.
 # --------------------------------------------------------------------------- #
+def a_ledger_row(key: str = "aaaa") -> dict:
+    """One row in the shape a hunt writes, carrying a **whole recipe**.
+
+    The recipe is not decoration here. `merge` prunes now, and the prune joins
+    every row back to the label store through `retention.render_key_of`, which
+    reads the recipe and raises on a family it cannot place — loudly, because a
+    row that cannot be keyed could never be found to carry a label and would be
+    dropped as unlabeled with nothing saying so.
+    """
+    from tests.test_candidate_ledger import decision
+
+    source = decision()
+    return candidate_ledger.row(
+        recipe=recipes.of_decision(source), key=key, source=source, picture=None
+    )
+
+
 def test_merging_a_hunt_twice_writes_the_same_ledger(monkeypatch, tmp_path):
     """The ledger upserts by recipe, so a partial and a finished hunt merge alike."""
     monkeypatch.setattr(hunt, "hunt_dir", lambda name: tmp_path / str(name))
@@ -475,17 +492,17 @@ def test_merging_a_hunt_twice_writes_the_same_ledger(monkeypatch, tmp_path):
     # and in the tracked history. `tests/test_ledger_tracking.py` owns that rule.
     monkeypatch.setattr(candidate_ledger, "backup_path", lambda name: tmp_path / f"copy-{name}")
     monkeypatch.setattr(candidate_ledger, "manifest_dir", lambda: tmp_path / "manifests")
+    # And the flatness sidecar, which is the fourth and the one a caller forgets,
+    # because it is reached through another module. `merge` prunes now, and a
+    # prune rewrites all three of the store's files against one set of keys — so
+    # a sidecar left pointing at the real store would be rewritten to hold the
+    # keys of this temporary one. `candidate_ledger.prune` refuses a store spread
+    # over two directories rather than doing it, and this is the redirect that
+    # refusal asks for.
+    monkeypatch.setattr(flatness, "sidecar_path", lambda: tmp_path / flatness.SIDECAR_NAME)
     (tmp_path / "one").mkdir()
     hunt.rows_path("one").write_text(
-        json.dumps(
-            {
-                "key": "aaaa",
-                "location": {"key": "place-a"},
-                "partition": "mandelbrot",
-                "provenance": {"run": "one", "candidate": "00001", "store": "hunt"},
-            }
-        )
-        + "\n",
+        json.dumps(a_ledger_row()) + "\n",
         encoding="utf-8",
         newline="\n",
     )
