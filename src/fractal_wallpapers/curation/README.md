@@ -770,7 +770,9 @@ the judge's own columns — `headroom.bars` chooses a mode's rule on `p_ge4`,
 `headroom.clearing` applies it, and the neutral pre-selection is about places — so two
 seatings differing in this flag differ in the sort order and in no other thing, which
 is what makes a before/after exact. A candidate the key cannot read is sorted **last**
-and counted under `order.unranked`; it is not a refusal, because no rule acted on it.
+and counted under `order.unranked`; that is not one of the *rules* refusing it,
+because no rule acted on it — but the seating as a whole now refuses rather than
+quietly sorting it to the bottom (below).
 
 The contact sheet is sorted **good to bad by the seating's own key** and captioned with
 it. A sheet in seating order is in *scarcity* order for its first seats, which reads as
@@ -911,6 +913,22 @@ afterwards cost **33.3 s** for those 8,192 pictures and the same seating then mo
 23 seats. So the order is `merge` → `flatness sweep` → `seat`, and the two places
 that say whether it was done are `order.coverage.no_flatness` on the seat record and
 `curate flatness coverage`.
+
+**And a seating on a key it cannot read now REFUSES, which is the whole reason to
+know the order.** `seating.seat` raises `SeatingRefused` when any clearing candidate
+carries no value for the active key, naming the count, the first few keys and the
+sweep command that fills the gap. The argument is in the message: such a row sorts
+last and cannot win a seat while a readable one is left, so a seating that let it
+through would be **silently ignoring** it rather than deciding about it — and
+`mine1h` is what that looks like, 1,326 clearing candidates and no line of output
+saying they had no chance. The refusal is not a bar and is not on the judge's
+columns; it fires before the walk and the pool is unchanged by it. `--allow-unranked`
+is the way past, and it is for exactly one case: a picture that is on disk and will
+not decode has no reading and never will, so a pool holding one would otherwise be
+unseatable forever. It is not the flag for *the sweep has not been run* — there the
+refusal is doing its job. Allowed through, the rows are logged and counted under
+`order.unranked` / `unranked_allowed`, and `unreadable_by_the_key` on the record is
+how many of the clearing population they were.
 
 ### `curate rank-key` — what a seating may rank on instead of the judge alone
 
@@ -1270,7 +1288,7 @@ and re-deriving it is `python -c` over those four names, never a measurement.
 | `itinerary` | modulate | no | **no** | 2 promoted | `P(>=4)` |
 
 Eighteen modes over **four** kinds, not three: `itinerary` is a `modulate` and is
-the only one. Seven field · five composite · four direct · one modulate. Four
+the only one. Seven field · six composite · four direct · one modulate. Four
 niche, seven normal, seven promoted; thirteen carry the autolevel operator and
 seven are shareable.
 
@@ -1529,6 +1547,23 @@ Measured 2026-08-28 at `--width 24 --top-bands 5`, seed 20260827, this machine:
 Every rate above is **one engine's**, which is what `--rate` wants. All four were
 measured single-engine; a rate read off a three-worker leg carries that leg's
 contention in it and would over-price a serial one by about 1.6x.
+
+**The plan is fixed before the first render, and nothing about the leg is
+adaptive.** `build_plan` returns the whole woven plan and `blocks_of` cuts it into
+location blocks — the roster cycled *inside* a place, one block per location in the
+order that location first appears in the weave — before a worker is handed anything.
+From there the only thing that can end the leg early is the **clock**: `_render_block`
+checks the parent's `deadline` before each candidate rather than only between blocks,
+because a near-band block is `--near-width` candidates deep and a block that could not
+stop inside itself would overrun the budget by minutes. **No stage reads a score to
+decide what to render next.** Scores enter twice and both are upstream of the plan —
+`population` reads the ledger so `best_field_by_location` can find the near band and
+`deficient_modes` the floor draw, and `ranked_bands` sorts on the location head's
+score — and everything downstream (`curves`, `hit_rate`, `by_mode`, `rank_readout`,
+`route_to`) reads what was made and writes the record. Two things follow. A killed
+leg is a **prefix** of the plan it was given rather than a different plan, which is
+what makes the weave's arm proportions hold at any cut. And "what would this leg have
+found at `k = 17`" is arithmetic over `sequence.jsonl` rather than a second run.
 
 ### Three workers, cut at the location
 
@@ -1996,11 +2031,42 @@ that leg's contention: three engines cost about 1.6–1.8x per candidate over on
 | 2.360 | `direct_trap_ring` | 3 | 12 | 08-29 | 1,977 cand | same leg |
 | 0.953 | `itinerary` — never shareable, full render | 3 | — | 08-29 | `mode_policy` pricing | `mode_policy` |
 | 0.239 | `smooth`, priced beside it | 3 | — | 08-29 | same | `mode_policy` |
-| 0.3433 | `smooth` alone, whole leg | 3 | 12 | 08-30 | 116,520 cand / 9,710 places | `smooth_500` |
-| 0.4777 | `smooth`, that leg's own pilot | 3 | 4 | 08-30 | 11,138 cand | `smooth_500` |
-| 0.3558 | `smooth`, ranked-bands arm | 3 | 12 | 08-30 | 84,084 cand / 7,007 places | `smooth_500` |
-| 0.3132 | `smooth`, flat arm | 3 | 12 | 08-30 | 24,948 cand / 2,079 places | `smooth_500` |
-| 0.3038 | `smooth`, conditioned arm | 3 | 12 | 08-30 | 7,488 cand / 624 places | `smooth_500` |
+| 0.3433 | `smooth` alone, whole leg | 3 | 12 | 08-29 | 116,520 cand / 9,710 places | `smooth_500` |
+| 0.4777 | `smooth`, that leg's own pilot | 3 | 4 | 08-29 | 11,138 cand | `smooth_500` |
+| 0.3558 | `smooth`, ranked-bands arm | 3 | 12 | 08-29 | 84,084 cand / 7,007 places | `smooth_500` |
+| 0.3132 | `smooth`, flat arm | 3 | 12 | 08-29 | 24,948 cand / 2,079 places | `smooth_500` |
+| 0.3038 | `smooth`, conditioned arm | 3 | 12 | 08-29 | 7,488 cand / 624 places | `smooth_500` |
+
+**Every `s/cand` above is a MEAN, and the flat-vs-ranked comparison needs the
+median beside it.** A per-candidate cost is long-tailed — `mine1`'s per-partition
+means run 0.67 to 2.06 against medians of 0.42 to 1.05 — so the two answer
+different questions and neither substitutes: a **mean** is what sizes a plan,
+because `PLAN_HEADROOM * workers * budget / rate` is arithmetic over the *sum*,
+and a **median** is what a candidate typically costs. Quoting one alone hides
+which. Both read off the rows themselves, `hunt.seconds` on `mine1`'s
+`rows.jsonl` and `seconds` on `smooth_500`'s `sequence.jsonl`, per arm:
+
+| leg | arm | n | mean | median | mean/median |
+|---|---|--:|--:|--:|--:|
+| `mine1` 08-26 | `deepen` | 2,274 | 0.7064 | 0.4690 | 1.51 |
+| `mine1` 08-26 | `breadth_ranked` | 1,989 | 1.3000 | 0.7030 | 1.85 |
+| `mine1` 08-26 | `breadth_flat` | 1,421 | 2.0848 | 0.8750 | 2.38 |
+| `smooth_500` 08-29 | `conditioned` | 7,488 | 0.3038 | 0.1980 | 1.53 |
+| `smooth_500` 08-29 | `flat` | 24,948 | 0.3132 | 0.2280 | 1.37 |
+| `smooth_500` 08-29 | `ranked_bands` | 84,084 | 0.3558 | 0.2520 | 1.41 |
+
+**"The ranked arm renders 1.6x cheaper than the flat one" is a mean and only a
+mean.** On medians the same two arms are **1.24x** apart, so most of that gap is
+`breadth_flat`'s tail — an unconditioned draw takes places nobody chose and a few
+of them are very dear — rather than its typical candidate. The direction survives
+the change of statistic and the size does not, which is the whole reason both are
+here.
+
+**And the sign is not a standing fact about the two draws.** On `smooth_500`,
+one mode and the whole top half of the head's rank, the ranked arm is the
+**dearer** of the two — 1.14x on the mean and 1.11x on the median — because that
+leg's ranked draw is spread over five bands and the flat draw is not, so the two
+are drawing from differently-stocked partitions. `mine1`'s ordering is `mine1`'s.
 
 **Per-mode dump cost in breadth**, one number a mode, `dc1`/`dc2` 2026-08-27:
 `stripe` .378 · `gaussian_int` .285 · `curvature` .268 · `tia` .147 ·

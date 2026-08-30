@@ -136,7 +136,12 @@ them, so a caller may sweep any range of rows into one buffer.
 
 Which is also the precise reading of where the specialization lives: **the table
 is `sweep_row`'s**, and `field::sample` is not a second specialized entry point —
-it reaches the same table through `gather`, one row at a time. Anything that calls
+it reaches the same table through `gather`, one row at a time. So **production is
+specialized**: every native render is `sample` (or `sample_exact`) → `gather` →
+`sweep_row` a row at a time, and `gather` carries a `debug_assert` that its own
+dispatch and `takes_the_specialized_loop` agree — which is what makes the three
+guards above claims about the path production really takes rather than about a
+table nothing reaches. Anything that calls
 `sweep_row` directly gets the specialization; anything that hands the family or
 the channel set in as a runtime value gets the generic loop, same source and same
 numbers, slower.
@@ -247,6 +252,131 @@ byte" is load-bearing for the candidate ledger rather than only for exploration.
 `tests/test_modes.py` pins all four curves, each held to *moving* the picture so
 the test cannot pass by testing nothing.
 
+## The colormap: stops on disk, a folded table in the engine
+
+A file in `data/palettes` is **control points**, never a gradient, and it ships at
+one of four resolutions — 33 stops for 156 maps, 34 for 36, 257 for 334, 512 for
+375; 901 files and none at 4096. `Colormap::from_stops_baked` is the only densifier:
+the stops are sorted, converted to **OKLab**, interpolated there, and baked into a
+`TABLE_SIZE` (**4096**) entry table of linear-light RGB, regenerated on every load.
+Perceptual interpolation because a gradient interpolated in linear RGB is evenly
+spaced and visually lumpy; a table because a 2560x1440 render at ss4 is 59 million
+lookups that only ever take 4096 values.
+
+Two consequences a reader outside the crate has to carry. A lookup is **clamped and
+not wrapped** — `t` outside `[0, 1]` returns the end colour, and what falling off the
+end means is for the recipe's `cycles` and `phase` to say. And **anything comparing
+two maps has to sample positions through this interpolation** rather than compare
+stop lists, because two maps at 33 and 512 stops are two samplings of one curve and
+the difference between the samplings is not a difference between the maps.
+`palettes.groups.cloud` is the Python side of that: 4096 evenly spaced unfolded
+positions, `numpy.interp` in OKLab, end colours held outside the outermost stops
+exactly as `interpolate` holds them here.
+
+**Folding happens at bake time, from the recipe's `mirror`.** `colormap::mirror`
+runs the stops out across `[0, 0.5]` and back across `[0.5, 1]` — `n` stops become
+`2n − 1`, the two ends shared between the halves rather than duplicated, and the
+opening colour written again at `1.0` so the closing segment is the fold rather than
+the second-to-last colour held flat. It is applied **before** the OKLab conversion,
+so a folded map is a different 4096-entry table and not a different way of reading
+one. Production's rule is `mirror = the map is not cyclic`, owned by
+`models.palette_sets.recipe_for` and read off the gradient rather than off a row: of
+the 900-map candidate pool **155 are sequential and are folded, 745 are cyclic and
+are not**, and the engine refuses to fold a cyclic map at all.
+
+**And a fold is why a lopsided field loses nearly all of a map.** The fold sends the
+ramp's original position `g` to *two* table positions, `g / 2` and `1 − g / 2`, so
+the ramp's far end lands **dead centre** — `g = 1` at `t = 0.5` — and its whole far
+half lives in the middle band of the stretch. `coloring` normalizes a field against
+its own 0.5th and 99.5th percentiles, and an escape-time field is nowhere near
+uniform over that stretch: it piles up, often very hard, at one end. A frame with no
+middle therefore never reaches the far half of a folded map, however much of the
+gradient that half occupies — a swatch at gradient position 0.8 needs field values
+near 0.4 and 0.6 of the stretch and is simply absent from a frame that has none. So
+a map's ramp is a **necessary condition on what a picture can be and not a
+prediction**, which is why `curation.palette_coverage` measures capability on pixels
+instead, and why its probe panel takes by construction the two cells whose gradient
+positions pile hardest at one end: those are the cells where a mirrored ramp strands
+its far half, and a panel without one cannot see the failure it exists to find.
+
+## The whole lib compiles to wasm32, and draws the same bytes
+
+`engine/src` carries **no `cfg(target_arch)` anywhere**: the crate compiles to
+`wasm32-unknown-unknown` unmodified, and the two things that could have needed a
+gate do not.
+
+* **Rayon.** `coloring` and `resample` are `par_iter` throughout. `rayon-core`
+  detects that a target's threading is unsupported and configures a global
+  **single-threaded fallback** rather than panicking — as if `RAYON_NUM_THREADS=1` —
+  so the parallelism on a page is that page's worker pool, and the engine did not
+  have to know.
+* **The filesystem.** The one fs touch reachable from the coloring path is
+  `Colormap::load`. A wasm consumer calls `from_stops_baked` instead, which is why a
+  map crosses that boundary as stops rather than as a name.
+
+**Whole-frame output is byte-identical to native.** Each of the eighteen production
+modes, on the parameter plane and on a dynamical one, at one and at two samples per
+pixel, against `fractal-engine render` of the same spec: **72 of 72 frames**. It is
+the same `f64` code over the same inputs, and wasm's `f64` is IEEE-754 with no x87
+excess precision to diverge through. That measurement lives with the consumer rather
+than here — this crate has no wasm target of its own and no test that builds one.
+
+**The bindings take one render spec and have no family-specific entry point.** The
+site's module exports `plan`, `compute_band` and `shade`, and all three take the
+engine's own render spec minus the two keys that name files, plus the colormap by
+value — so a family, a degree, a constant, a mode, a mode parameter and a palette
+recipe have exactly one spelling on that boundary, and **adding a family here is not
+adding an export**. `plan` is what a page asks first, and it answers out of
+`mode::resolve`, `maxiter::for_width` and `Family::home_view` rather than out of a
+table the page keeps. No wasm-bindgen: the module is this crate plus one file.
+
+**Consumers pin by path, because the version cannot tell them anything.** This crate
+is `0.1.0` and is never bumped, so a git dependency could not distinguish two
+revisions of it — and it would drag the Python package, the data and the labels into
+a build that wants one Rust library. The site's `explorer/engine-wasm` therefore
+depends on this directory by path, and its `build.rs` exists to say exactly that when
+the sibling checkout is missing. What identifies a build is what it draws: see
+[`engine_fingerprint`](../src/fractal_wallpapers/engine_fingerprint.py), a digest of
+a pinned probe set rendered through the production path, which catches a binary
+rebuilt from unchanged source by a different toolchain as well as a source change.
+
+## What each family's picture is symmetric under
+
+None of this is code — there is no symmetry pass in the crate and nothing folds a
+render — but it is what the recurrences in `family.rs` imply, and it is the first
+thing to check when a picture looks like it has a bug in it. Measured below on 401²
+`smooth` fields, width 3.0 about the origin at a cap of 800, rotated by nearest
+sample and compared where both land inside the frame.
+
+* **Multibrot, `z ← z^d + c` with the pixel as `c`: `(d − 1)`-fold rotation about the
+  origin.** `c ↦ ωc` with `ω^{d−1} = 1` conjugates the whole orbit by `ω`, and the
+  escape test reads only `|z|`. At `d = 2` that is the identity, which is the honest
+  reading of the Mandelbrot set having no rotational symmetry at all;
+  `discovery.nucleus` folds an atom's `c` into the fundamental sector on this same
+  rule. Measured: at `d = 3, 4, 5` the median `|Δsmooth|` under a `(d − 1)`-fold
+  rotation is 0.0000, 0.0041 and 0.0000, against 0.10 to 0.69 at the neighbouring
+  wrong orders.
+* **Julia, the same recurrence with the pixel as `z₀`: `d`-fold.** Not by conjugacy —
+  `f(ωz) = ω^d z^d + c = f(z)` exactly when `ω^d = 1`, so the two orbits *coincide*
+  after one step rather than merely mirroring, and it holds for every `c`. Measured
+  at `c = −0.4 + 0.6i`: median `|Δsmooth|` 0.0000, 0.0049, 0.0000 and 0.0031 at
+  `d = 2..5`, against 0.16 to 0.28 at the wrong orders.
+* **Any family whose constants are real: reflection in the real axis**, because
+  `cpow` and `cpowf` both commute with conjugation and `|z̄| = |z|`. That is the one
+  symmetry `fractional_multibrot` has, and it is why the negative real axis of its
+  *parameter* plane is not a seam — below.
+* **Phoenix, `z ← z² + c + p·z₋₁`: that conjugation and nothing else, and only when
+  `c`, `p` and `z₋₁` are ALL real.** `CLASSIC_PHOENIX` is `(0.5667, 0)`, `(−0.5, 0)`
+  and `z₋₁ = 0`, so the default render has it; give any one of the three an imaginary
+  part and it is gone. Measured on the classic instance the largest `|Δsmooth|`
+  across the axis is **0.0057** — the `f32` dump's own granularity — and with `c`
+  moved to `0.5666 + 0.1i` it is **147**.
+* **`p = 0` erases the memory term and leaves a quadratic Julia set**, exactly rather
+  than approximately: `phoenix_with_zero_p_is_a_quadratic_julia` pins the smooth
+  counts equal **bit for bit** over 1,600 samples, and a dumped 401² field at
+  `c = −0.4 + 0.6i` is byte-identical to the `julia` degree-2 one. A non-zero `z₋₁`
+  is a real axis and not a decoration — `a_nonzero_z_prev_gives_a_different_set`.
+
 ## The one family that only draws pictures
 
 `fractional_multibrot` is `z ← z^d + c` at a **non-integer** `d`, on the
@@ -257,6 +387,44 @@ every ray where an iterate crosses it. That seam is not an artifact to be
 smoothed away: it is what a fractional degree *is* on a single-valued branch, and
 it is the subject of the figure this family exists to draw. A different branch
 moves it and does not remove it.
+
+**The cut is in `z`, so the parameter plane's own real axis is NOT a seam.** The
+branch is chosen in `cpowf`, which is applied to an *iterate*; the pixel is `c`, and
+`cpowf` commutes with conjugation, so the orbit from `c̄` is the conjugate of the
+orbit from `c` and the escape test reads only `|z|`. The picture is therefore exactly
+symmetric about the real axis: on 401² fields at `d = 1.8` and `d = 2.5` the
+difference across `im = 0` is **zero everywhere**, where the typical neighbouring
+difference elsewhere in the same frame is 0.009 to 0.027. What the picture does carry
+is the curves where an *iterate* crosses the cut, and by the same argument those
+arrive in conjugate pairs.
+
+**Below degree 2 the seam is the picture rather than a detail of it.** At `d = 2.5`
+the seams are thin rays off a set that still reads as a multibrot. At `d = 1.8` a
+broad double ray runs corner to corner through a set that is small, lopsided and
+pushed off-centre, and it is the first thing anyone sees — which is the figure this
+family exists to draw, and the reason `LOWEST_FRACTIONAL_DEGREE` reaches below the
+quadratic degree at all.
+
+**A frame below degree 2 costs about half of one just above it, and that is the set
+shrinking rather than orbits escaping sooner.** Same geometry throughout — 401²,
+width 4.0 about the origin, cap 2000, `dump-field`:
+
+| d | escapes | median smooth | seconds |
+|--:|--:|--:|--:|
+| 1.8 | 94.3% | 6.88 | 0.23 |
+| 1.9 | 93.2% | 6.61 | 0.27 |
+| 2.1 | 88.6% | 6.15 | 0.48 |
+| 2.5 | 88.3% | 5.39 | 0.44 |
+| 3.5 | 89.5% | 4.43 | 0.39 |
+
+Only interior samples pay the full cap, so the cost tracks the escaping share and
+not the count. **The count itself runs the other way**: over the samples that escape
+at every degree in the table the median is 6.73 at `d = 1.8` against 5.32 at
+`d = 2.5`, because the smooth count's base is `ln d` and `ln d < ln 2` below the
+quadratic degree. That is the same fact
+`the_smooth_count_does_not_terrace_below_degree_two` exists for — a smaller base
+*amplifies* the overshoot correction rather than shrinking it, so a wrong
+normalization shows up more loudly at 1.8 and 1.9 than at 2.
 
 It is **render-only**, and that is a guarantee about what cannot happen rather
 than a gap. A written `render` or `dump-field` spec reaches it; seven other doors
