@@ -862,16 +862,34 @@ def test_a_record_round_trips_through_its_own_directory(tmp_path, monkeypatch):
 # --------------------------------------------------------------------------- #
 # The tracked pool. Real rows, real pictures, real HiGHS.
 # --------------------------------------------------------------------------- #
+@pytest.fixture
+def tracked_artifacts(monkeypatch):
+    """Undo `artifacts_on_disk` for the two guards that read the REAL tree.
+
+    That fixture is autouse over this whole module, so it points the hot root at
+    an empty `tmp_path` for every test in the file — including these, whose whole
+    subject is that the tracked pool's pictures are where the ledger says. They
+    then look for 247,780 real renders inside an empty directory and report every
+    one of them missing, which reads as a store that moved rather than as a
+    fixture that moved under them. Autouse cannot be declined, so it is undone
+    here, and it has to stay undone through the test body rather than only
+    through the fixture: `picture_of` is called on the rows, not on the pool.
+    """
+    monkeypatch.delenv(paths.HOT_ROOT_VARIABLE, raising=False)
+
+
 @pytest.fixture(scope="module")
 def tracked_pool():
     if not candidate_ledger.rows_path().is_file():
         pytest.skip("the candidate ledger has not been backfilled on this machine")
-    candidates, _refused = solve.pool(log=lambda *_: None)
+    with pytest.MonkeyPatch.context() as patched:
+        patched.delenv(paths.HOT_ROOT_VARIABLE, raising=False)
+        candidates, _refused = solve.pool(log=lambda *_: None)
     return candidates
 
 
 @pytest.mark.slow
-def test_the_tracked_pool_solves_and_honours_every_rule(tracked_pool):
+def test_the_tracked_pool_solves_and_honours_every_rule(tracked_artifacts, tracked_pool):
     """One small real solve, end to end: the store, the pictures, and HiGHS.
 
     Five seats rather than twenty, because the guard is that every rule is
@@ -901,7 +919,7 @@ def test_the_tracked_pool_solves_and_honours_every_rule(tracked_pool):
 
 
 @pytest.mark.slow
-def test_every_candidate_the_solver_may_seat_has_its_picture(tracked_pool):
+def test_every_candidate_the_solver_may_seat_has_its_picture(tracked_artifacts, tracked_pool):
     """The pool's own claim. A candidate no pairwise rule can read is refused at
     [`solve.pool`], so a missing picture here is a store that moved under it."""
     missing = [c.key for c in tracked_pool[:400] if not solve.picture_of(c).is_file()]
