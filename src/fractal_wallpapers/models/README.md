@@ -70,6 +70,28 @@ full cache while the trainer refuses. `renders verify` re-derives a seeded sampl
 and compares, and `renders ship` will not stage anything until `renders accept`
 has written a verdict — a `FAIL` needs `--force` and a sentence about why.
 
+**Budget a whole cache at about two and a quarter seconds a picture, and build it
+with ONE engine.** Measured 2026-08-30 over the 10,552-picture plan both stores
+now carry, on adjacent hundred-job slices of the shuffled plan: **2.11 s serially
+against 2.65 s at three engines**, so `renders.DEFAULT_WORKERS` is 1 and
+`--workers` exists to re-take the measurement rather than to raise it. The engine
+iterates one field across every core it can see, so a second process does not
+find an idle machine — it finds this one. That is the same direction and about
+the same size as `discovery.scoring`'s fan-out and the flip leg's, now measured a
+third time. A cache built from nothing is **about five hours** and it is the
+dominant cost of any retrain that starts without one.
+
+**`renders decode` is the lever that speeds every arm at once.** The training
+loop is data-loading bound — the GPU sits near 10% while a worker decodes a
+1280x720 JPEG — and on this machine the decode is **12.3 ms of a 29.6 ms
+example**. `renders decode` writes each crop's own pixels beside it once, about
+2.7 MB a picture and roughly 3 GB a thousand, and `renders.open_picture` serves
+them to the loader. It is **exactly the JPEG's pixels**: no resize, no smaller
+intermediate, so a run over the cache and a run over the crops are the same run.
+An array at anything smaller would put a second resize in the chain, and then the
+recipe a band was fitted at would depend on whether a cache happened to be warm.
+A truncated array reads as a miss and the crop is still the authority.
+
 **Every score file holds UNCONDITIONAL `P(≥k)`.** CORN trains cutpoint `k`
 conditionally — given the row cleared the cutpoint below — so the answer a floor
 is a point on is the *running product* of those sigmoids, which is what

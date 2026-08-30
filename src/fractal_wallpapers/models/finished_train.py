@@ -464,12 +464,10 @@ class Crops:
     def __getitem__(self, index: int):
         import random
 
-        from PIL import Image
+        from fractal_wallpapers.models import renders
 
         row = self.rows[index]
-        with Image.open(row.path) as opened:
-            opened.load()
-            image = opened.convert("RGB")
+        image = renders.open_picture(row.path)
         # Seeded on the picture and the epoch, so a run reproduces and a picture
         # still gets a different crop every pass.
         return self.transform(image, random.Random(f"{row.name}:{self.epoch}")), row.score, index

@@ -219,7 +219,7 @@ def test_the_logistic_agrees_with_scipy_on_the_same_penalised_objective():
         )
 
     reference = minimize(objective, numpy.zeros(4), method="BFGS", tol=1e-12).x
-    assert numpy.allclose(rank_key._logistic(columns, target), reference, atol=1e-5)
+    assert numpy.allclose(rank_key.logistic(columns, target), reference, atol=1e-5)
 
 
 def test_the_auc_agrees_with_a_brute_force_pair_count_ties_included():

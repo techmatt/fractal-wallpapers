@@ -301,14 +301,14 @@ def order_for(candidates, key: Key | None = None, log=print) -> tuple[dict, dict
 # --------------------------------------------------------------------------- #
 # The fit.
 # --------------------------------------------------------------------------- #
-def _standardize(matrix):
+def standardize(matrix):
     mean = matrix.mean(axis=0)
     deviation = matrix.std(axis=0)
     deviation[deviation < 1e-12] = 1.0
     return mean, deviation
 
 
-def _logistic(design_columns, target, lam: float = LAMBDA, iterations: int = 100):
+def logistic(design_columns, target, lam: float = LAMBDA, iterations: int = 100):
     """IRLS with an L2 on the slopes; the intercept is not penalised.
 
     Hand-written because `sklearn` is not in this project's dependency set and a
@@ -338,7 +338,7 @@ def _logistic(design_columns, target, lam: float = LAMBDA, iterations: int = 100
     return beta
 
 
-def _predict(beta, design_columns):
+def predict(beta, design_columns):
     import numpy
 
     rows = design_columns.shape[0]
@@ -583,8 +583,8 @@ def fit(rows=None, log=print) -> dict:
         [[entry["features"][name] for name in COLUMNS] for entry in consumed], dtype=float
     )
     target = numpy.array([1.0 if entry["tier"] >= 4 else 0.0 for entry in consumed])
-    mean, deviation = _standardize(matrix)
-    beta = _logistic((matrix - mean) / deviation, target)
+    mean, deviation = standardize(matrix)
+    beta = logistic((matrix - mean) / deviation, target)
 
     # ---- out of fold, per kind, against the incumbent ------------------------ #
     folds = numpy.array([entry["fold"] for entry in consumed])
@@ -593,9 +593,9 @@ def fit(rows=None, log=print) -> dict:
         held = folds == fold
         if held.sum() == 0 or (~held).sum() == 0 or len(numpy.unique(target[~held])) < 2:
             continue
-        inner_mean, inner_deviation = _standardize(matrix[~held])
-        inner = _logistic((matrix[~held] - inner_mean) / inner_deviation, target[~held])
-        predicted[held] = _predict(inner, (matrix[held] - inner_mean) / inner_deviation)
+        inner_mean, inner_deviation = standardize(matrix[~held])
+        inner = logistic((matrix[~held] - inner_mean) / inner_deviation, target[~held])
+        predicted[held] = predict(inner, (matrix[held] - inner_mean) / inner_deviation)
     incumbent = numpy.array([entry["features"]["p_ge4"] for entry in consumed])
     out_of_fold: dict = {}
     for kind in KINDS:
@@ -737,10 +737,13 @@ __all__ = [
     "auc",
     "features_for",
     "fit",
+    "logistic",
     "ledger_identity",
     "load",
     "order_for",
     "population_path",
+    "predict",
+    "standardize",
     "stratum_of",
     "thin_cells",
 ]

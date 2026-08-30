@@ -87,13 +87,19 @@ def test_two_seeds_that_do_not_cover_the_same_pictures_are_refused() -> None:
         )
 
 
-def test_the_arms_differ_in_the_input_size_and_in_nothing_else() -> None:
-    """Arm B is 2x linear of the REALIZED shape, and every other key is arm A's."""
+def test_the_arms_differ_in_the_aspect_and_in_nothing_else() -> None:
+    """Arm B closes the aspect gap at the SHIPPED width, and moves nothing else.
+
+    The width is the load-bearing half. Aspect and resolution are two questions
+    and the resolution one is answered by a scoring check over retired
+    checkpoints, so an arm that widened the input while correcting the aspect
+    would confound them and could answer neither.
+    """
     assert render_grade.ARMS["A"]["target_dims"] is None
-    assert render_grade.ARMS["B"]["target_dims"] == [
-        render_grade.SHIPPED_DIMS[0] * 2,
-        render_grade.SHIPPED_DIMS[1] * 2,
-    ]
+    assert render_grade.ARMS["B"]["target_dims"] == list(render_grade.ASPECT_DIMS)
+    assert render_grade.ASPECT_DIMS[0] == render_grade.SHIPPED_DIMS[0]
+    width, height = render_grade.ASPECT_DIMS
+    assert width * render_grade.SOURCE_ASPECT[1] == height * render_grade.SOURCE_ASPECT[0]
     assert set(render_grade.ARMS["A"]) == set(render_grade.ARMS["B"])
 
 
@@ -169,3 +175,80 @@ def test_a_pinned_location_reaches_neither_the_training_side_nor_the_stop_slice(
             f"{len(trespassing)} pinned pictures would be trained or stopped on in fold "
             f"{fold}, which spends a blind sheet the folds may not touch"
         )
+
+
+def carried_columns_for(rows: list[dict], flatness: float = 0.1) -> dict:
+    """The arm-independent half of the rank key's row, for a synthetic population."""
+    return {
+        "rows": {
+            f"{row['kind']}:{row['name']}": {
+                "kind": row["kind"],
+                "name": row["name"],
+                "tier": int(row["score"]),
+                "mode": row["mode"],
+                "loc_p_ge4": 0.5,
+                "stratum_score": 1.0,
+                "flat16_1.0": flatness,
+            }
+            for row in rows
+        }
+    }
+
+
+def test_the_key_is_refit_out_of_fold_on_the_arm_s_own_predictions() -> None:
+    """The primary, and the one property that makes it a primary.
+
+    An arm whose scale has moved must not be read through constants fitted
+    against another arm's scale — CORN's axis is set by the training prior, so
+    every retrain moves it and the move would report as a quality change. So the
+    key's own weights come from the arm being read, out of the fold being read.
+    """
+    rows = [
+        an_out_of_fold_row(
+            f"a{index}", 4 if index % 3 == 0 else 3, index / 60, lineage=index, fold=index % 5
+        )
+        for index in range(60)
+    ]
+    carried = carried_columns_for(rows)
+    read = render_grade.key_readings(rows, carried)
+    assert len(read) == len(rows)
+    assert all("key_value" in row for row in read)
+
+    # The same reading with every probability shifted by a constant is the same
+    # ORDER, so a refit key reads the same AUC off it. That is the calibration
+    # sensitivity dropping out, stated as a test rather than as a claim.
+    moved = [{**row, "p_ge3": row["p_ge3"] / 2, "p_ge4": row["p_ge4"] / 2} for row in rows]
+    shifted = render_grade.key_readings(moved, carried)
+    document = render_grade.key_delta(shifted, read)
+    assert document["n"] == len(rows)
+    assert document["candidate"] == pytest.approx(document["reference"], abs=1e-9)
+
+
+def test_a_row_the_key_cannot_be_read_for_is_left_out_rather_than_imputed() -> None:
+    """A rank the key never took is not a rank of zero. It is an absence."""
+    rows = [
+        an_out_of_fold_row(
+            f"b{index}", 4 if index % 2 else 3, index / 20, lineage=index, fold=index % 5
+        )
+        for index in range(20)
+    ]
+    carried = carried_columns_for(rows[:12])
+    read = render_grade.key_readings(rows, carried)
+    assert len(read) == 12
+    assert {row["name"] for row in read} == {row["name"] for row in rows[:12]}
+
+
+def test_the_primary_pools_both_kinds_and_takes_only_the_three_and_four_rows() -> None:
+    """Pooled because the key's weights are shared; 3-or-4 because that is the seat."""
+    rows = [
+        an_out_of_fold_row(f"c{index}", (index % 4) + 1, index / 40, lineage=index, fold=index % 5)
+        for index in range(40)
+    ]
+    for index, row in enumerate(rows):
+        row["kind"] = "smooth_render" if index % 2 else "strange_render"
+    carried = carried_columns_for(rows)
+    read = render_grade.key_readings(rows, carried)
+    document = render_grade.key_delta(read, read)
+    assert document["n"] == sum(1 for row in rows if int(row["score"]) in {3, 4})
+    assert set(document["per_kind"]) == set(render_train.KINDS)
+    assert document["delta"] == pytest.approx(0.0)
