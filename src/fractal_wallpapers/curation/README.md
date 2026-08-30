@@ -637,22 +637,32 @@ exactly once. Every supply figure in both modules is a count of `location.key`.
 
 A candidate is supply only if it is worth seating. The default is `solve.Q4_BAR` on
 raw `P(>=4)` — 0.50, the same bar the solver's first objective stage counts against.
-Six of the thirteen modes `mode_policy` accepts have fewer than twenty-five
+Six of the **fourteen** modes `mode_policy` accepts have fewer than twenty-five
 distinct locations clearing that, so those fall back to `P(>=3) >= 0.50` and the
 table **says which rule each mode landed on**: a mode censused under a lower bar
 is not comparable to one censused under the default. The roster is `accepted()`
 and not the engine's eighteen — a weight-0 mode has no row in the pool to bar.
+Which mode is on which bar is the last column of the capability table under
+`mode_policy` below, and is not restated here.
 
 Both bars are flags on the arithmetic. Neither is a measured crossover, and the one
 ACTING release bar — `P(>=3) >= 0.575` on strange_render — is *above* the fallback.
 Nothing here re-scores at shipping geometry.
 
-Read on 2026-08-27 over 85,078 candidates at 4,956 places: seven modes on the
-default (`smooth`, `exp_smoothing`, `tia`, `stripe`, `smooth_stripe`, `threads`,
-`itinerary`), eleven on the fallback, and **four the fallback does not rescue** —
+**Read on 2026-08-27 over 85,078 candidates at 4,956 places**, before `mode_policy`
+existed and over all eighteen: seven modes on the default (`smooth`,
+`exp_smoothing`, `tia`, `stripe`, `smooth_stripe`, `threads`, `itinerary`), eleven
+on the fallback, and **four of those eleven the fallback does not rescue** —
 `trap_circle` at 2 distinct places, `gaussian_int` at 18, `direct_trap_ring` at 20,
-`smooth_trap_circle` at 23. Those four are the standing mine instruction. 5,924
-candidates over 1,427 places clear.
+`smooth_trap_circle` at 23. 5,924 candidates over 1,427 places clear. Those four
+became the standing mine instruction and are exactly the four `MODE_POLICY` now
+weights 0.
+
+⚠ **Do not quote "eleven on the fallback" as current.** That count was taken over
+eighteen modes; the bar is now asked only of `accepted()`, and the four unrescued
+modes are weight-0 and have no row in the pool to bar at all. The reading on
+2026-08-30 is **eight on the default, six on the fallback, four with no bar** — the
+last column of the capability table under `mode_policy` below.
 
 ### The census is a covering condition, stated in one direction
 
@@ -1230,6 +1240,54 @@ out of the niche set on 2026-08-29.
 the finished-render corpora were collected over and lives in Rust; this table is a
 claim about what is worth collecting next, and it has to express a third value a
 two-valued tier cannot. `check()` refuses if a mode carries both.
+
+### Every mode's capabilities, in one table
+
+What each of the eighteen production modes can do, so nothing below has to say it
+again in prose. Every column but the last is read straight out of code —
+`colorize.kind_of`, `colorize.shareable`, `autolevel.applies_to`, `MODE_POLICY` —
+and re-deriving it is `python -c` over those four names, never a measurement.
+
+| mode | kind | shareable / field dumpable | `autolevel` | weight | bar |
+|---|---|:-:|:-:|:-:|---|
+| `smooth` | field | yes | yes | 1 normal | `P(>=4)` |
+| `tia` | field | yes | yes | 2 promoted | `P(>=4)` |
+| `stripe` | field | yes | yes | 2 promoted | `P(>=4)` |
+| `exp_smoothing` | field | yes | yes | 1 normal | `P(>=4)` |
+| `curvature` | field | yes | yes | 1 normal | `P(>=4)` |
+| `gaussian_int` | field | yes | yes | **0 niche** | none |
+| `trap_circle` | field | yes | yes | **0 niche** | none |
+| `smooth_stripe` | composite | no | yes | 2 promoted | `P(>=4)` |
+| `threads` | composite | no | yes | 2 promoted | `P(>=4)` |
+| `smooth_mean_angle` | composite | no | yes | 2 promoted | `P(>=3)` fallback |
+| `smooth_angle_min` | composite | no | yes | 2 promoted | `P(>=3)` fallback |
+| `smooth_curvature` | composite | no | yes | 1 normal | `P(>=3)` fallback |
+| `smooth_trap_circle` | composite | no | yes | **0 niche** | none |
+| `direct_trap_screen` | direct | no | **no** | 1 normal | `P(>=3)` fallback |
+| `direct_trap_multiply` | direct | no | **no** | 1 normal | `P(>=3)` fallback |
+| `direct_trap_lines` | direct | no | **no** | 1 normal | `P(>=3)` fallback |
+| `direct_trap_ring` | direct | no | **no** | **0 niche** | none |
+| `itinerary` | modulate | no | **no** | 2 promoted | `P(>=4)` |
+
+Eighteen modes over **four** kinds, not three: `itinerary` is a `modulate` and is
+the only one. Seven field · five composite · four direct · one modulate. Four
+niche, seven normal, seven promoted; thirteen carry the autolevel operator and
+seven are shareable.
+
+**`shareable` and "a field is dumpable" are one column, not two.** `colorize.shareable`
+is `kind_of(mode) == FIELD_KIND` and nothing else, so the two agree on all eighteen.
+The only way they can ever part is `colorize._UNSHAREABLE`, a per-process cache of
+modes the engine refused a dump for at runtime; it is empty on a fresh interpreter,
+so a document that prints both columns is printing the same column twice.
+
+**The bar is the one column that is not a code constant.** A mode falls back to
+`P(>=3) >= 0.50` when fewer than `headroom.FALLBACK_MIN` (25) distinct locations
+clear `P(>=4) >= 0.50`, which is a fact about the pool on the day. The column above
+is read off the newest seating record — `mode_policy_switch_n150`, 2026-08-30, over
+275,822 candidates of which 20,028 cleared — and it moves when the pool moves.
+`config.bars` on any `seat.json` is the authority for that record's own seating. A
+niche mode has no bar because it has no row in the pool to bar: `solve.pool` refuses
+it upstream.
 
 ## One field, many palettes — how a candidate is made
 
@@ -1883,6 +1941,99 @@ population. Read them as **per engine**, which is what `--rate` is:
   `build_plan` takes `--modes` verbatim with no `colorize.shareable()` check, so a
   wholly composite roster runs and its record still claims field modes only. Do not read
   that field.
+
+## Every per-candidate rate this project has measured
+
+⚠ **These are historical, measured under different conditions, and not comparable
+across rows.** A rate is a joint fact about the mode roster, the width `k`, the
+engine count, the picture geometry and whether the field was shared — change any one
+and the number moves by more than the spread of this whole table. Nothing here is a
+constant, none of it sizes a leg you have not piloted, and the depth roster moved to
+five field modes on 2026-08-29, so **every row below predates the current roster**.
+Pilot the roster the leg will actually run.
+
+This caveat is stated once, here. Everywhere else in these documents that quotes a
+rate should point at this table rather than repeat the warning.
+
+**Read `s/cand` as per ENGINE**, which is what `--rate` wants and what
+`budget.seconds_per_candidate` records. A rate read off a three-worker leg carries
+that leg's contention: three engines cost about 1.6–1.8x per candidate over one.
+
+| s/cand | mode or roster | eng | k | date | population drawn | record |
+|--:|---|:-:|--:|---|---|---|
+| 1.26 | production mix, before the shared field | 1 | 3 | 08-26 | 5,684 cand / 7,169 s | `mine1` |
+| 0.976 | field, **before** field sharing | 1 | 1 | 08-26 | 9 never-opened places x 8 maps | `curate mine bench` |
+| 0.673 | field, after | 1 | 1 | 08-26 | same | `mine bench` |
+| 0.217 | field, after | 1 | 8 | 08-26 | same | `mine bench` |
+| 0.178 | field, after | 1 | 20 | 08-26 | same | `mine bench` |
+| 0.165 | field, after | 1 | 40 | 08-26 | same | `mine bench` |
+| 0.041 | a bare recolour, flat in maxiter | 1 | — | 08-26 | same | `mine bench` |
+| 0.417 | 6 cycled field modes | 3 | 40 | 08-27 | `dc1`/`dc2`, 61,863 cand | depth curves |
+| 0.356 | 3 field modes | 3 | 20 | 08-27 | same | depth curves |
+| 0.260 | near band, mode held | 3 | — | 08-27 | same | depth curves |
+| 0.898 | `tia` dump, 3-mode roster | 3 | — | 08-27 | same | depth curves |
+| 0.497 | 6 breadth field modes | 1 | 24 | 08-28 | seed 20260827 | `curate depth` |
+| 0.696 | 2 composites, **no sharing** | 1 | 24 | 08-28 | seed 20260827 | `curate depth` |
+| 0.278 | 2 field modes, near-heavy | 1 | 24/127 | 08-28 | `mine1h` field leg | `curate depth` |
+| 0.743 | 4 direct traps, near-heavy | 1 | 24/136 | 08-28 | `mine1h` composite leg | `curate depth` |
+| 0.270 | `{gaussian_int, curvature}` | 1 | 24/40 | 08-28 | 649 of a 2,416 plan, seed 20260901 | worker bench |
+| 0.496 | same | 3 | 24/40 | 08-28 | 1,076 of the same plan | worker bench |
+| 0.424 | same, `ENGINE_THREADS_PER_WORKER` 7 | 3 | 24/40 | 08-28 | 1,254 | worker bench |
+| 0.442 | same, 4 engine threads | 3 | 24/40 | 08-28 | 1,219 | worker bench |
+| 0.2652 | one leg's seed re-run serially | 1 | — | 08-28 | 440 of 440 identical recipes | `mine_weak_modes` |
+| 0.4707 | the same leg | 3 | — | 08-28 | location-matched to the row above | `mine_weak_modes` |
+| 4.377 | WIDE, weak modes | 3 | 3 | 08-28 | 2,726 renders / 3,988 s | `mine_weak_modes` |
+| 0.680 | DEEP, weak modes | 3 | 40 | 08-28 | 4,520 renders / 1,038 s | `mine_weak_modes` |
+| 0.285 | NEAR, weak modes | 3 | 96 | 08-28 | 35,306 renders / 3,402 s | `mine_weak_modes` |
+| 2.843 | COMP, 3 composites | 3 | 24 | 08-28 | 2,107 renders / 2,002 s | `mine_weak_modes` |
+| 1.480 | `direct_trap_lines` alone | 3 | 24 | 08-28 | 849 renders / 422 s | `mine_weak_modes` |
+| 0.4505 | `trap_circle`,`gaussian_int`,`curvature` | 3 | 60 | 08-29 | 45,104 cand / 6,833 s | `sparse_mode_harvest` P1 |
+| 0.501 | `gaussian_int` | 3 | 60 | 08-29 | 15,035 cand | same leg |
+| 0.500 | `curvature` | 3 | 60 | 08-29 | 15,034 cand | same leg |
+| 0.350 | `trap_circle` | 3 | 60 | 08-29 | 15,035 cand | same leg |
+| 1.646 | `direct_trap_screen` | 3 | 12 | 08-29 | 1,977 cand | `sparse_mode_harvest` P2 |
+| 1.469 | `direct_trap_lines` | 3 | 12 | 08-29 | 1,978 cand | same leg |
+| 2.360 | `direct_trap_ring` | 3 | 12 | 08-29 | 1,977 cand | same leg |
+| 0.953 | `itinerary` — never shareable, full render | 3 | — | 08-29 | `mode_policy` pricing | `mode_policy` |
+| 0.239 | `smooth`, priced beside it | 3 | — | 08-29 | same | `mode_policy` |
+| 0.3433 | `smooth` alone, whole leg | 3 | 12 | 08-30 | 116,520 cand / 9,710 places | `smooth_500` |
+| 0.4777 | `smooth`, that leg's own pilot | 3 | 4 | 08-30 | 11,138 cand | `smooth_500` |
+| 0.3558 | `smooth`, ranked-bands arm | 3 | 12 | 08-30 | 84,084 cand / 7,007 places | `smooth_500` |
+| 0.3132 | `smooth`, flat arm | 3 | 12 | 08-30 | 24,948 cand / 2,079 places | `smooth_500` |
+| 0.3038 | `smooth`, conditioned arm | 3 | 12 | 08-30 | 7,488 cand / 624 places | `smooth_500` |
+
+**Per-mode dump cost in breadth**, one number a mode, `dc1`/`dc2` 2026-08-27:
+`stripe` .378 · `gaussian_int` .285 · `curvature` .268 · `tia` .147 ·
+`exp_smoothing` .147 · **`smooth` .056**. Stripe's field costs seven times smooth's
+to dump, which is why it is the dearest field mode to draw.
+
+**What the spread is made of, and it is not noise.** The table runs 0.041 to 4.377,
+a hundredfold, and four mechanisms account for nearly all of it. **Field sharing**:
+one dump amortised over `k` palettes, 0.976 to 0.165 from k=1 to k=40 on the same
+places. **Coloring kind**: a mode with no dumpable field pays a full render every
+candidate, which is `itinerary` at 0.953 against `smooth`'s 0.239 on the same day.
+**Where the draw came from**: a near-band place holds its mode and pays one dump
+over the whole set; a breadth place cycles the roster and pays one per mode.
+**Contention**: three engines are ~1.7x per candidate over one, and the record's
+`concurrency` field is engine-seconds over wall and is **not** a speedup.
+
+**A pilot over-reads a short leg's rate by a knowable amount.** Budget seconds are
+`stages.total()` and exclude the fixed start — the population read, the judge load
+and the plan build, about 50 s — so a short run's wall carries it and a long run's
+does not. `mine1h`'s pilots measured wall/spent at 1.28 where the legs came in at
+1.03 and 1.02. Read a pilot's `spent / made`, never its wall. And do not pilot
+unlike shapes concurrently: a k=40 pilot sharing the machine with a dump-heavy k=3
+pilot came out 42% dear, and a composite pilot including the cheap
+`direct_trap_lines` under-priced a leg that dropped it by 89%.
+
+**Rates in other units live elsewhere and never belong in this table.** A gallery
+release is priced per **row** (3.5 s/row on gallery4's 249 winners at 1280x720 ss2
+on three workers, against gallery3's 44.6 s at 2560x1440 ss4 on four), and a
+labeling measure pass per **unit** (2.8 s/unit over nine modes, 5.90 s/unit on a
+single-mode sheet cut from the top of the pool). A row and a unit are a finished
+picture; a candidate is 640x360 ss2. Mixing the three is how a leg gets priced an
+order of magnitude wrong.
+
 
 ## `curate shrinkage` — what the winner of a wide set loses on a second look
 
