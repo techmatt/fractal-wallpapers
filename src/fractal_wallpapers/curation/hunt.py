@@ -941,9 +941,10 @@ def run(
     started = time.monotonic()
     index = frames(margin, log=log)
     places = scanned(log=log)
-    # One read of the ledger, not two. It is forty megabytes and both questions
-    # asked of it here — which places are open, and which recipes already exist —
-    # are answered off the same rows.
+    # One read of the ledger, not two. It is the largest store this project has
+    # and it grows every leg, so a second pass costs whatever it happens to weigh
+    # that week; both questions asked of it here — which places are open, and
+    # which recipes already exist — are answered off the same rows.
     stored = candidate_ledger.read()
     opened = opened_locations(stored)
     known = {str(row["key"]) for row in stored}

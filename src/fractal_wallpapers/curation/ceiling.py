@@ -101,9 +101,11 @@ GROUP_CAP = 1
 #: The **proportional** cap's rate: a group may take this share of the seats.
 #:
 #: **0.025**, Matt's, at ckpt 88 — `max(1, floor(0.025 * n))`, so 1 up to n=40,
-#: 3 at n=150 and 25 at n=1000. It is not shipped: [`GROUP_CAP`] above is still
-#: the default everywhere, and this is what [`group_cap`] returns when a caller
-#: asks for the proportional rule by name.
+#: 3 at n=150 and 25 at n=1000. **This is the shipped rule**: a seating that names
+#: no cap gets it, because [`curation.seating.DEFAULT_GROUP_CAP`] is
+#: [`PROPORTIONAL`]. [`GROUP_CAP`] above is still the constant behind
+#: [`IDENTITY`], which is what [`group_cap`] returns when a caller asks for that
+#: rule by name.
 #:
 #: What the identity cap was doing beside being a ceiling is the reason to have
 #: both. A cap of one forces an n-seat gallery onto n distinct maps, which pushes

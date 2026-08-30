@@ -410,8 +410,9 @@ def ledger_identity(row: dict) -> tuple | None:
 
 def _stream_rows(path: Path | None = None):
     """The ledger a line at a time. Streamed rather than read whole because the
-    fit needs six fields off a third of a gigabyte and holding all of it costs
-    gigabytes of dictionaries for nothing."""
+    fit needs six fields per row and the ledger is the largest store here — it
+    grows every leg, and parsing all of it into dictionaries costs many times its
+    own size in memory for the six fields this actually reads."""
     from fractal_wallpapers.curation import candidate_ledger
 
     where = candidate_ledger.rows_path() if path is None else Path(path)
