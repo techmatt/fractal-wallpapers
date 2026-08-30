@@ -46,6 +46,7 @@ import time
 from pathlib import Path
 
 from fractal_wallpapers.curation import hunt
+from fractal_wallpapers.labeling.sheets import LABEL_RESOLUTION, LABEL_SUPERSAMPLE
 from fractal_wallpapers.paths import tracked_name, under
 
 #: The schema every row and record this module writes carries.
@@ -54,11 +55,16 @@ SCHEMA = 1
 #: The subtree one shrinkage read lands in, under the regenerable tree.
 UNIT = "shrinkage"
 
-#: The geometry a person's label is taken at, and therefore the second reading.
-#: A candidate is 640x360 ss2; a finished sheet serves this. One doubling, which
-#: is the contrast the calibration sheet measured over.
-LABEL_RESOLUTION = (1280, 720)
-LABEL_SUPERSAMPLE = 2
+# `LABEL_RESOLUTION` and `LABEL_SUPERSAMPLE` — the geometry a person's label is
+# taken at, and therefore the second reading. A candidate is 640x360 ss2; a
+# finished sheet serves this. One doubling, which is the contrast the calibration
+# sheet measured over.
+#
+# Imported at the top rather than spelled again: `labeling.sheets` owns them,
+# because the sheet rule is what they are about. Two spellings of one geometry is
+# a silent null — the day the sheet moves, a re-read holding its own copy goes on
+# measuring the doubling it used to be, and nothing goes red. Both names stay in
+# `__all__`, so what this module has always answered to still answers.
 
 #: The widths the curve is re-read at. Not every `k`: the re-render is four times
 #: a candidate's pixels and the answer wanted is the *shape* of the drop against
