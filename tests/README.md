@@ -83,16 +83,20 @@ One `candidate_ledger.read()` of that file was 21.9s, `read_scores()` 4.2s,
 `present_pictures()` 13.0s and laying the pool out over them 13.4s, so a cold
 `headroom.population()` was about 46 seconds.
 
-**Since 2026-08-29 the fixture reads the retained ledger and those figures are
-the wide one's.** `candidate_ledger.LIVE` points at `retained/`, which is 122,516
-rows and 150.8 MiB — the top three per (location, mode) under four protections,
-each row cut to what the readers consume. Re-measured on this machine: `read()`
-**3.9s**, `read_scores()` **0.8s**, `solve.pool()` end to end **7.1s** against
-**29.3s** over the wide file. Reading is no longer what this lane pays for.
+**Those figures are the wide store's, and it was deleted on 2026-08-29.** What
+stands in its place is 122,516 rows and 150.8 MiB — the top three per (location,
+mode) under four protections, each row cut to what the readers consume.
+Re-measured on this machine: `read()` **3.9s**, `read_scores()` **0.8s**,
+`solve.pool()` end to end **7.1s** against **29.3s** over the wide file. Reading
+is no longer what this lane pays for.
 
-What has not changed is the shape of the trap. The retained ledger has no ceiling
-either — it grows with every leg like the wide one did, just from a lower base —
-so the two rules below stand exactly as written.
+**And it now has a ceiling, which is new.** `candidate_ledger.prune` runs inside
+`candidate_ledger.merge`, so rows per (location, mode) are bounded by
+`RETAIN_PER_PAIR` plus whatever the four protections carry, and are no longer a
+function of the attempts made. A leg that opens new locations still grows the
+file; a leg that deepens old ones no longer does. The two rules below stand as
+written — a bound is not a licence to read the store in a fast test — but the
+digit is no longer expected to move on its own.
 
 Two rules follow, and they are why this lane is 7 minutes instead of 18:
 

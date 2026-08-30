@@ -99,28 +99,10 @@ SCHEMA = 1
 #: The subtree both files live in, under the regenerable tree.
 UNIT = "candidate_ledger"
 
-#: What the files are called, in whichever of the two ledgers they belong to.
+#: What the three files that make up the store are called. The flatness sidecar
+#: is [`curation.flatness.SIDECAR_NAME`], beside these and pruned with them.
 ROWS_NAME = "rows.jsonl"
 SCORES_NAME = "scores.jsonl"
-
-#: The **wide** ledger: the store as it was written up to 2026-08-29, one row
-#: per recipe at about three kilobytes. It lives at the root of the unit and it
-#: is left exactly where it is. Nothing writes to it any more.
-WIDE = ""
-
-#: The **retained** ledger: the same store at top-[`retention.KEEP_PER_PAIR`]
-#: per (location, mode) under the four protections, and each row cut to what the
-#: readers actually consume. A subdirectory rather than a second name in the
-#: same one, so the three files that belong together are together and a backup,
-#: a manifest and a tier move all address them as a unit.
-RETAINED = "retained"
-
-#: **Which ledger the readers read, and the one line that reverts this.** Set it
-#: back to [`WIDE`] and every reader is on the old file again — the old file is
-#: still there, byte for byte. Reverting after a leg has run is the one thing it
-#: does not buy: a merge writes to whichever ledger is live, so rows added since
-#: the flip live in the retained one alone.
-LIVE = RETAINED
 
 #: What a candidate's engine build is recorded as. Every candidate render in
 #: every pass and every run predates [`engine_fingerprint`], which stamps a view
@@ -150,30 +132,22 @@ def store_root() -> Path:
     return under("curation", UNIT)
 
 
-def ledger_root(which: str | None = None) -> Path:
-    """The subtree one of the two ledgers sits in. [`LIVE`] by default."""
-    which = LIVE if which is None else which
-    return store_root() / which if which else store_root()
+def rows_path() -> Path:
+    """The ledger: one row per recipe."""
+    return store_root() / ROWS_NAME
 
 
-def rows_path(which: str | None = None) -> Path:
-    """The ledger: one row per recipe. The live one unless told otherwise."""
-    return ledger_root(which) / ROWS_NAME
+def scores_path() -> Path:
+    """The score sidecar: one row per (recipe, judge artifact, regime)."""
+    return store_root() / SCORES_NAME
 
 
-def scores_path(which: str | None = None) -> Path:
-    """The sidecar: one row per (recipe, judge artifact, regime)."""
-    return ledger_root(which) / SCORES_NAME
+def manifest_dir() -> Path:
+    """The tracked directory the store's manifests live in."""
+    return records.default_root() / UNIT
 
 
-def manifest_dir(which: str | None = None) -> Path:
-    """The tracked directory one ledger's manifests live in."""
-    which = LIVE if which is None else which
-    root = records.default_root() / UNIT
-    return root / which if which else root
-
-
-def backup_path(name: str, which: str | None = None) -> Path:
+def backup_path(name: str) -> Path:
     """The durable copy, beside the gate store's and the sidecar's.
 
     Off a root rather than through `under()`, for [`durability`]'s reason: a copy
@@ -185,11 +159,9 @@ def backup_path(name: str, which: str | None = None) -> Path:
     copy in the same place, and a second spelling of this path is how one of them
     ends up backed up somewhere nothing looks.
     """
-    which = LIVE if which is None else which
     archive = archive_root()
     root = hot_root() if archive is None else archive
-    where = Path(root) / durability.BACKUP_UNIT / UNIT
-    return (where / which if which else where) / name
+    return Path(root) / durability.BACKUP_UNIT / UNIT / name
 
 
 def _facts(path: Path) -> dict:
@@ -422,9 +394,10 @@ def present_pictures(rows=None) -> set:
     """`{key}` for every row whose picture is **on disk**, as one batched pass.
 
     THE answer to "does this row still have a picture", and the only one: naming
-    a picture and having one are different questions, and `curate retention` made
-    the difference 30,040 rows wide by design — rows are never dropped, pictures
-    are. A reader that asks the row is asking the wrong half.
+    a picture and having one are different questions, and the two-K era made the
+    difference 30,040 rows wide by design. [`prune`] closed it — a picture goes
+    with its row — but the question stays worth asking, because a row that names
+    an absent picture is exactly what a half-finished prune leaves behind.
 
     Two things make this affordable enough to sit in `solve.pool`, which every
     seating and every headroom census runs. `rehome` is called with one shared
@@ -468,10 +441,12 @@ def present_pictures(rows=None) -> set:
 def picture_census(rows=None) -> dict:
     """How many rows name a picture that is not there, by mode and by run.
 
-    Permanent, expected state rather than damage: [`curation.retention`] keeps
-    every row and drops the picture of everything outside the top five per
-    (location, mode), the labeled, and a one-in-200 reservoir. This is the reader
-    that state was missing — without it the only way to notice was a seating
+    **Nearly always zero now, and that is the change.** While the picture rule
+    ran on its own ranking at its own K this was permanent expected state, 30,040
+    rows wide; since 2026-08-29 a picture is kept if and only if its row is, so a
+    row naming an absent picture is either one of the 41 the ledger inherited or
+    a [`prune`] that was interrupted between its two halves. Either way this is
+    the reader that says so — without it the only way to notice was a seating
     behaving oddly, which is how it was in fact noticed.
     """
     stored = read() if rows is None else rows
@@ -677,11 +652,12 @@ def write_scores(rows) -> tuple[Path, int, int]:
 
 
 def merge(rows, scores, log=print) -> dict:
-    """Upsert rows and score readings into the two files, and **record both**.
+    """Upsert a leg's rows, record them, prune the store back to the rule.
 
     THE door. Every leg that adds to the ledger — a hunt, a mine, a depth run,
     the backfill — comes through here, and there is one body rather than four
-    copies of an upsert followed by a save each of them has to remember.
+    copies of an upsert followed by a save each of them has to remember. It is
+    also the only door the retention rule needs to stand at.
 
     **The tracking is the point.** The manifests are the only thing about this
     store the history keeps, and they went stale for an era: three merge legs and
@@ -701,17 +677,39 @@ def merge(rows, scores, log=print) -> dict:
     incremental and reads only pictures the sidecar has never seen — 33 s for
     those 8,192 — so a merge with nothing new to read pays one file read.
 
+    **And [`prune`] runs here, which is the half that makes the store bounded.**
+    A merge is the only thing that grows this file, so it is the only place the
+    rule has to act; anywhere else and a rule nothing runs is a rule the store
+    stops obeying between the times somebody remembers it. Rows per (location,
+    mode) cannot exceed [`RETAIN_PER_PAIR`] after this returns, and the pictures
+    of the rows it drops are gone with them. Deciding is **18.4 s** over the
+    122,516 rows standing on 2026-08-29, and rewriting the three files is about as
+    much again — paid at the end of a leg measured in minutes or hours, which is
+    the same trade the flatness sweep above it makes.
+
     The **copy** goes with the manifest, because that is what the manifest is a
     claim about: [`durability.save`] writes both or neither, and a manifest naming
     a count no copy holds would make [`durability.restore`] believe a stale file.
-    That is the whole cost of this — one copy of each file per leg, at the end of
-    a leg measured in minutes or hours.
+    It is written **after** the prune and not before: a manifest recording the
+    pre-prune count would make [`durability.check`] read `short` on a store that
+    is exactly what the rule says it should be.
     """
-    from fractal_wallpapers.curation import flatness
+    from fractal_wallpapers.curation import colorize, flatness, retention
+
+    # Before the upsert, because it is a reading of what the store held BEFORE
+    # this leg's own rows joined it — see [`retention.repeat_draws`].
+    standing = retention.drawn_before(stream())
+    repeated = retention.repeat_draws(rows, standing, pool=len(colorize.pool(0)))
+    log(
+        f"[ledger] {repeated['at_locations_with_deleted_rows']:,} of {len(rows):,} row(s) "
+        f"land at a location holding deleted recipes; at most {repeated['bound']:,} and "
+        f"about {repeated['expected']} of them are renders this project already paid for"
+    )
 
     rows_file, total, new = write(rows)
     scores_file, score_total, score_new = write_scores(scores)
     swept = flatness.sweep(flatness.of_rows(rows), log=log)
+    pruned = prune(log=log)
     saved = {
         "rows": durability.save(durable_rows(), log=log),
         "scores": durability.save(durable_scores(), log=log),
@@ -728,6 +726,8 @@ def merge(rows, scores, log=print) -> dict:
             "unreadable": swept["unreadable"],
             "seconds": swept["seconds"],
         },
+        "repeat_draws": repeated,
+        "pruned": pruned,
         "recorded": {
             "rows": saved["rows"]["rows"],
             "scores": saved["scores"]["rows"],
@@ -739,19 +739,20 @@ def merge(rows, scores, log=print) -> dict:
     }
 
 
-#: How many rows one (location, `recipe.mode`) pair keeps in the retained
-#: ledger, ranked by the shipped [`curation.rank_key`].
+#: How many rows one (location, `recipe.mode`) pair keeps, ranked by the shipped
+#: [`curation.rank_key`]. **The** constant: a picture is kept if and only if its
+#: row is, so this bounds the pictures too and there is no second number.
 #:
 #: **Three**, settled on the replay in `PRUNE1_replay_bestk_report.md`: at K=3
 #: the solve at n=150 reproduced the full pool's seats exactly, and at K=2 it did
-#: not. It is not [`retention.KEEP_PER_PAIR`] and must not be confused with it —
-#: that one is five and it is how many **pictures** a pair keeps. A row is much
-#: cheaper than a picture and a row is what recipe dedup reads, so the two
-#: numbers are about different things and are allowed to differ.
+#: not. It was one of two until 2026-08-29 — `retention.KEEP_PER_PAIR` kept five
+#: **pictures** a pair by raw `P(>=4)`, on a different ranking, and the two were
+#: not nested, so a row in the top three by rank could be sixth by `P(>=4)` and
+#: have lost its picture. That second spelling is gone.
 RETAIN_PER_PAIR = 3
 
-#: Why a row is in the retained ledger. The first is [`retention.RANKED`]; the
-#: four after it are the protections, and each one keeps a row the rank let go.
+#: Why a row survives [`prune`]. The first is [`retention.RANKED`]; the four
+#: after it are the protections, and each one keeps a row the rank let go.
 RETAINED_RANKED = "ranked"
 RETAINED_SEATED = "seated_in_a_live_release_row"
 RETAINED_REJECTED = "carries_a_human_rejected_verdict"
@@ -764,40 +765,6 @@ RETAINED_REASONS = (
     RETAINED_LABELED,
     RETAINED_FITTED,
 )
-
-
-def compacted(wide: dict) -> dict:
-    """One row of the wide ledger in the shape [`row`] writes now.
-
-    A projection and not a rebuild: every field it keeps is copied across unread,
-    so a row that comes out of here is the row that went in with the unread half
-    removed. `location.agrees` and `at_candidate_regime` are carried rather than
-    recomputed for that reason — recomputing them would let this quietly
-    *re-decide* something the wide row had already recorded, over a store nothing
-    can go back and check.
-    """
-    location = wide.get("location") or {}
-    provenance = wide.get("provenance") or {}
-    out = {
-        "schema": SCHEMA,
-        "key": str(wide["key"]),
-        "partition": wide.get("partition"),
-        "location": {"key": location.get("key"), "agrees": bool(location.get("agrees"))},
-        "recipe": wide.get("recipe"),
-        "at_candidate_regime": bool(wide.get("at_candidate_regime")),
-        "colour": colour_kept(wide.get("colour")),
-        "provenance": {
-            "run": provenance.get("run"),
-            "candidate": provenance.get("candidate"),
-            "also_rendered": list(provenance.get("also_rendered") or []),
-            "also_recorded": list(provenance.get("also_recorded") or []),
-        },
-        "picture": wide.get("picture"),
-        "rejected": wide.get("rejected"),
-    }
-    if wide.get("hunt"):
-        out["hunt"] = hunt_block(wide["hunt"])
-    return out
 
 
 def hunt_block(named: dict | None) -> dict:
@@ -813,52 +780,79 @@ def hunt_block(named: dict | None) -> dict:
     return {"seconds": (named or {}).get("seconds"), "k": (named or {}).get("k")}
 
 
-def retain(keep: int = RETAIN_PER_PAIR, log=print) -> dict:
-    """Build the retained ledger and both its sidecars beside the wide ones.
+def prune(keep: int = RETAIN_PER_PAIR, apply: bool = True, log=print) -> dict:
+    """Bring the store back to the settled rule. **Rows and their pictures, together.**
 
-    **Deletes nothing.** The wide ledger, its two sidecars and every picture stay
-    exactly where they are; this writes three new files under [`RETAINED`], and
-    the readers reach them because [`LIVE`] says so.
+    Top-`keep` per (location, `recipe.mode`) ranked by the shipped
+    [`curation.rank_key`], through [`retention.decide`] rather than a second
+    selector — the same body the article teaches the rule with, handed rank values
+    instead of a raw `P(>=4)`. Four protections keep a row the rank let go: a seat
+    in a live release row, a human rejection, a human label joining it, and a row
+    named by the rank key's own tracked population file, whose fit stops being
+    reproducible if one of them goes.
 
-    The rule is top-`keep` per (location, `recipe.mode`) ranked by the shipped
-    [`curation.rank_key`], through [`retention.decide`] rather than through a
-    second selector — the same body that decides which pictures a pair keeps,
-    handed rank values instead of a raw `P(>=4)`. Four protections keep a row the
-    rank let go: a seat in a live release row, a human rejection, a human label
-    joining it, and a row named by the rank key's own tracked population file,
-    whose fit stops being reproducible if one of them goes.
+    A dropped row loses **its picture in the same call**. That is the one rule
+    now: until 2026-08-29 the pictures were swept on their own ranking at their
+    own K and the two were not nested, so a row could be retained with its picture
+    already gone. `pictures` says what this freed.
 
-    `decide`'s one-in-200 reservoir is **not** a fifth protection here and its
-    rows are folded back into the dropped, counted. The reservoir exists so that
-    a reject autopsy has pictures in the middle of the distribution; a row is not
-    a picture, and the rule as settled names four.
+    ## The order is the safety property
 
-    ## One transaction
+    Pictures first, then the record transaction. A crash between them leaves rows
+    naming pictures that are not there — which [`picture_census`] reports,
+    `solve.pool` refuses, and a second `prune` repairs, because the ranking is a
+    deterministic function of the rows. The other order leaves pictures nothing
+    names, which is garbage no reader can find and no run can free.
 
-    The three files are written to `.writing` names and renamed only once all
+    The three files are then written to `.writing` names and renamed only once all
     three are whole. A sidecar pruned against a ledger that was never written
     would be a store of rows nothing joins to, and the half-written state is the
     one state this must not be able to leave behind.
+
+    `apply=False` reads and decides and touches nothing, which is what
+    `fractal-wallpapers curate candidate-ledger prune --dry-run` is.
     """
     import time
 
-    from fractal_wallpapers.curation import flatness, retention
+    from fractal_wallpapers.curation import retention
 
     started = time.time()
-    wide = ledger_root(WIDE)
-    live = ledger_root(RETAINED)
-    if not (wide / ROWS_NAME).is_file():
-        raise LedgerError(f"{wide / ROWS_NAME} is not there, so there is nothing to retain.")
+    # Through the path accessors and never off `store_root()`, because those are
+    # what a test redirects: `tests/test_candidate_ledger.isolated` moves the two
+    # row files and the sidecar by name, and a prune that rebuilt the paths from
+    # the root would read past the redirect into the real store and rewrite it.
+    # It did exactly that once, on 2026-08-29, and cost 266 pictures.
+    files = (rows_path(), scores_path(), _flatness_path())
+    homes = {path.parent for path in files}
+    if len(homes) != 1:
+        # A REFUSAL and not a repair, because the shape it catches is a test that
+        # redirected two of the three and left the third pointing at this
+        # machine's real store — which would then be rewritten to hold only the
+        # keys of a temporary one. That is not hypothetical: it happened on
+        # 2026-08-29, and the sidecar is the one of the three that is reached
+        # through another module and so the one a caller forgets.
+        raise LedgerError(
+            f"the store's three files are in {len(homes)} directories and a prune rewrites "
+            f"all three against one set of keys: {[str(path) for path in files]}. Nothing "
+            f"was read. If this is a test, redirect `flatness.sidecar_path` too."
+        )
+    if not files[0].is_file():
+        raise LedgerError(f"{files[0]} is not there, so there is nothing to prune.")
 
     # ---- one pass to decide ------------------------------------------------- #
-    meta = _retain_meta(wide, log=log)
-    values, coverage = _retain_ranks(meta, log=log)
+    meta = _prune_meta(files[0], log=log)
+    values, coverage = _prune_ranks(meta, log=log)
     stubs = [
-        {"key": held["key"], "location": {"key": held["place"]}, "recipe": {"mode": held["mode"]}}
+        {
+            "key": held["key"],
+            "location": {"key": held["place"]},
+            "recipe": {"mode": held["mode"]},
+            "picture": held["picture"],
+        }
         for held in meta
     ]
-    verdicts = retention.decide(stubs, values, None, keep=int(keep))
-    protections = _retain_protections(meta, log=log)
+    verdicts = retention.decide(stubs, values, keep=int(keep))
+    protections = _prune_protections(meta, log=log)
     kept_because = dict.fromkeys(RETAINED_REASONS, 0)
     keys: set = set()
     for held in meta:
@@ -873,51 +867,118 @@ def retain(keep: int = RETAIN_PER_PAIR, log=print) -> dict:
         name: sum(1 for key in protections[name] if verdicts.get(key) != retention.RANKED)
         for name in RETAINED_REASONS[1:]
     }
-    log(f"[retain] {len(keys):,} of {len(meta):,} rows kept at K={int(keep)}; saved {saved}")
+    log(f"[prune] {len(keys):,} of {len(meta):,} rows kept at K={int(keep)}; saved {saved}")
 
-    # ---- one transaction to write ------------------------------------------- #
-    live.mkdir(parents=True, exist_ok=True)
-    names = (ROWS_NAME, SCORES_NAME, flatness.SIDECAR_NAME)
-    temps = [live / f"{name}.writing" for name in names]
+    record = {
+        "schema": SCHEMA,
+        "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "applied": bool(apply),
+        "keep_per_location_mode": int(keep),
+        "store": tracked_name(files[0].parent),
+        "rank": coverage,
+        "rows_read": len(meta),
+        "rows_kept": len(keys),
+        "rows_dropped": len(meta) - len(keys),
+        "kept_because": kept_because,
+        "saved_by_a_protection": saved,
+    }
+    doomed = [held["picture"] for held in meta if held["key"] not in keys and held["picture"]]
+    if not apply:
+        record["pictures"] = {"would_delete": len(doomed)}
+        record["seconds"] = round(time.time() - started, 1)
+        return record
+
+    # ---- the pictures, then the records ------------------------------------- #
+    record["pictures"] = delete_pictures(doomed, log=log)
+    columns = ("key", "recipe_key", "recipe_key")
+    temps = [path.with_suffix(path.suffix + ".writing") for path in files]
     written: dict = {}
     try:
-        written["rows"] = _retain_rows(wide / ROWS_NAME, temps[0], keys)
-        written["scores"] = _retain_sidecar(wide / SCORES_NAME, temps[1], keys)
-        written["flatness"] = _retain_sidecar(wide / flatness.SIDECAR_NAME, temps[2], keys)
-        for temp, name in zip(temps, names, strict=True):
-            temp.replace(live / name)
+        for name, path, temp, column in zip(
+            ("rows", "scores", "flatness"), files, temps, columns, strict=True
+        ):
+            written[name] = _prune_file(path, temp, keys, column)
+        for temp, path in zip(temps, files, strict=True):
+            temp.replace(path)
     except BaseException:
         for temp in temps:
             temp.unlink(missing_ok=True)
         raise
-    for name, record in written.items():
-        log(f"[retain] {name}: {record['rows']:,} rows, {record['bytes']:,} bytes")
+    for name, held in written.items():
+        log(f"[prune] {name}: {held['rows']:,} rows, {held['bytes']:,} bytes")
 
-    return {
-        "schema": SCHEMA,
-        "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "keep_per_location_mode": int(keep),
-        "wide": tracked_name(wide),
-        "retained": tracked_name(live),
-        "rank": coverage,
-        "rows_read": len(meta),
-        "rows_kept": len(keys),
-        "kept_because": kept_because,
-        "saved_by_a_protection": saved,
-        "reservoir_folded_into_dropped": sum(
-            1 for held in meta if verdicts.get(held["key"]) == retention.RESERVOIR
-        ),
-        "files": written,
-        "seconds": round(time.time() - started, 1),
-    }
+    record["files"] = written
+    record["seconds"] = round(time.time() - started, 1)
+    return record
 
 
-def _retain_meta(wide: Path, log=print) -> list[dict]:
-    """One streamed pass of the wide ledger into what the decision needs per row."""
+def _flatness_path() -> Path:
+    """The flatness sidecar, through its own module's accessor.
+
+    A third name for a path this module already knows how to build would be a
+    third thing to redirect, and redirecting two of three is how a test comes to
+    rewrite the real store.
+    """
+    from fractal_wallpapers.curation import flatness
+
+    return flatness.sidecar_path()
+
+
+def delete_pictures(named, log=print) -> dict:
+    """Delete the candidate pictures a prune dropped. `named` is stored names.
+
+    Through [`paths.rehome`], because a row names its picture as the run that
+    made it saw it and the subtree may have been archived since. A name with no
+    artifacts component is not a name this project wrote and is left alone —
+    which is what keeps a fixture's `a.jpg` out of reach of this.
+
+    Counted rather than raised on: a picture already gone is the ordinary state
+    of a store somebody has swept before, and a leg that refused to finish over
+    one would leave the records ahead of the disk.
+    """
+    from fractal_wallpapers.paths import rehome
+
+    out = {"asked": 0, "deleted": 0, "bytes": 0, "absent": 0, "unreadable": 0}
+    for stored in named:
+        out["asked"] += 1
+        where = rehome(str(stored))
+        if where is None:
+            out["absent"] += 1
+            continue
+        try:
+            size = where.stat().st_size
+        except OSError:
+            out["absent"] += 1
+            continue
+        try:
+            where.unlink()
+        except OSError as failure:
+            out["unreadable"] += 1
+            log(f"[prune] {where}: {failure!r}")
+            continue
+        out["deleted"] += 1
+        out["bytes"] += size
+        if out["deleted"] % 25_000 == 0:
+            log(f"[prune] {out['deleted']:,} picture(s) deleted, {out['bytes'] / 2**30:.2f} GiB")
+    out["gib"] = round(out["bytes"] / 2**30, 3)
+    log(f"[prune] {out['deleted']:,} of {out['asked']:,} picture(s) deleted, {out['gib']} GiB")
+    return out
+
+
+def _prune_meta(path: Path, log=print) -> list[dict]:
+    """One streamed pass of the ledger into what the decision needs per row.
+
+    Takes the **file** and not the directory it is in. It took the directory for
+    one afternoon and joined `ROWS_NAME` onto a name that was already the file,
+    which `_stream_of` answers by yielding nothing — so the prune decided over an
+    empty store and wrote three empty files. A silent empty read is what that
+    shape of mistake always looks like here, which is why the caller now hands
+    every path in and this builds none of its own.
+    """
     from fractal_wallpapers.curation import retention
 
     out: list[dict] = []
-    for at, held in enumerate(_stream_of(wide / ROWS_NAME), start=1):
+    for at, held in enumerate(_stream_of(path), start=1):
         colour = held.get("colour") or {}
         provenance = held.get("provenance") or {}
         out.append(
@@ -927,6 +988,7 @@ def _retain_meta(wide: Path, log=print) -> list[dict]:
                 "mode": str((held.get("recipe") or {}).get("mode")),
                 "cells": tuple(colour.get("cells") or ()),
                 "rejected": bool(held.get("rejected")),
+                "picture": held.get("picture"),
                 "render_key": retention.render_key_of(held),
                 "seat": (str(provenance.get("run")), str(provenance.get("candidate"))),
                 "also_recorded": tuple(
@@ -936,8 +998,8 @@ def _retain_meta(wide: Path, log=print) -> list[dict]:
             }
         )
         if at % 100_000 == 0:
-            log(f"[retain] {at:,} rows read")
-    log(f"[retain] {len(out):,} rows read from {tracked_name(wide / ROWS_NAME)}")
+            log(f"[prune] {at:,} rows read")
+    log(f"[prune] {len(out):,} rows read from {tracked_name(path)}")
     return out
 
 
@@ -955,7 +1017,7 @@ class _Pooled:
         self.p_ge3 = float(reading.get("p_ge3") or 0.0)
 
 
-def _retain_ranks(meta: list, log=print) -> tuple[dict, dict]:
+def _prune_ranks(meta: list, log=print) -> tuple[dict, dict]:
     """`({key: rank value}, coverage)` through the SHIPPED key, not a copy of it.
 
     A row the key cannot read — no reading on the live judge, no flatness — has
@@ -964,13 +1026,13 @@ def _retain_ranks(meta: list, log=print) -> tuple[dict, dict]:
     """
     from fractal_wallpapers.curation import flatness, intake, rank_key
 
-    readings = scores_by_recipe(read_scores(scores_path(WIDE)))
-    flat = flatness.by_recipe(flatness.read(ledger_root(WIDE) / flatness.SIDECAR_NAME))
+    readings = scores_by_recipe(read_scores())
+    flat = flatness.by_recipe(flatness.read())
     held = rank_key.load()
     pooled = [_Pooled(row, readings[row["key"]]) for row in meta if row["key"] in readings]
     features, gaps = rank_key.features_for(pooled, locations=intake.read_scores(), readings=flat)
     values = {name: held.score(row) for name, row in features.items()}
-    log(f"[retain] {len(values):,} of {len(meta):,} rows carry a rank value; gaps {gaps}")
+    log(f"[prune] {len(values):,} of {len(meta):,} rows carry a rank value; gaps {gaps}")
     return values, {
         "artifact": tracked_name(rank_key.artifact_path()),
         "fitted_at": held.document.get("fitted_at"),
@@ -983,7 +1045,7 @@ def _retain_ranks(meta: list, log=print) -> tuple[dict, dict]:
     }
 
 
-def _retain_protections(meta: list, log=print) -> dict:
+def _prune_protections(meta: list, log=print) -> dict:
     """`{reason: {keys}}` for the four things kept whatever the rank says."""
     from fractal_wallpapers.curation import rank_key, retention, served_locations
 
@@ -1011,29 +1073,22 @@ def _retain_protections(meta: list, log=print) -> dict:
         RETAINED_FITTED: {held["key"] for held in meta if held["key"] in fitted},
     }
     named = ", ".join(f"{name} {len(found):,}" for name, found in out.items())
-    log(f"[retain] protections: {named}; the population file names {len(fitted):,} recipe(s)")
+    log(f"[prune] protections: {named}; the population file names {len(fitted):,} recipe(s)")
     return out
 
 
-def _retain_rows(source: Path, into: Path, keys: set) -> dict:
-    """Stream the wide ledger into the retained one, compacting as it goes."""
-    rows = 0
-    with into.open("w", encoding="utf-8", newline="\n") as handle:
-        for held in _stream_of(source):
-            if str(held["key"]) not in keys:
-                continue
-            handle.write(json.dumps(compacted(held), ensure_ascii=False) + "\n")
-            rows += 1
-    return {"rows": rows, "bytes": into.stat().st_size}
+def _prune_file(source: Path, into: Path, keys: set, column: str) -> dict:
+    """Stream one recipe-keyed file into a `.writing` name, its kept rows only.
 
-
-def _retain_sidecar(source: Path, into: Path, keys: set) -> dict:
-    """Stream one recipe-keyed sidecar into the retained ledger, its rows only."""
+    One body for the ledger and both sidecars: the only thing that differs is
+    which column carries the recipe key, and two copies of a filter is how a
+    sidecar comes to be pruned against a rule the rows were not.
+    """
     rows = 0
     dropped = 0
     with into.open("w", encoding="utf-8", newline="\n") as handle:
         for held in _stream_of(source):
-            if str(held.get("recipe_key")) not in keys:
+            if str(held.get(column)) not in keys:
                 dropped += 1
                 continue
             handle.write(json.dumps(held, ensure_ascii=False) + "\n")
@@ -1647,7 +1702,7 @@ __all__ = [
     "check",
     "colour_block",
     "colour_kept",
-    "compacted",
+    "delete_pictures",
     "hunt_block",
     "durable_rows",
     "durable_scores",
@@ -1661,7 +1716,7 @@ __all__ = [
     "stream",
     "stream_scores",
     "renders_of",
-    "retain",
+    "prune",
     "restore",
     "row",
     "rows_path",

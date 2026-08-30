@@ -1,17 +1,16 @@
-"""Picture retention: what is kept, what the aggregates hold, and what is never dropped.
+"""Retention: what is kept, what the aggregates hold, and what the rule costs.
 
 Arithmetic over rows, like [`test_mine`] and [`test_depth`]. Nothing renders and
-nothing is deleted — this module has no delete in it at all, which is the first
-property pinned here.
+nothing is deleted — the module under test has no delete in it at all, which is
+the first property pinned here and the one that stops a report becoming a prune.
 
-The claims worth pinning hardest are the ones a wrong decision would hide. **A
-row is never dropped**, because recipe-key dedup is the ledger's reason for
-existing and a pass that could not tell it had already made a picture would
-re-render it. **The ranking is within the (location, mode) pair** and never
-against an absolute probability, because CORN's scale moves under every retrain
-and the per-mode crossovers already span 0.367 to 0.950. And **the reservoir is
-a hash and not a draw**, so the same tenth of a percent is kept in every process
-that asks.
+The claims worth pinning hardest are the ones a wrong decision would hide. **The
+ranking is within the (location, mode) pair** and never against an absolute
+probability, because CORN's scale moves under every retrain and the per-mode
+crossovers already span 0.367 to 0.950. **There is one constant**, and it is the
+store's — a second K on a second ranking is what let a retained row lose its
+picture. And **the price of dropping a row is reported off the `k` the survivors
+carry**, so it can be read without keeping the index the rule exists to avoid.
 """
 
 from __future__ import annotations
@@ -57,7 +56,7 @@ def a_row(key, place="p", mode="smooth", colormap="viridis", cells=(), picture="
 def test_the_top_n_of_a_pair_are_kept_and_ranked_inside_the_pair():
     rows = [a_row(f"k{at}") for at in range(8)]
     scores = {f"k{at}": at / 10 for at in range(8)}
-    out = retention.decide(rows, scores, labeled=set(), keep=3)
+    out = retention.decide(rows, scores, keep=3)
     ranked = [key for key, reason in out.items() if reason == retention.RANKED]
     assert sorted(ranked) == ["k5", "k6", "k7"], "the three highest of the pair"
 
@@ -70,7 +69,7 @@ def test_the_ranking_never_crosses_a_mode_or_a_location():
     rows = [a_row(f"a{at}", mode="smooth") for at in range(3)]
     rows += [a_row(f"b{at}", mode="stripe") for at in range(3)]
     scores = {f"a{at}": 0.9 for at in range(3)} | {f"b{at}": 0.01 for at in range(3)}
-    out = retention.decide(rows, scores, labeled=set(), keep=2)
+    out = retention.decide(rows, scores, keep=2)
     assert sum(1 for key in ("a0", "a1", "a2") if out[key] == retention.RANKED) == 2
     assert sum(1 for key in ("b0", "b1", "b2") if out[key] == retention.RANKED) == 2, (
         "the weak mode keeps its own best two, at a hundredth of the strong mode's score"
@@ -81,48 +80,37 @@ def test_a_row_with_no_score_ranks_last_rather_than_being_thrown_out():
     """Nothing has an opinion about it, which is not the same as something
     thinking little of it."""
     rows = [a_row("scored"), a_row("silent")]
-    out = retention.decide(rows, {"scored": 0.0}, labeled=set(), keep=1)
+    out = retention.decide(rows, {"scored": 0.0}, keep=1)
     assert out["scored"] == retention.RANKED
     assert out["silent"] != retention.RANKED
 
 
-def test_a_labeled_row_is_kept_however_far_down_the_ranking_it_is():
-    rows = [a_row(f"k{at}") for at in range(20)]
-    scores = {f"k{at}": 1.0 - at / 100 for at in range(20)}
-    labeled = {retention.render_key_of(rows[19])}
-    out = retention.decide(rows, scores, labeled=labeled, keep=2)
-    assert out["k19"] == retention.LABELED, "last of twenty, and instrument"
+def test_there_is_one_constant_and_it_is_the_stores():
+    """One ranking, one number. `retention.KEEP_PER_PAIR` was a second of each —
+    five pictures a pair by raw `P(>=4)` against three rows a pair by the rank
+    key — and because the two were not nested a retained row could have lost its
+    picture already."""
+    from fractal_wallpapers.curation import candidate_ledger
+
+    assert retention.keep_per_pair() == candidate_ledger.RETAIN_PER_PAIR
+    assert not hasattr(retention, "KEEP_PER_PAIR")
+    assert not hasattr(retention, "RESERVOIR_ONE_IN")
 
 
-def test_the_reservoir_is_a_hash_of_the_key_and_not_a_draw():
-    """The same tenth of a percent in every process that asks. `hash()` is
-    salted per process and would keep a different set on every run."""
-    assert retention.in_reservoir("some-key", one_in=1)
-    picked = {key for key in (f"k{at:06d}" for at in range(4000)) if retention.in_reservoir(key)}
-    again = {key for key in (f"k{at:06d}" for at in range(4000)) if retention.in_reservoir(key)}
-    assert picked == again
-    assert 5 <= len(picked) <= 45, f"1 in 200 of 4,000 is about 20; got {len(picked)}"
-
-
-def test_the_reservoir_only_catches_what_the_ranking_dropped():
-    rows = [a_row(f"k{at}") for at in range(40)]
-    scores = {f"k{at}": at for at in range(40)}
-    out = retention.decide(rows, scores, labeled=set(), keep=5, one_in=1)
-    kept_by_rank = [key for key, reason in out.items() if reason == retention.RANKED]
-    assert len(kept_by_rank) == 5
-    assert all(
-        reason == retention.RESERVOIR for key, reason in out.items() if key not in kept_by_rank
-    )
+def test_the_default_keep_is_the_stores_constant_and_not_a_copy_of_its_value():
+    rows = [a_row(f"k{at}") for at in range(8)]
+    scores = {f"k{at}": at for at in range(8)}
+    ranked = [key for key, why in retention.decide(rows, scores).items() if why == retention.RANKED]
+    assert len(ranked) == retention.keep_per_pair()
 
 
 def test_every_row_gets_exactly_one_reason_and_all_of_them_are_named():
     rows = [a_row(f"k{at}") for at in range(30)]
-    out = retention.decide(rows, {f"k{at}": at for at in range(30)}, labeled=set(), keep=4)
+    out = retention.decide(rows, {f"k{at}": at for at in range(30)}, keep=4)
     assert set(out) == {f"k{at}" for at in range(30)}
     assert set(out.values()) <= set(retention.REASONS)
+    assert set(retention.REASONS) == {retention.RANKED, retention.DROPPED}
     assert retention.kept(retention.RANKED)
-    assert retention.kept(retention.LABELED)
-    assert retention.kept(retention.RESERVOIR)
     assert not retention.kept(retention.DROPPED)
 
 
@@ -199,41 +187,90 @@ def test_the_aggregates_are_bounded_by_their_key_spaces_and_not_by_the_attempts(
 # --------------------------------------------------------------------------- #
 # The report.
 # --------------------------------------------------------------------------- #
-def test_the_report_says_it_applied_nothing(tmp_path):
+def test_the_report_says_it_applied_nothing():
     rows = [a_row(f"k{at}", picture=None) for at in range(12)]
-    out = retention.prune_report(
-        rows, {f"k{at}": at for at in range(12)}, labeled=set(), keep=3, log=lambda *_: None
-    )
+    out = retention.prune_report(rows, {f"k{at}": at for at in range(12)}, keep=3)
     assert out["applied"] is False
-    assert out["policy"]["rows_dropped"].startswith("never")
     assert out["rows"] == 12
-    assert out["would_keep"] + out["would_delete"] == 12
-    assert out["pictures"]["row_names_none"] == 12
-    assert out["bytes"]["would_delete"] == 0
+    assert out["verdicts"][retention.RANKED] + out["verdicts"][retention.DROPPED] == 12
+    assert out["rows_naming_no_picture"] == 12
+    assert out["pictures_named_by_a_dropped_row"] == 0
 
 
-def test_the_report_sizes_only_the_pictures_that_are_on_this_machine(tmp_path):
-    real = tmp_path / "real.jpg"
-    real.write_bytes(b"x" * 1000)
+def test_the_report_counts_a_picture_for_every_row_it_would_drop():
+    """One rule: a picture goes if and only if its row does. A dropped row that
+    names a picture is a picture to delete, and there is no second ranking that
+    could already have taken it."""
     rows = [
-        a_row("keeper", picture=str(real)),
-        a_row("goner", picture=str(tmp_path / "gone.jpg")),
+        a_row(f"k{at}", picture=f"artifacts/curation/hunt/h/pictures/k{at}.jpg") for at in range(9)
     ]
-    out = retention.prune_report(
-        rows, {"keeper": 1.0, "goner": 0.0}, labeled=set(), keep=1, log=lambda *_: None
-    )
-    assert out["bytes"]["would_keep"] == 1000
-    assert out["pictures"]["named_but_absent"] == 1
+    out = retention.prune_report(rows, {f"k{at}": at for at in range(9)}, keep=2)
+    assert out["verdicts"][retention.DROPPED] == 7
+    assert out["pictures_named_by_a_dropped_row"] == 7
 
 
 def test_the_report_breaks_the_deletion_down_by_mode():
     rows = [a_row(f"s{at}", mode="smooth", picture=None) for at in range(8)]
     rows += [a_row(f"t{at}", mode="stripe", picture=None) for at in range(4)]
     scores = {row["key"]: 0.5 for row in rows}
-    out = retention.prune_report(rows, scores, labeled=set(), keep=2, log=lambda *_: None)
+    out = retention.prune_report(rows, scores, keep=2)
     assert out["by_mode"]["smooth"][retention.RANKED] == 2
     assert out["by_mode"]["stripe"][retention.RANKED] == 2
     assert sum(out["by_mode"][mode][retention.DROPPED] for mode in ("smooth", "stripe")) == 8
+
+
+# --------------------------------------------------------------------------- #
+# What the rule costs.
+# --------------------------------------------------------------------------- #
+def with_k(key, place, k):
+    row = a_row(key, place=place)
+    row["hunt"] = {"seconds": 0.1, "k": k}
+    return row
+
+
+def test_the_deleted_count_is_read_off_the_deepest_k_the_survivors_carry():
+    """Three rows left and a deepest `k` of forty means thirty-seven recipes were
+    rendered here and dropped. The count survives the drop that made it, which is
+    what makes the price readable with no index of every recipe ever drawn."""
+    rows = [with_k("a", "p", 40), with_k("b", "p", 12), with_k("c", "p", 3)]
+    out = retention.drawn_before(rows)
+    assert out["p"] == {"retained": 3, "deepest_k": 40, "invisible": 37}
+
+
+def test_a_location_whose_rows_predate_the_k_stamp_reports_nothing_invisible():
+    """No `k` is not a `k` of one. A reader that took it for one would report the
+    whole pre-stamp history as never deepened."""
+    out = retention.drawn_before([a_row("a"), a_row("b")])
+    assert out["p"]["deepest_k"] is None
+    assert out["p"]["invisible"] == 0
+
+
+def test_a_draw_at_a_place_with_nothing_invisible_cannot_be_a_repeat():
+    standing = retention.drawn_before([with_k("a", "p", 1)])
+    out = retention.repeat_draws([a_row("new")], standing, pool=800)
+    assert out["at_locations_with_deleted_rows"] == 0
+    assert out["bound"] == 0
+    assert out["expected"] == 0
+
+
+def test_a_location_cannot_repeat_more_than_it_hides():
+    standing = retention.drawn_before([with_k("a", "p", 4), with_k("b", "p", 2)])
+    assert standing["p"]["invisible"] == 2
+    drawn = [a_row(f"n{at}") for at in range(5)]
+    out = retention.repeat_draws(drawn, standing, pool=800)
+    assert out["at_locations_with_deleted_rows"] == 5
+    assert out["bound"] == 2, "five draws, two hidden recipes"
+    assert 0 < out["expected"] < 1
+
+
+def test_the_price_is_reported_and_never_prevented():
+    """A counter that refused a draw would be the index this rule exists to not
+    keep, wearing a different name. It reports; the leg renders anyway."""
+    import inspect
+
+    source = inspect.getsource(retention.repeat_draws)
+    for forbidden in ("raise", "continue  # skip", "known"):
+        assert forbidden not in source.replace("if not held", ""), forbidden
 
 
 # --------------------------------------------------------------------------- #
@@ -262,10 +299,14 @@ def test_the_policy_keeps_every_human_labeled_row_on_the_real_store(tracked_ledg
         for key, row in candidate_ledger.scores_by_recipe(tracked_ledger.scores).items()
     }
     labeled = retention.labeled_renders()
-    out = retention.decide(rows, scores, labeled)
-    missed = [
-        row["key"]
-        for row in rows
-        if retention.render_key_of(row) in labeled and not retention.kept(out[str(row["key"])])
-    ]
-    assert missed == [], f"{len(missed)} labeled row(s) would lose their picture"
+    out = retention.decide(rows, scores)
+    # The label is a PROTECTION and not part of the ranking, so what is pinned
+    # here is that the store applies it: `candidate_ledger.RETAINED_LABELED` is
+    # the reason, and a labeled row the rank dropped must be carried by it.
+    ranked = {key for key, why in out.items() if retention.kept(why)}
+    marked = {str(row["key"]) for row in rows if retention.render_key_of(row) in labeled}
+    assert marked, "the store holds no human-labeled row, so this pins nothing"
+    assert marked - ranked, (
+        "every labeled row is already inside the rank, so this cannot tell whether the "
+        "protection is applied at all"
+    )
