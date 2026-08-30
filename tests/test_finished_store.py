@@ -100,6 +100,74 @@ def test_a_later_verdict_on_one_picture_wins_and_the_earlier_stays_readable() ->
     assert [row["score"] for row in resolution.scored()] == [3]
 
 
+#: The contested render the diagnosis found in `strange_render`: one render key
+#: carrying an evaluation row and a training row a second apart. Spelled here as
+#: two registrations rather than read off the store, so the guard survives the
+#: batches being renamed.
+CONTESTED = {
+    "an_instrument": registry_module.Registration(
+        batch="an_instrument", method="blind", eval_only=True, why="the instrument"
+    ),
+    "a_training_draw": registry_module.Registration(
+        batch="a_training_draw", method="the head's own ranked top", why="train-side"
+    ),
+}
+
+
+def a_contested_pair() -> tuple[dict, dict]:
+    """The eval row, and a training row one second later on the same render key."""
+    evaluation = {
+        **a_row(batch="an_instrument", score=2, recorded_at="2026-08-29T23:37:21Z"),
+        "_file": "an_instrument.jsonl",
+        "_line": 1,
+    }
+    training = {
+        **a_row(batch="a_training_draw", score=3, recorded_at="2026-08-29T23:37:22Z"),
+        "_file": "a_training_draw.jsonl",
+        "_line": 1,
+    }
+    assert finished.render_key(evaluation) == finished.render_key(training)
+    return evaluation, training
+
+
+def test_the_evaluation_side_outranks_the_clock_on_a_contested_render() -> None:
+    """A place is pinned at the location; a row's side is read off its batch. So a
+    training batch writing a second after an eval batch on the same render key used
+    to take the render off the evaluation side, with nothing red and no writer
+    intending it. `eval_only` outranks the timestamp instead."""
+    evaluation, training = a_contested_pair()
+    resolution = finished.resolve([evaluation, training], known=CONTESTED)
+    assert resolution.n_superseded == 1
+    assert [row["batch"] for row in resolution.scored()] == ["an_instrument"]
+    assert [row["score"] for row in resolution.scored()] == [2]
+
+
+def test_two_evaluation_rows_on_one_render_still_resolve_by_the_clock() -> None:
+    """The pin outranks the clock between sides, and nowhere else."""
+    early = {
+        **a_row(batch="an_instrument", score=2, recorded_at="2026-08-29T23:37:21Z"),
+        "_file": "an_instrument.jsonl",
+        "_line": 1,
+    }
+    late = {**early, "score": 3, "recorded_at": "2026-08-29T23:37:22Z", "_line": 2}
+    resolution = finished.resolve([late, early], known=CONTESTED)
+    assert [row["score"] for row in resolution.scored()] == [3]
+
+
+def test_the_canonical_reader_reads_the_registry_for_itself(tmp_path, monkeypatch) -> None:
+    """`resolved` is where every consumer routes, so it is where the rule has to
+    hold — a caller is not asked to remember to pass the registrations."""
+    monkeypatch.setattr(finished, "repo_root", lambda: tmp_path)
+    for registration in CONTESTED.values():
+        finished.register("strange_render", registration)
+    evaluation, training = a_contested_pair()
+    for row in (evaluation, training):
+        finished.append("strange_render", [{k: v for k, v in row.items() if k[0] != "_"}])
+
+    scored = finished.resolved("strange_render").scored()
+    assert [row["batch"] for row in scored] == ["an_instrument"]
+
+
 def test_the_pin_is_asserted_on_the_place_not_on_the_picture(tmp_path, monkeypatch) -> None:
     """A re-render of a pinned location under a fresh recipe is still the instrument."""
     monkeypatch.setattr(finished, "repo_root", lambda: tmp_path)

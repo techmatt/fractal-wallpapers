@@ -112,11 +112,59 @@ def test_the_transform_still_runs_with_the_colour_stages_off() -> None:
     assert tuple(tensor.shape) == (3, head.TARGET_HEIGHT, head.TARGET_WIDTH)
 
 
+def trespassers(by_side: dict, pinned: set) -> list:
+    """Every training-side picture sitting on a pinned place.
+
+    THE thing that must be empty, and the reason the test below exists. Lifted
+    out of it so the teeth can be shown to bite without a render cache: a spent
+    instrument still produces a number, so a guard nobody has watched fail is a
+    guard nobody knows is wired up.
+    """
+    return [
+        picture
+        for side in ("train", finished_train.SELECTION)
+        for picture in by_side[side]
+        if picture.place in pinned
+    ]
+
+
+def test_a_training_row_on_a_pinned_place_is_caught() -> None:
+    """The planted violation, so the assertion below is known to have teeth."""
+    pinned = {"a_pinned_place"}
+    clean = finished_train.sides([a_picture("somewhere_else", 2)])
+    assert trespassers(clean, pinned) == []
+    for side in ("train", finished_train.SELECTION):
+        spent = finished_train.sides([a_picture("a_pinned_place", 2, side=side)])
+        assert [p.place for p in trespassers(spent, pinned)] == ["a_pinned_place"]
+
+
 @pytest.mark.slow
 @pytest.mark.parametrize("head_name", sorted(finished.HEADS))
-def test_the_split_is_the_pin_and_the_selection_slice_comes_out_of_training(
-    head_name: str, shipped_render_cache
+def test_the_pin_is_part_of_the_evaluation_side_and_carries_no_training_row(
+    head_name: str, shipped_render_cache, record_property
 ) -> None:
+    """One-way containment, which is what the design actually holds.
+
+    This asserted the other direction until 2026-08-30 — every eval-side place is
+    pinned — under the name `test_the_split_is_the_pin_...`. `ca42265` had already
+    abandoned that property on purpose: the pin took the 150 places carrying no
+    training row and left the other 50 **contested** — eval-side by their batch's
+    registration, unpinned because a training row is already on them. So the test
+    demanded something no repair to the pin could give it, and stood red.
+
+    What holds, and what is worth guarding:
+
+    * the pin is a **subset** of the evaluation side — a pinned place with no
+      eval-side row is an instrument that is not being read;
+    * **no pinned place carries a training row.** This is the assertion the test
+      exists for. A blind slice is spent the moment it trains and nothing about
+      the number it then produces looks wrong.
+
+    Contested places are permitted and their count is **recorded, not asserted**:
+    it moves with every batch anybody labels, and a fixed number here would be a
+    test that fails on ordinary work. `labeling/README.md` carries the standing
+    figures.
+    """
     from fractal_wallpapers.models import renders
 
     if not finished.registry_path(head_name).is_file():
@@ -129,10 +177,22 @@ def test_the_split_is_the_pin_and_the_selection_slice_comes_out_of_training(
     pictures, record = finished_train.population(head_name)
     by_side = finished_train.sides(pictures)
     pinned = {repr(key) for key in finished.pinned(head_name)}
+    evaluation = {picture.place for picture in by_side["eval"]}
 
-    assert {picture.place for picture in by_side["eval"]} <= pinned
-    for side in ("train", finished_train.SELECTION):
-        assert not [p for p in by_side[side] if p.place in pinned], f"{side} touches the pin"
+    assert pinned, "an empty pin makes every assertion below vacuous"
+    assert pinned <= evaluation, (
+        f"{len(pinned - evaluation)} pinned place(s) have no evaluation-side row — "
+        "the instrument is shipped and not being read"
+    )
+    caught = trespassers(by_side, pinned)
+    assert not caught, (
+        f"{len(caught)} training-side picture(s) sit on a pinned place, e.g. "
+        f"batch {caught[0].batch!r} at {caught[0].place}. Fix the split, never the pin."
+    )
+    record_property("pinned_places", len(pinned))
+    record_property("evaluation_places", len(evaluation))
+    record_property("contested_places", len(evaluation - pinned))
+
     assert by_side[finished_train.SELECTION], "nothing to choose an epoch on"
     # A place's pictures may not straddle the training side and the slice.
     training_places = {p.place for p in by_side["train"]}

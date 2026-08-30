@@ -429,10 +429,17 @@ class Resolution:
         }
 
 
-def resolve(rows: list[dict]) -> Resolution:
-    """THE resolution rule: latest row wins, per render."""
+def resolve(rows: list[dict], known: dict | None = None) -> Resolution:
+    """THE resolution rule: per render, an evaluation row wins, then the latest.
+
+    `known` is this head's batch registry, which is where a row's side is read
+    from — see [`fractal_wallpapers.labeling.store.resolution_order`] for why the
+    pin has to outrank the clock here. Without it the rule degrades to the clock
+    alone; [`resolved`] always hands the store's own registrations over.
+    """
+    eval_only = store.eval_side_batches(known)
     resolution = Resolution(n_rows=len(rows))
-    for row in sorted(rows, key=store.order_of):
+    for row in sorted(rows, key=lambda row: store.resolution_order(row, eval_only)):
         key = render_key(row)
         if key is None:
             resolution.n_unkeyed += 1
@@ -446,7 +453,7 @@ def resolve(rows: list[dict]) -> Resolution:
 
 def resolved(head: str, paths=None) -> Resolution:
     """THE reader every consumer of a finished-render store routes through."""
-    return resolve(read(head, paths))
+    return resolve(read(head, paths), known=registry(head))
 
 
 def write_pin(head: str, rows: list[dict], recipe_document: dict) -> tuple[Path, Path]:
