@@ -78,6 +78,37 @@ def test_a_revision_is_a_new_row_and_the_original_survives(store_dir, registered
     assert resolution.n_superseded == 1
 
 
+def test_the_evaluation_side_outranks_the_clock_on_a_contested_location(
+    store_dir, registered
+) -> None:
+    """The pin is a decision about a population, so it outranks the clock at the
+    row too. Otherwise an ordinary batch labeling a place a second after the
+    instrument did takes that place off the evaluation side — the earlier row
+    still in the store, nothing red, and no writer having asked for it.
+
+    No batch in the tracked location store is registered `eval_only` today, so
+    the shape has to be built here. That is the right way round: the guarantee is
+    about the reader, not about which batches happen to exist this month."""
+    registered("an_instrument", eval_only=True, why="the instrument")
+    known = registered("a_training_draw")
+    store.append(
+        [row(score=2, batch="an_instrument", recorded_at="2026-08-29T23:37:21Z")], known=known
+    )
+    store.append(
+        [row(score=3, batch="a_training_draw", recorded_at="2026-08-29T23:37:22Z")], known=known
+    )
+
+    resolution = store.resolved()
+    assert resolution.n_superseded == 1
+    assert [scored["batch"] for scored in resolution.scored()] == ["an_instrument"]
+    assert [scored["score"] for scored in resolution.scored()] == [2]
+    # And between two rows of the pinned batch, the clock still decides.
+    store.append(
+        [row(score=4, batch="an_instrument", recorded_at="2026-08-29T23:40:00Z")], known=known
+    )
+    assert [scored["score"] for scored in store.resolved().scored()] == [4]
+
+
 def test_latest_wins_is_keyed_on_the_location_not_the_batch(store_dir, registered) -> None:
     """A re-render under a fresh batch is the same place, and cannot hold a second
     live verdict beside the first."""

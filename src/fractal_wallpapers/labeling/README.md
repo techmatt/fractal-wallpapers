@@ -187,39 +187,54 @@ side from the registry with `finished.write_pin`, and assert the new side is a
 can shrink is not a pin. Measured on a 200-unit two-store drop: 150 places pinnable,
 50 contested.
 
-#### The contested places leave one slow-lane guard red, and that is the standing state
+#### The contested places are the design, and the guard now asserts that design
 
-`test_finished_train.py::test_the_split_is_the_pin_and_the_selection_slice_comes_out_of_training`
-asserts `{eval-side places} ⊆ {pinned places}`, and a contested place is eval-side by
-its batch's registration while being deliberately absent from the pin. So it fails on
-**both** heads, and it is not a regression in whatever prompt notices it — three have
-now re-diagnosed it. Standing on 2026-08-30: **23 contested places on
-`smooth_render`, 25 on `strange_render`**, every one of them carrying a training row
-(28 rows and 65 rows respectively), and **zero** places pinned that hold no eval-side
-row. The disagreement is one-way by construction.
+`test_finished_train.py` asserted `{eval-side places} ⊆ {pinned places}` until
+2026-08-30, under the name `test_the_split_is_the_pin_...`. A contested place is
+eval-side by its batch's registration while being deliberately absent from the pin, so
+that assertion failed on **both** heads and no repair to the pin could close it: the
+eligible repair — add only places carrying no training row — has an empty population,
+and extending the pin to the contested places moves the failure one line down to the
+stranding this section refuses.
 
-**There is no repair that both fixes the guard and obeys the rule above.** Extending
-the pin to the 48 moves the failure one line down to `not [p for p in by_side[side]
-if p.place in pinned]` — the same stranding the section refuses — and the eligible
-repair (add only places carrying no training row) has an empty population. Closing it
-means either a rule for contested places or a guard that knows about them, and that
-is a decision rather than a fix. Do not repair the pin to make this green.
+It now asserts the containment that actually holds, one way: **the pin is a subset of
+the evaluation side**, and **no pinned place carries a training row**. That second one
+is the assertion the test exists for and it must always fail loudly. The contested
+count is *recorded* rather than asserted — it moves with every batch anybody labels, so
+a fixed number there would be a test that fails on ordinary work. Standing on
+2026-08-30, read off `finished_train.population`:
 
-#### ⚠ A contested place can leave the evaluation side entirely, and nothing says so
+| head | pinned | eval-side places | contested | pinned with no eval-side row |
+|---|---|---|---|---|
+| `smooth_render` | 277 | 300 | **23** | 0 |
+| `strange_render` | 180 | 207 | **27** | 0 |
+
+50 contested, which is `ca42265`'s own number. Do not repair the pin to move it.
+
+#### `eval_only` outranks the clock, and that is what stops the evaluation side shrinking
 
 The two rules key on different things. A *place* is pinned at the location, but which
-side a *row* is on is read off its batch's registration, and `resolve` keeps one row
-per **render key** by timestamp. So a training batch landing on a render key an
-`eval_only` batch already wrote **supersedes it**, and if that was the place's only
-eval-side row the place stops being eval-side at all. Measured between 2026-08-28 and
-2026-08-30: `strange_render` went from 207 eval-side places to 205, none gained. On
-both, a `sparse_mode_head_top` row beat a `seated_and_head_top` row by **one second**.
+side a *row* is on is read off its batch's registration, and a resolution keeps one row
+per **render key**. While that resolution ordered on the timestamp alone, a training
+batch landing on a render key an `eval_only` batch already wrote **superseded it**, and
+where that was the place's only eval-side row the place stopped being eval-side at all.
+It happened twice: on 2026-08-29 two `sparse_mode_head_top` rows beat two
+`seated_and_head_top` rows by **one second** each, and `strange_render` went from 207
+eval-side places to 205 with nothing red and no writer intending it. The tiers agreed
+in both cases, so nothing was corrupted — but the mechanism does not depend on their
+agreeing, and `finished.assert_pin_holds` cannot see it: it asks whether a training row
+sits on a *pinned* place, and a contested place is by construction not pinned.
 
-The tiers agreed in both cases, so nothing was corrupted — but the mechanism does not
-depend on their agreeing. `finished.assert_pin_holds` cannot catch it: it asks whether
-a training row sits on a *pinned* place, and a contested place is by construction not
-pinned. Anything reasoning about the size of the evaluation side should read it from
-the store rather than assume it only grows.
+Closed on 2026-08-30, **reader-side and with no stored row touched**.
+`store.resolution_order` puts a row from a batch registered `eval_only` after every
+other row about the same key, so the evaluation side wins a contested key whatever the
+clock says; the clock still decides between two rows of the same side.
+`store.resolve` and `finished.resolve` take the registry as `known` and
+`store.resolved` / `finished.resolved` — the canonical readers — always pass their own
+store's. A caller holding rows and no store gets the clock alone, which is stated at
+the function rather than assumed. Restoring the rule moved **two rows** across both
+stores, neither of them changing a tier, and put `strange_render` back to 207
+eval-side places.
 
 ## What cutting a sheet costs, and why the number moves so much
 

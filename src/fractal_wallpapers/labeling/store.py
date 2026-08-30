@@ -296,12 +296,42 @@ def read(paths=None) -> list[dict]:
 
 
 def order_of(row: dict) -> tuple:
-    """THE total order rows resolve in: when, then where, then which line."""
+    """THE clock order two rows about one thing stand in: when, where, which line."""
     return (
         str(row.get("recorded_at") or ""),
         str(row.get("_file") or ""),
         int(row.get("_line", 0)),
     )
+
+
+def eval_side_batches(known: dict | None) -> frozenset[str]:
+    """The batches whose rows outrank the clock: the ones registered `eval_only`.
+
+    Not a new rule. `eval_only` is the pin, and the registry already says the pin
+    outranks whatever a batch's draw implies — this is that same sentence one
+    level down, about a row rather than about a population.
+
+    `None` is "no registrations were handed over", which resolves on the clock
+    alone. Every canonical reader passes its own store's registry, so that
+    fallback is for a caller holding rows and no store to read them against.
+    """
+    if not known:
+        return frozenset()
+    return frozenset(batch for batch, entry in known.items() if getattr(entry, "eval_only", False))
+
+
+def resolution_order(row: dict, eval_only=frozenset()) -> tuple:
+    """THE total order rows resolve in: the pin first, then the clock.
+
+    Two rules key differently and that is what makes this necessary. A *place* is
+    pinned at the location; which side a *row* sits on is read off its batch's
+    registration; and a resolution keeps one row per key. So an ordinary training
+    batch writing a second after an evaluation batch on the same key used to take
+    that key off the evaluation side — no writer intending it, the earlier row
+    still in the store, and nothing red, because the place was contested rather
+    than pinned and `assert_pin_holds` only ever asks about pinned places.
+    """
+    return (1 if row.get("batch") in eval_only else 0, *order_of(row))
 
 
 @dataclass
@@ -337,10 +367,15 @@ class Resolution:
         }
 
 
-def resolve(rows: list[dict]) -> Resolution:
-    """THE resolution rule: latest row wins, per location."""
+def resolve(rows: list[dict], known: dict | None = None) -> Resolution:
+    """THE resolution rule: per location, an evaluation row wins, then the latest.
+
+    `known` is the batch registry the sides are read off — see
+    [`resolution_order`]. Without it the rule degrades to the clock alone.
+    """
+    eval_only = eval_side_batches(known)
     resolution = Resolution(n_rows=len(rows))
-    for row in sorted(rows, key=order_of):
+    for row in sorted(rows, key=lambda row: resolution_order(row, eval_only)):
         key = key_of_row(row)
         if key is None:
             resolution.n_unkeyed += 1
@@ -354,7 +389,7 @@ def resolve(rows: list[dict]) -> Resolution:
 
 def resolved(paths=None) -> Resolution:
     """THE reader every consumer routes through."""
-    return resolve(read(paths))
+    return resolve(read(paths), known=registry())
 
 
 __all__ = [
@@ -367,6 +402,7 @@ __all__ = [
     "append",
     "batch_path",
     "check",
+    "eval_side_batches",
     "eval_split_path",
     "export_dir",
     "export_path",
@@ -378,6 +414,7 @@ __all__ = [
     "register",
     "registry",
     "registry_path",
+    "resolution_order",
     "resolve",
     "resolved",
     "row_dir",
