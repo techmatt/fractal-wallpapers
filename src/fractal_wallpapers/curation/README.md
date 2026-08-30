@@ -2208,6 +2208,40 @@ applying it backwards would cost so that the decision, if it is ever taken, is
 taken against a number; it writes nothing and `tests/test_retention.py` pins that
 the module contains no delete at all.
 
+### A per-cell retention arm cannot prune this store, and the shape says why
+
+Replayed 2026-08-29 over 366,236 rows at 18,424 locations: a rule keeping the top
+K per (location, mode) **union** the top K per (location, dominant cell) keeps
+**65.8% of the rows at K=1** and frees 15.7 of 49.2 GiB. It is not a tuning
+failure, it is the store's shape.
+
+**Rows per location are median 12, p90 40, max 332 — and the two arms together
+open median 22 of them.** A location carries median 1 mode but **median 21
+distinct dominant cells**, because `colour.cells` is thresholded rather than
+singular: a row is dominant in 2.36 cells on average and the codebook has 48. So
+at K=1 only **1,819 of 18,424 locations (9.9%)** hold more rows than arms, and
+everywhere else top-K reaches every row and refuses nothing. Restricting the arm
+to the largest cell buys nothing either — 66.7% kept — because 12 rows over 48
+cells rarely collide whichever cell you read. **The mode arm alone at K=1 keeps
+13.4% and frees 84.9%**, which is the rule shape this module already ships.
+
+The counterpart worth knowing before any prune is that **deleting rows is not
+deleting pictures**. Rows are what `hunt.run` and `mine.population` build `known`
+off; a deleted row is a recipe the next leg cannot tell it has already drawn, and
+at K=1 that is **10.2 engine-hours** of re-render priced through
+[`headroom.render_cost`]. And the two `(location, *)` aggregates above keep every
+pair under such a rule — the arms *are* their key spaces — while every count in
+them silently becomes a count over winners.
+
+### What the two n=150 legs cost on this machine
+
+Measured 2026-08-29 over the 275,822-candidate pool, idle machine: **`curate solve
+run --n 150` is about four minutes** — 238 s, ten cutting-plane rounds, the LP
+relaxation 8 s and the greedy seed 33 s — and **`curate seat --n 150` is about a
+minute**, 51 s including the pixel clouds the twin test opens. A solve over a pool
+pruned to 39,019 candidates is 127 s, so the cost is closer to linear in the
+rounds than in the columns.
+
 ## What a pass puts in the history, and what it puts beside it
 
 **Everything a pass tracks scales with `n`; nothing tracked scales with the
