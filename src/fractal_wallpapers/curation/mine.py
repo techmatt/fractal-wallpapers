@@ -178,7 +178,7 @@ def best_by_location(rows: list, scores: dict) -> dict:
     out: dict = {}
     for row in rows:
         key = str((row.get("location") or {})["key"])
-        score = float(scores.get(str(row["recipe_key"]), 0.0))
+        score = float(scores.get(str(row["key"]), 0.0))
         held = out.setdefault(
             key,
             {"best": -1.0, "count": 0, "partition": str(row.get("partition")), "best_mode": None},
@@ -823,7 +823,9 @@ def run(
             colour=result["colour"],
             picture=tracked_name(result["picture"]),
         )
-        stored["hunt"] = {"name": name, "seconds": round(stages.total(), 3), **unit.named()}
+        stored["hunt"] = candidate_ledger.hunt_block(
+            {"seconds": round(stages.total(), 3), **unit.named()}
+        )
         scored = candidate_ledger.score_row(
             key=key,
             artifact=artifact,

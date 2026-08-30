@@ -146,21 +146,27 @@ def _chunk(payload: list) -> list:
 # --------------------------------------------------------------------------- #
 def sidecar_path() -> Path:
     """The sidecar: one row per recipe key, beside the scores sidecar."""
-    return candidate_ledger.store_root() / SIDECAR_NAME
+    return candidate_ledger.ledger_root() / SIDECAR_NAME
 
 
-def durable() -> durability.Durable:
+def durable(which: str | None = None) -> durability.Durable:
     """The sidecar as a [`durability.Durable`] — how it is saved and restored.
 
     Its own durable rather than a third file inside the ledger's `save`, because
     the ledger's save refuses when a file it names is not there, and a checkout
     that has never swept is the ordinary state rather than a loss.
+
+    `which` names one of the store's two ledgers, and defaults to the live one.
+    The **wide** sidecar has a copy and a manifest of its own and keeps them: it
+    holds every reading this project has ever taken, the retained one holds the
+    readings of the rows that survived the retention, and the first is not
+    regenerable from the second.
     """
     return durability.Durable(
         name="the candidate ledger's flatness sidecar",
-        live=sidecar_path(),
-        copy=candidate_ledger.backup_path(SIDECAR_NAME),
-        manifest=candidate_ledger.manifest_dir() / "flatness.manifest.json",
+        live=candidate_ledger.ledger_root(which) / SIDECAR_NAME,
+        copy=candidate_ledger.backup_path(SIDECAR_NAME, which),
+        manifest=candidate_ledger.manifest_dir(which) / "flatness.manifest.json",
         why_not_tracked=(
             "one row per recipe with a picture on disk, which is tens of thousands of rows "
             "against a 1 MiB per-file history guard. Same guard, same answer as the rows and "

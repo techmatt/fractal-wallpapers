@@ -159,19 +159,19 @@ def of_shares(share: dict) -> Reading:
 def of_block(block: dict) -> Reading:
     """One reading back out of the `colour` block a ledger row stores.
 
-    The store's own spelling — `cells`, `families`, `cell_shares`,
-    `family_shares`, `neutral` — read back without a picture, so a pass that
-    already has the row does not decode the JPEG to ask what it is dominant in.
-    [`curation.candidate_ledger.colour_block`] is the other direction and the two
-    round-trip exactly: the block holds the dominant names outright rather than
-    re-deriving them, so a threshold that moved since the row was written cannot
-    quietly re-decide it here.
+    The store's own spelling — `cells` and `families` — read back without a
+    picture, so a pass that already has the row does not decode the JPEG to ask
+    what it is dominant in. [`curation.candidate_ledger.colour_block`] is the
+    other direction and the two round-trip on what the store keeps: the block
+    holds the dominant names outright rather than re-deriving them, so a
+    threshold that moved since the row was written cannot quietly re-decide it
+    here.
 
-    The shares come back **as stored** — rounded to six places with everything
-    under [`curation.candidate_ledger.SHARE_FLOOR`] dropped — which is the whole
-    of what a reader of the store has ever had. Nothing here reads them anyway:
-    the ceiling asks a reading for its `cells` and its `families` and for
-    nothing else.
+    The **shares come back empty**, because the store stopped keeping them: they
+    were 678 bytes a row and nothing had ever read one — the ceiling asks a
+    reading for its `cells` and its `families` and for nothing else. A block
+    written under the old shape still reads its shares back through here, which
+    is why they are still named.
     """
     return Reading(
         cells=tuple(block.get("cells") or ()),

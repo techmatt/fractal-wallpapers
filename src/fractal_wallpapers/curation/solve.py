@@ -374,20 +374,13 @@ def pool(rows=None, scores=None, artifact=None, log=print) -> tuple[list[Candida
     are different facts about a row: one was never drawn, the other was drawn and
     swept. Only the second is expected to grow.
     """
-    stored = candidate_ledger.read() if rows is None else list(rows)
-    if not stored:
-        raise SolveRefused(
-            "the candidate ledger is empty, so there is nothing to solve over. Run "
-            "`fractal-wallpapers curate candidate-ledger backfill` first."
-        )
+    stored = candidate_ledger.stream() if rows is None else rows
     read = candidate_ledger.read_scores() if scores is None else list(scores)
     # On the LIVE judge only, for [`candidate_ledger.scores_by_recipe`]'s reason:
     # the sidecar is keyed on the artifact and a flattened join would put two
     # judges' scales into one objective. A recipe read on an older artifact falls
     # into `no_score` below, which is where a recipe with no reading belongs.
     by_key = candidate_ledger.scores_by_recipe(read, artifact=artifact)
-    present = candidate_ledger.present_pictures(stored)
-    out: list[Candidate] = []
     refused = {
         "niche_mode": 0,
         "rejected": 0,
@@ -396,8 +389,18 @@ def pool(rows=None, scores=None, artifact=None, log=print) -> tuple[list[Candida
         "picture_absent": 0,
         "no_score": 0,
     }
+    # The four refusals that read the row alone are taken in the stream, so the
+    # only rows that survive into memory are the ones that could still be seated
+    # — a projection of eleven fields, not the row. The two that need another
+    # store come after, in the order they were always in: a row can be both
+    # picture-absent and unscored, and which counter it lands in is a number this
+    # has reported since it was written.
+    seen = 0
+    projected: list[dict] = []
     for row in stored:
-        if not mode_policy.is_accepted((row.get("recipe") or {}).get("mode")):
+        seen += 1
+        recipe = row.get("recipe") or {}
+        if not mode_policy.is_accepted(recipe.get("mode")):
             refused["niche_mode"] += 1
             continue
         if row.get("rejected"):
@@ -409,27 +412,47 @@ def pool(rows=None, scores=None, artifact=None, log=print) -> tuple[list[Candida
         if not row.get("picture"):
             refused["no_picture"] += 1
             continue
-        if str(row["key"]) not in present:
+        colour = row.get("colour") or {}
+        projected.append(
+            {
+                "key": str(row["key"]),
+                "picture": str(row["picture"]),
+                "location": str((row.get("location") or {}).get("key")),
+                "partition": str(row.get("partition")),
+                "mode": str(recipe.get("mode")),
+                "group": str(recipe.get("palette_group")),
+                "cells": tuple(colour.get("cells") or ()),
+                "families": tuple(colour.get("families") or ()),
+            }
+        )
+    if not seen:
+        raise SolveRefused(
+            "the candidate ledger is empty, so there is nothing to solve over. Run "
+            "`fractal-wallpapers curate candidate-ledger backfill` first."
+        )
+    present = candidate_ledger.present_pictures(projected)
+    out: list[Candidate] = []
+    for held in projected:
+        if held["key"] not in present:
             refused["picture_absent"] += 1
             continue
-        reading = by_key.get(str(row["key"]))
+        reading = by_key.get(held["key"])
         if reading is None or reading.get("p_ge4") is None:
             refused["no_score"] += 1
             continue
-        colour = row.get("colour") or {}
         out.append(
             Candidate(
-                key=str(row["key"]),
-                location=str((row.get("location") or {}).get("key")),
-                partition=str(row.get("partition")),
-                mode=str((row.get("recipe") or {}).get("mode")),
-                group=str(row.get("palette_group")),
+                key=held["key"],
+                location=held["location"],
+                partition=held["partition"],
+                mode=held["mode"],
+                group=held["group"],
                 kind=str(reading.get("head")),
-                cells=tuple(colour.get("cells") or ()),
-                families=tuple(colour.get("families") or ()),
+                cells=held["cells"],
+                families=held["families"],
                 score=float(reading["p_ge4"]),
                 p_ge3=float(reading.get("p_ge3") or 0.0),
-                picture=str(row["picture"]),
+                picture=held["picture"],
             )
         )
     out.sort(key=lambda candidate: (-candidate.score, candidate.key))
@@ -1989,7 +2012,17 @@ def render_seats(
 
     regime = release_regime() if regime is None else regime
     workers = release.DEFAULT_WORKERS if workers is None else int(workers)
-    rows = {str(row["key"]): row for row in candidate_ledger.read()}
+    wanted = {str(seat["key"]) for seat in record["seated"]}
+    # A keyed lookup and not a read: this needs the recipes behind about a
+    # hundred and fifty seats, and reading the whole ledger for them held every
+    # other row in memory for the length of a release render pass.
+    rows = candidate_ledger.by_key(wanted)
+    missing = wanted - set(rows)
+    if missing:
+        raise SolveRefused(
+            f"{len(missing)} seat(s) name a recipe the ledger does not hold — "
+            f"{sorted(missing)[:3]}. A seat cannot be rendered without its recipe."
+        )
     where = (solve_dir(name) / "release") if where is None else Path(where)
     where.mkdir(parents=True, exist_ok=True)
     stamps = where / "autolevel_stamps.jsonl"

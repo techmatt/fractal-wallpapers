@@ -78,10 +78,21 @@ is **which store grew**, and then whether one more guard started reading it.
 ### The candidate ledger is the thing that grows
 
 It went from 15,362 rows and 41 MB on 2026-08-26 to **366,236 rows and 1.11 GB on
-2026-08-29** — 24x in three days, and it grows with every mine, hunt and depth
-leg. Nothing caps it. One `candidate_ledger.read()` is 21.9s, `read_scores()` is
-4.2s, `present_pictures()` is 13.0s and laying the pool out over them is 13.4s,
-so a cold `headroom.population()` is about 46 seconds.
+2026-08-29** — 24x in three days, and it grew with every mine, hunt and depth leg.
+One `candidate_ledger.read()` of that file was 21.9s, `read_scores()` 4.2s,
+`present_pictures()` 13.0s and laying the pool out over them 13.4s, so a cold
+`headroom.population()` was about 46 seconds.
+
+**Since 2026-08-29 the fixture reads the retained ledger and those figures are
+the wide one's.** `candidate_ledger.LIVE` points at `retained/`, which is 122,516
+rows and 150.8 MiB — the top three per (location, mode) under four protections,
+each row cut to what the readers consume. Re-measured on this machine: `read()`
+**3.9s**, `read_scores()` **0.8s**, `solve.pool()` end to end **7.1s** against
+**29.3s** over the wide file. Reading is no longer what this lane pays for.
+
+What has not changed is the shape of the trap. The retained ledger has no ceiling
+either — it grows with every leg like the wide one did, just from a lower base —
+so the two rules below stand exactly as written.
 
 Two rules follow, and they are why this lane is 7 minutes instead of 18:
 

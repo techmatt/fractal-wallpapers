@@ -308,13 +308,29 @@ def a_block(cells=("dark_vivid_green",), families=("green",)):
 
 
 def test_a_stored_colour_block_round_trips_through_a_reading_exactly():
-    """The store's five members out and back with nothing moved. If this drifted,
+    """The store's two members out and back with nothing moved. If this drifted,
     a lens served off the ledger would be answering a different question from a
-    lens served off the picture and nothing would say so."""
+    lens served off the picture and nothing would say so.
+
+    Two and not five: the share vectors came off the row on 2026-08-29 because no
+    reader had ever opened one. What still has to round-trip is the pair that
+    every reader does take."""
     from fractal_wallpapers.curation import candidate_ledger
 
     block = a_block()
-    assert candidate_ledger.colour_block(dominance.of_block(block)) == block
+    assert candidate_ledger.colour_block(dominance.of_block(block)) == {
+        "cells": block["cells"],
+        "families": block["families"],
+    }
+
+
+def test_a_block_written_under_the_old_shape_still_reads_its_shares_back():
+    """The store stopped writing the shares; it did not stop being able to read
+    a row that has them. Every row on disk before 2026-08-29 carries them."""
+    reading = dominance.of_block(a_block())
+    assert reading.cell_shares["dark_vivid_green"] == pytest.approx(0.42)
+    assert reading.family_shares["green"] == pytest.approx(0.42)
+    assert reading.neutral == pytest.approx(0.210567)
 
 
 def test_of_block_carries_the_names_and_does_not_re_derive_them():

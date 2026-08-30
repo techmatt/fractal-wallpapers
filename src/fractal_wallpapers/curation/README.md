@@ -219,11 +219,12 @@ constant and every carrier the launch checked.
 The word does three jobs in this stage and they are not versions of one another.
 A reader who conflates them will look for a row in the wrong file:
 
-* **The candidate ledger** — `artifacts/curation/candidate_ledger/rows.jsonl`,
-  one row per *recipe ever rendered*, with its colour and where its picture is.
+* **The candidate ledger** — `artifacts/curation/candidate_ledger/`, one row per
+  *recipe ever rendered*, with its colour and where its picture is.
   Manifest-tracked, written only through [`candidate_ledger.merge`]. This is what
   `curate candidate-ledger` and `curate solve` mean by "the ledger", and it is the
-  one below.
+  one below. Since 2026-08-29 it is **two files of that shape and not one** — see
+  "The two ledgers".
 * **The supply ledgers** — a walk's own output, `walk.jsonl` under a harvest, one
   row per *location* the search found and scored. Plural because there are many
   of them, one per run, hot or archived; `--ledgers` and `--ledger` on the CLI
@@ -243,21 +244,56 @@ build starts here, and this is its first piece — a type that names a picture, 
 a durable store of every picture named.
 
 ```
-src/fractal_wallpapers/curation/recipes.py           the type, and the key
-src/fractal_wallpapers/curation/candidate_ledger.py  the store, the backfill, the census
-artifacts/curation/candidate_ledger/rows.jsonl       one row per recipe
-artifacts/curation/candidate_ledger/scores.jsonl     one row per (recipe, judge, regime)
-data/curation/candidate_ledger/rows.manifest.json    what the history keeps of the first
-data/curation/candidate_ledger/scores.manifest.json  ...and of the second
-<archive>/curation_backup/candidate_ledger/*.jsonl   the durable copies
+src/fractal_wallpapers/curation/recipes.py            the type, the key, and `of_record`
+src/fractal_wallpapers/curation/candidate_ledger.py   the store, the backfill, the census
+artifacts/curation/candidate_ledger/rows.jsonl        the WIDE ledger — every recipe, wide row
+artifacts/curation/candidate_ledger/scores.jsonl      ...and its scores
+artifacts/curation/candidate_ledger/flatness.jsonl    ...and its dead-space column
+artifacts/curation/candidate_ledger/retained/*.jsonl  the RETAINED ledger — what the readers read
+data/curation/candidate_ledger/*.manifest.json        what the history keeps of the wide three
+data/curation/candidate_ledger/retained/*.json        ...and of the retained three
+<archive>/curation_backup/candidate_ledger/**/*.jsonl the durable copies of both
 ```
 
 ```
 fractal-wallpapers curate candidate-ledger backfill   # from what already exists
 fractal-wallpapers curate candidate-ledger census --n 20 --out scratch/ledger_census.json
-fractal-wallpapers curate candidate-ledger save       # both files, both manifests
+fractal-wallpapers curate candidate-ledger retain     # build the retained ledger, ~72 s
+fractal-wallpapers curate candidate-ledger save       # the live files, their manifests
 fractal-wallpapers curate candidate-ledger check      # are they whole
+fractal-wallpapers curate flatness save               # the sidecar's own durable, per ledger
 ```
+
+### The two ledgers
+
+`candidate_ledger.LIVE` names which of them every reader reads, and it is the one
+line that reverts the arrangement:
+
+| | rows | on disk | what it is |
+|---|---|---|---|
+| **wide** (`rows.jsonl`) | 366,236 | 1,057.3 MiB | every recipe ever rendered, at 3,027 B a row. Frozen on 2026-08-29 — nothing writes to it any more |
+| **retained** (`retained/rows.jsonl`) | 122,516 | 150.8 MiB | the top three per (location, `recipe.mode`) by the shipped rank key, plus four protections, at 1,291 B a row |
+
+The wide ledger is **not deleted and not superseded as a record** — it is the
+revert path, and it is the only place the 243,720 rows the retention let go still
+exist. What it is not any more is the file a reader opens: reading it was 46.5 s
+and several gigabytes a session, fourteen times over.
+
+Two numbers that are easy to confuse. `retention.KEEP_PER_PAIR` is **five** and
+is how many *pictures* a (location, mode) pair keeps. `candidate_ledger.RETAIN_PER_PAIR`
+is **three** and is how many *rows* it keeps. A row is a twentieth of a picture's
+bytes and it is what recipe dedup reads, so the two are allowed to differ.
+
+The row itself was cut against the reader sites and against two invariants: the
+recipe key stays recomputable (`recipes.of_record` then `recipes.key_of`) and the
+picture stays re-renderable from the row alone (`Recipe.row` is the engine spec).
+Both are held by `tests/test_candidate_ledger.py`, the second pair over the live
+store in the slow lane.
+
+**Every sidecar is pruned in the same transaction as the rows.** `scores.jsonl`
+and `flatness.jsonl` are keyed on the recipe key, so a ledger written without them
+is two stores of rows nothing joins to. `candidate_ledger.retain` writes all three
+to `.writing` names and renames only once all three are whole.
 
 **The key is the pixels and nothing but the pixels.** It is a digest of the
 engine spec — through `renders.spec_of`, so this project has one derivation of
@@ -893,9 +929,14 @@ its own (AUC 0.407 smooth / 0.480 strange: more dead space is a worse picture) a
 earns its place on top of the judge on both kinds, which is why it is a column of the
 rank key and never a bar.
 
-One row per recipe key in `artifacts/curation/candidate_ledger/flatness.jsonl`, beside
-`scores.jsonl`, with its own manifest under `data/curation/candidate_ledger/`. **No
-ledger row is edited.** About 7.5 ms a picture and incremental: a store already swept
+One row per recipe key in `flatness.jsonl`, beside `scores.jsonl` inside whichever of
+the two ledgers is live, with its own manifest under `data/curation/candidate_ledger/`.
+**No ledger row is edited.** `flatness.durable(which)` addresses one ledger's copy —
+`curate flatness save|check|restore` acts on the live one, and the **wide** sidecar's
+336,196 readings have a copy and a manifest of their own that they keep: they are every
+reading this project has ever taken, and the retained sidecar's 122,475 are a subset.
+It was regenerable from the pictures until the pictures started being swept, which is
+why it was made durable on 2026-08-29 before anything else touched it. About 7.5 ms a picture and incremental: a store already swept
 costs one read of the sidecar and no decodes at all. `--all` sweeps every ledger row
 whose picture is on disk rather than the pool — the pool excludes a row a person
 rejected and a row off the candidate regime, and the rank key has to be *fitted* on

@@ -378,9 +378,9 @@ def ledger_identity(row: dict) -> tuple | None:
     from fractal_wallpapers.labeling import finished
     from fractal_wallpapers.supply.location import location_key
 
-    location = row.get("location") or {}
+    recipe = row.get("recipe") or {}
     try:
-        place = location_key(location.get("family") or {}, location.get("viewport") or {})
+        place = location_key(recipe.get("family") or {}, recipe.get("viewport") or {})
     except Exception:
         # More tolerant than [`finished.render_key`], deliberately and in one
         # direction only. This streams a hundred and twenty-eight thousand rows of
@@ -391,7 +391,6 @@ def ledger_identity(row: dict) -> tuple | None:
         return None
     if place is None:
         return None
-    recipe = row.get("recipe") or {}
     palette = recipe.get("palette") or {}
     if any(name not in palette for name in finished.RECIPE_KEYS):
         return None

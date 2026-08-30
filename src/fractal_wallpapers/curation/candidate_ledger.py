@@ -99,9 +99,28 @@ SCHEMA = 1
 #: The subtree both files live in, under the regenerable tree.
 UNIT = "candidate_ledger"
 
-#: What the two files are called, wherever they are.
+#: What the files are called, in whichever of the two ledgers they belong to.
 ROWS_NAME = "rows.jsonl"
 SCORES_NAME = "scores.jsonl"
+
+#: The **wide** ledger: the store as it was written up to 2026-08-29, one row
+#: per recipe at about three kilobytes. It lives at the root of the unit and it
+#: is left exactly where it is. Nothing writes to it any more.
+WIDE = ""
+
+#: The **retained** ledger: the same store at top-[`retention.KEEP_PER_PAIR`]
+#: per (location, mode) under the four protections, and each row cut to what the
+#: readers actually consume. A subdirectory rather than a second name in the
+#: same one, so the three files that belong together are together and a backup,
+#: a manifest and a tier move all address them as a unit.
+RETAINED = "retained"
+
+#: **Which ledger the readers read, and the one line that reverts this.** Set it
+#: back to [`WIDE`] and every reader is on the old file again — the old file is
+#: still there, byte for byte. Reverting after a leg has run is the one thing it
+#: does not buy: a merge writes to whichever ledger is live, so rows added since
+#: the flip live in the retained one alone.
+LIVE = RETAINED
 
 #: What a candidate's engine build is recorded as. Every candidate render in
 #: every pass and every run predates [`engine_fingerprint`], which stamps a view
@@ -127,26 +146,34 @@ class LedgerError(RuntimeError):
 # Where it all is.
 # --------------------------------------------------------------------------- #
 def store_root() -> Path:
-    """The subtree the rows and the sidecar sit in, on whichever tier it is on."""
+    """The subtree the whole store sits in, on whichever tier it is on."""
     return under("curation", UNIT)
 
 
-def rows_path() -> Path:
-    """The ledger: one row per recipe."""
-    return store_root() / ROWS_NAME
+def ledger_root(which: str | None = None) -> Path:
+    """The subtree one of the two ledgers sits in. [`LIVE`] by default."""
+    which = LIVE if which is None else which
+    return store_root() / which if which else store_root()
 
 
-def scores_path() -> Path:
+def rows_path(which: str | None = None) -> Path:
+    """The ledger: one row per recipe. The live one unless told otherwise."""
+    return ledger_root(which) / ROWS_NAME
+
+
+def scores_path(which: str | None = None) -> Path:
     """The sidecar: one row per (recipe, judge artifact, regime)."""
-    return store_root() / SCORES_NAME
+    return ledger_root(which) / SCORES_NAME
 
 
-def manifest_dir() -> Path:
-    """The tracked directory both manifests live in."""
-    return records.default_root() / UNIT
+def manifest_dir(which: str | None = None) -> Path:
+    """The tracked directory one ledger's manifests live in."""
+    which = LIVE if which is None else which
+    root = records.default_root() / UNIT
+    return root / which if which else root
 
 
-def backup_path(name: str) -> Path:
+def backup_path(name: str, which: str | None = None) -> Path:
     """The durable copy, beside the gate store's and the sidecar's.
 
     Off a root rather than through `under()`, for [`durability`]'s reason: a copy
@@ -158,13 +185,11 @@ def backup_path(name: str) -> Path:
     copy in the same place, and a second spelling of this path is how one of them
     ends up backed up somewhere nothing looks.
     """
+    which = LIVE if which is None else which
     archive = archive_root()
     root = hot_root() if archive is None else archive
-    return Path(root) / durability.BACKUP_UNIT / UNIT / name
-
-
-def _backup(name: str) -> Path:
-    return backup_path(name)
+    where = Path(root) / durability.BACKUP_UNIT / UNIT
+    return (where / which if which else where) / name
 
 
 def _facts(path: Path) -> dict:
@@ -180,22 +205,18 @@ def _facts(path: Path) -> dict:
     runs: dict = {}
     partitions: dict = {}
     locations: set = set()
-    with Path(path).open(encoding="utf-8") as handle:
-        for line in handle:
-            if not line.strip():
-                continue
-            row = json.loads(line)
-            runs[str(row["provenance"]["run"])] = runs.get(str(row["provenance"]["run"]), 0) + 1
-            partition = str(row.get("partition"))
-            partitions[partition] = partitions.get(partition, 0) + 1
-            locations.add(str((row.get("location") or {}).get("key")))
+    for row in _stream_of(Path(path)):
+        run = str(row["provenance"]["run"])
+        runs[run] = runs.get(run, 0) + 1
+        partition = str(row.get("partition"))
+        partitions[partition] = partitions.get(partition, 0) + 1
+        locations.add(str((row.get("location") or {}).get("key")))
     return {
         "runs": dict(sorted(runs.items())),
         "partitions": dict(sorted(partitions.items())),
         "locations": len(locations),
         "colour": {
             "rule": dominance.RULE,
-            "share_floor": SHARE_FLOOR,
             "codebook": {
                 "sigma": codebook.SIGMA,
                 "swatches": len(codebook.names()),
@@ -211,7 +232,7 @@ def durable_rows() -> durability.Durable:
     return durability.Durable(
         name="the candidate ledger",
         live=rows_path(),
-        copy=_backup(ROWS_NAME),
+        copy=backup_path(ROWS_NAME),
         manifest=manifest_dir() / "rows.manifest.json",
         why_not_tracked=(
             "one row per recipe at about a kilobyte and a half a row, which is tens of "
@@ -231,7 +252,7 @@ def durable_scores() -> durability.Durable:
     return durability.Durable(
         name="the candidate ledger's scores",
         live=scores_path(),
-        copy=_backup(SCORES_NAME),
+        copy=backup_path(SCORES_NAME),
         manifest=manifest_dir() / "scores.manifest.json",
         why_not_tracked=(
             "one row per recipe per judge artifact, so it grows with the ledger and again "
@@ -269,10 +290,38 @@ def row(
     a pass spent on a picture another pass already had, and the thing a cache
     prevents. `also_recorded` is every other decision **row** about the render
     this one names — a pass writes a gate row for the attempt and a release row
-    for the seat, one picture, two decisions — and buys nothing but the join back
-    to the seat.
+    for the seat, one picture, two decisions — and is what a protection joining a
+    recipe back to its seat reads.
+
+    ## The row carries what a reader consumes, and two invariants
+
+    It was three kilobytes and is now about half of that. What came off was
+    derived from the reader sites and not from a field list: `colour.cell_shares`
+    and `colour.family_shares`, which every consumer skips in favour of the
+    already-thresholded `cells`/`families`; the fields stored twice
+    (`recipe_key`, `regime`, `palette_group`, and `location`'s copy of the
+    recipe's `family`, `viewport` and `maxiter`); and the fields nothing reads at
+    all (`location.frame_key`, `location.ledger`, `location.framing`,
+    `location.superseded_by`, `provenance.store`, `provenance.source_key`,
+    `provenance.engine`, and the `hunt` block's copies of the mode, the colormap
+    and the draw's own bookkeeping).
+
+    Two things it must always be able to do, and both are what the `recipe` block
+    is here whole for:
+
+    * **The recipe key stays recomputable.** [`recipes.of_row`] rebuilds the
+      dataclass off `recipe` alone and [`recipes.key_of`] digests it back to
+      `key`. `tests/test_candidate_ledger.py` holds that over the live store.
+    * **The picture stays re-renderable from the row alone.** The same rebuilt
+      recipe is [`recipes.Recipe.row`], which is the engine spec.
+
+    Everything derived is derived rather than stored — `at_candidate_regime` is
+    the one exception, because it is a bare boolean, five readers take it, and a
+    pool that silently came back **empty** is how the last attempt at this row
+    was noticed.
     """
     location = source.get("location") or {}
+    place = location.get("key")
     return {
         "schema": SCHEMA,
         "key": str(key),
@@ -280,38 +329,41 @@ def row(
         "location": {
             # The recorded identity: what the one-wallpaper-per-location cap
             # counts on, and what a refinement deliberately does NOT move.
-            "key": location.get("key"),
-            # The identity of the frame the pixels are of. Equal to the above on
-            # every row the refine leg did not move.
-            "frame_key": _frame_key(recipe),
-            "agrees": location.get("key") == _frame_key(recipe),
-            "family": recipe.family,
-            "viewport": recipe.viewport,
-            "maxiter": recipe.maxiter,
-            "ledger": location.get("ledger"),
-            "framing": _framing(source.get("framing")),
-            # Reserved for harvest's re-framing: the location key that supersedes
-            # this row's, written when a refinement moves the place this stands
-            # on. A superseded row keeps its picture and its colour.
-            "superseded_by": None,
+            "key": place,
+            # Whether the pixels are of the frame that identity names. The frame's
+            # own key was here beside it and is not any more: it is
+            # `_frame_key(recipe)` and nothing read it, while this is a bare
+            # boolean the census reports and re-deriving it would put a
+            # `location_key` call on every row of a sweep.
+            "agrees": place == _frame_key(recipe),
         },
         "recipe": recipe.record(),
-        "recipe_key": str(key),
-        "palette_group": recipe.palette_group,
-        "regime": recipe.regime.spelled,
         "at_candidate_regime": recipes.is_candidate_regime(recipe),
-        "colour": colour,
+        "colour": colour_kept(colour),
         "provenance": {
             "run": source.get("run"),
             "candidate": source.get("candidate"),
-            "store": source.get("_store"),
-            "source_key": source.get("key"),
-            "engine": UNKNOWN_ENGINE,
             "also_rendered": list(also_rendered),
             "also_recorded": list(also_recorded),
         },
         "picture": picture,
         "rejected": rejected,
+    }
+
+
+def colour_kept(colour: dict | None) -> dict | None:
+    """One colour block as the row stores it: the two thresholded lists, no shares.
+
+    Takes a block rather than a [`palettes.dominance.Reading`] so that a colour
+    *carried* from a row written under the old shape is cut the same way a fresh
+    read is. `None` in, `None` out — a recipe with no picture has no colour, and
+    an empty block would say something different.
+    """
+    if not colour:
+        return None
+    return {
+        "cells": list(colour.get("cells") or []),
+        "families": list(colour.get("families") or []),
     }
 
 
@@ -531,22 +583,71 @@ def score_row(*, key: str, artifact: str, regime: str, head: str, read: dict, so
 # --------------------------------------------------------------------------- #
 # Reading and writing.
 # --------------------------------------------------------------------------- #
+def stream(path: Path | None = None):
+    """Every ledger row, one at a time, in key order. **The reader.**
+
+    Streaming rather than reading whole, which is what this was until
+    2026-08-29. `read` built the whole file into one string, split it, and kept
+    366,236 dictionaries: 46.5 s and several gigabytes of peak, paid fourteen
+    times in a session by readers that each wanted a handful of fields per row.
+    A generator costs one line at a time, and a caller that genuinely needs the
+    list still says so by calling [`read`].
+
+    An absent file yields nothing rather than raising: a checkout that has never
+    backfilled is a state and not a failure, and every caller here already treats
+    an empty ledger as one.
+    """
+    where = rows_path() if path is None else Path(path)
+    yield from _stream_of(where)
+
+
+def stream_scores(path: Path | None = None):
+    """Every sidecar row, one at a time, in key order."""
+    yield from _stream_of(scores_path() if path is None else Path(path))
+
+
 def read(path: Path | None = None) -> list[dict]:
-    """Every ledger row on record, in key order."""
-    return _rows_of(rows_path() if path is None else Path(path))
+    """Every ledger row on record, in key order, as a list.
+
+    Off [`stream`], so the 1.1 GB intermediate string is gone even here. A
+    caller that only sweeps the rows once should take the stream: this holds
+    every row at once because that is what its name promises.
+    """
+    return list(stream(path))
 
 
 def read_scores(path: Path | None = None) -> list[dict]:
     """Every sidecar row on record, in key order."""
-    return _rows_of(scores_path() if path is None else Path(path))
+    return list(stream_scores(path))
 
 
-def _rows_of(path: Path) -> list[dict]:
+def by_key(keys, path: Path | None = None) -> dict:
+    """`{key: row}` for the keys asked for, in one streamed pass. **The lookup.**
+
+    For a caller that wants a handful of rows out of a store of hundreds of
+    thousands — the release render behind a solve's seats is a hundred and fifty
+    of them. It stops as soon as it has them all, so a seat set that happens to
+    sit early in key order costs a fraction of the file and never costs more than
+    one pass of it.
+    """
+    wanted = {str(key) for key in keys}
+    out: dict = {}
+    for row in stream(path):
+        key = str(row["key"])
+        if key in wanted:
+            out[key] = row
+            if len(out) == len(wanted):
+                break
+    return out
+
+
+def _stream_of(path: Path):
     if not path.is_file():
-        return []
-    return [
-        json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
-    ]
+        return
+    with path.open(encoding="utf-8") as handle:
+        for line in handle:
+            if line.strip():
+                yield json.loads(line)
 
 
 def write(rows) -> tuple[Path, int, int]:
@@ -636,6 +737,308 @@ def merge(rows, scores, log=print) -> dict:
             ],
         },
     }
+
+
+#: How many rows one (location, `recipe.mode`) pair keeps in the retained
+#: ledger, ranked by the shipped [`curation.rank_key`].
+#:
+#: **Three**, settled on the replay in `PRUNE1_replay_bestk_report.md`: at K=3
+#: the solve at n=150 reproduced the full pool's seats exactly, and at K=2 it did
+#: not. It is not [`retention.KEEP_PER_PAIR`] and must not be confused with it —
+#: that one is five and it is how many **pictures** a pair keeps. A row is much
+#: cheaper than a picture and a row is what recipe dedup reads, so the two
+#: numbers are about different things and are allowed to differ.
+RETAIN_PER_PAIR = 3
+
+#: Why a row is in the retained ledger. The first is [`retention.RANKED`]; the
+#: four after it are the protections, and each one keeps a row the rank let go.
+RETAINED_RANKED = "ranked"
+RETAINED_SEATED = "seated_in_a_live_release_row"
+RETAINED_REJECTED = "carries_a_human_rejected_verdict"
+RETAINED_LABELED = "a_label_row_joins_to_it"
+RETAINED_FITTED = "named_by_the_rank_key_population"
+RETAINED_REASONS = (
+    RETAINED_RANKED,
+    RETAINED_SEATED,
+    RETAINED_REJECTED,
+    RETAINED_LABELED,
+    RETAINED_FITTED,
+)
+
+
+def compacted(wide: dict) -> dict:
+    """One row of the wide ledger in the shape [`row`] writes now.
+
+    A projection and not a rebuild: every field it keeps is copied across unread,
+    so a row that comes out of here is the row that went in with the unread half
+    removed. `location.agrees` and `at_candidate_regime` are carried rather than
+    recomputed for that reason — recomputing them would let this quietly
+    *re-decide* something the wide row had already recorded, over a store nothing
+    can go back and check.
+    """
+    location = wide.get("location") or {}
+    provenance = wide.get("provenance") or {}
+    out = {
+        "schema": SCHEMA,
+        "key": str(wide["key"]),
+        "partition": wide.get("partition"),
+        "location": {"key": location.get("key"), "agrees": bool(location.get("agrees"))},
+        "recipe": wide.get("recipe"),
+        "at_candidate_regime": bool(wide.get("at_candidate_regime")),
+        "colour": colour_kept(wide.get("colour")),
+        "provenance": {
+            "run": provenance.get("run"),
+            "candidate": provenance.get("candidate"),
+            "also_rendered": list(provenance.get("also_rendered") or []),
+            "also_recorded": list(provenance.get("also_recorded") or []),
+        },
+        "picture": wide.get("picture"),
+        "rejected": wide.get("rejected"),
+    }
+    if wide.get("hunt"):
+        out["hunt"] = hunt_block(wide["hunt"])
+    return out
+
+
+def hunt_block(named: dict | None) -> dict:
+    """The `hunt` block as the row keeps it: the seconds, and which draw this was.
+
+    Two fields of nine. `seconds` is what [`headroom.render_cost`] prices a leg
+    off; `k` is what [`k_of`] hands the winner's-curse correction, and it is the
+    one field of the block that cannot be recovered from anywhere else. The other
+    seven were the leg's name (which is `provenance.run`), its mode and its
+    colormap (which are the recipe's), and four numbers about the draw that only
+    the leg's own record ever read.
+    """
+    return {"seconds": (named or {}).get("seconds"), "k": (named or {}).get("k")}
+
+
+def retain(keep: int = RETAIN_PER_PAIR, log=print) -> dict:
+    """Build the retained ledger and both its sidecars beside the wide ones.
+
+    **Deletes nothing.** The wide ledger, its two sidecars and every picture stay
+    exactly where they are; this writes three new files under [`RETAINED`], and
+    the readers reach them because [`LIVE`] says so.
+
+    The rule is top-`keep` per (location, `recipe.mode`) ranked by the shipped
+    [`curation.rank_key`], through [`retention.decide`] rather than through a
+    second selector — the same body that decides which pictures a pair keeps,
+    handed rank values instead of a raw `P(>=4)`. Four protections keep a row the
+    rank let go: a seat in a live release row, a human rejection, a human label
+    joining it, and a row named by the rank key's own tracked population file,
+    whose fit stops being reproducible if one of them goes.
+
+    `decide`'s one-in-200 reservoir is **not** a fifth protection here and its
+    rows are folded back into the dropped, counted. The reservoir exists so that
+    a reject autopsy has pictures in the middle of the distribution; a row is not
+    a picture, and the rule as settled names four.
+
+    ## One transaction
+
+    The three files are written to `.writing` names and renamed only once all
+    three are whole. A sidecar pruned against a ledger that was never written
+    would be a store of rows nothing joins to, and the half-written state is the
+    one state this must not be able to leave behind.
+    """
+    import time
+
+    from fractal_wallpapers.curation import flatness, retention
+
+    started = time.time()
+    wide = ledger_root(WIDE)
+    live = ledger_root(RETAINED)
+    if not (wide / ROWS_NAME).is_file():
+        raise LedgerError(f"{wide / ROWS_NAME} is not there, so there is nothing to retain.")
+
+    # ---- one pass to decide ------------------------------------------------- #
+    meta = _retain_meta(wide, log=log)
+    values, coverage = _retain_ranks(meta, log=log)
+    stubs = [
+        {"key": held["key"], "location": {"key": held["place"]}, "recipe": {"mode": held["mode"]}}
+        for held in meta
+    ]
+    verdicts = retention.decide(stubs, values, None, keep=int(keep))
+    protections = _retain_protections(meta, log=log)
+    kept_because = dict.fromkeys(RETAINED_REASONS, 0)
+    keys: set = set()
+    for held in meta:
+        key = held["key"]
+        ranked = verdicts.get(key) == retention.RANKED
+        because = [name for name in RETAINED_REASONS[1:] if key in protections[name]]
+        if not ranked and not because:
+            continue
+        keys.add(key)
+        kept_because[RETAINED_RANKED if ranked else because[0]] += 1
+    saved = {
+        name: sum(1 for key in protections[name] if verdicts.get(key) != retention.RANKED)
+        for name in RETAINED_REASONS[1:]
+    }
+    log(f"[retain] {len(keys):,} of {len(meta):,} rows kept at K={int(keep)}; saved {saved}")
+
+    # ---- one transaction to write ------------------------------------------- #
+    live.mkdir(parents=True, exist_ok=True)
+    names = (ROWS_NAME, SCORES_NAME, flatness.SIDECAR_NAME)
+    temps = [live / f"{name}.writing" for name in names]
+    written: dict = {}
+    try:
+        written["rows"] = _retain_rows(wide / ROWS_NAME, temps[0], keys)
+        written["scores"] = _retain_sidecar(wide / SCORES_NAME, temps[1], keys)
+        written["flatness"] = _retain_sidecar(wide / flatness.SIDECAR_NAME, temps[2], keys)
+        for temp, name in zip(temps, names, strict=True):
+            temp.replace(live / name)
+    except BaseException:
+        for temp in temps:
+            temp.unlink(missing_ok=True)
+        raise
+    for name, record in written.items():
+        log(f"[retain] {name}: {record['rows']:,} rows, {record['bytes']:,} bytes")
+
+    return {
+        "schema": SCHEMA,
+        "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "keep_per_location_mode": int(keep),
+        "wide": tracked_name(wide),
+        "retained": tracked_name(live),
+        "rank": coverage,
+        "rows_read": len(meta),
+        "rows_kept": len(keys),
+        "kept_because": kept_because,
+        "saved_by_a_protection": saved,
+        "reservoir_folded_into_dropped": sum(
+            1 for held in meta if verdicts.get(held["key"]) == retention.RESERVOIR
+        ),
+        "files": written,
+        "seconds": round(time.time() - started, 1),
+    }
+
+
+def _retain_meta(wide: Path, log=print) -> list[dict]:
+    """One streamed pass of the wide ledger into what the decision needs per row."""
+    from fractal_wallpapers.curation import retention
+
+    out: list[dict] = []
+    for at, held in enumerate(_stream_of(wide / ROWS_NAME), start=1):
+        colour = held.get("colour") or {}
+        provenance = held.get("provenance") or {}
+        out.append(
+            {
+                "key": str(held["key"]),
+                "place": str((held.get("location") or {}).get("key")),
+                "mode": str((held.get("recipe") or {}).get("mode")),
+                "cells": tuple(colour.get("cells") or ()),
+                "rejected": bool(held.get("rejected")),
+                "render_key": retention.render_key_of(held),
+                "seat": (str(provenance.get("run")), str(provenance.get("candidate"))),
+                "also_recorded": tuple(
+                    (str(named.get("run")), str(named.get("candidate")))
+                    for named in (provenance.get("also_recorded") or ())
+                ),
+            }
+        )
+        if at % 100_000 == 0:
+            log(f"[retain] {at:,} rows read")
+    log(f"[retain] {len(out):,} rows read from {tracked_name(wide / ROWS_NAME)}")
+    return out
+
+
+class _Pooled:
+    """What [`rank_key.features_for`] reads off a candidate, and nothing else."""
+
+    __slots__ = ("cells", "key", "location", "mode", "p_ge3", "score")
+
+    def __init__(self, held: dict, reading: dict):
+        self.key = held["key"]
+        self.location = held["place"]
+        self.mode = held["mode"]
+        self.cells = held["cells"]
+        self.score = float(reading.get("p_ge4") or 0.0)
+        self.p_ge3 = float(reading.get("p_ge3") or 0.0)
+
+
+def _retain_ranks(meta: list, log=print) -> tuple[dict, dict]:
+    """`({key: rank value}, coverage)` through the SHIPPED key, not a copy of it.
+
+    A row the key cannot read — no reading on the live judge, no flatness — has
+    no value here, and [`retention.decide`] ranks it last within its pair, which
+    is [`curation.seating`]'s own convention for exactly that case.
+    """
+    from fractal_wallpapers.curation import flatness, intake, rank_key
+
+    readings = scores_by_recipe(read_scores(scores_path(WIDE)))
+    flat = flatness.by_recipe(flatness.read(ledger_root(WIDE) / flatness.SIDECAR_NAME))
+    held = rank_key.load()
+    pooled = [_Pooled(row, readings[row["key"]]) for row in meta if row["key"] in readings]
+    features, gaps = rank_key.features_for(pooled, locations=intake.read_scores(), readings=flat)
+    values = {name: held.score(row) for name, row in features.items()}
+    log(f"[retain] {len(values):,} of {len(meta):,} rows carry a rank value; gaps {gaps}")
+    return values, {
+        "artifact": tracked_name(rank_key.artifact_path()),
+        "fitted_at": held.document.get("fitted_at"),
+        "columns": list(held.columns),
+        "rows": len(meta),
+        "with_a_live_score": len(pooled),
+        "ranked": len(values),
+        "unranked": len(meta) - len(values),
+        **gaps,
+    }
+
+
+def _retain_protections(meta: list, log=print) -> dict:
+    """`{reason: {keys}}` for the four things kept whatever the rank says."""
+    from fractal_wallpapers.curation import rank_key, retention, served_locations
+
+    index = served_locations.build()
+    live: set = set()
+    for held in index.rows:
+        live.add((str(held.get("run")), str(held.get("candidate"))))
+        source = held.get("source") or {}
+        if source.get("run") is not None:
+            live.add((str(source.get("run")), str(source.get("candidate"))))
+    marked = retention.labeled_renders()
+    fitted = {
+        str(json.loads(line)["recipe_key"])
+        for line in rank_key.population_path().read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    }
+    out = {
+        RETAINED_SEATED: {
+            held["key"]
+            for held in meta
+            if held["seat"] in live or any(named in live for named in held["also_recorded"])
+        },
+        RETAINED_REJECTED: {held["key"] for held in meta if held["rejected"]},
+        RETAINED_LABELED: {held["key"] for held in meta if held["render_key"] in marked},
+        RETAINED_FITTED: {held["key"] for held in meta if held["key"] in fitted},
+    }
+    named = ", ".join(f"{name} {len(found):,}" for name, found in out.items())
+    log(f"[retain] protections: {named}; the population file names {len(fitted):,} recipe(s)")
+    return out
+
+
+def _retain_rows(source: Path, into: Path, keys: set) -> dict:
+    """Stream the wide ledger into the retained one, compacting as it goes."""
+    rows = 0
+    with into.open("w", encoding="utf-8", newline="\n") as handle:
+        for held in _stream_of(source):
+            if str(held["key"]) not in keys:
+                continue
+            handle.write(json.dumps(compacted(held), ensure_ascii=False) + "\n")
+            rows += 1
+    return {"rows": rows, "bytes": into.stat().st_size}
+
+
+def _retain_sidecar(source: Path, into: Path, keys: set) -> dict:
+    """Stream one recipe-keyed sidecar into the retained ledger, its rows only."""
+    rows = 0
+    dropped = 0
+    with into.open("w", encoding="utf-8", newline="\n") as handle:
+        for held in _stream_of(source):
+            if str(held.get("recipe_key")) not in keys:
+                dropped += 1
+                continue
+            handle.write(json.dumps(held, ensure_ascii=False) + "\n")
+            rows += 1
+    return {"rows": rows, "dropped": dropped, "bytes": into.stat().st_size}
 
 
 def save(log=print) -> dict:
@@ -896,32 +1299,17 @@ def colour_block(reading) -> dict:
     Its own function because two writers make ledger rows — this backfill, off
     pictures that already exist, and [`curation.hunt`], off a picture it has just
     rendered — and a colour block written two ways is two stores wearing one
-    name. What is stored is the rounding and the share floor, and both belong to
-    the *store* rather than to either writer.
+    name.
+
+    **The share vectors are not in it.** They were, at 678 bytes a row and 236 MB
+    over the store, and no reader ever opened one: every consumer — the pool, the
+    ceiling, the census, the retention aggregates, the rank key's stratum — takes
+    the already-thresholded `cells` and `families`, which is the reading
+    [`palettes.dominance.RULE`] has already made. A share vector kept beside the
+    verdict it produced is the verdict stored twice, once in a form nothing can
+    act on.
     """
-    return {
-        "cells": list(reading.cells),
-        "families": list(reading.families),
-        "cell_shares": _kept(reading.cell_shares),
-        "family_shares": _kept(reading.family_shares),
-        "neutral": round(reading.neutral, 6),
-    }
-
-
-#: The share below which a cell is not stored. The same number
-#: [`codebook.census`] stores at, and it is a literal there too — one place a
-#: constant is written twice, because the alternative is a store that keeps
-#: fourteen megabytes of numbers no constraint can read.
-SHARE_FLOOR = 1e-4
-
-
-def _kept(shares: dict) -> dict:
-    """One share vector as it is stored: rounded, and the noise dropped."""
-    return {
-        name: round(float(value), 6)
-        for name, value in shares.items()
-        if float(value) >= SHARE_FLOOR
-    }
+    return {"cells": list(reading.cells), "families": list(reading.families)}
 
 
 def _scores_for(key: str, recipe: recipes.Recipe, drawn: list, artifacts: dict) -> list[dict]:
@@ -988,7 +1376,9 @@ def census(rows=None, n: int = FIRST_SOLVE, log=print) -> dict:
         "cells": _fill(stored, dominance.cells(), _cells_of),
         "families": _fill(stored, dominance.families(), _families_of),
         "modes": _fill(stored, _production_modes(), lambda row: [(row["recipe"] or {})["mode"]]),
-        "groups": _fill(stored, _drawable_groups(), lambda row: [row["palette_group"]]),
+        "groups": _fill(
+            stored, _drawable_groups(), lambda row: [(row["recipe"] or {})["palette_group"]]
+        ),
         "feasibility": feasibility(stored, n=n, log=log),
     }
 
@@ -1141,7 +1531,7 @@ def feasibility(stored: list, n: int = FIRST_SOLVE, log=print) -> dict:
     from fractal_wallpapers.palettes import dominance
 
     locations = {str((row.get("location") or {}).get("key")) for row in stored}
-    groups = {str(row.get("palette_group")) for row in stored}
+    groups = {str((row.get("recipe") or {}).get("palette_group")) for row in stored}
     cell_allowance = int(ceiling_module.K * ceiling_module.CELL_SHARE * n) + 1
     family_allowance = int(ceiling_module.K * ceiling_module.FAMILY_SHARE * n) + 1
     cells_held = {name for row in stored for name in _cells_of(row)}
@@ -1256,6 +1646,9 @@ __all__ = [
     "census",
     "check",
     "colour_block",
+    "colour_kept",
+    "compacted",
+    "hunt_block",
     "durable_rows",
     "durable_scores",
     "feasibility",
@@ -1265,7 +1658,10 @@ __all__ = [
     "merge",
     "read",
     "read_scores",
+    "stream",
+    "stream_scores",
     "renders_of",
+    "retain",
     "restore",
     "row",
     "rows_path",

@@ -594,19 +594,22 @@ def upsert_file(path: Path, rows) -> tuple[int, int]:
     """
     merged: dict = {}
     if path.is_file():
-        for line in path.read_text(encoding="utf-8").splitlines():
-            if line.strip():
-                existing = json.loads(line)
-                merged[existing["key"]] = existing
+        with path.open(encoding="utf-8") as handle:
+            for line in handle:
+                if line.strip():
+                    existing = json.loads(line)
+                    merged[existing["key"]] = existing
     before = set(merged)
     for row in rows:
         merged[row["key"]] = _carry(merged.get(row["key"]), row)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        "".join(json.dumps(merged[key], ensure_ascii=False) + "\n" for key in sorted(merged)),
-        encoding="utf-8",
-        newline="\n",
-    )
+    # Read a line at a time and written a row at a time, rather than through one
+    # string apiece. The candidate ledger is a gigabyte and this is the writer it
+    # is merged with: building the whole output first held the merged rows AND a
+    # second full copy of them as text, which is the peak nothing needed.
+    with path.open("w", encoding="utf-8", newline="\n") as handle:
+        for key in sorted(merged):
+            handle.write(json.dumps(merged[key], ensure_ascii=False) + "\n")
     return len(merged), len(set(merged) - before)
 
 

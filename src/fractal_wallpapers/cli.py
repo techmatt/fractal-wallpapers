@@ -3042,6 +3042,7 @@ def curate_candidate_ledger(args: argparse.Namespace) -> int:
         "save": candidate_ledger.save,
         "check": candidate_ledger.check,
         "pictures": candidate_ledger.picture_census,
+        "retain": lambda: candidate_ledger.retain(keep=args.keep),
         "restore": lambda: candidate_ledger.restore(force=args.force),
     }[args.what]
     try:
@@ -3480,10 +3481,8 @@ def curate_shrinkage(args: argparse.Namespace) -> int:
         # The run's own rows overlay the ledger rather than being read out of it,
         # so a read can be taken before `curate depth merge` and on a run that was
         # killed before it could be merged at all.
-        ledger = {str(row["recipe_key"]): row for row in candidate_ledger.read()}
-        ledger.update(
-            {str(row["recipe_key"]): row for row in hunt._read(depth.rows_path(args.name))}
-        )
+        ledger = {str(row["key"]): row for row in candidate_ledger.stream()}
+        ledger.update({str(row["key"]): row for row in hunt._read(depth.rows_path(args.name))})
         record = shrinkage.measure(
             args.name,
             sequence,
@@ -7194,10 +7193,19 @@ def curate_commands(subcommands) -> None:
     )
     ledger_store.add_argument(
         "what",
-        choices=["backfill", "census", "check", "pictures", "save", "restore"],
+        choices=["backfill", "census", "check", "pictures", "retain", "save", "restore"],
         help="build the ledger from what already exists, take the coverage census, check "
         "the live files against their manifests, report which rows name a picture that is "
-        "no longer on disk, save a fresh copy and manifests, or restore the copies",
+        "no longer on disk, build the retained ledger beside the wide one, save a fresh "
+        "copy and manifests, or restore the copies",
+    )
+    ledger_store.add_argument(
+        "--keep",
+        type=int,
+        default=candidate_ledger_module.RETAIN_PER_PAIR,
+        help="with `retain`: how many rows one (location, mode) pair keeps, ranked by the "
+        f"shipped rank key (default: {candidate_ledger_module.RETAIN_PER_PAIR}). Four "
+        "protections keep a row outside the rank whatever it says",
     )
     ledger_store.add_argument(
         "--recolour",

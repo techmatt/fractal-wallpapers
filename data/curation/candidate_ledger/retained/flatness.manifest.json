@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "path": "artifacts/curation/candidate_ledger/retained/flatness.jsonl",
+  "copy": "artifacts/curation_backup/candidate_ledger/retained/flatness.jsonl",
+  "rows": 122475,
+  "bytes": 15230070,
+  "sha256": "d0035c553f27143c0f3a0f7bd88d2a1819fadba3efc227234c80d5212158b7f5",
+  "column": "flat16_1.0",
+  "cell": 16,
+  "threshold": 1.0,
+  "recorded": "2026-08-29",
+  "why_not_tracked": "one row per recipe with a picture on disk, which is tens of thousands of rows against a 1 MiB per-file history guard. Same guard, same answer as the rows and the scores."
+}

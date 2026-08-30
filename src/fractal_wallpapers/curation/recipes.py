@@ -332,6 +332,46 @@ def of_decision(row: dict, group_table: dict | None = None) -> Recipe:
     )
 
 
+def of_record(block: dict) -> Recipe:
+    """The recipe behind one **stored** row: [`Recipe.record`] read back.
+
+    The inverse of `record`, and the reason the ledger row can drop everything
+    else it used to carry. Two things a row must always be able to do rest on
+    this one function:
+
+    * **The recipe key stays recomputable.** `key_of(of_record(row["recipe"]))`
+      is the row's own `key`, so the store's name for a picture is derived from
+      the row rather than trusted off it.
+    * **The picture stays re-renderable from the row alone.** `Recipe.row` on the
+      value this returns is the engine spec, which is the whole of what a render
+      needs.
+
+    Refuses on a missing member rather than defaulting one. A recipe with a
+    guessed `curve` digests to a key that names a different picture, and a
+    silently wrong identity is worse than no identity at all.
+    """
+    wanted = ("family", "viewport", "maxiter", "regime", "mode", "curve", "colormap", "palette")
+    missing = [name for name in wanted if block.get(name) is None]
+    if missing:
+        raise RecipeError(
+            f"{missing} is missing from the stored recipe, so it names no picture. A recipe "
+            f"read back with a member defaulted digests to a key for a different picture."
+        )
+    return Recipe(
+        family=block["family"],
+        viewport=block["viewport"],
+        maxiter=int(block["maxiter"]),
+        regime=release.regime_of(str(block["regime"])),
+        mode=str(block["mode"]),
+        mode_params=dict(block.get("mode_params") or {}),
+        curve=str(block["curve"]),
+        colormap=str(block["colormap"]),
+        palette=block["palette"],
+        autolevel=block.get("autolevel"),
+        palette_group=str(block.get("palette_group")),
+    )
+
+
 def is_candidate_regime(recipe: Recipe) -> bool:
     """Whether this recipe stands at the one regime the candidate pool was made at."""
     return recipe.regime == CANDIDATE_REGIME
@@ -358,5 +398,6 @@ __all__ = [
     "is_candidate_regime",
     "key_of",
     "of_decision",
+    "of_record",
     "stamp_of",
 ]

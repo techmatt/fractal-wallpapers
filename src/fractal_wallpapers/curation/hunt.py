@@ -1016,7 +1016,9 @@ def run(
             colour=result["colour"],
             picture=tracked_name(result["picture"]),
         )
-        stored["hunt"] = {"name": name, "seconds": result["seconds"], **intent.named()}
+        stored["hunt"] = candidate_ledger.hunt_block(
+            {"seconds": result["seconds"], **intent.named()}
+        )
         scored = candidate_ledger.score_row(
             key=key,
             artifact=artifact,

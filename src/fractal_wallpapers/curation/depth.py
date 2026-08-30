@@ -288,7 +288,7 @@ def best_field_by_location(rows: list, scores: dict, roster: set) -> dict:
         if mode not in roster:
             continue
         key = str((row.get("location") or {})["key"])
-        score = float(scores.get(str(row["recipe_key"]), 0.0))
+        score = float(scores.get(str(row["key"]), 0.0))
         held = out.setdefault(
             key,
             {"best": -1.0, "count": 0, "partition": str(row.get("partition")), "best_mode": None},
@@ -558,7 +558,7 @@ def deficient_modes(rows: list, scores: dict, floor: int = 10, bar: float = SEAT
     seats: dict = {}
     for row in rows:
         mode = str((row.get("recipe") or {}).get("mode"))
-        if float(scores.get(str(row["recipe_key"]), 0.0)) < float(bar):
+        if float(scores.get(str(row["key"]), 0.0)) < float(bar):
             continue
         seats.setdefault(mode, set()).add(str((row.get("location") or {})["key"]))
     out: dict = {}
@@ -1250,7 +1250,9 @@ def run(
             colour=result["colour"],
             picture=tracked_name(Path(result["picture"])),
         )
-        stored["hunt"] = {"name": name, "seconds": round(stages.total(), 3), **shot.named()}
+        stored["hunt"] = candidate_ledger.hunt_block(
+            {"seconds": round(stages.total(), 3), **shot.named()}
+        )
         scored = candidate_ledger.score_row(
             key=key,
             artifact=artifact,
