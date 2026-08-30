@@ -836,15 +836,21 @@ wallpaper per location, and the twin test; the cell and family allowances, the m
 floors and the group cap are soft with the shortfall recorded. No fallback leg, no
 least-violating rescue: unfilled beats padded.
 
-**The scarcity leg seats at most ONE seat per mandated mode, whatever the floor
-says.** It visits each mode once and `break`s on the first candidate nothing refuses,
-so a floor above 1 is recorded as `unmet` and never acted on by this walk. Measured
-2026-08-29: `curate seat --n 150 --mode-floor 2` returns a **bit-identical** gallery to
-`--mode-floor 1` — 0 seats different, the same 13 mode counts, `cell_allowance` 4,570
-either way — and adds three `unmet` rows. `solve` does carry the floor properly, as
-`sum(x in m) + d_m >= mode_floor` with a penalty; the greedy does not. So a floor is
-a real lever only at 1, and `n >= 200` will under-serve every mode here until the leg
-loops. Not fixed: it is a change to how a gallery is chosen, not a wiring detail.
+**The scarcity leg keeps seating a mode until its floor is met.** It used not to:
+it visited each mode once and `break`ed on the first candidate nothing refused, so a
+floor above 1 was recorded as `unmet` and never acted on by this walk. Measured
+2026-08-29, `curate seat --n 150 --mode-floor 2` returned a **bit-identical** gallery
+to `--mode-floor 1` — 0 seats different, the same 13 mode counts, `cell_allowance`
+4,570 either way — while `solve` carried the floor properly as
+`sum(x in m) + d_m >= floor_m` with a penalty. Fixed 2026-08-30: the inner walk stops
+on the floor or on a spent subpool, never on its own first success.
+
+The two solvers agree at a floor of 2 wherever the floor is **free**, which is the
+limit of what an agreement between them can mean. The exact solver's mode floor is
+soft and third in a lexicographic objective, so a floor that would cost a point of the
+worst seated score is a floor it declines to fill; the greedy fills one
+unconditionally. `test_the_greedy_and_the_exact_solver_seat_the_same_rows_at_a_floor_of_two`
+is the pin, and it is built so the floor costs nothing.
 
 ### Both seating decisions flipped on 2026-08-28, and the incumbent is still reachable
 
@@ -1362,10 +1368,52 @@ and the exact solver read. The mode floors in `seating`, `solve`, `headroom` and
 floor over a mode with no rows in the pool is a mandate nothing could meet.
 
 **Weights 1 and 2 are recorded and read the same.** There is no MODE-side cap
-anywhere — `seating.RULES` has none — and the only mode-side floor is
-`solve.mode_floor(n) = n // 100`, which is 1 at `n = 150`. So a promoted mode has
-nothing to bind on at the seat that would move more than a seat or two; what a 2
-buys is a decision still to make, and the table records it rather than pretending.
+anywhere — `seating.RULES` has none — and the only mode-side floor anything *calls*
+is `solve.mode_floor(n) = n // 100`, one floor for every mode, which is 1 at
+`n = 150`. So a promoted mode still has nothing to bind on at the seat that would
+move more than a seat or two.
+
+### The seat floors that would make a 2 mean something — built, and switched off
+
+`mode_policy.seat_floors(n)` is the rule that turns the weights load-bearing.
+Nothing in `src` calls it; `test_nothing_that_ships_calls_the_floor_rule_yet` is
+what keeps that true, and enabling it is a deliberate act against a pre-registered
+bar rather than a wiring change.
+
+```
+python -c "from fractal_wallpapers.curation import mode_policy as m; print(m.seat_floors(1000))"
+```
+
+* `mode_policy.STRANGE_SEAT_SHARE = 0.60` is the strange share of a gallery's
+  **seats**, declared and not measured. It is **not** `run.STRANGE_SHARE`, which
+  carries the same number and splits a release's *mining slots* between the heads
+  at `budget.head_slots`. One name over two stages is the confusion this repository
+  keeps paying for, so the seat-side name says `SEAT`. The knob is the floor's
+  denominator and nothing else: no rule asks a finished gallery whether it realized
+  the share.
+* Over the **13 accepted strange modes** — `accepted()` less `smooth`, read from
+  `colorize.modes_for(budget.STRANGE)` — `2·promoted + 1·normal` sums to 20 and
+  distributes the strange budget fully. Each mode's floor is **half** its share, so
+  the floors sum to exactly half the budget and the other half is the gallery's to
+  spend on whatever is strongest. At `n = 1000`: budget 600, floors summing to 300,
+  30 a promoted mode and 15 a normal one.
+* The halves are fractional, so they are integerized by **largest remainder**, ties
+  by weight then by name. That is deliberately *not* `supply.apportion`'s rule,
+  which is largest-*deficit* sequencing and whose subject is every prefix of a batch
+  that may stop early; nothing stops early here and the only property asked is that
+  the floors sum. An odd budget rounds the house up: `(budget + 1) // 2`.
+* No mode gets a bare 1 by exception, `direct_trap_multiply` included. Smooth is not
+  in the table at all — `colorize.modes_for` returns `[SMOOTH_MODE]` unconditionally
+  on the smooth branch, so the smooth side is one mode by construction and has no
+  distribution to solve.
+* **Where a floor collides with a ceiling the ceiling wins and the floor goes
+  unfilled.** `seating.seat(floor=...)` and `solve.Program(floor=...)` both take the
+  mapping, and the seating record reports the collision per mode under
+  `shortfalls.modes.per_mode` — `clearing` above `seated` means a rule named in
+  `refused_by` took the seats, `clearing` at `seated` means the pool held nothing
+  more. `starved` (a floor above zero that went unfilled) and `floor_never_needed`
+  (a floor of zero, which no gallery can fail) are separate lists, because the old
+  single one read as working when the floor was switched off.
 
 **Nothing is deleted.** A niche mode keeps its labels, its ledger rows and its
 pictures; it renders by name; `--modes` names it and is taken as given; and a

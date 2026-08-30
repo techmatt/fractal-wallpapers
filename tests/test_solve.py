@@ -843,6 +843,49 @@ def test_a_program_reads_the_real_floor_unless_a_caller_puts_one_back():
     assert program_of([candidate("a")], 20).config()["mode_floor_artificial"] is True
 
 
+def test_a_floor_can_be_set_per_mode_and_the_deficit_rows_follow_it():
+    """The mapping [`curation.mode_policy.seat_floors`] builds, reaching stage 3.
+
+    Every score is equal, so the first two stages are tied on every gallery of
+    three and the mode penalty is the only thing left to decide. Which mode the
+    floor names is therefore exactly what the answer turns on — the same pool,
+    two floors, two different galleries.
+    """
+    pool = [candidate(f"c{at}", mode="smooth", score=0.90) for at in range(3)]
+    pool += [candidate(f"s{at}", mode="stripe", score=0.90) for at in range(2)]
+
+    def modes_seated(floor):
+        program = program_of(pool, 3, floor=floor)
+        answer = solve.lexicographic(program, log=lambda *_: None)
+        assert answer.get("feasible", True)
+        held: dict = {}
+        for at in answer["chosen"]:
+            held[pool[at].mode] = held.get(pool[at].mode, 0) + 1
+        return held
+
+    assert modes_seated({"stripe": 2, "smooth": 0})["stripe"] == 2
+    assert modes_seated({"stripe": 0, "smooth": 3}) == {"smooth": 3}
+
+
+def test_the_scalar_floor_of_a_per_mode_program_is_the_largest_asked():
+    """It bounds the deficit columns, so a smaller number would make a soft row
+    hard. A reader wanting the rule as applied takes `mode_floors`."""
+    program = program_of([candidate("a")], 20, floor={"smooth": 3, "stripe": 1})
+    assert program.mode_floors == {"smooth": 3, "stripe": 1}
+    assert program.mode_floor == 3
+    assert program.config()["mode_floors"] == {"smooth": 3, "stripe": 1}
+    assert program.config()["mode_floor_rule"] == "set per mode by the caller"
+
+
+def test_a_mode_a_per_mode_floor_does_not_name_asks_for_nothing():
+    """Not a default, because a floor rule that floors a mode it never mentioned
+    cannot be read off its own table."""
+    assert program_of([candidate("a")], 20, floor={"smooth": 2}).mode_floors == {
+        "smooth": 2,
+        "stripe": 0,
+    }
+
+
 def test_the_rule_a_solve_builds_carries_the_allowance_arithmetic():
     """[`solve`] wants the allowance without the pictures, and that is now all
     [`ceiling.Rule`] is: the seating half it used to refuse to do is deleted."""

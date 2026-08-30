@@ -868,12 +868,36 @@ class Program:
     #: one. It is here for the same reason [`curation.seating`] takes one: the
     #: real floor is zero below a hundred seats, so a small program exercises
     #: stage 3's rows only if something puts a floor back.
-    floor: int | None = None
+    #:
+    #: A **mapping** is one floor per mode — what
+    #: [`curation.mode_policy.seat_floors`] builds. Nothing constructs a program
+    #: that way yet; it is here so the exact solver and [`curation.seating`]'s
+    #: greedy can be asked the same question, which is the only way either one
+    #: checks the other.
+    floor: int | dict | None = None
+
+    @property
+    def mode_floors(self) -> dict:
+        """`{mode: how many seats its floor asks for}` in this program.
+
+        A number — or `None`, for [`mode_floor`]'s own answer — is the same floor
+        for every mode. A mode a mapping does not name asks for nothing.
+        """
+        if isinstance(self.floor, dict):
+            return {name: max(0, int(self.floor.get(name, 0))) for name in self.modes}
+        asked = mode_floor(self.n) if self.floor is None else int(self.floor)
+        return {name: max(0, asked) for name in self.modes}
 
     @property
     def mode_floor(self) -> int:
-        """How many seats each production mode's floor asks for in this program."""
-        return mode_floor(self.n) if self.floor is None else int(self.floor)
+        """The floor every mode asks for, where they all ask for the same thing.
+
+        The **largest** floor asked otherwise, because that is what the deficit
+        columns have to be bounded by and a smaller number would make the rows
+        infeasible rather than soft. A reader wanting the rule as it was applied
+        takes [`mode_floors`].
+        """
+        return max(self.mode_floors.values(), default=0)
 
     def __post_init__(self) -> None:
         self.locations = by_location(self.candidates)
@@ -983,7 +1007,7 @@ class Program:
                 f"1. count of seats with raw P(>=4) >= {Q4_BAR}",
                 "2. the minimum score among the seated, maximized",
                 f"3. the sum of the seated scores, less {PENALTY_PER_SEAT} * n per "
-                f"accepted mode below its floor of {self.mode_floor}",
+                f"accepted mode below its own floor",
             ],
             "q4_bar": Q4_BAR,
             "q4_basis": Q4_BASIS,
@@ -991,7 +1015,10 @@ class Program:
             "radius_from": "ceiling.TAU. `solve.RADIUS` is retired: one distance, one name",
             "tau_group": ceiling.TAU_GROUP,
             "mode_floor": self.mode_floor,
-            "mode_floor_rule": f"floor(n / {SEATS_PER_MODE_FLOOR})",
+            "mode_floors": self.mode_floors,
+            "mode_floor_rule": f"floor(n / {SEATS_PER_MODE_FLOOR})"
+            if not isinstance(self.floor, dict)
+            else "set per mode by the caller",
             "mode_floor_artificial": self.floor is not None,
             "mode_penalty": round(self.n * PENALTY_PER_SEAT, 6),
             "modes": list(self.modes),
@@ -1081,9 +1108,13 @@ def lexicographic(program: Program, seed: dict | None = None, log=print) -> dict
     score is a probability — an unseated candidate's row reads `t <= score + 1`,
     which cannot bind on a `t` already bounded above by one.
 
-    Stage 3 adds `sum(x in mode m) + d_m >= mode_floor(n)` and pays `n *
+    Stage 3 adds `sum(x in mode m) + d_m >= floor_m` and pays `n *
     PENALTY_PER_SEAT` for each unit of `d`. Those rows exist only in this stage:
-    the first two ask questions the penalty is not allowed to trade against.
+    the first two ask questions the penalty is not allowed to trade against —
+    which is also the limit of what the floor can buy. A floor that would cost a
+    point of the worst seated score is a floor this objective declines to fill,
+    by construction, and [`curation.seating`]'s greedy is the leg that fills one
+    unconditionally. The two agree wherever the floor is free.
 
     ## What an incumbent's own floor is worth
 
@@ -1116,9 +1147,10 @@ def lexicographic(program: Program, seed: dict | None = None, log=print) -> dict
     above = numpy.array([1.0 if c.above_bar else 0.0 for c in program.candidates])
     pad = sparse.csr_array((base.shape[0], width - size))
     base = sparse.hstack([base, pad], format="csr")
-    ceiling_of = numpy.concatenate(
-        [numpy.ones(size), [1.0], numpy.full(len(modes), float(program.mode_floor))]
-    )
+    # One deficit column per mode, bounded by that mode's own floor: the row is
+    # `seated + d >= floor`, so a bound of the floor is what makes it soft.
+    asked = numpy.array([float(program.mode_floors[name]) for name in modes])
+    ceiling_of = numpy.concatenate([numpy.ones(size), [1.0], asked])
     values: dict = {}
     started = time.monotonic()
 
@@ -1206,7 +1238,7 @@ def lexicographic(program: Program, seed: dict | None = None, log=print) -> dict
         [
             second_low,
             [floor - EPSILON],
-            numpy.full(len(modes), float(program.mode_floor)),
+            asked,
         ]
     )
     third_high = numpy.concatenate([second_high, [numpy.inf], numpy.full(len(modes), numpy.inf)])
