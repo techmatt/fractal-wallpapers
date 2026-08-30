@@ -116,6 +116,23 @@ sheets cut for the same judge cannot overwrite each other (see [`export_control.
 against its sheet; until then the store is untouched. Drops written before sheets carried
 their own name are called `<head>.json`, and re-ingesting one needs an explicit `--labels`.
 
+**The second half of a drop's name is the BATCH, not the sheet directory** —
+`store.export_path(manifest["head"], manifest["batch"])` is what both `label serve` and
+`label sheets --drops` print. So the collision that name prevents is two *batches* under
+one head; two *cuts of one batch* land on the same drop, and `label sheets --drops` shows
+them doing it. Re-cutting a page — dropping duplicate places, re-ordering, screening — is
+exactly that case, so it is the normal way to arrive here rather than a mistake.
+
+**And the ingest cannot tell which cut the drop came from.** A drop is joined by position,
+so a shorter export against a longer sheet of the same batch is accepted: every exported id
+is on the sheet, and the units the drop does not name are reported as `not acted on`, which
+is what a half-labelled page looks like too. Measured 2026-08-29 on a batch whose 745-unit
+re-cut and 998-unit original share one drop: the correct sheet joined 745 of 745 with 21
+withheld, and the original joined the same file at `exported 745, not acted on 253` and
+offered **515 rows bound to the wrong pictures**, without an error. Match the *unit count*
+to the drop before ingesting, and delete or rename the superseded cut once its replacement
+is labelled.
+
 ## A verdict cast on a pinned location is WITHHELD, not written
 
 A finished store's evaluation side is a **batch** — one registered `eval_only`, cut

@@ -45,10 +45,16 @@ not.
 * **Nothing is modified.** An ingest appends or it does nothing at all. A verdict
   that changed since the last ingest is a **new row**, resolved latest-wins by
   the store's own reader, and the earlier one stays readable underneath it.
-* **A second ingest of the same export is a no-op.** The current row for a unit
-  already saying what the export says is the whole test — so the step is safe to
-  re-run, which is the only reason a labeler ever re-runs it after finding a
-  mistake.
+* **A second ingest of the same export is a no-op** — until another batch has
+  judged the same render. The current row for a unit already saying what the
+  export says is the whole test, and that current row can belong to a *later*
+  drop, in which case re-ingesting an old export writes its verdicts back on top
+  and the older page wins. So the step is safe to re-run, which is the only
+  reason a labeler ever re-runs it after finding a mistake, and a session
+  landing several drops has to run them **oldest first**. Reversing that order
+  on 2026-08-29 reverted all 98 renders the newest drop had revised; the repair
+  is to re-ingest in cast order until every export reports `to write: 0` except
+  where a genuinely newer drop supersedes it.
 * **Registration comes first.** Both writers refuse a batch nobody registered, so
   the flags that decide train from eval are on record before the first row exists
   rather than reconstructed after it.
