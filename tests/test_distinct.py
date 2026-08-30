@@ -204,7 +204,7 @@ def test_the_module_exports_a_set_of_candidates_and_never_a_setting():
 # The tracked store. Real descriptors, real pictures, the real bound.
 # --------------------------------------------------------------------------- #
 @pytest.fixture(scope="module")
-def tracked_places():
+def tracked_places(tracked_ledger):
     """A small slice of the real pool: keys, descriptors, and a picture each.
 
     Small on purpose. The guard is that the bound is **sound** on real material
@@ -212,17 +212,18 @@ def tracked_places():
     particular number comes back — and forty places is nine hundred pairs, which
     is enough for the bound to settle most of them and for at least a few to be
     measured.
+
+    The pool itself is the session's one reading; see `conftest.tracked_ledger`.
     """
-    from fractal_wallpapers.curation import candidate_ledger, embeddings, headroom
+    from fractal_wallpapers.curation import embeddings, headroom
     from fractal_wallpapers.paths import rehome
 
-    if not candidate_ledger.rows_path().is_file():
-        pytest.skip("the candidate ledger has not been backfilled on this machine")
     if not embeddings.store_path().is_file():
         pytest.skip("the neutral embedding store is not on this machine")
-    candidates, _costs, _refused = headroom.population(log=lambda *_: None)
     best: dict = {}
-    for candidate in sorted(headroom.clearing(candidates), key=lambda c: (-c.score, c.key)):
+    for candidate in sorted(
+        headroom.clearing(tracked_ledger.pool), key=lambda c: (-c.score, c.key)
+    ):
         best.setdefault(candidate.location, candidate)
     keys, matrix = distinct.matrix_for(sorted(best)[:40])
     if len(keys) < 8:

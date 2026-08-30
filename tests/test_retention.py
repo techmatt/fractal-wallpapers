@@ -240,24 +240,26 @@ def test_the_report_breaks_the_deletion_down_by_mode():
 # Over the real store.
 # --------------------------------------------------------------------------- #
 @pytest.mark.slow
-def test_every_ledger_row_can_be_spelled_as_a_render_key_for_the_label_join():
+def test_every_ledger_row_can_be_spelled_as_a_render_key_for_the_label_join(tracked_ledger):
     """A row that cannot be keyed could never be found to carry a label, and
-    would be dropped as unlabeled without anything saying so."""
-    from fractal_wallpapers.curation import candidate_ledger
+    would be dropped as unlabeled without anything saying so.
 
-    rows = candidate_ledger.read()
+    Whole-store on purpose — the claim is about every row, and once the reading
+    is the session's the sweep itself is arithmetic. See `conftest.tracked_ledger`.
+    """
+    rows = tracked_ledger.rows
     unkeyable = [row["key"] for row in rows if retention.render_key_of(row) is None]
     assert unkeyable == [], f"{len(unkeyable)} of {len(rows)} rows cannot be keyed"
 
 
 @pytest.mark.slow
-def test_the_policy_keeps_every_human_labeled_row_on_the_real_store():
+def test_the_policy_keeps_every_human_labeled_row_on_the_real_store(tracked_ledger):
     from fractal_wallpapers.curation import candidate_ledger
 
-    rows = candidate_ledger.read()
+    rows = tracked_ledger.rows
     scores = {
         key: float(row.get("p_ge4") or 0.0)
-        for key, row in candidate_ledger.scores_by_recipe().items()
+        for key, row in candidate_ledger.scores_by_recipe(tracked_ledger.scores).items()
     }
     labeled = retention.labeled_renders()
     out = retention.decide(rows, scores, labeled)

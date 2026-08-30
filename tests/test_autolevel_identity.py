@@ -34,13 +34,14 @@ Slow lane, and it needs a **release** engine: it is thirty-odd renders.
 from __future__ import annotations
 
 import hashlib
+from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
 from fractal_wallpapers import engine
 from fractal_wallpapers.coloring import autolevel
 from fractal_wallpapers.coloring import band as band_module
-from fractal_wallpapers.curation import colorize
+from fractal_wallpapers.curation import colorize, release
 from fractal_wallpapers.models import renders
 
 try:
@@ -546,7 +547,8 @@ def test_every_pinned_candidate_comes_back_byte_for_byte(tmp_path) -> None:
     """
     record = band_module.load()
     cyclic = colorize.cyclic()
-    for index, probe in enumerate(PROBES):
+
+    def check(index: int, probe: dict) -> None:
         name = f"{index:03d}_{probe['mode']}"
         row = {
             "family": probe["family"],
@@ -575,3 +577,10 @@ def test_every_pinned_candidate_comes_back_byte_for_byte(tmp_path) -> None:
         if acted:
             leveled = tmp_path / f"{name}.leveled" / f"{probe['colormap']}.json"
             assert _digest(leveled) == probe["leveled"], f"{name}: the levelled colormap moved"
+
+    # One probe a worker, at the pool's own width. Every probe writes under its
+    # own indexed name and `fields=None` means no cache is shared, so the only
+    # thing the workers contend for is the engine — which is what the count is
+    # about. Twenty-eight serial renders were 38.9 s on 2026-08-29.
+    with ThreadPoolExecutor(max_workers=release.DEFAULT_WORKERS) as pool:
+        list(pool.map(lambda pair: check(*pair), enumerate(PROBES)))

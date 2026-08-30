@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import contextlib
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path, PurePosixPath
 
 import pytest
 
 from fractal_wallpapers import engine
-from fractal_wallpapers.curation import budget, colorize
+from fractal_wallpapers.curation import budget, colorize, release
 from fractal_wallpapers.palettes import space
 
 
@@ -528,28 +529,40 @@ def test_a_recolour_is_the_render_byte_for_byte(tmp_path) -> None:
     """
     cyclic = colorize.cyclic()
     band = colorize.band()
-    checked = 0
-    for at, row in enumerate(EXACTNESS_PLACES):
-        for mode in shareable_modes():
-            for colormap in EXACTNESS_MAPS:
-                plain = tmp_path / f"plain{at}-{mode}-{colormap}.jpg"
-                shared = tmp_path / f"shared{at}-{mode}-{colormap}.jpg"
-                _, plain_stamp = colorize.render(
-                    row, mode, colormap, cyclic, plain, level=True, band=band
-                )
-                _, shared_stamp = colorize.render(
-                    row,
-                    mode,
-                    colormap,
-                    cyclic,
-                    shared,
-                    level=True,
-                    band=band,
-                    fields=tmp_path / "fields",
-                )
-                assert digest_of(plain) == digest_of(shared), f"{mode}/{colormap} at {at}"
-                assert plain_stamp == shared_stamp, f"{mode}/{colormap} at {at}: the stamp"
-                checked += 1
+
+    def both_paths(at: int, row: dict, mode: str) -> int:
+        """Every map at one (place, mode), which is one unit of the render pool.
+
+        The colormaps stay serial inside a unit because that is exactly what they
+        share: the field cache is keyed on the family, the viewport, the geometry,
+        the mode and the curve, and never on the map. Two threads at one
+        (place, mode) would be two writers of one `.f32`.
+        """
+        for colormap in EXACTNESS_MAPS:
+            plain = tmp_path / f"plain{at}-{mode}-{colormap}.jpg"
+            shared = tmp_path / f"shared{at}-{mode}-{colormap}.jpg"
+            _, plain_stamp = colorize.render(
+                row, mode, colormap, cyclic, plain, level=True, band=band
+            )
+            _, shared_stamp = colorize.render(
+                row,
+                mode,
+                colormap,
+                cyclic,
+                shared,
+                level=True,
+                band=band,
+                fields=tmp_path / "fields",
+            )
+            assert digest_of(plain) == digest_of(shared), f"{mode}/{colormap} at {at}"
+            assert plain_stamp == shared_stamp, f"{mode}/{colormap} at {at}: the stamp"
+        return len(EXACTNESS_MAPS)
+
+    units = [
+        (at, row, mode) for at, row in enumerate(EXACTNESS_PLACES) for mode in shareable_modes()
+    ]
+    with ThreadPoolExecutor(max_workers=release.DEFAULT_WORKERS) as pool:
+        checked = sum(pool.map(lambda unit: both_paths(*unit), units))
     assert checked == len(EXACTNESS_PLACES) * len(shareable_modes()) * len(EXACTNESS_MAPS)
 
 
@@ -570,14 +583,19 @@ def test_a_coloring_with_no_field_is_served_by_the_render_path_without_being_ask
     unshareable = [mode for kind, mode in sorted(kinds.items()) if kind != colorize.FIELD_KIND]
     assert len(unshareable) == 3, f"the engine grew a shape: {sorted(kinds)}"
     fields = tmp_path / "fields"
-    for mode in unshareable:
+    band = colorize.band()
+
+    def both_paths(mode: str) -> None:
         plain = tmp_path / f"plain-{mode}.jpg"
         shared = tmp_path / f"shared-{mode}.jpg"
-        colorize.render(row, mode, "viridis", cyclic, plain, level=True, band=colorize.band())
-        colorize.render(
-            row, mode, "viridis", cyclic, shared, level=True, band=colorize.band(), fields=fields
-        )
+        colorize.render(row, mode, "viridis", cyclic, plain, level=True, band=band)
+        colorize.render(row, mode, "viridis", cyclic, shared, level=True, band=band, fields=fields)
         assert digest_of(plain) == digest_of(shared), mode
+
+    # One mode a worker, at the pool's own width. Nothing is shared between them:
+    # the whole subject here is modes the field cache never writes for.
+    with ThreadPoolExecutor(max_workers=release.DEFAULT_WORKERS) as pool:
+        list(pool.map(both_paths, unshareable))
     assert not list(fields.glob("*.f32")), "a dump was written for a coloring that has no field"
 
 

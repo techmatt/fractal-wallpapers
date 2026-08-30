@@ -17,7 +17,7 @@ from __future__ import annotations
 import pytest
 
 from fractal_wallpapers import paths
-from fractal_wallpapers.curation import candidate_ledger, ceiling, solve
+from fractal_wallpapers.curation import ceiling, solve
 
 pytest.importorskip("scipy", reason="the solve leg needs SciPy's HiGHS binding")
 
@@ -878,14 +878,15 @@ def tracked_artifacts(monkeypatch):
     monkeypatch.delenv(paths.HOT_ROOT_VARIABLE, raising=False)
 
 
-@pytest.fixture(scope="module")
-def tracked_pool():
-    if not candidate_ledger.rows_path().is_file():
-        pytest.skip("the candidate ledger has not been backfilled on this machine")
-    with pytest.MonkeyPatch.context() as patched:
-        patched.delenv(paths.HOT_ROOT_VARIABLE, raising=False)
-        candidates, _refused = solve.pool(log=lambda *_: None)
-    return candidates
+#: How much of the score-sorted pool the real solve below runs over. See that
+#: test's docstring for the measurement that set it.
+SOLVE_SLICE = 20_000
+
+
+@pytest.fixture
+def tracked_pool(tracked_ledger):
+    """The session's one reading of the ledger. See `conftest.tracked_ledger`."""
+    return tracked_ledger.pool
 
 
 @pytest.mark.slow
@@ -893,22 +894,33 @@ def test_the_tracked_pool_solves_and_honours_every_rule(tracked_artifacts, track
     """One small real solve, end to end: the store, the pictures, and HiGHS.
 
     Five seats rather than twenty, because the guard is that every rule is
-    honoured on real material and not that a particular gallery comes back — and
-    a five-seat solve over the whole pool costs seconds where twenty costs half a
-    minute.
+    honoured on real material and not that a particular gallery comes back.
+
+    **Over the pool's top `SOLVE_SLICE` and no longer over all of it.** The
+    cutting plane is super-linear in the candidate count, measured on this
+    machine on 2026-08-29: 1.3 s at two thousand, 1.9 s at twenty thousand,
+    18.8 s at a hundred thousand and **185.6 s at the 275,822 the ledger now
+    admits** — a sixth of the whole slow lane, from a docstring that used to say
+    "costs seconds" and was right when the store held 15,362 rows. The slice is
+    the head of a list already sorted by score, which is the part any real solve
+    seats out of anyway, and `Pairs` calibrates its own bound on "the pool's top
+    two thousand" for the same reason. Every rule below is still read off real
+    candidates, real pictures and real HiGHS.
     """
     from fractal_wallpapers import engine
 
+    pool = tracked_pool[:SOLVE_SLICE]
+    assert len(pool) == min(SOLVE_SLICE, len(tracked_pool)), "the slice lost the pool"
     program = solve.Program(
-        candidates=tracked_pool,
+        candidates=pool,
         n=5,
         rule=solve.rule_for(),
         modes=tuple(engine.production_modes()),
     )
-    pairs = solve.Pairs(tracked_pool)
+    pairs = solve.Pairs(pool)
     answer = solve.cutting_plane(program, pairs, log=lambda *_: None)
     assert answer["feasible"]
-    seated = [tracked_pool[at] for at in answer["chosen"]]
+    seated = [pool[at] for at in answer["chosen"]]
     assert len({c.location for c in seated}) == 5
     for at, one in enumerate(answer["chosen"]):
         for other in answer["chosen"][at + 1 :]:

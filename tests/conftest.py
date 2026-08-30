@@ -175,3 +175,46 @@ def distillation_rows():
     if not palette_corpus.row_dir().is_dir():
         pytest.skip("the distillation corpus has not been built")
     return palette_corpus.read()
+
+
+@pytest.fixture(scope="session")
+def tracked_ledger():
+    """The candidate ledger and its score sidecar, read **once** for the session.
+
+    The dearest reading in this repository by a wide margin, and until this
+    existed the slow lane paid for it eight times: four module fixtures derived
+    the same pool independently, and three more guards read the rows again to
+    census them. On this machine, 2026-08-29, one reading is 21.9 s for the rows,
+    4.2 s for the sidecar and 13.4 s to lay the pool out over them — so the four
+    duplicated derivations alone were 138 s of a 1,088 s lane.
+
+    Why the whole file rather than the six fields the censuses read: a projection
+    is a second opinion about which fields a row has, and a guard handed a
+    thinned row would go on passing after the field it stopped being given
+    started mattering. The cost is that the session holds about 6 GB while it
+    runs. That is a reading of *this machine's* tree and nowhere else's — the
+    ledger lives under `artifacts/`, so every machine without it, CI included,
+    skips these guards rather than paying anything.
+
+    The hot root is unset while the pool is laid out, deliberately. `solve.pool`
+    asks whether each row's picture is still on disk, and a module that has
+    redirected the root at its own `tmp_path` would otherwise have this read the
+    empty tree and report every picture missing. Higher-scoped fixtures are built
+    before lower-scoped ones, so this is belt and braces — but the belt is what
+    makes the reading independent of which file happened to ask for it first.
+    """
+    from fractal_wallpapers import paths
+    from fractal_wallpapers.curation import candidate_ledger, headroom
+
+    if not candidate_ledger.rows_path().is_file():
+        pytest.skip("the candidate ledger has not been backfilled on this machine")
+
+    def quiet(*_args, **_flags) -> None:
+        """The census logs a line a mode; a fixture is not a place for it."""
+
+    with pytest.MonkeyPatch.context() as patched:
+        patched.delenv(paths.HOT_ROOT_VARIABLE, raising=False)
+        rows = candidate_ledger.read()
+        scores = candidate_ledger.read_scores()
+        pool, costs, refused = headroom.population(rows=rows, scores=scores, log=quiet)
+    return SimpleNamespace(rows=rows, scores=scores, pool=pool, costs=costs, refused=refused)

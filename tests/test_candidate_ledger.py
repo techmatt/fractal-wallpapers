@@ -421,10 +421,11 @@ def test_the_recipe_dataclass_says_what_a_ledger_row_stores():
 # The stored colour, and the lens served off it.
 # --------------------------------------------------------------------------- #
 @pytest.mark.slow
-def test_the_stored_colour_block_is_what_the_picture_still_reads_as():
+def test_the_stored_colour_block_is_what_the_picture_still_reads_as(tracked_ledger):
     """The lens serves the stored block instead of decoding, so the two paths
-    have to be one answer. A sample rather than all 85,129 because a decode is
-    16 ms a row: this is the guard that catches a drift, not a re-census."""
+    have to be one answer. A sample rather than every row because a decode is
+    16 ms a row: this is the guard that catches a drift, not a re-census. The
+    rows are the session's one reading; see `conftest.tracked_ledger`."""
     import random
     from pathlib import Path
 
@@ -433,7 +434,7 @@ def test_the_stored_colour_block_is_what_the_picture_still_reads_as():
 
     rows = [
         row
-        for row in candidate_ledger.read()
+        for row in tracked_ledger.rows
         if row.get("picture") and row.get("colour") and not row.get("rejected")
     ]
     assert rows, "the ledger has rows with a picture and a colour"
