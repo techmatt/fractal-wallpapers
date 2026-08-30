@@ -110,6 +110,49 @@ DIFFERENT — so the cut is read by a **one-sided rule**: never merge a pair mar
 DIFFERENT, and pay for it by declining two merges a person would have made. Both
 are named in the record's header, and `groups.jsonl`'s `marks` field points at it.
 
+**Library, candidate pool, drawn set — three counts, and none of them is the same
+number.** The **library** is every file in `data/palettes`: **901** maps
+(`groups.library`, which is `clusters.library`). The **candidate pool** is
+`models.palette_sets.pool()["pool"]`, **900** — 700 maps inherited as a *subset* of
+the source project's own 987-map pool (nothing was brought across to round the
+number up) plus the 200 of the one admitted drop. The one library map it does not
+hold is `blue_orange`, which is instrument rather than choice: it is
+`labeling.sheets.VIVID_COLORMAP`, the map a person judges a location from, and half
+of the tile floor's palette expansion in `engine/src/tiles.rs`. What a colorize actually **draws** from is **822**, because
+`colorize.pool` reads that 900 through `groups.collapse`: 143 of them fall in 65
+groups, each group stands one member up and 78 stand down, leaving `757 singletons +
+65 = 822`. The record `colorize.pool_record` writes on every run carries all of it,
+and names the group every absent map stood down for.
+
+**The 822 is seed-independent; which 822 is not.** `collapse` draws the standing
+member with `random.Random(seed).randrange` inside each group, so a different
+`--seed` stands a different member up and never a different *number* of them — two
+seeds a day apart shared 790 of 822 maps. That is Matt's rule and the reason is what
+a group means: its members are indistinguishable, so none of them deserves the slot
+permanently, and always taking `groups.canonical` would quietly retire every other
+member of every group while leaving it in the library. `canonical` is what a record
+or a figure *names*; it is deliberately not what the pool draws.
+`FRACTAL_WALLPAPERS_PALETTE_GROUPS=off` turns the collapse off for one run, read at
+call time so a typo falls back to the default rather than silently widening a pool.
+
+**Comparing two maps means sampling positions through the bake, never comparing stop
+lists.** `data/palettes` ships control points at four different resolutions — 33
+stops for 156 maps, 34 for 36, 257 for 334, 512 for 375 — and the engine bakes every
+one of them into the same 4,096-entry table (`colormap.rs`'s `TABLE_SIZE`), so two
+maps compared stop for stop are two different samplings of one curve. `groups.cloud`
+therefore reads a map at `SAMPLES` (4,096) evenly spaced **unfolded** positions with
+`numpy.interp` over the sorted stops in Oklab, holding the end colours outside the
+outermost stops exactly as `colormap.rs`'s `interpolate` does above and below them —
+and stops one step short of the engine, which ends in `oklab_to_linear_srgb`, because
+coming back out of Oklab to measure a distance in it would be a round trip through a
+clip. `weighted` then scales `a` and `b` by `HUE_WEIGHT` (4.0) and `m1` projects the
+clouds onto `DIRECTIONS` (1,024) directions of a Fibonacci **half**-sphere — half
+because the 1-D distance along a direction and along its opposite are one number —
+reading each projection at `QUANTILES` (128) evenly spaced quantiles. That is the
+whole of M1, and it is chunked over directions rather than over maps so the pass
+stays inside a gigabyte. Unfolded on purpose: folding never adds colour, so the
+unfolded read is the right superset of every mirrored one.
+
 `reference-fields` dumps the three pictures every palette sheet is judged on —
 one smooth, one the ramp sweeps across several times, one a parameter plane — from
 tracked specs into `artifacts/palettes/reference_fields/`. The spec is twelve
