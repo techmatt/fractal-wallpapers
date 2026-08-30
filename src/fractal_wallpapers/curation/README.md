@@ -262,7 +262,7 @@ fractal-wallpapers curate candidate-ledger pictures   # rows naming a picture th
 fractal-wallpapers curate candidate-ledger re-render  # ...and put them back. ~1.5 pictures/s
 fractal-wallpapers curate candidate-ledger save       # the live files, their manifests
 fractal-wallpapers curate candidate-ledger check      # are they whole
-fractal-wallpapers curate flatness save               # the sidecar's own durable
+fractal-wallpapers curate flatness save               # its own durable. `merge` does this too
 ```
 
 ### The growth law
@@ -1012,15 +1012,27 @@ its own (AUC 0.407 smooth / 0.480 strange: more dead space is a worse picture) a
 earns its place on top of the judge on both kinds, which is why it is a column of the
 rank key and never a bar.
 
-One row per recipe key in `flatness.jsonl`, beside `scores.jsonl` inside whichever of
-the two ledgers is live, with its own manifest under `data/curation/candidate_ledger/`.
-**No ledger row is edited.** `flatness.durable(which)` addresses one ledger's copy —
-`curate flatness save|check|restore` acts on the live one, and the **wide** sidecar's
-336,196 readings have a copy and a manifest of their own that they keep: they are every
-reading this project has ever taken, and the retained sidecar's 122,475 are a subset.
+One row per recipe key in `flatness.jsonl`, beside `scores.jsonl` in the ledger, with
+its own manifest under `data/curation/candidate_ledger/`. **No ledger row is edited.**
 It was regenerable from the pictures until the pictures started being swept, which is
-why it was made durable on 2026-08-29 before anything else touched it. About 7.5 ms a picture and incremental: a store already swept
-costs one read of the sidecar and no decodes at all. `--all` sweeps every ledger row
+why it was made durable on 2026-08-29 before anything else touched it.
+
+**`candidate_ledger.merge` records it, along with the rows and the scores.** Until
+2026-08-30 the door saved two of the store's three files and the sidecar's manifest
+was current only because somebody had run `curate flatness save` by hand — a writer
+that has to remember, which is the exact shape the two other manifests went stale in.
+The save is conditional where theirs are not, because `durability.save` refuses a
+file that is not there; in practice `prune` rewrites all three, so the sidecar exists
+by the time the save reaches it and a merge that swept nothing records zero rows.
+
+**What this does not buy:** `curate candidate-ledger check` still reads the rows and
+the scores alone, so a short or missing sidecar is *not* what makes that command exit
+1 — `curate flatness check` is a separate call with its own exit code. Extending the
+one to cover the other is a decision about what counts as a build failure and has not
+been taken.
+
+The sweep is about 7.5 ms a picture and incremental: a store already swept costs one
+read of the sidecar and no decodes at all. `--all` sweeps every ledger row
 whose picture is on disk rather than the pool — the pool excludes a row a person
 rejected and a row off the candidate regime, and the rank key has to be *fitted* on
 some of those.

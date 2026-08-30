@@ -209,3 +209,67 @@ def test_the_one_door_fills_the_flatness_sidecar_as_well_as_the_two_files(
         log=lambda *_a, **_k: None,
     )
     assert again["flatness"]["swept"] == 0, "incremental: a row already read costs no decode"
+
+
+def test_the_door_records_the_flatness_sidecar_with_the_other_two(tmp_path, monkeypatch) -> None:
+    """The third file of the store, recorded by the same write that fills it.
+
+    `merge` saved the rows and the scores and left the sidecar to whoever
+    remembered `curate flatness save` — which is a writer that has to remember,
+    the exact shape this file's own docstring says goes stale. It matters more
+    here than for the other two: an unrecorded sidecar is the one whose loss
+    leaves every row of the store unranked to the fitted key.
+    """
+    from PIL import Image
+
+    from fractal_wallpapers.curation import flatness
+
+    live, copies, manifests = tmp_path / "live", tmp_path / "copy", tmp_path / "manifests"
+    for directory in (live, copies, manifests):
+        directory.mkdir()
+    redirect(monkeypatch, live, copies, manifests)
+
+    picture = tmp_path / "one.jpg"
+    Image.new("RGB", (64, 64), (30, 90, 160)).save(picture)
+    monkeypatch.setattr("fractal_wallpapers.paths.rehome", lambda name: picture if name else None)
+
+    report = candidate_ledger.merge(
+        [a_row(picture="artifacts/one.jpg", colour={"cells": [], "families": []})],
+        [],
+        log=lambda *_a, **_k: None,
+    )
+
+    assert report["recorded"]["flatness"] == 1
+    assert (manifests / "flatness.manifest.json").is_file()
+    assert (copies / flatness.SIDECAR_NAME).read_bytes() == (
+        live / flatness.SIDECAR_NAME
+    ).read_bytes()
+    named = [name for name in report["recorded"]["manifests"] if "flatness" in name]
+    assert len(named) == 1, report["recorded"]["manifests"]
+
+
+def test_a_merge_that_swept_nothing_records_an_empty_sidecar_rather_than_none(
+    tmp_path, monkeypatch
+) -> None:
+    """A merge whose rows name no resolvable picture still records the sidecar.
+
+    Worth pinning because the reason is not the sweep. `flatness.sweep` writes no
+    file when it read nothing, so on the sweep alone there would be nothing to
+    record — but [`candidate_ledger.prune`] rewrites all THREE files of the store
+    and runs between the two, so the sidecar is on disk by the time the save
+    reaches it, empty. The conditional in `merge` is therefore a guard against
+    [`durability.save`]'s refusal and not the ordinary path.
+    """
+    live, copies, manifests = tmp_path / "live", tmp_path / "copy", tmp_path / "manifests"
+    for directory in (live, copies, manifests):
+        directory.mkdir()
+    redirect(monkeypatch, live, copies, manifests)
+    monkeypatch.setattr("fractal_wallpapers.paths.rehome", lambda _name: None)
+
+    report = candidate_ledger.merge([a_row()], [], log=lambda *_a, **_k: None)
+
+    assert report["flatness"]["read"] == 0, "nothing was resolvable to sweep"
+    assert report["recorded"]["flatness"] == 0
+    assert (manifests / "flatness.manifest.json").is_file()
+    assert report["recorded"]["rows"] == 1, "the other two are recorded either way"
+    assert report["recorded"]["scores"] == 0

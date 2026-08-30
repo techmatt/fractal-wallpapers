@@ -51,9 +51,27 @@ weights `p_ge3` above `p_ge4` on smooth, which an expected tier cannot express.
 No colormap identity, no palette group, and no human label aggregated by map. A
 key that read a map's own label history would be a selection rule fit on the
 thing it selects. `hunt.seconds` and everything derived from it are out for a
-different reason: they are on 44% of rows, and a form that has to score the whole
-ledger cannot carry a column most of the ledger does not have. `mode` is out
-because the smooth population is one mode and the column is not evaluable there.
+different reason, and **it is not coverage**. The stated reason here was "on 44%
+of rows"; post-prune it is on **90.3%** of the 122,516 standing (2026-08-30), and
+the absence is not scattered — it is whole-run, 0% or 100% on every one of the 36
+runs, and every row without it predates the stamp.
+
+The exclusion still stands because of what the column *is*. It is the wall-clock
+seconds one worker spent rendering, colouring and scoring that candidate — a
+reading of the machine and its load at that moment, not of the picture. The same
+picture measures differently for reasons that are nothing about itself: rendered
+under three workers it prices **1.53×** what it prices serially, measured on this
+box at 196 ms against 300 ms. A sort key carrying it would order the pool partly
+by how busy the machine was when each row happened to be drawn, and would be
+unreproducible by construction — re-rendering the recipe cannot recover the
+number. What signal it does hold is a proxy for iteration count, which the recipe
+already carries honestly.
+
+It also has one job already: [`headroom.render_cost`] prices a leg off it, and a
+selection rule reading the same column the budget reads couples the two.
+
+`mode` is out because the smooth population is one mode and the column is not
+evaluable there.
 
 ## The artifact is tracked, the fit is a command, and the population is on record
 

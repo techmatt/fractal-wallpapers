@@ -187,6 +187,40 @@ side from the registry with `finished.write_pin`, and assert the new side is a
 can shrink is not a pin. Measured on a 200-unit two-store drop: 150 places pinnable,
 50 contested.
 
+#### The contested places leave one slow-lane guard red, and that is the standing state
+
+`test_finished_train.py::test_the_split_is_the_pin_and_the_selection_slice_comes_out_of_training`
+asserts `{eval-side places} ⊆ {pinned places}`, and a contested place is eval-side by
+its batch's registration while being deliberately absent from the pin. So it fails on
+**both** heads, and it is not a regression in whatever prompt notices it — three have
+now re-diagnosed it. Standing on 2026-08-30: **23 contested places on
+`smooth_render`, 25 on `strange_render`**, every one of them carrying a training row
+(28 rows and 65 rows respectively), and **zero** places pinned that hold no eval-side
+row. The disagreement is one-way by construction.
+
+**There is no repair that both fixes the guard and obeys the rule above.** Extending
+the pin to the 48 moves the failure one line down to `not [p for p in by_side[side]
+if p.place in pinned]` — the same stranding the section refuses — and the eligible
+repair (add only places carrying no training row) has an empty population. Closing it
+means either a rule for contested places or a guard that knows about them, and that
+is a decision rather than a fix. Do not repair the pin to make this green.
+
+#### ⚠ A contested place can leave the evaluation side entirely, and nothing says so
+
+The two rules key on different things. A *place* is pinned at the location, but which
+side a *row* is on is read off its batch's registration, and `resolve` keeps one row
+per **render key** by timestamp. So a training batch landing on a render key an
+`eval_only` batch already wrote **supersedes it**, and if that was the place's only
+eval-side row the place stops being eval-side at all. Measured between 2026-08-28 and
+2026-08-30: `strange_render` went from 207 eval-side places to 205, none gained. On
+both, a `sparse_mode_head_top` row beat a `seated_and_head_top` row by **one second**.
+
+The tiers agreed in both cases, so nothing was corrupted — but the mechanism does not
+depend on their agreeing. `finished.assert_pin_holds` cannot catch it: it asks whether
+a training row sits on a *pinned* place, and a contested place is by construction not
+pinned. Anything reasoning about the size of the evaluation side should read it from
+the store rather than assume it only grows.
+
 ## What cutting a sheet costs, and why the number moves so much
 
 A location unit is **two renders at 1280×720 ss2**, and that is the whole bill —

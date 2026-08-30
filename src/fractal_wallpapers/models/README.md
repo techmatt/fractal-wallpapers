@@ -550,6 +550,20 @@ at 384x224 carry the whole gain** (+0.0407 [+0.0111, +0.0711] smooth `AUC(≥4)`
 forward pass on every scored candidate forever, which makes it a throughput
 question against the mining budget rather than a training one.
 
+⚠ **AND THE SHIPPED HEAD GAINS NOTHING AT 768x448 — IT LOSES.** Every reading above
+is of arm B, a checkpoint *trained* at 768x448. The shipped `models/render/render.fp16.pt`
+was trained at 384x224, and read at 768x448 over the same 1,795 rows it is worse on
+all four columns, two of them CI-excluding: smooth `AUC(≥3)` **−0.0197 [−0.0323,
+−0.0076]**, strange `AUC(≥3)` **−0.0501 [−0.0761, −0.0270]**, smooth `AUC(≥4)`
+−0.0124 [−0.0310, +0.0060], strange `AUC(≥4)` −0.0263 [−0.0574, +0.0026]. Paired
+bootstrap over lineage groups, one checkpoint read twice.
+
+**So `input_detail` is a JUDGE ADOPTION and not a config change.** There is no
+setting that buys the +0.02 on the head that serves today; taking the gain means
+training at 768x448 and shipping those weights, which re-scores every row of the
+candidate ledger's score sidecar. The throughput question above is real but it is
+the *second* cost, not the only one.
+
 **The `P(≥4)` crossover does not exist, and that is worth not re-deriving.** Over
 pooled out-of-fold predictions across all five folds (8,977 rows), the `P(≥3)`
 crossover is **0.5693**, 95% over lineages [0.504, 0.642] — which reproduces
