@@ -14,13 +14,41 @@ the whole store and about 200 in any one fold, four to five times the declared
 slice, and it is the statistic the screen's own report named as the better
 instrument. The band is where a bar would *act*; it is not where the evidence is.
 
+## ★ The primary is the RANK KEY, and that is a later correction
+
+Everything above is the ckpt-88 reading and its arithmetic still stands. What
+moved at ckpt 91 is what the comparison turns on. `P(>=4)` is **one of five
+columns** [`curation.rank_key`] reads, and the key — not the column — is what
+orders seats; so a retrain that improved the column and left the key alone would
+have improved nothing anybody ships. [`key_delta`] is the declared primary: the
+key **refit on each arm's own out-of-fold predictions**, ordering the rows a
+person scored 3 or 4, pooled over both kinds.
+
+Refitting per arm is deliberate rather than a convenience. CORN's scale is set by
+the training prior, so every retrain moves the whole probability axis; a key
+whose constants were fitted against the incumbent's scale would read a
+candidate's columns at the wrong offset and report that move as a quality
+change. Fitting per arm makes it drop out, and it is what an adoption would do
+anyway — the key is *on* the adoption checklist, not beside it.
+
+The strange-side `AUC(>=4)` over 3-or-4 rows stays on every table under
+`motivating` and now decides nothing.
+
 ## Two things are tested at once and one of them is free
 
-**`input_detail`.** Every band on the record reads 384x224 of a 1280x720
-picture — 9.3% of the pixels, and by a whole-frame anisotropic stretch rather
-than a crop, so the head has never once seen this material at its own aspect
-ratio let alone its own scale. The screen moved that axis to 512x288 and found
-the only arm pointing the right way. This doubles both axes instead.
+**Aspect.** Every band on the record reads 384x224 — which is 12:7 — of a
+1280x720 picture, through a whole-frame `image.resize` with no crop at deploy.
+Every picture this project draws is 16:9: the store's renders, the 640x360
+candidate a mining pass scores, the location tiles. So the head has **never once
+seen this material at its own aspect ratio**, in training or at deploy, and the
+3.7% horizontal stretch is not a property of one corpus but of every reading the
+judge has ever taken. [`ASPECT_DIMS`] closes it at the shipped width.
+
+⚠ The **resolution** axis was arm B until ckpt 91 and is not an arm here any
+more. Its gain was measured at label geometry, where 768x448 takes 37% of a
+1280x720 source; mining scores the 640x360 candidate, where 384x224 already
+takes 37% and 768x448 *exceeds the source*. That is a scoring check over two
+retired checkpoints rather than a training run, and it is priced in minutes.
 
 **The stopping rule.** The shipped recipe selects the epoch on the pooled
 cutpoint cross-entropy and keeps epoch 5 of 40, while `AUC(>=4)` on that very
@@ -52,10 +80,13 @@ slices. It comes out of the training side and never out of the holdout: a run
 that early-stopped on the graded split would make the graded number optimistic
 and it could not also be the grading statistic.
 
-## Nothing here adopts anything
+## Nothing here adopts anything, and no LEVEL is claimed
 
 No weights ship, `curation.floors.SCORING_HEAD` does not move, `models/` is not
-written and no registry is opened. The crossovers [`crossovers`] fits are read at
+written and no registry is opened. Nor is any number here an absolute: the stores
+are overwhelmingly train-side and the incumbent's own AUCs are inflated on that
+side, so every reading says which **arm** is better on identical rows and none of
+them says how good any arm is. The crossovers [`crossovers`] fits are read at
 **label geometry** — the store's own 1280x720 renders — and the judge is not
 regime-robust, so they are not seating floors and no bar is set on them here.
 """
@@ -132,6 +163,29 @@ def run_dir(arm: str, fold: int, seed: int) -> Path:
 SHIPPED_DIMS = (head.TARGET_WIDTH, head.TARGET_HEIGHT)
 DOUBLED_DIMS = (SHIPPED_DIMS[0] * 2, SHIPPED_DIMS[1] * 2)
 
+#: **The aspect every picture this judge has ever read.** The stores' renders are
+#: 1280x720, the candidate a mining pass scores is 640x360 and a location tile is
+#: 640x360: 16:9 is not one corpus's convention here, it is the only shape this
+#: project draws. The shipped input is 384x224, which is 12:7, and `head.resize`
+#: is a bare whole-frame `image.resize` — so every picture the head has ever seen
+#: arrived stretched 3.7% horizontally, in training and at deploy alike.
+SOURCE_ASPECT = (16, 9)
+
+#: Arm B's input: **the shipped width at the source's own aspect**. 384x216 is
+#: exactly 16:9, so the picture arrives undistorted with every pixel of it still
+#: in the frame.
+#:
+#: The gap admits three treatments and this is the one that gives up nothing a
+#: verdict was about. **Padding** spends 3.6% of the input on a constant band and
+#: teaches an edge no picture has. **Cropping** to 12:7 throws 46 columns of a
+#: wallpaper away, and the store's verdicts are about whole frames. An
+#: aspect-preserving resize costs 3.6% of the input pixels and nothing else.
+#:
+#: The **width is held at the shipped 384 on purpose**: this arm has to move
+#: aspect alone. Resolution is what the `input_detail` check asks about, and an
+#: arm that moved both could not answer either question.
+ASPECT_DIMS = (SHIPPED_DIMS[0], SHIPPED_DIMS[0] * SOURCE_ASPECT[1] // SOURCE_ASPECT[0])
+
 ARMS: dict[str, dict] = {
     "A": {
         "target_dims": None,
@@ -142,10 +196,11 @@ ARMS: dict[str, dict] = {
         ),
     },
     "B": {
-        "target_dims": list(DOUBLED_DIMS),
+        "target_dims": list(ASPECT_DIMS),
         "what": (
-            "arm A with `input_detail` at 2x linear — 768x448, four times the pixels, the "
-            "same whole-frame stretch and the same aspect. Every other key is A's"
+            "arm A with the aspect gap closed — 384x216, exactly the source's own 16:9, by "
+            "the same whole-frame resize. Every pixel still arrives and none is padded or "
+            "cropped away; the width is the shipped one, so resolution does not move"
         ),
     },
 }
@@ -395,23 +450,255 @@ def pooled(arm: str, rule: str, seed: int, folds=None) -> list[dict]:
 
 
 # --------------------------------------------------------------------------- #
+# The primary: the shipped rank key, refit on each arm's own predictions.
+# --------------------------------------------------------------------------- #
+#: The members of [`curation.rank_key.COLUMNS`] a retrain does NOT move. The
+#: place's own reading, the calibration stratum and the dead-space fraction are
+#: facts about the picture rather than about the judge, so they are joined once
+#: and every arm is handed the same ones; the two the judge owns are exactly what
+#: an arm substitutes.
+CARRIED_COLUMNS = ("loc_p_ge4", "stratum_score", "flat16_1.0")
+
+#: The judge's own two columns in the key, in the order the key reads them.
+JUDGE_COLUMNS = ("p_ge3", "p_ge4")
+
+
+def columns_path() -> Path:
+    """Where the arm-independent half of the key's rows is cached. Regenerable."""
+    return root() / "rank_key_columns.json"
+
+
+def rank_key_columns(rebuild: bool = False, log=train.say) -> dict:
+    """The arm-independent half of the rank key's row, for every label row it has one.
+
+    [`curation.rank_key.fit`]'s join, re-derived against the stores as they stand
+    and **written nowhere tracked** — this grades, it does not ship a key. The
+    shipped artifact's own `population.jsonl` is deliberately not reused: it was
+    joined on a file and a line, the stores have been appended to and superseded
+    since it was written, and a tenth of its rows no longer address what they
+    addressed.
+
+    Keyed by the **render job name**, which is what an out-of-fold reading
+    already carries, so the two join without going back to either store.
+    """
+    cache = columns_path()
+    if cache.is_file() and not rebuild:
+        return json.loads(cache.read_text(encoding="utf-8"))
+
+    from fractal_wallpapers.curation import candidate_ledger, flatness, intake, rank_key
+    from fractal_wallpapers.labeling import finished
+    from fractal_wallpapers.models import renders
+
+    labels = []
+    for kind in rank_key.KINDS:
+        for row in finished.resolved(kind).scored():
+            identity = finished.render_key(row)
+            if identity is not None:
+                labels.append((kind, row, identity))
+    log(f"[key] {len(labels):,} resolved scored label rows")
+
+    wanted = {identity for _kind, _row, identity in labels}
+    ledger: dict = {}
+    with candidate_ledger.rows_path().open(encoding="utf-8") as handle:
+        for line in handle:
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            identity = rank_key.ledger_identity(row)
+            if identity is not None and identity in wanted and identity not in ledger:
+                ledger[identity] = row
+    log(f"[key] {len(ledger):,} ledger rows join a label")
+
+    location_scores = intake.read_scores()
+    flat = flatness.by_recipe()
+    lean = rank_key.thin_cells()
+    scores = candidate_ledger.scores_by_recipe()
+    kinds: dict = {}
+    out: dict = {}
+    dropped = {"no_ledger_row": 0, "no_score": 0, "no_flatness": 0, "no_location_reading": 0}
+    for kind, row, identity in labels:
+        entry = ledger.get(identity)
+        if entry is None:
+            dropped["no_ledger_row"] += 1
+            continue
+        key = str(entry["key"])
+        reading = scores.get(key) or {}
+        if reading.get("p_ge3") is None or reading.get("p_ge4") is None:
+            dropped["no_score"] += 1
+            continue
+        value = flat.get(key)
+        if value is None:
+            dropped["no_flatness"] += 1
+            continue
+        place = location_scores.get(str((entry.get("location") or {}).get("key"))) or {}
+        reading_of_place = place.get("p_ge4")
+        if reading_of_place is None:
+            dropped["no_location_reading"] += 1
+        mode = str((entry.get("recipe") or {}).get("mode"))
+        stripped = {name: member for name, member in row.items() if not name.startswith("_")}
+        name = renders.job_name({**stripped, "_head": kind})
+        cells = (entry.get("colour") or {}).get("cells") or ()
+        out[f"{kind}:{name}"] = {
+            "kind": kind,
+            "name": name,
+            "tier": int(row["score"]),
+            "mode": mode,
+            "loc_p_ge4": (
+                rank_key.NO_LOCATION_READING
+                if reading_of_place is None
+                else float(reading_of_place)
+            ),
+            "stratum_score": rank_key.STRATUM_ORDER[rank_key.stratum_of(mode, cells, lean, kinds)],
+            "flat16_1.0": float(value),
+            "incumbent_p_ge3": float(reading["p_ge3"]),
+            "incumbent_p_ge4": float(reading["p_ge4"]),
+        }
+    log(f"[key] {len(out):,} label rows carry every column; dropped {dropped}")
+    document = {"schema": SCHEMA, "dropped": dropped, "rows": out}
+    cache.parent.mkdir(parents=True, exist_ok=True)
+    cache.write_text(json.dumps(document, indent=1) + "\n", encoding="utf-8", newline="\n")
+    return document
+
+
+def key_readings(rows: list[dict], carried: dict | None = None) -> list[dict]:
+    """One arm's reading, put through a rank key **refit on that arm's own scores**.
+
+    The shipped key standardizes and weights five columns, two of which are this
+    judge's. A retrain moves the CORN scale by construction, so a key whose
+    constants were fitted against the incumbent's scale would read a candidate's
+    columns at the wrong offset and report the scale move as a quality change.
+    Refitting per arm is what makes that drop out: each arm is ranked by the best
+    key its own numbers support, which is also what an adoption would do — the
+    key is on the adoption checklist rather than beside it.
+
+    The fold is the **judge's own**, carried on the reading. So a row's key value
+    comes from weights fitted without its fold and from a judge that never saw
+    its lineage, and the two levels share one partition instead of drawing two.
+    """
+    import numpy
+
+    from fractal_wallpapers.curation import rank_key
+
+    held = (carried or rank_key_columns())["rows"]
+    joined = [
+        (row, held[f"{row['kind']}:{row['name']}"])
+        for row in rows
+        if f"{row['kind']}:{row['name']}" in held
+    ]
+    if not joined:
+        raise GradingError(
+            "no out-of-fold row joins the rank key's columns, so the key cannot be refit. "
+            "Has `curate flatness sweep` run over the labeled rows?"
+        )
+    matrix = numpy.array(
+        [
+            [
+                carried_row["loc_p_ge4"],
+                float(row["p_ge3"]),
+                float(row["p_ge4"]),
+                carried_row["stratum_score"],
+                carried_row["flat16_1.0"],
+            ]
+            for row, carried_row in joined
+        ],
+        dtype=float,
+    )
+    target = numpy.array([1.0 if int(row["score"]) >= 4 else 0.0 for row, _carried in joined])
+    folds = numpy.array([int(row["fold"]) for row, _carried in joined])
+    predicted = numpy.full(len(joined), numpy.nan)
+    for fold in sorted(set(folds.tolist())):
+        inside = folds == fold
+        if inside.sum() == 0 or (~inside).sum() == 0 or len(numpy.unique(target[~inside])) < 2:
+            continue
+        mean, deviation = rank_key.standardize(matrix[~inside])
+        beta = rank_key.logistic((matrix[~inside] - mean) / deviation, target[~inside])
+        predicted[inside] = rank_key.predict(beta, (matrix[inside] - mean) / deviation)
+    return [
+        {**row, "key_value": float(value)}
+        for (row, _carried), value in zip(joined, predicted, strict=True)
+        if not numpy.isnan(value)
+    ]
+
+
+def key_delta(candidate: list[dict], reference: list[dict]) -> dict:
+    """The primary: two refit keys ordering the same human 3-against-4 rows.
+
+    **Pooled over both kinds**, because the key's weights are shared over both
+    and its ordering is what seats a wallpaper of either kind. Restricted to the
+    rows a person scored 3 or 4, because that is the judgement a seating turns on
+    and the one the shipped judge is measured not to make.
+    """
+    import numpy
+
+    mine = {(row["kind"], row["name"]): row for row in candidate}
+    theirs = {(row["kind"], row["name"]): row for row in reference}
+    shared = sorted(set(mine) & set(theirs))
+    pairs = [(mine[key], theirs[key]) for key in shared if int(theirs[key]["score"]) in {3, 4}]
+    if not pairs:
+        return {"n": 0, "positives": 0, "delta": None, "lo": None, "hi": None}
+    labels = numpy.array([int(row["score"]) >= 4 for _mine, row in pairs], dtype=float)
+    ours = numpy.array([float(row["key_value"]) for row, _theirs in pairs])
+    others = numpy.array([float(row["key_value"]) for _mine, row in pairs])
+    lineages = numpy.array([row["lineage"] for _mine, row in pairs])
+    out = metrics.paired_delta(labels, ours, others, lineages, draws=DRAWS, seed=BOOTSTRAP_SEED)
+    out["n"] = len(pairs)
+    out["positives"] = int(labels.sum())
+    out["negatives"] = len(pairs) - int(labels.sum())
+    out["lineages"] = int(len(set(lineages.tolist())))
+    out["candidate"] = metrics.auc(labels, ours)
+    out["reference"] = metrics.auc(labels, others)
+    out["joined"] = len(shared)
+    out["per_kind"] = {}
+    for kind in render_train.KINDS:
+        members = [(mine_row, row) for mine_row, row in pairs if row["kind"] == kind]
+        if not members:
+            continue
+        truth = [int(row["score"]) >= 4 for _mine_row, row in members]
+        out["per_kind"][kind] = {
+            "n": len(members),
+            "positives": int(sum(truth)),
+            "candidate": metrics.auc(truth, [float(m["key_value"]) for m, _r in members]),
+            "reference": metrics.auc(truth, [float(r["key_value"]) for _m, r in members]),
+        }
+    return out
+
+
+# --------------------------------------------------------------------------- #
 # The bar. Declared in `render_judge_grade.md` before any number here existed.
 # --------------------------------------------------------------------------- #
-#: The motivating slice, and it is not band-restricted. `AUC(>=4)` over strange
-#: holdout rows a person scored 3 or 4 — the screen's own `three_against_four`,
-#: promoted from a descriptive read to the statistic the comparison turns on,
-#: because at 43 rows the banded one could not resolve anything.
+#: **The primary is the RANK KEY, not the judge's own AUC.** `P(>=4)` is one of
+#: five columns [`curation.rank_key`] reads, and the key is what orders seats —
+#: so what a retrain has to move is the key's ordering, not a column's. The key
+#: is refit per arm on that arm's own out-of-fold predictions, which is what
+#: makes the CORN scale shift drop out: an arm is ranked by the best key its own
+#: numbers support, and no comparison here carries a calibration sensitivity.
+#:
+#: Pooled over both kinds, because the key's weights are shared over both. The
+#: strange-only `AUC(>=4)` over 3-or-4 rows that was the ckpt-88 primary stays on
+#: every table under `motivating` and now decides nothing.
 BAR: dict = {
+    "primary": {
+        "name": "rank_key_auc_ge4_three_against_four",
+        "population": (
+            "every holdout row a human scored 3 or 4, BOTH KINDS POOLED, that the rank "
+            "key's other three columns can be read for"
+        ),
+        "statistic": (
+            "AUC at the >=4 boundary of the rank key REFIT on this arm's own out-of-fold "
+            "predictions, read out of fold on the judge's own partition"
+        ),
+        "requires": "significantly better — the paired interval's lower bound above zero",
+    },
     "motivating": {
         "name": "strange_auc_ge4_three_against_four",
         "population": "strange holdout rows a human scored 3 or 4, UNBANDED",
-        "statistic": "AUC at the >=4 boundary",
-        "requires": "significantly better — the paired interval's lower bound above zero",
+        "statistic": "AUC at the >=4 boundary of the judge's own P(>=4) column",
+        "requires": "DESCRIPTIVE — the ckpt-88 primary, reported and deciding nothing",
     },
     "primary_comparison": (
         "arm B under the AUC stopping rule against arm A under the SHIPPED stopping rule — "
-        "the true incumbent. The stopping-rule effect and the resolution effect are "
-        "separated afterwards, descriptively, by arm A under the AUC rule"
+        "the true incumbent. The stopping-rule effect and the aspect effect are separated "
+        "afterwards, descriptively, by arm A under the AUC rule"
     ),
     "guards": [
         {"name": "strange_auc_ge3", "kind": "strange_render", "cutpoint": 3},
@@ -431,7 +718,18 @@ BAR: dict = {
         "the seed BAND, never the better seed: arms are compared on the seed-AVERAGED "
         "statistic and both seeds are reported. No per-seed conjunction anywhere"
     ),
-    "descriptive_only": "per-mode and per-seed numbers, reported with n and deciding nothing",
+    "descriptive_only": (
+        "per-mode, per-kind and per-seed numbers, reported with n and deciding nothing. "
+        "Per-mode is PRE-DECLARED and gates nothing on purpose: a few hundred strange fours "
+        "over eighteen modes puts single digits in most cells, and a per-mode bar would fit "
+        "noise. It is reported because the sparse-mode agreement gap is what a retrain is "
+        "trying to move and a pooled number hides it entirely"
+    ),
+    "no_level_claim": (
+        "the stores are overwhelmingly train-side and the incumbent's own AUCs are inflated "
+        "on that side, so every number here says which ARM is better on identical rows and "
+        "none of them says how good any arm is. No absolute is quotable from this table"
+    ),
 }
 
 
@@ -495,12 +793,23 @@ def _verdict(interval: dict, better: bool) -> str:
     return "worse" if hi < 0 else "not worse"
 
 
-def compare(candidate: list[dict], reference: list[dict], labels: tuple[str, str]) -> dict:
+def compare(
+    candidate: list[dict],
+    reference: list[dict],
+    labels: tuple[str, str],
+    carried: dict | None = None,
+) -> dict:
     """One reading against another, on every arm of the declared bar.
 
     Refuses to intersect quietly: two readings taken on one written assignment
     cover the same pictures, so a difference in what they cover is a difference
     in what was fitted rather than something to work around.
+
+    `carried` is [`rank_key_columns`], passed in when a caller is about to make
+    several comparisons off one join. It is a parameter rather than a global
+    cache because the join is a fact about the stores at one moment, and a table
+    whose comparisons were drawn against two different joins would be a table
+    nobody could account for.
     """
     mine = {(row["kind"], row["name"]): row for row in candidate}
     theirs = {(row["kind"], row["name"]): row for row in reference}
@@ -514,8 +823,13 @@ def compare(candidate: list[dict], reference: list[dict], labels: tuple[str, str
     strange = [pair for pair in pairs if pair[1]["kind"] == "strange_render"]
     band = [pair for pair in strange if int(pair[1]["score"]) in {3, 4}]
     motivating = _delta(band, 4)
-    motivating["verdict"] = _verdict(motivating, better=True)
+    motivating["verdict"] = _verdict(motivating, better=False)
     motivating["what"] = BAR["motivating"]["population"]
+
+    carried = carried or rank_key_columns()
+    primary = key_delta(key_readings(candidate, carried), key_readings(reference, carried))
+    primary["verdict"] = _verdict(primary, better=True)
+    primary["what"] = BAR["primary"]["population"]
 
     guards = []
     for entry in BAR["guards"]:
@@ -533,13 +847,17 @@ def compare(candidate: list[dict], reference: list[dict], labels: tuple[str, str
         "bootstrap_seed": BOOTSTRAP_SEED,
         "rows": len(pairs),
         "lineages": len({row["lineage"] for _mine, row in pairs}),
+        "primary": primary,
         "motivating": motivating,
         "guards": guards,
         "clears_the_bar": (
-            motivating["verdict"] == "better"
+            primary["verdict"] == "better"
             and all(guard["verdict"] == "not worse" for guard in guards)
         ),
         "per_mode_ge4": per_mode(strange, 4),
+        "per_mode_ge4_smooth": per_mode(
+            [pair for pair in pairs if pair[1]["kind"] == "smooth_render"], 4
+        ),
     }
 
 
@@ -668,6 +986,8 @@ def readout(seeds: list[int], folds=None, arms=("A", "B")) -> dict:
     readings = {
         (arm, rule): reading(arm, rule, seeds, folds) for arm in arms for rule in CHECKPOINTS
     }
+    # One join, every comparison. See [`compare`] on why this is not a cache.
+    carried = rank_key_columns()
     comparisons = []
     for candidate, candidate_rule, reference, reference_rule, why in COMPARISONS:
         if (candidate, candidate_rule) not in readings or (
@@ -679,6 +999,7 @@ def readout(seeds: list[int], folds=None, arms=("A", "B")) -> dict:
             readings[(candidate, candidate_rule)],
             readings[(reference, reference_rule)],
             (f"{candidate}@{candidate_rule}", f"{reference}@{reference_rule}"),
+            carried,
         )
         document["why"] = why
         document["seed_averaged_over"] = list(seeds)
@@ -694,7 +1015,8 @@ def readout(seeds: list[int], folds=None, arms=("A", "B")) -> dict:
                         pooled(candidate, candidate_rule, seed, folds),
                         pooled(reference, reference_rule, seed, folds),
                         (candidate, reference),
-                    )["motivating"].items()
+                        carried,
+                    )["primary"].items()
                     if key in ("n", "positives", "candidate", "reference", "delta", "lo", "hi")
                 },
             }
@@ -966,6 +1288,14 @@ def autopsy_sheet(document: dict, labels: tuple[str, str], output: Path, note: s
 
 __all__ = [
     "ARMS",
+    "ASPECT_DIMS",
+    "CARRIED_COLUMNS",
+    "JUDGE_COLUMNS",
+    "SOURCE_ASPECT",
+    "columns_path",
+    "key_delta",
+    "key_readings",
+    "rank_key_columns",
     "AUC_RULE",
     "AUC_SAYS",
     "BAR",

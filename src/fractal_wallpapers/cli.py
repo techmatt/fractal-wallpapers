@@ -1693,14 +1693,30 @@ def renders_plan(args: argparse.Namespace) -> int:
     return 0
 
 
+def renders_default_workers() -> int:
+    """The render pool, read off the module rather than restated in a help string."""
+    from fractal_wallpapers.models import renders
+
+    return renders.DEFAULT_WORKERS
+
+
 def renders_build(args: argparse.Namespace) -> int:
     """Render every picture of the plan, skipping the ones already on disk."""
     from fractal_wallpapers.models import renders
 
-    report = renders.build(args.head, limit=args.limit)
+    report = renders.build(args.head, limit=args.limit, workers=args.workers)
     renders.build_record_path(args.head).write_text(
         json.dumps(report, indent=2) + "\n", encoding="utf-8", newline="\n"
     )
+    print(json.dumps(report, indent=2))
+    return 0
+
+
+def renders_decode(args: argparse.Namespace) -> int:
+    """Decode every crop of one head's cache once and keep the array beside it."""
+    from fractal_wallpapers.models import renders
+
+    report = renders.decode(args.head, limit=args.limit)
     print(json.dumps(report, indent=2))
     return 0
 
@@ -1874,15 +1890,21 @@ def renders_grade_readout(args: argparse.Namespace) -> int:
     path = render_grade.root() / "readout.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8", newline="\n")
+    # The PRIMARY is the refit rank key's ordering, pooled over both kinds; the
+    # judge's own strange-side column is printed under it and decides nothing.
     for comparison in document["comparisons"]:
-        motivating = comparison["motivating"]
-        print(
-            f"{comparison['candidate']:>32} vs {comparison['reference']:<32} "
-            f"n {motivating['n']:4d} (+{motivating['positives']}) "
-            f"{motivating['candidate']:.4f} vs {motivating['reference']:.4f}  "
-            f"delta {motivating['delta']:+.4f} [{motivating['lo']:+.4f}, {motivating['hi']:+.4f}] "
-            f"{motivating['verdict']}  clears={comparison['clears_the_bar']}"
-        )
+        for name in ("primary", "motivating"):
+            cell = comparison[name]
+            if cell.get("delta") is None:
+                continue
+            print(
+                f"{comparison['candidate']:>28} vs {comparison['reference']:<28} "
+                f"{name:<11} n {cell['n']:4d} (+{cell['positives']}) "
+                f"{cell['candidate']:.4f} vs {cell['reference']:.4f}  "
+                f"delta {cell['delta']:+.4f} [{cell['lo']:+.4f}, {cell['hi']:+.4f}] "
+                f"{cell['verdict']}"
+            )
+        print(f"{'':>28}    clears the bar: {comparison['clears_the_bar']}")
     print(f"wrote {path}")
     return 0
 
@@ -5144,7 +5166,31 @@ def render_commands(subcommands) -> None:
     )
     building.add_argument("--head", required=True, help="which judge's corpus")
     building.add_argument("--limit", type=int, help="stop after this many jobs of the plan")
+    building.add_argument(
+        "--workers",
+        type=int,
+        default=renders_default_workers(),
+        help=f"engines this build drives at once (default {renders_default_workers()}, this "
+        "machine's render pool; 1 renders in this process). Each is spawned below normal "
+        "priority whatever this is set to",
+    )
     building.set_defaults(handler=renders_build)
+
+    decoding = steps.add_parser(
+        "decode",
+        help="keep every crop's decoded pixels beside it, so the loader stops decoding",
+        description=(
+            "The training loop is data-loading bound — the GPU sits near a tenth of its "
+            "capacity while a worker decodes a 1280x720 JPEG — and the decode is about "
+            "twelve of a thirty-millisecond example. This writes each crop's own pixels "
+            "beside it once. Exactly the JPEG's pixels: no resize, no smaller "
+            "intermediate, so a run over the cache and a run over the crops are the same "
+            "run. About 3 GB a thousand pictures, in the ignored tree."
+        ),
+    )
+    decoding.add_argument("--head", required=True, help="which judge's cache")
+    decoding.add_argument("--limit", type=int, help="stop after this many crops")
+    decoding.set_defaults(handler=renders_decode)
 
     checking = steps.add_parser(
         "verify",

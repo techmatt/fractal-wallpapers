@@ -317,3 +317,54 @@ def test_a_regenerated_picture_is_the_picture_that_was_judged(shipped_render_cac
             f"{head}: one regenerated picture is {report['delta']['max']:.2f} from the judged "
             f"one. Something in its recipe did not reach the engine: {report['furthest'][0]}"
         )
+
+
+def test_the_decoded_cache_serves_the_crop_s_own_pixels(tmp_path) -> None:
+    """The lever that speeds every arm at once, and the one way it could be wrong.
+
+    A cache in front of the loader is worth about twelve of a thirty-millisecond
+    example, and it is worth exactly nothing if it serves pixels the JPEG does
+    not hold — a head would train on one picture and be deployed against
+    another, which is the failure `renders` exists to prevent in the first
+    place. So the array and the decode are compared whole rather than sampled.
+    """
+    import numpy
+    from PIL import Image
+
+    crops = tmp_path / "strange_render" / "crops"
+    crops.mkdir(parents=True)
+    picture = crops / "0123456789abcdef.jpg"
+    Image.fromarray(numpy.arange(48 * 32 * 3, dtype=numpy.uint8).reshape(32, 48, 3)).save(
+        picture, quality=90
+    )
+
+    with Image.open(picture) as opened:
+        opened.load()
+        decoded = numpy.asarray(opened.convert("RGB"))
+
+    # No cache yet: the crop itself is the authority and is served untouched.
+    assert numpy.array_equal(numpy.asarray(renders.open_picture(picture)), decoded)
+
+    target = renders.decoded_of(picture)
+    assert target == tmp_path / "strange_render" / "decoded" / "0123456789abcdef.npy"
+    target.parent.mkdir(parents=True)
+    with target.open("wb") as handle:
+        numpy.save(handle, decoded, allow_pickle=False)
+    assert numpy.array_equal(numpy.asarray(renders.open_picture(picture)), decoded)
+
+
+def test_a_truncated_decoded_array_is_a_miss_and_not_a_failure(tmp_path) -> None:
+    """A killed decode leaves a file, and the JPEG is still the authority."""
+    import numpy
+    from PIL import Image
+
+    crops = tmp_path / "smooth_render" / "crops"
+    crops.mkdir(parents=True)
+    picture = crops / "fedcba9876543210.jpg"
+    Image.fromarray(numpy.zeros((16, 24, 3), dtype=numpy.uint8)).save(picture, quality=90)
+    target = renders.decoded_of(picture)
+    target.parent.mkdir(parents=True)
+    target.write_bytes(b"\x93NUMPY not an array")
+
+    served = numpy.asarray(renders.open_picture(picture))
+    assert served.shape == (16, 24, 3)

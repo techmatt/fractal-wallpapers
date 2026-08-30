@@ -69,6 +69,22 @@ SEED = 0
 #: eight thousand pictures the chance of any two colliding is about 2e-15.
 NAME_LENGTH = 16
 
+#: How many engines a cache build drives at once, and **one is the measured
+#: answer** rather than the render pool's three.
+#:
+#: The engine iterates one field across every core it can see, so a second
+#: process does not find an idle machine — it finds this one. Measured over
+#: adjacent hundred-job slices of the same shuffled plan, 2026-08-30: **2.11 s a
+#: picture serially against 2.65 s at three**, the same direction and the same
+#: size as `discovery.scoring`'s fan-out and the flip leg's. The pool rule is a
+#: ceiling on how much of the desktop a leg may take, not a floor, and a leg
+#: whose one worker already holds twelve cores is at it.
+#:
+#: The knob stays because the measurement will want re-taking on a machine with
+#: more cores than one field can fill; the priority half of the rule is
+#: `engine.run`'s and needs nothing here at any count.
+DEFAULT_WORKERS = 1
+
 
 def cache_dir(head: str) -> Path:
     """Where one judge's pictures live. Ignored, and regenerable from the rows."""
@@ -384,31 +400,62 @@ def read_plan(head: str) -> list[dict]:
     return [json.loads(line) for line in lines if line.strip()]
 
 
-def build(head: str, limit: int | None = None, log: Path | None = None) -> dict:
-    """Render every picture of the plan that is not already on disk."""
+def render_one(job: dict) -> float | None:
+    """One picture, wherever this is called — in the caller or in a worker.
+
+    Module level and taking a plain dict because a Windows pool **spawns**: a
+    closure over the plan would not pickle, and a worker re-imports this module
+    and rebuilds [`catalog`] once for the several thousand jobs it is handed.
+    Returns the field's interior fraction, or `None` for a picture already on
+    disk — the resume check is made here rather than before the hand-off, so a
+    file an earlier launch finished costs a `stat` instead of a render.
+    """
+    output = crop_dir(job["_head"]) / f"{job['name']}.jpg"
+    if output.is_file():
+        return None
+    report = engine.run("render", spec_of(job, output))
+    return float(report.get("interior_fraction", 0.0))
+
+
+def build(
+    head: str,
+    limit: int | None = None,
+    log: Path | None = None,
+    workers: int = DEFAULT_WORKERS,
+) -> dict:
+    """Render every picture of the plan that is not already on disk.
+
+    Ordered work, unordered accounting: the plan goes to the pool in its own
+    order and the log counts what comes back. A build's only ordering
+    requirement is the shuffle that makes a prefix a fair sample, and that is
+    already in the plan rather than in the order results land.
+    """
+    from concurrent.futures import ProcessPoolExecutor
+
     head = finished.head_of(head)
-    jobs = read_plan(head)
+    jobs = [{**job, "_head": head} for job in read_plan(head)]
     if limit is not None:
         jobs = jobs[:limit]
     crops = crop_dir(head)
     crops.mkdir(parents=True, exist_ok=True)
     log = log or log_path(head)
     log.parent.mkdir(parents=True, exist_ok=True)
+    workers = max(1, int(workers))
 
     started = time.monotonic()
     rendered = skipped = 0
     interior = 0.0
     with log.open("a", encoding="utf-8", newline="\n") as handle:
-        handle.write(f"--- build {head}: {len(jobs)} jobs ---\n")
+        handle.write(f"--- build {head}: {len(jobs)} jobs on {workers} engine(s) ---\n")
         handle.flush()
-        for index, job in enumerate(jobs, start=1):
-            output = crops / f"{job['name']}.jpg"
-            if output.is_file():
+
+        def account(index: int, fraction: float | None) -> None:
+            nonlocal rendered, skipped, interior
+            if fraction is None:
                 skipped += 1
-                continue
-            report = engine.run("render", spec_of({**job, "_head": head}, output))
+                return
             rendered += 1
-            interior += float(report.get("interior_fraction", 0.0))
+            interior += fraction
             if rendered % 25 == 0 or index == len(jobs):
                 spent = time.monotonic() - started
                 rate = spent / max(rendered, 1)
@@ -419,6 +466,14 @@ def build(head: str, limit: int | None = None, log: Path | None = None) -> dict:
                 )
                 handle.flush()
 
+        if workers == 1:
+            for index, job in enumerate(jobs, start=1):
+                account(index, render_one(job))
+        else:
+            with ProcessPoolExecutor(max_workers=workers) as pool:
+                for index, fraction in enumerate(pool.map(render_one, jobs, chunksize=1), start=1):
+                    account(index, fraction)
+
     seconds = time.monotonic() - started
     on_disk = sorted(crops.glob("*.jpg"))
     return {
@@ -428,6 +483,7 @@ def build(head: str, limit: int | None = None, log: Path | None = None) -> dict:
         "rendered": rendered,
         "skipped": skipped,
         "seconds": round(seconds, 1),
+        "workers": workers,
         "seconds_each": round(seconds / rendered, 3) if rendered else None,
         "mean_interior_fraction": round(interior / rendered, 4) if rendered else None,
         "files": len(on_disk),
@@ -439,6 +495,115 @@ def build(head: str, limit: int | None = None, log: Path | None = None) -> dict:
             "jpeg_quality": 90,
             "seed": SEED,
         },
+    }
+
+
+# --------------------------------------------------------------------------- #
+# The decoded cache: the same pixels, without the JPEG.
+# --------------------------------------------------------------------------- #
+#: What a decoded array is called, beside the crops it was decoded from.
+DECODED = "decoded"
+
+
+def decoded_dir(head: str) -> Path:
+    """Where one judge's decoded arrays live. Ignored, and rebuilt from the crops."""
+    return cache_dir(head) / DECODED
+
+
+def decoded_of(picture: Path) -> Path:
+    """Where one crop's decoded array sits, addressed from the crop rather than the head.
+
+    A picture is handed to the training loop as a path and nothing else, so the
+    cache has to be findable from that path alone — `<head>/crops/<name>.jpg`
+    becomes `<head>/decoded/<name>.npy` and no caller has to carry a head around
+    to open a picture.
+    """
+    picture = Path(picture)
+    return picture.parent.parent / DECODED / f"{picture.stem}.npy"
+
+
+def open_picture(path):
+    """One crop as an RGB image, through the decoded cache where it has been built.
+
+    **Exactly the pixels the JPEG holds.** This removes a decode and nothing
+    else — no resize, no colour conversion, no smaller intermediate — so a run
+    over the cache and a run over the JPEGs are the same run. That is the whole
+    reason the cache is at the source geometry and costs 2.7 MB a picture: an
+    array at anything smaller would put a second resize in the chain, and then
+    the recipe a band was fitted at would depend on whether a cache happened to
+    be warm.
+
+    The loop is data-loading bound — the GPU sits near 10% while a worker decodes
+    a 1280x720 JPEG — and the decode is 12 ms of a 30 ms example. A half-written
+    or truncated array reads as a **miss** rather than as a failure: the JPEG is
+    still there and is still the authority.
+    """
+    import numpy
+    from PIL import Image
+
+    cached = decoded_of(path)
+    if cached.is_file():
+        try:
+            return Image.fromarray(numpy.load(cached, mmap_mode="r"))
+        except (OSError, ValueError):
+            pass
+    with Image.open(path) as opened:
+        opened.load()
+        return opened.convert("RGB")
+
+
+def decode(head: str, limit: int | None = None, log=print) -> dict:
+    """Decode every crop of one head's cache once, and keep the array beside it.
+
+    Resumable the way the build is, and by the same rule: written to a temporary
+    and renamed, so presence means complete. Costs about 3 GB a thousand
+    pictures, which is why it lives in the ignored tree and is never shipped.
+    """
+    import numpy
+    from PIL import Image
+
+    from fractal_wallpapers.paths import WRITING_INFIX
+
+    head = finished.head_of(head)
+    crops = sorted(crop_dir(head).glob("*.jpg"))
+    if limit is not None:
+        crops = crops[:limit]
+    out = decoded_dir(head)
+    out.mkdir(parents=True, exist_ok=True)
+
+    started = time.monotonic()
+    written = skipped = 0
+    total = 0
+    for picture in crops:
+        target = decoded_of(picture)
+        if target.is_file():
+            skipped += 1
+            total += target.stat().st_size
+            continue
+        with Image.open(picture) as opened:
+            opened.load()
+            array = numpy.asarray(opened.convert("RGB"))
+        temporary = target.with_name(target.name + WRITING_INFIX)
+        # Through a handle rather than a path: `numpy.save` appends `.npy` to a
+        # name that does not end in it, so the temporary would be written beside
+        # itself and the rename would find nothing.
+        with temporary.open("wb") as handle:
+            numpy.save(handle, array, allow_pickle=False)
+        temporary.replace(target)
+        written += 1
+        total += target.stat().st_size
+        if written % 500 == 0:
+            log(f"[decode] {head}: {written:,} written, {skipped:,} already there")
+    seconds = time.monotonic() - started
+    return {
+        "schema": SCHEMA,
+        "head": head,
+        "crops": len(crops),
+        "written": written,
+        "skipped": skipped,
+        "bytes": total,
+        "seconds": round(seconds, 1),
+        "what": "the crop's own pixels, decoded once. No resize and no other change",
     }
 
 
@@ -608,6 +773,8 @@ def crop_of(head: str, row: dict) -> Path:
 
 
 __all__ = [
+    "DECODED",
+    "DEFAULT_WORKERS",
     "FIELD_COLORMAP",
     "FIELD_IDENTITY",
     "JPEG_FLOOR_QUALITY",
@@ -626,12 +793,17 @@ __all__ = [
     "coloring_of",
     "crop_dir",
     "crop_of",
+    "decode",
+    "decoded_dir",
+    "decoded_of",
     "job_name",
     "log_path",
     "missing",
+    "open_picture",
     "plan",
     "plan_path",
     "read_plan",
+    "render_one",
     "spec_of",
     "verify",
     "write_plan",
