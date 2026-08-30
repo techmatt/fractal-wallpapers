@@ -1031,7 +1031,9 @@ def bench(
       second pass is a recolour too.
     * **judged in one batch** — the same pictures through the judge at
       `batch_size` = `maps` against one at a time, which is the only stage whose
-      cost is a Python-side choice rather than an engine one.
+      cost is a Python-side choice rather than an engine one. **Both judge
+      figures are totals over `maps`** where every other timing here is per map;
+      divide before setting either beside a candidate.
 
     Plus the **boundary itself**: an engine call that renders nothing, which is
     the floor under every one of the loop's crossings.
@@ -1212,6 +1214,12 @@ def _bench_one(place, frame, mode, maps, scratch: Path, world: dict, ks=BENCH_K,
     else:
         shared = {"available": False, "why": f"{mode} is a {kind} coloring: no single scalar field"}
 
+    # **These two are TOTALS over `maps` pictures, and every other timing on this
+    # block is per map.** `built_per_map`, `leveled_recolour_per_map` and the rest
+    # divide; these do not, and the key names do not say so. A reader who sets
+    # `judge_one_at_a_time` beside a per-candidate render is out by `maps` — an
+    # eightfold at the default width, which is the difference between a judge that
+    # is a sixth of a candidate and one that is larger than the whole of it.
     judge = colorize.load_judge()
     started = colorize.tick()
     for picture in pictures:
