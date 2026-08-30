@@ -3065,6 +3065,7 @@ def curate_candidate_ledger(args: argparse.Namespace) -> int:
         "check": candidate_ledger.check,
         "pictures": candidate_ledger.picture_census,
         "prune": lambda: candidate_ledger.prune(keep=args.keep, apply=not args.dry_run),
+        "re-render": lambda: candidate_ledger.re_render(limit=args.limit, workers=args.workers),
         "restore": lambda: candidate_ledger.restore(force=args.force),
     }[args.what]
     try:
@@ -7233,11 +7234,21 @@ def curate_commands(subcommands) -> None:
     )
     ledger_store.add_argument(
         "what",
-        choices=["backfill", "census", "check", "pictures", "prune", "save", "restore"],
+        choices=[
+            "backfill",
+            "census",
+            "check",
+            "pictures",
+            "prune",
+            "re-render",
+            "save",
+            "restore",
+        ],
         help="build the ledger from what already exists, take the coverage census, check "
         "the live files against their manifests, report which rows name a picture that is "
-        "no longer on disk, bring the store back to the retention rule, save a fresh copy "
-        "and manifests, or restore the copies",
+        "no longer on disk, bring the store back to the retention rule, put back the "
+        "pictures the rows still name, save a fresh copy and manifests, or restore the "
+        "copies",
     )
     ledger_store.add_argument(
         "--keep",
@@ -7247,6 +7258,21 @@ def curate_commands(subcommands) -> None:
         f"shipped rank key (default: {candidate_ledger_module.RETAIN_PER_PAIR}). Four "
         "protections keep a row outside the rank whatever it says, and a picture is kept "
         "if and only if its row is",
+    )
+    ledger_store.add_argument(
+        "--workers",
+        type=int,
+        default=candidate_ledger_module.RE_RENDER_WORKERS,
+        metavar="COUNT",
+        help="with `re-render`: how many engines to drive at once (default "
+        f"{candidate_ledger_module.RE_RENDER_WORKERS}, this machine's render pool). More "
+        "than three, or any of them at normal priority, makes the desktop unusable",
+    )
+    ledger_store.add_argument(
+        "--limit",
+        type=int,
+        help="with `re-render`: stop after this many pictures. What a pilot prices the "
+        "whole leg off",
     )
     ledger_store.add_argument(
         "--dry-run",
