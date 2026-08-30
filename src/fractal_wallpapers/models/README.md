@@ -508,6 +508,48 @@ premise did not hold — `AUC(≥4)` peaked at epoch 5–6 in all four runs rath
 11–13. What it did buy is **stability**: epoch 5–6 every run, where the
 cross-entropy rule chose 2, 7, 6 and 4.
 
+**What the ckpt-91 band found on the grown stores, 2026-08-30.** Five folds, two
+seeds, 20 runs, graded on the refit rank key over 1,421 human 3-or-4 rows pooled
+across both kinds. **Nothing cleared the bar and nothing was adopted.** The
+declared primary — the aspect arm under the AUC stopping rule against the
+incumbent — reads **−0.0035 [−0.0250, +0.0178]**, and every non-inferiority guard
+is *not worse*. The decomposition is the interesting part: **aspect alone buys
++0.0116 [−0.0046, +0.0275] and the AUC stopping rule alone buys +0.0105 [−0.0062,
++0.0285], and the two do not compose** — the rule applied on top of the aspect arm
+gives back −0.0151 [−0.0312, +0.0004]. One interval anywhere excludes zero in a
+good direction: the stopping rule on arm A lifts smooth `AUC(≥4)` by **+0.0090
+[+0.0020, +0.0161]**.
+
+⚠ **384x216 confounds aspect with the backbone's pretrained height** and the band
+cannot separate them. `mobilenetv4_conv_small.e2400_r224_in1k` is trained at 224,
+and the arm corrects the aspect by dropping 8 pixels below it. The clean re-ask is
+**400x225** — exactly 16:9, at or above the native height. Until that runs the
++0.0116 is not evidence about aspect.
+
+⚠ **AN INTERIM READ OF THIS BAND REVERSED ITS OWN SIGN.** At three folds and one
+seed the aspect contrast read −0.0316 [−0.0572, −0.0055] — CI-excluding, and
+*worse*. Completing the band moved it to +0.0116. A partial band is not a small
+version of a whole one; nothing here may be read before its last run lands.
+
+⚠ **THE STOPPING RULE'S STABILITY CLAIM HAS INVERTED — do not re-quote the
+paragraph above.** On the grown stores the cross-entropy rule chose epochs **4–7**
+across the ten arm-A runs and the AUC rule chose **3–16**, one of them taking the
+epoch cap. The 2026-08-27 reading was the other way round. The rule's *mean* is
+still worth something; its stability is now the other rule's.
+
+**The resolution axis is NOT closed at candidate geometry, and the gain is at
+INFERENCE.** The re-entry instrument predicted `input_detail` would lose its edge
+at 640x360, where 768x448 exceeds the source and reads an upsample. It does not:
+strange `AUC(≥3)` is +0.0272 [+0.0059, +0.0483] at candidate geometry against
++0.0278 [+0.0067, +0.0489] at label geometry, over 1,795 rows. Reading arm B's own
+checkpoint at arm A's input size separates why: **B's weights at 384x224 buy
+nothing** (strange `AUC(≥3)` +0.0090 [−0.0162, +0.0327]) and cost smooth `AUC(≥4)`
+−0.0334 [−0.0651, −0.0039], while **B's weights at 768x448 against the same weights
+at 384x224 carry the whole gain** (+0.0407 [+0.0111, +0.0711] smooth `AUC(≥4)`).
+**Train big and deploy small is refused by measurement**: adoption means the 4x
+forward pass on every scored candidate forever, which makes it a throughput
+question against the mining budget rather than a training one.
+
 **The `P(≥4)` crossover does not exist, and that is worth not re-deriving.** Over
 pooled out-of-fold predictions across all five folds (8,977 rows), the `P(≥3)`
 crossover is **0.5693**, 95% over lineages [0.504, 0.642] — which reproduces
