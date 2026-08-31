@@ -691,6 +691,175 @@ def re_render(
     return record
 
 
+#: How many pictures go through the judge between one checkpoint and the next.
+#: A chunk is the finest safe interruption point a re-score has: the readings so
+#: far are on disk, and a kill costs the chunk in flight and nothing else.
+SCORE_CHUNK = 4096
+
+#: The judge reads this many pictures at once. 7.4 ms a picture at 128 against
+#: 8.3 at 64, over 512 of this store's own pictures on this machine's GPU,
+#: 2026-08-31 — the pass is JPEG decode and not the forward, so the batch buys
+#: little past here.
+SCORE_BATCH = 128
+
+
+def partial_scores_path() -> Path:
+    """Where a re-score in flight keeps the chunks it has already read.
+
+    Beside the sidecar and not inside it: a half-finished re-score is not a
+    reading of the store, and a reader that joined on the live artifact would
+    otherwise see a pool that grows while it is being read. [`rescore`] folds it
+    in at the end and deletes it.
+    """
+    return store_root() / "scores.partial.jsonl"
+
+
+def rescore(
+    artifact: str | None = None,
+    limit: int | None = None,
+    batch: int = SCORE_BATCH,
+    device: str = "auto",
+    log=print,
+) -> dict:
+    """Read every row whose picture is on disk through the judge shipped now.
+
+    **The step a judge adoption makes necessary and nothing else does.** Scores
+    are keyed on `(recipe, artifact, regime)` and
+    [`scores_by_recipe`] joins on the live artifact alone, so the morning after a
+    flip this store holds a full set of readings and the pool is *empty* — every
+    row omitted as read on a head that no longer ships. Nothing is overwritten:
+    the retired artifact's rows stay where they are, because a picture read by
+    two judges is two facts.
+
+    A row with no picture on disk is skipped rather than guessed at, the same
+    rule [`curation.rescore`] holds over the release pool. There is one judge for
+    both kinds since 2026-08-23, so the head is loaded once; `head` on the row
+    still says which kind's floor and slot the row belongs to.
+
+    **Resumable by chunk.** Each [`SCORE_CHUNK`] pictures are appended to
+    [`partial_scores_path`] as they are read, and a re-run skips what that file
+    already holds. The sidecar itself is written once, at the end, through the
+    same upsert every other writer uses.
+    """
+    import time
+
+    from fractal_wallpapers.curation import colorize, durability, hunt
+
+    started = time.time()
+    want = live_artifact() if artifact is None else str(artifact)
+    stored = read()
+    present = present_pictures(stored)
+    held = {
+        str(row["recipe_key"]) for row in read_scores() if str(row.get("judge_artifact")) == want
+    }
+    done_partial = _partial_keys(want)
+    wanted = [
+        row
+        for row in stored
+        if str(row["key"]) in present
+        and str(row["key"]) not in held
+        and str(row["key"]) not in done_partial
+    ]
+    if limit is not None:
+        wanted = wanted[: int(limit)]
+    log(
+        f"[rescore] {len(stored):,} row(s), {len(present):,} with a picture; "
+        f"{len(held):,} already read on {want[:8]}, {len(done_partial):,} in the partial; "
+        f"{len(wanted):,} to read"
+    )
+    if wanted:
+        from fractal_wallpapers.models import scoring, train
+
+        model, config, where = colorize.load_judge(device)
+        transform = scoring.transform_of(config)
+        classes = int(config["classes"])
+        log(f"[rescore] judge on {where}, {classes} classes, batch {int(batch)}")
+        for at in range(0, len(wanted), SCORE_CHUNK):
+            chunk = wanted[at : at + SCORE_CHUNK]
+            paths = [rehome(str(row["picture"])) for row in chunk]
+            probabilities = train.score(
+                model, paths, transform, where, classes, {"batch_size": int(batch)}
+            )
+            _append_partial(
+                [
+                    score_row(
+                        key=str(row["key"]),
+                        artifact=want,
+                        regime=str((row["recipe"] or {})["regime"]),
+                        head=hunt.kind_of(str((row["recipe"] or {})["mode"])),
+                        read=_reading_of(probabilities[index]),
+                        source={
+                            "scores_current": True,
+                            "run": (row.get("provenance") or {}).get("run"),
+                            "candidate": (row.get("provenance") or {}).get("candidate"),
+                        },
+                    )
+                    for index, row in enumerate(chunk)
+                ]
+            )
+            read_so_far = at + len(chunk)
+            wall = time.time() - started
+            rate = read_so_far / max(1e-9, wall)
+            left = (len(wanted) - read_so_far) / max(1e-9, rate)
+            log(
+                f"[rescore] {read_so_far:,} of {len(wanted):,} in {wall / 60:.1f} min "
+                f"({rate:.0f}/s, ~{left / 60:.0f} min left)"
+            )
+    fresh = list(_stream_of(partial_scores_path()))
+    path, total, new = write_scores(fresh)
+    saved = durability.save(durable_scores(), log=log)
+    partial_scores_path().unlink(missing_ok=True)
+    record = {
+        "schema": SCHEMA,
+        "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "artifact": want,
+        "rows": len(stored),
+        "with_picture": len(present),
+        "already_held": len(held),
+        "read": len(fresh),
+        "sidecar_rows": total,
+        "sidecar_new": new,
+        "wall_seconds": round(time.time() - started, 1),
+        "saved": saved,
+        "scores_path": tracked_name(path),
+    }
+    log(
+        f"[rescore] {len(fresh):,} reading(s) on {want[:8]} merged; sidecar holds "
+        f"{total:,} row(s) in {record['wall_seconds'] / 60:.1f} min"
+    )
+    return record
+
+
+def _reading_of(probabilities) -> dict:
+    """One judge output as [`score_row`] takes it: every cutpoint, and the sum.
+
+    [`curation.colorize.score_picture`]'s body over an already-scored row rather
+    than a second spelling of it — the rank score is the sum of the unconditional
+    cutpoints and a second derivation of that is a second scale.
+    """
+    row = {f"p_ge{index + 2}": float(value) for index, value in enumerate(probabilities)}
+    row["rank_score"] = float(sum(float(value) for value in probabilities))
+    return row
+
+
+def _partial_keys(artifact: str) -> set:
+    """The recipes a partial re-score of THIS artifact has already read."""
+    return {
+        str(row["recipe_key"])
+        for row in _stream_of(partial_scores_path())
+        if str(row.get("judge_artifact")) == str(artifact)
+    }
+
+
+def _append_partial(rows) -> None:
+    """One chunk onto the partial file. Appended, so a kill costs one chunk."""
+    path = partial_scores_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8", newline="\n") as handle:
+        for row in rows:
+            handle.write(json.dumps(row, ensure_ascii=False) + "\n")
+
+
 def _live_stamp(mode: str, band: dict | None):
     """The autolevel identity a render in this mode will carry, right now.
 
@@ -2070,6 +2239,7 @@ __all__ = [
     "save",
     "score_row",
     "scores_by_recipe",
+    "rescore",
     "scores_path",
     "sources",
     "stale_scores",

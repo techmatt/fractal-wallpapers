@@ -260,10 +260,36 @@ fractal-wallpapers curate candidate-ledger prune      # back to the rule, ~35 s.
 fractal-wallpapers curate candidate-ledger prune --dry-run   # THE dry run. Touches nothing
 fractal-wallpapers curate candidate-ledger pictures   # rows naming a picture that is not there
 fractal-wallpapers curate candidate-ledger re-render  # ...and put them back. ~1.5 pictures/s
+fractal-wallpapers curate candidate-ledger score      # every picture through the judge shipped NOW
 fractal-wallpapers curate candidate-ledger save       # the live files, their manifests
 fractal-wallpapers curate candidate-ledger check      # are they whole
 fractal-wallpapers curate flatness save               # its own durable. `merge` does this too
 ```
+
+### The step a judge adoption makes necessary
+
+**The morning after a flip this store holds a full set of scores and the pool is
+empty.** Not a bug and not a migration that was forgotten: the sidecar is keyed
+`(recipe, artifact, regime)` and `scores_by_recipe` joins on the live artifact
+alone, so every row reads as *unscored on the head that ships* until it is read
+again. `solve.pool` refuses all of them as `no_score` and every seating, census
+and headroom read over the ledger comes back empty. `curate candidate-ledger
+score` is the step that closes it, and it is the only one — nothing else in this
+tree reads a ledger picture through the judge.
+
+It writes **beside** the retired artifact's rows and never over them: a picture
+read by two judges is two facts, and the retired reading is what every
+before-and-after comparison is taken against. Resumable by chunk — 4,096
+pictures at a time onto `scores.partial.jsonl`, folded into the sidecar in one
+upsert at the end — so a kill costs the chunk in flight.
+
+Measured over the whole store, weights-v4 to weights-v5 on 2026-08-31: **122,260
+pictures in 20.2 min**, 101 a second, one CUDA judge at batch 128. The pass is
+JPEG decode and not the forward: 7.4 ms a picture at batch 128 against 8.3 at 64,
+so the batch buys almost nothing past there and a second GPU would buy less. It
+also runs at half that rate on a cold page cache and at twice it on a warm one —
+the first chunks read 88 a second and the last 195 — so the figure is a leg's
+average and not a per-picture constant.
 
 ### The growth law
 
