@@ -55,12 +55,14 @@ def candidate(
 
 
 def program_of(candidates, n, modes=("smooth", "stripe"), targets=None, floor=1):
-    """A program at `n`, with an **artificial** mode floor of one by default.
+    """A program at `n`, with an **artificial** flat mode floor of one by default.
 
-    `solve.mode_floor` is `floor(n / 100)`, so every program small enough to solve
-    in a unit test asks for no floors at all and stage 3's rows would never be
-    exercised. `floor=1` is what these tests are about; `floor=None` reads the
-    real one, and one test below pins that it is zero at these sizes.
+    A unit-sized program under either shipped rule asks for almost no floors —
+    `solve.mode_floor` is `floor(n / 100)`, and the per-mode rule that replaced it
+    as the default spends a tiny house over thirteen strange modes — so stage 3's
+    rows would go unexercised at these sizes. `floor=1` is what these tests are
+    about; `floor=None` reads the default rule, and one test below pins what that
+    gives a program at these sizes.
     """
     return solve.Program(
         candidates=list(candidates),
@@ -834,11 +836,26 @@ def test_the_mode_floor_scales_with_the_gallery_and_is_zero_below_a_hundred():
     assert not hasattr(solve, "MODE_FLOOR")
 
 
-def test_a_program_reads_the_real_floor_unless_a_caller_puts_one_back():
-    """The artificial floor is a debug affordance and the record says which it was."""
+def test_a_program_naming_no_floor_is_solved_under_the_per_mode_rule():
+    """The flip, on the exact solver. `floor=None` was `floor(n / 100)` for every
+    mode; it is [`mode_policy.seat_floors`] now, so a program that names nothing is
+    floored per mode and the flat floor is something a caller asks for.
+
+    `program_of` here is over two modes rather than the accepted roster, which is
+    what makes the two answers different at the same `n`: the rule gives `stripe`
+    a seat at twenty and `smooth` none, where the flat floor gives both nothing.
+    """
+    from fractal_wallpapers.curation import mode_policy
+
     plain = program_of([candidate("a")], 20, floor=None)
-    assert plain.mode_floor == 0
+    rule = mode_policy.seat_floors(20)
+    assert plain.mode_floors == {name: rule.get(name, 0) for name in ("smooth", "stripe")}
     assert plain.config()["mode_floor_artificial"] is False
+    assert "THE DEFAULT" in plain.config()["mode_floor_rule"]
+    flat = program_of([candidate("a")], 20, floor=solve.mode_floor(20))
+    assert flat.mode_floor == 0
+    assert flat.config()["mode_floor_artificial"] is True
+    assert "FLAT" in flat.config()["mode_floor_rule"]
     assert program_of([candidate("a")], 20).mode_floor == 1
     assert program_of([candidate("a")], 20).config()["mode_floor_artificial"] is True
 

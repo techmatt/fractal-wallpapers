@@ -34,10 +34,20 @@ order is a fact about supply and not a preference: a mode with three eligible
 places is seated before a mode with eight hundred because the three can only be
 spent one way.
 
-[`solve.mode_floor`] is now `floor(n / 100)`, so below a hundred seats there is no
-mandate at all and this leg does nothing — which is the honest shape of a
-twenty-seat debug gallery. `--mode-floor` puts an artificial floor back so the leg
-is still exercised, and a record taken under one says so.
+**The floors are per mode and they are the default.**
+[`curation.mode_policy.seat_floors`] is what an unflagged seating asks for: half
+each accepted strange mode's share of the strange seat budget, which at `n = 150`
+is 45 of the 150 seats mandated across thirteen modes rather than the 14 the flat
+floor asked for. Diversity is the design rather than a knob, so the rule is on
+unless a seating turns it off, and `--flat-floor` is how — it puts back
+[`solve.mode_floor`]'s `floor(n / 100)`, one number for every mode, which is what
+every gallery seated before 2026-08-31 was seated under. `--mode-floor` still puts
+an artificial flat floor back for a debug gallery, and the record names which of
+the three it was.
+
+This leg is therefore doing something at every `n` the flat floor was silent at:
+at twenty seats the rule asks for twelve strange seats and floors six of them,
+where `floor(n / 100)` asked for nothing at all.
 
 ## One rule is hard and every other is soft
 
@@ -541,12 +551,15 @@ def seat(
     refused in the first leg is offered again in the second, because the state it
     was refused against has moved on.
 
-    `floor` is a **mapping** of mode to the seats its floor asks for, or a number
-    meaning the same floor for every accepted mode. The mapping is the shape
-    [`curation.mode_policy.seat_floors`] builds and nothing that ships passes one;
-    a number is the **artificial** mode floor a debug gallery uses to exercise the
-    scarcity leg at a size where [`solve.mode_floor`] asks for nothing. Unset, the
-    floor is the real one and the record says so.
+    `floor` **replaces the default rule**, which is
+    [`curation.mode_policy.seat_floors`] — half each accepted strange mode's share
+    of the strange seat budget, per mode. Unset is that rule, and a gallery seated
+    here is seated under it. A **mapping** is one floor per mode, some other
+    caller's; a **number** is the same floor for every accepted mode, which is
+    both the flat `solve.mode_floor(n)` the rule replaced (`--flat-floor`, the way
+    off) and the artificial floor a debug gallery uses to exercise the scarcity
+    leg at a size where the flat one asks for nothing. The record says which of
+    the three it was.
 
     ## The two decisions, both flipped on 2026-08-28, both still reachable
 
@@ -597,7 +610,11 @@ def seat(
     if rule is None:
         rule = solve.rule_for()
         rule.group_cap = cap
-    natural = solve.mode_floor(n)
+    # The DEFAULT is the per-mode rule. `floor` replaces it: a mapping is one
+    # floor per mode, a number is the same floor for every accepted mode — which
+    # is how `--flat-floor` asks for the flat `solve.mode_floor(n)` the rule
+    # replaced.
+    natural = mode_policy.seat_floors(n)
     asked = natural if floor is None else floor
     floors = floors_for(asked, modes)
     #: The uniform floor, where the caller passed one. `None` says it was per mode.
@@ -744,7 +761,7 @@ def _config(
     table: dict,
     floor: int | None,
     floors: dict,
-    natural: int,
+    natural: dict,
     twins: Twins | None,
     group_cap: str = ceiling.IDENTITY,
     order: dict | None = None,
@@ -788,18 +805,45 @@ def _config(
             "targets": dict(sorted(rule.targets.items())),
         },
         "sort_key": "p_ge4" if order is None else "rank_key",
-        # The uniform floor, or `None` where the caller set one per mode. Both
-        # shapes are always in `mode_floors`, which is what a reader should take.
+        # The uniform floor, or `None` where the floors are per mode — which is
+        # what the default rule builds. Both shapes are always in `mode_floors`,
+        # which is what a reader should take.
         "mode_floor": floor,
         "mode_floors": dict(floors),
-        "mode_floor_rule": f"floor(n / {solve.SEATS_PER_MODE_FLOOR})"
-        if floor is not None
-        else "set per mode by the caller",
-        "mode_floor_natural": natural,
-        "mode_floor_artificial": floor != natural,
+        "mode_floor_rule": _floor_rule(n, floor, floors, natural, modes),
+        # What nobody naming a floor would have got: the default rule's answer.
+        "mode_floor_natural": floors_for(natural, modes),
+        "mode_floor_artificial": dict(floors) != floors_for(natural, modes),
         "modes": modes,
         "mode_policy": mode_policy.record(),
     }
+
+
+def _floor_rule(n: int, floor: int | None, floors: dict, natural: dict, modes: list) -> str:
+    """One sentence naming the rule the floors in this record came from.
+
+    Three answers and they are not interchangeable: the **default**, the **flat**
+    floor the default replaced — which is the one `--flat-floor` asks for and the
+    one every gallery before this flip was seated under — and a floor some caller
+    made up. A record that said `floor(n / 100)` for all three, which this said
+    while the flat floor was the default, is a record that cannot tell a
+    measurement apart from its own baseline.
+    """
+    if dict(floors) == floors_for(natural, modes):
+        return (
+            "the per-mode floor rule, curation.mode_policy.seat_floors(n): half each "
+            "accepted strange mode's share of the strange seat budget, summing to half "
+            "of it. THE DEFAULT — a seating that named no floor was seated under this"
+        )
+    if floor is None:
+        return "set per mode by the caller"
+    if floor == solve.mode_floor(n):
+        return (
+            f"the FLAT floor, floor(n / {solve.SEATS_PER_MODE_FLOOR}) = {floor} for every "
+            "accepted mode. It was the default until the per-mode rule replaced it, and "
+            "it is what `--flat-floor` asks for"
+        )
+    return f"an artificial flat {floor} for every accepted mode"
 
 
 def _lost_to(seats: Seats, preselection: dict, cleared: list) -> dict:
@@ -919,9 +963,10 @@ def _shortfalls(
     per_mode = _per_mode(seats, modes, floors, cleared, refused)
     starved = [name for name in modes if per_mode[name]["short"] > 0]
     never = [name for name in modes if per_mode[name]["floor"] == 0]
-    # One number where every mode asked for the same thing — which is every
-    # seating that ships today — and `None` where they did not, so a reader of
-    # `floor` is never handed one mode's figure as if it were the gallery's.
+    # One number where every mode asked for the same thing — which since the
+    # per-mode rule became the default is only a seating that asked for the flat
+    # floor — and `None` where they did not, so a reader of `floor` is never
+    # handed one mode's figure as if it were the gallery's.
     asked = {per_mode[name]["floor"] for name in modes}
     uniform = next(iter(asked)) if len(asked) == 1 else None
     return {

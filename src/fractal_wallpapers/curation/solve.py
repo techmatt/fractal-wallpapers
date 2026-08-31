@@ -170,7 +170,13 @@ PENALTY_PER_SEAT = 1.0 / 100.0
 
 
 def mode_floor(n: int) -> int:
-    """How many seats each **accepted** mode's floor asks for, at `n`.
+    """The **flat** floor: how many seats every accepted mode is asked for, at `n`.
+
+    **It is no longer the default.** [`curation.mode_policy.seat_floors`] is, per
+    mode, since 2026-08-31; this is what `--flat-floor` puts back and what every
+    gallery seated or solved before that date was seated or solved under, so it
+    stays here as the baseline a floored-against-unfloored reading is taken
+    against rather than as a rule anything reaches by not naming one.
 
     `floor(n / SEATS_PER_MODE_FLOOR)`, by integer division rather than a float
     times a rate, so the value at a rung is the value every reader computes.
@@ -874,29 +880,57 @@ class Program:
     generated: list = field(default_factory=list)
     #: Whether cardinality is `== n` or `<= n`. The under-fill re-solve sets it.
     exact_cardinality: bool = True
-    #: An **artificial** mode floor, replacing [`mode_floor`]. `None` is the real
-    #: one. It is here for the same reason [`curation.seating`] takes one: the
-    #: real floor is zero below a hundred seats, so a small program exercises
-    #: stage 3's rows only if something puts a floor back.
+    #: A floor **replacing the default**, which is
+    #: [`curation.mode_policy.seat_floors`] — per mode, and what an unflagged
+    #: `curate solve` is now solved under. A **mapping** is some other caller's
+    #: per-mode floors; a **number** is one floor for every mode, which is both
+    #: [`mode_floor`]'s flat `floor(n / 100)` (what `--flat-floor` asks for, and
+    #: what every solve before 2026-08-31 ran under) and the artificial floor a
+    #: unit-sized program needs to exercise stage 3's rows at all.
     #:
-    #: A **mapping** is one floor per mode — what
-    #: [`curation.mode_policy.seat_floors`] builds. Nothing constructs a program
-    #: that way yet; it is here so the exact solver and [`curation.seating`]'s
-    #: greedy can be asked the same question, which is the only way either one
-    #: checks the other.
+    #: The mapping shape is what lets the exact solver and [`curation.seating`]'s
+    #: greedy be asked the same question, which is the only way either one checks
+    #: the other.
     floor: int | dict | None = None
 
     @property
     def mode_floors(self) -> dict:
         """`{mode: how many seats its floor asks for}` in this program.
 
-        A number — or `None`, for [`mode_floor`]'s own answer — is the same floor
-        for every mode. A mode a mapping does not name asks for nothing.
+        Unset is the default rule, [`curation.mode_policy.seat_floors`], which is
+        per mode; a number is the same floor for every mode. A mode a mapping does
+        not name asks for nothing — the smooth side is every such mode under the
+        default, because the floors are the strange side's distribution problem
+        and the smooth side is one mode.
         """
+        asked = mode_policy.seat_floors(self.n) if self.floor is None else self.floor
+        if isinstance(asked, dict):
+            return {name: max(0, int(asked.get(name, 0))) for name in self.modes}
+        return {name: max(0, int(asked)) for name in self.modes}
+
+    @property
+    def mode_floor_rule(self) -> str:
+        """One sentence naming where this program's floors came from.
+
+        The default, the flat floor it replaced, or a caller's own — three
+        answers that a record calling all of them `floor(n / 100)` could not tell
+        apart, which is exactly what a floored-against-unfloored measurement asks
+        of the record.
+        """
+        if self.floor is None:
+            return (
+                "the per-mode floor rule, curation.mode_policy.seat_floors(n): half each "
+                "accepted strange mode's share of the strange seat budget. THE DEFAULT"
+            )
         if isinstance(self.floor, dict):
-            return {name: max(0, int(self.floor.get(name, 0))) for name in self.modes}
-        asked = mode_floor(self.n) if self.floor is None else int(self.floor)
-        return {name: max(0, asked) for name in self.modes}
+            return "set per mode by the caller"
+        if int(self.floor) == mode_floor(self.n):
+            return (
+                f"the FLAT floor, floor(n / {SEATS_PER_MODE_FLOOR}) = {int(self.floor)} for "
+                "every mode. The default until the per-mode rule replaced it, and what "
+                "`--flat-floor` asks for"
+            )
+        return f"an artificial flat {int(self.floor)} for every mode"
 
     @property
     def mode_floor(self) -> int:
@@ -1026,9 +1060,7 @@ class Program:
             "tau_group": ceiling.TAU_GROUP,
             "mode_floor": self.mode_floor,
             "mode_floors": self.mode_floors,
-            "mode_floor_rule": f"floor(n / {SEATS_PER_MODE_FLOOR})"
-            if not isinstance(self.floor, dict)
-            else "set per mode by the caller",
+            "mode_floor_rule": self.mode_floor_rule,
             "mode_floor_artificial": self.floor is not None,
             "mode_penalty": round(self.n * PENALTY_PER_SEAT, 6),
             "modes": list(self.modes),
@@ -1691,13 +1723,16 @@ def solve(
     candidates: list[Candidate] | None = None,
     targets: dict | None = None,
     locations: int | None = None,
+    floor: int | dict | None = None,
     log=print,
 ) -> dict:
     """One gallery, solved. The record is the return value; nothing is written.
 
     `locations` truncates the reachable pool to that many strongest places; `None`
     is the whole ledger. `targets` is `{cell: fraction}` and is what makes a
-    program hard enough to be infeasible on purpose.
+    program hard enough to be infeasible on purpose. `floor` replaces the default
+    per-mode floors — see [`Program.floor`]; `mode_floor(n)` is the flat one they
+    replaced.
     """
     _scipy()
 
@@ -1714,6 +1749,7 @@ def solve(
         rule=rule_for(targets),
         modes=tuple(mode_policy.accepted()),
         targets=dict(targets or {}),
+        floor=floor,
     )
     record = {
         "schema": SCHEMA,

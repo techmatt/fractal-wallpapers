@@ -3272,7 +3272,14 @@ def curate_solve(args: argparse.Namespace) -> int:
     name = args.name or f"n{args.n}"
     try:
         if args.what == "run":
-            record = solve.solve(n=args.n, targets=targets, locations=args.locations)
+            # Unset is the per-mode floor rule, which is the default. `--flat-floor`
+            # is the way off it and puts back the flat floor(n / 100).
+            record = solve.solve(
+                n=args.n,
+                targets=targets,
+                locations=args.locations,
+                floor=solve.mode_floor(args.n) if args.flat_floor else None,
+            )
             if record.get("feasible") and not args.no_render:
                 solve.render_seats(name, record, workers=args.workers)
             path = solve.write_record(name, record)
@@ -3355,18 +3362,18 @@ def _twin_sweep(candidates, radius) -> dict:
 
 def curate_seat(args: argparse.Namespace) -> int:
     """Seat a gallery off the ledger with a greedy, keep every refusal, release it."""
-    from fractal_wallpapers.curation import headroom, mode_policy, seating
+    from fractal_wallpapers.curation import headroom, seating, solve
     from fractal_wallpapers.curation import release as release_module
 
     floor = args.mode_floor
-    if args.seat_floors:
+    if args.flat_floor:
         if floor is not None:
-            print("--seat-floors and --mode-floor are two different floors; name one.")
+            print("--flat-floor and --mode-floor are two different floors; name one.")
             return 1
-        # The ONE shipped call, and it is behind a flag nobody gets by default:
-        # an unflagged seating still asks `solve.mode_floor` for a flat floor.
-        floor = mode_policy.seat_floors(args.n)
-        print(json.dumps({"seat_floors": floor, "asks_for": sum(floor.values())}, indent=2))
+        # The way OFF. Unflagged, `seating.seat` takes the per-mode floor rule;
+        # this puts back the flat floor every gallery before the flip was seated
+        # under, which is what a floored-against-unfloored reading compares to.
+        floor = solve.mode_floor(args.n)
 
     candidates, _costs, _refused = headroom.population()
     order, coverage = seating.ranking_for(candidates, args.key)
@@ -7734,6 +7741,15 @@ def curate_commands(subcommands) -> None:
         "ranked by their best candidate. Unset is the whole ledger",
     )
     solving.add_argument(
+        "--flat-floor",
+        action="store_true",
+        help="with `run`: solve under the FLAT mode floor instead of the per-mode rule — "
+        f"floor(n / {solve_module.SEATS_PER_MODE_FLOOR}) seats for every accepted mode, "
+        "which is what every solve before 2026-08-31 ran under. The default is "
+        "curation.mode_policy.seat_floors(n), per mode. The floors are soft either way: "
+        "a mode below its own costs the third objective stage and refuses nothing",
+    )
+    solving.add_argument(
         "--workers",
         type=int,
         default=4,
@@ -7855,19 +7871,20 @@ def curate_commands(subcommands) -> None:
         "--mode-floor",
         type=int,
         metavar="SEATS",
-        help="an ARTIFICIAL mode floor, so a debug gallery can exercise the scarcity leg "
-        f"at a size where the real floor asks for nothing. Unset is "
-        f"floor(n / {solve_module.SEATS_PER_MODE_FLOOR}) — 0 at n=20, 1 at 150, 10 at 1000 "
-        "— and a record taken under an artificial floor says so",
+        help="an ARTIFICIAL flat mode floor, one number for every accepted mode. Unset is "
+        "the per-mode floor rule, which is the default; `--flat-floor` is the other way "
+        f"off it, floor(n / {solve_module.SEATS_PER_MODE_FLOOR}). A record taken under any "
+        "of the three says which it was",
     )
     seating_step.add_argument(
-        "--seat-floors",
+        "--flat-floor",
         action="store_true",
-        help="seat under the PER-MODE floor rule — curation.mode_policy.seat_floors(n), "
-        "half each accepted strange mode's share of the strange seat budget, summing to "
-        "half of it. Off unless named, and naming it is the only way to a gallery seated "
-        "under the rule: an unflagged seating still takes the flat floor. Refuses beside "
-        "`--mode-floor`, which asks for a different one",
+        help="seat under the FLAT floor instead of the per-mode rule — "
+        f"floor(n / {solve_module.SEATS_PER_MODE_FLOOR}) seats for every accepted mode, "
+        "which is what every gallery before 2026-08-31 was seated under. The default is "
+        "curation.mode_policy.seat_floors(n): half each accepted strange mode's share of "
+        "the strange seat budget, summing to half of it. Refuses beside `--mode-floor`, "
+        "which asks for a different flat one",
     )
     seating_step.add_argument(
         "--neutral-radius",

@@ -815,14 +815,14 @@ exactly once. Every supply figure in both modules is a count of `location.key`.
 
 A candidate is supply only if it is worth seating. The default is `solve.Q4_BAR` on
 raw `P(>=4)` — 0.50, the same bar the solver's first objective stage counts against.
-Six of the **fourteen** modes `mode_policy` accepted on 2026-08-30 have fewer
-than twenty-five distinct locations clearing that, so those fall back to `P(>=3)
->= 0.50` and the table **says which rule each mode landed on**: a mode censused
-under a lower bar is not comparable to one censused under the default. The roster
-is `accepted()` and not the engine's nineteen — a weight-0 mode has no row in the
-pool to bar. `tail_itinerary` is the fifteenth accepted mode and is **not in that
-reading at all**: it arrived after it and has no candidate in the pool, so it has
-no bar rather than a fallback.
+Six of the **fourteen** modes `mode_policy` accepts have fewer than twenty-five
+distinct locations clearing that, so those fall back to `P(>=3) >= 0.50` and the
+table **says which rule each mode landed on**: a mode censused under a lower bar is
+not comparable to one censused under the default. The roster is `accepted()` and not
+the engine's nineteen — a weight-0 mode has no row in the pool to bar. The reading
+was taken on 2026-08-30 over the same fourteen: `tail_itinerary` was briefly a
+fifteenth and was never in it, and it is weight 0 as of 2026-08-31, so the roster
+the reading was taken over is the roster again.
 Which mode is on which bar is the last column of the capability table under
 `mode_policy` below, and is not restated here.
 
@@ -843,8 +843,9 @@ weights 0.
 eighteen modes; the bar is now asked only of `accepted()`, and the four unrescued
 modes are weight-0 and have no row in the pool to bar at all. The reading on
 2026-08-30 is **eight on the default, six on the fallback, four with no bar** — the
-last column of the capability table under `mode_policy` below. `tail_itinerary`
-arrived after it and is unread.
+last column of the capability table under `mode_policy` below. `tail_itinerary` is
+a fifth with no bar and was never read: it arrived after that reading and was ruled
+weight 0 before it had a candidate in the pool.
 
 ### The census is a covering condition, stated in one direction
 
@@ -1183,19 +1184,30 @@ record is the guard: per row the store, the batch, the source file and line, the
 key, the tier, the lineage group and the fold it landed in. It costs nothing now and
 would be expensive to reconstruct later.
 
-### The mode floor scales with the gallery: `floor(n / 100)`
+### The mode floors are per mode, and they are the default
 
-`solve.mode_floor(n)` — 0 at 20 seats, 1 at 150, 10 at 1000, replacing a flat one per
-mode. The flat floor spent eighteen of a twenty-seat gallery on representation, which
-is a survey of the roster rather than a debug gallery, and it forced `trap_circle` —
-2 clearing places, the better at `P(>=4) = 0.066` — into every gallery this project
-would ever seat. `curate seat --mode-floor N` puts an artificial floor back so a debug
-gallery still exercises the scarcity leg, and the record says when one was used.
+**`mode_policy.seat_floors(n)` is what a seating and a solve take by naming nothing**,
+since 2026-08-31. Each accepted strange mode is floored at half its share of the
+strange seat budget, weighted `2 * promoted + 1 * normal`, so the floors sum to half
+that budget by construction and the other half is the gallery's to spend on whatever
+is strongest. The rule is in `mode_policy` and the section under it is where it is
+derived and measured.
 
-Measured on 2026-08-27, the same twenty seats under the two policies: at floor 0 the
-gallery is `smooth` 14, `exp_smoothing` 4, `smooth_trap_circle` 1, `smooth_curvature`
-1 — **4 modes**; at an artificial floor of 1 it is 18 modes, one seat each but for
-`smooth` at 3. That is the whole cost of the old policy in one line.
+`solve.mode_floor(n)` — `floor(n / 100)`, 0 at 20 seats, 1 at 150, 10 at 1000 — is now
+the **flat** floor rather than the default, and `curate seat --flat-floor` /
+`curate solve run --flat-floor` is what asks for it. It is what every gallery seated
+before that date was seated under, which makes it the baseline a floored-against-flat
+reading is taken against. `curate seat --mode-floor N` still puts an artificial flat
+floor of `N` back. The record names which of the three it ran under, in
+`config.mode_floor_rule`.
+
+Two older readings, both still worth the line they take. The flat floor `mode_floor`
+replaced was **one per mode**, which spent eighteen of a twenty-seat gallery on
+representation and forced `trap_circle` — 2 clearing places, the better at
+`P(>=4) = 0.066` — into every gallery this project would ever seat. And measured on
+2026-08-27, the same twenty seats under those two: at floor 0 the gallery is `smooth`
+14, `exp_smoothing` 4, `smooth_trap_circle` 1, `smooth_curvature` 1 — **4 modes**; at
+an artificial floor of 1 it is 18 modes, one seat each but for `smooth` at 3.
 
 ### The twin test is in the seating, and it is the last rule
 
@@ -1428,8 +1440,8 @@ as reproducible and is not — and the negative half of its range makes
 ## `mode_policy` — what standing each mode has, in one table
 
 `curation/mode_policy.py` is the only place a mode's standing is written.
-`MODE_POLICY` maps every one of the engine's eighteen **production** modes to a
-weight in `{0, 1, 2}` — four niche, seven normal, seven promoted — and
+`MODE_POLICY` maps every one of the engine's nineteen **production** modes to a
+weight in `{0, 1, 2}` — five niche, seven normal, seven promoted — and
 `mode_policy.check()` refuses unless the table and the engine's catalog name the
 same roster.
 
@@ -1452,7 +1464,7 @@ and no picture moves — the recipe still says `itinerary` and the file on disk 
 untouched. The register behind it, and what it costs to fill, is
 [`data/coloring/README.md`](../../../data/coloring/README.md).
 
-**Only the 0 is wired, and it is wired in three places.** A weight-0 mode is out of
+**The 0 is wired in three places.** A weight-0 mode is out of
 the **labeling rosters** and the **default mining rosters** (both through
 `colorize.modes_for`, `mine._accepted_modes` and `hunt.plan`, so the mode draw, the
 mine, the hunt and `manufacture` all honour it), out of the **depth roster**
@@ -1462,65 +1474,84 @@ and the exact solver read. The mode floors in `seating`, `solve`, `headroom` and
 `candidate_ledger.feasibility` are asked of `accepted()` for the same reason: a
 floor over a mode with no rows in the pool is a mandate nothing could meet.
 
-**Weights 1 and 2 are recorded and read the same, unless a seating asks.** There
-is no MODE-side cap anywhere — `seating.RULES` has none — and the floor an
-*unflagged* seating takes is `solve.mode_floor(n) = n // 100`, one for every mode,
-which is 1 at `n = 150`. Under that floor a promoted mode has nothing to bind on
-at the seat that would move more than a seat or two. `--seat-floors` is what makes
-the weight bind; the section below measures what happens when it does.
+**Weights 1 and 2 differ at the seat, and that is the whole of what a 2 buys.**
+There is still no MODE-side cap anywhere — `seating.RULES` has none — but the floor
+an *unflagged* seating and an unflagged solve take is `mode_policy.seat_floors(n)`,
+which floors a promoted mode at twice a normal one. The section below is the rule
+and what it measured.
 
-### The seat floors that make a 2 mean something — built, off unless named
+### The seat floors that make a 2 mean something — ON by default since 2026-08-31
 
-`mode_policy.seat_floors(n)` is the rule that turns the weights load-bearing.
-**It is off unless a seating names it.** `curate seat --seat-floors` is the one
-shipped caller and the only way to a gallery seated under the rule; an unflagged
-seating still takes `solve.mode_floor`'s flat one, and
-`test_the_floor_rule_is_reachable_only_by_naming_it` asserts both halves — that
-`cli.py` is the only file in `src` that reaches the rule, and that the parser's
-default is off.
+`mode_policy.seat_floors(n)` is the rule that turns the weights load-bearing, and
+**it is the default**: `curate seat` and `curate solve run` are floored per mode by
+naming nothing. `--flat-floor` is the way off, back to `solve.mode_floor`'s flat
+`floor(n / 100)`. `test_the_floor_rule_is_the_default_and_a_flag_is_what_turns_it_off`
+asserts both halves on the parser and on the record a seating writes, and
+`test_the_exact_solver_is_floored_by_the_same_rule_the_greedy_is` pins that the two
+legs answer one question.
+
+**Why it is on rather than measured further.** Matt's ruling, ckpt 94: diversity
+definitionally makes a better gallery, so the floors ARE the design — the
+10,000-hour frame, `N / 100`, "novelty is worth a 3" — and the measurements below
+are a pathology check that passed rather than the case for the rule. The open
+question the flip leaves is the price, which is what the reject autopsy is for.
 
 ```
-curate seat --n 150 --seat-floors --name floor_measure   # seated under the rule
+curate seat --n 150 --name n150                          # floored per mode
+curate seat --n 150 --flat-floor --name n150_flat        # the flat floor, for a baseline
 python -c "from fractal_wallpapers.curation import mode_policy as m; print(m.seat_floors(1000))"
 ```
 
-#### What the rule actually did, measured at n = 150
+#### What the rule does, measured at n = 150 under routing
 
-`smoke5_v5` (flat floor of one) beside `floor_measure` (`--seat-floors`), on **one
-pool** — 97,423 candidates, 11,137 clearing, 4,480 places after the neutral
-pre-selection — same rank key, same proportional group cap, 2026-08-31.
+`flip_flat` (`--flat-floor`, one seat a mode) beside `flip_floored` (the default),
+on **one pool** — 97,423 candidates, 11,137 clearing, 4,480 places after the
+neutral pre-selection — same rank key, same proportional group cap, 2026-08-31,
+after the modulate re-routing and with `tail_itinerary` at weight 0. **The flip is
+not conditional on any of it**: the ruling is above, and this is the pathology
+check.
 
-**Both filled 150 of 150 and all 14 modes. Every floor was filled: `starved` is
-empty.** The floors ask for 45 seats and the census's bound over the same modes is
-exactly 45, so nothing was ever short of places to fill one from.
+**Both filled 150 of 150 and all 14 modes, and every floor was filled — `starved`
+is empty on both.** The floors ask for 45 of the 150 seats, and because each was
+filled the census's covering bound over those modes, `sum of min(floor, that mode's
+clearing places)`, is exactly the 45 they need.
 
-**Only three of the thirteen floors were binding** — `itinerary` (1 seat under the
-flat floor, floor 5, took **8**), `direct_trap_lines` (1 → 2) and
-`direct_trap_multiply` (1 → 2). The other ten modes were already above their floor
-and the rule asked them for nothing.
+**Three of the thirteen floors bind**: `itinerary` (1 seat under the flat floor,
+floor 5, took **6**), `direct_trap_lines` (1 → 2) and `direct_trap_multiply`
+(1 → 2). The other ten were already above their floor and the rule asked them for
+nothing.
 
-**And it moved 52 of the 150 seats, not 7.** That is the finding. Filling three
-floors demands seven seats; what actually changed is a third of the gallery,
-because the scarcity leg seats 45 rather than 14 *before* the general leg starts,
-and every one of those takes a location, a colour cell and a palette group out of
-what the general leg then sees. `smooth` paid the most (14 seats dropped, 11
-different ones taken back, net −3), `smooth_stripe` −8 and `threads` −3.
+**And it moved 46 of the 150 seats, not 7.** That is the finding, and it is the
+same shape the pre-routing reading found (52 there). Filling three floors demands
+seven seats; what changes is a third of the gallery, because the scarcity leg
+seats 45 before the general leg starts and every one of those takes a location, a
+colour cell and a palette group out of what the general leg then sees. By mode:
+`itinerary` +5, `stripe` +3, `curvature` `direct_trap_screen` `smooth_angle_min`
++2 each, against `smooth_stripe` −7, `threads` −6, `smooth_curvature` −3,
+`tia` −1. `smooth` is unmoved at 33 both ways.
 
-The refusal ledger says the same thing from the other side: `cell_allowance`
-2,111 → **3,012**, `the_greedy_had_no_seat_left` 6,670 → 5,746, `twin` 97 → **73**,
-`group_cap` 2 → 0.
+**Of the 45 seats the floor leg placed, 22 would have been seated anyway** — the
+flat gallery holds them too — so **23 seats exist only because a floor bound**.
+That is the price, and it is what the autopsy sheet lays out beside the 46 seats
+the flat gallery held and the floored one does not.
 
-**The two orderings disagree about whether it is better.** Worst seated `p_ge4` is
-the same row either way (0.518425) and every seat clears the q4 bar in both, but
-the floored gallery holds **127** seats above `P(>=4) = 0.90` against 123 and sums
-0.89 higher on `p_ge4` — while summing **2.02 lower** on the fitted `rank_key` it
-was actually sorted by, with a worse floor (0.4217 against 0.4564). A rule that
-improves the judge's raw fourth cutpoint and costs the fitted key is a rule whose
-acceptance is Matt's by eye, not a number's.
+The refusal ledger says the same from the other side: `cell_allowance` 2,773 →
+**3,095**, `the_greedy_had_no_seat_left` 6,002 → 5,655, `twin` 99 → **68**,
+`group_cap` 4 → **19**, `location` 291 → 332.
 
-Sheet: `scratch/floor_measure/contact_sheet.html`; record
-`artifacts/curation/seat/floor_measure/seat.json`.
+**The two orderings still disagree about whether it is better.** The floored
+gallery has the better worst seat on the judge's own column (`P(>=4)` 0.5184
+against 0.5070), holds **128** seats above `P(>=4) = 0.90` against 121, and sums
+1.10 higher on `p_ge4` — while summing **2.20 lower** on the fitted `rank_key` it
+was actually sorted by, with a worse floor there (0.4185 against 0.4309). Every
+seat clears the q4 bar in both. A rule that improves the judge's raw fourth
+cutpoint and costs the fitted key is a rule whose acceptance is a ruling and not a
+number's, which is what ckpt 94 was.
 
+Records `artifacts/curation/seat/flip_floored/seat.json` and `.../flip_flat/`;
+sheets beside them; the reject autopsy is `scratch/flip_floor_autopsy.html`, which
+pairs each of the 23 with the displaced seat it shares a palette group or colour
+cell with.
 
 * `mode_policy.STRANGE_SEAT_SHARE = 0.60` is the strange share of a gallery's
   **seats**, declared and not measured. It is **not** `run.STRANGE_SHARE`, which
@@ -1591,11 +1622,11 @@ and re-deriving it is `python -c` over those four names, never a measurement.
 | `direct_trap_lines` | direct | no | **no** | 1 normal | `P(>=3)` fallback |
 | `direct_trap_ring` | direct | no | **no** | **0 niche** | none |
 | `itinerary` | modulate | no | **no** | 2 promoted | `P(>=4)` |
-| `tail_itinerary` | modulate | no | **no** | 1 normal | none yet |
+| `tail_itinerary` | modulate | no | **no** | **0 niche** | none |
 
 Nineteen modes over **four** kinds, not three: `itinerary` and `tail_itinerary`
 are the `modulate`s. Seven field · six composite · four direct · two modulate.
-Four niche, eight normal, seven promoted; thirteen carry the autolevel operator
+Five niche, seven normal, seven promoted; thirteen carry the autolevel operator
 and seven are shareable.
 
 `tail_itinerary` is the same address as `itinerary` read off the **end** of the
@@ -1604,8 +1635,14 @@ a judgement about the new mode: unshareable and undumpable because a modulate ha
 no single scalar index behind it, outside `autolevel` because the operator re-bakes
 the colormap a modulate reads a different place in per sample, and never in a
 near-band draw because that draw's roster is `depth.field_modes`, the shareable
-ones. Its `none yet` in the last column is an absence of pool rows and not a
-weight-0 mode's absence of a row to bar — see the note above.
+ones.
+
+**Its weight is a judgement about the new mode, and it is 0.** It arrived at 1
+provisionally, on no labels, so that a mode nothing may draw would get its contact
+sheet; it got one and Matt ruled it not gallery-worthy — the frequency of address
+changes is too abrupt (ckpt 94). No further draws were bought, so there is no rate
+to quote and there never will be. Nothing is deleted: the catalog entry stays, the
+engine renders it by name, and its pictures are where they were.
 
 **`shareable` and "a field is dumpable" are one column, not two.** `colorize.shareable`
 is `kind_of(mode) == FIELD_KIND` and nothing else, so the two agree on all nineteen.
@@ -2558,7 +2595,7 @@ belonging to a leg the ledger cannot answer for.
 
 **The orphan JPEG pile is not what it looks like.** 6,529 pictures in the candidate
 directories carry no ledger row, but **none of them is unnamed**: 7,466 more are
-`manufacture/`'s own live products (named relatively, `pictures 002.jpg`, by
+`manufacture/`'s own live products (named relatively, `pictures/000002.jpg`, by
 `screened.jsonl` and the plan files), 4,535 belong to unmerged legs, 11,028 are run
 *attempt* pictures named by index rather than by recipe key, and the 1,775 left are
 named by a study's own record — `depth/breadth_strange`, `depth/wm1_serial`,
