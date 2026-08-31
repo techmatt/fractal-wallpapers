@@ -665,26 +665,41 @@ impl Coloring {
     /// seam and renumbers every address by a base-`k` place. Rendering that
     /// quietly would put a differently-addressed picture on record under an option
     /// whose name says what it is for.
+    ///
+    /// **The address window is matched three ways on purpose.** A `_` arm here
+    /// would let a variant added later be legal on both planes by default, and
+    /// which planes an address may be read on is exactly the question this
+    /// function exists to answer. So every variant is named and carries its own
+    /// reason. [`Tail`](crate::field::AddressStart::Tail) is legal everywhere
+    /// *because* of what it is: it keeps the last `depth` symbols, so `z₀` is not
+    /// in the address at all, there is no leading digit for a plane to make a
+    /// wedge of, and nothing to renumber.
     pub fn agrees_with_family(&self, family: &Family) -> Result<(), String> {
         if family.pixel_is_z0() {
             return Ok(());
         }
         for field in self.fields() {
-            if matches!(
-                field,
-                FieldSpec::Itinerary {
-                    start: field::AddressStart::Z1,
-                    ..
+            let FieldSpec::Itinerary { start, .. } = field else {
+                continue;
+            };
+            match start {
+                // The leading symbol is `z₀`'s, and on this plane `z₀ = 0` for every
+                // pixel: one constant digit, the same everywhere. Nothing to fix.
+                field::AddressStart::Z0 => {}
+                field::AddressStart::Z1 => {
+                    return Err(
+                        "itinerary's z1 start is a dynamical-plane option: it opens the address \
+                         at the first iterate so the pixel's own sector stops drawing a wedge \
+                         over the frame. This family's pixel is c and z0 = 0 everywhere, so \
+                         there is no such wedge and starting at z1 would only renumber the \
+                         address. Drop `start`, or render it on a julia or phoenix view."
+                            .into(),
+                    );
                 }
-            ) {
-                return Err(
-                    "itinerary's z1 start is a dynamical-plane option: it opens the address at \
-                     the first iterate so the pixel's own sector stops drawing a wedge over the \
-                     frame. This family's pixel is c and z0 = 0 everywhere, so there is no such \
-                     wedge and starting at z1 would only renumber the address. Drop `start`, or \
-                     render it on a julia or phoenix view."
-                        .into(),
-                );
+                // Deliberate, and not an accident of name-matching: the tail
+                // window reads the END of the orbit, so the pixel's own sector is
+                // not in it and the plane has nothing to say about the address.
+                field::AddressStart::Tail => {}
             }
         }
         Ok(())

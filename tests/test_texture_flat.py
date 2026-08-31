@@ -27,8 +27,12 @@ from fractal_wallpapers.coloring import texture_flat
 from fractal_wallpapers.curation import budget, candidate_ledger, colorize, hunt, mode_policy
 from fractal_wallpapers.labeling import finished
 
-#: The one production mode whose coloring has a texture layer that can be flat.
+#: The production modes whose coloring has a texture layer that can be flat.
+#: `MODULATE` is the one every test below is written against; `TAIL_MODULATE` is
+#: the second, and it is here to hold the rule to being about the *shape* rather
+#: than about a name — see `test_the_rule_is_about_the_modulate_shape_and_not_a_name`.
 MODULATE = "itinerary"
+TAIL_MODULATE = "tail_itinerary"
 
 
 # --------------------------------------------------------------------------- #
@@ -48,6 +52,24 @@ def test_the_row_form_of_the_rule_reads_a_missing_flag_as_not_flat():
     drawn = {"recipe": {"mode": MODULATE}}
     assert mode_policy.routed_mode_of(drawn) == MODULATE
     assert mode_policy.routed_mode_of({**drawn, "texture_flat": False}) == MODULATE
+    assert mode_policy.routed_mode_of({**drawn, "texture_flat": True}) == colorize.SMOOTH_MODE
+
+
+def test_the_rule_is_about_the_modulate_shape_and_not_a_name():
+    """A second modulate arrived and nothing here was written for it.
+
+    `routed_mode` names no mode, so `tail_itinerary` routes by the same sentence
+    `itinerary` does — a degenerate tail address is the smooth base spent by rank,
+    bit for bit, for exactly the reason a degenerate head one is. This is the
+    guard that would go red the day the rule acquired a name.
+    """
+    assert texture_flat.has_a_texture(TAIL_MODULATE)
+    assert mode_policy.routed_mode(TAIL_MODULATE, texture_flat=True) == colorize.SMOOTH_MODE
+    assert mode_policy.routed_mode(TAIL_MODULATE, texture_flat=False) == TAIL_MODULATE
+    assert mode_policy.routed_mode(TAIL_MODULATE) == TAIL_MODULATE
+
+    drawn = {"recipe": {"mode": TAIL_MODULATE}}
+    assert mode_policy.routed_mode_of(drawn) == TAIL_MODULATE
     assert mode_policy.routed_mode_of({**drawn, "texture_flat": True}) == colorize.SMOOTH_MODE
 
 

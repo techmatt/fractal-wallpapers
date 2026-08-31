@@ -122,6 +122,21 @@ WEIGHTS = (NICHE, NORMAL, PROMOTED)
 #: on. **Moving the weight is a ruling and not a repair**, and this figure is
 #: recorded so that whoever takes it is taking it on a number that is about the
 #: mode.
+#:
+#: **`itinerary` stays at 2. Matt's ruling, ckpt 94.** The 17.0% above is on the
+#: record so the figure is not lost, and the ruling is here beside it so the
+#: question does not reopen every time somebody reads the paragraph: a weight is a
+#: claim about what is worth buying more of, the mode is still above every weight-1
+#: mode on the re-read population, and the number that shrank was a ranking rather
+#: than the case.
+#:
+#: **`tail_itinerary` arrives at 1, provisionally, on no labels at all.** It is
+#: the same address as `itinerary` read off the end of the orbit instead of the
+#: start, so nothing about `itinerary`'s rate transfers to it — a tail address
+#: reads near zero wherever the orbit escaped fast, which is most of a frame, and
+#: whether that buys a picture is a question about pictures. 1 rather than 2
+#: because there is no case yet, and 1 rather than 0 because a mode nothing may
+#: draw never gets one: Matt iterates from the contact sheet.
 MODE_POLICY: dict[str, int] = {
     # --- 0: niche ---
     "trap_circle": NICHE,
@@ -136,6 +151,7 @@ MODE_POLICY: dict[str, int] = {
     "direct_trap_screen": NORMAL,
     "direct_trap_multiply": NORMAL,
     "direct_trap_lines": NORMAL,
+    "tail_itinerary": NORMAL,
     # --- 2: promoted ---
     "tia": PROMOTED,
     "stripe": PROMOTED,
@@ -373,6 +389,11 @@ def routed_mode(mode: str, texture_flat: bool = False) -> str:
     `transfer: {"kind": "rank"}`, so it routes as `smooth` wherever a mode or a
     kind is decided — the seating pool, the census, the per-mode bars, the mode
     floors and the two label stores.
+
+    **It is a rule about the shape and not about one mode's name.** `itinerary`
+    was the only modulate when this was written and `tail_itinerary` is the
+    second; neither is named here, and neither needs to be. A degenerate row of
+    either routes `smooth` by the same sentence.
 
     **It holds because every catalogued modulate is built on the smooth field.**
     That is an engine invariant rather than an assumption made here: `mode.rs`'s

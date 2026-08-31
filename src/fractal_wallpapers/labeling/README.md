@@ -295,11 +295,12 @@ original is never modified; `finished_train.population` derives the exclusion at
 read instead. The numbers are in
 [`data/strange_render/README.md`](../../../data/strange_render/README.md).
 
-**A mode can route to the other store without being that mode.** `itinerary` shifts
-its base's palette position by an address field, and where that field has no span the
-shift is zero everywhere and the picture is the `smooth` field spent by rank — *bit
-for bit*, not merely similar. So such a row is the smooth judge's, whatever its
-`mode` says. `finished.routes_to` is the call that knows: it takes the render's own
+**A mode can route to the other store without being that mode.** A modulate —
+`itinerary`, and `tail_itinerary` beside it — shifts its base's palette position by
+an address field, and where that field has no span the shift is zero everywhere and
+the picture is the `smooth` field spent by rank — *bit for bit*, not merely similar.
+So such a row is the smooth judge's, whatever its `mode` says, and the rule names
+neither mode: it is about the modulate shape. `finished.routes_to` is the call that knows: it takes the render's own
 identity to `coloring.texture_flat`, the tracked register of which renders that is
 true of, and hands the answer to `routed_to`. `check` uses it at the writer and
 `finished_train.population` at the read, which is the same two-sided arrangement the
@@ -667,8 +668,8 @@ short: `autolevel.maybe_level` around the render, with
 `autolevel.overriding_colormap` writing the re-baked map into a directory the
 second `engine.run("render", …)` is pointed at through `colormap_dir`. Note what
 it does not cover — `autolevel.applies_to` is `field` and `composite` only, so
-the four `direct_trap_*` modes and `itinerary` get no operator pass **by kind**,
-which is a third of the strange roster and is not a measurement about those
+the four `direct_trap_*` modes and the two modulates get no operator pass **by
+kind**, which is a third of the strange roster and is not a measurement about those
 pictures.
 
 Every one of those 3,990 rows resolves through `spec_of`, and every one of the

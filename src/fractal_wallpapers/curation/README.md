@@ -815,11 +815,14 @@ exactly once. Every supply figure in both modules is a count of `location.key`.
 
 A candidate is supply only if it is worth seating. The default is `solve.Q4_BAR` on
 raw `P(>=4)` — 0.50, the same bar the solver's first objective stage counts against.
-Six of the **fourteen** modes `mode_policy` accepts have fewer than twenty-five
-distinct locations clearing that, so those fall back to `P(>=3) >= 0.50` and the
-table **says which rule each mode landed on**: a mode censused under a lower bar
-is not comparable to one censused under the default. The roster is `accepted()`
-and not the engine's eighteen — a weight-0 mode has no row in the pool to bar.
+Six of the **fourteen** modes `mode_policy` accepted on 2026-08-30 have fewer
+than twenty-five distinct locations clearing that, so those fall back to `P(>=3)
+>= 0.50` and the table **says which rule each mode landed on**: a mode censused
+under a lower bar is not comparable to one censused under the default. The roster
+is `accepted()` and not the engine's nineteen — a weight-0 mode has no row in the
+pool to bar. `tail_itinerary` is the fifteenth accepted mode and is **not in that
+reading at all**: it arrived after it and has no candidate in the pool, so it has
+no bar rather than a fallback.
 Which mode is on which bar is the last column of the capability table under
 `mode_policy` below, and is not restated here.
 
@@ -840,7 +843,8 @@ weights 0.
 eighteen modes; the bar is now asked only of `accepted()`, and the four unrescued
 modes are weight-0 and have no row in the pool to bar at all. The reading on
 2026-08-30 is **eight on the default, six on the fallback, four with no bar** — the
-last column of the capability table under `mode_policy` below.
+last column of the capability table under `mode_policy` below. `tail_itinerary`
+arrived after it and is unread.
 
 ### The census is a covering condition, stated in one direction
 
@@ -1562,7 +1566,7 @@ two-valued tier cannot. `check()` refuses if a mode carries both.
 
 ### Every mode's capabilities, in one table
 
-What each of the eighteen production modes can do, so nothing below has to say it
+What each of the nineteen production modes can do, so nothing below has to say it
 again in prose. Every column but the last is read straight out of code —
 `colorize.kind_of`, `colorize.shareable`, `autolevel.applies_to`, `MODE_POLICY` —
 and re-deriving it is `python -c` over those four names, never a measurement.
@@ -1587,14 +1591,24 @@ and re-deriving it is `python -c` over those four names, never a measurement.
 | `direct_trap_lines` | direct | no | **no** | 1 normal | `P(>=3)` fallback |
 | `direct_trap_ring` | direct | no | **no** | **0 niche** | none |
 | `itinerary` | modulate | no | **no** | 2 promoted | `P(>=4)` |
+| `tail_itinerary` | modulate | no | **no** | 1 normal | none yet |
 
-Eighteen modes over **four** kinds, not three: `itinerary` is a `modulate` and is
-the only one. Seven field · six composite · four direct · one modulate. Four
-niche, seven normal, seven promoted; thirteen carry the autolevel operator and
-seven are shareable.
+Nineteen modes over **four** kinds, not three: `itinerary` and `tail_itinerary`
+are the `modulate`s. Seven field · six composite · four direct · two modulate.
+Four niche, eight normal, seven promoted; thirteen carry the autolevel operator
+and seven are shareable.
+
+`tail_itinerary` is the same address as `itinerary` read off the **end** of the
+orbit rather than the start, so every capability column is the modulate's and not
+a judgement about the new mode: unshareable and undumpable because a modulate has
+no single scalar index behind it, outside `autolevel` because the operator re-bakes
+the colormap a modulate reads a different place in per sample, and never in a
+near-band draw because that draw's roster is `depth.field_modes`, the shareable
+ones. Its `none yet` in the last column is an absence of pool rows and not a
+weight-0 mode's absence of a row to bar — see the note above.
 
 **`shareable` and "a field is dumpable" are one column, not two.** `colorize.shareable`
-is `kind_of(mode) == FIELD_KIND` and nothing else, so the two agree on all eighteen.
+is `kind_of(mode) == FIELD_KIND` and nothing else, so the two agree on all nineteen.
 The only way they can ever part is `colorize._UNSHAREABLE`, a per-process cache of
 modes the engine refused a dump for at runtime; it is empty on a fresh interpreter,
 so a document that prints both columns is printing the same column twice.
@@ -1614,13 +1628,13 @@ it upstream.
 has two ways of making one.** Which one serves a candidate is not a caller's
 decision and no caller can see it:
 
-* a **field** coloring — seven of the eighteen production modes — is dumped once
+* a **field** coloring — seven of the nineteen production modes — is dumped once
   per `(location, mode)` into the unit of work's own `fields/` directory, and
   every palette at that pair is an `engine recolor`: a colormap lookup over an
   array on disk, with no iteration behind it;
-* a **composite**, the **modulate** and the **direct traps** have no single scalar
-  field, the engine refuses to dump one, and those take the full render they
-  always did. The refusal is remembered against the mode, so a mine that draws
+* a **composite**, the two **modulates** and the **direct traps** have no single
+  scalar field, the engine refuses to dump one, and those take the full render
+  they always did. The refusal is remembered against the mode, so a mine that draws
   `threads` four hundred times pays for it once.
 
 A caller opts in by naming a `fields=` directory — `hunt.Maker` and every mine

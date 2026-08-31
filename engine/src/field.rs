@@ -24,7 +24,7 @@ use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::family::{Family, over_written_out};
-use crate::iterate::{self, Lattice, Orbit, Symbols, Wants};
+use crate::iterate::{self, AddressWindow, Lattice, Orbit, Symbols, Wants};
 use crate::viewport::Viewport;
 
 /// Which scalar to reduce an orbit to, and the constants that shape it.
@@ -166,8 +166,10 @@ pub enum FieldSpec {
         weight_base: Option<f64>,
         #[serde(default = "itinerary_depth")]
         depth: u32,
-        /// Which iterate spells the first symbol. See [`AddressStart`]; `z0` is
-        /// the settled default and the only one a named mode asks for.
+        /// Which `depth` symbols the address is made of. See [`AddressStart`];
+        /// `z0` is the settled default, and the two named modes that ask for
+        /// something else — `itinerary` on a dynamical plane, `tail_itinerary`
+        /// everywhere — say so in the record.
         ///
         /// **Absent from the record when it is the default**, which is the same
         /// exception [`crate::coloring::Coloring::Composite::texture_gamma`]
@@ -193,7 +195,7 @@ pub enum FieldSpec {
     ExpSmoothing,
 }
 
-/// Which iterate the address spells its first symbol from.
+/// Which `depth` symbols of the orbit the address is made of.
 ///
 /// The most significant digit is a fact about wherever the address opens, and on
 /// a **dynamical plane** `z₀` *is* the pixel — so under [`Z0`](AddressStart::Z0)
@@ -206,27 +208,52 @@ pub enum FieldSpec {
 /// digit's boundaries are the preimages of the sector boundaries — the set's own
 /// curves — rather than straight lines through the frame.
 ///
-/// **This is a dynamical-plane option and the engine refuses it elsewhere.** On a
+/// **`Z1` is a dynamical-plane option and the engine refuses it elsewhere.** On a
 /// parameter plane `z₀ = 0` for every pixel, so the leading digit is one constant
 /// and dropping it does not remove a seam — it renumbers every address by a whole
 /// base-`k` place, which is a different picture for no stated reason. See
 /// [`Coloring::agrees_with_family`](crate::coloring::Coloring::agrees_with_family).
+///
+/// [`Tail`](AddressStart::Tail) is not a *start* in the same sense and is here
+/// anyway, because it answers the same question — which `depth` symbols the
+/// address is made of — and a second key answering it would let a record ask for
+/// both. It reads the **last** `depth` symbols instead of the first, so there is
+/// no leading digit to place and the plane has nothing to say about it: it is
+/// legal on both, which is a fact about what the option means rather than an
+/// oversight in the refusal above.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum AddressStart {
     /// The address opens on `z₀`. The settled default: `s₀` is the most
-    /// significant digit, and on a parameter plane it is the only choice that
-    /// means anything.
+    /// significant digit, and on a parameter plane it is the only head choice
+    /// that means anything.
     #[default]
     Z0,
     /// The address opens on `z₁`, the first iterate. Dynamical planes only.
     Z1,
+    /// The address is the last `depth` symbols before the orbit stopped —
+    /// escaping, or running out of iterations.
+    ///
+    /// A rolling window rather than a start: every step writes a symbol into the
+    /// bottom of the address and shifts one off the top. See
+    /// [`Address::roll`](crate::iterate::Address) for the arithmetic and for the
+    /// two things it is exact about. `z₀` never enters it unless the orbit was
+    /// too short to fill the window, which is why both planes accept it.
+    Tail,
 }
 
 impl AddressStart {
-    /// Whether the first symbol is `z₀`'s.
-    pub fn spells_z0(self) -> bool {
-        self == AddressStart::Z0
+    /// Which symbols of the orbit this spells, as the escape loop asks it.
+    ///
+    /// Three values, one per variant, written as a match rather than as a pair of
+    /// booleans: "not `z₀`" already means `z₁`, so a third option arriving as the
+    /// negative of the first would be indistinguishable from the second.
+    pub fn window(self) -> AddressWindow {
+        match self {
+            AddressStart::Z0 => AddressWindow::HeadFromZ0,
+            AddressStart::Z1 => AddressWindow::HeadFromZ1,
+            AddressStart::Tail => AddressWindow::Tail,
+        }
     }
 
     fn is_default(&self) -> bool {
@@ -377,7 +404,7 @@ impl FieldSpec {
                     sectors,
                     base: weight_base.unwrap_or(sectors as f64),
                     depth,
-                    spells_z0: start.spells_z0(),
+                    window: start.window(),
                 }),
                 ..Wants::default()
             },

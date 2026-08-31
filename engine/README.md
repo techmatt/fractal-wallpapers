@@ -169,7 +169,7 @@ so a serial skip *lost* to the filter, 0.85x, by trading fifty cheap operations
 for the parallelism on the one costly one. Chunked across the same cores it is
 1.03x to 1.20x.
 
-Every catalog entry carries a **tier**. Eighteen are `production` — a run may draw
+Every catalog entry carries a **tier**. Nineteen are `production` — a run may draw
 them, and the finished-render judges were trained on them. One is `niche`: `de`,
 renderable on demand by name and excluded from every production draw. `threads`
 and `itinerary` were niche too, until a round of labels over both of them said
@@ -189,8 +189,27 @@ choice is in the record either way, so the picture and its coloring say the same
 thing. `fractal-engine modes` has no family to answer for, so it prints the
 parameter-plane form.
 
-**The one modulate can degenerate into an exact spelling of another mode, and it
-says so.** `Coloring::Modulate` spends its base by rank and shifts where in the
+**`start` has a third value, and it is a window rather than a start.**
+`{"kind": "itinerary", "start": "tail"}` reads the **last** `depth` symbols the
+orbit spelled before it stopped, instead of the first — `Address::roll`, a rolling
+window whose whole rule is `frac(value·base) + sector·base^-depth`. It is exact
+where `base >= sectors`, which is the only way the catalog asks for it (four
+sectors in base four); under a smaller `weight_base` the retained window can reach
+past 1 and `fract` takes a bite out of a symbol that was meant to stay, which is
+stated at the function rather than refused. An orbit shorter than `depth` fills
+the window from the bottom and so reads with leading zeros, which puts the
+address's structure where the orbits run long — the boundary — and leaves the
+fast-escaping exterior at the smooth base spent by rank.
+
+`z₀` is never in a tail address, so there is no wedge for a plane to make and
+nothing to renumber: **`tail_itinerary` is one coloring on both planes**, and
+`Coloring::agrees_with_family` says so as a three-way match over `AddressStart`
+rather than by not naming the variant. `tail_itinerary` is the catalog mode — the
+same sectors, base, depth and half-turn shift as `itinerary`, with only the window
+moved, so the two render as a comparison of the window and nothing else.
+
+**A modulate can degenerate into an exact spelling of another mode, and it says
+so.** `Coloring::Modulate` spends its base by rank and shifts where in the
 gradient each rank lands by the normalized texture — `position = frac(rank(base)
 + shift · normalize(texture))`. Normalizing needs a span, and `Stretch::over` has
 an `else` branch for when there is none: every sample at one value, or none of
@@ -201,16 +220,18 @@ is applied to zero. **That is not a picture resembling the base spent by rank, i
 is that render bit for bit** — and since every catalogued composite and the
 modulate are all built on `smooth_base()`, which
 `smooth_is_the_default_and_the_base_of_every_composite` asserts over the whole
-catalog, a degenerate `itinerary` render is the `smooth` mode at
-`transfer: {"kind": "rank"}` and nothing else. Confirmed by sha256 at the
+catalog, a degenerate `itinerary` or `tail_itinerary` render is the `smooth` mode
+at `transfer: {"kind": "rank"}` and nothing else. Confirmed by sha256 at the
 candidate regime, not only in the arithmetic.
 
 So the `else` branch is reported rather than discarded. `Stretch::is_flat` keeps
 it, `modulate` returns it beside the colour, `Painted::texture_flat` carries it up
 and `RenderReport.texture_flat` prints it — `Option<bool>`, absent for every
-coloring with no texture layer to be flat, which is all of them but the modulate.
+coloring with no texture layer to be flat, which is all of them but the two
+modulates.
 It is absent by `skip_serializing_if` for the same recorded-name reason
-`Composite::texture_gamma` is. Python reads it in
+`Composite::texture_gamma` is. The rule is about the modulate *shape* and names no
+mode, which is why `tail_itinerary` needed nothing added to it. Python reads it in
 `fractal_wallpapers.curation.mode_policy.routed_mode`, which is where the
 consequence lives: such a render routes as `smooth` wherever a mode or a kind is
 decided. **A flat texture is a no-op recolour and not a weak one** — this is the

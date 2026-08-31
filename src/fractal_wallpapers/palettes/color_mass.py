@@ -66,7 +66,8 @@ what a ceiling acts on. It is the *bound* that does not apply to them.
 
 ## Why it is eighteen files
 
-One per mode, under `data/palettes/color_mass/`. `tests/test_history_purity.py`
+One per mode over the roster it was measured on — see [`UNMEASURED`] for the
+production mode that has no file — under `data/palettes/color_mass/`. `tests/test_history_purity.py`
 caps a tracked file at 1 MiB and the whole map is several megabytes, so it splits
 the way the tracked release store splits on partition — for the guard, and on the
 axis a reader already has in hand. A `.json` under `data/palettes/` is a colormap
@@ -114,6 +115,28 @@ NOISY_MODES = (
     "gaussian_int",
 )
 
+#: **Production modes the map holds no rows for, named so the hole is not silent.**
+#:
+#: The map is a *measurement* — 15,681 judged pool rows and a 27,053-render sweep —
+#: taken over the roster of the day. A mode added to the engine's catalog
+#: afterwards has no file and no rows, and a lookup for it reads exactly like a
+#: pair with no colour, which is the failure [`read`] and the completeness guard
+#: exist to prevent. Writing it down here is what turns that into a stated
+#: absence: the guard asserts this set is exactly the production modes with no
+#: file, so a mode measured later has to leave this tuple and a mode retired from
+#: the engine cannot linger in it.
+#:
+#: Filling one in is not a code change. It is a sweep leg — every palette group at
+#: the new mode over the seeded two-location panel — and then
+#: `fractal-wallpapers palettes color-mass build`.
+#:
+#: `tail_itinerary` is here because it arrived with the tail address window and
+#: nothing has been rendered in it at scale. Its colour behaviour is not
+#: `itinerary`'s: the address reads near zero wherever the orbit escaped fast, so
+#: the modulate's shift is off over most of a frame and the realized mass is the
+#: smooth base's rather than the address's.
+UNMEASURED = ("tail_itinerary",)
+
 #: The two measurements a pair's observations can come from, and what each is.
 SOURCES = ("census", "sweep")
 
@@ -141,6 +164,20 @@ def stored_modes(directory: Path | None = None) -> list[str]:
     if not root.is_dir():
         return []
     return sorted(path.stem for path in root.glob("*.jsonl"))
+
+
+def measured_modes() -> list[str]:
+    """Every production mode the map is meant to be complete over, in catalog order.
+
+    The engine's roster less [`UNMEASURED`]. Read this rather than
+    `engine.production_modes()` when asking whether the map has a hole: a mode
+    that has never been swept is not a hole, it is a mode nobody has measured, and
+    the two want different answers.
+    """
+    from fractal_wallpapers import engine
+
+    absent = set(UNMEASURED)
+    return [name for name in engine.production_modes() if name not in absent]
 
 
 # --------------------------------------------------------------------------- #
@@ -606,11 +643,13 @@ __all__ = [
     "SCHEMA",
     "SOURCES",
     "STORED_FLOOR",
+    "UNMEASURED",
     "ColorMassError",
     "SWEEP_LOG",
     "SWEEP_UNIT",
     "build",
     "check_sweep_log",
+    "measured_modes",
     "method_row",
     "observations",
     "read",

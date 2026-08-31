@@ -445,6 +445,99 @@ def test_the_render_cache_builds_the_same_itinerary_coloring_the_engine_resolves
 
 
 @needs_engine
+def test_the_tail_address_mode_is_one_coloring_on_every_plane(tmp_path) -> None:
+    """The structural difference between the two modulates, at the name.
+
+    `itinerary`'s start is the family's answer; `tail_itinerary`'s is a catalog
+    constant, because a tail address never reads `z₀` and so has no wedge for a
+    plane to argue about. Walked over every family kind rather than over one of
+    each plane, because "the plane does not move it" is a claim about all of them.
+    """
+    for name, (family, _) in FAMILIES.items():
+        report = engine.render_report(
+            {
+                **{key: value for key, value in ANCHOR.items() if key != "mode"},
+                "family": family,
+                "mode": "tail_itinerary",
+                "output": str(tmp_path / f"tail_{name}.png"),
+            }
+        )
+        field = report["coloring"]["texture"]["field"]
+        assert field["start"] == "tail", name
+        assert report["coloring"]["kind"] == "modulate", name
+        assert report["coloring"]["shift"] == 0.5, name
+        assert (field["sectors"], field["weight_base"], field["depth"]) == (4, 4.0, 26), name
+
+
+@needs_engine
+def test_the_render_cache_leaves_the_tail_window_alone_on_a_dynamical_plane(tmp_path) -> None:
+    """`renders.open_the_address` walks every address in a coloring and moves the
+    ones the plane decides. A tail start is not one of those, and the engine would
+    not catch the mistake — `z1` is legal on the plane this branch is about — so a
+    tail coloring quietly rewritten here would render the *head* mode under the
+    tail mode's name.
+    """
+    from fractal_wallpapers.models import renders
+
+    for name, (family, _) in FAMILIES.items():
+        ours = renders.coloring_of(
+            {"mode": "tail_itinerary", "curve": "linear", "mode_params": {}, "family": family}
+        )
+        assert ours["texture"]["field"]["start"] == "tail", name
+        theirs = engine.render_report(
+            {
+                **{key: value for key, value in ANCHOR.items() if key != "mode"},
+                "family": family,
+                "mode": "tail_itinerary",
+                "output": str(tmp_path / f"cache_{name}.png"),
+            }
+        )["coloring"]
+        assert ours["texture"]["field"] == theirs["texture"]["field"], name
+
+
+@needs_engine
+def test_a_tail_render_reports_its_texture_and_a_degenerate_one_routes_smooth(tmp_path) -> None:
+    """The flat-texture flag is a rule about the modulate shape, not about a name.
+
+    `routed_mode` was built over the whole catalog, so the new mode should need
+    nothing: the engine reports `texture_flat` for it through the same writer, and
+    a tail row whose texture said nothing routes `smooth` exactly as `itinerary`'s
+    does. One sector is how a texture is made to say nothing — every iterate lands
+    in the only sector there is, so the address is zero everywhere and has no span
+    to normalize.
+    """
+    from fractal_wallpapers.curation import colorize, mode_policy
+
+    live = engine.render_report(spec("tail_itinerary", tmp_path / "live.png"))
+    assert live["texture_flat"] is False, "the anchor's addresses are not all one value"
+    assert mode_policy.routed_mode("tail_itinerary", live["texture_flat"]) == "tail_itinerary"
+
+    dead = engine.render_report(
+        {
+            **{key: value for key, value in ANCHOR.items() if key != "mode"},
+            "coloring": {
+                "kind": "modulate",
+                "base": {"field": {"kind": "smooth"}},
+                "texture": {
+                    "field": {
+                        "kind": "itinerary",
+                        "sectors": 1,
+                        "weight_base": 4.0,
+                        "depth": 26,
+                        "start": "tail",
+                    }
+                },
+                "shift": 0.5,
+            },
+            "output": str(tmp_path / "dead.png"),
+        }
+    )
+    assert dead["texture_flat"] is True, "one sector is an address with nothing to say"
+    row = {"recipe": {"mode": "tail_itinerary"}, "texture_flat": dead["texture_flat"]}
+    assert mode_policy.routed_mode_of(row) == colorize.SMOOTH_MODE
+
+
+@needs_engine
 def test_a_modulate_refuses_a_recipe_that_spends_its_base_another_way(tmp_path) -> None:
     """The mode ranks its base as part of what it is, so a recipe that asks for
     another transfer is refused rather than half-honoured."""
