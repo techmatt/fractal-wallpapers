@@ -1897,6 +1897,89 @@ def renders_dose_curve(args: argparse.Namespace) -> int:
     return 0
 
 
+def renders_deploy_split(args: argparse.Namespace) -> int:
+    """What the forward split holds, before anything is fitted on it."""
+    from fractal_wallpapers.models import render_cv, render_deploy
+
+    del args
+    try:
+        path, split = render_deploy.write_split()
+    except (render_cv.CrossValidationError, render_deploy.DeployError) as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps({k: v for k, v in split.items() if k != "population"}, indent=2))
+    print(f"wrote {path}")
+    return 0
+
+
+def renders_deploy_fit(args: argparse.Namespace) -> int:
+    """Train the head that ships: one run, the incumbent recipe, the new rule."""
+    from fractal_wallpapers.models import render_cv, render_deploy, render_train
+
+    try:
+        record = render_deploy.fit(device=args.device, epochs=args.epochs)
+    except (
+        render_cv.CrossValidationError,
+        render_deploy.DeployError,
+        render_train.TrainingError,
+    ) as refusal:
+        print(refusal)
+        return 1
+    wanted = ("run", "best_epoch", "best_selection_objective", "wall_seconds", "stopped_early")
+    print(json.dumps({key: record[key] for key in wanted if key in record}, indent=2))
+    return 0
+
+
+def renders_deploy_read(args: argparse.Namespace) -> int:
+    """Score the comparison side through one head and write the rows."""
+    from pathlib import Path as _Path
+
+    from fractal_wallpapers.models import render_cv, render_deploy
+
+    try:
+        if args.head == "shipped":
+            checkpoint = render_deploy.shipped_artifact()
+        else:
+            checkpoint = (
+                _Path(args.checkpoint) if args.checkpoint else (render_deploy.run_dir() / "best.pt")
+            )
+        path = render_deploy.read_through(checkpoint, args.head, device=args.device)
+    except (render_cv.CrossValidationError, render_deploy.DeployError) as refusal:
+        print(refusal)
+        return 1
+    print(f"wrote {path}")
+    return 0
+
+
+def renders_deploy_compare(args: argparse.Namespace) -> int:
+    """Both heads on identical comparison rows, at every reported slice."""
+    from fractal_wallpapers.models import render_cv, render_deploy
+
+    try:
+        candidate = args.candidate or render_deploy.RUN
+        path, document = render_deploy.write_comparison(candidate, args.reference)
+    except (render_cv.CrossValidationError, render_deploy.DeployError) as refusal:
+        print(refusal)
+        return 1
+    epoch = document["epoch"]
+    print(
+        f"epoch {epoch['best_epoch']} of {epoch['epochs_run']} run "
+        f"(cap {epoch['of_epochs']}, patience {epoch['patience']})"
+    )
+    for cut in document["cuts"]:
+        for entry in cut["slices"]:
+            if entry["delta"] is None:
+                continue
+            print(
+                f"{cut['cut']:<12} top {entry['fraction']:.0%} (k {entry['k']:4d} of "
+                f"{entry['n']:4d}, base {entry['base_rate']:.3f})  "
+                f"new {entry['candidate']:.4f} vs shipped {entry['reference']:.4f}  "
+                f"delta {entry['delta']:+.4f} [{entry['lo']:+.4f}, {entry['hi']:+.4f}]"
+            )
+    print(f"wrote {path}")
+    return 0
+
+
 def renders_grade_split(args: argparse.Namespace) -> int:
     """What one fold's split holds, before anything is fitted on it."""
     from fractal_wallpapers.models import render_cv, render_grade
@@ -5380,6 +5463,55 @@ def render_commands(subcommands) -> None:
         "is the baseline's; naming another arm makes the population a stated choice",
     )
     contesting.set_defaults(handler=renders_cv_compare)
+
+    deploying = steps.add_parser(
+        "deploy",
+        help="train the head that ships: one run, a forward holdout, one comparison",
+        description=(
+            "One training run on the whole corpus under the incumbent recipe, with the "
+            "epoch chosen by precision in the top slice of a drawn stopping slice. The "
+            "holdout is FORWARD — every row registered after the incumbent trained, plus "
+            "every pinned place — so the two heads can be compared on rows neither has "
+            "seen. The artifact from this run is the one that ships."
+        ),
+    )
+    deployings = deploying.add_subparsers(dest="deploy_step", required=True)
+
+    deploy_split = deployings.add_parser(
+        "split",
+        help="what the forward split holds, before anything is fitted on it",
+    )
+    deploy_split.set_defaults(handler=renders_deploy_split)
+
+    deploy_fitting = deployings.add_parser(
+        "fit",
+        help="train the head that ships",
+    )
+    deploy_fitting.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
+    deploy_fitting.add_argument("--epochs", type=int, help="override the epoch ceiling")
+    deploy_fitting.set_defaults(handler=renders_deploy_fit)
+
+    deploy_reading = deployings.add_parser(
+        "read",
+        help="score the comparison side through one head",
+        description=(
+            "Both heads are read through one split in one order, so the comparison never "
+            "has to intersect anything afterwards. `--head shipped` resolves the incumbent "
+            "through the weights manifest."
+        ),
+    )
+    deploy_reading.add_argument("--head", required=True, help="a label: 'shipped' or the run name")
+    deploy_reading.add_argument("--checkpoint", help="an explicit checkpoint, for a named run")
+    deploy_reading.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
+    deploy_reading.set_defaults(handler=renders_deploy_read)
+
+    deploy_comparing = deployings.add_parser(
+        "compare",
+        help="both heads on identical comparison rows, at every reported slice",
+    )
+    deploy_comparing.add_argument("--candidate", default=None, help="the new head's label")
+    deploy_comparing.add_argument("--reference", default="shipped", help="the incumbent's label")
+    deploy_comparing.set_defaults(handler=renders_deploy_compare)
 
     dosing = steps.add_parser(
         "dose",
