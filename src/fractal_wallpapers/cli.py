@@ -3209,6 +3209,7 @@ def curate_candidate_ledger(args: argparse.Namespace) -> int:
         "pictures": candidate_ledger.picture_census,
         "prune": lambda: candidate_ledger.prune(keep=args.keep, apply=not args.dry_run),
         "re-render": lambda: candidate_ledger.re_render(limit=args.limit, workers=args.workers),
+        "score": lambda: candidate_ledger.rescore(limit=args.limit),
         "restore": lambda: candidate_ledger.restore(force=args.force),
     }[args.what]
     try:
@@ -7500,13 +7501,14 @@ def curate_commands(subcommands) -> None:
             "prune",
             "re-render",
             "save",
+            "score",
             "restore",
         ],
         help="build the ledger from what already exists, take the coverage census, check "
         "the live files against their manifests, report which rows name a picture that is "
         "no longer on disk, bring the store back to the retention rule, put back the "
-        "pictures the rows still name, save a fresh copy and manifests, or restore the "
-        "copies",
+        "pictures the rows still name, save a fresh copy and manifests, read every picture "
+        "through the judge shipped now, or restore the copies",
     )
     ledger_store.add_argument(
         "--keep",
@@ -7529,8 +7531,8 @@ def curate_commands(subcommands) -> None:
     ledger_store.add_argument(
         "--limit",
         type=int,
-        help="with `re-render`: stop after this many pictures. What a pilot prices the "
-        "whole leg off",
+        help="with `re-render` and `score`: stop after this many pictures. What a pilot "
+        "prices the whole leg off",
     )
     ledger_store.add_argument(
         "--dry-run",

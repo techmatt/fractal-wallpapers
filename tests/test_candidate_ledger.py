@@ -956,7 +956,10 @@ def test_nothing_but_the_ledger_deletes_a_candidate_picture():
 
     assert "unlink(" not in inspect.getsource(retention)
     assert "rmtree(" not in inspect.getsource(retention)
-    assert owners("unlink(") == ["delete_pictures", "prune"]
+    # `rescore` is the third only because it drops the chunk file it wrote for
+    # itself, for `re_render`'s reason below: a leg's own working file is not a
+    # candidate, and neither of them can reach a picture.
+    assert owners("unlink(") == ["delete_pictures", "prune", "rescore"]
     # `re_render` is the second only because it drops the shared field directory
     # it dumped for itself, which is its own working file and not a candidate's.
     assert owners("rmtree(") == ["_delete_colormap", "re_render"]
@@ -1057,3 +1060,124 @@ def test_the_live_ledger_s_sidecars_hold_no_row_that_joins_to_nothing(tracked_le
     assert not orphan_scores, f"{len(orphan_scores)} score row(s) join no ledger row"
     orphan_flat = set(flatness.by_recipe()) - keys
     assert not orphan_flat, f"{len(orphan_flat)} flatness row(s) join no ledger row"
+
+
+# --------------------------------------------------------------------------- #
+# Reading the store again on a new judge.
+# --------------------------------------------------------------------------- #
+def _rescored(isolated, monkeypatch, present, probabilities):
+    """`rescore` over `isolated` with the judge and the disk both stubbed."""
+    from fractal_wallpapers.curation import colorize, durability
+    from fractal_wallpapers.models import scoring, train
+
+    monkeypatch.setattr(candidate_ledger, "partial_scores_path", lambda: isolated / "partial.jsonl")
+    monkeypatch.setattr(candidate_ledger, "present_pictures", lambda rows: set(present))
+    monkeypatch.setattr(candidate_ledger, "live_artifact", lambda: "new")
+    monkeypatch.setattr(colorize, "load_judge", lambda device="auto": (None, {"classes": 4}, "cpu"))
+    monkeypatch.setattr(scoring, "transform_of", lambda config: None)
+    monkeypatch.setattr(train, "score", lambda *a, **k: probabilities(*a, **k))
+    monkeypatch.setattr(durability, "save", lambda durable, log=print: {"stub": True})
+    return candidate_ledger.rescore(log=lambda *_: None)
+
+
+def test_a_rescore_reads_only_what_the_live_judge_has_not_read(isolated, monkeypatch):
+    """The retired artifact's rows stay, and a row the live judge has already read
+    is not read twice.
+
+    THE shape of the step a judge adoption makes necessary. `scores_by_recipe`
+    joins on the live artifact alone, so the morning after a flip the pool is
+    empty with a full sidecar — and a pass that rewrote the retired rows, or
+    re-read what it had already read, would be answering a different question
+    from the one the empty pool asks.
+    """
+    keys = ["a", "b"]
+    rows = []
+    for key in keys:
+        source = decision()
+        rows.append(
+            candidate_ledger.row(
+                recipe=recipes.of_decision(source),
+                key=key,
+                source=source,
+                picture=str(isolated / f"{key}.jpg"),
+            )
+        )
+    candidate_ledger.write(rows)
+    candidate_ledger.write_scores(
+        [
+            candidate_ledger.score_row(
+                key="a",
+                artifact="old",
+                regime=rows[0]["recipe"]["regime"],
+                head="strange_render",
+                read={"p_ge2": 0.9, "p_ge3": 0.5, "p_ge4": 0.1, "rank_score": 1.5},
+                source={},
+            ),
+            candidate_ledger.score_row(
+                key="a",
+                artifact="new",
+                regime=rows[0]["recipe"]["regime"],
+                head="strange_render",
+                read={"p_ge2": 0.9, "p_ge3": 0.6, "p_ge4": 0.2, "rank_score": 1.7},
+                source={"scores_current": True},
+            ),
+        ]
+    )
+    asked: list = []
+
+    def probabilities(model, paths, transform, where, classes, recipe):
+        asked.append(list(paths))
+        return [[0.8, 0.7, 0.6] for _ in paths]
+
+    record = _rescored(isolated, monkeypatch, set(keys), probabilities)
+
+    assert record["read"] == 1, "the row the live judge had already read was read again"
+    assert len(asked) == 1 and len(asked[0]) == 1
+    held = candidate_ledger.read_scores()
+    assert len(held) == 3, "the retired artifact's reading was overwritten"
+    on_old = [row for row in held if row["judge_artifact"] == "old"]
+    assert on_old and on_old[0]["p_ge4"] == 0.1
+    fresh = candidate_ledger.scores_by_recipe(held, artifact="new")
+    assert set(fresh) == {"a", "b"}
+    assert fresh["b"]["p_ge4"] == 0.6 and fresh["b"]["rank_score"] == pytest.approx(2.1)
+    assert not candidate_ledger.partial_scores_path().is_file(), (
+        "the partial file outlived the pass"
+    )
+
+
+def test_a_rescore_resumes_off_the_chunk_file_it_left_behind(isolated, monkeypatch):
+    """A killed pass costs the chunk in flight and nothing before it.
+
+    The finest safe interruption point this leg has: the sidecar is written once,
+    at the end, so without the partial file a kill at ninety per cent would ask
+    the judge for every picture again.
+    """
+    source = decision()
+    row = candidate_ledger.row(
+        recipe=recipes.of_decision(source),
+        key="a",
+        source=source,
+        picture=str(isolated / "a.jpg"),
+    )
+    candidate_ledger.write([row])
+    monkeypatch.setattr(candidate_ledger, "partial_scores_path", lambda: isolated / "partial.jsonl")
+    candidate_ledger._append_partial(
+        [
+            candidate_ledger.score_row(
+                key="a",
+                artifact="new",
+                regime=row["recipe"]["regime"],
+                head="strange_render",
+                read={"p_ge2": 0.9, "p_ge3": 0.8, "p_ge4": 0.7, "rank_score": 2.4},
+                source={"scores_current": True},
+            )
+        ]
+    )
+
+    def refuse(*args, **kwargs):
+        raise AssertionError("the judge was asked for a picture the partial file already held")
+
+    record = _rescored(isolated, monkeypatch, {"a"}, refuse)
+
+    assert record["read"] == 1
+    assert candidate_ledger.scores_by_recipe(artifact="new")["a"]["p_ge4"] == 0.7
