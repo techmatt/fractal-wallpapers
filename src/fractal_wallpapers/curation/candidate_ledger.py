@@ -1215,12 +1215,26 @@ def _flatness_path() -> Path:
 
 
 def delete_pictures(named, log=print) -> dict:
-    """Delete the candidate pictures a prune dropped. `named` is stored names.
+    """Delete the candidate pictures a prune dropped, and their levelled colormaps.
 
-    Through [`paths.rehome`], because a row names its picture as the run that
-    made it saw it and the subtree may have been archived since. A name with no
-    artifacts component is not a name this project wrote and is left alone —
-    which is what keeps a fixture's `a.jpg` out of reach of this.
+    `named` is stored names, read through [`paths.rehome`], because a row names
+    its picture as the run that made it saw it and the subtree may have been
+    archived since. A name with no artifacts component is not a name this project
+    wrote and is left alone entirely — which is what keeps a fixture's `a.jpg`,
+    and anything beside it, out of reach of this.
+
+    **The levelled colormap goes with the picture**, because it is part of what
+    that render cost and the rule is that a picture goes with its row.
+    `colorize.render` writes the autolevel operator's overriding map to
+    `<stem>.leveled/` beside the JPEG on every acted render, ~76 KiB against the
+    picture's ~157 KiB. Unlinking the one and leaving the other is how 206,147 of
+    them reached 14.9 GiB — more than the whole candidate pool — and how they
+    would do it again. Nothing reads a candidate's for content and the row
+    re-derives it, so it is regenerable exactly as the picture is.
+
+    The colormap is swept whether or not the JPEG was still there: a row is being
+    dropped either way, and a colormap outliving an already-deleted picture is
+    precisely the pile.
 
     Counted rather than raised on: a picture already gone is the ordinary state
     of a store somebody has swept before, and a leg that refused to finish over
@@ -1228,7 +1242,15 @@ def delete_pictures(named, log=print) -> dict:
     """
     from fractal_wallpapers.paths import rehome
 
-    out = {"asked": 0, "deleted": 0, "bytes": 0, "absent": 0, "unreadable": 0}
+    out = {
+        "asked": 0,
+        "deleted": 0,
+        "bytes": 0,
+        "absent": 0,
+        "unreadable": 0,
+        "colormaps": 0,
+        "colormap_bytes": 0,
+    }
     for stored in named:
         out["asked"] += 1
         where = rehome(str(stored))
@@ -1238,21 +1260,54 @@ def delete_pictures(named, log=print) -> dict:
         try:
             size = where.stat().st_size
         except OSError:
+            size = None
+        if size is None:
             out["absent"] += 1
-            continue
-        try:
-            where.unlink()
-        except OSError as failure:
-            out["unreadable"] += 1
-            log(f"[prune] {where}: {failure!r}")
-            continue
-        out["deleted"] += 1
-        out["bytes"] += size
-        if out["deleted"] % 25_000 == 0:
+        else:
+            try:
+                where.unlink()
+            except OSError as failure:
+                out["unreadable"] += 1
+                log(f"[prune] {where}: {failure!r}")
+            else:
+                out["deleted"] += 1
+                out["bytes"] += size
+        # One call site, past every outcome the JPEG can have. A second one
+        # inside a branch is how the sweep would come to be skipped for exactly
+        # the rows whose picture was already the odd case.
+        _delete_colormap(where, out, log)
+        if out["deleted"] and out["deleted"] % 25_000 == 0:
             log(f"[prune] {out['deleted']:,} picture(s) deleted, {out['bytes'] / 2**30:.2f} GiB")
     out["gib"] = round(out["bytes"] / 2**30, 3)
-    log(f"[prune] {out['deleted']:,} of {out['asked']:,} picture(s) deleted, {out['gib']} GiB")
+    out["colormap_gib"] = round(out["colormap_bytes"] / 2**30, 3)
+    log(
+        f"[prune] {out['deleted']:,} of {out['asked']:,} picture(s) deleted, {out['gib']} GiB, "
+        f"and {out['colormaps']:,} levelled colormap(s), {out['colormap_gib']} GiB"
+    )
     return out
+
+
+def _delete_colormap(picture: Path, out: dict, log) -> None:
+    """Remove the `<stem>.leveled/` directory beside one picture, if it has one.
+
+    Spelled the way [`curation.colorize.render`] spells it when it writes the
+    thing, so the two cannot drift apart into a writer and a sweeper that
+    disagree about the name.
+    """
+    import shutil
+
+    where = picture.parent / f"{picture.stem}.leveled"
+    if not where.is_dir():
+        return
+    try:
+        size = sum(entry.stat().st_size for entry in where.iterdir() if entry.is_file())
+        shutil.rmtree(where)
+    except OSError as failure:
+        out["unreadable"] += 1
+        log(f"[prune] {where}: {failure!r}")
+        return
+    out["colormaps"] += 1
+    out["colormap_bytes"] += size
 
 
 def _prune_meta(path: Path, log=print) -> list[dict]:
