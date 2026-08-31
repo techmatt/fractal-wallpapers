@@ -18,18 +18,22 @@ from fractal_wallpapers.models import render_cv, render_train
 
 
 @pytest.fixture(scope="module")
-def dealt(shipped_render_cache):
+def dealt(shipped_render_cache, shipped_cv_pool):
     """The population and the deal, derived once for every guard in this file.
 
     Building the population sweeps both stores and digests a recipe per row, and
     three guards over five folds would otherwise pay for it seven times. Nothing
     here writes to it: `sides_for` reassigns every picture's side on every call,
     so one population answers for all five folds.
+
+    Through `conftest.shipped_cv_pool`, which is the session's one reading — and
+    which is also what keeps `assignment` from laying the population out a second
+    time inside itself.
     """
     short = {kind: len(shipped_render_cache.missing(kind)) for kind in render_train.KINDS}
     if any(short.values()):
         pytest.skip(f"the render cache is short {short} — `renders plan` then `renders build`")
-    return render_cv.pool(), render_cv.assignment()
+    return shipped_cv_pool.pool(), shipped_cv_pool.assignment()
 
 
 def a_row(batch: str, unit: str | None = None, **changes) -> dict:

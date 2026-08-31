@@ -491,6 +491,31 @@ EXACTNESS_PLACES = (
 #: not the other is the failure this pair would catch and a single map would not.
 EXACTNESS_MAPS = ("viridis", "twilight_shifted")
 
+#: **The raster the two exactness pins below are taken on, and the one thing here
+#: that is not production's own.** `colorize.RESOLUTION` at `SUPERSAMPLE` 2 is a
+#: 1280x720 iteration pass a unit, and the two pins were 116.6 s and 29.5 s of a
+#: 563 s slow lane on this machine, 2026-08-31 — a quarter of it, for a property
+#: that does not read the raster.
+#:
+#: What is kept is everything the property is about: the supersample **and its
+#: downsample**, because the shared path recolours a field dumped at the sampled
+#: size and the two paths have to agree about the reduction as much as about the
+#: arithmetic; every shareable mode; both planes; both bakes; the operator on.
+#: What shrinks is the pixel count and the iteration cap, and neither is a term
+#: in "these two paths produce the same file" — the same code runs on every pixel
+#: either way, and a divergence in it is a divergence at any size.
+#:
+#: The honest cost: a rarer per-pixel disagreement has fewer pixels to show up
+#: in. That is the trade, it is the only one taken here, and the full-size pin
+#: still exists on the operator's side — `test_autolevel_identity` renders its
+#: twenty-eight probes at production geometry and holds them to pinned digests.
+EXACTNESS_GEOMETRY = {"resolution": [256, 144], "supersample": colorize.SUPERSAMPLE}
+
+
+def exactness_geometry(row: dict, cap: int = 800) -> dict:
+    """The cheap raster, carrying a capped iteration count off the row's own."""
+    return {**EXACTNESS_GEOMETRY, "maxiter": min(int(row["maxiter"]), cap)}
+
 
 def digest_of(path) -> str:
     import hashlib
@@ -526,6 +551,9 @@ def test_a_recolour_is_the_render_byte_for_byte(tmp_path) -> None:
     operator on — which is where the two paths differ most, because on the shared
     path the operator's second pass is a recolour of the same field rather than a
     second iteration of it.
+
+    Taken on [`EXACTNESS_GEOMETRY`] rather than on production's raster; that
+    constant carries the measurement and the trade.
     """
     cyclic = colorize.cyclic()
     band = colorize.band()
@@ -538,11 +566,19 @@ def test_a_recolour_is_the_render_byte_for_byte(tmp_path) -> None:
         the mode and the curve, and never on the map. Two threads at one
         (place, mode) would be two writers of one `.f32`.
         """
+        geometry = exactness_geometry(row)
         for colormap in EXACTNESS_MAPS:
             plain = tmp_path / f"plain{at}-{mode}-{colormap}.jpg"
             shared = tmp_path / f"shared{at}-{mode}-{colormap}.jpg"
             _, plain_stamp = colorize.render(
-                row, mode, colormap, cyclic, plain, level=True, band=band
+                row,
+                mode,
+                colormap,
+                cyclic,
+                plain,
+                render_geometry=geometry,
+                level=True,
+                band=band,
             )
             _, shared_stamp = colorize.render(
                 row,
@@ -550,6 +586,7 @@ def test_a_recolour_is_the_render_byte_for_byte(tmp_path) -> None:
                 colormap,
                 cyclic,
                 shared,
+                render_geometry=geometry,
                 level=True,
                 band=band,
                 fields=tmp_path / "fields",
@@ -573,8 +610,12 @@ def test_a_coloring_with_no_field_is_served_by_the_render_path_without_being_ask
 ) -> None:
     """The fallback is automatic. A composite, a modulate and a direct trap have no
     single scalar field; the caller offers the same field cache and gets the same
-    picture, made the way it always was."""
+    picture, made the way it always was.
+
+    On [`EXACTNESS_GEOMETRY`], for that constant's reason.
+    """
     row = dict(EXACTNESS_PLACES[0])
+    geometry = exactness_geometry(row)
     cyclic = colorize.cyclic()
     from fractal_wallpapers.models import renders
 
@@ -588,8 +629,20 @@ def test_a_coloring_with_no_field_is_served_by_the_render_path_without_being_ask
     def both_paths(mode: str) -> None:
         plain = tmp_path / f"plain-{mode}.jpg"
         shared = tmp_path / f"shared-{mode}.jpg"
-        colorize.render(row, mode, "viridis", cyclic, plain, level=True, band=band)
-        colorize.render(row, mode, "viridis", cyclic, shared, level=True, band=band, fields=fields)
+        colorize.render(
+            row, mode, "viridis", cyclic, plain, render_geometry=geometry, level=True, band=band
+        )
+        colorize.render(
+            row,
+            mode,
+            "viridis",
+            cyclic,
+            shared,
+            render_geometry=geometry,
+            level=True,
+            band=band,
+            fields=fields,
+        )
         assert digest_of(plain) == digest_of(shared), mode
 
     # One mode a worker, at the pool's own width. Nothing is shared between them:

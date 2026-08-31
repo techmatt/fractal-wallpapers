@@ -147,7 +147,14 @@ def build(
         if (exclude_run is None or row.get("run") != exclude_run)
         and (collection is None or row.get("collection") == collection)
     ]
-    rows = [row for row in rows if not _superseded(row, current_pass(rows))]
+    # Once, not once a row. `current_pass` ranks every row it is given through
+    # `records.served`, and asking it inside the comprehension asked it again for
+    # each of the rows it had just ranked — 1,186 calls and 10.5 s of a merge on
+    # this machine, 2026-08-31, against one call and 9 ms. It is a pure function
+    # of `rows`, which does not move underneath the filter, so the hoist is the
+    # same answer.
+    current = current_pass(rows)
+    rows = [row for row in rows if not _superseded(row, current)]
     return ServedLocations(locations=[dict(row.get("location") or {}) for row in rows], rows=rows)
 
 

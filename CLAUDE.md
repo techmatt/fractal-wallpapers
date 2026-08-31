@@ -117,9 +117,24 @@ rebuild *and* the fast lane until you do it.
 what CI runs and what runs before a checkpoint. The fast lane is for the
 edit-run loop and nothing else.
 
-Both are measured, not estimated: **3,121 tests in 8:23**, with the fast lane at
-**116.8 s over the 3,007 it holds**. On this machine, idle, 2026-08-30, at the
-commit that added `renders deploy`. **It read 3,126 in 14:26 on 2026-08-31**, idle,
+Both are measured, not estimated: **3,152 tests in 5:45**, with the fast lane at
+**98.3 s over the 3,039 it holds**. On this machine, idle, 2026-08-31, at the
+commit that cut the lane — which is the entry to read first, because that
+prompt found the lane was never a broad tax: the **top eighty tests were 490.6 s
+of the 563.5 s** it started at, and the other three thousand were 72.9 s between
+them. It came down by collapsing derivations paid many times over and by taking
+one pixel-exactness pin off production's raster, and **no guard was deleted or
+moved lanes**. `tests/README.md` carries the table and the reasoning; the one
+worth knowing here is that `served_locations.build` was asking `current_pass`
+once per row instead of once, which was ~10.5 s on every merge, seating and
+gallery build in **production** and not only under test.
+
+The figures below are the history that got it here, and they are kept because
+each is a way this lane has moved without code moving.
+
+It read **3,121 tests in 8:23** at the commit that added `renders deploy`, idle,
+2026-08-30, with the fast lane at 116.8 s.
+**It read 3,126 in 14:26 on 2026-08-31**, idle,
 at the commit that closed the pool re-score — twice in a row (12:45 then 14:26) and
 over five *more* tests than the 8:23. That is the third time this lane has moved
 without code moving; the store that grew in between is the release pool's, whose

@@ -357,12 +357,15 @@ def population(head_name: str) -> tuple[list[Picture], dict]:
         off_kind_flat += int(finished.routed_to(row["mode"]) == head_name)
     rows = kept
     crops = renders.crop_dir(head_name)
+    # One listing of the crop directory rather than a stat a row: see
+    # [`renders.present`] for the measurement.
+    on_disk = renders.present(head_name)
 
     pictures, absent = [], []
     for row in rows:
         name = renders.job_name({**row, "_head": head_name})
         path = crops / f"{name}.jpg"
-        if not path.is_file():
+        if f"{name}.jpg" not in on_disk:
             absent.append(name)
             continue
         pinned = registry_module.lookup(known, row["batch"]).eval_only

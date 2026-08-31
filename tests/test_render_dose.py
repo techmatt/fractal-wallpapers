@@ -21,12 +21,15 @@ TRAINED_ON = {"train", render_train.SELECTION}
 
 
 @pytest.fixture(scope="module")
-def dealt(shipped_render_cache):
-    """The population and the deal, derived once for every guard in this file."""
+def dealt(shipped_render_cache, shipped_cv_pool):
+    """The population and the deal, derived once for every guard in this file.
+
+    The population through `conftest.shipped_cv_pool` — the session's one reading.
+    """
     short = {kind: len(shipped_render_cache.missing(kind)) for kind in render_train.KINDS}
     if any(short.values()):
         pytest.skip(f"the render cache is short {short} — `renders plan` then `renders build`")
-    return render_cv.pool(), render_cv.read_assignment()
+    return shipped_cv_pool.pool(), render_cv.read_assignment()
 
 
 def test_the_axis_is_cut_on_the_batch_and_the_cuts_are_ordered() -> None:
