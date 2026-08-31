@@ -108,7 +108,15 @@ from fractal_wallpapers.curation import (
 #: **2**: the mode-floor block became a function of `n` rather than a flat one per
 #: mode, the population is the neutral pre-selection's, and the twin constraint
 #: has a block. A schema 1 census counted none of those.
-SCHEMA = 2
+#:
+#: **3**: the mode-floor block bounds the floors the shipped legs actually take —
+#: [`curation.mode_policy.seat_floors`], per mode — rather than the flat
+#: `floor(n / 100)` that stopped being the default on 2026-08-31. A schema 2
+#: census at `n = 20` reported a demand of zero where the shipped seating asks for
+#: six, so the two are not comparable readings of the same pool. The block's
+#: `floor` is now the flat number when one was asked for and `None` otherwise, the
+#: mapping is on `floors`, and `floor_rule` names which of the three rules ran.
+SCHEMA = 3
 
 #: The subtree a census lands in, under the regenerable tree.
 UNIT = "headroom"
@@ -156,6 +164,15 @@ FALLBACK_LOCATIONS = 25
 #: satisfied and cannot be satisfied *twice* under any of the pairwise rules, and
 #: the flag is the list of things to go and make.
 THIN = 25
+
+#: Ask the mode-floor block for the **flat** floor instead of the shipped rule.
+#:
+#: Not a number, because the flat floor is a function of `n` and a census walks a
+#: whole ladder: a caller wanting `floor(n / 100)` at every rung cannot say it with
+#: one integer the way [`curation.seating.seat`] can at its single `n`. So
+#: `census(floor=FLAT)` resolves to [`solve.mode_floor`] per rung. A plain number
+#: still means one artificial flat floor at every rung, and a mapping is per mode.
+FLAT = "flat"
 
 #: What a block's rows are. `demand` is a row that can only fall short (a floor);
 #: `cap` a row that can only be exceeded (an allowance); `cover` the derived
@@ -444,6 +461,7 @@ def census(
     costs: dict | None = None,
     radius: float | None = distinct.PRESELECT_RADIUS,
     twins: dict | None = None,
+    floor=None,
     log=print,
 ) -> dict:
     """The whole curve: every constraint at every `n` of `ladder`. No solver.
@@ -457,6 +475,13 @@ def census(
     censuses the pool without it, which is the only way to read a schema 1 census
     against this one. `twins` is [`distinct.twins`]' sweep, and the twin block is
     empty without it — see the module docstring on why that block is opt-in.
+
+    `floor` is [`curation.seating.seat`]'s, and it is `None` for the same reason:
+    unset is [`curation.mode_policy.seat_floors`], the rule both gallery legs take
+    by being asked for nothing, so an unflagged census bounds the gallery an
+    unflagged seating would build. A number is a flat floor for every accepted
+    mode — `solve.mode_floor(n)` is what `curate headroom --flat-floor` passes at
+    each rung — and a mapping is per mode. The block names which it ran under.
     """
     costs = {} if costs is None else costs
     table = bars(candidates)
@@ -537,6 +562,7 @@ def census(
                 size,
                 kept=kept,
                 rule=rule,
+                floor=solve.mode_floor(size) if floor is FLAT else floor,
                 costs=costs,
                 renders=renders,
                 by_cell=by_cell,
@@ -557,6 +583,7 @@ def _at(
     *,
     kept,
     rule,
+    floor,
     costs,
     renders,
     by_cell,
@@ -617,34 +644,49 @@ def _at(
             "exemptions the pixels grant — which is not knowable without decoding them"
         ),
     )
+    # Deferred because `seating` imports this module at the top. Both helpers are
+    # that module's, and reusing them is the point: a census that resolved the
+    # floors its own way, or named them its own way, would be a second floor rule.
+    from fractal_wallpapers.curation import seating
+
     modes = mode_policy.accepted()
-    floor = solve.mode_floor(n)
-    # Each mode needs `floor` distinct places of its own, so the supply the demand
-    # is read against is the sum of what each mode can actually put towards its
-    # own floor — NOT the count of modes that hold anything. Those two are the
-    # same number only while the floor is one, which is how a flat floor of one
-    # hid the difference.
-    usable = sum(min(floor, len(_places(by_mode.get(name, [])))) for name in modes)
+    natural = mode_policy.seat_floors(n)
+    asked = seating.floors_for(natural if floor is None else floor, modes)
+    needs = sum(asked.values())
+    floored = [name for name in modes if asked[name]]
+    # Each mode needs ITS OWN floor in distinct places, so the supply the demand is
+    # read against is the sum of what each mode can actually put towards it — NOT
+    # the count of modes that hold anything. Those two are the same number only
+    # while every floor is one, which is how a flat floor of one hid the
+    # difference, and under a per-mode mapping they are nowhere near each other.
+    usable = sum(min(asked[name], len(_places(by_mode.get(name, [])))) for name in modes)
     out["blocks"]["mode_floors"] = {
         "kind": DEMAND,
-        "floor": floor,
-        "needs": floor * len(modes),
+        "floors": dict(asked),
+        "floor": None if floor is None or isinstance(floor, dict) else int(floor),
+        "floor_rule": seating.floor_rule(
+            n, None if isinstance(floor, dict) else floor, asked, natural, modes
+        ),
+        "floor_artificial": dict(asked) != seating.floors_for(natural, modes),
+        "needs": needs,
         "supply": usable,
-        "slack": usable - floor * len(modes),
-        "short": usable < floor * len(modes),
+        "slack": usable - needs,
+        "short": usable < needs,
+        "floored_modes": len(floored),
         "modes_holding_anything": sum(1 for name in modes if by_mode.get(name)),
-        "rule": f"soft in the solve; floor(n / {solve.SEATS_PER_MODE_FLOOR}) = {floor} seat(s) "
-        f"per accepted mode, {floor * len(modes)} between them. Supply is the sum over modes "
-        "of min(floor, its distinct clearing locations). At a floor of zero the block asks for "
-        "nothing and the per-mode rows below are a supply table rather than a demand",
-        "supply_counts": "the sum over modes of min(the floor, that mode's distinct "
-        "clearing locations) — in locations, like every other row here",
-        "fits_in_n": floor * len(modes) <= n,
+        "rule": f"soft in the seating and in the solve; per mode, {needs} seat(s) between "
+        f"{len(floored)} of the {len(modes)} accepted modes. Supply is the sum over modes of "
+        "min(that mode's own floor, its distinct clearing locations). A mode floored at zero "
+        "asks for nothing and its row below is a supply line rather than a demand. Which of "
+        "the three floor rules these came from is `floor_rule`",
+        "supply_counts": "the sum over modes of min(that mode's own floor, that mode's "
+        "distinct clearing locations) — in locations, like every other row here",
+        "fits_in_n": needs <= n,
         "rows": [
             _row(
                 about=name,
                 kind=DEMAND,
-                needs=floor,
+                needs=asked[name],
                 members=by_mode.get(name, []),
                 costs=costs,
                 renders=renders_by_mode.get(name, 0),
@@ -831,6 +873,7 @@ __all__ = [
     "FALLBACK_BAR",
     "FALLBACK_COLUMN",
     "FALLBACK_LOCATIONS",
+    "FLAT",
     "LADDER",
     "SCHEMA",
     "THIN",

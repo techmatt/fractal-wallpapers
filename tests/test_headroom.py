@@ -183,63 +183,132 @@ def test_the_cap_a_cover_row_carries_is_the_ceilings_own_allowance():
 # --------------------------------------------------------------------------- #
 # The mode floors.
 # --------------------------------------------------------------------------- #
+def test_the_block_bounds_the_floors_the_shipped_legs_actually_take():
+    """The whole point of the block, and the one thing a revert would break.
+
+    `curation.mode_policy.seat_floors(n)` is what an unflagged `curate seat` and an
+    unflagged `curate solve run` are floored by, so an unflagged census has to bound
+    those floors or it bounds a gallery nobody builds. It bounded the flat
+    `floor(n / 100)` until 2026-08-31 and reported a demand of **zero** at `n = 20`
+    where the shipped seating asks for six.
+
+    Every assertion here is red under a flat floor of any value: a flat floor is one
+    number for every mode, and this rule is thirteen different ones.
+    """
+    read = headroom.census(clearing_pool(3), ladder=(20, 150), log=lambda *_: None)
+    for size in (20, 150):
+        block = read["curve"][str(size)]["blocks"]["mode_floors"]
+        want = mode_policy.seat_floors(size)
+        assert block["floors"] == {name: want.get(name, 0) for name in mode_policy.accepted()}
+        assert block["needs"] == sum(want.values())
+        assert block["floor"] is None, "the shipped rule is per mode and not one number"
+        assert block["floor_artificial"] is False
+        assert "THE DEFAULT" in block["floor_rule"]
+        assert {row["needs"] for row in block["rows"]} == set(block["floors"].values())
+    # Not one number for everybody, which is what a flat floor is.
+    assert len(set(read["curve"]["150"]["blocks"]["mode_floors"]["floors"].values())) > 1
+    assert read["curve"]["20"]["blocks"]["mode_floors"]["needs"] == 6
+    assert read["curve"]["150"]["blocks"]["mode_floors"]["needs"] == 45
+
+
+def test_the_flat_floor_is_still_readable_and_says_it_is_the_flat_one():
+    """`curate headroom --flat-floor`, the baseline the shipped rule is read against.
+
+    It is a function of `n` and a census walks a ladder, so it is asked for by
+    [`headroom.FLAT`] rather than by a number — and the block has to say it ran
+    under the baseline, or a floored-against-flat reading cannot tell the two
+    censuses apart.
+    """
+    read = headroom.census(
+        clearing_pool(3), ladder=(20, 150), floor=headroom.FLAT, log=lambda *_: None
+    )
+    at20 = read["curve"]["20"]["blocks"]["mode_floors"]
+    assert at20["floor"] == 0
+    assert at20["needs"] == 0
+    assert all(row["short"] is False for row in at20["rows"])
+    at150 = read["curve"]["150"]["blocks"]["mode_floors"]
+    assert at150["floor"] == solve.mode_floor(150) == 1
+    assert at150["needs"] == len(mode_policy.accepted())
+    assert set(at150["floors"].values()) == {1}
+    assert at150["floor_artificial"] is True, "flat is not what nobody asked for any more"
+    assert "FLAT" in at150["floor_rule"]
+
+
 def test_a_mode_with_no_clearing_candidate_is_short_at_its_own_floor():
-    # At 150 seats the floor is one, which is the smallest n at which the block
-    # asks for anything at all.
+    # `stripe` is floored at 5 of the 150 seats and the pool is all `smooth`, so
+    # the row is short by its own floor rather than by one number shared with
+    # every other mode.
     read = headroom.census(clearing_pool(3), ladder=(150,), log=lambda *_: None)
     block = read["curve"]["150"]["blocks"]["mode_floors"]
-    assert block["floor"] == 1
     row = next(row for row in block["rows"] if row["about"] == "stripe")
+    assert row["needs"] == mode_policy.seat_floors(150)["stripe"] == 5
     assert row["supply"] == 0
     assert row["short"] is True
     assert "stripe" in block["empty"]
 
 
-def test_below_a_hundred_seats_the_mode_floors_ask_for_nothing():
-    """The `trap_circle` question, retired by arithmetic.
+def test_a_small_gallery_is_not_asked_for_one_of_every_mode():
+    """The `trap_circle` question, re-asked of the rule that ships.
 
-    A flat floor of one put every mode into a twenty-seat gallery, including one
-    whose best clearing picture sits at `P(>=4) = 0.066`. `floor(n / 100)` is zero
-    there, so the block asks for nothing and no mode is short.
+    A flat floor of one put every mode into a twenty-seat gallery — eighteen of
+    the twenty seats spent on representation — including one whose best clearing
+    picture sat at `P(>=4) = 0.066`. `floor(n / 100)` retired that by being zero
+    below a hundred seats, and the per-mode rule retires it a second way: at
+    `n = 20` it asks for six seats between six modes and asks the other eight
+    accepted modes for nothing at all.
+
+    So the guard is not "the block asks for nothing" any more — it asks for six.
+    It is that a small gallery is never made to seat the whole roster, and that
+    what it does ask stays a minority of the seats.
     """
     read = headroom.census(clearing_pool(3), ladder=(20,), log=lambda *_: None)
     block = read["curve"]["20"]["blocks"]["mode_floors"]
-    assert block["floor"] == 0
-    assert block["needs"] == 0
-    assert all(row["short"] is False for row in block["rows"])
+    roster = len(mode_policy.accepted())
+    assert block["floored_modes"] == 6
+    assert block["floored_modes"] < roster, "not one of every mode"
+    assert sum(1 for row in block["rows"] if row["needs"] == 0) == roster - 6
+    # Six of twenty, where the flat floor of one asked for eighteen of twenty.
+    assert block["needs"] == 6
+    assert block["needs"] * 3 <= 20
 
 
 def test_the_floor_block_counts_places_towards_the_floor_and_not_modes():
     """The bug a flat floor of one could not show.
 
-    Each mode needs `floor` distinct places of its own, so the supply the demand
-    is read against is the sum over modes of `min(floor, its places)`. Counting
-    modes-that-hold-anything instead is the same number only while the floor is
-    one — at n=500 it read one row per mode against a demand of five times the
-    roster, and called a pool short that is nowhere near it.
+    Each mode needs **its own** floor in distinct places, so the supply the demand
+    is read against is the sum over modes of `min(that mode's floor, its places)`.
+    Counting modes-that-hold-anything instead is the same number only while every
+    floor is one — at n=500 it read one row per mode against a demand in the
+    hundreds, and called a pool short that is nowhere near it.
     """
-    read = headroom.census(clearing_pool(3), ladder=(500,), log=lambda *_: None)
+    # One strange mode, three places, against a floor of fifteen at n=500.
+    read = headroom.census(clearing_pool(3, mode="stripe"), ladder=(500,), log=lambda *_: None)
     block = read["curve"]["500"]["blocks"]["mode_floors"]
-    assert block["floor"] == 5
+    assert block["floors"]["stripe"] == mode_policy.seat_floors(500)["stripe"] == 15
     # The floor is asked of the modes a gallery may seat, not of the whole
     # production roster: a mode weighted 0 has no row in the pool to meet it with.
-    assert block["needs"] == 5 * len(mode_policy.accepted())
-    # One mode, three places, so three of the five it is asked for.
+    assert block["needs"] == sum(mode_policy.seat_floors(500).values()) == 150
+    # Three of the fifteen `stripe` is asked for, and nothing from anybody else.
     assert block["supply"] == 3
     assert block["modes_holding_anything"] == 1
     assert block["short"] is True
 
 
-def test_the_scaled_floor_always_fits_in_n_and_the_flat_one_did_not():
-    # A roster of r modes at floor(n / 100) asks for at most 0.01*r*n, and r is
-    # nowhere near a hundred, so the block can never fail to fit — which the flat
-    # floor of one did at every n below the roster's size.
-    roster = len(mode_policy.accepted())
-    read = headroom.census(clearing_pool(3), ladder=(5, 150, 1000), log=lambda *_: None)
-    for size in ("5", "150", "1000"):
-        assert read["curve"][size]["blocks"]["mode_floors"]["fits_in_n"] is True
-    assert solve.mode_floor(5) * roster == 0
-    assert solve.mode_floor(1000) * roster == 10 * roster
+def test_the_per_mode_floors_always_fit_in_n_and_the_flat_one_did_not():
+    """They sum to half the strange seat budget by construction — `ceil(0.6n / 2)`,
+    which is `ceil(0.3n)` and never more — so the block can never ask for a gallery
+    it cannot fit. The flat floor of one this replaced asked for the whole roster at
+    every `n` below the roster's size, which was eighteen of twenty seats at
+    `n = 20`. The bound is tight at the bottom rather than generous: `n = 1` asks
+    for the one seat there is, and that still fits."""
+    read = headroom.census(clearing_pool(3), ladder=(1, 5, 150, 1000), log=lambda *_: None)
+    for size in (1, 5, 150, 1000):
+        block = read["curve"][str(size)]["blocks"]["mode_floors"]
+        assert block["fits_in_n"] is True
+        assert block["needs"] == (mode_policy.strange_seats(size) + 1) // 2
+        assert block["needs"] <= size
+        assert block["needs"] <= -(-3 * size // 10), "at most ceil(0.3n), at every rung"
+    assert len(mode_policy.accepted()) > 5, "the flat floor of one did not fit at n = 5"
 
 
 # --------------------------------------------------------------------------- #
