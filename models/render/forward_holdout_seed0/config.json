@@ -1,0 +1,202 @@
+{
+  "schema": 1,
+  "head": "render",
+  "run": "forward_holdout_seed0",
+  "only": null,
+  "classifier_width": 4,
+  "pretrained": true,
+  "geometry": "stretch",
+  "epochs": 20,
+  "batch_size": 32,
+  "backbone_lr": 0.0002,
+  "head_lr": 0.001,
+  "weight_decay": 0.05,
+  "drop_rate": 0.2,
+  "drop_path_rate": 0.1,
+  "grad_clip": 1.0,
+  "seed": 0,
+  "workers": 4,
+  "amp": "off",
+  "border_crop": 0.05,
+  "augmentation": "geometric only \u2014 border crop and both flips. No colour, no JPEG jitter",
+  "class_balance": "sqrt",
+  "source_dims": [
+    1280,
+    720
+  ],
+  "target_dims": [
+    384,
+    224
+  ],
+  "loss": "CORN ordinal, K-1 conditional-subset tasks",
+  "sampler": "w_class[1/sqrt] x w_place[1/pictures at this place], in that order",
+  "selection": "max precision at the top 10% of the stopping slice ranked by P(>=3), counting a row a person scored 3 or better as a hit, through the deploy transform. Rank-only, and sized at the rate the seating stage actually admits",
+  "classes": 4,
+  "backbone": "mobilenetv4_conv_small.e2400_r224_in1k",
+  "selection_cutpoint": 3,
+  "conditioning": "none \u2014 the picture is the input, and the head is told no kind",
+  "patience": 6,
+  "second_selection_epoch": -1,
+  "stopped_early": {
+    "at_epoch": 7,
+    "of_epochs": 20,
+    "patience": 6,
+    "best_epoch": 1,
+    "second_epoch": -1
+  },
+  "kinds": [
+    "smooth_render",
+    "strange_render"
+  ],
+  "mean": [
+    0.485,
+    0.456,
+    0.406
+  ],
+  "std": [
+    0.229,
+    0.224,
+    0.225
+  ],
+  "interpolation": "bicubic",
+  "best_epoch": 1,
+  "inherited": {
+    "identical_to_both_incumbents": [
+      "amp",
+      "augmentation",
+      "backbone_lr",
+      "batch_size",
+      "border_crop",
+      "class_balance",
+      "classes",
+      "drop_path_rate",
+      "drop_rate",
+      "epochs",
+      "geometry",
+      "grad_clip",
+      "head_lr",
+      "loss",
+      "pretrained",
+      "sampler",
+      "selection",
+      "selection_cutpoint",
+      "source_dims",
+      "target_dims",
+      "weight_decay"
+    ],
+    "chosen": [
+      {
+        "key": "backbone",
+        "was": "medium for smooth renders, small for strange \u2014 the one behavioural key the two incumbent recipes disagree about",
+        "now": "the medium, for both",
+        "why": "one head has one backbone, so this value cannot be inherited and had to be picked. Capacity is chosen against corpus size and the pooled training side is larger than either constituent, so the backbone already proven on the larger of the two is the one that carries over. PINNED, not tuned: nothing here searches over it, and a candidate that failed at this backbone is not evidence about the other."
+      },
+      {
+        "key": "split",
+        "was": "each store's own eval-only pin, and nothing else",
+        "now": "the INTERSECTION of the two training sides \u2014 a location pinned in either store is out of training, whichever store the row came from",
+        "why": "a joint head is read on both blind sheets, so both instruments have to stay clean. It is stricter than what either incumbent faced and it costs the candidate rows the smooth incumbent legitimately trained on. Conservative against the candidate, on purpose."
+      },
+      {
+        "key": "selection_population",
+        "was": "a seeded 10% slice of each head's own training side, drawn over places",
+        "now": "the same rule at the same share and seed, over the POOLED training side's places",
+        "why": "the objective and the drawing rule are controlled variables; the population follows the head. A place carrying both kinds sits whole on one side, so no location straddles the boundary in either kind."
+      }
+    ]
+  },
+  "renders": {
+    "seed": 0,
+    "jpeg_quality": 90
+  },
+  "split": {
+    "schema": 1,
+    "rule": "80/20 over LINEAGES, forward: every row registered after the incumbent trained and every pinned place put their whole lineage on the comparison side, and a seeded lineage draw out of the remainder is the stopping slice",
+    "unit": "lineage \u2014 labeling.groups.assign",
+    "shipped_cut": "2026-08-24",
+    "population": {
+      "rows": 10299,
+      "cut": {
+        "off_kind": 40,
+        "swept": 213
+      },
+      "per_kind": {
+        "smooth_render": {
+          "scored": 5896,
+          "off_kind": 0,
+          "swept": 0,
+          "kept": 5896,
+          "pinned": 324
+        },
+        "strange_render": {
+          "scored": 4656,
+          "off_kind": 40,
+          "swept": 213,
+          "kept": 4403,
+          "pinned": 274
+        }
+      },
+      "swept_rule": "under_seen_modes positions past 269 \u2014 the last override on a page the sweep filled to the end, so every row after it restates the head's own decode",
+      "off_kind_rule": "a row whose mode routes to the other store, derived at the read"
+    },
+    "grouping": {
+      "groups": 3649,
+      "largest": 66,
+      "singletons": 2389,
+      "unplaced": 0
+    },
+    "rows": 10299,
+    "constraints": {
+      "post_growth_rows": 1847,
+      "pinned_rows": 598,
+      "both": 213,
+      "union": 2232,
+      "carried_in_by_lineage_closure": 183
+    },
+    "sides": {
+      "train": 6883,
+      "stopping": 1001,
+      "comparison": 2415
+    },
+    "holdout_share": 0.3317,
+    "stopping_slice": {
+      "target_rows": 1000,
+      "seed": 0,
+      "lineages": 285,
+      "of_available_lineages": 2246,
+      "rows": 1001,
+      "tiers": {
+        "1": 268,
+        "2": 386,
+        "3": 257,
+        "4": 90
+      },
+      "drawn_over": "LINEAGES outside both constraints, so no pinned row is ever stopped on"
+    },
+    "comparison_slice": {
+      "rows": 2415,
+      "tiers": {
+        "1": 115,
+        "2": 619,
+        "3": 904,
+        "4": 777
+      },
+      "post_growth_rows": 1847,
+      "post_growth_tiers": {
+        "1": 21,
+        "2": 484,
+        "3": 708,
+        "4": 634
+      },
+      "pinned_rows": 598,
+      "reported_on": "the post-growth rows only. The pinned rows are held and not spent, and the rows lineage closure carried in were seen by the incumbent"
+    },
+    "train_tiers": {
+      "1": 1884,
+      "2": 2748,
+      "3": 1640,
+      "4": 611
+    }
+  },
+  "precision": "fp32"
+}

@@ -1,0 +1,308 @@
+{
+  "schema": 1,
+  "head": "render",
+  "run": "forward_holdout_seed0",
+  "only": null,
+  "two_head": false,
+  "device": "cuda",
+  "wall_seconds": 479.9,
+  "segments": [
+    {
+      "from_epoch": 0,
+      "through_epoch": 7,
+      "wall_seconds": 479.9
+    }
+  ],
+  "best_epoch": 1,
+  "best_selection_objective": -0.89,
+  "second_selection_epoch": -1,
+  "best_second_selection_objective": null,
+  "stopped_early": {
+    "at_epoch": 7,
+    "of_epochs": 20,
+    "patience": 6,
+    "best_epoch": 1,
+    "second_epoch": -1
+  },
+  "selection_metric": "validation loss (minimized), pooled over both kinds",
+  "pictures": {
+    "total": 10299,
+    "train": 6883,
+    "selection": 1001,
+    "eval": 2415,
+    "excluded": 0
+  },
+  "per_kind": {
+    "smooth_render": {
+      "train": 4284,
+      "selection": 565,
+      "eval": 1047,
+      "excluded": 0
+    },
+    "strange_render": {
+      "train": 2599,
+      "selection": 436,
+      "eval": 1368,
+      "excluded": 0
+    }
+  },
+  "class_counts": {
+    "train": {
+      "1": 1884,
+      "2": 2748,
+      "3": 1640,
+      "4": 611
+    },
+    "selection": {
+      "1": 268,
+      "2": 386,
+      "3": 257,
+      "4": 90
+    },
+    "eval": {
+      "1": 115,
+      "2": 619,
+      "3": 904,
+      "4": 777
+    }
+  },
+  "split": {
+    "schema": 1,
+    "rule": "80/20 over LINEAGES, forward: every row registered after the incumbent trained and every pinned place put their whole lineage on the comparison side, and a seeded lineage draw out of the remainder is the stopping slice",
+    "unit": "lineage \u2014 labeling.groups.assign",
+    "shipped_cut": "2026-08-24",
+    "population": {
+      "rows": 10299,
+      "cut": {
+        "off_kind": 40,
+        "swept": 213
+      },
+      "per_kind": {
+        "smooth_render": {
+          "scored": 5896,
+          "off_kind": 0,
+          "swept": 0,
+          "kept": 5896,
+          "pinned": 324
+        },
+        "strange_render": {
+          "scored": 4656,
+          "off_kind": 40,
+          "swept": 213,
+          "kept": 4403,
+          "pinned": 274
+        }
+      },
+      "swept_rule": "under_seen_modes positions past 269 \u2014 the last override on a page the sweep filled to the end, so every row after it restates the head's own decode",
+      "off_kind_rule": "a row whose mode routes to the other store, derived at the read"
+    },
+    "grouping": {
+      "groups": 3649,
+      "largest": 66,
+      "singletons": 2389,
+      "unplaced": 0
+    },
+    "rows": 10299,
+    "constraints": {
+      "post_growth_rows": 1847,
+      "pinned_rows": 598,
+      "both": 213,
+      "union": 2232,
+      "carried_in_by_lineage_closure": 183
+    },
+    "sides": {
+      "train": 6883,
+      "stopping": 1001,
+      "comparison": 2415
+    },
+    "holdout_share": 0.3317,
+    "stopping_slice": {
+      "target_rows": 1000,
+      "seed": 0,
+      "lineages": 285,
+      "of_available_lineages": 2246,
+      "rows": 1001,
+      "tiers": {
+        "1": 268,
+        "2": 386,
+        "3": 257,
+        "4": 90
+      },
+      "drawn_over": "LINEAGES outside both constraints, so no pinned row is ever stopped on"
+    },
+    "comparison_slice": {
+      "rows": 2415,
+      "tiers": {
+        "1": 115,
+        "2": 619,
+        "3": 904,
+        "4": 777
+      },
+      "post_growth_rows": 1847,
+      "post_growth_tiers": {
+        "1": 21,
+        "2": 484,
+        "3": 708,
+        "4": 634
+      },
+      "pinned_rows": 598,
+      "reported_on": "the post-growth rows only. The pinned rows are held and not spent, and the rows lineage closure carried in were seen by the incumbent"
+    },
+    "train_tiers": {
+      "1": 1884,
+      "2": 2748,
+      "3": 1640,
+      "4": 611
+    }
+  },
+  "sampled_mass": {
+    "places": 2134,
+    "largest_place": 66,
+    "sampled_mass": {
+      "1": 0.1294,
+      "2": 0.3036,
+      "3": 0.3633,
+      "4": 0.2037
+    },
+    "raw_share": {
+      "1": 0.2737,
+      "2": 0.3992,
+      "3": 0.2383,
+      "4": 0.0888
+    }
+  },
+  "history": [
+    {
+      "epoch": 0,
+      "loss": 0.6806663157512814,
+      "seconds": 60.5,
+      "selection_loss": -0.78,
+      "second_selection_loss": null,
+      "selection_ap_ge3": 0.6823785066369292,
+      "selection_auc_ge2": 0.8323084441367514,
+      "selection_mean_p_ge2": 0.8063544337600461,
+      "selection_auc_ge3": 0.8082515929460911,
+      "selection_mean_p_ge3": 0.4970677556368677,
+      "selection_auc_ge4": 0.8334431028174167,
+      "selection_mean_p_ge4": 0.2245870676049463,
+      "selection_loss_smooth_render": 0.45325014151284226,
+      "selection_loss_strange_render": 0.4493215885659377
+    },
+    {
+      "epoch": 1,
+      "loss": 0.545852759965852,
+      "seconds": 61.1,
+      "selection_loss": -0.89,
+      "second_selection_loss": null,
+      "selection_ap_ge3": 0.7419042375585977,
+      "selection_auc_ge2": 0.8608967441102808,
+      "selection_mean_p_ge2": 0.8414142937103055,
+      "selection_auc_ge3": 0.8378279530091919,
+      "selection_mean_p_ge3": 0.3875146411818073,
+      "selection_auc_ge4": 0.8546042200268326,
+      "selection_mean_p_ge4": 0.07578763129545055,
+      "selection_loss_smooth_render": 0.39717162885616447,
+      "selection_loss_strange_render": 0.3829572652891635
+    },
+    {
+      "epoch": 2,
+      "loss": 0.49599262539875916,
+      "seconds": 61.1,
+      "selection_loss": -0.78,
+      "second_selection_loss": null,
+      "selection_ap_ge3": 0.7045179238164768,
+      "selection_auc_ge2": 0.8617010445724991,
+      "selection_mean_p_ge2": 0.7235712545491096,
+      "selection_auc_ge3": 0.8268381672527298,
+      "selection_mean_p_ge3": 0.3690782040944495,
+      "selection_auc_ge4": 0.8379558482741798,
+      "selection_mean_p_ge4": 0.09337315261396642,
+      "selection_loss_smooth_render": 0.39270096850510455,
+      "selection_loss_strange_render": 0.36738838476359353
+    },
+    {
+      "epoch": 3,
+      "loss": 0.46256784241109083,
+      "seconds": 60.6,
+      "selection_loss": -0.86,
+      "second_selection_loss": null,
+      "selection_ap_ge3": 0.7279638990368513,
+      "selection_auc_ge2": 0.8442965934312069,
+      "selection_mean_p_ge2": 0.8312620658300757,
+      "selection_auc_ge3": 0.8288783720663794,
+      "selection_mean_p_ge3": 0.389046721871118,
+      "selection_auc_ge4": 0.8368215636053177,
+      "selection_mean_p_ge4": 0.09161521961009608,
+      "selection_loss_smooth_render": 0.3853018649571775,
+      "selection_loss_strange_render": 0.41465617214713046
+    },
+    {
+      "epoch": 4,
+      "loss": 0.41995176346898166,
+      "seconds": 60.1,
+      "selection_loss": -0.84,
+      "second_selection_loss": null,
+      "selection_ap_ge3": 0.739986539552945,
+      "selection_auc_ge2": 0.8820529005721732,
+      "selection_mean_p_ge2": 0.7806757029164527,
+      "selection_auc_ge3": 0.847958473239387,
+      "selection_mean_p_ge3": 0.40578905132296367,
+      "selection_auc_ge4": 0.8701183071106232,
+      "selection_mean_p_ge4": 0.11156384802956458,
+      "selection_loss_smooth_render": 0.40571707523497197,
+      "selection_loss_strange_render": 0.3719800359527043
+    },
+    {
+      "epoch": 5,
+      "loss": 0.36878180427639945,
+      "seconds": 58.4,
+      "selection_loss": -0.88,
+      "second_selection_loss": null,
+      "selection_ap_ge3": 0.741265247895452,
+      "selection_auc_ge2": 0.8738113660890635,
+      "selection_mean_p_ge2": 0.7430967107447771,
+      "selection_auc_ge3": 0.8457111634014577,
+      "selection_mean_p_ge3": 0.3647075805065066,
+      "selection_auc_ge4": 0.8144773752896695,
+      "selection_mean_p_ge4": 0.07273733195234693,
+      "selection_loss_smooth_render": 0.3963005867790312,
+      "selection_loss_strange_render": 0.37733293968757403
+    },
+    {
+      "epoch": 6,
+      "loss": 0.3573957053481987,
+      "seconds": 58.7,
+      "selection_loss": -0.79,
+      "second_selection_loss": null,
+      "selection_ap_ge3": 0.7267240619852187,
+      "selection_auc_ge2": 0.886079493392519,
+      "selection_mean_p_ge2": 0.791708323276809,
+      "selection_auc_ge3": 0.8480245705875613,
+      "selection_mean_p_ge3": 0.4567294973126384,
+      "selection_auc_ge4": 0.8583485790950116,
+      "selection_mean_p_ge4": 0.1406037362317607,
+      "selection_loss_smooth_render": 0.42126694978267726,
+      "selection_loss_strange_render": 0.4496627479562225
+    },
+    {
+      "epoch": 7,
+      "loss": 0.3318249724180775,
+      "seconds": 58.4,
+      "selection_loss": -0.84,
+      "second_selection_loss": null,
+      "selection_ap_ge3": 0.7426297158459582,
+      "selection_auc_ge2": 0.878525177658773,
+      "selection_mean_p_ge2": 0.6841504855551778,
+      "selection_auc_ge3": 0.852294459279627,
+      "selection_mean_p_ge3": 0.25993716585775806,
+      "selection_auc_ge4": 0.8747408220514697,
+      "selection_mean_p_ge4": 0.06592777975803103,
+      "selection_loss_smooth_render": 0.3901791253885689,
+      "selection_loss_strange_render": 0.36217110038127726
+    }
+  ],
+  "checkpoints": {
+    "best": "models/render/forward_holdout_seed0/best.pt",
+    "last": "models/render/forward_holdout_seed0/last.pt"
+  }
+}

@@ -584,6 +584,66 @@ shipped artifact's in-sample read, at both `P(≥3)` and `P(≥4)`. The store's 
 scores is a different regime and this judge is not regime-robust. Re-scoring at
 shipping geometry is a separate act and no bar is set on these numbers.
 
+## Training the head that ships: `renders deploy`
+
+Every band before this one produced fold models and nothing deployable. This is one
+run on the whole corpus under the incumbent recipe, and its artifact is the one that
+would ship.
+
+```
+fractal-wallpapers renders deploy split                      # what the forward split holds
+fractal-wallpapers renders deploy fit                        # the run
+fractal-wallpapers renders deploy read --head shipped        # the incumbent on the comparison side
+fractal-wallpapers renders deploy read --head forward_holdout_seed0
+fractal-wallpapers renders deploy compare                    # both heads, every reported slice
+```
+
+**The split is FORWARD.** Eighty-twenty over lineages, and what lands in the twenty is
+not a draw: every row whose batch was registered after the incumbent trained
+(`SHIPPED_CUT`, 2026-08-24 — checked against `enlarged_corpus_seed1`'s own recorded
+8,502 pictures, not asserted), plus every pinned place, plus their whole lineages.
+Those post-growth rows are the one population on which the two heads can be compared,
+because neither has seen a row of it.
+
+**The stopping slice is drawn on top of that, not carved out of it**, and it has to be:
+the constrained holdout is only post-growth lineages and pinned lineages, the first are
+the comparison and `render_train.run` refuses to early-stop on the second. So the
+realized holdout is 33.2% — comparison 2,415, stopping 1,001, train 6,883 — against the
+incumbent's 7,498 fitted pictures.
+
+**The epoch is chosen by top-slice precision**, not by the incumbent's pooled cutpoint
+cross-entropy and not by AUC: rank the stopping slice by the head's own `P(≥3)`, take
+the top `TOP_SLICE`, count what fraction a person scored 3 or 4. `TOP_SLICE` is 10%
+because that is about what the supply engine promotes — over the 122,516 live-judge
+score rows in the candidate ledger, `mine.SEATING_BAR` admits **9.76%** and
+`mine.PRIMED_BAR` **3.88%** — and every readout reports 4 / 10 / 20% beside it. It is
+rank-only, so it cannot be won by shrinking toward the prior the way
+`render_cv.top_cutpoint_selection` was.
+
+⚠ **On the first run of this the rule chose epoch 1 of 20 and it chose on noise.** At
+k = 100 rows the statistic steps by 0.01, its spread over eight epochs was 0.11, and
+epoch 1 beat epoch 5 by one row — while stop-slice `AUC(≥3)` climbed monotonically to
+the epoch patience stopped at. A larger stopping slice or a smoothed rule is what this
+would need before the epoch it picks means anything.
+
+⚠ **And the declared comparison saturated.** The post-growth rows are **72.7% `≥3`** —
+they were drawn off a head's own top and off calibration bands — so the incumbent
+scores a *perfect* 1.0000 at the top 4% and 10% and no precision-at-`≥3` statistic can
+separate two heads on them. `READOUT_COLUMNS` therefore carries a second, descriptive
+readout at `P(≥4)`, where the same rows still have a 0.343 base rate.
+
+**Nothing here adopts anything by itself.** `renders deploy` writes checkpoints under
+`models/render/<run>/` and records under `artifacts/render_deploy/`; staging and the
+flip are `ship.stage_candidate` and `ship.promote`, which are separate acts.
+
+⚠ **A render flip is not free, and `models/adoption.py` does not cover it** — its
+`HEAD` is `"location"`. Three ACTING bars stamp the render artifact they were measured
+on and refuse on their first call afterwards: `strange_render_release` 0.575,
+`strange_render_gallery` 0.575, `smooth_render_gallery` 0.54. Refitting them is
+`head floor --head <kind>` against the new artifact, then re-declaring the heights with
+new stamps in `curation.floors`. Until that is done a flip stops the curation run's
+release and gallery paths.
+
 ## Adopting a head: `regime restate`, then `regime adopt`
 
 Those two steps are the priced flip, and they run in that order once — **between

@@ -117,13 +117,13 @@ rebuild *and* the fast lane until you do it.
 what CI runs and what runs before a checkpoint. The fast lane is for the
 edit-run loop and nothing else.
 
-Both are measured, not estimated: **3,101 tests in 16:25**, with the fast lane at
-**290-320 s over the 2,998 it holds** — 289.8 s and 317.5 s on two idle runs, and
-that spread is the run-to-run noise, not a trend. On this machine at `9560862`,
-2026-08-30. The entry here read 64.3 s and 7:20 at
-`0b53e15` the day before, over almost exactly these tests; what happened in
-between is the next paragraph, and it is why a stale figure here is worth
-correcting rather than living with.
+Both are measured, not estimated: **3,121 tests in 8:23**, with the fast lane at
+**116.8 s over the 3,007 it holds**. On this machine, idle, 2026-08-30, at the
+commit that added `renders deploy`. The entry here read 64.3 s and 7:20 at
+`0b53e15`, then **3,101 in 16:25 with the fast lane at 290-320 s** at `9560862`
+later the same day; what happened in between and what undid it are the next two
+paragraphs, and they are why a stale figure here is worth correcting rather than
+living with.
 
 Measure it on an **idle** machine, and take that literally. The same lane sharing
 this one with a render leg crawled to 41% in the time it normally takes to
@@ -150,6 +150,16 @@ was checked by measuring 317.5 s at `7383b63` with the working tree stashed.
 Suspected: NTFS metadata after a bulk small-directory delete. So also re-measure
 after anything that moves hundreds of thousands of paths, and suspect the **disk**
 as well as the stores.
+
+**And it came back on its own, later the same day, with nobody doing anything to
+it.** The slow lane read 8:23 and the fast lane 116.8 s over twenty *more* tests
+than the 16:25 and 289.8 s above — the slow lane is back to its pre-sweep 8:22 to
+within a second and the fast lane is well under its pre-sweep 163.6 s. No code
+was reverted and no store moved between the two readings; the only thing that
+happened in between is that hours passed. That is the strongest evidence the
+doubling was the disk settling after the delete rather than anything in this
+repository, and it is the reason to re-run a slow lane before believing one. It
+is still not *proven*, so the paragraph above stays.
 
 Two rules came out of that and `tests/README.md` argues both. **The candidate
 ledger is read once a session**, through `conftest.tracked_ledger`; a test that
