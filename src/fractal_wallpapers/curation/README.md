@@ -1092,6 +1092,53 @@ refusal is doing its job. Allowed through, the rows are logged and counted under
 `order.unranked` / `unranked_allowed`, and `unreadable_by_the_key` on the record is
 how many of the clearing population they were.
 
+### `curation.detail` — complexity descriptors beside the dead-space column
+
+No subcommand and no caller: nothing in `curation` reads this module. It exists so
+the complexity descriptors can be *measured* against the label rows before any of
+them is chosen, and the choosing is a separate decision.
+
+`flat16_1.0` is the rank key's only texture term and it is a penalty — it says
+where a picture is dead and nothing about how busy the rest of it is. `detail`
+reads five things that do, each a few lines over one decoded picture with no
+engine call and no field: `bpp` (the stored JPEG's own size as bits per pixel),
+`grad_energy` (mean gradient magnitude on the luminance, **divided by the
+picture's own contrast**, so it reads structure rather than how hard the palette
+pushes), `spectral_slope` (the `a` of `P(k) ~ k**-a`, and the one reading here
+that goes **down** as a picture gets busier), and `flatness.fraction`'s own rule
+at cells of 8, 32 and 64 beside the shipped 16. About 25 ms a picture at 640x360
+over three workers, [`flatness.WORKERS`]' number for [`flatness.WORKERS`]' reason.
+
+**Every one of them is bound to a geometry** and `standardize_within` is the shape
+that says so: a 16-pixel cell is a different fraction of a 640-wide picture than
+of a 1280-wide one, and a single mean over two geometries would rank every picture
+at one of them above every picture at the other for no reason about the pictures.
+Every candidate JPEG this project holds is **640x360**; a `--release` render is a
+second render at **1280x720**, not the same picture resized. Across that jump
+`grad_energy` and `flat8_1.0` keep their ordering almost exactly (Spearman 0.99
+over the 150 `smoke5_v5` seats) and `spectral_slope` mostly does (0.85); `bpp`
+does not survive at all, because a release picture is a PNG and a PNG's byte count
+is its compressor's opinion rather than an encoder's rate decision.
+
+**The larger cells go degenerate at the candidate geometry.** Over the rank key's
+1,051 label rows, `flat64_1.0` is exactly zero on 72.7% of them and `flat32_1.0`
+on 43.3%, against 24.2% for the shipped `flat16_1.0` and 7.8% for `flat8_1.0`. A
+column that is zero on three rows in four is not carrying a scale, and `flat8` is
+the only one of the three new scales with room underneath the shipped one.
+
+**Measured, 2026-08-31, and nothing was adopted.** Out of fold on the shipped folds
+and the shipped standardization, each descriptor added singly to the five-column
+form moves the key's AUC by at most **+0.003** on either kind — `bpp` is the best
+of them at +0.0029 smooth / +0.0025 strange, against the shipped 0.779 / 0.850.
+Marginally, within kind, every complexity reading correlates **negatively** with
+the tier (`grad_energy` -0.14 smooth / -0.18 strange), so the labels as they stand
+weakly prefer the *calmer* picture; conditional on the judge, `bpp` enters
+**positively** and stably across all five folds. `flat8_1.0` is the one column
+whose coefficient changes sign fold to fold. A pooled correlation over both kinds
+is not readable here — strange rows carry both higher tiers and more dead space,
+so the pooled sign is the difference between the two corpora rather than anything
+about a picture.
+
 ### `curate rank-key` — what a seating may rank on instead of the judge alone
 
 ```
