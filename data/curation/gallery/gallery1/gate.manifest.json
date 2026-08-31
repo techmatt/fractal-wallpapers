@@ -3,8 +3,8 @@
   "path": "artifacts/curation/gallery/gallery1/gate.jsonl",
   "copy": "artifacts/curation_backup/gallery/gallery1/gate.jsonl",
   "rows": 1120,
-  "bytes": 3945558,
-  "sha256": "7ed101df21a179510126dfcffcc07ab07e4ff0feed96d145b0415d7f7c087ebf",
+  "bytes": 3946654,
+  "sha256": "9473269694ffaf88dac7245614f6f72a9fedfe35f196ed776d09b6e1b3244093",
   "stage": "gate",
   "locations": 140,
   "rows_by_partition": {
@@ -25,6 +25,6 @@
   "rows_by_verdict": {
     "kept": 1120
   },
-  "recorded": "2026-08-24",
+  "recorded": "2026-08-31",
   "why_not_tracked": "one pool row per attempt at about 3.8 KB, and a pass makes locations x heads x draws of them per slot \u2014 1,120 rows at n=50 and ten times that at n=500, against a 1 MiB per-file history guard, kept forever per pass. The manifest is what the history keeps: the row count, the bytes, the sha256, and the population the attempts were made over."
 }

@@ -380,6 +380,45 @@ left half the pool idle behind a file read. And three engines already saturate
 twelve cores, so effective concurrency tops out near **2.0**, not 3.0; that is
 the three-worker rule doing its job rather than headroom going unused.
 
+### The release pool's pictures come back the same way
+
+`curate candidate-ledger re-render` is the ledger's. **`curate re-render` is the
+pool's** — the release rows in the tracked store and every gallery pass's attempt
+rows in its own, resolved to the one candidate render each is about. It exists
+because `curate rescore` refuses outright while any of them is missing: a reading
+of most of the pool is not a reading of the pool, and the pool's pictures live
+under the regenerable tree where a sweep can take them.
+
+The adapter is `recipes.of_decision` rather than `of_record`, and the check is the
+same one: the recipe the *render path* would derive is digested against the digest
+of the row's own stored join, and only a row that reproduces is rendered. A row
+that will not is recorded and skipped.
+
+**A pool row is not a picture**, so the leg deduplicates before it renders. A
+pass's attempt at an earlier run's candidate is a second row about one render, and
+`origin_of` follows the `source` chain all the way down; on 2026-08-31 3,546 absent
+rows named **3,484** absent renders. Rendering per row would pay for sixty-two
+twice and would put two workers on one path.
+
+Measured on 2026-08-31, three workers, over the 3,424 the leg proper took:
+
+| | |
+|---|---|
+| reproduce their own recipe | **3,424 of 3,424**, 0 refused |
+| made / failed | **3,424 / 0** |
+| wall | **43.8 min** at 2.14 pictures a pair |
+| a picture | **2.26 s** per engine, concurrency **2.95** |
+
+That is **2.3x the ledger leg's 0.99 s** a picture at a comparable 2.5 pictures a
+pair, and the difference is the frames: a pool location is a place a gallery pass
+already liked, so it is deep and its iteration cap is high. Price a pool re-render
+off this number and not off the ledger's. The concurrency is the other way round —
+2.95 of three workers here against the ledger leg's 2.0 — because these pairs are
+iteration-bound rather than contending on a shared dump.
+
+`curate rescore` after it read all **16,029** rows in **280.7 s** (4,529 smooth,
+11,500 strange) and put the whole pool on one artifact.
+
 ### What the rule costs
 
 A dropped row is a recipe the `known` dedup in `hunt.run` and `mine.population`
@@ -1092,53 +1131,6 @@ refusal is doing its job. Allowed through, the rows are logged and counted under
 `order.unranked` / `unranked_allowed`, and `unreadable_by_the_key` on the record is
 how many of the clearing population they were.
 
-### `curation.detail` — complexity descriptors beside the dead-space column
-
-No subcommand and no caller: nothing in `curation` reads this module. It exists so
-the complexity descriptors can be *measured* against the label rows before any of
-them is chosen, and the choosing is a separate decision.
-
-`flat16_1.0` is the rank key's only texture term and it is a penalty — it says
-where a picture is dead and nothing about how busy the rest of it is. `detail`
-reads five things that do, each a few lines over one decoded picture with no
-engine call and no field: `bpp` (the stored JPEG's own size as bits per pixel),
-`grad_energy` (mean gradient magnitude on the luminance, **divided by the
-picture's own contrast**, so it reads structure rather than how hard the palette
-pushes), `spectral_slope` (the `a` of `P(k) ~ k**-a`, and the one reading here
-that goes **down** as a picture gets busier), and `flatness.fraction`'s own rule
-at cells of 8, 32 and 64 beside the shipped 16. About 25 ms a picture at 640x360
-over three workers, [`flatness.WORKERS`]' number for [`flatness.WORKERS`]' reason.
-
-**Every one of them is bound to a geometry** and `standardize_within` is the shape
-that says so: a 16-pixel cell is a different fraction of a 640-wide picture than
-of a 1280-wide one, and a single mean over two geometries would rank every picture
-at one of them above every picture at the other for no reason about the pictures.
-Every candidate JPEG this project holds is **640x360**; a `--release` render is a
-second render at **1280x720**, not the same picture resized. Across that jump
-`grad_energy` and `flat8_1.0` keep their ordering almost exactly (Spearman 0.99
-over the 150 `smoke5_v5` seats) and `spectral_slope` mostly does (0.85); `bpp`
-does not survive at all, because a release picture is a PNG and a PNG's byte count
-is its compressor's opinion rather than an encoder's rate decision.
-
-**The larger cells go degenerate at the candidate geometry.** Over the rank key's
-1,051 label rows, `flat64_1.0` is exactly zero on 72.7% of them and `flat32_1.0`
-on 43.3%, against 24.2% for the shipped `flat16_1.0` and 7.8% for `flat8_1.0`. A
-column that is zero on three rows in four is not carrying a scale, and `flat8` is
-the only one of the three new scales with room underneath the shipped one.
-
-**Measured, 2026-08-31, and nothing was adopted.** Out of fold on the shipped folds
-and the shipped standardization, each descriptor added singly to the five-column
-form moves the key's AUC by at most **+0.003** on either kind — `bpp` is the best
-of them at +0.0029 smooth / +0.0025 strange, against the shipped 0.779 / 0.850.
-Marginally, within kind, every complexity reading correlates **negatively** with
-the tier (`grad_energy` -0.14 smooth / -0.18 strange), so the labels as they stand
-weakly prefer the *calmer* picture; conditional on the judge, `bpp` enters
-**positively** and stably across all five folds. `flat8_1.0` is the one column
-whose coefficient changes sign fold to fold. A pooled correlation over both kinds
-is not readable here — strange rows carry both higher tiers and more dead space,
-so the pooled sign is the difference between the two corpora rather than anything
-about a picture.
-
 ### `curate rank-key` — what a seating may rank on instead of the judge alone
 
 ```
@@ -1452,22 +1444,65 @@ and the exact solver read. The mode floors in `seating`, `solve`, `headroom` and
 `candidate_ledger.feasibility` are asked of `accepted()` for the same reason: a
 floor over a mode with no rows in the pool is a mandate nothing could meet.
 
-**Weights 1 and 2 are recorded and read the same.** There is no MODE-side cap
-anywhere — `seating.RULES` has none — and the only mode-side floor anything *calls*
-is `solve.mode_floor(n) = n // 100`, one floor for every mode, which is 1 at
-`n = 150`. So a promoted mode still has nothing to bind on at the seat that would
-move more than a seat or two.
+**Weights 1 and 2 are recorded and read the same, unless a seating asks.** There
+is no MODE-side cap anywhere — `seating.RULES` has none — and the floor an
+*unflagged* seating takes is `solve.mode_floor(n) = n // 100`, one for every mode,
+which is 1 at `n = 150`. Under that floor a promoted mode has nothing to bind on
+at the seat that would move more than a seat or two. `--seat-floors` is what makes
+the weight bind; the section below measures what happens when it does.
 
-### The seat floors that would make a 2 mean something — built, and switched off
+### The seat floors that make a 2 mean something — built, off unless named
 
 `mode_policy.seat_floors(n)` is the rule that turns the weights load-bearing.
-Nothing in `src` calls it; `test_nothing_that_ships_calls_the_floor_rule_yet` is
-what keeps that true, and enabling it is a deliberate act against a pre-registered
-bar rather than a wiring change.
+**It is off unless a seating names it.** `curate seat --seat-floors` is the one
+shipped caller and the only way to a gallery seated under the rule; an unflagged
+seating still takes `solve.mode_floor`'s flat one, and
+`test_the_floor_rule_is_reachable_only_by_naming_it` asserts both halves — that
+`cli.py` is the only file in `src` that reaches the rule, and that the parser's
+default is off.
 
 ```
+curate seat --n 150 --seat-floors --name floor_measure   # seated under the rule
 python -c "from fractal_wallpapers.curation import mode_policy as m; print(m.seat_floors(1000))"
 ```
+
+#### What the rule actually did, measured at n = 150
+
+`smoke5_v5` (flat floor of one) beside `floor_measure` (`--seat-floors`), on **one
+pool** — 97,423 candidates, 11,137 clearing, 4,480 places after the neutral
+pre-selection — same rank key, same proportional group cap, 2026-08-31.
+
+**Both filled 150 of 150 and all 14 modes. Every floor was filled: `starved` is
+empty.** The floors ask for 45 seats and the census's bound over the same modes is
+exactly 45, so nothing was ever short of places to fill one from.
+
+**Only three of the thirteen floors were binding** — `itinerary` (1 seat under the
+flat floor, floor 5, took **8**), `direct_trap_lines` (1 → 2) and
+`direct_trap_multiply` (1 → 2). The other ten modes were already above their floor
+and the rule asked them for nothing.
+
+**And it moved 52 of the 150 seats, not 7.** That is the finding. Filling three
+floors demands seven seats; what actually changed is a third of the gallery,
+because the scarcity leg seats 45 rather than 14 *before* the general leg starts,
+and every one of those takes a location, a colour cell and a palette group out of
+what the general leg then sees. `smooth` paid the most (14 seats dropped, 11
+different ones taken back, net −3), `smooth_stripe` −8 and `threads` −3.
+
+The refusal ledger says the same thing from the other side: `cell_allowance`
+2,111 → **3,012**, `the_greedy_had_no_seat_left` 6,670 → 5,746, `twin` 97 → **73**,
+`group_cap` 2 → 0.
+
+**The two orderings disagree about whether it is better.** Worst seated `p_ge4` is
+the same row either way (0.518425) and every seat clears the q4 bar in both, but
+the floored gallery holds **127** seats above `P(>=4) = 0.90` against 123 and sums
+0.89 higher on `p_ge4` — while summing **2.02 lower** on the fitted `rank_key` it
+was actually sorted by, with a worse floor (0.4217 against 0.4564). A rule that
+improves the judge's raw fourth cutpoint and costs the fitted key is a rule whose
+acceptance is Matt's by eye, not a number's.
+
+Sheet: `scratch/floor_measure/contact_sheet.html`; record
+`artifacts/curation/seat/floor_measure/seat.json`.
+
 
 * `mode_policy.STRANGE_SEAT_SHARE = 0.60` is the strange share of a gallery's
   **seats**, declared and not measured. It is **not** `run.STRANGE_SHARE`, which

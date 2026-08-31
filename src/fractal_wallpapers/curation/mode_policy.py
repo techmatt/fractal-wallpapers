@@ -61,8 +61,14 @@ WEIGHTS = (NICHE, NORMAL, PROMOTED)
 #: because a 4 is the unit of currency and a standing is a claim about how often a
 #: mode buys one.
 #:
+#: **Every count below is over the 4,656 renders, one label a render**, which is
+#: the basis [`floors`] states its cuts on too. Per *row* each reads a little
+#: differently — `itinerary` is 46 fours in 208 rows against 44 in 201 renders —
+#: and a figure quoted off one basis beside sixteen quoted off the other is a
+#: ranking nobody can read. Two numbers here said `rows` and meant renders.
+#:
 #: The four at 0 are the modes a round of human labels could not make a case for:
-#: `gaussian_int` 7 fours in 296 rows (2.4%), `smooth_trap_circle` 10 in 256 (3.9%),
+#: `gaussian_int` 7 fours in 296 renders (2.4%), `smooth_trap_circle` 10 in 256 (3.9%),
 #: `trap_circle` 12 in 260 (4.6%) and `direct_trap_ring` 20 in 342 (5.8%).
 #:
 #: **The cut is not a pure ranking on that rate and cannot be read as one.**
@@ -72,8 +78,8 @@ WEIGHTS = (NICHE, NORMAL, PROMOTED)
 #: the two `direct_trap_*` modes rarely buy a 4 but reliably return a usable picture,
 #: and a mode that returns neither is the one there is no case for.
 #:
-#: The seven at 2 are the ones that did: `itinerary` 44 fours in 201 rows (21.9%),
-#: `threads` 36 in 167 (21.6%), `smooth_angle_min` 30 in 159 (18.9%),
+#: The seven at 2 are the ones that did: `itinerary` 44 fours in 201 renders
+#: (21.9%), `threads` 36 in 167 (21.6%), `smooth_angle_min` 30 in 159 (18.9%),
 #: `smooth_mean_angle` 34 in 193 (17.6%), `smooth_stripe` 34 in 239 (14.2%),
 #: `stripe` 26 in 203 (12.8%) and `tia` 31 in 310 (10.0%).
 #:
@@ -90,11 +96,16 @@ WEIGHTS = (NICHE, NORMAL, PROMOTED)
 #: rather than as a rate.
 #:
 #: The two that moved on 2026-08-29 moved on that arm. `itinerary` 1 → 2: the highest
-#: pooled tier-4 rate of the seventeen, and 38 of the 60 rows the aimed leg drew for
-#: it came back a 4 (63.3%), the best yield of the nine. `curvature` 0 → 1: 31 fours
-#: pooled, level with `tia`'s 31, on the third-best aimed yield of the nine. Neither
-#: is a base rate; a mode promoted on a best-of draw is a mode to re-count once it
-#: has been drawn flat.
+#: pooled tier-4 rate of the seventeen, and 38 of the 60 the aimed leg drew for it
+#: came back a 4 (63.3%), the best yield of the nine. **Its one flat draw reads
+#: 3.6%** — `itinerary_promotion`, 4 fours in 110 over 08-17/18 (5 in 111, 4.5%, per
+#: row), an independent admitted-stock draw sharing no location with the aimed arm —
+#: and that batch's own record in `data/strange_render/batches.jsonl` says even
+#: *that* measures agreement with the head rather than a base rate. The 21.9% is a
+#: ceiling with a 3.6% underneath it, and neither end is a flat rate.
+#: `curvature` 0 → 1: 31 fours pooled, level with `tia`'s 31, on the third-best aimed
+#: yield of the nine. Neither is a base rate; a mode promoted on a best-of draw is a
+#: mode to re-count once it has been drawn flat.
 MODE_POLICY: dict[str, int] = {
     # --- 0: niche ---
     "trap_circle": NICHE,
@@ -269,7 +280,11 @@ def strange_seats(n: int, share: float = STRANGE_SEAT_SHARE) -> int:
 
 
 def seat_floors(n: int, share: float = STRANGE_SEAT_SHARE) -> dict[str, int]:
-    """`{strange mode: the seats its floor asks for}` at `n`. **Nothing reads this.**
+    """`{strange mode: the seats its floor asks for}` at `n`.
+
+    **One shipped caller, and it is a flag**: `curate seat --seat-floors`. An
+    unflagged seating still takes [`solve.mode_floor`]'s flat one, so a gallery
+    is seated under this rule only where somebody named it.
 
     ## The rule
 

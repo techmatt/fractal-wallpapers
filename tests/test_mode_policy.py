@@ -257,14 +257,19 @@ def test_the_floors_are_a_pure_function_of_n():
 
 
 @needs_engine
-def test_nothing_that_ships_calls_the_floor_rule_yet():
-    """It ships inert. Enabling it is a deliberate act against a pre-registered
-    bar, and this test is what turns that from an intention into a fact.
+def test_the_floor_rule_is_reachable_only_by_naming_it():
+    """It still ships inert, and there is now exactly one way to turn it on.
 
-    Over the Python under `src` only. The tests below and in [`test_seating`] do
-    call it, which is how anyone knows it works, and the curation README spells the
-    call in a code fence. What must stay true is that no shipped leg builds a
-    gallery under it — the default is still one floor for every mode.
+    This was `test_nothing_that_ships_calls_the_floor_rule_yet` and it was a
+    stronger statement than the fact it defended: nothing shipped *reached* the
+    rule at all. `curate seat --seat-floors` reaches it now, because the rule
+    cannot be measured against a baseline gallery without a leg that seats under
+    it. What must stay true is what always mattered — **no unflagged seating
+    builds a gallery under it** — so that is what is asserted here, on the parser
+    rather than on a grep.
+
+    The grep half is kept and narrowed: `cli.py` is the one shipped file allowed
+    to name the rule, so a second leg quietly adopting it is still a red.
     """
     import subprocess
 
@@ -277,6 +282,16 @@ def test_nothing_that_ships_calls_the_floor_rule_yet():
         check=False,
     )
     reached = {line for line in found.stdout.split() if line}
-    assert reached <= {"src/fractal_wallpapers/curation/mode_policy.py"}, (
-        f"the floor rule is no longer inert: {sorted(reached)}"
-    )
+    assert reached <= {
+        "src/fractal_wallpapers/curation/mode_policy.py",
+        "src/fractal_wallpapers/cli.py",
+    }, f"a leg other than `curate seat` reaches the floor rule: {sorted(reached)}"
+
+    from fractal_wallpapers import cli
+
+    parser = cli.build_parser()
+    plain = parser.parse_args(["curate", "seat", "--n", "150"])
+    assert plain.seat_floors is False, "an unflagged seating must take the flat floor"
+    assert plain.mode_floor is None
+    named = parser.parse_args(["curate", "seat", "--n", "150", "--seat-floors"])
+    assert named.seat_floors is True
