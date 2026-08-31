@@ -29,9 +29,9 @@ geometry is the node regime's, which is the frame the views this pin protects
 are drawn at.
 
 **What that sample does not see.** [`PROBES`] is six fixed rows and the mode
-roster is eighteen, so a change confined to one of the twelve modes nobody probes
-moves no pixel this digest reads, and a build that **adds** a mode is invisible
-to it outright — the six probes come back byte-identical and the fingerprint does
+roster is nineteen, so a change confined to one of the thirteen modes nobody
+probes moves no pixel this digest reads, and a build that **adds** a mode is
+invisible to it outright — the six probes come back byte-identical and the fingerprint does
 not move. Same for a family kind, a curve or a palette operator outside the six.
 This says *these six renders came back different*, and a fingerprint that has not
 moved is evidence about the probed path and not a certificate about the build. It

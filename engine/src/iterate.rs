@@ -100,13 +100,49 @@ pub struct Symbols {
     /// base-`k` expansion; a smaller base decays more slowly and so keeps more of
     /// the deep symbols visible.
     pub base: f64,
-    /// How many symbols to take before stopping.
+    /// How many symbols the address holds.
     pub depth: u32,
-    /// Whether the first symbol is `z₀`'s, or whether the address opens one step
-    /// in at `z₁`. The spec-level spelling is
-    /// [`AddressStart`](crate::field::AddressStart); the loop needs only the
-    /// answer, which is what keeps the wire format out of it.
-    pub spells_z0: bool,
+    /// Which `depth` symbols of the orbit the address is made of. The spec-level
+    /// spelling is [`AddressStart`](crate::field::AddressStart); the loop needs
+    /// only the answer, which is what keeps the wire format out of it.
+    pub window: AddressWindow,
+}
+
+/// Which `depth` symbols of an orbit an address is made of.
+///
+/// **Three-valued, and each value is a different question.** The first two read
+/// the *head* of the orbit and differ only in whether the pixel's own sector is
+/// the leading digit; the third reads the *tail* and so has no leading digit to
+/// argue about. It was a `bool` while there were two, and widening it is what
+/// keeps the third from arriving as "not `z₀`" — which is what `z₁` already
+/// means.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum AddressWindow {
+    /// The first `depth` symbols, opening on `z₀`: the pixel's own sector is the
+    /// most significant digit. The settled default.
+    #[default]
+    HeadFromZ0,
+    /// The first `depth` symbols, opening on `z₁`. Every digit is then one the
+    /// recurrence produced.
+    HeadFromZ1,
+    /// The **last** `depth` symbols the orbit spelled before it stopped —
+    /// escaping, or running out of iterations. `z₀` is never one of them: the
+    /// tail is a fact about where the orbit ended up, and the pixel's own sector
+    /// only reaches it on an orbit too short to fill the window.
+    Tail,
+}
+
+impl AddressWindow {
+    /// Whether `z₀` spells a symbol. The one thing the escape loop asks before
+    /// it starts stepping.
+    pub fn opens_on_z0(self) -> bool {
+        self == AddressWindow::HeadFromZ0
+    }
+
+    /// Whether the address rolls rather than filling once.
+    pub fn is_tail(self) -> bool {
+        self == AddressWindow::Tail
+    }
 }
 
 /// A running mean that remembers its last term.
@@ -169,30 +205,94 @@ impl Average {
 /// `f32` does not blur it — it bands it, because whole subtrees of the lamination
 /// collapse onto one value. That is why the coloring this feeds never travels
 /// through the `f32` field dump.
+///
+/// ## The two windows
+///
+/// A **head** address ([`AddressWindow::HeadFromZ0`], [`AddressWindow::HeadFromZ1`])
+/// fills once and then ignores everything after it: the first `depth` symbols are
+/// the address and the orbit's later life is not in the number. A **tail** address
+/// ([`AddressWindow::Tail`]) keeps rolling — every step pushes a symbol in at the
+/// bottom and shifts one out of the top — so what it holds is the last `depth`
+/// symbols the orbit spelled before it stopped.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Address {
     value: f64,
-    /// The weight the next symbol will carry: `base^{−(n+1)}`.
+    /// The weight the next symbol will carry: `base^{−(n+1)}`. A tail address
+    /// does not use it: every symbol it takes carries the same weight, at the
+    /// bottom of the window.
     weight: f64,
     count: u32,
 }
 
 impl Address {
-    /// Add the sector this iterate landed in, unless the address is already full.
+    /// Add the sector this iterate landed in.
+    ///
+    /// A head address stops once it is full; a tail address rolls, dropping its
+    /// oldest symbol to make room.
     fn push(&mut self, z: Complex<f64>, symbols: Symbols) {
+        if symbols.depth == 0 {
+            return;
+        }
+        let sector = Address::sector(z, symbols);
+        if symbols.window.is_tail() {
+            self.roll(sector, symbols);
+        } else {
+            self.append(sector, symbols);
+        }
+    }
+
+    /// Which of the `k` angular sectors an iterate landed in.
+    ///
+    /// `atan2` runs `(−π, π]`; shifting by π puts the cut on the negative real
+    /// axis and the sectors in `[0, k)` counting counter-clockwise from there.
+    fn sector(z: Complex<f64>, symbols: Symbols) -> f64 {
+        let turns = (z.im.atan2(z.re) + std::f64::consts::PI) / std::f64::consts::TAU;
+        let sector = (turns * symbols.sectors as f64).floor();
+        sector.clamp(0.0, (symbols.sectors - 1) as f64)
+    }
+
+    /// One more digit of a head address, unless it is already full.
+    fn append(&mut self, sector: f64, symbols: Symbols) {
         if self.count >= symbols.depth {
             return;
         }
         if self.count == 0 {
             self.weight = 1.0 / symbols.base;
         }
-        // `atan2` runs `(−π, π]`; shifting by π puts the cut on the negative real
-        // axis and the sectors in `[0, k)` counting counter-clockwise from there.
-        let turns = (z.im.atan2(z.re) + std::f64::consts::PI) / std::f64::consts::TAU;
-        let sector = (turns * symbols.sectors as f64).floor();
-        let sector = sector.clamp(0.0, (symbols.sectors - 1) as f64);
         self.value += sector * self.weight;
         self.weight /= symbols.base;
+        self.count += 1;
+    }
+
+    /// One more digit of a tail address: shift the window up a place, drop what
+    /// falls off the top, and write the new symbol into the bottom.
+    ///
+    /// `frac(value·base) + sector·base^{−depth}` is the whole rule. Multiplying
+    /// by the base moves the oldest symbol into the integer part, `fract` is what
+    /// drops it, and the new symbol goes in at the window's least significant
+    /// place.
+    ///
+    /// **Exact when `base ≥ sectors`, which is the only way the named mode asks
+    /// for it** — four sectors in base four. There the symbols that stay are
+    /// worth `Σ_{i≥1} sᵢ·base^{−i} ≤ (sectors−1)/(base−1) ≤ 1`, so the integer
+    /// part is the dropped symbol and nothing else. Under a *smaller* weight base
+    /// — the option that exists so the deep symbols decay more slowly — the
+    /// retained window can reach past 1 and `fract` takes a bite out of a symbol
+    /// that was meant to stay. That is a real limit of this arithmetic rather
+    /// than a bug to work around, and it is stated here because a caller lowering
+    /// `weight_base` under a tail start is the one who has to know it.
+    ///
+    /// **An orbit shorter than `depth` reads with leading zeros**, because the
+    /// window fills from the bottom: the first symbol lands at `base^{−depth}`
+    /// and climbs a place per step. So the tail address is near zero wherever the
+    /// orbit escaped fast, and only reaches the size a head address has where the
+    /// orbit ran the full `depth`. That is the point of the field rather than a
+    /// defect — it puts the address's structure where the orbits are long — and
+    /// at exactly `depth` symbols the two windows agree, which is what makes the
+    /// tail a continuation of the head rather than a different number.
+    fn roll(&mut self, sector: f64, symbols: Symbols) {
+        let bottom = symbols.base.powi(-(symbols.depth as i32));
+        self.value = (self.value * symbols.base).fract() + sector * bottom;
         self.count += 1;
     }
 
@@ -201,7 +301,8 @@ impl Address {
         (self.count > 0).then_some(self.value)
     }
 
-    /// How many symbols the address holds.
+    /// How many symbols were pushed. A tail address counts every step the orbit
+    /// took, not the `depth` it kept.
     pub fn symbols(&self) -> u32 {
         self.count
     }
@@ -432,15 +533,20 @@ pub fn run(family: &Family, pixel: Complex<f64>, maxiter: u32, wants: &Wants) ->
     let mut orbit = Orbit::new();
     orbit.last = z;
 
-    // **The address's first symbol is `z₀`'s.** Every other channel here
-    // accumulates from `n = 1`, which for an average is a rounding difference. For
-    // an address it is not: `s₀` is the most significant digit, so dropping it
-    // shifts every address by a whole base-`k` place and the field means something
-    // else. This push is the only reason `z₀` is offered to any channel at all —
-    // and `spells_z0` is the one field that asks not to be offered it, because on
-    // a dynamical plane `z₀` is the pixel and its sector is a wedge rather than a
-    // fact about the orbit.
-    if let Some(symbols) = wants.itinerary.filter(|symbols| symbols.spells_z0) {
+    // **A head address opening on `z₀` spells its first symbol here.** Every other
+    // channel accumulates from `n = 1`, which for an average is a rounding
+    // difference. For an address it is not: `s₀` is the most significant digit, so
+    // dropping it shifts every address by a whole base-`k` place and the field
+    // means something else. This push is the only reason `z₀` is offered to any
+    // channel at all — and the other two windows ask not to be offered it, for
+    // two different reasons. `z₁` because on a dynamical plane `z₀` is the pixel
+    // and its sector is a wedge rather than a fact about the orbit; the tail
+    // because it reads the end of the orbit, where `z₀` has no business unless
+    // the orbit was too short to fill the window.
+    if let Some(symbols) = wants
+        .itinerary
+        .filter(|symbols| symbols.window.opens_on_z0())
+    {
         orbit.itinerary.push(z, symbols);
     }
 
@@ -606,7 +712,7 @@ mod tests {
                 sectors: 4,
                 base: 4.0,
                 depth: 26,
-                spells_z0: true,
+                window: AddressWindow::HeadFromZ0,
             }),
             derivative: true,
         }
@@ -1116,6 +1222,160 @@ mod tests {
             let error = (analytic - difference).norm() / analytic.norm().max(1.0);
             assert!(error < 1e-4, "{family:?}: {analytic} against {difference}");
         }
+    }
+
+    /// A point in each of the four sectors, chosen so the sector is readable off
+    /// the signs: `atan2` is shifted by π before the cut, so the quadrants number
+    /// `(−,−) = 0`, `(+,−) = 1`, `(+,+) = 2`, `(−,+) = 3`.
+    fn in_sector(sector: u32) -> Complex<f64> {
+        match sector {
+            0 => Complex::new(-1.0, -1.0),
+            1 => Complex::new(1.0, -1.0),
+            2 => Complex::new(1.0, 1.0),
+            3 => Complex::new(-1.0, 1.0),
+            other => panic!("there are four sectors, not {other}"),
+        }
+    }
+
+    fn address_of(sectors: &[u32], depth: u32, window: AddressWindow) -> f64 {
+        let symbols = Symbols {
+            sectors: 4,
+            base: 4.0,
+            depth,
+            window,
+        };
+        let mut address = Address::default();
+        for &sector in sectors {
+            address.push(in_sector(sector), symbols);
+        }
+        address.value().expect("something was spelled")
+    }
+
+    /// The four sector points spell the digits they are named for. Everything
+    /// below is hand-computed against this mapping, so it is asserted first
+    /// rather than assumed.
+    #[test]
+    fn the_four_sector_points_spell_their_own_digits() {
+        for sector in 0..4 {
+            let expected = f64::from(sector) / 4.0;
+            let spelled = address_of(&[sector], 1, AddressWindow::HeadFromZ0);
+            assert_eq!(spelled, expected, "sector {sector}");
+        }
+    }
+
+    /// **The rolling window, against an orbit computed by hand.**
+    ///
+    /// Five symbols `1 2 3 0 2` into a three-symbol address. A head keeps the
+    /// first three — `1/4 + 2/16 + 3/64 = 0.421875` — and never moves again. A
+    /// tail keeps the last three, `3 0 2`, which is `3/4 + 0/16 + 2/64 =
+    /// 0.78125`. Both are exact in binary, so these are equalities and not
+    /// tolerances.
+    #[test]
+    fn a_tail_address_holds_the_last_symbols_and_a_head_holds_the_first() {
+        let orbit = [1, 2, 3, 0, 2];
+        assert_eq!(
+            address_of(&orbit, 3, AddressWindow::HeadFromZ0),
+            0.421875,
+            "the head fills once and ignores the rest of the orbit"
+        );
+        assert_eq!(
+            address_of(&orbit, 3, AddressWindow::Tail),
+            0.78125,
+            "the tail is `3 0 2`, the last three symbols"
+        );
+    }
+
+    /// A tail window fills from the bottom, so a short orbit reads with leading
+    /// zeros — and at exactly `depth` symbols the two windows agree, which is
+    /// what makes the tail a continuation of the head rather than a different
+    /// number. Both are hand-computed: `1·4⁻³`, then `1·4⁻² + 2·4⁻³`, then the
+    /// full `1/4 + 2/16 + 3/64`.
+    #[test]
+    fn a_tail_window_fills_from_the_bottom_and_meets_the_head_when_it_is_full() {
+        assert_eq!(address_of(&[1], 3, AddressWindow::Tail), 1.0 / 64.0);
+        assert_eq!(
+            address_of(&[1, 2], 3, AddressWindow::Tail),
+            1.0 / 16.0 + 2.0 / 64.0
+        );
+        assert_eq!(
+            address_of(&[1, 2, 3], 3, AddressWindow::Tail),
+            address_of(&[1, 2, 3], 3, AddressWindow::HeadFromZ0),
+        );
+    }
+
+    /// The window that is not a start: a tail address is the same number whether
+    /// the orbit that fed it was long or short, as long as its last `depth`
+    /// symbols were the same. That is the property a rolling window is for, and
+    /// the one a head cannot have.
+    #[test]
+    fn a_tail_address_forgets_everything_before_the_window() {
+        let short = address_of(&[3, 0, 2], 3, AddressWindow::Tail);
+        let long = address_of(&[1, 2, 3, 0, 2], 3, AddressWindow::Tail);
+        let longer = address_of(&[0, 0, 1, 1, 2, 3, 3, 0, 2], 3, AddressWindow::Tail);
+        assert_eq!(short, long);
+        assert_eq!(long, longer);
+        assert_ne!(
+            address_of(&[1, 2, 3, 0, 2], 3, AddressWindow::HeadFromZ0),
+            long,
+            "a head does not forget: it never saw the tail at all"
+        );
+    }
+
+    /// A depth of nothing spells nothing, whichever window asked. The tail path
+    /// is the one that would otherwise divide the window into a `base⁰` place and
+    /// let the address run past 1.
+    #[test]
+    fn an_address_of_no_symbols_holds_no_value() {
+        for window in [
+            AddressWindow::HeadFromZ0,
+            AddressWindow::HeadFromZ1,
+            AddressWindow::Tail,
+        ] {
+            let symbols = Symbols {
+                sectors: 4,
+                base: 4.0,
+                depth: 0,
+                window,
+            };
+            let mut address = Address::default();
+            for sector in [1, 2, 3] {
+                address.push(in_sector(sector), symbols);
+            }
+            assert_eq!(address.value(), None, "{window:?}");
+        }
+    }
+
+    /// **`z₀` is offered to the head-from-`z₀` window and to no other.** Read off
+    /// the symbol count through the real escape loop rather than off the address,
+    /// because that is where the offer is made: a head opening on `z₀` has seen
+    /// one more iterate than the orbit took steps, and the other two have seen
+    /// exactly as many.
+    #[test]
+    fn only_the_head_from_z0_window_is_offered_the_pixel_itself() {
+        let family = julia(Complex::new(-0.8, 0.156));
+        let pixel = Complex::new(0.31, 0.22);
+        let counted = |window| {
+            let wants = Wants {
+                itinerary: Some(Symbols {
+                    sectors: 4,
+                    base: 4.0,
+                    // Deep enough that no window here fills, so the count is the
+                    // number of iterates offered rather than the cap.
+                    depth: 10_000,
+                    window,
+                }),
+                ..Wants::default()
+            };
+            let orbit = run(&family, pixel, 400, &wants);
+            (orbit.itinerary.symbols(), orbit.iteration)
+        };
+        let (from_z0, steps) = counted(AddressWindow::HeadFromZ0);
+        let (from_z1, _) = counted(AddressWindow::HeadFromZ1);
+        let (tail, _) = counted(AddressWindow::Tail);
+        assert!(steps > 1, "the probe orbit has to actually run");
+        assert_eq!(from_z0, steps + 1, "z0 spells a symbol of its own");
+        assert_eq!(from_z1, steps);
+        assert_eq!(tail, steps, "the tail never reads the pixel");
     }
 
     /// An average of one term has nothing to fade against, and an average of

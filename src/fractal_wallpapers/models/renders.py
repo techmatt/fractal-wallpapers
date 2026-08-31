@@ -249,20 +249,33 @@ def catalog() -> dict[str, dict]:
     return _CATALOG
 
 
-#: The mode whose coloring is not the same on both planes, and where its address
-#: opens when the pixel is `z₀`.
+#: The field kind an address is written under, and where a *head* address opens
+#: when the pixel is `z₀`.
 #:
 #: Matt's verdict of 2026-08-17: on a dynamical plane the `z₀` address spells its
 #: leading symbol from the pixel's own angular sector, which draws a hard wedge
 #: seam along the axes; `z₁` opens the address one step in, so every symbol is one
 #: the recurrence produced. On a parameter plane `z₀ = 0` for every pixel, there is
 #: no wedge to remove, and the engine refuses `z1` there.
+#:
+#: `ITINERARY` is the **field**'s name and not the mode's: `tail_itinerary` reads
+#: the same field under a different window, so a join on the mode name would miss
+#: it and a join on the field name catches both. That is the whole reason the
+#: split below is written against `start` rather than against the mode.
 ITINERARY = "itinerary"
 Z1 = "z1"
 
+#: The windows a caller asked for by name, which the plane does not get to move.
+#:
+#: A `start` the catalog wrote out is a decision already taken — `tail` is the
+#: only one today — and the plane rule below applies to the one window that has a
+#: leading digit to argue about. Absent means the field's own default, `z0`, which
+#: is exactly the case the rule is for.
+NAMED_STARTS = frozenset({"tail"})
+
 
 def open_the_address(coloring: dict, family: dict) -> dict:
-    """Put the plane's answer for where an `itinerary` address opens into `coloring`.
+    """Put the plane's answer for where a **head** address opens into `coloring`.
 
     The **catalog listing has no family**, so the coloring `catalog()` holds is the
     parameter-plane form and this is what makes it the row's. Written explicitly
@@ -272,11 +285,21 @@ def open_the_address(coloring: dict, family: dict) -> dict:
 
     Every field of the coloring is walked, not just the modulate's texture, because
     the second way an address could arrive is the one nobody would look for. The
-    plane is asked about only when there is an address to open, so the eighteen
-    modes that read no address are untouched by a family the split has no answer
-    for.
+    plane is asked about only when there is an address to open, so the modes that
+    read no address are untouched by a family the split has no answer for.
+
+    **A window the catalog named is left exactly as it arrived.** `tail_itinerary`
+    carries `"start": "tail"`, which is not a start the plane decides — a tail
+    address never reads `z₀`, so there is no wedge for `z₁` to remove and the mode
+    is one coloring on both planes. Overwriting it here would render the head mode
+    under the tail mode's name, and the engine would not refuse it: `z1` is legal
+    on the plane this branch is about. See [`NAMED_STARTS`].
     """
-    addresses = [f for f in _fields_of(coloring) if f.get("kind") == ITINERARY]
+    addresses = [
+        field
+        for field in _fields_of(coloring)
+        if field.get("kind") == ITINERARY and field.get("start") not in NAMED_STARTS
+    ]
     if addresses and engine.pixel_is_z0(family):
         for field in addresses:
             field["start"] = Z1
@@ -768,6 +791,31 @@ def _row_of(source_row: dict, head: str, modes: set, cyclic: set) -> dict:
     }
 
 
+def present(head: str) -> set[str]:
+    """Every file name in one head's crop directory, as **one** listing of it.
+
+    THE answer to "is this head's picture on disk", for a caller asking it of a
+    whole store rather than of one row. The same trade
+    [`curation.candidate_ledger.present_pictures`] already takes over the
+    candidate pool: a directory listing costs one syscall where a stat per row
+    costs one each, and on Windows the difference is the whole cost of the
+    question. Measured on this machine, 2026-08-31: the two crop directories hold
+    10,552 entries and list in **13 ms** together, against about 100 us a row for
+    `is_file` — 1.1 s per sweep of the 11,072 scored rows, paid by every one of
+    the eleven sweeps the slow lane used to make.
+
+    A directory that is not there yet lists as empty: nothing is on disk either
+    way, and a caller asking this of an unbuilt cache wants "none" rather than an
+    error — [`missing`] is exactly the caller that then reports the whole plan.
+    """
+    import os
+
+    try:
+        return {entry.name for entry in os.scandir(crop_dir(head))}
+    except OSError:
+        return set()
+
+
 def missing(head: str) -> list[dict]:
     """Every picture the store's verdicts need that is not on disk.
 
@@ -777,8 +825,8 @@ def missing(head: str) -> list[dict]:
     afterwards, every ingest of a labeling session grows it, and a plan that
     predates those rows reports a full cache while the trainer refuses to start.
     """
-    crops = crop_dir(head)
-    return [job for job in plan(head) if not (crops / f"{job['name']}.jpg").is_file()]
+    on_disk = present(head)
+    return [job for job in plan(head) if f"{job['name']}.jpg" not in on_disk]
 
 
 def crop_of(head: str, row: dict) -> Path:
@@ -818,6 +866,7 @@ __all__ = [
     "open_picture",
     "plan",
     "plan_path",
+    "present",
     "read_plan",
     "render_one",
     "spec_of",

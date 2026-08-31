@@ -102,9 +102,10 @@ struct Mode {
     /// instead of restating it and drifting.
     ///
     /// A listing has no family, so this is the **catalog form**: exact for
-    /// eighteen of the nineteen, and `itinerary`'s parameter-plane one. Where the
+    /// nineteen of the twenty, and `itinerary`'s parameter-plane one. Where the
     /// pixel is `z₀` that mode opens its address at `z₁` instead, which its
-    /// identity line says and [`mode::resolve`] does.
+    /// identity line says and [`mode::resolve`] does. `tail_itinerary` reads the
+    /// same on both planes, so its listed coloring is exact.
     coloring: Coloring,
 }
 

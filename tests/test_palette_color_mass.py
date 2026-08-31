@@ -47,10 +47,20 @@ def test_the_map_is_committed_and_every_file_is_well_under_the_history_guard() -
         )
 
 
-def test_every_palette_group_is_in_every_production_mode() -> None:
+def test_every_palette_group_is_in_every_measured_mode() -> None:
     """A pair absent from the map and a pair with no colour read identically off a
-    lookup, so the map is complete by construction: the sweep measured the whole
-    grid and the census only ever added to it."""
+    lookup, so the map is complete by construction over the roster it was measured
+    on: the sweep measured the whole grid and the census only ever added to it.
+
+    **The roster is `measured_modes()` and not the engine's.** The map is a
+    measurement — a 27,053-render sweep and a census — so a mode added to the
+    catalog after it was taken has no rows, and that is not the same failure as a
+    hole. `color_mass.UNMEASURED` names those, and the assertions below hold the
+    tuple to being exactly right in both directions: an unmeasured mode must have
+    no file at all, and a mode measured later has to leave the tuple or this goes
+    red. What is *not* relaxed is the grid: over every mode the map claims to
+    hold, every palette group is still there.
+    """
     from fractal_wallpapers import engine
 
     table = color_mass.read()
@@ -60,8 +70,17 @@ def test_every_palette_group_is_in_every_production_mode() -> None:
     named = {group for group, _mode in table}
     assert named <= library, sorted(named - library)[:5]
     modes = {mode for _group, mode in table}
-    assert modes == set(engine.production_modes())
+    assert modes == set(color_mass.measured_modes())
     assert len(table) == len(named) * len(modes), "the grid has a hole in it"
+
+    roster = set(engine.production_modes())
+    unmeasured = set(color_mass.UNMEASURED)
+    assert unmeasured <= roster, sorted(unmeasured - roster)
+    assert not unmeasured & set(color_mass.stored_modes()), (
+        "a mode named UNMEASURED has a file: it has been swept, so it belongs in the "
+        "grid above and not in the exception"
+    )
+    assert roster - modes == unmeasured, sorted((roster - modes) ^ unmeasured)
 
 
 def test_the_noisy_modes_are_flagged_and_kept() -> None:

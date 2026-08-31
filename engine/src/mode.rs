@@ -3,7 +3,7 @@
 //! A [`Coloring`](crate::coloring::Coloring) is a wide space — any field through
 //! any curve, any pair of fields through any blend, any trap shape at any
 //! threshold — and almost all of it is bad. What is here is the part that
-//! survived being looked at: nineteen settled points in that space, each with a
+//! survived being looked at: twenty settled points in that space, each with a
 //! name, so a render can ask for a look rather than for a parameter vector.
 //!
 //! They come in four shapes, and the shape decides what can be done with the
@@ -14,8 +14,10 @@
 //! * **Composites** — a smooth base with a strange field blended over it. The
 //!   base carries the shape of the escape and the texture writes structure into
 //!   it, including into the interior, where the smooth field has nothing to say.
-//! * **A modulate** — a smooth base whose *palette position* a second field
-//!   perturbs, rather than whose value it blends with. One member, `itinerary`.
+//! * **Modulates** — a smooth base whose *palette position* a second field
+//!   perturbs, rather than whose value it blends with. Two members, `itinerary`
+//!   and `tail_itinerary`, which read the same address at opposite ends of the
+//!   orbit.
 //! * **Direct traps** — the color-valued family, which paints during the
 //!   iteration and never makes a field at all.
 //!
@@ -99,7 +101,7 @@ const fn niche(name: &'static str, identity: &'static str) -> Entry {
 }
 
 /// Every named mode, with the line that says what it is for.
-pub const CATALOG: [Entry; 19] = [
+pub const CATALOG: [Entry; 20] = [
     production(
         "smooth",
         "Fractional escape time: the spine every composite builds on.",
@@ -164,6 +166,11 @@ pub const CATALOG: [Entry; 19] = [
         "Smooth base whose palette position the orbit's angular address shifts. \
          The address opens at z1 on a dynamical plane and at z0 on a parameter one.",
     ),
+    production(
+        "tail_itinerary",
+        "Smooth base shifted by the LAST symbols of the orbit's angular address, \
+         rather than the first. Reads the same on both planes.",
+    ),
     niche(
         "de",
         "Distance to the set itself, read through a log curve. No lighting.",
@@ -193,6 +200,12 @@ const THREADS_WEIGHT: f64 = 0.5;
 /// 26 symbols, which is the `f64` ceiling at that base; and a shift of half a turn
 /// of the gradient, which perturbs the smooth base's own structure rather than
 /// overriding it. See [`crate::field::FieldSpec::Itinerary`].
+///
+/// **The first three are `tail_itinerary`'s too**, which is why they are named
+/// here rather than written into the one arm. The base four is also what makes a
+/// tail window exact — see [`TAIL_ITINERARY_START`]. Moving any of them renames
+/// every cached picture of *both* modes, which is the reason the tail arrived as
+/// a mode of its own rather than as a fourth knob on this one.
 const ITINERARY_SECTORS: u32 = 4;
 const ITINERARY_BASE: f64 = 4.0;
 const ITINERARY_DEPTH: u32 = 26;
@@ -221,12 +234,34 @@ fn itinerary_start(family: Option<&Family>) -> AddressStart {
     }
 }
 
+/// Where `tail_itinerary` reads its address, and how far it pushes the palette.
+///
+/// **The two settings that make it a mode of its own, and the only two that
+/// differ from `itinerary`.** The sectors, the weight base and the depth are read
+/// from `itinerary`'s own constants above rather than restated, because the two
+/// modes are the same address and it is only the window over it that moves — a
+/// second copy of `26` here would be a number nobody would keep in step.
+///
+/// The shift matches `itinerary`'s half turn deliberately. It is what makes the
+/// pair comparable: rendered side by side at one location, everything but which
+/// end of the orbit the address is read from is held fixed, which is the whole
+/// question the mode was added to ask.
+///
+/// The start is a **catalog constant and not a function of the family**, which is
+/// the one structural difference from [`itinerary_start`]. A tail address never
+/// reads `z₀`, so the wedge that split `itinerary` across the two planes cannot
+/// arise, and `tail_itinerary` is one coloring everywhere. See
+/// [`AddressStart::Tail`](crate::field::AddressStart::Tail).
+const TAIL_ITINERARY_START: AddressStart = AddressStart::Tail;
+const TAIL_ITINERARY_SHIFT: f64 = 0.5;
+
 /// Look a mode up by name, over the family it will be rendered on.
 ///
 /// `None` is the **catalog's own form** — what `fractal-engine modes` prints.
-/// Eighteen of the nineteen entries are the same coloring whatever they are drawn
+/// Nineteen of the twenty entries are the same coloring whatever they are drawn
 /// over; `itinerary` is not, and its catalog form is its parameter-plane one. See
-/// [`itinerary_start`].
+/// [`itinerary_start`]. `tail_itinerary` is in the nineteen — its start is a
+/// constant, not the family's answer.
 pub fn resolve(name: &str, family: Option<&Family>) -> Result<Coloring, String> {
     let field = |field, transform| Coloring::Field { field, transform };
     let over_smooth = |field| Coloring::Composite {
@@ -296,7 +331,7 @@ pub fn resolve(name: &str, family: Option<&Family>) -> Result<Coloring, String> 
             texture_gamma: None,
         },
 
-        // --- the modulate ---
+        // --- the modulates ---
         "itinerary" => Coloring::Modulate {
             base: smooth_base(),
             texture: Layer {
@@ -309,6 +344,20 @@ pub fn resolve(name: &str, family: Option<&Family>) -> Result<Coloring, String> 
                 transform: Transform::Linear,
             },
             shift: ITINERARY_SHIFT,
+        },
+
+        "tail_itinerary" => Coloring::Modulate {
+            base: smooth_base(),
+            texture: Layer {
+                field: FieldSpec::Itinerary {
+                    sectors: ITINERARY_SECTORS,
+                    weight_base: Some(ITINERARY_BASE),
+                    depth: ITINERARY_DEPTH,
+                    start: TAIL_ITINERARY_START,
+                },
+                transform: Transform::Linear,
+            },
+            shift: TAIL_ITINERARY_SHIFT,
         },
 
         // --- direct traps ---
@@ -422,8 +471,13 @@ mod tests {
 
     /// The four shapes of coloring, and which modes are which — the split that
     /// decides what `dump-field` will accept.
+    ///
+    /// The modulate count moved from one to two when `tail_itinerary` arrived.
+    /// These are the intended counts and not a tally that follows the catalog: a
+    /// mode added without a decision about which shape it is would fail here,
+    /// which is the point of writing them down.
     #[test]
-    fn the_catalog_splits_into_eight_fields_six_composites_a_modulate_and_four_traps() {
+    fn the_catalog_splits_into_eight_fields_six_composites_two_modulates_and_four_traps() {
         let mut fields = Vec::new();
         let mut composites = Vec::new();
         let mut modulates = Vec::new();
@@ -438,7 +492,7 @@ mod tests {
         }
         assert_eq!(fields.len(), 8, "{fields:?}");
         assert_eq!(composites.len(), 6, "{composites:?}");
-        assert_eq!(modulates.len(), 1, "{modulates:?}");
+        assert_eq!(modulates.len(), 2, "{modulates:?}");
         assert_eq!(direct.len(), 4, "{direct:?}");
         for name in &fields {
             assert!(
@@ -626,6 +680,137 @@ mod tests {
                 transform: Transform::Log,
             }
         );
+    }
+
+    /// The tail mode is the head mode with one key moved, and that is the claim
+    /// worth pinning: if the sectors, the base, the depth or the shift ever part,
+    /// the contact sheet the pair was chosen on stops being a comparison of the
+    /// window and becomes a comparison of four things at once.
+    #[test]
+    fn the_tail_mode_is_the_itinerary_with_the_window_moved_and_nothing_else() {
+        let Coloring::Modulate {
+            base: tail_base,
+            texture: tail,
+            shift: tail_shift,
+        } = catalogued("tail_itinerary").unwrap()
+        else {
+            panic!("tail_itinerary is a modulate");
+        };
+        let Coloring::Modulate {
+            base: head_base,
+            texture: head,
+            shift: head_shift,
+        } = catalogued("itinerary").unwrap()
+        else {
+            panic!("itinerary is a modulate");
+        };
+
+        assert_eq!(tail_base, head_base, "both are built on the smooth spine");
+        assert_eq!(tail_shift, head_shift, "the shift is matched on purpose");
+        assert_eq!(tail_shift, 0.5);
+        assert_eq!(tail.transform, head.transform);
+        assert_eq!(
+            tail.field,
+            FieldSpec::Itinerary {
+                sectors: ITINERARY_SECTORS,
+                weight_base: Some(ITINERARY_BASE),
+                depth: ITINERARY_DEPTH,
+                start: AddressStart::Tail,
+            }
+        );
+
+        let (
+            FieldSpec::Itinerary {
+                sectors: tail_sectors,
+                weight_base: tail_weight_base,
+                depth: tail_depth,
+                start: tail_start,
+            },
+            FieldSpec::Itinerary {
+                sectors: head_sectors,
+                weight_base: head_weight_base,
+                depth: head_depth,
+                start: head_start,
+            },
+        ) = (tail.field, head.field)
+        else {
+            panic!("both textures are addresses");
+        };
+        assert_eq!(tail_sectors, head_sectors);
+        assert_eq!(tail_weight_base, head_weight_base);
+        assert_eq!(tail_depth, head_depth);
+        assert_ne!(tail_start, head_start, "the window is the whole difference");
+    }
+
+    /// The tail window is exact at the base the catalog asks for, which is the
+    /// one thing that makes the mode's arithmetic more than approximately right.
+    /// See `Address::roll`: the retained symbols are worth less than one, so the
+    /// integer part `fract` drops is the departing symbol and nothing else.
+    #[test]
+    fn the_tail_modes_weight_base_is_the_one_the_rolling_window_is_exact_at() {
+        let Coloring::Modulate { texture, .. } = catalogued("tail_itinerary").unwrap() else {
+            panic!("tail_itinerary is a modulate");
+        };
+        let FieldSpec::Itinerary {
+            sectors,
+            weight_base,
+            ..
+        } = texture.field
+        else {
+            panic!("the texture is an address");
+        };
+        assert!(
+            weight_base.unwrap_or(sectors as f64) >= sectors as f64,
+            "a tail window under a weight base below the sector count clips a symbol \
+             it was meant to keep"
+        );
+    }
+
+    /// The tail mode is one coloring on both planes, and that is a fact about the
+    /// window rather than an omission: `z0` is not in a tail address, so there is
+    /// no wedge to remove and nothing for the family to decide. Asserted at both
+    /// ends — the coloring does not move, and both planes accept it.
+    #[test]
+    fn the_tail_address_is_the_same_on_both_planes_and_accepted_on_both() {
+        for family in [JULIA, MANDELBROT, crate::family::CLASSIC_PHOENIX] {
+            let over = resolve("tail_itinerary", Some(&family)).unwrap();
+            assert_eq!(over, catalogued("tail_itinerary").unwrap(), "{family:?}");
+            over.agrees_with_family(&family)
+                .unwrap_or_else(|e| panic!("{family:?}: {e}"));
+        }
+    }
+
+    /// The refusal is a three-way match and not a name match, so the plane rule
+    /// is stated once per window rather than falling out of which variants happen
+    /// to be spelled. `z1` on a parameter plane is still refused; the tail is not.
+    #[test]
+    fn the_plane_refuses_the_z1_window_and_only_that_one() {
+        let address = |start| Coloring::Modulate {
+            base: smooth_base(),
+            texture: Layer {
+                field: FieldSpec::Itinerary {
+                    sectors: ITINERARY_SECTORS,
+                    weight_base: Some(ITINERARY_BASE),
+                    depth: ITINERARY_DEPTH,
+                    start,
+                },
+                transform: Transform::Linear,
+            },
+            shift: ITINERARY_SHIFT,
+        };
+        address(AddressStart::Z0)
+            .agrees_with_family(&MANDELBROT)
+            .unwrap();
+        address(AddressStart::Tail)
+            .agrees_with_family(&MANDELBROT)
+            .unwrap();
+        let refused = address(AddressStart::Z1)
+            .agrees_with_family(&MANDELBROT)
+            .unwrap_err();
+        assert!(refused.contains("z1 start"), "{refused}");
+        for start in [AddressStart::Z0, AddressStart::Z1, AddressStart::Tail] {
+            address(start).agrees_with_family(&JULIA).unwrap();
+        }
     }
 
     #[test]

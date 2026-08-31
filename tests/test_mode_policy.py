@@ -14,8 +14,23 @@ from pathlib import Path
 
 import pytest
 
-from fractal_wallpapers import engine
+from fractal_wallpapers import engine, paths
 from fractal_wallpapers.curation import mode_policy
+
+
+@pytest.fixture(autouse=True)
+def artifacts_on_disk(tmp_path, monkeypatch):
+    """A hot root these fixtures can plant a picture in that is not the real one.
+
+    [`solve.pool`] asks whether a row's picture is **on disk**, so `_ledger_row`
+    has to plant one — and without this it planted `mp_keep.jpg` and
+    `mp_drop.jpg` into the checkout's own `artifacts/`, where they outlived the
+    run. The same fixture `test_solve` uses, for the same reason.
+    """
+    root = tmp_path / "artifacts"
+    root.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv(paths.HOT_ROOT_VARIABLE, str(root))
+    return root
 
 
 def engine_is_built() -> bool:
@@ -209,8 +224,20 @@ def test_the_floors_sum_to_half_the_strange_budget():
 
 @needs_engine
 def test_a_promoted_mode_is_floored_at_twice_a_normal_one():
-    """What makes the weights load-bearing: `2 * promoted + 1 * normal`."""
-    floors = mode_policy.seat_floors(1000)
+    """What makes the weights load-bearing: `2 * promoted + 1 * normal`.
+
+    The gallery size is **derived from the table rather than picked**, and that is
+    the whole of what this test learned when `tail_itinerary` arrived. At `n =
+    1000` the strange house was 300 seats over a total weight of 20, which divided
+    exactly and made every promoted floor the same integer — a coincidence of the
+    roster, not the rule. A fourteenth strange mode put the total at 21, largest
+    remainder handed six of the seven promoted modes a spare seat, and the test
+    read that as the weights having stopped working. Sizing the house at a whole
+    multiple of the total weight makes the halves exact for any roster, so what is
+    asserted is the ratio and never the arithmetic's luck.
+    """
+    total = sum(mode_policy.weight_of(name) for name in mode_policy.strange_modes())
+    floors = mode_policy.seat_floors(2 * 20 * total, share=1.0)
     promoted = {name for name in mode_policy.promoted()} & set(floors)
     normal = set(floors) - promoted
     assert promoted and normal
