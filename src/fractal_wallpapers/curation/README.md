@@ -2009,6 +2009,18 @@ at all. The record carries `render_wall` (what the budget governs), `wall_second
 (the whole call), `engine_seconds`, and `seconds_per_candidate`, which is **per
 engine** and is the number a later `--rate` is read off.
 
+**A worker hands back a dict, not [`mine.make`]'s result, and the two are two
+lists.** `_render_block` runs in a `ProcessPoolExecutor` and spells the keys it
+pickles; the parent's `take` writes the row off those. A key added to `mine.make`
+and to `take` alone is not a missing field — it is a `KeyError` on the first
+candidate that lands, after the plan, the population read and the first block have
+all been paid, so the leg renders for minutes and writes **no row at all**. That
+is what `texture_flat` did on 2026-08-31: it reached `take` three times at
+`7ea2f44` and the worker's dict not at all, and every depth leg was dead for eight
+hours with pictures on disk and an empty `rows.jsonl` as the only symptom.
+`test_the_parent_reads_no_key_the_worker_does_not_spell` reads both sides off the
+AST and holds them to each other.
+
 **Workers render, the parent writes**, [`curation.release`]'s rule for its reason:
 an append-only log with three writers has no order and `sequence.jsonl` is read
 back as an ordered stream. Every row, score and sequence line is written by the
@@ -2112,6 +2124,21 @@ at the default ten bands is `'{"band05":0,"band06":0,"band07":0,"band08":0,"band
 `sparse_mode_harvest` (2026-08-29) wanted the top half and used that. A leg that
 wants the **whole** of itself in the top half passes both: `--band-weights` for
 the ranked draw and `--top-bands` for the two matched ones.
+
+**Measured at `dark_vivid_lime` on 2026-08-31, and the two grades disagree.** 520
+candidates against a matched 514-row flat control: **44.8% came out dominant in the
+cell against the control's 0.78%** — a 57.6x lift, 22 of 24 carrier maps hitting, so
+the draw does what it is for. At `P(>=4) >= 0.50` **not one of the 520 cleared**, and
+read there the arm is a share that bought nothing. At `P(>=3) >= 0.50` **63 of the
+233 dominant rows cross** — 27.0% of them, over 11 of the arm's 13 places, at 5.8 s a
+crossing and **33.0 s a distinct location**, which is cheaper per location than the
+same leg's unconditioned breadth arm managed at q4 (76.2 s). At the ACTING strange
+bar of `P(>=3) >= 0.77` it is 33 rows over 8 places, 45.4 s a place. The top of that
+ordering reads `P(>=3) 0.9989 / P(>=4) 0.0014`: the judge is confident these are
+three-grade pictures and confident they are not fours. **So price a conditioned arm
+at the grade it is bought for.** A themed leg aimed at a q3-graded collection is
+live; the same rows aimed at a `P(>=4)` seating are not, and a leg reported only at
+q4 will be written off for the wrong reason.
 
 **The `conditioned` share gates the arm and does not size it.** `build_plan`
 computes one `scale` — `shares[FLAT] / shares[RANKED]` — and applies it to the

@@ -837,3 +837,73 @@ class _StubMaker:
 
     def recipe_for(self, shot, place, frame):
         return _StubRecipe(shot)
+
+
+# --------------------------------------------------------------------------- #
+# The process boundary between a worker and the parent.
+# --------------------------------------------------------------------------- #
+def _reads_of_result() -> set:
+    """Every `result["<key>"]` the parent's `take` asks for, off the source."""
+    import ast
+    import inspect
+    import textwrap
+
+    tree = ast.parse(textwrap.dedent(inspect.getsource(depth.run)))
+    take = next(
+        node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef) and node.name == "take"
+    )
+    return {
+        node.slice.value
+        for node in ast.walk(take)
+        if isinstance(node, ast.Subscript)
+        and isinstance(node.value, ast.Name)
+        and node.value.id == "result"
+        and isinstance(node.slice, ast.Constant)
+        and isinstance(node.slice.value, str)
+    } | {
+        node.comparators[0].id and node.left.value
+        for node in ast.walk(take)
+        if isinstance(node, ast.Compare)
+        and isinstance(node.left, ast.Constant)
+        and isinstance(node.left.value, str)
+        and isinstance(node.comparators[0], ast.Name)
+        and node.comparators[0].id == "result"
+    }
+
+
+def _keys_a_worker_spells() -> set:
+    """Every string key `_render_block` puts in a dict it hands back."""
+    import ast
+    import inspect
+    import textwrap
+
+    tree = ast.parse(textwrap.dedent(inspect.getsource(depth._render_block)))
+    return {
+        key.value
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Dict)
+        for key in node.keys
+        if isinstance(key, ast.Constant) and isinstance(key.value, str)
+    }
+
+
+def test_the_parent_reads_no_key_the_worker_does_not_spell():
+    """A worker returns a DICT and not [`mine.make`]'s result, so the two are two lists.
+
+    `curate depth run` renders in a `ProcessPoolExecutor` and every candidate is
+    written by the parent off what the worker pickled back. A key added to
+    `mine.make` and to the parent's `take` alone is not a missing field: it is a
+    `KeyError` on the first candidate that lands, after the plan, the population
+    read and the first block have all been paid — a leg that renders for minutes
+    and writes no row.
+
+    Bought on 2026-08-31 by `texture_flat`, which reached `take` three times and
+    the worker's dict not at all, and killed every depth leg for eight hours.
+    """
+    reads = _reads_of_result()
+    spelled = _keys_a_worker_spells()
+    assert "texture_flat" in reads, "the guard is reading the wrong function"
+    assert reads <= spelled, (
+        f"the parent reads {sorted(reads - spelled)} out of a worker's result and "
+        f"`_render_block` spells {sorted(spelled)}"
+    )
