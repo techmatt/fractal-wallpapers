@@ -215,6 +215,28 @@ cell has no carrier in the pass's own collapsed palette pool. `config.ceiling`,
 `config.targets` and `config.target_feasibility` on the pass record carry every
 constant and every carrier the launch checked.
 
+**A target is also the only lever on the ceiling, which is what a THEMED gallery
+needs.** Solve over a pool restricted to one dominant cell and that cell's own
+allowance is `floor(K × (1/48) × n) + 1` — **9 seats at n=200** — so the program is
+infeasible before any other rule acts, and there is no flag, constant or config that
+raises an allowance except this one. `--target <cell>=1.0` puts it at
+`floor(2 × 1.0 × n) + 1`, raises the family with it, and raises each companion the
+carrier table measures by `t × rate`. Over a pool already filtered to the cell the
+target's own demand costs nothing, because cardinality satisfies it.
+
+**Under a hard target the solve's under-fill readout is unusable.** `_under_fill`
+relaxes cardinality to `<= n` but rebuilds the Program carrying `targets` unchanged,
+so a `t = 1.0` row still demands `ceil(1.0 × n)` dominant seats and the re-solve
+comes back infeasible for any smaller count: the record reads `filled: 0` however
+many seats the pool could really fill. So the "largest gallery every constraint
+admits" is **not** available in exactly the case a shortage list is being read for.
+Take it instead from the solve's own greedy seed (constructive) and
+`headroom.twin_bound` (necessary); measured 2026-08-31 on a `dark_vivid_green` pool
+those two agree to within two seats, 88 and 90. The same rebuild also drops
+`floor=program.floor`, so a `--flat-floor` solve's under-fill silently reverts to the
+default per-mode floors — soft either way, so it moves the reported objective and not
+feasibility.
+
 ## Three different things are called a ledger
 
 The word does three jobs in this stage and they are not versions of one another.
@@ -1009,6 +1031,17 @@ curate seat --n 150 --release [--release-regime WxHssN] [--workers 3]
 flatness sidecar and the location scores, once per pool. `seat(order=...)` overrides
 it, which is what a sweep seating one pool four ways passes.
 
+**The flag is the seating's, and `curate solve` has no equivalent.** There the cap is a
+*generated pairwise row* and never a counted one: `solve.Pairs.rule_for` asks a same-group
+pair for `max(TAU, TAU_GROUP) = 0.10` and every other pair for `TAU`, and
+`Program.rule.group_cap` is set on the record but `Program.blocks()` never reads it. So
+there is no cap to name, raise or switch off in a solve — the only way to run one without
+it is to make `rule_for` return the diversity rule for every pair, which is a code change
+and not a flag. Neither is there any way to turn the cap **off** in the seating: both rules
+go through `max(1, ...)`, so the lowest either reaches is one seat a group. A caller inside
+the process can pass `seat(rule=ceiling.Rule(group_cap=...))` with any integer, and that is
+the whole of the raise-past-binding lever.
+
 **`--group-cap proportional` is `max(1, floor(0.025 n))`** — 1 up to n=40, 3 at n=150,
 25 at n=1000 — against `ceiling.GROUP_CAP = 1`, the identity cap. The `max(1, ...)` is
 not a rounding convenience: `floor(0.025 n)` is zero below forty seats and a cap of
@@ -1415,6 +1448,20 @@ tightest block that is not provably short: at n=1000 its slack is 38, where
 `palette_group_cap` is at -240 and `mode_floors` sits exactly on its needs. The greedy
 lower bound stays far below 1,000, so a thousand-seat gallery is bounded from above and
 unproven from below.
+
+**A pool filtered to one colour is a near-duplicate pool, and this is the block that
+says by how much.** Measured 2026-08-31 over the rows dominant in one cell and above
+their kind's gallery floor: `dark_vivid_green` 881 places, **35,213 twin pairs of
+387,640 screened (9.1%)**, upper bound 460, greedy set 90; `dark_vivid_lime` 339 places,
+**8,308 of 57,291 (14.5%)**, upper bound 179, greedy set 45. Against the whole pool's
+0.66% that is a 14x to 22x concentration, and the constructive yield falls from 30% of
+places to 13%. It is structural rather than a supply shortage: `pixel_clouds.METRIC` is
+over a picture's **colour cloud** and colour comes from the map rather than the place, so
+selecting on the dominant cell selects for pictures that are near-duplicates of each
+other under exactly the rule a gallery uses to refuse duplicates. It is the same argument
+the location-level prune above failed on, with the sign flipped. **So a themed gallery is
+bounded by `TAU` and not by its bar, its cap or its floors** — at n=200 the ceiling needs
+`--target <cell>=1.0` to admit the theme at all, and past that no arm fills.
 
 ## `curate hunt` — rendering into a shortage instead of around it
 
