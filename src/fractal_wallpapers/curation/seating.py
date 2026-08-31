@@ -810,7 +810,7 @@ def _config(
         # which is what a reader should take.
         "mode_floor": floor,
         "mode_floors": dict(floors),
-        "mode_floor_rule": _floor_rule(n, floor, floors, natural, modes),
+        "mode_floor_rule": floor_rule(n, floor, floors, natural, modes),
         # What nobody naming a floor would have got: the default rule's answer.
         "mode_floor_natural": floors_for(natural, modes),
         "mode_floor_artificial": dict(floors) != floors_for(natural, modes),
@@ -819,7 +819,7 @@ def _config(
     }
 
 
-def _floor_rule(n: int, floor: int | None, floors: dict, natural: dict, modes: list) -> str:
+def floor_rule(n: int, floor: int | None, floors: dict, natural: dict, modes: list) -> str:
     """One sentence naming the rule the floors in this record came from.
 
     Three answers and they are not interchangeable: the **default**, the **flat**
@@ -828,6 +828,12 @@ def _floor_rule(n: int, floor: int | None, floors: dict, natural: dict, modes: l
     made up. A record that said `floor(n / 100)` for all three, which this said
     while the flat floor was the default, is a record that cannot tell a
     measurement apart from its own baseline.
+
+    Public because [`curation.headroom`] writes the same sentence into its census
+    block, and the census naming the floors one way while the seating names them
+    another is the confusion this sentence exists to end. It is called from there
+    rather than copied: `headroom` cannot import this module at the top (this one
+    imports it), so the call is deferred inside the census.
     """
     if dict(floors) == floors_for(natural, modes):
         return (
@@ -1594,6 +1600,8 @@ __all__ = [
     "autolevel_rate",
     "clouds_for",
     "contact_sheet",
+    "floor_rule",
+    "floors_for",
     "leg_of",
     "ranking_for",
     "rejection",

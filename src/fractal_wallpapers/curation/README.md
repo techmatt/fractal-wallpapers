@@ -57,6 +57,7 @@ fractal-wallpapers curate candidate-ledger census --n 20 --out scratch/ledger_ce
 fractal-wallpapers curate candidate-ledger save        # both files, made durable
 fractal-wallpapers curate headroom                     # the census: what is short, and what one more costs
 fractal-wallpapers curate headroom --n 20 --n 150      # only these rungs of the ladder
+fractal-wallpapers curate headroom --flat-floor        # bound the FLAT mode floor, for a baseline
 fractal-wallpapers curate seat --n 20                  # the greedy: the lower bound, and the rejection ledger
 fractal-wallpapers curate distinct                     # the neutral pre-selection read, and the radius sheet
 fractal-wallpapers curate distinct --no-premise        # the join and the sheet, measuring no pixel cloud
@@ -862,6 +863,70 @@ A location dominant in three cells is counted in all three, so the sum is an
 direction that makes it safe: a short row is provable infeasibility, and a row with
 slack is not a claim that the selection is possible.
 
+### The mode-floor block bounds the floors the legs actually take
+
+`mode_policy.seat_floors(n)` — per mode, the section further down — is what an
+unflagged `curate seat` and an unflagged `curate solve run` are floored by, so an
+unflagged census bounds those and not something else. It bounded the flat
+`floor(n / 100)` until 2026-08-31, which read a demand of **zero at `n = 20` where
+the shipped seating asks for six**, and a census whose floor block is a different
+rule from the seating's is a misread waiting to happen rather than a second opinion.
+
+The arithmetic is per mode on both sides: each mode is asked for **its own** floor
+in distinct locations, so the supply the demand is read against is
+
+```text
+sum over accepted modes of min(that mode's floor, its distinct clearing locations)
+```
+
+which is not the count of modes holding anything — those two agree only while every
+floor is one, and under this rule the thirteen strange floors are not one number.
+`smooth` is floored at zero by construction (the rule concerns the strange side), so
+a pool of nothing but `smooth` reads supply 0 against a demand of 45 at `n = 150`.
+
+`curate headroom --flat-floor` puts the flat floor back at every rung — it is a
+function of `n` and a census walks a ladder, so it is a flag rather than a number —
+and that is the baseline a floored-against-flat reading is taken against. The block
+says which of the three it ran under in `floor_rule`, the same sentence
+`config.mode_floor_rule` carries in a seating and a solve record, written by
+`seating.floor_rule` and called from the census rather than copied into it. The
+per-mode mapping is on `floors`; `floor` is the flat number when one was asked for
+and `None` otherwise, exactly as `mode_floor` reads in a seating record.
+
+The floors sum to half the strange seat budget by construction, `ceil(0.3n)` and
+never more, so this block can never ask for a gallery that will not fit. The flat
+floor of **one** that both replaced could and did: eighteen of twenty seats at
+`n = 20`, which is the `trap_circle` incident recorded below.
+
+**Census schema 3.** A schema 2 census bounds the flat floor and is not a
+comparable reading of the same pool.
+
+#### What the flip found, measured 2026-08-31
+
+One pool — 97,423 candidates, 11,137 clearing, 4,480 places after the neutral
+pre-selection — censused both ways (`floor_default` beside `floor_flat`).
+
+| n | floors ask | supply | short? | the flat floor asked |
+|---:|---:|---:|:---|---:|
+| 20 | 6 across 6 modes | 6 | no, slack 0 | 0 |
+| 150 | 45 across 13 | 45 | no, slack 0 | 14 |
+| 500 | 150 across 13 | 150 | no, slack 0 | 70 |
+| 1000 | 300 across 13 | 296 | **short by 4** | 140 |
+
+**At `n = 1000` the pool is provably short on the mode floors, and the flat reading
+said nothing.** `smooth_mean_angle` holds 27 of the 30 it is asked for and
+`smooth_angle_min` 29 of 30 — the block joins `palette_group_cap` as a short row
+there, where the flat census flagged four things and this one flags seven. It is a
+cheap mine instruction: 53.6 and 40.0 seconds per win on those two modes, so the
+four places are about 201 render-seconds, ~67 s of wall clock over the three-worker
+pool. The estimator is the unconditioned ledger-wide rate and an aimed leg beats it.
+
+**The slack is exactly zero at every rung below that**, which is the shape to
+notice rather than the comfort: supply meets the demand and never exceeds it,
+because a mode's contribution is capped at its own floor by construction. One place
+lost at any floored mode makes the block short. It is the tightest block in the
+census after the group cap.
+
 ### What one more costs
 
 Slack alone is not a work order, because headroom is not equally purchasable. Every
@@ -1199,7 +1264,9 @@ the **flat** floor rather than the default, and `curate seat --flat-floor` /
 before that date was seated under, which makes it the baseline a floored-against-flat
 reading is taken against. `curate seat --mode-floor N` still puts an artificial flat
 floor of `N` back. The record names which of the three it ran under, in
-`config.mode_floor_rule`.
+`config.mode_floor_rule` — and so does the census, in its `mode_floors` block's
+`floor_rule`, off the same `seating.floor_rule`. The census is floored by this rule
+too, since 2026-08-31; `curate headroom --flat-floor` is its way off.
 
 Two older readings, both still worth the line they take. The flat floor `mode_floor`
 replaced was **one per mode**, which spent eighteen of a twenty-seat gallery on

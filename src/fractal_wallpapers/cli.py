@@ -3318,7 +3318,17 @@ def curate_headroom(args: argparse.Namespace) -> int:
         swept = _twin_sweep(candidates, radius)
         held = headroom.write_sweep(args.name, swept)
         print(f"{held}")
-    record = headroom.census(candidates, ladder=ladder, costs=costs, radius=radius, twins=swept)
+    # Unset is the per-mode floor rule both gallery legs take, so an unflagged
+    # census bounds the gallery an unflagged seating would build. `--flat-floor`
+    # is the way off it, at every rung rather than as one number.
+    record = headroom.census(
+        candidates,
+        ladder=ladder,
+        costs=costs,
+        radius=radius,
+        twins=swept,
+        floor=headroom.FLAT if args.flat_floor else None,
+    )
     record["pool"] = {"refused": refused}
     path = headroom.write_record(args.name, record)
     print(f"{path}")
@@ -7818,6 +7828,16 @@ def curate_commands(subcommands) -> None:
         action="store_true",
         help="census the whole clearing pool, with no neutral pre-selection. The only way "
         "to read a schema 1 census against this one",
+    )
+    headroom_step.add_argument(
+        "--flat-floor",
+        action="store_true",
+        help="bound the FLAT mode floor instead of the per-mode rule — "
+        f"floor(n / {solve_module.SEATS_PER_MODE_FLOOR}) seats for every accepted mode, at "
+        "every rung. The default is curation.mode_policy.seat_floors(n), which is what an "
+        "unflagged `curate seat` and an unflagged `curate solve run` are floored by, so an "
+        "unflagged census bounds the gallery they would build. The block says which it ran "
+        "under",
     )
     headroom_step.add_argument(
         "--twin",
