@@ -22,6 +22,22 @@ Spearman -0.64 smooth / -0.58 strange — but head to head at n=342 the differen
 does not resolve either way. This column is preferred on motivation and because
 it earns on both kinds, not because it was proven better.
 
+## It is blind to a dead TEXTURE layer, which is a different thing entirely
+
+This column measures **dead space in the picture** — cells a plane fits with
+nothing left over. It says nothing about whether a *layer* of the coloring was
+dead, and the name invites the opposite reading. The case that proves it is the
+modulate: an `itinerary` render whose address field has no span is the smooth
+field spent by rank bit for bit, and a rank-swept smooth field has no dead space
+at all, so this column cannot see the degeneracy. Measured, over the 1,962
+`itinerary` rows in the candidate ledger: mean `flat16_1.0` is **0.182 on the
+degenerate rows against 0.170 on the varying ones** — the wrong way round, and by
+nothing. The engine reports that fact per render instead
+([`fractal_wallpapers.coloring.texture_flat`]), and it rides on the ledger row
+rather than here for the reason the section below gives in reverse: it is not a
+reading of a picture by a rule that could be re-chosen, it is exact and it is
+re-derivable only by rendering.
+
 ## One cell size and one threshold, and neither is chosen here
 
 `flat16_1.0` — 16-pixel cells, a residual RMS of 1.0. It was selected over two

@@ -226,7 +226,7 @@ def place_of(row: dict) -> tuple | None:
     return location_key(row.get("family") or {}, row.get("viewport") or {})
 
 
-def routed_to(mode: str) -> str:
+def routed_to(mode: str, texture_flat: bool = False) -> str:
     """Which store a mode's rows belong in, asked of the thing that does the routing.
 
     [`curation.hunt.kind_of`] is the router: everything the pipeline draws is
@@ -235,13 +235,36 @@ def routed_to(mode: str) -> str:
     up holding a mode it does not own — the two spellings agree until one of them
     is edited.
 
+    `texture_flat` says the render's modulate texture carried no information, so
+    the picture is the smooth field spent by rank and the row is the smooth
+    judge's. Callers with a row rather than a mode want [`routes_to`], which takes
+    the render's own identity to the register and needs no argument.
+
     Imported at the call rather than at the top: this module is on the base
     install's labeling path and the router sits in `curation`, which imports back
     here.
     """
     from fractal_wallpapers.curation import hunt
 
-    return hunt.kind_of(mode)
+    return hunt.kind_of(mode, texture_flat)
+
+
+def routes_to(row: dict) -> str:
+    """Which store one **row** belongs in, its texture's degeneracy included.
+
+    THE call a reader of a stored corpus makes. A finished-render row carries
+    everything the flag is a function of — the place, the geometry, the mode and
+    its curve — so the answer is a lookup in
+    [`fractal_wallpapers.coloring.texture_flat`] and never a re-render here.
+
+    A row this repository has never measured reads as not flat, which is what
+    every reader concluded before the flag existed. That is why the register is
+    tracked: routing that differed between two checkouts of one commit would be
+    two corpora wearing one name.
+    """
+    from fractal_wallpapers.coloring import texture_flat
+
+    return routed_to(row.get("mode"), texture_flat.flat_for(row))
 
 
 def check(head: str, row: dict) -> dict:
@@ -272,13 +295,24 @@ def check(head: str, row: dict) -> dict:
             "palette pass on the same line, or it is a verdict about a picture nobody can "
             "rebuild"
         )
-    routed = routed_to(row["mode"])
+    routed = routes_to(row)
     if routed != head:
+        # Which of the two reasons, because they read very differently to whoever
+        # has to act on this. The mode being in the wrong store is a mistake at
+        # the sheet; a flat texture is not — the mode is the mode that rendered,
+        # and the picture it produced is another mode's exactly.
+        why = (
+            f"mode {row['mode']!r} is routed to the {routed} store"
+            if routed_to(row["mode"]) == routed
+            else f"mode {row['mode']!r} is this store's, but this render's texture carried no "
+            f"information, so the picture is the smooth field spent by rank bit for bit and "
+            f"the row is the {routed} store's"
+        )
         raise FinishedError(
-            f"mode {row['mode']!r} is routed to the {routed} store and this row is being "
-            f"written to {head}. A store that holds a mode it does not own inflates its own "
-            f"per-mode tables, double-weights the places that carry the mode in both, and "
-            f"reads as evidence about a population it is not from. Write it to {routed}."
+            f"{why} and this row is being written to {head}. A store that holds a mode it "
+            f"does not own inflates its own per-mode tables, double-weights the places that "
+            f"carry the mode in both, and reads as evidence about a population it is not "
+            f"from. Write it to {routed}."
         )
     return row
 
@@ -539,6 +573,7 @@ __all__ = [
     "resolve",
     "resolved",
     "routed_to",
+    "routes_to",
     "row_dir",
     "row_paths",
     "split_recipe_path",

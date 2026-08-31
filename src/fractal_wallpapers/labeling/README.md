@@ -295,6 +295,17 @@ original is never modified; `finished_train.population` derives the exclusion at
 read instead. The numbers are in
 [`data/strange_render/README.md`](../../../data/strange_render/README.md).
 
+**A mode can route to the other store without being that mode.** `itinerary` shifts
+its base's palette position by an address field, and where that field has no span the
+shift is zero everywhere and the picture is the `smooth` field spent by rank — *bit
+for bit*, not merely similar. So such a row is the smooth judge's, whatever its
+`mode` says. `finished.routes_to` is the call that knows: it takes the render's own
+identity to `coloring.texture_flat`, the tracked register of which renders that is
+true of, and hands the answer to `routed_to`. `check` uses it at the writer and
+`finished_train.population` at the read, which is the same two-sided arrangement the
+paragraph above describes — and for the same reason, since the rows already on record
+are originals and are never rewritten.
+
 **`--reuse-renders` misses every pool row, and it is not a near miss.** Candidates are
 rendered at 640x360 ss2 and a finished sheet serves 1280x720 ss2; the cache keys a picture
 by a digest of the whole engine spec, so the geometry alone makes it a different name.

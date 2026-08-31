@@ -720,6 +720,9 @@ fn in_unit_interval(value: f64, name: &str) -> Result<(), String> {
 pub struct Stretch {
     low: f64,
     span: f64,
+    /// Whether the samples had no span to normalize against — every one of them
+    /// the same value, or none of them a value at all. See [`Stretch::is_flat`].
+    flat: bool,
 }
 
 impl Stretch {
@@ -744,6 +747,7 @@ impl Stretch {
             return Stretch {
                 low: 0.0,
                 span: 1.0,
+                flat: true,
             };
         }
         let low = percentile(&mut valid, CLIP_LOW);
@@ -751,7 +755,20 @@ impl Stretch {
         Stretch {
             low,
             span: if high > low { high - low } else { 1.0 },
+            flat: high <= low,
         }
+    }
+
+    /// Whether these samples said nothing: no span between the trimmed ends, so
+    /// every one of them lands at the same place on the gradient.
+    ///
+    /// The fallback span of 1.0 above is what keeps [`position`](Stretch::position)
+    /// arithmetic rather than a division by zero, and it hides the fact — the
+    /// picture is still made, and made correctly, out of samples that carry no
+    /// information. This is that fact, kept rather than discarded, and it is the
+    /// whole of what [`modulate`] reports.
+    pub fn is_flat(&self) -> bool {
+        self.flat
     }
 
     /// Place one field value on the gradient.
@@ -941,6 +958,15 @@ pub struct Painted {
     pub linear: Vec<[f64; 3]>,
     /// Share of samples whose orbit never escaped.
     pub interior_fraction: f64,
+    /// Whether this coloring's **texture layer** carried no information: every
+    /// sample of it at one value, or none of them at a value at all.
+    ///
+    /// `None` for every coloring that has no texture to be flat, which is all of
+    /// them but [`Coloring::Modulate`] — a field coloring, a direct trap and a
+    /// composite each answer a different question here, and `false` would be a
+    /// claim about a layer they do not have. See [`modulate`] for what `Some(true)`
+    /// means about the picture: it is the base spent by rank, bit for bit.
+    pub texture_flat: Option<bool>,
 }
 
 /// Iterate `view` and color it, whichever shape of coloring this is.
@@ -992,6 +1018,7 @@ fn paint_untoned(
             Ok(Painted {
                 linear: shade(&sampled.fields[0], *transform, palette, colormap),
                 interior_fraction: sampled.interior_fraction,
+                texture_flat: None,
             })
         }
         Coloring::Composite {
@@ -1015,6 +1042,7 @@ fn paint_untoned(
                     colormap,
                 ),
                 interior_fraction: sampled.interior_fraction,
+                texture_flat: None,
             })
         }
         Coloring::Modulate {
@@ -1026,17 +1054,19 @@ fn paint_untoned(
             // address whose deep digits are the picture, so it never narrows.
             let (fields, interior_fraction) =
                 field::sample_exact(view, family, maxiter, &[base.field, texture.field]);
+            let (linear, texture_flat) = modulate(
+                &fields[0].narrow(),
+                &fields[1],
+                base.transform,
+                texture.transform,
+                *shift,
+                palette,
+                colormap,
+            );
             Ok(Painted {
-                linear: modulate(
-                    &fields[0].narrow(),
-                    &fields[1],
-                    base.transform,
-                    texture.transform,
-                    *shift,
-                    palette,
-                    colormap,
-                ),
+                linear,
                 interior_fraction,
+                texture_flat: Some(texture_flat),
             })
         }
         Coloring::Direct {
@@ -1162,7 +1192,8 @@ pub fn composite(
         .collect()
 }
 
-/// Modulate the base's palette position by the texture.
+/// Modulate the base's palette position by the texture. The color, and whether the
+/// texture was flat.
 ///
 /// `position = frac( rank(base) + shift · normalize(texture) )`, and the texture
 /// arrives as [`field::Exact`] rather than as a `Field` because the one coloring
@@ -1176,6 +1207,17 @@ pub fn composite(
 ///   because the two are peers; here the texture is a perturbation *of* the base
 ///   and there is nothing to perturb, so the honest answer is the set's own black.
 ///
+/// ## The second return value, and why a caller wants it
+///
+/// The texture's stretch can come back [flat](Stretch::is_flat) — every sample at
+/// one value, or no sample carrying a value at all. Then `spread.position` is
+/// `0.0` everywhere, the per-sample phase is the recipe's own phase everywhere,
+/// and the picture is `frac(rank(base) · cycles + phase)` through the map: **the
+/// base's field spent by rank, and nothing else**. That is not *like* a plain
+/// field coloring at `Transfer::Rank`, it is bit-for-bit that render, which is
+/// why the fact is worth carrying out of here rather than leaving it to a reader
+/// to guess from the picture. The shift is still applied; it is applied to zero.
+///
 /// Public on the same terms as [`composite`]: the fields, then the color.
 pub fn modulate(
     base: &Field,
@@ -1185,10 +1227,11 @@ pub fn modulate(
     shift: f64,
     palette: &Palette,
     colormap: &Colormap,
-) -> Vec<[f64; 3]> {
+) -> (Vec<[f64; 3]>, bool) {
     let ranks = Ranks::measure(base.values.iter().map(|&value| value as f64));
     let spread = Stretch::over(texture.values.iter().copied());
-    base.values
+    let linear = base
+        .values
         .par_iter()
         .zip(&texture.values)
         .map(|(&base_value, &texture_value)| {
@@ -1212,7 +1255,8 @@ pub fn modulate(
             .place(gray);
             colormap.lookup(placed)
         })
-        .collect()
+        .collect();
+    (linear, spread.is_flat())
 }
 
 /// The `p`-th percentile of `values`, which is partially reordered in place.
@@ -1832,7 +1876,11 @@ mod tests {
             width: 8,
             height: 8,
         };
-        let over_flat = paint(&flat);
+        let (over_flat, flat_said_nothing) = paint(&flat);
+        assert!(
+            !flat_said_nothing,
+            "this texture has a span; the BASE is the flat one"
+        );
         let distinct: std::collections::BTreeSet<u64> =
             over_flat.iter().map(|c| c[0].to_bits()).collect();
         assert!(
@@ -1843,7 +1891,7 @@ mod tests {
 
         // Against the busy base the same texture must not be the whole picture:
         // the rank of the base has to be moving the color too.
-        let over_busy = paint(&busy);
+        let (over_busy, _) = paint(&busy);
         let rows_agree = (0..8).all(|row| {
             let start = row * 8;
             over_busy[start..start + 8]
@@ -1869,7 +1917,7 @@ mod tests {
             width: 4,
             height: 1,
         };
-        let colors = modulate(
+        let (colors, _) = modulate(
             &base,
             &texture,
             Transform::Linear,
@@ -1898,7 +1946,7 @@ mod tests {
             width: 32,
             height: 1,
         };
-        let modulated = modulate(
+        let (modulated, flat) = modulate(
             &base,
             &texture,
             Transform::Linear,
@@ -1907,6 +1955,7 @@ mod tests {
             &Palette::default(),
             &ramp(),
         );
+        assert!(!flat, "the texture here has a span; only the SHIFT is zero");
         let ranked = shade(
             &base,
             Transform::Linear,
@@ -1919,6 +1968,70 @@ mod tests {
         for (a, b) in modulated.iter().zip(&ranked) {
             assert!((a[0] - b[0]).abs() < 1e-12, "{a:?} against {b:?}");
         }
+    }
+
+    /// A texture with no span at all is reported flat, and the picture it makes
+    /// **is** the base spent by rank — the same bits `shade` produces at
+    /// `Transfer::Rank`, not merely a picture that looks like it.
+    ///
+    /// The shift is the shipped 0.5 here, not zero: the point is that a modulate
+    /// asking for a real perturbation and getting a dead texture is
+    /// indistinguishable from never having asked. The two textures are the whole
+    /// of the difference between the halves — one constant, one a ramp — so a
+    /// `flat` that stopped tracking the texture would fail one half or the other.
+    #[test]
+    fn a_flat_texture_is_reported_and_makes_the_base_spent_by_rank() {
+        let base = Field {
+            values: (0..64).map(|i| (i * i) as f32).collect(),
+            width: 64,
+            height: 1,
+        };
+        let paint = |values: Vec<f64>| {
+            modulate(
+                &base,
+                &field::Exact {
+                    values,
+                    width: 64,
+                    height: 1,
+                },
+                Transform::Linear,
+                Transform::Linear,
+                0.5,
+                &Palette::default(),
+                &ramp(),
+            )
+        };
+        let ranked = shade(
+            &base,
+            Transform::Linear,
+            &Palette {
+                transfer: Transfer::Rank,
+                ..Palette::default()
+            },
+            &ramp(),
+        );
+
+        let (dead, flat) = paint(vec![0.375; 64]);
+        assert!(
+            flat,
+            "a texture at one value everywhere has no span to normalize"
+        );
+        assert_eq!(dead, ranked, "a flat texture is not a recolour of anything");
+
+        let (moving, flat) = paint((0..64).map(|i| i as f64).collect());
+        assert!(!flat, "a ramp is a texture that speaks");
+        assert_ne!(moving, ranked, "a texture that speaks moved no pixel");
+    }
+
+    /// A texture no sample of which carries a value is flat for the second reason
+    /// [`Stretch::over`] has one: there is nothing to take a percentile of. The
+    /// modulate already treats such a sample as zero perturbation, so the picture
+    /// is the base by rank there too, and reporting anything else would say the
+    /// address spoke where no address exists.
+    #[test]
+    fn a_texture_with_no_values_at_all_is_flat_too() {
+        assert!(Stretch::over([f64::NAN, f64::INFINITY].into_iter()).is_flat());
+        assert!(!Stretch::over([0.0, 1.0].into_iter()).is_flat());
     }
 
     /// A modulate spends its base by rank as part of what it is, so a recipe that

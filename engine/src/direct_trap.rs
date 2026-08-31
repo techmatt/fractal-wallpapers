@@ -223,6 +223,10 @@ impl Painter {
         Ok(Painted {
             linear: rows.into_iter().flat_map(|(colors, _)| colors).collect(),
             interior_fraction: interior as f64 / samples as f64,
+            // A direct trap composites gradient samples during the iteration and
+            // never lays one field over another, so it has no texture layer to be
+            // flat. See `Painted::texture_flat`.
+            texture_flat: None,
         })
     }
 

@@ -1434,6 +1434,20 @@ fractal-wallpapers curate seat --n 150 --name n150     # seats over accepted() o
 python -c "from fractal_wallpapers.curation import mode_policy; print(mode_policy.check())"
 ```
 
+**One row's mode is not always the mode it was drawn in.** `mode_policy.routed_mode`
+is the second thing this module owns and the only place the rule is spelled: a
+modulate whose texture had no span to normalize against produced the `smooth`
+field spent by rank *bit for bit*, so the row routes as `smooth` everywhere a mode
+or a kind is decided. It holds because every catalogued composite and the modulate
+are built on the same smooth base, which the engine asserts over its whole catalog.
+`itinerary` is the one production mode it can apply to today. The flag rides on the
+ledger row as a bare boolean; `solve.pool` takes it before it asks the roster, so
+the per-mode bars, the mode floors and the seated census all follow without asking
+again, and `candidate_ledger.census` takes it on the modes axis. Nothing is renamed
+and no picture moves — the recipe still says `itinerary` and the file on disk is
+untouched. The register behind it, and what it costs to fill, is
+[`data/coloring/README.md`](../../../data/coloring/README.md).
+
 **Only the 0 is wired, and it is wired in three places.** A weight-0 mode is out of
 the **labeling rosters** and the **default mining rosters** (both through
 `colorize.modes_for`, `mine._accepted_modes` and `hunt.plan`, so the mode draw, the

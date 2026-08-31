@@ -189,6 +189,43 @@ choice is in the record either way, so the picture and its coloring say the same
 thing. `fractal-engine modes` has no family to answer for, so it prints the
 parameter-plane form.
 
+**The one modulate can degenerate into an exact spelling of another mode, and it
+says so.** `Coloring::Modulate` spends its base by rank and shifts where in the
+gradient each rank lands by the normalized texture — `position = frac(rank(base)
++ shift · normalize(texture))`. Normalizing needs a span, and `Stretch::over` has
+an `else` branch for when there is none: every sample at one value, or none of
+them at a value at all. Then `spread.position` is `0.0` everywhere, the
+per-sample phase is the recipe's own phase everywhere, and the picture is
+`frac(rank(base)·cycles + phase)` through the map. The shift is still applied; it
+is applied to zero. **That is not a picture resembling the base spent by rank, it
+is that render bit for bit** — and since every catalogued composite and the
+modulate are all built on `smooth_base()`, which
+`smooth_is_the_default_and_the_base_of_every_composite` asserts over the whole
+catalog, a degenerate `itinerary` render is the `smooth` mode at
+`transfer: {"kind": "rank"}` and nothing else. Confirmed by sha256 at the
+candidate regime, not only in the arithmetic.
+
+So the `else` branch is reported rather than discarded. `Stretch::is_flat` keeps
+it, `modulate` returns it beside the colour, `Painted::texture_flat` carries it up
+and `RenderReport.texture_flat` prints it — `Option<bool>`, absent for every
+coloring with no texture layer to be flat, which is all of them but the modulate.
+It is absent by `skip_serializing_if` for the same recorded-name reason
+`Composite::texture_gamma` is. Python reads it in
+`fractal_wallpapers.curation.mode_policy.routed_mode`, which is where the
+consequence lives: such a render routes as `smooth` wherever a mode or a kind is
+decided. **A flat texture is a no-op recolour and not a weak one** — this is the
+difference between the modulate and a composite, where a flat texture blends
+toward a constant and makes a *worse* picture rather than a different mode's.
+
+Width does not predict it and a dumped field cannot measure it. Over the 1,962
+`itinerary` rows in the candidate ledger the widest degenerate frame is wider
+than the narrowest varying one in every one of the nine partitions; and counting
+distinct values in the `f32` dump reads 1,280 degenerate against a truth of
+1,085, wrong 15.2% of the time, because `Address` spends its `f32` after eleven
+base-4 symbols against the catalogued depth of 26 and whole subtrees of the
+lamination collapse on the way in. That is the same fact `why_not_a_field` states:
+the texture is carried at `f64` precisely to keep it out of the dump.
+
 A field meant to be *looked at* rather than named stays out of the catalog
 entirely. There is one: `discrete`, the integer escape count, which is what the
 smooth count replaced and is in the crate so the article can show the two side by

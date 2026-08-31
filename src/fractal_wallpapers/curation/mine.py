@@ -570,6 +570,7 @@ def make(
     }
     stages = Stages()
     meter = dict.fromkeys(colorize.METER_STAGES, 0.0)
+    reported: dict = {}
     picture, stamp = colorize.render(
         row,
         unit.mode,
@@ -580,6 +581,7 @@ def make(
         band=maker.band,
         fields=maker.fields,
         meter=meter,
+        reported=reported,
     )
     stages.take(meter)
     at = colorize.tick()
@@ -595,6 +597,8 @@ def make(
         "acted": bool((stamp or {}).get("acted")),
         "colour": candidate_ledger.colour_block(reading),
         "cells": list(reading.cells),
+        # See [`hunt.Maker.make`]: the engine's word, not a reading of the picture.
+        "texture_flat": bool(reported.get("texture_flat")),
     }
 
 
@@ -822,6 +826,7 @@ def run(
             source=source,
             colour=result["colour"],
             picture=tracked_name(result["picture"]),
+            texture_flat=result["texture_flat"],
         )
         stored["hunt"] = candidate_ledger.hunt_block(
             {"seconds": round(stages.total(), 3), **unit.named()}
@@ -830,7 +835,7 @@ def run(
             key=key,
             artifact=artifact,
             regime=recipe.regime.spelled,
-            head=hunt.kind_of(unit.mode),
+            head=hunt.kind_of(unit.mode, result["texture_flat"]),
             read=result["verdict"],
             source=source,
         )
@@ -853,6 +858,7 @@ def run(
             "partition": unit.partition,
             "mode": unit.mode,
             "mode_kind": _kind_of(unit.mode),
+            "texture_flat": result["texture_flat"],
             "colormap": unit.colormap,
             "palette_group": recipe.palette_group,
             "maxiter": int(frame["maxiter"]),

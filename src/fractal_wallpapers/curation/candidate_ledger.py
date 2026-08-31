@@ -251,6 +251,7 @@ def row(
     colour: dict | None = None,
     picture: str | None = None,
     rejected: dict | None = None,
+    texture_flat: bool = False,
 ) -> dict:
     """One ledger row: a recipe, where it stands, what colour it is, who made it.
 
@@ -288,10 +289,25 @@ def row(
     * **The picture stays re-renderable from the row alone.** The same rebuilt
       recipe is [`recipes.Recipe.row`], which is the engine spec.
 
-    Everything derived is derived rather than stored — `at_candidate_regime` is
-    the one exception, because it is a bare boolean, five readers take it, and a
-    pool that silently came back **empty** is how the last attempt at this row
-    was noticed.
+    Everything derived is derived rather than stored — `at_candidate_regime` and
+    `texture_flat` are the two exceptions, and for one reason each is a bare
+    boolean nothing can re-derive from the row. The first: five readers take it,
+    and a pool that silently came back **empty** is how the last attempt at this
+    row was noticed. The second: it is the engine's own
+    `RenderReport.texture_flat`, and re-deriving it costs a *render* — the picture
+    is the only place the fact survives, and even then only as the absence of
+    something. See [`fractal_wallpapers.curation.mode_policy.routed_mode`] for
+    what a `True` means, and [`fractal_wallpapers.coloring.texture_flat`] for how
+    the rows written before the engine reported it were filled in.
+
+    It is deliberately **not** the flatness sidecar's shape
+    ([`curation.flatness`]). That column is a reading of a picture by a rule that
+    could be re-chosen, so it is keyed on the recipe and kept out of the row.
+    This one has no constant to re-choose — the engine either had a span to
+    normalize against or it did not — and it is measured blind to a dead texture
+    layer by the sidecar, whose `flat16_1.0` reads 0.182 on the degenerate rows
+    against 0.170 on the varying ones: a rank-swept smooth field has no dead
+    space, so the column that measures dead space cannot see this.
     """
     location = source.get("location") or {}
     place = location.get("key")
@@ -312,6 +328,10 @@ def row(
         },
         "recipe": recipe.record(),
         "at_candidate_regime": recipes.is_candidate_regime(recipe),
+        # Whether the coloring's texture layer said nothing, so this row routes as
+        # smooth-with-rank. False on every mode that has no texture, which is
+        # sixteen of the seventeen.
+        "texture_flat": bool(texture_flat),
         "colour": colour_kept(colour),
         "provenance": {
             "run": source.get("run"),
@@ -1740,6 +1760,11 @@ def backfill(recolour: bool = False, log=print) -> dict:
             "recoloured": 0,
             "colour_carried": 0,
             "colour_missing": 0,
+            "texture_flat": 0,
+            "texture_flat_from_register": 0,
+            "texture_flat_carried": 0,
+            "texture_flat_unmeasured": 0,
+            "texture_flat_no_texture": 0,
         }
     )
     held: dict = {}
@@ -1772,6 +1797,9 @@ def backfill(recolour: bool = False, log=print) -> dict:
         picture = next((p for p in (_picture_of(rows_[0]) for rows_ in made) if p.is_file()), None)
         colour, how = _colour_for(key, picture, known, recolour)
         counts[how] += 1
+        flat, from_where = _texture_flat_for(recipe, known.get(key) or {})
+        counts[from_where] += 1
+        counts["texture_flat"] += int(flat)
         rows.append(
             row(
                 recipe=recipe,
@@ -1784,6 +1812,7 @@ def backfill(recolour: bool = False, log=print) -> dict:
                 colour=colour,
                 picture=None if picture is None else tracked_name(picture),
                 rejected=rejected,
+                texture_flat=flat,
             )
         )
         scores.extend(_scores_for(key, recipe, every_row, artifacts))
@@ -1845,6 +1874,38 @@ def _colour_for(key: str, picture: Path | None, known: dict, recolour: bool) -> 
     if picture is None:
         return None, "colour_missing"
     return colour_block(dominance.of_picture(picture)), "recoloured"
+
+
+def _texture_flat_for(recipe: recipes.Recipe, stored: dict) -> tuple[bool, str]:
+    """`(the flag, which counter to bump)` for one recipe. Renders nothing.
+
+    A backfill rebuilds the ledger out of the two decision stores and drives no
+    engine, so the one thing it cannot do is *measure* this. Two places have the
+    answer and they are asked in that order:
+
+    * **The register** — [`fractal_wallpapers.coloring.texture_flat`] — which is
+      the measurement, tracked, and keyed on the field side of the render so one
+      probe answers for every map at a location.
+    * **The row already on record**, for a candidate mined since the engine began
+      reporting it. That row's flag came straight off the engine and no register
+      entry exists for it.
+
+    They cannot disagree: both are the engine's answer about one field identity.
+    A recipe neither knows reads `False`, which is what every reader concluded
+    before the flag existed. A mode with no texture layer is counted apart from
+    that and not as a fallback: `False` is the only true answer there, and sixteen
+    of the seventeen production modes are in it.
+    """
+    from fractal_wallpapers.coloring import texture_flat
+
+    if not texture_flat.has_a_texture(recipe.mode):
+        return False, "texture_flat_no_texture"
+    measured = texture_flat.register().get(texture_flat.field_key(recipe.row()))
+    if measured is not None:
+        return bool(measured), "texture_flat_from_register"
+    if "texture_flat" in stored:
+        return bool(stored["texture_flat"]), "texture_flat_carried"
+    return False, "texture_flat_unmeasured"
 
 
 def colour_block(reading) -> dict:
@@ -1913,6 +1974,7 @@ def census(rows=None, n: int = FIRST_SOLVE, log=print) -> dict:
     its fill **and its empties**: a solver's question is never how much material
     there is, it is which of its constraints has nothing to satisfy it with.
     """
+    from fractal_wallpapers.curation import mode_policy
     from fractal_wallpapers.palettes import dominance
 
     stored = read() if rows is None else list(rows)
@@ -1929,7 +1991,11 @@ def census(rows=None, n: int = FIRST_SOLVE, log=print) -> dict:
         "locations": _locations(stored),
         "cells": _fill(stored, dominance.cells(), _cells_of),
         "families": _fill(stored, dominance.families(), _families_of),
-        "modes": _fill(stored, _production_modes(), lambda row: [(row["recipe"] or {})["mode"]]),
+        # The mode a row COUNTS as, not the mode it was drawn in: a modulate whose
+        # texture said nothing is the smooth field spent by rank bit for bit, and a
+        # census that counted it as `itinerary` would be reporting a fill the
+        # gallery cannot spend. See [`mode_policy.routed_mode`].
+        "modes": _fill(stored, _production_modes(), lambda row: [mode_policy.routed_mode_of(row)]),
         "groups": _fill(
             stored, _drawable_groups(), lambda row: [(row["recipe"] or {})["palette_group"]]
         ),
@@ -1950,6 +2016,9 @@ def _population(stored: list) -> dict:
         "with_picture": sum(1 for stamped in stored if stamped.get("picture")),
         "recipe_only": sum(1 for stamped in stored if not stamped.get("picture")),
         "off_regime": sum(1 for stamped in stored if not stamped.get("at_candidate_regime")),
+        # Rows whose modulate texture said nothing, so they are counted as
+        # `smooth` on the modes axis above and seated on the smooth side.
+        "texture_flat": sum(1 for stamped in stored if stamped.get("texture_flat")),
         "rejected": sum(1 for stamped in stored if stamped.get("rejected")),
         "no_colour": sum(1 for stamped in stored if not stamped.get("colour")),
         "duplicate_renders": sum(
