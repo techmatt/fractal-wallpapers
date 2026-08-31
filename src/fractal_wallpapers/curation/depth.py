@@ -1029,6 +1029,14 @@ def _render_block(payload: tuple) -> list:
                     "colour": result["colour"],
                     "cells": result["cells"],
                     "acted": bool(result["acted"]),
+                    # The engine's own word about the modulate texture, carried
+                    # across the process boundary because the parent decides the
+                    # row's head and the ledger's flag off it. Everything `take`
+                    # reads has to be spelled here: a worker returns a dict and
+                    # not the result, so a key added to `mine.make` alone is a
+                    # `KeyError` in the parent and a leg that renders and writes
+                    # nothing.
+                    "texture_flat": bool(result["texture_flat"]),
                     # The `Stages` dataclass itself, not a dict of it: the parent
                     # feeds it straight to `mine.Clock.add`, and a second spelling
                     # of the eight stage names is a second thing to keep in step.
