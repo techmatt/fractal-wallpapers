@@ -540,6 +540,7 @@ def render(
     band: dict | None = None,
     fields: Path | None = None,
     meter: dict | None = None,
+    reported: dict | None = None,
 ) -> tuple[Path, dict | None]:
     """Render one candidate and level it. `(picture, stamp)`; the stamp may be `None`.
 
@@ -572,6 +573,17 @@ def render(
     leg had `render` at 97% of a mine's clock and could say nothing about what was
     inside it — and now that the iteration pass is gone from most candidates, what
     is inside it is the whole question.
+
+    `reported` takes the **engine's own report** for this candidate, on the same
+    terms: a dict the caller owns, updated rather than replaced. What the engine
+    says about a render it just made — `interior_fraction`, and
+    `texture_flat`, which says the modulate's texture moved nothing and the
+    picture is its base spent by rank — used to be parsed and dropped on the
+    floor here, and a ledger row built downstream could not carry a fact the
+    engine had already computed. The recolour path fills nothing: a dumped field
+    is re-coloured in this process and there is no engine to report. That is not a
+    gap to paper over — [`shareable`] is false for every coloring that has a
+    texture, so a mode whose report anybody reads never takes that path.
 
     **Nothing exists at `output` until the row is finished.** Every render lands
     on a temporary and is renamed into place at the end, which makes the file's
@@ -606,7 +618,9 @@ def render(
         scratch.unlink(missing_ok=True)
         if field is None:
             here = spec if colormap_dir is None else {**spec, "colormap_dir": str(colormap_dir)}
-            engine.run("render", here)
+            report = engine.run("render", here)
+            if reported is not None and isinstance(report, dict):
+                reported.update(report)
         else:
             recolored(field, colormap, mirror, scratch, colormap_dir=colormap_dir)
         spent(stage, at)

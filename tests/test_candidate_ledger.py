@@ -528,6 +528,11 @@ ROW_MEMBERS = {
         "location",
         "recipe",
         "at_candidate_regime",
+        # A bare boolean and the second derived member the row stores, because
+        # re-deriving it costs a render — see [`coloring.texture_flat`]. Five
+        # readers take it: the seating pool, the census, the two label-store
+        # routers and the mode floors that follow the pool.
+        "texture_flat",
         "colour",
         "provenance",
         "picture",

@@ -56,6 +56,16 @@ struct RenderReport {
     /// Share of samples whose orbit never escaped — a one-number sanity check on
     /// a render, and the first thing to look at when a frame comes out flat.
     interior_fraction: f64,
+    /// Whether the coloring's texture layer carried no information — see
+    /// [`coloring::Painted::texture_flat`]. Absent for every coloring that has no
+    /// texture to be flat, which is all of them but the modulate, and absent for
+    /// the same recorded-name reason `Composite::texture_gamma` is: a key that
+    /// appeared unconditionally would say nothing on sixteen of the seventeen
+    /// production modes and would put a member into every render record ever read
+    /// back. A `true` here says the picture is the base spent by rank, bit for
+    /// bit — the reason to report it rather than throw it away.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    texture_flat: Option<bool>,
     output: String,
     seconds: RenderSeconds,
 }
@@ -294,6 +304,7 @@ fn render(spec_path: Option<&str>) -> Result<(), String> {
         palette: spec.palette,
         colormap: colormap.name().to_string(),
         interior_fraction: painted.interior_fraction,
+        texture_flat: painted.texture_flat,
         output: spec.output.display().to_string(),
         seconds: RenderSeconds {
             paint: paint_seconds,

@@ -7,13 +7,17 @@ end and the picture comes out muddy, or blown out, or flat — not because the m
 is bad but because this location spends it badly.
 
 ```
-band       the tone band, measured off finished wallpapers that are already good
-autolevel  the operator that projects a render onto it, or leaves it exactly alone
+band          the tone band, measured off finished wallpapers that are already good
+autolevel     the operator that projects a render onto it, or leaves it exactly alone
+texture_flat  which renders' modulate texture carried no information at all
 ```
 
 ```
 fractal-wallpapers coloring show
 fractal-wallpapers coloring derive-band --from <folder> --write
+fractal-wallpapers coloring texture-flat measure     # render what is unmeasured
+fractal-wallpapers coloring texture-flat stamp       # carry it onto the ledger rows
+fractal-wallpapers coloring texture-flat show
 ```
 
 **The correction is measured on the picture and applied on the palette.** Every
@@ -100,3 +104,23 @@ mode). What the tiers are and which mode sits in each is
 than by a test buried in the measurement. A direct trap is a thin bright figure
 over a flat ground, so its tone statistics describe the ground; a new direct mode
 must not be able to acquire a tone curve by being added.
+
+**A modulate whose texture said nothing is another mode's render, exactly.** The
+one modulate coloring shifts its base's palette position by a normalized texture,
+and normalizing needs a span. Where there is none the shift is zero everywhere and
+the picture is the base spent by rank — bit for bit the `smooth` mode at
+`transfer: {"kind": "rank"}`, since every catalogued composite and the modulate
+are built on the same smooth base. The engine reports that per render as
+`RenderReport.texture_flat`; `curation.mode_policy.routed_mode` is where the
+consequence is spelled, and such a render routes as `smooth` wherever a mode or a
+kind is decided — the seating pool, the census, the per-mode bars, the mode floors
+and both label stores.
+
+`texture_flat` here is the register for the rows written before the engine
+reported it. It is **tracked**, because the label corpus is tracked and routing
+that differed between two checkouts of one commit would be two corpora wearing one
+name; and it is keyed on the field side of the render — place, frame, sample grid,
+iteration cap, coloring — so one probe answers for all thirty-two maps at a
+location. Establishing a single entry costs a render: frame width does not
+separate the two populations in any partition, and counting distinct values in a
+dumped `f32` field is wrong 15.2% of the time in the direction that matters.

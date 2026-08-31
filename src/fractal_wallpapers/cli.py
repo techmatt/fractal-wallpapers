@@ -2855,6 +2855,26 @@ def coloring_derive_band(args: argparse.Namespace) -> int:
     return 0
 
 
+def coloring_texture_flat(args: argparse.Namespace) -> int:
+    """Measure, or report, which renders' modulate texture said nothing."""
+    from fractal_wallpapers.coloring import texture_flat
+
+    try:
+        if args.what == "show":
+            print(json.dumps(texture_flat.summary(), indent=2))
+            return 0
+        if args.what == "stamp":
+            print(json.dumps(texture_flat.stamp_ledger(), indent=2))
+            return 0
+        stores = tuple(args.store) if args.store else texture_flat.STORES
+        record = texture_flat.measure_stores(stores=stores, workers=args.workers, limit=args.limit)
+    except texture_flat.RegisterError as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps(record, indent=2))
+    return 0
+
+
 def coloring_show(args: argparse.Namespace) -> int:
     """Print the operator's switch and the band it is projecting onto."""
     from fractal_wallpapers.coloring import autolevel, band
@@ -7029,14 +7049,16 @@ def storage_commands(subcommands) -> None:
 
 
 def coloring_commands(subcommands) -> None:
-    """The tone band, and the operator that projects onto it."""
+    """The tone band, the operator that projects onto it, and the texture register."""
     colouring = subcommands.add_parser(
         "coloring",
-        help="the tone band and the autolevel operator: show it, derive it",
+        help="the tone band, the autolevel operator and the flat-texture register",
         description=(
             "The autolevel operator pulls a render's tone onto a band of finished "
             "wallpapers that are already good, or — when it is already inside the band — "
-            "leaves it exactly alone and hands back the render's own bytes."
+            "leaves it exactly alone and hands back the render's own bytes. `texture-flat` "
+            "is the other thing measured about a finished coloring here: which renders' "
+            "modulate texture carried no information, and therefore route as smooth."
         ),
     )
     steps = colouring.add_subparsers(dest="step", required=True)
@@ -7062,6 +7084,52 @@ def coloring_commands(subcommands) -> None:
     )
     deriving.add_argument("--write", action="store_true", help="write it; otherwise print it")
     deriving.set_defaults(handler=coloring_derive_band)
+
+    from fractal_wallpapers.coloring import texture_flat as texture_flat_module
+
+    flat = steps.add_parser(
+        "texture-flat",
+        help="the register of renders whose modulate texture carried no information",
+        description=(
+            "A modulate lays a texture over a base and shifts the base's palette position "
+            "by it. Where the texture has no span, the shift is zero everywhere and the "
+            "picture is the base spent by rank BIT FOR BIT — so the render routes as "
+            "`smooth` wherever a mode or a kind is decided. The engine reports it per "
+            "render; this is the tracked measurement for the rows written before it did, "
+            "keyed on the field side of the render so one probe answers for every map at a "
+            "location. `measure` renders what it has not measured and nothing else."
+        ),
+    )
+    flat.add_argument(
+        "what",
+        choices=["measure", "stamp", "show"],
+        help="render every unmeasured identity the named stores hold, carry what it says "
+        "onto the candidate-ledger rows, or print what the register already says",
+    )
+    flat.add_argument(
+        "--store",
+        action="append",
+        choices=list(texture_flat_module.STORES),
+        help="with `measure`: which store to take identities from, repeatable (default: "
+        "both). The ledger is drawn at the candidate regime and the label stores at the "
+        "shipping one, so a place in both is two identities and two probes",
+    )
+    flat.add_argument(
+        "--workers",
+        type=int,
+        default=texture_flat_module.MEASURE_WORKERS,
+        metavar="COUNT",
+        help=f"with `measure`: how many engines to drive at once (default "
+        f"{texture_flat_module.MEASURE_WORKERS}, this machine's render pool). More than "
+        f"three, or any of them at normal priority, makes the desktop unusable",
+    )
+    flat.add_argument(
+        "--limit",
+        type=int,
+        help="with `measure`: stop after this many identities. What a pilot prices the "
+        "whole leg off",
+    )
+    flat.set_defaults(handler=coloring_texture_flat)
 
 
 def curate_commands(subcommands) -> None:

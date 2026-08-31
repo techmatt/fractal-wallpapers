@@ -1249,6 +1249,7 @@ def run(
             source=source,
             colour=result["colour"],
             picture=tracked_name(Path(result["picture"])),
+            texture_flat=result["texture_flat"],
         )
         stored["hunt"] = candidate_ledger.hunt_block(
             {"seconds": round(stages.total(), 3), **shot.named()}
@@ -1257,7 +1258,7 @@ def run(
             key=key,
             artifact=artifact,
             regime=recipe.regime.spelled,
-            head=hunt.kind_of(shot.mode),
+            head=hunt.kind_of(shot.mode, result["texture_flat"]),
             read=result["verdict"],
             source=source,
         )
@@ -1278,6 +1279,7 @@ def run(
             "rank_fraction": shot.rank_fraction,
             "mode": shot.mode,
             "mode_kind": mine._kind_of(shot.mode),
+            "texture_flat": result["texture_flat"],
             "colormap": shot.colormap,
             "palette_group": recipe.palette_group,
             "maxiter": int(frame["maxiter"]),
@@ -1599,8 +1601,17 @@ def clears_its_bar(row: dict, table: dict) -> bool:
     A mode the table has never heard of falls to the default column, which is the
     same direction [`curation.labeling.registry`] fails in: the strict reading is
     the safe one when the population cannot answer for itself.
+
+    The mode is the one the row **routes as** — [`mode_policy.routed_mode`] — for
+    the same reason the table above is built over routed candidates: a row whose
+    modulate texture said nothing is the smooth field spent by rank, and asking a
+    routed table with an unrouted mode is looking one row up under a name the
+    other side no longer files it under.
     """
-    rule = (table.get("modes") or {}).get(str(row["mode"])) or {
+    from fractal_wallpapers.curation import mode_policy
+
+    mode = mode_policy.routed_mode(str(row["mode"]), bool(row.get("texture_flat")))
+    rule = (table.get("modes") or {}).get(mode) or {
         "column": "p_ge4",
         "bar": SEATING_BAR,
     }

@@ -65,6 +65,35 @@ those places across the two stores. Pooled, they move `>=3` from 0.2670 to 0.262
 `>=4` from 0.0636 to 0.0635. No render key of theirs is in both stores and no eval
 pin holds one, so the evaluation side was never touched.
 
+**And 110 rows in here are `itinerary` renders whose texture said nothing, which
+routes them to `smooth_render` too.** A modulate shifts its base's palette position
+by a normalized address field; where that field has no span the shift is zero
+everywhere and the picture is the smooth field spent by rank *bit for bit*. So
+those rows are the smooth judge's on the same rule the 40 above are, arrived at by
+a different route — they are not mislabelled, the mode they name is the mode that
+was rendered. **110 raw rows, 107 resolved renders of the 201 `itinerary` holds
+(53.2%)**, measured 2026-08-31 off the engine's own `texture_flat` report;
+`data/coloring/texture_flat.jsonl` is the register and `finished.routes_to` is the
+call every reader makes.
+
+Originals stay where they are, as ever, and the re-attribution is at the read.
+What it costs this store's per-mode table is the whole of `itinerary`'s promotion
+case: the mode reads **44 fours in 201 renders (21.9%)** as recorded and **16 in 94
+(17.0%)** on the rows that are really its own, which is fourth of the seventeen
+rather than first. The 107 that leave read 26.2%. Tier-3-or-better does not move at
+all — 54.2% against 54.3% — so the whole difference is where the fours sat.
+
+**No eval pin is touched.** None of the 107 comes from an `eval_only` batch
+(`blind_modes`, `seated_and_head_top`), and none stands at a place this store's
+pinned set holds; they are 59 `itinerary_promotion`, 40 `sparse_mode_head_top`, 6
+`manufactured_rare_colors` and 2 `p_ge4_calibration_strange`, every one registered
+`eval_only=false, score_unconditioned=false`. Three of them do stand at a place
+**`smooth_render`'s** pinned set holds, which is worth knowing and costs nothing
+today: the rows are physically in this store's files, so the smooth head's
+population never reads them and cannot spend its instrument on them. A future
+batch that re-rendered one of those three places for the smooth store would be
+trespassing, and `intake`'s pin check is what would catch it.
+
 **The newest batch buys the modes with the fewest keepers.** `under_seen_modes`,
 2026-08-27: 504 verdicts, 56 on each of nine modes, drawn as the render judge's own
 unfiltered top of each mode over the whole candidate ledger. All 504 route here —

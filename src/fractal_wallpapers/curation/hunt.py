@@ -821,6 +821,7 @@ class Maker:
             "maxiter": int(frame["maxiter"]),
         }
         started = colorize.tick()
+        reported: dict = {}
         picture, stamp = colorize.render(
             row,
             plan.mode,
@@ -830,6 +831,7 @@ class Maker:
             level=True,
             band=self.band,
             fields=self.fields,
+            reported=reported,
         )
         verdict = colorize.score_picture(self.judge(), picture)
         reading = dominance.of_picture(picture)
@@ -841,20 +843,32 @@ class Maker:
             "colour": candidate_ledger.colour_block(reading),
             "cells": list(reading.cells),
             "recipe": recipe,
+            # The engine's own word on whether this coloring's texture said
+            # anything. Absent on every mode that has no texture. See
+            # [`curation.mode_policy.routed_mode`].
+            "texture_flat": bool(reported.get("texture_flat")),
         }
 
 
-def kind_of(mode: str) -> str:
+def kind_of(mode: str, texture_flat: bool = False) -> str:
     """Which label store's KIND a candidate in this mode belongs to.
 
     [`curation.budget`]'s two spellings, which are what every record already on
     disk uses and what the sidecar's `head` member is read as. One judge answers
     for both since 2026-08-23; the kind still selects a floor and a slot.
+
+    `texture_flat` is the engine's report that a modulate's texture said nothing,
+    which makes the picture the smooth field spent by rank bit for bit — so the
+    row is the smooth judge's whatever the recipe's mode says. The routing itself
+    is [`curation.mode_policy.routed_mode`]'s and is asked of it rather than
+    restated: this is the KIND half, and a second spelling of the rule would agree
+    with the first until one of them was edited.
     """
     from fractal_wallpapers.curation import budget as budget_module
-    from fractal_wallpapers.curation import colorize
+    from fractal_wallpapers.curation import colorize, mode_policy
 
-    return budget_module.SMOOTH if mode == colorize.SMOOTH_MODE else budget_module.STRANGE
+    routed = mode_policy.routed_mode(mode, texture_flat)
+    return budget_module.SMOOTH if routed == colorize.SMOOTH_MODE else budget_module.STRANGE
 
 
 def source_for(name: str, plan: Try, place: dict, frame: dict, at: int) -> dict:
@@ -1015,6 +1029,7 @@ def run(
             source=source,
             colour=result["colour"],
             picture=tracked_name(result["picture"]),
+            texture_flat=result["texture_flat"],
         )
         stored["hunt"] = candidate_ledger.hunt_block(
             {"seconds": result["seconds"], **intent.named()}
@@ -1023,7 +1038,7 @@ def run(
             key=key,
             artifact=artifact,
             regime=recipe.regime.spelled,
-            head=kind_of(intent.mode),
+            head=kind_of(intent.mode, result["texture_flat"]),
             read=result["verdict"],
             source=source,
         )

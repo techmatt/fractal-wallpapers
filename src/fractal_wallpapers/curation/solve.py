@@ -400,7 +400,13 @@ def pool(rows=None, scores=None, artifact=None, log=print) -> tuple[list[Candida
     for row in stored:
         seen += 1
         recipe = row.get("recipe") or {}
-        if not mode_policy.is_accepted(recipe.get("mode")):
+        # The mode this candidate COUNTS as, which is the mode it was rendered in
+        # unless its texture said nothing — see [`mode_policy.routed_mode`]. It is
+        # taken here, before the roster is asked, because a row whose picture is
+        # the smooth field spent by rank is a smooth picture on both questions:
+        # whether the mode may be seated at all, and which pile it is seated in.
+        mode = mode_policy.routed_mode_of(row)
+        if not mode_policy.is_accepted(mode):
             refused["niche_mode"] += 1
             continue
         if row.get("rejected"):
@@ -419,7 +425,11 @@ def pool(rows=None, scores=None, artifact=None, log=print) -> tuple[list[Candida
                 "picture": str(row["picture"]),
                 "location": str((row.get("location") or {}).get("key")),
                 "partition": str(row.get("partition")),
-                "mode": str(recipe.get("mode")),
+                # Everything downstream of the pool reads a candidate's mode off
+                # here: the per-mode bars, the mode floors, the census of what was
+                # seated. A caller wanting the mode that was *asked for* reads the
+                # ledger row's own recipe, which is untouched.
+                "mode": mode,
                 "group": str(recipe.get("palette_group")),
                 "cells": tuple(colour.get("cells") or ()),
                 "families": tuple(colour.get("families") or ()),

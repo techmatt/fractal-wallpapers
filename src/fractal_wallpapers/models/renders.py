@@ -147,6 +147,22 @@ SPEC_MEMBERS: tuple[str, ...] = (
 #: **The field-side members: what a dumped scalar field is a function of.** The
 #: place, the geometry, and the field the mode names with the curve it is read
 #: through. Everything a `dump-field` spends before it stops.
+#:
+#: **A mode that is not shareable never has a field cached under this name at
+#: all**, and `itinerary` is the case worth knowing: `colorize.shareable` is false
+#: for it — a modulate has no single scalar index behind it and the engine refuses
+#: to dump one — so no itinerary field is ever written, and every itinerary
+#: candidate takes the render path. The field cache is moot for it in both
+#: directions: an axis added to the modulate's coloring can rename its *pictures*
+#: and cannot rename a field, because there are none.
+#:
+#: The split itself still answers a question about that mode. What a *coloring* is
+#: a function of, as opposed to what a recolour spends afterwards, is exactly the
+#: half [`fractal_wallpapers.coloring.texture_flat`] keys its register on — one
+#: probe there answers for all thirty-two maps at a location. It declares its own
+#: list rather than importing this one, because that register is tracked and
+#: [`job_name`] digests `colormap_dir`, which is a path on the machine that took
+#: the reading.
 FIELD_IDENTITY: tuple[str, ...] = (
     "family",
     "viewport",

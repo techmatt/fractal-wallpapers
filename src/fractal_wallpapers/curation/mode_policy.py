@@ -106,6 +106,22 @@ WEIGHTS = (NICHE, NORMAL, PROMOTED)
 #: `curvature` 0 → 1: 31 fours pooled, level with `tia`'s 31, on the third-best aimed
 #: yield of the nine. Neither is a base rate; a mode promoted on a best-of draw is a
 #: mode to re-count once it has been drawn flat.
+#:
+#: **`itinerary`'s 21.9% was over a population half of which was not `itinerary`,
+#: and the weight has NOT been changed here on that.** 107 of its 201 renders are
+#: modulates whose texture said nothing, which [`routed_mode`] below rules smooth —
+#: measured 2026-08-31 against the engine's own report, reproducing the shift-pair
+#: audit's ledger figures partition by partition. Read on the 94 that remain,
+#: `itinerary` is **16 fours in 94 (17.0%)**, fourth of the seventeen behind
+#: `threads` 21.6%, `smooth_angle_min` 18.9% and `smooth_mean_angle` 17.6%; the 107
+#: that left read 26.2% and are the smooth judge's. Its tier-3-or-better is
+#: unmoved — 54.2% recorded against 54.3% after — so the split is entirely in where
+#: the fours sat. It is still above every weight-1 mode (`exp_smoothing`, the best
+#: of them, is 14.7%), so nothing here is obviously wrong; what is gone is the claim
+#: that it is the top of the seventeen, which is the sentence the 1 → 2 was written
+#: on. **Moving the weight is a ruling and not a repair**, and this figure is
+#: recorded so that whoever takes it is taking it on a number that is about the
+#: mode.
 MODE_POLICY: dict[str, int] = {
     # --- 0: niche ---
     "trap_circle": NICHE,
@@ -342,6 +358,51 @@ def seat_floors(n: int, share: float = STRANGE_SEAT_SHARE) -> dict[str, int]:
     return out
 
 
+# --------------------------------------------------------------------------- #
+# What a row routes as, which is not always the mode it was rendered in.
+# --------------------------------------------------------------------------- #
+def routed_mode(mode: str, texture_flat: bool = False) -> str:
+    """The mode one render **counts as**, given whether its texture said anything.
+
+    A modulate lays a texture over a base and shifts the base's palette position
+    by it. When the texture has no span — every sample at one value, or none of
+    them at a value at all — the shift is zero everywhere and the picture is the
+    base spent by rank, *bit for bit*. The engine reports that as
+    `RenderReport.texture_flat`, the ledger row carries it, and this is the one
+    place the consequence is spelled: such a render is `smooth` at
+    `transfer: {"kind": "rank"}`, so it routes as `smooth` wherever a mode or a
+    kind is decided — the seating pool, the census, the per-mode bars, the mode
+    floors and the two label stores.
+
+    **It holds because every catalogued modulate is built on the smooth field.**
+    That is an engine invariant rather than an assumption made here: `mode.rs`'s
+    `smooth_is_the_default_and_the_base_of_every_composite` asserts it over the
+    whole catalog. A modulate on some other base would still degenerate, and it
+    would degenerate to that other base by rank — so the day one exists, this
+    function is where it is answered rather than a place that would silently be
+    wrong.
+
+    Nothing is renamed and no picture moves. The recipe still says `itinerary`,
+    the row still records it, and the file on disk is untouched; what changes is
+    only which pile the row is counted in. A caller wanting the mode that was
+    *asked for* reads `recipe["mode"]` as it always did.
+    """
+    from fractal_wallpapers.curation import colorize
+
+    return colorize.SMOOTH_MODE if texture_flat else str(mode)
+
+
+def routed_mode_of(row: dict) -> str:
+    """[`routed_mode`] off a candidate-ledger row, so no reader spells the join.
+
+    A row written before the flag existed carries no `texture_flat` and reads as
+    `False` — which is the mode it was rendered in, and which is right for every
+    row of every mode but a modulate. The backfill that fills those in is
+    [`fractal_wallpapers.coloring.texture_flat`].
+    """
+    return routed_mode(str((row.get("recipe") or {}).get("mode")), bool(row.get("texture_flat")))
+
+
 def record() -> dict:
     """What a run writes down about the policy it drew under."""
     return {
@@ -370,6 +431,8 @@ __all__ = [
     "niche",
     "promoted",
     "record",
+    "routed_mode",
+    "routed_mode_of",
     "seat_floors",
     "strange_modes",
     "strange_seats",

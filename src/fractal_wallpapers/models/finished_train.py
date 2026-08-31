@@ -338,8 +338,23 @@ def population(head_name: str) -> tuple[list[Picture], dict]:
     # `rare_palette` batch put forty resolved `smooth` rows into `strange_render`
     # before the writer's routing guard existed; the originals stay exactly where
     # they are and this head does not train on a mode it does not answer for.
-    kept = [row for row in rows if finished.routed_to(row["mode"]) == head_name]
-    off_kind = len(rows) - len(kept)
+    #
+    # `routes_to` and not `routed_to`: a modulate whose texture said nothing is
+    # the smooth field spent by rank bit for bit, and the row that records it
+    # names a `strange` mode. Re-attribution is the reader's, here, for exactly
+    # the reason the paragraph above gives — the original is never modified.
+    # The two exclusions are counted apart, because they are different facts about
+    # a store and one number reads as the first. A row excluded on its `mode`
+    # alone is in the wrong store; a row excluded on a flat texture names the mode
+    # it really was rendered in and is in the wrong store anyway, because the
+    # picture that mode produced is another mode's exactly.
+    kept, off_kind, off_kind_flat = [], 0, 0
+    for row in rows:
+        if finished.routes_to(row) == head_name:
+            kept.append(row)
+            continue
+        off_kind += 1
+        off_kind_flat += int(finished.routed_to(row["mode"]) == head_name)
     rows = kept
     crops = renders.crop_dir(head_name)
 
@@ -383,6 +398,7 @@ def population(head_name: str) -> tuple[list[Picture], dict]:
 
     record = {
         "off_kind_rows_excluded": off_kind,
+        "off_kind_on_a_flat_texture": off_kind_flat,
         "share": SELECTION_SHARE,
         "seed": SELECTION_SEED,
         "drawn_over": "places on the training side, so a place's pictures cannot straddle",
