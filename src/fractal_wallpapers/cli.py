@@ -1818,6 +1818,85 @@ def renders_cv_compare(args: argparse.Namespace) -> int:
     return 0
 
 
+def renders_dose_plan(args: argparse.Namespace) -> int:
+    """Every dose point's training side on every fold, before anything is fitted."""
+    from fractal_wallpapers.models import render_cv, render_dose
+
+    folds = [int(value) for value in args.folds.split(",")]
+    points = args.points.split(",") if args.points else None
+    try:
+        document = render_dose.plan(folds, points)
+    except (render_cv.CrossValidationError, render_dose.DoseError) as refusal:
+        print(refusal)
+        return 1
+    path = render_dose.root() / "plan.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(document, indent=1) + "\n", encoding="utf-8", newline="\n")
+    for cell in document["points"]:
+        print(
+            f"{cell['point']:<12} {cell.get('cut') or ('matches ' + str(cell.get('matches'))):<12} "
+            f"mean train {cell['mean_train']:8.1f}  mean strange fours "
+            f"{cell['mean_strange_fours']:6.1f}  holdout {cell['holdout_rows']}"
+        )
+    print(f"wrote {path}")
+    return 0
+
+
+def renders_dose_fit(args: argparse.Namespace) -> int:
+    """Fit the incumbent recipe on one dose point and one fold."""
+    from fractal_wallpapers.models import render_cv, render_dose, render_train
+
+    try:
+        record = render_dose.fit(args.point, args.fold, device=args.device, epochs=args.epochs)
+    except (
+        render_cv.CrossValidationError,
+        render_dose.DoseError,
+        render_train.TrainingError,
+    ) as refusal:
+        print(refusal)
+        return 1
+    wanted = ("run", "best_epoch", "wall_seconds")
+    print(json.dumps({key: record[key] for key in wanted if key in record}, indent=2))
+    return 0
+
+
+def renders_dose_read(args: argparse.Namespace) -> int:
+    """Read one dose point's held-out rows through its own checkpoint."""
+    from fractal_wallpapers.models import render_cv, render_dose
+
+    try:
+        record = render_dose.read_out_of_fold(args.point, args.fold, device=args.device)
+    except (render_cv.CrossValidationError, render_dose.DoseError) as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps(record, indent=2))
+    return 0
+
+
+def renders_dose_curve(args: argparse.Namespace) -> int:
+    """The whole curve: every declared readout at every point, against one anchor."""
+    from fractal_wallpapers.models import render_cv, render_dose
+
+    folds = [int(value) for value in args.folds.split(",")] if args.folds else None
+    points = args.points.split(",") if args.points else None
+    try:
+        path, document = render_dose.write_curve(points, folds, args.reference)
+    except (render_cv.CrossValidationError, render_dose.DoseError) as refusal:
+        print(refusal)
+        return 1
+    for cell in document["points"]:
+        primary = cell["primary"]
+        if primary.get("delta") is None:
+            continue
+        print(
+            f"{cell['point']:<12} primary n {primary['n']:4d} (+{primary['positives']}) "
+            f"{primary['candidate']:.4f}  delta vs {document['reference']} "
+            f"{primary['delta']:+.4f} [{primary['lo']:+.4f}, {primary['hi']:+.4f}]"
+        )
+    print(f"wrote {path}")
+    return 0
+
+
 def renders_grade_split(args: argparse.Namespace) -> int:
     """What one fold's split holds, before anything is fitted on it."""
     from fractal_wallpapers.models import render_cv, render_grade
@@ -5301,6 +5380,78 @@ def render_commands(subcommands) -> None:
         "is the baseline's; naming another arm makes the population a stated choice",
     )
     contesting.set_defaults(handler=renders_cv_compare)
+
+    dosing = steps.add_parser(
+        "dose",
+        help="one recipe on increasing amounts of label data, read on a holdout that does not move",
+        description=(
+            "A dose curve rather than an arms comparison. The incumbent recipe and the "
+            "incumbent stopping rule are refit on the corpus as it stood at each of several "
+            "batch-registration dates, and on random lineage draws of the grown corpus "
+            "matched to the pre-growth row count. Every point is read on the same held-out "
+            "rows. Nothing here adopts anything."
+        ),
+    )
+    dosings = dosing.add_subparsers(dest="dose_step", required=True)
+
+    dose_planning = dosings.add_parser(
+        "plan",
+        help="every dose point's training side on every fold, before anything is fitted",
+        description=(
+            "The dose axis in rows, the strange fours beside it, and the holdout that does "
+            "not move. What a launch is priced off."
+        ),
+    )
+    dose_planning.add_argument(
+        "--folds", default="0,1,2,3,4", help="which parts of the deal, comma separated"
+    )
+    dose_planning.add_argument("--points", help="which dose points, comma separated (default: all)")
+    dose_planning.set_defaults(handler=renders_dose_plan)
+
+    dose_fitting = dosings.add_parser(
+        "fit",
+        help="fit the incumbent recipe on one dose point and one fold",
+        description=(
+            "The trainer every band on the record used, over the deal's own folds, with the "
+            "rows outside the dose held out of training alongside the fold's own holdout."
+        ),
+    )
+    dose_fitting.add_argument("--point", required=True, help="which dose point")
+    dose_fitting.add_argument("--fold", type=int, required=True, help="which part of the deal")
+    dose_fitting.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
+    dose_fitting.add_argument("--epochs", type=int, help="override the epoch ceiling")
+    dose_fitting.set_defaults(handler=renders_dose_fit)
+
+    dose_reading = dosings.add_parser(
+        "read",
+        help="read one dose point's held-out rows through its own checkpoint",
+        description=(
+            "One row a picture, carrying its whole join and the dose point that produced it. "
+            "Every point writes the same rows, which is what lets the curve be read paired."
+        ),
+    )
+    dose_reading.add_argument("--point", required=True, help="which dose point")
+    dose_reading.add_argument("--fold", type=int, required=True, help="which part of the deal")
+    dose_reading.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
+    dose_reading.set_defaults(handler=renders_dose_read)
+
+    dose_curve = dosings.add_parser(
+        "curve",
+        help="every declared readout at every point, against one anchor",
+        description=(
+            "The rank key refit per point, the strange and smooth AUCs, and the sparse-mode "
+            "slice — each as a paired difference against the pre-growth point on identical "
+            "rows. No level is claimed anywhere."
+        ),
+    )
+    dose_curve.add_argument(
+        "--points", help="which dose points, comma separated (default: all read)"
+    )
+    dose_curve.add_argument("--folds", help="which folds, comma separated (default: all read)")
+    dose_curve.add_argument(
+        "--reference", default="era_0824", help="the anchor every difference is taken against"
+    )
+    dose_curve.set_defaults(handler=renders_dose_curve)
 
     grading = steps.add_parser(
         "grade",
