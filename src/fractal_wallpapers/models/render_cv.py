@@ -223,6 +223,10 @@ def pool() -> tuple[list[dict], list[render_train.Picture], dict]:
     for kind in render_train.KINDS:
         counted = {"scored": 0, "off_kind": 0, "swept": 0, "kept": 0, "pinned": 0}
         crops = renders.crop_dir(kind)
+        # One listing of the crop directory rather than a stat a row: see
+        # [`renders.present`] for the measurement. This loop is the pool's whole
+        # cost and it runs over every scored row of both stores.
+        on_disk = renders.present(kind)
         for row in finished.resolved(kind).scored():
             counted["scored"] += 1
             if finished.routed_to(row["mode"]) != kind:
@@ -235,7 +239,7 @@ def pool() -> tuple[list[dict], list[render_train.Picture], dict]:
                 continue
             name = renders.job_name({**row, "_head": kind})
             path = crops / f"{name}.jpg"
-            if not path.is_file():
+            if f"{name}.jpg" not in on_disk:
                 absent.append(name)
                 continue
             place = finished.place_of(row)

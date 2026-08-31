@@ -32,12 +32,16 @@ TOUCHED = {"train", render_deploy.STOPPING}
 
 
 @pytest.fixture(scope="module")
-def split(shipped_render_cache):
-    """One seed's split, derived once for every guard in this file."""
+def split(shipped_render_cache, shipped_cv_pool):
+    """One seed's split, derived once for every guard in this file.
+
+    The population through `conftest.shipped_cv_pool` — the session's one reading,
+    which hands back its own `Picture`s so `sides_for` may assign them in place.
+    """
     short = {kind: len(shipped_render_cache.missing(kind)) for kind in render_train.KINDS}
     if any(short.values()):
         pytest.skip(f"the render cache is short {short} — `renders plan` then `renders build`")
-    rows, pictures, record = render_deploy.sides_for(render_deploy.SEEDS[0], render_cv.pool())
+    rows, pictures, record = render_deploy.sides_for(render_deploy.SEEDS[0], shipped_cv_pool.pool())
     return rows, pictures, record
 
 
@@ -234,18 +238,25 @@ def test_the_stopping_slice_keeps_the_ones_and_twos(split) -> None:
 
 
 @pytest.mark.slow
-def test_the_three_seeds_draw_three_different_holdouts(shipped_render_cache) -> None:
+def test_the_three_seeds_draw_three_different_holdouts(
+    shipped_render_cache, shipped_cv_pool
+) -> None:
     """The seed has to move the split, or three runs are one run three times.
 
     The pinned lineages are forced into every one of them and that part is meant
     to be identical; what has to differ is the draw on top.
+
+    A seed gets its own `Picture`s from `conftest.shipped_cv_pool` rather than its
+    own sweep of both stores. `sides_for` assigns them in place, so what the three
+    draws need of each other is independence and not a re-derivation — this was
+    three layouts and 20.8 s of the slow lane before the fixture existed.
     """
     short = {kind: len(shipped_render_cache.missing(kind)) for kind in render_train.KINDS}
     if any(short.values()):
         pytest.skip(f"the render cache is short {short}")
     drawn = []
     for seed in render_deploy.SEEDS:
-        _rows, pictures, record = render_deploy.sides_for(seed, render_cv.pool())
+        _rows, pictures, record = render_deploy.sides_for(seed, shipped_cv_pool.pool())
         drawn.append(
             frozenset(
                 (picture.kind, picture.name)

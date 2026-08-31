@@ -613,24 +613,39 @@ def tracked_pool(tracked_ledger):
     return tracked_ledger.pool
 
 
+@pytest.fixture(scope="module")
+def tracked_seating(tracked_ledger):
+    """**One** real seating of the tracked pool, read by both guards below.
+
+    The two asked the same question of `seating.seat` with the same arguments and
+    got the same answer twice, for 3.3 s and 3.1 s of the slow lane on this
+    machine, 2026-08-31. They assert different things about it, which is what
+    makes them two tests; a greedy over the whole pool is not a thing to run
+    twice to find that out.
+
+    Read-only, like the tracked readings in `conftest.py`.
+    """
+    return seating.seat(tracked_ledger.pool, n=20, key=seating.JUDGE_KEY, log=quiet)
+
+
 @pytest.mark.slow
-def test_the_tracked_pool_seats_and_the_ledger_partitions_it(tracked_pool):
+def test_the_tracked_pool_seats_and_the_ledger_partitions_it(tracked_pool, tracked_seating):
     """One real seating, and the invariant the rejection ledger exists for: every
     candidate is seated exactly once or refused for exactly one reason.
 
     A ledger that double-counted would inflate whichever axis it double-counted
     on, and that aggregate is what a leg would be aimed down.
     """
-    record = seating.seat(tracked_pool, n=20, key=seating.JUDGE_KEY, log=quiet)
+    record = tracked_seating
     assert record["filled"] + sum(record["rejection"]["reasons"].values()) == len(tracked_pool)
     assert len({seat["location"] for seat in record["seated"]}) == record["filled"]
 
 
 @pytest.mark.slow
-def test_the_real_seating_breaks_no_rule_it_recorded_as_soft(tracked_pool):
+def test_the_real_seating_breaks_no_rule_it_recorded_as_soft(tracked_seating):
     """Soft means the shortfall is recorded, never that the rule is exceeded: a
     greedy that passes over a candidate cannot end up over an allowance."""
-    record = seating.seat(tracked_pool, n=20, key=seating.JUDGE_KEY, log=quiet)
+    record = tracked_seating
     assert record["shortfalls"]["cells"]["over_allowance"] == {}
     assert record["shortfalls"]["families"]["over_allowance"] == {}
     assert record["shortfalls"]["groups"]["over_cap"] == {}

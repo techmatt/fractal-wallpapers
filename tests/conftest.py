@@ -168,6 +168,58 @@ def shipped_render_cache():
 
 
 @pytest.fixture(scope="session")
+def shipped_cv_pool():
+    """`render_cv.pool()` and the deal over it, derived **once** for the session.
+
+    The same argument as [`shipped_render_cache`] one module up. Laying this out
+    sweeps every scored row of both finished stores, digests a recipe per row and
+    asks the render cache for its picture, and until this existed the slow lane
+    paid for it eight times: `test_render_cv` twice — once directly and once
+    inside `assignment`, which calls `pool` itself — `test_render_deploy` four
+    times, once in its module fixture and once per seed in the three-seed guard,
+    and `test_render_dose` and `test_render_grade` once each. On this machine,
+    2026-08-31, that was 52.4 s of a 563 s lane.
+
+    **The pictures are handed out fresh on every call, and that is the whole
+    reason this is a factory rather than a value.** `render_deploy.sides_for`
+    assigns `picture.side` **in place**, so one shared list would carry whichever
+    file ran last into whichever ran next — a cross-file coupling that reads as a
+    split rule breaking. A `dataclasses.replace` per row restores exactly the
+    independence a second `pool()` call used to buy, at about ten milliseconds
+    against four seconds.
+
+    The rows and the record are shared as they are: nothing here writes to them,
+    and `groups.assign` only reads. A test that needs to move one takes a copy,
+    which is this file's standing rule.
+    """
+    import dataclasses
+    from unittest import mock
+
+    from fractal_wallpapers.models import render_cv
+
+    derived: list = []
+
+    def pool():
+        if not derived:
+            derived.append(render_cv.pool())
+        rows, pictures, record = derived[0]
+        return rows, [dataclasses.replace(picture) for picture in pictures], record
+
+    @functools.cache
+    def assignment(*args, **flags):
+        """The real `assignment`, with the shared pool bound under it.
+
+        Patched rather than reimplemented, for [`shipped_render_cache`]'s reason:
+        a fixture that dealt the folds itself would be a second opinion about the
+        deal, which is the question that function exists to own.
+        """
+        with mock.patch.object(render_cv, "pool", pool):
+            return render_cv.assignment(*args, **flags)
+
+    return SimpleNamespace(pool=pool, assignment=assignment)
+
+
+@pytest.fixture(scope="session")
 def distillation_rows():
     """The tracked palette-distillation corpus, or a skip where it is not built."""
     from fractal_wallpapers.models import palette_corpus

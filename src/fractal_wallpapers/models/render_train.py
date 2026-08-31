@@ -475,11 +475,14 @@ def population(only: str | None = None) -> tuple[list[Picture], dict]:
         own = set(finished.pinned(kind))
         rows = finished.resolved(kind).scored()
         crops = renders.crop_dir(kind)
+        # One listing of the crop directory rather than a stat a row: see
+        # [`renders.present`] for the measurement.
+        on_disk = renders.present(kind)
         counted = {"rows": len(rows), "eval": 0, EXCLUDED: 0, "train_side": 0}
         for row in rows:
             name = renders.job_name({**row, "_head": kind})
             path = crops / f"{name}.jpg"
-            if not path.is_file():
+            if f"{name}.jpg" not in on_disk:
                 absent.append(name)
                 continue
             place = finished.place_of(row)

@@ -3,8 +3,8 @@
 The test suite, including the guard that keeps this history text-only and small.
 
 ```
-python -m pytest                                    # the fast lane, ~65s
-python -m pytest --slow                             # every test, ~7m20s
+python -m pytest                                    # the fast lane, ~1m40s
+python -m pytest --slow                             # every test, ~5m45s
 cargo test --manifest-path engine/Cargo.toml        # ~7s warm, ~28s cold
 ```
 
@@ -42,11 +42,22 @@ marking, not before.
 
 `conftest.py` holds session-scoped fixtures over the records this repository
 tracks — `shipped_labels`, `shipped_scored`, `shipped_tile_plan`,
-`shipped_render_cache`, `distillation_rows`, and `tracked_ledger`. Each is a
+`shipped_render_cache`, `shipped_cv_pool`, `distillation_rows`, and
+`tracked_ledger`. Each is a
 second or more to derive and the same every time it is asked, and more than one
 file asks. They are fixtures rather than module caches so the sharing is opt-in:
 a test that redirects a store to `tmp_path` does not ask for them and cannot be
 handed a reading of the tracked corpus by accident. Nothing writes to them.
+
+`shipped_cv_pool` is the second one to reach for by reflex, and it is a factory
+rather than a value on purpose. `render_deploy.sides_for` assigns `picture.side`
+**in place**, so one shared list would carry whichever file ran last into
+whichever ran next; the fixture hands back fresh `Picture`s on every call — a
+`dataclasses.replace` a row, about ten milliseconds against four seconds — which
+is exactly the independence a second `pool()` call used to buy. Its `assignment`
+is the real `render_cv.assignment` with the shared pool patched under it, for
+`shipped_render_cache`'s reason: a fixture that dealt the folds itself would be a
+second opinion about the deal.
 
 `tracked_ledger` is the dear one and the one to reach for by reflex. It carries
 `.rows`, `.scores`, `.pool`, `.costs` and `.refused` — one reading, about 40s and
@@ -59,21 +70,46 @@ is every machine but Matt's — CI included, so none of this costs CI anything.
 
 ## Where the time goes
 
-The lane is a handful of tests and never a broad tax. At 2026-08-29, `--slow` is
-440s and its `--durations` list is:
+The lane is a handful of tests and never a broad tax, and that is measurable
+rather than a figure of speech: at 2026-08-31 the **top eighty tests were 490.6s
+of a 563.5s lane**, and the other three thousand and sixty-eight were 72.9s
+between them. So the question to ask of a slow lane that has grown is never
+"what got slower"; it is **which store grew**, or **which derivation is being
+paid twice**, and never a broad hunt.
+
+That 563.5s is now **345.8s**, over the same 3,152 tests on the same machine the
+same day, and no guard was deleted or moved lanes to get there. Four things came
+out of the durations list, in the order they were worth:
+
+| was | is | what |
+| --- | --- | --- |
+| 116.6s | 5.7s | `test_curation_colorize`'s byte-identity leg, on [`EXACTNESS_GEOMETRY`] |
+| 29.5s | — | its fallback leg, the same |
+| 52.4s | 6.3s | eight derivations of `render_cv.pool` collapsed to one — `conftest.shipped_cv_pool` |
+| ~10.5s a call | 9ms | `served_locations.build` asking `current_pass` once instead of once a row |
+
+And what is left, which is the list to read before touching this again:
 
 | s | what |
 | --- | --- |
-| 104 | `test_curation_colorize`'s byte-identity leg — 28 real renders through both paths |
-| 40 | **the one reading of the candidate ledger**, wherever it lands first |
-| 31 | `test_autolevel_identity`'s 28 pinned probes |
-| 25 | `test_curation_colorize`'s fallback leg |
-| 17, 7 | `test_retention`'s two whole-store sweeps |
-| ~10 each | `test_hunt`, `test_candidate_ledger`, `test_distinct` |
+| 31 | `test_autolevel_identity`'s 28 pinned probes — **pinned to production geometry**, so it is not the colorize leg's trade |
+| 12 | **the one reading of the candidate ledger**, wherever it lands first |
+| ~10 each | `test_render_head`, `test_distinct`, `test_candidate_ledger`, `test_hunt` |
+| ~7 each | `test_train`'s two epochs, `test_renders`' regeneration, `test_ledger_tracking`'s merges |
 
-Everything else — three thousand tests — is about two minutes between them. So
-the question to ask of a slow lane that has grown is never "what got slower"; it
-is **which store grew**, and then whether one more guard started reading it.
+`test_ledger_tracking`'s merges are the honest kind: a merge reads the tracked
+release sidecar through `intake.read_scores` once, and a test that merges twice
+pays for two. That is what the door does in production and it is not a bug.
+
+### A derivation paid twice is the thing to look for
+
+`served_locations.build` is the one to remember, because it was not a test
+problem at all. `current_pass(rows)` sat **inside the list comprehension that
+filters `rows`**, so it re-ranked the whole store once per row: 1,186 calls to
+`records.score_rank` where one was meant, on every merge, every seating and every
+gallery build. It is a pure function of `rows` and `rows` does not move under the
+filter, so hoisting it is the same answer for a thousandth of the work. Nothing
+about the test suite made that visible — a profile of one 10s test did.
 
 ### The candidate ledger is the thing that grows
 
