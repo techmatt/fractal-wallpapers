@@ -119,7 +119,12 @@ edit-run loop and nothing else.
 
 Both are measured, not estimated: **3,121 tests in 8:23**, with the fast lane at
 **116.8 s over the 3,007 it holds**. On this machine, idle, 2026-08-30, at the
-commit that added `renders deploy`. The entry here read 64.3 s and 7:20 at
+commit that added `renders deploy`. **It read 3,126 in 14:26 on 2026-08-31**, idle,
+at the commit that closed the pool re-score — twice in a row (12:45 then 14:26) and
+over five *more* tests than the 8:23. That is the third time this lane has moved
+without code moving; the store that grew in between is the release pool's, whose
+16,029 rows were rewritten and whose 3,484 candidate pictures were put back on
+disk that morning. The entry here read 64.3 s and 7:20 at
 `0b53e15`, then **3,101 in 16:25 with the fast lane at 290-320 s** at `9560862`
 later the same day; what happened in between and what undid it are the next two
 paragraphs, and they are why a stale figure here is worth correcting rather than

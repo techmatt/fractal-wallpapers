@@ -54,8 +54,12 @@ with a reason and no number, and it has no picture to read either.
 from __future__ import annotations
 
 import functools
+import json
+import time
+from datetime import UTC, datetime
 from pathlib import Path
 
+from fractal_wallpapers import paths
 from fractal_wallpapers.curation import records
 from fractal_wallpapers.curation import run as run_module
 
@@ -230,20 +234,243 @@ def reading_on(row: dict, stamp: str) -> dict | None:
     return records.live_reading(row)
 
 
+#: The subtree one pool re-render leg owns: its dumped fields and its record.
+#: Its **own**, beside the ledger leg's rather than inside it — the two legs can
+#: be asked for on the same day, and one field directory shared between them is
+#: two legs racing to write one dump.
+RE_RENDER_UNIT = "pool_re_render"
+
+
+def pool_rows() -> list[dict]:
+    """Every scored row of the pool, out of both stores it lives in.
+
+    The population this module is about, in one place: a run's release rows from
+    the tracked store and every gallery pass's attempt rows from its own. A row
+    with **no score** is not in it — a failed render is a decision with a reason
+    and no number, and it has no picture to read either.
+    """
+    from fractal_wallpapers.curation import gallery_store
+
+    return [
+        row
+        for row in [*records.read_decisions(records.RELEASE), *gallery_store.read()]
+        if (row.get("scores") or {}).get("p_ge3") is not None
+    ]
+
+
+def absent_pictures(rows: list[dict] | None = None) -> list[tuple[Path, dict]]:
+    """Every candidate render the pool names and the disk does not have, **once each**.
+
+    `(picture, the row that says how to make it)`. Once each because a pool row
+    is not a picture: a pass's attempt at an earlier run's candidate is a second
+    row about one render, and 3,546 such rows named 3,484 renders the first time
+    this was asked. Rendering per row would pay for sixty-two pictures twice and
+    would put two workers on one path.
+
+    The row handed back is the picture's **own** row where the pool holds it —
+    the one whose `(run, candidate)` is the origin [`origin_of`] resolves to —
+    and the naming row otherwise. The same recipe either way, because a pass
+    copies the join it decided over; asserted rather than assumed by
+    [`re_render`], which refuses any row not reproducing the key it would
+    render under.
+    """
+    stored = pool_rows() if rows is None else list(rows)
+    pool = {row["key"]: row for row in stored}
+    owners = {origin_of(row, pool): row for row in stored}
+    wanted: dict[str, dict] = {}
+    for row in stored:
+        picture = picture_of(row, pool)
+        if picture.is_file() or str(picture) in wanted:
+            continue
+        wanted[str(picture)] = owners.get(origin_of(row, pool), row)
+    return [(Path(where), row) for where, row in wanted.items()]
+
+
+def _palette_knobs(mirror: bool) -> dict:
+    """The six palette knobs the candidate path spends, through their one owner."""
+    from fractal_wallpapers.labeling import finished
+
+    return finished.recipe(mirror=mirror)
+
+
+def re_render(
+    limit: int | None = None,
+    workers: int | None = None,
+    share_fields: bool = True,
+    log=print,
+) -> dict:
+    """Put back every pool candidate render that is not on disk. Writes no row.
+
+    The pool's half of the ledger's second invariant: **the picture stays
+    re-renderable from the row alone**. [`recipes.of_decision`] is the adapter —
+    a release row and a gate row both come through it — and `Recipe.row` is the
+    engine spec, so a decision this project has on record can always have its
+    pixels put back.
+
+    **The same pixels, not similar ones.** Every row is checked before it is
+    rendered: the recipe the *render path* would derive — the palette knobs from
+    the live cyclic set, the autolevel stamp from the shipped band, the geometry
+    from [`recipes.CANDIDATE_REGIME`] — is digested, and the row is rendered only
+    if that digest is the digest of the row's own stored join. A row whose stored
+    recipe and the live checkout disagree would otherwise get *different* pixels
+    under a name every reading in the pool was taken on. Those are recorded and
+    skipped, never worked around.
+
+    Nothing here writes a row, a reading or a manifest. The pictures are the only
+    thing that moves, which is what makes this safe to run beside anything except
+    another leg driving the same three engines.
+    """
+    import shutil
+    from concurrent.futures import ProcessPoolExecutor
+
+    from fractal_wallpapers.curation import candidate_ledger, colorize, recipes
+    from fractal_wallpapers.palettes import groups as groups_module
+
+    started = time.time()
+    if workers is None:
+        workers = candidate_ledger.RE_RENDER_WORKERS
+    wanted = absent_pictures()
+    log(f"[pool re-render] {len(wanted):,} candidate render(s) the pool names are not on disk")
+
+    # ---- the guard, before any engine runs ---------------------------------- #
+    cyclic = colorize.cyclic()
+    band = colorize.band()
+    table = groups_module.member_groups()
+    jobs = []
+    refused = []
+    for picture, row in wanted:
+        recipe = row.get("recipe") or {}
+        mode, colormap = str(recipe.get("mode") or ""), str(recipe.get("colormap") or "")
+        try:
+            stored = recipes.of_decision(row, table)
+            again = recipes.key_of(
+                recipes.Recipe(
+                    family=stored.family,
+                    viewport=stored.viewport,
+                    maxiter=stored.maxiter,
+                    regime=recipes.CANDIDATE_REGIME,
+                    mode=mode,
+                    mode_params={},
+                    curve=colorize.CURVE,
+                    colormap=colormap,
+                    palette=_palette_knobs(colormap not in cyclic),
+                    autolevel=recipes.live_stamp(mode, band),
+                    palette_group=groups_module.group_of(colormap, table),
+                )
+            )
+        except Exception as failure:  # noqa: BLE001 — a row that will not reproduce is a fact
+            refused.append({"key": str(row["key"]), "why": repr(failure)[:160]})
+            continue
+        mine = recipes.key_of(stored)
+        if again != mine:
+            refused.append(
+                {"key": str(row["key"]), "names": mine, "the_render_path_would_make": again}
+            )
+            continue
+        jobs.append(
+            {
+                "key": str(row["key"]),
+                "picture": str(picture),
+                "recipe": {
+                    "family": stored.family,
+                    "viewport": stored.viewport,
+                    "maxiter": stored.maxiter,
+                    "mode": mode,
+                    "colormap": colormap,
+                },
+                "pair": (str((row.get("location") or {}).get("key")), mode),
+            }
+        )
+    log(f"[pool re-render] {len(jobs):,} reproduce their own recipe; {len(refused):,} refused")
+
+    # ---- one task per (location, mode) -------------------------------------- #
+    fields = paths.under("curation", RE_RENDER_UNIT) / "fields"
+    if share_fields:
+        fields.mkdir(parents=True, exist_ok=True)
+    grouped: dict = {}
+    for job in jobs:
+        grouped.setdefault(job["pair"], []).append(job)
+    if limit is not None:
+        # **Whole pairs**, for the ledger leg's reason: a dumped field pays for
+        # itself only across the maps that follow it, so a pilot sliced in row
+        # order pays every dump, amortises none, and prices a leg nobody runs.
+        held: dict = {}
+        taken = 0
+        for pair, rows_of in grouped.items():
+            if taken >= int(limit):
+                break
+            held[pair] = rows_of
+            taken += len(rows_of)
+        grouped = held
+        jobs = [job for rows_of in grouped.values() for job in rows_of]
+        log(f"[pool re-render] limited to {len(jobs):,} over {len(grouped):,} whole pair(s)")
+    payloads = [
+        {"fields": str(fields) if share_fields else None, "rows": held} for held in grouped.values()
+    ]
+    log(
+        f"[pool re-render] {len(payloads):,} (location, mode) pair(s) over {int(workers)} "
+        f"worker(s); {len(jobs) / max(1, len(payloads)):.2f} picture(s) a pair"
+    )
+
+    made = 0
+    failed = 0
+    why: list = []
+    engine_seconds = 0.0
+    with ProcessPoolExecutor(max_workers=int(workers)) as pool:
+        for done, out in enumerate(pool.map(candidate_ledger.render_pair, payloads), start=1):
+            made += out["made"]
+            failed += out["failed"]
+            engine_seconds += out["seconds"]
+            why += out["why"][: max(0, 20 - len(why))]
+            if done % 100 == 0 or done == len(payloads):
+                wall = time.time() - started
+                rate = made / max(1e-9, wall)
+                left = (len(jobs) - made) / max(1e-9, rate)
+                log(
+                    f"[pool re-render] {made:,} of {len(jobs):,} made in {wall / 60:.1f} min "
+                    f"({rate:.1f}/s, ~{left / 60:.0f} min left), {failed:,} failed"
+                )
+
+    if share_fields:
+        shutil.rmtree(fields, ignore_errors=True)
+    wall = time.time() - started
+    record = {
+        "schema": records.SCHEMA,
+        "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "share_fields": bool(share_fields),
+        "named_but_absent": len(wanted),
+        "reproduce_their_own_recipe": len(jobs) if limit is None else None,
+        "refused": refused[:20],
+        "refused_count": len(refused),
+        "asked": len(jobs),
+        "made": made,
+        "failed": failed,
+        "why": why,
+        "pairs": len(payloads),
+        "workers": int(workers),
+        "wall_seconds": round(wall, 1),
+        "engine_seconds": round(engine_seconds, 1),
+        "seconds_per_picture": round(engine_seconds / max(1, made), 4),
+        "seconds_per_picture_is": "per ENGINE. Wall a picture is this over the concurrency",
+        "concurrency": round(engine_seconds / max(1e-9, wall), 2),
+    }
+    path = paths.under("curation", RE_RENDER_UNIT) / "re_render.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8", newline="\n")
+    log(f"[pool re-render] {made:,} made, {failed:,} failed in {wall / 60:.1f} min")
+    return record
+
+
 def run(device: str = "auto", log=print) -> dict:
     """Read the whole pool through the live heads and write `scores_current`.
 
     Idempotent: a second pass over an unchanged pool through unchanged heads
     writes the same bytes.
     """
-    from fractal_wallpapers.curation import floors, gallery_store
+    from fractal_wallpapers.curation import floors
     from fractal_wallpapers.models import render_train, scoring, ship, train
 
-    rows = [
-        row
-        for row in [*records.read_decisions(records.RELEASE), *gallery_store.read()]
-        if (row.get("scores") or {}).get("p_ge3") is not None
-    ]
+    rows = pool_rows()
     if not rows:
         raise RescoreError("the pool holds no scored row, so there is nothing to read.")
 
@@ -431,10 +658,14 @@ def _write(rows: list[dict], read: dict, log) -> dict:
 __all__ = [
     "BLOCK",
     "PICTURES",
+    "RE_RENDER_UNIT",
     "RescoreError",
+    "absent_pictures",
     "block",
     "origin_of",
     "picture_of",
+    "pool_rows",
+    "re_render",
     "run",
     "artifact_of",
     "reading_on",

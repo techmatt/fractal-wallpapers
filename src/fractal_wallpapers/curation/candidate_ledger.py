@@ -479,7 +479,7 @@ def missing_pictures(rows=None) -> list[dict]:
 _CYCLIC: set | None = None
 
 
-def _re_render_pair(payload: dict) -> dict:
+def render_pair(payload: dict) -> dict:
     """One (location, mode) pair's missing pictures, in a worker. **Module level.**
 
     A Windows pool *spawns*, so a closure over the work list would not pickle;
@@ -588,7 +588,7 @@ def re_render(
                     curve=colorize.CURVE,
                     colormap=colormap,
                     palette=finished.recipe(mirror=colormap not in cyclic),
-                    autolevel=_live_stamp(mode, band),
+                    autolevel=recipes.live_stamp(mode, band),
                     palette_group=groups_module.group_of(colormap, table),
                 )
             )
@@ -648,7 +648,7 @@ def re_render(
     why: list = []
     engine_seconds = 0.0
     with ProcessPoolExecutor(max_workers=int(workers)) as pool:
-        for done, out in enumerate(pool.map(_re_render_pair, payloads), start=1):
+        for done, out in enumerate(pool.map(render_pair, payloads), start=1):
             made += out["made"]
             failed += out["failed"]
             engine_seconds += out["seconds"]
@@ -858,21 +858,6 @@ def _append_partial(rows) -> None:
     with path.open("a", encoding="utf-8", newline="\n") as handle:
         for row in rows:
             handle.write(json.dumps(row, ensure_ascii=False) + "\n")
-
-
-def _live_stamp(mode: str, band: dict | None):
-    """The autolevel identity a render in this mode will carry, right now.
-
-    [`hunt.Maker.stamp_for`]'s body, and deliberately the same one: the stamp is
-    a member of the recipe key, so a second derivation of it here would be a
-    second answer to what picture a row names.
-    """
-    from fractal_wallpapers.coloring import autolevel
-    from fractal_wallpapers.curation import colorize, recipes
-
-    if not autolevel.enabled() or not recipes.autolevel_applies(colorize.kind_of(mode)):
-        return recipes.NO_AUTOLEVEL
-    return recipes.stamp_of(autolevel.make_stamp(band or {}, {}, {}, 0, 0, acted=False))
 
 
 def picture_census(rows=None) -> dict:
@@ -2231,6 +2216,7 @@ __all__ = [
     "stream",
     "stream_scores",
     "re_render",
+    "render_pair",
     "renders_of",
     "prune",
     "restore",

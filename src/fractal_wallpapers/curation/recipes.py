@@ -382,6 +382,25 @@ def autolevel_applies(mode_kind: str | None) -> bool:
     return bool(mode_kind) and autolevel.applies_to(str(mode_kind))
 
 
+def live_stamp(mode: str, band: dict | None = None):
+    """The autolevel identity a render in this mode will carry **right now**.
+
+    [`hunt.Maker.stamp_for`]'s body, hoisted to the module that owns the key it
+    is a member of. Two re-render legs ask it — the ledger's and the pool's — and
+    a third spelling of it is a third answer to what picture a row names, which
+    is the failure [`stamp_of`] exists to prevent.
+
+    Derivable rather than observed: the operator, the switch and the band's
+    sha256 are all known before the engine runs, and `acted` is deliberately not
+    among them.
+    """
+    from fractal_wallpapers.curation import colorize
+
+    if not autolevel.enabled() or not autolevel_applies(colorize.kind_of(mode)):
+        return NO_AUTOLEVEL
+    return stamp_of(autolevel.make_stamp(band or colorize.band() or {}, {}, {}, 0, 0, acted=False))
+
+
 __all__ = [
     "CANDIDATE_REGIME",
     "CARRIED",
@@ -397,6 +416,7 @@ __all__ = [
     "frame_used",
     "is_candidate_regime",
     "key_of",
+    "live_stamp",
     "of_decision",
     "of_record",
     "stamp_of",

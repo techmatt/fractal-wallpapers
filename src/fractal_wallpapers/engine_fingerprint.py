@@ -20,13 +20,24 @@ catalog* moved without its arithmetic moving.
 It needs no build system, no revision plumbing, and no cooperation from the
 crate. It costs one render per probe, once per process.
 
-**The probes are pinned, and they span the axes a change can hide in.** Four
+**The probes are pinned, and they are a SAMPLE rather than a cover.** Four
 family kinds, six modes, both planes, and one `itinerary` — the mode whose
 address opens differently on a dynamical plane — because the escape loop is
 written out per family *and per channel set*, and a change to one specialization
 would be invisible to a probe set that only drew `smooth` on a Mandelbrot. The
 geometry is the node regime's, which is the frame the views this pin protects
 are drawn at.
+
+**What that sample does not see.** [`PROBES`] is six fixed rows and the mode
+roster is eighteen, so a change confined to one of the twelve modes nobody probes
+moves no pixel this digest reads, and a build that **adds** a mode is invisible
+to it outright — the six probes come back byte-identical and the fingerprint does
+not move. Same for a family kind, a curve or a palette operator outside the six.
+This says *these six renders came back different*, and a fingerprint that has not
+moved is evidence about the probed path and not a certificate about the build. It
+is not the roster's guard either: the mode catalog is pinned against the engine's
+own list by [`curation.mode_policy`], which refuses when the two describe
+different rosters, and that is the check a new mode trips.
 
 ## A picture says which build drew it, beside the picture
 

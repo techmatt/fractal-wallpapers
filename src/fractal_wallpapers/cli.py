@@ -3086,6 +3086,15 @@ def curate_rescore(args: argparse.Namespace) -> int:
     return 0
 
 
+def curate_re_render(args: argparse.Namespace) -> int:
+    """Put back every pool candidate render that is not on disk."""
+    from fractal_wallpapers.curation import rescore
+
+    report = rescore.re_render(limit=args.limit, workers=args.workers)
+    print(json.dumps(report, indent=2))
+    return 1 if report["failed"] or report["refused_count"] else 0
+
+
 def drawn_modes(args: argparse.Namespace):
     """The mode table this invocation asks for, or `None` for curation's own.
 
@@ -3326,8 +3335,18 @@ def _twin_sweep(candidates, radius) -> dict:
 
 def curate_seat(args: argparse.Namespace) -> int:
     """Seat a gallery off the ledger with a greedy, keep every refusal, release it."""
-    from fractal_wallpapers.curation import headroom, seating
+    from fractal_wallpapers.curation import headroom, mode_policy, seating
     from fractal_wallpapers.curation import release as release_module
+
+    floor = args.mode_floor
+    if args.seat_floors:
+        if floor is not None:
+            print("--seat-floors and --mode-floor are two different floors; name one.")
+            return 1
+        # The ONE shipped call, and it is behind a flag nobody gets by default:
+        # an unflagged seating still asks `solve.mode_floor` for a flat floor.
+        floor = mode_policy.seat_floors(args.n)
+        print(json.dumps({"seat_floors": floor, "asks_for": sum(floor.values())}, indent=2))
 
     candidates, _costs, _refused = headroom.population()
     order, coverage = seating.ranking_for(candidates, args.key)
@@ -3336,7 +3355,7 @@ def curate_seat(args: argparse.Namespace) -> int:
     record = seating.seat(
         candidates,
         n=args.n,
-        floor=args.mode_floor,
+        floor=floor,
         radius=None if args.no_preselection else args.neutral_radius,
         twin=not args.no_twin,
         group_cap=args.group_cap,
@@ -7335,6 +7354,37 @@ def curate_commands(subcommands) -> None:
     rereading.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
     rereading.set_defaults(handler=curate_rescore)
 
+    remaking = steps.add_parser(
+        "re-render",
+        help="put back every pool candidate render the pool names and the disk does not have",
+        description=(
+            "The pool's pictures live under the regenerable tree, and `rescore` refuses "
+            "outright while one of them is missing — a reading of most of the pool is not a "
+            "reading of the pool. This is the repair that refusal points at. Each row's "
+            "recipe is rebuilt from the join the row carries, and it is rendered only if "
+            "the recipe the RENDER PATH derives digests to the same name: the same pixels, "
+            "not similar ones, because every reading the pool holds was taken on the pixels "
+            "that used to be there. A row that will not reproduce is recorded and skipped. "
+            "Writes no row, no reading and no manifest."
+        ),
+    )
+    remaking.add_argument(
+        "--workers",
+        type=int,
+        default=candidate_ledger_module.RE_RENDER_WORKERS,
+        metavar="COUNT",
+        help="how many engines to drive at once (default "
+        f"{candidate_ledger_module.RE_RENDER_WORKERS}, this machine's render pool). More "
+        "than three, or any of them at normal priority, makes the desktop unusable",
+    )
+    remaking.add_argument(
+        "--limit",
+        type=int,
+        help="stop after this many pictures, taken as WHOLE (location, mode) pairs. What a "
+        "pilot prices the whole leg off",
+    )
+    remaking.set_defaults(handler=curate_re_render)
+
     def with_shape(parser, defaults=True):
         # A run takes `None` where `plan` takes a number: a resumed run reads its
         # shape back out of its own sidecar, and a flag that defaulted to 6 here
@@ -7741,6 +7791,15 @@ def curate_commands(subcommands) -> None:
         f"at a size where the real floor asks for nothing. Unset is "
         f"floor(n / {solve_module.SEATS_PER_MODE_FLOOR}) — 0 at n=20, 1 at 150, 10 at 1000 "
         "— and a record taken under an artificial floor says so",
+    )
+    seating_step.add_argument(
+        "--seat-floors",
+        action="store_true",
+        help="seat under the PER-MODE floor rule — curation.mode_policy.seat_floors(n), "
+        "half each accepted strange mode's share of the strange seat budget, summing to "
+        "half of it. Off unless named, and naming it is the only way to a gallery seated "
+        "under the rule: an unflagged seating still takes the flat floor. Refuses beside "
+        "`--mode-floor`, which asks for a different one",
     )
     seating_step.add_argument(
         "--neutral-radius",
