@@ -404,7 +404,18 @@ def _row(
     renders: int,
     note: str = "",
 ) -> dict:
-    """One constraint's line: what it needs, what the pool has, and what more costs."""
+    """One constraint's line: what it needs, what the pool has, and what more costs.
+
+    **`renders_per_win` and `win_rate` are contaminated, and the fix is the
+    reader's.** `renders` is the whole ledger and `members` is the whole ledger's
+    survivors — neither side is filtered by `hunt.drawn_for`, so a leg aimed at
+    this constraint raises the numerator far faster than the denominator and the
+    price of a targeted win reads *lower* than it was. There is no scalar
+    correction: the aimed and unaimed draws are mixed at every place. Read these
+    two as a ledger-wide average over however the pool was actually bought, never
+    as what one more aimed render would cost. `depth.mode_bars`'
+    `ledger_clear_rate` reads the same contamination, for the same reason.
+    """
     places = _places(members)
     supply = len(places)
     win_rate = supply / renders if renders else 0.0

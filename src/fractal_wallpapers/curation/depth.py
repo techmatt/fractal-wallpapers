@@ -1591,6 +1591,12 @@ def mode_bars(rows=None, log=lambda *_args: None) -> dict:
         "on_fallback": list(table["on_fallback"]),
         "ledger_candidates": len(candidates),
         "ledger_clearing": len(clearing),
+        # `ledger_clear_rate` is the whole ledger's, unfiltered by
+        # `hunt.drawn_for` — the same contamination `headroom._row` carries and
+        # for the same reason. Aimed rows sit in both the numerator and the
+        # denominator at whatever mix the pool was bought at, so this is a
+        # ledger-wide average and never the rate a fresh aimed draw would clear
+        # at. It is here to stand beside the arm rates below, not to price one.
         "ledger_clear_rate": round(len(clearing) / max(1, len(candidates)), 5),
     }
 

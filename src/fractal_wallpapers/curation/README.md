@@ -2327,7 +2327,17 @@ population. Read them as **per engine**, which is what `--rate` is:
 * **`config.field_modes_only` is stamped `true` unconditionally** and is not enforced:
   `build_plan` takes `--modes` verbatim with no `colorize.shareable()` check, so a
   wholly composite roster runs and its record still claims field modes only. Do not read
-  that field.
+  that field. The cost of that is in the plan rather than in the record: the roster is
+  cycled **uniformly**, so a composite mixed in beside field modes takes an equal count
+  of the width at several times the unit cost and eats the breadth the leg was bought
+  for. A composite wants its own bounded leg, not a seat on this one.
+* **`--finish-by` is `harvest`'s alone and does not pace anything.** All five sites sit
+  under the `harvest` parser and it is a *derivation* of `--minutes` — the clock picks
+  the budget once, at launch, and nothing consults it again. `curate depth` does not
+  have the flag at all: it sizes off a budget in **wall seconds** plus a rate measured
+  at **its own width**, and refuses rather than guessing when the rate is absent. A
+  gallery pass has no clock of either kind — it runs to completion, and the hours it
+  is quoted at are an estimate with a hard-kill backstop behind them.
 
 ## Every per-candidate rate this project has measured
 
