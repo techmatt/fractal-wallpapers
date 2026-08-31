@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import dataclasses
 import json
+from pathlib import Path
 
 import pytest
 
@@ -747,6 +748,92 @@ def test_the_prune_is_the_only_thing_that_deletes_and_it_runs_from_the_merge():
     )
 
 
+def a_pair(pictures: Path, key: str) -> None:
+    """One candidate on disk as `colorize.render` leaves it: the JPEG and, where
+    the autolevel operator acted, the overriding colormap in `<stem>.leveled/`."""
+    pictures.mkdir(parents=True, exist_ok=True)
+    (pictures / f"{key}.jpg").write_bytes(b"0" * 32)
+    (pictures / f"{key}.leveled").mkdir(exist_ok=True)
+    (pictures / f"{key}.leveled" / "viridis.json").write_text('{"stops": []}', encoding="utf-8")
+
+
+def test_a_dropped_picture_takes_its_levelled_colormap_with_it(tmp_path, monkeypatch):
+    """The rule is that a picture goes with its row, and the levelled colormap is
+    part of what that render cost — ~76 KiB beside a ~157 KiB JPEG, on every
+    acted render. Unlinking the one and leaving the other is how 206,147 of them
+    reached 14.9 GiB, more than the whole candidate pool, entirely outside the
+    retention rule and invisible to the function that was supposed to be the only
+    thing deleting a candidate's artifacts."""
+    from fractal_wallpapers import paths
+
+    root = tmp_path / "artifacts"
+    pictures = root / "curation" / "depth" / "a_leg" / "pictures"
+    a_pair(pictures, "dropped")
+    a_pair(pictures, "kept")
+    monkeypatch.setenv(paths.HOT_ROOT_VARIABLE, str(root))
+
+    record = candidate_ledger.delete_pictures(
+        ["artifacts/curation/depth/a_leg/pictures/dropped.jpg"], log=lambda *_: None
+    )
+
+    assert record["deleted"] == 1 and record["bytes"] == 32
+    assert record["colormaps"] == 1 and record["colormap_bytes"] == 13
+    assert not (pictures / "dropped.jpg").exists()
+    assert not (pictures / "dropped.leveled").exists()
+    # The row nobody dropped keeps both halves of what its render made.
+    assert (pictures / "kept.jpg").is_file()
+    assert (pictures / "kept.leveled" / "viridis.json").is_file()
+
+
+def test_the_colormap_goes_even_where_the_picture_was_already_swept(tmp_path, monkeypatch):
+    """The row is being dropped either way, and a colormap outliving a picture
+    somebody already deleted is precisely the pile. Counted as an absent picture
+    and a deleted colormap, which is what happened."""
+    from fractal_wallpapers import paths
+
+    root = tmp_path / "artifacts"
+    pictures = root / "curation" / "depth" / "a_leg" / "pictures"
+    a_pair(pictures, "half_gone")
+    (pictures / "half_gone.jpg").unlink()
+    monkeypatch.setenv(paths.HOT_ROOT_VARIABLE, str(root))
+
+    record = candidate_ledger.delete_pictures(
+        ["artifacts/curation/depth/a_leg/pictures/half_gone.jpg"], log=lambda *_: None
+    )
+
+    assert record["absent"] == 1 and record["deleted"] == 0
+    assert record["colormaps"] == 1
+    assert not (pictures / "half_gone.leveled").exists()
+
+
+def test_a_name_this_project_did_not_write_reaches_neither_half(tmp_path, monkeypatch):
+    """`rehome` answers `None` for a name with no artifacts component, and that
+    has always kept a fixture's `a.jpg` out of reach of this. The colormap sweep
+    is inside the same refusal rather than beside it — a second path built before
+    the check is exactly how this function would grow a way out of the tree."""
+    from fractal_wallpapers import paths
+
+    monkeypatch.setenv(paths.HOT_ROOT_VARIABLE, str(tmp_path / "artifacts"))
+    (tmp_path / "artifacts").mkdir()
+    a_pair(tmp_path / "elsewhere", "a")
+
+    record = candidate_ledger.delete_pictures(["elsewhere/a.jpg"], log=lambda *_: None)
+
+    assert record == {
+        "asked": 1,
+        "deleted": 0,
+        "bytes": 0,
+        "absent": 1,
+        "unreadable": 0,
+        "colormaps": 0,
+        "colormap_bytes": 0,
+        "gib": 0.0,
+        "colormap_gib": 0.0,
+    }
+    assert (tmp_path / "elsewhere" / "a.jpg").is_file()
+    assert (tmp_path / "elsewhere" / "a.leveled" / "viridis.json").is_file()
+
+
 def test_a_prune_reads_the_store_through_the_accessors_and_never_off_the_root(
     isolated, monkeypatch
 ):
@@ -848,20 +935,36 @@ def test_the_re_render_writes_pictures_and_nothing_else(isolated):
 
 
 def test_nothing_but_the_ledger_deletes_a_candidate_picture():
-    """One delete in this project, in one module, reachable from one function."""
+    """One delete in this project, in one module, reachable from one function.
+
+    Asked of **both** verbs, because a candidate now costs two things on disk. A
+    picture is unlinked and a levelled colormap is a directory, so a sweeper that
+    grew `rmtree` somewhere this only asked about `unlink` would be a second way
+    to destroy a candidate that this guard would have called clean."""
     import inspect
 
     from fractal_wallpapers.curation import retention
 
+    def owners(verb: str) -> list[str]:
+        return sorted(
+            name
+            for name, held in vars(candidate_ledger).items()
+            if inspect.isfunction(held)
+            and held.__module__ == candidate_ledger.__name__
+            and verb in inspect.getsource(held)
+        )
+
     assert "unlink(" not in inspect.getsource(retention)
-    unlinks = [
-        name
-        for name, held in vars(candidate_ledger).items()
-        if inspect.isfunction(held)
-        and held.__module__ == candidate_ledger.__name__
-        and "unlink(" in inspect.getsource(held)
-    ]
-    assert sorted(unlinks) == ["delete_pictures", "prune"], unlinks
+    assert "rmtree(" not in inspect.getsource(retention)
+    assert owners("unlink(") == ["delete_pictures", "prune"]
+    # `re_render` is the second only because it drops the shared field directory
+    # it dumped for itself, which is its own working file and not a candidate's.
+    assert owners("rmtree(") == ["_delete_colormap", "re_render"]
+    # One definition and one call site, and the call site is past every outcome
+    # the JPEG can have — a second one inside a branch is how the sweep comes to
+    # be skipped for exactly the rows whose picture was already the odd case.
+    assert inspect.getsource(candidate_ledger).count("_delete_colormap(") == 2
+    assert "_delete_colormap(" in inspect.getsource(candidate_ledger.delete_pictures)
 
 
 def test_by_key_reads_only_the_rows_it_was_asked_for(tmp_path):
