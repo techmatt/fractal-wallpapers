@@ -226,7 +226,11 @@ pairs it never chose found 1,705 and 1,563.
 The bound above says *can*. This says *does*, and it is tracked:
 `data/palettes/color_mass/<mode>.jsonl`, one row per palette group, the **mean chromatic
 share per codebook cell** over every observation of that pair. All **14,796** pairs —
-822 groups by 18 production modes — with no hole in the grid.
+822 groups by the 18 modes it was measured on — with no hole in that grid. The engine
+ships **19** production modes; `color_mass.UNMEASURED` names the one with no file
+(`tail_itinerary`, catalogued after the sweep) and the completeness guard reads the
+engine's roster *less* that tuple, so a mode added later is a named hole rather than a
+red test. Measuring one costs a sweep leg, which is why the hole is declared instead.
 
 ```
 fractal-wallpapers palettes color-mass          cut the map from the two measurements
