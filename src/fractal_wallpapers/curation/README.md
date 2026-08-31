@@ -119,7 +119,7 @@ already cleared the floor, and naming the floor because something else was under
 it sends the reader looking for supply that is already there. That is not
 hypothetical: gallery4's seat `0153` recorded `below_bar` with 27 of its 30
 candidates under the floor, while the 3 that cleared it were turned away by the
-location rule and its best held P(≥3) 0.881 against a floor of 0.575. It reads
+location rule and its best held P(≥3) 0.881 against a floor of 0.770. It reads
 `location_served` under [`selection.binding_reason`], and every count that says so
 was already on the tracked record — the pass does not have to be run again to
 re-read it.
@@ -759,7 +759,7 @@ Which mode is on which bar is the last column of the capability table under
 `mode_policy` below, and is not restated here.
 
 Both bars are flags on the arithmetic. Neither is a measured crossover, and the one
-ACTING release bar — `P(>=3) >= 0.575` on strange_render — is *above* the fallback.
+ACTING release bar — `P(>=3) >= 0.770` on strange_render — is *above* the fallback.
 Nothing here re-scores at shipping geometry.
 
 **Read on 2026-08-27 over 85,078 candidates at 4,956 places**, before `mode_policy`
@@ -958,7 +958,7 @@ What acts instead, and all of it on the **candidate** column:
 |---|---|---|
 | `headroom.clearing`, pool construction | `solve.Q4_BAR` = `floors.RELEASE_ADVISORY` = 0.50 | the candidate's `P(>=4)` |
 | the same, for a mode with fewer than `FALLBACK_LOCATIONS`=25 clearing places | `floors.RELEASE_ADVISORY` = 0.50 | the candidate's `P(>=3)` |
-| `selection.py` (a run) | `floors.STRANGE_RELEASE_BAR` = 0.575, strange only | the candidate's `P(>=3)` |
+| `selection.py` (a run) | `floors.STRANGE_RELEASE_BAR` = 0.770, strange only | the candidate's `P(>=3)` |
 
 The third does not act on the `curate seat` path at all — a seating's only bar is the
 first two. `headroom.bars` already carries this on its own record under `provisional`,

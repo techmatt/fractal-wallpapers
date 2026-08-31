@@ -145,6 +145,34 @@ def test_the_acting_bar_is_stamped_with_the_head_its_height_was_measured_on() ->
     )
 
 
+def test_every_acting_render_bar_is_stamped_with_the_head_that_is_shipped() -> None:
+    """All THREE of them, which is one more than the release bar above.
+
+    A render flip refuses three cuts, not one: `strange_render_release` off
+    `STRANGE_RELEASE_BAR`, and both gallery floors off `MEASURED_RELEASE_FLOORS`
+    — where the smooth entry is a height that gates nothing at a run's release
+    and gates a gallery slot. The guard above only reaches the first, so a flip
+    that restated the strange bar and forgot the smooth one would leave the
+    gallery pass refusing with every fast test green.
+    """
+    live = floors.live_stamp(floors.SCORING_HEAD)
+    acting = {
+        f"{head}_gallery": floors.gallery_floor(head) for head in floors.MEASURED_RELEASE_FLOORS
+    }
+    acting.update(
+        {f"{head}_release": floors.release_cut(head) for head in floors.ACTING_RELEASE_BARS}
+    )
+    assert len(acting) == 3, sorted(acting)
+    stale = {name: bar.stamp[:12] for name, bar in acting.items() if bar.stamp != live}
+    assert not stale, (
+        f"{sorted(stale)} are stamped against a head that is not shipped ({live[:12]}), so "
+        f"they refuse on their first call. `head floor --head <kind>` re-measures and the "
+        f"height is re-declared in curation.floors."
+    )
+    for bar in acting.values():
+        bar.check()
+
+
 def test_a_restated_bar_carries_the_scale_the_method_and_the_day() -> None:
     """A bare float is unreadable: 0.50 and 0.685 are the same kind of thing only
     if you already know which head's probabilities each was read against."""

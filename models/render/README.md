@@ -15,11 +15,15 @@ one of those two; the **head** is this one.
 
 ## What ships
 
-`render.fp16.pt`, staged from `enlarged_corpus_seed1` by the pre-declared pick
-rule — the lowest frozen selection objective of the band, 0.372271 against 0.385630
-and 0.377333. The band remains the honest performance read; the pick rule only
-chooses which artifact carries it. It succeeded `small_backbone_seed0` on
-2026-08-24, at the same design and the same backbone, on a corpus 487 rows larger.
+`render.fp16.pt`, staged from `deploy_seed1` — the seed of `renders deploy`'s
+three whose chosen epoch scored best on its own stopping slice, AP(>=3) 0.8765 at
+epoch 17 against 0.8745 at epoch 3 and 0.8498 at epoch 9. It succeeded
+`enlarged_corpus_seed1` on 2026-08-30 as **weights-v5**, at the same recipe and the
+same backbone, fitted on 8,239 pictures against that head's 7,498.
+
+⚠ **Those three APs are read on three different 1,462-row slices**, because the
+seed moves the split as well as the initialization. The 0.002 between the first two
+is not a comparison of two heads, and no number from this band is a level.
 
 The weights are not tracked. `best.pt` and `last.pt` are what training leaves in
 full precision, and `fractal-wallpapers fetch-weights` downloads the halved
@@ -32,16 +36,24 @@ floor is *for* and the head it is *on* are different names now, and the record
 carries both.
 
 ```text
-strange_render   0.575   ACTING at release selection      crossing 0.573085
-smooth_render    0.540   measured, advisory, gates nothing crossing 0.535952
+strange_render   0.770   ACTING at release selection      crossing 0.768239
+smooth_render    0.620   measured, advisory at release    crossing 0.618260
+                         and ACTING in the gallery pass
 ```
 
 **A flip moves these two for two reasons and the record separates them.** The store
-grows and the scale moves, and a method that credited the whole drop to the scale
-would misstate a number somebody restates again. Fit on the *retired* artifact over
-the *grown* stores, the strange crossing is 0.614688 and the smooth is 0.527937 — so
-0.005 of the strange bar's 0.045 drop is the 237 new rows and the rest is the scale,
-and the smooth floor's whole 0.010 rise is the scale.
+grows and the scale moves, and a method that credited the whole move to one of them
+would misstate a number somebody restates again. Fit on the *retired* weights-v4
+artifact over the stores as they stand now, the strange crossing is 0.542695 and the
+smooth is 0.536564 — so at the weights-v5 flip the two causes pull **opposite ways**
+on the strange bar, the 1,334 new rows worth -0.030 against the scale's +0.226, and
+on the smooth floor the store is worth nothing at all (0.0006) and the scale is the
+whole +0.082.
+
+⚠ **Read the heights against their own scale and never against the last one.** 0.770
+is not a stricter bar than 0.575 was; it is the same crossing on a judge that reads
+higher. The share of the strange corpus below the floor went 24.1% keepers at 0.575
+to 32.7% keepers at 0.770 — the population *above* the bar grew.
 
 Both were re-fitted by `head floor --head <kind>` when the judge changed, and both
 reproduce on re-fit — that check is the STOP condition, and it now bites on a

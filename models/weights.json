@@ -34,13 +34,13 @@
       }
     },
     "render": {
-      "tag": "weights-v4",
+      "tag": "weights-v5",
       "asset": "render.fp16.pt",
-      "sha256": "e62e8dbab7f47ffedce3fcb3056b68eb4337dce0247ec387e03fdd517752d9b5",
-      "bytes": 5133550,
+      "sha256": "2b1771ab9cd9d7b7ac5a75d7921c31bbc55756c0ec05eb545b782392094bd63a",
+      "bytes": 5137970,
       "precision": "fp16",
-      "run": "enlarged_corpus_seed1",
-      "source_commit": "f90ad31e8e4a07d9c092d8ace60f030d6a70afb9",
+      "run": "deploy_seed1",
+      "source_commit": "e26a8bcb4d79e3a698480c8410cb363aadb38599",
       "provenance": {
         "supervision": "human verdicts",
         "corpus": "data/smooth_render + data/strange_render"

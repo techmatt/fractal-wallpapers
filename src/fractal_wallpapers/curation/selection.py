@@ -342,7 +342,7 @@ def binding_reason(below: int, capped: int, refused: int, withheld: int) -> str:
     exists to stop, and it is not hypothetical: the tracked pass `gallery4`'s
     seat `0153` recorded `below_bar` with 27 candidates under the floor while the
     3 that cleared it were turned away by the location rule, and its best held
-    `P(>=3) 0.881` against a floor of 0.575. Lowering that floor would not have
+    `P(>=3) 0.881` against a floor of 0.770. Lowering that floor would not have
     seated it. The field is what a reader trusts when deciding whether under-fill
     is a supply problem or a colour problem, and those have opposite remedies.
 

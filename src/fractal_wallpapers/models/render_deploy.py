@@ -1,80 +1,96 @@
-"""The run that makes the head that ships: one fit, a forward holdout, one comparison.
+"""The run that makes the head that ships: three seeds, one holdout, one artifact.
 
 Every band before this one produced fold models and nothing deployable.
 [`render_cv`] screened three arms on one fifth of a five-way deal, [`render_grade`]
 graded two arms over all five at two seeds, and [`render_dose`] read a curve — and
 none of them ever trained a head on a whole corpus, because none of them was
-supposed to. **This one is.** One training run, one artifact, and the artifact
-ships.
+supposed to. **This one is.** Three training runs that differ only in the seed,
+and the best of them ships.
 
 The recipe is the incumbent's, unchanged in every respect but the stopping rule
 below. Nothing about capacity, aspect, input size or architecture moves.
 
-## The split is FORWARD, and that is the whole design
+## The split is a plain random eighty-twenty, and the twenty has ONE job
 
-Eighty-twenty over **lineages** — the near-duplicate neighbourhoods
-[`labeling.groups`] finds, the unit every split and every interval in this
-project is drawn over, because two frames a hair apart on one plane are the same
-picture twice.
+Over **lineages** — the near-duplicate neighbourhoods [`labeling.groups`] finds,
+the unit every split and every interval in this project is drawn over, because
+two frames a hair apart on one plane are the same picture twice.
 
-What lands in the twenty is not a random draw. Two constraints decide it, and a
-third slice is drawn afterwards to make the first two usable:
+There is no date carve-out, no comparison side and no holdout built around the
+blind sheets. The 20% exists to stop the run and for nothing else, and it is
+reported as what it is: a **selection** slice, not an instrument. The head this
+produces is not read against the incumbent here at all — a forward draw on a live
+pool is what compares two heads honestly, and this module's job is only to
+produce the best head the labels support.
 
-1. **Every row labeled after the shipped artifact was trained.** The incumbent
-   ran on 2026-08-24 and its own record says it fitted 8,502 pictures;
-   [`SHIPPED_CUT`] cuts the batches at that day and leaves 8,452, which is that
-   number to within the forty off-kind rows this population drops and the ten
-   rows that have arrived since. So the cut is checked rather than asserted. Those
-   later rows are **the one population on which the incumbent and this head can
-   be compared fairly**, because neither of them has ever seen a row of it.
-2. **Every place pinned to a blind sheet.** `eval_split.jsonl` pins the places
-   carrying no training row, and they stay eval-side so that a forward-draw
-   sitting is still possible later. They are held and **not spent**: they train
-   nothing, they stop nothing, and the comparison is not read on them.
-3. **A stopping slice**, drawn by lineage out of what is left. It has to be drawn
-   rather than taken, because the first two constraints between them leave
-   nothing a run may legally early-stop on — the post-growth rows are the
-   comparison and a pinned row may never be touched. Stopping on the rows a
-   comparison is later reported from is selection on the test set, and it is free
-   to avoid.
+⚠ **So no number in this run's record is a level, and none of them is a
+comparison.** The per-epoch table says which epoch the rule liked; it does not
+say the head is good, and a stopping-slice statistic read as though it were a
+test-set one would be reading a number the epoch was chosen on.
 
-⚠ **So this head trains on less data than the incumbent did**, and a reader has
-to hold that when reading the comparison: the shipped artifact fitted 8,118
-pictures and this one fits about seven thousand, because the post-growth rows
-that grew the corpus are the holdout by construction. It is not refit on
-train-plus-holdout afterwards — that is the right close for a final head and this
-is not one.
+### The predecessor, and why it is not repeated
 
-**The 1s and 2s stay in the holdout.** Precision in a top slice only means
-something when the rows a head could wrongly rank highly are present; a holdout
-of 3s and 4s cannot punish anything.
+The run before this one held out every row registered after the shipped
+artifact trained, so that the two heads could be compared on rows neither had
+seen. It worked as designed and answered nothing: the post-cut rows were 73%
+`>=3` by construction — drawn off the incumbent's own top and off calibration
+bands — so the incumbent scored a perfect 1.000 in the top decile and a
+precision-at-`>=3` comparison there cannot separate two heads. Worse, the
+constraint cost the candidate exactly the rows the retrain existed for. **Both
+of those are properties of the design rather than of the day it ran**, which is
+why the forward holdout is gone from this module rather than parameterised, and
+why [`render_train.MISLAUNCHED`]-style archaeology is not needed: the run it
+produced is on disk, its report says what it said, and no code here reads it.
 
-## The stopping rule is TOP-SLICE PRECISION, and it is sized off the mine
+## The pin is obeyed exactly as the trainer already enforces it, and no further
 
-The epoch is chosen by [`top_slice_precision`]: rank the stopping slice by the
-head's own `P(>=3)`, take the top [`TOP_SLICE`], and count what fraction of them
-a person scored 3 or 4.
+[`render_train.run`] refuses to train on a place pinned to a blind sheet and
+refuses to early-stop on one. That is the whole constraint this module honours.
+It follows that a pinned place cannot sit on the training side, so **a lineage
+carrying one is held out**; and that a pinned row cannot be in the stopping
+statistic, so it sits on the side the trainer never touches. Both facts are
+consequences of the trainer's own guard rather than a rule this module adds — the
+blind sheets stay unspent because nothing here reads them, not because anything
+here was designed around them.
+
+That closure is 802 rows of 10,299 at this writing, 598 of them pinned outright.
+It is under the 20% the split wants, so the draw fills the rest at random and the
+holdout lands on its share rather than overshooting it.
+
+## The stopping rule is AVERAGE PRECISION at `>=3`
+
+Rank the stopping slice by the head's own `P(>=3)`; a hit is a row a person
+scored 3 or 4; the statistic is the area under the precision-recall curve of that
+ranking.
 
 **Not the pooled cutpoint cross-entropy the incumbent uses**, which is decided by
 the `>=2` boundary and stops the run where the easy question is happy. **Not
-AUC**, which reads the whole ordering and is dominated by its middle, where this
-head is not used. **Not `>=4` alone**: strange fours run to single digits per
-mode and a top-quartile-only signal is noise, while `>=3` is where the counts are
-real.
+precision at a single k**, which is what the predecessor stopped on and which
+moved in steps of one row: at k=100 it chose epoch 1 over epoch 5 by a single
+row while every other reading was still climbing. Average precision reads the
+whole ranking at one boundary, so it cannot be decided by one row at one
+cutpoint, and it still weights the top — which is where this head is used.
 
-`TOP_SLICE` is 10% because that is about what the supply engine actually
-promotes: over the 122,516 score rows the live judge has written into the
-candidate ledger, `curation.mine.SEATING_BAR` — `P(>=4) >= 0.50`, where the
-seating stage counts — admits **9.76%**, and `mine.PRIMED_BAR` at 0.90 admits
-**3.88%**. The readout reports the precision at all three of those fractions, so
-a reader can see whether the answer turns on the one that chose the epoch.
+**Not AUC**, except as the fallback. [`AVERAGE_PRECISION_SAYS`] is what runs;
+AUC(`>=3`) is what a run states it fell back to if average precision comes back
+undefined, which happens only where the slice is all hits or all misses.
 
-**Rank-only, so it cannot be gamed by refusing to commit.** A head that shrinks
-every probability toward the prior improves a cross-entropy at a rare cutpoint
-and leaves the *order* alone — which is why `render_cv.top_cutpoint_selection`
-stopped at epoch 1 and why this rule cannot. And it takes a patience and a hard
-cap, because on these stores the AUC rule chose epochs from 3 to 16 and one run
-took the ceiling.
+Both, plus precision at 4 / 10 / 20%, are logged **every epoch** whichever one is
+choosing, so the rule's choice is inspectable against the readings it did not
+make. The three fractions are the mine's own rates: over the live judge's score
+rows in the candidate ledger, `curation.mine.SEATING_BAR` admits about a tenth
+and `mine.PRIMED_BAR` about a twenty-fifth.
+
+## Three seeds, and the seeds are the read on the rule
+
+[`SEEDS`] runs the split three times. The seed moves the split and the
+initialization together — one seed per run, not a grid — and **the run whose
+chosen epoch has the best stopping-slice statistic is the one that ships.**
+
+Three curves side by side are also the only evidence available here about whether
+the rule is trustworthy: chosen epochs that cluster say the rule is reading
+signal, and chosen epochs three seeds apart say it is reading noise. That read
+costs three runs and nothing else, which is why it is here.
 
 ## What this does NOT do
 
@@ -83,7 +99,12 @@ are accepted and the ledger is re-scored lazily, and the sidecar already carries
 what that needs: every score row is keyed `(recipe, judge artifact, regime)` and
 names its `judge_artifact` outright, so a row written after this ships is
 attributable to this head and a row written before it names the one before.
-See this module's report for the census.
+
+It does not restate a floor either. Three acting bars stamp the render artifact
+they were measured on and refuse from the first call after a flip, which is
+[`cuts.Restatement`] working as designed — `head floor --head <kind>` is what
+re-measures them and declaring the height is a person's edit to
+`curation.floors`.
 """
 
 from __future__ import annotations
@@ -95,78 +116,57 @@ from pathlib import Path
 from fractal_wallpapers.labeling import groups
 from fractal_wallpapers.models import (
     finished_train,
-    head,
     metrics,
     render_cv,
     render_train,
     train,
 )
-from fractal_wallpapers.paths import repo_root, under
+from fractal_wallpapers.paths import under
 
 #: The schema every record here carries.
 SCHEMA = 1
 
-#: The day the shipped artifact's band was trained. Every batch registered after
-#: it is post-growth and is held out; every batch registered on or before it is
-#: what the incumbent could have seen.
-#:
-#: It is a date rather than a reconstruction of the artifact's own population for
-#: the reason [`render_dose`] gives: a batch is registered before its first row
-#: exists, so the registration clock is carried by the store, while the shipped
-#: run's population file joins on a file and a line that a tenth of its rows no
-#: longer address. The date is nevertheless checked against that run's own
-#: recorded count — see this module's header.
-SHIPPED_CUT = "2026-08-24"
-
-#: The run whose artifact serves today, named so the report can say what "absent"
+#: The run whose artifact serves today, named so a report can say what "absent"
 #: means on a score row that carries no judge of its own.
 INCUMBENT_RUN = "enlarged_corpus_seed1"
 
-#: How many rows the stopping slice is drawn to hold, and the seed it is drawn
-#: under. Lineages are taken whole, so the realized count lands near this rather
-#: than on it, and the realized count is what every record says.
-#:
-#: A thousand rows puts about a hundred in the top decile the rule reads, which
-#: moves in steps of one percent — coarse enough to see and fine enough to
-#: choose on. Larger would buy a smoother statistic out of a training side that
-#: is already smaller than the incumbent's.
-STOP_ROWS = 1000
-STOP_SEED = 0
+#: What share of the rows the holdout is drawn to hold. The 20% of a plain
+#: eighty-twenty; lineages are taken whole, so the realized share lands near this
+#: rather than on it, and the realized share is what every record says.
+HOLDOUT_SHARE = 0.20
 
-#: The fraction of a ranking the stopping rule reads, and the two others every
-#: readout reports beside it. 0.10 is about the rate the seating stage admits at
-#: (9.76% of the ledger's live score rows clear `mine.SEATING_BAR`); 0.04 is
-#: about the primed bar's (3.88% clear `mine.PRIMED_BAR`); 0.20 is the loose end,
-#: reported so that a reader can see the answer is not an artefact of the choice.
-TOP_SLICE = 0.10
+#: The three seeds, each moving the split and the initialization together. One
+#: seed per run rather than a grid: the question three of them answer is whether
+#: the stopping rule agrees with itself, and that needs the split to move.
+SEEDS: tuple[int, ...] = (0, 1, 2)
+
+#: The name each seed's run and directory carries under `models/render/`.
+RUN_PREFIX = "deploy_seed"
+
+#: The fractions every epoch's precision is reported at. 0.10 is about the rate
+#: the seating stage admits at (9.76% of the ledger's live score rows clear
+#: `curation.mine.SEATING_BAR`); 0.04 is about the primed bar's (3.88% clear
+#: `mine.PRIMED_BAR`); 0.20 is the loose end, reported so a reader can see
+#: whether a reading turns on the choice. **None of them stops anything** — that
+#: is the whole difference between this run and the one before it.
 REPORTED_SLICES = (0.04, 0.10, 0.20)
 
-#: The column a top slice is ranked by, and the boundary a hit is counted at.
-#: They are the same boundary on purpose: a precision at `>=3` read off an
-#: ordering by `P(>=3)` is one question asked once, where ranking on one cutpoint
-#: and scoring on another is two.
+#: The column the rule ranks by, and the boundary a hit is counted at. The same
+#: boundary on purpose: a statistic at `>=3` read off an ordering by `P(>=3)` is
+#: one question asked once, where ranking on one cutpoint and scoring on another
+#: is two.
 RANK_COLUMN = "p_ge3"
 HIT_TIER = 3
 
 #: The epoch ceiling and the patience. Twenty because every stopping rule ever
 #: read on these stores picked an epoch under fifteen; six because a rule that
-#: can run away is a rule that ships a budget rather than a choice.
+#: can run away ships a budget rather than a choice.
 EPOCHS = 20
 PATIENCE = 6
 
-#: The seed the run trains at. One run, one seed — this is a head and not a band.
-SEED = 0
-
-#: The run's name, which is also the directory it lands in under `models/render/`.
-RUN = "forward_holdout_seed0"
-
-#: Draws in every interval here and its seed. The repository's own, so an
-#: interval from this module and one from any band are the same statistic.
-DRAWS, BOOTSTRAP_SEED = render_cv.DRAWS, render_cv.BOOTSTRAP_SEED
-
 
 class DeployError(RuntimeError):
-    """A split, a fit or a comparison that cannot be made on what is here."""
+    """A split, a fit or a choice that cannot be made on what is here."""
 
 
 def root() -> Path:
@@ -174,47 +174,34 @@ def root() -> Path:
     return under("render_deploy")
 
 
-def run_dir() -> Path:
-    """Where the checkpoints land: beside the shipped heads, as every band does."""
-    return render_train.head_dir(RUN)
+def run_name(seed: int) -> str:
+    return f"{RUN_PREFIX}{int(seed)}"
 
 
-def registration_dates() -> dict[tuple[str, str], str]:
-    """`(kind, batch)` to the day that batch was registered, both stores."""
-    out: dict[tuple[str, str], str] = {}
-    for kind in render_train.KINDS:
-        path = repo_root() / "data" / kind / "batches.jsonl"
-        for line in path.read_text(encoding="utf-8").splitlines():
-            if not line.strip():
-                continue
-            row = json.loads(line)
-            out[(kind, str(row["batch"]))] = str(row["registered_at"])[:10]
-    return out
+def run_dir(seed: int) -> Path:
+    """Where one seed's checkpoints land: beside the shipped heads, as bands do."""
+    return render_train.head_dir(run_name(seed))
 
 
 # --------------------------------------------------------------------------- #
 # The split.
 # --------------------------------------------------------------------------- #
-#: The three parts of the holdout, by the name every record here uses. The
-#: comparison side is `eval` because that is what [`render_train.run`] calls the
-#: side it never touches, and the stopping slice is `SELECTION` for the same
-#: reason: this module owns a split, not a second trainer.
-COMPARISON, STOPPING = "eval", render_train.SELECTION
+#: The two sides of the holdout, by the names [`render_train.run`] gives them.
+#: The stopping slice is that function's `SELECTION` because this module owns a
+#: split and not a second trainer; the pinned rows are `eval`, which is the side
+#: that loop never touches at all.
+STOPPING, PINNED = render_train.SELECTION, "eval"
 
 
-def sides_for(population=None) -> tuple[list[dict], list, dict]:
-    """The whole corpus with every picture on the side the forward split puts it.
+def sides_for(seed: int, population=None) -> tuple[list[dict], list, dict]:
+    """The whole corpus with every picture on the side a seeded 80/20 puts it.
 
-    One pass, and the order it decides things in is the order the constraints
-    bind. A row whose batch postdates the incumbent, or whose place is pinned,
-    puts its **whole lineage** on the comparison side; a lineage drawn afterwards
-    out of what is left becomes the stopping slice; everything else trains.
-
-    Lineage closure is why the holdout comes out larger than the two constraints
-    alone: a pre-growth row sharing a neighbourhood with a post-growth one cannot
-    train, or the head would fit a near-duplicate of a row it is judged on. Those
-    carried rows sit on the comparison side and are **not** reported from it —
-    the comparison is read on the post-growth rows themselves.
+    Lineages carrying a pinned place go first, because the trainer will not have
+    them on either side it touches; the rest of the 20% is a seeded draw over
+    whole lineages. Inside the holdout a pinned row lands on [`PINNED`] and every
+    other row on [`STOPPING`], which is what keeps the pinned rows out of the
+    statistic the epoch is chosen on without adding a constraint of this module's
+    own.
     """
     rows, pictures, record = population or render_cv.pool()
     grouping = groups.assign(rows)
@@ -225,92 +212,102 @@ def sides_for(population=None) -> tuple[list[dict], list, dict]:
             f"nobody counted."
         )
     lineage = [int(group) for group in grouping.of_row]
-    dates = registration_dates()
     pinned = {repr(place) for place in render_train.pinned_everywhere()}
+    if not pinned:
+        raise DeployError(
+            "neither store pins an evaluation side, so nothing here can tell a blind sheet "
+            "from a training row. The pin is the trainer's guard and this split is built on it."
+        )
 
-    post = [
-        index
-        for index, picture in enumerate(pictures)
-        if dates[(picture.kind, picture.batch)] > SHIPPED_CUT
-    ]
-    pins = [index for index, picture in enumerate(pictures) if picture.place in pinned]
-    held_lineages = {lineage[index] for index in post} | {lineage[index] for index in pins}
-
-    for picture, group in zip(pictures, lineage, strict=True):
-        picture.side = COMPARISON if group in held_lineages else "train"
-
-    # The stopping slice, out of what the constraints left. Whole lineages, so a
-    # near-duplicate of a training picture never chooses the epoch, and seeded so
-    # the draw is a function of the corpus rather than of when it was run.
-    available = sorted({group for group in lineage if group not in held_lineages})
     members: dict[int, list[int]] = {}
     for index, group in enumerate(lineage):
         members.setdefault(group, []).append(index)
-    order = list(available)
-    random.Random(STOP_SEED).shuffle(order)
-    chosen: set[int] = set()
-    taken = 0
+
+    forced = {lineage[index] for index, picture in enumerate(pictures) if picture.place in pinned}
+    forced_rows = sum(len(members[group]) for group in forced)
+
+    wanted = round(len(pictures) * HOLDOUT_SHARE)
+    order = sorted(group for group in members if group not in forced)
+    random.Random(int(seed)).shuffle(order)
+    drawn: set[int] = set()
+    held_rows = forced_rows
     for group in order:
-        if taken >= STOP_ROWS:
+        if held_rows >= wanted:
             break
-        chosen.add(group)
-        taken += len(members[group])
-    for group in chosen:
-        for index in members[group]:
-            pictures[index].side = STOPPING
-    if not chosen:
-        raise DeployError(
-            "the two holdout constraints leave no lineage to draw a stopping slice from, so "
-            "this run would have to early-stop on the rows it is later compared on"
-        )
+        drawn.add(group)
+        held_rows += len(members[group])
+    held = forced | drawn
+    if held_rows >= len(pictures):
+        raise DeployError("the holdout swallowed the corpus; there is nothing left to train on")
+
+    for picture, group in zip(pictures, lineage, strict=True):
+        if group not in held:
+            picture.side = "train"
+        else:
+            picture.side = PINNED if picture.place in pinned else STOPPING
 
     training = [picture for picture in pictures if picture.side == "train"]
     stopping = [picture for picture in pictures if picture.side == STOPPING]
-    comparison = [picture for picture in pictures if picture.side == COMPARISON]
-    post_rows = [index for index in post]
+    held_pins = [picture for picture in pictures if picture.side == PINNED]
+    if not stopping:
+        raise DeployError("the holdout is all pinned rows, so there is nothing to stop on")
+
     split = {
         "schema": SCHEMA,
         "rule": (
-            "80/20 over LINEAGES, forward: every row registered after the incumbent trained "
-            "and every pinned place put their whole lineage on the comparison side, and a "
-            "seeded lineage draw out of the remainder is the stopping slice"
+            f"a seeded random {1 - HOLDOUT_SHARE:.0%}/{HOLDOUT_SHARE:.0%} over LINEAGES. No "
+            f"date carve-out and no comparison side: the holdout's only job is to stop the "
+            f"run. A lineage carrying a pinned place is held out first, because the trainer "
+            f"refuses to train on one, and the pinned rows themselves sit on the side it "
+            f"never touches so that they are out of the stopping statistic"
         ),
         "unit": "lineage — labeling.groups.assign",
-        "shipped_cut": SHIPPED_CUT,
+        "seed": int(seed),
+        "target_share": HOLDOUT_SHARE,
         "population": record,
         "grouping": grouping.summary(),
         "rows": len(pictures),
-        "constraints": {
-            "post_growth_rows": len(post),
-            "pinned_rows": len(pins),
-            "both": len(set(post) & set(pins)),
-            "union": len(set(post) | set(pins)),
-            "carried_in_by_lineage_closure": len(comparison) - len(set(post) | set(pins)),
-        },
+        "lineages": len(members),
         "sides": {
             "train": len(training),
             "stopping": len(stopping),
-            "comparison": len(comparison),
+            "pinned_held": len(held_pins),
         },
-        "holdout_share": round((len(stopping) + len(comparison)) / len(pictures), 4),
+        "holdout_share": round((len(stopping) + len(held_pins)) / len(pictures), 4),
+        "holdout": {
+            "target_rows": wanted,
+            "rows": len(stopping) + len(held_pins),
+            "lineages": len(held),
+            "forced_by_a_pinned_place": {
+                "lineages": len(forced),
+                "rows": forced_rows,
+                "pinned_rows": len(held_pins),
+                "carried_in_by_lineage_closure": forced_rows - len(held_pins),
+            },
+            "drawn_at_random": {
+                "lineages": len(drawn),
+                "rows": held_rows - forced_rows,
+                "of_available_lineages": len(order),
+            },
+        },
         "stopping_slice": {
-            "target_rows": STOP_ROWS,
-            "seed": STOP_SEED,
-            "lineages": len(chosen),
-            "of_available_lineages": len(available),
             "rows": len(stopping),
+            "lineages": len(
+                {group for group, p in zip(lineage, pictures, strict=True) if p.side == STOPPING}
+            ),
             "tiers": finished_train.histogram(stopping),
-            "drawn_over": "LINEAGES outside both constraints, so no pinned row is ever stopped on",
+            "excludes": (
+                "every pinned row. The trainer refuses to early-stop on a pinned place, so "
+                "the statistic is read on the non-pinned part of the holdout"
+            ),
         },
-        "comparison_slice": {
-            "rows": len(comparison),
-            "tiers": finished_train.histogram(comparison),
-            "post_growth_rows": len(post_rows),
-            "post_growth_tiers": finished_train.histogram([pictures[i] for i in post_rows]),
-            "pinned_rows": len(pins),
-            "reported_on": (
-                "the post-growth rows only. The pinned rows are held and not spent, and the "
-                "rows lineage closure carried in were seen by the incumbent"
+        "pinned_rows": {
+            "rows": len(held_pins),
+            "tiers": finished_train.histogram(held_pins),
+            "side": PINNED,
+            "spent": (
+                "no. They train nothing, they stop nothing, and nothing in this module reads "
+                "them — the two blind sheets are as unspent after this run as before it"
             ),
         },
         "train_tiers": finished_train.histogram(training),
@@ -318,17 +315,30 @@ def sides_for(population=None) -> tuple[list[dict], list, dict]:
     return rows, pictures, split
 
 
-def write_split(population=None) -> tuple[Path, dict]:
-    _rows, _pictures, split = sides_for(population)
-    path = root() / "split.json"
+def write_split(seed: int) -> tuple[Path, dict]:
+    _rows, _pictures, split = sides_for(seed)
+    path = root() / f"split_seed{int(seed)}.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(split, indent=1) + "\n", encoding="utf-8", newline="\n")
     return path, split
 
 
 # --------------------------------------------------------------------------- #
-# The stopping rule.
+# The stopping rule, and the readings logged beside it.
 # --------------------------------------------------------------------------- #
+def rank_scores(probabilities):
+    """The column [`HIT_TIER`] is ranked on, out of a head's cutpoint probabilities."""
+    import numpy
+
+    return numpy.asarray(probabilities)[:, int(HIT_TIER) - 2]
+
+
+def hits_of(labels):
+    import numpy
+
+    return (numpy.asarray(labels) >= int(HIT_TIER)).astype(int)
+
+
 def precision_at(labels, scores, fraction: float, tier: int = HIT_TIER) -> dict:
     """What share of the top `fraction` of a ranking a person scored `tier` or better.
 
@@ -353,359 +363,220 @@ def precision_at(labels, scores, fraction: float, tier: int = HIT_TIER) -> dict:
     }
 
 
-def top_slice_precision(labels, probabilities, classes: int) -> float:
-    """`-precision@k` over the stopping slice, as an epoch objective to MINIMIZE.
+def average_precision_selection(labels, probabilities, classes: int) -> float:
+    """`-AP(>=3)` over the stopping slice, as an epoch objective to MINIMIZE.
 
-    Negated so that it takes [`render_train.run`]'s selection contract unchanged
-    — one convention for every rule this project has, rather than a maximizer and
-    a minimizer a reader has to keep apart.
+    Negated so it takes [`render_train.run`]'s selection contract unchanged — one
+    convention for every rule this project has, rather than a maximizer and a
+    minimizer a reader has to keep apart.
 
-    **Rank-only.** Shrinking every probability toward the prior does not reorder
-    anything, so an under-confident head cannot win this the way it wins a
-    cross-entropy at a rare cutpoint.
+    **Rank-only**, so shrinking every probability toward the prior cannot win it
+    the way it wins a cross-entropy at a rare cutpoint. And it reads the whole
+    ranking at one boundary rather than one k, which is what the rule before it
+    did and what let a single row at k=100 choose the epoch.
     """
-    import numpy
-
-    column = int(HIT_TIER) - 2
-    scores = numpy.asarray(probabilities)[:, column]
-    read = precision_at(numpy.asarray(labels), scores, TOP_SLICE)
-    return -float(read["precision"]) if read["precision"] is not None else float("inf")
+    del classes
+    read = metrics.average_precision(hits_of(labels), rank_scores(probabilities))
+    return float("inf") if read is None else -float(read)
 
 
-SELECTION_SAYS = (
-    f"max precision at the top {TOP_SLICE:.0%} of the stopping slice ranked by P(>={HIT_TIER}), "
-    f"counting a row a person scored {HIT_TIER} or better as a hit, through the deploy "
-    f"transform. Rank-only, and sized at the rate the seating stage actually admits"
+def auc_selection(labels, probabilities, classes: int) -> float:
+    """`-AUC(>=3)`, the fallback. Stated on the record whenever it is the one used."""
+    del classes
+    read = metrics.auc(hits_of(labels), rank_scores(probabilities))
+    return float("inf") if read is None else -float(read)
+
+
+AVERAGE_PRECISION_SAYS = (
+    f"max average precision at >={HIT_TIER} over the non-pinned part of the holdout, ranked "
+    f"by P(>={HIT_TIER}) and counting a row a person scored {HIT_TIER} or better as a hit, "
+    f"through the deploy transform. Rank-only, and it reads the whole ranking rather than one "
+    f"k — the rule it replaces moved in steps of one row"
 )
 
+AUC_SAYS = (
+    f"max AUC at >={HIT_TIER} over the non-pinned part of the holdout — the FALLBACK, used "
+    f"only where average precision is undefined on this slice"
+)
+
+#: The rule and the sentence that goes on the record with it. A tuple rather than
+#: two constants, so a run cannot record one and use the other.
+RULES = {
+    "average_precision": (average_precision_selection, AVERAGE_PRECISION_SAYS),
+    "auc": (auc_selection, AUC_SAYS),
+}
+RULE = "average_precision"
+
+
+def readouts(labels, probabilities, classes: int) -> dict:
+    """Every reading this run logs per epoch beside the one that chooses.
+
+    `render_train.run` already writes `selection_ap_ge3` and `selection_auc_ge3`,
+    so what is added here is the three precisions — the readings the predecessor
+    stopped on, kept as readings so that the two runs' epoch tables are legible
+    against each other.
+    """
+    del classes
+    scores = rank_scores(probabilities)
+    out = {}
+    for fraction in REPORTED_SLICES:
+        read = precision_at(labels, scores, fraction)
+        out[f"precision_at_{int(round(fraction * 100)):02d}"] = read["precision"]
+        out[f"precision_at_{int(round(fraction * 100)):02d}_k"] = read["k"]
+    return out
+
 
 # --------------------------------------------------------------------------- #
-# The run.
+# The runs.
 # --------------------------------------------------------------------------- #
-def fit(device: str = "auto", epochs: int | None = None, log=None) -> dict:
-    """Train the head that ships: one run, the incumbent recipe, the new rule."""
-    directory = run_dir()
+def fit(seed: int, device: str = "auto", epochs: int | None = None, rule: str = RULE, log=None):
+    """Train one seed of the head that ships: the incumbent recipe, the new rule."""
+    if rule not in RULES:
+        raise DeployError(f"{rule!r} is not a stopping rule here; they are {sorted(RULES)}")
+    objective, says = RULES[rule]
+    directory = run_dir(seed)
     directory.mkdir(parents=True, exist_ok=True)
 
     def split():
-        _rows, pictures, record = sides_for()
+        _rows, pictures, record = sides_for(seed)
         return pictures, record
 
     return render_train.run(
         device=device,
         epochs=EPOCHS if epochs is None else int(epochs),
-        seed=SEED,
-        run_name=RUN,
+        seed=int(seed),
+        run_name=run_name(seed),
         backbone=render_train.CANDIDATES["enlarged_corpus"]["backbone"],
         target_dims=None,
         split=split,
         directory=directory,
-        selection=top_slice_precision,
-        selection_says=SELECTION_SAYS,
+        selection=objective,
+        selection_says=says,
         patience=PATIENCE,
+        readouts=readouts,
         log=log or train.say,
     )
 
 
-def shipped_artifact() -> Path:
-    """The artifact that serves today, resolved through the manifest.
-
-    `models/weights.json` is the only thing that answers *what ships*, so the
-    incumbent column resolves through it rather than naming a file.
-    """
-    manifest = json.loads((repo_root() / "models" / "weights.json").read_text(encoding="utf-8"))
-    entry = manifest["heads"][render_train.HEAD]
-    path = repo_root() / "models" / render_train.HEAD / entry["asset"]
+def epoch_curve(seed: int) -> dict:
+    """What one seed's rule saw, epoch by epoch, and where it stopped."""
+    path = run_dir(seed) / "metrics.json"
     if not path.is_file():
-        raise DeployError(
-            f"{path} is not here — `fractal-wallpapers fetch-weights` brings the shipped "
-            f"artifact down, and the incumbent column cannot be read without it."
-        )
-    return path
-
-
-def read_through(checkpoint: Path, label: str, device: str = "auto", log=train.say) -> Path:
-    """Score the comparison side through one checkpoint and write the rows.
-
-    Both heads are read through the same population in the same order, so the
-    comparison never has to intersect anything afterwards.
-    """
-    rows, pictures, _split = sides_for()
-    grouping = groups.assign(rows)
-    lineage = [int(group) for group in grouping.of_row]
-    dates = registration_dates()
-    pinned = {repr(place) for place in render_train.pinned_everywhere()}
-    held = [
-        (row, picture, group)
-        for row, picture, group in zip(rows, pictures, lineage, strict=True)
-        if picture.side == COMPARISON
-    ]
-    if not held:
-        raise DeployError("the comparison side is empty, so there is nothing to read")
-
-    model, config, where = render_train.load_checkpoint(checkpoint, device)
-    transform = head.Transform(
-        tuple(config["mean"]),
-        tuple(config["std"]),
-        config["interpolation"],
-        train=False,
-        target=tuple(config["target_dims"]),
-    )
-    classes = int(config["classes"])
-    log(f"{label}: reading {len(held)} comparison pictures through {checkpoint.name}")
-    probabilities = train.score(
-        model, [picture.path for _row, picture, _group in held], transform, where, classes, config
-    )
-
-    path = root() / f"comparison_{label}.jsonl"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8", newline="\n") as handle:
-        for (row, picture, group), probability in zip(held, probabilities, strict=True):
-            record = {
-                "schema": SCHEMA,
-                "head": label,
-                "checkpoint": checkpoint.name,
-                "epoch": config.get("best_epoch"),
-                "lineage": int(group),
-                "kind": picture.kind,
-                "name": picture.name,
-                "batch": row["batch"],
-                "score": int(row["score"]),
-                "registered": dates[(picture.kind, picture.batch)],
-                "post_growth": dates[(picture.kind, picture.batch)] > SHIPPED_CUT,
-                "pinned": picture.place in pinned,
-                "mode": row["mode"],
-                "partition": row.get("partition"),
-            }
-            for index in range(classes - 1):
-                record[f"p_ge{index + 2}"] = float(probability[index])
-            handle.write(json.dumps(record, ensure_ascii=False) + "\n")
-    return path
-
-
-def read_rows(label: str) -> list[dict]:
-    path = root() / f"comparison_{label}.jsonl"
-    if not path.is_file():
-        raise DeployError(f"{path} does not exist — read the comparison side through {label}")
-    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line]
-
-
-# --------------------------------------------------------------------------- #
-# The comparison.
-# --------------------------------------------------------------------------- #
-#: **The one real comparison available, and it is narrow on purpose.** The
-#: post-growth rows postdate the incumbent's training, so neither head has an
-#: unfair claim on them — but they are also what was labeled most recently, which
-#: on these stores means sparse strange modes and populations drawn off a head's
-#: own top. It is a harder and narrower slice than a random one and **no level is
-#: quotable from it for either head**.
-COMPARISON_SAYS = (
-    "top-slice precision at >=3 over the rows registered after the incumbent trained, on "
-    "identical rows for both heads, with a 95% lineage bootstrap on the difference. The "
-    "slice skews to whatever was labeled recently — by design, sparse strange modes and "
-    "draws off a head's own top — so it is narrower and harder than a random slice and no "
-    "LEVEL is claimed for either head"
-)
-
-
-def _delta_at(
-    candidate, reference, fraction: float, column: str = RANK_COLUMN, tier: int = HIT_TIER
-) -> dict:
-    """The paired difference in precision@k, with a lineage interval on it.
-
-    Precision at a slice is a property of a *population* rather than of a row, so
-    the interval cannot come from a per-row paired delta: every resample has to
-    re-rank both heads inside itself and take its own top slice. That is what
-    this does, and it is why the statistic is written here rather than reached
-    for in [`metrics`].
-    """
-    import numpy
-
-    labels = numpy.array([int(row["score"]) for row in reference])
-    ours = numpy.array([float(row[column]) for row in candidate])
-    theirs = numpy.array([float(row[column]) for row in reference])
-    lineages = numpy.array([row["lineage"] for row in reference])
-
-    mine = precision_at(labels, ours, fraction, tier)
-    others = precision_at(labels, theirs, fraction, tier)
-
-    def statistic(picked):
-        first = precision_at(labels[picked], ours[picked], fraction, tier)
-        second = precision_at(labels[picked], theirs[picked], fraction, tier)
-        if first["precision"] is None or second["precision"] is None:
-            return None
-        return first["precision"] - second["precision"]
-
-    interval = metrics.bootstrap(statistic, lineages, draws=DRAWS, seed=BOOTSTRAP_SEED)
-    return {
-        "fraction": fraction,
-        "column": column,
-        "tier": tier,
-        "n": len(reference),
-        "lineages": int(len(set(lineages.tolist()))),
-        "k": mine["k"],
-        "base_rate": mine["base_rate"],
-        "candidate": mine["precision"],
-        "candidate_hits": mine["hits"],
-        "reference": others["precision"],
-        "reference_hits": others["hits"],
-        "delta": mine["precision"] - others["precision"],
-        "lo": interval["lo"],
-        "hi": interval["hi"],
-    }
-
-
-def compare(
-    candidate: str = RUN,
-    reference: str = "shipped",
-    only: str = "post_growth",
-    column: str = RANK_COLUMN,
-    tier: int = HIT_TIER,
-) -> dict:
-    """Both heads on identical comparison rows, at every reported slice.
-
-    `only` names the cut of the comparison side this is read over.
-    `post_growth` is the declared one; `pinned` reads the two blind sheets, which
-    is descriptive and decides nothing; `all` reads the whole side, which
-    includes rows the incumbent trained on and is therefore **not** a fair
-    comparison — it is available for completeness and labelled.
-    """
-    mine, theirs = read_rows(candidate), read_rows(reference)
-    keyed = {(row["kind"], row["name"]): row for row in mine}
-    other = {(row["kind"], row["name"]): row for row in theirs}
-    if set(keyed) != set(other):
-        raise DeployError(
-            f"the two heads did not read the same rows — {len(set(keyed) - set(other))} only "
-            f"in the candidate. Both are read through one split; a difference is a bug."
-        )
-    cuts = {
-        "post_growth": lambda row: bool(row["post_growth"]),
-        "pinned": lambda row: bool(row["pinned"]),
-        "all": lambda _row: True,
-    }
-    if only not in cuts:
-        raise DeployError(f"{only!r} is not a cut of the comparison side; they are {sorted(cuts)}")
-    keys = sorted(key for key in keyed if cuts[only](other[key]))
-    if not keys:
-        raise DeployError(f"the {only!r} cut of the comparison side is empty")
-    candidate_rows = [keyed[key] for key in keys]
-    reference_rows = [other[key] for key in keys]
-
-    import collections
-
-    return {
-        "schema": SCHEMA,
-        "candidate": candidate,
-        "reference": reference,
-        "cut": only,
-        "says": COMPARISON_SAYS,
-        "fair": only in {"post_growth", "pinned"},
-        "rank_column": column,
-        "hit_tier": tier,
-        "declared": column == RANK_COLUMN and tier == HIT_TIER,
-        "rows": len(keys),
-        "kinds": dict(collections.Counter(row["kind"] for row in reference_rows)),
-        "tiers": dict(collections.Counter(int(row["score"]) for row in reference_rows)),
-        "draws": DRAWS,
-        "bootstrap_seed": BOOTSTRAP_SEED,
-        "slices": [
-            _delta_at(candidate_rows, reference_rows, fraction, column, tier)
-            for fraction in REPORTED_SLICES
-        ],
-    }
-
-
-def epoch_curve() -> dict:
-    """What the stopping rule saw, epoch by epoch, and where it stopped."""
-    path = run_dir() / "metrics.json"
-    if not path.is_file():
-        raise DeployError(f"{path} does not exist — the run wrote no trace")
+        raise DeployError(f"{path} does not exist — seed {seed} wrote no trace")
     record = json.loads(path.read_text(encoding="utf-8"))
+    history = record.get("history") or []
     return {
-        "run": RUN,
-        "rule": SELECTION_SAYS,
-        "epochs_run": len(record.get("history") or []),
+        "run": run_name(seed),
+        "seed": int(seed),
+        "rule": record.get("selection_metric"),
+        "epochs_run": len(history),
         "of_epochs": EPOCHS,
         "patience": PATIENCE,
         "best_epoch": record.get("best_epoch"),
+        "chosen_objective": (
+            None
+            if record.get("best_selection_objective") is None
+            else -float(record["best_selection_objective"])
+        ),
         "stopped_early": record.get("stopped_early"),
         "wall_seconds": record.get("wall_seconds"),
+        "stopping_rows": (record.get("pictures") or {}).get("selection"),
         "trace": [
             {
                 "epoch": row["epoch"],
-                "top_slice_precision": (
+                "loss": row.get("loss"),
+                "chosen_on": (
                     None if row.get("selection_loss") is None else -float(row["selection_loss"])
                 ),
-                "selection_auc_ge3": row.get("selection_auc_ge3"),
+                "ap_ge3": row.get("selection_ap_ge3"),
+                "auc_ge3": row.get("selection_auc_ge3"),
+                **{
+                    key: row.get(key)
+                    for key in row
+                    if key.startswith("precision_at_") and not key.endswith("_k")
+                },
             }
-            for row in (record.get("history") or [])
+            for row in history
         ],
     }
 
 
-#: The readouts [`write_comparison`] writes, and what each one is.
-#:
-#: The first is the declared one. The second reads the **other** boundary, and it
-#: is here because the declared one turned out to have no headroom on this slice:
-#: the post-growth rows are 73% `>=3` by construction — they were drawn off the
-#: incumbent's own top and off calibration bands — and both heads put `>=3` rows
-#: in nearly the whole top quintile. A statistic where the incumbent scores 1.000
-#: cannot say which head is better, and `>=4` is where the same population still
-#: has a base rate worth ranking against.
-READOUT_COLUMNS = (
-    (RANK_COLUMN, HIT_TIER, "DECLARED — ranked by P(>=3), a hit is a human 3 or 4"),
-    ("p_ge4", 4, "DESCRIPTIVE — ranked by P(>=4), a hit is a human 4. Gates nothing"),
-)
+def choose(seeds=SEEDS) -> dict:
+    """The three curves side by side, and the seed that ships.
+
+    **The best chosen-epoch statistic wins**, which is the rule declared before
+    any of them ran. The spread of the chosen epochs is reported beside it
+    because it is the read on whether the rule is trustworthy at all: epochs that
+    cluster say it is reading signal, epochs three seeds apart say it is not.
+    """
+    curves = [epoch_curve(seed) for seed in seeds]
+    scored = [curve for curve in curves if curve["chosen_objective"] is not None]
+    if not scored:
+        raise DeployError("no seed recorded a chosen objective, so there is nothing to choose on")
+    winner = max(scored, key=lambda curve: curve["chosen_objective"])
+    epochs = [curve["best_epoch"] for curve in scored]
+    return {
+        "schema": SCHEMA,
+        "rule": RULE,
+        "says": RULES[RULE][1],
+        "seeds": list(seeds),
+        "curves": curves,
+        "ships": {
+            "seed": winner["seed"],
+            "run": winner["run"],
+            "epoch": winner["best_epoch"],
+            "chosen_objective": winner["chosen_objective"],
+            "checkpoint": str(run_dir(winner["seed"]) / "best.pt"),
+        },
+        "chosen_epochs": epochs,
+        "epoch_spread": (max(epochs) - min(epochs)) if epochs else None,
+        "objective_spread": round(
+            max(curve["chosen_objective"] for curve in scored)
+            - min(curve["chosen_objective"] for curve in scored),
+            6,
+        ),
+    }
 
 
-def write_comparison(candidate: str = RUN, reference: str = "shipped") -> tuple[Path, dict]:
-    cuts = []
-    for column, tier, why in READOUT_COLUMNS:
-        for cut in ("post_growth", "pinned", "all"):
-            document = compare(candidate, reference, cut, column, tier)
-            document["why"] = why
-            cuts.append(document)
-    document = {"schema": SCHEMA, "epoch": epoch_curve(), "cuts": cuts}
-    path = root() / "comparison.json"
+def write_choice(seeds=SEEDS) -> tuple[Path, dict]:
+    document = choose(seeds)
+    path = root() / "choice.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(document, indent=1) + "\n", encoding="utf-8", newline="\n")
     return path, document
 
 
 __all__ = [
-    "BOOTSTRAP_SEED",
-    "COMPARISON",
-    "COMPARISON_SAYS",
-    "DRAWS",
+    "AUC_SAYS",
+    "AVERAGE_PRECISION_SAYS",
     "EPOCHS",
     "HIT_TIER",
+    "HOLDOUT_SHARE",
     "INCUMBENT_RUN",
     "PATIENCE",
+    "PINNED",
     "RANK_COLUMN",
     "REPORTED_SLICES",
-    "RUN",
+    "RULE",
+    "RULES",
+    "RUN_PREFIX",
     "SCHEMA",
-    "SEED",
-    "SELECTION_SAYS",
-    "SHIPPED_CUT",
+    "SEEDS",
     "STOPPING",
-    "STOP_ROWS",
-    "STOP_SEED",
-    "TOP_SLICE",
     "DeployError",
-    "READOUT_COLUMNS",
-    "compare",
+    "auc_selection",
+    "average_precision_selection",
+    "choose",
     "epoch_curve",
     "fit",
+    "hits_of",
     "precision_at",
-    "read_rows",
-    "read_through",
-    "registration_dates",
+    "rank_scores",
+    "readouts",
     "root",
     "run_dir",
-    "shipped_artifact",
+    "run_name",
     "sides_for",
-    "top_slice_precision",
-    "write_comparison",
+    "write_choice",
     "write_split",
 ]

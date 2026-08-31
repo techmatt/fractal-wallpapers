@@ -748,6 +748,7 @@ def run(
     second_selection=None,
     second_selection_says: str | None = None,
     patience: int | None = None,
+    readouts=None,
     log=train.say,
 ) -> dict:
     """Train the candidate at one seed, and write its checkpoints and records.
@@ -794,6 +795,15 @@ def run(
     so a patience read off one of them would truncate the other's search and the
     comparison would be between a rule and a budget. `None` runs the recipe's
     full epoch count, which is what every band on the record did.
+
+    **`readouts` adds numbers to the per-epoch record and decides nothing.** It
+    takes `(labels, probabilities, classes)` — the same arguments `selection`
+    takes — and returns a mapping merged into that epoch's row. It exists so a
+    caller whose stopping rule is one statistic can log the others beside it and
+    afterwards see whether the rule chose on a cliff or on a coin flip; a key
+    that collides with one this loop writes is refused rather than silently
+    winning, because a reader comparing two runs' history has to be reading the
+    same column.
     """
     import numpy
     import torch
@@ -1024,6 +1034,16 @@ def run(
                 (choosing_labels >= index + 2).astype(int), probabilities[:, index]
             )
             record[f"selection_mean_p_ge{index + 2}"] = float(probabilities[:, index].mean())
+        if readouts is not None:
+            extra = dict(readouts(choosing_labels, probabilities, classes))
+            clashing = sorted(set(extra) & set(record))
+            if clashing:
+                raise TrainingError(
+                    f"the caller's per-epoch readouts would overwrite {clashing}, which this "
+                    f"loop writes itself. Two runs whose history columns mean different "
+                    f"things cannot be read against each other — rename the readout."
+                )
+            record.update(extra)
         # Reported per kind, never selected on: the epoch is chosen by the pooled
         # objective, which is what a pooled head's selection has to be.
         for kind in KINDS:

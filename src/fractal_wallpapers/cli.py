@@ -1898,12 +1898,11 @@ def renders_dose_curve(args: argparse.Namespace) -> int:
 
 
 def renders_deploy_split(args: argparse.Namespace) -> int:
-    """What the forward split holds, before anything is fitted on it."""
+    """What one seed's holdout holds, before anything is fitted on it."""
     from fractal_wallpapers.models import render_cv, render_deploy
 
-    del args
     try:
-        path, split = render_deploy.write_split()
+        path, split = render_deploy.write_split(args.seed)
     except (render_cv.CrossValidationError, render_deploy.DeployError) as refusal:
         print(refusal)
         return 1
@@ -1913,11 +1912,13 @@ def renders_deploy_split(args: argparse.Namespace) -> int:
 
 
 def renders_deploy_fit(args: argparse.Namespace) -> int:
-    """Train the head that ships: one run, the incumbent recipe, the new rule."""
+    """Train one seed of the head that ships: the incumbent recipe, the new rule."""
     from fractal_wallpapers.models import render_cv, render_deploy, render_train
 
     try:
-        record = render_deploy.fit(device=args.device, epochs=args.epochs)
+        record = render_deploy.fit(
+            args.seed, device=args.device, epochs=args.epochs, rule=args.rule
+        )
     except (
         render_cv.CrossValidationError,
         render_deploy.DeployError,
@@ -1930,52 +1931,32 @@ def renders_deploy_fit(args: argparse.Namespace) -> int:
     return 0
 
 
-def renders_deploy_read(args: argparse.Namespace) -> int:
-    """Score the comparison side through one head and write the rows."""
-    from pathlib import Path as _Path
+def renders_deploy_choose(args: argparse.Namespace) -> int:
+    """The seeds' epoch tables side by side, and the one that ships."""
+    from fractal_wallpapers.models import render_deploy
 
-    from fractal_wallpapers.models import render_cv, render_deploy
-
-    try:
-        if args.head == "shipped":
-            checkpoint = render_deploy.shipped_artifact()
-        else:
-            checkpoint = (
-                _Path(args.checkpoint) if args.checkpoint else (render_deploy.run_dir() / "best.pt")
-            )
-        path = render_deploy.read_through(checkpoint, args.head, device=args.device)
-    except (render_cv.CrossValidationError, render_deploy.DeployError) as refusal:
-        print(refusal)
-        return 1
-    print(f"wrote {path}")
-    return 0
-
-
-def renders_deploy_compare(args: argparse.Namespace) -> int:
-    """Both heads on identical comparison rows, at every reported slice."""
-    from fractal_wallpapers.models import render_cv, render_deploy
-
-    try:
-        candidate = args.candidate or render_deploy.RUN
-        path, document = render_deploy.write_comparison(candidate, args.reference)
-    except (render_cv.CrossValidationError, render_deploy.DeployError) as refusal:
-        print(refusal)
-        return 1
-    epoch = document["epoch"]
-    print(
-        f"epoch {epoch['best_epoch']} of {epoch['epochs_run']} run "
-        f"(cap {epoch['of_epochs']}, patience {epoch['patience']})"
+    seeds = (
+        tuple(int(part) for part in args.seeds.split(",") if part.strip())
+        if args.seeds
+        else render_deploy.SEEDS
     )
-    for cut in document["cuts"]:
-        for entry in cut["slices"]:
-            if entry["delta"] is None:
-                continue
-            print(
-                f"{cut['cut']:<12} top {entry['fraction']:.0%} (k {entry['k']:4d} of "
-                f"{entry['n']:4d}, base {entry['base_rate']:.3f})  "
-                f"new {entry['candidate']:.4f} vs shipped {entry['reference']:.4f}  "
-                f"delta {entry['delta']:+.4f} [{entry['lo']:+.4f}, {entry['hi']:+.4f}]"
-            )
+    try:
+        path, document = render_deploy.write_choice(seeds)
+    except render_deploy.DeployError as refusal:
+        print(refusal)
+        return 1
+    for curve in document["curves"]:
+        print(
+            f"seed {curve['seed']}  epochs run {curve['epochs_run']} of {curve['of_epochs']}  "
+            f"chose epoch {curve['best_epoch']} at {curve['chosen_objective']:.4f}  "
+            f"({curve['wall_seconds']:.0f}s)"
+        )
+    ships = document["ships"]
+    print(
+        f"ships: seed {ships['seed']} ({ships['run']}) epoch {ships['epoch']} at "
+        f"{ships['chosen_objective']:.4f}; chosen epochs {document['chosen_epochs']} "
+        f"spread {document['epoch_spread']}"
+    )
     print(f"wrote {path}")
     return 0
 
@@ -5466,52 +5447,45 @@ def render_commands(subcommands) -> None:
 
     deploying = steps.add_parser(
         "deploy",
-        help="train the head that ships: one run, a forward holdout, one comparison",
+        help="train the head that ships: three seeds, one holdout, one artifact",
         description=(
-            "One training run on the whole corpus under the incumbent recipe, with the "
-            "epoch chosen by precision in the top slice of a drawn stopping slice. The "
-            "holdout is FORWARD — every row registered after the incumbent trained, plus "
-            "every pinned place — so the two heads can be compared on rows neither has "
-            "seen. The artifact from this run is the one that ships."
+            "Three training runs on the whole corpus under the incumbent recipe, differing "
+            "only in the seed, with the epoch chosen by average precision at >=3 over the "
+            "non-pinned part of a plain random 80/20 holdout drawn over lineages. The "
+            "holdout's only job is to stop the run; nothing here is a comparison. The "
+            "artifact of the seed whose chosen epoch scores best is the one that ships."
         ),
     )
     deployings = deploying.add_subparsers(dest="deploy_step", required=True)
 
     deploy_split = deployings.add_parser(
         "split",
-        help="what the forward split holds, before anything is fitted on it",
+        help="what one seed's holdout holds, before anything is fitted on it",
     )
+    deploy_split.add_argument("--seed", type=int, default=0, help="which seed's split")
     deploy_split.set_defaults(handler=renders_deploy_split)
 
     deploy_fitting = deployings.add_parser(
         "fit",
-        help="train the head that ships",
+        help="train one seed of the head that ships",
     )
+    deploy_fitting.add_argument("--seed", type=int, required=True, help="which seed's split")
     deploy_fitting.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
     deploy_fitting.add_argument("--epochs", type=int, help="override the epoch ceiling")
+    deploy_fitting.add_argument(
+        "--rule",
+        default="average_precision",
+        choices=("average_precision", "auc"),
+        help="the stopping rule; AUC is the stated fallback",
+    )
     deploy_fitting.set_defaults(handler=renders_deploy_fit)
 
-    deploy_reading = deployings.add_parser(
-        "read",
-        help="score the comparison side through one head",
-        description=(
-            "Both heads are read through one split in one order, so the comparison never "
-            "has to intersect anything afterwards. `--head shipped` resolves the incumbent "
-            "through the weights manifest."
-        ),
+    deploy_choosing = deployings.add_parser(
+        "choose",
+        help="the seeds' epoch tables side by side, and the one that ships",
     )
-    deploy_reading.add_argument("--head", required=True, help="a label: 'shipped' or the run name")
-    deploy_reading.add_argument("--checkpoint", help="an explicit checkpoint, for a named run")
-    deploy_reading.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
-    deploy_reading.set_defaults(handler=renders_deploy_read)
-
-    deploy_comparing = deployings.add_parser(
-        "compare",
-        help="both heads on identical comparison rows, at every reported slice",
-    )
-    deploy_comparing.add_argument("--candidate", default=None, help="the new head's label")
-    deploy_comparing.add_argument("--reference", default="shipped", help="the incumbent's label")
-    deploy_comparing.set_defaults(handler=renders_deploy_compare)
+    deploy_choosing.add_argument("--seeds", help="which seeds, comma separated (default: all)")
+    deploy_choosing.set_defaults(handler=renders_deploy_choose)
 
     dosing = steps.add_parser(
         "dose",
