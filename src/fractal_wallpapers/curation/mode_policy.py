@@ -15,12 +15,12 @@ This is the table. Mode to weight, and the weight is one of three:
   ledger rows and its pictures, it still resolves by name, and a verdict already
   exported on one still ingests. It stops being *bought more of*.
 * **1 — normal.** Drawn like anything else.
-* **2 — promoted.** Recorded and not yet wired. There is no MODE-side cap at
-  seating, and the only mode-side floor is [`solve.mode_floor`], `n // 100`, so a
-  weight of 2 has nothing to bind on today that would move more than a seat or
-  two at `n = 150`. It is written down because the decision was made; what it
-  will bind on is a separate question, and pretending it already binds would
-  answer it wrongly.
+* **2 — promoted.** Drawn like anything else, and floored at **twice** a normal
+  mode's seats. That is what [`seat_floors`] spends the strange budget on, and
+  since 2026-08-31 those floors are the default a seating and a solve take by
+  naming nothing — so a weight of 2 is load-bearing rather than recorded. There is
+  still no MODE-side *cap* anywhere: the weight buys a guarantee and never a
+  limit.
 
 ## Two layers, one word
 
@@ -67,9 +67,11 @@ WEIGHTS = (NICHE, NORMAL, PROMOTED)
 #: and a figure quoted off one basis beside sixteen quoted off the other is a
 #: ranking nobody can read. Two numbers here said `rows` and meant renders.
 #:
-#: The four at 0 are the modes a round of human labels could not make a case for:
-#: `gaussian_int` 7 fours in 296 renders (2.4%), `smooth_trap_circle` 10 in 256 (3.9%),
-#: `trap_circle` 12 in 260 (4.6%) and `direct_trap_ring` 20 in 342 (5.8%).
+#: Four of the five at 0 are the modes a round of human labels could not make a
+#: case for: `gaussian_int` 7 fours in 296 renders (2.4%), `smooth_trap_circle` 10
+#: in 256 (3.9%), `trap_circle` 12 in 260 (4.6%) and `direct_trap_ring` 20 in 342
+#: (5.8%). The fifth, `tail_itinerary`, was ruled on pictures rather than on
+#: labels and its paragraph is at the bottom.
 #:
 #: **The cut is not a pure ranking on that rate and cannot be read as one.**
 #: `direct_trap_multiply` (2.0%) and `direct_trap_lines` (2.8%) are accepted and read
@@ -130,19 +132,28 @@ WEIGHTS = (NICHE, NORMAL, PROMOTED)
 #: mode on the re-read population, and the number that shrank was a ranking rather
 #: than the case.
 #:
-#: **`tail_itinerary` arrives at 1, provisionally, on no labels at all.** It is
-#: the same address as `itinerary` read off the end of the orbit instead of the
-#: start, so nothing about `itinerary`'s rate transfers to it — a tail address
-#: reads near zero wherever the orbit escaped fast, which is most of a frame, and
-#: whether that buys a picture is a question about pictures. 1 rather than 2
-#: because there is no case yet, and 1 rather than 0 because a mode nothing may
-#: draw never gets one: Matt iterates from the contact sheet.
+#: **`tail_itinerary` is 0. Matt's ruling, ckpt 94, off the contact sheet.** It
+#: arrived at 1 provisionally on no labels at all — the same address as
+#: `itinerary` read off the end of the orbit instead of the start, so nothing
+#: about `itinerary`'s rate transferred to it, and 1 rather than 0 so that a mode
+#: nothing may draw would get its sheet. It got it, and the verdict is that the
+#: pictures are not gallery-worthy: **the frequency of address changes is too
+#: abrupt**. That is a judgement about what the tail address does to a picture and
+#: not a rate, so no further draws were bought to refine it, and there is no
+#: labelled figure to quote here because none was ever taken.
+#:
+#: **The mode is not deleted and the catalog entry stays.** Weight 0 is what this
+#: table means by ruled out — out of the draws and out of the gallery, its
+#: material standing — and the engine still renders `tail_itinerary` by name for
+#: anybody who asks. The ruling is written here so the question does not reopen
+#: the next time somebody reads the provisional paragraph above it.
 MODE_POLICY: dict[str, int] = {
     # --- 0: niche ---
     "trap_circle": NICHE,
     "gaussian_int": NICHE,
     "smooth_trap_circle": NICHE,
     "direct_trap_ring": NICHE,
+    "tail_itinerary": NICHE,
     # --- 1: normal ---
     "smooth": NORMAL,
     "exp_smoothing": NORMAL,
@@ -151,7 +162,6 @@ MODE_POLICY: dict[str, int] = {
     "direct_trap_screen": NORMAL,
     "direct_trap_multiply": NORMAL,
     "direct_trap_lines": NORMAL,
-    "tail_itinerary": NORMAL,
     # --- 2: promoted ---
     "tia": PROMOTED,
     "stripe": PROMOTED,
@@ -314,9 +324,16 @@ def strange_seats(n: int, share: float = STRANGE_SEAT_SHARE) -> int:
 def seat_floors(n: int, share: float = STRANGE_SEAT_SHARE) -> dict[str, int]:
     """`{strange mode: the seats its floor asks for}` at `n`.
 
-    **One shipped caller, and it is a flag**: `curate seat --seat-floors`. An
-    unflagged seating still takes [`solve.mode_floor`]'s flat one, so a gallery
-    is seated under this rule only where somebody named it.
+    **This is the default.** [`curation.seating.seat`] and [`solve.Program`] both
+    take it by being asked for nothing, so an unflagged `curate seat` and an
+    unflagged `curate solve run` are both floored per mode. `--flat-floor` is the
+    way off, and it puts back [`solve.mode_floor`]'s `floor(n / 100)`, which is
+    what every gallery before 2026-08-31 was seated under.
+
+    Diversity is the design rather than a tuning knob, which is why the polarity
+    is this way round: the ruling (Matt, ckpt 94) is that a gallery spread over
+    the roster is the better gallery, and the measurement that preceded it was a
+    pathology check rather than the case for the rule.
 
     ## The rule
 
@@ -431,9 +448,10 @@ def record() -> dict:
         "accepted": accepted(),
         "niche": niche(),
         "promoted": promoted(),
-        "wired": "weight 0 only: out of the labeling rosters, the default mining rosters "
-        "and gallery emission. Weights 1 and 2 are recorded and read the same: "
-        "`seat_floors` is what would make them differ and nothing calls it.",
+        "wired": "all three. Weight 0 is out of the labeling rosters, the default mining "
+        "rosters and gallery emission; 1 and 2 differ at the seat, where `seat_floors` "
+        "floors a promoted mode at twice a normal one and is the default floor of both "
+        "the greedy and the solver since 2026-08-31.",
     }
 
 

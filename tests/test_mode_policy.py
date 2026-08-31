@@ -10,8 +10,6 @@ old constants.
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
 
 from fractal_wallpapers import engine, paths
@@ -284,41 +282,77 @@ def test_the_floors_are_a_pure_function_of_n():
 
 
 @needs_engine
-def test_the_floor_rule_is_reachable_only_by_naming_it():
-    """It still ships inert, and there is now exactly one way to turn it on.
+def test_the_floor_rule_is_the_default_and_a_flag_is_what_turns_it_off():
+    """The FLIP. This was `test_the_floor_rule_is_reachable_only_by_naming_it`.
 
-    This was `test_nothing_that_ships_calls_the_floor_rule_yet` and it was a
-    stronger statement than the fact it defended: nothing shipped *reached* the
-    rule at all. `curate seat --seat-floors` reaches it now, because the rule
-    cannot be measured against a baseline gallery without a leg that seats under
-    it. What must stay true is what always mattered — **no unflagged seating
-    builds a gallery under it** — so that is what is asserted here, on the parser
-    rather than on a grep.
+    That guard existed to prove the rule shipped inert while it was being
+    measured — built, reachable by one flag, and the default nowhere. The ruling
+    (ckpt 94) is that the floors ARE the design, so the polarity is reversed and
+    the guard with it: an unflagged seating is seated under the rule, and
+    `--flat-floor` is the one way back to the flat `floor(n / 100)` every gallery
+    before 2026-08-31 was seated under.
 
-    The grep half is kept and narrowed: `cli.py` is the one shipped file allowed
-    to name the rule, so a second leg quietly adopting it is still a red.
+    Asserted on the parser and on the record a seating actually writes, because
+    "the default" is a claim about what somebody gets by naming nothing, and a
+    grep cannot see that.
     """
-    import subprocess
-
-    root = Path(__file__).resolve().parents[1]
-    found = subprocess.run(
-        ["git", "grep", "-l", "seat_floors(", "--", "src/**/*.py"],
-        cwd=root,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    reached = {line for line in found.stdout.split() if line}
-    assert reached <= {
-        "src/fractal_wallpapers/curation/mode_policy.py",
-        "src/fractal_wallpapers/cli.py",
-    }, f"a leg other than `curate seat` reaches the floor rule: {sorted(reached)}"
-
     from fractal_wallpapers import cli
+    from fractal_wallpapers.curation import seating, solve
 
     parser = cli.build_parser()
     plain = parser.parse_args(["curate", "seat", "--n", "150"])
-    assert plain.seat_floors is False, "an unflagged seating must take the flat floor"
+    assert plain.flat_floor is False, "the floors are the default; nothing turns them on"
     assert plain.mode_floor is None
-    named = parser.parse_args(["curate", "seat", "--n", "150", "--seat-floors"])
-    assert named.seat_floors is True
+    assert parser.parse_args(["curate", "seat", "--n", "150", "--flat-floor"]).flat_floor is True
+    assert parser.parse_args(["curate", "solve", "run", "--flat-floor"]).flat_floor is True
+
+    modes = mode_policy.accepted()
+    floored = seating.seat([], n=150, key=seating.JUDGE_KEY, log=lambda *_: None)["config"]
+    assert floored["mode_floors"] == seating.floors_for(mode_policy.seat_floors(150), modes)
+    assert floored["mode_floor"] is None, "the default is per mode and not one number"
+    assert floored["mode_floor_artificial"] is False
+    assert "THE DEFAULT" in floored["mode_floor_rule"]
+
+    flat = seating.seat(
+        [], n=150, floor=solve.mode_floor(150), key=seating.JUDGE_KEY, log=lambda *_: None
+    )["config"]
+    assert set(flat["mode_floors"].values()) == {solve.mode_floor(150)}
+    assert flat["mode_floor_artificial"] is True
+    assert "FLAT" in flat["mode_floor_rule"]
+
+
+@needs_engine
+def test_the_exact_solver_is_floored_by_the_same_rule_the_greedy_is():
+    """The two are only ever a check on each other where they solve one program.
+
+    The greedy and the solver each take a floor and each defaulted to the flat one;
+    a flip that moved only the greedy would leave `curate solve` answering a
+    different question in the same words.
+    """
+    from fractal_wallpapers.curation import seating, solve
+
+    modes = mode_policy.accepted()
+    program = solve.Program(candidates=[], n=150, rule=solve.rule_for(), modes=tuple(modes))
+    assert program.mode_floors == seating.floors_for(mode_policy.seat_floors(150), modes)
+    assert "THE DEFAULT" in program.mode_floor_rule
+    flat = solve.Program(
+        candidates=[], n=150, rule=solve.rule_for(), modes=tuple(modes), floor=solve.mode_floor(150)
+    )
+    assert set(flat.mode_floors.values()) == {1}
+    assert "FLAT" in flat.mode_floor_rule
+
+
+@needs_engine
+def test_the_ruled_out_modes_are_the_five_and_tail_itinerary_is_one_of_them():
+    """The rider, so the ruling is not carried by a docstring alone.
+
+    `tail_itinerary` was seated provisionally at 1 to buy itself a contact sheet.
+    It got one and Matt ruled it not gallery-worthy — the frequency of address
+    changes is too abrupt — so it is 0, out of the draws and out of the gallery,
+    with its catalog entry and every picture it has already made untouched.
+    """
+    assert mode_policy.weight_of("tail_itinerary") == mode_policy.NICHE
+    assert mode_policy.is_accepted("tail_itinerary") is False
+    assert len(mode_policy.accepted()) == 14
+    assert len(mode_policy.strange_modes()) == 13
+    assert "tail_itinerary" not in mode_policy.seat_floors(1000)

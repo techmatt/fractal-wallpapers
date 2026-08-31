@@ -231,18 +231,22 @@ def test_an_unseated_mode_is_a_recorded_shortfall_and_not_a_refusal():
 
 
 def test_the_mode_block_counts_representation_apart_from_the_floor():
-    """At twenty seats the floor asks for nothing, and `18 of 18 held` would lie.
+    """Held-against-the-floor is not held, and the two are further apart than ever.
 
-    Under the flat floor the block reported held-against-floor and nothing else,
-    so a vacuous floor would have read as a gallery holding every mode. What a
-    reader of a small gallery wants is how many modes actually took a seat.
+    Under the flat floor this read a vacuous floor of zero at twenty seats and
+    would have called a one-candidate pool `18 of 18 held`. Under the per-mode
+    rule the floor at twenty is real — six strange modes at one seat each — so the
+    same pool is below six floors while holding one mode, and the block has to say
+    both. `floor` is `None` because the modes do not all ask for the same thing.
     """
+    asked = {name: seats for name, seats in mode_policy.seat_floors(20).items() if seats}
     record = seating.seat([candidate("a")], n=20, key=seating.JUDGE_KEY, log=quiet)
     shortfall = record["shortfalls"]["modes"]
-    assert shortfall["floor"] == 0
-    assert shortfall["asked"] == 0
+    assert shortfall["floor"] is None
+    assert shortfall["floors_are"] == "per mode"
+    assert shortfall["asked"] == sum(asked.values())
     assert shortfall["represented"] == 1
-    assert shortfall["below_the_floor"] == []
+    assert set(shortfall["below_the_floor"]) == set(asked)
 
 
 def test_the_shortfall_block_says_a_greedy_shortfall_is_not_infeasibility():
@@ -346,7 +350,7 @@ def test_the_config_states_the_ceilings_own_constants_and_not_a_copy():
     record = seating.seat([candidate("a")], n=20, key=seating.JUDGE_KEY, log=quiet)
     assert record["config"]["ceiling"]["k"] == ceiling.K
     assert record["config"]["ceiling"]["group_cap"] == ceiling.GROUP_CAP
-    assert record["config"]["mode_floor"] == solve.mode_floor(20)
+    assert record["config"]["mode_floor"] is None, "the default floors are per mode"
     assert record["config"]["mode_floor_artificial"] is False
 
 
@@ -652,20 +656,47 @@ def test_the_real_seating_breaks_no_rule_it_recorded_as_soft(tracked_seating):
 
 
 # --------------------------------------------------------------------------- #
-# The mode floor, now a function of n.
+# The mode floors: per mode, and the default since 2026-08-31.
 # --------------------------------------------------------------------------- #
-def test_below_a_hundred_seats_the_scarcity_leg_seats_nothing_for_a_floor():
-    """The honest shape of a debug gallery: the strongest pictures, not a survey."""
+def test_a_gallery_too_small_for_the_flat_floor_is_floored_by_the_rule_anyway():
+    """The smallest consequence of the flip.
+
+    `floor(n / 100)` was zero below a hundred seats, so this leg did nothing there
+    and a five-seat gallery was the strongest pictures the pool held. The per-mode
+    rule asks for two of the three strange seats at `n = 5`, and this pool holds
+    neither of the two modes it names — so the leg still places nothing, and the
+    difference is that the record now says two floors went unfilled rather than
+    that nothing was asked.
+    """
+    asked = {name: seats for name, seats in mode_policy.seat_floors(5).items() if seats}
     record = seating.seat(deep_and_shallow(), n=5, key=seating.JUDGE_KEY, log=quiet)
-    assert record["config"]["mode_floor"] == 0
+    assert record["config"]["mode_floor"] is None
+    assert set(record["shortfalls"]["modes"]["below_the_floor"]) == set(asked)
     assert {seat["seated_for"] for seat in record["seated"]} == {"general_pool"}
     assert modes_of(record) == {"smooth"}
+
+
+def test_the_flat_floor_is_the_way_back_and_the_record_says_which_it_took():
+    """`--flat-floor`, at a size where the flat floor is zero: nothing is asked of
+    any mode, which is what every gallery seated before the flip got here."""
+    record = seating.seat(
+        deep_and_shallow(), n=5, floor=solve.mode_floor(5), key=seating.JUDGE_KEY, log=quiet
+    )
+    assert record["config"]["mode_floor"] == 0
+    assert record["config"]["mode_floor_artificial"] is True, "it is not the default any more"
+    assert "FLAT" in record["config"]["mode_floor_rule"]
+    assert record["shortfalls"]["modes"]["below_the_floor"] == []
+    assert {seat["seated_for"] for seat in record["seated"]} == {"general_pool"}
 
 
 def test_an_artificial_floor_puts_the_leg_back_and_the_record_says_it_was_one():
     record = seating.seat(deep_and_shallow(), n=5, floor=1, key=seating.JUDGE_KEY, log=quiet)
     assert record["config"]["mode_floor"] == 1
-    assert record["config"]["mode_floor_natural"] == 0
+    # `natural` is the default rule's own answer — what a seating naming no floor
+    # would have been given — and it is a mapping now rather than one number.
+    assert record["config"]["mode_floor_natural"] == seating.floors_for(
+        mode_policy.seat_floors(5), mode_policy.accepted()
+    )
     assert record["config"]["mode_floor_artificial"] is True
     assert any(seat["seated_for"].startswith("mode_floor:") for seat in record["seated"])
 
