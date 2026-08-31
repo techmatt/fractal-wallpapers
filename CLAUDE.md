@@ -112,15 +112,25 @@ rebuild *and* the fast lane until you do it.
 
 ### The two lanes
 
-`python -m pytest` runs the **fast lane**, about a minute. `python -m pytest
---slow` runs every test there is, about seven minutes, and that is
+`python -m pytest` runs the **fast lane**, about five minutes. `python -m pytest
+--slow` runs every test there is, about sixteen, and that is
 what CI runs and what runs before a checkpoint. The fast lane is for the
 edit-run loop and nothing else.
 
-The seven minutes is measured, not estimated: 3,044 tests in **7:20** on this
-machine at `0b53e15`, 2026-08-29, with the fast lane at 64.3 s over the 2,943 it
-holds. Measure it on an **idle** machine: the same lane sharing this one with a
-render leg crawled to 41% in the time it normally takes to finish.
+Both are measured, not estimated: **3,101 tests in 16:25**, with the fast lane at
+**290-320 s over the 2,998 it holds** — 289.8 s and 317.5 s on two idle runs, and
+that spread is the run-to-run noise, not a trend. On this machine at `9560862`,
+2026-08-30. The entry here read 64.3 s and 7:20 at
+`0b53e15` the day before, over almost exactly these tests; what happened in
+between is the next paragraph, and it is why a stale figure here is worth
+correcting rather than living with.
+
+Measure it on an **idle** machine, and take that literally. The same lane sharing
+this one with a render leg crawled to 41% in the time it normally takes to
+finish, and under load
+`test_twins.py::test_the_channel_only_ever_hands_over_what_nobody_has_walked`
+**fails** rather than merely slows — it runs a refill loop against a wall clock.
+A red there on a busy box is worth re-running alone before it is worth reading.
 
 **A lane that slows with no test added is a lane pricing data rather than code**,
 and this one has done it twice. It was 160 s on 2026-08-26 and **18:07** on
@@ -129,6 +139,17 @@ went from 15,362 rows and 41 MB to 366,236 rows and 1.11 GB in those three days 
 and seven guards each read the whole of it. So: re-measure after a **merge**, not
 only after writing tests, and suspect the stores first when the digit moves on
 its own.
+
+**A third move on 2026-08-30 went the other way and is recorded unsolved.** The
+fast lane went 163.6 s to 289.8 s and the slow lane 8:22 to 16:25, over the same
+tests on an idle machine, right after 194,058 levelled colormap directories and
+14 GiB came off `artifacts/` — so the stores got *smaller*. It is not a test: the
+ten slowest sum to 99 s on both sides of the sweep, and the extra ~130 s is a
+~45 ms constant spread across all 2,998. It is not that day's code either, which
+was checked by measuring 317.5 s at `7383b63` with the working tree stashed.
+Suspected: NTFS metadata after a bulk small-directory delete. So also re-measure
+after anything that moves hundreds of thousands of paths, and suspect the **disk**
+as well as the stores.
 
 Two rules came out of that and `tests/README.md` argues both. **The candidate
 ledger is read once a session**, through `conftest.tracked_ledger`; a test that
