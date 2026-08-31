@@ -1,0 +1,401 @@
+{
+  "schema": 1,
+  "head": "render",
+  "run": "deploy_seed0",
+  "only": null,
+  "two_head": false,
+  "device": "cuda",
+  "wall_seconds": 752.7,
+  "segments": [
+    {
+      "from_epoch": 0,
+      "through_epoch": 9,
+      "wall_seconds": 752.7
+    }
+  ],
+  "best_epoch": 3,
+  "best_selection_objective": -0.8745056181722659,
+  "second_selection_epoch": -1,
+  "best_second_selection_objective": null,
+  "stopped_early": {
+    "at_epoch": 9,
+    "of_epochs": 20,
+    "patience": 6,
+    "best_epoch": 3,
+    "second_epoch": -1
+  },
+  "selection_metric": "validation loss (minimized), pooled over both kinds",
+  "pictures": {
+    "total": 10299,
+    "train": 8239,
+    "selection": 1462,
+    "eval": 598,
+    "excluded": 0
+  },
+  "per_kind": {
+    "smooth_render": {
+      "train": 4723,
+      "selection": 849,
+      "eval": 324,
+      "excluded": 0
+    },
+    "strange_render": {
+      "train": 3516,
+      "selection": 613,
+      "eval": 274,
+      "excluded": 0
+    }
+  },
+  "class_counts": {
+    "train": {
+      "1": 1910,
+      "2": 3139,
+      "3": 2168,
+      "4": 1022
+    },
+    "selection": {
+      "1": 273,
+      "2": 497,
+      "3": 415,
+      "4": 277
+    },
+    "eval": {
+      "1": 84,
+      "2": 117,
+      "3": 218,
+      "4": 179
+    }
+  },
+  "split": {
+    "schema": 1,
+    "rule": "a seeded random 80%/20% over LINEAGES. No date carve-out and no comparison side: the holdout's only job is to stop the run. A lineage carrying a pinned place is held out first, because the trainer refuses to train on one, and the pinned rows themselves sit on the side it never touches so that they are out of the stopping statistic",
+    "unit": "lineage \u2014 labeling.groups.assign",
+    "seed": 0,
+    "target_share": 0.2,
+    "population": {
+      "rows": 10299,
+      "cut": {
+        "off_kind": 40,
+        "swept": 213
+      },
+      "per_kind": {
+        "smooth_render": {
+          "scored": 5896,
+          "off_kind": 0,
+          "swept": 0,
+          "kept": 5896,
+          "pinned": 324
+        },
+        "strange_render": {
+          "scored": 4656,
+          "off_kind": 40,
+          "swept": 213,
+          "kept": 4403,
+          "pinned": 274
+        }
+      },
+      "swept_rule": "under_seen_modes positions past 269 \u2014 the last override on a page the sweep filled to the end, so every row after it restates the head's own decode",
+      "off_kind_rule": "a row whose mode routes to the other store, derived at the read"
+    },
+    "grouping": {
+      "groups": 3649,
+      "largest": 66,
+      "singletons": 2389,
+      "unplaced": 0
+    },
+    "rows": 10299,
+    "lineages": 3649,
+    "sides": {
+      "train": 8239,
+      "stopping": 1462,
+      "pinned_held": 598
+    },
+    "holdout_share": 0.2,
+    "holdout": {
+      "target_rows": 2060,
+      "rows": 2060,
+      "lineages": 926,
+      "forced_by_a_pinned_place": {
+        "lineages": 432,
+        "rows": 802,
+        "pinned_rows": 598,
+        "carried_in_by_lineage_closure": 204
+      },
+      "drawn_at_random": {
+        "lineages": 494,
+        "rows": 1258,
+        "of_available_lineages": 3217
+      }
+    },
+    "stopping_slice": {
+      "rows": 1462,
+      "lineages": 555,
+      "tiers": {
+        "1": 273,
+        "2": 497,
+        "3": 415,
+        "4": 277
+      },
+      "excludes": "every pinned row. The trainer refuses to early-stop on a pinned place, so the statistic is read on the non-pinned part of the holdout"
+    },
+    "pinned_rows": {
+      "rows": 598,
+      "tiers": {
+        "1": 84,
+        "2": 117,
+        "3": 218,
+        "4": 179
+      },
+      "side": "eval",
+      "spent": "no. They train nothing, they stop nothing, and nothing in this module reads them \u2014 the two blind sheets are as unspent after this run as before it"
+    },
+    "train_tiers": {
+      "1": 1910,
+      "2": 3139,
+      "3": 2168,
+      "4": 1022
+    }
+  },
+  "sampled_mass": {
+    "places": 3094,
+    "largest_place": 66,
+    "sampled_mass": {
+      "1": 0.0968,
+      "2": 0.2908,
+      "3": 0.3528,
+      "4": 0.2595
+    },
+    "raw_share": {
+      "1": 0.2318,
+      "2": 0.381,
+      "3": 0.2631,
+      "4": 0.124
+    }
+  },
+  "history": [
+    {
+      "epoch": 0,
+      "loss": 0.6702597150236589,
+      "seconds": 77.7,
+      "selection_loss": -0.7836855266876656,
+      "second_selection_loss": null,
+      "selection_ap_ge3": 0.7836855266876656,
+      "selection_auc_ge2": 0.8143605763454376,
+      "selection_mean_p_ge2": 0.8755272601216962,
+      "selection_auc_ge3": 0.7968789880639592,
+      "selection_mean_p_ge3": 0.5596756689171813,
+      "selection_auc_ge4": 0.8350195737939649,
+      "selection_mean_p_ge4": 0.20187572647173457,
+      "precision_at_04": 0.9655172413793104,
+      "precision_at_04_k": 58,
+      "precision_at_10": 0.9178082191780822,
+      "precision_at_10_k": 146,
+      "precision_at_20": 0.8595890410958904,
+      "precision_at_20_k": 292,
+      "selection_loss_smooth_render": 0.4639715683254928,
+      "selection_loss_strange_render": 0.41963547435049325
+    },
+    {
+      "epoch": 1,
+      "loss": 0.5577868145347611,
+      "seconds": 76.1,
+      "selection_loss": -0.8341402207548623,
+      "second_selection_loss": null,
+      "selection_ap_ge3": 0.8341402207548623,
+      "selection_auc_ge2": 0.8662125651192094,
+      "selection_mean_p_ge2": 0.8743779752142525,
+      "selection_auc_ge3": 0.8384505667742662,
+      "selection_mean_p_ge3": 0.641652312337031,
+      "selection_auc_ge4": 0.8534296028880867,
+      "selection_mean_p_ge4": 0.25513745794352477,
+      "precision_at_04": 0.9827586206896551,
+      "precision_at_04_k": 58,
+      "precision_at_10": 0.9657534246575342,
+      "precision_at_10_k": 146,
+      "precision_at_20": 0.9178082191780822,
+      "precision_at_20_k": 292,
+      "selection_loss_smooth_render": 0.41963390721562727,
+      "selection_loss_strange_render": 0.478344108074457
+    },
+    {
+      "epoch": 2,
+      "loss": 0.5158560586769266,
+      "seconds": 75.2,
+      "selection_loss": -0.8707394848615796,
+      "second_selection_loss": null,
+      "selection_ap_ge3": 0.8707394848615796,
+      "selection_auc_ge2": 0.8970138356177044,
+      "selection_mean_p_ge2": 0.7895785666990027,
+      "selection_auc_ge3": 0.8735642969747016,
+      "selection_mean_p_ge3": 0.5252593940735623,
+      "selection_auc_ge4": 0.8774604335176469,
+      "selection_mean_p_ge4": 0.2267316058106954,
+      "precision_at_04": 1.0,
+      "precision_at_04_k": 58,
+      "precision_at_10": 0.9726027397260274,
+      "precision_at_10_k": 146,
+      "precision_at_20": 0.9417808219178082,
+      "precision_at_20_k": 292,
+      "selection_loss_smooth_render": 0.35553774915779585,
+      "selection_loss_strange_render": 0.3920505861747019
+    },
+    {
+      "epoch": 3,
+      "loss": 0.4545961683750558,
+      "seconds": 76.1,
+      "selection_loss": -0.8745056181722659,
+      "second_selection_loss": null,
+      "selection_ap_ge3": 0.8745056181722659,
+      "selection_auc_ge2": 0.855636373718796,
+      "selection_mean_p_ge2": 0.895312394181523,
+      "selection_auc_ge3": 0.8738383004278958,
+      "selection_mean_p_ge3": 0.585134379817994,
+      "selection_auc_ge4": 0.8785906868345291,
+      "selection_mean_p_ge4": 0.2481547795114965,
+      "precision_at_04": 1.0,
+      "precision_at_04_k": 58,
+      "precision_at_10": 0.9863013698630136,
+      "precision_at_10_k": 146,
+      "precision_at_20": 0.9452054794520548,
+      "precision_at_20_k": 292,
+      "selection_loss_smooth_render": 0.4104861866753569,
+      "selection_loss_strange_render": 0.4467523407304213
+    },
+    {
+      "epoch": 4,
+      "loss": 0.43088269153401204,
+      "seconds": 74.4,
+      "selection_loss": -0.870883058580863,
+      "second_selection_loss": null,
+      "selection_ap_ge3": 0.870883058580863,
+      "selection_auc_ge2": 0.8996971629435885,
+      "selection_mean_p_ge2": 0.8268675417168555,
+      "selection_auc_ge3": 0.8735661737106823,
+      "selection_mean_p_ge3": 0.3991939905252668,
+      "selection_auc_ge4": 0.8634129994363966,
+      "selection_mean_p_ge4": 0.10090983845100655,
+      "precision_at_04": 0.9827586206896551,
+      "precision_at_04_k": 58,
+      "precision_at_10": 0.9794520547945206,
+      "precision_at_10_k": 146,
+      "precision_at_20": 0.9486301369863014,
+      "precision_at_20_k": 292,
+      "selection_loss_smooth_render": 0.38993323692017295,
+      "selection_loss_strange_render": 0.42171830982443953
+    },
+    {
+      "epoch": 5,
+      "loss": 0.41378593509210837,
+      "seconds": 73.5,
+      "selection_loss": -0.8633537423727986,
+      "second_selection_loss": null,
+      "selection_ap_ge3": 0.8633537423727986,
+      "selection_auc_ge2": 0.8987482940384538,
+      "selection_mean_p_ge2": 0.834174665780356,
+      "selection_auc_ge3": 0.866029202011861,
+      "selection_mean_p_ge3": 0.5583339852919877,
+      "selection_auc_ge4": 0.8737741625919664,
+      "selection_mean_p_ge4": 0.19227029487527567,
+      "precision_at_04": 1.0,
+      "precision_at_04_k": 58,
+      "precision_at_10": 0.9726027397260274,
+      "precision_at_10_k": 146,
+      "precision_at_20": 0.934931506849315,
+      "precision_at_20_k": 292,
+      "selection_loss_smooth_render": 0.3881000986379397,
+      "selection_loss_strange_render": 0.4372972834412514
+    },
+    {
+      "epoch": 6,
+      "loss": 0.3859341975076784,
+      "seconds": 74.5,
+      "selection_loss": -0.8702380466151379,
+      "second_selection_loss": null,
+      "selection_ap_ge3": 0.8702380466151379,
+      "selection_auc_ge2": 0.8824480817752475,
+      "selection_mean_p_ge2": 0.9116242069211353,
+      "selection_auc_ge3": 0.8714548457323024,
+      "selection_mean_p_ge3": 0.6035845918622543,
+      "selection_auc_ge4": 0.8723788633490228,
+      "selection_mean_p_ge4": 0.2723841496954527,
+      "precision_at_04": 0.9827586206896551,
+      "precision_at_04_k": 58,
+      "precision_at_10": 0.9726027397260274,
+      "precision_at_10_k": 146,
+      "precision_at_20": 0.9554794520547946,
+      "precision_at_20_k": 292,
+      "selection_loss_smooth_render": 0.46772524733567056,
+      "selection_loss_strange_render": 0.4883085374103442
+    },
+    {
+      "epoch": 7,
+      "loss": 0.3548491836599766,
+      "seconds": 74.3,
+      "selection_loss": -0.8659506858726471,
+      "second_selection_loss": null,
+      "selection_ap_ge3": 0.8659506858726471,
+      "selection_auc_ge2": 0.8909139640846958,
+      "selection_mean_p_ge2": 0.8369715461702287,
+      "selection_auc_ge3": 0.8673485474063509,
+      "selection_mean_p_ge3": 0.5100676849451026,
+      "selection_auc_ge4": 0.8652378558698534,
+      "selection_mean_p_ge4": 0.18794059034506377,
+      "precision_at_04": 1.0,
+      "precision_at_04_k": 58,
+      "precision_at_10": 0.9863013698630136,
+      "precision_at_10_k": 146,
+      "precision_at_20": 0.9383561643835616,
+      "precision_at_20_k": 292,
+      "selection_loss_smooth_render": 0.3586336334778106,
+      "selection_loss_strange_render": 0.4108363694040751
+    },
+    {
+      "epoch": 8,
+      "loss": 0.3300689942253086,
+      "seconds": 74.8,
+      "selection_loss": -0.8627170487859369,
+      "second_selection_loss": null,
+      "selection_ap_ge3": 0.8627170487859369,
+      "selection_auc_ge2": 0.9010218825189389,
+      "selection_mean_p_ge2": 0.808939711539691,
+      "selection_auc_ge3": 0.8664214398318445,
+      "selection_mean_p_ge3": 0.516345279321891,
+      "selection_auc_ge4": 0.8510898871269935,
+      "selection_mean_p_ge4": 0.20096918868004013,
+      "precision_at_04": 1.0,
+      "precision_at_04_k": 58,
+      "precision_at_10": 0.9931506849315068,
+      "precision_at_10_k": 146,
+      "precision_at_20": 0.9417808219178082,
+      "precision_at_20_k": 292,
+      "selection_loss_smooth_render": 0.4242828977843766,
+      "selection_loss_strange_render": 0.4855114089748977
+    },
+    {
+      "epoch": 9,
+      "loss": 0.2919391911575872,
+      "seconds": 74.7,
+      "selection_loss": -0.8593616730954856,
+      "second_selection_loss": null,
+      "selection_ap_ge3": 0.8593616730954856,
+      "selection_auc_ge2": 0.8940902103223382,
+      "selection_mean_p_ge2": 0.814635553368034,
+      "selection_auc_ge3": 0.8641993844305983,
+      "selection_mean_p_ge3": 0.5037137009008786,
+      "selection_auc_ge4": 0.858657405291779,
+      "selection_mean_p_ge4": 0.17220414569704037,
+      "precision_at_04": 0.9827586206896551,
+      "precision_at_04_k": 58,
+      "precision_at_10": 0.9794520547945206,
+      "precision_at_10_k": 146,
+      "precision_at_20": 0.9212328767123288,
+      "precision_at_20_k": 292,
+      "selection_loss_smooth_render": 0.4188457148046991,
+      "selection_loss_strange_render": 0.5118707505789698
+    }
+  ],
+  "checkpoints": {
+    "best": "models/render/deploy_seed0/best.pt",
+    "last": "models/render/deploy_seed0/last.pt"
+  }
+}

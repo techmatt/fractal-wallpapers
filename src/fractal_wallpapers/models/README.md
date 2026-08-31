@@ -586,63 +586,78 @@ shipping geometry is a separate act and no bar is set on these numbers.
 
 ## Training the head that ships: `renders deploy`
 
-Every band before this one produced fold models and nothing deployable. This is one
-run on the whole corpus under the incumbent recipe, and its artifact is the one that
-would ship.
+Every band before this one produced fold models and nothing deployable. This is
+three runs on the whole corpus under the incumbent recipe, differing only in the
+seed, and the best of them is the artifact that ships.
 
 ```
-fractal-wallpapers renders deploy split                      # what the forward split holds
-fractal-wallpapers renders deploy fit                        # the run
-fractal-wallpapers renders deploy read --head shipped        # the incumbent on the comparison side
-fractal-wallpapers renders deploy read --head forward_holdout_seed0
-fractal-wallpapers renders deploy compare                    # both heads, every reported slice
+fractal-wallpapers renders deploy split --seed 0    # what one seed's holdout holds
+fractal-wallpapers renders deploy fit --seed 0      # one seed, ~13 min on this box
+fractal-wallpapers renders deploy fit --seed 1
+fractal-wallpapers renders deploy fit --seed 2
+fractal-wallpapers renders deploy choose            # the three curves, and the winner
 ```
 
-**The split is FORWARD.** Eighty-twenty over lineages, and what lands in the twenty is
-not a draw: every row whose batch was registered after the incumbent trained
-(`SHIPPED_CUT`, 2026-08-24 — checked against `enlarged_corpus_seed1`'s own recorded
-8,502 pictures, not asserted), plus every pinned place, plus their whole lineages.
-Those post-growth rows are the one population on which the two heads can be compared,
-because neither has seen a row of it.
+A driver that loops the seeds must carry an `if __name__ == "__main__":` guard.
+The loader workers are **spawned** on Windows and re-import the driver by path, so
+a script without one re-runs the whole band inside every worker and the second
+copy dies on the first one's `training.lock`.
 
-**The stopping slice is drawn on top of that, not carved out of it**, and it has to be:
-the constrained holdout is only post-growth lineages and pinned lineages, the first are
-the comparison and `render_train.run` refuses to early-stop on the second. So the
-realized holdout is 33.2% — comparison 2,415, stopping 1,001, train 6,883 — against the
-incumbent's 7,498 fitted pictures.
+**The split is a plain random eighty-twenty over lineages, seeded, and the twenty
+has one job: to stop the run.** No date carve-out, no comparison side, no holdout
+built around the blind sheets. The head this produces is not read against the
+incumbent here at all — a forward draw on a live pool is what compares two heads
+honestly, and nothing in this module is a level or a comparison.
 
-**The epoch is chosen by top-slice precision**, not by the incumbent's pooled cutpoint
-cross-entropy and not by AUC: rank the stopping slice by the head's own `P(≥3)`, take
-the top `TOP_SLICE`, count what fraction a person scored 3 or 4. `TOP_SLICE` is 10%
-because that is about what the supply engine promotes — over the 122,516 live-judge
-score rows in the candidate ledger, `mine.SEATING_BAR` admits **9.76%** and
-`mine.PRIMED_BAR` **3.88%** — and every readout reports 4 / 10 / 20% beside it. It is
-rank-only, so it cannot be won by shrinking toward the prior the way
-`render_cv.top_cutpoint_selection` was.
+**The pin is honoured exactly as the trainer already enforces it.**
+`render_train.run` refuses to train on a place pinned to a blind sheet and refuses
+to early-stop on one, so a lineage carrying a pinned place is held out and the
+pinned rows themselves land on the `eval` side the loop never touches — out of the
+stopping statistic, and unspent. On the stores of 2026-08-30 that closure is 802
+rows of 10,299 with 598 pinned outright, comfortably under the 20% the split
+wants, so the draw fills the rest at random: **train 8,239, stopping 1,462, pinned
+598**, holdout exactly 20.0% at all three seeds.
 
-⚠ **On the first run of this the rule chose epoch 1 of 20 and it chose on noise.** At
-k = 100 rows the statistic steps by 0.01, its spread over eight epochs was 0.11, and
-epoch 1 beat epoch 5 by one row — while stop-slice `AUC(≥3)` climbed monotonically to
-the epoch patience stopped at. A larger stopping slice or a smoothed rule is what this
-would need before the epoch it picks means anything.
+**The epoch is chosen by average precision at `≥3`** over the non-pinned part of
+the holdout, ranked by the head's own `P(≥3)`. Not the incumbent's pooled cutpoint
+cross-entropy, which is decided by the `≥2` boundary; not AUC, which is the stated
+fallback where AP is undefined; and **not precision at a single k**, which is what
+the predecessor stopped on and which moved in steps of one row — at k = 100 it
+chose epoch 1 over epoch 5 by a single row while every other reading was still
+climbing. Every epoch logs AP(≥3), AUC(≥3) and precision at 4 / 10 / 20% whichever
+rule is choosing, so the choice is inspectable against the readings it did not
+make. Patience 6, cap 20.
 
-⚠ **And the declared comparison saturated.** The post-growth rows are **72.7% `≥3`** —
-they were drawn off a head's own top and off calibration bands — so the incumbent
-scores a *perfect* 1.0000 at the top 4% and 10% and no precision-at-`≥3` statistic can
-separate two heads on them. `READOUT_COLUMNS` therefore carries a second, descriptive
-readout at `P(≥4)`, where the same rows still have a 0.343 base rate.
+**Three seeds are the read on the rule.** The seed moves the split and the
+initialization together, the best chosen-epoch AP ships, and the spread of the
+three chosen epochs is the only available evidence about whether the rule is
+reading signal or noise.
 
-**Nothing here adopts anything by itself.** `renders deploy` writes checkpoints under
-`models/render/<run>/` and records under `artifacts/render_deploy/`; staging and the
-flip are `ship.stage_candidate` and `ship.promote`, which are separate acts.
+⚠ **The forward-holdout design that ran before this one is retired, not
+parameterised.** It held out every post-cut row so the two heads could be compared
+on rows neither had seen. The comparison saturated — those rows are 73% `≥3` by
+construction, drawn off the incumbent's own top and off calibration bands, so the
+incumbent scored a perfect 1.000 in the top decile — and the constraint cost the
+candidate exactly the new strange fours the retrain existed for. Its run is still
+on disk at `models/render/forward_holdout_seed0/`; no code reads it.
+
+**Nothing here adopts anything by itself.** `renders deploy` writes checkpoints
+under `models/render/<run>/` and records under `artifacts/render_deploy/`; staging
+and the flip are `ship.stage_candidate` and `ship.promote`, which are separate
+acts.
 
 ⚠ **A render flip is not free, and `models/adoption.py` does not cover it** — its
-`HEAD` is `"location"`. Three ACTING bars stamp the render artifact they were measured
-on and refuse on their first call afterwards: `strange_render_release` 0.575,
-`strange_render_gallery` 0.575, `smooth_render_gallery` 0.54. Refitting them is
-`head floor --head <kind>` against the new artifact, then re-declaring the heights with
-new stamps in `curation.floors`. Until that is done a flip stops the curation run's
-release and gallery paths.
+`HEAD` is `"location"`. Three ACTING bars stamp the render artifact they were
+measured on and refuse on their first call afterwards: `strange_render_release`,
+`strange_render_gallery`, `smooth_render_gallery`. Refitting them is
+`head floor --head <kind>` against the new artifact, then re-declaring the two
+heights with new stamps in `curation.floors` — `STRANGE_RELEASE_BAR` carries the
+first two bars and `SMOOTH_RELEASE_FLOOR` the third. Until that is done a flip
+stops the curation run's release and gallery paths. **Retire the outgoing bytes
+first**: `torch.save` is not byte-reproducible, so a retired artifact's hash is not
+recoverable from its checkpoint. The copy kept beside the maker artifacts, under
+`retired_weights/render-weights-vN/` with its manifest, is the only thing a later
+forward draw can score a live pool through.
 
 ## Adopting a head: `regime restate`, then `regime adopt`
 

@@ -63,9 +63,9 @@ the default, and a table that did not name the rule per mode would silently mix
 them.
 
 Both bars are flags on the arithmetic and neither is a measured crossover. The
-one measured release bar this project acts on is `P(>=3) >= 0.575`
+one measured release bar this project acts on is `P(>=3) >= 0.770`
 ([`floors.STRANGE_RELEASE_BAR`]), which is *above* the fallback here; the smooth
-kind's measured floor is 0.540 and gates nothing. Nothing in this module
+kind's measured floor is 0.620 and gates nothing at a run's release. Nothing in this module
 re-scores at shipping geometry, and no per-mode crossover fitted at label geometry
 is transported onto the candidate column.
 
@@ -140,7 +140,7 @@ DEFAULT_COLUMN = "p_ge4"
 #: the fallback: the fourth class is where a judge trained on four classes is
 #: least sure, and a mode with three locations above it has no supply to census
 #: rather than no quality. It is **below** both measured release heights
-#: ([`floors.MEASURED_RELEASE_FLOORS`], 0.575 and 0.540) and is a flag on this
+#: ([`floors.MEASURED_RELEASE_FLOORS`], 0.770 and 0.620) and is a flag on this
 #: arithmetic rather than a bar anybody fitted.
 FALLBACK_BAR = floors.RELEASE_ADVISORY
 FALLBACK_COLUMN = "p_ge3"
