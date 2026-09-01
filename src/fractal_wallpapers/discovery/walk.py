@@ -1402,6 +1402,9 @@ class Walk:
                 "family": row["family"],
                 "viewport": row["viewport"],
                 "maxiter": row["maxiter"],
+                # Carried rather than dropped: a centered location is refined on
+                # its scale alone, and the flag is the only thing that says so.
+                "centered": bool(row.get("centered")),
             }
             for row in rows
         ]

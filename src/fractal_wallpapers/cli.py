@@ -975,6 +975,8 @@ def reframe(args: argparse.Namespace) -> int:
             partitions=args.partition or None,
             roots=args.roots,
             seed_batch=args.seed_batch,
+            max_period=args.seed_max_period,
+            prior=None if args.prior is None else resolve_input(args.prior),
         )
     except (reframing.ChannelRefused, reframing.PinnedPlace) as refusal:
         print(refusal)
@@ -4593,9 +4595,11 @@ def build_parser() -> argparse.ArgumentParser:
             "The reframing channel. A walk pushes an operator's nucleus-centred view onto "
             "the frontier as a node and only ever scores what it draws BELOW it, so that "
             "picture is never a candidate. This leg fires the same operators at locations a "
-            "human already scored a keeper, draws each nucleus it finds at 16x, 24x and 32x "
-            "the atom size, reads all three through the location head, and writes ONE "
-            "candidate row per nucleus at the rung the head picked. The ledger is walk-shaped "
+            "human already scored a keeper, draws each nucleus it finds at every rung of the "
+            "framing ladder, reads them all through the location head, and writes ONE "
+            "candidate row per nucleus at the rung the head picked. A nucleus that clears the "
+            "keeper floor becomes a seed for the next generation, behind every proven root on "
+            "a queue ordered matt-q4, matt-q3, head-q4, head-keeper. The ledger is walk-shaped "
             "and lands at <out-dir>/walk.jsonl, so `curate score --harvest <out-dir>` reads "
             "it like any other supply. Nothing about the walk changes."
         ),
@@ -4613,8 +4617,9 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=1,
         help="how many generations to fire (default: 1, the proven roots alone). A nucleus "
-        "the head scores at or above the q4 admission bar joins the seed set for the next "
-        "generation, and its generation number is on its row",
+        "the head scores at or above the q4 admission bar joins the next generation's seeds, "
+        "and one that merely clears the keeper floor joins behind it; the generation and the "
+        "queue class the seed came from are both on every row",
     )
     reframing_leg.add_argument(
         "--rungs",
@@ -4623,9 +4628,9 @@ def build_parser() -> argparse.ArgumentParser:
         default=list(reframing_default("RUNGS")),
         metavar="K",
         help=f"the framings to draw, in atom sizes (default: "
-        f"{' '.join(f'{k:g}' for k in reframing_default('RUNGS'))}). They are the location's "
-        f"framings and not three locations: all of them are scored, the head picks one, and "
-        f"every reading is on the row",
+        f"{' '.join(f'{k:g}' for k in reframing_default('RUNGS'))}). They are one location's "
+        f"framings and not several locations: all of them are drawn and scored, the head "
+        f"picks one, and every reading is on the row",
     )
     reframing_leg.add_argument(
         "--tier-floor",
@@ -4644,6 +4649,23 @@ def build_parser() -> argparse.ArgumentParser:
     )
     reframing_leg.add_argument(
         "--roots", type=int, help="use only this many of the available proven roots"
+    )
+    reframing_leg.add_argument(
+        "--prior",
+        metavar="DIR",
+        help="an earlier run of this channel to continue. Its nuclei are already found (so "
+        "an atom reached again is counted, not written twice), the proven roots it consumed "
+        "are off the queue, and its admitted rows ARE this run's promotions — head-q4 first, "
+        "then head-keeper, both behind whatever is left of the label store",
+    )
+    reframing_leg.add_argument(
+        "--seed-max-period",
+        type=int,
+        default=reframing_default("SEED_SNAP_MAX_PERIOD"),
+        help=f"the period ceiling the seed snap scans to (default: "
+        f"{reframing_default('SEED_SNAP_MAX_PERIOD')}). Higher than the operator module's "
+        f"own default on purpose: seeds are the scarce thing here and the snap is a tenth "
+        f"of the operator clock",
     )
     reframing_leg.add_argument(
         "--seed-batch",

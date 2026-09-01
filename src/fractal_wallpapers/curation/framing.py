@@ -39,6 +39,24 @@ stage B   at the best width, recentre +-0.25 frame, one axis
 Seven frames a location, and [`SCAN_THE_ORIGINAL`] says why the `x1.0` centre is
 one of them rather than free.
 
+## A centered location: scale only
+
+A location whose row says `centered` has a centre that **is** the location — the
+nucleus [`discovery.reframing`] solved for, not a place a walk happened to stop.
+Moving a quarter-frame off it does not produce a better crop of that location, it
+produces a crop of somewhere else that inherits the atom's name; the minibrot the
+whole channel exists to frame would be a quarter-frame off centre in the picture
+a gallery seats.
+
+So stage B does not run for those rows. Stage A does: the *scale* is exactly what
+is still open, because the rung the head picked out of five is a coarse ladder and
+half an octave either side of it is the finer question. [`recentres`] returns
+nothing for a centered row and [`refine`] plans no stage-B frames for one, so the
+saving is four frames a location as well as a rule.
+
+The flag is read off the row and never off the channel name. A hand-placed
+nucleus frame is centered for the same reason and would carry the same field.
+
 **A quarter of the frame means a quarter along the axis being moved** — `0.25 x
 width` sideways and `0.25 x height` vertically, and the node frame is 16:9, so
 the vertical step is `0.5625` of the horizontal one. The maker moved by a quarter
@@ -268,8 +286,25 @@ def ladder(row: dict) -> list[Framing]:
     return out
 
 
+def is_centered(row: dict) -> bool:
+    """Whether this location's centre is the location — see the module docstring.
+
+    One reader of the field, so a row that has never heard of it and a row that
+    says `false` are one case, and the guard cannot be half-applied.
+    """
+    return bool(row.get("centered"))
+
+
 def recentres(row: dict, best: Framing) -> list[Framing]:
-    """Stage B: the four one-axis recentrings, at the width stage A chose."""
+    """Stage B: the four one-axis recentrings, at the width stage A chose.
+
+    Empty for a centered row. The refusal is here rather than at the call site
+    because there are two call sites — [`window`], which is what a test asks the
+    window's shape of, and [`refine`], which is what plans the frames — and a
+    guard that lived in one of them would be a guard the other could walk past.
+    """
+    if is_centered(row):
+        return []
     return [
         Framing(
             width_scale=best.width_scale,
@@ -471,6 +506,9 @@ def _record(row: dict, original: dict | None, best: dict | None, refusal, margin
     return {
         "schema": SCHEMA,
         "key": str(row["key"]),
+        # On the record rather than inferred from `dx`/`dy` being zero, which is
+        # also what an ordinary row that adopted a width says.
+        "centered": is_centered(row),
         "adopted": bool(adopted),
         "refused": refusal,
         "why": REFUSALS.get(refusal) if refusal else None,
@@ -553,17 +591,28 @@ def refine(
     ]
     pairs_b: list[tuple] = []
     stage_b: dict[int, list] = {}
+    # Which row each stage-B frame belongs to, kept rather than divided out of
+    # the position. A centered row plans NO recentring, so `len(AXES)` is no
+    # longer the stride and arithmetic on it would hand one row's frames to
+    # another the moment one centered location entered the batch.
+    owners: list[int] = []
     for index in live:
         pool = [cell for cell in stage_a[index] if adoptable(cell)]
         widest = (min(pool, key=rank) if pool else originals[index])["framing"]
         stage_b[index] = []
-        pairs_b += [(rows[index], framing) for framing in recentres(rows[index], widest)]
+        planned = recentres(rows[index], widest)
+        owners += [index] * len(planned)
+        pairs_b += [(rows[index], framing) for framing in planned]
 
-    log(f"[refine] stage B: recentring {len(live)} location(s) at the width the ladder chose")
+    centered = sum(1 for index in live if is_centered(rows[index]))
+    log(
+        f"[refine] stage B: recentring {len(live) - centered} location(s) at the width the "
+        f"ladder chose, {centered} centered location(s) held to the scale"
+    )
     moved = screen(pairs_b, directory, log) if pairs_b else []
     read(moved, [row["family"] for row, _ in pairs_b], scorer, directory)
     for position, cell in enumerate(moved):
-        stage_b[live[position // len(AXES)]].append(cell)
+        stage_b[owners[position]].append(cell)
 
     seconds = time.monotonic() - started
     share = seconds / len(rows)
@@ -767,6 +816,10 @@ def price(records: list[dict]) -> dict:
     gains = [record["gain"] for record in records if record["gain"] is not None]
     return {
         "locations": len(records),
+        # How many of them were held to the scale. Reported because the frame
+        # count is four lower for each and a reader comparing two passes needs to
+        # know which of them was cheaper for that reason.
+        "centered": sum(1 for record in records if record.get("centered")),
         "frames": frames,
         "seconds": round(seconds, 1),
         "seconds_per_location": round(seconds / len(records), 2),

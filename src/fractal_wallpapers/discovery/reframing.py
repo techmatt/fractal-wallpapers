@@ -21,7 +21,7 @@ proven roots (label store, q3 and q4, parameter planes, pins excluded)
         │  expand_neighborhood      distinct atoms around it
         ▼
    one nucleus                      deduplicated on the atom key, across the run
-        │  16x / 24x / 32x          the three rungs, offered directly
+        │  16x 24x 32x 48x 64x      the five rungs, offered directly
         ▼
    engine.screen                    the walk's own gate battery, node regime
         │  the location head over the frames it just drew
@@ -36,13 +36,20 @@ audit closed on. Whatever the operators build here is scored, gated and recorded
 it is not a place to descend from.
 
 **One nucleus is one location, and the rungs are its framings.** A nucleus at
-three widths is not three locations — that would put one atom into three seats
-and would count one find three times in every book downstream. So the three rungs
-are drawn, all three are scored, all three readings are on the row, and the
-location's own score is the rung the head picked. The rungs are **offered
-directly** rather than walked to, because the built refinement moves x1.414 a
-step ([`curation.framing.WIDTH_LADDER`]) and cannot reach 32x from 16x in one
-move.
+five widths is not five locations — that would put one atom into five seats and
+would count one find five times in every book downstream. So every rung is
+drawn, every one is scored, every reading is on the row, and the location's own
+score is the rung the head picked. The rungs are **offered directly** rather
+than walked to, because the built refinement moves x1.414 a step
+([`curation.framing.WIDTH_LADDER`]) and cannot reach 64x from 16x in anything a
+window that size can express.
+
+**A nucleus location is `centered`.** The centre is the atom the operators
+solved for, and it is the whole of what the location is; a framing refinement
+over one of these rows may move the **scale** and nothing else.
+[`curation.framing`] reads the flag and drops its recentring stage for a row
+that carries it, so a later pass cannot walk a quarter-frame off the nucleus and
+still call the result this location.
 
 **Record and rank, never gate.** Every derived nucleus is scored and written,
 whatever the head said. Distinctness is applied where a *sheet* is cut and never
@@ -54,15 +61,21 @@ exists and why every derived row carries the seed's tier: the claim being
 inherited is somebody's verdict on a picture, and a channel that could not say
 whose verdict, at what tier, would be unpriceable.
 
-## Why 24x and 32x, and why not 4x
+## The five rungs, and why nothing below 16x
 
 Measured body width of eleven ring-seeded atoms at 1280 px
 (`scratch/framing_ladder.jsonl`): 115-183 px at the 16x rung, 57-92 px at 32x,
 28-45 px at 64x. The band that reads as *a minibrot with detail around it* is
-50-100 px, which is the 32x rung and nothing else; the walk's widest rung, 16x, is
-a factor of two too tight. 24x is the rung in between, carried because nothing has
-ever been labelled at either and the head's pick across the three is itself the
-measurement.
+50-100 px, which is the 32x rung; the walk's widest rung, 16x, is a factor of two
+too tight, and 48x and 64x sit below the band at roughly 38-61 px and 28-45 px.
+
+The band is a prediction and the ladder is the measurement of it. Generation 1
+drew 16x, 24x and 32x on all 792 of its nuclei and the head-q4 rate rose monotone
+outward — **2.1%, 2.9%, 3.5%** — which is the direction that says the ladder was
+stopping too early rather than that 32x is the answer. 48x and 64x are carried
+so the question has somewhere to land: a pick distribution that keeps moving
+outward past 32x says the band is wrong, and one that turns over at 32x or 48x
+says where it actually is. Every rung is drawn, scored and on the row either way.
 
 Nothing below 16x is offered. The 2x frame is 50-75% interior and is refused
 outright by the walk's own `interior_cap`; 4x is the walk's "is this atom any
@@ -76,13 +89,35 @@ the record rather than a stopwatch reading. That is the number an evening leg is
 sized against: the target is a thousand nuclei the location head scores q4, and
 the channel's own yield per minute is what says whether a night reaches it.
 
-## Generations
+## Generations, and the queue's priority order
 
 A nucleus the head scores at or above the q4 admission bar — the keeper floor on
-`P(>=3)` **and** the great cut on `P(>=4)`, both through
-[`supply.currency`] rather than restated — is a seed for the next generation, and
-its generation number is on its row. The loop is bounded by `--generations`;
-generation 1 alone is the channel firing at proven roots exactly.
+`P(>=3)` **and** the great cut on `P(>=4)`, both through [`supply.currency`]
+rather than restated — is a seed for the next generation. So is one that merely
+clears the keeper floor, at a lower priority: generation 1 found 58 of the first
+and 496 of the second, and a leg that promoted only the first would run its queue
+dry inside an hour.
+
+The queue is ordered and the order is a claim about what a seed is worth
+([`SOURCES`]):
+
+```text
+matt_q4       a person called it a 4       generation 0
+matt_q3       a person called it a 3       generation 0
+head_q4       the head calls it a 4        a promotion
+head_keeper   the head clears the floor    a promotion
+```
+
+A human verdict outranks the head's because it is the thing being inherited, and
+inside the human half q4 outranks q3 on measurement: over generation 1's 1,056
+consumed seeds the q4 roots returned a head-q4 at **11.4%** and the q3 roots at
+**4.2%**, so a q4 seed is worth 2.7 of the others. Both are ahead of any
+promotion, because a promotion's claim is the head's read of a picture the head
+also framed.
+
+Every row says which of the four it came from and which generation produced it,
+so yield per seed is a division on the record. The loop is bounded by
+`--generations`; generation 1 alone is the channel firing at proven roots exactly.
 """
 
 from __future__ import annotations
@@ -110,8 +145,33 @@ CHANNEL = "reframing"
 #: The rungs, in atom sizes. See the module docstring for the measurement.
 #:
 #: Offered directly and not walked to: `refine_framings` moves x1.414 a step, so
-#: half an octave cannot turn 16x into 32x however many times it fires.
-RUNGS: tuple[float, ...] = (16.0, 24.0, 32.0)
+#: half an octave cannot turn 16x into 64x however many times it fires.
+#:
+#: `48` and `64` join the ladder because generation 1's head-q4 rate rose monotone
+#: outward over the three it had — 2.1% at 16x, 2.9% at 24x, 3.5% at 32x — which
+#: leaves "does the pick keep moving outward?" a question the ladder could not
+#: answer while 32x was its end.
+RUNGS: tuple[float, ...] = (16.0, 24.0, 32.0, 48.0, 64.0)
+
+#: What a nucleus location's row says about its centre, and the contract
+#: [`curation.framing`] honours: the centre is the atom the operators solved for,
+#: so a framing refinement over one of these rows may move the **scale** only.
+#:
+#: The flag is on the row rather than derived from the channel name, because the
+#: property is about the geometry and not about who made it — a hand-placed
+#: nucleus frame would carry it too, and a reader that special-cased `channel ==
+#: "reframing"` would have to be found and changed the day one arrives.
+CENTERED = True
+
+#: The period ceiling the seed snap scans to, over [`operators.MAX_PERIOD`]'s 64.
+#:
+#: Measured on 60 generation-1 seeds: 64 found 24 nuclei in 5.1 s, 128 found 30 in
+#: 8.6 s, and 256 found **35 in 17.7 s** — a 58% hit rate against 40%, at 3.5x the
+#: Newton cost. It is the right trade here and would not be in the walk, because
+#: the snap is a tenth of this channel's operator clock and seeds are the scarce
+#: thing: `nucleus_outside_seed_view` was the single largest refusal in the smoke
+#: at 1,416, and a seed the snap misses is a seed nothing else will reach.
+SEED_SNAP_MAX_PERIOD = 256
 
 #: The lowest label tier a seed may carry. Both of the currency's paid classes:
 #: q3 and q4 alike are places a person called a keeper, and the channel is a claim
@@ -127,6 +187,28 @@ SCREEN_BATCH = 64
 #: killed leg loses a minute rather than an hour, large enough that the head and
 #: the engine are each entered a few times a minute rather than per nucleus.
 SEED_BATCH = 24
+
+#: What a promotion the head calls a class 4 is spelled as on the queue.
+HEAD_Q4 = "head_q4"
+
+#: What a promotion that merely clears the keeper floor is spelled as.
+HEAD_KEEPER = "head_keeper"
+
+#: The queue's priority order, best first. A proven root's source is its own tier
+#: — `matt_q4`, `matt_q3` — so a widened `--tier-floor` spells what it admitted
+#: rather than flattening it into the nearest name here.
+SOURCES: tuple[str, ...] = ("matt_q4", "matt_q3", HEAD_Q4, HEAD_KEEPER)
+
+
+def source_of_tier(tier: int) -> str:
+    """A proven root's queue class: the tier a person cast, spelled as a source."""
+    return f"matt_q{int(tier)}"
+
+
+def priority_of(source: str) -> int:
+    """Where a source sits in the queue. Anything unlisted sorts last, not first."""
+    return SOURCES.index(source) if source in SOURCES else len(SOURCES)
+
 
 #: The operators this channel fires, in order.
 #:
@@ -177,6 +259,8 @@ class Seed:
     generation: int
     #: `proven` for a label-store root, `reframing` for a nucleus this channel found.
     kind: str = "proven"
+    #: Which class of the seed queue this seed was taken from ([`SOURCES`]).
+    source: str = ""
 
     def view(self) -> dict:
         """The view an operator takes, coordinates as the decimal strings they are."""
@@ -230,6 +314,7 @@ def seeds(
                 viewport=row["viewport"],
                 tier=int(row["provenance"]["tier"]),
                 generation=0,
+                source=source_of_tier(row["provenance"]["tier"]),
             )
         )
     tiers: dict[str, int] = {}
@@ -246,6 +331,10 @@ def seeds(
         "refused_unkeyed": unkeyed,
         "seeds": len(kept),
         "tiers": {tier: tiers[tier] for tier in sorted(tiers, reverse=True)},
+        "sources": {
+            source: sum(1 for seed in kept if seed.source == source)
+            for source in sorted({seed.source for seed in kept}, key=priority_of)
+        },
         "rule": "a proven parameter-plane location no eval pin covers, best tier first",
     }
 
@@ -277,13 +366,24 @@ class Nucleus:
         return [(rung, row) for rung, row in sorted(self.rungs.items()) if row.available]
 
 
-def fire(seed: Seed, rng: random.Random, *, rungs=RUNGS, probe_max=None, found_max=None):
+def fire(
+    seed: Seed,
+    rng: random.Random,
+    *,
+    rungs=RUNGS,
+    probe_max=None,
+    found_max=None,
+    max_period: int = SEED_SNAP_MAX_PERIOD,
+):
     """`(nuclei, cost)` — every atom this seed's operators reached, at every rung.
 
     One Newton pass at the seed's centre answers [`operators.snap_at_seed`] and
     then seeds the neighbourhood enumeration through the shared
     [`operators.ParentAtom`], so the atom under the seed is solved for once even
-    though two operators want it.
+    though two operators want it. The snap scans to [`SEED_SNAP_MAX_PERIOD`]
+    rather than the operator module's default: the seed set is the scarce thing
+    here and the snap is a tenth of the clock, which is a trade the walk does not
+    have and this channel does.
 
     A seed on a family with no parameter-plane degree returns nothing and says so:
     the operators are undefined there rather than unlucky.
@@ -293,6 +393,7 @@ def fire(seed: Seed, rng: random.Random, *, rungs=RUNGS, probe_max=None, found_m
     cost: dict = {
         "operators": {},
         "degree": degree,
+        "max_period": int(max_period),
         "refusals": {},
     }
     if degree is None:
@@ -335,7 +436,9 @@ def fire(seed: Seed, rng: random.Random, *, rungs=RUNGS, probe_max=None, found_m
             held.rungs.setdefault(float(row.framing), row)
 
     started = time.monotonic()
-    snapped = operators.snap_at_seed(view, degree=degree, framings=ladder)
+    snapped = operators.snap_at_seed(
+        view, degree=degree, framings=ladder, max_period=int(max_period)
+    )
     collect("snap_at_seed", snapped, time.monotonic() - started)
     parent = operators.parent_atom_from_snap(snapped)
 
@@ -556,6 +659,10 @@ def candidate_row(
         "origin": nucleus.operator,
         "atom_key": nucleus.key,
         "channel": CHANNEL,
+        # The centre is the atom, and it is the whole of what this location is.
+        # A framing refinement over this row may move the scale and nothing else;
+        # `curation.framing` reads the flag rather than the channel name.
+        "centered": CENTERED,
         "fate": fate_of(chosen),
         "scorer": scorer_name,
         # A reframing is not a descent, so there is no rung below a plane root to
@@ -578,6 +685,7 @@ def candidate_row(
             "seed": {
                 "id": nucleus.seed.id,
                 "kind": nucleus.seed.kind,
+                "source": nucleus.seed.source,
                 "tier": nucleus.seed.tier,
                 "generation": nucleus.seed.generation,
                 "family": nucleus.seed.family,
@@ -614,6 +722,108 @@ def candidate_row(
 
 
 # --------------------------------------------------------------------------- #
+# The queue.
+# --------------------------------------------------------------------------- #
+def prior_run(directory: Path, log=print) -> dict:
+    """What an earlier run of this channel leaves the next one: found, fired, promoted.
+
+    A leg that ran generation 1 has already spent it, and a second leg that
+    re-derived its seeds from the label store would fire the same 1,176 roots at
+    the same atoms and write **every one of them a second time** — one nucleus in
+    two ledgers, which is the one thing the atom-key dedup exists to stop and
+    which it cannot see across runs.
+
+    So a continuing leg is handed three things off the earlier ledger:
+
+    * `found` — the atom keys it made locations of. They seed the new run's
+      `seen`, so an atom reached again is counted rather than re-written.
+    * `fired` — the proven root ids it consumed. What is left of the label store
+      is the front of the new queue, still at its own tier.
+    * `promoted` — its rows as the next generation's seeds, each at the class the
+      head earned it and carrying the **human** tier of the root it descends from.
+
+    Rows only; nothing here re-reads the head or re-decides a floor. `head_q4` is
+    the flag the earlier run wrote, and the keeper class is its own recorded fate.
+    """
+    directory = Path(directory)
+    path = directory / ledger_module.LEDGER_NAME
+    if not path.is_file():
+        raise ChannelRefused(
+            f"{directory} holds no {ledger_module.LEDGER_NAME}, so it is not a run of this "
+            f"channel a later one could continue. Point --prior at an earlier --out-dir."
+        )
+    rows = read(path)
+    found: set[str] = set()
+    fired: set[str] = set()
+    promoted: list[Seed] = []
+    for row in rows:
+        block = row.get("reframing") or {}
+        if row.get("atom_key"):
+            found.add(str(row["atom_key"]))
+        seed = block.get("seed") or {}
+        if seed.get("kind") == "proven" and seed.get("id"):
+            fired.add(str(seed["id"]))
+        source = None
+        if block.get("head_q4"):
+            source = HEAD_Q4
+        elif row.get("fate") == ledger_module.SURVIVED:
+            source = HEAD_KEEPER
+        if source is None:
+            continue
+        promoted.append(
+            Seed(
+                id=str(row.get("atom_key") or row["root_id"]),
+                family=row["family"],
+                viewport=row["viewport"],
+                tier=int(seed.get("tier", SEED_TIER_FLOOR)),
+                generation=int(block.get("generation", 1)),
+                kind=CHANNEL,
+                source=source,
+            )
+        )
+    record = {
+        "prior": str(path),
+        "rows": len(rows),
+        "nuclei_found": len(found),
+        "roots_fired": len(fired),
+        "promoted": len(promoted),
+        "promoted_by_source": by_source(promoted),
+        "generations": {
+            str(generation): sum(
+                1 for row in rows if (row.get("reframing") or {}).get("generation") == generation
+            )
+            for generation in sorted(
+                {(row.get("reframing") or {}).get("generation") for row in rows} - {None}
+            )
+        },
+    }
+    log(f"[reframe] prior: {json.dumps(record)}")
+    return {"found": found, "fired": fired, "promoted": promoted, "record": record}
+
+
+def queued(seeds_: list[Seed]) -> list[Seed]:
+    """One generation's seeds in the queue's priority order ([`SOURCES`]).
+
+    Stable inside a class, so the order [`supply.proven`] already imposed on the
+    proven roots — best tier first, then a digest of the location so a short leg
+    reaches a spread of places rather than a basin — survives untouched.
+    """
+    return sorted(seeds_, key=lambda seed: priority_of(seed.source))
+
+
+def _bump(where: dict, key: str, by: int = 1) -> None:
+    where[key] = where.get(key, 0) + by
+
+
+def by_source(seeds_: list[Seed]) -> dict:
+    """`{source: count}` over a seed list, in queue order. What a readout divides."""
+    counts: dict[str, int] = {}
+    for seed in seeds_:
+        counts[seed.source] = counts.get(seed.source, 0) + 1
+    return {source: counts[source] for source in sorted(counts, key=priority_of)}
+
+
+# --------------------------------------------------------------------------- #
 # The leg.
 # --------------------------------------------------------------------------- #
 class Channel:
@@ -630,6 +840,7 @@ class Channel:
         generations: int = 1,
         pinned: set | None = None,
         seed_batch: int = SEED_BATCH,
+        max_period: int = SEED_SNAP_MAX_PERIOD,
         log=print,
     ):
         from fractal_wallpapers.labeling import pins as pin_module
@@ -641,6 +852,7 @@ class Channel:
         self.minutes = None if minutes in (None, 0) else float(minutes)
         self.generations = max(1, int(generations))
         self.seed_batch = max(1, int(seed_batch))
+        self.max_period = int(max_period)
         self.log = log
         self.rng = random.Random(self.seed)
         self.pinned = pin_module.every_pinned() if pinned is None else set(pinned)
@@ -650,6 +862,10 @@ class Channel:
         #: Atom keys this run has already made a location of. One nucleus is one
         #: location, whichever operator or seed reached it first.
         self.seen: set[str] = set()
+        #: Per **generation** — a row's, not a round's. The drift read: whether
+        #: the head-q4 rate holds up as the queue moves away from the person who
+        #: cast the verdict being inherited.
+        self.per_generation: dict[int, dict] = {}
         self.counts: dict[str, int] = {}
         self.cost: dict = {}
         self.started = time.monotonic()
@@ -665,6 +881,38 @@ class Channel:
 
     def _count(self, name: str, by: int = 1) -> None:
         self.counts[name] = self.counts.get(name, 0) + by
+
+    def _generation_tally(self, generation: int) -> dict:
+        return self.per_generation.setdefault(
+            int(generation),
+            {
+                "seeds_consumed": 0,
+                "locations": 0,
+                "head_q4": 0,
+                "head_keeper": 0,
+                "consumed_by_source": {},
+                "rung_picked": {},
+            },
+        )
+
+    def by_generation(self) -> dict:
+        """`{generation: what it consumed and what it returned}`, best generation first.
+
+        Off the run's own counters rather than off the ledger, because the ledger
+        is the thing a readout re-derives this from and a summary that agreed with
+        it by construction would prove nothing.
+        """
+        out = {}
+        for generation in sorted(self.per_generation):
+            tally = dict(self.per_generation[generation])
+            seeds_ = tally["seeds_consumed"]
+            tally["locations_per_seed"] = round(tally["locations"] / seeds_, 4) if seeds_ else None
+            tally["head_q4_per_seed"] = round(tally["head_q4"] / seeds_, 4) if seeds_ else None
+            tally["head_q4_rate"] = (
+                round(tally["head_q4"] / tally["locations"], 4) if tally["locations"] else None
+            )
+            out[str(generation)] = tally
+        return out
 
     def _charge(self, cost: dict) -> None:
         for operator, tally in cost.get("operators", {}).items():
@@ -695,15 +943,25 @@ class Channel:
             )
 
     # ------------------------------------------------------------- the loop
-    def run(self, roots: list[Seed]) -> dict:
-        """Fire every generation the budget allows and return what was found."""
+    def run(self, roots: list[Seed], carried: list[Seed] | None = None) -> dict:
+        """Fire every round the budget allows and return what was found.
+
+        `carried` is an earlier run's promotions ([`prior_run`]), and they enter
+        the **first** round's queue rather than a round of their own: the queue's
+        order already puts every proven root ahead of every promotion, and a
+        second knob for the same fact would be a second answer to it. A round is
+        therefore not a generation — a row's generation is its seed's plus one and
+        is on the row — and the loop's record says `round` for that reason.
+        """
         header = {
             "channel": CHANNEL,
             "run_seed": self.seed,
             "rungs": list(self.rungs),
             "operators": list(OPERATORS),
-            "generations": self.generations,
+            "rounds": self.generations,
             "minutes": self.minutes,
+            "seed_max_period": self.max_period,
+            "queue": list(SOURCES),
             "seeds": len(roots),
             "pinned_places": len(self.pinned),
             "scorer": self.scorer.name,
@@ -715,33 +973,48 @@ class Channel:
         self.ledger.write("reframing_run", **header)
         self.log(f"[reframe] {json.dumps(header)}")
 
-        pending = list(roots)
+        pending = queued([*roots, *(carried or [])])
         consumed = 0
-        per_generation: list[dict] = []
-        for generation in range(1, self.generations + 1):
+        per_round: list[dict] = []
+        for index in range(1, self.generations + 1):
             if not pending or self.out_of_time():
                 break
-            found, used, promoted = self._generation(generation, pending)
-            consumed += used
-            per_generation.append(
+            tally, promoted = self._generation(index, pending)
+            consumed += tally["seeds_consumed"]
+            per_round.append(
                 {
-                    "generation": generation,
+                    "round": index,
                     "seeds_offered": len(pending),
-                    "seeds_consumed": used,
-                    "locations": found,
+                    "offered_by_source": by_source(pending),
+                    **tally,
                     "promoted": len(promoted),
+                    "promoted_by_source": by_source(promoted),
                 }
             )
-            pending = promoted
-        report = self.summary(roots, consumed, per_generation)
+            # The queue's own order, re-imposed every round: a head-q4 promotion
+            # is fired before any head-keeper one, whichever batch each came out
+            # of.
+            pending = queued(promoted)
+        report = self.summary([*roots, *(carried or [])], consumed, per_round)
         self.ledger.write("reframing_summary", **report)
         self.ledger.close()
         return report
 
-    def _generation(self, generation: int, pending: list[Seed]) -> tuple[int, int, list[Seed]]:
-        """`(locations written, seeds consumed, next generation's seeds)`."""
-        written = 0
-        consumed = 0
+    def _generation(self, index: int, pending: list[Seed]) -> tuple[dict, list[Seed]]:
+        """`(what this round did, the seeds it promoted)`.
+
+        The tally is kept per **seed source** as well as in total, because "yield
+        per seed by seed source" is the number the queue's order is an argument
+        about, and a run that only counted the total could not settle it.
+        """
+        tally = {
+            "seeds_consumed": 0,
+            "consumed_by_source": {},
+            "locations": 0,
+            "locations_by_source": {},
+            "head_q4": 0,
+            "head_q4_by_source": {},
+        }
         promoted: list[Seed] = []
         for start in range(0, len(pending), self.seed_batch):
             if self.out_of_time():
@@ -750,9 +1023,14 @@ class Channel:
             self.batch_index += 1
             nuclei: list[Nucleus] = []
             for seed in chunk:
-                consumed += 1
+                tally["seeds_consumed"] += 1
+                _bump(tally["consumed_by_source"], seed.source)
+                self._count(f"seed_consumed:{seed.source}")
+                mine = self._generation_tally(seed.generation + 1)
+                mine["seeds_consumed"] += 1
+                _bump(mine["consumed_by_source"], seed.source)
                 self.refuse_a_pinned_frame(seed.family, seed.viewport, f"seed {seed.id}")
-                found, cost = fire(seed, self.rng, rungs=self.rungs)
+                found, cost = fire(seed, self.rng, rungs=self.rungs, max_period=self.max_period)
                 self._charge(cost)
                 for nucleus in found:
                     if nucleus.key in self.seen:
@@ -763,15 +1041,20 @@ class Channel:
                         continue
                     self.seen.add(nucleus.key)
                     nuclei.append(nucleus)
-            written += self._draw(nuclei, promoted)
+            self._draw(nuclei, promoted, tally)
             self.log(
-                f"[reframe] generation {generation}: "
+                f"[reframe] round {index}: "
                 f"{min(start + self.seed_batch, len(pending)):,}/{len(pending):,} seed(s), "
-                f"{written:,} location(s), {self.spent() / 60.0:.1f} min"
+                f"{tally['locations']:,} location(s), {tally['head_q4']:,} head-q4, "
+                f"{self.spent() / 60.0:.1f} min"
             )
-        return written, consumed, promoted
+        for field_ in ("consumed_by_source", "locations_by_source", "head_q4_by_source"):
+            tally[field_] = {
+                source: tally[field_][source] for source in sorted(tally[field_], key=priority_of)
+            }
+        return tally, promoted
 
-    def _draw(self, nuclei: list[Nucleus], promoted: list[Seed]) -> int:
+    def _draw(self, nuclei: list[Nucleus], promoted: list[Seed], tally: dict) -> int:
         """Screen, score and write one batch of nuclei. One row per nucleus."""
         if not nuclei:
             return 0
@@ -812,6 +1095,12 @@ class Channel:
             self.ledger.write("candidate", node_id=None, **row)
             written += 1
             self.rows_written += 1
+            tally["locations"] += 1
+            mine = self._generation_tally(nucleus.generation)
+            mine["locations"] += 1
+            _bump(mine["rung_picked"], f"{chosen['rung']:g}")
+            _bump(tally["locations_by_source"], nucleus.seed.source)
+            self._count(f"location:{nucleus.seed.source}")
             self._count(f"fate:{row['fate']}")
             self._count(f"rung_picked:{chosen['rung']:g}")
             self._count(f"operator:{nucleus.operator}")
@@ -821,22 +1110,45 @@ class Channel:
                     self._count(f"rung_passed:{cell['rung']:g}")
                 if cell["p_ge4"] is not None and is_head_q4(cell):
                     self._count(f"rung_head_q4:{cell['rung']:g}")
+            # Both promotion classes fire. A nucleus the head calls a 4 is the
+            # better seed and goes ahead of every keeper on the queue, but a
+            # generation that promoted only those would have offered 58 seeds
+            # where 496 cleared the floor — and the floor is the bar the supply
+            # engine already admits on, not a second opinion invented here.
             if row["reframing"]["head_q4"]:
                 self._count("head_q4")
-                promoted.append(
-                    Seed(
-                        id=nucleus.key,
-                        family=nucleus.seed.family,
-                        viewport=chosen["viewport"],
-                        tier=nucleus.seed.tier,
-                        generation=nucleus.generation,
-                        kind=CHANNEL,
-                    )
-                )
+                self._count(f"head_q4:{nucleus.seed.source}")
+                tally["head_q4"] += 1
+                mine["head_q4"] += 1
+                _bump(tally["head_q4_by_source"], nucleus.seed.source)
+                promoted.append(self._promotion(nucleus, chosen, HEAD_Q4))
+            elif money.passes_good_floor(chosen["p_ge3"]):
+                self._count("head_keeper")
+                mine["head_keeper"] += 1
+                promoted.append(self._promotion(nucleus, chosen, HEAD_KEEPER))
         return written
 
+    def _promotion(self, nucleus: Nucleus, chosen: dict, source: str) -> Seed:
+        """One nucleus as the next generation's seed.
+
+        The **human** tier travels, never the head's verdict: the claim this
+        channel inherits is somebody's, and a promotion is a step away from the
+        person who cast it rather than a new person. What says how far away is
+        the generation, and what says on whose word this seed was taken is
+        [`SOURCES`] — which is why both are on the row.
+        """
+        return Seed(
+            id=nucleus.key,
+            family=nucleus.seed.family,
+            viewport=chosen["viewport"],
+            tier=nucleus.seed.tier,
+            generation=nucleus.generation,
+            kind=CHANNEL,
+            source=source,
+        )
+
     # ------------------------------------------------------------ the record
-    def summary(self, roots: list[Seed], consumed: int, per_generation: list[dict]) -> dict:
+    def summary(self, roots: list[Seed], consumed: int, per_round: list[dict]) -> dict:
         seconds = self.spent()
         operator_seconds = sum(tally["seconds"] for tally in self.cost.values())
         nuclei = len(self.seen)
@@ -846,12 +1158,16 @@ class Channel:
             "run_seed": self.seed,
             "seconds": round(seconds, 2),
             "operator_seconds": round(operator_seconds, 2),
+            "seed_max_period": self.max_period,
+            "queue": list(SOURCES),
             "seeds_available": len(roots),
+            "seeds_available_by_source": by_source(roots),
             "seeds_consumed": consumed,
             "nuclei": nuclei,
             "locations": self.rows_written,
             "head_q4": q4,
-            "generations": per_generation,
+            "rounds": per_round,
+            "by_generation": self.by_generation(),
             "cost": {
                 operator: {
                     **{k: (round(v, 3) if isinstance(v, float) else v) for k, v in tally.items()},
@@ -892,6 +1208,8 @@ def run(
     partitions=None,
     roots: int | None = None,
     seed_batch: int = SEED_BATCH,
+    max_period: int = SEED_SNAP_MAX_PERIOD,
+    prior: Path | None = None,
     log=print,
 ) -> dict:
     """Derive the seeds and run the channel over them. What the command calls."""
@@ -899,13 +1217,24 @@ def run(
 
     pinned = pin_module.every_pinned()
     found, record = seeds(tier_floor=tier_floor, partitions=partitions, pinned=pinned)
+    carried: list[Seed] = []
+    earlier = None
+    if prior is not None:
+        earlier = prior_run(prior, log=log)
+        carried = earlier["promoted"]
+        before = len(found)
+        found = [seed for seed in found if seed.id not in earlier["fired"]]
+        record["refused_already_fired"] = before - len(found)
+        record["seeds"] = len(found)
+        record["sources"] = by_source(found)
     if roots is not None:
         found = found[: max(0, int(roots))]
     log(f"[reframe] seeds: {json.dumps(record)}")
-    if not found:
+    if not found and not carried:
         raise ChannelRefused(
-            "no proven parameter-plane location survives the pin, so the channel has nowhere "
-            "to fire. Label some parameter-plane keepers, or widen --tier-floor."
+            "no seed survives: no proven parameter-plane location the pin allows, and no "
+            "promotion carried in from a --prior run. Label some parameter-plane keepers, "
+            "widen --tier-floor, or point --prior at a run that admitted something."
         )
     channel = Channel(
         out_dir=out_dir,
@@ -916,10 +1245,14 @@ def run(
         generations=generations,
         pinned=pinned,
         seed_batch=seed_batch,
+        max_period=max_period,
         log=log,
     )
-    report = channel.run(found)
+    if earlier is not None:
+        channel.seen |= earlier["found"]
+    report = channel.run(found, carried=carried)
     report["seed_query"] = record
+    report["prior"] = None if earlier is None else earlier["record"]
     return report
 
 
@@ -994,19 +1327,25 @@ def frame_multiple(row: dict) -> float | None:
 
 
 __all__ = [
+    "CENTERED",
     "CHANNEL",
     "DEFAULT_OUT",
+    "HEAD_KEEPER",
+    "HEAD_Q4",
     "OPERATORS",
     "RUNGS",
     "SCHEMA",
     "SEED_BATCH",
+    "SEED_SNAP_MAX_PERIOD",
     "SEED_TIER_FLOOR",
+    "SOURCES",
     "SCREEN_BATCH",
     "Channel",
     "ChannelRefused",
     "Nucleus",
     "PinnedPlace",
     "Seed",
+    "by_source",
     "candidate_row",
     "distinct_places",
     "fate_of",
@@ -1015,10 +1354,14 @@ __all__ = [
     "frame_of",
     "is_head_q4",
     "pick",
+    "prior_run",
+    "priority_of",
+    "queued",
     "rank",
     "read",
     "read_rungs",
     "run",
     "screen_rungs",
     "seeds",
+    "source_of_tier",
 ]
