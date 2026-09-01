@@ -135,6 +135,7 @@ from fractal_wallpapers.discovery import operators
 from fractal_wallpapers.discovery.ledger import Ledger
 from fractal_wallpapers.supply import currency as money
 from fractal_wallpapers.supply.location import key_of_row, location_key
+from fractal_wallpapers.supply.location import text_of_row as location_text
 
 #: The schema every record this module writes outside the ledger carries.
 SCHEMA = 1
@@ -1290,10 +1291,13 @@ def distinct_places(rows: list[dict], radius: float | None = None, log=print) ->
     radius = distinct.PRESELECT_RADIUS if radius is None else float(radius)
     best: dict[str, dict] = {}
     for row in rows:
-        key = key_of_row(row)
-        if key is None:
+        # [`supply.location.key_text`] and not `str(key)`. The embedding store
+        # spells a key as JSON, and a tuple repr matches none of it — which the
+        # suppressor cannot report, because a place with no descriptor is kept by
+        # rule. This read that way once and the whole pre-selection was a no-op.
+        name = location_text(row)
+        if name is None:
             continue
-        name = str(key)
         held = best.get(name)
         if held is None or (row.get("score_great") or -1.0) > (held.get("score_great") or -1.0):
             best[name] = row

@@ -630,6 +630,57 @@ def test_the_seed_snap_scans_further_than_the_walks_own_ceiling() -> None:
     assert seen["max_period"] == reframing.SEED_SNAP_MAX_PERIOD
 
 
+def test_the_sheet_cut_reads_the_key_spelling_the_embedding_store_writes(
+    tmp_path, monkeypatch
+) -> None:
+    """The pre-selection, and the way it failed without saying anything.
+
+    `distinct.suppress` keeps a place with no neutral descriptor by rule, so a
+    caller offering keys in the wrong spelling gets every place back and no
+    error. This offers rows whose descriptors ARE in the store: a reader on
+    `str(key)` matches none of them and the refusal count is zero.
+    """
+    from fractal_wallpapers.curation import distinct
+    from fractal_wallpapers.supply import location as location_module
+
+    drawn(monkeypatch)
+    run = channel(tmp_path)
+    run.run([ON_AN_ATOM])
+    first = reframing.read(run.ledger.path)[0]
+    rows = [
+        first,
+        {
+            **first,
+            "viewport": {
+                **first["viewport"],
+                "width": repr(float(first["viewport"]["width"]) * 1.5),
+            },
+        },
+    ]
+
+    # Two places one hair apart, spelled the way every store on disk spells them.
+    stored = [
+        {"key": location_module.text_of_row(row), "vector": vector}
+        for row, vector in zip(rows, ("A", "B"), strict=True)
+    ]
+    seen = {}
+
+    def matrix_for(locations, store=None):
+        del store
+        seen["asked"] = list(locations)
+        import numpy
+
+        kept = [row for row in stored if row["key"] in set(locations)]
+        return [row["key"] for row in kept], numpy.ones((len(kept), 4), dtype="float32") / 2.0
+
+    monkeypatch.setattr(distinct, "matrix_for", matrix_for)
+    kept, record = reframing.distinct_places(rows, log=lambda _l: None)
+    assert record["admitted_without_a_descriptor"] == 0
+    assert record["places_refused"] == 1, "identical vectors, so one must lose"
+    assert len(kept) == 1
+    assert all(name.startswith("[") for name in seen["asked"])
+
+
 def test_the_ledger_is_readable_json_lines_carrying_their_own_join(tmp_path, monkeypatch) -> None:
     """Every row a complete location: the family with its constants and the
     viewport, on the line, so a candidate is never split across two files."""
