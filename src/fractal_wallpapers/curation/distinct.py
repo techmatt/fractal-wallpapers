@@ -21,7 +21,7 @@ coloured pictures almost certainly will*. That is an empirical claim about two
 metrics over the same pairs, and it can be false — colour comes from the map
 rather than from the place, so two unrelated frames through similar ramps are
 near-duplicates by construction, which is exactly the finding that killed the
-location-level prune in [`curation.solve`]. **A correlated proxy is not a prune.**
+location-level prune the retired exact solve carried. **A correlated proxy is not a prune.**
 
 Measured on 2026-08-27 over the 1,427 places of the clearing pool:
 
@@ -29,7 +29,7 @@ Measured on 2026-08-27 over the 1,427 places of the clearing pool:
   neutral cosine against pixel-cloud W1 between each pair's own best candidate:
   **Pearson 0.034, Spearman 0.063.**
 * [`twins`] — every twin pair in that pool, found exactly over all 1,017,451 pairs
-  through [`solve.BOUND`]: **6,720 of them**, at a median neutral distance of
+  through [`rules.BOUND`]: **6,720 of them**, at a median neutral distance of
   **0.226**. A pre-filter at 0.10 — which already refuses 98% of the pool — removes
   **413 of the 6,720**. At 0.04 it removes 36.
 
@@ -53,7 +53,7 @@ So both are placed, in the two places their questions belong:
   the neutral descriptors, at pool construction. Geometric distinctness only. It
   errs toward over-admitting on purpose.
 * **Do these two read as one wallpaper?** The twin test at [`ceiling.TAU`], over
-  the pixel clouds, sequential inside [`curation.seating`]'s walk. That is the
+  the pixel clouds, sequential inside [`curation.solve`]'s walk. That is the
   rule the 6,720 twin pairs are a statement about, and nothing here weakens it.
 
 [`RADII`] stays a set of **candidates to look at** rather than a setting: it is
@@ -69,7 +69,7 @@ import statistics
 from datetime import UTC, datetime
 from pathlib import Path
 
-from fractal_wallpapers.curation import embeddings, neutral, solve
+from fractal_wallpapers.curation import embeddings, neutral, rules
 from fractal_wallpapers.paths import tracked_name
 
 #: The schema every record this module writes carries.
@@ -536,6 +536,13 @@ def _stratified(usable, matrix, pairs: int, bands: int, rng) -> list:
 PAIR_MATRIX_LIMIT = 6000
 
 
+#: How many pictures the twin sweep screens against the whole population at once.
+#: The bound is one broadcast subtraction, so the temporaries are
+#: `this x places x width` floats — sixteen keeps that under a tenth of a gibibyte
+#: at this pool's size, where sixty-four would be a quarter of one.
+BOUND_BLOCK = 16
+
+
 def twins(keys, matrix, picture_of, tau: float | None = None, cache: int = 384, log=print) -> dict:
     """**Every** twin pair in the population, found exactly, and where it sits in
     the descriptor.
@@ -550,16 +557,14 @@ def twins(keys, matrix, picture_of, tau: float | None = None, cache: int = 384, 
     correlation says.
 
     Exact over a million pairs because the metric admits a sound lower bound —
-    [`solve.BOUND`], the triangle inequality per direction and per block of
+    [`rules.BOUND`], the triangle inequality per direction and per block of
     quantiles. A pair the bound puts at or beyond `tau` provably cannot be a twin,
     so it is never measured. What it costs is one signature per picture to build
     the bound signatures, and then only the survivors in full.
     """
     import numpy
-    from scipy.spatial.distance import cdist
 
     from fractal_wallpapers.curation import ceiling
-    from fractal_wallpapers.palettes import groups as groups_module
     from fractal_wallpapers.palettes import pixel_clouds
 
     tau = ceiling.TAU if tau is None else float(tau)
@@ -567,16 +572,20 @@ def twins(keys, matrix, picture_of, tau: float | None = None, cache: int = 384, 
     log(f"[distinct] twins: bound signatures for {len(usable):,} picture(s)")
     reduced = numpy.stack(
         [
-            solve.reduce_signature(pixel_clouds.of_picture(picture_of(keys[at]))).reshape(-1)
+            rules.reduce_signature(pixel_clouds.of_picture(picture_of(keys[at]))).reshape(-1)
             for at in usable
         ]
     )
-    width = groups_module.DIRECTIONS * solve.BOUND_BLOCKS
+    width = rules.bound_width()
     survivors: list = []
     screened = 0
-    for start in range(0, len(usable), 64):
-        block = cdist(reduced[start : start + 64], reduced, "cityblock") / width
-        for row, one in enumerate(range(start, min(start + 64, len(usable)))):
+    # Blocked rather than one big outer difference: the broadcast is
+    # `block x places x width` floats and a full pass over this pool would be a
+    # quarter of a gibibyte of temporaries for an answer that is one number a pair.
+    for start in range(0, len(usable), BOUND_BLOCK):
+        mine = reduced[start : start + BOUND_BLOCK]
+        block = numpy.abs(mine[:, None, :] - reduced[None, :, :]).sum(axis=2) / width
+        for row, one in enumerate(range(start, min(start + BOUND_BLOCK, len(usable)))):
             close = numpy.nonzero(block[row, one + 1 :] < tau)[0]
             screened += len(usable) - one - 1
             survivors.extend((one, one + 1 + int(other)) for other in close)
@@ -606,7 +615,7 @@ def twins(keys, matrix, picture_of, tau: float | None = None, cache: int = 384, 
         "survived_the_bound": len(survivors),
         "twin_pairs": len(found),
         "rate": round(len(found) / max(1, screened), 8),
-        "bound": solve.BOUND,
+        "bound": rules.BOUND,
         "removed_by_radius": {str(radius): _removed(found, float(radius)) for radius in RADII},
         "reads": "the premise holds to the extent a radius removes these. A radius that "
         "removes none of them does not replace the twin test, however the scatter looks",

@@ -61,8 +61,8 @@ second opinion about the deal.
 
 `tracked_ledger` is the dear one and the one to reach for by reflex. It carries
 `.rows`, `.scores`, `.pool`, `.costs` and `.refused` — one reading, about 40s and
-about 6 GB resident, serving `test_solve`, `test_seating`, `test_headroom`,
-`test_distinct`, `test_retention`, `test_hunt` and `test_candidate_ledger`. It
+about 6 GB resident, serving `test_solve`, `test_headroom`, `test_distinct`,
+`test_retention`, `test_hunt` and `test_candidate_ledger`. It
 unsets the hot root while it lays the pool out, so a module that has redirected
 the root at its own `tmp_path` cannot have this read an empty tree and report
 every picture missing. It skips where the ledger has not been backfilled, which
@@ -142,11 +142,12 @@ Two rules follow, and they are why this lane is 7 minutes instead of 18:
   the rows again to census them. Ask the fixture; never call `read()` in a test.
 * **A guard that sweeps the ledger takes a budget, not the store.** Two did not,
   and both had lost their own docstring's estimate by an order of magnitude:
-  `test_solve`'s cutting plane is super-linear (1.3s at 2,000 candidates, 1.9s at
-  20,000, 18.8s at 100,000, **185.6s at 275,822**), and `test_hunt` rebuilt a
-  recipe key for all 344,923 levelled rows at half a millisecond each. Both now
-  state a constant — `SOLVE_SLICE`, `SAMPLE` — with the measurement that set it
-  and an assertion that the budget was actually filled. This is the one place the
+  `test_solve`'s cutting plane was super-linear (1.3s at 2,000 candidates, 1.9s at
+  20,000, 18.8s at 100,000, **185.6s at 275,822**) — that guard went with the exact
+  solve it measured, on 2026-08-31 — and `test_hunt` rebuilt a recipe key for all
+  344,923 levelled rows at half a millisecond each. `test_hunt` states a constant,
+  `SAMPLE`, with the measurement that set it and an assertion that the budget was
+  actually filled. This is the one place the
   suite trades coverage for time, and it is written down at each site rather than
   implied.
 

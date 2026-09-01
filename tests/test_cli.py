@@ -499,42 +499,50 @@ def test_the_focus_report_is_off_on_both_commands_that_walk() -> None:
     assert parse(["harvest", "--foci"]).foci is True
 
 
-def test_both_seating_changes_are_the_default_and_the_incumbent_is_still_reachable() -> None:
-    """Flipped on 2026-08-28. `curate seat` with no flag now seats the
-    proportional cap on the fitted key, and the walk every earlier gallery took is
-    two named flags away — reachable, and never what you get by not asking."""
-    from fractal_wallpapers.curation import ceiling, seating
+def test_both_gallery_changes_are_the_default_and_the_incumbent_is_still_reachable() -> None:
+    """Flipped on 2026-08-28. `curate solve run` with no flag now chooses under the
+    proportional palette-group cap and the fitted rank key."""
+    from fractal_wallpapers.curation import ceiling, solve
 
     parse = cli.build_parser().parse_args
-    unflagged = parse(["curate", "seat", "--n", "150"])
-    assert unflagged.handler is cli.curate_seat
-    assert unflagged.group_cap == seating.DEFAULT_GROUP_CAP == ceiling.PROPORTIONAL
-    assert unflagged.key == seating.DEFAULT_KEY == seating.RANK_KEY
-    incumbent = parse(["curate", "seat", "--n", "150", "--group-cap", "identity", "--key", "p_ge4"])
-    assert (incumbent.group_cap, incumbent.key) == (ceiling.IDENTITY, seating.JUDGE_KEY)
+    unflagged = parse(["curate", "solve", "run", "--n", "150"])
+    assert unflagged.handler is cli.curate_solve
+    assert unflagged.group_cap == solve.DEFAULT_GROUP_CAP == ceiling.PROPORTIONAL
+    assert unflagged.key == solve.DEFAULT_KEY == solve.RANK_KEY
+    incumbent = parse(
+        ["curate", "solve", "run", "--n", "150", "--group-cap", "identity", "--key", "p_ge4"]
+    )
+    assert (incumbent.group_cap, incumbent.key) == (ceiling.IDENTITY, solve.JUDGE_KEY)
     with pytest.raises(SystemExit):
-        parse(["curate", "seat", "--group-cap", "whatever_matt_meant"])
+        parse(["curate", "solve", "run", "--group-cap", "whatever_matt_meant"])
     with pytest.raises(SystemExit):
-        parse(["curate", "seat", "--key", "whatever_matt_meant"])
+        parse(["curate", "solve", "run", "--key", "whatever_matt_meant"])
 
 
-def test_the_seating_release_leg_is_opt_in_and_carries_the_shipping_regime() -> None:
-    """A seating chooses and renders nothing unless asked. When it is asked, it
-    renders at the regime every leg that ships a wallpaper ships at, over this
-    machine's render pool — not at a geometry or a worker count this subcommand
-    invented for itself. Both live in `curation.release` now; they were the
-    retired gallery pass's until it was deleted on 2026-08-28."""
+def test_the_release_leg_is_on_by_default_and_carries_the_shipping_regime() -> None:
+    """The gallery leg renders its seats unless told not to, and it renders them at
+    the one geometry every leg that ships a wallpaper ships."""
     from fractal_wallpapers.curation import release
 
     parse = cli.build_parser().parse_args
-    quiet = parse(["curate", "seat", "--n", "150"])
-    assert quiet.release is False
-    asked = parse(["curate", "seat", "--n", "150", "--release"])
-    assert asked.release is True
-    assert asked.release_regime == release.RELEASE_REGIME.spelled == "1280x720ss2"
-    assert asked.workers == release.DEFAULT_WORKERS == 3
-    assert release.regime_of(asked.release_regime) == release.RELEASE_REGIME
-    assert release.FORMER_RELEASE_REGIME.spelled == "2560x1440ss4"
+    quiet = parse(["curate", "solve", "run", "--n", "150", "--no-render"])
+    assert quiet.no_render is True
+    asked = parse(["curate", "solve", "run", "--n", "150"])
+    assert asked.no_render is False
+    assert asked.release_regime == release.RELEASE_REGIME.spelled
+
+
+def test_the_retired_experiments_went_with_the_solver_they_experimented_on() -> None:
+    """`sweep` and `truncate` were both instruments on the exact solve. A subcommand
+    that answers about a program nothing runs is worse than no subcommand."""
+    parse = cli.build_parser().parse_args
+    assert parse(["curate", "solve", "run"]).what == "run"
+    with pytest.raises(SystemExit):
+        parse(["curate", "solve", "sweep"])
+    with pytest.raises(SystemExit):
+        parse(["curate", "solve", "truncate"])
+    with pytest.raises(SystemExit):
+        parse(["curate", "seat", "--n", "150"])
 
 
 def test_the_flatness_sweep_and_the_rank_key_fit_are_subcommands_with_defaults() -> None:
@@ -588,5 +596,5 @@ def test_every_leg_that_drives_the_engine_defaults_to_the_locked_three() -> None
     assert release.DEFAULT_WORKERS == 3
     assert parse(["curate", "coverage"]).workers == release.DEFAULT_WORKERS
     assert parse(["curate", "manufacture"]).workers == release.DEFAULT_WORKERS
-    assert parse(["curate", "seat"]).workers == release.DEFAULT_WORKERS
+    assert parse(["curate", "solve", "run"]).workers == release.DEFAULT_WORKERS
     assert parse(["curate", "flatness"]).workers == flatness.WORKERS == 3

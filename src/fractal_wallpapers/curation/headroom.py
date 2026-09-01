@@ -8,11 +8,11 @@ greens at all" spent twenty minutes on a fact one pass over the rows already kne
 
 So this module is O(rows) necessary conditions and one opt-in sweep. It decides
 nothing and seats nothing. It is the **upper bound** half of
-the pair [`curation.seating`] completes: a census says what could not possibly be
-seated, a greedy says what a trivial rule actually seats, and the gap between the
-two is the only place exact optimization can buy anything. Close together, the
-answer is known and the money goes on making more candidates. Far apart, the gap
-is what a solver is for.
+the pair [`curation.solve`] completes: a census says what could not possibly be
+seated, the gallery leg says what a greedy and its swaps actually seat, and the
+gap between the two is the size of the prize anything cleverer is competing for.
+Close together, the answer is known and the money goes on making more candidates.
+Far apart, the gap is the instruction.
 
 ## The one block that opens a picture, and it is opt-in
 
@@ -112,7 +112,7 @@ from fractal_wallpapers.curation import (
 #: **3**: the mode-floor block bounds the floors the shipped legs actually take —
 #: [`curation.mode_policy.seat_floors`], per mode — rather than the flat
 #: `floor(n / 100)` that stopped being the default on 2026-08-31. A schema 2
-#: census at `n = 20` reported a demand of zero where the shipped seating asks for
+#: census at `n = 20` reported a demand of zero where the shipped leg asks for
 #: six, so the two are not comparable readings of the same pool. The block's
 #: `floor` is now the flat number when one was asked for and `None` otherwise, the
 #: mapping is on `floors`, and `floor_rule` names which of the three rules ran.
@@ -123,7 +123,7 @@ UNIT = "headroom"
 
 #: Where the census is taken, in seats. `20` is [`candidate_ledger.FIRST_SOLVE`],
 #: the trivial gallery everything else is read against; the three above it are the
-#: sizes this project would ship at. Only the first is exercised by a seating
+#: sizes this project would ship at. Only the first is exercised by a gallery
 #: today and the whole curve is reported anyway, because it is arithmetic over
 #: rows already in hand and the shape of the curve is the finding — a constraint
 #: that has slack at 20 and is short at 150 is a mine instruction with a date on
@@ -169,7 +169,7 @@ THIN = 25
 #:
 #: Not a number, because the flat floor is a function of `n` and a census walks a
 #: whole ladder: a caller wanting `floor(n / 100)` at every rung cannot say it with
-#: one integer the way [`curation.seating.seat`] can at its single `n`. So
+#: one integer the way [`curation.solve.solve`] can at its single `n`. So
 #: `census(floor=FLAT)` resolves to [`solve.mode_floor`] per rung. A plain number
 #: still means one artificial flat floor at every rung, and a mapping is per mode.
 FLAT = "flat"
@@ -471,17 +471,17 @@ def census(
     tallied — so the whole curve costs what one rung costs, which is why it is
     reported even though one rung is exercised.
 
-    `radius` is the neutral pre-selection the seating will run under; `None`
+    `radius` is the neutral pre-selection the gallery leg will run under; `None`
     censuses the pool without it, which is the only way to read a schema 1 census
     against this one. `twins` is [`distinct.twins`]' sweep, and the twin block is
     empty without it — see the module docstring on why that block is opt-in.
 
-    `floor` is [`curation.seating.seat`]'s, and it is `None` for the same reason:
-    unset is [`curation.mode_policy.seat_floors`], the rule both gallery legs take
+    `floor` is [`curation.solve.solve`]'s, and it is `None` for the same reason:
+    unset is [`curation.mode_policy.seat_floors`], the rule the gallery leg takes
     by being asked for nothing, so an unflagged census bounds the gallery an
-    unflagged seating would build. A number is a flat floor for every accepted
-    mode — `solve.mode_floor(n)` is what `curate headroom --flat-floor` passes at
-    each rung — and a mapping is per mode. The block names which it ran under.
+    unflagged solve would build. A number is a flat floor for every accepted mode
+    — `solve.mode_floor(n)` is what `curate headroom --flat-floor` passes at each
+    rung — and a mapping is per mode. The block names which it ran under.
     """
     costs = {} if costs is None else costs
     table = bars(candidates)
@@ -604,7 +604,7 @@ def _at(
         "supply": len(_places(kept)),
         "slack": len(_places(kept)) - n,
         "short": len(_places(kept)) < n,
-        "rule": "hard, and the only hard rule in the seating",
+        "rule": "hard, and one of the two hard rules the gallery leg applies",
         "rows": [],
     }
     out["blocks"]["colour_ceiling_cells"] = _cover(
@@ -644,14 +644,12 @@ def _at(
             "exemptions the pixels grant — which is not knowable without decoding them"
         ),
     )
-    # Deferred because `seating` imports this module at the top. Both helpers are
-    # that module's, and reusing them is the point: a census that resolved the
-    # floors its own way, or named them its own way, would be a second floor rule.
-    from fractal_wallpapers.curation import seating
-
     modes = mode_policy.accepted()
     natural = mode_policy.seat_floors(n)
-    asked = seating.floors_for(natural if floor is None else floor, modes)
+    # The gallery leg's own two helpers, reused rather than reimplemented: a census
+    # that resolved the floors its own way, or named them its own way, would be a
+    # second floor rule.
+    asked = solve.floors_for(natural if floor is None else floor, modes)
     needs = sum(asked.values())
     floored = [name for name in modes if asked[name]]
     # Each mode needs ITS OWN floor in distinct places, so the supply the demand is
@@ -664,17 +662,17 @@ def _at(
         "kind": DEMAND,
         "floors": dict(asked),
         "floor": None if floor is None or isinstance(floor, dict) else int(floor),
-        "floor_rule": seating.floor_rule(
+        "floor_rule": solve.floor_rule(
             n, None if isinstance(floor, dict) else floor, asked, natural, modes
         ),
-        "floor_artificial": dict(asked) != seating.floors_for(natural, modes),
+        "floor_artificial": dict(asked) != solve.floors_for(natural, modes),
         "needs": needs,
         "supply": usable,
         "slack": usable - needs,
         "short": usable < needs,
         "floored_modes": len(floored),
         "modes_holding_anything": sum(1 for name in modes if by_mode.get(name)),
-        "rule": f"soft in the seating and in the solve; per mode, {needs} seat(s) between "
+        "rule": f"soft in the gallery leg; per mode, {needs} seat(s) between "
         f"{len(floored)} of the {len(modes)} accepted modes. Supply is the sum over modes of "
         "min(that mode's own floor, its distinct clearing locations). A mode floored at zero "
         "asks for nothing and its row below is a supply line rather than a demand. Which of "

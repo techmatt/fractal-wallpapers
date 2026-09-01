@@ -171,7 +171,7 @@ def decide(rows: list, scores: dict | None = None, keep: int | None = None) -> d
     would order rows by which basis happened to reach them. A row with no value
     ranks last within its pair rather than being dropped outright: a row nothing
     has an opinion about is not the same as a row something thinks little of,
-    which is [`curation.seating`]'s own convention for the same case.
+    which is [`curation.solve`]'s own convention for the same case.
 
     Two verdicts and no protections. The protections are applied by the caller
     that holds the stores which answer them, which keeps this a pure function of

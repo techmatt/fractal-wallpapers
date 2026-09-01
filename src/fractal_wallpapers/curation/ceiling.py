@@ -16,9 +16,9 @@ reading.
 ## Where it acts
 
 At the **seat**, and it is arithmetic over rows rather than a walk of its own.
-[`curation.seating.Seats`] applies `allowed()` per candidate as it walks a ranked
-pool, and [`curation.solve`] states the same allowances as constraint rows over a
-store that already carries every colour. Two readers, one derivation.
+[`curation.rules.State`] applies `allowed()` per candidate as the gallery leg
+seeds and swaps, and it is the only reader: one derivation, and no second answer
+to what the allowance is.
 
 This module used to own a sequential seating of its own — a `Seating` object with
 three tests, a least-violating fallback, and a `Lens` that opened each candidate's
@@ -101,8 +101,8 @@ GROUP_CAP = 1
 #: The **proportional** cap's rate: a group may take this share of the seats.
 #:
 #: **0.025**, Matt's, at ckpt 88 — `max(1, floor(0.025 * n))`, so 1 up to n=40,
-#: 3 at n=150 and 25 at n=1000. **This is the shipped rule**: a seating that names
-#: no cap gets it, because [`curation.seating.DEFAULT_GROUP_CAP`] is
+#: 3 at n=150 and 25 at n=1000. **This is the shipped rule**: a pass that names
+#: no cap gets it, because [`curation.solve.DEFAULT_GROUP_CAP`] is
 #: [`PROPORTIONAL`]. [`GROUP_CAP`] above is still the constant behind
 #: [`IDENTITY`], which is what [`group_cap`] returns when a caller asks for that
 #: rule by name.
@@ -280,10 +280,9 @@ def measured_co_dominance(cell: str) -> dict:
 class Rule:
     """The constants and the targets. Arithmetic over rows, and no state at all.
 
-    Both readers already carry every colour on the row: [`curation.seating`] walks
-    a ranked pool and [`curation.solve`] states the same allowances as constraint
-    rows, so neither needs a picture opened to ask what a candidate is. That is
-    why nothing here reads pixels — a second derivation of `allowed()` would be a
+    A candidate already carries every colour it is dominant in on its ledger row,
+    so nothing here needs a picture opened to ask what a candidate is. That is why
+    nothing here reads pixels — a second derivation of `allowed()` would be a
     second answer to what the allowance is.
     """
 
@@ -304,7 +303,7 @@ class Rule:
         self._share: dict = {}
         #: `{cell or family: how much a target's companions raised it}`, kept apart
         #: from `_share` so a record can say which allowances were *asked for* and
-        #: which followed. Read by [`curation.solve.Program.config`].
+        #: which followed. Read by the gallery leg's own record.
         self.implied: dict = {}
         for cell, value in self.targets.items():
             self._share[cell] = value

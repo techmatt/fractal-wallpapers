@@ -324,11 +324,11 @@ def strange_seats(n: int, share: float = STRANGE_SEAT_SHARE) -> int:
 def seat_floors(n: int, share: float = STRANGE_SEAT_SHARE) -> dict[str, int]:
     """`{strange mode: the seats its floor asks for}` at `n`.
 
-    **This is the default.** [`curation.seating.seat`] and [`solve.Program`] both
-    take it by being asked for nothing, so an unflagged `curate seat` and an
-    unflagged `curate solve run` are both floored per mode. `--flat-floor` is the
-    way off, and it puts back [`solve.mode_floor`]'s `floor(n / 100)`, which is
-    what every gallery before 2026-08-31 was seated under.
+    **This is the default.** [`curation.solve.solve`] takes it by being asked for
+    nothing, so an unflagged `curate solve run` is floored per mode.
+    `--flat-floor` is the way off, and it puts back [`solve.mode_floor`]'s
+    `floor(n / 100)`, which is what every gallery before 2026-08-31 was seated
+    under.
 
     Diversity is the design rather than a tuning knob, which is why the polarity
     is this way round: the ruling (Matt, ckpt 94) is that a gallery spread over

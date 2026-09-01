@@ -1541,7 +1541,7 @@ def _prune_ranks(meta: list, log=print) -> tuple[dict, dict]:
 
     A row the key cannot read — no reading on the live judge, no flatness — has
     no value here, and [`retention.decide`] ranks it last within its pair, which
-    is [`curation.seating`]'s own convention for exactly that case.
+    is [`curation.solve`]'s own convention for exactly that case.
     """
     from fractal_wallpapers.curation import flatness, intake, rank_key
 

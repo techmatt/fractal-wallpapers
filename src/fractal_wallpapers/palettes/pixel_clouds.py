@@ -215,8 +215,23 @@ class Clouds:
             self._held[name] = made
             self._read.pop(name, None)
 
+    def let_go(self, name: str) -> None:
+        """Stop holding one picture, keeping it in the bounded cache instead.
+
+        The swap loop's half of [`hold`]: a seat that leaves the gallery is a
+        signature that must stop being kept forever, or a loop that takes a
+        thousand seats in and out again holds every one of them. It goes back into
+        the read cache rather than being thrown away, because a seat that has just
+        been swapped out is exactly the picture most likely to be asked for next.
+        """
+        made = self._held.pop(name, None)
+        if made is not None:
+            self._read[name] = made
+            while len(self._read) > self.cache:
+                self._read.popitem(last=False)
+
     def release(self) -> None:
-        """Drop everything held. A seating that starts again starts with nothing held."""
+        """Drop everything held. A pass that starts again starts with nothing held."""
         self._held.clear()
 
     def price(self) -> dict:
