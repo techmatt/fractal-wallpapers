@@ -119,7 +119,7 @@ from pathlib import Path
 from fractal_wallpapers.curation import binding, floors
 from fractal_wallpapers.models import location_view, tiles
 from fractal_wallpapers.paths import under
-from fractal_wallpapers.supply import apportion, ledgers, release_mix
+from fractal_wallpapers.supply import apportion, ledgers, location, release_mix
 from fractal_wallpapers.supply.location import key_of_row
 from fractal_wallpapers.supply.partitions import partition_of_row
 
@@ -515,7 +515,7 @@ def _key_text(row: dict) -> str:
             "a gate-surviving row carries no location identity, so its score could never be "
             "joined back to it. Every row the union keeps is keyable or is reported unkeyed."
         )
-    return json.dumps(key, ensure_ascii=False)
+    return location.key_text(key)
 
 
 def stored_scores(path: Path | None = None) -> list[dict]:
@@ -599,7 +599,7 @@ def ranked(paths=None, scores: dict | None = None) -> tuple[dict, dict]:
         key = key_of_row(row)
         if key is None:
             continue
-        text = json.dumps(key, ensure_ascii=False)
+        text = location.key_text(key)
         partition = partition_of_row(row)
         read = scores.get(text)
         value = None if read is None else float(read.get("p_ge3"))

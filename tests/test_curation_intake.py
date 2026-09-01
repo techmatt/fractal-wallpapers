@@ -10,6 +10,7 @@ import pytest
 from fractal_wallpapers import engine_fingerprint
 from fractal_wallpapers.curation import floors, intake
 from fractal_wallpapers.discovery import ledger as ledger_module
+from fractal_wallpapers.supply import location as location_module
 from fractal_wallpapers.supply.location import key_of_row
 
 
@@ -421,3 +422,27 @@ def test_a_regime_less_row_is_scored_at_the_node_regime_and_never_touches_locati
     assert not (tmp_path / "artifacts" / "location_views").exists()
     assert report["by_regime"] == {"384x216ss1": 1}
     assert next(iter(intake.read_scores().values()))["regime"] == "384x216ss1"
+
+
+def test_a_location_key_has_one_spelling_on_disk_and_it_is_json() -> None:
+    """The join every store makes, and the silent way it can fail.
+
+    A key is a tuple. `str(key)` writes a Python repr — `('mandelbrot', 2, (), …)`
+    — where the sidecar and the embedding store write JSON. The two are different
+    strings for one location and nothing raises: `curation.distinct` keeps a place
+    with no descriptor by rule, so a reader on the wrong spelling turns the whole
+    pre-selection into a no-op. It did, over the reframing channel's 792 places,
+    and this is the guard that says the spelling has one owner.
+    """
+    row = {
+        "family": {"kind": "mandelbrot", "degree": 2},
+        "viewport": {"center_re": "-0.75", "center_im": "0.1", "width": "0.01"},
+    }
+    text = location_module.text_of_row(row)
+    assert text == location_module.key_text(key_of_row(row))
+    assert text.startswith("[") and text.endswith("]")
+    assert json.loads(text)[0] == "mandelbrot"
+    assert text != str(key_of_row(row))
+    # And the sidecar's own writer is that function rather than a second one.
+    assert intake._key_text(row) == text
+    assert location_module.text_of_row({"family": None, "viewport": None}) is None

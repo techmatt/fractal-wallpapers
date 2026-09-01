@@ -32,6 +32,7 @@ population is how a reader knows the number is small.
 
 from __future__ import annotations
 
+import json
 from decimal import Decimal, InvalidOperation
 
 from fractal_wallpapers.supply.partitions import partition_of_family
@@ -104,4 +105,33 @@ def key_of_row(row: dict) -> tuple | None:
         return None
 
 
-__all__ = ["IDENTIFYING_CONSTANTS", "canonical", "key_of_row", "location_key"]
+def key_text(key) -> str:
+    """A location key as every store on disk spells it: JSON, so the join is exact.
+
+    THE spelling, and there is one of it. A key is a tuple, and a store that
+    wrote `str(key)` would write a Python tuple repr — `('mandelbrot', 2, (), …)`
+    — where the sidecar and the embedding store write `["mandelbrot", 2, [], …]`.
+    The two are different strings for one location, so a reader that took the
+    wrong one gets **zero** matches and no error: `curation.distinct` keeps a
+    place with no descriptor by rule, so the whole pre-selection silently becomes
+    a no-op. That happened, in `discovery.reframing.distinct_places` over the
+    reframing channel's 792 places, and it is why the spelling now has an owner
+    instead of two implementations that agreed until they did not.
+    """
+    return json.dumps(key, ensure_ascii=False)
+
+
+def text_of_row(row: dict) -> str | None:
+    """[`key_text`] of a row's own identity, or `None` where it carries none."""
+    key = key_of_row(row)
+    return None if key is None else key_text(key)
+
+
+__all__ = [
+    "IDENTIFYING_CONSTANTS",
+    "canonical",
+    "key_of_row",
+    "key_text",
+    "location_key",
+    "text_of_row",
+]
