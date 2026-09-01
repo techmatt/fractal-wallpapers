@@ -198,6 +198,20 @@ SEED_TIER_FLOOR = 3
 #: [`curation.framing.BATCH`]'s number, for the same reason it is that one there.
 SCREEN_BATCH = 64
 
+#: How many times a failed [`engine.screen`] batch is tried again before the
+#: frames in it are given up on.
+#:
+#: A batch is one engine process and the process can die — on 2026-08-31 one did,
+#: two minutes into an eight-hour leg, returning nonzero with **empty** stdout and
+#: stderr, which is a hard crash rather than a refusal the engine could describe.
+#: The leg died with it and the night's supervisor read the short ledger as an
+#: exhausted queue and moved on to something else. So a crashed batch is retried,
+#: and a batch that crashes twice costs its own frames and nothing more: the
+#: nuclei in it get no row, the count is on the summary as `screen_failed`, and
+#: the leg keeps going. **An unattended leg that stops on one frame has spent the
+#: night**, and that is a worse failure than sixty-four missing rows.
+SCREEN_RETRIES = 1
+
 #: Seeds fired before the batch's nuclei are drawn and scored. Small enough that a
 #: killed leg loses a minute rather than an hour, large enough that the head and
 #: the engine are each entered a few times a minute rather than per nucleus.
@@ -500,21 +514,35 @@ def screen_rungs(pairs: list[tuple], directory: Path, log=print) -> list[dict]:
     colormap = location_view.canonical_map()
     node_width = int(tile_module.NODE_REGIME.tile[0])
     out: list[dict] = []
+    failed = 0
     for start in range(0, len(pairs), SCREEN_BATCH):
         chunk = pairs[start : start + SCREEN_BATCH]
-        report = engine.screen(
-            {
-                "schema": 1,
-                "frames": [
-                    {"family": nucleus.seed.family, **frame_of(nucleus, rung, nucleus.rungs[rung])}
-                    for nucleus, rung in chunk
-                ],
-                "colormap": colormap,
-                "colormap_dir": str(engine.colormap_dir()),
-                "node_width": node_width,
-                "out_dir": str(directory),
-            }
-        )
+        spec = {
+            "schema": 1,
+            "frames": [
+                {"family": nucleus.seed.family, **frame_of(nucleus, rung, nucleus.rungs[rung])}
+                for nucleus, rung in chunk
+            ],
+            "colormap": colormap,
+            "colormap_dir": str(engine.colormap_dir()),
+            "node_width": node_width,
+            "out_dir": str(directory),
+        }
+        report = None
+        for attempt in range(SCREEN_RETRIES + 1):
+            try:
+                report = engine.screen(spec)
+                break
+            except (RuntimeError, OSError, ValueError) as failure:
+                log(
+                    f"[reframe] screen batch at {start} failed on attempt {attempt + 1} of "
+                    f"{SCREEN_RETRIES + 1}: {failure!r}"
+                )
+        if report is None:
+            # Given up on, and counted. The frames are lost and the leg is not.
+            failed += len(chunk)
+            log(f"[reframe] screen batch at {start}: {len(chunk)} frame(s) given up on")
+            continue
         for offset, (screened, (nucleus, rung)) in enumerate(
             zip(report["frames"], chunk, strict=True)
         ):
@@ -550,6 +578,8 @@ def screen_rungs(pairs: list[tuple], directory: Path, log=print) -> list[dict]:
                 }
             )
         log(f"[reframe] {min(start + SCREEN_BATCH, len(pairs))}/{len(pairs)} rung(s) drawn")
+    if failed:
+        log(f"[reframe] {failed} of {len(pairs)} rung(s) were never drawn")
     return out
 
 
@@ -1091,6 +1121,10 @@ class Channel:
         for nucleus in nuclei:
             readings = by_nucleus.get(nucleus.key)
             if not readings:
+                # Its batch crashed twice and was given up on. The atom stays in
+                # `seen`, so it is not reached again this run — which is the
+                # honest cost of carrying on rather than stopping the leg.
+                self._count("nucleus_not_drawn")
                 continue
             chosen, why = pick(readings)
             # The chosen frame is what the location IS, so the pin is asserted on
@@ -1361,6 +1395,7 @@ __all__ = [
     "SEED_TIER_FLOOR",
     "SOURCES",
     "SCREEN_BATCH",
+    "SCREEN_RETRIES",
     "Channel",
     "ChannelRefused",
     "Nucleus",
