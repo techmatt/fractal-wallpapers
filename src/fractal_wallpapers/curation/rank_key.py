@@ -291,7 +291,7 @@ def order_for(candidates, key: Key | None = None, log=print) -> tuple[dict, dict
     """`({candidate key: rank value}, the coverage record)` for a whole pool.
 
     A candidate with no value is simply absent from the mapping.
-    [`curation.seating`] ranks such a candidate **last** and counts it, which is
+    [`curation.solve`] ranks such a candidate **last** and counts it, which is
     the honest place for a row the key cannot read: it is not refused by a rule
     and it has not earned a place ahead of rows that were read.
     """

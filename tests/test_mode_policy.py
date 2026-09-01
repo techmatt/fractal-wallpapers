@@ -297,24 +297,23 @@ def test_the_floor_rule_is_the_default_and_a_flag_is_what_turns_it_off():
     grep cannot see that.
     """
     from fractal_wallpapers import cli
-    from fractal_wallpapers.curation import seating, solve
+    from fractal_wallpapers.curation import solve
 
     parser = cli.build_parser()
-    plain = parser.parse_args(["curate", "seat", "--n", "150"])
+    plain = parser.parse_args(["curate", "solve", "run", "--n", "150"])
     assert plain.flat_floor is False, "the floors are the default; nothing turns them on"
     assert plain.mode_floor is None
-    assert parser.parse_args(["curate", "seat", "--n", "150", "--flat-floor"]).flat_floor is True
     assert parser.parse_args(["curate", "solve", "run", "--flat-floor"]).flat_floor is True
 
     modes = mode_policy.accepted()
-    floored = seating.seat([], n=150, key=seating.JUDGE_KEY, log=lambda *_: None)["config"]
-    assert floored["mode_floors"] == seating.floors_for(mode_policy.seat_floors(150), modes)
+    floored = solve.solve([], n=150, key=solve.JUDGE_KEY, log=lambda *_: None)["config"]
+    assert floored["mode_floors"] == solve.floors_for(mode_policy.seat_floors(150), modes)
     assert floored["mode_floor"] is None, "the default is per mode and not one number"
     assert floored["mode_floor_artificial"] is False
     assert "THE DEFAULT" in floored["mode_floor_rule"]
 
-    flat = seating.seat(
-        [], n=150, floor=solve.mode_floor(150), key=seating.JUDGE_KEY, log=lambda *_: None
+    flat = solve.solve(
+        [], n=150, floor=solve.mode_floor(150), key=solve.JUDGE_KEY, log=lambda *_: None
     )["config"]
     assert set(flat["mode_floors"].values()) == {solve.mode_floor(150)}
     assert flat["mode_floor_artificial"] is True
@@ -322,24 +321,21 @@ def test_the_floor_rule_is_the_default_and_a_flag_is_what_turns_it_off():
 
 
 @needs_engine
-def test_the_exact_solver_is_floored_by_the_same_rule_the_greedy_is():
-    """The two are only ever a check on each other where they solve one program.
-
-    The greedy and the solver each take a floor and each defaulted to the flat one;
-    a flip that moved only the greedy would leave `curate solve` answering a
-    different question in the same words.
-    """
-    from fractal_wallpapers.curation import seating, solve
+def test_one_leg_is_floored_by_one_rule_and_the_demands_carry_it():
+    """There used to be two legs and two copies of this, and a flip that moved only
+    one would have left `curate solve` answering a different question in the same
+    words. There is one leg now, and the floors reach the objective through
+    `solve.demands_for` — a floor of zero is not a demand at all, because a floor
+    nothing can fail is not a row on a shortfall block."""
+    from fractal_wallpapers.curation import solve
 
     modes = mode_policy.accepted()
-    program = solve.Program(candidates=[], n=150, rule=solve.rule_for(), modes=tuple(modes))
-    assert program.mode_floors == seating.floors_for(mode_policy.seat_floors(150), modes)
-    assert "THE DEFAULT" in program.mode_floor_rule
-    flat = solve.Program(
-        candidates=[], n=150, rule=solve.rule_for(), modes=tuple(modes), floor=solve.mode_floor(150)
-    )
-    assert set(flat.mode_floors.values()) == {1}
-    assert "FLAT" in flat.mode_floor_rule
+    held = solve.floors_for(mode_policy.seat_floors(150), modes)
+    demands = solve.demands_for(held, {})
+    assert {demand.of for demand in demands} == set(mode_policy.strange_modes())
+    assert all(demand.wanted(150) == held[demand.of] for demand in demands)
+    assert "smooth" not in {demand.of for demand in demands}, "its floor is zero"
+    assert "THE DEFAULT" in solve.floor_rule(150, None, held, mode_policy.seat_floors(150), modes)
 
 
 @needs_engine

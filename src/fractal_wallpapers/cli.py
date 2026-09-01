@@ -3261,46 +3261,73 @@ def curate_candidate_ledger(args: argparse.Namespace) -> int:
 
 
 def curate_solve(args: argparse.Namespace) -> int:
-    """Solve the gallery, sweep `n`, or measure what truncating the pool costs."""
-    from fractal_wallpapers.curation import ceiling, solve
+    """Choose the gallery: a stratified view, a greedy seed, and swaps to exhaustion."""
+    from fractal_wallpapers.curation import ceiling, headroom, solve
+    from fractal_wallpapers.curation import release as release_module
 
     try:
         targets = dict(ceiling.parse_target(text) for text in (args.target or ()))
     except ceiling.TargetRefused as refusal:
         print(refusal)
         return 1
-    name = args.name or f"n{args.n}"
+    floor = args.mode_floor
+    if args.flat_floor:
+        if floor is not None:
+            print("--flat-floor and --mode-floor are two different floors; name one.")
+            return 1
+        # The way OFF. Unflagged, `solve.solve` takes the per-mode floor rule; this
+        # puts back the flat floor every gallery before the flip was seated under.
+        floor = solve.mode_floor(args.n)
+
+    candidates, _costs, _refused = headroom.population()
     try:
-        if args.what == "run":
-            # Unset is the per-mode floor rule, which is the default. `--flat-floor`
-            # is the way off it and puts back the flat floor(n / 100).
-            record = solve.solve(
-                n=args.n,
-                targets=targets,
-                locations=args.locations,
-                floor=solve.mode_floor(args.n) if args.flat_floor else None,
-            )
-            if record.get("feasible") and not args.no_render:
-                solve.render_seats(name, record, workers=args.workers)
-            path = solve.write_record(name, record)
-            print(f"{path}")
-            if record.get("feasible"):
-                print(f"{solve.contact_sheet(name, record)}")
-            else:
-                print(json.dumps(record.get("shortage"), indent=2))
-            return 0 if record.get("feasible") else 1
-        report = (
-            solve.sweep(seconds=args.sweep_seconds)
-            if args.what == "sweep"
-            else solve.truncation(n=args.n)
+        order, coverage = solve.ranking_for(candidates, args.key)
+        if coverage is not None:
+            print(json.dumps(coverage, indent=2))
+        record = solve.solve(
+            candidates,
+            n=args.n,
+            targets=targets,
+            floor=floor,
+            locations=args.locations,
+            radius=None if args.no_preselection else args.neutral_radius,
+            diversity=not args.no_diversity,
+            group_cap=args.group_cap,
+            key=args.key,
+            order=order,
+            coverage=coverage,
+            allow_unranked=args.allow_unranked,
+            rows_per_seat=args.rows_per_seat,
+            draw_seed=args.draw_seed,
+            swap=not args.no_swap,
+            seconds=args.swap_seconds,
         )
     except solve.SolveRefused as refusal:
         print(refusal)
         return 1
-    out = solve.solve_dir(name) / f"{args.what}.json"
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8", newline="\n")
-    print(f"{out}")
+    name = args.name or f"n{args.n}"
+    path = solve.write_record(name, record)
+    print(f"{path}")
+    if not args.no_render:
+        regime = release_module.regime_of(args.release_regime)
+        made = solve.render_seats(name, record, workers=args.workers, regime=regime)
+        path = solve.write_record(name, record)
+        print(json.dumps({**made, "timings": f"{len(made['timings'])} row(s), not restated"}))
+        print(json.dumps(solve.autolevel_rate(record), indent=2))
+    if not args.no_sheet:
+        sheet = None if args.sheet_out is None else resolve_output(args.sheet_out)
+        print(f"{solve.contact_sheet(name, record, rejected=record['samples'], output=sheet)}")
+    modes = record["shortfalls"]["modes"]
+    print(
+        f"{record['filled']} of {args.n} seat(s) in {record['seconds']}s; "
+        f"{modes['represented']} of {modes['of']} mode(s) represented, at a floor "
+        f"{'of ' + str(modes['floor']) if modes['floor'] is not None else 'set per mode'}"
+        f"; palette-group cap {record['config']['ceiling']['group_cap']} "
+        f"({record['config']['ceiling']['group_cap_rule']}), sorted on "
+        f"{record['config']['sort_key']}"
+    )
+    print(json.dumps(record["objective"]["final"], indent=2))
+    print(json.dumps(record["rejection"]["reasons"], indent=2))
     return 0
 
 
@@ -3368,63 +3395,6 @@ def _twin_sweep(candidates, radius) -> dict:
 
     keys, matrix = distinct.matrix_for(sorted(best))
     return distinct.twins(keys, matrix, picture_of)
-
-
-def curate_seat(args: argparse.Namespace) -> int:
-    """Seat a gallery off the ledger with a greedy, keep every refusal, release it."""
-    from fractal_wallpapers.curation import headroom, seating, solve
-    from fractal_wallpapers.curation import release as release_module
-
-    floor = args.mode_floor
-    if args.flat_floor:
-        if floor is not None:
-            print("--flat-floor and --mode-floor are two different floors; name one.")
-            return 1
-        # The way OFF. Unflagged, `seating.seat` takes the per-mode floor rule;
-        # this puts back the flat floor every gallery before the flip was seated
-        # under, which is what a floored-against-unfloored reading compares to.
-        floor = solve.mode_floor(args.n)
-
-    candidates, _costs, _refused = headroom.population()
-    order, coverage = seating.ranking_for(candidates, args.key)
-    if coverage is not None:
-        print(json.dumps(coverage, indent=2))
-    record = seating.seat(
-        candidates,
-        n=args.n,
-        floor=floor,
-        radius=None if args.no_preselection else args.neutral_radius,
-        twin=not args.no_twin,
-        group_cap=args.group_cap,
-        key=args.key,
-        order=order,
-        coverage=coverage,
-        allow_unranked=args.allow_unranked,
-    )
-    name = args.name or f"n{args.n}"
-    path = seating.write_record(name, record)
-    print(f"{path}")
-    if args.release:
-        regime = release_module.regime_of(args.release_regime)
-        made = seating.release_seats(name, record, workers=args.workers, regime=regime)
-        path = seating.write_record(name, record)
-        print(json.dumps({**made, "timings": f"{len(made['timings'])} row(s), not restated"}))
-        print(json.dumps(seating.autolevel_rate(record), indent=2))
-    if not args.no_sheet:
-        sheet = None if args.sheet_out is None else resolve_output(args.sheet_out)
-        print(f"{seating.contact_sheet(name, record, rejected=record['samples'], output=sheet)}")
-    modes = record["shortfalls"]["modes"]
-    print(
-        f"{record['filled']} of {args.n} seat(s); "
-        f"{modes['represented']} of {modes['of']} mode(s) represented, at a floor "
-        f"{'of ' + str(modes['floor']) if modes['floor'] is not None else 'set per mode'}"
-        f"; palette-group cap "
-        f"{record['config']['ceiling']['group_cap']} "
-        f"({record['config']['ceiling']['group_cap_rule']}), sorted on "
-        f"{record['config']['sort_key']}"
-    )
-    print(json.dumps(record["rejection"]["reasons"], indent=2))
-    return 0
 
 
 class _PictureOf(NamedTuple):
@@ -7165,9 +7135,9 @@ def curate_commands(subcommands) -> None:
     from fractal_wallpapers.curation import mine as mine_module
     from fractal_wallpapers.curation import release as release_module
     from fractal_wallpapers.curation import run as run_module
-    from fractal_wallpapers.curation import seating as seating_module
     from fractal_wallpapers.curation import shrinkage as shrinkage_module
     from fractal_wallpapers.curation import solve as solve_module
+    from fractal_wallpapers.curation import view as view_module
 
     curating = subcommands.add_parser(
         "curate",
@@ -7703,26 +7673,31 @@ def curate_commands(subcommands) -> None:
 
     solving = steps.add_parser(
         "solve",
-        help="choose the gallery by solving for it: one binary per candidate, the rules "
-        "as constraint rows, HiGHS",
+        help="choose the gallery: a stratified view, a greedy seed, and 1-swap improvement",
         description=(
-            "The second half of propose-then-solve. Every candidate in the ledger is a "
-            "binary; one candidate per location, the diversity radius, the palette-group "
-            "cap and the colour ceiling are rows; the objective is lexicographic — how "
-            "many clear the q4 bar, then the floor, then the sum less a soft mode-floor "
-            "penalty. The two pairwise rules are GENERATED rather than materialized: "
-            "solve, look at the incumbent's own pairs, add the violated ones, solve "
-            "again. An infeasible program is not an error — it is a shortage list saying "
-            "which constraint is how many candidates short, and in which partitions. "
-            "`sweep` solves at growing n and says which constraint binds first and where; "
-            "`truncate` solves the same n against a smaller reachable pool and compares."
+            "ONE leg, one pool, one command. A per-pass stratified VIEW over the pool above "
+            "its per-mode bars — one row per place plus each place's best row per (kind, "
+            "mode, cell) stratum, then either the whole stratum or a band-blind slice of it, "
+            "never a top-by-score cut. A GREEDY SEED in the seating order this project "
+            "already had: the mandated demands from their own subpools scarcest first, then "
+            "the ranked walk. Then 1-SWAP IMPROVEMENT — one seat out, one candidate in, "
+            "accepted only on strict lexicographic improvement, to exhaustion. ANYTIME: the "
+            "gallery is valid from its first seat, so a clock or a Ctrl-C leaves an answer. "
+            "The objective is lexicographic and strict: seats filled, then the worst seated "
+            "score, then the shortfall against the mode floors and any colour target, then "
+            "the sum — all in the FITTED rank key. TWO HARD RULES: one wallpaper per "
+            "location, and the diversity rule, which refuses a picture within ceiling.TAU of "
+            "one already seated. Everything else is counted with the shortfall recorded: no "
+            "fallback leg, no least-violating rescue, unfilled beats padded. The REJECTION "
+            "LEDGER is the product. The exact solve this replaced is RETIRED: it was "
+            "measured infeasible at n=1000 against a thirty-minute bar."
         ),
     )
     solving.add_argument(
         "what",
-        choices=["run", "sweep", "truncate"],
-        help="solve one gallery, sweep n upward until something binds, or compare the "
-        "same n against truncated pools",
+        choices=["run"],
+        help="choose one gallery. The `sweep` and `truncate` experiments went with the "
+        "exact solver they were experiments on",
     )
     solving.add_argument(
         "--n",
@@ -7732,54 +7707,163 @@ def curate_commands(subcommands) -> None:
     )
     solving.add_argument(
         "--name",
-        help="what to call this solve's output directory (default `n<N>`)",
+        help="what to call this pass's output directory (default `n<N>`)",
     )
     solving.add_argument(
         "--target",
         action="append",
         metavar="CELL=FRACTION",
-        help="with `run`: demand that at least this fraction of the seats be dominant in "
-        "this colour cell, as a HARD row. A target the pool cannot meet is what produces "
-        "a shortage list; the target also raises that cell's and its family's ceiling "
-        "allowance, so the demand is not refused by the ceiling it asked for",
+        help="demand that at least this share of the REALIZED seats be dominant in this "
+        "colour cell. A demand and not a row: it is seated from its own subpool by the "
+        "scarcity leg, it counts in the third objective tier, and a target the pool cannot "
+        "meet is a recorded shortfall rather than a refusal. The target also raises that "
+        "cell's and its family's ceiling allowance, so the demand is not refused by the "
+        "ceiling it asked for",
     )
     solving.add_argument(
         "--locations",
         type=int,
         metavar="COUNT",
-        help="with `run`: let the program reach only this many strongest locations, "
-        "ranked by their best candidate. Unset is the whole ledger",
+        help="let the pass reach only this many strongest locations, ranked by their best "
+        "candidate. Unset is the whole ledger",
+    )
+    solving.add_argument(
+        "--mode-floor",
+        type=int,
+        metavar="SEATS",
+        help="an ARTIFICIAL flat mode floor, one number for every accepted mode. Unset is "
+        "the per-mode floor rule, which is the default; `--flat-floor` is the other way "
+        f"off it, floor(n / {solve_module.SEATS_PER_MODE_FLOOR}). A record taken under any "
+        "of the three says which it was",
     )
     solving.add_argument(
         "--flat-floor",
         action="store_true",
-        help="with `run`: solve under the FLAT mode floor instead of the per-mode rule — "
+        help="solve under the FLAT mode floor instead of the per-mode rule — "
         f"floor(n / {solve_module.SEATS_PER_MODE_FLOOR}) seats for every accepted mode, "
-        "which is what every solve before 2026-08-31 ran under. The default is "
-        "curation.mode_policy.seat_floors(n), per mode. The floors are soft either way: "
-        "a mode below its own costs the third objective stage and refuses nothing",
+        "which is what every gallery before 2026-08-31 was seated under. The default is "
+        "curation.mode_policy.seat_floors(n): half each accepted strange mode's share of "
+        "the strange seat budget. Refuses beside `--mode-floor`, which asks for a "
+        "different flat one",
     )
     solving.add_argument(
-        "--workers",
+        "--neutral-radius",
+        type=float,
+        default=distinct_module.PRESELECT_RADIUS,
+        metavar="COSINE",
+        help="the neutral pre-selection radius applied at pool construction "
+        f"(default {distinct_module.PRESELECT_RADIUS:g}). Geometric distinctness only: it "
+        "asks whether two places are the same place, and it is NOT the diversity rule",
+    )
+    solving.add_argument(
+        "--no-preselection",
+        action="store_true",
+        help="choose from the whole clearing pool, with no neutral pre-selection",
+    )
+    solving.add_argument(
+        "--no-diversity",
+        action="store_true",
+        help="choose without the diversity rule, which is the only rule that opens a "
+        f"picture. A gallery without it is a bound on a program that does not refuse "
+        f"inside {ceiling_module.TAU}, and its record says so",
+    )
+    solving.add_argument(
+        "--no-swap",
+        action="store_true",
+        help="take the greedy seed and stop. The record still carries the objective, so "
+        "this is how a before/after on the swap loop alone is taken",
+    )
+    solving.add_argument(
+        "--swap-seconds",
+        type=float,
+        default=None,
+        metavar="SECONDS",
+        help="a wall budget for the SWAP LOOP alone. The seed always runs to completion, "
+        "so what this stops is improvement rather than the answer, and the gallery it "
+        "stops on is valid. Unset is until a full pass finds no improving swap",
+    )
+    solving.add_argument(
+        "--rows-per-seat",
         type=int,
-        default=4,
-        help="with `run`: render processes for the release leg (default 4)",
+        default=view_module.ROWS_PER_SEAT,
+        metavar="ROWS",
+        help=f"how many view rows each stratum keeps per seat it could contribute "
+        f"(default {view_module.ROWS_PER_SEAT}). Larger reaches more of the pool and costs "
+        "one pixel-cloud signature a row",
+    )
+    solving.add_argument(
+        "--draw-seed",
+        type=int,
+        default=view_module.DRAW_SEED,
+        metavar="SEED",
+        help=f"the seed the view's band-blind stride offsets are drawn under (default "
+        f"{view_module.DRAW_SEED}). It is on the record either way",
+    )
+    solving.add_argument(
+        "--allow-unranked",
+        action="store_true",
+        help="choose even though the key cannot read every clearing candidate. Unsaid, "
+        "that is REFUSED: an unreadable row sorts last and cannot win a seat while a "
+        "readable one is left, so a pool holding any is a pass that ignores them silently. "
+        "The usual cause is a leg merged before its pictures were swept, and the fix is "
+        "`curate flatness sweep`. This flag is for the other case — a picture on disk that "
+        "will not decode, which has no reading to take and never will",
+    )
+    solving.add_argument(
+        "--group-cap",
+        choices=list(ceiling_module.GROUP_CAP_RULES),
+        default=solve_module.DEFAULT_GROUP_CAP,
+        help=f"which palette-group cap to run under. `{ceiling_module.PROPORTIONAL}` is "
+        f"max(1, floor({ceiling_module.GROUP_CAP_RATE:g} * n)) — 1 up to n=40, 3 at n=150, "
+        f"25 at n=1000 — and is THE DEFAULT since 2026-08-28, the ckpt-88 ruling. "
+        f"`{ceiling_module.IDENTITY}` is ceiling.GROUP_CAP = {ceiling_module.GROUP_CAP}, one "
+        f"seat a map. It is a COUNT under either rule: the same-group DISTANCE row the exact "
+        f"solve carried is retired and not merged",
+    )
+    solving.add_argument(
+        "--key",
+        choices=list(solve_module.KEYS),
+        default=solve_module.DEFAULT_KEY,
+        help="the sort key the pool is walked in AND the quantity the objective is stated "
+        "in. `rank-key` is the fitted form in `curate rank-key` — the location head, both "
+        "judge cutpoints, the calibration stratum and the flatness column — and is THE "
+        "DEFAULT since 2026-08-28, on Matt's acceptance by eye. `p_ge4` is the render judge "
+        "alone. IT MOVES THE ORDER AND THE OBJECTIVE AND NOTHING ELSE: every bar, the "
+        "clearing rule and the neutral pre-selection still read the judge's own columns",
     )
     solving.add_argument(
         "--no-render",
         action="store_true",
-        help="with `run`: take every decision and make no release picture. The contact "
-        "sheet falls back to each seat's candidate render and says which it is showing",
+        help="take every decision and make no release picture. The contact sheet falls "
+        "back to each seat's candidate render and says which it is showing",
     )
     solving.add_argument(
-        "--sweep-seconds",
-        type=float,
-        default=solve_module.SWEEP_SECONDS,
-        metavar="SECONDS",
-        help="with `sweep`: how long the whole ladder may take before it stops and "
-        f"records which rung it stopped at (default {int(solve_module.SWEEP_SECONDS)}). The "
-        "round cap bounds rounds and not time, and it is the round count that grows with "
-        "n: a larger incumbent lands on more near-duplicate pairs",
+        "--release-regime",
+        default=release_module.RELEASE_REGIME.spelled,
+        metavar="WxHssN",
+        help=f"the geometry the release leg renders at (default "
+        f"{release_module.RELEASE_REGIME.spelled}, which is what every leg that ships a "
+        f"wallpaper ships; {release_module.FORMER_RELEASE_REGIME.spelled} is what the "
+        f"first three gallery passes shipped at)",
+    )
+    solving.add_argument(
+        "--workers",
+        type=int,
+        default=release_module.DEFAULT_WORKERS,
+        help=f"worker processes the release leg renders over (default "
+        f"{release_module.DEFAULT_WORKERS}, which is this machine's render pool; each "
+        f"spawns below-normal by construction)",
+    )
+    solving.add_argument(
+        "--no-sheet",
+        action="store_true",
+        help="take every decision and build no contact sheet",
+    )
+    solving.add_argument(
+        "--sheet-out",
+        metavar="PATH",
+        help="write the contact sheet there instead of beside the record, which is what a "
+        "before/after over several variants wants — one directory of sheets to look at",
     )
     solving.set_defaults(handler=curate_solve)
 
@@ -7856,150 +7940,6 @@ def curate_commands(subcommands) -> None:
         "should not cost the sweep again",
     )
     headroom_step.set_defaults(handler=curate_headroom)
-
-    seating_step = steps.add_parser(
-        "seat",
-        help="seat a gallery off the ledger with a greedy, and keep every refusal",
-        description=(
-            "The lower bound `headroom` is the upper bound on. Fill by SCARCITY and not "
-            "by score — the mandated constraints from their own subpools first, scarcest "
-            "first, then the general pool by score, because ordering by score alone turns "
-            "satisfiable problems into apparent infeasibility. TWO HARD RULES: one "
-            "wallpaper per location, and the twin test — nothing is seated within "
-            "ceiling.TAU of a picture already seated, sequentially, as the last and only "
-            "expensive rule of the walk. The other half of what `diversity` used to mean, "
-            "are these two the same place, is the neutral pre-selection at pool "
-            "construction. Everything else is soft with the shortfall recorded: no "
-            "fallback leg, no least-violating rescue, unfilled beats padded. It proposes "
-            "nothing and renders nothing. The REJECTION LEDGER is the product: for every "
-            "candidate not seated, which rule killed it, aggregated by cell, family, mode "
-            "and partition. A greedy shortfall is `this walk did not find it` and never "
-            "`the pool does not hold it`."
-        ),
-    )
-    seating_step.add_argument(
-        "--n",
-        type=int,
-        default=candidate_ledger_module.FIRST_SOLVE,
-        help=f"how many wallpapers to seat (default {candidate_ledger_module.FIRST_SOLVE})",
-    )
-    seating_step.add_argument(
-        "--name",
-        help="what to call this seating's output directory (default `n<N>`)",
-    )
-    seating_step.add_argument(
-        "--mode-floor",
-        type=int,
-        metavar="SEATS",
-        help="an ARTIFICIAL flat mode floor, one number for every accepted mode. Unset is "
-        "the per-mode floor rule, which is the default; `--flat-floor` is the other way "
-        f"off it, floor(n / {solve_module.SEATS_PER_MODE_FLOOR}). A record taken under any "
-        "of the three says which it was",
-    )
-    seating_step.add_argument(
-        "--flat-floor",
-        action="store_true",
-        help="seat under the FLAT floor instead of the per-mode rule — "
-        f"floor(n / {solve_module.SEATS_PER_MODE_FLOOR}) seats for every accepted mode, "
-        "which is what every gallery before 2026-08-31 was seated under. The default is "
-        "curation.mode_policy.seat_floors(n): half each accepted strange mode's share of "
-        "the strange seat budget, summing to half of it. Refuses beside `--mode-floor`, "
-        "which asks for a different flat one",
-    )
-    seating_step.add_argument(
-        "--neutral-radius",
-        type=float,
-        default=distinct_module.PRESELECT_RADIUS,
-        metavar="COSINE",
-        help="the neutral pre-selection radius applied at pool construction "
-        f"(default {distinct_module.PRESELECT_RADIUS:g}). Geometric distinctness only: it "
-        "asks whether two places are the same place, and it is NOT the diversity rule",
-    )
-    seating_step.add_argument(
-        "--no-preselection",
-        action="store_true",
-        help="seat from the whole clearing pool, with no neutral pre-selection",
-    )
-    seating_step.add_argument(
-        "--no-twin",
-        action="store_true",
-        help="seat without the twin test, which is the only rule that opens a picture. A "
-        f"seating without it is a bound on a program that does not refuse inside "
-        f"{ceiling_module.TAU}, and its record says so",
-    )
-    seating_step.add_argument(
-        "--no-sheet",
-        action="store_true",
-        help="take every decision and build no contact sheet",
-    )
-    seating_step.add_argument(
-        "--allow-unranked",
-        action="store_true",
-        help="seat even though the key cannot read every clearing candidate. Unsaid, that "
-        "is REFUSED: an unreadable row sorts last and cannot win a seat while a readable "
-        "one is left, so a pool holding any is a seating that ignores them silently. The "
-        "usual cause is a leg merged before its pictures were swept, and the fix is "
-        "`curate flatness sweep`. This flag is for the other case — a picture on disk that "
-        "will not decode, which has no reading to take and never will",
-    )
-    seating_step.add_argument(
-        "--sheet-out",
-        metavar="PATH",
-        help="write the contact sheet there instead of beside the record, which is what "
-        "a before/after over several variants wants — one directory of sheets to look at",
-    )
-    seating_step.add_argument(
-        "--group-cap",
-        choices=list(ceiling_module.GROUP_CAP_RULES),
-        default=seating_module.DEFAULT_GROUP_CAP,
-        help=f"which palette-group cap to seat under. `{ceiling_module.PROPORTIONAL}` is "
-        f"max(1, floor({ceiling_module.GROUP_CAP_RATE:g} * n)) — 1 up to n=40, 3 at n=150, "
-        f"25 at n=1000 — and is THE DEFAULT since 2026-08-28, the ckpt-88 ruling. "
-        f"`{ceiling_module.IDENTITY}` is ceiling.GROUP_CAP = {ceiling_module.GROUP_CAP}, one "
-        f"seat a map, which every gallery before that date was seated under and which is "
-        f"still reachable here. The two agree below n=40, so a before/after has to be taken "
-        f"at a size where they differ",
-    )
-    seating_step.add_argument(
-        "--key",
-        choices=list(seating_module.KEYS),
-        default=seating_module.DEFAULT_KEY,
-        help="the sort key the pool is walked in. `rank-key` is the fitted form in "
-        "`curate rank-key` — the location head, both judge cutpoints, the calibration "
-        "stratum and the flatness column — and is THE DEFAULT since 2026-08-28, on Matt's "
-        "acceptance by eye against the incumbent. `p_ge4` is the render judge alone, which "
-        "is what every earlier gallery was ordered by and is still reachable here. IT MOVES "
-        "THE ORDER AND NOTHING ELSE: every bar, the clearing rule and the neutral "
-        "pre-selection still read the judge's own columns",
-    )
-    seating_step.add_argument(
-        "--release",
-        action="store_true",
-        help="render every seat at release geometry after the walk, into the seating's own "
-        "`release/` directory, and put the released pictures on the contact sheet. NO BAR "
-        "ACTS in this leg: it re-scores nothing and refuses nothing, so every seat the walk "
-        "chose is rendered. A row that hangs is killed at "
-        f"{solve_module.ROW_BACKSTOP:.0f}s and the leg carries on; there is no budget gate "
-        "and the leg runs to completion",
-    )
-    seating_step.add_argument(
-        "--release-regime",
-        default=release_module.RELEASE_REGIME.spelled,
-        metavar="WxHssN",
-        help=f"the geometry --release renders at (default "
-        f"{release_module.RELEASE_REGIME.spelled}, which is what every leg that ships a "
-        f"wallpaper ships; {release_module.FORMER_RELEASE_REGIME.spelled} is what the "
-        f"first three gallery passes shipped at)",
-    )
-    seating_step.add_argument(
-        "--workers",
-        type=int,
-        default=release_module.DEFAULT_WORKERS,
-        help=f"worker processes the release leg renders over (default "
-        f"{release_module.DEFAULT_WORKERS}, which is this machine's render pool; each "
-        f"spawns below-normal by construction)",
-    )
-    seating_step.set_defaults(handler=curate_seat)
 
     flatness_step = steps.add_parser(
         "flatness",

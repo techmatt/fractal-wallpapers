@@ -20,7 +20,9 @@ framing    where a location's attempts are framed, decided before they render
 recipes    what decides a candidate's pixels, as one value with one key
 candidate_ledger  every recipe ever rendered, one row each, with its colour
 headroom   what each selection constraint needs, holds, and costs to buy — no solver
-seating    the trivial greedy that is the other bound, and every refusal it made
+view       what one pass may reach: strata, and band-blind slices of them
+rules      one spelling per selection rule, over incremental state
+solve      THE gallery leg: the view, a greedy seed, and 1-swap improvement
 distinct   which places are visibly different places, decided before any colour
 selection  top-N per judge, under the slot and supply caps, the location rule
            — and the bar
@@ -58,13 +60,11 @@ fractal-wallpapers curate candidate-ledger save        # both files, made durabl
 fractal-wallpapers curate headroom                     # the census: what is short, and what one more costs
 fractal-wallpapers curate headroom --n 20 --n 150      # only these rungs of the ladder
 fractal-wallpapers curate headroom --flat-floor        # bound the FLAT mode floor, for a baseline
-fractal-wallpapers curate seat --n 20                  # the greedy: the lower bound, and the rejection ledger
 fractal-wallpapers curate distinct                     # the neutral pre-selection read, and the radius sheet
 fractal-wallpapers curate distinct --no-premise        # the join and the sheet, measuring no pixel cloud
-fractal-wallpapers curate solve run --n 20             # THE solve: the gallery as a program
-fractal-wallpapers curate solve sweep                  # which constraint binds first, and at what n
-fractal-wallpapers curate solve truncate --n 20        # what a smaller reachable pool costs
-fractal-wallpapers curate seat --n 150 --release                       # the greedy, then the pictures
+fractal-wallpapers curate solve run --n 20 --no-render # THE gallery leg: decide, render nothing
+fractal-wallpapers curate solve run --n 150            # the gallery, then the pictures
+fractal-wallpapers curate solve run --n 1000 --no-render   # 8.5 min on this machine
 fractal-wallpapers curate manufacture --step register --write          # BEFORE anything
 fractal-wallpapers curate manufacture --oversample 2.5                 # plan, build, select
 fractal-wallpapers curate manufacture --step verify --sheet artifacts/<sheet>
@@ -82,14 +82,17 @@ read: the pass records and slot rows in `data/curation/gallery/<pass>/`, the
 winners in `data/curation/release/<pass>/`, the attempt rows behind
 [`gallery_store`], and 14,316 of the candidate ledger's rows.
 
-**What replaced it is the propose-then-solve pair.** `curate seat` is the
-sequential seating now — off the candidate ledger rather than off a draw's own
-attempts, so it chooses among pictures that already exist — and `curate solve`
-is the exact answer the greedy bounds. Neither draws points: the ledger is the
-proposal side and `curate hunt`, `curate mine` and `curate depth` are what add
-to it. `curate seat --release` renders the seats, at
+**What replaced it is propose-then-choose.** `curate solve` is the whole
+choosing now — off the candidate ledger rather than off a draw's own attempts, so
+it chooses among pictures that already exist. It draws no points: the ledger is
+the proposal side and `curate hunt`, `curate mine` and `curate depth` are what add
+to it. It renders its seats unless told `--no-render`, at
 [`release.RELEASE_REGIME`], which is the geometry the pass shipped at and is now
 named where every leg that ships a wallpaper reads it.
+
+It was briefly two legs — a sequential `curate seat` and an exact `curate solve` —
+and that pair is gone too. `curate seat` is retired; the exact solve is retired;
+the one leg behind `curate solve` is the section below.
 
 Three commands went with the phase: `curate gallery`, `curate draw` (its step-4
 point draw alone) and `curate on-demand` (the reconciliation of a pass's
@@ -98,8 +101,7 @@ written for). `curate gallery-store` stays, because the four passes' attempt row
 are a third of the ledger's backfill.
 
 What the pass established and the rest of this file still rests on is below: the
-**colour ceiling** and its targets, which `curate seat` and `curate solve` both
-read; the **binding reason** an empty seat records, which is how the four passes'
+**colour ceiling** and its targets, which `curate solve` reads; the **binding reason** an empty seat records, which is how the four passes'
 slot rows are still re-read; and the **framing refinement**, whose live home is
 the walk's own close-of-run leg (`supply/harvest.py`) rather than a seating.
 
@@ -172,7 +174,7 @@ rendered right there, then the least-violating fallback, flagged — because a
 colour rule that can only refuse spends its seats on the fallback, the pool
 having been proposed by a quality judge that never had colour in the question.
 The pass and its `ceiling.Seating` both went on 2026-08-28; the **idea** is kept
-as a design note in the handoff docs and no code implements it. `curate seat` and `curate solve` both choose among pictures
+as a design note in the handoff docs and no code implements it. `curate solve` chooses among pictures
 that already exist, so a seat with no acceptable colour is a shortage in the
 ledger, and the answer to it is `curate hunt`'s conditioned leg or
 `curate depth`'s conditioned draw. The four passes' on-demand rows are still in
@@ -269,7 +271,7 @@ A reader who conflates them will look for a row in the wrong file:
   of them, one per run, hot or archived; `--ledgers` and `--ledger` on the CLI
   always mean these. `curation.binding` is what declares which ones a curation
   reads. Nothing here writes one.
-* **The rejection ledger** — [`seating.rejection`], the block on a seating's
+* **The rejection ledger** — [`solve.rejection`], the block on a gallery's
   record naming, for every candidate the walk did **not** seat, the first rule
   that refused it. A partition of the pool rather than a store: it is written
   inside `artifacts/curation/seat/<name>/seat.json` and nowhere else.
@@ -311,7 +313,7 @@ fractal-wallpapers curate flatness save               # its own durable. `merge`
 empty.** Not a bug and not a migration that was forgotten: the sidecar is keyed
 `(recipe, artifact, regime)` and `scores_by_recipe` joins on the live artifact
 alone, so every row reads as *unscored on the head that ships* until it is read
-again. `solve.pool` refuses all of them as `no_score` and every seating, census
+again. `solve.pool` refuses all of them as `no_score` and every gallery, census
 and headroom read over the ledger comes back empty. `curate candidate-ledger
 score` is the step that closes it, and it is the only one — nothing else in this
 tree reads a ledger picture through the judge.
@@ -633,109 +635,226 @@ the wheel is a quarter of the red half: 986 locations carry red, 248 carry lime,
 258 green, 324 teal. The thinnest cell of the 48 is `dark_vivid_lime` at 44
 locations. 227 of the 822 palette groups have exactly one recipe behind them.
 
-## `curate solve` — the gallery as a program, not as a walk
+## `curate solve` — one leg, one pool, one command
 
-The ledger above is the proposal side. This is the other half: the selection
-stated as a **mixed-integer program** over it and handed to HiGHS, so the answer
-is optimal under the rules rather than optimal-given-the-order-the-walk-took.
-
-```
-src/fractal_wallpapers/curation/solve.py       the program, the loop, the shortage list
-artifacts/curation/solve/<name>/solve.json     the record: config, rounds, seats, spread
-artifacts/curation/solve/<name>/release/       the seats at release geometry
-artifacts/curation/solve/<name>/contact_sheet.html   the twenty, and what they beat
-```
+This is the whole of the choosing. It used to be two — a sequential `curate seat`
+that walked a ranked list, and an exact `curate solve` that stated the same
+intentions as a mixed-integer program and handed them to HiGHS. They chose from
+**different pools** under two copies of most rules and two different rules for one
+of them, and a divergence like that is not one anybody finds by reading either
+file. Both are gone. `curate seat` is retired with them.
 
 ```
-fractal-wallpapers curate solve run --n 20                   # one gallery, rendered
-fractal-wallpapers curate solve run --n 20 --no-render       # decide, render nothing
+src/fractal_wallpapers/curation/view.py    what one pass may reach: strata, band-blind slices
+src/fractal_wallpapers/curation/rules.py   one spelling per rule, over incremental state
+src/fractal_wallpapers/curation/solve.py   the view, the seed, the swap loop, the record
+artifacts/curation/solve/<name>/solve.json          the record
+artifacts/curation/solve/<name>/release/            the seats at release geometry
+artifacts/curation/solve/<name>/contact_sheet.html  the seats, and what each rule refused
+```
+
+```
+fractal-wallpapers curate solve run --n 150                  # one gallery, rendered
+fractal-wallpapers curate solve run --n 150 --no-render      # decide, render nothing
+fractal-wallpapers curate solve run --n 1000 --no-render     # 8.5 min on this machine
+fractal-wallpapers curate solve run --n 150 --no-swap        # the greedy seed alone
+fractal-wallpapers curate solve run --n 150 --swap-seconds 300   # a clock on the loop only
+fractal-wallpapers curate solve run --n 150 --flat-floor     # the pre-2026-08-31 mode floor
+fractal-wallpapers curate solve run --n 150 --group-cap identity --key p_ge4   # the incumbent
+fractal-wallpapers curate solve run --n 150 --sheet-out <path>    # the sheet, elsewhere
+fractal-wallpapers curate solve run --n 20 --target dark_vivid_lime=1.0   # a colour demand
 fractal-wallpapers curate solve run --n 20 --locations 40    # only the 40 best places
-fractal-wallpapers curate solve run --n 20 --target dark_vivid_lime=1.0   # a hard colour demand
-fractal-wallpapers curate solve sweep                        # which constraint binds first, and at what n
-fractal-wallpapers curate solve sweep --sweep-seconds 3600   # a longer ladder
-fractal-wallpapers curate solve truncate --n 20              # what a smaller reachable pool costs
 ```
 
-It needs SciPy's HiGHS binding, which is the `solve` extra (`pip install -e
-.[solve]`) and not part of the base install. The leg loads no head: every score
-it reads is off the ledger's sidecar, so a machine that solves does not need the
-CUDA wheels.
+It needs `numpy` and `pillow`, which is the `solve` extra (`pip install -e
+.[solve]`). **It needs no solver**: SciPy went with the MILP. The leg loads no
+head either — every score it reads is off the ledger's sidecar — so a machine that
+chooses a gallery needs neither the CUDA wheels nor a MIP.
 
-**The objective is lexicographic**, three solves with each stage's value frozen
-into the next: how many seats clear the q4 bar, then the **floor** — the lowest
-score among the seated, maximized — then the sum, less the mode-floor penalty.
-The floor stage is the one that matters: a gallery of twenty where nineteen are
-excellent and one is a mistake is worse than one where all twenty are merely
-good, and a sum cannot say so.
+### The four steps
 
-The q4 bar is **raw `P(>=4)` at 0.50**, which is the natural rank cutpoint of a
-CORN probability and explicitly not a measured crossover — both release heights
-this project has fitted are `P(>=3)` and neither transfers to a different
-cutpoint. It is recorded on every solve so a count taken across the change names
-its own bar.
+1. **The view** (`curation.view`). The pool above its per-mode bars and past the
+   neutral pre-selection, thinned to what one pass may reach. **Two layers, and
+   only one of them is ever cut.** Every place's strongest row by the pass's own
+   key is in, always — that set is exactly what the sequential seating this leg
+   replaced walked, so a view holding all of it cannot choose worse than that walk
+   did. On top of it, that place's best row in each further `(kind, mode, cell)`
+   stratum it can field — the **alternates** — and those are what a stratum's
+   quota is spent on: the whole set at or below `SMALL_STRATUM` (8), or a
+   **band-blind slice** sized at `ROWS_PER_SEAT` (2) times what `n` seats could
+   spend on that stratum. Strata, sizes, strides and the draw seed land on the
+   record, and the pool is never mutated.
+
+   The first draft sized its quotas over both layers together, and it is worth
+   knowing why that is wrong: it left the view reaching **1,768 of 4,496 places**,
+   and the seed came back at a worst seated score of **0.299** where the retired
+   greedy had reached **0.418** on the same pool. A view that can cut into the
+   place-bests can choose worse than the walk it replaced. This one cannot.
+2. **The rules** (`curation.rules`). One set-level predicate each, over incremental
+   state: `admits` for the seed, `removals` for the swap loop, and never a
+   sequential copy beside a set copy. The state holds which seats carry each cell,
+   family, palette group and mode — *which*, not how many, because a swap has to
+   know what to take out.
+3. **The greedy seed.** The seating order this project already had: the mandated
+   demands from their own subpools scarcest first, then the ranked walk.
+4. **1-swap improvement.** One seat out, one candidate in, accepted only on strict
+   lexicographic improvement, until a full pass finds none. No 2-swaps.
+
+**It is anytime.** The gallery is valid from its first seat, so a clock, a `Ctrl-C`
+or a pass cap leaves an answer rather than nothing. That is the whole reason it
+replaced a method that had no answer at all until it had a proof.
+
+### The objective, and the one place two rulings had to be reconciled
+
+Lexicographic and strict, in this order: **(1)** seats filled, every one above its
+own mode's bar because that is what the pool is; **(2)** the **worst seated
+score**, maximized; **(3)** the **shortfall** against every demand — the mode
+floors and any colour target — minimized, and nothing padded; **(4)** the sum. The
+rank quantity is `solve.RANK_KEY`, the fitted five-column form; `p_ge4` alone is
+not it and is still reachable by name.
+
+Tier 2 above tier 3 is the retired program's own order, where the floor stage sat
+above the mode penalty. Taken alone it can evacuate a mode floor the seed filled:
+the worst seat is by construction a scarce mode's, swapping it for a strong smooth
+candidate lifts tier 2, and tier 3 cannot buy it back. But the mode floors are one
+of the rules this leg **keeps**, and a rule the loop is free to break at will is
+not a rule. So `solve.Gallery.protected` holds a demand that is currently *met*:
+the seats carrying it may not leave unless the arriving candidate counts towards
+the same demand. Nothing pads and nothing refuses — a demand the pool cannot fill
+is still short, still recorded and still minimized by tier 3.
+
+`keep_demands=False` is the pure lexicographic reading, kept reachable so the
+difference is measurable rather than arguable. **Measured on the pool at n=150 it
+makes no difference at all**: the strict reading also came back 14 of 14 modes
+represented and zero shortfall, because the loop's own prune stops it long before
+it runs out of floor seats. The guard is for the shape, not for this pool.
+
+### The prune in the swap loop is sound, not a budget
+
+A pass walks the view in rank order and **stops at the worst seated value**.
+Nothing below it can be in an improving swap: a 1-swap does not change the seat
+count so tier 1 cannot move; seating a candidate worth less than the current worst
+makes the worst that candidate, so tier 2 gets worse; and the tiers are
+lexicographic, so a tier 3 or tier 4 gain cannot buy that. It tightens on its own,
+because every swap that improves tier 2 raises where the next pass stops.
+
+The one heuristic is `SWAP_DROPS` (8): how many seats are *offered* for removal per
+candidate — the weakest by the leg's own key inside the set whose departure would
+admit it. It is about which removals are offered and never about which are
+accepted.
+
+### What it costs, measured on this machine
+
+Both on the 98,457-candidate pool (11,210 clearing, 9,380 after the neutral
+pre-selection over 4,496 places), idle, 2026-08-31, `--no-render`:
+
+| | n=150 | n=1000 |
+|---|---|---|
+| view | 2,773 rows over 597 strata | see the report |
+| seed | 22.7 s, 150 of 150 | |
+| swap loop | 258.8 s, 22 swaps over 3 passes | |
+| **whole leg** | **289.7 s** | |
+
+Against the retired program's **1800 s and no answer** at n=1000.
+
+### What was retired, and why
+
+`PROBE_ilp_n1000` measured the exact solve against the thirty-minute bar
+production wants: `curate solve run --n 1000 --no-render` was killed at a hard
+1800 s having reached **stage 3 of round 1**, so there was no incumbent, no gap, no
+seated set and no record. One cutting-plane round did not finish, `ROUNDS` is a
+backstop of 60, and the round count grows with `n` (2 at n=20, 18 at n=120).
+
+**The headline was the seed, not branch-and-bound.** 46% of the budget went to
+`seed_greedily` before HiGHS ran, and it *failed* — 534 of 1000 seats, 6,282 cuts
+— because it called `Pairs.measure([at, *seated])` once per considered candidate
+and `measure` walks **every pair** of the list it is handed. O(seats²) per
+candidate, cubic overall: invisible at n=150, 828 s at n=1000. Nothing in the
+shipped leg may reuse that call shape, and `test_rules.py` guards it.
+
+**Shrinking the model would have bought nothing.** The matrix was 98,457 binaries,
+18,249 rows and 533,513 nonzeros *at both n=150 and n=1000* — identical, because
+only the bounds moved — and it built in 0.4-0.6 s.
+
+Gone with it: `Program`, `matrices`, `lexicographic`, `relaxation`,
+`cutting_plane`, `seed_greedily`, `Pairs`, the elastic solve, the deletion filter,
+the shortage list, `curate solve sweep`, `curate solve truncate`, and the SciPy
+dependency. What stayed is everything that was never the ILP: the pool, the
+per-mode bars, the ceiling, the release leg, the contact sheet, and the
+`reduce_signature` bound below.
+
+### The pairwise rule is now one rule and it is a count
+
+Two divergences were merged rather than carried. The **palette group cap is a
+COUNT** — `ceiling.PROPORTIONAL`, `max(1, floor(0.025 n))` seats a map — and the
+program's same-group *distance* row is **dropped**, not merged: there is no second
+threshold anywhere in the leg, and `tau_group` is deliberately absent from the
+record because nothing reads it. The **diversity rule** is the twin test at
+`ceiling.TAU`, one neighbour, and it is one replaceable component behind
+`within`/`hold`/`drop`/`record`, so a themed gallery can swap in geometry-only
+distinctness without touching anything else. The record names the rule and its
+threshold, because two galleries chosen under different diversity rules are not
+comparable.
+
+### The q4 bar is a statistic on the record, and the bars are the pool
+
+`solve.Q4_BAR` is **raw `P(>=4)` at 0.50**, the natural rank cutpoint of a CORN
+probability and explicitly not a measured crossover — both release heights this
+project has fitted are `P(>=3)` and neither transfers to a different cutpoint. It
+is a *count on the record* and not the pool rule: what the pool is is
+`headroom.bars`, which puts a mode without enough places above `P(>=4)` on
+`P(>=3)` instead, so a fallback mode's seats sit below this legitimately.
 
 **What the bar buys, measured.** The `seated_and_head_top` correction sheet put
-200 human tiers against this bar. Over the 150 seats of a `--n 150` solve the bar
+200 human tiers against it. Over the 150 seats of an `--n 150` gallery the bar
 buys **tier ≥3 at 91.3%** and **tier 4 at 30.7%**, and raising it buys nothing on
 the fourth cutpoint: tier-4 precision is 0.31 at 0.50 and 0.30 at 0.999, flat the
 whole way up, while ≥3 precision climbs 0.913 → 1.000. Read `P(>=4)` as a *third*
--cutpoint screen with a fourth-cutpoint name. The floor stage above is therefore
-doing real work — it is the ≥3 floor it protects — and the q4 bar is not an
-ordering over the seats it admits.
+-cutpoint screen with a fourth-cutpoint name. The worst-seat tier above is
+therefore doing real work — it is the ≥3 floor it protects.
 
-**Where `P(>=4)` is read at all, and where it only orders.** Traced end to end on
-2026-08-28, ledger row → admission → `curate seat` → `curate solve` → release.
-The column **acts as a bar in exactly one place**: `headroom.clearing`, at
-`solve.Q4_BAR` — and only for the seven of eighteen production modes that can
-field twenty-five distinct clearing locations there. The other eleven clear on
-`P(>=3) >= 0.50` (`headroom.FALLBACK_BAR`), so more than half the mode roster
-never meets a `P(>=4)` bar. `curation.depth.mode_bars` and `clears_its_bar` read
-the same rule and re-state nothing.
+**Where `P(>=4)` is read at all, and where it only orders.** The column **acts as a
+bar in exactly one place**: `headroom.clearing`, at `headroom.DEFAULT_BAR` — and
+only for the modes that can field twenty-five distinct clearing locations there.
+The others clear on `P(>=3) >= 0.50` (`headroom.FALLBACK_BAR`), so more than half
+the mode roster never meets a `P(>=4)` bar. `curation.depth.mode_bars` and
+`clears_its_bar` read the same rule and re-state nothing.
 
-Everywhere else on that path the column is an **ordering** and never a gate:
-`solve.pool` (presence only — a row with no `p_ge4` is refused `no_score`),
-`solve.strongest_locations`, the MILP's stage-1 count and tie-break,
-`distinct.preselect` (which place represents a near-cluster, and the walk order),
-`seating.scarcity` and `seating.seat`'s ranked walk, `curation.mine`'s
-`best_by_location`, `curation.framing`'s reframe choice.
+Everywhere else the column is an **ordering** and never a gate: `solve.pool`
+(presence only — a row with no `p_ge4` is refused `no_score`),
+`solve.strongest_locations`, `distinct.preselect` (which place represents a
+near-cluster, and the walk order), `curation.mine`'s `best_by_location`,
+`curation.framing`'s reframe choice. Since 2026-08-28 the leg's own order and its
+objective are the **fitted** key rather than this column.
 
 **Every acting bar in the release path is on `P(>=3)`, not `P(>=4)`.**
 `selection.entries` builds its rank key from `p_ge3`; `floors.release_bar`,
-`floors.gallery_floor` and `curation.rejection` all call
-`.acts()` on `p_ge3`. The supply engine's `GOOD_FLOOR` and `GREAT_CUT` are on the
-**location** head and are reached by a run's harvest, not by the render judge's
-column at all. So the sentence to carry is: *`P(>=4)` decides who is in the pool
-for seven modes and decides the order for everybody; nothing at release reads it.*
+`floors.gallery_floor` and `curation.rejection` all call `.acts()` on `p_ge3`. The
+supply engine's `GOOD_FLOOR` and `GREAT_CUT` are on the **location** head. So the
+sentence to carry is: *`P(>=4)` decides who is in the pool for seven modes and
+decides the order for nobody any more; nothing at release reads it.*
 
-**The pairwise rules are generated, never materialized.** The diversity distance
-and the group cap are statements about a pair of finished pictures, and the
-ledger holds 118 million pairs at 512 KiB a signature. So: solve without them,
-look at the pairs, add a row for each violated pair, solve again. It terminates on
-an incumbent that violates nothing, and that answer is optimal for the whole
-program — the generated program is a relaxation, so its optimum bounds the full
-one's, and the incumbent attains that bound while being feasible for it. At N=20
-over the whole pool it converges in **two rounds**.
+### The location-level prune does not work, and this is why
 
-**The location-level prune does not work, and this is why.** The design was to
-skip pairs whose *places* are far apart on the ground that they cannot be
-near-duplicate pictures. Measured over 79,621 cross-location pairs drawn from the
-pool's top two thousand: 1,350 of them are closer than 0.07 as pictures, and the
-furthest-apart pair of places that makes one sits at cosine 0.583 — past the 90th
-percentile of location distance. The metric is over a picture's **colour cloud**
-and colour comes from the map rather than from the place, so two unrelated frames
-through similar ramps are near-duplicates by construction. A cut at 0.40 would
-still keep 91% of the pairs and miss 96 real violations. **A correlated proxy is
-not a prune.**
+The design was to skip pairs whose *places* are far apart on the ground that they
+cannot be near-duplicate pictures. Measured over 79,621 cross-location pairs drawn
+from the pool's top two thousand: 1,350 of them are closer than 0.07 as pictures,
+and the furthest-apart pair of places that makes one sits at cosine 0.583 — past
+the 90th percentile of location distance. The metric is over a picture's **colour
+cloud** and colour comes from the map rather than from the place, so two unrelated
+frames through similar ramps are near-duplicates by construction. A cut at 0.40
+would still keep 91% of the pairs and miss 96 real violations. **A correlated proxy
+is not a prune.**
 
-**The metric admits a real one.** It is a mean of absolute differences over
-`DIRECTIONS * QUANTILES` numbers, so the triangle inequality bounds it from below
-out of a summary of each cloud: group the quantiles into `solve.BOUND_BLOCKS`
-blocks and, per direction and per block, the mean of `|a - b|` is at least
-`|mean a - mean b|`. At one block that is exactly the distance between the two
-clouds' **mean colours**; at `QUANTILES` blocks it is the metric itself. A pair the
-bound puts at or beyond its own threshold *provably* cannot violate, so it is
-never measured and never generated. Measured over 79,800 pairs from the same
-population, at the 0.07 radius:
+**The metric admits a real one**, and it is `rules.BOUND`. It is a mean of absolute
+differences over `DIRECTIONS * QUANTILES` numbers, so the triangle inequality
+bounds it from below out of a summary of each cloud: group the **quantiles** into
+`rules.BOUND_BLOCKS` blocks and, per direction and per block, the mean of `|a - b|`
+is at least `|mean a - mean b|`. At one block that is exactly the distance between
+the two clouds' **mean colours**; at `QUANTILES` blocks it is the metric itself. A
+pair the bound puts at or beyond its threshold *provably* cannot violate, so it is
+never measured. Measured over 79,800 pairs from the same population, at the retired
+0.07 radius:
 
 | blocks | bytes a signature | settles | survivors per real violation |
 |---|---|---|---|
@@ -745,137 +864,81 @@ population, at the 0.07 radius:
 | 16 | 64 KiB | 98.3% | 1.0 |
 | 128 (the metric) | 512 KiB | 100% | 1.0 |
 
-What that buys is not mainly the arithmetic. It is that a round can screen every
-pair among **everything a signature has ever been made of** — the greedy seed's
-rejects and every earlier incumbent — instead of the incumbent's own pairs alone,
-so rows arrive many rounds before the incumbent would have found them. It also
-uncouples the signature cache from `n`: a round no longer compares every seat with
-every other one in the full metric.
+**The grouping axis is the quantiles and not the directions**, and both are sound
+partitions — the bound holds either way. Grouping across directions averages a
+hundred unrelated projections at one quantile and settles far less, and the table
+above is the band grouping's. `test_pool.py` pins the one-block reading against the
+mean colours, which is what makes the axis observable rather than a comment.
 
-**A greedy walk seeds the cut pool, and never ships an answer.**
-`solve.seed_greedily` seats down the ranked list and keeps every pair it refuses.
-Those pairs are valid rows of the full program however bad the walk's own gallery
-is — two pictures under their threshold can never both be seated, whoever noticed
-it — and where the walk fills every seat, its own minimum score is what fixes stage
-2's columns. It is never a shipped alternative to the exact solve: sequential
-seating is what this design replaced, and it hides exactly the failure the n=1.1N
-truncation exposed.
+### `--target <cell>=<fraction>` is a share of the realized seats
 
-**Stage 2 was the whole cost of a round, and an incumbent is what removes it.**
-Measured at n=60, an 11.1 s round was 1.1 s of stage 1, **9.8 s of stage 2** and
-0.2 s of stage 3. Stage 2 maximizes the minimum seated score, and `t` has no lower
-bound in it, so no presolve can tell HiGHS that a candidate scoring 0.4 is not
-going into a gallery whose floor is 0.97. Any feasible solution that clears the
-same count says so: the optimal floor is at least that solution's own, so no
-optimal solution seats anything below it, and every such column can be fixed to
-zero without removing an optimum. 15,955 free columns become 305, and 9.8 s
-becomes 0.36 s for the same floor to twelve places.
+One spelling, always. The retired program had two — a hard `ceil(t * n)` while
+cardinality was `== n`, and a share of what got filled once it was `<= n` — and the
+hard one was wrong in exactly the case a target is set for: it demands a share of
+seats nobody is promising to fill, so an under-filled answer reported nothing at
+all. This leg never promises `n`, so the demand is `ceil(t * seats filled)`, it is
+seated from its own subpool by the scarcity leg beside the mode floors, and it
+counts in the third objective tier.
 
-**Continuing one live model does not help, and that was measured rather than
-assumed.** The obvious next move is to stop rebuilding: hold one `highspy` model,
-append the generated rows, and continue from the existing basis. HiGHS gives a MIP
-no warm start. Over eight rounds at n=60, one live model with rows appended took
-14.82 s against 14.87 s for a fresh build each round, and handing stage 1 its own
-answer back as a MIP start moved it from 1.36 s to 1.31 s — the time is in proving
-the bound, not in finding the incumbent. `scipy.optimize.milp` has no warm start to
-give, and neither does the C++ interface underneath it, so the solve stays on SciPy
-and takes on no second solver dependency.
-
-**The sweep carries a clock, and says where it stopped.** A round cap bounds
-rounds and not time, and the two are not the same thing: the rounds grow with `n`,
-and so does the pool of pairs each of them screens. The shipped ladder stops at
-**160**, which is where this project has measured; the whole run stops at
-`--sweep-seconds` (1,200 by default) and the record names the rung it did not
-reach. `relaxation_ladder` carries the same question to the top in seconds, on
-every block except the two pairwise ones — and its answer is exact: **1,223**, the
-location count, with `one_per_location` the block that runs out.
-
-**Infeasibility is a shortage list.** A program that cannot be solved does not
-raise: an elastic LP gives every relaxable row a slack and minimizes it, so the
-answer says *how many candidates short* each block is, and a deletion filter over
-the blocks says which of them are irreducibly in conflict. The partitions holding
-each short colour are on the readout too, because that is what launches a
-conditioned hunt. Under-fill is the same fact one seat smaller: the cardinality
-row alone goes from `== n` to `<= n`, nothing is relaxed, and the empty seats stay
-on the record.
-
-**And sometimes it is not a shortage at all**, so `shortage.verdict` says which
-kind it is. Both instruments are LPs, and a program whose LP is feasible while its
-MILP is not has nothing short: the elastic read comes back at zero slack and the
-deletion filter — which can only ever name a conflict the relaxation has — would
-otherwise return every block, a list of six that reads like a finding and is not
-one. It returns `[]` there instead, and the verdict names the integral cause: with
-pairwise rows standing, the diversity rule is refusing the *combinations* rather
-than the pool refusing the colours, and no hunt for more of a colour relieves it.
-
-**`--target <cell>=<fraction>` is a hard demand**, and it also raises that cell's
-and its family's ceiling allowance through `ceiling.Rule` — otherwise a demand
-would be refused by the ceiling it asked for.
+It also raises that cell's and its family's ceiling allowance through
+`ceiling.Rule` — otherwise a demand would be refused by the ceiling it asked for.
 
 **And it raises the allowance of the cells it structurally implies.** A carrier of
 one colour is dominant in more than one: on the reference fields a
 `dark_vivid_lime` delivery lands `dark_muted_lime` 42% of the time,
 `light_muted_lime` 34% and `dark_vivid_green` 8%. So a target that raised only its
 own cell pushes its own seats against its companions' untargeted allowance of
-three, and the program is infeasible for a reason nobody chose — which is exactly
-where the lime hunt's shortage moved once the target itself was met.
-`ceiling.Rule` raises a companion's share by `target x the measured co-dominance
-rate`, and the companion's family by the same unless it is the target's own family
-(which the target already raised, and which counts a picture once however many of
-its cells that picture is dominant in). The rates come from
-`palettes.carriers.co_dominance` over the tracked table's own deliveries, never
-from an adjacency written down off the hue wheel. `config.ceiling.implied` on a
-solve record and on a pass record says what moved.
+three, and the demand is unmeetable for a reason nobody chose — which is exactly
+where the lime hunt's shortage moved once the target itself was met. `ceiling.Rule`
+raises a companion's share by `target x the measured co-dominance rate`, and the
+companion's family by the same unless it is the target's own family (which the
+target already raised, and which counts a picture once however many of its cells
+that picture is dominant in). The rates come from `palettes.carriers.co_dominance`
+over the tracked table's own deliveries, never from an adjacency written down off
+the hue wheel. `config.ceiling.implied` says what moved.
 
-### What a solve costs at n=1000, and why it is the seed rather than HiGHS
+### The expand hook is a stub, and its shape is the contract
 
-**`curate solve run --n 1000` does not terminate.** Measured 2026-08-31 on the
-98,457-candidate pool, killed at a 30-minute wall cap in **stage 3 of round 1** —
-one cutting-plane round of the sixty `ROUNDS` allows, so there is no incumbent and
-no record written. At n=1000 the shipping selection is a greedy with local swap
-improvement, not this.
+`solve.expand` emits, per demand that went short, the strata that could have fed
+it — what each held in the view, how many it seated, and which rules acted on the
+rows it did not. That last column is the instruction: a stratum whose refusals are
+all `cell_allowance` is one the gallery is already full of and mining it buys
+nothing, while one whose refusals are all `location` exists only at places
+something else already took. **Nothing reads it and nothing is wired to mining.**
+When a mining leg does, the contract is this shape.
 
-Where the 1800 s went: 9.0 s to load the pool, 1.7 s for the LP relaxation,
-**827.9 s in `seed_greedily`**, 50.7 s in stage 1, 335.5 s in stage 2, and the rest
-of stage 3 unfinished. The seed is 46% of the budget and it *failed* — 534 of 1000
-seats over its 4,000-candidate reach, 6,282 cuts seeded, `feasible=False` — which
-then costs stage 2 as well, because an infeasible seed hands it no floor and it ran
-with 10,092 of 98,457 columns free instead of a few hundred.
+### The rejection ledger is taken against the finished gallery
 
-The seed is cubic. `seed_greedily` calls `Pairs.measure([at, *seated])` once per
-considered candidate, and `measure` walks **every pair** of the list it is handed
-rather than only the new one, so the cost is O(seats²) per candidate. Invisible at
-n=150; 828 s at n=1000. **A greedy shipping leg must not reuse that call shape.**
+For every candidate not seated, which rule killed it, aggregated by cell, family,
+mode and partition, and over distinct **locations** as well as rows. The four
+counted rules are dictionary lookups, so every clearing candidate is asked *after*
+the leg finishes — against the gallery that was actually chosen, rather than
+against the moving state the seed happened to test each row under, which is all
+the sequential leg could do. The diversity rule is a signature apiece, so only the
+rows it acted on carry its answer and no row is opened for the first time here.
 
-**Building the program is free and its size does not grow with `n`.** The matrix is
-98,457 binaries, 18,249 rows and 533,513 nonzeros *at both n=150 and n=1000* —
-identical, because only the bounds move (the allowances, the mode floors, the
-cardinality). Build is 0.4-0.6 s on top of an 8.5 s pool load, and stage 2 and 3
-add one row per candidate to reach 116,707 and 116,722. So a slow solve is never a
-big model, and shrinking the model buys nothing.
+Four names sit outside `rules.RULES` and are kept apart from it deliberately:
+`the_leg_had_no_seat_left` (broke no rule and simply lost),
+`the_view_did_not_reach_it` (**this pass's own budget**, and never a fact about the
+wallpaper), `below_its_mode_bar` (never entered the population) and
+`another_place_is_the_same_place` (the neutral pre-selection, at pool
+construction). A mine aimed at any of the four would be aimed at nothing.
 
-**There is no wall cap inside a solve.** `cutting_plane` takes a `deadline`, but
-`solve.solve` never passes one and no `time_limit` reaches HiGHS anywhere in the
-module — only `curate solve sweep` carries a clock, through `--sweep-seconds`. A
-caller that needs `run` bounded caps it from outside and gets no incumbent back
-when the cap fires.
+## `curate headroom` — the upper bound the gallery leg is measured against
 
-## `curate headroom` and `curate seat` — the two bounds either side of the answer
-
-The solve above is expensive and it is the wrong instrument for one question. Before
+The leg above is minutes and it is the wrong instrument for one question. Before
 another leg spends hours making candidates, somebody has to know **which selection
 constraints the pool cannot satisfy and how much each shortfall costs to buy**, and a
 twenty-minute solve that reports "there are no light greens at all" spent twenty
 minutes on a fact one pass over the rows already knew.
 
 So the pair. `curate headroom` is O(rows) necessary conditions and no solver: the
-**upper bound**. `curate seat` is the simplest greedy that fills seats: the **lower
+**upper bound**. `curate solve` is what actually fills them: the **lower
 bound**. Close together, the answer is known and the money goes on making candidates.
 Far apart, the gap is what exact optimization is competing for.
 
 ```
 src/fractal_wallpapers/curation/headroom.py   the census, the bars, the marginal cost
-src/fractal_wallpapers/curation/seating.py    the greedy, and the rejection ledger
 src/fractal_wallpapers/curation/distinct.py   the neutral pre-selection, and its premise
 ```
 
@@ -886,7 +949,7 @@ exactly once. Every supply figure in both modules is a count of `location.key`.
 ### The bars, and why they are per mode
 
 A candidate is supply only if it is worth seating. The default is `solve.Q4_BAR` on
-raw `P(>=4)` — 0.50, the same bar the solver's first objective stage counts against.
+raw `P(>=4)` — 0.50, the same bar the gallery record counts its seats against.
 Six of the **fourteen** modes `mode_policy` accepts have fewer than twenty-five
 distinct locations clearing that, so those fall back to `P(>=3) >= 0.50` and the
 table **says which rule each mode landed on**: a mode censused under a lower bar is
@@ -937,7 +1000,7 @@ slack is not a claim that the selection is possible.
 ### The mode-floor block bounds the floors the legs actually take
 
 `mode_policy.seat_floors(n)` — per mode, the section further down — is what an
-unflagged `curate seat` and an unflagged `curate solve run` are floored by, so an
+unflagged `curate solve run` is floored by, so an
 unflagged census bounds those and not something else. It bounded the flat
 `floor(n / 100)` until 2026-08-31, which read a demand of **zero at `n = 20` where
 the shipped seating asks for six**, and a census whose floor block is a different
@@ -960,9 +1023,9 @@ function of `n` and a census walks a ladder, so it is a flag rather than a numbe
 and that is the baseline a floored-against-flat reading is taken against. The block
 says which of the three it ran under in `floor_rule`, the same sentence
 `config.mode_floor_rule` carries in a seating and a solve record, written by
-`seating.floor_rule` and called from the census rather than copied into it. The
+`solve.floor_rule` and called from the census rather than copied into it. The
 per-mode mapping is on `floors`; `floor` is the flat number when one was asked for
-and `None` otherwise, exactly as `mode_floor` reads in a seating record.
+and `None` otherwise, exactly as `mode_floor` reads in a gallery record.
 
 The floors sum to half the strange seat budget by construction, `ceil(0.3n)` and
 never more, so this block can never ask for a gallery that will not fit. The flat
@@ -1045,7 +1108,7 @@ least-violating rescue: unfilled beats padded.
 **The scarcity leg keeps seating a mode until its floor is met.** It used not to:
 it visited each mode once and `break`ed on the first candidate nothing refused, so a
 floor above 1 was recorded as `unmet` and never acted on by this walk. Measured
-2026-08-29, `curate seat --n 150 --mode-floor 2` returned a **bit-identical** gallery
+2026-08-29, `curate seat --n 150 --mode-floor 2` (as it then was) returned a **bit-identical** gallery
 to `--mode-floor 1` — 0 seats different, the same 13 mode counts, `cell_allowance`
 4,570 either way — while `solve` carried the floor properly as
 `sum(x in m) + d_m >= floor_m` with a penalty. Fixed 2026-08-30: the inner walk stops
@@ -1058,25 +1121,25 @@ worst seated score is a floor it declines to fill; the greedy fills one
 unconditionally. `test_the_greedy_and_the_exact_solver_seat_the_same_rows_at_a_floor_of_two`
 is the pin, and it is built so the floor costs nothing.
 
-### Both seating decisions flipped on 2026-08-28, and the incumbent is still reachable
+### Both gallery decisions flipped on 2026-08-28, and the incumbent is still reachable
 
 Built at ckpt 88 behind flags; **both are the default since 2026-08-28**. The cap is
 the ckpt-88 ruling, the key is Matt's acceptance by eye on the four-arm contact sheets
-at `n = 150`. `curate seat` with no flag now seats the proportional cap on the fitted
+at `n = 150`. `curate solve run` with no flag now seats the proportional cap on the fitted
 key; the walk every earlier gallery took is two named flags away and the record says
 which rule and which key it ran under, by name, either way.
 
 ```
-curate seat --n 150                                       proportional + rank-key
-curate seat --n 150 --group-cap identity --key p_ge4      the incumbent, whole
-curate seat --n 150 --group-cap {identity,proportional}   the palette-group cap
-curate seat --n 150 --key {rank-key,p_ge4}                the sort key
-curate seat --n 150 --sheet-out <path>                    the contact sheet, elsewhere
-curate seat --n 150 --release [--release-regime WxHssN] [--workers 3]
+curate solve run --n 150                                    proportional + rank-key
+curate solve run --n 150 --group-cap identity --key p_ge4   the incumbent, whole
+curate solve run --n 150 --group-cap {identity,proportional}   the palette-group cap
+curate solve run --n 150 --key {rank-key,p_ge4}             the sort key
+curate solve run --n 150 --sheet-out <path>                 the contact sheet, elsewhere
+curate solve run --n 150 [--release-regime WxHssN] [--workers 3]
 ```
 
-`seating.DEFAULT_KEY` and `seating.DEFAULT_GROUP_CAP` are the two constants, and
-`seating.ranking_for` is the one place a seating pays for its key — it reads the
+`solve.DEFAULT_KEY` and `solve.DEFAULT_GROUP_CAP` are the two constants, and
+`solve.ranking_for` is the one place a pass pays for its key — it reads the
 flatness sidecar and the location scores, once per pool. `seat(order=...)` overrides
 it, which is what a sweep seating one pool four ways passes.
 
@@ -1120,7 +1183,7 @@ unmodified map and the release render is shipping geometry with the autolevel op
 inside it, so showing one under the other's caption would say something false with every
 field on the card true.
 
-### `curate seat --release` — the seats at shipping geometry, and no bar anywhere in it
+### The release leg — the seats at shipping geometry, and no bar anywhere in it
 
 `solve.render_seats` with the seating's own directory, so the geometry, the autolevel
 stamp and the resume rule live in one place rather than two. Pictures and
@@ -1167,7 +1230,7 @@ unchanged by construction and nothing has to be matched up by hand.
 Worth writing down because it is easy to assume otherwise. The rule *select on the
 candidate score, then re-score the shortlist at shipping geometry and let that be the
 floor* is **not implemented**, in this path or in any other, and the two release legs
-say so in their own docstrings: `seating.release_seats` and `solve.render_seats` both
+say so in their own docstrings: `solve.render_seats` and its caller both
 refuse to re-score, on the reasoning that the heads' floors were fitted on 640x360
 candidate renders and a height read at one geometry does not transfer to another.
 
@@ -1179,7 +1242,7 @@ What acts instead, and all of it on the **candidate** column:
 | the same, for a mode with fewer than `FALLBACK_LOCATIONS`=25 clearing places | `floors.RELEASE_ADVISORY` = 0.50 | the candidate's `P(>=3)` |
 | `selection.py` (a run) | `floors.STRANGE_RELEASE_BAR` = 0.770, strange only | the candidate's `P(>=3)` |
 
-The third does not act on the `curate seat` path at all — a seating's only bar is the
+The third does not act on the `curate solve` path at all — the leg's only bar is the
 first two. `headroom.bars` already carries this on its own record under `provisional`,
 and that block is the honest statement of the position: the bars here are
 candidate-column bars, nothing re-scores at shipping geometry, and no crossover fitted
@@ -1270,7 +1333,7 @@ that say whether it was done are `order.coverage.no_flatness` on the seat record
 `curate flatness coverage`.
 
 **And a seating on a key it cannot read now REFUSES, which is the whole reason to
-know the order.** `seating.seat` raises `SeatingRefused` when any clearing candidate
+know the order.** `solve.solve` raises `SolveRefused` when any clearing candidate
 carries no value for the active key, naming the count, the first few keys and the
 sweep command that fills the gap. The argument is in the message: such a row sorts
 last and cannot win a seat while a readable one is left, so a seating that let it
@@ -1285,7 +1348,7 @@ refusal is doing its job. Allowed through, the rows are logged and counted under
 `order.unranked` / `unranked_allowed`, and `unreadable_by_the_key` on the record is
 how many of the clearing population they were.
 
-### `curate rank-key` — what a seating may rank on instead of the judge alone
+### `curate rank-key` — what the gallery leg ranks on instead of the judge alone
 
 ```
 curate rank-key fit     re-fit and rewrite both tracked files
@@ -1343,13 +1406,13 @@ is strongest. The rule is in `mode_policy` and the section under it is where it 
 derived and measured.
 
 `solve.mode_floor(n)` — `floor(n / 100)`, 0 at 20 seats, 1 at 150, 10 at 1000 — is now
-the **flat** floor rather than the default, and `curate seat --flat-floor` /
+the **flat** floor rather than the default, and `curate solve run --flat-floor` /
 `curate solve run --flat-floor` is what asks for it. It is what every gallery seated
 before that date was seated under, which makes it the baseline a floored-against-flat
-reading is taken against. `curate seat --mode-floor N` still puts an artificial flat
+reading is taken against. `curate solve run --mode-floor N` still puts an artificial flat
 floor of `N` back. The record names which of the three it ran under, in
 `config.mode_floor_rule` — and so does the census, in its `mode_floors` block's
-`floor_rule`, off the same `seating.floor_rule`. The census is floored by this rule
+`floor_rule`, off the same `solve.floor_rule`. The census is floored by this rule
 too, since 2026-08-31; `curate headroom --flat-floor` is its way off.
 
 Two older readings, both still worth the line they take. The flat floor `mode_floor`
@@ -1360,7 +1423,7 @@ representation and forced `trap_circle` — 2 clearing places, the better at
 14, `exp_smoothing` 4, `smooth_trap_circle` 1, `smooth_curvature` 1 — **4 modes**; at
 an artificial floor of 1 it is 18 modes, one seat each but for `smooth` at 3.
 
-### The twin test is in the seating, and it is the last rule
+### The twin test is the diversity rule, and it is the last one
 
 `ceiling.TAU = 0.0586` in the pixel-cloud metric, against every already-seated
 picture, sequentially. It is **not** in the solve and the solve's complexity does not
@@ -1437,7 +1500,7 @@ twin test. They are near-orthogonal, so one rule cannot be both, and both are pl
 | question | rule | where it acts |
 |---|---|---|
 | the same place? | cosine `distinct.PRESELECT_RADIUS = 0.02` over the neutral descriptors | pool construction, before the walk |
-| one wallpaper? | `ceiling.TAU = 0.0586` in the pixel cloud | sequential, last rule of `curate seat` |
+| one wallpaper? | `ceiling.TAU = 0.0586` in the pixel cloud | set-level, last rule of `curate solve` |
 
 `RADII` stays a set of candidates to look at, and the sheet — near pairs at each
 radius, ordered by distance, as pictures — is the instrument. That is how
@@ -1611,7 +1674,7 @@ weight in `{0, 1, 2}` — five niche, seven normal, seven promoted — and
 same roster.
 
 ```
-fractal-wallpapers curate seat --n 150 --name n150     # seats over accepted() only
+fractal-wallpapers curate solve run --n 150 --name n150   # seats over accepted() only
 python -c "from fractal_wallpapers.curation import mode_policy; print(mode_policy.check())"
 ```
 
@@ -1635,12 +1698,12 @@ the **labeling rosters** and the **default mining rosters** (both through
 mine, the hunt and `manufacture` all honour it), out of the **depth roster**
 (`depth.field_modes`), and out of **gallery emission** — `solve.pool` refuses the
 row and counts it as `niche_mode`, which is the one pool both the greedy seating
-and the exact solver read. The mode floors in `seating`, `solve`, `headroom` and
+and the census read. The mode floors in `solve`, `headroom` and
 `candidate_ledger.feasibility` are asked of `accepted()` for the same reason: a
 floor over a mode with no rows in the pool is a mandate nothing could meet.
 
 **Weights 1 and 2 differ at the seat, and that is the whole of what a 2 buys.**
-There is still no MODE-side cap anywhere — `seating.RULES` has none — but the floor
+There is still no MODE-side cap anywhere — `rules.RULES` has none — but the floor
 an *unflagged* seating and an unflagged solve take is `mode_policy.seat_floors(n)`,
 which floors a promoted mode at twice a normal one. The section below is the rule
 and what it measured.
@@ -1648,7 +1711,7 @@ and what it measured.
 ### The seat floors that make a 2 mean something — ON by default since 2026-08-31
 
 `mode_policy.seat_floors(n)` is the rule that turns the weights load-bearing, and
-**it is the default**: `curate seat` and `curate solve run` are floored per mode by
+**it is the default**: `curate solve run` is floored per mode by
 naming nothing. `--flat-floor` is the way off, back to `solve.mode_floor`'s flat
 `floor(n / 100)`. `test_the_floor_rule_is_the_default_and_a_flag_is_what_turns_it_off`
 asserts both halves on the parser and on the record a seating writes, and
@@ -1662,8 +1725,8 @@ are a pathology check that passed rather than the case for the rule. The open
 question the flip leaves is the price, which is what the reject autopsy is for.
 
 ```
-curate seat --n 150 --name n150                          # floored per mode
-curate seat --n 150 --flat-floor --name n150_flat        # the flat floor, for a baseline
+curate solve run --n 150 --name n150                     # floored per mode
+curate solve run --n 150 --flat-floor --name n150_flat   # the flat floor, for a baseline
 python -c "from fractal_wallpapers.curation import mode_policy as m; print(m.seat_floors(1000))"
 ```
 
@@ -1741,7 +1804,7 @@ cell with.
   on the smooth branch, so the smooth side is one mode by construction and has no
   distribution to solve.
 * **Where a floor collides with a ceiling the ceiling wins and the floor goes
-  unfilled.** `seating.seat(floor=...)` and `solve.Program(floor=...)` both take the
+  unfilled.** `solve.solve(floor=...)` takes the
   mapping, and the seating record reports the collision per mode under
   `shortfalls.modes.per_mode` — `clearing` above `seated` means a rule named in
   `refused_by` took the seats, `clearing` at `seated` means the pool held nothing
@@ -1820,7 +1883,7 @@ so a document that prints both columns is printing the same column twice.
 clear `P(>=4) >= 0.50`, which is a fact about the pool on the day. The column above
 is read off the newest seating record — `mode_policy_switch_n150`, 2026-08-30, over
 275,822 candidates of which 20,028 cleared — and it moves when the pool moves.
-`config.bars` on any `seat.json` is the authority for that record's own seating. A
+`config.bars` on any `solve.json` is the authority for that record's own pass. A
 niche mode has no bar because it has no row in the pool to bar: `solve.pool` refuses
 it upstream.
 
@@ -2840,14 +2903,14 @@ at K=1 that is **10.2 engine-hours** of re-render priced through
 pair under such a rule — the arms *are* their key spaces — while every count in
 them silently becomes a count over winners.
 
-### What the two n=150 legs cost on this machine
+### What the gallery leg costs at n=150 on this machine
 
-Measured 2026-08-29 over the 275,822-candidate pool, idle machine: **`curate solve
-run --n 150` is about four minutes** — 238 s, ten cutting-plane rounds, the LP
-relaxation 8 s and the greedy seed 33 s — and **`curate seat --n 150` is about a
-minute**, 51 s including the pixel clouds the twin test opens. A solve over a pool
-pruned to 39,019 candidates is 127 s, so the cost is closer to linear in the
-rounds than in the columns.
+Measured 2026-08-31 over the 98,457-candidate pool, idle machine, `--no-render`:
+**`curate solve run --n 150` is about five minutes** — the seed 23 s and the swap
+loop the rest of it, over a view of 2,773 rows. The retired history is the
+comparison worth keeping: on 2026-08-29 over a 275,822-candidate pool the exact
+solve was 238 s at n=150 and **did not terminate at all** at n=1000, while the
+sequential `curate seat` was 51 s at n=150 and had no objective to report.
 
 ## What a pass puts in the history, and what it puts beside it
 

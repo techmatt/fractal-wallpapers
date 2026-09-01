@@ -18,7 +18,11 @@ authors = [{ name = "Matt Fisher" }]
 dependencies = ["mpmath>=1.3"]
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "ruff>=0.6"]
+# The suite and the linter, plus SciPy for one guard: `curate rank-key`'s IRLS is
+# hand-written because `sklearn` is not in this project's dependency set, and a
+# hand-written fit has to be checked against something that was not. Nothing this
+# package ships imports SciPy any more — the MILP that did is retired.
+dev = ["pytest>=8", "ruff>=0.6", "scipy>=1.14"]
 # Training and running the judges. Kept out of the base install on purpose: a
 # clone that only wants to render fractals should not pull two gigabytes of CUDA
 # wheels, and the whole engine, the discovery walk, the supply engine and the
@@ -31,14 +35,15 @@ models = [
   "numpy>=2",
   "pillow>=11",
 ]
-# Choosing the gallery by solving for it rather than by walking a ranked list.
-# SciPy's HiGHS binding is the MILP solver `curate solve` hands its program to;
-# numpy and pillow are what reads the ledger's colours and the pixel clouds the
-# pairwise rules act on. Its own extra and not part of `models`: the solve reads
-# scores off a store and never loads a head, so a machine that solves does not
-# need the CUDA wheels, and a machine that only renders needs neither.
+# Choosing the gallery. `numpy` and `pillow` are what read the ledger's colours
+# and the pixel clouds the diversity rule acts on, and that is the whole of it —
+# there is NO SOLVER here any more. The exact MILP `curate solve` used to hand its
+# program to was measured infeasible at n=1000 against a thirty-minute bar and is
+# retired, and SciPy went with it. Its own extra and not part of `models`: the leg
+# reads scores off a store and never loads a head, so a machine that chooses a
+# gallery does not need the CUDA wheels, and a machine that only renders needs
+# neither.
 solve = [
-  "scipy>=1.14",
   "numpy>=2",
   "pillow>=11",
 ]
