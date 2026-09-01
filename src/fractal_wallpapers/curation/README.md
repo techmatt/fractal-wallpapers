@@ -729,19 +729,56 @@ makes no difference at all**: the strict reading also came back 14 of 14 modes
 represented and zero shortfall, because the loop's own prune stops it long before
 it runs out of floor seats. The guard is for the shape, not for this pool.
 
-### The prune in the swap loop is sound, not a budget
+### Two prunes in the swap loop, and both are sound
 
-A pass walks the view in rank order and **stops at the worst seated value**.
-Nothing below it can be in an improving swap: a 1-swap does not change the seat
-count so tier 1 cannot move; seating a candidate worth less than the current worst
-makes the worst that candidate, so tier 2 gets worse; and the tiers are
-lexicographic, so a tier 3 or tier 4 gain cannot buy that. It tightens on its own,
-because every swap that improves tier 2 raises where the next pass stops.
+**The first is on the walk.** A pass goes down the view in rank order and stops at
+the worst seated value. Nothing below it can be in an improving swap: a 1-swap does
+not change the seat count so tier 1 cannot move; seating a candidate worth less
+than the current worst makes the worst that candidate, so tier 2 gets worse; and
+the tiers are lexicographic, so a tier 3 or tier 4 gain cannot buy that. It
+tightens on its own, because every swap that improves tier 2 raises where the next
+pass stops.
+
+**The second is per candidate, and it is what keeps a pass cheap.** Every seat that
+could leave for a candidate is in its **counted** removal set — the four counted
+rules intersected, which is dictionary lookups — because the diversity rule can
+only ever narrow it. So a candidate worth no more than the weakest member of that
+set cannot improve tier 4 (the sum needs the arrival to beat the departure) and
+cannot improve tier 2 either (for the worst seat to rise, the seat that leaves must
+*be* the worst one, which puts the worst seat inside the set). It is decided before
+any picture is opened. `solve.Gallery.hopeless` is the predicate.
+
+Tier 3 is the exception and it is load-bearing: a low-ranked row covering a starved
+mode is exactly the swap the third tier exists for, so a candidate counting towards
+a currently-short demand is never hopeless.
+
+**Measured on the pool at n=150**, with the reduced-signature store below: the
+second prune settles **4,153** candidates without opening a picture, signatures
+fall from **4,624 to 289**, and the swap loop goes from **430.1 s to 7.0 s** for a
+**bit-identical** gallery — same seats in the same order, the same 18 swaps, the
+same tier breakdown. `tests/test_solve.py` pins the identity against an exhaustive
+neighbourhood walk, because a prune that moved the answer would be a bug wearing a
+speedup's clothes.
 
 The one heuristic is `SWAP_DROPS` (8): how many seats are *offered* for removal per
 candidate — the weakest by the leg's own key inside the set whose departure would
 admit it. It is about which removals are offered and never about which are
 accepted.
+
+### What a pass costs is one store
+
+`rules.Twins.reduced_of` keeps **one reduced signature per candidate for the life
+of the pass**, unbounded on purpose: 16 KiB a row is 139 MB over the largest view
+this project builds, and the full half-mebibyte signatures stay in the bounded
+cache underneath. Every question the bound asks reads the reduced form; the full
+one is fetched lazily and only for the candidates whose bound could not settle
+everything — 99.9% of seat comparisons are settled, so most candidates never have
+their cloud read back at all.
+
+Deriving the reduced form through the bounded cache instead is what a view larger
+than that cache cannot afford: measured before this store existed, **24,969
+signatures for an 8,704-row view — 2.9 decodes a row** — and a pass cost the same
+whether it took forty-seven swaps or none.
 
 ### What it costs, measured on this machine
 
@@ -750,12 +787,19 @@ pre-selection over 4,496 places), idle, 2026-08-31, `--no-render`:
 
 | | n=150 | n=1000 |
 |---|---|---|
-| view | 2,773 rows over 597 strata | see the report |
-| seed | 22.7 s, 150 of 150 | |
-| swap loop | 258.8 s, 22 swaps over 3 passes | |
-| **whole leg** | **289.7 s** | |
+| view | 6,515 rows over 597 strata | 8,704 over 597 |
+| seed | 22.2 s, 150 of 150 | 402.0 s, **653 of 1000** |
+| swap loop | 7.0 s, 18 swaps over 3 passes | 47 + 2 + 0 swaps over 3 |
+| signatures made | 289 | |
+| **whole leg** | **38.4 s** | |
 
-Against the retired program's **1800 s and no answer** at n=1000.
+Against the retired program's **1800 s and no answer** at n=1000. The pool cannot
+fill a thousand seats under these rules — 653 is what it holds — and the four mode
+floors that go short are on the expand hook.
+
+**The seed is now the whole cost**, which is where the next lever is: it opens a
+picture for every candidate that clears the counted rules, and that is the one
+place left where a worker pool would buy anything.
 
 ### What was retired, and why
 

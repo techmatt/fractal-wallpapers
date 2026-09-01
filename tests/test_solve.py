@@ -1655,3 +1655,102 @@ def test_the_judge_key_needs_no_flatness_and_is_never_refused_for_one() -> None:
     record = solve.solve(pool, n=2, key=solve.JUDGE_KEY, log=quiet)
     assert record["order"]["unranked"] == 0
     assert record["order"]["unranked_allowed"] is False
+
+
+# --------------------------------------------------------------------------- #
+# The second prune: settled by arithmetic, before any picture is opened.
+# --------------------------------------------------------------------------- #
+def test_a_candidate_below_its_own_weakest_removable_seat_is_hopeless():
+    """Sound tier by tier: tier 1 cannot move on a 1-swap; tier 4 needs the arriving
+    candidate to beat the seat that leaves, and every seat that could leave is in
+    the counted set; and tier 2 can only rise if the seat that leaves IS the worst
+    one, which puts the worst seat inside that set too."""
+    rows = [candidate("strong", score=0.9), candidate("fair", score=0.8)]
+    gallery = seated_by_hand(rows, n=2, keep=["strong", "fair"])
+    counted = set(gallery.state.seated)
+    assert gallery.hopeless(candidate("weak", score=0.1), counted, []) is True
+    assert gallery.hopeless(candidate("better", score=0.85), counted, []) is False
+    assert gallery.hopeless(candidate("tied", score=0.8), counted, []) is True, "strict"
+
+
+def test_a_candidate_covering_a_short_demand_is_never_hopeless():
+    """Tier 3 is the exception and it is load-bearing: a low-ranked row covering a
+    starved mode is exactly the swap the third tier exists for."""
+    rows = [candidate("strong", score=0.9), candidate("fair", score=0.8)]
+    gallery = seated_by_hand(rows, n=2, keep=["strong", "fair"], floors={"itinerary": 1})
+    counted = set(gallery.state.seated)
+    starved = gallery.short_demands()
+    assert [demand.of for demand in starved] == ["itinerary"]
+    weak = candidate("weak", score=0.01, mode="itinerary")
+    assert gallery.hopeless(weak, counted, starved) is False
+    assert gallery.hopeless(candidate("weak_smooth", score=0.01), counted, starved) is True
+
+
+def test_the_prune_settles_candidates_without_opening_a_picture():
+    """The point of it: a hopeless candidate must not cost a pixel-cloud signature.
+
+    It has to clear the FIRST prune to exercise the second, so the arriving row is
+    worth more than the worst seat and is still hopeless — its place is taken by a
+    seat worth more than it is, and that seat is the only one that could leave.
+    """
+    clouds = Signatures({"a": 0.0, "b": 0.4, "c": 0.8, "x": 1.2})
+    state = rules.State(ceiling.Rule(), 3, diversity=rules.Twins(clouds))
+    state.rule.group_cap = 100
+    gallery = solve.Gallery(state, None, [])
+    for key, score, place in (("a", 0.9, "one"), ("b", 0.5, "two"), ("c", 0.2, "three")):
+        gallery.seat(candidate(key, score=score, location=place), "general_pool")
+    arriving = candidate("x", score=0.6, location="one")
+    assert gallery.state.counted_removals(arriving) == {"a"}, "its place is taken"
+    before = clouds.made
+    report = solve.improve(gallery, [arriving], log=quiet)
+    assert report["swaps"] == 0
+    assert report["settled_before_opening_a_picture"] == 1
+    assert clouds.made == before, "hopeless, so no picture was opened for it"
+
+
+def test_the_prune_does_not_change_the_answer():
+    """The guard that matters. A prune that moved the gallery would be a bug wearing
+    a speedup's clothes, so the improved loop has to land on the objective an
+    exhaustive neighbourhood search lands on."""
+    rows = [candidate(f"c{at:02d}", score=0.9 - at / 100) for at in range(12)]
+    rows += [candidate("weak", score=0.05)]
+    ordered = sorted(rows, key=solve.ranking(None))
+    gallery = seated_by_hand(rows, n=4, keep=["weak", "c05", "c06", "c07"])
+    solve.improve(gallery, ordered, log=quiet)
+    fast = gallery.objective.record()
+
+    # The same neighbourhood, walked without either prune.
+    slow = seated_by_hand(rows, n=4, keep=["weak", "c05", "c06", "c07"])
+    moved = True
+    while moved:
+        moved = False
+        current = slow.objective
+        for arriving in ordered:
+            if slow.state.holds(arriving.key):
+                continue
+            for out_key in list(slow.state.seated):
+                found = slow.after_swap(out_key, arriving)
+                if found.beats(current):
+                    slow.unseat(out_key)
+                    slow.seat(arriving, "swap")
+                    moved = True
+                    break
+            if moved:
+                break
+    assert fast == slow.objective.record()
+
+
+def test_the_guards_are_the_protected_set_turned_inside_out():
+    """Same answer, asked once per seat instead of once per row of the view."""
+    rows = [
+        candidate("stripe", score=0.5, mode="stripe"),
+        candidate("smooth", score=0.9),
+    ]
+    gallery = seated_by_hand(rows, n=2, keep=["stripe", "smooth"], floors={"stripe": 1})
+    guards = gallery.guards()
+    assert set(guards) == gallery.protected()
+    assert [demand.of for demand in guards["stripe"]] == ["stripe"]
+    arriving = candidate("stripe_better", score=0.99, mode="stripe")
+    assert gallery.weakest(set(gallery.state.seated), 8, arriving, guards) == ["stripe", "smooth"]
+    other = candidate("smooth_better", score=0.99)
+    assert gallery.weakest(set(gallery.state.seated), 8, other, guards) == ["smooth"]
