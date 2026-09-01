@@ -753,12 +753,13 @@ mode is exactly the swap the third tier exists for, so a candidate counting towa
 a currently-short demand is never hopeless.
 
 **Measured on the pool at n=150**, with the reduced-signature store below: the
-second prune settles **4,153** candidates without opening a picture, signatures
-fall from **4,624 to 289**, and the swap loop goes from **430.1 s to 7.0 s** for a
-**bit-identical** gallery — same seats in the same order, the same 18 swaps, the
-same tier breakdown. `tests/test_solve.py` pins the identity against an exhaustive
-neighbourhood walk, because a prune that moved the answer would be a bug wearing a
-speedup's clothes.
+second prune settles **4,153** candidates without opening a picture and signatures
+fall from **4,624 to 289** — counts off the record's own counters, which is what to
+read, because this machine is usually shared and the wall times are upper bounds
+under unknown load. The gallery is **bit-identical** either way: same seats in the
+same order, the same 18 swaps, the same tier breakdown. `tests/test_solve.py` pins
+that against an exhaustive neighbourhood walk, because a prune that moved the
+answer would be a bug wearing a speedup's clothes.
 
 The one heuristic is `SWAP_DROPS` (8): how many seats are *offered* for removal per
 candidate — the weakest by the leg's own key inside the set whose departure would
@@ -788,10 +789,14 @@ pre-selection over 4,496 places), idle, 2026-08-31, `--no-render`:
 | | n=150 | n=1000 |
 |---|---|---|
 | view | 6,515 rows over 597 strata | 8,704 over 597 |
-| seed | 22.2 s, 150 of 150 | 402.0 s, **653 of 1000** |
-| swap loop | 7.0 s, 18 swaps over 3 passes | 47 + 2 + 0 swaps over 3 |
-| signatures made | 289 | |
-| **whole leg** | **38.4 s** | |
+| seats | 150 of 150 | **653 of 1000** |
+| **signatures decoded** | **289** (was 4,624) | **19,113** (was 24,969) |
+| swaps | 18 over 3 passes | 49 over 3 passes |
+| whole leg, on a *shared* machine | 38.4 s (was 461.1 s) | 2,030.8 s (was 2,743.4 s) |
+
+The seconds are upper bounds — this machine is usually running something else — so
+the **decode counts** are the figure to compare; they are off each record's own
+counters and they predict the walls at both sizes.
 
 Against the retired program's **1800 s and no answer** at n=1000. The pool cannot
 fill a thousand seats under these rules — 653 is what it holds — and the four mode
