@@ -306,9 +306,20 @@ src/fractal_wallpapers/curation/candidate_ledger.py   the store, the backfill, t
 artifacts/curation/candidate_ledger/rows.jsonl        one row per recipe
 artifacts/curation/candidate_ledger/scores.jsonl      ...and its scores
 artifacts/curation/candidate_ledger/flatness.jsonl    ...and its dead-space column
+artifacts/curation/candidate_ledger/reduced_signatures.jsonl   ...and its twin signatures
 data/curation/candidate_ledger/*.manifest.json        what the history keeps of the three
 <archive>/curation_backup/candidate_ledger/*.jsonl    the durable copies
 ```
+
+**Three of the four are mirrored and one is not**, and that is the rule rather than
+an oversight: `merge` copies `rows`, `scores` and `flatness` to the archive and
+verifies each identical, and the signature sidecar is **regenerable from the pictures**
+so it takes the same treatment as the score amendment — no durable copy, no manifest.
+Worth knowing anyway, because the sidecar it omits is the one the **binding**
+constraint reads: the n=2000 solve of 2026-09-01 served **9,371 of 9,388** signatures
+from it. Re-deriving all 11,636 rows is about **2.8 minutes** at `DIRECTIONS = 256`,
+against ~19 at the 1024 it used before that constant moved — so this is an annoyance
+now and was close to an outage before.
 
 ```
 fractal-wallpapers curate candidate-ledger backfill   # from what already exists
@@ -2717,6 +2728,42 @@ added only 9 to the view (4,750 -> 4,759) — the `mode_floor` wins were at plac
 held. What refuses these two is `below_its_mode_bar` and then `one_per_location`, at 2-3x what
 twin refuses; that is the opposite of the gallery-wide ranking and it is a supply problem.
 
+### A GENERAL leg cannot close a floor, and the reason is the roster
+
+Measured by `general20`, 2026-09-01: twenty minutes unaimed and unconditioned, the
+module's own neutral shares (near 0.25 / ranked 0.50 / flat 0.25), default width 40,
+seed 20260902, three engines, **0.5461 s a candidate**. 6,557 candidates over 208
+location blocks bought **55 new places** and moved the n=2000 gallery **885 -> 896
+seats**, with the shortfall **unchanged at 200 and not one of the nine short modes
+moving by a single seat**.
+
+That is not bad luck, it is arithmetic on the roster. `depth.field_modes()` is the
+**shareable** modes [`colorize.shareable`] accepts, and **every one of the nine modes
+short at n=2000 fails that test** — five composites, three direct traps and one
+modulate. The five it does draw are all at zero shortfall already. So the roster a
+general leg draws and the set of modes carrying a deficit are **disjoint**, and no
+amount of general mining moves the second one.
+
+A general leg is therefore a way to buy **places**, which is what the twin rule
+consumes; it is not a way to buy **floors**. Floors need `--modes` naming non-field
+modes, which is the 1.9-7.4 s/candidate régime rather than this one's 0.55. Both are
+worth running and they are not substitutes.
+
+Two things this leg also measured, both against `empty_modes` above. **The head's
+rank buys far less on field modes**: `ranked_bands` beat its `flat` control **1.07x**
+here against 1.5-2.2x on the composites, so the ranked arm's premium is a fact about
+dear modes rather than about the rank. And the arms rank the other way round —
+`near_band` cleared **90.2%** of its locations at **5.8 s a win** against
+`ranked_bands` 45.8% / 16.7 s and `flat` 42.9% / 19.8 s, because a near-band place is
+by construction one already sitting between the bars. Per-candidate clear rates were
+`smooth` 11.08%, `exp_smoothing` 6.35%, `stripe` 5.73%, `tia` 3.61% and **`curvature`
+0.51%** — 983 candidates for 5 clearing rows, which is the arm to question next.
+
+**Draw the autopsy sheet BEFORE merging.** `depth merge` prunes at retention K=3 and
+deletes the losers' pictures: it took 4,608 of `general20`'s 6,557 candidate JPEGs,
+which is the whole bottom of the score ordering. A reject autopsy taken afterwards is
+an autopsy of the survivors and cannot be anything else.
+
 **The `mode_floor` arm escapes the roster, by design.** `deficient_modes` iterates
 `mine._accepted_modes()` — all fourteen — and `plan_floor` never intersects its
 modes with `roster`; `test_the_floor_draw_holds_the_place_and_moves_the_mode` pins
@@ -3349,6 +3396,7 @@ that leg's contention: three engines cost about 1.6–1.8x per candidate over on
 | 0.692 | 5 accepted **field** modes | 3 | 40 | 09-01 | 1,400 cand / 35 whole visits | `audit_field40` |
 | 1.883 | 3 accepted **direct traps** | 3 | 40 | 09-01 | 1,440 cand / 36 whole visits | `audit_direct40` |
 | 7.360 | 5 **composites** + `itinerary` | 3 | 40 | 09-01 | 328 cand / 7 whole visits | `audit_comp40` |
+| 0.5461 | 5 accepted **field** modes, all three arms | 3 | 40 | 09-01 | 6,557 cand / 208 blocks | `general20` |
 
 **The three 09-01 rows are one matched pilot** — `ranked_bands` at share 1.0, seed
 20260901, the never-opened drawable pool banded across the whole rank range, nothing
