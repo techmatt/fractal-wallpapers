@@ -341,3 +341,68 @@ def test_of_block_carries_the_names_and_does_not_re_derive_them():
     assert reading.cells == ("dark_muted_rose",), "the stored name, not the largest share"
     assert reading.families == ("rose",)
     assert reading.carries("dark_muted_rose") and not reading.carries("dark_vivid_green")
+
+
+# --------------------------------------------------------------------------- #
+# The themed cap: twice the even share across the groups that can field it.
+# --------------------------------------------------------------------------- #
+class Row:
+    """The two fields [`ceiling.capable_groups`] reads off a candidate."""
+
+    def __init__(self, group, location):
+        self.group = group
+        self.location = location
+
+
+def pool_of(sizes: dict) -> list:
+    """`{group: how many distinct places it fields}` as rows, plus a repeat.
+
+    Each group gets one extra row at a place it already holds, so a test that
+    counted rows instead of places would read every size one too high.
+    """
+    rows = []
+    for group, count in sizes.items():
+        rows += [Row(group, f"{group}-{at}") for at in range(count)]
+        rows.append(Row(group, f"{group}-0"))
+    return rows
+
+
+def test_the_themed_cap_is_twice_the_even_share_across_the_capable_groups():
+    assert ceiling.themed_group_cap(150, 29) == 11  # ceil(300 / 29)
+    assert ceiling.themed_group_cap(200, 50) == 8
+    assert ceiling.themed_group_cap(50, 65) == 2
+
+
+def test_the_themed_cap_never_reaches_zero_and_never_binds_on_an_incapable_pool():
+    """A cap of zero is a program with no seats in it. And a pool where no group
+    reaches the floor gets a cap above `n`, which cannot bind — the honest answer,
+    because nothing there can take more than two seats by supply anyway and a
+    tighter cap would enforce what one-per-location already does."""
+    assert ceiling.themed_group_cap(10, 1000) == 1
+    assert ceiling.themed_group_cap(0, 29) == 1
+    assert ceiling.themed_group_cap(150, 0) == 300 > 150
+
+
+def test_P_counts_distinct_places_and_never_rows():
+    """One wallpaper per location is absolute, so a group with fifty rows at one
+    place can take exactly one seat and its capacity is one."""
+    capable = ceiling.capable_groups(pool_of({"deep": 5, "flat": 3}), places=3)
+    assert capable == {"deep": 5, "flat": 3}
+
+
+def test_a_group_under_the_floor_is_not_in_the_denominator():
+    """P is a denominator: a group that can never take more than one seat prices a
+    capacity that does not exist and tightens the cap on the groups doing the
+    work."""
+    pool = pool_of({"deep": 9, "two": 2, "one": 1})
+    assert set(ceiling.capable_groups(pool)) == {"deep"}
+    assert set(ceiling.capable_groups(pool, places=1)) == {"deep", "two", "one"}
+    assert ceiling.THEMED_CAP_PLACES == 3
+
+
+def test_the_themed_cap_is_not_a_rule_a_caller_may_name():
+    """It needs a number no flag carries — how many groups the pool holds — so it
+    is spelled for the record and kept out of the two `--group-cap` accepts."""
+    assert ceiling.THEMED not in ceiling.GROUP_CAP_RULES
+    with pytest.raises(ValueError, match="group cap rule"):
+        ceiling.group_cap(150, ceiling.THEMED)

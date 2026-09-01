@@ -1143,9 +1143,9 @@ is **admitted and counted** rather than refused, the ruling `distinct.preselect`
 already made for this store, and it is safe here only because one-per-location
 sits above it so an unembedded place still takes at most one seat.
 
-### `--themed <cell>` is the whole themed leg, and it is three things at once
+### `--themed <cell>` is the whole themed leg, and it is four things at once
 
-Per `solver_design` §Themed, and they are one decision rather than three flags:
+Per `solver_design` §Themed, and they are one decision rather than four flags:
 
 * the **pool** is the rows dominant in the cell — the row's own `colour.cells`
   block and never the carrier table, which is a prior about supply rather than a
@@ -1155,6 +1155,9 @@ Per `solver_design` §Themed, and they are one decision rather than three flags:
   bars against 1,209 at the crossing, `dark_vivid_lime` 266 against 457. At the
   per-mode bars a themed gallery has no pool;
 * the **diversity rule** is `rules.Places` rather than the twin test;
+* the **palette-group cap** is `ceiling.themed_group_cap` — `ceil(2n/P)`, twice
+  the even share across the `P` groups that can field the theme, `P` measured off
+  this pool at solve time. `--themed-cap` names a number instead;
 * `--target <cell>=1.0` and `--flat-floor`, which the flag sets as **defaults**
   and not as overrides — a themed pass naming its own target or its own floor
   keeps it. Without the target the cell allowance is `floor(K x (1/48) x n) + 1`
@@ -1163,6 +1166,34 @@ Per `solver_design` §Themed, and they are one decision rather than three flags:
 Rows outside the cell are recorded `not_dominant_in_the_theme`, which is pool
 construction and sits beside `below_its_mode_bar` rather than among the rules:
 the row was not refused a seat, it was never eligible for one.
+
+**Why a themed pass needs its own cap, and what P counts.** The main gallery's
+`max(1, floor(0.025 n))` is a share of `n` alone. Over a pool holding a few dozen
+maps rather than hundreds that is the **binding** rule at every size a themed
+gallery would ship at — measured 2026-09-01, `dark_vivid_lime` seated 38 of 50,
+90 of 150 and 124 of 200 with the cap refusing 300-435 rows against the diversity
+rule's 1-27, and `sum_g min(cap, places g fields)` predicted the whole column.
+Matt's ruling is `ceil(2n/P)`: twice the even share, so a good map may take twice
+its share and no map may take a gallery.
+
+`P` is **groups fielding three or more distinct PLACES** in the pool
+(`ceiling.THEMED_CAP_PLACES`). Places and not rows, because one wallpaper per
+location is absolute. The floor is there because `P` is a **denominator**: a group
+holding one fluke place can never take more than one seat however high the cap
+goes, so counting it prices a capacity that does not exist and tightens the cap on
+the groups doing the work. Measured either way on 2026-09-01: lime 39 groups of
+which 29 clear the floor, green 65 of which 50. **Nothing is dropped from the
+pool** — a sub-floor group still seats, it is only out of the denominator — and
+the capacity it is out of the denominator on behalf of is 13 places (lime) and 17
+(green), the places no group over the floor reaches at all. So the floor moves
+`P` by about a quarter, loosening the cap ~30%, in exchange for pricing at most
+13 or 17 seats.
+
+The cap is computed **after** the bar and the pre-selection, over exactly the rows
+the leg may seat — which is why `solve` sets `rule.group_cap` there rather than
+with the other constants. `ceiling.THEMED` is the rule's name on the record and is
+deliberately **not** in `GROUP_CAP_RULES`: it is not a rule a caller names, it is
+the rule a themed pass has, and it needs a number no flag carries.
 
 ### The q4 bar is a statistic on the record, and the bars are the pool
 

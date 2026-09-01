@@ -123,6 +123,41 @@ IDENTITY = "identity"
 PROPORTIONAL = "proportional"
 GROUP_CAP_RULES = (IDENTITY, PROPORTIONAL)
 
+#: The **themed** cap's rule name. Not in [`GROUP_CAP_RULES`] on purpose: it is
+#: not a rule a caller names, it is the rule a themed pass *has*, and it needs a
+#: number no CLI flag carries — how many palette groups the themed pool holds. A
+#: record still has to say which cap ran, so it is spelled here with the others.
+THEMED = "themed"
+
+#: How many seats the themed cap gives one group as a multiple of the even share.
+#:
+#: **Two**, Matt's ruling. `ceil(SHARE * n / P)`: the even share of `n` seats
+#: across the `P` groups that can field the theme, doubled, so a good map may take
+#: twice its share and no map may take a gallery. The main gallery's
+#: [`GROUP_CAP_RATE`] is untouched and is a share of `n` rather than of the pool —
+#: which is exactly why it is the wrong cap for a theme. A themed pool has a few
+#: dozen groups in it against the whole pool's hundreds, so a cap denominated in
+#: `n` alone refuses the theme long before the theme runs out: `dark_vivid_lime`
+#: measured 38 of 50 seats, 90 of 150 and 124 of 200 under it on 2026-09-01, with
+#: the cap refusing 300-435 rows against the diversity rule's 1-27.
+THEMED_CAP_SHARE = 2
+
+#: How many distinct **places** a palette group has to field in the themed pool
+#: before it counts towards `P`.
+#:
+#: **Three.** `P` is a denominator, so every group counted loosens nothing and
+#: tightens the cap on the groups actually doing the work; a group holding one
+#: fluke place can never take more than one seat however high the cap goes, and
+#: counting it prices a capacity that does not exist. Measured on 2026-09-01:
+#: `dark_vivid_lime` 39 groups of which 29 field three or more, and the ten it
+#: drops hold 13 of the pool's 424 places; `dark_vivid_green` 65 of which 50, the
+#: fifteen dropped holding 20 of 1,097. So the floor moves `P` by a quarter while
+#: giving up under 3% of the places, which is the whole argument for it.
+#:
+#: **Places and never rows**, because one wallpaper per location is absolute: a
+#: group with fifty rows at one place can take exactly one seat.
+THEMED_CAP_PLACES = 3
+
 
 def group_cap(n: int, rule: str = IDENTITY) -> int:
     """How many seats one palette group may take out of `n`, under `rule`.
@@ -140,6 +175,36 @@ def group_cap(n: int, rule: str = IDENTITY) -> int:
     if str(rule) != PROPORTIONAL:
         raise ValueError(f"the group cap rule is one of {GROUP_CAP_RULES}, not {rule!r}")
     return max(1, int(math.floor(GROUP_CAP_RATE * max(0, int(n)))))
+
+
+def capable_groups(candidates, places: int = THEMED_CAP_PLACES) -> dict:
+    """`{group: how many distinct places it fields}`, for the groups over the floor.
+
+    The denominator of [`themed_group_cap`], and it counts **places** — one
+    wallpaper per location is absolute, so a group's capacity is the places it can
+    field and never the rows it holds. `places` is the floor a group has to reach
+    before it counts; see [`THEMED_CAP_PLACES`].
+    """
+    held: dict = {}
+    for candidate in candidates:
+        held.setdefault(str(candidate.group), set()).add(str(candidate.location))
+    return {group: len(where) for group, where in sorted(held.items()) if len(where) >= int(places)}
+
+
+def themed_group_cap(n: int, groups: int) -> int:
+    """`ceil(THEMED_CAP_SHARE * n / P)` — the themed cap. **Never below one.**
+
+    `groups` is `P`, the count [`capable_groups`] returns. The denominator floors
+    at one, so a pool where **no** group reaches [`THEMED_CAP_PLACES`] gets
+    `SHARE * n` — above `n`, so it cannot bind, which is the honest answer rather
+    than a fallback: in a pool like that no group can take more than two seats by
+    supply, and a cap tighter than the main gallery's would be throwing seats away
+    to enforce something one-per-location already enforces.
+
+    The `max(1, ...)` on the result is the same argument [`group_cap`] makes: a
+    cap of zero is a program with no seats in it.
+    """
+    return max(1, int(math.ceil(THEMED_CAP_SHARE * max(0, int(n)) / max(1, int(groups)))))
 
 
 #: How far apart two pictures of one palette group have to be for the second to
@@ -367,8 +432,13 @@ __all__ = [
     "GROUP_CAP_RATE",
     "GROUP_CAP_RULES",
     "IDENTITY",
+    "THEMED",
+    "THEMED_CAP_PLACES",
+    "THEMED_CAP_SHARE",
     "K",
     "PROPORTIONAL",
+    "capable_groups",
+    "themed_group_cap",
     "TAU",
     "TAU_GROUP",
     "TWINS",

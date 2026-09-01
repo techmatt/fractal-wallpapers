@@ -1243,6 +1243,7 @@ def solve(
     allow_unranked: bool = False,
     theme: str | None = None,
     geometry_radius: float | None = None,
+    themed_cap: int | None = None,
     rows_per_seat: int = view.ROWS_PER_SEAT,
     draw_seed: int = view.DRAW_SEED,
     swap: bool = True,
@@ -1284,9 +1285,16 @@ def solve(
     * the diversity rule is [`rules.Places`] at `geometry_radius` instead of the
       pixel-cloud twin test, because a single-cell pool is a near-duplicate pool
       under a metric over colour and the twin test would be refusing the theme;
-    * nothing else. The caller still owns the target, the floor rule and the group
-      cap, and a themed pass without `--target <cell>=1.0` is a pass the cell
-      allowance refuses at nine seats — see [`ceiling.Rule.allowed`].
+    * the palette-group cap is [`ceiling.themed_group_cap`], `ceil(2n/P)` over the
+      `P` groups the themed pool can actually field the theme with, measured off
+      that pool at solve time. The main gallery's `max(1, floor(0.025 n))` is a
+      share of `n` alone, and over a pool holding a few dozen maps rather than
+      hundreds it was the **binding** rule at every shipping size — 90 of 150
+      lime seats, with the cap refusing 360 rows against the diversity rule's 12.
+      `themed_cap` names a number instead;
+    * nothing else. The caller still owns the target and the floor rule, and a
+      themed pass without `--target <cell>=1.0` is a pass the cell allowance
+      refuses at nine seats — see [`ceiling.Rule.allowed`].
 
     Rows outside the cell are recorded [`OFF_THEME`], which is pool construction
     and not a refusal, so the rejection ledger stays a partition of the ledger.
@@ -1344,10 +1352,8 @@ def solve(
     # would be a mandate nothing could meet and an `unmet` row that is a policy
     # decision wearing the shape of a shortfall.
     modes = mode_policy.accepted()
-    cap = ceiling.group_cap(n, group_cap)
     if rule is None:
         rule = rule_for(targets)
-    rule.group_cap = cap
     natural = mode_policy.seat_floors(n)
     asked = natural if floor is None else floor
     held_floors = floors_for(asked, modes)
@@ -1389,6 +1395,33 @@ def solve(
             )
     rank = ranking(order)
     unranked = 0 if order is None else sum(1 for c in kept if c.key not in order)
+
+    # The cap is set HERE and not with the other constants above, because a themed
+    # pass's cap has a denominator it reads off the pool: `P` is measured after
+    # the bar and the pre-selection, over exactly the rows the leg may seat.
+    # Nothing between there and here asks the rule for a cap.
+    cap_rule = str(group_cap)
+    capable: dict = {}
+    if theme is None:
+        cap = ceiling.group_cap(n, group_cap)
+    else:
+        capable = ceiling.capable_groups(kept)
+        cap_rule = ceiling.THEMED
+        cap = (
+            ceiling.themed_group_cap(n, len(capable))
+            if themed_cap is None
+            else max(1, int(themed_cap))
+        )
+        log(
+            f"[solve] themed group cap {cap}: "
+            + (
+                f"ceil({ceiling.THEMED_CAP_SHARE} x {n} / P) over P={len(capable)} group(s) "
+                f"fielding {ceiling.THEMED_CAP_PLACES}+ places"
+                if themed_cap is None
+                else "named by the caller"
+            )
+        )
+    rule.group_cap = cap
 
     viewed = view.stratify(
         kept,
@@ -1482,7 +1515,7 @@ def solve(
         "schema": SCHEMA,
         "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "config": _config(
-            n, rule, modes, table, flat, held_floors, natural, group_cap, order, key, theme
+            n, rule, modes, table, flat, held_floors, natural, cap_rule, order, key, theme
         ),
         "objective": {
             "of": OBJECTIVE,
@@ -1517,6 +1550,20 @@ def solve(
             "diversity": "geometry-only distinctness over the neutral descriptors. The "
             "pixel-cloud twin test is over a picture's COLOUR cloud, so a single-cell pool "
             "is a near-duplicate pool under exactly it",
+            "group_cap": cap,
+            "group_cap_is": f"ceil({ceiling.THEMED_CAP_SHARE} x n / P), twice the even "
+            "share across the palette groups that can field the theme"
+            if themed_cap is None
+            else "named by the caller, overriding ceiling.themed_group_cap",
+            "P": len(capable),
+            "P_is": f"palette groups fielding {ceiling.THEMED_CAP_PLACES} or more distinct "
+            "PLACES in this pool. Places and not rows, because one wallpaper per location "
+            "is absolute; and a floor, because a group holding one fluke place can never "
+            "take more than one seat however high the cap goes, so counting it would price "
+            "a capacity that does not exist and tighten the cap on the groups doing the work",
+            "P_places": ceiling.THEMED_CAP_PLACES,
+            "groups_in_the_pool": len({candidate.group for candidate in kept}),
+            "capable_groups": capable,
         },
         "order": {
             "key": JUDGE_KEY if order is None else "rank_key",
@@ -1608,9 +1655,11 @@ def _config(
             "allowance": "floor(k * t * n) + 1",
             "group_cap": rule.group_cap,
             "group_cap_rule": str(group_cap),
-            "group_cap_from": "ceiling.GROUP_CAP"
-            if str(group_cap) == ceiling.IDENTITY
-            else f"max(1, floor({ceiling.GROUP_CAP_RATE} * n))",
+            "group_cap_from": {
+                ceiling.IDENTITY: "ceiling.GROUP_CAP",
+                ceiling.THEMED: f"ceiling.themed_group_cap: ceil({ceiling.THEMED_CAP_SHARE}"
+                " * n / P), P measured off this pool — see the `theme` block",
+            }.get(str(group_cap), f"max(1, floor({ceiling.GROUP_CAP_RATE} * n))"),
             "targets": dict(sorted(rule.targets.items())),
             "target_rule": target_rule(),
         },
