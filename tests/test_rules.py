@@ -248,3 +248,52 @@ def test_everything_inside_the_threshold_refuses_and_the_threshold_has_one_name(
     assert state.refuses(candidate("b")) == "twin"
     assert state.diversity.tau == ceiling.TAU
     assert state.record()["diversity"]["threshold"] == ceiling.TAU
+
+
+# --------------------------------------------------------------------------- #
+# What a pass costs, which is a rule about this machine as much as the gallery.
+# --------------------------------------------------------------------------- #
+def test_a_reduced_signature_is_made_once_and_kept_for_the_whole_pass():
+    """THE COST OF A PASS. Deriving the reduced form from the full one through a
+    bounded cache means a view larger than that cache re-decodes the same pictures
+    on every pass — measured at 24,969 signatures for an 8,704-row view, 2.9 a
+    row, and it made a pass that found nothing cost what a pass that found
+    everything cost."""
+    clouds = Signatures({"a": 0.0, "b": 0.5})
+    held = rules.Twins(clouds)
+    for _ in range(20):
+        held.within("b")
+    assert clouds.made == 1, "one decode, however many times it is asked"
+    assert held.reduced_made == 1
+    assert held.reduced_hits == 19
+    assert len(held._mine) == 1
+
+
+def test_the_full_signature_is_fetched_only_when_the_bound_cannot_settle():
+    """99.9% of seat comparisons are settled by the bound, and a candidate whose
+    bound settles every one of them never needs its own half-mebibyte cloud."""
+    far = rules.Twins(Signatures({"seated": 0.0, "far": ceiling.TAU * 4}))
+    far.hold("seated")
+    assert far.within("far") == []
+    assert far.full_signatures_fetched == 0, "settled, so nothing was read back"
+
+    near = rules.Twins(Signatures({"seated": 0.0, "near": ceiling.TAU / 2}))
+    near.hold("seated")
+    assert [key for _gap, key in near.within("near")] == ["seated"]
+    assert near.full_signatures_fetched == 1
+
+
+def test_the_counted_removals_open_nothing_and_are_a_superset_of_the_real_ones():
+    """The whole basis of the swap loop's second prune: the diversity rule can only
+    ever narrow the counted set, so a decision taken on the counted set alone is
+    sound for the real one."""
+    clouds = Signatures({"a": 0.0, "b": ceiling.TAU / 2, "c": 0.9})
+    state = rules.State(ceiling.Rule(), 20, diversity=rules.Twins(clouds))
+    state.rule.group_cap = 100
+    state.seat(candidate("a"), "general_pool")
+    before = clouds.made
+    counted = state.counted_removals(candidate("b"))
+    assert counted == {"a"}
+    assert clouds.made == before, "no picture was opened"
+    assert state.narrowed(candidate("b"), counted) <= counted
+    assert state.narrowed(candidate("c"), state.counted_removals(candidate("c"))) == {"a"}

@@ -235,15 +235,54 @@ class Twins:
         self._stack = None
         self._live: list = []
         self._at: dict = {}
+        #: `{key: its reduced signature}`, made once and kept for the life of the
+        #: pass. **This is the one store that decides what a pass costs.** See
+        #: [`reduced_of`].
+        self._mine: dict = {}
         self.tested = 0
         self.settled_by_the_bound = 0
         self.measured = 0
         self.without_a_picture = 0
+        self.reduced_made = 0
+        self.reduced_hits = 0
+        self.full_signatures_fetched = 0
 
     @property
     def held(self) -> list:
         """Every seated key the rule is currently holding, in the order held."""
         return [key for key in self.keys if key is not None]
+
+    def reduced_of(self, key: str):
+        """One candidate's reduced signature, made **once** and kept. `None` if
+        the picture cannot be read.
+
+        The whole cost of a pass lives here. Every question the bound asks reads
+        the reduced form — sixteen kibibytes — and the full half-mebibyte one is
+        needed only for the fraction of a percent of pairs the bound cannot
+        settle. Deriving the reduced form from the full one through a bounded
+        cache means a view larger than that cache re-decodes the same pictures on
+        every pass, so a pass that finds nothing costs what a pass that finds
+        everything costs. Measured before this store existed: **24,969 signatures
+        made for an 8,704-row view, 2.9 decodes a row**, and the swap loop at
+        n=1000 was 2,338 s of which ~2,392 s was decoding.
+
+        Unbounded on purpose, and small enough to be: 16 KiB a row is 139 MB over
+        the largest view this project builds. The **full** signatures stay in the
+        bounded cache underneath, because those are half a mebibyte each.
+        """
+        name = str(key)
+        held = self._mine.get(name)
+        if held is not None:
+            self.reduced_hits += 1
+            return held
+        import numpy
+
+        made = self.clouds.of(name)
+        if made is None:
+            return None
+        self.reduced_made += 1
+        self._mine[name] = numpy.asarray(reduce_signature(made).reshape(-1))
+        return self._mine[name]
 
     def within(self, key: str) -> list | dict:
         """`[(distance, seated key)]` inside [`tau`], closest first.
@@ -256,8 +295,8 @@ class Twins:
 
         from fractal_wallpapers.palettes import pixel_clouds
 
-        made = self.clouds.of(str(key))
-        if made is None:
+        mine = self.reduced_of(key)
+        if mine is None:
             self.without_a_picture += 1
             return {"unreadable": True, "why": "the candidate's picture is not on disk"}
         if self._stack is None:
@@ -268,10 +307,20 @@ class Twins:
         if self._stack is None:
             return []
         self.tested += 1
-        mine = reduce_signature(made).reshape(-1)
         lower = numpy.abs(self._stack - mine).sum(axis=1, dtype=numpy.float64) / bound_width()
         close = [self._live[int(at)] for at in numpy.nonzero(lower < self.tau)[0]]
         self.settled_by_the_bound += len(self._live) - len(close)
+        if not close:
+            # The ordinary case by a long way, and the reason the full signature is
+            # fetched lazily: 99.9% of seat comparisons are settled here, and a
+            # candidate whose bound settles every one of them never needs its own
+            # half-mebibyte cloud read back.
+            return []
+        made = self.clouds.of(str(key))
+        if made is None:  # pragma: no cover - the picture vanished mid-pass
+            self.without_a_picture += 1
+            return {"unreadable": True, "why": "the candidate's picture is not on disk"}
+        self.full_signatures_fetched += 1
         near = []
         for at in close:
             self.measured += 1
@@ -283,15 +332,13 @@ class Twins:
 
     def hold(self, key: str) -> bool:
         """Keep one seated picture's signature, in both forms. `False` if it has none."""
-        import numpy
-
-        made = self.clouds.of(str(key))
-        if made is None:
+        mine = self.reduced_of(key)
+        if mine is None:
             return False
         self.clouds.hold(str(key))
         self._at[str(key)] = len(self.keys)
         self.keys.append(str(key))
-        self._reduced.append(numpy.asarray(reduce_signature(made).reshape(-1)))
+        self._reduced.append(mine)
         self._stack = None
         return True
 
@@ -317,6 +364,13 @@ class Twins:
             "candidates_tested": self.tested,
             "seat_comparisons_settled_by_the_bound": self.settled_by_the_bound,
             "seat_comparisons_measured": self.measured,
+            "reduced_signatures_kept": len(self._mine),
+            "reduced_signatures_made": self.reduced_made,
+            "reduced_signature_hits": self.reduced_hits,
+            "full_signatures_fetched": self.full_signatures_fetched,
+            "reduced_store_is": "one reduced signature a candidate, kept for the life of the "
+            "pass. It is what stops a view larger than the bounded cache re-decoding the "
+            "same pictures on every pass — see rules.Twins.reduced_of",
             "signatures_made": self.clouds.made,
             "signature_cache_hits": self.clouds.hits,
             "refused_without_a_picture_on_disk": self.without_a_picture,
@@ -504,6 +558,34 @@ class State:
             wanted.extend({key} for _gap, key in near)
         return wanted
 
+    def counted_removals(self, candidate) -> set:
+        """Which single seat could leave under the four **counted** rules alone.
+
+        Free — dictionary lookups over the seated set, and no picture opened. It
+        is a **superset** of [`removals`], because the diversity rule can only ever
+        narrow it, and that is what makes it useful: a caller can decide a
+        candidate is not worth a pixel-cloud signature from this alone.
+        """
+        return _intersect(self.counted_requirements(candidate), self.seated)
+
+    def narrowed(self, candidate, counted: set) -> set | None:
+        """[`counted_removals`] narrowed by the diversity rule. **Opens a picture.**
+
+        Split out so the caller decides when to pay. `None` is
+        [`requirements`]'s `None`: no departure could admit this candidate.
+        """
+        if not counted or self.diversity is None:
+            return counted
+        near = self.diversity.within(candidate.key)
+        if isinstance(near, dict):
+            return None
+        out = set(counted)
+        for _gap, key in near:
+            out &= {key}
+            if not out:
+                break
+        return out
+
     def removals(self, candidate) -> set | None:
         """Which single seat could leave so that this candidate could be seated.
 
@@ -514,21 +596,9 @@ class State:
         The counted rules are intersected **first and alone**, and the diversity
         rule is asked only if what is left is non-empty. That is not a shortcut
         past the rule: a candidate the counts refuse outright cannot be seated
-        whatever any picture says, and it is the difference between one pass of
-        the swap loop costing a few thousand pixel-cloud signatures and costing
-        one for every row in the view.
+        whatever any picture says.
         """
-        out = _intersect(self.counted_requirements(candidate), self.seated)
-        if not out or self.diversity is None:
-            return out
-        near = self.diversity.within(candidate.key)
-        if isinstance(near, dict):
-            return None
-        for _gap, key in near:
-            out &= {key}
-            if not out:
-                break
-        return out
+        return self.narrowed(candidate, self.counted_removals(candidate))
 
     # ------------------------------------------------------------------ #
     # What the rules were, for the record.

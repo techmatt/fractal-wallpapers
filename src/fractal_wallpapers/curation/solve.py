@@ -687,6 +687,10 @@ class Gallery:
         #: See [`protected`]; `False` is the pure lexicographic reading.
         self.keep_demands = bool(keep_demands)
         self._ranks: list = []
+        #: `{seat key: its value}`. The sorted list answers "the worst seat"; this
+        #: answers "the worst seat **inside this set**", which is what the swap
+        #: loop's per-candidate prune asks once per row of the view.
+        self._value_at: dict = {}
         self._total = 0.0
 
     # -- what is seated ------------------------------------------------- #
@@ -711,12 +715,14 @@ class Gallery:
         value = self.value(candidate)
         self.state.seat(candidate, why)
         bisect.insort(self._ranks, (value, str(candidate.key)))
+        self._value_at[str(candidate.key)] = value
         self._total += value
 
     def unseat(self, key):
         candidate = self.state.unseat(key)
         value = self.value(candidate)
         self._ranks.remove((value, str(candidate.key)))
+        self._value_at.pop(str(candidate.key), None)
         self._total -= value
         return candidate
 
@@ -735,6 +741,60 @@ class Gallery:
             got = demand.held(self.state) if count is None else count(demand)
             short += max(0, demand.wanted(filled) - got)
         return short
+
+    def short_demands(self) -> list:
+        """Every demand this gallery is currently short of. One pass's worth."""
+        return [
+            demand
+            for demand in self.demands
+            if demand.held(self.state) < demand.wanted(self.filled)
+        ]
+
+    def guards(self) -> dict:
+        """`{seat key: the met demands holding it}` — [`protected`] as a lookup.
+
+        The same answer [`protected`] gives, turned inside out so the swap loop
+        asks it once per **seat** rather than building a union once per candidate
+        in the view. At n=1000 that was ~390 keys unioned 8,704 times a pass.
+        """
+        if not self.keep_demands:
+            return {}
+        out: dict = {}
+        for demand in self.demands:
+            taken = demand.taken(self.state)
+            if taken and len(taken) <= demand.wanted(self.filled):
+                for key in taken:
+                    out.setdefault(key, []).append(demand)
+        return out
+
+    def hopeless(self, candidate, counted: set, short: list) -> bool:
+        """Whether **no** 1-swap seating `candidate` could improve any tier.
+
+        Asked before the diversity rule is, and that is the point: a candidate
+        this refuses never costs a pixel-cloud signature. It reads only
+        [`rules.State.counted_removals`], which is dictionary lookups.
+
+        The argument, tier by tier. Tier 1 cannot move — a 1-swap keeps the seat
+        count. For tier 4 the sum improves only if the arriving candidate is worth
+        more than the seat that leaves, and every seat that could leave is in
+        `counted` (the diversity rule only ever narrows it), so a candidate worth
+        no more than the weakest member of `counted` cannot improve it. Tier 2 is
+        the same bound from the other side: for the worst seat to rise, the seat
+        that leaves must **be** the worst one, and then the weakest member of
+        `counted` is the worst seat itself — so a candidate at or below it cannot
+        improve that either.
+
+        Tier 3 is the exception and it is load-bearing: a low-ranked row covering a
+        starved mode is exactly the swap the third tier exists for, so a candidate
+        counting towards a demand that is currently short is never hopeless.
+        """
+        if any(demand.counts(candidate) for demand in short):
+            return False
+        if len(counted) >= self.filled:
+            weakest = self.worst_value
+        else:
+            weakest = min(self._value_at[key] for key in counted)
+        return weakest is not None and self.value(candidate) <= weakest
 
     def protected(self, arriving=None) -> set:
         """Seats the swap loop may not remove, because a met demand would go short.
@@ -819,21 +879,26 @@ class Gallery:
             total=self._total - gone[0] + arrived,
         )
 
-    def weakest(self, among, count: int, arriving=None) -> list:
+    def weakest(self, among, count: int, arriving=None, guards: dict | None = None) -> list:
         """The `count` weakest removable seated keys inside `among`, by the leg's key.
 
         The sorted rank list is walked from the bottom, so this is `count` steps
         and not a sort of the whole gallery — which matters because the swap loop
         asks it once per candidate in the view. What may not leave is
-        [`protected`], read against the candidate that would take the seat.
+        [`protected`], read against the candidate that would take the seat and
+        answered through [`guards`] where the caller has one in hand.
         """
-        held = self.protected(arriving)
+        held = self.guards() if guards is None else guards
         out = []
         for _value, key in self._ranks:
-            if key in among and key not in held:
-                out.append(key)
-                if len(out) >= int(count):
-                    break
+            if key not in among:
+                continue
+            holding = held.get(key)
+            if holding and not all(demand.counts(arriving) for demand in holding):
+                continue
+            out.append(key)
+            if len(out) >= int(count):
+                break
         return out
 
 
@@ -966,10 +1031,15 @@ def improve(
 
     ## What it costs
 
-    Per candidate: an intersection of the rules' requirement sets, which is
-    dictionary lookups; then, only if that intersection is non-empty, the diversity
-    rule's one vectorized pass. The candidate's own reduced signature is made once
-    and kept, so a second pass over the same row costs no pixels at all.
+    Per candidate: an intersection of the **counted** rules' requirement sets,
+    which is dictionary lookups; then [`Gallery.hopeless`], which is one more
+    lookup; and only for what survives both, the diversity rule's one vectorized
+    pass. The candidate's own reduced signature is made once and kept for the life
+    of the pass, so a second pass over the same row costs no pixels at all.
+
+    Those three together are what makes a pass that finds nothing cheap. Before
+    them a pass cost the same whether it took forty-seven swaps or none, because
+    every row in the view was decoded again on every pass.
 
     No 2-swaps. A 2-swap neighbourhood is the square of this one and this project
     has not measured that it buys anything; when it does, it is a separate ruling.
@@ -978,6 +1048,7 @@ def improve(
     taken: list = []
     by_tier: dict = {}
     walked = 0
+    skipped = 0
     stopped = "a full pass found no improving swap"
     at_pass = 0
     try:
@@ -987,6 +1058,8 @@ def improve(
                 break
             improved = 0
             floor_value = gallery.worst_value
+            guards = gallery.guards()
+            short = gallery.short_demands()
             for candidate in rows:
                 if deadline is not None and time.monotonic() > deadline:
                     stopped = "the clock ran out; the gallery it stopped on is valid"
@@ -997,12 +1070,19 @@ def improve(
                 if gallery.state.holds(candidate.key):
                     continue
                 walked += 1
-                leaving = gallery.state.removals(candidate)
+                counted = gallery.state.counted_removals(candidate)
+                if not counted:
+                    continue
+                if gallery.hopeless(candidate, counted, short):
+                    # Settled by arithmetic alone, so no picture is opened for it.
+                    skipped += 1
+                    continue
+                leaving = gallery.state.narrowed(candidate, counted)
                 if not leaving:
                     continue
                 current = gallery.objective
                 best, best_out = None, None
-                for out_key in gallery.weakest(leaving, drops, arriving=candidate):
+                for out_key in gallery.weakest(leaving, drops, candidate, guards):
                     found = gallery.after_swap(out_key, candidate)
                     if found.beats(current) and (best is None or found.beats(best)):
                         best, best_out = found, out_key
@@ -1012,6 +1092,8 @@ def improve(
                 gone = gallery.unseat(best_out)
                 gallery.seat(candidate, "swap")
                 improved += 1
+                guards = gallery.guards()
+                short = gallery.short_demands()
                 by_tier[tier] = by_tier.get(tier, 0) + 1
                 taken.append(
                     {
@@ -1039,6 +1121,10 @@ def improve(
         "prune": "a pass stops at the worst seated value: nothing below it can improve any "
         "tier, because seating it would become the worst seat and tier 2 outranks tiers 3 "
         "and 4. Sound rather than a budget",
+        "second_prune": "and per candidate, against the weakest seat its own COUNTED rules "
+        "would let leave — see solve.Gallery.hopeless. Sound by the same argument, and it "
+        "is what keeps a hopeless candidate from ever costing a pixel-cloud signature",
+        "settled_before_opening_a_picture": skipped,
         "drops_tried_per_candidate": int(drops),
         "drops_are": "the weakest seated by the leg's own key, inside the set of seats "
         "whose departure would admit the candidate, less the seats a MET demand is holding. "
