@@ -262,7 +262,7 @@ def _mixed_cost(costs: dict, candidates) -> float | None:
 # --------------------------------------------------------------------------- #
 # The bars, per mode.
 # --------------------------------------------------------------------------- #
-def bars(candidates) -> dict:
+def bars(candidates, relaxed: bool = False) -> dict:
     """Which rule each **accepted** mode's rows clear under, and the counts behind it.
 
     The default bar on `P(>=4)` unless fewer than [`FALLBACK_LOCATIONS`] distinct
@@ -275,6 +275,13 @@ def bars(candidates) -> dict:
     already out of [`solve.pool`] and so cannot arrive here; if one does — a caller
     handing in its own list — it lands in `off_roster` and [`clearing`] drops it,
     which is the same answer by a second route rather than a second rule.
+
+    `relaxed` puts **every** accepted mode on [`FALLBACK_BAR`], which is the pool
+    definition a THEMED leg runs under: a single-cell pool is q3-grade material by
+    measurement — `dark_vivid_green` holds 470 places at the per-mode bars against
+    1,209 at the crossing, `dark_vivid_lime` 266 against 457 — so a themed gallery
+    at the per-mode bars is a gallery with no pool. It is the same height on the
+    other cutpoint and never a second constant, and the table says which ran.
     """
     modes = mode_policy.accepted()
     held: dict = {name: [] for name in modes}
@@ -292,6 +299,8 @@ def bars(candidates) -> dict:
         places4 = {c.location for c in above4}
         places3 = {c.location for c in above3}
         rule = DEFAULT_COLUMN if len(places4) >= FALLBACK_LOCATIONS else FALLBACK_COLUMN
+        if relaxed:
+            rule = FALLBACK_COLUMN
         clearing = above4 if rule == DEFAULT_COLUMN else above3
         out[mode] = {
             "rule": rule,
@@ -307,6 +316,9 @@ def bars(candidates) -> dict:
             "thin": len({c.location for c in clearing}) < THIN,
         }
     return {
+        "relaxed": bool(relaxed),
+        "relaxed_is": "every accepted mode on the fallback column, which is what a THEMED "
+        "leg's pool is: the P(>=3) crossing rather than the per-mode rule",
         "default": {"column": DEFAULT_COLUMN, "at": DEFAULT_BAR, "from": "solve.Q4_BAR"},
         "fallback": {
             "column": FALLBACK_COLUMN,

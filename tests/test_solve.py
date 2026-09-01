@@ -1820,3 +1820,145 @@ def test_weakest_offers_every_seat_because_refusing_one_is_the_objectives_job():
     # ...and accepted for a better seat of its own mode, which keeps the floor.
     same = candidate("stripe_better", score=0.99, mode="stripe")
     assert gallery.after_swap("stripe", same).beats(current)
+
+
+# --------------------------------------------------------------------------- #
+# The themed gallery: the leg's other use.
+# --------------------------------------------------------------------------- #
+def themed_pool(count=12, cell="dark_vivid_lime"):
+    """`count` candidates in the cell at q3 grade, and as many outside it.
+
+    q3 grade because that is what a single-cell pool measurably is: at the
+    per-mode bars `dark_vivid_lime` holds 266 places against 457 at the crossing,
+    so a themed pass at the default bars is a pass with no pool.
+    """
+    inside = [
+        candidate(f"in{at}", score=0.10, p_ge3=0.90, cells=(cell,), mode="smooth")
+        for at in range(count)
+    ]
+    outside = [
+        candidate(f"out{at}", score=0.99, p_ge3=0.99, cells=("dark_vivid_red",), mode="smooth")
+        for at in range(count)
+    ]
+    return inside + outside
+
+
+def test_a_themed_pass_seats_only_the_cell_and_calls_the_rest_pool_construction():
+    """The rows outside the theme are not refused a seat — they were never
+    eligible for one — so they land under their own name and the rejection ledger
+    stays a partition of the ledger rather than a tally naming a rule."""
+    record = solve.solve(
+        themed_pool(),
+        n=6,
+        theme="dark_vivid_lime",
+        targets={"dark_vivid_lime": 1.0},
+        floor=0,
+        key=solve.JUDGE_KEY,
+        log=quiet,
+    )
+    assert record["filled"] == 6
+    assert all(seat["key"].startswith("in") for seat in record["seated"])
+    assert record["rejection"]["reasons"][solve.OFF_THEME] == 12
+    assert record["theme"]["cell"] == "dark_vivid_lime"
+    assert record["theme"]["in_the_cell"] == 12
+    assert record["theme"]["outside_the_cell"] == 12
+
+
+def test_a_themed_pass_takes_the_relaxed_bar_and_an_unthemed_one_does_not():
+    """`P(>=3) >= 0.50` for every accepted mode. The same pool under the per-mode
+    rule has no seat in it at all: these rows sit at `P(>=4)` 0.10."""
+    themed = solve.solve(
+        themed_pool(),
+        n=6,
+        theme="dark_vivid_lime",
+        targets={"dark_vivid_lime": 1.0},
+        floor=0,
+        key=solve.JUDGE_KEY,
+        log=quiet,
+    )
+    assert themed["config"]["bars"]["smooth"] == headroom.FALLBACK_COLUMN
+    assert "RELAXED" in themed["config"]["bars_are"]
+
+    # 25 places clear P(>=4), so `smooth` is over `FALLBACK_LOCATIONS` and holds
+    # the default column — and the themed rows are all below it.
+    plain = solve.solve(
+        themed_pool(count=headroom.FALLBACK_LOCATIONS),
+        n=6,
+        key=solve.JUDGE_KEY,
+        log=quiet,
+    )
+    assert plain["config"]["bars"]["smooth"] == headroom.DEFAULT_COLUMN
+    assert plain["theme"] is None
+    assert all(seat["key"].startswith("out") for seat in plain["seated"])
+
+
+def test_a_themed_pass_runs_the_geometry_rule_and_opens_no_picture(monkeypatch):
+    """Two galleries chosen under different diversity rules are not comparable, so
+    the record names which ran — and a themed record naming `twin` would be a
+    record about a test that never happened."""
+
+    def refuse(*_args, **_rest):
+        raise AssertionError("a themed pass must not build a pixel cloud")
+
+    monkeypatch.setattr(rules, "clouds_for", refuse)
+    record = solve.solve(
+        themed_pool(),
+        n=6,
+        theme="dark_vivid_lime",
+        targets={"dark_vivid_lime": 1.0},
+        floor=0,
+        key=solve.JUDGE_KEY,
+        log=quiet,
+    )
+    assert record["diversity"]["rule"] == rules.Places.NAME
+    assert record["diversity"]["threshold"] == rules.GEOMETRY_RADIUS
+    assert record["diversity"]["pictures_opened"] == 0
+    assert record["rules"]["rules"][-1] == "geometry"
+    assert "geometry" in record["rejection"]["read"]
+    assert "twin" not in record["rejection"]["read"]
+
+
+def test_the_geometry_rule_refuses_a_near_place_and_the_ledger_says_so(monkeypatch):
+    import math
+
+    # Three places: `b` sits 0.005 from `a` — inside the geometry radius but
+    # OUTSIDE the 0.02 pre-selection is not true, so the pre-selection is turned
+    # off here to leave one rule in the picture.
+    rows = store_of({"a": 0.0, "b": 0.1, "c": math.pi / 2})
+    monkeypatch.setattr(embeddings, "read", lambda *_args, **_rest: rows)
+    pool = [
+        candidate(key, score=0.10, p_ge3=0.90, cells=("dark_vivid_lime",))
+        for key in ("a", "b", "c")
+    ]
+    record = solve.solve(
+        pool,
+        n=3,
+        theme="dark_vivid_lime",
+        targets={"dark_vivid_lime": 1.0},
+        floor=0,
+        radius=None,
+        key=solve.JUDGE_KEY,
+        log=quiet,
+    )
+    assert record["filled"] == 2
+    assert record["rejection"]["reasons"]["geometry"] == 1
+    assert record["diversity_refusals"]["b"]["rule"] == "geometry"
+    assert record["samples"]["geometry"][0]["lost_to"]["neutral"] < rules.GEOMETRY_RADIUS
+
+
+def test_a_theme_no_row_is_dominant_in_is_a_refusal_and_not_an_empty_gallery():
+    with pytest.raises(solve.SolveRefused, match="dominant"):
+        solve.solve(themed_pool(), n=6, theme="dark_vivid_teal", key=solve.JUDGE_KEY, log=quiet)
+
+
+def test_the_theme_is_read_off_the_rows_own_dominance_block():
+    """Membership is `colour.cells` and never the carrier table: the table says
+    which maps TEND to make the cell, which is a prior about supply, and a gate
+    built on a prior admits a picture nobody measured."""
+    pool = [
+        candidate("both", cells=("dark_vivid_lime", "dark_muted_lime")),
+        candidate("neither", cells=()),
+        candidate("other", cells=("dark_muted_lime",)),
+    ]
+    assert [held.key for held in solve.in_theme(pool, "dark_vivid_lime")] == ["both"]
+    assert [held.key for held in solve.in_theme(pool, "dark_muted_lime")] == ["both", "other"]

@@ -3312,8 +3312,18 @@ def curate_solve(args: argparse.Namespace) -> int:
     except ceiling.TargetRefused as refusal:
         print(refusal)
         return 1
+    flat_floor = args.flat_floor
+    if args.themed:
+        # A themed gallery is one decision spelled in four places (→
+        # solver_design, §Themed), so naming the cell asks for all of it. The two
+        # a caller could set alone are DEFAULTS here and never overrides: a themed
+        # pass that names its own target or its own floor keeps the one it named.
+        if not targets:
+            targets = {str(args.themed): 1.0}
+        if args.mode_floor is None:
+            flat_floor = True
     floor = args.mode_floor
-    if args.flat_floor:
+    if flat_floor:
         if floor is not None:
             print("--flat-floor and --mode-floor are two different floors; name one.")
             return 1
@@ -3339,6 +3349,8 @@ def curate_solve(args: argparse.Namespace) -> int:
             order=order,
             coverage=coverage,
             allow_unranked=args.allow_unranked,
+            theme=args.themed,
+            geometry_radius=args.themed_radius,
             rows_per_seat=args.rows_per_seat,
             draw_seed=args.draw_seed,
             swap=not args.no_swap,
@@ -7309,6 +7321,7 @@ def curate_commands(subcommands) -> None:
     from fractal_wallpapers.curation import hunt as hunt_module
     from fractal_wallpapers.curation import mine as mine_module
     from fractal_wallpapers.curation import release as release_module
+    from fractal_wallpapers.curation import rules as rules_module
     from fractal_wallpapers.curation import run as run_module
     from fractal_wallpapers.curation import shrinkage as shrinkage_module
     from fractal_wallpapers.curation import signatures as signatures_module
@@ -7895,6 +7908,31 @@ def curate_commands(subcommands) -> None:
         "meet is a recorded shortfall rather than a refusal. The target also raises that "
         "cell's and its family's ceiling allowance, so the demand is not refused by the "
         "ceiling it asked for",
+    )
+    solving.add_argument(
+        "--themed",
+        metavar="CELL",
+        help="choose a THEMED gallery: one dominant colour cell, over a pool of the rows "
+        "that cell's dominance block claims, at the RELAXED bar — P(>=3) >= "
+        f"{headroom_module.FALLBACK_BAR} for every accepted mode rather than the per-mode "
+        "rule, because a single-cell pool is q3-grade material and at the per-mode bars "
+        "there is no pool. It also swaps the diversity rule for geometry-only "
+        f"distinctness at rules.GEOMETRY_RADIUS ({rules_module.GEOMETRY_RADIUS:g}) in the "
+        "neutral descriptor: the pixel-cloud twin test is over a picture's COLOUR cloud, "
+        "so a themed pool is a near-duplicate pool under exactly it. Unless you name them "
+        "otherwise it also sets `--target CELL=1.0`, without which the cell allowance "
+        "refuses the theme at nine seats, and `--flat-floor`",
+    )
+    solving.add_argument(
+        "--themed-radius",
+        type=float,
+        default=rules_module.GEOMETRY_RADIUS,
+        metavar="COSINE",
+        help=f"the radius the themed diversity rule refuses inside (default "
+        f"{rules_module.GEOMETRY_RADIUS:g}). A SETTING and not a law — it was read off the "
+        "themed pools' own nearest-neighbour distributions and is the number to move if a "
+        "themed gallery reads as repetitive or as needlessly small. Ignored without "
+        "`--themed`",
     )
     solving.add_argument(
         "--locations",

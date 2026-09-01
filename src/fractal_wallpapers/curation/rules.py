@@ -55,6 +55,14 @@ distinctness supplies its own object and changes nothing else. That seam is why
 the rule's name and its threshold are on the record: two galleries chosen under
 different diversity rules are not comparable, and the record is where a reader
 finds out which one ran.
+
+[`Places`] is the second implementation and the reason the seam exists: geometric
+distinctness over the neutral descriptors at [`GEOMETRY_RADIUS`], for a themed
+gallery whose colour was chosen in advance and whose pool is therefore a
+near-duplicate pool under the twin test. It is a **replacement** and not a
+complement — a pass runs one of them — and it is not a cheap approximation of the
+other: the two metrics are near-orthogonal over this population, which
+[`curation.distinct`] measured before either was placed.
 """
 
 from __future__ import annotations
@@ -84,6 +92,21 @@ RULES = (
     "twin",
 )
 
+
+def rules_for(diversity) -> tuple:
+    """[`RULES`] with the diversity rule that actually ran in the last slot.
+
+    The tuple above is the shipped rule's spelling, and a themed pass under
+    [`Places`] refuses under a different name. Every reader of the order — the
+    record, the rejection ledger's partition — goes through here rather than
+    keeping a second copy, because a ledger keyed on `twin` under a pass that
+    never applied the twin test is a ledger naming a rule nothing ran.
+    """
+    if diversity is None:
+        return RULES
+    return RULES[:-1] + (str(diversity.NAME),)
+
+
 #: How many seated pictures inside [`ceiling.TAU`] it takes to refuse. **One.**
 #:
 #: Deliberately stricter than [`ceiling.TWINS`], which is 2 and is the shipped
@@ -104,6 +127,31 @@ TWIN_NEIGHBOURS = 1
 #: against it; what this buys is the second and third offer of a candidate the
 #: swap loop keeps coming back to.
 SIGNATURE_CACHE = 256
+
+#: The radius the **themed** diversity rule refuses inside, in [`distinct.METRIC`].
+#:
+#: **0.07.** A themed pool is a near-duplicate pool under the pixel-cloud metric
+#: by construction — colour comes from the map, so filtering to one dominant cell
+#: selects for pictures that are close to each other under exactly the rule the
+#: main gallery refuses duplicates with (twin density 14-22x the whole pool's).
+#: So a themed leg asks the other question instead: *are these two the same
+#: place*, over the neutral descriptors, at a radius chosen for a collection
+#: rather than for pool construction.
+#:
+#: Read off the two themed pools' own nearest-neighbour distributions on
+#: 2026-09-01, after the pre-selection: `dark_vivid_lime` 424 places at a median
+#: nearest gap of 0.0556 and a p75 of 0.0703, `dark_vivid_green` 1,097 at 0.0454
+#: and 0.0595. 0.07 sits just above both p75s — it refuses the quarter of places
+#: that are genuinely each other's near neighbours and leaves the rest, which is
+#: 233 mutually-distinct lime places and 435 green ones under a greedy walk. It
+#: is deliberately far above [`distinct.PRESELECT_RADIUS`] (0.02, which refuses
+#: nothing this pool has not already lost): a rule that fires on nothing is not a
+#: diversity rule.
+#:
+#: It is a **setting and not a law**: the ladder either side of it is 0.04 (369
+#: lime places, 855 green), 0.05 (330 / 709) and 0.10 (126 / 208), and the number
+#: to move if a themed gallery reads as repetitive or as needlessly small.
+GEOMETRY_RADIUS = 0.07
 
 #: How many blocks of the metric's quantiles the diversity rule's lower bound
 #: reads.
@@ -413,6 +461,197 @@ class Twins:
         }
 
 
+def places_for(candidates, rows=None) -> dict:
+    """`{location key: its unit descriptor}` for one view. The geometry rule's store.
+
+    By **location** and not by candidate, which is the whole difference between
+    this and [`clouds_for`]: the neutral descriptor is read off a render that says
+    nothing about a colouring, so a place's fifty rows are fifty pictures with one
+    descriptor between them. That is exactly the property a themed leg wants — the
+    colour is the theme, so the rule that keeps the collection varied must not be
+    a rule about colour.
+
+    A place the store has never seen is simply absent, and [`Places`] admits it —
+    see there.
+    """
+    from fractal_wallpapers.curation import embeddings
+
+    wanted = {str(candidate.location) for candidate in candidates}
+    stored = embeddings.read() if rows is None else list(rows)
+    return {
+        str(row["key"]): embeddings.unpack(row["vector"])
+        for row in stored
+        if str(row["key"]) in wanted
+    }
+
+
+class Places:
+    """The themed diversity rule: is this picture's PLACE one of the seated places?
+
+    Geometry-only distinctness, over [`curation.embeddings`]' neutral descriptors,
+    at [`GEOMETRY_RADIUS`]. It is [`Twins`]' replacement and never its complement:
+    a pass runs one diversity rule or the other, and the record names which.
+
+    Why a themed leg needs a different rule at all is measured rather than
+    supposed. The pixel-cloud metric is over a picture's **colour cloud** and
+    colour comes from the map, so a pool filtered to one dominant cell is a
+    near-duplicate pool under exactly the rule the main gallery uses to refuse
+    duplicates — twin density 14-22x the whole pool's, and a `dark_vivid_green`
+    gallery that caps near a hundred seats where geometric distinctness leaves
+    around a thousand places. Neither the bar nor the group cap is the lever.
+
+    ## Three ways this is cheaper than [`Twins`], and one way it is weaker
+
+    No picture is ever opened: the descriptors are read once for the whole view
+    and every question after that is one dot product against a small stack. There
+    is no bound to be sound about, because the exact distance costs what the bound
+    would. And the store does not grow with the seats.
+
+    The weakness is the one [`curation.distinct`] measured and wrote down: neutral
+    distance and pixel-cloud distance are near-orthogonal over this population
+    (Pearson 0.034). **This rule is not a cheap approximation of the twin test and
+    must not be read as one.** It answers a different question — *are these two
+    the same place* — which is the right question for a collection whose colour
+    was chosen in advance, and the wrong one for a mixed gallery.
+
+    ## A place with no descriptor is admitted, and counted
+
+    The opposite of [`Twins`], which fails closed, and the same ruling
+    [`distinct.preselect`] already made for the same store: the embedding store is
+    built per place by its own leg, so a place can be newer than the last run, and
+    refusing on a missing row would make the rule a silent function of when the
+    store was last built. Admitting is safe here in a way it is not for the twin
+    test: this rule runs *underneath* the one-per-location rule, so an unembedded
+    place still takes at most one seat. The count is on the record whether or not
+    it is zero.
+    """
+
+    #: What the record calls this rule.
+    NAME = "geometry"
+
+    def __init__(
+        self,
+        places: dict,
+        locations: dict,
+        tau: float | None = None,
+        neighbours: int = TWIN_NEIGHBOURS,
+    ):
+        #: `{location key: unit descriptor}` — [`places_for`]'s answer.
+        self.places = dict(places)
+        #: `{candidate key: its location key}`, which is how the protocol's
+        #: candidate-keyed questions reach a place.
+        self.locations = {str(key): str(where) for key, where in locations.items()}
+        self.tau = GEOMETRY_RADIUS if tau is None else float(tau)
+        self.neighbours = int(neighbours)
+        #: The seated, in the order held. A dropped seat is blanked rather than
+        #: compacted, so no index a caller holds ever moves — [`Twins`]' shape.
+        self.keys: list = []
+        self._vectors: list = []
+        self._stack = None
+        self._live: list = []
+        self._at: dict = {}
+        self.tested = 0
+        self.measured = 0
+        self.without_a_descriptor = 0
+        self.seated_without_a_descriptor = 0
+
+    @property
+    def held(self) -> list:
+        """Every seated key the rule is currently holding, in the order held."""
+        return [key for key in self.keys if key is not None]
+
+    def vector_of(self, key: str):
+        """One candidate's place descriptor, or `None` where the store has none."""
+        return self.places.get(self.locations.get(str(key), ""))
+
+    def within(self, key: str) -> list | dict:
+        """`[(distance, seated key)]` inside [`tau`], closest first.
+
+        Never a dict: this rule has no unreadable outcome. A candidate whose place
+        carries no descriptor is admitted and counted, for the reason on the class.
+        """
+        import numpy
+
+        mine = self.vector_of(key)
+        if mine is None:
+            self.without_a_descriptor += 1
+            return []
+        if self._stack is None:
+            self._live = [at for at, name in enumerate(self.keys) if name is not None]
+            self._stack = (
+                numpy.stack([self._vectors[at] for at in self._live]) if self._live else None
+            )
+        if self._stack is None:
+            return []
+        self.tested += 1
+        gaps = 1.0 - (self._stack @ mine)
+        self.measured += len(self._live)
+        near = [
+            (round(float(gaps[row]), 6), self.keys[self._live[row]])
+            for row in numpy.nonzero(gaps < self.tau)[0].tolist()
+        ]
+        near.sort()
+        return near
+
+    def hold(self, key: str) -> bool:
+        """Keep one seated place's descriptor. `True` even where there is none.
+
+        The seat is taken either way — this rule admitted it — so the state has to
+        record that it is held or [`drop`] would have nothing to take back out. An
+        unembedded seat simply never refuses anything, which is what admitting it
+        meant.
+        """
+        import numpy
+
+        mine = self.vector_of(key)
+        if mine is None:
+            self.seated_without_a_descriptor += 1
+            self._at[str(key)] = None
+            return True
+        self._at[str(key)] = len(self.keys)
+        self.keys.append(str(key))
+        self._vectors.append(numpy.asarray(mine))
+        self._stack = None
+        return True
+
+    def drop(self, key: str) -> bool:
+        """Take one seated place back out. `False` if it was never held."""
+        if str(key) not in self._at:
+            return False
+        at = self._at.pop(str(key))
+        if at is None:
+            return True
+        self.keys[at] = None
+        self._stack = None
+        return True
+
+    def record(self) -> dict:
+        """What the rule was and what it cost, for the pass record."""
+        from fractal_wallpapers.curation import distinct
+
+        return {
+            "rule": self.NAME,
+            "threshold": self.tau,
+            "threshold_from": "rules.GEOMETRY_RADIUS",
+            "neighbours": self.neighbours,
+            "metric": distinct.METRIC,
+            "of": "the LOCATION and not the picture. Two galleries chosen under different "
+            "diversity rules are not comparable, and this one is not a cheap twin test: "
+            "neutral distance and pixel-cloud distance are near-orthogonal over this "
+            "population (Pearson 0.034, curation.distinct.premise)",
+            "descriptors_held": len(self.places),
+            "candidates_tested": self.tested,
+            "seat_comparisons_measured": self.measured,
+            "pictures_opened": 0,
+            "admitted_without_a_descriptor": self.without_a_descriptor,
+            "seated_without_a_descriptor": self.seated_without_a_descriptor,
+            "unembedded_are": "admitted and counted, the ruling distinct.preselect already "
+            "made for this store. Safe here because this rule runs underneath "
+            "one-per-location, so an unembedded place still takes at most one seat",
+            "seated_places_held": len(self.held),
+        }
+
+
 class State:
     """The seated set, and every rule read off it. Counts and never pictures.
 
@@ -439,7 +678,7 @@ class State:
         self.groups: dict = {}
         self.modes: dict = {}
         #: `{rule: how many times it was the reason}`, over every candidate tested.
-        self.refusals: dict = {name: 0 for name in RULES}
+        self.refusals: dict = {name: 0 for name in rules_for(diversity)}
         #: `{key: what the diversity rule said it was too close to}`, for the record.
         self.refused_for: dict = {}
 
@@ -647,7 +886,7 @@ class State:
         same-group distance rule is retired and this leg does not read it.
         """
         return {
-            "rules": list(RULES),
+            "rules": list(rules_for(self.diversity)),
             "hard": ["one wallpaper per location", "the diversity rule"],
             "counted": [
                 "the palette group cap",
@@ -683,12 +922,16 @@ class State:
 __all__ = [
     "BOUND",
     "BOUND_BLOCKS",
+    "GEOMETRY_RADIUS",
     "RULES",
     "SIGNATURE_CACHE",
     "TWIN_NEIGHBOURS",
+    "Places",
     "State",
     "Twins",
     "bound_width",
     "clouds_for",
+    "places_for",
     "reduce_signature",
+    "rules_for",
 ]
