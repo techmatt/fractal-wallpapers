@@ -2199,14 +2199,21 @@ is read off the newest seating record — `mode_policy_switch_n150`, 2026-08-30,
 niche mode has no bar because it has no row in the pool to bar: `solve.pool` refuses
 it upstream.
 
-**And it has moved since.** Re-read 2026-09-01 over a pool of 100,743 candidates
-(125,697 ledger rows less 24,906 refused `niche_mode` and 48 rejected), of which
-11,574 clear: **`direct_trap_multiply` is the only mode left on the fallback**. The
-five that came off it — `smooth_mean_angle`, `smooth_angle_min`, `smooth_curvature`,
-`direct_trap_screen`, `direct_trap_lines` — now field 40, 33, 49, 39 and 31 distinct
-clearing locations against `headroom.FALLBACK_MIN`'s 25. The column above is the
-08-30 reading and is kept as one; this is the direction it moves in when a leg is
-aimed at a sparse mode.
+**And it has moved twice on 2026-09-01 alone.** Re-read that morning over a pool of
+100,743 candidates (125,697 ledger rows less 24,906 refused `niche_mode` and 48
+rejected), of which 11,574 clear: `direct_trap_multiply` was the only mode left on
+the fallback. The five that came off it — `smooth_mean_angle`, `smooth_angle_min`,
+`smooth_curvature`, `direct_trap_screen`, `direct_trap_lines` — reached 40, 33, 49,
+39 and 31 distinct clearing locations against `FALLBACK_LOCATIONS`' 25.
+
+Merging that afternoon's three cost pilots added 108 `direct_trap_multiply` rows and
+took it off too, at **exactly 25** locations, so **`on_fallback` is now empty** and
+every accepted mode is on `P(>=4) >= 0.50`. Its measured clear rate reads **13.99% →
+2.20%** across that flip: the bar moved, not the mode, and 134 clearing locations
+became 25 because the question changed. Read a per-mode clear rate beside the rule it
+was taken under or it is not a number. At exactly 25 the flip is fragile — one prune
+or rescore moves it back, `bars` is derived at read time from no stored row, and
+nothing warns.
 
 ## One field, many palettes — how a candidate is made
 
@@ -3114,10 +3121,18 @@ of a composite visit is the autolevel curve firing.
 
 On a wall hour at three workers, and applying each mode's own `headroom.bars` rule
 over the standing pool, that is **15,133 / 5,601 / 1,448** candidates an hour and
-**1,374 / 330 / 100** clearing ones — field buys **13.7x** the seatable pictures of
-composite and **4.2x** of direct trap. On these pilots' own fresh clear rates
+**1,378 / 109 / 99** clearing ones — field buys **13.9x** the seatable pictures of
+composite and **12.7x** of direct trap. On these pilots' own fresh clear rates
 (4.71% / 4.24% / 1.83%) it is 713 / 237 / 27, which is 27x and 3.0x; the pool's
 rates are the higher pair because the pool holds legs that aimed at those modes.
+
+**The direct figure read 330 an hour and 4.2x for half a day, and the bar is why.**
+Merging the three pilots put `direct_trap_multiply` over `FALLBACK_LOCATIONS` at
+exactly 25, its rule flipped off the `P(>=3)` fallback, and the leg's mixed pool rate
+went 5.88% → 1.94%. Nothing about the mode changed and no row was re-rendered. This
+is the sharpest example in this file of why a per-mode rate is meaningless apart from
+the rule it was taken under — and of why a *ratio* between two modes on different
+columns is not a comparison at all.
 
 **Every `s/cand` above is a MEAN, and the flat-vs-ranked comparison needs the
 median beside it.** A per-candidate cost is long-tailed — `mine1`'s per-partition
