@@ -210,12 +210,17 @@ def refined_of(row: dict, refinements: dict) -> dict:
     # file — which is the one thing `score_view` exists to prevent.
     out["score_view"] = None
     if row.get("fate") in ledger_module.SCORED:
-        out["fate"] = _fate_of(out["score"])
+        out["fate"] = fate_of(out["score"])
     return out
 
 
-def _fate_of(score: float | None) -> str:
+def fate_of(score: float | None) -> str:
     """Which of the three scored fates a score earns, on the floors as they stand.
+
+    Public, because a second writer of candidate rows now exists —
+    [`fractal_wallpapers.discovery.reframing`] — and a channel that decided its own
+    fates would be a second answer to what the floors mean. One function, whether
+    the row is a walk's or a reframing's.
 
     Both floors through their owners rather than restated: the keeper floor is
     the supply currency's and the junk floor is curation's, which is the same
@@ -356,6 +361,7 @@ __all__ = [
     "LEDGER_NAME",
     "admitted",
     "admitted_union",
+    "fate_of",
     "is_admitted",
     "ledger_dirs",
     "ledger_paths",

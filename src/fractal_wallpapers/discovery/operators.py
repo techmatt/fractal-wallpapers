@@ -13,9 +13,16 @@ the walk already found and returns a different view of the same neighbourhood:
 
 ```text
 snap_to_nucleus       probe the view's center → Newton → recenter on the nucleus
+snap_at_seed          the same, at the tighter radius a *judged* view earns
 lateral_to_sibling    step to a nearby nucleus at comparable scale
 expand_neighborhood   enumerate several nearby nuclei at any smaller scale
 ```
+
+`snap_at_seed` is the one whose trigger is not a walk survivor:
+[`fractal_wallpapers.discovery.reframing`] fires it at locations a person already
+scored a keeper. That does not make the operators a source — the seed is still a
+place somebody found and judged — and it is why the tighter radius is the whole
+of the difference between the two snaps.
 
 That single decision — operator, not source — fixes everything else. It is why
 they need a reserved slot rather than a score (nothing has ever been trained on
@@ -60,6 +67,18 @@ KEEP_PERIODS = 4
 
 #: The nucleus must land within this many frame widths of the view's center.
 SNAP_MAX_WIDTH_MULTIPLE = 1.0
+
+#: The same bound for [`snap_at_seed`], where the view being reframed is a frame
+#: **a human scored** rather than one a walk proposed.
+#:
+#: Tighter than [`SNAP_MAX_WIDTH_MULTIPLE`], and the reason is what the seed is: a
+#: judged view is a claim about a picture, and a nucleus a whole frame width off
+#: centre was not in that picture. At `1.0` the operator can land on an atom the
+#: labeller never saw and inherit a verdict cast on somewhere else — which is the
+#: teleport guard's own argument, one notch stricter because the quality being
+#: inherited here is a person's rather than a head's. `0.75` is the source
+#: project's `snap_max_fw_mult`, ported unchanged.
+SNAP_AT_SEED_MAX_WIDTH_MULTIPLE = 0.75
 
 #: The framings a snap emits, in atom sizes. `None` keeps the view's own width.
 #:
@@ -255,21 +274,42 @@ def _available(operator, record, framing, width, view, solves, **extra) -> Refra
     )
 
 
-def _solve_at_center(view: dict, degree: int):
+#: Why a [`snap_at_seed`] refused: the atom is outside the frame a person judged.
+#:
+#: A name of its own rather than `nucleus_outside_frame`, because the two refuse
+#: different claims and the channel that fires this operator prices them apart —
+#: this one says *the labeller was not looking at this atom*, the walk's says
+#: *this is a teleport*.
+OUTSIDE_SEED_VIEW = "nucleus_outside_seed_view"
+
+
+def _solve_at_center(
+    view: dict,
+    degree: int,
+    *,
+    near_multiple: float = SNAP_MAX_WIDTH_MULTIPLE,
+    outside_reason: str = "nucleus_outside_frame",
+    max_period: int = MAX_PERIOD,
+):
     """The Newton half of a snap: `(record, solves, refusal)`.
 
     Split out because **the nucleus does not depend on the framing.** A framing
     only chooses a width afterwards, so N framings of one view cost one solve,
     not N — which is what makes adding a framing a design choice rather than a
     cost one.
+
+    `near_multiple` is how far off centre the nucleus may land, in frame widths,
+    and `outside_reason` is what the refusal is called when it lands further. The
+    two travel together on purpose: a caller that tightened the bound and kept the
+    walk's word for the refusal would be reporting a refusal the walk never made.
     """
     nuc.set_precision()
     center = mp.mpc(mp.mpf(str(view["center_re"])), mp.mpf(str(view["center_im"])))
-    periods = nuc.period_candidates(center, degree, MAX_PERIOD, KEEP_PERIODS)
+    periods = nuc.period_candidates(center, degree, int(max_period), KEEP_PERIODS)
     if not periods:
         return None, 0, "orbit_escaped_immediately"
 
-    near = mp.mpf(str(SNAP_MAX_WIDTH_MULTIPLE * float(view["width"])))
+    near = mp.mpf(str(float(near_multiple) * float(view["width"])))
     solves = 0
     refusal = "no_converge"
     for period in periods:
@@ -279,7 +319,7 @@ def _solve_at_center(view: dict, degree: int):
             refusal = "no_converge"
             continue
         if abs(solve.c - center) > near:
-            refusal = "nucleus_outside_frame"
+            refusal = outside_reason
             continue
         record = nuc.make_atom(solve.c, period, degree)
         if record is None:
@@ -290,25 +330,31 @@ def _solve_at_center(view: dict, degree: int):
     return None, solves, refusal
 
 
-def snap_to_nucleus(
+def _snap(
     view: dict,
+    operator: str,
     *,
-    degree: int = 2,
-    framings=FRAMINGS,
-    max_width: float = MAX_WIDTH,
+    degree: int,
+    framings,
+    max_width: float,
+    near_multiple: float,
+    outside_reason: str,
+    max_period: int,
 ) -> list[Reframing]:
-    """Recenter a view on the nucleus its center sits on, at each framing.
+    """One solve at the view's centre, one [`Reframing`] per framing.
 
-    `view` is `{center_re, center_im, width, node_id}` with the coordinates as
-    decimal strings. One probe, one Newton pass, one [`Reframing`] per framing —
-    and the solves are charged to the first row only, so summing them over the
-    returned rows is the true cost of the call rather than N copies of one solve.
-
-    The framing verdict stays per-framing: one solve, several answers. A shallow
-    atom can take the 4× frame and refuse the 16× one off the same nucleus.
+    THE snap, and the only implementation of it: [`snap_to_nucleus`] and
+    [`snap_at_seed`] are the same move at two radii, and a second copy of this
+    loop would be a second answer to what a snap charges and what it records.
     """
     framings = list(framings) or [None]
-    record, solves, refusal = _solve_at_center(view, degree)
+    record, solves, refusal = _solve_at_center(
+        view,
+        degree,
+        near_multiple=near_multiple,
+        outside_reason=outside_reason,
+        max_period=max_period,
+    )
     parent_width = float(view["width"])
 
     rows: list[Reframing] = []
@@ -316,13 +362,13 @@ def snap_to_nucleus(
         charged = solves if index == 0 else 0
         shared: dict[str, Any] = {} if index == 0 else {"reused_solve": True}
         if record is None:
-            rows.append(_unavailable("snap_to_nucleus", refusal, view, charged, framing, **shared))
+            rows.append(_unavailable(operator, refusal, view, charged, framing, **shared))
             continue
         width, why = _frame_for(record, framing, parent_width, max_width)
         if width is None:
             rows.append(
                 _unavailable(
-                    "snap_to_nucleus",
+                    operator,
                     why,
                     view,
                     charged,
@@ -335,7 +381,7 @@ def snap_to_nucleus(
             continue
         rows.append(
             _available(
-                "snap_to_nucleus",
+                operator,
                 record,
                 framing,
                 width,
@@ -347,6 +393,69 @@ def snap_to_nucleus(
             )
         )
     return rows
+
+
+def snap_to_nucleus(
+    view: dict,
+    *,
+    degree: int = 2,
+    framings=FRAMINGS,
+    max_width: float = MAX_WIDTH,
+    max_period: int = MAX_PERIOD,
+) -> list[Reframing]:
+    """Recenter a view on the nucleus its center sits on, at each framing.
+
+    `view` is `{center_re, center_im, width, node_id}` with the coordinates as
+    decimal strings. One probe, one Newton pass, one [`Reframing`] per framing —
+    and the solves are charged to the first row only, so summing them over the
+    returned rows is the true cost of the call rather than N copies of one solve.
+
+    The framing verdict stays per-framing: one solve, several answers. A shallow
+    atom can take the 4× frame and refuse the 16× one off the same nucleus.
+    """
+    return _snap(
+        view,
+        "snap_to_nucleus",
+        degree=degree,
+        framings=framings,
+        max_width=max_width,
+        near_multiple=SNAP_MAX_WIDTH_MULTIPLE,
+        outside_reason="nucleus_outside_frame",
+        max_period=max_period,
+    )
+
+
+def snap_at_seed(
+    view: dict,
+    *,
+    degree: int = 2,
+    framings=FRAMINGS,
+    max_width: float = MAX_WIDTH,
+    max_period: int = MAX_PERIOD,
+) -> list[Reframing]:
+    """[`snap_to_nucleus`] fired at a frame **a human scored**, at the seed radius.
+
+    The source project's `snap_at_seed`, ported at its own semantics. The same
+    move at a tighter bound — [`SNAP_AT_SEED_MAX_WIDTH_MULTIPLE`] rather than
+    [`SNAP_MAX_WIDTH_MULTIPLE`] — and a refusal of its own name, because the claim
+    being inherited is different: a walk's snap inherits a *score*, and this
+    inherits somebody's verdict on a picture they were looking at.
+
+    A separate entry point rather than a keyword, because it is priced as a
+    separate operator wherever it fires: yield per operator-minute is the number
+    the channel that calls it is sized against, and an argument would have left
+    the two indistinguishable on the record.
+    """
+    return _snap(
+        view,
+        "snap_at_seed",
+        degree=degree,
+        framings=framings,
+        max_width=max_width,
+        near_multiple=SNAP_AT_SEED_MAX_WIDTH_MULTIPLE,
+        outside_reason=OUTSIDE_SEED_VIEW,
+        max_period=max_period,
+    )
 
 
 def _probe_seed(rng: random.Random, parent_scale: float, center_re, center_im):

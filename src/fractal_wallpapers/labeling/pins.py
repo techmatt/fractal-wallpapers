@@ -57,6 +57,34 @@ def pinned(rows=None) -> set:
     return keys
 
 
+def every_pinned(rows=None) -> set:
+    """Every pinned location key, over **every** store that ships an evaluation side.
+
+    [`pinned`] answers for the location head, which is the one the split pass and
+    the tile plan care about. This answers for the whole project: the location
+    store *and* each finished-render judge, whose own splits hold the blind draws
+    the finished heads are measured on — `blind_minibrot` and `blind_modes` among
+    them. Measured on 2026-08-31: the location store pins 1,002 places and the two
+    finished stores add 450 more.
+
+    A second reader rather than a widening of [`pinned`], because the two are
+    different claims and only one of them is about training a location head. What
+    wants this one is a *sourcing* pass: a channel that manufactures new locations
+    must not manufacture a frame that coincides with a place some instrument is
+    measured on, whichever instrument that is — the pin is on the coordinate, so a
+    fresh derivation of a pinned place spends the blind slice exactly as a re-draw
+    of it would.
+
+    Keyed the same way, through the same adapter, so the two sets are unionable.
+    """
+    from fractal_wallpapers.labeling import finished
+
+    keys = pinned(rows)
+    for head in finished.HEADS:
+        keys.update(finished.pinned(head))
+    return keys
+
+
 def side_of(row: dict, keys: set | None = None) -> str:
     """Which side one row's location is on. The reading every consumer wants."""
     keys = pinned() if keys is None else keys
@@ -129,6 +157,7 @@ __all__ = [
     "EvalPinViolation",
     "assert_eval",
     "assert_none_training",
+    "every_pinned",
     "pin",
     "pinned",
     "side_of",

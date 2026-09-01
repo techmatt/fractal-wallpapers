@@ -678,6 +678,13 @@ def scoring_flags(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     return parser
 
 
+def reframing_default(name: str):
+    """One of the reframing channel's constants, for a help string that cannot drift."""
+    from fractal_wallpapers.discovery import reframing
+
+    return getattr(reframing, name)
+
+
 def plane_seed_default(name: str):
     """One of the plane-seed deriver's constants, for a help string that cannot drift."""
     from fractal_wallpapers.discovery import plane_seeds
@@ -941,6 +948,38 @@ def walk(args: argparse.Namespace) -> int:
         print("no roots: nothing to walk")
         return 1
     print(json.dumps(run.run(), indent=2))
+    return 0
+
+
+def reframe(args: argparse.Namespace) -> int:
+    """Fire the reframing operators at proven roots and record their own views."""
+    from fractal_wallpapers.discovery import reframing
+
+    scorer = build_scorer(args)
+    if scorer is None:
+        print(
+            "the reframing channel scores every view it builds, and the whole point of it is "
+            "that those views become scored candidates. --no-scoring would write a ledger of "
+            "unclassed rows the supply engine cannot count."
+        )
+        return 1
+    try:
+        report = reframing.run(
+            out_dir=resolve_output(args.out_dir),
+            scorer=scorer,
+            seed=args.seed,
+            rungs=[float(rung) for rung in args.rungs],
+            minutes=args.minutes,
+            generations=args.generations,
+            tier_floor=args.tier_floor,
+            partitions=args.partition or None,
+            roots=args.roots,
+            seed_batch=args.seed_batch,
+        )
+    except (reframing.ChannelRefused, reframing.PinnedPlace) as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps(report, indent=2))
     return 0
 
 
@@ -4187,7 +4226,7 @@ def modes(args: argparse.Namespace) -> int:
 def build_parser() -> argparse.ArgumentParser:
     from fractal_wallpapers.curation import run as curation_run
     from fractal_wallpapers.discovery.walk import Limits as WalkLimits
-    from fractal_wallpapers.supply.partitions import ALL_PARTITIONS
+    from fractal_wallpapers.supply.partitions import ALL_PARTITIONS, PARAMETER_PLANES
 
     parser = argparse.ArgumentParser(
         prog="fractal-wallpapers",
@@ -4522,6 +4561,81 @@ def build_parser() -> argparse.ArgumentParser:
     grace_flag(search)
     scoring_flags(search)
     search.set_defaults(handler=walk)
+
+    reframing_leg = subcommands.add_parser(
+        "reframe",
+        help="fire the reframing operators at proven roots; their own views become candidates",
+        description=(
+            "The reframing channel. A walk pushes an operator's nucleus-centred view onto "
+            "the frontier as a node and only ever scores what it draws BELOW it, so that "
+            "picture is never a candidate. This leg fires the same operators at locations a "
+            "human already scored a keeper, draws each nucleus it finds at 16x, 24x and 32x "
+            "the atom size, reads all three through the location head, and writes ONE "
+            "candidate row per nucleus at the rung the head picked. The ledger is walk-shaped "
+            "and lands at <out-dir>/walk.jsonl, so `curate score --harvest <out-dir>` reads "
+            "it like any other supply. Nothing about the walk changes."
+        ),
+    )
+    reframing_leg.add_argument("--seed", type=int, default=0, help="run seed (default: 0)")
+    reframing_leg.add_argument(
+        "--minutes",
+        type=float,
+        default=None,
+        help="stop when this many minutes of the leg have been spent, at the next seed-batch "
+        "boundary (default: none; run the seed set out)",
+    )
+    reframing_leg.add_argument(
+        "--generations",
+        type=int,
+        default=1,
+        help="how many generations to fire (default: 1, the proven roots alone). A nucleus "
+        "the head scores at or above the q4 admission bar joins the seed set for the next "
+        "generation, and its generation number is on its row",
+    )
+    reframing_leg.add_argument(
+        "--rungs",
+        type=float,
+        nargs="+",
+        default=list(reframing_default("RUNGS")),
+        metavar="K",
+        help=f"the framings to draw, in atom sizes (default: "
+        f"{' '.join(f'{k:g}' for k in reframing_default('RUNGS'))}). They are the location's "
+        f"framings and not three locations: all of them are scored, the head picks one, and "
+        f"every reading is on the row",
+    )
+    reframing_leg.add_argument(
+        "--tier-floor",
+        type=int,
+        default=reframing_default("SEED_TIER_FLOOR"),
+        help=f"the lowest human label tier a seed may carry (default: "
+        f"{reframing_default('SEED_TIER_FLOOR')}, both of the currency's paid classes)",
+    )
+    reframing_leg.add_argument(
+        "--partition",
+        action="append",
+        choices=list(PARAMETER_PLANES),
+        help="seed from this parameter plane alone (repeatable; default: every one). The "
+        "dynamical partitions are never served here: a Julia viewport is a z-plane point "
+        "and has no nucleus in the parameter-plane sense",
+    )
+    reframing_leg.add_argument(
+        "--roots", type=int, help="use only this many of the available proven roots"
+    )
+    reframing_leg.add_argument(
+        "--seed-batch",
+        type=int,
+        default=reframing_default("SEED_BATCH"),
+        help=f"seeds fired before their nuclei are drawn and scored (default: "
+        f"{reframing_default('SEED_BATCH')})",
+    )
+    reframing_leg.add_argument(
+        "--out-dir",
+        default=str(reframing_default("DEFAULT_OUT")),
+        help=f"the run directory, a TOP-LEVEL name of the regenerable tree (default: "
+        f"{reframing_default('DEFAULT_OUT')})",
+    )
+    scoring_flags(reframing_leg)
+    reframing_leg.set_defaults(handler=reframe)
 
     production = subcommands.add_parser(
         "harvest",

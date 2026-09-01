@@ -12,6 +12,7 @@ pools      the tracked seed pools, and the spacing the julia one has to keep
 walk       the frontier, the batch, the two reserved floors, the run loop
 nucleus    Newton on a nucleus, the atom instrument, the canonical key
 operators  reframing a found view onto the atoms around it
+reframing  the channel that makes an operator's OWN view a candidate
 ledger     one JSONL record, one schema, a fate on every row
 scoring    the seam a trained head arrives through
 identity   why the gate render is the picture that head was trained on
@@ -32,6 +33,85 @@ it admits what survives the gates, and its ledger is what the first head gets
 trained on, which is the only order the two can be built in.
 
 What follows is what to read before changing anything here.
+
+## The reframing channel: `reframe`, seeded at proven roots
+
+**A walk never scores the frame its own operator built.** `_propose` pushes the
+nucleus-centred view onto the frontier as a *node*, and only what `expand` draws
+*below* a node becomes a candidate — measured on `harvest_run10`, 0 of 14,678
+distinct available reframing viewports appear as a candidate viewport and 0 of
+12,163 pushed node ids is a candidate's own node id. The walk then descends
+straight into the atom's black body: over twelve production ledgers the 42,904
+candidates below a reframing sit at a median frame multiple of **1.66 atom
+sizes**, where 9,432 of their 14,109 interior-cap refusals are. That is why the
+whole candidate pool holds **14** frames that are minibrot centres in the sense a
+gallery wants, and why no seating has ever held more than one.
+
+`fractal-wallpapers reframe` is the other half of the same operators. It fires
+them at **seeds**, takes the view they build as a **candidate**, and writes a
+walk-shaped ledger at `<out-dir>/walk.jsonl` that the supply union reads like any
+other. **Nothing about the walk changes.**
+
+```
+fractal-wallpapers reframe --minutes 20 --out-dir artifacts/reframe_g1
+fractal-wallpapers curate score --harvest artifacts/reframe_g1
+```
+
+**Seeds are `proven` roots, q3 and q4, parameter planes only, minus every eval
+pin.** Off `supply.proven` rather than a second query over the label store; the
+dynamical partitions are never served, because a Julia viewport is a z-plane point
+with no nucleus in the parameter-plane sense. The pin is the **union over every
+store that ships an evaluation side** — `labeling.pins.every_pinned`, which is the
+location split plus both finished-render splits, so `blind_minibrot`'s 197 places
+and `blind_modes`' are excluded as seeds *and* as derived frames. Measured
+2026-08-31: 1,452 pinned places, 1,252 proven parameter-plane locations at tier
+>= 3, **76 of them pinned, 1,176 seeds available** (184 q4, 992 q3).
+
+**The rungs are 16x, 24x and 32x the atom size, and they are framings of one
+location rather than three locations.** All three are drawn through
+`engine.screen` at the node regime, all three are read through the location head,
+one row is written, and its score is the rung the head picked — every rung's own
+reading rides on the row under `reframing.rungs_drawn`. They are offered directly
+rather than walked to: `curation.framing.WIDTH_LADDER` moves x1.414 a step and
+cannot reach 32x from 16x in one move. The band that reads as *a minibrot with
+detail around it* is 50-100 px of body at 1280, which is the 32x rung; the walk's
+widest rung, 16x, lands at 115-183 px and is a factor of two too tight.
+
+**`operators.snap_at_seed` is the ported operator.** The maker's set was
+`snap_at_seed`, `snap_to_nucleus`, `neighborhood_expand`; this repository had the
+second (`snap_to_nucleus`) and the third under the name `expand_neighborhood`, and
+was missing the first. It is `snap_to_nucleus` at `SNAP_AT_SEED_MAX_WIDTH_MULTIPLE
+= 0.75` — the source project's `snap_max_fw_mult` — with a refusal of its own
+name, `nucleus_outside_seed_view`, because a judged view is a claim about a
+picture and a nucleus a whole frame width off centre was not in it.
+`snap_to_nucleus` itself is **not** fired at seeds: at a seed it is `snap_at_seed`
+with the looser radius, so firing both would return one atom under two names for
+every seed the tighter one accepts and buy only the annulus between 0.75 and 1.0
+frame widths, at a second full Newton pass. The maker did not fire it at seeds
+either — its `snap_to_nucleus` rows are all walk-triggered.
+
+**It is operator-bound, not render-bound, so the three-worker render pool does not
+apply.** One `engine.screen` process at a time, below-normal by construction, the
+same shape `curation.framing`'s refine leg has. On the generation-1 smoke the
+operators were 53% of the leg's clock and the neighbourhood enumeration was the
+expensive half of that: **`expand_neighborhood` cost 17x what `snap_at_seed` cost
+per nucleus** (4.6 s against 0.27 s on the pilot), because most of its probes hand
+back the parent atom.
+
+**Generations.** A nucleus the head scores at or above the q4 admission bar —
+`supply.currency`'s keeper floor on `P(>=3)` *and* its great cut on `P(>=4)`,
+never a third reading of the two — becomes a seed for the next generation, and the
+generation number is on its row. `--generations 1` is the channel firing at proven
+roots exactly and is what the first smoke ran.
+
+**Record and rank, never gate.** Every derived nucleus is scored and written
+whatever the head said. Neutral pre-selection distinctness (`curation.distinct`,
+`PRESELECT_RADIUS`) is applied where a **sheet** is cut, through
+`reframing.distinct_places`, and never to the ledger — so a sitting never sees
+fifty lookalikes off one seed and the record still says what the channel found.
+Note that the neutral store is built from the *admitted* supply sidecar, so places
+this leg finds have no descriptor until `curate score` and `curate embed` have run
+over its ledger.
 
 ## The refine leg: `--refine-per-walk`, at close, top-k
 
