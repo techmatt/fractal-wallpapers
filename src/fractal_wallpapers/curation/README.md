@@ -2592,6 +2592,41 @@ share**, because its two composites cost 5.53 s a candidate against the field ar
 0.70–1.03. A share is a share of the plan, not of the budget, the moment two arms
 run different kinds.
 
+### What the two empty modes actually cost, measured
+
+`smooth_mean_angle` and `smooth_angle_min` are the pair the n=2000 census called "nothing in the
+pool". They are **composites, not field modes** — no dump to amortise, a full render a candidate —
+and the dearest pair on the roster after `smooth_stripe`. `empty_modes`, 2026-09-01, this machine
+idle, three engines below-normal, `--width 8 --floor-width 4`, seed 20260827, 979 candidates in
+1,813.5 s render wall at concurrency 2.989:
+
+| arm | population | `smooth_angle_min` | `smooth_mean_angle` |
+|---|---|---|---|
+| `ranked_bands` | never-opened, head-ranked | 0.090 · **75 s** | 0.059 · **129 s** |
+| `mode_floor` | proven places | 0.097 · **66 s** | 0.032 · 229 s |
+| `flat` | never-opened, unconditioned | 0.040 · 202 s | 0.040 · 218 s |
+| **all arms** | | **10 wins · 85 s** | **6 wins · 160 s** |
+
+Location clear rate · **wall** seconds a clearing location; engine seconds are 2.989x these. The
+bar is each mode's own `headroom.bars` rule, `P(>=4) >= 0.50` for both since they came off the
+`P(>=3)` fallback that morning — a rate quoted against the older rule is a different number.
+
+**Three things to carry forward.** The head's rank buys money: `ranked_bands` beats the
+unconditioned `flat` control 2.2x and 1.5x, and flat is the worst arm for both. The census priced
+the two within 0.4 s of each other and **`smooth_mean_angle` actually costs 1.9x per win**, being
+both the slower render and the thinner clear rate (1.84% against 2.66%) — allocate to them
+separately. And the census's own figure was **76.5 / 76.9 s a win against a realized 113 s pooled,
+1.47x optimistic**, because it was carried in from another leg's rates.
+
+**Mining one short mode does not necessarily cut the shortfall.** The 16 clearing locations this
+leg bought moved `smooth_mean_angle` 21 -> 25 and `smooth_angle_min` 18 -> 22 at n=2000, and the
+total shortfall stayed at **200**: `smooth_curvature` lost 6, `smooth_stripe` 3 and `threads` 1 in
+the same pass. A place seated in one mode is a place not seated in another, so in a gallery where
+ten demands are short, a mine that does not add **places** moves seats between them. These 16
+added only 9 to the view (4,750 -> 4,759) — the `mode_floor` wins were at places the view already
+held. What refuses these two is `below_its_mode_bar` and then `one_per_location`, at 2-3x what
+twin refuses; that is the opposite of the gallery-wide ranking and it is a supply problem.
+
 **The `mode_floor` arm escapes the roster, by design.** `deficient_modes` iterates
 `mine._accepted_modes()` — all fourteen — and `plan_floor` never intersects its
 modes with `roster`; `test_the_floor_draw_holds_the_place_and_moves_the_mode` pins
@@ -2603,7 +2638,11 @@ than clock. The crossover is around 50, where it names
 `direct_trap_multiply`, `direct_trap_lines`, `smooth_angle_min`,
 `direct_trap_screen`, `smooth_mean_angle` and `smooth_curvature`, worst first.
 Note that 10 is *below* what `mode_policy.seat_floors` guarantees at n = 1000,
-which is 15 for a normal mode and 30 for a promoted one.
+which is 15 for a normal mode and 30 for a promoted one. A run aimed at a
+named pair passes both `--floor-modes` and a `--floor-seats` above their floor —
+`empty_modes` used **60**, at which `seats_short_today` reads `smooth_angle_min` 26
+and `smooth_mean_angle` 19; at the default 10 the arm plans nothing and the other
+arms run out of plan rather than clock.
 
 **And that census counts the raw recipe mode, not the routed one.** A modulate
 whose texture said nothing is `smooth` everywhere the seating looks
