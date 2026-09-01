@@ -67,7 +67,7 @@ fractal-wallpapers curate signatures sweep              # the bound signatures, 
 fractal-wallpapers curate signatures coverage          # how much of the pool the sidecar can answer for
 fractal-wallpapers curate solve run --n 20 --no-render # THE gallery leg: decide, render nothing
 fractal-wallpapers curate solve run --n 150            # the gallery, then the pictures
-fractal-wallpapers curate solve run --n 1000 --no-render   # 8.5 min on this machine
+fractal-wallpapers curate solve run --n 1000 --no-render   # 34 min on this machine
 fractal-wallpapers curate manufacture --step register --write          # BEFORE anything
 fractal-wallpapers curate manufacture --oversample 2.5                 # plan, build, select
 fractal-wallpapers curate manufacture --step verify --sheet artifacts/<sheet>
@@ -671,7 +671,7 @@ artifacts/curation/solve/<name>/contact_sheet.html  the seats, and what each rul
 ```
 fractal-wallpapers curate solve run --n 150                  # one gallery, rendered
 fractal-wallpapers curate solve run --n 150 --no-render      # decide, render nothing
-fractal-wallpapers curate solve run --n 1000 --no-render     # 8.5 min on this machine
+fractal-wallpapers curate solve run --n 1000 --no-render     # 34 min on this machine
 fractal-wallpapers curate solve run --n 150 --no-swap        # the greedy seed alone
 fractal-wallpapers curate solve run --n 150 --swap-seconds 300   # a clock on the loop only
 fractal-wallpapers curate solve run --n 150 --flat-floor     # the pre-2026-08-31 mode floor
@@ -1807,6 +1807,38 @@ put those places back at frames they are already at. A draw over that channel
 therefore goes at a **location list** rather than through the never-opened pool;
 `reframe_q4` (2026-09-01, in the rate section below) is what that measured.
 
+**How much is out of reach, counted 2026-09-01.** The supply sidecar holds 102,552
+locations; **36,868** clear `floors.JUNK_FLOOR` and every one of them is embedded,
+so the neutral store is not the bound. **28,090 carry a frame row and 8,778 do
+not** — 23.8% of the admitted population. Of those 8,778: 8,448 are the reframing
+channel's five ledgers, and **330 are ordinary walk locations** —
+`harvest_run2` 155, `harvest_run3` 81, `harvest_run9` 69, `mandelbrot_sourcing`
+25 — embedded after the scan was taken on 08-26. So the exclusion is not only the
+reframe channel's: any location admitted after a scan is out until the next one,
+and `hunt.drawable` drops it with **no count and no log line**, which is why it
+reads as an empty pool rather than as a filter. 9,641 of the 28,090 are still
+never-opened.
+
+**What the filter is protecting is a policy, not a data dependency.** `recipe_for`
+needs `frame["viewport"]` and `frame["maxiter"]` and nothing else, and both are on
+the embedding row already; `chosen_frame` on a *refused* scan row returns exactly
+those, from `original`. So "draw it at its recorded frame" is available and
+`drawable` declines it on purpose. For a `centered` row the question the scan would
+re-ask is narrow: `framing.recentres` returns nothing for one, so only stage A runs
+— and over the 28,090 rows the scan did take, **84.9% of its 19,041 adoptions were
+recentrings** and only 15.1% were the scale (10.3% of all rows). A centered row's
+whole window can therefore reach at most about a tenth of what the scan buys a walk
+location, against `MARGIN`'s 2 nats, on a scale the location head has already picked
+five rungs of.
+
+**The seam for a location list already exists in two of the three legs.**
+`depth.run` and `mine.run` both take `world: dict | None = None` and only call
+`population()` when it is `None`; `hunt.run` builds `frames`/`scanned`/`drawable`
+inline and has no seam. Nothing but `world["index"]` and `world["pools"]` comes from
+the scan — `by_key`, `known`, `taken`, `best`, `head_scores` and `ledger_scores` are
+all sidecar and ledger — so what a raw list needs is those two keys and a CLI that
+passes a `world` through. Neither is built and this paragraph is not a proposal.
+
 **Rows land as candidates land**, one appended ledger row and one appended score
 row per picture, so a killed hunt is a usable partial. `merge` is separate because
 the ledger upserts by rewriting the whole file: forty megabytes a candidate is not
@@ -2063,6 +2095,15 @@ is read off the newest seating record — `mode_policy_switch_n150`, 2026-08-30,
 niche mode has no bar because it has no row in the pool to bar: `solve.pool` refuses
 it upstream.
 
+**And it has moved since.** Re-read 2026-09-01 over a pool of 100,743 candidates
+(125,697 ledger rows less 24,906 refused `niche_mode` and 48 rejected), of which
+11,574 clear: **`direct_trap_multiply` is the only mode left on the fallback**. The
+five that came off it — `smooth_mean_angle`, `smooth_angle_min`, `smooth_curvature`,
+`direct_trap_screen`, `direct_trap_lines` — now field 40, 33, 49, 39 and 31 distinct
+clearing locations against `headroom.FALLBACK_MIN`'s 25. The column above is the
+08-30 reading and is kept as one; this is the direction it moves in when a leg is
+aimed at a sparse mode.
+
 ## One field, many palettes — how a candidate is made
 
 **`colorize.render` is still THE one place a curation picture is made, and it now
@@ -2265,16 +2306,25 @@ fractal-wallpapers curate depth sheet --name d1                             # re
 ```
 
 **Field modes only, and every conclusion is conditional on that.** A composite at
-forty candidates is about 175 s a location — one arm's worth of places would eat
-a ninety-minute budget — so the roster is `depth.field_modes()`: the shareable
-modes `mode_policy` accepts. Nothing a depth run reports says what a composite
-would have done.
+forty candidates is **212 s a location, measured** — one arm's worth of places would
+eat a ninety-minute budget — so the roster is `depth.field_modes()`: the shareable
+modes `mode_policy` accepts.
 
-**That roster is four modes now, and it was six.** `smooth`, `tia`, `stripe`,
-`exp_smoothing`. Three of the seven field modes — `trap_circle`, `gaussian_int`,
-`curvature` — are `mode_policy` weight 0, and they were three of the four cheapest
-things a depth run could render. A depth leg is now a narrower instrument than the
-one the curves were measured on; size one off a fresh rate rather than off `dc1`'s.
+(That sentence read "about 175 s" and was a derivation off a per-candidate rate
+until 2026-09-01, when `audit_comp40` measured the visit directly at **212.1 s mean
+and 199.5 median** against a field visit's **27.7 / 21.6** and a direct trap's
+**75.3 / 47.8** — the three-leg pilot in the rate section below. The estimate was
+21% low. What no depth run reports is still what a composite *clears*: these three
+legs are unmerged, and their clear rates are the pilot's own.)
+
+**That roster is five modes now, and it was six.** `smooth`, `tia`, `stripe`,
+`exp_smoothing`, `curvature`. Two of the seven production field modes —
+`trap_circle` and `gaussian_int` — are `mode_policy` weight 0, and they were two of
+the cheapest things a depth run could render. (This paragraph said *four* and named
+`curvature` as a third weight-0 mode until 2026-09-01; `curvature` moved 0 → 1 on
+2026-08-29 and `mode_policy`'s own docstring carries the ruling.) A depth leg is
+still a narrower instrument than the one the curves were measured on; size one off
+a fresh rate rather than off `dc1`'s.
 
 **`trap_circle` is out of the draw and still in the catalogue.** Niche by
 `mode_policy` (never given a 4 in 118 labeled rows) and production by the engine's
@@ -2284,12 +2334,56 @@ ingests.
 
 **A composite mode reaches a depth run only through its own leg.** `--modes` is not
 checked against `colorize.shareable`, so a composite named there *runs* — it simply
-pays a full render a candidate, because `colorize.field_for` answers `None` for a
-coloring with no single scalar field. Do not put one on a roster beside field modes:
+pays a full render a candidate, because `colorize._shared_field` answers `None` for
+a coloring with no single scalar field. Do not put one on a roster beside field modes:
 `plan_cycled_modes` cycles the roster **uniformly**, so the dear modes take an equal
 count and the great majority of the budget, and the single `--rate` that sizes the
 plan is then a mean over per-candidate costs that differ by an order of magnitude.
 Give them a separate run with `--modes <composite> ...` and their own rate.
+
+**The roster is a filter on one default and nothing under it assumes a field.**
+`depth.field_modes()` is read at exactly one site — `build_plan`'s `roster`
+default — and every stage below it takes the roster it is handed. `blocks_of` cuts
+at the location whatever the kind, `workers_for` counts blocks, `sweep_fields`
+returns 0 on a directory that was never made, and `renders.FIELD_IDENTITY` names no
+field for an unshareable mode, so the dump lifecycle is a no-op rather than a
+special case. Eight legs on the record have already run this way: `sm_comp` made
+4,246 composite candidates and `sm_direct` 5,932 direct ones on three workers with
+zero failures, and `curate depth` is the **largest** producer of non-field rows in
+the ledger — 11,497 of the 21,913, at the lowest share of any leg (10.8%), because
+they all came through `--modes` and never through the default.
+
+**Two things the record gets wrong when it does.** `config.field_modes_only` is
+written `True` unconditionally, so `cc_pilot` claims it while carrying 96
+`smooth_angle_min` and `smooth_mean_angle` candidates. And the single `--rate`
+prices candidates, while `weave` holds the arms' proportions in **counts**: in
+`cc_pilot` the `mode_floor` arm took 25.0% of its planned count — exactly the leg's
+own 25.0% truncation — and **24.7% of the engine seconds against a declared 5%
+share**, because its two composites cost 5.53 s a candidate against the field arms'
+0.70–1.03. A share is a share of the plan, not of the budget, the moment two arms
+run different kinds.
+
+**The `mode_floor` arm escapes the roster, by design.** `deficient_modes` iterates
+`mine._accepted_modes()` — all fourteen — and `plan_floor` never intersects its
+modes with `roster`; `test_the_floor_draw_holds_the_place_and_moves_the_mode` pins
+that with `threads` and `itinerary`. What bounds it instead is `--floor-seats`,
+and at its default of 10 the census returns **`{}` on today's ledger**: every
+accepted mode holds at least 23 distinct locations over `P(>=4) >= 0.50`, so an arm
+given a share would plan nothing and the other arms would run out of plan rather
+than clock. The crossover is around 50, where it names
+`direct_trap_multiply`, `direct_trap_lines`, `smooth_angle_min`,
+`direct_trap_screen`, `smooth_mean_angle` and `smooth_curvature`, worst first.
+Note that 10 is *below* what `mode_policy.seat_floors` guarantees at n = 1000,
+which is 15 for a normal mode and 30 for a promoted one.
+
+**And that census counts the raw recipe mode, not the routed one.** A modulate
+whose texture said nothing is `smooth` everywhere the seating looks
+(`mode_policy.routed_mode`), and `deficient_modes` does not ask: on 2026-09-01 it
+reads `itinerary` at **152 seats where the routed count is 64**, over the 1,085
+rows the engine reported `texture_flat`. `best_field_by_location` reads the raw
+mode too, so a near-band incumbent can be a degenerate modulate. Neither is live
+today — `itinerary` is off the default roster — and both would be the moment a run
+named it.
 
 Measured 2026-08-28 at `--width 24 --top-bands 5`, seed 20260827, this machine:
 
@@ -2320,6 +2414,38 @@ score — and everything downstream (`curves`, `hit_rate`, `by_mode`, `rank_read
 leg is a **prefix** of the plan it was given rather than a different plan, which is
 what makes the weave's arm proportions hold at any cut. And "what would this leg have
 found at `k = 17`" is arithmetic over `sequence.jsonl` rather than a second run.
+
+### What an arm can and cannot be credited with
+
+**The record credits its arms; the ledger does not.** `depth.json` carries the
+census the plan was taken against (`plan.seats_short_today`), every arm's realized
+candidates, locations, partitions and modes, and per arm its seconds,
+seconds-per-candidate and cumulative primed locations at both bars — enough to price
+one arm against another *inside* one run. Two axes it does not cross: `by_mode`
+pools the arms and `curves[arm]` pools the modes, so a leg whose floor arm ran a
+different roster cannot say what that roster cost there; and `curves` reads the flat
+`P(>=4)` bars rather than each mode's own `headroom.bars` rule, which under-reports
+any mode on the `P(>=3)` fallback. Both are recoverable from `sequence.jsonl`, whose
+rows carry `arm`, `mode`, `seconds` and both probabilities together.
+
+**Past the merge the arm is gone.** `candidate_ledger.hunt_block` keeps two fields
+of nine — `seconds` and `k` — so a merged row names its *run*
+(`provenance.run`) and its index (`provenance.candidate`, which joins to
+`sequence.at`) and never its draw. So crediting a seated picture back to the arm
+that bought it is a join through a file under `artifacts/`, which is gitignored:
+`data/curation/runs.jsonl` tracks six **release** runs and no mining leg at all, and
+`cc_hour` has already lost its `depth.json` while keeping its rows. This is not the
+same axis as the seating's own `leg` field, which says whether `solve` placed a seat
+through `mode_floor` or `general_pool` — that is which door a finished candidate
+walked through, not which budget paid for it.
+
+**One past allocation is fully replayable and it is `dc2` (2026-08-27).** It is the
+only leg on record whose floor roster came from the census rather than from
+`--floor-modes`: 2,991 candidates over 9 modes at 56 proven places, 2,069 engine
+seconds, buying **14 mode-seats** — 148 engine seconds a seat. Four of the nine were
+composites or direct traps. `route_to`'s `hours` on any record is **engine** hours
+while `--budget` is wall seconds, so divide by the leg's own `budget.concurrency`
+before reading it as a clock.
 
 ### Three workers, cut at the location
 
@@ -2862,6 +2988,32 @@ that leg's contention: three engines cost about 1.6–1.8x per candidate over on
 | 0.3132 | `smooth`, flat arm | 3 | 12 | 08-29 | 24,948 cand / 2,079 places | `smooth_500` |
 | 0.3038 | `smooth`, conditioned arm | 3 | 12 | 08-29 | 7,488 cand / 624 places | `smooth_500` |
 | 4.676 | production draw, 1 smooth + 2 strange, palette head | 3 | 1 | 09-01 | 2,286 cand / 762 head-q4 nuclei | `reframe_q4` |
+| 0.692 | 5 accepted **field** modes | 3 | 40 | 09-01 | 1,400 cand / 35 whole visits | `audit_field40` |
+| 1.883 | 3 accepted **direct traps** | 3 | 40 | 09-01 | 1,440 cand / 36 whole visits | `audit_direct40` |
+| 7.360 | 5 **composites** + `itinerary` | 3 | 40 | 09-01 | 328 cand / 7 whole visits | `audit_comp40` |
+
+**The three 09-01 rows are one matched pilot** — `ranked_bands` at share 1.0, seed
+20260901, the never-opened drawable pool banded across the whole rank range, nothing
+merged — so they are the one place in this table where three kinds are comparable.
+Per **visit** (40 candidates at a place) they are **27.7 / 75.3 / 212.1 s** mean and
+**21.6 / 47.8 / 199.5** median. Their medians are 0.372 / 1.157 / 5.231, which is
+where the mean-vs-median warning below bites hardest: sizing a field leg off the
+median over-plans it by 86%.
+
+Where the visit goes, and it is not the same shape three times. A field visit is
+**9.13 s of dump** — five modes at 1.83 s each, 33% of the leg — then 0.463 s a
+candidate for the recolour, judge, colour and autolevel. A direct trap is **86.3%
+`paint`** and nothing else: no dump, and `autolevel.applies_to` excludes the kind, so
+`repaint` and `measure` are exactly 0. A composite is 59.1% `paint` and **33.6%
+`repaint`** — the operator's second pass is a second *full render* there, so a third
+of a composite visit is the autolevel curve firing.
+
+On a wall hour at three workers, and applying each mode's own `headroom.bars` rule
+over the standing pool, that is **15,133 / 5,601 / 1,448** candidates an hour and
+**1,374 / 330 / 100** clearing ones — field buys **13.7x** the seatable pictures of
+composite and **4.2x** of direct trap. On these pilots' own fresh clear rates
+(4.71% / 4.24% / 1.83%) it is 713 / 237 / 27, which is 27x and 3.0x; the pool's
+rates are the higher pair because the pool holds legs that aimed at those modes.
 
 **Every `s/cand` above is a MEAN, and the flat-vs-ranked comparison needs the
 median beside it.** A per-candidate cost is long-tailed — `mine1`'s per-partition
@@ -3114,9 +3266,11 @@ them silently becomes a count over winners.
 
 ### What the gallery leg costs at n=150 on this machine
 
-Measured 2026-08-31 over the 98,457-candidate pool, idle machine, `--no-render`:
-**`curate solve run --n 150` is about five minutes** — the seed 23 s and the swap
-loop the rest of it, over a view of 2,773 rows. The retired history is the
+Measured 2026-09-01 over the 100,743-candidate pool, idle machine, `--no-render`:
+**`curate solve run --n 150` is 44.6 s** — pool and view 11.2 s, the seed 24.5 s and
+the swap loop 8.9 s, over a view of 6,818 rows. The five-minute figure this
+paragraph used to carry was the leg before `curation.signatures` and the two swap
+prunes; the table under *What it costs* is the one to read. The retired history is the
 comparison worth keeping: on 2026-08-29 over a 275,822-candidate pool the exact
 solve was 238 s at n=150 and **did not terminate at all** at n=1000, while the
 sequential `curate seat` was 51 s at n=150 and had no objective to report.
