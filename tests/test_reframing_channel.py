@@ -559,6 +559,38 @@ def test_a_continuing_leg_does_not_write_the_earlier_legs_nuclei_a_second_time(
     assert report["seeds_consumed"] == len(carried["promoted"])
 
 
+def test_a_chain_inherits_every_earlier_leg_and_not_only_the_last(tmp_path, monkeypatch) -> None:
+    """The duplicate a one-directory `--prior` writes, and it is not hypothetical.
+
+    A leg handed only its immediate predecessor inherits only that ledger's atom
+    keys, so it re-finds and re-writes what the legs before it found. On the night
+    of 2026-08-31 a fourth leg handed only the third's ledger wrote 192 of its 302
+    rows on atoms the first leg already held — one atom in two ledgers, which is
+    two location keys the moment the two legs pick different rungs, which is one
+    atom in two seats.
+    """
+    drawn(monkeypatch)
+    first = channel(tmp_path / "one", scorer=Stub(p_ge3=0.99, p_ge4=0.99))
+    first.run([ON_AN_ATOM])
+    held = {row["atom_key"] for row in reframing.read(first.ledger.path)}
+    assert held, "the first leg must have found something for this guard to mean anything"
+
+    second = channel(tmp_path / "two", scorer=Stub(p_ge3=0.99, p_ge4=0.99), seed=5)
+    second.seen |= reframing.prior_run(first.out_dir, log=lambda *_a: None)["found"]
+    second.run([ON_AN_ATOM])
+
+    only_the_last = reframing.prior_run(second.out_dir, log=lambda *_a: None)
+    whole_chain = reframing.prior_run([first.out_dir, second.out_dir], log=lambda *_a: None)
+    assert not (held & only_the_last["found"]), "the last ledger cannot know the first's atoms"
+    assert held <= whole_chain["found"]
+    assert len(whole_chain["record"]["priors"]) == 2
+    assert whole_chain["record"]["nuclei_found"] > only_the_last["record"]["nuclei_found"]
+    # And every seed the chain fired at is spent, promotions included — which is
+    # what a plain continuation drops and a --reprobe leg deliberately keeps.
+    assert ON_AN_ATOM.id in whole_chain["spent"]
+    assert ON_AN_ATOM.id in whole_chain["fired"]
+
+
 def test_a_reprobe_fires_at_a_spent_root_again_and_still_writes_no_duplicate(
     tmp_path, monkeypatch
 ) -> None:
