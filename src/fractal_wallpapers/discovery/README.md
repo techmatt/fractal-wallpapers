@@ -72,14 +72,19 @@ a minute for 788 rows and left the sidecar at 91,272 rows; `curate embed` wrote
 **663** vectors in 49.5 s and left the store complete over 29,083 admitted
 locations with 0 missing.
 
-**`--prior <dir>` continues an earlier run and is not optional between legs.** The
-atom-key dedup is per run, so a second leg that re-derived its seeds off the label
-store fires the same roots at the same atoms and writes **every one of the first
-leg's nuclei a second time** — one nucleus in two ledgers, which the union reads
-as two locations. `--prior` hands the new leg three things off the earlier ledger:
-the atom keys it found (they seed `seen`), the proven root ids it consumed (off
-the queue), and its admitted rows as this leg's promotions. Note that "consumed"
-is read off the rows, so a root that produced nothing is invisible and is fired
+**`--prior <dir>` continues an earlier run, it is not optional between legs, and
+it must name EVERY earlier leg.** The atom-key dedup is per run, so a second leg
+that re-derived its seeds off the label store fires the same roots at the same
+atoms and writes **every one of the first leg's nuclei a second time** — one
+nucleus in two ledgers, which is two location keys the moment the two legs pick
+different rungs, which is one atom in two seats. The flag is repeatable and a
+chain that names only the last link forgets everything before it: measured
+2026-09-01, a fourth leg handed only the third's ledger wrote **192 of its 302
+rows** on atoms the first leg already held. `--prior` hands the new leg the atom
+keys the chain found (they seed `seen`), the proven root ids it consumed (off the
+queue), every seed id it fired at, and its admitted rows as this leg's
+promotions, deduplicated on the atom at the better class. Note that "consumed" is
+read off the rows, so a root that produced nothing is invisible and is fired
 again — which is wanted, because the seed snap's ceiling has moved since.
 
 **`--reprobe` fires at the roots an earlier leg already spent.**
@@ -113,6 +118,18 @@ factor of two too tight, and 48x and 64x sit below the band at roughly 38-61 px
 and 28-45 px. The outer two were added after generation 1's head-q4 rate rose
 monotone outward over the three rungs it had — 2.1% at 16x, 2.9% at 24x, 3.5% at
 32x — which left the ladder's own end the thing that had never been tested.
+
+**Tested, on 6,590 locations over the night of 2026-09-01: the rate plateaus at
+32x and the pick keeps moving outward anyway.** Head-q4 as a share of what was
+drawn at each rung reads **2.0 / 5.0 / 7.3 / 7.1 / 7.6%** at 16 / 24 / 32 / 48 /
+64x — 48x and 64x are inside a rounding of 32x rather than above it, so
+generation 1's monotone read was the ladder ending too early and not a trend. But
+the outer two take **596 of the 1,305 q4 picks (46%)**, and the median chosen
+frame is 32 atom sizes with quartiles at 24 and 48, so the ladder is used across
+its whole width. Both outer rungs draw about 790 fewer frames than the inner
+three: a wider frame trips `width_over_root_scale` on the largest atoms. What
+none of this settles is whether a 64x frame is a better *minibrot* picture or
+merely one the head likes; that is what the `reframe_nuclei` sheet is cut for.
 
 **A nucleus location is `centered`, and the field is a contract with
 `curation.framing`.** The centre is the atom the operators solved for and it is
@@ -150,13 +167,26 @@ every seed the tighter one accepts and buy only the annulus between 0.75 and 1.0
 frame widths, at a second full Newton pass. The maker did not fire it at seeds
 either — its `snap_to_nucleus` rows are all walk-triggered.
 
+**A crashed `engine.screen` batch costs its frames, not the leg.** One engine
+process died two minutes into an eight-hour leg on 2026-08-31 — nonzero with
+empty stdout *and* stderr, a hard crash rather than a refusal it could describe —
+and took the leg with it. A batch is retried `SCREEN_RETRIES` times and then
+given up on, its nuclei counted as `nucleus_not_drawn` and left in `seen`. An
+unattended leg that stops on one frame has spent the night, which is worse than
+sixty-four missing rows. A supervisor over these legs must tell a **nonzero exit**
+(a crash, retry it) from a **clean exit with few rows** (the queue is done).
+
 **It is operator-bound, not render-bound, so the three-worker render pool does not
 apply.** One `engine.screen` process at a time, below-normal by construction, the
 same shape `curation.framing`'s refine leg has. On the generation-1 smoke the
 operators were 53% of the leg's clock and the neighbourhood enumeration was the
 expensive half of that: **`expand_neighborhood` cost 17x what `snap_at_seed` cost
 per nucleus** (4.6 s against 0.27 s on the pilot), because most of its probes hand
-back the parent atom.
+back the parent atom. Over the whole of 2026-09-01's night the operators were
+**92%** of the leg (26,742 s of 29,014 s) and the split was starker still:
+`expand_neighborhood` **15,541 s for 5,974 locations at 2.60 s each and 1,316,304
+Newton solves**, against `snap_at_seed`'s **61 s for 616 locations at 0.10 s
+each** — 99.6% of the operator clock for 91% of the locations.
 
 **Generations, and why a round is not a generation.** A nucleus the head scores at
 or above the q4 admission bar — `supply.currency`'s keeper floor on `P(>=3)` *and*
@@ -168,6 +198,22 @@ generation once `--prior` is in play: an earlier leg's promotions enter the firs
 round's queue beside whatever is left of the label store, so one round writes rows
 of two generations. The summary spells the loop's entries `rounds` for that reason
 and carries a `by_generation` block beside them.
+
+**The head-q4 rate does not decay with generation — it rises.** Over 28
+generations on the night of 2026-09-01 it went 14.0% at generation 1 to 21.3% at
+3, 25.6% at 5 and 32.0% at 16, and each generation is a fresh promotion set off
+the one before rather than one surviving lineage. Read it as the head agreeing
+with itself about what it liked one step ago rather than as the channel getting
+better, and price it on a person's verdicts before believing it. The other half
+of the same measurement: a `head_q4` seed returns q4 at **42.5%** against a
+`matt_q4` seed's **41.3%**, and a `head_keeper` seed matches a `matt_q3` seed at
+**17.3%** exactly, so one generation on the head's class buys what the person's
+class buys.
+
+**A leg exits when its queue empties, and that is completion.** Both full legs of
+that night ran their queues out before their clocks — 3h22m and 2h48m — which is
+why an overnight is a *chain* of legs under one supervisor rather than one long
+`--minutes`.
 
 **Record and rank, never gate.** Every derived nucleus is scored and written
 whatever the head said. Neutral pre-selection distinctness (`curation.distinct`,
