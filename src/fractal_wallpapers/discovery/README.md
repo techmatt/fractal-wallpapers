@@ -139,6 +139,35 @@ nothing for a centered row and `refine` plans no stage-B frames for one, three
 frames a location instead of seven. The flag is read off the row rather than off
 the channel name, so a hand-placed nucleus frame carries it for the same reason.
 
+**Which is also why these places are drawn from a location LIST and never through
+the curation pool.** `curation.hunt.drawable` — the population `curate hunt`,
+`curate mine` and `curate depth` all take — drops a location the pool-wide
+refinement scan holds no row for, and the scan holds none for any of these: it
+predates the channel, and a centered row wants no scan row anyway, because its
+frame is the rung the head already picked. See `curation/README.md`'s frame-lookup
+paragraph.
+
+**Drawn as wallpapers, the q4 slice clears at nine times the breadth rate, and the
+rung question comes back with an answer.** `reframe_q4` (2026-09-01) spent an hour
+of the standard per-location draw over the head-q4 nuclei surviving
+`PRESELECT_RADIUS`, top-down: **2,286 candidates over 762 of the 1,252 places**,
+15.62% clearing raw `P(>=4) >= 0.50` against a fresh breadth draw's 1.72% at the
+same cost a candidate, and 38.1% of places producing at least one such row. Per the
+rung the head picked:
+
+| rung | 16x | 24x | 32x | 48x | 64x |
+|---|---|---|---|---|---|
+| places drawn | 61 | 122 | 216 | 157 | 206 |
+| candidates clearing q4 | 9.3% | 14.2% | **18.7%** | 17.0% | 14.1% |
+| places with a q4 row | 25% | 34% | **45%** | 44% | 33% |
+
+**The render judge peaks at 32x and falls away at 64x**, where the location head's
+own pick rate merely plateaued — so the outer rungs are, on this evidence, frames
+the location head likes more than the wallpaper judge does. It is an observation
+and not a controlled comparison: the rung on each row is the one the head *chose*
+for that place, so a rung column is partly a column about which places chose it.
+The `reframe_nuclei` sheet is still what settles it against a person's verdict.
+
 **The seed snap scans to period 256**, over `operators.MAX_PERIOD`'s 64.
 Measured on 60 generation-1 seeds: 64 found 24 nuclei in 5.1 s, 128 found 30 in
 8.6 s, 256 found **35 in 17.7 s** — a 58% hit rate against 40% at 3.5x the Newton
