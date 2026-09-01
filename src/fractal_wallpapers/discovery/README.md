@@ -113,6 +113,18 @@ budget. Every source that enumerated minibrots from first principles was measure
 and found dead; what a minibrot is good for is being a *marker* of a dense
 neighbourhood, at a scale the search can compute before rendering anything.
 
+**That verdict is about one enumerator at one scale, and there is a counter-fact
+worth carrying beside it.** The measurement that closed it is the source
+project's `minibrot_roster_v2` — 487 human-blind labels on screen-selected,
+G-framed windows at **one scale per atom**, class-4 yield 2, both windows of one
+atom. Its own file records the correction that scale was never varied. Against
+that, `data/smooth_render/rows/blind_minibrot.jsonl` — 197 rows, `eval_only`,
+unanchored, drawn from **maneuver views taken directly as locations** — came back
+**96 fours, 95 threes, 6 twos: 48.7% q4**, against 3.1% for `fresh_pool_draw` and
+0% for `pool_draw_bootstrap` on the same store. Minibrot *supply* has been
+measured to work; minibrot *auto-framed windows at one scale* have been measured
+not to. They are different claims.
+
 **`snap_to_nucleus` is the outward framing ladder**, and it is the operator that
 turns that marker into views. It recenters on the nucleus the view's centre sits
 on — one probe, one Newton pass — and emits a `Reframing` per rung of
@@ -125,6 +137,46 @@ material the corpus wants. The verdict is per rung off one solve — a shallow a
 can take 4× and be refused 16× — and nothing is reframed wider than
 `MAX_WIDTH` (3.0), a whole-set view, because wider than that is a different
 search rather than a reframing of this neighbourhood.
+
+**A reframing's own frame is never a candidate, and that is the shape of the
+whole operator suite.** `_propose` pushes the nucleus-centred view onto the
+frontier as a *node*; only what `expand` draws **below** a node becomes a
+candidate, and curation reads candidate rows alone
+(`supply.ledgers.passes_gates`). Measured in `harvest_run10`: **0 of 14,678
+distinct available reframing viewports appear as a candidate viewport, and 0 of
+12,163 pushed node ids is a candidate's own node id.** So the picture the
+operator constructs is a place to stand and never a place to ship — it cannot be
+scored, labelled, coloured or released — which is a design fact worth stating
+because every count of "what the operators bought" is a count of their
+*descendants*.
+
+**And the descendants are inside the atom.** `Policy.zoom` is `(0.35, 0.50)`, so
+a 16× frame's children land at 5.6–8× atom sizes and its grandchildren at 2–4×.
+Over twelve production ledgers the 42,904 candidates descended from a reframing
+have a **median frame multiple of 1.66 atom sizes**, 59% of them below 2×, and
+that is where 9,432 of their 14,109 `interior_cap` refusals sit.
+
+**How wide a nucleus reads, per rung, measured.** Eleven ring-seeded atoms at a
+1280 px frame — which is both label geometry and `release.RELEASE_REGIME`; halve
+it for the head's own 640 px view:
+
+```text
+framing        2x       4x       8x      16x      32x      64x     128x
+body px      ~1050  460-740  230-370  115-183   57-92    28-45    14-22
+interior   .50-.75  .16-.24  .04-.06  .01-.02    ~.003    ~.001    ~.000
+```
+
+The 2× frame is half interior or more and is refused by `Gates.interior_cap`
+(0.30), which is the arithmetic behind "there is no small rung". The top rung,
+16×, puts the body at 115–183 px. `scratch/AUDIT_minibrot_pipeline_report.md`
+(2026-08-31) argues that a *minibrot as a subject with detail around it* is the
+50–100 px band, which is a **32× rung this ladder does not have**.
+
+**And curation's refinement scan cannot supply it.** `curation.framing`'s window
+is half an octave either side — it has adopted 19,041 of its 28,090 scans at
+Δ = 2.0, and moved outward on 161 of the 809 nucleus-centred places it saw, but
+always at ×1.414. A frame two rungs too tight for its subject stays two rungs too
+tight, so the rung has to be right when the operator emits it.
 
 **What the probe costs, measured.** A harvest charges `expand` and
 `trigger_reframings` as one number, so the ledger cannot break the operators out.
