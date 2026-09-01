@@ -116,7 +116,16 @@ from fractal_wallpapers.curation import (
 #: six, so the two are not comparable readings of the same pool. The block's
 #: `floor` is now the flat number when one was asked for and `None` otherwise, the
 #: mapping is on `floors`, and `floor_rule` names which of the three rules ran.
-SCHEMA = 3
+#:
+#: **4**: the palette-group block prices against the cap [`curation.rules`]
+#: applies — [`ceiling.group_cap`] under [`solve.DEFAULT_GROUP_CAP`] — instead of
+#: the flat [`ceiling.GROUP_CAP`] the retired seat leg used. A schema 3 census read
+#: 754 groups at one seat each and called the pool short by 246 at `n = 1000`,
+#: where the leg that actually runs seated a realized maximum of 7 against a cap of
+#: 25 and found no ceiling binding at all. That is not a tighter reading of the
+#: same rule, it is a different rule, so the two are not comparable. The block now
+#: carries `cap` and `cap_rule`.
+SCHEMA = 4
 
 #: The subtree a census lands in, under the regenerable tree.
 UNIT = "headroom"
@@ -627,23 +636,33 @@ def _at(
         renders=renders,
         what="family",
     )
+    # The cap the SHIPPED leg applies, asked of `ceiling` rather than spelled a
+    # second time here. This block read `ceiling.GROUP_CAP` — a flat one a group —
+    # until 2026-08-31, which was the retired seat leg's cap and had stopped being
+    # anybody's default; at n=1000 it priced 754 groups at one seat each and called
+    # the pool short by 246 while the leg that actually runs seated a realized
+    # maximum of 7 against a cap of 25.
+    cap = ceiling.group_cap(n, solve.DEFAULT_GROUP_CAP)
     out["blocks"]["palette_group_cap"] = _cover(
         n,
         members=by_group,
         axis=sorted(by_group),
-        allowance=lambda _name: ceiling.GROUP_CAP,
+        allowance=lambda _name: cap,
         spare=[],
         costs=costs,
         renders=renders,
         what="palette group",
         flag_thin=False,
         note=(
-            f"the TIGHT form of the cap. A second seat in one group is allowed when its "
-            f"pixel cloud is more than {ceiling.TAU_GROUP} from every picture that group "
-            "already seated, so the real condition is looser than this by however many "
-            "exemptions the pixels grant — which is not knowable without decoding them"
+            f"a COUNT of seats one palette group may take: {cap} at n={n}, from "
+            f"ceiling.group_cap under the {solve.DEFAULT_GROUP_CAP} rule, which is the "
+            "cap curation.rules applies. There is no same-group distance rule and no "
+            "second threshold — the retired solve's TAU_GROUP row was dropped rather "
+            "than merged, so this block is the whole of the cap and not a tight form of it"
         ),
     )
+    out["blocks"]["palette_group_cap"]["cap"] = cap
+    out["blocks"]["palette_group_cap"]["cap_rule"] = str(solve.DEFAULT_GROUP_CAP)
     modes = mode_policy.accepted()
     natural = mode_policy.seat_floors(n)
     # The gallery leg's own two helpers, reused rather than reimplemented: a census

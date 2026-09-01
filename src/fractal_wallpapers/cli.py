@@ -3415,7 +3415,7 @@ def _twin_sweep(candidates, radius) -> dict:
     the twin relation the census bounds is a relation between places, and a place
     is represented by the picture a seating would reach for first.
     """
-    from fractal_wallpapers.curation import distinct, headroom
+    from fractal_wallpapers.curation import distinct, headroom, signatures
     from fractal_wallpapers.paths import rehome
 
     kept = headroom.clearing(candidates)
@@ -3432,8 +3432,16 @@ def _twin_sweep(candidates, radius) -> dict:
         where = Path(rehome(held.picture))
         return where if where.is_file() else None
 
+    # The sidecar holds exactly the vector this sweep builds, keyed on the RECIPE;
+    # the sweep is keyed on the place, and `best` is the map between them.
+    held_signatures = signatures.for_candidates(best.values())
+
+    def reduced_for(key):
+        candidate = best.get(key)
+        return None if candidate is None else held_signatures.get(str(candidate.key))
+
     keys, matrix = distinct.matrix_for(sorted(best))
-    return distinct.twins(keys, matrix, picture_of)
+    return distinct.twins(keys, matrix, picture_of, reduced_for=reduced_for)
 
 
 class _PictureOf(NamedTuple):
@@ -3483,6 +3491,22 @@ def curate_flatness(args: argparse.Namespace) -> int:
     record = flatness.sweep(candidates, workers=args.workers, recompute=args.recompute)
     print(json.dumps(record, indent=2))
     print(json.dumps(flatness.coverage(candidates), indent=2))
+    return 0
+
+
+def curate_signatures(args: argparse.Namespace) -> int:
+    """Sweep the diversity rule's bound signature over the clearing pool."""
+    from fractal_wallpapers.curation import headroom, signatures
+
+    candidates, _costs, _refused = headroom.population()
+    kept = headroom.clearing(candidates)
+    print(f"[signatures] the clearing pool: {len(kept):,} candidate(s)")
+    if args.what == "coverage":
+        print(json.dumps(signatures.coverage(kept), indent=2))
+        return 0
+    record = signatures.sweep(kept, workers=args.workers, recompute=args.recompute)
+    print(json.dumps(record, indent=2))
+    print(json.dumps(signatures.coverage(kept), indent=2))
     return 0
 
 
@@ -7250,6 +7274,7 @@ def curate_commands(subcommands) -> None:
     from fractal_wallpapers.curation import release as release_module
     from fractal_wallpapers.curation import run as run_module
     from fractal_wallpapers.curation import shrinkage as shrinkage_module
+    from fractal_wallpapers.curation import signatures as signatures_module
     from fractal_wallpapers.curation import solve as solve_module
     from fractal_wallpapers.curation import view as view_module
 
@@ -8106,6 +8131,46 @@ def curate_commands(subcommands) -> None:
         help="with `restore`: overwrite a live sidecar holding MORE rows than the manifest",
     )
     flatness_step.set_defaults(handler=curate_flatness)
+
+    signatures_step = steps.add_parser(
+        "signatures",
+        help="the diversity rule's bound signature, swept over the clearing pool into a "
+        "sidecar beside the scores",
+        description=(
+            "The gallery leg screens a candidate against the seated pictures with a sound "
+            "lower bound read off a REDUCED pixel-cloud signature — four blocks of "
+            "quantiles by a thousand directions, 16 KiB against the metric's 512. Making "
+            "one costs a JPEG decode, about 96 ms, and it was ~100% of the leg before the "
+            "prunes. It is the same number every time, so this sweeps it once into a "
+            "sidecar and every later solve reads it instead of deriving it. One row per "
+            "recipe key; NO LEDGER ROW IS EDITED. Incremental, and a row is stale when the "
+            "recipe's picture is not the picture the row was read from — never on a clock."
+        ),
+    )
+    signatures_step.add_argument(
+        "what",
+        nargs="?",
+        default="sweep",
+        choices=["sweep", "coverage"],
+        help="read every clearing candidate the sidecar cannot answer for, or report how "
+        "much of the pool it can answer for",
+    )
+    signatures_step.add_argument(
+        "--workers",
+        type=int,
+        default=signatures_module.WORKERS,
+        metavar="N",
+        help=f"how many processes decode at once (default {signatures_module.WORKERS}, the "
+        "render pool's number and for the same reason: this should not make the desktop "
+        "unusable while it runs)",
+    )
+    signatures_step.add_argument(
+        "--recompute",
+        action="store_true",
+        help="re-read every candidate rather than only the ones the sidecar cannot answer "
+        "for. What to run after changing anything about the reduction itself",
+    )
+    signatures_step.set_defaults(handler=curate_signatures)
 
     rank_key_step = steps.add_parser(
         "rank-key",

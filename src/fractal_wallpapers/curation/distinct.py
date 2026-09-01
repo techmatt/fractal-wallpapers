@@ -543,7 +543,15 @@ PAIR_MATRIX_LIMIT = 6000
 BOUND_BLOCK = 16
 
 
-def twins(keys, matrix, picture_of, tau: float | None = None, cache: int = 384, log=print) -> dict:
+def twins(
+    keys,
+    matrix,
+    picture_of,
+    tau: float | None = None,
+    cache: int = 384,
+    reduced_for=None,
+    log=print,
+) -> dict:
     """**Every** twin pair in the population, found exactly, and where it sits in
     the descriptor.
 
@@ -561,6 +569,12 @@ def twins(keys, matrix, picture_of, tau: float | None = None, cache: int = 384, 
     quantiles. A pair the bound puts at or beyond `tau` provably cannot be a twin,
     so it is never measured. What it costs is one signature per picture to build
     the bound signatures, and then only the survivors in full.
+
+    `reduced_for(key)` is where those bound signatures come from when a caller has
+    them already — [`curation.signatures`]' sidecar holds exactly this vector for
+    every clearing candidate, and this sweep used to build them and throw them
+    away. It returns `None` for a key it cannot answer for and that key is decoded
+    as before, so an unswept checkout is slower and never different.
     """
     import numpy
 
@@ -569,13 +583,22 @@ def twins(keys, matrix, picture_of, tau: float | None = None, cache: int = 384, 
 
     tau = ceiling.TAU if tau is None else float(tau)
     usable = [at for at, key in enumerate(keys) if picture_of(key) is not None]
-    log(f"[distinct] twins: bound signatures for {len(usable):,} picture(s)")
-    reduced = numpy.stack(
-        [
+    held = 0
+    made = []
+    for at in usable:
+        ready = None if reduced_for is None else reduced_for(keys[at])
+        if ready is not None:
+            held += 1
+            made.append(numpy.asarray(ready).reshape(-1))
+            continue
+        made.append(
             rules.reduce_signature(pixel_clouds.of_picture(picture_of(keys[at]))).reshape(-1)
-            for at in usable
-        ]
+        )
+    log(
+        f"[distinct] twins: bound signatures for {len(usable):,} picture(s) "
+        f"({held:,} from the sidecar, {len(usable) - held:,} decoded)"
     )
+    reduced = numpy.stack(made) if made else numpy.zeros((0, rules.bound_width()), numpy.float32)
     width = rules.bound_width()
     survivors: list = []
     screened = 0

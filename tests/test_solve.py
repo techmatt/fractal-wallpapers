@@ -11,10 +11,12 @@ eighteen mode floors against twenty seats, eleven of the modes with a handful of
 places each. `test_score_order_would_have_lost_the_thin_modes` is that failure
 written down, and the two tests around it are the fix.
 
-The second is **what the swap loop is allowed to give back**. The objective is
-lexicographic with the worst seated score above the demand shortfall, so a loop
-free to remove anything empties every mode floor the seed filled — the tests
-around `solve.Gallery.protected` are that, measured both ways.
+The second is **what the swap loop is allowed to give back**, and the answer is
+now the tier order rather than a guard. The shortfall outranks the worst seated
+score, so a swap that empties a mode floor to lift one seat loses on tier 2 and
+no tier beneath it can pay for that. The tests below are that, measured — including
+the reading that made a `protected` set necessary, which is what the order used to
+be and is now the planted red.
 """
 
 from __future__ import annotations
@@ -753,7 +755,7 @@ def test_the_objective_is_stated_in_the_fitted_key_and_not_p_ge4_alone():
 
 def test_the_record_names_every_tier_and_the_order_they_are_read_in():
     record = solve.solve([candidate("a")], n=20, key=solve.JUDGE_KEY, log=quiet)
-    assert record["objective"]["tiers"] == ["seats", "worst", "shortfall", "sum"]
+    assert record["objective"]["tiers"] == ["seats", "shortfall", "worst", "sum"]
     assert "lexicographic and strict" in record["objective"]["of"]
     assert set(record["objective"]["final"]) == {"seats", "worst", "shortfall", "sum"}
     assert record["objective"]["seed"]["seats"] == record["filled"]
@@ -762,20 +764,20 @@ def test_the_record_names_every_tier_and_the_order_they_are_read_in():
 # --------------------------------------------------------------------------- #
 # The 1-swap loop.
 # --------------------------------------------------------------------------- #
-def swapping(rows, n, floors=None, keep_demands=True, targets=None):
+def swapping(rows, n, floors=None, targets=None):
     """A gallery seeded and then improved, with no view and no pictures in the way."""
     rule = ceiling.Rule(targets=dict(targets or {}))
     rule.group_cap = 100
     state = rules.State(rule, n)
     demands = solve.demands_for(floors or {}, targets or {})
-    gallery = solve.Gallery(state, None, demands, keep_demands=keep_demands)
+    gallery = solve.Gallery(state, None, demands)
     rank = solve.ranking(None)
     ordered = sorted(rows, key=rank)
     solve.seed(gallery, ordered, demands, rank, {}, log=quiet)
     return gallery, solve.improve(gallery, ordered, log=quiet)
 
 
-def seated_by_hand(rows, n, keep, floors=None, keep_demands=True):
+def seated_by_hand(rows, n, keep, floors=None):
     """A gallery put into a knowably bad state, so the loop alone is under test.
 
     The greedy seed is hard to beat on a pool of five rows — a ranked walk over a
@@ -788,7 +790,7 @@ def seated_by_hand(rows, n, keep, floors=None, keep_demands=True):
     rule.group_cap = 100
     state = rules.State(rule, n)
     demands = solve.demands_for(floors or {}, {})
-    gallery = solve.Gallery(state, None, demands, keep_demands=keep_demands)
+    gallery = solve.Gallery(state, None, demands)
     by_key = {row.key: row for row in rows}
     for key in keep:
         gallery.seat(by_key[key], "general_pool")
@@ -833,15 +835,53 @@ def test_a_pass_that_finds_no_swap_ends_the_loop_rather_than_spinning():
 
 
 def test_the_loop_stops_at_the_worst_seated_value_and_says_the_prune_is_sound():
-    """Nothing below the worst seat can improve any tier — seating it would BECOME
-    the worst seat, and tier 2 outranks tiers 3 and 4. So the prune is the set of
-    candidates that provably cannot help rather than a budget."""
+    """Nothing below the worst seat can improve tier 3 or tier 4 — seating it would
+    BECOME the worst seat. Tier 2 is the exemption and it is taken first, so the
+    prune is the set of candidates that provably cannot help rather than a budget."""
     rows = [candidate(f"s{at}", score=0.9 - at / 100) for at in range(3)]
     rows += [candidate(f"tail{at}", score=0.01) for at in range(500)]
     _gallery, report = swapping(rows, n=3)
     assert report["candidates_considered"] < 500
     assert "provably" not in report["prune"] or True
     assert "worst seated value" in report["prune"]
+
+
+def test_a_row_BELOW_the_worst_seat_is_still_reached_when_it_covers_a_short_floor():
+    """THE SWAP THE RULING EXISTS FOR, and the walk prune nearly hid it.
+
+    A pass stops at the worst seated value because seating anything below it makes
+    it the worst seat. That is sound for tiers 3 and 4 — and tier 2 is the
+    shortfall, which sits ABOVE both. A starved mode's only available row is
+    usually a weak one, so it is usually below the floor, and a walk that breaks
+    there can never reach the one swap "grab where possible" is about.
+
+    RED with an unconditional `break` at the floor, which is what this was while
+    the worst seated score outranked the shortfall.
+    """
+    rows = [candidate(f"s{at}", score=0.9 - at / 100) for at in range(3)]
+    # The only `stripe` in the pool, and it is far below every seated score.
+    rows.append(candidate("stripe_only", score=0.01, mode="stripe"))
+    # Seeded by hand without it, because the seed's own mandate leg would have
+    # taken it from the floor's subpool and the SWAP loop is what is under test.
+    gallery = seated_by_hand(rows, n=3, keep=["s0", "s1", "s2"], floors={"stripe": 1})
+    assert gallery.objective.shortfall == 1, "the floor starts short"
+    assert gallery.worst_value == pytest.approx(0.88)
+    report = solve.improve(gallery, sorted(rows, key=solve.ranking(None)), log=quiet)
+    assert gallery.objective.shortfall == 0, "the floor was filled from below the floor"
+    assert "stripe_only" in gallery.state.seated
+    assert report["by_tier"] == {"shortfall": 1}
+    assert gallery.objective.worst == pytest.approx(0.01), "and the worst seat paid for it"
+    assert "WHILE NOTHING IS SHORT" in report["prune"]
+
+
+def test_the_walk_still_stops_at_the_floor_when_nothing_is_short():
+    """The prune is not given up, it is made conditional. With no demand short
+    there is no tier above the worst seat that a 1-swap can move, so the rest of
+    the walk is provably hopeless and the pass stops."""
+    rows = [candidate(f"s{at}", score=0.9 - at / 100) for at in range(3)]
+    rows += [candidate(f"tail{at}", score=0.01) for at in range(500)]
+    _gallery, report = swapping(rows, n=3)
+    assert report["candidates_considered"] < 500
 
 
 def test_the_loop_never_offers_more_than_its_own_drop_count_per_candidate():
@@ -894,27 +934,43 @@ def floor_and_a_better_row():
     ]
 
 
-def test_a_met_demand_is_not_given_back_to_lift_the_worst_seat():
-    """THE RECONCILIATION. Tier 2 outranks tier 3, so taken alone the loop trades
-    `stripe_weak` for `smooth_b`, the floor goes short, and tier 3 cannot buy it
-    back. The mode floors are one of the rules this leg KEEPS, and a rule the loop
-    is free to break at will is not a rule."""
+def test_a_met_demand_is_kept_by_the_TIER_ORDER_and_by_no_guard():
+    """THE RULING. The shortfall outranks the worst seated score, so trading
+    `stripe_weak` for `smooth_b` loses tier 2 and the two tiers beneath it cannot
+    pay for one. Nothing refuses the removal — `weakest` offers every seat — and
+    the swap is simply not an improvement."""
     gallery, report = swapping(floor_and_a_better_row(), n=2, floors={"stripe": 1})
     assert "stripe_weak" in gallery.state.seated
     assert report["swaps"] == 0
-    assert report["demands_kept"] is True
     assert gallery.objective.shortfall == 0
+    assert "no guard" in report["met_demands_are"]
+    assert not hasattr(solve.Gallery, "protected"), "the guard the order replaced"
+    seated = set(gallery.state.seated)
+    assert gallery.weakest(seated, 8) == ["stripe_weak", "smooth_a"], "both offered"
 
 
-def test_the_pure_lexicographic_reading_empties_the_floor_and_is_reachable():
-    """PLANTED, and it is the measurement rather than the argument: with the demand
-    unheld the loop does exactly what the strict order says, and the floor goes."""
-    gallery, report = swapping(
-        floor_and_a_better_row(), n=2, floors={"stripe": 1}, keep_demands=False
-    )
-    assert "stripe_weak" not in gallery.state.seated
+def test_the_RETIRED_order_empties_the_floor_which_is_why_it_is_retired():
+    """PLANTED, and it is the measurement rather than the argument. Put the worst
+    seated score back above the shortfall — the retired program's order — and the
+    same three rows lose the floor: `stripe_weak` goes, tier 2 rises, and nothing
+    beneath can buy the representation back. That reading needed a guard; this one
+    does not, and this is the red that proves the difference is the ORDER."""
+    retired = ("seats", "worst", "shortfall", "sum")
+
+    def order(self):
+        holding = {
+            "seats": self.seats,
+            "worst": -1.0 if self.worst is None else float(self.worst),
+            "shortfall": -int(self.shortfall),
+            "sum": float(self.total),
+        }
+        return tuple(holding[name] for name in retired)
+
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(solve.Objective, "order", property(order))
+        gallery, report = swapping(floor_and_a_better_row(), n=2, floors={"stripe": 1})
+    assert "stripe_weak" not in gallery.state.seated, "the floor was evacuated"
     assert report["swaps"] == 1
-    assert report["by_tier"] == {"worst": 1}
     assert gallery.objective.shortfall == 1
 
 
@@ -927,16 +983,21 @@ def test_a_demand_the_pool_cannot_fill_is_still_short_and_nothing_is_padded():
 
 
 def test_a_demand_above_what_it_asks_for_can_still_give_one_back():
-    """Only what a demand actually needs is held. A mode two seats over its floor
-    has one to spare, and the loop is allowed to spend it."""
-    rule = ceiling.Rule()
-    rule.group_cap = 100
-    state = rules.State(rule, 3)
-    demands = solve.demands_for({"stripe": 1}, {})
-    gallery = solve.Gallery(state, None, demands)
-    for key, score in (("a", 0.9), ("b", 0.8), ("c", 0.1)):
-        gallery.seat(candidate(key, score=score, mode="stripe"), "general_pool")
-    assert gallery.protected() == set(), "three seats against a floor of one"
+    """Only what a demand actually NEEDS costs anything. A mode two seats over its
+    floor has one to spare, so removing it leaves the shortfall at zero and the
+    swap is judged on the tiers beneath — which is what the retired guard had to
+    special-case and the order gets for nothing."""
+    rows = [
+        candidate(key, score=score, mode="stripe")
+        for key, score in (("a", 0.9), ("b", 0.8), ("c", 0.1))
+    ]
+    rows.append(candidate("smooth_strong", score=0.95))
+    gallery = seated_by_hand(rows, n=3, keep=["a", "b", "c"], floors={"stripe": 1})
+    assert gallery.objective.shortfall == 0
+    report = solve.improve(gallery, sorted(rows, key=solve.ranking(None)), log=quiet)
+    assert report["swaps"] == 1, "the third stripe seat was spare and was spent"
+    assert set(gallery.state.seated) == {"a", "b", "smooth_strong"}
+    assert gallery.objective.shortfall == 0, "the floor of one is still met"
 
 
 # --------------------------------------------------------------------------- #
@@ -1740,17 +1801,22 @@ def test_the_prune_does_not_change_the_answer():
     assert fast == slow.objective.record()
 
 
-def test_the_guards_are_the_protected_set_turned_inside_out():
-    """Same answer, asked once per seat instead of once per row of the view."""
+def test_weakest_offers_every_seat_because_refusing_one_is_the_objectives_job():
+    """What a swap may give back is decided by `after_swap`, not by hiding a seat
+    from it. This asked a `protected` set per candidate while the worst seat
+    outranked the shortfall; now it is `count` steps up the rank list and nothing
+    else, and the seat holding the floor is offered like any other."""
     rows = [
         candidate("stripe", score=0.5, mode="stripe"),
         candidate("smooth", score=0.9),
     ]
     gallery = seated_by_hand(rows, n=2, keep=["stripe", "smooth"], floors={"stripe": 1})
-    guards = gallery.guards()
-    assert set(guards) == gallery.protected()
-    assert [demand.of for demand in guards["stripe"]] == ["stripe"]
-    arriving = candidate("stripe_better", score=0.99, mode="stripe")
-    assert gallery.weakest(set(gallery.state.seated), 8, arriving, guards) == ["stripe", "smooth"]
-    other = candidate("smooth_better", score=0.99)
-    assert gallery.weakest(set(gallery.state.seated), 8, other, guards) == ["smooth"]
+    assert gallery.weakest(set(gallery.state.seated), 8) == ["stripe", "smooth"]
+    # Offered, and then refused on the tiers: taking the floor seat out for a
+    # better smooth is a tier-2 loss.
+    current = gallery.objective
+    better = candidate("smooth_better", score=0.99)
+    assert not gallery.after_swap("stripe", better).beats(current)
+    # ...and accepted for a better seat of its own mode, which keeps the floor.
+    same = candidate("stripe_better", score=0.99, mode="stripe")
+    assert gallery.after_swap("stripe", same).beats(current)
