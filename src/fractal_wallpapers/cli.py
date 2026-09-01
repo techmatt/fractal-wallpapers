@@ -976,7 +976,7 @@ def reframe(args: argparse.Namespace) -> int:
             roots=args.roots,
             seed_batch=args.seed_batch,
             max_period=args.seed_max_period,
-            prior=None if args.prior is None else resolve_input(args.prior),
+            prior=[resolve_input(each) for each in (args.prior or [])],
             reprobe=args.reprobe,
         )
     except (reframing.ChannelRefused, reframing.PinnedPlace) as refusal:
@@ -4654,10 +4654,14 @@ def build_parser() -> argparse.ArgumentParser:
     reframing_leg.add_argument(
         "--prior",
         metavar="DIR",
-        help="an earlier run of this channel to continue. Its nuclei are already found (so "
-        "an atom reached again is counted, not written twice), the proven roots it consumed "
-        "are off the queue, and its admitted rows ARE this run's promotions — head-q4 first, "
-        "then head-keeper, both behind whatever is left of the label store",
+        action="append",
+        help="an earlier run of this channel to continue (repeatable, and NAME THEM ALL). "
+        "Their nuclei are already found, so an atom reached again is counted rather than "
+        "written twice; the proven roots they consumed are off the queue; and their admitted "
+        "rows ARE this run's promotions — head-q4 first, then head-keeper, both behind "
+        "whatever is left of the label store. A leg handed only the last run of a chain "
+        "re-writes what the runs before it found: on 2026-08-31 that was 192 of one leg's "
+        "302 rows",
     )
     reframing_leg.add_argument(
         "--reprobe",

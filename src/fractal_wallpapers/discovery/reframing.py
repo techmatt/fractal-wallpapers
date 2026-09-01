@@ -769,55 +769,74 @@ def candidate_row(
 # --------------------------------------------------------------------------- #
 # The queue.
 # --------------------------------------------------------------------------- #
-def prior_run(directory: Path, log=print) -> dict:
-    """What an earlier run of this channel leaves the next one: found, fired, promoted.
+def prior_run(directories, log=print) -> dict:
+    """What earlier runs of this channel leave the next one: found, fired, promoted.
 
-    A leg that ran generation 1 has already spent it, and a second leg that
-    re-derived its seeds from the label store would fire the same 1,176 roots at
-    the same atoms and write **every one of them a second time** — one nucleus in
-    two ledgers, which is the one thing the atom-key dedup exists to stop and
-    which it cannot see across runs.
+    **Every** earlier run, and that is the whole of why this takes a list. A leg
+    handed only its immediate predecessor inherits only that ledger's atom keys,
+    so a chain of legs re-finds and re-writes what the legs before the last one
+    already found: measured on the night of 2026-08-31, a fourth leg handed only
+    the third's ledger wrote **192 of its 302 rows** on atoms the first leg
+    already held. One atom in two ledgers is two location keys wherever the two
+    legs picked different rungs, which is one atom in two seats — the exact harm
+    the per-run dedup exists to stop and cannot see across runs.
 
-    So a continuing leg is handed three things off the earlier ledger:
+    What comes back:
 
-    * `found` — the atom keys it made locations of. They seed the new run's
-      `seen`, so an atom reached again is counted rather than re-written.
-    * `fired` — the proven root ids it consumed. What is left of the label store
-      is the front of the new queue, still at its own tier.
-    * `promoted` — its rows as the next generation's seeds, each at the class the
-      head earned it and carrying the **human** tier of the root it descends from.
+    * `found` — every atom key the chain has made a location of. They seed the new
+      run's `seen`, so an atom reached again is counted rather than re-written.
+    * `fired` — the proven root ids the chain consumed *and got something from*.
+      What is left of the label store is the front of the new queue, at its own
+      tier. A root that returned nothing is invisible here and is fired again,
+      which is wanted: the snap's ceiling has moved since.
+    * `spent` — every seed id the chain has fired at, promotions included. A plain
+      continuation drops a promotion it already fired; a `--reprobe` leg keeps it,
+      because the point of re-probing is a second random sample of one
+      neighbourhood.
+    * `promoted` — the chain's admitted rows as seeds, deduplicated on the atom
+      and kept at the better class where two legs disagree about one.
 
     Rows only; nothing here re-reads the head or re-decides a floor. `head_q4` is
     the flag the earlier run wrote, and the keeper class is its own recorded fate.
     """
-    directory = Path(directory)
-    path = directory / ledger_module.LEDGER_NAME
-    if not path.is_file():
-        raise ChannelRefused(
-            f"{directory} holds no {ledger_module.LEDGER_NAME}, so it is not a run of this "
-            f"channel a later one could continue. Point --prior at an earlier --out-dir."
-        )
-    rows = read(path)
+    if isinstance(directories, (str, Path)):
+        directories = [directories]
     found: set[str] = set()
     fired: set[str] = set()
-    promoted: list[Seed] = []
-    for row in rows:
-        block = row.get("reframing") or {}
-        if row.get("atom_key"):
-            found.add(str(row["atom_key"]))
-        seed = block.get("seed") or {}
-        if seed.get("kind") == "proven" and seed.get("id"):
-            fired.add(str(seed["id"]))
-        source = None
-        if block.get("head_q4"):
-            source = HEAD_Q4
-        elif row.get("fate") == ledger_module.SURVIVED:
-            source = HEAD_KEEPER
-        if source is None:
-            continue
-        promoted.append(
-            Seed(
-                id=str(row.get("atom_key") or row["root_id"]),
+    spent: set[str] = set()
+    best: dict[str, Seed] = {}
+    per_run: list[dict] = []
+    for directory in directories:
+        directory = Path(directory)
+        path = directory / ledger_module.LEDGER_NAME
+        if not path.is_file():
+            raise ChannelRefused(
+                f"{directory} holds no {ledger_module.LEDGER_NAME}, so it is not a run of this "
+                f"channel a later one could continue. Point --prior at an earlier --out-dir."
+            )
+        rows = read(path)
+        for row in rows:
+            block = row.get("reframing") or {}
+            if row.get("atom_key"):
+                found.add(str(row["atom_key"]))
+            seed = block.get("seed") or {}
+            if seed.get("id"):
+                spent.add(str(seed["id"]))
+                if seed.get("kind") == "proven":
+                    fired.add(str(seed["id"]))
+            source = None
+            if block.get("head_q4"):
+                source = HEAD_Q4
+            elif row.get("fate") == ledger_module.SURVIVED:
+                source = HEAD_KEEPER
+            if source is None:
+                continue
+            name = str(row.get("atom_key") or row["root_id"])
+            held = best.get(name)
+            if held is not None and priority_of(held.source) <= priority_of(source):
+                continue
+            best[name] = Seed(
+                id=name,
                 family=row["family"],
                 viewport=row["viewport"],
                 tier=int(seed.get("tier", SEED_TIER_FLOOR)),
@@ -825,25 +844,24 @@ def prior_run(directory: Path, log=print) -> dict:
                 kind=CHANNEL,
                 source=source,
             )
-        )
+        per_run.append({"prior": str(path), "rows": len(rows)})
+    promoted = list(best.values())
     record = {
-        "prior": str(path),
-        "rows": len(rows),
+        "priors": per_run,
         "nuclei_found": len(found),
         "roots_fired": len(fired),
+        "seeds_spent": len(spent),
         "promoted": len(promoted),
         "promoted_by_source": by_source(promoted),
-        "generations": {
-            str(generation): sum(
-                1 for row in rows if (row.get("reframing") or {}).get("generation") == generation
-            )
-            for generation in sorted(
-                {(row.get("reframing") or {}).get("generation") for row in rows} - {None}
-            )
-        },
     }
     log(f"[reframe] prior: {json.dumps(record)}")
-    return {"found": found, "fired": fired, "promoted": promoted, "record": record}
+    return {
+        "found": found,
+        "fired": fired,
+        "spent": spent,
+        "promoted": promoted,
+        "record": record,
+    }
 
 
 def queued(seeds_: list[Seed]) -> list[Seed]:
@@ -1258,7 +1276,7 @@ def run(
     roots: int | None = None,
     seed_batch: int = SEED_BATCH,
     max_period: int = SEED_SNAP_MAX_PERIOD,
-    prior: Path | None = None,
+    prior=None,
     reprobe: bool = False,
     log=print,
 ) -> dict:
@@ -1269,13 +1287,15 @@ def run(
     found, record = seeds(tier_floor=tier_floor, partitions=partitions, pinned=pinned)
     carried: list[Seed] = []
     earlier = None
-    if prior is not None:
+    if prior:
         earlier = prior_run(prior, log=log)
         carried = earlier["promoted"]
         before = len(found)
         if not reprobe:
             found = [seed for seed in found if seed.id not in earlier["fired"]]
+            carried = [seed for seed in carried if seed.id not in earlier["spent"]]
         record["refused_already_fired"] = before - len(found)
+        record["carried"] = len(carried)
         record["reprobe"] = bool(reprobe)
         record["seeds"] = len(found)
         record["sources"] = by_source(found)
