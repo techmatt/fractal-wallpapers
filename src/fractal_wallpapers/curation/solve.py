@@ -933,6 +933,21 @@ class Program:
         return f"an artificial flat {int(self.floor)} for every mode"
 
     @property
+    def target_rule(self) -> str:
+        """One sentence naming what a `--target t` asks of this program.
+
+        The two spellings are not interchangeable and a record that called both
+        of them "the target" could not say which one ran — see [`_target_row`].
+        """
+        if self.exact_cardinality:
+            return "ceil(t * n) seats, a hard count against the n the cardinality row fixes"
+        return (
+            "t * the REALIZED seat count: sum(cell) >= t * sum(all), as "
+            "(1 - t) * sum(cell) - t * sum(rest) >= 0. A share of the gallery that gets "
+            "filled, because `<= n` no longer promises n of them"
+        )
+
+    @property
     def mode_floor(self) -> int:
         """The floor every mode asks for, where they all ask for the same thing.
 
@@ -962,7 +977,13 @@ class Program:
         return len(self.candidates)
 
     def blocks(self) -> list[tuple[str, str, list]]:
-        """`[(name, kind, [(indices, bound, what the row is about)])]`."""
+        """`[(name, kind, [(members, bound, what the row is about)])]`.
+
+        `members` is a list of column indices, every coefficient one — which is
+        every row here but the relaxed colour target, the one row that has to
+        weight its columns. That row states `[(column, coefficient)]` instead and
+        both readers go through [`members_of`]; see [`_target_row`].
+        """
         out = [
             (
                 "cardinality",
@@ -1012,16 +1033,36 @@ class Program:
             )
         if self.targets:
             out.append(
-                (
-                    "colour_target",
-                    UNDER,
-                    [
-                        (self.cell_members.get(cell, []), self.rule.wanted(cell, self.n), cell)
-                        for cell in sorted(self.targets)
-                    ],
-                )
+                ("colour_target", UNDER, [self._target_row(cell) for cell in sorted(self.targets)])
             )
         return out
+
+    def _target_row(self, cell: str) -> tuple[list, float, str]:
+        """One target's row, spelled for the cardinality this program is under.
+
+        Under `== n` the seat count is known, so a target of `t` is the hard count
+        [`ceiling.Rule.wanted`] gives: `ceil(t * n)` seats dominant in the cell.
+
+        Under `<= n` it cannot be, and a hard count there is not a stricter
+        reading of the target but a wrong one: it demands a share of seats the
+        program is no longer promising to fill, so the re-solve is infeasible at
+        every size below `n` and an under-fill under a target reports nothing at
+        all. What a target means is a share of the gallery, so under `<= n` it is
+        a share of the **realized** seat count:
+
+            sum(cell) >= t * sum(all)   ->   (1 - t) * sum(cell) - t * sum(rest) >= 0
+
+        which is linear, is the same row as `ceil(t * n)` wherever the seats do
+        come to `n`, and is the same demand at every smaller size the pool can
+        actually fill. It is the one row here that weights its columns.
+        """
+        members = self.cell_members.get(cell, [])
+        if self.exact_cardinality:
+            return (members, self.rule.wanted(cell, self.n), cell)
+        share = float(self.targets[cell])
+        inside = set(members)
+        weighted = [(at, (1.0 - share) if at in inside else -share) for at in range(self.size)]
+        return (weighted, 0.0, cell)
 
     def _untargeted(self) -> tuple[str, str]:
         """A cell and a family no target has moved, so the record can state the
@@ -1047,6 +1088,7 @@ class Program:
             "candidates": self.size,
             "locations": len(self.locations),
             "cardinality": "== n" if self.exact_cardinality else "<= n",
+            "target_rule": self.target_rule,
             "objective": [
                 f"1. count of seats with raw P(>=4) >= {Q4_BAR}",
                 "2. the minimum score among the seated, maximized",
@@ -1091,11 +1133,29 @@ class Program:
                     "raised and which counts a picture once."
                 ),
             },
-            "group_cap": (
-                f"one seat per palette group, exempt at {ceiling.TAU_GROUP} in the pixel-cloud "
-                f"metric — generated as a pairwise row, not as a per-group count"
+            "pairwise_rule": (
+                f"two seated pictures of one palette group must be "
+                f"{max(ceiling.TAU, ceiling.TAU_GROUP)} apart in the pixel-cloud metric and "
+                f"any other two {ceiling.TAU} — solve.Pairs.rule_for, generated one row per "
+                f"violating pair as the cutting plane finds it. There is NO per-group count "
+                f"in this program and no flag that raises or lowers one"
             ),
         }
+
+
+def members_of(members):
+    """`(column, coefficient)` for one block row's members.
+
+    A member is a plain column where its coefficient is one, which is every row a
+    program states but the relaxed colour target — see [`Program._target_row`].
+    Both readers of a row go through here, so a weighted row cannot be counted as
+    an unweighted one by whichever of them was written first.
+    """
+    for member in members:
+        if isinstance(member, tuple):
+            yield int(member[0]), float(member[1])
+        else:
+            yield int(member), 1.0
 
 
 def matrices(program: Program, skip=None):
@@ -1108,15 +1168,16 @@ def matrices(program: Program, skip=None):
     from scipy import sparse
 
     skip = set(skip or ())
-    rows, columns, lower, upper, index = [], [], [], [], []
+    rows, columns, weights, lower, upper, index = [], [], [], [], [], []
     at = 0
     for name, kind, block in program.blocks():
         if name in skip:
             continue
         for members, bound, about in block:
-            for column in members:
+            for column, weight in members_of(members):
                 rows.append(at)
                 columns.append(column)
+                weights.append(weight)
             if kind == EXACT:
                 lower.append(float(bound))
                 upper.append(float(bound))
@@ -1129,7 +1190,7 @@ def matrices(program: Program, skip=None):
             index.append((name, about, kind))
             at += 1
     matrix = sparse.csr_array(
-        (numpy.ones(len(rows), dtype=numpy.float64), (rows, columns)),
+        (numpy.array(weights, dtype=numpy.float64), (rows, columns)),
         shape=(at, program.size),
     )
     return matrix, numpy.array(lower), numpy.array(upper), index
@@ -1806,6 +1867,15 @@ def _under_fill(program: Program, pairs: Pairs, log=print) -> dict:
     The cardinality row alone goes from `== n` to `<= n`, and what comes back is
     the largest gallery every constraint admits — which is the number the
     shortage list is a shortage *against*.
+
+    Every other rule is rebuilt **as the program stated it**, and the two that
+    once were not are the reason this says so out loud. A target rebuilt as
+    `ceil(t * n)` demands a share of seats nobody is promising to fill any more,
+    which made this whole readout `filled: 0` for exactly the solves it exists
+    for; the floor rebuilt as `None` silently put a `--flat-floor` solve back on
+    the per-mode default. So the record states the rule that ran on both counts —
+    [`Program.target_rule`] and [`Program.mode_floor_rule`] — on the infeasible
+    branch too, where a reader has only those to go on.
     """
     reduced = Program(
         candidates=program.candidates,
@@ -1815,14 +1885,22 @@ def _under_fill(program: Program, pairs: Pairs, log=print) -> dict:
         targets=program.targets,
         cuts=list(program.cuts),
         exact_cardinality=False,
+        floor=program.floor,
     )
+    stated = {
+        "cardinality": "<= n",
+        "target_rule": reduced.target_rule,
+        "mode_floor_rule": reduced.mode_floor_rule,
+        "mode_floors": reduced.mode_floors,
+    }
     log("[solve] re-solving at <= n so the fillable seats are filled")
     answer = cutting_plane(reduced, pairs, log=log)
     if not answer["feasible"]:
-        return {"filled": 0, "unfilled": program.n, "message": answer.get("message")}
+        return {"filled": 0, "unfilled": program.n, "message": answer.get("message"), **stated}
     return {
         "filled": len(answer["chosen"]),
         "unfilled": program.n - len(answer["chosen"]),
+        **stated,
         "values": answer["values"],
         "seated": [_seat(reduced, at, pairs, answer["chosen"]) for at in answer["chosen"]],
         "distribution": distribution(reduced, answer["chosen"]),
@@ -1917,8 +1995,14 @@ def binding(program: Program, chosen: list[int]) -> dict:
     for name, kind, block in program.blocks():
         tight = []
         for members, bound, about in block:
-            taken = sum(1 for at in members if at in picked)
-            if (kind in {OVER, EXACT} and taken >= bound) or (kind == UNDER and taken == bound):
+            # The row's own left-hand side and not a count of its members: a
+            # weighted row (the relaxed colour target) is at its bound when its
+            # coefficients sum there, which is not how many of its columns were
+            # taken. For every other row the two are the same number.
+            taken = sum(weight for at, weight in members_of(members) if at in picked)
+            taken = int(taken) if float(taken).is_integer() else round(taken, 6)
+            at_bound = abs(taken - bound) <= EPSILON
+            if (kind in {OVER, EXACT} and taken >= bound - EPSILON) or (kind == UNDER and at_bound):
                 tight.append({"about": about, "at": taken, "bound": bound})
         out[name] = {"rows": len(block), "tight": len(tight), "worst": tight[:8]}
     return out

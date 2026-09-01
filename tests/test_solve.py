@@ -14,6 +14,8 @@ own guards. The slow lane runs the real thing over the tracked pool.
 
 from __future__ import annotations
 
+import re
+
 import pytest
 
 from fractal_wallpapers import paths
@@ -549,6 +551,102 @@ def test_under_fill_fills_what_it_can_and_relaxes_nothing():
     read = solve._under_fill(program, Table(candidates, {}), log=lambda *_: None)
     assert read["filled"] == 1
     assert read["unfilled"] == 1
+
+
+def test_under_fill_reads_a_target_as_a_share_of_the_seats_it_actually_filled():
+    """A hard `ceil(t * n)` makes the re-solve infeasible at every size below `n`,
+    so the one readout an under-fill exists to produce disappears exactly when a
+    hard target is set — which is when a shortage list is being read. Relaxed, the
+    target means a share of the REALIZED seats, and three lime carriers over three
+    places are a full-strength `t = 1.0` gallery of three."""
+    candidates = [
+        candidate(name, cells=("dark_vivid_lime",), families=("lime",))
+        for name in ("lime_a", "lime_b", "lime_c")
+    ]
+    candidates.append(candidate("blue", cells=("dark_vivid_blue",), families=("blue",)))
+    program = program_of(candidates, 6, targets={"dark_vivid_lime": 1.0})
+    read = solve._under_fill(program, Table(candidates, {}), log=lambda *_: None)
+    assert read["filled"] == 3
+    assert read["unfilled"] == 3
+    assert {seat["key"] for seat in read["seated"]} == {"lime_a", "lime_b", "lime_c"}
+
+
+def test_under_fill_asks_a_half_target_for_half_of_what_it_seated():
+    """The share is of the seats filled and not of `n`: at `t = 0.5` with four
+    seats filled the row wants two, and it wants them of the four rather than
+    three of the six the hard count would have asked for."""
+    candidates = [
+        candidate(f"lime_{at}", cells=("dark_vivid_lime",), families=("lime",)) for at in range(2)
+    ]
+    # Dominant in no cell, which 308 of the pool's own rows are: a filler carrying
+    # a cell of its own would be held to that cell's untargeted allowance of one
+    # and the seat count would be the ceiling's answer rather than the target's.
+    candidates += [candidate(f"filler_{at}") for at in range(2)]
+    program = program_of(candidates, 6, targets={"dark_vivid_lime": 0.5})
+    read = solve._under_fill(program, Table(candidates, {}), log=lambda *_: None)
+    assert read["filled"] == 4
+    assert sum(1 for seat in read["seated"] if "dark_vivid_lime" in seat["cells"]) == 2
+
+
+def test_under_fill_carries_the_programs_floor_rule_and_not_the_default():
+    """The rebuild dropped `floor=`, so a `--flat-floor` solve's under-fill was
+    silently re-solved under the per-mode default. Soft either way — it moves the
+    reported objective and not feasibility — and a record naming the wrong rule is
+    a floored-against-unfloored measurement nobody can read."""
+    candidates = [
+        candidate("a", location="one", score=1.0),
+        candidate("b", location="one", score=0.9),
+    ]
+    # At the `n` the flat rule was computed for, so `mode_floor_rule` names the
+    # flat floor rather than an artificial one — the two are the same number and
+    # a different sentence, and the sentence is what this is about.
+    flat = solve.mode_floor(200)
+    program = solve.Program(
+        candidates=candidates,
+        n=200,
+        rule=solve.rule_for(),
+        modes=("smooth", "stripe"),
+        floor=flat,
+    )
+    read = solve._under_fill(program, Table(candidates, {}), log=lambda *_: None)
+    assert read["mode_floor_rule"] == program.mode_floor_rule
+    assert "FLAT" in read["mode_floor_rule"]
+    assert read["mode_floors"] == {"smooth": flat, "stripe": flat}
+
+
+def test_every_rule_field_on_the_solve_record_is_one_the_program_reads():
+    """A record naming a rule nothing applied is worse than a record silent about
+    it. `group_cap` sat in this config for months describing one seat per palette
+    group as a counted row, while the cap that actually ran was a generated
+    pairwise row off [`solve.Pairs.rule_for`] — so a reader asking what capped the
+    groups got an answer, and the wrong one.
+
+    The guard is mechanical rather than a list: a config key sharing its name with
+    a [`ceiling.Rule`] field has to be a field this module genuinely reads, as
+    `rule.<name>`, as the module constant `ceiling.<NAME>`, or off the program
+    that mirrors it. Today `targets`, `k` and `tau_group` each answer; anything
+    inert cannot.
+    """
+    import dataclasses
+    from pathlib import Path
+
+    source = Path(solve.__file__).read_text(encoding="utf-8")
+    config = program_of([candidate("a")], 1).config()
+    named = set(config) | set(config["ceiling"])
+    checked = []
+    for field in dataclasses.fields(ceiling.Rule):
+        if field.name not in named:
+            continue
+        checked.append(field.name)
+        reads = (
+            rf"\brule\.{field.name}\b",
+            rf"\bceiling\.{field.name.upper()}\b",
+            rf"\bself\.{field.name}\b",
+        )
+        assert any(re.search(pattern, source) for pattern in reads), (
+            f"the solve record names `{field.name}`, which nothing in solve.py reads"
+        )
+    assert checked, "no Rule field is named on the record, so this guard proves nothing"
 
 
 # --------------------------------------------------------------------------- #
