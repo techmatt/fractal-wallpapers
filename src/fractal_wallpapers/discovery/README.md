@@ -139,13 +139,17 @@ nothing for a centered row and `refine` plans no stage-B frames for one, three
 frames a location instead of seven. The flag is read off the row rather than off
 the channel name, so a hand-placed nucleus frame carries it for the same reason.
 
-**Which is also why these places are drawn from a location LIST and never through
-the curation pool.** `curation.hunt.drawable` — the population `curate hunt`,
-`curate mine` and `curate depth` all take — drops a location the pool-wide
-refinement scan holds no row for, and the scan holds none for any of these: it
+**These places were once out of reach of the curation pool, and since 2026-09-01
+they are not.** `curation.hunt.drawable` — the population `curate hunt`,
+`curate mine` and `curate depth` all take — used to drop a location the pool-wide
+refinement scan held no row for, and the scan holds none for any of these: it
 predates the channel, and a centered row wants no scan row anyway, because its
-frame is the rung the head already picked. See `curation/README.md`'s frame-lookup
-paragraph.
+frame is the rung the head already picked. The population is now bounded by the
+location ledger's ratings alone and a framing is an attribute rather than an
+admission ticket, so the channel's **7,686** never-opened places are in the
+ordinary pool and draw at the frame they already carry. `reframe_q4` (below) is
+the location-list draw that was needed before that; see
+`curation/README.md`'s *What bounds the minable population*.
 
 **Drawn as wallpapers, the q4 slice clears at nine times the breadth rate, and the
 rung question comes back with an answer.** `reframe_q4` (2026-09-01) spent an hour

@@ -3605,8 +3605,9 @@ def curate_hunt(args: argparse.Namespace) -> int:
             print(f"{display_path(hunt.contact_sheet(args.name, record))}")
             return 0
         if args.what == "plan":
-            index = hunt.frames(rebuild=args.rebuild_frames)
-            pools = hunt.drawable(hunt.scanned(), index, hunt.opened_locations())
+            if args.rebuild_frames:
+                hunt.frames(rebuild=True)
+            pools = hunt.drawable(hunt.scanned(), hunt.opened_locations())
             intended = hunt.plan(
                 pools,
                 seed=args.seed,
@@ -8289,7 +8290,7 @@ def curate_commands(subcommands) -> None:
         help="render candidates into the ledger's two shortages: fresh places, and one colour",
         description=(
             "The proposal side of propose-then-solve, aimed rather than opportunistic. The "
-            "UNCONDITIONAL leg buys breadth — locations from the scanned pool that carry no "
+            "UNCONDITIONAL leg buys breadth — locations from the admitted pool that carry no "
             "ledger recipe at all, a shallow spread each, the palette stratified across the "
             "codebook's cells instead of picked by the palette head, whose argmax is what "
             "left the ledger at a quarter as much green as red. The CONDITIONED leg buys one "

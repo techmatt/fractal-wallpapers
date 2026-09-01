@@ -300,15 +300,19 @@ def best_field_by_location(rows: list, scores: dict, roster: set) -> dict:
     return out
 
 
-def near_places(best_field: dict, index: dict, seed: int, count: int) -> list:
+def near_places(best_field: dict, places: dict, seed: int, count: int) -> list:
     """`count` locations whose best field candidate sits in `[SEATING_BAR, PRIMED_BAR)`.
 
     Round-robin over partitions for [`hunt.spread`]'s reason: the price table is
     per partition and a draw that spent itself on one of them prices one of them.
+
+    `places` is the admitted population keyed by location — `world["by_key"]`.
+    A key it does not hold has no row to render from; a key no framing scan holds
+    is drawn at the frame it already carries, through [`hunt.frame_for`].
     """
     pools: dict = {}
     for key, held in best_field.items():
-        if not (SEATING_BAR <= held["best"] < PRIMED_BAR) or key not in index:
+        if not (SEATING_BAR <= held["best"] < PRIMED_BAR) or key not in places:
             continue
         pools.setdefault(held["partition"], []).append({**held, "key": key})
     pools = {name: sorted(rows, key=lambda row: str(row["key"])) for name, rows in pools.items()}
@@ -488,7 +492,7 @@ def spread_over_partitions(banded: dict, places: int) -> dict:
     return {name: count for name, count in out.items() if count}
 
 
-def proven_places(best: dict, index: dict, seed: int, count: int, bar: float = SEATING_BAR):
+def proven_places(best: dict, places: dict, seed: int, count: int, bar: float = SEATING_BAR):
     """`count` locations that already hold a candidate over `bar`, spread over partitions.
 
     The [`FLOOR`] draw's population. A mode short of seats is short of **good**
@@ -497,10 +501,12 @@ def proven_places(best: dict, index: dict, seed: int, count: int, bar: float = S
     a known-good place clearing at 2.7 times the near band's rate, and the near
     band at four times a fresh one. What is being varied here is the mode, so the
     place is held at the best evidence available.
+
+    `places` is `world["by_key"]`, for [`near_places`]'s reason.
     """
     pools: dict = {}
     for key, held in best.items():
-        if float(held.get("best", -1.0)) < float(bar) or key not in index:
+        if float(held.get("best", -1.0)) < float(bar) or key not in places:
             continue
         pools.setdefault(str(held.get("partition")), []).append({**held, "key": key})
     pools = {name: sorted(rows, key=lambda row: str(row["key"])) for name, rows in pools.items()}
@@ -831,7 +837,7 @@ def build_plan(
     # the two of them, and a run sized off a measurement may say so.
     near_width = int(width if near_width is None else near_width)
     near = (
-        near_places(best_field, world["index"], seed, max(1, want[NEAR] // max(1, near_width)))
+        near_places(best_field, world["by_key"], seed, max(1, want[NEAR] // max(1, near_width)))
         if want.get(NEAR)
         else []
     )
@@ -868,7 +874,7 @@ def build_plan(
     )
     per_place = max(1, int(floor_width) * max(1, len(wanted_floor_modes)))
     proven = (
-        proven_places(world["best"], world["index"], seed, max(1, want[FLOOR] // per_place))
+        proven_places(world["best"], world["by_key"], seed, max(1, want[FLOOR] // per_place))
         if want.get(FLOOR)
         else []
     )
@@ -1065,10 +1071,10 @@ def blocks_of(intended: list, world: dict, maker, known: set, log=print) -> tupl
     skipped, unresolvable = 0, 0
     for at, shot in enumerate(intended, start=1):
         place = world["by_key"].get(shot.location)
-        frame = world["index"].get(shot.location)
-        if place is None or frame is None:
+        if place is None:
             unresolvable += 1
             continue
+        frame = hunt.frame_for(place, world["index"])
         recipe = maker.recipe_for(shot, place, frame)
         key = recipes.key_of(recipe)
         if key in known:

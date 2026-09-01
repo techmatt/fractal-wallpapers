@@ -208,16 +208,22 @@ def taken_maps(rows: list) -> dict:
 # --------------------------------------------------------------------------- #
 # The three draws.
 # --------------------------------------------------------------------------- #
-def deepen_places(best: dict, index: dict, band: tuple, seed: int, count: int) -> list:
+def deepen_places(best: dict, places: dict, band: tuple, seed: int, count: int) -> list:
     """`count` locations whose best candidate sits in `band`, spread over partitions.
 
     Round-robin over partitions for [`hunt.spread`]'s reason — the price table is
     per partition, and an arm that spent itself on one of them prices one of them.
+
+    `places` is the admitted population keyed by location — `world["by_key"]` —
+    and a key it does not hold is dropped because there is no row to render from,
+    not because no scan looked at it. This used to take the frame index, which
+    made every unscanned location invisible to the arm; the frame itself comes
+    from [`hunt.frame_for`] at draw time.
     """
     pools: dict = {}
     low, high = band
     for key, held in best.items():
-        if not (low <= held["best"] < high) or key not in index:
+        if not (low <= held["best"] < high) or key not in places:
             continue
         pools.setdefault(held["partition"], []).append({**held, "key": key})
     pools = {name: sorted(rows, key=lambda row: str(row["key"])) for name, rows in pools.items()}
@@ -632,12 +638,13 @@ def population(margin: float = framing.MARGIN, log=print) -> dict:
             f"artifact(s) are out of this draw: {stale}"
         )
     opened = hunt.opened_locations(stored)
-    pools = hunt.drawable(places, index, opened)
+    pools = hunt.drawable(places, opened)
     best = best_by_location(stored, scores)
+    at_recorded = sum(1 for held in pools.values() for row in held if str(row["key"]) not in index)
     log(
         f"[mine] {len(best):,} opened location(s) in the ledger; "
         f"{sum(len(held) for held in pools.values()):,} admitted and never opened over "
-        f"{len(pools)} partition(s)"
+        f"{len(pools)} partition(s), {at_recorded:,} of them at the frame they already carry"
     )
     return {
         "index": index,
@@ -681,7 +688,7 @@ def build_plan(
     per_band = max(1, want[DEEPEN] // (2 * max(1, k)))
     deepen: list = []
     for band, bounds in (("near", NEAR_BAND), ("over", OVER_BAND)):
-        places = deepen_places(world["best"], world["index"], bounds, seed, per_band)
+        places = deepen_places(world["best"], world["by_key"], bounds, seed, per_band)
         deepen += plan_deepen(places, world["taken"], maps, seed, k, band)
     ranked_wanted = max(1, want[RANKED] // max(1, per_location))
     ranked = ranked_places(world["pools"], world["head_scores"], seed, ranked_wanted)
@@ -794,10 +801,10 @@ def run(
     for at, unit in enumerate(intended, start=1):
         loop = colorize_module().tick()
         place = world["by_key"].get(unit.location)
-        frame = world["index"].get(unit.location)
-        if place is None or frame is None:
+        if place is None:
             counts["failed"] += 1
             continue
+        frame = hunt.frame_for(place, world["index"])
         recipe = maker.recipe_for(unit, place, frame)
         key = recipes.key_of(recipe)
         if key in known:
@@ -912,6 +919,17 @@ def run(
             "ledger_rows": world["ledger_rows"],
             "already_open": len(world["opened"]),
             "unopened_drawable": sum(len(held) for held in world["pools"].values()),
+            "unopened_at_recorded_frame": sum(
+                1
+                for held in world["pools"].values()
+                for row in held
+                if str(row["key"]) not in world["index"]
+            ),
+            "unopened_wanting_framing": len(
+                hunt.unframed(
+                    [row for held in world["pools"].values() for row in held], world["index"]
+                )
+            ),
             "by_partition": {name: len(held) for name, held in sorted(world["pools"].items())},
         },
         "plan": shape,
@@ -1151,9 +1169,7 @@ def _bench_picks(world: dict, seed: int, kinds=BENCH_KINDS) -> list:
         if not held:
             continue
         row = random.Random(hunt.seed_of(seed, "bench", name)).choice(held)
-        frame = world["index"].get(str(row["key"]))
-        if frame is None:
-            continue
+        frame = hunt.frame_for(row, world["index"])
         for _kind, mode in sorted(wanted.items()):
             picks.append((row, frame, mode))
     return picks

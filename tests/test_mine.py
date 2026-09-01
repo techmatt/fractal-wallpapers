@@ -136,15 +136,21 @@ def test_deepen_skips_a_place_whose_best_candidate_names_no_mode():
     assert mine.plan_deepen(places, {}, list("abc"), 7, 3, "near") == []
 
 
-def test_deepen_draws_only_inside_its_band_and_only_where_a_frame_is_known():
+def test_deepen_draws_only_inside_its_band_and_only_where_the_location_is_admitted():
+    """The bound is `world["by_key"]` — a row to render from — and never a frame row.
+
+    `unframed` is in the admitted population and carries no framing row, and the
+    arm draws it: it renders at the frame its own store row already holds.
+    """
     best = {
         "in-band": {"best": 0.7, "partition": "mandelbrot", "best_mode": "smooth", "count": 1},
         "over-band": {"best": 0.95, "partition": "mandelbrot", "best_mode": "smooth", "count": 1},
-        "no-frame": {"best": 0.7, "partition": "phoenix", "best_mode": "smooth", "count": 1},
+        "unframed": {"best": 0.7, "partition": "phoenix", "best_mode": "smooth", "count": 1},
+        "gone": {"best": 0.7, "partition": "phoenix", "best_mode": "smooth", "count": 1},
     }
-    index = {"in-band": {}, "over-band": {}}
-    drawn = mine.deepen_places(best, index, mine.NEAR_BAND, seed=3, count=10)
-    assert [row["key"] for row in drawn] == ["in-band"]
+    by_key = dict.fromkeys(("in-band", "over-band", "unframed"), {})
+    drawn = mine.deepen_places(best, by_key, mine.NEAR_BAND, seed=3, count=10)
+    assert sorted(row["key"] for row in drawn) == ["in-band", "unframed"]
 
 
 # --------------------------------------------------------------------------- #
