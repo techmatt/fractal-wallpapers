@@ -297,3 +297,84 @@ def test_the_counted_removals_open_nothing_and_are_a_superset_of_the_real_ones()
     assert clouds.made == before, "no picture was opened"
     assert state.narrowed(candidate("b"), counted) <= counted
     assert state.narrowed(candidate("c"), state.counted_removals(candidate("c"))) == {"a"}
+
+
+# --------------------------------------------------------------------------- #
+# The themed diversity rule: geometry-only distinctness.
+# --------------------------------------------------------------------------- #
+def place_rule(vectors, tau=None, locations=None):
+    """A [`rules.Places`] over two-dimensional unit vectors, by angle.
+
+    Two dimensions because the cosine between two unit vectors is the whole of
+    what the rule reads, and an angle is a distance a test can state — the same
+    stand-in `test_solve`'s pre-selection tests use.
+    """
+    import math
+
+    import numpy
+
+    places = {
+        key: numpy.array([math.cos(angle), math.sin(angle)], dtype=numpy.float32)
+        for key, angle in vectors.items()
+    }
+    where = {key: key for key in vectors} if locations is None else locations
+    return rules.Places(places, where, tau=tau)
+
+
+def test_the_geometry_rule_refuses_a_place_inside_the_radius_and_names_the_seat():
+    # cos(0.4) is 0.921, so a and b sit 0.079 apart — outside 0.07; a and c sit
+    # 0.002 apart, well inside it.
+    rule = place_rule({"a": 0.0, "b": 0.4, "c": 0.06})
+    rule.hold("a")
+    assert rule.within("b") == []
+    assert [key for _gap, key in rule.within("c")] == ["a"]
+    assert rule.tau == rules.GEOMETRY_RADIUS
+
+
+def test_the_geometry_rule_is_over_the_PLACE_and_not_over_the_picture():
+    """Two candidates at one location share one descriptor, which is the whole
+    reason a themed leg can use this: colour is the theme, so the rule that keeps
+    the collection varied must not be a rule about colour."""
+    rule = place_rule({"here": 0.0, "far": 1.0}, locations={"one": "here", "two": "here"})
+    rule.hold("one")
+    assert [key for _gap, key in rule.within("two")] == ["one"]
+    assert rule.record()["pictures_opened"] == 0
+
+
+def test_a_dropped_seat_stops_refusing_and_the_indices_do_not_move():
+    rule = place_rule({"a": 0.0, "b": 0.06, "c": 1.0})
+    rule.hold("a")
+    rule.hold("c")
+    assert [key for _gap, key in rule.within("b")] == ["a"]
+    assert rule.drop("a") is True
+    assert rule.within("b") == []
+    assert rule.held == ["c"]
+    assert rule.drop("a") is False
+
+
+def test_a_place_with_no_descriptor_is_admitted_and_counted():
+    """The OPPOSITE of [`rules.Twins`], which fails closed, and the ruling
+    `distinct.preselect` already made for this store: refusing on a missing row
+    would make the rule a silent function of when the embedding leg last ran. Safe
+    here only because one-per-location sits above it."""
+    rule = place_rule({"a": 0.0})
+    rule.hold("a")
+    assert rule.within("nowhere") == []
+    assert rule.hold("nowhere") is True
+    assert rule.drop("nowhere") is True
+    assert rule.record()["admitted_without_a_descriptor"] == 1
+    assert rule.record()["seated_without_a_descriptor"] == 1
+
+
+def test_the_state_names_the_geometry_rule_last_and_never_the_twin_test():
+    """A rejection ledger keyed on `twin` under a pass that never applied the twin
+    test names a rule nothing ran, which is worse than naming none."""
+    rule = place_rule({"a": 0.0, "b": 0.06})
+    state = rules.State(ceiling.Rule(), 20, diversity=rule)
+    state.rule.group_cap = 100
+    state.seat(candidate("a"), "general_pool")
+    assert state.refuses(candidate("b")) == "geometry"
+    assert rules.rules_for(rule)[-1] == "geometry"
+    assert state.record()["rules"][-1] == "geometry"
+    assert state.record()["diversity"]["threshold"] == rules.GEOMETRY_RADIUS
+    assert rules.rules_for(None) == rules.RULES

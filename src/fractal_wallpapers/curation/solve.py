@@ -106,6 +106,13 @@ from fractal_wallpapers.paths import rehome, tracked_name, under
 #: carries `relaxation`, `rounds` and `cuts`, and it was taken over a pool the
 #: per-mode bars had never been applied to. The two are not comparable galleries
 #: and no reader should try.
+#:
+#: The themed leg did **not** bump it. Its whole footprint on the record is the
+#: `theme` block, which is `None` on every unthemed pass, and the rule that
+#: actually ran was always named in `rules.diversity` — so two unthemed schema-2
+#: galleries mean the same thing before and after it, which is what a schema
+#: number is for. What is not comparable is a themed record against an unthemed
+#: one, and that is a different diversity rule rather than a different schema.
 SCHEMA = 2
 
 #: The subtree this leg's record and its sheet land in.
@@ -220,6 +227,12 @@ BELOW_BAR = "below_its_mode_bar"
 #: as. Kept apart from [`rules.RULES`] for the same reason [`BELOW_BAR`] is: it
 #: is pool construction and not a seat this leg declined to give.
 SAME_PLACE = "another_place_is_the_same_place"
+
+#: What a candidate outside a THEMED pass's cell is recorded as. Pool
+#: construction like [`BELOW_BAR`] and never a rule: the row was not refused a
+#: seat, it was never eligible for one, and a themed leg's whole reading is which
+#: of its own eligible rows it could not seat.
+OFF_THEME = "not_dominant_in_the_theme"
 
 #: What a candidate the view never reached is recorded as. The view is a
 #: deliberate restriction and a row outside it was refused by no rule at all, so
@@ -378,6 +391,20 @@ def pool(rows=None, scores=None, artifact=None, log=print) -> tuple[list[Candida
     out.sort(key=lambda candidate: (-candidate.score, candidate.key))
     log(f"[solve] {len(out):,} candidates; refused {refused}")
     return out, refused
+
+
+def in_theme(candidates, cell: str) -> list:
+    """Every candidate **dominant** in one colour cell. A themed pass's whole pool.
+
+    Membership is the row's own dominance block and never the carrier table: the
+    table says which palette maps tend to produce the cell, which is a prior about
+    supply, and a gate built on a prior admits a picture nobody measured and
+    refuses one somebody did. [`palettes.dominance`] is what wrote `colour.cells`,
+    a row may carry several dominant cells or none, and this asks the one question
+    it can answer.
+    """
+    wanted = str(cell)
+    return [candidate for candidate in candidates if wanted in candidate.cells]
 
 
 def picture_of(candidate: Candidate) -> Path:
@@ -1214,6 +1241,8 @@ def solve(
     order: dict | None = None,
     coverage: dict | None = None,
     allow_unranked: bool = False,
+    theme: str | None = None,
+    geometry_radius: float | None = None,
     rows_per_seat: int = view.ROWS_PER_SEAT,
     draw_seed: int = view.DRAW_SEED,
     swap: bool = True,
@@ -1243,6 +1272,25 @@ def solve(
     all read the judge's own columns, so two passes differing in one of them
     differ in the order and in the cap and in nothing else.
 
+    ## `theme` is the other gallery this leg builds
+
+    Naming a cell makes this a **themed** pass, and it changes three things at
+    once because the three are one decision:
+
+    * the pool is the rows [`in_theme`] — dominant in that cell, read off each
+      row's own dominance block — at the **relaxed** bar, `P(>=3) >= 0.50` for
+      every accepted mode. A single-cell pool is q3-grade material and at the
+      per-mode bars there is no pool to solve over;
+    * the diversity rule is [`rules.Places`] at `geometry_radius` instead of the
+      pixel-cloud twin test, because a single-cell pool is a near-duplicate pool
+      under a metric over colour and the twin test would be refusing the theme;
+    * nothing else. The caller still owns the target, the floor rule and the group
+      cap, and a themed pass without `--target <cell>=1.0` is a pass the cell
+      allowance refuses at nine seats — see [`ceiling.Rule.allowed`].
+
+    Rows outside the cell are recorded [`OFF_THEME`], which is pool construction
+    and not a refusal, so the rejection ledger stays a partition of the ledger.
+
     ## An unreadable clearing pool is a refusal, not a gallery
 
     A candidate the active key cannot read sorts last and cannot win a seat while
@@ -1268,6 +1316,29 @@ def solve(
     if order is None and str(key) != JUDGE_KEY:
         order, coverage = ranking_for(candidates, key, log=log)
 
+    #: `{key: the rule that refused it, the last time it was offered}`.
+    refused: dict = {}
+    #: The rows the bars are taken over. A themed pass narrows it to its cell
+    #: **before** the bars, so every count on the record is a count about the
+    #: theme; the whole ledger is still walked for the rejection block below.
+    population = candidates
+    if theme is not None:
+        population = in_theme(candidates, theme)
+        for candidate in candidates:
+            if str(theme) not in candidate.cells:
+                refused[candidate.key] = OFF_THEME
+        log(
+            f"[solve] themed on {theme}: {len(population):,} of {len(candidates):,} "
+            f"candidate(s) dominant in the cell, over "
+            f"{len({c.location for c in population}):,} place(s)"
+        )
+        if not population:
+            raise SolveRefused(
+                f"no candidate in the ledger is dominant in {theme!r}, so there is no "
+                "themed pool to solve over. `fractal-wallpapers curate colors` says which "
+                "cells the pool actually holds"
+            )
+
     # The accepted roster, not the engine's production one: a mode
     # [`mode_policy`] weights 0 has no rows in [`pool`] at all, so a floor over it
     # would be a mandate nothing could meet and an `unmet` row that is a policy
@@ -1283,11 +1354,12 @@ def solve(
     #: The uniform floor, where the caller passed one. `None` says it was per mode.
     flat = None if isinstance(asked, dict) else int(asked)
 
-    table = headroom.bars(candidates)
-    cleared = headroom.clearing(candidates, table)
-    log(f"[solve] {len(cleared):,} of {len(candidates):,} candidates clear their mode's bar")
-    #: `{key: the rule that refused it, the last time it was offered}`.
-    refused: dict = {}
+    table = headroom.bars(population, relaxed=theme is not None)
+    cleared = headroom.clearing(population, table)
+    log(
+        f"[solve] {len(cleared):,} of {len(population):,} candidates clear their mode's bar"
+        + (" (relaxed: the P(>=3) crossing)" if theme is not None else "")
+    )
     if radius is None:
         kept, preselection = list(cleared), {"skipped": "no neutral pre-selection was applied"}
     else:
@@ -1334,15 +1406,28 @@ def solve(
     # swept — see [`curation.signatures`]. Everything it answers for is a picture
     # this pass will not open; everything it misses is made on demand exactly as
     # before, so an unswept checkout is slower and never wrong.
-    held_signatures = signatures.for_candidates(viewed.rows) if diversity else {}
-    if held_signatures:
-        log(
-            f"[solve] {len(held_signatures):,} of {len(viewed.rows):,} reduced "
-            "signature(s) from the sidecar"
+    if not diversity:
+        twins = None
+    elif theme is not None:
+        # Geometry-only distinctness, and the sidecar is not consulted: it holds
+        # reduced pixel-cloud signatures, which this rule never reads.
+        twins = rules.Places(
+            rules.places_for(viewed.rows),
+            {candidate.key: candidate.location for candidate in viewed.rows},
+            tau=geometry_radius,
         )
-    twins = (
-        rules.Twins(rules.clouds_for(viewed.rows), reduced=held_signatures) if diversity else None
-    )
+        log(
+            f"[solve] the diversity rule is {twins.NAME} at {twins.tau}: "
+            f"{len(twins.places):,} place descriptor(s), no picture opened"
+        )
+    else:
+        held_signatures = signatures.for_candidates(viewed.rows)
+        if held_signatures:
+            log(
+                f"[solve] {len(held_signatures):,} of {len(viewed.rows):,} reduced "
+                "signature(s) from the sidecar"
+            )
+        twins = rules.Twins(rules.clouds_for(viewed.rows), reduced=held_signatures)
     state = rules.State(rule, n, diversity=twins)
     demands = demands_for(held_floors, rule.targets)
     gallery = Gallery(state, order, demands)
@@ -1396,7 +1481,9 @@ def solve(
     record = {
         "schema": SCHEMA,
         "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "config": _config(n, rule, modes, table, flat, held_floors, natural, group_cap, order, key),
+        "config": _config(
+            n, rule, modes, table, flat, held_floors, natural, group_cap, order, key, theme
+        ),
         "objective": {
             "of": OBJECTIVE,
             "tiers": ["seats", "shortfall", "worst", "sum"],
@@ -1414,6 +1501,22 @@ def solve(
             "refused": pool_refused,
             "reachable_locations": len(reachable),
             "truncated_to": locations,
+        },
+        "theme": None
+        if theme is None
+        else {
+            "cell": str(theme),
+            "membership": "the row's own colour.cells dominance block, never the carrier "
+            "table: the table is a prior about which maps make the cell and a gate built "
+            "on a prior admits a picture nobody measured",
+            "bar": "relaxed: P(>=3) >= "
+            f"{headroom.FALLBACK_BAR} for every accepted mode, not the per-mode rule",
+            "in_the_cell": len(population),
+            "in_the_cell_locations": len({c.location for c in population}),
+            "outside_the_cell": len(candidates) - len(population),
+            "diversity": "geometry-only distinctness over the neutral descriptors. The "
+            "pixel-cloud twin test is over a picture's COLOUR cloud, so a single-cell pool "
+            "is a near-duplicate pool under exactly it",
         },
         "order": {
             "key": JUDGE_KEY if order is None else "rank_key",
@@ -1450,7 +1553,9 @@ def solve(
         "diversity": None if twins is None else twins.record(),
         "diversity_refusals": dict(sorted(state.refused_for.items())),
         "expand": expand(viewed, gallery, refused),
-        "rejection": rejection(candidates, refused, log=log),
+        "rejection": rejection(
+            candidates, refused, log=log, order=rules.rules_for(state.diversity)
+        ),
         "samples": samples(
             candidates, refused, against=_lost_to(state, preselection, cleared), rank=rank
         ),
@@ -1477,9 +1582,11 @@ def _config(
     group_cap: str,
     order: dict | None,
     key: str,
+    theme: str | None = None,
 ) -> dict:
     return {
         "n": n,
+        "theme": None if theme is None else str(theme),
         "method": "a stratified view, a greedy seed, and 1-swap improvement to exhaustion. "
         "ANYTIME: the gallery is valid from its first seat and nothing here claims "
         "optimality. The exact solve it replaced is retired",
@@ -1488,7 +1595,12 @@ def _config(
         "general pool by the rank key; then swaps",
         "bars": {name: block["rule"] for name, block in sorted(table["modes"].items())},
         "bars_are": "the pool definition. curation.headroom.bars: P(>=4) for a mode with "
-        "enough places above it, P(>=3) for one without",
+        "enough places above it, P(>=3) for one without"
+        + (
+            ". RELAXED for this themed pass: every accepted mode on the P(>=3) crossing"
+            if theme is not None
+            else ""
+        ),
         "ceiling": {
             "k": rule.k,
             "cell_share": ceiling.CELL_SHARE,
@@ -1911,7 +2023,7 @@ def _binding(gallery: Gallery, rule: ceiling.Rule, n: int) -> dict:
 # --------------------------------------------------------------------------- #
 # The rejection ledger — the product.
 # --------------------------------------------------------------------------- #
-def rejection(candidates, refused: dict, log=print) -> dict:
+def rejection(candidates, refused: dict, log=print, order: tuple | None = None) -> dict:
     """For every candidate not seated, which rule killed it, aggregated four ways.
 
     By cell, by family, by mode and by partition, because those are the four axes a
@@ -1962,11 +2074,12 @@ def rejection(candidates, refused: dict, log=print) -> dict:
             for axis in axes
         },
         "read": "the rule that refused each candidate the LAST time it was offered, in "
-        f"{list(rules.RULES)} order. `{UNSEATED}` broke no rule and simply lost; "
+        f"{list(order or rules.RULES)} order. `{UNSEATED}` broke no rule and simply lost; "
         f"`{OUTSIDE_THE_VIEW}` was never reached, which is this pass's own budget and not "
         f"a fact about the wallpaper; `{BELOW_BAR}` never entered the population at all, "
         f"and `{SAME_PLACE}` was refused at pool construction because another place inside "
-        "the neutral pre-selection radius took it",
+        f"the neutral pre-selection radius took it. `{OFF_THEME}` is pool construction too: "
+        "a themed pass only ever chooses among rows dominant in its own cell",
     }
 
 
@@ -2011,11 +2124,18 @@ def _lost_to(state, preselection: dict, cleared: list) -> dict:
     at_place: dict = {}
     for candidate in cleared:
         at_place.setdefault(candidate.location, []).append(candidate.key)
+    # The two diversity rules measure in different spaces, so the gap is written
+    # under the column it was measured in and never under a shared name: the sheet
+    # already knows both, and a caption saying `0.048` without saying in what is a
+    # caption a reader can only misread.
+    threshold = ceiling.TAU if state.diversity is None else state.diversity.tau
+    column = "neutral" if getattr(state.diversity, "NAME", None) == "geometry" else "pixel_cloud"
     out = {
         key: {
             "picture": pictures.get(found["too_close_to"]),
-            "pixel_cloud": found["distance"],
-            "rule": f"{found['rule']}: under {ceiling.TAU} of a seated picture",
+            column: found["distance"],
+            "rule": f"{found['rule']}: under {threshold} of a seated picture, "
+            f"in the {column} metric",
         }
         for key, found in state.refused_for.items()
     }

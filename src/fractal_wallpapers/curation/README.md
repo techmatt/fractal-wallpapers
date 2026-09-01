@@ -681,6 +681,8 @@ fractal-wallpapers curate solve run --n 150 --group-cap identity --key p_ge4   #
 fractal-wallpapers curate solve run --n 150 --sheet-out <path>    # the sheet, elsewhere
 fractal-wallpapers curate solve run --n 20 --target dark_vivid_lime=1.0   # a colour demand
 fractal-wallpapers curate solve run --n 20 --locations 40    # only the 40 best places
+fractal-wallpapers curate solve run --n 100 --themed dark_vivid_green --no-render  # THEMED
+fractal-wallpapers curate solve run --n 100 --themed dark_vivid_green --themed-radius 0.05
 ```
 
 It needs `numpy` and `pillow`, which is the `solve` extra (`pip install -e
@@ -1128,7 +1130,39 @@ record because nothing reads it. The **diversity rule** is the twin test at
 `within`/`hold`/`drop`/`record`, so a themed gallery can swap in geometry-only
 distinctness without touching anything else. The record names the rule and its
 threshold, because two galleries chosen under different diversity rules are not
-comparable.
+comparable — `rules.rules_for` is what puts the rule that actually ran in the
+last slot of the order, so the rejection ledger never names a rule nothing ran.
+
+`rules.Places` is that second implementation and it is a **replacement**, never a
+complement: geometric distinctness over `curation.embeddings`' neutral
+descriptors at `rules.GEOMETRY_RADIUS` (0.07), no picture opened at all. It reads
+one descriptor per **location**, so a place's fifty rows share one — which is the
+property a themed leg wants, because the colour is the theme. Its one divergence
+from `Twins` is deliberate and written at both sites: a place with no descriptor
+is **admitted and counted** rather than refused, the ruling `distinct.preselect`
+already made for this store, and it is safe here only because one-per-location
+sits above it so an unembedded place still takes at most one seat.
+
+### `--themed <cell>` is the whole themed leg, and it is three things at once
+
+Per `solver_design` §Themed, and they are one decision rather than three flags:
+
+* the **pool** is the rows dominant in the cell — the row's own `colour.cells`
+  block and never the carrier table, which is a prior about supply rather than a
+  measurement of a picture — at the **relaxed bar**, `P(>=3) >= 0.50` for every
+  accepted mode (`headroom.bars(relaxed=True)`). A single-cell pool is q3-grade
+  material by measurement: `dark_vivid_green` holds 470 places at the per-mode
+  bars against 1,209 at the crossing, `dark_vivid_lime` 266 against 457. At the
+  per-mode bars a themed gallery has no pool;
+* the **diversity rule** is `rules.Places` rather than the twin test;
+* `--target <cell>=1.0` and `--flat-floor`, which the flag sets as **defaults**
+  and not as overrides — a themed pass naming its own target or its own floor
+  keeps it. Without the target the cell allowance is `floor(K x (1/48) x n) + 1`
+  and refuses the theme at nine seats.
+
+Rows outside the cell are recorded `not_dominant_in_the_theme`, which is pool
+construction and sits beside `below_its_mode_bar` rather than among the rules:
+the row was not refused a seat, it was never eligible for one.
 
 ### The q4 bar is a statistic on the record, and the bars are the pool
 
@@ -1939,9 +1973,34 @@ places to 13%. It is structural rather than a supply shortage: `pixel_clouds.MET
 over a picture's **colour cloud** and colour comes from the map rather than the place, so
 selecting on the dominant cell selects for pictures that are near-duplicates of each
 other under exactly the rule a gallery uses to refuse duplicates. It is the same argument
-the location-level prune above failed on, with the sign flipped. **So a themed gallery is
-bounded by `TAU` and not by its bar, its cap or its floors** — at n=200 the ceiling needs
-`--target <cell>=1.0` to admit the theme at all, and past that no arm fills.
+the location-level prune above failed on, with the sign flipped. **So a themed gallery
+under the twin test is bounded by `TAU` and not by its bar, its cap or its floors** — at
+n=200 the ceiling needs `--target <cell>=1.0` to admit the theme at all, and past that no
+arm fills. That is the reading `--themed` acts on: it swaps the twin test out.
+
+**And with the twin test out, the binding rule is the palette-group cap.** Measured
+2026-09-01 over the two themed pools at the relaxed bar, geometry-only distinctness at
+0.07, `--target <cell>=1.0` and `--flat-floor`:
+
+```
+                       n=50  100  150  200  300  400  600   pool
+dark_vivid_lime  seats   38   66   90  124  154  185  217   476 rows / 424 places / 39 groups
+                 cap    435  389  360  300  255  171  101   <- rows the group cap refused
+                 geom     1    6   12   27   35   84  119
+dark_vivid_green seats   50  100  150  200  289  356  405  1209 rows / 1097 places / 65 groups
+                 cap   1095 1009  985  755  735  548  251
+                 geom     2   13   25   87  139  246  492
+```
+
+`sum_g min(cap, places group g can field)` predicts the lime column to within a few seats
+to n=300 — 39, 71, 100, 145, 183 — so **at any size a themed gallery would ship at, more
+pictures through the same maps buy nothing**; new palette groups dominant in the cell do.
+The two columns cross near n=400, and past there geometry is the ceiling: the galleries
+land at 217 and 405 against a greedy walk at 0.07 that leaves 233 and 435 places. Green
+fills exactly through n=200 and lime never fills. `→ scratch/SOLVE_themed_lime_green`.
+The seats are weak — worst seated rank key 0.0125 (lime) and 0.0241 (green) at n=200,
+against 0.418 for the main gallery at n=150 — which is what the relaxed bar buys.
+A themed solve costs 3–8 s at every rung, because the geometry rule opens no picture.
 
 ## `curate hunt` — rendering into a shortage instead of around it
 
