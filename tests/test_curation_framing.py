@@ -52,6 +52,35 @@ def test_the_window_is_three_widths_and_four_one_axis_recentrings() -> None:
     assert sum(1 for frame in frames if frame.unmoved) == 1
 
 
+# --------------------------------------------------------------------------- #
+# A centered location: scale only.
+# --------------------------------------------------------------------------- #
+def test_a_centered_locations_window_is_the_width_ladder_and_nothing_else() -> None:
+    """The centre of a nucleus location IS the location.
+
+    A quarter-frame west of the atom the operators solved for is not a better
+    crop of that location, it is a crop of somewhere else wearing the atom's name
+    — and the minibrot the reframing channel exists to frame would be off centre
+    in the picture a gallery seats. So stage B does not run, and stage A does:
+    the scale is exactly what a five-rung ladder left open.
+    """
+    row = {**location(), "centered": True}
+    frames = framing.window(row)
+    assert [frame.width_scale for frame in frames] == list(framing.WIDTH_LADDER)
+    assert all((frame.dx, frame.dy) == (0, 0) for frame in frames)
+    assert framing.recentres(row, frames[0]) == []
+    # And the ordinary row is untouched by the flag's arrival.
+    assert len(framing.window(location())) == 7
+
+
+def test_the_flag_is_read_off_the_row_and_a_row_that_never_heard_of_it_is_not_centered() -> None:
+    """One reader, so `False` and absent are one case and the guard cannot be
+    half-applied by a row written before the field existed."""
+    assert framing.is_centered({"centered": True})
+    assert not framing.is_centered({"centered": False})
+    assert not framing.is_centered({})
+
+
 def test_the_unmoved_rung_reproduces_the_record_rather_than_re_deriving_it() -> None:
     """The `x1.0` centre carries the row's own decimals and its own cap.
 
@@ -343,6 +372,68 @@ def test_the_leg_raises_where_an_adopted_framing_would_read_lower(monkeypatch, t
         framing.refine(
             [location()], directory=tmp_path, scorer=scorer, margin=2.0, log=lambda _line: None
         )
+
+
+def test_a_centered_row_is_refined_on_its_scale_and_never_off_its_centre(
+    monkeypatch, tmp_path
+) -> None:
+    """The leg's half of the guard. Three frames, not seven, and the centre holds.
+
+    The scripted head is told a quarter-frame west reads 0.99 against the width
+    ladder's best of 0.60, so a leg that planned stage B here would adopt the move
+    and the record would carry a `dx`. Nothing in the arithmetic would complain.
+    """
+    stub_screen(monkeypatch)
+    row = {**location(width="1.0"), "centered": True}
+    scorer = Scorer(
+        {
+            (1.0, 0.0, 0.0): 0.10,
+            (1.414, 0.0, 0.0): 0.60,
+            (1.414, -0.3535, 0.0): 0.99,
+            (1.0, -0.25, 0.0): 0.99,
+        }
+    )
+    [record] = framing.refine(
+        [row], directory=tmp_path, scorer=scorer, margin=2.0, log=lambda _line: None
+    )
+    assert record["centered"] is True
+    assert record["scanned"] == len(framing.WIDTH_LADDER) == 3
+    assert (record["dx"], record["dy"]) == (0, 0)
+    assert record["adopted"] is True
+    assert record["width_scale"] == 1.414
+    assert record["best"]["viewport"]["center_re"] == row["viewport"]["center_re"]
+    assert record["best"]["viewport"]["center_im"] == row["viewport"]["center_im"]
+    assert framing.price([record])["centered"] == 1
+
+
+def test_a_centered_row_in_a_mixed_batch_does_not_take_another_rows_frames(
+    monkeypatch, tmp_path
+) -> None:
+    """The stride bug, planted.
+
+    Stage B used to divide a frame's position by `len(AXES)` to find its owner,
+    which is true only while every scanned location plans four recentrings. One
+    centered row in the batch plans none, and the arithmetic then hands the rows
+    after it somebody else's readings — silently, and in the direction of adopting
+    a framing of a different place.
+    """
+    stub_screen(monkeypatch)
+    centered = {**location(key="centered", width="1.0"), "centered": True}
+    ordinary = {**location(key="ordinary", width="2.0")}
+    # A quarter-frame west of the ordinary row at its own width is the only strong
+    # frame in the batch, and it belongs to the second row.
+    scorer = Scorer({(2.0, 0.0, 0.0): 0.30, (2.0, -0.5, 0.0): 0.99}, fallback=0.10)
+    first, second = framing.refine(
+        [centered, ordinary], directory=tmp_path, scorer=scorer, margin=2.0, log=lambda _l: None
+    )
+    assert first["key"] == "centered"
+    assert first["adopted"] is False, "a centered row cannot adopt a move it never drew"
+    assert (first["dx"], first["dy"]) == (0, 0)
+    assert second["key"] == "ordinary"
+    assert second["adopted"] is True
+    assert (second["width_scale"], second["dx"], second["dy"]) == (1.0, -1, 0)
+    assert first["scanned"] == 3
+    assert second["scanned"] == 7
 
 
 def test_the_log_is_resumable_and_a_torn_tail_is_repaired(tmp_path) -> None:

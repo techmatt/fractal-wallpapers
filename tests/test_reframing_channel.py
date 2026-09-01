@@ -30,6 +30,7 @@ ON_AN_ATOM = reframing.Seed(
     viewport={"center_re": "-0.1592", "center_im": "1.0317", "width": "0.02"},
     tier=4,
     generation=0,
+    source="matt_q4",
 )
 
 
@@ -281,27 +282,69 @@ def test_the_head_picks_the_rung_and_the_row_says_which(tmp_path, monkeypatch) -
 # --------------------------------------------------------------------------- #
 # 4. The rung set.
 # --------------------------------------------------------------------------- #
-def test_the_rung_set_is_16_24_and_32_atom_sizes() -> None:
+def test_the_rung_set_is_16_24_32_48_and_64_atom_sizes() -> None:
     """The band that reads as a minibrot with detail around it is 50-100 px of
-    body at 1280, which is the 32x rung and nothing else; the walk's widest rung
-    is 16x and is a factor of two too tight. Nothing below 16x is offered: the 2x
-    frame is half interior and the walk's own cap refuses it outright."""
-    assert reframing.RUNGS == (16.0, 24.0, 32.0)
+    body at 1280, which is the 32x rung; the walk's widest rung is 16x and is a
+    factor of two too tight. 48x and 64x are carried because generation 1's
+    head-q4 rate rose monotone outward over the three rungs it had — 2.1%, 2.9%,
+    3.5% — which leaves the ladder's own end the thing that was never tested.
+    Nothing below 16x is offered: the 2x frame is half interior and the walk's own
+    cap refuses it outright."""
+    assert reframing.RUNGS == (16.0, 24.0, 32.0, 48.0, 64.0)
     assert min(reframing.RUNGS) >= max(f for f in operators.FRAMINGS if f is not None)
 
 
-def test_every_rung_is_drawn_and_scored_and_all_three_readings_are_on_the_row(
+def test_every_rung_is_drawn_and_scored_and_every_reading_is_on_the_row(
     tmp_path, monkeypatch
 ) -> None:
     """A rung that was not read cannot have been picked against, and a row that
     kept only its winner could never be used to ask which rung the head prefers —
-    which is the measurement the 24x rung exists to buy."""
+    which is the whole measurement the outer rungs exist to buy."""
     drawn(monkeypatch)
-    run = channel(tmp_path, rungs=(16.0, 24.0, 32.0))
+    run = channel(tmp_path, rungs=reframing.RUNGS)
     run.run([ON_AN_ATOM])
-    for row in reframing.read(run.ledger.path):
-        assert [cell["rung"] for cell in row["reframing"]["rungs_drawn"]] == [16.0, 24.0, 32.0]
+    rows = reframing.read(run.ledger.path)
+    assert rows
+    for row in rows:
+        assert [cell["rung"] for cell in row["reframing"]["rungs_drawn"]] == list(reframing.RUNGS)
         assert all(cell["p_ge4"] is not None for cell in row["reframing"]["rungs_drawn"])
+        assert all(cell["p_ge3"] is not None for cell in row["reframing"]["rungs_drawn"])
+
+
+# --------------------------------------------------------------------------- #
+# 5. A nucleus location is centered.
+# --------------------------------------------------------------------------- #
+def test_every_nucleus_location_says_it_is_centered(tmp_path, monkeypatch) -> None:
+    """The centre is the atom the operators solved for, and the row has to say so.
+
+    Without the field a later framing refinement would recentre a quarter-frame
+    off the nucleus and keep the location's name — the minibrot this whole channel
+    exists to frame, off centre, in the picture a gallery seats.
+    """
+    drawn(monkeypatch)
+    run = channel(tmp_path)
+    run.run([ON_AN_ATOM])
+    rows = reframing.read(run.ledger.path)
+    assert rows
+    assert all(row["centered"] is True for row in rows)
+
+
+def test_the_centered_contract_is_the_one_curation_framing_honours(tmp_path, monkeypatch) -> None:
+    """The two halves joined: what this channel writes is what that step reads.
+
+    A guard on the flag alone would pass with a `curation.framing` that had never
+    heard of it, which is exactly the failure it is here to stop.
+    """
+    from fractal_wallpapers.curation import framing
+
+    drawn(monkeypatch)
+    run = channel(tmp_path)
+    run.run([ON_AN_ATOM])
+    row = reframing.read(run.ledger.path)[0]
+    assert framing.is_centered(row)
+    window = framing.window({**row, "key": "k", "maxiter": row["maxiter"]})
+    assert [frame.width_scale for frame in window] == list(framing.WIDTH_LADDER)
+    assert all((frame.dx, frame.dy) == (0, 0) for frame in window)
 
 
 def test_the_rungs_are_offered_directly_because_refinement_cannot_reach_them() -> None:
@@ -391,21 +434,175 @@ def test_the_snap_at_a_seed_is_tighter_than_the_snap_at_a_walk_survivor() -> Non
     assert rows[0].reason != "nucleus_outside_frame", "the two refusals are priced apart"
 
 
-def test_a_generation_promotes_only_what_clears_the_q4_bar(tmp_path, monkeypatch) -> None:
-    """The loop, and its bound. A nucleus at or above the bar is next generation's
-    seed; one below it is on the ledger and goes no further."""
+# --------------------------------------------------------------------------- #
+# 6. The seed queue.
+# --------------------------------------------------------------------------- #
+def test_the_queue_is_matt_q4_then_matt_q3_then_head_q4_then_head_keeper() -> None:
+    """The order is a claim about what a seed is worth, and it is measured.
+
+    A human verdict outranks the head's because it is the thing being inherited;
+    inside the human half q4 outranks q3 because over generation 1's 1,056
+    consumed seeds a q4 root returned a head-q4 at 11.4% against a q3 root's 4.2%.
+    """
+    assert reframing.SOURCES == ("matt_q4", "matt_q3", "head_q4", "head_keeper")
+    assert reframing.source_of_tier(4) == "matt_q4"
+    assert reframing.source_of_tier(3) == "matt_q3"
+    # A widened --tier-floor spells what it admitted rather than being rounded
+    # into the nearest name here, and sorts behind everything the queue knows.
+    assert reframing.source_of_tier(2) == "matt_q2"
+    assert reframing.priority_of("matt_q2") == len(reframing.SOURCES)
+
+    mixed = [
+        reframing.Seed("d", {}, {}, tier=3, generation=1, source="head_keeper"),
+        reframing.Seed("b", {}, {}, tier=3, generation=0, source="matt_q3"),
+        reframing.Seed("c", {}, {}, tier=4, generation=1, source="head_q4"),
+        reframing.Seed("a", {}, {}, tier=4, generation=0, source="matt_q4"),
+    ]
+    assert [seed.id for seed in reframing.queued(mixed)] == ["a", "b", "c", "d"]
+    # Stable inside a class, so `supply.proven`'s own digest order survives.
+    twins = [
+        reframing.Seed(name, {}, {}, tier=4, generation=0, source="matt_q4")
+        for name in ("z", "y", "x")
+    ]
+    assert [seed.id for seed in reframing.queued(twins)] == ["z", "y", "x"]
+
+
+def test_both_promotion_classes_fire_and_the_q4_ones_go_first(tmp_path, monkeypatch) -> None:
+    """The generation loop, and the reason it has two classes rather than one.
+
+    Generation 1 found 58 nuclei over the q4 bar and 496 over the keeper floor. A
+    loop that promoted only the first would run its queue dry inside an hour of an
+    overnight leg — and the keeper floor is the bar the supply engine already
+    admits on, not a second opinion invented here.
+    """
     drawn(monkeypatch)
-    run = channel(tmp_path, scorer=Stub(p_ge3=0.99, p_ge4=0.0), generations=2)
+
+    # Over the keeper floor, under the great cut: a keeper promotion, not a q4 one.
+    run = channel(tmp_path / "keeper", scorer=Stub(p_ge3=0.99, p_ge4=0.0), generations=1)
     report = run.run([ON_AN_ATOM])
     assert report["head_q4"] == 0
-    assert [g["promoted"] for g in report["generations"]] == [0]
+    assert report["rounds"][0]["promoted"] >= 1
+    assert set(report["rounds"][0]["promoted_by_source"]) == {reframing.HEAD_KEEPER}
 
-    run = channel(tmp_path / "b", scorer=Stub(p_ge3=0.99, p_ge4=0.99), generations=1)
+    # Under the keeper floor: on the ledger, and no further.
+    run = channel(tmp_path / "floor", scorer=Stub(p_ge3=0.0, p_ge4=0.0), generations=2)
+    report = run.run([ON_AN_ATOM])
+    assert [g["promoted"] for g in report["rounds"]] == [0]
+
+    # Over both: a q4 promotion, and it is what generation 2 is offered first.
+    run = channel(tmp_path / "q4", scorer=Stub(p_ge3=0.99, p_ge4=0.99), generations=1)
     report = run.run([ON_AN_ATOM])
     assert report["head_q4"] >= 1
-    # Generation 1 only: the promotion is recorded and not fired.
-    assert len(report["generations"]) == 1
-    assert report["generations"][0]["promoted"] >= 1
+    assert set(report["rounds"][0]["promoted_by_source"]) == {reframing.HEAD_Q4}
+
+
+def test_every_row_says_which_generation_and_which_queue_class_produced_it(
+    tmp_path, monkeypatch
+) -> None:
+    """Yield per seed by seed source is a division on the record or it is nothing.
+
+    The **human** tier travels with a promotion and the head's verdict never
+    becomes one: what says how far from the person the seed has drifted is the
+    generation, and what says on whose word it was taken is the source.
+    """
+    drawn(monkeypatch)
+    run = channel(tmp_path, scorer=Stub(p_ge3=0.99, p_ge4=0.99), generations=2)
+    report = run.run([ON_AN_ATOM])
+    rows = reframing.read(run.ledger.path)
+    assert rows
+    for row in rows:
+        block = row["reframing"]
+        assert block["seed"]["source"] in reframing.SOURCES
+        assert block["generation"] == block["seed"]["generation"] + 1
+        # A promotion inherits the person's tier, never the head's number.
+        assert block["seed"]["tier"] == ON_AN_ATOM.tier
+    assert [row["reframing"]["seed"]["source"] for row in rows][0] == "matt_q4"
+    first, second = report["rounds"][:2]
+    assert first["consumed_by_source"] == {"matt_q4": 1}
+    assert sum(first["locations_by_source"].values()) == first["locations"]
+    assert sum(first["head_q4_by_source"].values()) == first["head_q4"]
+    # Generation 2 fires the promotions it was handed, and they are the q4 ones.
+    # It writes no row here and that is the dedup working, not a fault: a
+    # promotion's frame is already nucleus-centred, so the snap re-finds the atom
+    # the run has already made a location of.
+    assert second["offered_by_source"] == first["promoted_by_source"]
+    assert set(second["consumed_by_source"]) == {reframing.HEAD_Q4}
+    assert run.counts.get("nucleus_already_found", 0) >= 1
+
+
+def test_a_continuing_leg_does_not_write_the_earlier_legs_nuclei_a_second_time(
+    tmp_path, monkeypatch
+) -> None:
+    """`--prior`, and the duplicate it exists to stop.
+
+    The atom-key dedup is per run. A second leg that re-derived its seeds from the
+    label store would fire the same roots at the same atoms and put one nucleus in
+    two ledgers — which the union reads as two locations, in two seats, counted
+    twice in every book downstream.
+    """
+    drawn(monkeypatch)
+    first = channel(tmp_path / "one", scorer=Stub(p_ge3=0.99, p_ge4=0.99))
+    first.run([ON_AN_ATOM])
+    rows = reframing.read(first.ledger.path)
+    assert rows
+
+    carried = reframing.prior_run(first.out_dir, log=lambda *_a: None)
+    assert carried["found"] == {row["atom_key"] for row in rows}
+    assert carried["fired"] == {ON_AN_ATOM.id}
+    assert set(carried["record"]["promoted_by_source"]) == {reframing.HEAD_Q4}
+
+    second = channel(tmp_path / "two", scorer=Stub(p_ge3=0.99, p_ge4=0.99))
+    second.seen |= carried["found"]
+    report = second.run([], carried=carried["promoted"])
+    assert reframing.read(second.ledger.path) == []
+    assert report["counts"]["nucleus_already_found"] >= 1
+    assert report["seeds_consumed"] == len(carried["promoted"])
+
+
+def test_a_keeper_row_carries_forward_as_a_keeper_and_a_rejected_one_not_at_all(
+    tmp_path, monkeypatch
+) -> None:
+    """The classes a prior ledger's rows earn, read off the rows and not re-judged."""
+    drawn(monkeypatch)
+    run = channel(tmp_path / "keeper", scorer=Stub(p_ge3=0.99, p_ge4=0.0))
+    run.run([ON_AN_ATOM])
+    carried = reframing.prior_run(run.out_dir, log=lambda *_a: None)
+    assert set(carried["record"]["promoted_by_source"]) == {reframing.HEAD_KEEPER}
+
+    run = channel(tmp_path / "floor", scorer=Stub(p_ge3=0.0, p_ge4=0.0))
+    run.run([ON_AN_ATOM])
+    carried = reframing.prior_run(run.out_dir, log=lambda *_a: None)
+    assert carried["promoted"] == []
+    # And the nuclei are still off the queue, whatever the head said about them.
+    assert carried["found"]
+
+
+def test_the_seed_snap_scans_further_than_the_walks_own_ceiling() -> None:
+    """256, and the measurement behind it.
+
+    On 60 generation-1 seeds the snap found 24 nuclei at a ceiling of 64 in 5.1 s,
+    30 at 128 in 8.6 s and **35 at 256 in 17.7 s** — 58% against 40% at 3.5x the
+    Newton cost. It is the right trade here and the wrong one in the walk: the
+    snap is a tenth of this channel's operator clock and seeds are the scarce
+    thing, so a seed the snap misses is a seed nothing else reaches.
+    """
+    assert reframing.SEED_SNAP_MAX_PERIOD == 256
+    assert reframing.SEED_SNAP_MAX_PERIOD > operators.MAX_PERIOD
+
+    seen = {}
+    real = operators.snap_at_seed
+
+    def spy(view, *, degree, framings, max_period=operators.MAX_PERIOD, **rest):
+        seen["max_period"] = max_period
+        return real(view, degree=degree, framings=framings, max_period=max_period, **rest)
+
+    original = reframing.operators.snap_at_seed
+    try:
+        reframing.operators.snap_at_seed = spy
+        reframing.fire(ON_AN_ATOM, random.Random(0))
+    finally:
+        reframing.operators.snap_at_seed = original
+    assert seen["max_period"] == reframing.SEED_SNAP_MAX_PERIOD
 
 
 def test_the_ledger_is_readable_json_lines_carrying_their_own_join(tmp_path, monkeypatch) -> None:
