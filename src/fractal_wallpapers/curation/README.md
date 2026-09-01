@@ -811,6 +811,39 @@ its cells that picture is dominant in). The rates come from
 from an adjacency written down off the hue wheel. `config.ceiling.implied` on a
 solve record and on a pass record says what moved.
 
+### What a solve costs at n=1000, and why it is the seed rather than HiGHS
+
+**`curate solve run --n 1000` does not terminate.** Measured 2026-08-31 on the
+98,457-candidate pool, killed at a 30-minute wall cap in **stage 3 of round 1** —
+one cutting-plane round of the sixty `ROUNDS` allows, so there is no incumbent and
+no record written. At n=1000 the shipping selection is a greedy with local swap
+improvement, not this.
+
+Where the 1800 s went: 9.0 s to load the pool, 1.7 s for the LP relaxation,
+**827.9 s in `seed_greedily`**, 50.7 s in stage 1, 335.5 s in stage 2, and the rest
+of stage 3 unfinished. The seed is 46% of the budget and it *failed* — 534 of 1000
+seats over its 4,000-candidate reach, 6,282 cuts seeded, `feasible=False` — which
+then costs stage 2 as well, because an infeasible seed hands it no floor and it ran
+with 10,092 of 98,457 columns free instead of a few hundred.
+
+The seed is cubic. `seed_greedily` calls `Pairs.measure([at, *seated])` once per
+considered candidate, and `measure` walks **every pair** of the list it is handed
+rather than only the new one, so the cost is O(seats²) per candidate. Invisible at
+n=150; 828 s at n=1000. **A greedy shipping leg must not reuse that call shape.**
+
+**Building the program is free and its size does not grow with `n`.** The matrix is
+98,457 binaries, 18,249 rows and 533,513 nonzeros *at both n=150 and n=1000* —
+identical, because only the bounds move (the allowances, the mode floors, the
+cardinality). Build is 0.4-0.6 s on top of an 8.5 s pool load, and stage 2 and 3
+add one row per candidate to reach 116,707 and 116,722. So a slow solve is never a
+big model, and shrinking the model buys nothing.
+
+**There is no wall cap inside a solve.** `cutting_plane` takes a `deadline`, but
+`solve.solve` never passes one and no `time_limit` reaches HiGHS anywhere in the
+module — only `curate solve sweep` carries a clock, through `--sweep-seconds`. A
+caller that needs `run` bounded caps it from outside and gets no incumbent back
+when the cap fires.
+
 ## `curate headroom` and `curate seat` — the two bounds either side of the answer
 
 The solve above is expensive and it is the wrong instrument for one question. Before
