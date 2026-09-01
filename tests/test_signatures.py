@@ -73,14 +73,16 @@ def test_the_stored_vector_is_bit_identical_to_what_the_pass_would_derive():
 
     from fractal_wallpapers.palettes import pixel_clouds
 
-    made = numpy.linspace(0.0, 255.0, 128 * 1024, dtype=numpy.float32)
+    made = numpy.linspace(
+        0.0, 255.0, pixel_clouds.groups.QUANTILES * pixel_clouds.DIRECTIONS, dtype=numpy.float32
+    )
     want = rules.reduce_signature(made).reshape(-1)
     back = signatures.unpack(signatures.pack(want))
     assert numpy.array_equal(want, back), "not approximately — exactly"
     assert back.dtype == numpy.float32
     blocks, directions = signatures.shape()
     assert len(back) == rules.bound_width() == blocks * directions
-    assert directions == pixel_clouds.groups.DIRECTIONS
+    assert directions == pixel_clouds.DIRECTIONS
 
 
 def test_a_row_carries_the_constants_it_was_reduced_at(tmp_path):

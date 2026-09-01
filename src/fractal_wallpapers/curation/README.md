@@ -67,8 +67,8 @@ fractal-wallpapers curate signatures sweep              # the bound signatures, 
 fractal-wallpapers curate signatures coverage          # how much of the pool the sidecar can answer for
 fractal-wallpapers curate solve run --n 20 --no-render # THE gallery leg: decide, render nothing
 fractal-wallpapers curate solve run --n 150            # the gallery, then the pictures
-fractal-wallpapers curate solve run --n 1000 --no-render   # 34 min on this machine
-fractal-wallpapers curate solve run --n 2000 --no-render   # the planning size, 60 min
+fractal-wallpapers curate solve run --n 1000 --no-render   # ~6 min, scaled not measured
+fractal-wallpapers curate solve run --n 2000 --no-render   # the planning size, 10 min
 fractal-wallpapers curate manufacture --step register --write          # BEFORE anything
 fractal-wallpapers curate manufacture --oversample 2.5                 # plan, build, select
 fractal-wallpapers curate manufacture --step verify --sheet artifacts/<sheet>
@@ -672,8 +672,8 @@ artifacts/curation/solve/<name>/contact_sheet.html  the seats, and what each rul
 ```
 fractal-wallpapers curate solve run --n 150                  # one gallery, rendered
 fractal-wallpapers curate solve run --n 150 --no-render      # decide, render nothing
-fractal-wallpapers curate solve run --n 1000 --no-render     # 34 min on this machine
-fractal-wallpapers curate solve run --n 2000 --no-render     # THE planning size (Matt), 60 min
+fractal-wallpapers curate solve run --n 1000 --no-render     # ~6 min, scaled not measured
+fractal-wallpapers curate solve run --n 2000 --no-render     # THE planning size (Matt), 10 min
 fractal-wallpapers curate solve run --n 150 --no-swap        # the greedy seed alone
 fractal-wallpapers curate solve run --n 150 --swap-seconds 300   # a clock on the loop only
 fractal-wallpapers curate solve run --n 150 --flat-floor     # the pre-2026-08-31 mode floor
@@ -754,8 +754,8 @@ repairs by seating something it should not.
 ### The bound signature is swept once, not derived per pass
 
 The twin rule is the only one that opens a picture, and what one signature costs is
-**the sort, not the decode**. Measured stage by stage on 2026-09-01, 141 ms a
-signature: `codebook.pixels` **2.65 ms** — libjpeg's `draft` lands on `CENSUS_SIZE`
+**the sort, not the decode**. Measured stage by stage on 2026-09-01 at the 1024
+directions the metric then used, 141 ms a signature: `codebook.pixels` **2.65 ms** — libjpeg's `draft` lands on `CENSUS_SIZE`
 without building the full image — `space.oklab` 5.19 ms, the projection 4.49 ms, and
 `numpy.sort` over the `[4096 samples, 1024 directions]` projections **121 ms, 86% of
 it**. Until 2026-09-01 this paragraph read "the JPEG decode — about 96 ms", which was
@@ -786,9 +786,11 @@ a pool nothing changed *and* miss a picture replaced inside one second. The two
 reduction constants ride on the row too, so changing either invalidates the store
 at once.
 
-It is regenerable and gets no `durability.Durable`: **247 MB, 11,210 rows, 448 s**
+It is regenerable and gets no `durability.Durable`: **65.4 MB, 11,454 rows, 103 s**
 over the standard three-worker pool with nothing unreadable. A second copy of a
-derived store that size earns less than it costs.
+derived store that size earns less than it costs. It was 247 MB and 448 s until
+`pixel_clouds.DIRECTIONS` came down to 256 on 2026-09-01 — a reduced signature is
+4 KiB now rather than 16.
 
 **What it bought, measured: not the gallery leg.** At n=150 the leg is 37.9 s
 without the sidecar and 36.9 s with it, over a bit-identical gallery — and the
@@ -803,12 +805,14 @@ prunes have already removed nearly all of those. The store is still the right sh
 — it is the read-ahead's benefit without the read-ahead's guess — but the gallery
 leg is not where it shows up, and saying so is cheaper than re-deriving it later.
 
-**Where it does earn its 247 MB is `curate headroom --twin`**, which builds one
+**Where it does earn its 65.4 MB is `curate headroom --twin`**, which builds one
 reduced signature per place to screen millions of pairs and needs a full cloud only
 for the few thousand survivors — so nothing cancels. Measured over that sweep's own
 population, 4,496 places after the neutral pre-selection: the sidecar answers **all
-4,496 in 0.7 s** against **429 s** to decode them at 95 ms a picture. That sweep used
-to build every one of them and throw them away.
+4,496 in 0.7 s** against **429 s** to decode them at 95 ms a picture — both measured at
+1024 directions; a signature is 16.8 ms now, so the same sweep would decode them in about
+75 s and the sidecar's edge there is far smaller than it was. That sweep used to build
+every one of them and throw them away.
 
 ### Two prunes in the swap loop, and both are sound
 
@@ -860,8 +864,8 @@ accepted.
 ### What a pass costs is one store
 
 `rules.Twins.reduced_of` keeps **one reduced signature per candidate for the life
-of the pass**, unbounded on purpose: 16 KiB a row is 139 MB over the largest view
-this project builds, and the full half-mebibyte signatures stay in the bounded
+of the pass**, unbounded on purpose: 4 KiB a row is 37 MB over the largest view
+this project builds, and the full 128 KiB signatures stay in the bounded
 cache underneath. Every question the bound asks reads the reduced form; the full
 one is fetched lazily and only for the candidates whose bound could not settle
 everything — 99.9% of seat comparisons are settled, so most candidates never have
@@ -889,6 +893,41 @@ pre-selection over 4,791 places), 2026-09-01. All `--no-render`:
 | swap loop | 7.1 s | 1,617.9 s | 2,632.1 s, ran out of improvements |
 | whole leg, on a *shared* machine | 38.4 s (was 461.1 s) | 2,030.8 s (was 2,743.4 s) | 3,592.1 s |
 
+**And this is the leg before the metric came down to 256 directions**, which is most of
+what it cost. Measured the same day on the same pool, `--no-render`, same gallery at
+n=150 seat for seat:
+
+| | n=150 | n=2000 |
+|---|---|---|
+| whole leg | 46.1 s → **16.2 s (2.85x)** | 3,592.1 s → **607.2 s (5.9x)** |
+| seed | 25.1 s → **4.5 s** | 947.3 s → **145.8 s** |
+| swap loop | 9.4 s → **1.7 s** | 2,632.1 s → **451.3 s** |
+| signatures decoded | 317 → 314 | 28,826 → 28,112 |
+
+**And the gallery it chooses barely moves, which was checked against a control rather
+than argued.** At n=150 it is **seat for seat identical** — same 150 places, same 26
+swaps, same objective, every refusal count the same. At n=2000, against the same pool at
+1024 directions (`control1024_n2000`, which is the retired metric exactly because the
+sort rearrangement is byte-identical there):
+
+| | 1024 | 256 |
+|---|---|---|
+| seats / shortfall / worst | 878 / 200 / 0.097761 | **all three identical** |
+| sum | 422.86 | 421.56 (−0.3%) |
+| places held | — | **863 of 878 (98.3%)** |
+| whole leg | 2,517.6 s | **607.2 s** |
+
+The first three objective tiers do not move. Over 5,700 twin verdicts, **5,674 agree**;
+26 pairs the old metric called twins the new one does not (0.46%) and 13 the other way,
+with the median distance on shared refusals moving **+0.000008** — three parts in ten
+million of `ceiling.TAU`. **Read a diverging census against the pool first**: the
+`census_n2000` comparison looked like a 22-seat shortfall regression and every seat of it
+was `direct_trap_multiply` losing 183 of its 220 clearing rows to a merge, not the metric.
+
+A gallery at the planning size is **ten minutes** now rather than an hour. **n=1000 was
+not re-run**, so the only figure for it is the 2,030.8 s above; scaling by the n=2000
+ratio puts it near six minutes and nothing has measured that.
+
 The seconds are upper bounds — this machine is usually running something else — so
 the **decode counts** are the figure to compare; they are off each record's own
 counters and they predict the walls at all three sizes.
@@ -902,8 +941,8 @@ knowing before capping one: `--swap-seconds 3600` was set as insurance on that r
 never bound. The planning size is affordable.
 
 **The seed is no longer the whole cost** — at n=2000 it is 947 s of 3,592 — but the
-signature still is, at both of its stages. See *Two measured levers on the signature*
-below.
+signature still is, at both of its stages. Both were taken on 2026-09-01; see *The twin
+metric's two costs* below, and read this table as the leg **before** them.
 
 ### At the planning size the binding constraint is distinctness, not places
 
@@ -946,28 +985,63 @@ slack 0 unless a `--twin` sweep is handed in, so the one block that would bound 
 is the opt-in one. At 4,791 places that sweep is the minutes-to-hours leg — an attempt was
 stopped unfinished at ~40 min — and everything above says the next census should pay for it.
 
-### Two measured levers on the signature, neither taken
+### The twin metric's two costs, both now taken
 
-Both from `SOLVE_census_n2000`, and they compose — they are different stages of the
-same 141 ms.
+Measured in `SOLVE_census_n2000` and taken in `EDIT_twin_metric_directions`. They are
+different stages of the same signature and they compose.
 
-**The sort is strided, which is a free 1.75x.** `signature` builds
-`[SAMPLES, DIRECTIONS]` C-contiguous and sorts `axis=0`, so each of the 1,024
-independent sorts walks a 4,096-float stride. The same sorts along the contiguous axis
-are **45.6 ms against 116.0 ms**, and producing the projection transposed —
-`lattice @ points.T` then `sort(axis=-1)` — is **67.7 ms end to end against 118.4 ms**,
-bit-identical output. What needs care is that the quantile read then yields
-`[DIRECTIONS, QUANTILES]` while `reduce_signature` reshapes assuming the transpose, so
-the flatten order has to be preserved exactly. **`numpy.partition` is a dead end** and
-was measured: the 128 quantiles need 256 distinct kth positions and `partition` at 256
-kths is 181-246 ms against the sort's 116 ms.
+**1. The sort runs on the contiguous axis, for a byte-identical answer.** `signature`
+used to build `[SAMPLES, DIRECTIONS]` C-contiguous and sort `axis=0`, which is
+`DIRECTIONS` independent sorts each striding `SAMPLES` floats apart. It now transposes
+into a contiguous copy and sorts the last axis. The sort itself is much cheaper that way
+— 8.1 ms against 13.2 ms at 256 directions, 32.2 against 84.9 at 1024 — but the copy
+takes most of it back, so **end to end the rearrangement is 1.28x** and not the 1.75x
+`SOLVE_census_n2000` projected off the sort alone. The transpose on the way out keeps the
+flat form quantile-major, which is what `reduce_signature` reshapes against.
 
-**A narrower lattice is 6.6x and it barely moves the answers.** Project-and-sort scales
-better than linearly in `DIRECTIONS` — 117 ms at 1024, 47 at 512, 22 at 256, 9.3 at
-128 — because the metric is a Monte Carlo estimate over the lattice and fewer slices is
-the same expectation with more variance. Measured over 731 pairs in the 0.5-1.5x `TAU`
-band, each setting given its own `groups.directions(count)` call because a 256-point
-Fibonacci lattice is not a prefix of a 1024-point one:
+It is byte-identical, checked rather than assumed, because BLAS picks a kernel per shape
+and could accumulate three terms in another order: today's code forced back to 1024
+directions reproduces signatures captured before the edit over 40 real pictures —
+**20,971,520 bytes, 0 differing elements of 5,242,880, `tobytes()` equal**.
+`test_the_contiguous_sort_is_the_same_answer_as_the_strided_one` keeps the retired
+formulation beside the shipped one and pins it, because a speedup whose output moved
+would be a bug wearing a speedup's clothes.
+
+**Why a copy rather than projecting straight into the transposed shape, which is the
+trap.** `lattice @ points.T` gives `[DIRECTIONS, SAMPLES]` contiguous and bit-identical
+for free, and it went in first. The projection's inner dimension is **3**, so there is
+nothing in it to parallelise — and BLAS threads that shape anyway. The whole signature
+went to **24.93 ms wall for 185 ms of CPU** against 9.57 ms and 9.38 ms with threads
+capped: a spin-wait, 20x the CPU for 2.6x worse wall time, and three times worse again
+inside `curation.signatures`' three-worker pool. At 256 directions `points @ lattice.T`
+`[4096,256]` is 0.70 ms and threading helps it; `lattice @ points.T` `[256,4096]` is
+5.79 ms wall for 56.6 ms of CPU.
+
+**Nothing failed and no test caught it** — the answers were identical either way. It
+surfaced as a number that made no sense: the sidecar sweep ran past 600 s where the
+1024-direction sweep had been 448 s, on a signature four times cheaper.
+
+**Two measured dead ends.** `numpy.einsum` with `optimize=True` is bit-identical and
+looks nearly free, because it returns a **non-contiguous transposed view of the same
+BLAS result** — timing it times the view, and sorting it strides again; with
+`optimize=False` it is contiguous but its own accumulation is not bit-identical. And
+`numpy.partition` to the 256 kth positions the 128 quantiles need is 181-246 ms against
+the sort's 116 ms.
+
+**2. The metric has its own direction count, at 256.** [`pixel_clouds.DIRECTIONS`], and
+deliberately not `groups.DIRECTIONS`, which stays at 1024 for the palette-group M1
+matrix — a different metric over colormap *ramps* rather than pictures, and the one
+every stored group name was cut under. The audit behind that split: every non-test
+reader of the shared constant was either the twin metric's (`pixel_clouds.lattice`,
+`distance`, `distances`, `Clouds.price`, `METRIC`, `rules.reduce_signature`,
+`rules.bound_width`, `signatures.shape`) or `groups.m1`'s own default. Nothing else
+took it. `QUANTILES`, `SAMPLES` and `HUE_WEIGHT` are still shared.
+
+Project-and-sort scales better than linearly in the count — 117 ms at 1024, 47 at 512,
+22 at 256, 9.3 at 128 — because the metric is a Monte Carlo estimate over the lattice
+and fewer slices is the same expectation with more variance. Measured over 731 pairs in
+the 0.5-1.5x `TAU` band, each setting given its own `groups.directions(count)` call
+because a 256-point Fibonacci lattice is not a prefix of a 1024-point one:
 
 | DIRECTIONS | ms | descriptor | p95 error as % of TAU | twin decisions flipped |
 |---|---|---|---|---|
@@ -987,10 +1061,35 @@ comparisons depending on the estimator, 0.001-0.013% of the 11.94 M the leg make
 
 **The prune stays sound at any count**: the bound is the identity
 `|mean a - mean b| <= mean|a - b|` on the same projection vector, so it becomes an exact
-bound for the narrower metric rather than an inexact one for the wider. **What stops
-this being a one-line change** is that `groups.DIRECTIONS` is shared with the
-palette-group code rather than being solve-local, so it wants an audit of the other
-readers or its own constant.
+bound for the narrower metric rather than an inexact one for the wider.
+
+**`TAU` is not refitted and must not be.** The error is added variance centred on
+1.0000, not a shift, so there is nothing for a refit to absorb — and a threshold moved
+to chase it would silently change which pairs are twins for reasons that have nothing
+to do with the pictures.
+
+### Every signature is now a function of the direction count
+
+This is the part that could fail silently, so it is keyed at every layer that holds one
+— four, and the fourth was found by looking rather than by anything breaking. A stale
+entry under a fresh key would compare two different metrics and **raise nothing**: both
+are flat float32 vectors and the caller only ever takes an absolute difference.
+
+| what holds a metric result | how a stale entry is caught |
+|---|---|
+| the reduced sidecar, `reduced_signatures.jsonl` | each row carries `blocks` and `directions`; `signatures.by_recipe` and `for_candidates` drop any row not matching `signatures.shape()`. The 11,210 rows swept at 1024 went to **0 accepted** the moment the count moved — a miss, and the picture is decoded as before |
+| the direction lattice, `pixel_clouds._LATTICE` | keyed **per count** rather than one module singleton. Nothing in production moves the count inside a process; a test that sets `DIRECTIONS` is exactly the caller a stale singleton would answer wrongly |
+| the in-memory cache, `pixel_clouds.Clouds` | the instance records the count it was built at and **drops everything** if it moves, held seats included. A miss costs a decode; a hit would cost a wrong answer |
+| **`twins.json`**, replayed by `curate headroom --twin-from` | it recorded `tau` and not the count, so a sweep taken at 1024 would have been replayed as a twin count in a different metric. It now records `directions`, and `headroom.census` **refuses** a mismatch or an absent one rather than flagging it — there is nothing about a sweep's shape to give the metric away. The two files on disk are refused with a message naming the fix |
+
+**There is no full-signature disk cache** — it was a proposal in the census report, not
+something shipped, so there was nothing to invalidate. If one is ever built it needs the
+count in its identity for the same reason, and it would now cost 1.4 GiB over the
+clearing pool rather than 5.5 GiB.
+
+A gallery's own record carries `diversity.directions` too, because two galleries chosen
+at different counts are measured in different metrics and are no more comparable than
+two chosen under different diversity rules.
 
 ### What was retired, and why
 
@@ -1095,9 +1194,9 @@ never measured. Measured over 79,800 pairs from the same population, at the reti
 |---|---|---|---|
 | 1 | 4 KiB | 95.4% | 2.7 |
 | 2 | 8 KiB | 97.4% | 1.6 |
-| **4 (shipped)** | **16 KiB** | **97.9%** | **1.2** |
+| **4 (shipped)** | **4 KiB** | **97.9%** | **1.2** |
 | 16 | 64 KiB | 98.3% | 1.0 |
-| 128 (the metric) | 512 KiB | 100% | 1.0 |
+| 128 (the metric) | 128 KiB | 100% | 1.0 |
 
 **The grouping axis is the quantiles and not the directions**, and both are sound
 partitions — the bound holds either way. Grouping across directions averages a

@@ -576,17 +576,54 @@ def test_the_bounds_say_which_of_them_is_a_necessary_condition():
     assert "one picture per place" in read["measured_over"]
 
 
-def test_the_twin_block_is_short_when_the_bound_falls_under_n():
-    swept = {
+def sweep(pairs, directions=None):
+    """A twin sweep in the shape `--twin-from` reads one from disk.
+
+    The direction count is part of it, because a sweep is a set of distances and so
+    is only a fact about the metric that measured them.
+    """
+    from fractal_wallpapers.palettes import pixel_clouds
+
+    return {
         "tau": ceiling.TAU,
+        "directions": pixel_clouds.DIRECTIONS if directions is None else directions,
         "places": 3,
         "pairs_screened": 3,
-        "pairs": [{"a": "c0", "b": "c1"}, {"a": "c1", "b": "c2"}],
+        "pairs": list(pairs),
     }
+
+
+def test_the_twin_block_is_short_when_the_bound_falls_under_n():
+    swept = sweep([{"a": "c0", "b": "c1"}, {"a": "c1", "b": "c2"}])
     read = headroom.census(clearing_pool(3), ladder=(2, 20), twins=swept, log=lambda *_: None)
     assert read["curve"]["2"]["blocks"]["twin_diversity"]["supply"] == 2
     assert read["curve"]["2"]["blocks"]["twin_diversity"]["short"] is False
     assert read["curve"]["20"]["blocks"]["twin_diversity"]["short"] is True
+    assert read["twin_constraint"]["directions"] == swept["directions"]
+
+
+def test_a_twin_sweep_from_another_direction_count_is_refused_not_read():
+    """A sweep is distances, so it is only a fact about the metric that took it.
+
+    `--twin-from` replays one off disk, and the twin counts in a sweep taken at
+    another slice count are counts in a different metric — with nothing about its
+    shape to give that away, which is why this refuses instead of flagging. Both
+    `twins.json` files on disk when the count moved predate the field entirely.
+    """
+    from fractal_wallpapers.palettes import pixel_clouds
+
+    pairs = [{"a": "c0", "b": "c1"}]
+    with pytest.raises(headroom.HeadroomError, match="different metric"):
+        headroom.census(
+            clearing_pool(3),
+            ladder=(2,),
+            twins=sweep(pairs, directions=pixel_clouds.DIRECTIONS * 2),
+            log=lambda *_: None,
+        )
+    stale = sweep(pairs)
+    del stale["directions"]
+    with pytest.raises(headroom.HeadroomError, match="no direction count"):
+        headroom.census(clearing_pool(3), ladder=(2,), twins=stale, log=lambda *_: None)
 
 
 # --------------------------------------------------------------------------- #

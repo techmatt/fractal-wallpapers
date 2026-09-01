@@ -506,18 +506,38 @@ def census(
     for candidate in sorted(kept, key=lambda held: (-held.score, held.key)):
         best.setdefault(candidate.location, candidate)
     strongest = sorted(best, key=lambda key: (-best[key].score, best[key].key))
-    twin = (
-        {"skipped": "no twin sweep was handed in; `curate headroom --twin` runs one"}
-        if twins is None
-        else {
+    if twins is None:
+        twin = {"skipped": "no twin sweep was handed in; `curate headroom --twin` runs one"}
+    else:
+        from fractal_wallpapers.palettes import pixel_clouds
+
+        # A sweep is a set of distances, so it is only a fact about the metric that
+        # measured it. `--twin-from` replays one from disk and a sweep taken at
+        # another slice count is a twin count in a different metric — with nothing
+        # about its shape to give that away, which is why this refuses rather than
+        # flags. A sweep from before the count was recorded says `None`.
+        swept_at = twins.get("directions")
+        if swept_at is not None and int(swept_at) != pixel_clouds.DIRECTIONS:
+            raise HeadroomError(
+                f"this twin sweep was taken at {int(swept_at)} directions and the metric "
+                f"is at {pixel_clouds.DIRECTIONS}, so its pairs are twins in a different "
+                f"metric. Re-run `curate headroom --twin` rather than `--twin-from`."
+            )
+        if swept_at is None:
+            raise HeadroomError(
+                "this twin sweep carries no direction count, so it predates "
+                "2026-09-01 and was taken at 1024 directions against the metric's "
+                f"{pixel_clouds.DIRECTIONS}. Re-run `curate headroom --twin`."
+            )
+        twin = {
             **twin_bound(
                 strongest, [(pair["a"], pair["b"]) for pair in twins["pairs"]], order=strongest
             ),
             "tau": twins.get("tau"),
+            "directions": int(swept_at),
             "swept_places": twins.get("places"),
             "pairs_screened": twins.get("pairs_screened"),
         }
-    )
     by_cell: dict = {}
     by_family: dict = {}
     by_mode: dict = {}

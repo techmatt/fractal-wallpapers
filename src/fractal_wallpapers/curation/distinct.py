@@ -98,7 +98,8 @@ RADII = (0.02, 0.04, 0.07, 0.10)
 PAIRS_SHOWN = 16
 
 #: How many pairs [`premise`] measures. Each one costs two pixel-cloud signatures
-#: at about a tenth of a second, and they are cached per picture — so the real
+#: at about 16.8 ms each since the metric came down to 256 directions, a tenth of a
+#: second before that, and they are cached per picture — so the real
 #: cost is the distinct pictures, not the pairs.
 PREMISE_PAIRS = 800
 
@@ -633,6 +634,11 @@ def twins(
     log(f"[distinct] twins: {len(found):,} real twin pair(s)")
     return {
         "tau": tau,
+        "directions": pixel_clouds.DIRECTIONS,
+        "directions_are": "the slice count every distance in this sweep was measured at. "
+        "A sweep replayed through `curate headroom --twin-from` at another count is a "
+        "count of twins in a different metric, which nothing about its shape would give "
+        "away — see headroom.twin_constraint, which refuses on it",
         "places": len(usable),
         "pairs_screened": screened,
         "survived_the_bound": len(survivors),

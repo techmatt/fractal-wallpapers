@@ -153,10 +153,10 @@ def signature_pair(seed):
     """Two signatures shaped the way the metric makes them, from a seeded draw."""
     import numpy
 
-    from fractal_wallpapers.palettes import groups
+    from fractal_wallpapers.palettes import groups, pixel_clouds
 
     rng = numpy.random.default_rng(seed)
-    size = groups.QUANTILES * groups.DIRECTIONS
+    size = groups.QUANTILES * pixel_clouds.DIRECTIONS
     return (
         numpy.sort(rng.normal(size=size).astype(numpy.float32)),
         numpy.sort(rng.normal(0.3, 1.4, size=size).astype(numpy.float32)),
@@ -186,19 +186,19 @@ def test_the_bound_never_exceeds_the_distance_it_bounds(seed) -> None:
 def test_the_bound_at_one_block_is_the_distance_between_the_mean_colours() -> None:
     """Which is what the design predicted the metric would admit. Four blocks is
     that statement per band of the cloud; one block is the statement itself."""
-    from fractal_wallpapers.palettes import groups
+    from fractal_wallpapers.palettes import groups, pixel_clouds
 
     one, _other = signature_pair(0)
-    grid = one.reshape(groups.QUANTILES, groups.DIRECTIONS)
+    grid = one.reshape(groups.QUANTILES, pixel_clouds.DIRECTIONS)
     assert rules.reduce_signature(one).mean(axis=0) == pytest.approx(grid.mean(axis=0), abs=1e-5)
 
 
 def test_the_bounds_denominator_has_one_spelling() -> None:
     """Two spellings of a denominator is how a screen and a metric stop being
     comparable while every line of both still reads correctly."""
-    from fractal_wallpapers.palettes import groups
+    from fractal_wallpapers.palettes import pixel_clouds
 
-    assert rules.bound_width() == groups.DIRECTIONS * rules.BOUND_BLOCKS
+    assert rules.bound_width() == pixel_clouds.DIRECTIONS * rules.BOUND_BLOCKS
 
 
 # --------------------------------------------------------------------------- #

@@ -4,12 +4,13 @@ The gallery leg's one expensive rule is the twin rule, and what it costs is not 
 comparison — it is opening the JPEG. [`curation.rules.Twins`] screens a candidate
 against the seated stack with a sound lower bound read off a **reduced** signature:
 [`rules.BOUND_BLOCKS`] blocks of quantiles by
-[`fractal_wallpapers.palettes.groups.DIRECTIONS`] directions, sixteen kibibytes
-against the metric's five hundred and twelve. Only the fraction of a percent of
+[`fractal_wallpapers.palettes.pixel_clouds.DIRECTIONS`] directions, four kibibytes
+against the metric's hundred and twenty-eight. Only the fraction of a percent of
 pairs the bound cannot settle ever needs the full cloud.
 
 That reduced form is derived from the full one, so **making it costs a decode** —
-about 96 ms a picture — and a pass that walks nine thousand rows pays for every
+about 16.8 ms a picture, and 96 ms before the metric came down to 256 directions — and a
+pass that walks nine thousand rows pays for every
 picture it opens. It is also the same number every time: the picture on disk does
 not change, so the reduced signature is a property of the picture and not of the
 pass. This is where it is kept.
@@ -54,7 +55,8 @@ survivors. It used to build every one of them and throw them all away.
 
 Measured over that sweep's own population — 4,496 places after the neutral
 pre-selection, one picture each: the sidecar answers **all 4,496 in 0.7 s**, against
-**429 s** to decode them at the measured 95 ms a picture. That is the sweep's whole
+**429 s** to decode them at the 95 ms a picture that cost at 1024 directions; at 256 it
+is 16.8 ms and the same decode is about 75 s. That is the sweep's whole
 signature-building half, and it is where this store earns its 247 MB.
 
 ## Staleness is the picture's identity and never a clock
@@ -95,7 +97,7 @@ SCHEMA = 1
 SIDECAR_NAME = "reduced_signatures.jsonl"
 
 #: How many pictures one worker takes at a time. Smaller than
-#: [`curation.flatness.CHUNK`] because each reading comes back sixteen kibibytes
+#: [`curation.flatness.CHUNK`] because each reading comes back four kibibytes
 #: rather than one float, and a worker's result list is held whole before it is
 #: written.
 CHUNK = 64
@@ -113,9 +115,9 @@ class SignatureError(RuntimeError):
 def shape() -> tuple[int, int]:
     """`(blocks, directions)` — the constants a row is only valid at."""
     from fractal_wallpapers.curation import rules
-    from fractal_wallpapers.palettes import groups
+    from fractal_wallpapers.palettes import pixel_clouds
 
-    return rules.BOUND_BLOCKS, groups.DIRECTIONS
+    return rules.BOUND_BLOCKS, pixel_clouds.DIRECTIONS
 
 
 # --------------------------------------------------------------------------- #
@@ -150,7 +152,7 @@ def pack(vector) -> str:
     metric and a value rounded the wrong way turns it into a slightly-too-large
     one, which would let a real twin be pruned; and `test_solve.py` pins the
     gallery bit-identical, which a lossy round-trip would break for nothing. Four
-    bytes a float is 16 KiB a row and the store is regenerable.
+    bytes a float is 4 KiB a row and the store is regenerable.
     """
     import numpy
 

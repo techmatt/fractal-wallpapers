@@ -67,7 +67,7 @@ from fractal_wallpapers.curation import ceiling
 #:
 #: The diversity rule is **last** because it is the only one that costs anything.
 #: The four above it are dictionary lookups over counts already held; this one
-#: decodes a JPEG and builds half a mebibyte of pixel cloud. Every candidate the
+#: decodes a JPEG and builds 128 KiB of pixel cloud. Every candidate the
 #: cheap rules refuse is a signature not made.
 #:
 #: `picture_unreadable` sits immediately before it and is the same rule's other
@@ -99,7 +99,8 @@ RULES = (
 TWIN_NEIGHBOURS = 1
 
 #: How many signatures the diversity rule's pixel-cloud cache holds before it
-#: forgets the oldest. 256 is 128 MiB. The seated are **held** and never counted
+#: forgets the oldest. 256 is 32 MiB at [`pixel_clouds.DIRECTIONS`] = 256, and was
+#: 128 MiB at 1024. The seated are **held** and never counted
 #: against it; what this buys is the second and third offer of a candidate the
 #: swap loop keeps coming back to.
 SIGNATURE_CACHE = 256
@@ -115,8 +116,10 @@ SIGNATURE_CACHE = 256
 #:
 #: Measured over 79,800 pairs drawn from a pool's top two thousand: one block
 #: settles 95.4% of pairs, two 97.4%, four 97.9%, sixteen 98.3%. Four is where
-#: the curve flattens, and it is a sixteen-kibibyte signature against the
-#: metric's five hundred and twelve.
+#: the curve flattens, and it is a four-kibibyte signature against the metric's
+#: hundred and twenty-eight. (Those settle rates were measured at 1024 directions;
+#: the ratio of block count to quantile count is what they turn on, and
+#: [`pixel_clouds.DIRECTIONS`] moved neither.)
 BOUND_BLOCKS = 4
 
 #: What the bound is, carried in every record that prunes by it. A prune is only
@@ -133,7 +136,7 @@ BOUND = (
 
 
 def reduce_signature(made):
-    """One full signature as its `[BOUND_BLOCKS, DIRECTIONS]` block means.
+    """One full signature as its `[BOUND_BLOCKS, pixel_clouds.DIRECTIONS]` block means.
 
     The signature is `[QUANTILES, DIRECTIONS]` flattened, and the bound reads it as
     [`BOUND_BLOCKS`] contiguous groups of **quantiles** averaged down. Contiguous,
@@ -146,19 +149,21 @@ def reduce_signature(made):
     """
     import numpy
 
-    from fractal_wallpapers.palettes import groups
+    from fractal_wallpapers.palettes import groups, pixel_clouds
 
-    grid = numpy.asarray(made, dtype=numpy.float32).reshape(groups.QUANTILES, groups.DIRECTIONS)
-    return grid.reshape(BOUND_BLOCKS, groups.QUANTILES // BOUND_BLOCKS, groups.DIRECTIONS).mean(
-        axis=1
+    grid = numpy.asarray(made, dtype=numpy.float32).reshape(
+        groups.QUANTILES, pixel_clouds.DIRECTIONS
     )
+    return grid.reshape(
+        BOUND_BLOCKS, groups.QUANTILES // BOUND_BLOCKS, pixel_clouds.DIRECTIONS
+    ).mean(axis=1)
 
 
 def bound_width() -> int:
     """The denominator the reduced distance is taken over. One place, one answer."""
-    from fractal_wallpapers.palettes import groups
+    from fractal_wallpapers.palettes import pixel_clouds
 
-    return groups.DIRECTIONS * BOUND_BLOCKS
+    return pixel_clouds.DIRECTIONS * BOUND_BLOCKS
 
 
 def clouds_for(candidates, cache: int = SIGNATURE_CACHE):
@@ -203,8 +208,8 @@ class Twins:
 
     Two stores, and the split is [`BOUND`]'s. Every seated picture is kept twice —
     once as its full signature, held in the [`pixel_clouds.Clouds`], and once as
-    [`reduce_signature`]'s four blocks of quantiles, sixteen kibibytes against
-    half a mebibyte. A candidate is screened against the reduced stack first,
+    [`reduce_signature`]'s four blocks of quantiles, four kibibytes against a
+    hundred and twenty-eight. A candidate is screened against the reduced stack first,
     which is a sound *lower* bound on the metric, so a seat the bound puts at or
     beyond [`ceiling.TAU`] provably cannot be a twin and is never measured. Only
     the survivors cost a full comparison.
@@ -212,7 +217,8 @@ class Twins:
     The bound settles almost everything — 99.2% of the pairs in the sweep that
     measured this pool — and what it buys is that the cost of the rule does not
     grow with the number of seats already taken. The candidate's own signature has
-    to be made either way and that is the tenth of a second.
+    to be made either way and that is the 16.8 ms — a tenth of a second before the
+    metric came down to 256 directions.
 
     **A seat can be dropped again.** That is the difference from the sequential
     twin state this replaces: a swap loop takes a seat back out, so the stack has
@@ -271,7 +277,7 @@ class Twins:
         the picture cannot be read.
 
         The whole cost of a pass lives here. Every question the bound asks reads
-        the reduced form — sixteen kibibytes — and the full half-mebibyte one is
+        the reduced form — four kibibytes — and the full 128 KiB one is
         needed only for the fraction of a percent of pairs the bound cannot
         settle. Deriving the reduced form from the full one through a bounded
         cache means a view larger than that cache re-decodes the same pictures on
@@ -280,9 +286,9 @@ class Twins:
         made for an 8,704-row view, 2.9 decodes a row**, and the swap loop at
         n=1000 was 2,338 s of which ~2,392 s was decoding.
 
-        Unbounded on purpose, and small enough to be: 16 KiB a row is 139 MB over
+        Unbounded on purpose, and small enough to be: 4 KiB a row is 37 MB over
         the largest view this project builds. The **full** signatures stay in the
-        bounded cache underneath, because those are half a mebibyte each.
+        bounded cache underneath, because those are 128 KiB each.
 
         A caller that hands in [`curation.signatures`]' sidecar has this store
         already full for every row the sweep covered, so the decode below never
@@ -333,7 +339,7 @@ class Twins:
             # The ordinary case by a long way, and the reason the full signature is
             # fetched lazily: 99.9% of seat comparisons are settled here, and a
             # candidate whose bound settles every one of them never needs its own
-            # half-mebibyte cloud read back.
+            # 128 KiB cloud read back.
             return []
         made = self.clouds.of(str(key))
         if made is None:  # pragma: no cover - the picture vanished mid-pass
@@ -373,6 +379,8 @@ class Twins:
 
     def record(self) -> dict:
         """What the rule cost and what it settled, for the pass record."""
+        from fractal_wallpapers.palettes import pixel_clouds
+
         return {
             "rule": self.NAME,
             "threshold": self.tau,
@@ -380,6 +388,13 @@ class Twins:
             "threshold_from": "ceiling.TAU",
             "neighbours": self.neighbours,
             "metric": "pixel-cloud sliced Wasserstein-1 between two finished pictures",
+            "directions": pixel_clouds.DIRECTIONS,
+            "directions_are": "the slice count the metric estimates over, and part of the "
+            "rule's identity: two galleries chosen at different counts are measured in "
+            "different metrics and are not comparable, the same way two chosen under "
+            "different diversity rules are not. pixel_clouds.DIRECTIONS, which is the twin "
+            "metric's own and not groups.DIRECTIONS",
+            "bound_blocks": BOUND_BLOCKS,
             "bound": BOUND,
             "candidates_tested": self.tested,
             "seat_comparisons_settled_by_the_bound": self.settled_by_the_bound,

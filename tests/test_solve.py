@@ -1364,10 +1364,10 @@ class Signatures:
     def __init__(self, values):
         import numpy
 
-        from fractal_wallpapers.palettes import groups
+        from fractal_wallpapers.palettes import groups, pixel_clouds
 
         self.values = {
-            key: numpy.full(groups.QUANTILES * groups.DIRECTIONS, value, dtype="float32")
+            key: numpy.full(groups.QUANTILES * pixel_clouds.DIRECTIONS, value, dtype="float32")
             for key, value in values.items()
         }
         self.made = 0
@@ -1408,13 +1408,13 @@ class EveryPicture(Signatures):
     def of(self, name):
         import numpy
 
-        from fractal_wallpapers.palettes import groups
+        from fractal_wallpapers.palettes import groups, pixel_clouds
 
         key = str(name)
         if key not in self.values:
             self._spread[key] = len(self._spread) * 1.0
             self.values[key] = numpy.full(
-                groups.QUANTILES * groups.DIRECTIONS, self._spread[key], dtype="float32"
+                groups.QUANTILES * pixel_clouds.DIRECTIONS, self._spread[key], dtype="float32"
             )
         return super().of(key)
 
