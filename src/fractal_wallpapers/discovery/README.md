@@ -55,7 +55,40 @@ other. **Nothing about the walk changes.**
 ```
 fractal-wallpapers reframe --minutes 20 --out-dir artifacts/reframe_g1
 fractal-wallpapers curate score --harvest artifacts/reframe_g1
+fractal-wallpapers curate embed                    # the merge is these two, in order
+
+# a later leg CONTINUES an earlier one rather than re-deriving its seeds
+fractal-wallpapers reframe --prior artifacts/reframe_g1 --out-dir artifacts/reframe_g2   --generations 40 --minutes 480
+fractal-wallpapers reframe --prior artifacts/reframe_g2 --out-dir artifacts/reframe_g3   --reprobe --seed 3 --minutes 120
 ```
+
+**Merging a run into the standing pool is `curate score --harvest <dir>` and then
+`curate embed`, in that order, and nothing else.** The union finds a ledger by
+looking it up at `<run directory>/walk.jsonl` for every top-level name of the
+regenerable tree, so a run directory *is* in the pool the moment it exists; what
+the two commands add is the sidecar's read of it and one neutral-render vector per
+admitted location. Measured on generation 1, 2026-08-31: the score step took under
+a minute for 788 rows and left the sidecar at 91,272 rows; `curate embed` wrote
+**663** vectors in 49.5 s and left the store complete over 29,083 admitted
+locations with 0 missing.
+
+**`--prior <dir>` continues an earlier run and is not optional between legs.** The
+atom-key dedup is per run, so a second leg that re-derived its seeds off the label
+store fires the same roots at the same atoms and writes **every one of the first
+leg's nuclei a second time** — one nucleus in two ledgers, which the union reads
+as two locations. `--prior` hands the new leg three things off the earlier ledger:
+the atom keys it found (they seed `seen`), the proven root ids it consumed (off
+the queue), and its admitted rows as this leg's promotions. Note that "consumed"
+is read off the rows, so a root that produced nothing is invisible and is fired
+again — which is wanted, because the seed snap's ceiling has moved since.
+
+**`--reprobe` fires at the roots an earlier leg already spent.**
+`expand_neighborhood` probes at random, so a second pass at one root is a
+different sample of the same neighbourhood and reaches atoms the first missed. It
+is the lever that keeps the channel yielding after the promotion queue converges,
+and it does converge: generation 1 returned 496 promotions on 1,056 seeds, so each
+round is roughly half the last. Give the leg its own `--seed` or it draws the same
+probes.
 
 **Seeds are `proven` roots, q3 and q4, parameter planes only, minus every eval
 pin.** Off `supply.proven` rather than a second query over the label store; the
@@ -67,15 +100,42 @@ and `blind_modes`' are excluded as seeds *and* as derived frames. Measured
 2026-08-31: 1,452 pinned places, 1,252 proven parameter-plane locations at tier
 >= 3, **76 of them pinned, 1,176 seeds available** (184 q4, 992 q3).
 
-**The rungs are 16x, 24x and 32x the atom size, and they are framings of one
-location rather than three locations.** All three are drawn through
-`engine.screen` at the node regime, all three are read through the location head,
+**The rungs are 16x, 24x, 32x, 48x and 64x the atom size, and they are framings of
+one location rather than five locations.** Every rung is drawn through
+`engine.screen` at the node regime, every one is read through the location head,
 one row is written, and its score is the rung the head picked — every rung's own
 reading rides on the row under `reframing.rungs_drawn`. They are offered directly
 rather than walked to: `curation.framing.WIDTH_LADDER` moves x1.414 a step and
-cannot reach 32x from 16x in one move. The band that reads as *a minibrot with
-detail around it* is 50-100 px of body at 1280, which is the 32x rung; the walk's
-widest rung, 16x, lands at 115-183 px and is a factor of two too tight.
+cannot reach 64x from 16x in anything a window that size can express. The band
+that reads as *a minibrot with detail around it* is 50-100 px of body at 1280,
+which is the 32x rung; the walk's widest rung, 16x, lands at 115-183 px and is a
+factor of two too tight, and 48x and 64x sit below the band at roughly 38-61 px
+and 28-45 px. The outer two were added after generation 1's head-q4 rate rose
+monotone outward over the three rungs it had — 2.1% at 16x, 2.9% at 24x, 3.5% at
+32x — which left the ladder's own end the thing that had never been tested.
+
+**A nucleus location is `centered`, and the field is a contract with
+`curation.framing`.** The centre is the atom the operators solved for and it is
+the whole of what the location is, so a framing refinement over one of these rows
+may move the **scale** and nothing else: `curation.framing.recentres` returns
+nothing for a centered row and `refine` plans no stage-B frames for one, three
+frames a location instead of seven. The flag is read off the row rather than off
+the channel name, so a hand-placed nucleus frame carries it for the same reason.
+
+**The seed snap scans to period 256**, over `operators.MAX_PERIOD`'s 64.
+Measured on 60 generation-1 seeds: 64 found 24 nuclei in 5.1 s, 128 found 30 in
+8.6 s, 256 found **35 in 17.7 s** — a 58% hit rate against 40% at 3.5x the Newton
+cost. It is the right trade here and the wrong one in the walk, because the snap
+is a tenth of this channel's operator clock and seeds are the scarce thing.
+
+**The seed queue has four classes and every row says which one it came from**:
+`matt_q4`, `matt_q3`, `head_q4`, `head_keeper`, in that order. A human verdict
+outranks the head's because it is the thing being inherited, and inside the human
+half q4 outranks q3 on measurement — over generation 1's 1,056 consumed seeds a q4
+root returned a head-q4 at **11.4%** against a q3 root's **4.2%**, so a q4 seed is
+worth 2.7 of the others. Both promotion classes fire: generation 1 found 58 nuclei
+over the q4 bar and 496 over the keeper floor, and a loop that promoted only the
+first runs its queue dry inside an hour of an overnight leg.
 
 **`operators.snap_at_seed` is the ported operator.** The maker's set was
 `snap_at_seed`, `snap_to_nucleus`, `neighborhood_expand`; this repository had the
@@ -98,11 +158,16 @@ expensive half of that: **`expand_neighborhood` cost 17x what `snap_at_seed` cos
 per nucleus** (4.6 s against 0.27 s on the pilot), because most of its probes hand
 back the parent atom.
 
-**Generations.** A nucleus the head scores at or above the q4 admission bar —
-`supply.currency`'s keeper floor on `P(>=3)` *and* its great cut on `P(>=4)`,
-never a third reading of the two — becomes a seed for the next generation, and the
-generation number is on its row. `--generations 1` is the channel firing at proven
-roots exactly and is what the first smoke ran.
+**Generations, and why a round is not a generation.** A nucleus the head scores at
+or above the q4 admission bar — `supply.currency`'s keeper floor on `P(>=3)` *and*
+its great cut on `P(>=4)`, never a third reading of the two — becomes a `head_q4`
+seed for the next generation; one that merely clears the keeper floor becomes a
+`head_keeper` seed behind it. A row's **generation** is its seed's plus one and is
+on the row. The loop's `--generations` bounds *rounds*, and a round is not a
+generation once `--prior` is in play: an earlier leg's promotions enter the first
+round's queue beside whatever is left of the label store, so one round writes rows
+of two generations. The summary spells the loop's entries `rounds` for that reason
+and carries a `by_generation` block beside them.
 
 **Record and rank, never gate.** Every derived nucleus is scored and written
 whatever the head said. Neutral pre-selection distinctness (`curation.distinct`,

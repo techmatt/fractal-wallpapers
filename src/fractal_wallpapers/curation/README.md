@@ -108,6 +108,18 @@ What the pass established and the rest of this file still rests on is below: the
 slot rows are still re-read; and the **framing refinement**, whose live home is
 the walk's own close-of-run leg (`supply/harvest.py`) rather than a seating.
 
+**A `centered` row is refined on its scale alone.** A location row carrying
+`centered: true` — every nucleus location `discovery.reframing` writes, and
+anything else whose centre *is* the location — has stage B switched off:
+`framing.recentres` returns nothing for it, `framing.refine` plans no stage-B
+frames for it, and the record says `centered` beside the decision. Three frames a
+location instead of seven, and the reason is not the saving: a quarter-frame off a
+solved nucleus is a crop of somewhere else wearing the atom's name, and the
+minibrot the reframing channel exists to frame would be off centre in the picture
+a gallery seats. The flag is read off the row through `framing.is_centered`, never
+off a channel name, so a row that has never heard of the field and a row that says
+`false` are one case.
+
 ### What an empty seat names, and why it is not the first rule that refused anything
 
 A slot that goes unfilled records **one slug** and the counts that chose it:
