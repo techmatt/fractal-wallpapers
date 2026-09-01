@@ -1794,6 +1794,19 @@ margin belongs to that record, and re-deciding it is a read of every rung. Becau
 the frame is part of the recipe, a candidate stays valid if the margin later
 moves — what a moved margin invalidates is where to draw next, not what was drawn.
 
+**So a location the scan has no row for is out of reach of a hunt, a mine and a
+depth run alike** — `hunt.drawable` drops it rather than drawing it at its recorded
+frame, and all three take their population through that one call. That is the right
+refusal for a walk location and the wrong question for a **`centered`** one: a
+solved nucleus has no frame to look up because its frame *is* the rung the location
+head picked, and re-deciding it is the thing `framing.recentres` already refuses to
+do. The reframing channel's 6,590 places are in the supply sidecar and in the
+neutral store and in **none** of `frames.jsonl`'s 28,090 rows — the index was built
+four days before the channel existed and rebuilding it is a 3.5-hour scan that would
+put those places back at frames they are already at. A draw over that channel
+therefore goes at a **location list** rather than through the never-opened pool;
+`reframe_q4` (2026-09-01, in the rate section below) is what that measured.
+
 **Rows land as candidates land**, one appended ledger row and one appended score
 row per picture, so a killed hunt is a usable partial. `merge` is separate because
 the ledger upserts by rewriting the whole file: forty megabytes a candidate is not
@@ -2757,6 +2770,38 @@ population. Read them as **per engine**, which is what `--rate` is:
   gallery pass has no clock of either kind — it runs to completion, and the hours it
   is quoted at are an estimate with a hard-kill backstop behind them.
 
+**The reframe channel's head-q4 nuclei clear at nine times the breadth rate for the
+same money, `reframe_q4` 2026-09-01, three engines.** One hour of the standard
+per-location draw over the top of `discovery.reframing`'s q4 slice, and the row to
+read it against is the **breadth k=3** row above rather than the ledger-wide 7.0%:
+the two cost within 7% of each other a candidate, which is what makes the clear
+rates comparable at all.
+
+| | population | rung | regime | k | s/cand | cand/wall s | clear@0.50 | renders/clear |
+|---|---|---|---|--:|--:|--:|--:|--:|
+| `mine_weak_modes` breadth | never-opened admitted, 5 field modes | scan's | 640x360ss2 | 3 | 4.377 | 0.684 | **1.72%** | 58.0 |
+| `mine_weak_modes` near band | already over the bar | scan's | 640x360ss2 | 96 | 0.285 | 10.378 | 10.66% | 9.4 |
+| `reframe_q4` | 1,252 head-q4 nuclei past `PRESELECT_RADIUS`, top-down | the head's picked rung | 640x360ss2 | 1 | 4.676 | 0.636 | **15.62%** | 6.4 |
+
+`clear@0.50` is raw `P(>=4) >= 0.50` on one reading of one candidate, in all three
+rows. `reframe_q4` drew **2,286 candidates over 762 places in 3,593 s**, one smooth
+and two strange a location out of the production roster with the palette head
+picking from a 32-wide neighbourhood — so its `k` of 1 is a candidate per (location,
+mode) and every candidate pays a whole field dump, which is why it prices beside
+k=3 and not beside k=40. **51.14%** of its rows also clear `P(>=3) >= 0.50`; **38.1%**
+of its places produced a q4 row and **91.3%** a q3 row.
+
+**It beats the near band, which is the part that is not arithmetic.** A near-band
+place was chosen for already holding a candidate over the bar; these places had never
+been drawn at all. Read it as a statement about the *population* — a solved nucleus
+framed at the rung the location head picked — and not about this draw's shape, which
+is production's unchanged.
+
+**The head's rank pays across the slice it reached**, top to bottom of the 762 drawn:
+24.56 / 17.32 / 14.25 / 11.62 / 10.53% over five equal bands of 152 places, and
+55 / 42 / 36 / 31 / 27% of places producing a q4 row. A 2.3x spread end to end
+*inside* a population every member of which the location head already called q4.
+
 ## Every per-candidate rate this project has measured
 
 ⚠ **These are historical, measured under different conditions, and not comparable
@@ -2816,6 +2861,7 @@ that leg's contention: three engines cost about 1.6–1.8x per candidate over on
 | 0.3558 | `smooth`, ranked-bands arm | 3 | 12 | 08-29 | 84,084 cand / 7,007 places | `smooth_500` |
 | 0.3132 | `smooth`, flat arm | 3 | 12 | 08-29 | 24,948 cand / 2,079 places | `smooth_500` |
 | 0.3038 | `smooth`, conditioned arm | 3 | 12 | 08-29 | 7,488 cand / 624 places | `smooth_500` |
+| 4.676 | production draw, 1 smooth + 2 strange, palette head | 3 | 1 | 09-01 | 2,286 cand / 762 head-q4 nuclei | `reframe_q4` |
 
 **Every `s/cand` above is a MEAN, and the flat-vs-ranked comparison needs the
 median beside it.** A per-candidate cost is long-tailed — `mine1`'s per-partition
