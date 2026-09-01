@@ -224,18 +224,34 @@ raises an allowance except this one. `--target <cell>=1.0` puts it at
 carrier table measures by `t × rate`. Over a pool already filtered to the cell the
 target's own demand costs nothing, because cardinality satisfies it.
 
-**Under a hard target the solve's under-fill readout is unusable.** `_under_fill`
-relaxes cardinality to `<= n` but rebuilds the Program carrying `targets` unchanged,
-so a `t = 1.0` row still demands `ceil(1.0 × n)` dominant seats and the re-solve
-comes back infeasible for any smaller count: the record reads `filled: 0` however
-many seats the pool could really fill. So the "largest gallery every constraint
-admits" is **not** available in exactly the case a shortage list is being read for.
-Take it instead from the solve's own greedy seed (constructive) and
-`headroom.twin_bound` (necessary); measured 2026-08-31 on a `dark_vivid_green` pool
-those two agree to within two seats, 88 and 90. The same rebuild also drops
-`floor=program.floor`, so a `--flat-floor` solve's under-fill silently reverts to the
-default per-mode floors — soft either way, so it moves the reported objective and not
-feasibility.
+**A target means a share of the seats that get filled, and under `<= n` that is how
+it is spelled.** `_under_fill` relaxes cardinality and nothing else, so a target has
+to survive the relaxation — and rebuilt as the hard `ceil(t × n)` it did not: it went
+on demanding a share of seats the program had stopped promising, so the re-solve was
+infeasible at every count below `n` and the record read `filled: 0` however many
+seats the pool could really fill. The readout disappeared in exactly the case a
+shortage list is read for. Under `<= n` the row is now
+
+    sum(cell) >= t × sum(all)   as   (1 − t) × sum(cell) − t × sum(rest) >= 0
+
+— linear, the same row wherever the seats do come to `n`, and the same demand at
+every smaller size. It is the only weighted row in the program, which is why
+`Program.blocks()` states members as `[(column, coefficient)]` there and both readers
+of a row (`matrices`, `binding`) go through `solve.members_of`. `Program.target_rule`
+names which of the two spellings ran and is on the record beside `cardinality`.
+
+**The fix is guarded but not yet measured on a real pool.** The two instruments the
+read used instead of this readout are still the only *measured* answers to "how big a
+themed gallery is": the solve's own greedy seed (constructive) and `headroom.twin_bound`
+(necessary), which agreed to within two seats on a 2026-08-31 `dark_vivid_green` pool,
+88 and 90. Re-running the read's lime arm at n=200 against this under-fill is what would
+retire them, and it has not been done.
+
+The same rebuild also dropped `floor=program.floor`, so a `--flat-floor` solve's
+under-fill silently reverted to the default per-mode floors — soft either way, so it
+moved the reported objective and not feasibility. Both rules are now carried through
+and both are stated on the under-fill record, on the infeasible branch too:
+`target_rule`, `mode_floor_rule`, `mode_floors`.
 
 ## Three different things are called a ledger
 
@@ -1066,9 +1082,11 @@ it, which is what a sweep seating one pool four ways passes.
 
 **The flag is the seating's, and `curate solve` has no equivalent.** There the cap is a
 *generated pairwise row* and never a counted one: `solve.Pairs.rule_for` asks a same-group
-pair for `max(TAU, TAU_GROUP) = 0.10` and every other pair for `TAU`, and
-`Program.rule.group_cap` is set on the record but `Program.blocks()` never reads it. So
-there is no cap to name, raise or switch off in a solve — the only way to run one without
+pair for `max(TAU, TAU_GROUP) = 0.10` and every other pair for `TAU`. The solve record
+used to carry a `group_cap` field describing one seat per palette group, which no block
+ever wrote — it is now `pairwise_rule` and states the row that actually runs, and
+`tests/test_solve.py` holds every `ceiling.Rule` field named on that record to being one
+`solve.py` genuinely reads. So there is no cap to name, raise or switch off in a solve — the only way to run one without
 it is to make `rule_for` return the diversity rule for every pair, which is a code change
 and not a flag. Neither is there any way to turn the cap **off** in the seating: both rules
 go through `max(1, ...)`, so the lowest either reaches is one seat a group. A caller inside
