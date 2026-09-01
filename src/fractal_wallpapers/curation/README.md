@@ -1970,7 +1970,7 @@ fractal-wallpapers curate hunt sheet  --name h1                     # redraw the
 
 **The two legs answer two different questions and are interleaved so a budget
 that runs out truncates both.** *Unconditional* buys breadth: locations from the
-scanned pool that carry no ledger recipe at all, `--per-location` candidates each,
+admitted pool that carry no ledger recipe at all, `--per-location` candidates each,
 the palette **stratified across the codebook's 48 cells** rather than picked by
 the palette head. *Conditioned* buys one colour: maps drawn from
 `data/palettes/carriers.jsonl` for `--cell`, the head never asked, the partitions
@@ -1988,59 +1988,78 @@ render; the record reports the two apart (`drawn_for` against `cells`, and
 `delivery_rate` over them), because the field and the mode carry a real share of
 the outcome.
 
-**The frame is looked up, not recomputed.** Everything renders at the frame the
-pool-wide refinement scan chose at `framing.MARGIN` — the winner where it adopted,
-the recorded frame where it refused. `curate hunt frames` derives a thin index
-(one row a location, 28,090 rows, about two seconds) off the 98 MB scan record, and
-a scan row taken at another margin is **refused** rather than reinterpreted: the
-margin belongs to that record, and re-deciding it is a read of every rung. Because
-the frame is part of the recipe, a candidate stays valid if the margin later
-moves — what a moved margin invalidates is where to draw next, not what was drawn.
+### What bounds the minable population
 
-**So a location the scan has no row for is out of reach of a hunt, a mine and a
-depth run alike** — `hunt.drawable` drops it rather than drawing it at its recorded
-frame, and all three take their population through that one call. That is the right
-refusal for a walk location and the wrong question for a **`centered`** one: a
-solved nucleus has no frame to look up because its frame *is* the rung the location
-head picked, and re-deciding it is the thing `framing.recentres` already refuses to
-do. The reframing channel's 6,590 places are in the supply sidecar and in the
-neutral store and in **none** of `frames.jsonl`'s 28,090 rows — the index was built
-four days before the channel existed and rebuilding it is a 3.5-hour scan that would
-put those places back at frames they are already at. A draw over that channel
-therefore goes at a **location list** rather than through the never-opened pool;
-`reframe_q4` (2026-09-01, in the rate section below) is what that measured.
+**The location ledger's ratings, and nothing else.** A location is minable when
+the location head's rating clears `floors.JUNK_FLOOR` in the supply sidecar, it is
+embedded in the neutral store, and the candidate ledger does not already stand on
+it. That is `hunt.drawable`, it is the one population `curate hunt`, `curate mine`
+and `curate depth` all take, and the three arguments it used to have are now two.
+Counted 2026-09-01: 102,552 sidecar locations, **36,868** over the junk floor and
+every one of them embedded, 19,286 already open — **17,620 minable**.
 
-**How much is out of reach, counted 2026-09-01.** The supply sidecar holds 102,552
-locations; **36,868** clear `floors.JUNK_FLOOR` and every one of them is embedded,
-so the neutral store is not the bound. **28,090 carry a frame row and 8,778 do
-not** — 23.8% of the admitted population. Of those 8,778: 8,448 are the reframing
-channel's five ledgers, and **330 are ordinary walk locations** —
-`harvest_run2` 155, `harvest_run3` 81, `harvest_run9` 69, `mandelbrot_sourcing`
-25 — embedded after the scan was taken on 08-26. So the exclusion is not only the
-reframe channel's: any location admitted after a scan is out until the next one,
-and `hunt.drawable` drops it with **no count and no log line**, which is why it
-reads as an empty pool rather than as a filter. 9,641 of the 28,090 are still
-never-opened.
+**A framing is an attribute a location may or may not carry, never an admission
+ticket.** `hunt.frame_for` is the whole of the seam: where the pool-wide scan holds
+a row, the leg draws the frame that scan chose; where it does not, the leg draws
+`hunt.recorded_frame` — the `viewport` and `maxiter` the location's own store row
+already carries, stamped `used: original`, `adopted: false`, `from_scan: false`. That
+is exactly what `chosen_frame` returns for a scan row that *refused*, so the two
+absences make the same picture and only the record tells them apart.
 
-**What the filter is protecting is a policy, not a data dependency.** `recipe_for`
-needs `frame["viewport"]` and `frame["maxiter"]` and nothing else, and both are on
-the embedding row already; `chosen_frame` on a *refused* scan row returns exactly
-those, from `original`. So "draw it at its recorded frame" is available and
-`drawable` declines it on purpose. For a `centered` row the question the scan would
-re-ask is narrow: `framing.recentres` returns nothing for one, so only stage A runs
-— and over the 28,090 rows the scan did take, **84.9% of its 19,041 adoptions were
-recentrings** and only 15.1% were the scale (10.3% of all rows). A centered row's
-whole window can therefore reach at most about a tenth of what the scan buys a walk
-location, against `MARGIN`'s 2 nats, on a scale the location head has already picked
-five rungs of.
+**Until 2026-09-01 the rule was the other one and it was stale by construction.**
+`drawable` dropped a location the scan held no row for, with no count and no log
+line, so it read as an empty pool rather than as a filter — and the rule it
+amounted to was "minable if it was present the last time someone ran a batch job".
+Nothing in this repository builds that scan. Dropping the coupling moved the
+never-opened population **9,605 → 17,620, +8,015 locations (+83.4%)**:
 
-**The seam for a location list already exists in two of the three legs.**
-`depth.run` and `mine.run` both take `world: dict | None = None` and only call
-`population()` when it is `None`; `hunt.run` builds `frames`/`scanned`/`drawable`
-inline and has no seam. Nothing but `world["index"]` and `world["pools"]` comes from
-the scan — `by_key`, `known`, `taken`, `best`, `head_scores` and `ledger_scores` are
-all sidecar and ledger — so what a raw list needs is those two keys and a CLI that
-passes a `world` through. Neither is built and this paragraph is not a proposal.
+| unlocked | rows |
+|---|--:|
+| `harvest_reframe_night` | 2,212 |
+| `reframe_g4` | 2,145 |
+| `reframe_g2` | 1,351 |
+| `reframe_g5` | 1,350 |
+| `reframe_g1` | 628 |
+| `harvest_run2` / `run3` / `run9` / `mandelbrot_sourcing` | 155 / 80 / 69 / 25 |
+
+So it was never only the reframing channel: **329 of those 8,015 are ordinary
+walk locations**, embedded after the scan was taken on 08-26, and the next
+channel would have hit it the same way. The unlock is weighted to the partitions the channel
+works in — `multibrot5` +2,786, `multibrot4` +1,830, `multibrot3` +764 — which
+are the three the old pool was thinnest in. A further **763** locations that *are*
+open were invisible to `mine`'s DEEPEN arm and `depth`'s NEAR and FLOOR arms for
+the same reason; those three now bound on `world["by_key"]`, which is a row to
+render from, and never on the frame index.
+
+**The filter was protecting a policy and not a data dependency.** `recipe_for`
+needs `frame["viewport"]` and `frame["maxiter"]` and nothing else, both are on the
+embedding row, and drawing at the recorded frame was available the whole time.
+Nothing else read the scan's columns: `by_key`, `known`, `taken`, `best`,
+`head_scores` and `ledger_scores` are all sidecar and ledger.
+
+**A `centered` location is not incomplete for having no scan row.** Its centre *is*
+the location and its scale is the rung its head picked out of `reframing.RUNGS`, so
+`hunt.wants_framing` says no for one and `hunt.unframed` — the census a scan would
+be pointed at, which is not the population and gates nothing — never holds one. Two
+things to know about that census. It reads the flag off the row exactly as
+`framing.is_centered` does, and **neither the embedding store nor the supply sidecar
+carries the flag today**, so on those two stores it counts every unframed location
+alike; the flag lives on the walk ledger row. And `curation.framing`'s own docstring
+argues the narrower position — that stage B is refused for a centered row while
+stage A, the *scale*, is still an open question, half an octave either side of a
+coarse ladder. The discovery-side refine leg still runs stage A for one. Nothing in
+curation asks for a framing row at all.
+
+**What is still true about the scan.** `curate hunt frames` derives a thin index
+(one row a location, 28,090 rows, about two seconds) off the 98 MB scan record; a
+scan row taken at another margin is **refused** rather than reinterpreted, because
+the margin belongs to that record and re-deciding it is a read of every rung. Where
+the record is missing entirely, `hunt.frames` now logs a line and returns `{}`
+instead of refusing — a rebuild still refuses, because that is a caller naming the
+scan. Because the frame is part of the recipe, a candidate stays valid if the
+margin later moves: what a moved margin invalidates is where to draw next, not
+what was drawn. Every leg's record carries `unopened_at_recorded_frame` beside
+`unopened_drawable`, so a run says how much of its population drew unrefined.
 
 **Rows land as candidates land**, one appended ledger row and one appended score
 row per picture, so a killed hunt is a usable partial. `merge` is separate because

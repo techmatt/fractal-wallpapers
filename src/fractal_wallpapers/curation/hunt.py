@@ -25,7 +25,7 @@ cost.
 
 ## Two legs, and why neither is the other
 
-**Unconditional** buys breadth. Locations come from the scanned pool that carry
+**Unconditional** buys breadth. Locations come from the admitted pool that carry
 **no ledger recipe at all**, a shallow spread each, and the palettes are
 *stratified across the codebook's cells* rather than picked by the head. The
 stratification is the whole point: the head's argmax concentrates, and its
@@ -42,16 +42,24 @@ A conditioned candidate is a candidate and never a privilege: it is judged by th
 same judge, its colour is read off **its own render** rather than off the carrier
 table, and it takes a seat only by winning one.
 
-## The frame is looked up, not recomputed
+## The frame is looked up where there is one, and is never an admission ticket
 
-A recipe carries the frame it was drawn at, so a hunt has to choose one. It
-chooses the frame the pool-wide refinement scan already chose at
-[`framing.MARGIN`] — the winner where that scan adopted, the recorded frame where
-it refused — read out of the scan's record. **No refinement machinery runs
-here**: this is a lookup, the record says which margin it was taken at, and a
-record taken at another margin is refused rather than reinterpreted.
+A recipe carries the frame it was drawn at, so a hunt has to choose one. Where the
+pool-wide refinement scan holds a row for the location, it draws what that scan
+chose at [`framing.MARGIN`] — the winner where it adopted, the recorded frame
+where it refused. **No refinement machinery runs here**: this is a lookup, the
+record says which margin it was taken at, and a record taken at another margin is
+refused rather than reinterpreted.
 
-That the frame is part of the recipe is what makes the lookup safe. A candidate
+Where the scan holds no row, it draws **the frame the location already carries**.
+Every location row carries its own `viewport` and `maxiter`, so there is nothing
+to wait for; [`frame_for`] is the whole of the seam and [`drawable`] no longer
+knows the index exists. **Absence is not a rejection**, and the rule it replaced
+was "minable if it was present the last time someone ran a batch job" — stale by
+construction, and on 2026-09-01 it was holding 8,015 never-opened admitted
+locations out of every mining leg, the whole reframing channel among them.
+
+That the frame is part of the recipe is what makes both branches safe. A candidate
 is recorded at the frame it was drawn at and stays valid if the margin later
 moves; what a moved margin invalidates is the *choice of where to draw*, not the
 picture that was drawn.
@@ -317,9 +325,22 @@ def build_frames(margin: float = framing.MARGIN, log=print) -> tuple[Path, int]:
 
 
 def frames(margin: float = framing.MARGIN, rebuild: bool = False, log=print) -> dict:
-    """`{location key: the frame the scan chose}`, off the index, built on first ask."""
+    """`{location key: the frame the scan chose}`, off the index, built on first ask.
+
+    **Empty where there is no scan at all**, rather than refused. A framing is an
+    attribute a location may carry and never an admission ticket: a leg reads
+    this to draw a refined frame where one was chosen, and draws the recorded
+    frame where one was not — see [`frame_for`]. Asking for a *rebuild* still
+    refuses, because that is a caller naming the scan.
+    """
     path = frames_path()
     if rebuild or not path.is_file():
+        if not rebuild and not scan_path().is_file():
+            log(
+                f"[hunt] no refinement scan at {tracked_name(scan_path())}; every location "
+                f"draws at the frame it already carries"
+            )
+            return {}
         build_frames(margin, log=log)
     out: dict = {}
     with path.open(encoding="utf-8") as handle:
@@ -375,18 +396,97 @@ def scanned(log=print) -> list[dict]:
     return rows
 
 
-def drawable(rows: list, index: dict, opened: set) -> dict:
-    """`{partition: [rows]}` — scanned, admitted, and carrying no ledger recipe yet.
+def recorded_frame(place: dict) -> dict:
+    """The frame a location already carries, in the shape [`chosen_frame`] returns.
 
-    A location the scan does not hold is dropped rather than drawn at its recorded
-    frame. The frame is part of the recipe and *the frame the scan chose* is what
-    this hunt is specified to draw at, so a location with no scan row is one it
-    cannot honestly render.
+    Every location row — the ledger's, the sidecar's, the embedding store's —
+    carries its own `viewport` and `maxiter`, because a store that could not
+    re-render its own pictures would not be a store. So a location no refinement
+    scan has ever looked at is still fully renderable, and this is the frame it
+    renders at: [`framing.ORIGINAL`], which is *the recorded framing, always*.
+
+    `from_scan` is the one member [`chosen_frame`] does not set, and it is spelled
+    that way rather than `scanned` because [`scanned`] here is the admitted
+    population. It separates a location the scan looked at and refused — which
+    also comes back `adopted: False` at the original — from one the scan never
+    held a row for. Both draw the same picture; only the second is a location
+    whose framing is still an open question.
+    """
+    return {
+        "adopted": False,
+        "used": framing.ORIGINAL,
+        "from_scan": False,
+        "viewport": place.get("viewport"),
+        "maxiter": place.get("maxiter"),
+        "original_viewport": place.get("viewport"),
+        "refined_viewport": None,
+        "slug": None,
+        "gain": None,
+    }
+
+
+def frame_for(place: dict, index: dict) -> dict:
+    """The frame one location is rendered at: the scan's where there is one.
+
+    **Absence is not a rejection.** This is the single seam between the pool-wide
+    framing scan and every leg that draws: where the scan holds a row the leg
+    draws what the scan chose, and where it does not the leg draws the frame the
+    location already has. Nothing above this function has to know which happened,
+    and no leg's population is bounded by which happened.
+    """
+    return index.get(str(place["key"])) or recorded_frame(place)
+
+
+def wants_framing(place: dict, index: dict) -> bool:
+    """Whether a refinement scan would have anything left to decide here.
+
+    Two ways the answer is no. The scan already holds a row for this location —
+    the ordinary case — or the location is [`framing.is_centered`], and then its
+    centre **is** the location and its scale is the rung its head picked out of
+    [`discovery.reframing.RUNGS`]. A centered location is not incomplete for
+    having no scan row; it is a location whose framing was decided somewhere else.
+
+    A store that does not carry the flag says nothing about it, exactly as
+    [`framing.is_centered`] reads it: absent and `false` are one case. The
+    embedding store and the supply sidecar both drop it today, so this separates
+    the two populations only where the rows come from a walk ledger.
+    """
+    if str(place["key"]) in index:
+        return False
+    return not framing.is_centered(place)
+
+
+def unframed(rows: list, index: dict) -> list:
+    """The locations a framing scan would still be pointed at. A census, not a gate.
+
+    Nothing in this repository builds the pool-wide scan, and no leg here waits on
+    one: every row in this list is minable today at the frame it already carries,
+    through [`frame_for`]. What the count is for is saying how much of a
+    population has an open framing question — which is a different number from how
+    much of it drew unrefined, and smaller by every centered location.
+    """
+    return [row for row in rows if wants_framing(row, index)]
+
+
+def drawable(rows: list, opened: set) -> dict:
+    """`{partition: [rows]}` — admitted, and carrying no ledger recipe yet.
+
+    That is the whole of the rule. `rows` has already been through
+    [`scanned`]'s admission — the location head's rating over the junk floor —
+    and what is subtracted here is the places the ledger already stands on.
+
+    **A framing row is not part of it.** It used to be: a location the pool-wide
+    scan did not hold was dropped rather than drawn at its recorded frame, which
+    made "minable" mean "present the last time someone ran a batch job" and left
+    every location admitted after a scan silently out of reach — 8,778 of the
+    36,868 admitted on 2026-09-01, 8,015 of those never opened, the whole
+    reframing channel among them. A location with no scan row draws at the frame
+    it already has, through [`frame_for`].
     """
     out: dict = {}
     for row in rows:
         key = str(row["key"])
-        if key in opened or key not in index:
+        if key in opened:
             continue
         out.setdefault(str(row["partition"]), []).append(row)
     return {name: sorted(held, key=lambda row: str(row["key"])) for name, held in out.items()}
@@ -962,10 +1062,12 @@ def run(
     stored = candidate_ledger.read()
     opened = opened_locations(stored)
     known = {str(row["key"]) for row in stored}
-    pools = drawable(places, index, opened)
+    pools = drawable(places, opened)
+    at_recorded = sum(1 for held in pools.values() for row in held if str(row["key"]) not in index)
     log(
-        f"[hunt] {sum(len(held) for held in pools.values()):,} scanned location(s) carry no "
-        f"ledger recipe, over {len(pools)} partition(s); {len(opened):,} are already open"
+        f"[hunt] {sum(len(held) for held in pools.values()):,} admitted location(s) carry no "
+        f"ledger recipe, over {len(pools)} partition(s); {len(opened):,} are already open, "
+        f"and {at_recorded:,} draw at the frame they already carry"
     )
     intended = plan(
         pools,
@@ -997,7 +1099,7 @@ def run(
     spent = 0.0
     for at, intent in enumerate(intended, start=1):
         place = by_key[intent.location]
-        frame = index[intent.location]
+        frame = frame_for(place, index)
         recipe = maker.recipe_for(intent, place, frame)
         key = recipes.key_of(recipe)
         if key in known:
@@ -1092,6 +1194,10 @@ def run(
             "scanned_admitted": len(places),
             "already_open": len(opened),
             "unopened_drawable": sum(len(held) for held in pools.values()),
+            "unopened_at_recorded_frame": at_recorded,
+            "unopened_wanting_framing": len(
+                unframed([row for held in pools.values() for row in held], index)
+            ),
             "by_partition": {name_: len(held) for name_, held in sorted(pools.items())},
         },
         "counts": counts,
@@ -1364,6 +1470,7 @@ __all__ = [
     "contact_sheet",
     "coverage",
     "drawable",
+    "frame_for",
     "frames",
     "frames_path",
     "fields_dir",
@@ -1375,6 +1482,7 @@ __all__ = [
     "pictures_dir",
     "plan",
     "record_path",
+    "recorded_frame",
     "rows_path",
     "run",
     "scan_path",
@@ -1384,4 +1492,6 @@ __all__ = [
     "shape_of",
     "source_for",
     "spread",
+    "unframed",
+    "wants_framing",
 ]

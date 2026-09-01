@@ -55,13 +55,21 @@ def scan_row(key="place-a", *, adopted=True, partition="mandelbrot", margin=None
     }
 
 
-def place(key="place-a", partition="mandelbrot"):
-    """One embedding-store row, thinned the same way."""
+def place(key="place-a", partition="mandelbrot", **extra):
+    """One embedding-store row, thinned the same way.
+
+    It carries its own `viewport` and `maxiter` because the real store does — that
+    is what makes a location with no scan row renderable at the frame it already
+    has, which is what [`hunt.recorded_frame`] reads.
+    """
     return {
         "key": key,
         "partition": partition,
         "family": {"kind": "mandelbrot", "degree": 2},
+        "viewport": ORIGINAL,
+        "maxiter": 1000,
         "ledger": "artifacts/harvest_run10/walk.jsonl",
+        **extra,
     }
 
 
@@ -134,13 +142,44 @@ def test_the_frame_index_round_trips_what_the_scan_chose(monkeypatch, tmp_path):
 def test_a_location_the_ledger_already_stands_on_is_not_drawable():
     """Depth is not the thin axis; a place with a recipe already has one."""
     rows = [place("a"), place("b")]
-    index = {"a": {}, "b": {}}
-    assert set(hunt.drawable(rows, index, {"a"})["mandelbrot"][0]["key"]) == set("b")
+    assert set(hunt.drawable(rows, {"a"})["mandelbrot"][0]["key"]) == set("b")
 
 
-def test_a_location_the_scan_does_not_hold_is_not_drawable():
-    """The frame is part of the recipe, so a place with no scan row cannot be drawn."""
-    assert hunt.drawable([place("a"), place("b")], {"a": {}}, set())["mandelbrot"] == [place("a")]
+def test_a_location_with_no_framing_row_is_minable_at_the_frame_it_carries():
+    """Absence is not a rejection: the ledger's ratings bound the population, not the scan.
+
+    The rule used to be "minable if the last pool-wide framing scan holds a row
+    for it", which made every location admitted after a scan silently unreachable
+    — 8,778 of the 36,868 admitted on 2026-09-01 and 8,015 of those never opened,
+    the whole reframing channel among them. A location with no scan row draws at
+    the frame its own store row carries.
+    """
+    rows = [place("a"), place("b")]
+    assert hunt.drawable(rows, set())["mandelbrot"] == rows
+    frame = hunt.frame_for(place("b"), {"a": {"viewport": REFINED, "maxiter": 900}})
+    assert (frame["viewport"], frame["maxiter"]) == (ORIGINAL, 1000)
+    assert (frame["adopted"], frame["used"], frame["from_scan"]) == (False, "original", False)
+    assert frame["refined_viewport"] is None
+
+
+def test_a_scanned_location_still_draws_at_the_frame_the_scan_chose():
+    """The seam is one-way: where the index holds a row, nothing about it moved."""
+    chosen = hunt.chosen_frame(scan_row("a", adopted=True))
+    assert hunt.frame_for(place("a"), {"a": chosen}) is chosen
+
+
+def test_a_centered_location_is_never_sent_for_framing():
+    """Its centre is the location and its scale is the rung its head picked.
+
+    So it is not incomplete for carrying no scan row, and it is not in the census
+    a scan would be pointed at. An ordinary walk location with no row still is.
+    """
+    walk, nucleus = place("walk"), place("nucleus", centered=True)
+    assert hunt.wants_framing(walk, {}) and not hunt.wants_framing(nucleus, {})
+    assert not hunt.wants_framing(walk, {"walk": {}})
+    assert hunt.unframed([walk, nucleus], {}) == [walk]
+    # And it is minable all the same — the census is not the population.
+    assert hunt.drawable([walk, nucleus], set())["mandelbrot"] == [nucleus, walk]
 
 
 def test_opened_locations_reads_the_recorded_identity_and_not_the_frame():

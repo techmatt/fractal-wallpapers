@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import pytest
 
-from fractal_wallpapers.curation import depth
+from fractal_wallpapers.curation import depth, hunt
 
 PARTITIONS = ("mandelbrot", "phoenix", "julia:mandelbrot")
 
@@ -177,14 +177,29 @@ def test_the_near_band_is_read_off_the_best_candidate_this_run_can_afford():
     best = depth.best_field_by_location(rows, scores, roster={"smooth", "stripe"})
     assert best["place"]["best"] == pytest.approx(0.60)
     assert best["place"]["best_mode"] == "smooth"
-    index = {"place": {"maxiter": 100}}
-    assert [row["key"] for row in depth.near_places(best, index, seed=1, count=5)] == ["place"]
+    places = {"place": {"key": "place", "maxiter": 100}}
+    assert [row["key"] for row in depth.near_places(best, places, seed=1, count=5)] == ["place"]
 
 
 def test_a_place_whose_only_field_candidate_is_over_the_bar_is_not_near_band():
     rows = [ledger_row("a", "place", mode="smooth")]
     best = depth.best_field_by_location(rows, {"a": 0.97}, roster={"smooth"})
     assert not depth.near_places(best, {"place": {}}, seed=1, count=5)
+
+
+def test_the_near_band_draws_a_place_the_framing_scan_has_never_held_a_row_for():
+    """The arm's population is the ledger's ratings; a framing row is not a ticket.
+
+    `world["by_key"]` is what bounds it — a location there is renderable, framed
+    or not — and the frame itself is resolved at draw time by `hunt.frame_for`.
+    """
+    rows = [ledger_row("a", "place", mode="smooth")]
+    best = depth.best_field_by_location(rows, {"a": 0.60}, roster={"smooth"})
+    by_key = {"place": {"key": "place", "viewport": {"width": "0.5"}, "maxiter": 100}}
+    drawn = depth.near_places(best, by_key, seed=1, count=5)
+    assert [row["key"] for row in drawn] == ["place"]
+    frame = hunt.frame_for(by_key["place"], {})
+    assert (frame["maxiter"], frame["adopted"], frame["from_scan"]) == (100, False, False)
 
 
 # --------------------------------------------------------------------------- #
