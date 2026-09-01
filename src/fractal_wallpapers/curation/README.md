@@ -68,6 +68,7 @@ fractal-wallpapers curate signatures coverage          # how much of the pool th
 fractal-wallpapers curate solve run --n 20 --no-render # THE gallery leg: decide, render nothing
 fractal-wallpapers curate solve run --n 150            # the gallery, then the pictures
 fractal-wallpapers curate solve run --n 1000 --no-render   # 34 min on this machine
+fractal-wallpapers curate solve run --n 2000 --no-render   # the planning size, 60 min
 fractal-wallpapers curate manufacture --step register --write          # BEFORE anything
 fractal-wallpapers curate manufacture --oversample 2.5                 # plan, build, select
 fractal-wallpapers curate manufacture --step verify --sheet artifacts/<sheet>
@@ -672,6 +673,7 @@ artifacts/curation/solve/<name>/contact_sheet.html  the seats, and what each rul
 fractal-wallpapers curate solve run --n 150                  # one gallery, rendered
 fractal-wallpapers curate solve run --n 150 --no-render      # decide, render nothing
 fractal-wallpapers curate solve run --n 1000 --no-render     # 34 min on this machine
+fractal-wallpapers curate solve run --n 2000 --no-render     # THE planning size (Matt), 60 min
 fractal-wallpapers curate solve run --n 150 --no-swap        # the greedy seed alone
 fractal-wallpapers curate solve run --n 150 --swap-seconds 300   # a clock on the loop only
 fractal-wallpapers curate solve run --n 150 --flat-floor     # the pre-2026-08-31 mode floor
@@ -751,10 +753,17 @@ repairs by seating something it should not.
 
 ### The bound signature is swept once, not derived per pass
 
-The twin rule is the only one that opens a picture, and what it costs is the JPEG
-decode — about 96 ms — not the comparison. `BUILD_greedy_swap_solve` measured the
-signatures at ~100% of the leg: 4,624 made at n=150 for 443 s of a 461 s leg. Two
-prunes and a per-pass reduced store cut that to 289 signatures and 38.4 s, and
+The twin rule is the only one that opens a picture, and what one signature costs is
+**the sort, not the decode**. Measured stage by stage on 2026-09-01, 141 ms a
+signature: `codebook.pixels` **2.65 ms** — libjpeg's `draft` lands on `CENSUS_SIZE`
+without building the full image — `space.oklab` 5.19 ms, the projection 4.49 ms, and
+`numpy.sort` over the `[4096 samples, 1024 directions]` projections **121 ms, 86% of
+it**. Until 2026-09-01 this paragraph read "the JPEG decode — about 96 ms", which was
+the whole signature attributed to a stage costing 2% of it: the total was right and the
+attribution was not, and it is recorded because it pointed every speedup at the wrong
+place. `BUILD_greedy_swap_solve` measured the signatures at ~100% of the leg: 4,624 made
+at n=150 for 443 s of a 461 s leg. Two prunes and a per-pass reduced store cut that to
+289 signatures and 38.4 s, and
 decoding in parallel over three workers was implemented, measured and **reverted** —
 a prefetch has to guess which candidates the walk will open, the only free guess
 (the counted rules) is a superset, and at n=150 the leg opens 289 pictures out of a
@@ -865,28 +874,123 @@ whether it took forty-seven swaps or none.
 
 ### What it costs, measured on this machine
 
-Both on the 98,457-candidate pool (11,210 clearing, 9,380 after the neutral
-pre-selection over 4,496 places), idle, 2026-08-31, `--no-render`:
+The first two on the 98,457-candidate pool (11,210 clearing, 9,380 after the neutral
+pre-selection over 4,496 places), idle, 2026-08-31; the n=2000 column on the
+100,743-candidate pool the reframe-q4 merge left (11,574 clearing, 9,744 after
+pre-selection over 4,791 places), 2026-09-01. All `--no-render`:
 
-| | n=150 | n=1000 |
-|---|---|---|
-| view | 6,515 rows over 597 strata | 8,704 over 597 |
-| seats | 150 of 150 | **653 of 1000** |
-| **signatures decoded** | **289** (was 4,624) | **19,113** (was 24,969) |
-| swaps | 18 over 3 passes | 49 over 3 passes |
-| whole leg, on a *shared* machine | 38.4 s (was 461.1 s) | 2,030.8 s (was 2,743.4 s) |
+| | n=150 | n=1000 | n=2000 |
+|---|---|---|---|
+| view | 6,515 rows over 597 strata | 8,704 over 597 | 9,461 over 604 |
+| seats | 150 of 150 | **653 of 1000** | **890 of 2000** |
+| **signatures decoded** | **289** (was 4,624) | **19,113** (was 24,969) | **28,826** |
+| swaps | 18 over 3 passes | 49 over 3 passes | 75 over 3 passes |
+| seed | 22.3 s | 402.0 s | 947.3 s |
+| swap loop | 7.1 s | 1,617.9 s | 2,632.1 s, ran out of improvements |
+| whole leg, on a *shared* machine | 38.4 s (was 461.1 s) | 2,030.8 s (was 2,743.4 s) | 3,592.1 s |
 
 The seconds are upper bounds — this machine is usually running something else — so
 the **decode counts** are the figure to compare; they are off each record's own
-counters and they predict the walls at both sizes.
+counters and they predict the walls at all three sizes.
 
 Against the retired program's **1800 s and no answer** at n=1000. The pool cannot
 fill a thousand seats under these rules — 653 is what it holds — and the four mode
 floors that go short are on the expand hook.
 
-**The seed is now the whole cost**, which is where the next lever is: it opens a
-picture for every candidate that clears the counted rules, and that is the one
-place left where a worker pool would buy anything.
+**A gallery at n=2000 is an hour and the swap loop still terminates**, which is worth
+knowing before capping one: `--swap-seconds 3600` was set as insurance on that run and
+never bound. The planning size is affordable.
+
+**The seed is no longer the whole cost** — at n=2000 it is 947 s of 3,592 — but the
+signature still is, at both of its stages. See *Two measured levers on the signature*
+below.
+
+### At the planning size the binding constraint is distinctness, not places
+
+**n=2000 is the size the collection is being built toward** (Matt), and `SOLVE_census_n2000`
+is the first census taken there. It reverses what the n=1000 record suggested.
+
+**890 of 2,000 seats.** The refusal order inverts between the two sizes, because the cell
+allowance is `floor(k * t * n) + 1` and doubles with n while the pool does not:
+
+| rule | n=1000 rows | n=2000 rows | n=2000 distinct locations |
+|---|---|---|---|
+| `twin` | 3,275 | **4,090** | **2,785** |
+| `cell_allowance` | **4,120** | 2,845 | 2,082 |
+| `location` | 1,228 | 1,817 | **663** |
+| `group_cap`, `family_allowance` | 0 | 0 | 0 |
+
+**The twin test refuses 2,785 distinct locations against one-per-location's 663.** Places
+are not what runs out — 4,791 survive pre-selection for 890 seats — and neither is colour
+supply. Among refusals *while choosing* at n=2000 it is twin 6,431 rows against
+cell_allowance 1,588. **The palette group cap and the family allowance have never fired at
+any size**; the realized group maximum is 6 against a cap of 50.
+
+**The colour ceiling binds at small n and stops binding by n=2000.** At n=150 the allowance
+is 7 and **30 of 48 cells sit at it** with pool unseated behind them, which makes the
+allowance the limit. At n=2000 the allowance is 84 and only **3 of 48** reach it; the other
+45 are held down by the twin test — `dark_muted_azure` has 34 seats of an allowed 84 with
+428 unseated places, 4 refused by the allowance and **336 by twin**.
+
+**Read a shortfall against `curate headroom`, not on its own.** At n=2000 the leg's realized
+shortfall is 178 seats, but the census proves only **61** of it: `mode_floors` needs 600 and
+supplies 539, while `one_per_location` has +2,791 slack and the cell cover +1,880. The other
+117 is candidates the pool held and the leg could not seat. **Only two modes are genuinely
+empty** — `smooth_mean_angle` and `smooth_angle_min` hold 30 distinct clearing locations each
+against a floor of 60 — and closing that provable gap is about **1.3 engine-hours** at the
+census's own `seconds_per_win`. The other eight short demands had unseated pool behind them,
+so they are a distinctness problem and mining more of the same places makes more twins.
+
+**The census cannot yet price the constraint that binds.** `twin_diversity` reads supply 0 /
+slack 0 unless a `--twin` sweep is handed in, so the one block that would bound distinctness
+is the opt-in one. At 4,791 places that sweep is the minutes-to-hours leg — an attempt was
+stopped unfinished at ~40 min — and everything above says the next census should pay for it.
+
+### Two measured levers on the signature, neither taken
+
+Both from `SOLVE_census_n2000`, and they compose — they are different stages of the
+same 141 ms.
+
+**The sort is strided, which is a free 1.75x.** `signature` builds
+`[SAMPLES, DIRECTIONS]` C-contiguous and sorts `axis=0`, so each of the 1,024
+independent sorts walks a 4,096-float stride. The same sorts along the contiguous axis
+are **45.6 ms against 116.0 ms**, and producing the projection transposed —
+`lattice @ points.T` then `sort(axis=-1)` — is **67.7 ms end to end against 118.4 ms**,
+bit-identical output. What needs care is that the quantile read then yields
+`[DIRECTIONS, QUANTILES]` while `reduce_signature` reshapes assuming the transpose, so
+the flatten order has to be preserved exactly. **`numpy.partition` is a dead end** and
+was measured: the 128 quantiles need 256 distinct kth positions and `partition` at 256
+kths is 181-246 ms against the sort's 116 ms.
+
+**A narrower lattice is 6.6x and it barely moves the answers.** Project-and-sort scales
+better than linearly in `DIRECTIONS` — 117 ms at 1024, 47 at 512, 22 at 256, 9.3 at
+128 — because the metric is a Monte Carlo estimate over the lattice and fewer slices is
+the same expectation with more variance. Measured over 731 pairs in the 0.5-1.5x `TAU`
+band, each setting given its own `groups.directions(count)` call because a 256-point
+Fibonacci lattice is not a prefix of a 1024-point one:
+
+| DIRECTIONS | ms | descriptor | p95 error as % of TAU | twin decisions flipped |
+|---|---|---|---|---|
+| 512 | 32.9 | 256 KiB | 0.3% | **0 of 731** |
+| 256 | 14.4 | 128 KiB | 0.8% | **1 of 731** |
+| 128 | 7.3 | 64 KiB | 1.5% | 3 of 731 |
+| 64 | 3.6 | 32 KiB | 3.0% | 4 of 731 |
+
+Every flipped pair sat within **0.05% of TAU at 256** and 0.41% at 64, flip direction
+is balanced, and the `got/reference` ratio is centred on 1.0000 within 0.02% — so it is
+noise rather than bias and **a re-fitted `TAU` would buy nothing**. The exposure is
+small because the bound removes it: **99.03%** of pairs over a 3,000-row sidecar sample
+are settled without measuring, matching the leg's own 99.62% at n=2000, and only 6.1% of
+the comparisons a leg must measure sit inside the 256-setting's own noise band. Scaled
+onto the n=1000 record's 51,019 measured comparisons that is ~125 to ~1,570 flipped
+comparisons depending on the estimator, 0.001-0.013% of the 11.94 M the leg makes.
+
+**The prune stays sound at any count**: the bound is the identity
+`|mean a - mean b| <= mean|a - b|` on the same projection vector, so it becomes an exact
+bound for the narrower metric rather than an inexact one for the wider. **What stops
+this being a one-line change** is that `groups.DIRECTIONS` is shared with the
+palette-group code rather than being solve-local, so it wants an audit of the other
+readers or its own constant.
 
 ### What was retired, and why
 
