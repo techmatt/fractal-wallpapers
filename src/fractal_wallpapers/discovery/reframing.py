@@ -163,6 +163,20 @@ RUNGS: tuple[float, ...] = (16.0, 24.0, 32.0, 48.0, 64.0)
 #: "reframing"` would have to be found and changed the day one arrives.
 CENTERED = True
 
+#: Whether a continuing leg fires at the proven roots an earlier one already
+#: consumed. `False` is the plain continuation: what is left of the label store,
+#: then the promotions.
+#:
+#: The lever exists because [`operators.expand_neighborhood`] **probes at
+#: random** — a ring of radii at a random angle, `NEIGHBOUR_PROBES` of them — so
+#: a second pass at the same root is a different sample of the same
+#: neighbourhood and finds atoms the first one did not. The prior run's nuclei
+#: are still deduped, so what a re-probe can add is exactly what it found that
+#: the earlier pass missed and nothing else. It is how the channel keeps
+#: yielding after its promotion queue converges, which it does: a generation
+#: returns well under one promotion per seed.
+REPROBE = False
+
 #: The period ceiling the seed snap scans to, over [`operators.MAX_PERIOD`]'s 64.
 #:
 #: Measured on 60 generation-1 seeds: 64 found 24 nuclei in 5.1 s, 128 found 30 in
@@ -1210,6 +1224,7 @@ def run(
     seed_batch: int = SEED_BATCH,
     max_period: int = SEED_SNAP_MAX_PERIOD,
     prior: Path | None = None,
+    reprobe: bool = False,
     log=print,
 ) -> dict:
     """Derive the seeds and run the channel over them. What the command calls."""
@@ -1223,8 +1238,10 @@ def run(
         earlier = prior_run(prior, log=log)
         carried = earlier["promoted"]
         before = len(found)
-        found = [seed for seed in found if seed.id not in earlier["fired"]]
+        if not reprobe:
+            found = [seed for seed in found if seed.id not in earlier["fired"]]
         record["refused_already_fired"] = before - len(found)
+        record["reprobe"] = bool(reprobe)
         record["seeds"] = len(found)
         record["sources"] = by_source(found)
     if roots is not None:
@@ -1360,6 +1377,7 @@ __all__ = [
     "rank",
     "read",
     "read_rungs",
+    "REPROBE",
     "run",
     "screen_rungs",
     "seeds",

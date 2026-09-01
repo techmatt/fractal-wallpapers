@@ -977,6 +977,7 @@ def reframe(args: argparse.Namespace) -> int:
             seed_batch=args.seed_batch,
             max_period=args.seed_max_period,
             prior=None if args.prior is None else resolve_input(args.prior),
+            reprobe=args.reprobe,
         )
     except (reframing.ChannelRefused, reframing.PinnedPlace) as refusal:
         print(refusal)
@@ -4657,6 +4658,15 @@ def build_parser() -> argparse.ArgumentParser:
         "an atom reached again is counted, not written twice), the proven roots it consumed "
         "are off the queue, and its admitted rows ARE this run's promotions — head-q4 first, "
         "then head-keeper, both behind whatever is left of the label store",
+    )
+    reframing_leg.add_argument(
+        "--reprobe",
+        action="store_true",
+        help="with --prior: fire at the proven roots the earlier run already consumed as "
+        "well. `expand_neighborhood` probes at random, so a second pass at one root is a "
+        "different sample of its neighbourhood and reaches atoms the first missed; the "
+        "earlier run's nuclei are still deduped, so nothing is written twice. Give the leg "
+        "its own --seed or it draws the same probes",
     )
     reframing_leg.add_argument(
         "--seed-max-period",

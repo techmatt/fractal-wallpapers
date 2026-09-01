@@ -559,6 +559,31 @@ def test_a_continuing_leg_does_not_write_the_earlier_legs_nuclei_a_second_time(
     assert report["seeds_consumed"] == len(carried["promoted"])
 
 
+def test_a_reprobe_fires_at_a_spent_root_again_and_still_writes_no_duplicate(
+    tmp_path, monkeypatch
+) -> None:
+    """The lever that keeps the channel yielding after its queue converges.
+
+    A generation returns well under one promotion per seed, so the promotion queue
+    is geometric and dies. `expand_neighborhood` probes at random, so the same
+    root sampled again is a different sample of the same neighbourhood — which is
+    a source of new atoms that does not need a new label. The dedup is what makes
+    it safe: what a re-probe can add is exactly what the earlier pass missed.
+    """
+    drawn(monkeypatch)
+    first = channel(tmp_path / "one", scorer=Stub(p_ge3=0.99, p_ge4=0.99))
+    first.run([ON_AN_ATOM])
+    carried = reframing.prior_run(first.out_dir, log=lambda *_a: None)
+    assert carried["fired"] == {ON_AN_ATOM.id}
+
+    again = channel(tmp_path / "two", scorer=Stub(p_ge3=0.99, p_ge4=0.99), seed=7)
+    again.seen |= carried["found"]
+    again.run([ON_AN_ATOM])
+    written = reframing.read(again.ledger.path)
+    assert not (carried["found"] & {row["atom_key"] for row in written})
+    assert again.counts.get("nucleus_already_found", 0) >= 1
+
+
 def test_a_keeper_row_carries_forward_as_a_keeper_and_a_rejected_one_not_at_all(
     tmp_path, monkeypatch
 ) -> None:
