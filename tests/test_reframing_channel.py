@@ -94,12 +94,12 @@ def drawn(monkeypatch, fates=None, passed=True):
     monkeypatch.setattr(reframing, "screen_rungs", screen)
 
 
-def channel(tmp_path, scorer=None, pinned=frozenset(), **kwargs):
+def channel(tmp_path, scorer=None, pinned=frozenset(), log=None, **kwargs):
     return reframing.Channel(
         out_dir=tmp_path / "reframe",
         scorer=scorer or Stub(),
         pinned=set(pinned),
-        log=lambda *_a, **_k: None,
+        log=log or (lambda *_a, **_k: None),
         **kwargs,
     )
 
@@ -600,6 +600,34 @@ def test_a_keeper_row_carries_forward_as_a_keeper_and_a_rejected_one_not_at_all(
     assert carried["promoted"] == []
     # And the nuclei are still off the queue, whatever the head said about them.
     assert carried["found"]
+
+
+def test_a_crashed_screen_batch_costs_its_frames_and_not_the_leg(tmp_path, monkeypatch) -> None:
+    """The failure that ended an eight-hour leg two minutes in.
+
+    One `engine.screen` process died returning nonzero with empty stdout and
+    empty stderr — a hard crash rather than a refusal it could describe — and the
+    whole leg went with it. An unattended leg that stops on one frame has spent
+    the night, which is a worse failure than sixty-four missing rows. So the
+    batch is retried, a batch that crashes twice is given up on, and the leg
+    carries on.
+    """
+    from fractal_wallpapers import engine
+
+    calls = {"n": 0}
+
+    def crashing(spec):
+        calls["n"] += 1
+        raise RuntimeError("engine failed: ")
+
+    monkeypatch.setattr(engine, "screen", crashing)
+    lines = []
+    run = channel(tmp_path, log=lines.append)
+    report = run.run([ON_AN_ATOM])
+    assert calls["n"] == reframing.SCREEN_RETRIES + 1, "the batch is tried again, once"
+    assert reframing.read(run.ledger.path) == []
+    assert report["counts"]["nucleus_not_drawn"] >= 1
+    assert any("given up on" in line for line in lines)
 
 
 def test_the_seed_snap_scans_further_than_the_walks_own_ceiling() -> None:
