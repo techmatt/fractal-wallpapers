@@ -33,7 +33,7 @@ from fractal_wallpapers.curation import ceiling
 from fractal_wallpapers.palettes import dominance, groups, pixel_clouds
 
 SMOOTH, STRANGE = "smooth_render", "strange_render"
-WIDTH = groups.DIRECTIONS * groups.QUANTILES
+WIDTH = pixel_clouds.DIRECTIONS * groups.QUANTILES
 
 
 # --------------------------------------------------------------------------- #

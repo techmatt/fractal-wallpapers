@@ -29,10 +29,10 @@ class Signatures:
     def __init__(self, values):
         import numpy
 
-        from fractal_wallpapers.palettes import groups
+        from fractal_wallpapers.palettes import groups, pixel_clouds
 
         self.values = {
-            key: numpy.full(groups.QUANTILES * groups.DIRECTIONS, value, dtype="float32")
+            key: numpy.full(groups.QUANTILES * pixel_clouds.DIRECTIONS, value, dtype="float32")
             for key, value in values.items()
         }
         self.made = 0

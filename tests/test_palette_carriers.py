@@ -135,10 +135,19 @@ def test_asking_for_more_than_the_cell_has_gives_what_it_has() -> None:
 # --------------------------------------------------------------------------- #
 # The metric a twin is measured in.
 # --------------------------------------------------------------------------- #
-def test_the_pixel_cloud_metric_is_the_palette_metric_on_pixels() -> None:
+def test_the_pixel_cloud_metric_shares_the_palette_metric_except_its_slice_count() -> None:
+    """Same cloud, same quantiles, its OWN direction count.
+
+    The twin metric was the palette-group metric read on pixels until 2026-09-01,
+    when the slice count was cut to 256 for a 6.6x cheaper signature. `groups.m1`
+    still runs at 1024 and every stored group name was cut under it, so the two
+    diverge here and nowhere else.
+    """
     assert pixel_clouds.SAMPLES == groups.SAMPLES
-    assert pixel_clouds.lattice().shape == (groups.DIRECTIONS, 3)
-    width = groups.DIRECTIONS * groups.QUANTILES
+    assert pixel_clouds.DIRECTIONS == 256
+    assert groups.DIRECTIONS == 1024, "the palette-group M1 count does not move"
+    assert pixel_clouds.lattice().shape == (pixel_clouds.DIRECTIONS, 3)
+    width = pixel_clouds.DIRECTIONS * groups.QUANTILES
     assert pixel_clouds.distance(numpy.zeros(width), numpy.full(width, 0.25)) == pytest.approx(0.25)
     assert pixel_clouds.distances(numpy.zeros(width), [numpy.full(width, 0.25)]) == [
         pytest.approx(0.25)
@@ -151,8 +160,90 @@ def test_the_subsample_is_seeded_so_two_readings_of_one_picture_agree() -> None:
     assert numpy.array_equal(first, pixel_clouds.take(14400))
 
 
+def test_the_lattice_is_cached_per_direction_count_and_not_as_one_singleton() -> None:
+    """A lattice built at one count and handed back at another is a silent metric change.
+
+    It was one module-level singleton until 2026-09-01, when the twin metric got its
+    own count. Nothing in production moves the count inside a process; a test that
+    sets it is exactly the caller a stale singleton would answer wrongly, with
+    nothing raised.
+    """
+    assert pixel_clouds.lattice().shape == (pixel_clouds.DIRECTIONS, 3)
+    assert pixel_clouds.lattice(1024).shape == (1024, 3)
+    assert pixel_clouds.lattice(64).shape == (64, 3)
+    assert pixel_clouds.lattice().shape == (pixel_clouds.DIRECTIONS, 3), "not clobbered"
+    # The same count twice is the same object, so the cache is a cache.
+    assert pixel_clouds.lattice(64) is pixel_clouds.lattice(64)
+
+
+def test_a_signature_cache_that_outlives_a_direction_change_is_dropped_not_mixed(
+    monkeypatch,
+) -> None:
+    """The failure this guards is silent: two entries under one key in two metrics.
+
+    A hit from before the change would be compared against a signature made after
+    it, and no shape mismatch would raise because the caller only ever takes an
+    absolute difference of flat vectors of whatever length it is handed.
+    """
+    store = pixel_clouds.Clouds(lambda name: None)
+    store._held["seated"] = numpy.zeros(4, dtype=numpy.float32)
+    assert store.directions == pixel_clouds.DIRECTIONS
+
+    monkeypatch.setattr(pixel_clouds, "DIRECTIONS", pixel_clouds.DIRECTIONS // 2)
+    assert store.of("seated") is None, "the stale entry is a MISS, never a wrong answer"
+    assert store._held == {}, "and it is dropped rather than kept beside a fresh one"
+    assert store.directions == pixel_clouds.DIRECTIONS
+
+
+def test_the_signature_is_quantile_major_so_the_bound_can_reshape_it() -> None:
+    """The flat layout is the contract between `signature` and `reduce_signature`.
+
+    `signature` sorts along the CONTIGUOUS axis and transposes on the way out, which
+    is twice as fast for a byte-identical answer; get that transpose wrong and every
+    reduced signature is a reshape of the correct numbers in the wrong order, which
+    changes no shape and raises nothing.
+    """
+    from fractal_wallpapers.curation import rules
+
+    rng = numpy.random.default_rng(0)
+    points = rng.standard_normal((pixel_clouds.SAMPLES, 3))
+    made = pixel_clouds.signature(points)
+    assert made.shape == (groups.QUANTILES * pixel_clouds.DIRECTIONS,)
+
+    # Quantile-major: row q of the reshape is the q-th quantile across directions,
+    # and the quantiles ascend because each column was sorted.
+    grid = made.reshape(groups.QUANTILES, pixel_clouds.DIRECTIONS)
+    assert numpy.all(numpy.diff(grid, axis=0) >= 0), "each direction ascends down the rows"
+    assert rules.reduce_signature(made).shape == (rules.BOUND_BLOCKS, pixel_clouds.DIRECTIONS)
+
+
+def test_the_contiguous_sort_is_the_same_answer_as_the_strided_one() -> None:
+    """The rearrangement, against the formulation it replaced, on the same input.
+
+    Not a rewrite of `signature`: the right-hand side is the shipped 2026-08 body,
+    kept here because a speedup whose output moved would be a bug wearing a
+    speedup's clothes and nothing else in the suite would catch it.
+    """
+    rng = numpy.random.default_rng(7)
+    points = rng.standard_normal((pixel_clouds.SAMPLES, 3))
+
+    lattice = pixel_clouds.lattice()
+    strided = numpy.sort(numpy.asarray(points, dtype=numpy.float32) @ lattice.T, axis=0)
+    where = groups._quantile_positions(pixel_clouds.SAMPLES, groups.QUANTILES)
+    low = numpy.floor(where).astype(numpy.intp)
+    high = numpy.minimum(low + 1, pixel_clouds.SAMPLES - 1)
+    fraction = (where - low).astype(numpy.float32)[:, None]
+    want = numpy.ascontiguousarray(
+        (strided[low] * (1.0 - fraction) + strided[high] * fraction).reshape(-1)
+    )
+
+    got = pixel_clouds.signature(points)
+    assert numpy.array_equal(got, want), "byte-identical, not approximately"
+    assert got.tobytes() == want.tobytes()
+
+
 def test_the_cache_keeps_what_is_held_and_forgets_what_is_merely_read() -> None:
-    width = groups.DIRECTIONS * groups.QUANTILES
+    width = pixel_clouds.DIRECTIONS * groups.QUANTILES
     del width
     store = pixel_clouds.Clouds(lambda name: None, cache=2)
     assert store.of("nothing") is None, "no picture, no cloud, and no crash"
