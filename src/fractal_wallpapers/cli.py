@@ -3351,6 +3351,7 @@ def curate_solve(args: argparse.Namespace) -> int:
             allow_unranked=args.allow_unranked,
             theme=args.themed,
             geometry_radius=args.themed_radius,
+            themed_cap=args.themed_cap,
             rows_per_seat=args.rows_per_seat,
             draw_seed=args.draw_seed,
             swap=not args.no_swap,
@@ -7922,6 +7923,19 @@ def curate_commands(subcommands) -> None:
         "so a themed pool is a near-duplicate pool under exactly it. Unless you name them "
         "otherwise it also sets `--target CELL=1.0`, without which the cell allowance "
         "refuses the theme at nine seats, and `--flat-floor`",
+    )
+    solving.add_argument(
+        "--themed-cap",
+        type=int,
+        metavar="SEATS",
+        help="the palette-group cap a THEMED pass runs under, overriding the computed "
+        f"one. Unset is ceiling.themed_group_cap: ceil({ceiling_module.THEMED_CAP_SHARE} x "
+        "n / P), twice the even share across the P palette groups that can field the "
+        f"theme, where P counts the groups fielding {ceiling_module.THEMED_CAP_PLACES} or "
+        "more distinct PLACES in the themed pool. The main gallery's cap is a share of `n` "
+        "alone and was measured as the BINDING rule over a themed pool at every shipping "
+        "size, which is why a themed pass gets its own. `--group-cap` still names the "
+        "main gallery's rule and a themed pass ignores it. Ignored without `--themed`",
     )
     solving.add_argument(
         "--themed-radius",

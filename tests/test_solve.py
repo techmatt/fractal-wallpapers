@@ -1962,3 +1962,72 @@ def test_the_theme_is_read_off_the_rows_own_dominance_block():
     ]
     assert [held.key for held in solve.in_theme(pool, "dark_vivid_lime")] == ["both"]
     assert [held.key for held in solve.in_theme(pool, "dark_muted_lime")] == ["both", "other"]
+
+
+def test_a_themed_pass_takes_the_themed_cap_and_measures_P_off_its_own_pool():
+    """`P` is read after the bar and the pre-selection, over exactly the rows the
+    leg may seat — not off the ledger, and not off a flag."""
+    pool = [
+        candidate(
+            f"{group}_{at}",
+            score=0.10,
+            p_ge3=0.90,
+            cells=("dark_vivid_lime",),
+            group=f"map:{group}",
+        )
+        # Four groups of five places, and one group with a single place: P is 4.
+        for group, count in (("a", 5), ("b", 5), ("c", 5), ("d", 5), ("fluke", 1))
+        for at in range(count)
+    ]
+    record = solve.solve(
+        pool,
+        n=20,
+        theme="dark_vivid_lime",
+        targets={"dark_vivid_lime": 1.0},
+        floor=0,
+        key=solve.JUDGE_KEY,
+        log=quiet,
+    )
+    theme = record["theme"]
+    assert theme["P"] == 4
+    assert theme["groups_in_the_pool"] == 5, "the fluke group is in the pool, not in P"
+    assert theme["group_cap"] == ceiling.themed_group_cap(20, 4) == 10
+    assert record["config"]["ceiling"]["group_cap"] == 10
+    assert record["config"]["ceiling"]["group_cap_rule"] == ceiling.THEMED
+    assert "themed_group_cap" in record["config"]["ceiling"]["group_cap_from"]
+
+
+def test_the_themed_cap_can_be_named_and_then_it_is_the_cap():
+    pool = [
+        candidate(f"a{at}", score=0.10, p_ge3=0.90, cells=("dark_vivid_lime",), group="map:a")
+        for at in range(9)
+    ]
+    record = solve.solve(
+        pool,
+        n=9,
+        theme="dark_vivid_lime",
+        targets={"dark_vivid_lime": 1.0},
+        floor=0,
+        themed_cap=2,
+        key=solve.JUDGE_KEY,
+        log=quiet,
+    )
+    assert record["theme"]["group_cap"] == 2
+    assert record["filled"] == 2
+    assert record["rejection"]["reasons"]["group_cap"] == 7
+    assert "caller" in record["theme"]["group_cap_is"]
+
+
+def test_an_unthemed_pass_is_untouched_by_any_of_it():
+    """The main gallery's cap is not what this changed, and a record that let the
+    themed rule leak into it would be a gallery chosen under a rule nobody asked
+    for."""
+    record = solve.solve(
+        [candidate(f"c{at}", score=0.9) for at in range(30)],
+        n=150,
+        key=solve.JUDGE_KEY,
+        log=quiet,
+    )
+    assert record["theme"] is None
+    assert record["config"]["ceiling"]["group_cap_rule"] == ceiling.PROPORTIONAL
+    assert record["config"]["ceiling"]["group_cap"] == ceiling.group_cap(150, ceiling.PROPORTIONAL)
