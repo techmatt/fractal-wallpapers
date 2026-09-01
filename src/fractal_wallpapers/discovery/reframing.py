@@ -21,7 +21,8 @@ proven roots (label store, q3 and q4, parameter planes, pins excluded)
         │  expand_neighborhood      distinct atoms around it
         ▼
    one nucleus                      deduplicated on the atom key, across the run
-        │  16x 24x 32x 48x 64x      the five rungs, offered directly
+        │  8x 12x 16x 24x 32x       the nine rungs, offered directly
+        │  48x 64x 96x 128x
         ▼
    engine.screen                    the walk's own gate battery, node regime
         │  the location head over the frames it just drew
@@ -36,12 +37,12 @@ audit closed on. Whatever the operators build here is scored, gated and recorded
 it is not a place to descend from.
 
 **One nucleus is one location, and the rungs are its framings.** A nucleus at
-five widths is not five locations — that would put one atom into five seats and
-would count one find five times in every book downstream. So every rung is
+nine widths is not nine locations — that would put one atom into nine seats and
+would count one find nine times in every book downstream. So every rung is
 drawn, every one is scored, every reading is on the row, and the location's own
 score is the rung the head picked. The rungs are **offered directly** rather
 than walked to, because the built refinement moves x1.414 a step
-([`curation.framing.WIDTH_LADDER`]) and cannot reach 64x from 16x in anything a
+([`curation.framing.WIDTH_LADDER`]) and cannot reach 128x from 8x in anything a
 window that size can express.
 
 **A nucleus location is `centered`.** The centre is the atom the operators
@@ -61,25 +62,52 @@ exists and why every derived row carries the seed's tier: the claim being
 inherited is somebody's verdict on a picture, and a channel that could not say
 whose verdict, at what tier, would be unpriceable.
 
-## The five rungs, and why nothing below 16x
+## The nine rungs, and where the ladder stops at each end
 
 Measured body width of eleven ring-seeded atoms at 1280 px
 (`scratch/framing_ladder.jsonl`): 115-183 px at the 16x rung, 57-92 px at 32x,
 28-45 px at 64x. The band that reads as *a minibrot with detail around it* is
 50-100 px, which is the 32x rung; the walk's widest rung, 16x, is a factor of two
 too tight, and 48x and 64x sit below the band at roughly 38-61 px and 28-45 px.
+Scaled along the same measurement the ends land at 230-366 px (8x), 153-244 (12x),
+19-30 (96x) and 14-23 (128x).
 
-The band is a prediction and the ladder is the measurement of it. Generation 1
+The band was a prediction and the ladder is the measurement of it. Generation 1
 drew 16x, 24x and 32x on all 792 of its nuclei and the head-q4 rate rose monotone
-outward — **2.1%, 2.9%, 3.5%** — which is the direction that says the ladder was
-stopping too early rather than that 32x is the answer. 48x and 64x are carried
-so the question has somewhere to land: a pick distribution that keeps moving
-outward past 32x says the band is wrong, and one that turns over at 32x or 48x
-says where it actually is. Every rung is drawn, scored and on the row either way.
+outward — 2.1%, 2.9%, 3.5% — which is the direction that says a ladder is
+stopping too early. 48x and 64x were added for the question to land in, and over
+5,773 locations drawn on that five-rung ladder **the head's pick came back very
+nearly flat: 17.5 / 22.2 / 23.0 / 17.5 / 19.8%** at 16 / 24 / 32 / 48 / 64x.
 
-Nothing below 16x is offered. The 2x frame is 50-75% interior and is refused
-outright by the walk's own `interior_cap`; 4x is the walk's "is this atom any
-good" frame and this channel is not asking that question.
+A flat pick over `k` rungs puts `2/k` of the picks on an end, and an end pick is a
+truncation rather than an optimum — the head was asked for its favourite width
+and answered with the widest or narrowest width it was offered. What extending a
+ladder does about that is already on the record: under the three-rung ladder the
+outermost rung took **30.6%** of picks, and adding 48x and 64x did not drain that
+pile, it *moved* it — 32x settled to 23.0% and the new outer end took 19.8%. So
+the ladder carries two more rungs at each end at its own alternating step (x1.5,
+x1.333), and the honest claim for them is dilution and reach rather than a cure:
+37.3% of picks sat on an end at five rungs and about 22% will at nine. Every
+rung is drawn, scored and on the row either way, and [`Channel.summary`]'s
+`ends` block is where the next leg reads whether the new rungs took picks off
+the old ends.
+
+**8x is the inner stop.** The 2x frame is 50-75% interior and is refused outright
+by the walk's own `interior_cap`, and 4x is the walk's "is this atom any good"
+frame — a question this channel is not asking. 8x is neither: the body lands at
+230-366 px of 1280, which is 3-8% interior against a 30% cap.
+
+**128x is the outer stop, and it is a judgement rather than a guard.** Nothing in
+the battery refuses it — a framing is refused as `width_over_root_scale` only past
+[`operators.MAX_WIDTH`], and over 6,590 nucleus rows the largest atom seen has a
+window scale of 8.5e-3, so the first rung that guard would refuse is **352x**.
+What stops the ladder at 128x is that the body is 14-23 px there: past it the
+picture is a speck in a field and stops being a minibrot frame at all.
+
+What does bite, at the other end, is the f64 spacing wall on the deepest atoms —
+8x is offerable on 99.7% of those 6,590 rows and 12x on 99.8%, against 99.8% for
+16x itself. A rung the wall refuses is simply not drawn for that nucleus, which
+is what the ladder already did before it was extended.
 
 ## What is priced, and against what
 
@@ -146,13 +174,25 @@ CHANNEL = "reframing"
 #: The rungs, in atom sizes. See the module docstring for the measurement.
 #:
 #: Offered directly and not walked to: `refine_framings` moves x1.414 a step, so
-#: half an octave cannot turn 16x into 64x however many times it fires.
+#: half an octave cannot turn 8x into 128x however many times it fires.
 #:
-#: `48` and `64` join the ladder because generation 1's head-q4 rate rose monotone
-#: outward over the three it had — 2.1% at 16x, 2.9% at 24x, 3.5% at 32x — which
-#: leaves "does the pick keep moving outward?" a question the ladder could not
-#: answer while 32x was its end.
-RUNGS: tuple[float, ...] = (16.0, 24.0, 32.0, 48.0, 64.0)
+#: The step alternates x1.5 and x1.333 and the ends continue it rather than
+#: inventing a spacing — the whole ladder is `{8, 12}` doubled four times. `8`
+#: and `12` came in below and `96` and `128` above because the five-rung ladder
+#: put **37.3%** of its picks on an end, and an end pick is the head saying it
+#: wanted a width it was never offered. It does not cure that: a near-flat pick
+#: over `k` rungs leaves `2/k` on the ends, so nine rungs buys about 22% and the
+#: widths themselves. [`ENDS_READOUT`] is what says whether it bought them.
+RUNGS: tuple[float, ...] = (8.0, 12.0, 16.0, 24.0, 32.0, 48.0, 64.0, 96.0, 128.0)
+
+#: How many rungs at each end of [`RUNGS`] were added by the extension, so the
+#: `ends` readout can name the new ends and the old ones apart without a second
+#: copy of the ladder's history living in a caller.
+#:
+#: A number rather than the old ladder spelled out again: what the readout asks
+#: is "did the pile move off the ends it was on", and that question is about
+#: position in the ladder rather than about the values 16 and 64.
+ENDS_READOUT = 2
 
 #: What a nucleus location's row says about its centre, and the contract
 #: [`curation.framing`] honours: the centre is the atom the operators solved for,
@@ -886,6 +926,46 @@ def by_source(seeds_: list[Seed]) -> dict:
     return {source: counts[source] for source in sorted(counts, key=priority_of)}
 
 
+def end_picks(picked: dict, ladder, added: int = ENDS_READOUT) -> dict:
+    """Where a leg's picks landed relative to the ladder's ends.
+
+    `picked` is `{rung: count}` and `ladder` is the ladder that was offered. The
+    block splits the picks three ways — the `added` outermost and innermost rungs
+    at each end, the two rungs that were the ends before they arrived, and
+    everything strictly inside — because that is the one comparison that says
+    whether extending the ladder bought anything.
+
+    **A pick on a new end is not the failure an old-end pick was.** The old ends
+    were the ladder's whole reach, so a pick there was the head asking for a width
+    it could not be offered; a new end is a width that had never been drawn. What
+    the shares answer is whether the pile moved off the old ends or merely moved
+    outward with them, which is what happened the last time this ladder grew.
+
+    `added` rungs off each end of a ladder shorter than `2 * added + 2` would
+    overlap, so the split degrades to new-ends-and-interior rather than
+    double-counting a rung into two buckets.
+    """
+    rungs = sorted(float(rung) for rung in ladder)
+    total = sum(picked.values())
+    new_ends = set(rungs[:added]) | set(rungs[-added:] if added else [])
+    rest = [rung for rung in rungs if rung not in new_ends]
+    old_ends = {rest[0], rest[-1]} if rest else set()
+    buckets = {
+        "new_ends": sorted(new_ends),
+        "old_ends": sorted(old_ends),
+        "interior": [rung for rung in rest if rung not in old_ends],
+    }
+    block: dict = {"ladder": rungs, "picks": total}
+    for name, group in buckets.items():
+        count = sum(picked.get(rung, 0) for rung in group)
+        block[name] = {
+            "rungs": group,
+            "picks": count,
+            "share": round(count / total, 4) if total else None,
+        }
+    return block
+
+
 # --------------------------------------------------------------------------- #
 # The leg.
 # --------------------------------------------------------------------------- #
@@ -1258,6 +1338,14 @@ class Channel:
                     round(q4 / (operator_seconds / 60.0), 2) if operator_seconds > 0 else None
                 ),
             },
+            "ends": end_picks(
+                {
+                    float(name.split(":", 1)[1]): count
+                    for name, count in self.counts.items()
+                    if name.startswith("rung_picked:")
+                },
+                self.rungs,
+            ),
             "counts": dict(sorted(self.counts.items())),
             "ledger": str(self.ledger.path),
         }
@@ -1407,6 +1495,7 @@ __all__ = [
     "DEFAULT_OUT",
     "HEAD_KEEPER",
     "HEAD_Q4",
+    "ENDS_READOUT",
     "OPERATORS",
     "RUNGS",
     "SCHEMA",
@@ -1424,6 +1513,7 @@ __all__ = [
     "by_source",
     "candidate_row",
     "distinct_places",
+    "end_picks",
     "fate_of",
     "fire",
     "frame_multiple",

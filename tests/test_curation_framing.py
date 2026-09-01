@@ -62,7 +62,7 @@ def test_a_centered_locations_window_is_the_width_ladder_and_nothing_else() -> N
     crop of that location, it is a crop of somewhere else wearing the atom's name
     — and the minibrot the reframing channel exists to frame would be off centre
     in the picture a gallery seats. So stage B does not run, and stage A does:
-    the scale is exactly what a five-rung ladder left open.
+    the scale is exactly what the rung ladder left open.
     """
     row = {**location(), "centered": True}
     frames = framing.window(row)

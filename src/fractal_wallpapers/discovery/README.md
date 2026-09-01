@@ -105,19 +105,18 @@ and `blind_modes`' are excluded as seeds *and* as derived frames. Measured
 2026-08-31: 1,452 pinned places, 1,252 proven parameter-plane locations at tier
 >= 3, **76 of them pinned, 1,176 seeds available** (184 q4, 992 q3).
 
-**The rungs are 16x, 24x, 32x, 48x and 64x the atom size, and they are framings of
-one location rather than five locations.** Every rung is drawn through
-`engine.screen` at the node regime, every one is read through the location head,
-one row is written, and its score is the rung the head picked — every rung's own
-reading rides on the row under `reframing.rungs_drawn`. They are offered directly
-rather than walked to: `curation.framing.WIDTH_LADDER` moves x1.414 a step and
-cannot reach 64x from 16x in anything a window that size can express. The band
-that reads as *a minibrot with detail around it* is 50-100 px of body at 1280,
-which is the 32x rung; the walk's widest rung, 16x, lands at 115-183 px and is a
-factor of two too tight, and 48x and 64x sit below the band at roughly 38-61 px
-and 28-45 px. The outer two were added after generation 1's head-q4 rate rose
-monotone outward over the three rungs it had — 2.1% at 16x, 2.9% at 24x, 3.5% at
-32x — which left the ladder's own end the thing that had never been tested.
+**The rungs are 8x, 12x, 16x, 24x, 32x, 48x, 64x, 96x and 128x the atom size, and
+they are framings of one location rather than nine locations.** Every rung is
+drawn through `engine.screen` at the node regime, every one is read through the
+location head, one row is written, and its score is the rung the head picked —
+every rung's own reading rides on the row under `reframing.rungs_drawn`. They are
+offered directly rather than walked to: `curation.framing.WIDTH_LADDER` moves
+x1.414 a step and cannot reach 128x from 8x in anything a window that size can
+express. The band that reads as *a minibrot with detail around it* is 50-100 px
+of body at 1280, which is the 32x rung; the walk's widest rung, 16x, lands at
+115-183 px and is a factor of two too tight. The step alternates x1.5 and x1.333
+and the ends continue it rather than inventing a spacing — the whole ladder is
+`{8, 12}` doubled four times.
 
 **Tested, on 6,590 locations over the night of 2026-09-01: the rate plateaus at
 32x and the pick keeps moving outward anyway.** Head-q4 as a share of what was
@@ -126,10 +125,46 @@ drawn at each rung reads **2.0 / 5.0 / 7.3 / 7.1 / 7.6%** at 16 / 24 / 32 / 48 /
 generation 1's monotone read was the ladder ending too early and not a trend. But
 the outer two take **596 of the 1,305 q4 picks (46%)**, and the median chosen
 frame is 32 atom sizes with quartiles at 24 and 48, so the ladder is used across
-its whole width. Both outer rungs draw about 790 fewer frames than the inner
-three: a wider frame trips `width_over_root_scale` on the largest atoms. What
-none of this settles is whether a 64x frame is a better *minibrot* picture or
-merely one the head likes; that is what the `reframe_nuclei` sheet is cut for.
+its whole width. What none of this settles is whether a 64x frame is a better
+*minibrot* picture or merely one the head likes; that is what the
+`reframe_nuclei` sheet is cut for.
+
+**The ladder grew to nine on 2026-09-01 because its ends were carrying picks that
+were not answers.** Over the 5,773 locations drawn on the full five-rung ladder
+the head's pick came back very nearly flat — **17.5 / 22.2 / 23.0 / 17.5 / 19.8%**
+at 16 / 24 / 32 / 48 / 64x — which puts 37.3% of picks on a rung that was the
+ladder's own reach rather than the head's preferred width. Extending it does not
+cure that and the claim here is not that it does: a flat pick over `k` rungs
+leaves `2/k` on the ends, so nine rungs buys about 22% and, more to the point,
+four widths that had never been drawn. The five-rung ladder had already shown
+which of those two things happens — under the three-rung ladder the outermost
+rung took **30.6%** of picks, and adding 48x and 64x did not drain that pile, it
+moved it: 32x settled to 23.0% and the new outer end took 19.8%.
+
+**`reframing.end_picks` is the readout that says whether this bought anything**,
+and it rides on every run summary under `ends`. It splits a leg's picks three ways
+— the two new rungs at each end, the two rungs that *were* the ends (16x and 64x),
+and the strict interior — because a single end-share number cannot tell "the pile
+came off the ends" from "the pile moved outward with the ladder", which is exactly
+what happened last time. Read `ends.old_ends.share` against the 37.3% above.
+
+**No guard is what stops the ladder at 128x.** `width_over_root_scale` fires past
+`operators.MAX_WIDTH`, and the largest atom over those 6,590 rows has a window
+scale of 8.5e-3 — so the first rung that guard would refuse is **352x**. It has
+never fired in any reframe leg. (An earlier revision of this section said the
+outer two rungs "draw about 790 fewer frames" for that reason; they do not, and
+the 790 was generation 1's 792 rows, drawn before 48x and 64x existed.) What
+stops the ladder at 128x is that the body is 14-23 px there — past it the picture
+is a speck in a field. The guard that does bite is at the *other* end, the f64
+spacing wall on the deepest atoms: 8x is offerable on 99.7% of those rows and 12x
+on 99.8%, against 99.8% for 16x itself, and a rung the wall refuses is simply not
+drawn for that nucleus.
+
+**Cost of the four new rungs: about 6% of a leg.** A framing is free of Newton
+solves — `operators._snap` charges the solve to the first framing and marks the
+rest `reused_solve` — so the added cost is renders and head reads only. On
+`reframe_g4` that half was 905 s of a 12,143 s leg (7.5%), and frames per location
+go 4.995 to 8.989 over the same 6,590 rows, so +80% of 7.5% is +6.0%.
 
 **A nucleus location is `centered`, and the field is a contract with
 `curation.framing`.** The centre is the atom the operators solved for and it is
@@ -157,7 +192,8 @@ of the standard per-location draw over the head-q4 nuclei surviving
 `PRESELECT_RADIUS`, top-down: **2,286 candidates over 762 of the 1,252 places**,
 15.62% clearing raw `P(>=4) >= 0.50` against a fresh breadth draw's 1.72% at the
 same cost a candidate, and 38.1% of places producing at least one such row. Per the
-rung the head picked:
+rung the head picked — over the five-rung ladder those legs ran, so 8x, 12x, 96x
+and 128x have no column here and the next leg's is the first that will:
 
 | rung | 16x | 24x | 32x | 48x | 64x |
 |---|---|---|---|---|---|
@@ -171,6 +207,13 @@ the location head likes more than the wallpaper judge does. It is an observation
 and not a controlled comparison: the rung on each row is the one the head *chose*
 for that place, so a rung column is partly a column about which places chose it.
 The `reframe_nuclei` sheet is still what settles it against a person's verdict.
+
+It is also the standing argument *against* the outward half of the extension: the
+render judge was already falling away at 64x when the ladder stopped there, so 96x
+and 128x are drawn into a declining region on this evidence. They are drawn
+anyway, because the location head's own pick had not turned over at 64x and a
+width nobody has read cannot be argued about. `ends.new_ends` split by end is what
+answers it.
 
 **The seed snap scans to period 256**, over `operators.MAX_PERIOD`'s 64.
 Measured on 60 generation-1 seeds: 64 found 24 nuclei in 5.1 s, 128 found 30 in
