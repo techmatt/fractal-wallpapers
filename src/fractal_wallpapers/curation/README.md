@@ -22,6 +22,7 @@ candidate_ledger  every recipe ever rendered, one row each, with its colour
 headroom   what each selection constraint needs, holds, and costs to buy — no solver
 view       what one pass may reach: strata, and band-blind slices of them
 rules      one spelling per selection rule, over incremental state
+signatures the diversity rule's bound signature, swept once into a sidecar
 solve      THE gallery leg: the view, a greedy seed, and 1-swap improvement
 distinct   which places are visibly different places, decided before any colour
 selection  top-N per judge, under the slot and supply caps, the location rule
@@ -62,6 +63,8 @@ fractal-wallpapers curate headroom --n 20 --n 150      # only these rungs of the
 fractal-wallpapers curate headroom --flat-floor        # bound the FLAT mode floor, for a baseline
 fractal-wallpapers curate distinct                     # the neutral pre-selection read, and the radius sheet
 fractal-wallpapers curate distinct --no-premise        # the join and the sheet, measuring no pixel cloud
+fractal-wallpapers curate signatures sweep              # the bound signatures, once, for the clearing pool
+fractal-wallpapers curate signatures coverage          # how much of the pool the sidecar can answer for
 fractal-wallpapers curate solve run --n 20 --no-render # THE gallery leg: decide, render nothing
 fractal-wallpapers curate solve run --n 150            # the gallery, then the pictures
 fractal-wallpapers curate solve run --n 1000 --no-render   # 8.5 min on this machine
@@ -704,40 +707,107 @@ chooses a gallery needs neither the CUDA wheels nor a MIP.
 or a pass cap leaves an answer rather than nothing. That is the whole reason it
 replaced a method that had no answer at all until it had a proof.
 
-### The objective, and the one place two rulings had to be reconciled
+### The objective, and why nothing guards a met demand
 
 Lexicographic and strict, in this order: **(1)** seats filled, every one above its
-own mode's bar because that is what the pool is; **(2)** the **worst seated
-score**, maximized; **(3)** the **shortfall** against every demand — the mode
-floors and any colour target — minimized, and nothing padded; **(4)** the sum. The
-rank quantity is `solve.RANK_KEY`, the fitted five-column form; `p_ge4` alone is
-not it and is still reachable by name.
+own mode's bar because that is what the pool is; **(2)** the **shortfall** against
+every demand — the mode floors and any colour target — minimized, and nothing
+padded; **(3)** the **worst seated score**, maximized; **(4)** the sum. The rank
+quantity is `solve.RANK_KEY`, the fitted five-column form; `p_ge4` alone is not it
+and is still reachable by name.
 
-Tier 2 above tier 3 is the retired program's own order, where the floor stage sat
-above the mode penalty. Taken alone it can evacuate a mode floor the seed filled:
-the worst seat is by construction a scarce mode's, swapping it for a strong smooth
-candidate lifts tier 2, and tier 3 cannot buy it back. But the mode floors are one
-of the rules this leg **keeps**, and a rule the loop is free to break at will is
-not a rule. So `solve.Gallery.protected` holds a demand that is currently *met*:
-the seats carrying it may not leave unless the arriving candidate counts towards
-the same demand. Nothing pads and nothing refuses — a demand the pool cannot fill
-is still short, still recorded and still minimized by tier 3.
+**A filled floor above the worst seat is Matt's ruling**, and it is what "grab
+where possible" means: a mode this pool can represent is represented, and the
+price is paid out of the weakest seat rather than out of the roster. A swap that
+fills a short floor at the cost of the worst seat is the ordinary case here, not
+the refused one.
 
-`keep_demands=False` is the pure lexicographic reading, kept reachable so the
-difference is measurable rather than arguable. **Measured on the pool at n=150 it
-makes no difference at all**: the strict reading also came back 14 of 14 modes
-represented and zero shortfall, because the loop's own prune stops it long before
-it runs out of floor seats. The guard is for the shape, not for this pool.
+The retired program had these two the other way round — its floor stage sat above
+the mode penalty — and that order needed a guard. The worst seat is by
+construction a scarce mode's, so trading it for a strong smooth candidate lifted
+tier 2 and nothing beneath could buy the representation back; `solve.Gallery`
+carried a `protected` set, a `guards` lookup and a `keep_demands` flag to stop it,
+and `curate solve`'s record carried a `demands_kept` field to say so. **All four
+are gone.** Under this order a met demand is kept by the order itself: giving one
+back is a tier-2 loss and the two tiers beneath cannot pay for it. `Gallery.weakest`
+now offers every seat it reaches and `after_swap` refuses on the arithmetic, which
+is where a refusal belongs.
+
+Nothing pads. A demand the pool cannot fill is still short, still recorded and
+still minimized by tier 2 — a shortfall is a finding, never something the leg
+repairs by seating something it should not.
+
+### The bound signature is swept once, not derived per pass
+
+The twin rule is the only one that opens a picture, and what it costs is the JPEG
+decode — about 96 ms — not the comparison. `BUILD_greedy_swap_solve` measured the
+signatures at ~100% of the leg: 4,624 made at n=150 for 443 s of a 461 s leg. Two
+prunes and a per-pass reduced store cut that to 289 signatures and 38.4 s, and
+decoding in parallel over three workers was implemented, measured and **reverted** —
+a prefetch has to guess which candidates the walk will open, the only free guess
+(the counted rules) is a superset, and at n=150 the leg opens 289 pictures out of a
+6,515-row view. A guess that over-fetches to a thousand loses to 289 on one core
+however many workers it has.
+
+`curation.signatures` is the same win without the guess. The reduced signature is a
+property of the **picture**, so it is swept once over the clearing pool into
+`artifacts/curation/candidate_ledger/reduced_signatures.jsonl` — one JSONL row a
+recipe, the vector base64-packed as `float32` the way `curation.embeddings` packs
+its unit vectors — and `solve` and `curate headroom --twin` read it instead of
+deriving it. `float32` and not `float16` because the bound is a *lower* bound and a
+value rounded the wrong way would let a real twin be pruned; the store round-trips
+bit-identically and `test_signatures.py` pins that.
+
+**Staleness is the picture's identity, never a clock.** The row carries the picture
+it was read from and a mismatch is the only staleness there is — `curate retention`
+moves pictures and a restore rewrites mtimes, so a time-keyed store would re-sweep
+a pool nothing changed *and* miss a picture replaced inside one second. The two
+reduction constants ride on the row too, so changing either invalidates the store
+at once.
+
+It is regenerable and gets no `durability.Durable`: **247 MB, 11,210 rows, 448 s**
+over the standard three-worker pool with nothing unreadable. A second copy of a
+derived store that size earns less than it costs.
+
+**What it bought, measured: not the gallery leg.** At n=150 the leg is 37.9 s
+without the sidecar and 36.9 s with it, over a bit-identical gallery — and the
+reason is structural. `Twins.within` asks for the candidate's reduced form and
+then, for the fraction the bound cannot settle, asks for that same key's full cloud
+a few lines later; without a sidecar the first call decodes into the Clouds read
+cache and the second is a hit, with one the first never touches Clouds and the
+second is a cold decode. Both records show `full_signatures_fetched` **325**. The
+store removes 289 reduced decodes and hands back 325 full ones. So the win is
+bounded by candidates whose bound settles everything, and the swap loop's two
+prunes have already removed nearly all of those. The store is still the right shape
+— it is the read-ahead's benefit without the read-ahead's guess — but the gallery
+leg is not where it shows up, and saying so is cheaper than re-deriving it later.
+
+**Where it does earn its 247 MB is `curate headroom --twin`**, which builds one
+reduced signature per place to screen millions of pairs and needs a full cloud only
+for the few thousand survivors — so nothing cancels. Measured over that sweep's own
+population, 4,496 places after the neutral pre-selection: the sidecar answers **all
+4,496 in 0.7 s** against **429 s** to decode them at 95 ms a picture. That sweep used
+to build every one of them and throw them away.
 
 ### Two prunes in the swap loop, and both are sound
 
 **The first is on the walk.** A pass goes down the view in rank order and stops at
 the worst seated value. Nothing below it can be in an improving swap: a 1-swap does
 not change the seat count so tier 1 cannot move; seating a candidate worth less
-than the current worst makes the worst that candidate, so tier 2 gets worse; and
-the tiers are lexicographic, so a tier 3 or tier 4 gain cannot buy that. It
-tightens on its own, because every swap that improves tier 2 raises where the next
-pass stops.
+than the current worst makes the worst that candidate, so tier 3 gets worse; and
+the tiers are lexicographic, so a tier 4 gain cannot buy that. The prune tightens
+on its own, because every swap that improves tier 3 raises where the next pass
+stops.
+
+**It is conditional on nothing being short, and that is not a detail.** Tier 2 is
+the shortfall and it sits *above* the worst seat, so a low-ranked row covering a
+starved demand still improves the gallery — and a starved mode's only available
+row is usually a weak one, which puts it below the floor. A walk that broke there
+unconditionally could never reach the one swap "grab where possible" is about. So
+with a demand short the walk runs on, considering only rows that cover one; that
+test is a dictionary lookup and opens no picture. This was the tier swap's live
+defect, caught by re-deriving the prune rather than by the n=150 replay, which
+could not see it because that pool's shortfall is zero from the seed onward.
 
 **The second is per candidate, and it is what keeps a pass cheap.** Every seat that
 could leave for a candidate is in its **counted** removal set — the four counted
@@ -1098,17 +1168,47 @@ pre-selection — censused both ways (`floor_default` beside `floor_flat`).
 
 **At `n = 1000` the pool is provably short on the mode floors, and the flat reading
 said nothing.** `smooth_mean_angle` holds 27 of the 30 it is asked for and
-`smooth_angle_min` 29 of 30 — the block joins `palette_group_cap` as a short row
-there, where the flat census flagged four things and this one flags seven. It is a
-cheap mine instruction: 53.6 and 40.0 seconds per win on those two modes, so the
-four places are about 201 render-seconds, ~67 s of wall clock over the three-worker
-pool. The estimator is the unconditioned ledger-wide rate and an aimed leg beats it.
+`smooth_angle_min` 29 of 30. It is a cheap mine instruction: 53.6 and 40.0 seconds
+per win on those two modes, so the four places are about 201 render-seconds, ~67 s
+of wall clock over the three-worker pool. The estimator is the unconditioned
+ledger-wide rate and an aimed leg beats it.
+
+`palette_group_cap` used to be short beside it there and **was not really short at
+all** — see the note under the group cap below.
 
 **The slack is exactly zero at every rung below that**, which is the shape to
 notice rather than the comfort: supply meets the demand and never exceeds it,
 because a mode's contribution is capped at its own floor by construction. One place
 lost at any floored mode makes the block short. It is the tightest block in the
-census after the group cap.
+census.
+
+### The group cap was a second spelling, and the census was the one that was wrong
+
+Until 2026-08-31 the `palette_group_cap` block priced against `ceiling.GROUP_CAP` —
+a flat **one seat a group**, the retired `curate seat` leg's cap — while the leg
+that actually runs takes `ceiling.group_cap(n, solve.DEFAULT_GROUP_CAP)`, the
+proportional `max(1, floor(0.025 n))`. At `n = 1000` that is 1 against **25**. The
+census read 754 groups at one seat each, called the pool short by 246, and it was
+the loudest short block in the record; the shipped leg at the same rung found **no
+ceiling binding at all** and a realized maximum of **7** seats in any one group.
+The block was not a tight bound on the rule — it was a different rule.
+
+It is fixed by asking `ceiling` rather than spelling the cap again, the block now
+carries `cap` and `cap_rule`, and the census is **schema 4**: a schema 3 reading of
+this block is not comparable. The note it used to carry — that the count was the
+`TIGHT form` and the pixels could exempt a second seat within `TAU_GROUP` — went
+with it, because `curation.rules` **dropped** that same-group distance row rather
+than merging it. The count is the whole cap and there is no second threshold.
+
+**Why the census survived the question at all.** The gallery leg's own expand hook
+reports a per-constraint shortfall, so the obvious move was to retire the census as
+a second spelling of the rules. It does not cover it: `solve.expand` walks
+`gallery.demands`, which is the mode floors and any colour target, and it runs
+*after* a leg. It has no `one_per_location`, no cell or family ceiling, no group
+cap, no twin bound, and no renders-per-win — and it cannot answer anything at a
+rung nobody has solved, which is the census's whole job. The two are the upper and
+lower bound of the same pair, and the fix was to make them agree rather than to
+delete one.
 
 ### What one more costs
 
@@ -1607,8 +1707,10 @@ for the unrestricted one. The block says so.
 a picture at ~116 ms, then the exact metric on the few thousand pairs the bound cannot
 refuse (13,708 of 1,602,945 screened here). Merging `teal_conditioned` moved it
 1,013 -> 1,038, so 25 of that merge's 40 new places survived as non-twin. It is the
-tightest block that is not provably short: at n=1000 its slack is 38, where
-`palette_group_cap` is at -240 and `mode_floors` sits exactly on its needs. The greedy
+tightest block that is not provably short: at n=1000 its slack is 38 and
+`mode_floors` sits exactly on its needs. (`palette_group_cap` read -240 here under
+the flat cap that was corrected on 2026-08-31; under the cap the leg applies it is
+not short at that rung.) The greedy
 lower bound stays far below 1,000, so a thousand-seat gallery is bounded from above and
 unproven from below.
 

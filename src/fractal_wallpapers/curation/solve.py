@@ -46,24 +46,28 @@ without making an earlier one worse:
 
 1. **seats filled** — every one above its own mode's bar, because that is what
    the pool is;
-2. the **worst seated score**, maximized;
-3. the **shortfall** against every demand the pass was given — the mode floors
+2. the **shortfall** against every demand the pass was given — the mode floors
    and any colour target — minimized. Fewer short seats is better and nothing is
    ever padded;
+3. the **worst seated score**, maximized;
 4. the **sum**.
 
 The rank quantity is [`RANK_KEY`], the fitted five-column form the ranking
 retention already uses. `p_ge4` alone is not it and is still reachable by name.
 
-**Tier 2 outranks tier 3 and that is the ruling, not an accident.** It is the
-retired program's own order — its stage 2 maximized the floor and the mode
-penalty lived in stage 3 beneath it — and taken alone it means the loop trades a
-mode's representation away whenever doing so lifts the worst seat. The mode
-floors are one of the **rules this leg keeps**, though, and a rule the loop may
-break at will is not a rule, so a demand the gallery currently *meets* is held:
-see [`Gallery.protected`], which is the one place those two rulings had to be
-reconciled and which states what it costs. `swaps.by_tier` is where to read what
-the loop actually traded.
+**A filled floor outranks the worst seat, and that is the ruling.** Matt's, and
+it is what "grab where possible" means: a mode this pool *can* represent is
+represented, and the price is paid out of the weakest seat rather than out of the
+roster. The retired program had these two the other way round — its stage 2
+maximized the floor and the mode penalty lived in stage 3 beneath it — and that
+order needed a guard, because the worst seat is by construction a scarce mode's,
+trading it for a strong `smooth` lifts the floor value, and a tier beneath it
+cannot buy the representation back. Under this order there is nothing to guard: a
+met demand is kept by the order itself, since giving it back is a tier-2 loss no
+tier below it can pay for. The guard that used to reconcile them is gone, and so
+is the reading that made it necessary. `swaps.by_tier` is where to read what the
+loop actually traded, and a swap that fills a short floor at the cost of the worst
+seat is now the ordinary case rather than the refused one.
 
 ## A shortfall is not infeasibility
 
@@ -90,6 +94,7 @@ from fractal_wallpapers.curation import (
     floors,
     mode_policy,
     rules,
+    signatures,
     view,
 )
 from fractal_wallpapers.paths import rehome, tracked_name, under
@@ -626,11 +631,17 @@ class Objective:
 
     @property
     def order(self) -> tuple:
-        """The tuple `>` compares. Shortfall negated so that every tier maximizes."""
+        """The tuple `>` compares. Shortfall negated so that every tier maximizes.
+
+        The shortfall sits **above** the worst seated score, which is the ruling
+        and the whole reason nothing here needs a guard: a swap that takes a met
+        demand back below what it asks for loses on this tier, and no gain in the
+        two beneath it can pay for that.
+        """
         return (
             self.seats,
-            -1.0 if self.worst is None else float(self.worst),
             -int(self.shortfall),
+            -1.0 if self.worst is None else float(self.worst),
             float(self.total),
         )
 
@@ -640,7 +651,7 @@ class Objective:
 
     def tier_over(self, other: Objective) -> str | None:
         """Which tier this one first improves on. `None` where it does not beat it."""
-        names = ("seats", "worst", "shortfall", "sum")
+        names = ("seats", "shortfall", "worst", "sum")
         for name, mine, theirs in zip(names, self.order, other.order, strict=True):
             if mine != theirs:
                 return name if mine > theirs else None
@@ -658,11 +669,12 @@ class Objective:
 #: The objective, spelled once, for every record that carries one.
 OBJECTIVE = (
     "lexicographic and strict, in this order: (1) seats filled, every one above its own "
-    "mode's bar; (2) the worst seated score, maximized; (3) the shortfall against every "
-    "demand — the mode floors and any colour target — minimized, and nothing padded; "
-    "(4) the sum. The rank quantity is the fitted rank key and not p_ge4 alone. Tier 2 "
-    "outranks tier 3 by ruling: the seed fills the floors first and the swap loop may "
-    "trade one away when doing so lifts the worst seat"
+    "mode's bar; (2) the shortfall against every demand — the mode floors and any colour "
+    "target — minimized, and nothing padded; (3) the worst seated score, maximized; "
+    "(4) the sum. The rank quantity is the fitted rank key and not p_ge4 alone. A filled "
+    "floor outranks the worst seat by ruling: a demand this pool can meet is met, and the "
+    "price comes out of the weakest seat rather than out of the roster. Nothing guards a "
+    "met demand because the order itself keeps it"
 )
 
 
@@ -675,17 +687,21 @@ class Gallery:
     diversity rule out should not have to know how a swap is scored.
 
     The seated ranks are held sorted, so the worst seat and the second-worst — the
-    two numbers tier 2 needs for every candidate swap — are the first two entries
+    two numbers tier 3 needs for every candidate swap — are the first two entries
     rather than a scan.
+
+    **Nothing here guards a met demand.** It used to: under the retired order the
+    worst seated score outranked the shortfall, so the loop would evacuate a mode
+    floor to lift one seat and a `protected` set had to stop it. The tiers were
+    swapped on 2026-08-31 and the guard went with them — a demand the gallery meets
+    is kept by the order, because giving it back is a tier-2 loss and the two tiers
+    beneath cannot pay for one.
     """
 
-    def __init__(self, state, order: dict | None, demands: list, keep_demands: bool = True):
+    def __init__(self, state, order: dict | None, demands: list):
         self.state = state
         self.order = order
         self.demands = list(demands)
-        #: Whether a demand this gallery currently **meets** may be given back.
-        #: See [`protected`]; `False` is the pure lexicographic reading.
-        self.keep_demands = bool(keep_demands)
         self._ranks: list = []
         #: `{seat key: its value}`. The sorted list answers "the worst seat"; this
         #: answers "the worst seat **inside this set**", which is what the swap
@@ -750,23 +766,6 @@ class Gallery:
             if demand.held(self.state) < demand.wanted(self.filled)
         ]
 
-    def guards(self) -> dict:
-        """`{seat key: the met demands holding it}` — [`protected`] as a lookup.
-
-        The same answer [`protected`] gives, turned inside out so the swap loop
-        asks it once per **seat** rather than building a union once per candidate
-        in the view. At n=1000 that was ~390 keys unioned 8,704 times a pass.
-        """
-        if not self.keep_demands:
-            return {}
-        out: dict = {}
-        for demand in self.demands:
-            taken = demand.taken(self.state)
-            if taken and len(taken) <= demand.wanted(self.filled):
-                for key in taken:
-                    out.setdefault(key, []).append(demand)
-        return out
-
     def hopeless(self, candidate, counted: set, short: list) -> bool:
         """Whether **no** 1-swap seating `candidate` could improve any tier.
 
@@ -775,18 +774,24 @@ class Gallery:
         [`rules.State.counted_removals`], which is dictionary lookups.
 
         The argument, tier by tier. Tier 1 cannot move — a 1-swap keeps the seat
-        count. For tier 4 the sum improves only if the arriving candidate is worth
-        more than the seat that leaves, and every seat that could leave is in
-        `counted` (the diversity rule only ever narrows it), so a candidate worth
-        no more than the weakest member of `counted` cannot improve it. Tier 2 is
-        the same bound from the other side: for the worst seat to rise, the seat
-        that leaves must **be** the worst one, and then the weakest member of
-        `counted` is the worst seat itself — so a candidate at or below it cannot
-        improve that either.
+        count. **Tier 2 is the exception and it is load-bearing**: the shortfall
+        falls only if the arriving candidate covers a demand that is currently
+        short, so a low-ranked row covering a starved mode is exactly the swap this
+        prune must never refuse, and it is exempted first. For tier 4 the sum
+        improves only if the arriving candidate is worth more than the seat that
+        leaves, and every seat that could leave is in `counted` (the diversity rule
+        only ever narrows it), so a candidate worth no more than the weakest member
+        of `counted` cannot improve it. Tier 3 is the same bound from the other
+        side: for the worst seat to rise, the seat that leaves must **be** the
+        worst one, and then the weakest member of `counted` is the worst seat
+        itself — so a candidate at or below it cannot improve that either.
 
-        Tier 3 is the exception and it is load-bearing: a low-ranked row covering a
-        starved mode is exactly the swap the third tier exists for, so a candidate
-        counting towards a demand that is currently short is never hopeless.
+        The tier swap of 2026-08-31 left this sound and made it slightly weaker:
+        the exemption used to sit under two tiers this bound covers and now sits
+        over them, so a candidate the value bound settles is refused only when it
+        also covers nothing short. That is the same set it always was — the
+        exemption was tested first before the swap too — and the prune is
+        unchanged in code for that reason.
         """
         if any(demand.counts(candidate) for demand in short):
             return False
@@ -795,45 +800,6 @@ class Gallery:
         else:
             weakest = min(self._value_at[key] for key in counted)
         return weakest is not None and self.value(candidate) <= weakest
-
-    def protected(self, arriving=None) -> set:
-        """Seats the swap loop may not remove, because a met demand would go short.
-
-        **This is the one place two rulings had to be reconciled.** The objective
-        is lexicographic and strict with the worst seated score (tier 2) above the
-        demand shortfall (tier 3) — which is the retired program's own order, where
-        the floor stage sat above the mode penalty. Taken alone, that order
-        evacuates every mode floor the seed filled: the worst seat is by
-        construction a scarce mode's, swapping it for a strong smooth candidate
-        lifts tier 2, and tier 3 cannot buy it back. Measured on a three-row
-        synthetic and on the pool at n=150, it empties the roster.
-
-        But the mode floors are one of the **rules this leg keeps**, and a rule the
-        loop is free to break at will is not a rule. So a demand that is currently
-        *met* is held: the seats carrying it may not leave while removing one would
-        take it below what it asks for. Nothing here pads and nothing here refuses
-        — a demand the pool cannot fill is still short, still recorded, and still
-        minimized by tier 3. What is protected is only what was actually achieved.
-
-        `arriving` is the candidate that would take the seat. A demand it counts
-        towards is **not** protected against it: replacing one of a mode's seats
-        with a better seat of the same mode leaves the floor exactly as filled, and
-        refusing that would freeze every mandated seat at whatever the seed
-        happened to reach first — which is the opposite of the mistake this guards.
-
-        `keep_demands=False` is the pure lexicographic reading, kept reachable so
-        the difference can be measured rather than argued about.
-        """
-        if not self.keep_demands:
-            return set()
-        out: set = set()
-        for demand in self.demands:
-            if arriving is not None and demand.counts(arriving):
-                continue
-            taken = demand.taken(self.state)
-            if taken and len(taken) <= demand.wanted(self.filled):
-                out |= taken
-        return out
 
     @property
     def worst_value(self) -> float | None:
@@ -879,22 +845,23 @@ class Gallery:
             total=self._total - gone[0] + arrived,
         )
 
-    def weakest(self, among, count: int, arriving=None, guards: dict | None = None) -> list:
-        """The `count` weakest removable seated keys inside `among`, by the leg's key.
+    def weakest(self, among, count: int) -> list:
+        """The `count` weakest seated keys inside `among`, by the leg's key.
 
         The sorted rank list is walked from the bottom, so this is `count` steps
         and not a sort of the whole gallery — which matters because the swap loop
-        asks it once per candidate in the view. What may not leave is
-        [`protected`], read against the candidate that would take the seat and
-        answered through [`guards`] where the caller has one in hand.
+        asks it once per candidate in the view.
+
+        **Every seat in `among` is offered.** There is no second filter here: what
+        a swap may give back is the objective's business, and under the current
+        tier order a removal that takes a met demand short loses on tier 2 and is
+        refused by [`after_swap`] rather than hidden from it. This took a
+        `protected` set and an `arriving` argument while the worst seat outranked
+        the shortfall.
         """
-        held = self.guards() if guards is None else guards
         out = []
         for _value, key in self._ranks:
             if key not in among:
-                continue
-            holding = held.get(key)
-            if holding and not all(demand.counts(arriving) for demand in holding):
                 continue
             out.append(key)
             if len(out) >= int(count):
@@ -1058,15 +1025,24 @@ def improve(
                 break
             improved = 0
             floor_value = gallery.worst_value
-            guards = gallery.guards()
             short = gallery.short_demands()
             for candidate in rows:
                 if deadline is not None and time.monotonic() > deadline:
                     stopped = "the clock ran out; the gallery it stopped on is valid"
                     raise TimeoutError
                 if gallery.value(candidate) < floor_value:
-                    # Sound: everything below here would become the worst seat.
-                    break
+                    # Below the worst seat. Seating one of these makes IT the worst
+                    # seat, so tier 3 gets worse and tier 4 cannot buy that back —
+                    # but tier 2 sits above both, and a low-ranked row covering a
+                    # demand the gallery is currently short of still improves it.
+                    # That is the whole of "grab where possible" and it is usually a
+                    # scarce mode's only row, so it is usually down here.
+                    if not short:
+                        # Nothing is short, so no tier above the worst seat can
+                        # move: the rest of the walk is provably hopeless.
+                        break
+                    if not any(demand.counts(candidate) for demand in short):
+                        continue
                 if gallery.state.holds(candidate.key):
                     continue
                 walked += 1
@@ -1082,7 +1058,7 @@ def improve(
                     continue
                 current = gallery.objective
                 best, best_out = None, None
-                for out_key in gallery.weakest(leaving, drops, candidate, guards):
+                for out_key in gallery.weakest(leaving, drops):
                     found = gallery.after_swap(out_key, candidate)
                     if found.beats(current) and (best is None or found.beats(best)):
                         best, best_out = found, out_key
@@ -1092,7 +1068,6 @@ def improve(
                 gone = gallery.unseat(best_out)
                 gallery.seat(candidate, "swap")
                 improved += 1
-                guards = gallery.guards()
                 short = gallery.short_demands()
                 by_tier[tier] = by_tier.get(tier, 0) + 1
                 taken.append(
@@ -1118,23 +1093,25 @@ def improve(
     return {
         "of": "one seat out, one candidate in, accepted only on strict lexicographic "
         "improvement. No 2-swaps",
-        "prune": "a pass stops at the worst seated value: nothing below it can improve any "
-        "tier, because seating it would become the worst seat and tier 2 outranks tiers 3 "
-        "and 4. Sound rather than a budget",
+        "prune": "a pass stops at the worst seated value WHILE NOTHING IS SHORT: seating "
+        "a candidate below it makes it the worst seat, so tier 3 gets worse and tier 4 "
+        "cannot buy that back. With a demand short the walk runs on, because tier 2 sits "
+        "above both and a low-ranked row covering a starved demand still improves it — "
+        "only rows covering one are considered down there, which is a dictionary lookup "
+        "and opens no picture. Sound rather than a budget",
         "second_prune": "and per candidate, against the weakest seat its own COUNTED rules "
         "would let leave — see solve.Gallery.hopeless. Sound by the same argument, and it "
         "is what keeps a hopeless candidate from ever costing a pixel-cloud signature",
         "settled_before_opening_a_picture": skipped,
         "drops_tried_per_candidate": int(drops),
         "drops_are": "the weakest seated by the leg's own key, inside the set of seats "
-        "whose departure would admit the candidate, less the seats a MET demand is holding. "
-        "The one heuristic here, and it is about which removals are OFFERED and never about "
-        "which are accepted",
-        "demands_kept": bool(gallery.keep_demands),
-        "demands_kept_is": "a demand this gallery already MEETS is not given back. Without "
-        "it the strict lexicographic order empties every mode floor the seed filled, "
-        "because tier 2 outranks tier 3 and the worst seat is always a scarce mode's — see "
-        "solve.Gallery.protected",
+        "whose departure would admit the candidate. Every one of them is offered: what a "
+        "swap may give back is the objective's business. The one heuristic here, and it is "
+        "about which removals are OFFERED and never about which are accepted",
+        "met_demands_are": "kept by the tier ORDER and by no guard. A removal that takes a "
+        "met demand short loses tier 2, and tiers 3 and 4 cannot pay for one. This carried "
+        "a `protected` set and a `demands_kept` flag while the worst seat outranked the "
+        "shortfall; the tiers were swapped on 2026-08-31 and both went with them",
         "passes": at_pass,
         "pass_cap": int(passes),
         "candidates_considered": walked,
@@ -1240,7 +1217,6 @@ def solve(
     rows_per_seat: int = view.ROWS_PER_SEAT,
     draw_seed: int = view.DRAW_SEED,
     swap: bool = True,
-    keep_demands: bool = True,
     drops: int = SWAP_DROPS,
     seconds: float | None = None,
     log=print,
@@ -1354,10 +1330,22 @@ def solve(
     )
     inside = {candidate.key for candidate in viewed.rows}
 
-    twins = rules.Twins(rules.clouds_for(viewed.rows)) if diversity else None
+    # The reduced signatures the bound reads, from the sidecar where one has been
+    # swept — see [`curation.signatures`]. Everything it answers for is a picture
+    # this pass will not open; everything it misses is made on demand exactly as
+    # before, so an unswept checkout is slower and never wrong.
+    held_signatures = signatures.for_candidates(viewed.rows) if diversity else {}
+    if held_signatures:
+        log(
+            f"[solve] {len(held_signatures):,} of {len(viewed.rows):,} reduced "
+            "signature(s) from the sidecar"
+        )
+    twins = (
+        rules.Twins(rules.clouds_for(viewed.rows), reduced=held_signatures) if diversity else None
+    )
     state = rules.State(rule, n, diversity=twins)
     demands = demands_for(held_floors, rule.targets)
-    gallery = Gallery(state, order, demands, keep_demands=keep_demands)
+    gallery = Gallery(state, order, demands)
 
     seeded = seed(gallery, viewed.rows, demands, rank, refused, log=log)
     swapped = (
@@ -1411,7 +1399,7 @@ def solve(
         "config": _config(n, rule, modes, table, flat, held_floors, natural, group_cap, order, key),
         "objective": {
             "of": OBJECTIVE,
-            "tiers": ["seats", "worst", "shortfall", "sum"],
+            "tiers": ["seats", "shortfall", "worst", "sum"],
             "rank_quantity": "rank_key" if order is not None else JUDGE_KEY,
             "seed": seeded.get("objective"),
             "final": gallery.objective.record(),

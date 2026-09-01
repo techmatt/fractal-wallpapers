@@ -224,7 +224,13 @@ class Twins:
     #: its own name, and the record is where a reader finds out which one ran.
     NAME = "twin"
 
-    def __init__(self, clouds, tau: float | None = None, neighbours: int = TWIN_NEIGHBOURS):
+    def __init__(
+        self,
+        clouds,
+        tau: float | None = None,
+        neighbours: int = TWIN_NEIGHBOURS,
+        reduced: dict | None = None,
+    ):
         self.clouds = clouds
         self.tau = ceiling.TAU if tau is None else float(tau)
         self.neighbours = int(neighbours)
@@ -238,7 +244,15 @@ class Twins:
         #: `{key: its reduced signature}`, made once and kept for the life of the
         #: pass. **This is the one store that decides what a pass costs.** See
         #: [`reduced_of`].
-        self._mine: dict = {}
+        #:
+        #: Seeded from [`curation.signatures`] where a caller hands one in, which
+        #: is the whole of what the sidecar buys: every key already in here is a
+        #: picture this pass will never open.
+        self._mine: dict = dict(reduced or {})
+        #: How many of [`_mine`] arrived from the sidecar rather than from a
+        #: decode. On the record, because a pass that read a store and a pass that
+        #: did the work are not the same measurement.
+        self.reduced_from_the_sidecar = len(self._mine)
         self.tested = 0
         self.settled_by_the_bound = 0
         self.measured = 0
@@ -269,6 +283,11 @@ class Twins:
         Unbounded on purpose, and small enough to be: 16 KiB a row is 139 MB over
         the largest view this project builds. The **full** signatures stay in the
         bounded cache underneath, because those are half a mebibyte each.
+
+        A caller that hands in [`curation.signatures`]' sidecar has this store
+        already full for every row the sweep covered, so the decode below never
+        runs for those and the pass opens a picture only for the full-signature
+        fetches the bound could not settle.
         """
         name = str(key)
         held = self._mine.get(name)
@@ -357,6 +376,7 @@ class Twins:
         return {
             "rule": self.NAME,
             "threshold": self.tau,
+            "reduced_from_the_sidecar": self.reduced_from_the_sidecar,
             "threshold_from": "ceiling.TAU",
             "neighbours": self.neighbours,
             "metric": "pixel-cloud sliced Wasserstein-1 between two finished pictures",

@@ -318,8 +318,56 @@ def test_the_group_cap_is_short_when_there_are_fewer_groups_than_seats():
     pool = [candidate(f"c{at}", group="map:one") for at in range(40)]
     read = headroom.census(pool, ladder=(20,), log=lambda *_: None)
     block = read["curve"]["20"]["blocks"]["palette_group_cap"]
-    assert block["supply"] == ceiling.GROUP_CAP
+    # One group, and at twenty seats the proportional cap is its `max(1, ...)`
+    # floor — so the whole pool is supply for exactly one seat.
+    assert block["supply"] == ceiling.group_cap(20, solve.DEFAULT_GROUP_CAP) == 1
     assert block["short"] is True
+
+
+def test_the_block_prices_against_the_cap_THE_SHIPPED_LEG_APPLIES():
+    """The census used to spell the group cap a second time, as the flat
+    `ceiling.GROUP_CAP` the retired seat leg took. The leg that actually runs takes
+    `ceiling.group_cap(n, solve.DEFAULT_GROUP_CAP)`, which is proportional: at
+    n=1000 that is 25 a group and not 1. Priced flat, 754 groups made the pool look
+    short by 246 at a rung where the shipped leg found no ceiling binding at all
+    and seated a realized maximum of 7.
+
+    RED under `allowance=lambda _name: ceiling.GROUP_CAP`, which is what this was.
+    """
+    # Forty groups of four places each: enough that a cap of 1 binds hard and the
+    # shipped cap does not bind at all.
+    pool = [
+        candidate(f"c{group}_{at}", group=f"map:{group}") for group in range(40) for at in range(4)
+    ]
+    read = headroom.census(pool, ladder=(40,), log=lambda *_: None)
+    block = read["curve"]["40"]["blocks"]["palette_group_cap"]
+    cap = ceiling.group_cap(40, solve.DEFAULT_GROUP_CAP)
+    assert cap == 1, "the proportional rule's floor at forty seats"
+    assert block["cap"] == cap
+    assert block["cap_rule"] == solve.DEFAULT_GROUP_CAP == ceiling.PROPORTIONAL
+    assert all(row["needs"] == cap for row in block["rows"]), "every group gets the same cap"
+
+    # And at a rung where the two rules diverge, the block follows the shipped one.
+    wide = headroom.census(pool, ladder=(1000,), log=lambda *_: None)
+    block = wide["curve"]["1000"]["blocks"]["palette_group_cap"]
+    assert block["cap"] == ceiling.group_cap(1000, solve.DEFAULT_GROUP_CAP) == 25
+    assert block["cap"] != ceiling.GROUP_CAP, "the retired leg's flat cap is not this one"
+    # 40 groups x min(25, 4 places) = 160 against a thousand seats: still short,
+    # but short on PLACES, which is the true condition, rather than on the cap.
+    assert block["supply"] == 160
+
+
+def test_the_block_says_there_is_no_second_threshold_behind_the_cap():
+    """The retired solve carried a same-group DISTANCE row beside the count, and
+    this block's note used to call itself the `TIGHT form` of a cap the pixels
+    could exempt. `curation.rules` dropped that row rather than merging it, so the
+    count is the whole rule and the note may not promise otherwise."""
+    read = headroom.census(clearing_pool(40), ladder=(20,), log=lambda *_: None)
+    note = read["curve"]["20"]["blocks"]["palette_group_cap"]["rows"][0]["note"]
+    block = read["curve"]["20"]["blocks"]["palette_group_cap"]
+    text = f"{note} {block.get('note', '')}"
+    assert "TIGHT" not in text
+    assert str(ceiling.TAU_GROUP) not in text
 
 
 def test_the_group_axis_does_not_raise_the_thin_flag():

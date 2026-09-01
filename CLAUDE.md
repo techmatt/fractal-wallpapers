@@ -230,6 +230,15 @@ Each prompt in this project ends the same way:
   and when another prompt is in flight in this repository — anything `git status`
   lists as modified or untracked that is not yours — commit **only your own files, by
   explicit path**: `git add <path> …`, never `git add -A` or `git add .`.
+- **One prompt at a time in this repository.** A second prompt does not start while
+  another has uncommitted changes — wait for `git status` to come back clean. The
+  by-explicit-path rule above is necessary and it is *not* sufficient: it governs
+  what a commit adds and says nothing about what the index already holds, so a
+  prompt that has staged a **deletion** has it swept into whatever the other prompt
+  commits next. That is not hypothetical — `915ede6` carries `seating.py`,
+  `test_seating.py` and the old `test_solve.py`, deleted by a prompt that was still
+  running, under a message about something else entirely. Nothing was lost and the
+  history is wrong anyway, which is the cheap version of this failure.
 
 ## Rules
 

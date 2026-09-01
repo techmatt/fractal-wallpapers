@@ -88,6 +88,30 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config) -> None:
     )
 
 
+@pytest.fixture(autouse=True)
+def no_signature_sidecar(monkeypatch, tmp_path_factory):
+    """No test reads the **real** bound-signature sidecar. Every test, always.
+
+    [`curation.signatures`]' store is ~247 MB and [`solve.solve`] consults it on
+    every pass, so a unit test seating three synthetic candidates would otherwise
+    read a quarter of a gibibyte off disk to answer for keys it has never heard of.
+    Measured when this was missing: `test_view.py` plus `test_solve.py` went from
+    5.9 s to 35.8 s, which is a store being priced by the lane rather than code.
+
+    Autouse and in `conftest` rather than per file, because the hazard is not a
+    property of the tests that happen to call the gallery leg today. Pointing it at
+    a path that does not exist is the whole fixture: an absent sidecar reads empty
+    by design, which is the ordinary state of a fresh checkout.
+
+    `test_signatures.py` overrides this with its own tmp store — a file's fixture
+    runs after this one, so its `monkeypatch.setattr` is the one that stands.
+    """
+    from fractal_wallpapers.curation import signatures
+
+    nowhere = tmp_path_factory.mktemp("no_signature_sidecar") / signatures.SIDECAR_NAME
+    monkeypatch.setattr(signatures, "sidecar_path", lambda: nowhere)
+
+
 @pytest.fixture
 def store_dir(tmp_path, monkeypatch):
     """An empty label store, and everything in the package pointed at it."""
