@@ -4046,6 +4046,37 @@ named by a study's own record — `depth/breadth_strange`, `depth/wm1_serial`,
 `depth/smooth500_pilot` by their `sequence.jsonl`, and `shrinkage/dc1` by the
 `pairs.jsonl` those 200 label-geometry re-reads *are*. Nothing was deleted here.
 
+**A killed leg bypasses the retention rule entirely, and `curate candidate-ledger
+orphans` is the backstop.** `prune` runs from `merge`, so a leg that *finishes* hands
+its candidates to the ledger and the rule bounds them from that moment. A leg that is
+killed never reaches `merge`: its pictures are on disk, no row was ever written for
+them, and **no later prune can free them**, because a prune only ever decides about
+rows it can see. Nothing else in this project can either, which is why the sweep
+exists. It is a dry run unless `--apply` says so — the opposite way round from
+`prune`, deliberately, because a prune decides about rows and this decides about files
+nothing wrote down.
+
+**It deletes what neither the ledger nor the leg's own records name, and the second
+half is not a formality.** Swept 2026-09-02 over 188,000 pictures in the five
+subtrees: **10,007 carried no ledger row** — `depth` 5,317, `runs` 3,703, `mine` 987,
+and none at all in `reframe_draw` or `hunt` — but **9,983 of those were named by the
+leg that made them**, and only **24 were named by nothing at all** (3.3 MB, every one
+of them in `depth`, plus 13 levelled colormaps). A sweep keyed on the ledger alone
+would have deleted all 10,007 and called it garbage collection; the paragraph above is
+the reason it does not, and the sweep now enforces in code what that paragraph found
+by hand. Both figures are reported on every run, so the gap between them stays
+visible. The `depth` figure reproduces `AUDIT_artifacts_inventory`'s 5,317 exactly,
+which is the cheap check that the sweep is looking where the audit looked.
+
+The safety is three properties and none of them is a promise made in a comment: the
+enumeration is `<subtree>/<leg>/pictures` at a **fixed depth**, so a leg's `fields/` is
+unreachable however large it gets; every directory is checked against the tier roots
+**at the point of deciding** rather than trusted from whatever produced the list; and
+the deletion is `delete_pictures` and nothing else, which is the one deleter in this
+project and re-homes each name as it unlinks. The run costs about 31 s over this
+store — a `scandir` per leg, one streamed pass of the ledger, one of each leg's own
+records.
+
 **The ledger's pictures live in exactly five subtrees, and nothing it holds names a
 field.** Swept 2026-09-02 over 177,993 rows: `depth` 158,628 · `runs` 11,875 · `mine`
 4,566 · `reframe_draw` 2,283 · `hunt` 641, and no row points anywhere else at all.

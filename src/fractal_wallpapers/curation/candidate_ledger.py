@@ -924,6 +924,220 @@ def picture_census(rows=None) -> dict:
     }
 
 
+# --------------------------------------------------------------------------- #
+# The other direction: pictures on disk that no record names.
+# --------------------------------------------------------------------------- #
+#: The five subtrees under `curation` that hold pool pictures. Swept 2026-09-02
+#: over 177,993 rows: `depth` 158,628 - `runs` 11,875 - `mine` 4,566 -
+#: `reframe_draw` 2,283 - `hunt` 641, and **no row points anywhere else at all**.
+#: The list is written down rather than discovered per call because it is what
+#: bounds [`orphans`] — a sweep that found its own subtrees would follow the tree
+#: wherever it grew.
+POOL_SUBTREES = ("depth", "runs", "mine", "reframe_draw", "hunt")
+
+#: What every leg calls the directory it keeps its candidates in. [`orphans`]
+#: looks at `<subtree>/<leg>/pictures` and at **no other shape**, which is what
+#: keeps it structurally unable to reach a leg's `fields/`, its `candidates/`,
+#: its `release/` or a sheet, whatever any record says.
+PICTURES_NAME = "pictures"
+
+
+def picture_dirs() -> list[Path]:
+    """Every `<pool subtree>/<leg>/pictures` there is, resolved through the tiers.
+
+    A fixed shape at a fixed depth, not a walk: the directories are named rather
+    than discovered, so the enumeration cannot follow the tree into somewhere
+    that merely happens to hold JPEGs.
+    """
+    found = []
+    for name in POOL_SUBTREES:
+        base = under("curation", name)
+        if not base.is_dir():
+            continue
+        for leg in sorted(base.iterdir()):
+            where = leg / PICTURES_NAME
+            if where.is_dir():
+                found.append(where)
+    return found
+
+
+def _named_by_the_ledger(tiers) -> dict:
+    """`{resolved pictures directory: {file name}}` for every picture a row names.
+
+    Bucketed by directory and resolved through one shared [`paths.Tiers`]
+    snapshot, for [`present_pictures`]'s reason: the alternative re-reads the
+    settings once per row, which was 215 s against 1.0 s over this store.
+    """
+    from collections import defaultdict
+
+    wanted: dict = defaultdict(set)
+    for row in stream():
+        named = row.get("picture")
+        if not named:
+            continue
+        where = rehome(str(named), tiers)
+        if where is not None:
+            wanted[where.parent].add(where.name)
+    return wanted
+
+
+def _named_by_the_leg(leg: Path) -> set:
+    """Every `.jpg` file name this leg's own records mention.
+
+    A leg keeps records the ledger never sees — `sequence.jsonl`,
+    `profile.jsonl`, `candidates.jsonl`, `screened.jsonl`, the plan files — and
+    `curation/README.md` is explicit that those are measurement records rather
+    than a feature store, recorded whole on purpose and read whole by things like
+    `depth.contact_sheet`. A picture one of them names is therefore **not**
+    unreferenced, whatever the ledger says about it.
+
+    Deliberately a regex over the text rather than a schema-aware read. These
+    records spell a picture several ways — the stored `artifacts/...` name, a
+    name relative to the leg, a bare file name — and this question has a safe
+    direction to be wrong in. Over-reading a name keeps a picture that could have
+    gone; under-reading one deletes a picture something names.
+    """
+    import re
+
+    pattern = re.compile(r"([A-Za-z0-9_.\-]+)\.jpg")
+    found: set = set()
+    for path in sorted(leg.rglob("*")):
+        if PICTURES_NAME in path.parts[len(leg.parts) :]:
+            continue
+        if not path.is_file() or path.suffix not in (".json", ".jsonl"):
+            continue
+        try:
+            with path.open(encoding="utf-8", errors="ignore") as handle:
+                for line in handle:
+                    found.update(f"{stem}.jpg" for stem in pattern.findall(line))
+        except OSError:
+            continue
+    return found
+
+
+def orphans(apply: bool = False, log=print) -> dict:
+    """Pictures in the pool subtrees that **nothing** names. The backstop under [`prune`].
+
+    [`prune`] is the retention rule and it runs from [`merge`], so every leg that
+    finishes hands its candidates to the ledger and the rule bounds them from
+    then on. A leg that is **killed** never reaches `merge`: its pictures are on
+    disk, no row was ever written for them, and no later prune can free them,
+    because a prune only ever decides about rows it can see. This is the only
+    thing that can, and that is the whole reason it exists.
+
+    ## What counts as named, and why the ledger is not the whole of it
+
+    Two reference sets, unioned, and the second is what makes this safe to run:
+
+    * every picture a **ledger row** names, resolved through the tiers;
+    * every `.jpg` a **leg's own records** mention — see [`_named_by_the_leg`].
+
+    The difference between them is neither small nor theoretical. Over this
+    machine on 2026-09-02: 10,007 pictures carried no ledger row, and **9,983 of
+    them were named by the leg that made them.** A sweep keyed on the ledger
+    alone would have deleted all 10,007 and reported it as garbage collection.
+
+    ## Where the safety actually lives
+
+    Three places, none of them a promise made in a comment:
+
+    * the enumeration is [`picture_dirs`], a fixed shape at a fixed depth, so a
+      leg's `fields/` is not reachable however large it gets;
+    * every directory is checked against the tier roots **here**, at the point of
+      deciding, rather than trusted from whatever produced the list;
+    * the deletion is [`delete_pictures`] and nothing else, which re-homes each
+      name as it unlinks and leaves alone any name with no artifacts component.
+
+    `apply=False` is the default and is the whole of the dry run. Costs a
+    `scandir` per leg plus one streamed pass of the ledger and one of each leg's
+    own records: about 35 s over this store.
+    """
+    import os
+    from collections import Counter
+
+    from fractal_wallpapers.paths import Tiers
+
+    started = time.time()
+    tiers = Tiers.current()
+    roots = [Path(root).resolve() for root in (tiers.hot, tiers.archive) if root is not None]
+    wanted = _named_by_the_ledger(tiers)
+
+    by_subtree: dict = {}
+    doomed: list = []
+    ledger_only: Counter = Counter()
+    for where in picture_dirs():
+        # The check at the point of decision, and not carried over from the
+        # enumeration. A directory that does not sit under a tier root is not
+        # something this may reason about at all, whoever put it in the list.
+        resolved = where.resolve()
+        if not any(root == resolved or root in resolved.parents for root in roots):
+            raise LedgerError(
+                f"{where} is not under either tier root ({[str(root) for root in roots]}), "
+                f"and this sweep deletes what it decides about. Nothing was read."
+            )
+        subtree = where.parent.parent.name
+        cell = by_subtree.setdefault(
+            subtree,
+            {
+                "legs": 0,
+                "pictures": 0,
+                "named_by_the_ledger": 0,
+                "named_by_a_leg_record": 0,
+                "named_by_nothing": 0,
+                "bytes": 0,
+            },
+        )
+        cell["legs"] += 1
+
+        stems: dict = {}
+        for entry in os.scandir(where):
+            if entry.is_file(follow_symlinks=False) and entry.name.endswith(".jpg"):
+                stems[entry.name] = entry.stat().st_size
+            elif entry.is_dir(follow_symlinks=False) and entry.name.endswith(".leveled"):
+                # A levelled colormap whose JPEG is already gone is precisely the
+                # pile, and it is addressed by the name its picture would have.
+                stems.setdefault(f"{entry.name[: -len('.leveled')]}.jpg", 0)
+        cell["pictures"] += len(stems)
+
+        held = wanted.get(where, set())
+        loose = {name for name in stems if name not in held}
+        cell["named_by_the_ledger"] += len(stems) - len(loose)
+        if not loose:
+            continue
+        ledger_only[subtree] += len(loose)
+        mentioned = _named_by_the_leg(where.parent)
+        unnamed = sorted(name for name in loose if name not in mentioned)
+        cell["named_by_a_leg_record"] += len(loose) - len(unnamed)
+        cell["named_by_nothing"] += len(unnamed)
+        cell["bytes"] += sum(stems[name] for name in unnamed)
+        doomed.extend(tracked_name(where / name) for name in unnamed)
+
+    record = {
+        "schema": SCHEMA,
+        "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "applied": bool(apply),
+        "subtrees": list(POOL_SUBTREES),
+        "by_subtree": dict(sorted(by_subtree.items())),
+        "pictures_on_disk": sum(cell["pictures"] for cell in by_subtree.values()),
+        "carrying_no_ledger_row": dict(sorted(ledger_only.items())),
+        "named_by_nothing": len(doomed),
+        "bytes_named_by_nothing": sum(cell["bytes"] for cell in by_subtree.values()),
+    }
+    log(
+        f"[orphans] {record['pictures_on_disk']:,} pictures, "
+        f"{sum(ledger_only.values()):,} with no ledger row, of which "
+        f"{len(doomed):,} are named by nothing either"
+    )
+    if not apply:
+        record["pictures"] = {"would_delete": len(doomed)}
+        record["seconds"] = round(time.time() - started, 1)
+        return record
+
+    record["pictures"] = delete_pictures(doomed, log=log)
+    record["seconds"] = round(time.time() - started, 1)
+    return record
+
+
 def k_of(row: dict) -> int | None:
     """Which candidate at its location this row was, or `None` where it cannot say.
 

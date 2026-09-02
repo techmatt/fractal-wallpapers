@@ -26,8 +26,12 @@ tracked manifest describes it, and the commands to name in a refusal. The
 sidecar is [`sidecar`], one such value, and the zero-argument calls still mean
 it.
 
-What is NOT generic is [`guard`]: a run refuses over the supply and nothing
-else.
+[`guard`] is the one thing here that names its own list rather than taking a
+[`Durable`] from the caller: a run refuses over the files in [`guarded`], which
+are the supply and the score amendment, and over nothing else. A file earns a
+place on that list by being unrecoverable *and* by being an input the run reads
+without asking — a shorter one would send the leg out over a supply nobody said
+had shrunk.
 
 ## Why it is archived under a manifest rather than tracked
 
@@ -89,6 +93,10 @@ SIDECAR_NAME = "supply_scores.jsonl"
 #: How many bytes are read at a time when hashing. The file is tens of megabytes,
 #: and reading it whole to hash it is the one avoidable spike here.
 CHUNK = 1 << 20
+
+#: What each of [`guarded`]'s files is called in a refusal and in the line the
+#: guard prints. Short, because they are read at the top of every run's log.
+GUARD_TAGS = ("sidecar", "amendment")
 
 
 class DurableLost(RuntimeError):
@@ -391,44 +399,76 @@ def restore(durable: Durable | None = None, force: bool = False, log=print) -> d
 # --------------------------------------------------------------------------- #
 # The guard a run makes before it does anything else.
 # --------------------------------------------------------------------------- #
-def guard(log=print) -> dict:
-    """Refuse a run whose supply sidecar is gone, or has lost rows since it was recorded.
+def guarded() -> tuple[Durable, ...]:
+    """The files a `curate run` refuses to start without. **Two**, and the list is here.
+
+    Both are inputs a run reads without being asked to, and neither can be
+    recovered from afterwards:
+
+    * the **supply sidecar**, which is the standing supply the leg is offered;
+    * the **score amendment**, which every reader of a seating score overlays on
+      that sidecar — so a run started without it is not offered a smaller supply,
+      it is offered the same supply at scores nobody has corrected. That is the
+      worse of the two failures, because the count would look right.
+
+    A file is not on this list merely for being expensive. The embedding store
+    and the two ledger sidecars are all expensive and all absent here: a run that
+    starts without them fails loudly at the step that needs them, which is a
+    different thing from a run that starts and quietly decides on stale numbers.
+    """
+    from fractal_wallpapers.curation import amend
+
+    return (sidecar(), amend.durable())
+
+
+def guard_one(durable: Durable, tag: str, log=print) -> dict:
+    """Refuse over one durable that is gone, or has lost rows since it was recorded.
 
     Cheap on purpose — an existence test and a newline count, no hash and no
-    parse — because it runs at the top of every `curate run` and the file is tens
-    of megabytes. It answers the one question that cannot be recovered from
-    afterwards: is the standing supply still there.
+    parse — because it runs at the top of every `curate run` and these files are
+    tens of megabytes each.
 
-    Silent where there is no manifest. A checkout that has never recorded the
-    sidecar has nothing to be short *of*, and a guard that refused there would
+    Silent where there is no manifest. A checkout that has never recorded this
+    file has nothing to be short *of*, and a guard that refused there would
     refuse every fresh clone's first run.
     """
-    record = read_manifest(sidecar())
+    record = read_manifest(durable)
     if record is None:
         return {"verdict": "unrecorded"}
-    live = sidecar_path()
+    live = durable.live
     recorded = int(record["rows"])
     if not live.is_file():
         raise DurableLost(
-            f"the supply sidecar is missing: {tracked_name(live)} is not there, and the "
-            f"manifest records {recorded:,} rows of standing supply at "
-            f"{str(record['sha256'])[:12]}. It is not regenerable from the checkout — the "
-            f"ledgers it reads are under the regenerable tree too. Run "
-            f"`fractal-wallpapers curate sidecar restore` to bring back the durable copy, or "
-            f"`fractal-wallpapers curate score` to read the supply again from whatever "
-            f"ledgers are still here."
+            f"{durable.name} is missing: {tracked_name(live)} is not there, and the "
+            f"manifest records {recorded:,} rows at {str(record['sha256'])[:12]}. "
+            f"{durable.why_not_tracked} Run `{durable.restore_command}` to bring back the "
+            f"durable copy, or `{durable.rebuild_command}` to make it again from whatever "
+            f"is still here."
         )
     rows = count_rows(live)
     if rows < recorded:
         raise DurableLost(
-            f"the supply sidecar has lost rows: {tracked_name(live)} holds {rows:,} and the "
-            f"manifest records {recorded:,}. A run started here would be offered a supply "
-            f"{recorded - rows:,} locations smaller than the one on record, and would say "
-            f"nothing about it. Run `fractal-wallpapers curate sidecar restore`, or "
-            f"`curate sidecar save` if the shorter file is the truth."
+            f"{durable.name} has lost rows: {tracked_name(live)} holds {rows:,} and the "
+            f"manifest records {recorded:,}. A run started here would decide over "
+            f"{recorded - rows:,} rows fewer than the ones on record, and would say nothing "
+            f"about it. Run `{durable.restore_command}`, or `{durable.save_command}` if the "
+            f"shorter file is the truth."
         )
-    log(f"[sidecar] {rows:,} rows, at or above the {recorded:,} on record")
+    log(f"[{tag}] {rows:,} rows, at or above the {recorded:,} on record")
     return {"verdict": "ok", "rows": rows, "recorded": recorded}
+
+
+def guard(log=print) -> dict:
+    """Refuse a run whose guarded files are gone, or have lost rows since recording.
+
+    One verdict per file in [`guarded`], keyed by a short tag. It answers the
+    questions that cannot be recovered from afterwards: is the standing supply
+    still there, and are the corrections to it still there.
+    """
+    return {
+        tag: guard_one(durable, tag, log=log)
+        for tag, durable in zip(GUARD_TAGS, guarded(), strict=True)
+    }
 
 
 # --------------------------------------------------------------------------- #
@@ -505,6 +545,7 @@ def provenance_path() -> Path:
 
 __all__ = [
     "BACKUP_UNIT",
+    "GUARD_TAGS",
     "SCHEMA",
     "SIDECAR_NAME",
     "Durable",
@@ -513,6 +554,8 @@ __all__ = [
     "check",
     "count_rows",
     "guard",
+    "guard_one",
+    "guarded",
     "manifest_path",
     "measure",
     "pool_ledgers",

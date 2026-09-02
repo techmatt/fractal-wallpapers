@@ -68,15 +68,22 @@ snapshot for the whole file so the tier of `artifacts/tiles` is decided once
 rather than stat-ed on two disks a million times.
 `tests/test_storage_tiers.py` is the guard over all of it.
 
-**Two places still build a tree path without asking**, found by
-`AUDIT_artifacts_inventory` and left alone by it: `palettes/carriers.py`'s
-`RECOLOUR_DIR` and `models/decisions.py`'s `FIGURE` are both a bare
+**Two places used to build a tree path without asking**, found by
+`AUDIT_artifacts_inventory` and closed on 2026-09-02: `palettes/carriers.py`'s
+`RECOLOUR_DIR` and `models/decisions.py`'s `FIGURE` were both a bare
 `Path("artifacts") / …`, joined directly rather than passed through `under()` or
-`cli.resolve_output`. They are relative to the *shell's* working directory, so on
-a machine that has moved its hot root they write to a fourth place that is
-neither tier. Everything else that looks hard-coded is an argparse **default
-string** — `resolve_output` puts those through `rehome`, which is what makes the
-literal `"artifacts"` in them load-bearing rather than a leak.
+`cli.resolve_output`. They were relative to the *shell's* working directory, so on
+a machine that has moved its hot root they wrote to a fourth place that was
+neither tier — and that failure is silent, because a regenerable subtree in the
+wrong place looks exactly like one nothing has built yet. Both are now accessor
+functions, `carriers.recolour_dir()` and `decisions.figure_dir()`, resolving
+through `under()`; they are **functions and not constants** because `under()`
+reads which tier the subtree is on and a constant would have to answer that at
+import time. `tests/test_storage_tiers.py` pins both in the consumer list and
+asserts a `chdir` cannot move either answer. Everything else that looks
+hard-coded is an argparse **default string** — `resolve_output` puts those
+through `rehome`, which is what makes the literal `"artifacts"` in them
+load-bearing rather than a leak.
 
 **Censusing the tree is cheap and worth doing.** A metadata-only walk of the hot
 tier — 403,088 files, 102 GiB on 2026-09-02 — takes under thirty seconds on this

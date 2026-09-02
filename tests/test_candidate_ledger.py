@@ -981,6 +981,165 @@ def test_nothing_but_the_ledger_deletes_a_candidate_picture():
     assert "_delete_colormap(" in inspect.getsource(candidate_ledger.delete_pictures)
 
 
+# --------------------------------------------------------------------------- #
+# The orphan sweep: the backstop under the prune, and its isolation.
+# --------------------------------------------------------------------------- #
+@pytest.fixture
+def swept(tmp_path, monkeypatch):
+    """A whole artifacts tree in `tmp_path`, and the real one out of reach.
+
+    One redirect isolates the sweep entirely, which is the property worth having:
+    `picture_dirs` resolves through `under("curation", ...)` and `stream` resolves
+    through `store_root()`, so both follow the hot root and neither can be moved
+    independently of the other. A fixture that redirected the store by name — the
+    way `isolated` does, for `prune`'s reasons — would leave the sweep's
+    enumeration pointed at this machine's real hundred-and-eighty-thousand
+    pictures.
+    """
+    from fractal_wallpapers import paths
+
+    root = tmp_path / "artifacts"
+    root.mkdir()
+    monkeypatch.setenv(paths.HOT_ROOT_VARIABLE, str(root))
+    monkeypatch.setenv(paths.ARCHIVE_ROOT_VARIABLE, "")
+    return root
+
+
+def a_leg(root: Path, subtree: str, leg: str, keys, record: str | None = None) -> Path:
+    """One leg on disk as a run leaves it: pictures, levelled colormaps, records."""
+    pictures = root / "curation" / subtree / leg / "pictures"
+    pictures.mkdir(parents=True, exist_ok=True)
+    for key in keys:
+        a_pair(pictures, key)
+    if record is not None:
+        (pictures.parent / "sequence.jsonl").write_text(record, encoding="utf-8", newline="\n")
+    return pictures
+
+
+def a_ledger_row(picture: str) -> dict:
+    """The one field the sweep reads off a row."""
+    return {"schema": candidate_ledger.SCHEMA, "key": picture, "picture": picture}
+
+
+def test_the_sweep_deletes_only_what_neither_the_ledger_nor_the_leg_names(swept):
+    """Three pictures, three fates, and the middle one is the whole point. Keyed on
+    the ledger alone this leg would lose two of its three."""
+    pictures = a_leg(
+        swept,
+        "depth",
+        "a_leg",
+        ("in_the_ledger", "in_the_record", "named_by_nothing"),
+        record='{"picture": "pictures/in_the_record.jpg"}\n',
+    )
+    candidate_ledger.write(
+        [a_ledger_row("artifacts/curation/depth/a_leg/pictures/in_the_ledger.jpg")]
+    )
+
+    record = candidate_ledger.orphans(apply=True, log=lambda *_: None)
+
+    assert record["pictures_on_disk"] == 3
+    assert record["carrying_no_ledger_row"] == {"depth": 2}
+    assert record["named_by_nothing"] == 1
+    assert record["pictures"]["deleted"] == 1
+    assert (pictures / "in_the_ledger.jpg").is_file()
+    assert (pictures / "in_the_record.jpg").is_file()
+    assert not (pictures / "named_by_nothing.jpg").exists()
+    # The levelled colormap goes with the picture, the same rule the prune keeps.
+    assert not (pictures / "named_by_nothing.leveled").exists()
+    assert (pictures / "in_the_record.leveled").is_dir()
+
+
+def test_the_dry_run_is_the_default_and_it_touches_nothing(swept):
+    """The opposite way round from `prune`, deliberately: this decides about files
+    nothing ever wrote down, so the safe answer has to be the one you get by
+    typing less."""
+    pictures = a_leg(swept, "depth", "a_leg", ("gone_if_applied",))
+    candidate_ledger.write([])
+
+    record = candidate_ledger.orphans(log=lambda *_: None)
+
+    assert record["applied"] is False
+    assert record["pictures"] == {"would_delete": 1}
+    assert (pictures / "gone_if_applied.jpg").is_file()
+
+
+def test_the_sweep_cannot_reach_a_leg_s_fields_however_large_they_get(swept):
+    """`fields/` is 6.2 GiB of `.f32` that no record names, and it is NOT this
+    command's to delete — the enumeration is a fixed shape at a fixed depth, so a
+    directory beside `pictures/` is not reachable whatever it holds."""
+    a_leg(swept, "depth", "a_leg", ())
+    fields = swept / "curation" / "depth" / "a_leg" / "fields"
+    fields.mkdir(parents=True)
+    (fields / "0000.f32").write_bytes(b"0" * 64)
+    # A JPEG in there too, so this is about the shape and not about the suffix.
+    (fields / "stray.jpg").write_bytes(b"0" * 64)
+    candidate_ledger.write([])
+
+    candidate_ledger.orphans(apply=True, log=lambda *_: None)
+
+    assert (fields / "0000.f32").is_file()
+    assert (fields / "stray.jpg").is_file()
+    assert [where.name for where in candidate_ledger.picture_dirs()] == ["pictures"]
+
+
+def test_the_sweep_looks_at_the_five_pool_subtrees_and_no_others(swept):
+    """The ledger's pictures live in exactly five subtrees. A sixth holding
+    pictures is somebody else's, and this must not discover it."""
+    a_leg(swept, "depth", "a_leg", ("a",))
+    a_leg(swept, "manufacture", "a_leg", ("b",))
+    a_leg(swept, "neutral", "a_leg", ("c",))
+    candidate_ledger.write([])
+
+    record = candidate_ledger.orphans(apply=True, log=lambda *_: None)
+
+    assert record["pictures_on_disk"] == 1, "it swept outside the five pool subtrees"
+    assert (swept / "curation" / "manufacture" / "a_leg" / "pictures" / "b.jpg").is_file()
+    assert (swept / "curation" / "neutral" / "a_leg" / "pictures" / "c.jpg").is_file()
+
+
+def test_a_directory_outside_the_tier_roots_refuses_before_anything_is_read(swept, monkeypatch):
+    """The check is at the point of DECIDING, not carried over from whatever
+    produced the list. A sweep that trusted its own enumeration would be one
+    monkeypatch away from deleting out of the tree."""
+    outside = swept.parent / "elsewhere" / "pictures"
+    outside.mkdir(parents=True)
+    a_pair(outside, "not_ours")
+    monkeypatch.setattr(candidate_ledger, "picture_dirs", lambda: [outside])
+    candidate_ledger.write([])
+
+    with pytest.raises(candidate_ledger.LedgerError, match="not under either tier root"):
+        candidate_ledger.orphans(apply=True, log=lambda *_: None)
+
+    assert (outside / "not_ours.jpg").is_file()
+
+
+def test_a_levelled_colormap_whose_picture_is_gone_is_swept_too(swept):
+    """Precisely the pile: 206,147 of these reached 14.9 GiB by outliving pictures
+    somebody had already deleted. It is addressed by the name its picture had."""
+    pictures = a_leg(swept, "depth", "a_leg", ("half_gone",))
+    (pictures / "half_gone.jpg").unlink()
+    candidate_ledger.write([])
+
+    record = candidate_ledger.orphans(apply=True, log=lambda *_: None)
+
+    assert record["named_by_nothing"] == 1
+    assert record["pictures"]["colormaps"] == 1
+    assert not (pictures / "half_gone.leveled").exists()
+
+
+def test_the_sweep_deletes_through_the_one_deleter_and_grows_no_second_one():
+    """`test_nothing_but_the_ledger_deletes_a_candidate_picture` owns the rule; this
+    is the sweep's half of it. A destructive writer that unlinked for itself would
+    be a second way to destroy a candidate, past every protection in
+    `delete_pictures`."""
+    import inspect
+
+    source = inspect.getsource(candidate_ledger.orphans)
+    assert "delete_pictures(" in source
+    for forbidden in ("unlink(", "rmtree(", "os.remove"):
+        assert forbidden not in source, forbidden
+
+
 def test_by_key_reads_only_the_rows_it_was_asked_for(tmp_path):
     """The lookup a release render makes: a hundred and fifty recipes out of
     hundreds of thousands, without holding the rest."""

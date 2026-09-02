@@ -74,12 +74,29 @@ CARRIER_ROW = "carrier"
 #: two more than any decision reads.
 PLACES = 6
 
-#: Where the recolours live. Ignored, regenerable, and about 40 MB.
-RECOLOUR_DIR = Path("artifacts") / "palettes" / "carriers"
+#: What the recolour subtree is called under the regenerable tree. The path is
+#: [`recolour_dir`] and not a constant: `under()` reads which tier that subtree is
+#: on, and a constant would have to answer that question at import time.
+RECOLOUR_UNIT = ("palettes", "carriers")
 
 
 class CarrierError(RuntimeError):
     """The carrier table cannot be built or cannot be read."""
+
+
+def recolour_dir() -> Path:
+    """Where the recolours live. Ignored, regenerable, and about 40 MB.
+
+    Through `under()` rather than a bare `Path("artifacts")`, which is what this
+    was until 2026-09-02. That spelling is relative to the **shell's** working
+    directory, so on a machine that has moved its hot root it wrote to a fourth
+    place that is neither tier — and nothing would have said so, because a
+    regenerable subtree that is not where it should be looks exactly like one
+    nothing has built yet.
+    """
+    from fractal_wallpapers.paths import under
+
+    return under(*RECOLOUR_UNIT)
 
 
 def record_path(directory: Path | None = None) -> Path:
@@ -290,7 +307,7 @@ def _recoloured(field: Path, name: str, mirror: bool, klass: str) -> Path:
     """
     from fractal_wallpapers.curation.colorize import recolored
 
-    return recolored(field, name, mirror, RECOLOUR_DIR / klass / f"{name}.jpg")
+    return recolored(field, name, mirror, recolour_dir() / klass / f"{name}.jpg")
 
 
 def rows_for(name: str, readings: dict) -> list:

@@ -2,12 +2,12 @@
   "schema": 1,
   "path": "artifacts/curation/candidate_ledger/reduced_signatures.jsonl",
   "copy": "artifacts/curation_backup/candidate_ledger/reduced_signatures.jsonl",
-  "rows": 11919,
-  "bytes": 70197142,
-  "sha256": "59c79e1a5e2b671791ec662f51623935fb842dcbf553833527353cdf6c263ea9",
+  "rows": 15754,
+  "bytes": 91853916,
+  "sha256": "225d41ace958e335741215b4ff6cf364df2ef1514d72921cc9736a5429ebb55f",
   "rows_by_shape": {
     "4x1024": 182,
-    "4x256": 11737
+    "4x256": 15572
   },
   "recorded": "2026-09-02",
   "why_not_tracked": "one packed vector per recipe key at about six kilobytes a row, which is tens of megabytes against a 1 MiB per-file history guard. Same guard, same answer as the rows, the scores and the flatness sidecar."

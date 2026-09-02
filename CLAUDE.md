@@ -130,15 +130,24 @@ rebuild *and* the fast lane until you do it.
 what CI runs and what runs before a checkpoint. The fast lane is for the
 edit-run loop and nothing else.
 
-Both are measured, not estimated: **3,152 tests in 5:45**, with the fast lane at
-**98.3 s over the 3,039 it holds**. On this machine, idle, 2026-08-31, at the
-commit that cut the lane — which is the entry to read first, because that
-prompt found the lane was never a broad tax: the **top eighty tests were 490.6 s
-of the 563.5 s** it started at, and the other three thousand were 72.9 s between
-them. It came down by collapsing derivations paid many times over and by taking
-one pixel-exactness pin off production's raster, and **no guard was deleted or
-moved lanes**. `tests/README.md` carries the table and the reasoning; the one
-worth knowing here is that `served_locations.build` was asking `current_pass`
+Both are measured, not estimated: **3,371 tests in 6:41**, with the fast lane at
+**136.2 s over the 3,260 it holds**. On this machine, idle, 2026-09-02, at the
+commit that swept `artifacts/`. That reading was taken **right after** 41.5 GiB
+and 31,426 paths came off the hot tier and 7.4 GiB moved to the archive — the
+conditions the paragraphs below say to suspect — and it did not move: it is 16%
+over the 5:45 below across 219 more tests, which is the per-test cost holding
+flat. So the 2026-08-30 doubling stays attributed to the disk settling and not to
+anything a sweep does on its own.
+
+The reading it replaces was **3,152 tests in 5:45** with the fast lane at **98.3 s
+over 3,039**, idle, 2026-08-31, at the commit that cut the lane — which is still
+the entry to read first, because that prompt found the lane was never a broad
+tax: the **top eighty tests were 490.6 s of the 563.5 s** it started at, and the
+other three thousand were 72.9 s between them. It came down by collapsing
+derivations paid many times over and by taking one pixel-exactness pin off
+production's raster, and **no guard was deleted or moved lanes**.
+`tests/README.md` carries the table and the reasoning; the one worth knowing
+here is that `served_locations.build` was asking `current_pass`
 once per row instead of once, which was ~10.5 s on every merge, seating and
 gallery build in **production** and not only under test.
 

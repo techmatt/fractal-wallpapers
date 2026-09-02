@@ -42,8 +42,9 @@ from fractal_wallpapers.curation import binding
 from fractal_wallpapers.curation import intake as curation_intake
 from fractal_wallpapers.curation import run as curation_run
 from fractal_wallpapers.discovery import scoring as discovery_scoring
-from fractal_wallpapers.models import palette_corpus, regime_flips, renders
+from fractal_wallpapers.models import decisions, palette_corpus, regime_flips, renders
 from fractal_wallpapers.models import tiles as tile_module
+from fractal_wallpapers.palettes import carriers
 from fractal_wallpapers.supply import ledgers
 
 
@@ -157,6 +158,13 @@ def test_every_consumer_follows_the_tiers(tiered):
         "curation": curation_intake.store_dir(),
         "a curation run": curation_run.run_dir("r"),
         "regime flips": regime_flips.study_dir(),
+        # Both of these were a bare `Path("artifacts") / ...` until 2026-09-02 —
+        # relative to the SHELL's working directory, so on a machine with a moved
+        # hot root they wrote to a fourth place that was neither tier, and looked
+        # exactly like a subtree nothing had built yet. `AUDIT_artifacts_inventory`
+        # found them; they are pinned here so a third one cannot arrive quietly.
+        "palette carriers": carriers.recolour_dir(),
+        "the decision figure": decisions.figure_dir(),
     }
     strays = {
         name: path
@@ -170,6 +178,26 @@ def test_every_consumer_follows_the_tiers(tiered):
     assert archive in where["tiles"].parents
     assert archive in where["palette"].parents
     assert hot in where["location views"].parents
+
+
+def test_the_two_bypasses_write_under_a_root_and_not_beside_the_shell(tiered, monkeypatch):
+    """The regression these two were: a path built off the literal string rather
+    than through `under()` follows the working directory, so it lands wherever the
+    operator happened to be standing. Chdir somewhere else and the answer must not
+    move."""
+    hot, _ = tiered
+    monkeypatch.chdir(tiered[0].parent)
+    assert carriers.recolour_dir() == hot / "palettes" / "carriers"
+    assert decisions.figure_dir() == hot / "figures" / "judges_score_to_decision"
+
+
+def test_the_two_bypasses_follow_their_subtree_to_the_archive(tiered):
+    """And they resolve like every other name once their subtree has moved."""
+    _, archive = tiered
+    (archive / "palettes").mkdir()
+    (archive / "figures").mkdir()
+    assert archive in carriers.recolour_dir().parents
+    assert archive in decisions.figure_dir().parents
 
 
 def test_an_archived_subtree_reads_through_and_a_new_one_lands_hot(tiered):

@@ -44,6 +44,30 @@ def sidecar(tmp_path, monkeypatch):
     return live, copy, manifest
 
 
+@pytest.fixture
+def guarded(sidecar, tmp_path, monkeypatch):
+    """Both files a run refuses to start without, inside `tmp_path`.
+
+    The guard reads two files now, so a fixture that redirected one of them would
+    leave the other pointed at this machine's real amendment — a unit test asking
+    a hundred-thousand-row question about the live tree.
+    """
+    live, _, _ = sidecar
+    amendment = tmp_path / "hot" / "curation" / "score_amendments.jsonl"
+    durable = durability.Durable(
+        name="the score amendment",
+        live=amendment,
+        copy=tmp_path / "cold" / durability.BACKUP_UNIT / "score_amendments.jsonl",
+        manifest=tmp_path / "score_amendments.manifest.json",
+        why_not_tracked="tens of megabytes against a 1 MiB per-file history guard.",
+        save_command="fractal-wallpapers curate amendments save",
+        restore_command="fractal-wallpapers curate amendments restore",
+        rebuild_command="fractal-wallpapers curate redraw",
+    )
+    monkeypatch.setattr(durability, "guarded", lambda: (durability.sidecar(), durable))
+    return live, amendment, durable
+
+
 def write_rows(path, count: int, salt: str = "") -> None:
     with path.open("w", encoding="utf-8", newline="\n") as handle:
         for index in range(count):
@@ -172,13 +196,13 @@ def test_a_verified_copy_comes_back_byte_for_byte(sidecar) -> None:
 # The guard a run makes before it does anything else.
 # --------------------------------------------------------------------------- #
 def test_the_guard_refuses_a_missing_or_shortened_sidecar_and_names_the_way_back(
-    sidecar,
+    guarded,
 ) -> None:
-    live, _, _ = sidecar
+    live, _, _ = guarded
     write_rows(live, 50)
     durability.save(log=lambda *_: None)
 
-    assert durability.guard(log=lambda *_: None)["verdict"] == "ok"
+    assert durability.guard(log=lambda *_: None)["sidecar"]["verdict"] == "ok"
 
     write_rows(live, 49)
     with pytest.raises(durability.DurableLost, match="curate sidecar restore"):
@@ -189,14 +213,67 @@ def test_the_guard_refuses_a_missing_or_shortened_sidecar_and_names_the_way_back
         durability.guard(log=lambda *_: None)
 
 
-def test_the_guard_is_silent_where_nothing_has_recorded_the_sidecar(sidecar) -> None:
+def test_the_guard_refuses_a_shortened_amendment_too(guarded) -> None:
+    """The second guarded file, and the failure it is here for is not the
+    sidecar's. A missing amendment does not shrink the supply — every count comes
+    out right — it puts the seating silently back on the scores the re-read
+    corrected. So it refuses on the same rule and names its own way back."""
+    live, amendment, durable = guarded
+    write_rows(live, 50)
+    durability.save(log=lambda *_: None)
+    write_rows(amendment, 40)
+    durability.save(durable, log=lambda *_: None)
+
+    verdicts = durability.guard(log=lambda *_: None)
+    assert verdicts["sidecar"]["verdict"] == "ok"
+    assert verdicts["amendment"] == {"verdict": "ok", "rows": 40, "recorded": 40}
+
+    # Append-only, so shorter is always a loss and never an ordinary state.
+    write_rows(amendment, 39)
+    with pytest.raises(durability.DurableLost, match="curate amendments restore"):
+        durability.guard(log=lambda *_: None)
+
+    amendment.unlink()
+    with pytest.raises(durability.DurableLost, match="curate redraw"):
+        durability.guard(log=lambda *_: None)
+
+
+def test_a_grown_amendment_is_the_ordinary_state_and_passes(guarded) -> None:
+    """A redraw nobody has saved yet is what `curate redraw` leaves behind, and a
+    guard that refused there would refuse the run after every refresh."""
+    live, amendment, durable = guarded
+    write_rows(live, 50)
+    durability.save(log=lambda *_: None)
+    write_rows(amendment, 40)
+    durability.save(durable, log=lambda *_: None)
+    write_rows(amendment, 44)
+
+    assert durability.guard(log=lambda *_: None)["amendment"]["rows"] == 44
+
+
+def test_the_guard_is_silent_where_nothing_has_recorded_the_files(guarded) -> None:
     """A fresh clone has no manifest and therefore nothing to be short of. A guard
     that refused there would refuse every first run."""
-    live, _, _ = sidecar
+    live, amendment, _ = guarded
+    unrecorded = {"sidecar": {"verdict": "unrecorded"}, "amendment": {"verdict": "unrecorded"}}
 
-    assert durability.guard(log=lambda *_: None) == {"verdict": "unrecorded"}
+    assert durability.guard(log=lambda *_: None) == unrecorded
     write_rows(live, 1)
-    assert durability.guard(log=lambda *_: None) == {"verdict": "unrecorded"}
+    write_rows(amendment, 1)
+    assert durability.guard(log=lambda *_: None) == unrecorded
+
+
+def test_the_guarded_list_is_the_supply_and_the_amendment_and_nothing_else() -> None:
+    """The list is a decision, not an accident of what happens to be expensive.
+    The embedding store and the two ledger sidecars are all costly and none of
+    them is here: a run that starts without those fails loudly at the step that
+    needs them, which is a different thing from a run that starts and quietly
+    decides on stale numbers."""
+    from fractal_wallpapers.curation import amend
+
+    named = [durable.live.name for durable in durability.guarded()]
+    assert named == [durability.SIDECAR_NAME, amend.AMENDMENTS_NAME]
+    assert len(durability.GUARD_TAGS) == len(named)
 
 
 def test_a_run_asks_the_guard_before_it_writes_a_plan(tmp_path, monkeypatch) -> None:
@@ -227,6 +304,22 @@ def test_the_tracked_manifest_describes_a_sidecar_and_names_a_copy() -> None:
     assert record["rows"] > 0
     assert len(record["sha256"]) == 64
     assert record["rows"] == sum(record["rows_by_ledger"].values())
+
+
+def test_the_tracked_manifest_describes_an_amendment_and_names_a_copy() -> None:
+    from fractal_wallpapers.curation import amend
+
+    durable = amend.durable()
+    record = durability.read_manifest(durable)
+    if record is None:
+        pytest.skip("no amendment has been recorded in this checkout")
+    assert record["path"].endswith(amend.AMENDMENTS_NAME)
+    assert record["copy"].startswith(f"artifacts/{durability.BACKUP_UNIT}/")
+    assert record["rows"] > 0
+    assert len(record["sha256"]) == 64
+    # Keyed on (location, engine), so the per-build split has to add up and a
+    # manifest giving one number would describe a population that does not exist.
+    assert record["rows"] == sum(record["rows_by_engine"].values())
 
 
 def test_the_ledger_provenance_record_agrees_with_the_release_store() -> None:
