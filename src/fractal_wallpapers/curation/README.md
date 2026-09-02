@@ -307,19 +307,27 @@ artifacts/curation/candidate_ledger/rows.jsonl        one row per recipe
 artifacts/curation/candidate_ledger/scores.jsonl      ...and its scores
 artifacts/curation/candidate_ledger/flatness.jsonl    ...and its dead-space column
 artifacts/curation/candidate_ledger/reduced_signatures.jsonl   ...and its twin signatures
-data/curation/candidate_ledger/*.manifest.json        what the history keeps of the three
+data/curation/candidate_ledger/*.manifest.json        what the history keeps of the four
 <archive>/curation_backup/candidate_ledger/*.jsonl    the durable copies
 ```
 
-**Three of the four are mirrored and one is not**, and that is the rule rather than
-an oversight: `merge` copies `rows`, `scores` and `flatness` to the archive and
-verifies each identical, and the signature sidecar is **regenerable from the pictures**
-so it takes the same treatment as the score amendment — no durable copy, no manifest.
-Worth knowing anyway, because the sidecar it omits is the one the **binding**
-constraint reads: the n=2000 solve of 2026-09-01 served **9,371 of 9,388** signatures
-from it. Re-deriving all 11,636 rows is about **2.8 minutes** at `DIRECTIONS = 256`,
-against ~19 at the 1024 it used before that constant moved — so this is an annoyance
-now and was close to an outage before.
+**All four are mirrored**, by one door: `merge` copies `rows`, `scores`, `flatness`
+and `reduced_signatures` to the archive and verifies each identical. The signature
+sidecar was outside that until 2026-09-01, on the argument that it is
+**regenerable from the pictures** — true, and it stopped being worth it when the
+file shrank. It is the sidecar the **binding** constraint reads: the n=2000 solve
+of 2026-09-01 served **9,371 of 9,388** signatures from it, and re-deriving all
+11,636 rows is about **2.8 minutes** at `DIRECTIONS = 256` against ~19 at the 1024
+it used before that constant moved. Copying 68.6 MB beats 2.8 minutes, so it is
+copied.
+
+Two things about that copy. It is **conditional** — nothing in a merge fills the
+signature sidecar, so a checkout that has never run `curate signatures sweep` has
+no file to save and the door records `null` rather than refusing. And the manifest
+counts rows by the shape **each row names** rather than by the current
+`(BOUND_BLOCKS, DIRECTIONS)`: nothing sweeps old constants out, so the live file
+held 11,454 rows at `4x256` and 182 still at `4x1024` on 2026-09-01, and a mirror
+of bytes does not get to restate what those bytes are.
 
 ```
 fractal-wallpapers curate candidate-ledger backfill   # from what already exists
@@ -332,6 +340,7 @@ fractal-wallpapers curate candidate-ledger score      # every picture through th
 fractal-wallpapers curate candidate-ledger save       # the live files, their manifests
 fractal-wallpapers curate candidate-ledger check      # are they whole
 fractal-wallpapers curate flatness save               # its own durable. `merge` does this too
+fractal-wallpapers curate signatures save             # ...and so is this one. `check`/`restore` too
 ```
 
 ### The step a judge adoption makes necessary
@@ -799,11 +808,13 @@ a pool nothing changed *and* miss a picture replaced inside one second. The two
 reduction constants ride on the row too, so changing either invalidates the store
 at once.
 
-It is regenerable and gets no `durability.Durable`: **65.4 MB, 11,454 rows, 103 s**
-over the standard three-worker pool with nothing unreadable. A second copy of a
-derived store that size earns less than it costs. It was 247 MB and 448 s until
-`pixel_clouds.DIRECTIONS` came down to 256 on 2026-09-01 — a reduced signature is
-4 KiB now rather than 16.
+It is regenerable — **65.4 MB, 11,454 rows, 103 s** over the standard three-worker
+pool with nothing unreadable — and it is mirrored anyway, through a
+`durability.Durable` of its own that `merge` saves with the other three. The
+argument that kept it out was size: it was 247 MB and 448 s until
+`pixel_clouds.DIRECTIONS` came down to 256 on 2026-09-01, and a reduced signature
+is 4 KiB now rather than 16. At a quarter of the bytes, a copy is cheaper than the
+re-derivation a restore would otherwise pay.
 
 **What it bought, measured: not the gallery leg.** At n=150 the leg is 37.9 s
 without the sidecar and 36.9 s with it, over a bit-identical gallery — and the

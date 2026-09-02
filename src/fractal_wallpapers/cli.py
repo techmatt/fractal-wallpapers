@@ -3511,8 +3511,23 @@ def curate_flatness(args: argparse.Namespace) -> int:
 
 
 def curate_signatures(args: argparse.Namespace) -> int:
-    """Sweep the diversity rule's bound signature over the clearing pool."""
-    from fractal_wallpapers.curation import headroom, signatures
+    """Sweep the diversity rule's bound signature, or keep the sidecar it lands in."""
+    from fractal_wallpapers.curation import durability, headroom, signatures
+
+    # Before the population is built, because the three keeping verbs are about
+    # the file on disk and reading the clearing pool to save it would be minutes
+    # of work to copy bytes. Same shape as `curate flatness`.
+    if args.what in ("save", "check", "restore"):
+        durable = signatures.durable()
+        if args.what == "save":
+            print(json.dumps(durability.save(durable), indent=2))
+            return 0
+        if args.what == "check":
+            report = durability.check(durable)
+            print(json.dumps(report, indent=2))
+            return 0 if report["verdict"] in ("ok", "grown", "unrecorded") else 1
+        print(json.dumps(durability.restore(durable, force=args.force), indent=2))
+        return 0
 
     candidates, _costs, _refused = headroom.population()
     kept = headroom.clearing(candidates)
@@ -8228,9 +8243,9 @@ def curate_commands(subcommands) -> None:
         description=(
             "The gallery leg screens a candidate against the seated pictures with a sound "
             "lower bound read off a REDUCED pixel-cloud signature — four blocks of "
-            "quantiles by a thousand directions, 16 KiB against the metric's 512. Making "
-            "one costs a JPEG decode, about 96 ms, and it was ~100% of the leg before the "
-            "prunes. It is the same number every time, so this sweeps it once into a "
+            "quantiles by 256 directions, 4 KiB against the metric's 128. Making "
+            "one costs a JPEG decode, about 16.8 ms, and it was ~100% of the leg before "
+            "the prunes. It is the same number every time, so this sweeps it once into a "
             "sidecar and every later solve reads it instead of deriving it. One row per "
             "recipe key; NO LEDGER ROW IS EDITED. Incremental, and a row is stale when the "
             "recipe's picture is not the picture the row was read from — never on a clock."
@@ -8240,9 +8255,10 @@ def curate_commands(subcommands) -> None:
         "what",
         nargs="?",
         default="sweep",
-        choices=["sweep", "coverage"],
-        help="read every clearing candidate the sidecar cannot answer for, or report how "
-        "much of the pool it can answer for",
+        choices=["sweep", "coverage", "save", "check", "restore"],
+        help="read every clearing candidate the sidecar cannot answer for, report how "
+        "much of the pool it can answer for, or save, check and restore the sidecar "
+        "against its manifest",
     )
     signatures_step.add_argument(
         "--workers",
@@ -8258,6 +8274,11 @@ def curate_commands(subcommands) -> None:
         action="store_true",
         help="re-read every candidate rather than only the ones the sidecar cannot answer "
         "for. What to run after changing anything about the reduction itself",
+    )
+    signatures_step.add_argument(
+        "--force",
+        action="store_true",
+        help="with `restore`: overwrite a live sidecar holding MORE rows than the manifest",
     )
     signatures_step.set_defaults(handler=curate_signatures)
 

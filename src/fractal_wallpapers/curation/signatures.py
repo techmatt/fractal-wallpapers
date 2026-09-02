@@ -57,7 +57,7 @@ Measured over that sweep's own population — 4,496 places after the neutral
 pre-selection, one picture each: the sidecar answers **all 4,496 in 0.7 s**, against
 **429 s** to decode them at the 95 ms a picture that cost at 1024 directions; at 256 it
 is 16.8 ms and the same decode is about 75 s. That is the sweep's whole
-signature-building half, and it is where this store earns its 247 MB.
+signature-building half, and it is where this store earns its 68.6 MB.
 
 ## Staleness is the picture's identity and never a clock
 
@@ -73,22 +73,34 @@ The two constants the reduction is taken at ride on the row for
 different vector and must not be able to wear this one's name. Change either and
 every row is stale at once, which is correct and is what [`by_recipe`] enforces.
 
-## Regenerable, and not backed up
+## Mirrored with the rest of the store
 
-No [`curation.durability.Durable`], unlike the flatness sidecar. The whole store is
-~245 MB and rebuilding it is one command and a few minutes over the standard
-three-worker pool; a second copy of a derived store that size earns less than it
-costs. The pictures are the durable thing and they already are one.
+It has a [`curation.durability.Durable`] and [`candidate_ledger.merge`] saves it
+beside the rows, the scores and the flatness sidecar. That was not always true, and
+the argument that kept it out was a size the reduction has since undone: the store
+was ~245 MB at 1024 directions, against **68.6 MB** at 256, and a restore that has
+to re-derive it pays minutes over the three-worker pool for bytes the mirror could
+have copied. The pictures are still the durable thing; this is a cache of readings
+off them, kept because copying it is now cheaper than the sweep.
+
+**The mirror copies bytes and does not reinterpret them.** Nothing drops a row when
+a constant moves — [`by_recipe`] ignores the wrong-shape rows and the next sweep
+overwrites them by key — so a live file holds rows at more than one shape whenever
+one has moved and the re-sweep has not finished. On 2026-09-01 it held 11,454 rows
+at 4x256 and **182 still at 4x1024**. The manifest therefore counts rows by the
+shape each one *names*, through [`_shapes`], rather than stamping [`shape`] over the
+whole file and calling those 182 something they are not.
 """
 
 from __future__ import annotations
 
 import base64
 import json
+from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
 
-from fractal_wallpapers.curation import candidate_ledger
+from fractal_wallpapers.curation import candidate_ledger, durability
 
 #: The schema every sidecar row carries.
 SCHEMA = 1
@@ -190,6 +202,52 @@ def sidecar_path() -> Path:
     return candidate_ledger.store_root() / SIDECAR_NAME
 
 
+def _shapes(path: Path) -> dict:
+    """How many rows the file holds at each `(blocks, directions)` **it names**.
+
+    Read off the rows and never off [`shape`]. The sidecar is upserted by recipe
+    key and nothing sweeps the old constants out, so a file that has outlived a
+    change to either one holds both — 11,454 at `4x256` and 182 left at `4x1024`
+    on 2026-09-01. A manifest that stamped the current shape over the whole file
+    would say those 182 rows are something they are not, and the copy this
+    manifest describes is a copy of bytes.
+    """
+    tally: Counter = Counter()
+    with Path(path).open(encoding="utf-8") as handle:
+        for line in handle:
+            if line.strip():
+                held = json.loads(line)
+                tally[f"{held.get('blocks')}x{held.get('directions')}"] += 1
+    return {"rows_by_shape": dict(sorted(tally.items()))}
+
+
+def durable() -> durability.Durable:
+    """The sidecar as a [`durability.Durable`] — how it is saved, checked, restored.
+
+    Its own durable beside [`curation.flatness.durable`] and for the same reasons:
+    the copy goes where [`candidate_ledger.backup_path`] puts the store's other
+    three, and the manifest goes beside theirs in the tracked directory. It is
+    conditional at the merge door for the flatness sidecar's reason too — nothing
+    in a merge fills this one, so a checkout that has never run
+    `curate signatures sweep` has no file to save and that is a state, not a loss.
+    """
+    return durability.Durable(
+        name="the candidate ledger's reduced-signature sidecar",
+        live=sidecar_path(),
+        copy=candidate_ledger.backup_path(SIDECAR_NAME),
+        manifest=candidate_ledger.manifest_dir() / "signatures.manifest.json",
+        why_not_tracked=(
+            "one packed vector per recipe key at about six kilobytes a row, which is tens "
+            "of megabytes against a 1 MiB per-file history guard. Same guard, same answer "
+            "as the rows, the scores and the flatness sidecar."
+        ),
+        save_command="fractal-wallpapers curate signatures save",
+        restore_command="fractal-wallpapers curate signatures restore",
+        rebuild_command="fractal-wallpapers curate signatures sweep",
+        facts=_shapes,
+    )
+
+
 def row(key: str, picture: str, packed: str) -> dict:
     """One sidecar row. The picture it was read from and the constants it was
     reduced at both travel on it — the first is what staleness is keyed on and the
@@ -259,11 +317,11 @@ def write(rows) -> tuple[Path, int, int]:
 def for_candidates(candidates, path: Path | None = None) -> dict:
     """`{key: its reduced signature}` for the ones this store can answer for.
 
-    **Only the keys asked for are kept.** The whole store is ~245 MB and a view is
-    a fraction of it; holding the rest would put a quarter of a gibibyte behind a
-    pass that will never look at it. A key whose row names a different picture than
-    the candidate does is left out, which is the staleness rule doing its work at
-    read time as well as at sweep time.
+    **Only the keys asked for are kept.** The whole store is 68.6 MB and a view is
+    a fraction of it; holding the rest would put the better part of a hundred
+    megabytes behind a pass that will never look at it. A key whose row names a
+    different picture than the candidate does is left out, which is the staleness
+    rule doing its work at read time as well as at sweep time.
     """
     wanted = {str(held.key): str(held.picture or "") for held in candidates}
     if not wanted:
@@ -421,6 +479,7 @@ __all__ = [
     "SignatureError",
     "by_recipe",
     "coverage",
+    "durable",
     "for_candidates",
     "missing",
     "pack",

@@ -58,12 +58,16 @@ struct RenderReport {
     interior_fraction: f64,
     /// Whether the coloring's texture layer carried no information — see
     /// [`coloring::Painted::texture_flat`]. Absent for every coloring that has no
-    /// texture to be flat, which is all of them but the modulate, and absent for
-    /// the same recorded-name reason `Composite::texture_gamma` is: a key that
-    /// appeared unconditionally would say nothing on sixteen of the seventeen
+    /// texture to be flat, which is all of them but the two modulates, and absent
+    /// for the same recorded-name reason `Composite::texture_gamma` is: a key that
+    /// appeared unconditionally would say nothing on seventeen of the nineteen
     /// production modes and would put a member into every render record ever read
-    /// back. A `true` here says the picture is the base spent by rank, bit for
-    /// bit — the reason to report it rather than throw it away.
+    /// back. The count is `mode`'s own split test — eight fields, six composites
+    /// and four direct traps carry no texture layer, against two modulates that
+    /// do — read over the nineteen entries of [`mode::CATALOG`] on
+    /// [`mode::Tier::Production`], which is all of them but `de`. A `true` here
+    /// says the picture is the base spent by rank, bit for bit — the reason to
+    /// report it rather than throw it away.
     #[serde(skip_serializing_if = "Option::is_none")]
     texture_flat: Option<bool>,
     output: String,
