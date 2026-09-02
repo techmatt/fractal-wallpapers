@@ -922,3 +922,243 @@ def test_the_parent_reads_no_key_the_worker_does_not_spell():
         f"the parent reads {sorted(reads - spelled)} out of a worker's result and "
         f"`_render_block` spells {sorted(spelled)}"
     )
+
+
+# --------------------------------------------------------------------------- #
+# The `centered` join: a flag that lives on the walk ledger and nowhere else.
+# --------------------------------------------------------------------------- #
+def test_the_centered_flag_reaches_the_draw_only_through_the_plan_time_join():
+    """No store under the draw carries it, which is why the join exists.
+
+    [`hunt.scanned`]'s population is the embedding store's rows, and those are
+    written without the flag. So a draw that asked the pool directly would answer
+    `not centered` for every location in the collection, silently.
+    """
+    from fractal_wallpapers.curation import framing
+
+    row = {"key": "a", "partition": "mandelbrot"}
+    assert framing.is_centered(row) is False, "absent reads as not centered, by design"
+    assert "centered" not in row
+
+
+def test_a_centered_draw_and_its_exclusion_partition_the_pool(monkeypatch):
+    pool = pools({"mandelbrot": 6, "phoenix": 4})
+    keys = frozenset({"mandelbrot-0000", "mandelbrot-0001", "phoenix-0000"})
+    monkeypatch.setattr(depth, "centered_locations", lambda: keys)
+    only = depth.by_centered(pool, depth.CENTERED_ONLY, log=lambda *_a: None)
+    rest = depth.by_centered(pool, depth.CENTERED_EXCLUDE, log=lambda *_a: None)
+    took = {str(row["key"]) for held in only.values() for row in held}
+    left = {str(row["key"]) for held in rest.values() for row in held}
+    whole = {str(row["key"]) for held in pool.values() for row in held}
+    assert took == set(keys)
+    assert took | left == whole and not (took & left), "a partition of the pool, both ways"
+
+
+def test_an_unfiltered_draw_is_the_pool_object_itself_and_pays_no_join(monkeypatch):
+    """`any` is what every leg drew before the flag existed, and it must not read
+    41 walk ledgers to say so."""
+    monkeypatch.setattr(
+        depth, "centered_locations", lambda: pytest.fail("the join was taken for `any`")
+    )
+    pool = pools({"mandelbrot": 3})
+    assert depth.by_centered(pool, depth.CENTERED_ANY, log=lambda *_a: None) is pool
+
+
+def test_a_partition_with_no_centered_location_leaves_the_draw_rather_than_emptying_it(
+    monkeypatch,
+):
+    pool = pools({"mandelbrot": 4, "phoenix": 4})
+    monkeypatch.setattr(depth, "centered_locations", lambda: frozenset({"mandelbrot-0000"}))
+    only = depth.by_centered(pool, depth.CENTERED_ONLY, log=lambda *_a: None)
+    assert set(only) == {"mandelbrot"}, "an empty partition is dropped, not carried as []"
+
+
+def test_a_misspelt_centred_filter_is_refused():
+    with pytest.raises(depth.DepthRefused, match="not one of"):
+        depth.by_centered(pools({"mandelbrot": 2}), "centred", log=lambda *_a: None)
+
+
+def test_the_centered_cut_moves_the_ranked_draw_and_its_control_together(monkeypatch):
+    """A control drawn from a different population than the arm it controls is
+    not a control, so the cut lands on the pool both are banded out of."""
+    keys = frozenset(f"mandelbrot-{at:04d}" for at in range(400))
+    monkeypatch.setattr(depth, "centered_locations", lambda: keys)
+    plan, shape = build_a_plan(centered=depth.CENTERED_ONLY)
+    assert {shot.partition for shot in plan if shot.arm != depth.NEAR} == {"mandelbrot"}
+    assert shape["centered"] == depth.CENTERED_ONLY
+    assert set(shape["drawn_from"]) == {"mandelbrot"}
+    assert set(shape["drawable"]) == set(PARTITIONS), "what the pool held is still reported"
+
+
+# --------------------------------------------------------------------------- #
+# The soft lean on the release mix.
+# --------------------------------------------------------------------------- #
+def test_a_partition_weight_buys_more_turns_and_starves_nobody():
+    pool = pools(dict.fromkeys(PARTITIONS, 60))
+    banded = depth.ranked_bands(pool, heads(pool), bands=3)
+    drawn = depth.banded_places(banded, seed=5, count=60, partition_weights={"mandelbrot": 3})
+    tally = {name: sum(1 for row in drawn if row["partition"] == name) for name in PARTITIONS}
+    assert tally["mandelbrot"] > tally["phoenix"], "the weight leans the draw"
+    assert min(tally.values()) > 0, "and it is a weight, not a floor: nobody is starved"
+
+
+def test_the_band_axis_and_the_partition_axis_multiply():
+    """They say different things — a band weight is measured, a partition weight
+    is declared — so one must not quietly override the other."""
+    pool = pools({"mandelbrot": 40, "phoenix": 40})
+    banded = depth.ranked_bands(pool, heads(pool), bands=2)
+    drawn = depth.banded_places(
+        banded,
+        seed=5,
+        count=20,
+        weights={"band01": 0},
+        partition_weights={"mandelbrot": 3},
+    )
+    assert {row["rank_band"] for row in drawn} == {0}, "the zeroed band stays out"
+    tally = {
+        name: sum(1 for row in drawn if row["partition"] == name)
+        for name in ("mandelbrot", "phoenix")
+    }
+    assert tally["mandelbrot"] > tally["phoenix"]
+
+
+def test_an_unweighted_draw_is_unchanged_by_the_new_axis():
+    pool = pools(dict.fromkeys(PARTITIONS, 30))
+    banded = depth.ranked_bands(pool, heads(pool), bands=3)
+    assert depth.banded_places(banded, seed=7, count=30) == depth.banded_places(
+        banded, seed=7, count=30, partition_weights=None
+    )
+
+
+# --------------------------------------------------------------------------- #
+# Opened-but-shallow: the dear half of the roster has never been asked.
+# --------------------------------------------------------------------------- #
+def test_the_dear_modes_are_exactly_what_a_dumped_field_cannot_serve():
+    from fractal_wallpapers.curation import colorize
+    from fractal_wallpapers.curation import mine as mine_module
+
+    assert set(depth.dear_modes()) | set(depth.field_modes()) == set(mine_module._accepted_modes())
+    assert not (set(depth.dear_modes()) & set(depth.field_modes()))
+    for mode in depth.dear_modes():
+        assert not colorize.shareable(mode)
+
+
+def test_a_place_with_one_dear_attempt_is_out_of_the_untried_population():
+    rows = [
+        ledger_row("r1", "a", mode="smooth"),
+        ledger_row("r2", "b", mode="smooth"),
+        ledger_row("r3", "b", mode="threads"),
+        ledger_row("r4", "c", mode="exp_smoothing"),
+    ]
+    assert depth.without_mode_attempt(rows, depth.dear_modes()) == {"a", "c"}
+
+
+def test_a_place_the_ledger_has_never_opened_is_not_in_it_either():
+    """The draw is *opened*-but-shallow. A never-opened place is the breadth
+    draws' population and would be counted twice if it were here too."""
+    assert depth.without_mode_attempt([ledger_row("r1", "a")], depth.dear_modes()) == {"a"}
+    assert "z" not in depth.without_mode_attempt([ledger_row("r1", "a")], depth.dear_modes())
+
+
+def test_the_floor_draw_narrowed_to_untried_places_leaves_the_tried_ones_out():
+    world = a_world()
+    world["rows"] = world["rows"] + [ledger_row("t0", "seated-0", mode="threads")]
+    plan, shape = depth.build_plan(
+        world,
+        seed=11,
+        rate=0.3,
+        budget=600,
+        width=8,
+        bands=5,
+        shares={depth.NEAR: 0.0, depth.RANKED: 0.0, depth.FLAT: 0.0, depth.FLOOR: 1.0},
+        floor_modes=["itinerary"],
+        floor_untried=depth.dear_modes(),
+        floor_width=2,
+        log=lambda *_args: None,
+    )
+    took = {shot.location for shot in plan}
+    assert took, "the rest of the seated places are still drawable"
+    assert "seated-0" not in took, "one threads attempt takes the place out of this draw"
+    assert shape["floor_untried"] == depth.dear_modes()
+    assert shape["floor_population"] == len(world["best"]) - 1
+
+
+# --------------------------------------------------------------------------- #
+# The aimed arm over several cells.
+# --------------------------------------------------------------------------- #
+THIN = ["light_vivid_lime", "dark_vivid_yellow", "light_vivid_teal"]
+
+
+def test_several_cells_split_the_aimed_arm_and_a_place_is_aimed_at_exactly_one():
+    plan, shape = build_a_plan(shares=AIMED_SHARES, cell=THIN)
+    aimed = [shot for shot in plan if shot.arm == depth.AIMED]
+    assert aimed
+    assert {shot.cell for shot in aimed} == set(THIN)
+    by_place: dict = {}
+    for shot in aimed:
+        by_place.setdefault(shot.location, set()).add(shot.cell)
+    assert all(len(held) == 1 for held in by_place.values()), "one place, one cell"
+    assert shape["cells"] == THIN
+    assert shape["cell"] == THIN, "several cells are reported as several"
+
+
+def test_one_cell_still_reports_itself_as_one_cell():
+    _plan, shape = build_a_plan(shares=AIMED_SHARES, cell=["dark_vivid_green"])
+    assert shape["cell"] == "dark_vivid_green"
+    assert shape["cells"] == ["dark_vivid_green"]
+
+
+def test_a_cell_the_carrier_table_cannot_serve_is_dropped_at_the_plan_and_named(monkeypatch):
+    """The fallback to a flat draw is right for a cell that goes thin mid-run and
+    wrong as a plan: it would spend an aimed share on a second control and report
+    it as a cell that was served and bought nothing."""
+    real = hunt.conditioned_maps
+    monkeypatch.setattr(
+        hunt,
+        "conditioned_maps",
+        lambda cell, count, pool, seed: [] if cell == THIN[0] else real(cell, count, pool, seed),
+    )
+    _plan, shape = build_a_plan(shares=AIMED_SHARES, cell=THIN)
+    assert shape["cells_unservable"] == [THIN[0]]
+    assert shape["cells"] == THIN[1:]
+
+
+def test_a_run_whose_every_cell_is_unservable_is_refused_rather_than_drawn_flat(monkeypatch):
+    monkeypatch.setattr(hunt, "conditioned_maps", lambda *_a, **_k: [])
+    with pytest.raises(depth.DepthRefused, match="serves none of"):
+        build_a_plan(shares=AIMED_SHARES, cell=THIN)
+
+
+def test_the_per_cell_hit_rate_reads_each_cell_against_the_whole_flat_control():
+    made = [
+        {
+            "arm": depth.AIMED,
+            "location": "a",
+            "colormap": "m1",
+            "drawn_for": THIN[0],
+            "cells": [THIN[0]],
+        },
+        {
+            "arm": depth.AIMED,
+            "location": "b",
+            "colormap": "m2",
+            "drawn_for": THIN[0],
+            "cells": [],
+        },
+        {
+            "arm": depth.AIMED,
+            "location": "c",
+            "colormap": "m3",
+            "drawn_for": THIN[1],
+            "cells": [],
+        },
+        {"arm": depth.FLAT, "location": "d", "colormap": "m9", "cells": [THIN[0]]},
+        {"arm": depth.FLAT, "location": "e", "colormap": "m8", "cells": []},
+    ]
+    out = depth.hit_rate(made, THIN[:2])
+    assert set(out["cells"]) == set(THIN[:2])
+    first = out["cells"][THIN[0]]
+    assert first[depth.AIMED]["candidates"] == 2, "only the shots drawn for this cell"
+    assert first[depth.AIMED]["rate"] == pytest.approx(0.5)
+    assert first[depth.FLAT]["candidates"] == 2, "and the whole control at every cell"
+    assert out["cells"][THIN[1]][depth.AIMED]["candidates"] == 1
