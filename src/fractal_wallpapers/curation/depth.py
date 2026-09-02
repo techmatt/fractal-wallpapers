@@ -503,7 +503,7 @@ def banded_places(
                 took = True
         if not took:
             break
-    return _interleave_by_partition(out)
+    return _interleave_by_partition(out, partition_weights)
 
 
 def _weighted_order(cells: list, weights: dict | None, partitions: dict | None = None) -> list:
@@ -549,7 +549,9 @@ def _band_name(at: int) -> str:
     return f"band{int(at):02d}"
 
 
-def flat_places(banded: dict, taken: set, seed: int, want: dict) -> list:
+def flat_places(
+    banded: dict, taken: set, seed: int, want: dict, weights: dict | None = None
+) -> list:
     """Never-opened locations with no quality conditioning, `want` many per partition.
 
     Drawn from the same annotated pool as the ranked draw so every flat location
@@ -564,7 +566,7 @@ def flat_places(banded: dict, taken: set, seed: int, want: dict) -> list:
         if take <= 0 or not held:
             continue
         out += random.Random(hunt.seed_of(seed, name)).sample(held, min(take, len(held)))
-    return _interleave_by_partition(out)
+    return _interleave_by_partition(out, weights)
 
 
 def strongest_bands(banded: dict, keep: int | None) -> dict:
@@ -701,8 +703,23 @@ def deficient_modes(rows: list, scores: dict, floor: int = 10, bar: float = SEAT
     return dict(sorted(out.items(), key=lambda item: -item[1]))
 
 
-def _interleave_by_partition(places: list) -> list:
-    """One place from each partition in turn, in partition-name order."""
+def _interleave_by_partition(places: list, weights: dict | None = None) -> list:
+    """Each partition's places in turn, `weights` many a round, in name order.
+
+    **`weights` has to be the same table the draw was taken under, and this is
+    why.** The interleave exists so a truncated leg keeps a spread rather than a
+    proportional prefix; unweighted, it hands every partition one place a round
+    and puts a leaned draw's whole surplus in the tail. A production leg is
+    clock-bound and always truncates — [`PLAN_HEADROOM`] is 1.6 precisely so it
+    does — so the tail is never reached and `--partition-weights` lands on the
+    plan and nowhere else.
+
+    Measured, `overnight_c_pilot` 2026-09-02: the plan leaned `julia:mandelbrot`
+    39 places and `mandelbrot` 38 against 17 for the other seven, exactly the
+    3:3:1 of `release_mix.json`, and the leg realized **16 to 18 across all
+    nine**. The lean had no effect at all. Weighting the rounds here is what
+    makes it survive the cut.
+    """
     pools: dict = {}
     for row in places:
         pools.setdefault(str(row["partition"]), []).append(row)
@@ -712,10 +729,14 @@ def _interleave_by_partition(places: list) -> list:
     while len(out) < len(places):
         took = False
         for name in order:
-            if at[name] < len(pools[name]):
-                out.append(pools[name][at[name]])
-                at[name] += 1
-                took = True
+            # `max(1, ...)`: a weight here is a lean and never a gate. A partition
+            # in `places` was already chosen by the draw, and dropping it at the
+            # interleave would starve a partition the draw deliberately kept.
+            for _turn in range(max(1, int(round(float((weights or {}).get(name, 1.0)))))):
+                if at[name] < len(pools[name]):
+                    out.append(pools[name][at[name]])
+                    at[name] += 1
+                    took = True
         if not took:
             break
     return out
@@ -800,28 +821,29 @@ def aimed_maps(cell: str):
 def _plan_aimed(places: list, cells: list, roster: list, maps: list, seed: int, width: int):
     """The aimed arm over one cell or several, each place aimed at exactly one.
 
-    Round-robin over the cells in the order they were asked for, so a leg sent to
-    the pool's thinnest colours spends itself evenly over them and a truncation
-    truncates them alike. One place is aimed at one cell and never at a mixture:
-    the hit rate this arm reports is `dominant in the cell it was drawn for`, and
-    a place whose palettes came from two carrier tables could not answer it.
+    One place is aimed at one cell and never at a mixture: the hit rate this arm
+    reports is *dominant in the cell it was drawn for*, and a place whose palettes
+    came from two carrier tables could not answer it.
+
+    **The cells are cycled place by place, in the plan's own order, and that is
+    load-bearing.** This was written as a round-robin *assignment* followed by a
+    concatenation of the per-cell blocks, which put every candidate for the first
+    cell ahead of every candidate for the second: [`blocks_of`] orders location
+    blocks by first appearance in the weave, so a truncated leg served the leading
+    cells and starved the trailing ones outright. Measured, `overnight_d_pilot`
+    2026-09-02: six thin cells asked for, the leg stopped at 2,570 of 4,240
+    planned candidates, and the last two — `light_vivid_green` and
+    `light_vivid_cyan` — got **zero** aimed candidates while the first four got
+    288 to 560 each. A clock-bound leg always truncates, so this was not an edge
+    case; it was the normal case.
     """
     if not places or not cells:
         return []
     out: list = []
-    for at, one in enumerate(cells):
-        mine_places = places[at :: len(cells)]
-        if not mine_places:
-            continue
+    for at, row in enumerate(places):
+        one = cells[at % len(cells)]
         out += plan_cycled_modes(
-            AIMED,
-            mine_places,
-            roster,
-            maps,
-            seed,
-            width,
-            draw=aimed_maps(one),
-            cell=one,
+            AIMED, [row], roster, maps, seed, width, draw=aimed_maps(one), cell=one
         )
     return out
 
@@ -1047,13 +1069,23 @@ def build_plan(
     else:
         flat_want = spread_over_partitions(matched, max(1, want.get(FLAT, 0) // max(1, width)))
         aimed_want = spread_over_partitions(matched, max(1, want.get(AIMED, 0) // max(1, width)))
-    flat = flat_places(matched, picked, seed + 1, flat_want) if want.get(FLAT) else []
+    flat = (
+        flat_places(matched, picked, seed + 1, flat_want, partition_weights)
+        if want.get(FLAT)
+        else []
+    )
     # The aimed arm's places are drawn exactly as the flat arm's are and out of
     # the same pools, disjoint from both draws above. That is the point: the two
     # differ in the palette ask and in nothing else, so the flat arm is the
     # control the aimed arm's dominance hit rate is read against.
     aimed = (
-        flat_places(matched, picked | {str(row["key"]) for row in flat}, seed + 2, aimed_want)
+        flat_places(
+            matched,
+            picked | {str(row["key"]) for row in flat},
+            seed + 2,
+            aimed_want,
+            partition_weights,
+        )
         if want.get(AIMED)
         else []
     )
