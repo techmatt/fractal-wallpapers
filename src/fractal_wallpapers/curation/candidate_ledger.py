@@ -961,58 +961,42 @@ def picture_dirs() -> list[Path]:
     return found
 
 
-def _named_by_the_ledger(tiers) -> dict:
-    """`{resolved pictures directory: {file name}}` for every picture a row names.
+def _named_by_the_ledger(tiers) -> tuple[dict, set]:
+    """`({pictures directory: {file name}}, {directory a MERGE stamped})`.
 
     Bucketed by directory and resolved through one shared [`paths.Tiers`]
     snapshot, for [`present_pictures`]'s reason: the alternative re-reads the
     settings once per row, which was 215 s against 1.0 s over this store.
+
+    **The second set is the merge stamp and the marker is [`hunt_block`].** No leg
+    writes a stamp of its own — `hunt.merge`, `mine.merge` and `depth.merge` build
+    a report and the CLI prints it — but every row those three hand over carries a
+    `hunt` block, and no other row in the store does. It separates exactly: of
+    177,993 rows on 2026-09-02, **166,118 carry one**, which is `depth` 158,628 +
+    `mine` 4,566 + `reframe_draw` 2,283 + `hunt` 641 to the row, and the 11,875
+    without one are the whole of `runs`.
+
+    That difference is the point rather than a curiosity. The `runs` legs are in
+    this ledger by [`backfill`], which reads the two **decision stores** — so the
+    ledger holds what those runs *decided about* and never what they *rendered*,
+    and a picture of theirs with no row is not a picture anything decided to drop.
+    A backfilled leg therefore does not carry the stamp however many rows name it.
     """
     from collections import defaultdict
 
     wanted: dict = defaultdict(set)
+    stamped: set = set()
     for row in stream():
         named = row.get("picture")
         if not named:
             continue
         where = rehome(str(named), tiers)
-        if where is not None:
-            wanted[where.parent].add(where.name)
-    return wanted
-
-
-def _named_by_the_leg(leg: Path) -> set:
-    """Every `.jpg` file name this leg's own records mention.
-
-    A leg keeps records the ledger never sees — `sequence.jsonl`,
-    `profile.jsonl`, `candidates.jsonl`, `screened.jsonl`, the plan files — and
-    `curation/README.md` is explicit that those are measurement records rather
-    than a feature store, recorded whole on purpose and read whole by things like
-    `depth.contact_sheet`. A picture one of them names is therefore **not**
-    unreferenced, whatever the ledger says about it.
-
-    Deliberately a regex over the text rather than a schema-aware read. These
-    records spell a picture several ways — the stored `artifacts/...` name, a
-    name relative to the leg, a bare file name — and this question has a safe
-    direction to be wrong in. Over-reading a name keeps a picture that could have
-    gone; under-reading one deletes a picture something names.
-    """
-    import re
-
-    pattern = re.compile(r"([A-Za-z0-9_.\-]+)\.jpg")
-    found: set = set()
-    for path in sorted(leg.rglob("*")):
-        if PICTURES_NAME in path.parts[len(leg.parts) :]:
+        if where is None:
             continue
-        if not path.is_file() or path.suffix not in (".json", ".jsonl"):
-            continue
-        try:
-            with path.open(encoding="utf-8", errors="ignore") as handle:
-                for line in handle:
-                    found.update(f"{stem}.jpg" for stem in pattern.findall(line))
-        except OSError:
-            continue
-    return found
+        wanted[where.parent].add(where.name)
+        if row.get("hunt") is not None:
+            stamped.add(where.parent)
+    return wanted, stamped
 
 
 def orphans(apply: bool = False, log=print) -> dict:
@@ -1025,17 +1009,36 @@ def orphans(apply: bool = False, log=print) -> dict:
     because a prune only ever decides about rows it can see. This is the only
     thing that can, and that is the whole reason it exists.
 
-    ## What counts as named, and why the ledger is not the whole of it
+    ## The merge stamp decides which question a leg is asked
 
-    Two reference sets, unioned, and the second is what makes this safe to run:
+    A leg that has reached `merge` has handed the ledger everything it made, so
+    from that moment the **ledger alone** is the reference set: a picture in it
+    that no row names is a picture the retention rule has already decided about,
+    and keeping it because the leg's own `sequence.jsonl` still mentions it is
+    keeping a file against a decision rather than against an absence.
 
-    * every picture a **ledger row** names, resolved through the tiers;
-    * every `.jpg` a **leg's own records** mention — see [`_named_by_the_leg`].
+    A leg that has **not** merged is the opposite case and it is not swept at all.
+    Its pictures are real work with no row anywhere, which is precisely what this
+    command exists for and precisely what it must not delete on its own: the fix
+    is a `merge`, which costs nothing on a partial, or a deliberate `rm`. Those
+    legs are **skipped and listed** on the record under `unmerged`, with the count
+    and the bytes each is holding, for a person to act on.
 
-    The difference between them is neither small nor theoretical. Over this
-    machine on 2026-09-02: 10,007 pictures carried no ledger row, and **9,983 of
-    them were named by the leg that made them.** A sweep keyed on the ledger
-    alone would have deleted all 10,007 and reported it as garbage collection.
+    **The stamp is the `hunt` block, read off the ledger and not off a file** — see
+    [`_named_by_the_ledger`], which works it out in the pass it was already making.
+    Two consequences worth knowing. A leg whose every row was later pruned reads as
+    unmerged and is skipped, which is the safe direction and frees nothing that is
+    still there. And a leg that merged, then rendered more, then was killed has that
+    tail swept — the one case the old leg-records union covered and this does not;
+    `merge` it again before sweeping if that is its history.
+
+    `ledger_named` on each `unmerged` entry is how to tell the two kinds apart
+    without opening anything: **0** is a killed leg the ledger never heard of, and
+    the advice is literally re-merge or delete. A **large** number is a `runs`-era
+    leg that is in the ledger by [`backfill`] and cannot be re-merged at all — its
+    pictures outnumber its decisions because the decision stores were never the
+    whole of what it rendered, and deleting them is a judgement about keeping a
+    superseded era's attempts, not garbage collection.
 
     ## Where the safety actually lives
 
@@ -1049,8 +1052,9 @@ def orphans(apply: bool = False, log=print) -> dict:
       name as it unlinks and leaves alone any name with no artifacts component.
 
     `apply=False` is the default and is the whole of the dry run. Costs a
-    `scandir` per leg plus one streamed pass of the ledger and one of each leg's
-    own records: about 35 s over this store.
+    `scandir` per leg plus one streamed pass of the ledger: **9.9 s** over this
+    store on 2026-09-02, against about 31 s when it also read every leg's own
+    records with a regex — that pass was two thirds of the run.
     """
     import os
     from collections import Counter
@@ -1060,10 +1064,11 @@ def orphans(apply: bool = False, log=print) -> dict:
     started = time.time()
     tiers = Tiers.current()
     roots = [Path(root).resolve() for root in (tiers.hot, tiers.archive) if root is not None]
-    wanted = _named_by_the_ledger(tiers)
+    wanted, stamped = _named_by_the_ledger(tiers)
 
     by_subtree: dict = {}
     doomed: list = []
+    unmerged: list = []
     ledger_only: Counter = Counter()
     for where in picture_dirs():
         # The check at the point of decision, and not carried over from the
@@ -1080,10 +1085,11 @@ def orphans(apply: bool = False, log=print) -> dict:
             subtree,
             {
                 "legs": 0,
+                "unmerged_legs": 0,
                 "pictures": 0,
                 "named_by_the_ledger": 0,
-                "named_by_a_leg_record": 0,
                 "named_by_nothing": 0,
+                "skipped_unmerged": 0,
                 "bytes": 0,
             },
         )
@@ -1100,14 +1106,26 @@ def orphans(apply: bool = False, log=print) -> dict:
         cell["pictures"] += len(stems)
 
         held = wanted.get(where, set())
-        loose = {name for name in stems if name not in held}
-        cell["named_by_the_ledger"] += len(stems) - len(loose)
-        if not loose:
+        if where not in stamped:
+            # No merge stamp: the ledger has never heard of this leg, so nothing
+            # here is decidable and none of it is swept. Listed instead.
+            cell["unmerged_legs"] += 1
+            cell["skipped_unmerged"] += len(stems)
+            unmerged.append(
+                {
+                    "leg": tracked_name(where.parent),
+                    "pictures": len(stems),
+                    "ledger_named": len(held),
+                    "bytes": sum(stems.values()),
+                    "why": "unmerged — re-merge or delete",
+                }
+            )
             continue
-        ledger_only[subtree] += len(loose)
-        mentioned = _named_by_the_leg(where.parent)
-        unnamed = sorted(name for name in loose if name not in mentioned)
-        cell["named_by_a_leg_record"] += len(loose) - len(unnamed)
+        unnamed = sorted(name for name in stems if name not in held)
+        cell["named_by_the_ledger"] += len(stems) - len(unnamed)
+        if not unnamed:
+            continue
+        ledger_only[subtree] += len(unnamed)
         cell["named_by_nothing"] += len(unnamed)
         cell["bytes"] += sum(stems[name] for name in unnamed)
         doomed.extend(tracked_name(where / name) for name in unnamed)
@@ -1122,12 +1140,21 @@ def orphans(apply: bool = False, log=print) -> dict:
         "carrying_no_ledger_row": dict(sorted(ledger_only.items())),
         "named_by_nothing": len(doomed),
         "bytes_named_by_nothing": sum(cell["bytes"] for cell in by_subtree.values()),
+        "unmerged": sorted(unmerged, key=lambda held: -held["pictures"]),
+        "unmerged_legs": len(unmerged),
+        "skipped_unmerged": sum(cell["skipped_unmerged"] for cell in by_subtree.values()),
     }
     log(
-        f"[orphans] {record['pictures_on_disk']:,} pictures, "
-        f"{sum(ledger_only.values()):,} with no ledger row, of which "
-        f"{len(doomed):,} are named by nothing either"
+        f"[orphans] {record['pictures_on_disk']:,} pictures; "
+        f"{len(unmerged):,} unmerged leg(s) holding {record['skipped_unmerged']:,} were "
+        f"skipped, and {len(doomed):,} of the rest are named by no ledger row"
     )
+    for held in record["unmerged"]:
+        log(
+            f"[orphans] unmerged — re-merge or delete: {held['leg']} "
+            f"({held['pictures']:,} pictures, {held['ledger_named']:,} of them named by a "
+            f"ledger row this leg never merged)"
+        )
     if not apply:
         record["pictures"] = {"would_delete": len(doomed)}
         record["seconds"] = round(time.time() - started, 1)

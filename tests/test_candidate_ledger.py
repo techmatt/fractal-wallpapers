@@ -1016,14 +1016,19 @@ def a_leg(root: Path, subtree: str, leg: str, keys, record: str | None = None) -
     return pictures
 
 
-def a_ledger_row(picture: str) -> dict:
-    """The one field the sweep reads off a row."""
-    return {"schema": candidate_ledger.SCHEMA, "key": picture, "picture": picture}
+def a_ledger_row(picture: str, merged: bool = True) -> dict:
+    """The two fields the sweep reads off a row: where the picture is, and whether
+    the row got here through `merge`. `merged=False` is a backfilled row."""
+    row = {"schema": candidate_ledger.SCHEMA, "key": picture, "picture": picture}
+    return {**row, "hunt": candidate_ledger.hunt_block(None)} if merged else row
 
 
-def test_the_sweep_deletes_only_what_neither_the_ledger_nor_the_leg_names(swept):
-    """Three pictures, three fates, and the middle one is the whole point. Keyed on
-    the ledger alone this leg would lose two of its three."""
+def test_a_merged_leg_is_decided_by_the_ledger_alone_and_its_records_do_not_save_a_picture(
+    swept,
+):
+    """Once a leg has merged, a picture with no row is one the retention rule has
+    already decided about. `sequence.jsonl` still naming it is a measurement record
+    outliving a decision, and it does not buy the file a reprieve."""
     pictures = a_leg(
         swept,
         "depth",
@@ -1037,30 +1042,77 @@ def test_the_sweep_deletes_only_what_neither_the_ledger_nor_the_leg_names(swept)
 
     record = candidate_ledger.orphans(apply=True, log=lambda *_: None)
 
+    assert record["unmerged"] == [], "one row under this leg is the merge stamp"
     assert record["pictures_on_disk"] == 3
     assert record["carrying_no_ledger_row"] == {"depth": 2}
-    assert record["named_by_nothing"] == 1
-    assert record["pictures"]["deleted"] == 1
+    assert record["named_by_nothing"] == 2
+    assert record["pictures"]["deleted"] == 2
     assert (pictures / "in_the_ledger.jpg").is_file()
-    assert (pictures / "in_the_record.jpg").is_file()
+    assert not (pictures / "in_the_record.jpg").exists()
     assert not (pictures / "named_by_nothing.jpg").exists()
     # The levelled colormap goes with the picture, the same rule the prune keeps.
     assert not (pictures / "named_by_nothing.leveled").exists()
-    assert (pictures / "in_the_record.leveled").is_dir()
+    assert not (pictures / "in_the_record.leveled").exists()
+
+
+def test_an_unmerged_leg_is_skipped_and_listed_and_nothing_in_it_is_touched(swept):
+    """The case the whole command exists for is the one it must not act on alone.
+    A leg the ledger has never heard of is a killed leg's real work, and the answer
+    is a person's — `merge` it, which costs nothing on a partial, or delete it."""
+    killed = a_leg(swept, "depth", "killed_leg", ("a", "b"))
+    merged = a_leg(swept, "depth", "merged_leg", ("kept", "loose"))
+    candidate_ledger.write([a_ledger_row("artifacts/curation/depth/merged_leg/pictures/kept.jpg")])
+
+    record = candidate_ledger.orphans(apply=True, log=lambda *_: None)
+
+    assert [held["leg"] for held in record["unmerged"]] == ["artifacts/curation/depth/killed_leg"]
+    assert record["unmerged"][0]["pictures"] == 2
+    assert record["unmerged"][0]["ledger_named"] == 0, "the ledger never heard of it"
+    assert record["unmerged"][0]["why"] == "unmerged — re-merge or delete"
+    assert record["unmerged_legs"] == 1
+    assert record["skipped_unmerged"] == 2
+    assert record["by_subtree"]["depth"]["unmerged_legs"] == 1
+    assert (killed / "a.jpg").is_file() and (killed / "b.jpg").is_file()
+    # And the merged leg beside it is swept as usual, so the skip is per leg.
+    assert record["named_by_nothing"] == 1
+    assert (merged / "kept.jpg").is_file()
+    assert not (merged / "loose.jpg").exists()
 
 
 def test_the_dry_run_is_the_default_and_it_touches_nothing(swept):
     """The opposite way round from `prune`, deliberately: this decides about files
     nothing ever wrote down, so the safe answer has to be the one you get by
     typing less."""
-    pictures = a_leg(swept, "depth", "a_leg", ("gone_if_applied",))
-    candidate_ledger.write([])
+    pictures = a_leg(swept, "depth", "a_leg", ("in_the_ledger", "gone_if_applied"))
+    candidate_ledger.write(
+        [a_ledger_row("artifacts/curation/depth/a_leg/pictures/in_the_ledger.jpg")]
+    )
 
     record = candidate_ledger.orphans(log=lambda *_: None)
 
     assert record["applied"] is False
     assert record["pictures"] == {"would_delete": 1}
     assert (pictures / "gone_if_applied.jpg").is_file()
+
+
+def test_a_backfilled_leg_is_not_a_merged_leg_however_many_rows_name_it(swept):
+    """The `runs` era is in this ledger by `backfill`, which reads the two DECISION
+    stores — so the ledger holds what those runs decided about and never what they
+    rendered. 11,875 rows against 15,578 pictures on 2026-09-02, and the 3,703
+    difference is attempts nothing ever decided to drop. Row presence alone would
+    have called that a stamp and swept them."""
+    pictures = a_leg(swept, "runs", "gallery4", ("decided", "an_attempt"))
+    candidate_ledger.write(
+        [a_ledger_row("artifacts/curation/runs/gallery4/pictures/decided.jpg", merged=False)]
+    )
+
+    record = candidate_ledger.orphans(apply=True, log=lambda *_: None)
+
+    assert record["named_by_nothing"] == 0, "a backfilled leg carries no merge stamp"
+    assert record["unmerged"][0]["leg"] == "artifacts/curation/runs/gallery4"
+    # And the count that tells a backfilled leg from a killed one, at a glance.
+    assert record["unmerged"][0]["ledger_named"] == 1
+    assert (pictures / "an_attempt.jpg").is_file()
 
 
 def test_the_sweep_cannot_reach_a_leg_s_fields_however_large_they_get(swept):
@@ -1116,9 +1168,11 @@ def test_a_directory_outside_the_tier_roots_refuses_before_anything_is_read(swep
 def test_a_levelled_colormap_whose_picture_is_gone_is_swept_too(swept):
     """Precisely the pile: 206,147 of these reached 14.9 GiB by outliving pictures
     somebody had already deleted. It is addressed by the name its picture had."""
-    pictures = a_leg(swept, "depth", "a_leg", ("half_gone",))
+    pictures = a_leg(swept, "depth", "a_leg", ("in_the_ledger", "half_gone"))
     (pictures / "half_gone.jpg").unlink()
-    candidate_ledger.write([])
+    candidate_ledger.write(
+        [a_ledger_row("artifacts/curation/depth/a_leg/pictures/in_the_ledger.jpg")]
+    )
 
     record = candidate_ledger.orphans(apply=True, log=lambda *_: None)
 

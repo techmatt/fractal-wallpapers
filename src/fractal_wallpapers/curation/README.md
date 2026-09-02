@@ -1708,6 +1708,29 @@ denominator by different factors. The same caveat rides on `depth.mode_bars`'
 `ledger_clear_rate`, which is the base rate the next arm's clear rate will be
 quoted against.
 
+**And it under-prices a win that only a non-shareable mode can deliver, by up to
+an order of magnitude.** `seconds_per_win` is `renders_per_win` — a count over the
+**whole ledger**, which is dominated by the cheap shareable modes — times
+`_mixed_cost`, the mean of the medians of the modes that *already* won. Neither
+half is the marginal mode. Measured over the store of 2026-09-02, 166,118 of
+177,993 rows carrying `hunt.seconds`: the ledger-wide median render is **0.333 s**,
+the five accepted **shareable** modes run 0.217 s (`tia`) to 0.269 s
+(`exp_smoothing`), and the nine accepted **non-shareable** ones run 0.947 s
+(`direct_trap_lines`) to **5.64 s** (`smooth_stripe`) — a median-of-medians of
+2.52 s against 0.239 s, **10.6x**, and the dearest mode is **16.9x** the
+ledger-wide median.
+
+**This is not a corner case, because the modes the pool is short of are exactly
+the dear ones.** The four mode floors short at n=1000 — `smooth_angle_min` 6,
+`itinerary` 5, `smooth_mean_angle` 4, `smooth_stripe` 3 — are all four
+non-shareable, at 3.67 s, 2.22 s, 3.83 s and 5.64 s a render. A census row for one
+of those quotes a price built from a mix the shortage is by definition not in.
+It is a **reader caveat and not a record fix**: the arithmetic is right about what
+it computes and the shape §3709 states for `curate depth` is the same one — a
+roster cycled uniformly charges a composite an equal count of the width at several
+times the unit cost. Price a composite work order off that mode's own median in
+the table above, never off a census row's `render_seconds`.
+
 ### The greedy fills by scarcity, not by score
 
 Ordering by score alone converts satisfiable problems into apparent infeasibility.
@@ -2305,7 +2328,7 @@ so the shortage can be measured against what it cost.
 
 ```
 src/fractal_wallpapers/curation/hunt.py             the legs, the budget, the price
-artifacts/curation/hunt/frames.jsonl                the frame index, derived from the scan
+artifacts/curation/hunt/frames.jsonl                the frame index — DURABLE, see below
 artifacts/curation/hunt/<name>/rows.jsonl           ledger rows, appended as each lands
 artifacts/curation/hunt/<name>/scores.jsonl         sidecar rows, likewise
 artifacts/curation/hunt/<name>/pictures/<key>.jpg   the candidate renders, named by recipe
@@ -2328,6 +2351,18 @@ the palette **stratified across the codebook's 48 cells** rather than picked by
 the palette head. *Conditioned* buys one colour: maps drawn from
 `data/palettes/carriers.jsonl` for `--cell`, the head never asked, the partitions
 spread by `--work-order` — which is the shortage list's own supply table.
+
+**`--per-location` defaults to `hunt.PER_LOCATION = 3`, and it is uniform over the
+roster.** Shallow on purpose — the thin axis is places, not depth at a place: the
+ledger's median location already carries eight recipes and a gallery seats one of
+them, so a fourth candidate at a fresh place beats a ninth at a stocked one. Every
+mode in the leg's roster is cycled at the same count, which is what makes a
+composite mixed in beside field modes expensive out of proportion to what it
+delivers — the same shape §3709 states for `curate depth`. **"Full-roster" names
+the draw's DOMAIN and never the per-place count**: a full-roster leg is one whose
+draw may reach any partition on the roster, not one that renders every mode at
+every place. `mine.PER_LOCATION` is this constant and not a second opinion about
+it — a breadth arm gives one location the same three.
 
 **The palette head is bypassed on both legs, and that is the point.** It is
 offered the green carriers as often as anything else and takes them at 0.17x the
@@ -2358,6 +2393,16 @@ a row, the leg draws the frame that scan chose; where it does not, the leg draws
 already carries, stamped `used: original`, `adopted: false`, `from_scan: false`. That
 is exactly what `chosen_frame` returns for a scan row that *refused*, so the two
 absences make the same picture and only the record tells them apart.
+
+**The scan the index came from is deleted, so the index is now the durable half.**
+`artifacts/curation/frame_refit/scan.jsonl` was 97.8 MiB with **no builder anywhere in
+this repository** — only the reader `hunt.build_frames`, and the job that produced it
+lived outside the tree. It was removed on 2026-09-02 after checking the index carried
+all 28,090 of its rows (19,041 adopted) across, zero missing in either direction. So
+`curate hunt frames` can no longer run and `frames.jsonl` cannot be rebuilt: back it up
+with the other durables rather than treating it as a cache. Nothing about a leg
+changes — `frame_for` reads the index, and a location it has no row for draws at the
+frame it already carries, which was already the majority case.
 
 **Until 2026-09-01 the rule was the other one and it was stale by construction.**
 `drawable` dropped a location the scan held no row for, with no count and no log
@@ -4080,26 +4125,42 @@ exists. It is a dry run unless `--apply` says so — the opposite way round from
 `prune`, deliberately, because a prune decides about rows and this decides about files
 nothing wrote down.
 
-**It deletes what neither the ledger nor the leg's own records name, and the second
-half is not a formality.** Swept 2026-09-02 over 188,000 pictures in the five
-subtrees: **10,007 carried no ledger row** — `depth` 5,317, `runs` 3,703, `mine` 987,
-and none at all in `reframe_draw` or `hunt` — but **9,983 of those were named by the
-leg that made them**, and only **24 were named by nothing at all** (3.3 MB, every one
-of them in `depth`, plus 13 levelled colormaps). A sweep keyed on the ledger alone
-would have deleted all 10,007 and called it garbage collection; the paragraph above is
-the reason it does not, and the sweep now enforces in code what that paragraph found
-by hand. Both figures are reported on every run, so the gap between them stays
-visible. The `depth` figure reproduces `AUDIT_artifacts_inventory`'s 5,317 exactly,
-which is the cheap check that the sweep is looking where the audit looked.
+**The merge stamp decides which question a leg is asked, and the stamp is the `hunt`
+block on the row.** A leg that has merged handed the ledger everything it made, so
+from then on the **ledger alone** is its reference set: a picture with no row is one
+the retention rule already decided about, and a `sequence.jsonl` still naming it is a
+measurement record outliving a decision. A leg that has **not** merged is skipped
+whole and listed under `unmerged` with its counts, because its pictures are real work
+with no row anywhere — which is what this command exists for and exactly what it must
+not delete on its own initiative. No leg writes a stamp of its own; `hunt.merge`,
+`mine.merge` and `depth.merge` build a report and the CLI prints it. The `hunt` block
+separates exactly: of 177,993 rows, **166,118 carry one** — `depth` 158,628 · `mine`
+4,566 · `reframe_draw` 2,283 · `hunt` 641, to the row — and the 11,875 that do not are
+the whole of `runs`.
+
+**Row presence alone is NOT the stamp, and `runs` is why.** Those legs are in this
+ledger by `backfill`, which reads the two **decision stores** — so the ledger holds
+what they decided about and never what they rendered: 11,875 rows against 15,578
+pictures on disk. Sweeping them on row presence would have deleted 3,610 index-named
+attempts out of `gallery1`–`gallery4` and the `run*` legs and called it garbage
+collection. `ledger_named` on each `unmerged` entry tells the two kinds apart at a
+glance: **0** is a killed leg to re-merge or delete, a **large** number is a
+backfilled leg that cannot be re-merged at all.
+
+**Dry-run 2026-09-02** over 187,976 pictures: 32 unmerged legs holding **20,723
+pictures (3.09 GiB)** skipped — 22 backfilled `runs` legs and 10 killed ones — and
+**1,135 named by no ledger row (182.2 MiB)**, every one of them in two merged `depth`
+legs (`breadth_strange` 883, `smooth500_pilot` 252). The rule this replaced kept those
+1,135 because those legs' `sequence.jsonl` still names them, and deleted 24.
 
 The safety is three properties and none of them is a promise made in a comment: the
 enumeration is `<subtree>/<leg>/pictures` at a **fixed depth**, so a leg's `fields/` is
 unreachable however large it gets; every directory is checked against the tier roots
 **at the point of deciding** rather than trusted from whatever produced the list; and
 the deletion is `delete_pictures` and nothing else, which is the one deleter in this
-project and re-homes each name as it unlinks. The run costs about 31 s over this
-store — a `scandir` per leg, one streamed pass of the ledger, one of each leg's own
-records.
+project and re-homes each name as it unlinks. The run costs **9.9 s** over this store —
+a `scandir` per leg and one streamed pass of the ledger. It was about 31 s when it also
+read every leg's own records with a regex, so that pass was two thirds of it.
 
 **The ledger's pictures live in exactly five subtrees, and nothing it holds names a
 field.** Swept 2026-09-02 over 177,993 rows: `depth` 158,628 · `runs` 11,875 · `mine`

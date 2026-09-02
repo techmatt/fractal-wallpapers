@@ -3370,9 +3370,14 @@ def curate_gallery(args: argparse.Namespace) -> int:
 
 def _curate_gallery_record(args: argparse.Namespace) -> int:
     """The production solve, run once and recorded under a stamp that never moves."""
-    from fractal_wallpapers.curation import headroom, solve, tentative
+    from fractal_wallpapers.curation import solve, tentative
 
-    candidates, _costs, refused = headroom.population()
+    # `solve.pool` and not `headroom.population`, for `curate solve run`'s reason:
+    # the two build the same candidate list — `population` IS `solve.pool` plus a
+    # per-mode render-cost table read off every ledger row — and this handler has
+    # never looked at that table. Streaming instead is 5.1 s and one fewer
+    # whole-ledger copy.
+    candidates, refused = solve.pool()
     try:
         order, coverage = solve.ranking_for(candidates, args.key)
         record = solve.solve(
@@ -3634,7 +3639,7 @@ class _PictureOf(NamedTuple):
 
 def curate_flatness(args: argparse.Namespace) -> int:
     """Sweep the dead-space column over the pool, or keep the sidecar it lands in."""
-    from fractal_wallpapers.curation import durability, flatness, headroom
+    from fractal_wallpapers.curation import durability, flatness, solve
 
     if args.what in ("save", "check", "restore"):
         durable = flatness.durable()
@@ -3660,7 +3665,8 @@ def curate_flatness(args: argparse.Namespace) -> int:
         ]
         print(f"[flatness] every ledger row with a picture on disk: {len(candidates):,}")
     else:
-        candidates, _costs, _refused = headroom.population()
+        # `solve.pool` and not `headroom.population` — see `curate gallery record`.
+        candidates, _ = solve.pool()
     if args.what == "coverage":
         print(json.dumps(flatness.coverage(candidates), indent=2))
         return 0
@@ -3672,7 +3678,7 @@ def curate_flatness(args: argparse.Namespace) -> int:
 
 def curate_signatures(args: argparse.Namespace) -> int:
     """Sweep the diversity rule's bound signature, or keep the sidecar it lands in."""
-    from fractal_wallpapers.curation import durability, headroom, signatures
+    from fractal_wallpapers.curation import durability, headroom, signatures, solve
 
     # Before the population is built, because the three keeping verbs are about
     # the file on disk and reading the clearing pool to save it would be minutes
@@ -3689,7 +3695,8 @@ def curate_signatures(args: argparse.Namespace) -> int:
         print(json.dumps(durability.restore(durable, force=args.force), indent=2))
         return 0
 
-    candidates, _costs, _refused = headroom.population()
+    # `solve.pool` and not `headroom.population` — see `curate gallery record`.
+    candidates, _ = solve.pool()
     kept = headroom.clearing(candidates)
     print(f"[signatures] the clearing pool: {len(kept):,} candidate(s)")
     if args.what == "coverage":
@@ -3724,10 +3731,11 @@ def curate_rank_key(args: argparse.Namespace) -> int:
 
 def curate_distinct(args: argparse.Namespace) -> int:
     """The neutral pre-selection read: the join, the distribution, the premise, the sheet."""
-    from fractal_wallpapers.curation import distinct, headroom
+    from fractal_wallpapers.curation import distinct, headroom, solve
     from fractal_wallpapers.paths import rehome
 
-    candidates, _costs, _refused = headroom.population()
+    # `solve.pool` and not `headroom.population` — see `curate gallery record`.
+    candidates, _ = solve.pool()
     kept = headroom.clearing(candidates)
     best: dict = {}
     for candidate in sorted(kept, key=lambda held: (-held.score, held.key)):
@@ -7998,9 +8006,10 @@ def curate_commands(subcommands) -> None:
             "stores and renders nothing; `census` is the fill over the axes a constraint "
             "acts on, and which of them is thin. `orphans` is the other direction and the "
             "backstop under `prune`: a KILLED leg never reaches `merge`, so its pictures "
-            "are on disk with no row ever written for them and no prune can free them. It "
-            "deletes only what neither a ledger row nor the leg's own records name, and it "
-            "is a dry run unless `--apply` says otherwise."
+            "are on disk with no row ever written for them and no prune can free them. A "
+            "leg that HAS merged is decided by the ledger alone; one that has not is "
+            "skipped and listed for a person, never swept. It is a dry run unless "
+            "`--apply` says otherwise."
         ),
     )
     ledger_store.add_argument(
@@ -8059,7 +8068,8 @@ def curate_commands(subcommands) -> None:
         action="store_true",
         help="with `orphans`: actually delete what the sweep found. The default is the dry "
         "run, which is the opposite way round from `prune` and deliberately so — a prune "
-        "decides about rows it can see, and this decides about files nothing wrote down",
+        "decides about rows it can see, and this decides about files nothing wrote down. "
+        "Read the `unmerged` list first: those legs are skipped either way",
     )
     ledger_store.add_argument(
         "--recolour",

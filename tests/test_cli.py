@@ -561,6 +561,28 @@ def test_the_flatness_sweep_and_the_rank_key_fit_are_subcommands_with_defaults()
     assert parse(["curate", "rank-key", "show"]).what == "show"
 
 
+def test_no_handler_materialises_the_ledger_for_a_cost_table_it_discards() -> None:
+    """`headroom.population` IS `solve.pool` plus a per-mode render cost read off
+    every ledger row, so a handler that wants only the candidates and reaches it
+    anyway buys one whole-ledger copy — 5.1 s and 177,993 rows — for a table it
+    throws away. Five sites did; `curate headroom` is the one that reads the table.
+    Source-level because the alternative is a fixture that loads the real pool."""
+    import inspect
+    import re
+
+    source = inspect.getsource(cli)
+    binds = re.findall(r"^\s*(.*)=\s*headroom\.population\(", source, re.MULTILINE)
+    assert binds, "the census handler still reaches it; this guard has lost its subject"
+    for bound in binds:
+        # The middle of the three is the cost table. A throwaway name there is a
+        # handler paying for the whole ledger to read nothing off it.
+        names = [name.strip() for name in bound.split(",")]
+        assert len(names) == 3, f"{bound.strip()!r} is not the three-tuple this returns"
+        assert not names[1].startswith("_"), (
+            f"{bound.strip()!r} discards the cost table: take `solve.pool()` instead"
+        )
+
+
 def test_every_subcommands_help_renders() -> None:
     """`--help` on any verb, at any depth. It is not a formality: argparse
     `%`-expands a help string as it prints it, so one unescaped `%` in one
