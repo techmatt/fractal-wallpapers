@@ -291,6 +291,19 @@ that night ran their queues out before their clocks — 3h22m and 2h48m — whic
 why an overnight is a *chain* of legs under one supervisor rather than one long
 `--minutes`.
 
+**A fifth leg on the same roots is 93% re-discovery, which is the convergence
+`--reprobe` exists for, measured.** A four-minute leg on 2026-09-01 handed all
+four earlier ledgers as `--prior` and no `--reprobe` spent **576 seeds** — the
+whole human queue, all 84 `matt_q4` and all 462 `matt_q3`, then 30 `head_q4` —
+and the operators found **100 nuclei of which 93 were already in the priors'
+`seen` set**. Seven new locations, one head-q4. The count is on the summary under
+`counts.nucleus_already_found`, and it is the number to read before deciding
+whether a leg wants `--reprobe`: the seed queue was not empty (3,795 offered) and
+the clock was not the binding constraint. Note also that **all 84 `matt_q4` seeds
+returned nothing** — the highest-priority class is the first the chain exhausts,
+because four earlier legs fired at it first, so a short leg's yield comes off
+`matt_q3` and the queue order works against a leg that will not run to the end.
+
 **Record and rank, never gate.** Every derived nucleus is scored and written
 whatever the head said. Neutral pre-selection distinctness (`curation.distinct`,
 `PRESELECT_RADIUS`) is applied where a **sheet** is cut, through

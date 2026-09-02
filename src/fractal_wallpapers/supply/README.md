@@ -105,6 +105,17 @@ twin             74         1,079       14.6     62 /  74              68 /  74
 pool             50           551       11.0     21 /  50              47 /  50
 ```
 
+**Re-measured a third time on 2026-09-01, over ten active minutes with every
+partition served and the channel on, the margin is wider still**: of 128 roots
+served, **90 were proven and they returned 1,690 of the run's 1,789 admissions
+(94.5%)**. The rest is a rounding — 6 twin roots returned 57, 2 `ranked_harvest`
+pool roots returned 41, and the **21 `nucleus_grid` plane-pool roots and 4
+`home_view` roots returned nothing at all**. A quarter of the roots this run
+served booked zero. Note the root row says which channel it came from under
+`provenance.channel` and *not* under `source`, which names the pool file the
+entry was read out of: a tally by `source` puts 115 of these 128 roots under
+`seed_file` and cannot see the channel at all.
+
 Cost came out at **0.19–0.22 s/admission**, against 0.26–0.38 for the same five
 partitions on run10 with the channel off. The margin is widest where the pool is
 weakest: **2 of 29 phoenix `c`-pool roots booked anything at all**, against 57 of
@@ -186,6 +197,23 @@ contest only, evaluated at the pop rather than baked into the priority, because
 neighbourhood *no ledger* has ever booked an admission from, and prices that
 fraction against its own admission rate. Inside the share the head ranks and only
 the junk floor kills; the discount never reaches it.
+
+**The exploration share cannot reach a floored partition, and the partitions with
+the most unwalked ground are the floored ones.** Measured over a ten-minute
+all-partition leg on 2026-09-01: the four julia twins carried a **non-empty
+novel-root queue in all 114 batches** — peaks of 50, 53, 46 and 66 roots no ledger
+had booked from — and took **0 of the run's 326 exploration slots** between them,
+against 179 to `mandelbrot` and 84 to `multibrot3`. The mechanism is on every
+quota card as `share.weight_source`, which read `intent` in all 114: the share is
+drawn over the post-floor pool weighted by each partition's *intended* share, and
+a partition whose intent is the 0.05 floor has spent that intent on its floor
+slots, so it carries a vanishing weight in the draw that follows. With `wanted`
+at one or two slots a batch, a floored partition essentially never wins one. The
+run-wide realized share was **0.424**, comfortably over the 0.25 floor, which is
+why the run-wide number cannot see this — `quota.exploration.realized.per_partition`
+is where it shows, and a partition reading 0.0 there with a non-empty
+`novel_queues` entry is this. Nothing is broken: the floor and the share are two
+levers that compose badly, and which one should give is not settled here.
 
 **A run's `--ledgers` names one root, and the two cross-run indexes are only as
 wide as it.** Both `saturation` and `novelty` read the tree that flag points at,
