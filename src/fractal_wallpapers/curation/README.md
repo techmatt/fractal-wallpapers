@@ -4046,6 +4046,15 @@ named by a study's own record — `depth/breadth_strange`, `depth/wm1_serial`,
 `depth/smooth500_pilot` by their `sequence.jsonl`, and `shrinkage/dc1` by the
 `pairs.jsonl` those 200 label-geometry re-reads *are*. Nothing was deleted here.
 
+**The ledger's pictures live in exactly five subtrees, and nothing it holds names a
+field.** Swept 2026-09-02 over 177,993 rows: `depth` 158,628 · `runs` 11,875 · `mine`
+4,566 · `reframe_draw` 2,283 · `hunt` 641, and no row points anywhere else at all.
+That is the cheap test for whether a name under the regenerable tree is load-bearing —
+grep the `picture` field, not the source. It also settles the dumped fields: **zero**
+rows across `rows.jsonl`, `scores.jsonl` and `flatness.jsonl` name a `.f32`, so a
+leg's `fields/` is a pure intermediate however large it gets (6.2 GiB across 54 depth
+legs on that date, against 24.3 GiB of pictures in the same tree).
+
 **A leg's `sequence.jsonl` / `profile.jsonl` is a measurement record, not a feature
 store, and it must not be pruned row by row.** 361,221 rows over 43 legs, 295 MB, 69%
 of them naming a key the ledger no longer holds — but `depth`'s own module docstring
@@ -4929,6 +4938,19 @@ fractal-wallpapers curate sidecar restore    # bring the copy back, count-verifi
 `grown` between a harvest and the next `save`, which is the ordinary state and not
 a fault; `short` and `missing` are the two it exists to catch, and they exit
 non-zero.
+
+**`grown` stops being ordinary before anything deletes or moves under the tree.**
+The delta a `grown` reports is content that exists on one disk only, and the whole
+point of the durable is that no such content should be there when the tree is
+being operated on. Measured 2026-09-02, all three of the manually-saved durables
+were behind at once — the supply by 15,194 rows and eleven days, the embedding
+store by 10,669 rows (a GPU leg to remake), the reduced-signature sidecar by
+21.7 MB — while the ledger's `rows`/`scores`/`flatness`, saved that morning,
+matched their manifests to the byte. So the pre-flight for any tree surgery is
+`curate sidecar save`, `curate embeddings save` and `curate signatures save`
+first, and `check` on all of them after. `score_amendments.jsonl` is the one file
+under the tree with no durable at all (above), which is fine while it is
+regenerable and is worth remembering when the sidecar it is derived from is not.
 
 **A run name is claimed once.** A `curate run` whose name already has a
 `run_plan.json` refuses: continuing an interrupted run is `--resume`, and it is a
