@@ -50,9 +50,25 @@ DECISIONS = (REFUSED, EXPANDABLE, FIND, EXCEPTIONAL)
 #: The schema the sidecar carries, from its first row.
 SCHEMA = 1
 
-#: Where the figure's frames land, and what the sidecar beside them is called.
-FIGURE = Path("artifacts") / "figures" / "judges_score_to_decision"
+#: What the figure's subtree is called under the regenerable tree, and what the
+#: sidecar beside its frames is called. The directory is [`figure_dir`] and not a
+#: constant: `under()` reads which tier that subtree is on, and a constant would
+#: have to answer that at import time.
+FIGURE_UNIT = ("figures", "judges_score_to_decision")
 SIDECAR = "frames.jsonl"
+
+
+def figure_dir() -> Path:
+    """Where the figure's frames land when no directory is named.
+
+    Through `under()` rather than a bare `Path("artifacts")`, which is what this
+    was until 2026-09-02 — a path relative to the **shell's** working directory,
+    which on a machine that has moved its hot root is a fourth place that is
+    neither tier.
+    """
+    from fractal_wallpapers.paths import under
+
+    return under(*FIGURE_UNIT)
 
 
 class DecisionError(RuntimeError):
@@ -218,7 +234,7 @@ def draw(
     rows = held_out(head, run)
     picks = chosen(rows, partition)
 
-    directory = Path(directory) if directory is not None else FIGURE
+    directory = Path(directory) if directory is not None else figure_dir()
     directory.mkdir(parents=True, exist_ok=True)
     colormap = location_view.canonical_map()
     cyclic = location_view.cyclic_maps()
@@ -264,7 +280,7 @@ __all__ = [
     "DECISIONS",
     "EXCEPTIONAL",
     "EXPANDABLE",
-    "FIGURE",
+    "FIGURE_UNIT",
     "FIND",
     "REFUSED",
     "SCHEMA",

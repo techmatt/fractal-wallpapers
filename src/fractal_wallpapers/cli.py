@@ -2981,6 +2981,27 @@ def curate_sidecar(args: argparse.Namespace) -> int:
     return 0
 
 
+def curate_amendments(args: argparse.Namespace) -> int:
+    """Record, check or restore the score amendment against its tracked manifest."""
+    from fractal_wallpapers.curation import amend, durability
+
+    durable = amend.durable()
+    doing = {
+        "save": lambda: durability.save(durable),
+        "check": lambda: durability.check(durable),
+        "restore": lambda: durability.restore(durable, force=args.force),
+    }[args.what]
+    try:
+        report = doing()
+    except durability.DurableLost as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps(report, indent=2))
+    if args.what == "check" and report.get("verdict") in {"short", "missing"}:
+        return 1
+    return 0
+
+
 def curate_mass_sweep(args: argparse.Namespace) -> int:
     """Record, check or restore the colour-mass sweep log against its tracked manifest."""
     from fractal_wallpapers.curation import durability
@@ -3277,6 +3298,7 @@ def curate_candidate_ledger(args: argparse.Namespace) -> int:
         "census": lambda: candidate_ledger.census(n=args.n),
         "save": candidate_ledger.save,
         "check": candidate_ledger.check,
+        "orphans": lambda: candidate_ledger.orphans(apply=args.apply),
         "pictures": candidate_ledger.picture_census,
         "prune": lambda: candidate_ledger.prune(keep=args.keep, apply=not args.dry_run),
         "re-render": lambda: candidate_ledger.re_render(limit=args.limit, workers=args.workers),
@@ -7556,6 +7578,35 @@ def curate_commands(subcommands) -> None:
     )
     sidecar.set_defaults(handler=curate_sidecar)
 
+    amendments = steps.add_parser(
+        "amendments",
+        help="the score amendment's durability: record it, check it, restore it",
+        description=(
+            "artifacts/curation/score_amendments.jsonl is what `curate redraw` writes: one "
+            "append-only row per (location, engine build) re-reading a standing seating "
+            "score off a view drawn again for it. Every reader of a seating score overlays "
+            "it, so losing it does not shrink the supply — it silently puts the supply back "
+            "on the numbers the re-read corrected. Rebuilding it is `curate redraw` over "
+            "the whole supply, about ninety thousand renders, and only on a machine whose "
+            "engine still fingerprints the same. So the bytes go to the archive tier and "
+            "the history keeps the manifest: the row count, the byte count, the sha256 and "
+            "the per-build split."
+        ),
+    )
+    amendments.add_argument(
+        "what",
+        choices=["check", "save", "restore"],
+        help="check the live amendment against the manifest, save a fresh copy and "
+        "manifest, or restore the copy",
+    )
+    amendments.add_argument(
+        "--force",
+        action="store_true",
+        help="with `restore`: overwrite a live amendment that holds MORE rows than the "
+        "manifest records. Those rows are a redraw nobody has saved yet",
+    )
+    amendments.set_defaults(handler=curate_amendments)
+
     mass_sweep = steps.add_parser(
         "mass-sweep",
         help="the colour-mass sweep log's durability: record it, check it, restore it",
@@ -7944,7 +7995,11 @@ def curate_commands(subcommands) -> None:
             "Scores live in a sidecar keyed on (recipe, judge artifact, regime), so a judge "
             "adoption invalidates scores and nothing else. `backfill` reads the two decision "
             "stores and renders nothing; `census` is the fill over the axes a constraint "
-            "acts on, and which of them is thin."
+            "acts on, and which of them is thin. `orphans` is the other direction and the "
+            "backstop under `prune`: a KILLED leg never reaches `merge`, so its pictures "
+            "are on disk with no row ever written for them and no prune can free them. It "
+            "deletes only what neither a ledger row nor the leg's own records name, and it "
+            "is a dry run unless `--apply` says otherwise."
         ),
     )
     ledger_store.add_argument(
@@ -7953,6 +8008,7 @@ def curate_commands(subcommands) -> None:
             "backfill",
             "census",
             "check",
+            "orphans",
             "pictures",
             "prune",
             "re-render",
@@ -7961,10 +8017,11 @@ def curate_commands(subcommands) -> None:
             "restore",
         ],
         help="build the ledger from what already exists, take the coverage census, check "
-        "the live files against their manifests, report which rows name a picture that is "
-        "no longer on disk, bring the store back to the retention rule, put back the "
-        "pictures the rows still name, save a fresh copy and manifests, read every picture "
-        "through the judge shipped now, or restore the copies",
+        "the live files against their manifests, sweep the pool subtrees for pictures no "
+        "record names, report which rows name a picture that is no longer on disk, bring "
+        "the store back to the retention rule, put back the pictures the rows still name, "
+        "save a fresh copy and manifests, read every picture through the judge shipped now, "
+        "or restore the copies",
     )
     ledger_store.add_argument(
         "--keep",
@@ -7995,6 +8052,13 @@ def curate_commands(subcommands) -> None:
         action="store_true",
         help="with `prune`: read, decide, and touch nothing. THE dry run — there is no "
         "second command that says what a prune would do",
+    )
+    ledger_store.add_argument(
+        "--apply",
+        action="store_true",
+        help="with `orphans`: actually delete what the sweep found. The default is the dry "
+        "run, which is the opposite way round from `prune` and deliberately so — a prune "
+        "decides about rows it can see, and this decides about files nothing wrote down",
     )
     ledger_store.add_argument(
         "--recolour",

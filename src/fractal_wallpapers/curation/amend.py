@@ -368,6 +368,90 @@ def shift(minted: list[dict], moved: float = 0.02) -> dict:
     }
 
 
+# --------------------------------------------------------------------------- #
+# Keeping it. The amendment is the one file here nothing can make again cheaply.
+# --------------------------------------------------------------------------- #
+def backup_path() -> Path:
+    """The durable copy, beside the sidecar's on the archive tier.
+
+    The same [`curation.durability.BACKUP_UNIT`] as the sidecar this file amends,
+    and for that module's reason: a copy resolved through `under()` would land on
+    the tier the original is already on, which is the one place a second copy is
+    no use.
+    """
+    from fractal_wallpapers.curation import durability
+    from fractal_wallpapers.paths import archive_root, hot_root
+
+    archive = archive_root()
+    root = hot_root() if archive is None else archive
+    return Path(root) / durability.BACKUP_UNIT / AMENDMENTS_NAME
+
+
+def manifest_path() -> Path:
+    """The tracked manifest: what the amendment was, last time anybody recorded it."""
+    from fractal_wallpapers.paths import repo_root
+
+    return repo_root() / "data" / "curation" / "score_amendments.manifest.json"
+
+
+def durable():
+    """The amendment as a [`curation.durability.Durable`] — saved, checked, restored.
+
+    It gets what the sidecar gets, and the case is sharper than the sidecar's. A
+    row here is a re-read of a location through the shipped location head over a
+    view **re-rendered for it**, so rebuilding the file is [`refresh`] over the
+    whole supply: about ninety thousand renders, the best part of an hour, and
+    only on a machine whose engine still fingerprints the same — a build that has
+    moved on cannot reproduce these rows at all, it can only write different ones
+    beside them. Tracking it is out for the usual reason and by a wide margin:
+    tens of megabytes against a 1 MiB per-file history guard.
+
+    Unlike every other durable here it is **append-only**, which is what makes
+    [`durability.guard`] worth extending to it: a shorter file is always a loss
+    and never an ordinary state.
+    """
+    from fractal_wallpapers.curation import durability
+
+    return durability.Durable(
+        name="the score amendment",
+        live=path(),
+        copy=backup_path(),
+        manifest=manifest_path(),
+        why_not_tracked=(
+            "tens of megabytes of re-read scores against a 1 MiB per-file history guard, "
+            "and it grows by an append every time a build change makes a standing score "
+            "stale. The manifest is what the history keeps: the row count, the bytes, the "
+            "sha256, and how many rows each engine build contributed."
+        ),
+        save_command="fractal-wallpapers curate amendments save",
+        restore_command="fractal-wallpapers curate amendments restore",
+        rebuild_command="fractal-wallpapers curate redraw",
+        facts=_facts,
+    )
+
+
+def _facts(where: Path) -> dict:
+    """The columns this file adds to its manifest: which engine build read what.
+
+    Per build and not in total, because the amendment is keyed on (location,
+    engine) and two builds' readings of one location are two measurements. A
+    manifest that gave one number would be describing a population that does not
+    exist.
+    """
+    from collections import Counter
+
+    builds: Counter = Counter()
+    keys = set()
+    with Path(where).open(encoding="utf-8") as handle:
+        for line in handle:
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            builds[str(row.get("engine"))] += 1
+            keys.add(str(row.get("key")))
+    return {"locations": len(keys), "rows_by_engine": dict(sorted(builds.items()))}
+
+
 __all__ = [
     "AMENDMENTS_NAME",
     "BATCH",
@@ -375,6 +459,9 @@ __all__ = [
     "SCHEMA",
     "AmendError",
     "append",
+    "backup_path",
+    "durable",
+    "manifest_path",
     "overlay",
     "path",
     "read",
