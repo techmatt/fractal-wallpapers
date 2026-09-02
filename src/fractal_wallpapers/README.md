@@ -68,6 +68,23 @@ snapshot for the whole file so the tier of `artifacts/tiles` is decided once
 rather than stat-ed on two disks a million times.
 `tests/test_storage_tiers.py` is the guard over all of it.
 
+**Two places still build a tree path without asking**, found by
+`AUDIT_artifacts_inventory` and left alone by it: `palettes/carriers.py`'s
+`RECOLOUR_DIR` and `models/decisions.py`'s `FIGURE` are both a bare
+`Path("artifacts") / …`, joined directly rather than passed through `under()` or
+`cli.resolve_output`. They are relative to the *shell's* working directory, so on
+a machine that has moved its hot root they write to a fourth place that is
+neither tier. Everything else that looks hard-coded is an argparse **default
+string** — `resolve_output` puts those through `rehome`, which is what makes the
+literal `"artifacts"` in them load-bearing rather than a leak.
+
+**Censusing the tree is cheap and worth doing.** A metadata-only walk of the hot
+tier — 403,088 files, 102 GiB on 2026-09-02 — takes under thirty seconds on this
+machine with `os.scandir` and no `stat` beyond size and mtime. `git status` over
+the same tree is 90–108 ms, and `-uno` is no faster, so the tracked hole in
+`.gitignore` is not making git descend expensively. The tool that this tree *is*
+expensive for is anything walking the checkout without honouring `.gitignore`.
+
 **Every tracked record goes out through `tracked_name`, including the ones that
 name a file the tree does not hold.** A summary's `run_dir`, a metrics record's
 checkpoints, a price table's source runs: all of them are read back on a machine
