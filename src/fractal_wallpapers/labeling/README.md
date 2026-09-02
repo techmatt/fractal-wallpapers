@@ -239,7 +239,20 @@ eval-side places.
 ## What cutting a sheet costs, and why the number moves so much
 
 A location unit is **two renders at 1280×720 ss2**, and that is the whole bill —
-scoring the cut page afterwards is a minute whatever the page holds. Build it in the
+scoring the cut page afterwards is a minute whatever the page holds.
+
+**The label geometry has one spelling and it is `sheets.LABEL_RESOLUTION`**
+(`labeling/sheets.py`), with `LABEL_SUPERSAMPLE` and `LABEL_FILTER` beside it: what
+both finished-render corpora were collected at, and therefore what a finished-render
+sheet renders at — a picture judged at a different geometry is a verdict about a
+different picture. `curation/shrinkage.py` imports it and **nothing else in the tree
+does**, which is what makes it the single spelling rather than one of several.
+Grepping the numbers instead lands on the wrong constant: `sheets.py` holds
+`SHEET_RESOLUTION`/`SHEET_SUPERSAMPLE` at the *same* 1280×720 ss2 for the **location**
+sheet, and `curation/manufacture.py` a third at those numbers again. They agree today
+and nothing makes them; a change to what a person judges a finished render at is a
+change to `LABEL_RESOLUTION` alone.
+ Build it in the
 background and estimate before committing, because the per-unit cost is not one
 number and picking the wrong one is off by an order of magnitude:
 

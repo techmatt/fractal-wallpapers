@@ -118,14 +118,22 @@ PICTURES = "pictures"
 #: [`colorize.render`]. Swept down to [`colorize.FIELDS_KEPT`] as the run goes.
 FIELDS = "fields"
 
-#: The pool-wide refinement scan a hunt looks its frames up in.
+#: The pool-wide refinement scan [`frames_path`] was derived from. **The artifact
+#: is gone and nothing here ever built it** — this repository has only ever held a
+#: reader for it, and the scan itself came from a job outside the tree. Deleted
+#: 2026-09-02 (97.8 MiB) once [`build_frames`] was checked to have carried all
+#: 28,090 of its rows across. The names stay because [`build_frames`] is still the
+#: only thing that can make the index and would be unreconstructable without them;
+#: what they point at will not come back on its own.
 SCAN_UNIT = "frame_refit"
 SCAN_NAME = "scan.jsonl"
 
 #: The thin index derived from that scan: one row a location, the frame it chose
-#: and nothing else. The scan is 98 MB of every rung and a hunt asks it one
-#: question — parsing all of it per run is a minute of wall clock buying a lookup
-#: table that does not change between runs.
+#: and nothing else. The scan was 98 MB of every rung and a hunt asks it one
+#: question — parsing all of it per run was a minute of wall clock buying a lookup
+#: table that does not change between runs. **It is now the durable half rather
+#: than a cache**: the scan it came from is deleted, so this file cannot be rebuilt
+#: and a leg that loses it draws every location at its recorded frame.
 FRAMES_NAME = "frames.jsonl"
 
 #: The two legs, in the spelling every row and every tally uses.
@@ -282,13 +290,21 @@ def build_frames(margin: float = framing.MARGIN, log=print) -> tuple[Path, int]:
     margin is a property of that *record*, and re-deciding it is a read of every
     rung — which is what the scan kept every rung for, and is not something a
     hunt does on its way past.
+
+    **This can no longer run**, because [`SCAN_UNIT`]'s artifact is deleted and
+    nothing in this repository builds one. Re-deriving at a different margin was
+    the only thing the scan was still being kept for, and it is bought back only
+    by re-running the outside job that made it. The index it already wrote is the
+    durable product.
     """
     source = scan_path()
     if not source.is_file():
         raise HuntRefused(
-            f"there is no refinement scan at {tracked_name(source)}, so a hunt has no frame "
-            f"to draw at. The scan is resumable and regenerates in about three and a half "
-            f"hours; the curation README says how."
+            f"there is no refinement scan at {tracked_name(source)} and nothing in this "
+            f"repository builds one — it was deleted on 2026-09-02, having no builder here "
+            f"and no reader but this. {tracked_name(frames_path())} is the index it wrote "
+            f"and is what a hunt actually reads; a location missing from it draws at the "
+            f"frame it already carries, which is `frame_for`'s other half and not an error."
         )
     out = frames_path()
     out.parent.mkdir(parents=True, exist_ok=True)
