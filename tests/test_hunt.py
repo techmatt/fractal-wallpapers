@@ -20,6 +20,7 @@ import json
 import pytest
 
 from fractal_wallpapers.curation import candidate_ledger, flatness, hunt, recipes
+from fractal_wallpapers.supply.partitions import ALL_PARTITIONS, CLASSIC_PHOENIX
 
 # --------------------------------------------------------------------------- #
 # Material.
@@ -143,6 +144,21 @@ def test_a_location_the_ledger_already_stands_on_is_not_drawable():
     """Depth is not the thin axis; a place with a recipe already has one."""
     rows = [place("a"), place("b")]
     assert set(hunt.drawable(rows, {"a"})["mandelbrot"][0]["key"]) == set("b")
+
+
+def test_a_partition_with_no_drawable_row_is_reported_as_a_zero_not_an_absence():
+    """A partition that holds nothing used to be absent from this dict rather than
+    zero in it, so it could not appear as a refusal anywhere in the hunt's own
+    records — and `phoenix:classic` sat at zero for the life of the project with
+    nothing saying so. A table that omits a partition and a table that reports it
+    empty are different statements."""
+    pools = hunt.drawable([place("a")], set())
+    assert set(pools) == set(ALL_PARTITIONS)
+    assert pools[CLASSIC_PHOENIX] == []
+    shape = hunt.shape_of(pools, [])
+    assert shape["drawable"]["by_partition"][CLASSIC_PHOENIX] == 0
+    assert shape["drawable"]["locations"] == 1
+    assert hunt.spread(pools, 4, seed=1) == [place("a")], "an empty pool takes no turn"
 
 
 def test_a_location_with_no_framing_row_is_minable_at_the_frame_it_carries():

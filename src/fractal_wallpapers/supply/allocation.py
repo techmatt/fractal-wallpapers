@@ -28,12 +28,6 @@ trigger the reframings which reach into the poor ones.
 `deficit / price`, so a wrong price stops the only service that would revise it.
 Nothing else in this design can reach a partition that is never served.
 
-**Externally supplied partitions get share 0.0 and keep their key.** They are
-neither pinned up to the floor nor given any of the proportional pool, and the
-remaining shares still sum to one. The key stays because every tally downstream is
-shaped by this dict, and an explicit zero reads as "allocated nothing on purpose"
-where a missing key reads as a partition nobody tracked.
-
 ## The floor's carry — because an entitlement that does not accumulate is not one
 
 The share-gap rule cannot hold a floor, and the reason is structural rather than a
@@ -136,11 +130,6 @@ class Allocation:
     floored: set
     weighted_deficit: dict
     floor: float
-    #: Externally-supplied partitions held out of the floor and the pool. Recorded
-    #: rather than inferred from a zero share: a partition can legitimately
-    #: allocate to zero, and "we chose not to" and "the arithmetic came out zero"
-    #: are different facts.
-    external: set = field(default_factory=set)
 
     def bucket(self, partition: str) -> str:
         return "floor" if partition in self.floored else "deficit"
@@ -149,7 +138,6 @@ class Allocation:
         return {
             "share": {p: round(v, 4) for p, v in sorted(self.share.items())},
             "floored": sorted(self.floored),
-            "external": sorted(self.external),
             "floor": self.floor,
             "floor_share_total": round(sum(self.share[p] for p in self.floored), 4),
             "weighted_deficit": {p: round(v, 5) for p, v in sorted(self.weighted_deficit.items())},
@@ -161,10 +149,14 @@ def allocate(
     prices: dict,
     partitions=ALL_PARTITIONS,
     floor: float = FLOOR_FRACTION,
-    external: set | None = None,
 ) -> Allocation:
     """Intended time-share per partition. Every share is at least `floor`, the
     rest is proportional to price-weighted deficit, and the shares sum to one.
+
+    **Every registered partition is served.** There is no held-out set: a
+    partition that should get none of the clock is retired from the registry, and
+    one the walk cannot currently feed is starved — which the refill census says
+    out loud rather than the allocator swallowing silently.
 
     The degenerate cases each have a reason rather than a fallback:
 
@@ -179,22 +171,16 @@ def allocate(
       run, and every partition *is* tagged floored there, since the floor is
       exactly what could not be honoured.
     """
-    external = set() if external is None else set(external)
-    skipped = [p for p in partitions if p in external]
-    served = [p for p in partitions if p not in external]
-    zeros = dict.fromkeys(skipped, 0.0)
+    served = list(partitions)
     n = len(served)
     if n == 0:
-        return Allocation(
-            share=zeros, floored=set(), weighted_deficit={}, floor=floor, external=set(skipped)
-        )
+        return Allocation(share={}, floored=set(), weighted_deficit={}, floor=floor)
     if floor * n >= 1.0:
         return Allocation(
-            share={p: 1.0 / n for p in served} | zeros,
+            share={p: 1.0 / n for p in served},
             floored=set(served),
             weighted_deficit=dict.fromkeys(served, 0.0),
             floor=floor,
-            external=set(skipped),
         )
 
     weighted = {
@@ -204,11 +190,10 @@ def allocate(
     total = sum(weighted.values())
     if total <= 0.0:
         return Allocation(
-            share={p: 1.0 / n for p in served} | zeros,
+            share={p: 1.0 / n for p in served},
             floored=(set(served) if 1.0 / n < floor else set()),
             weighted_deficit=weighted,
             floor=floor,
-            external=set(skipped),
         )
 
     pinned: set = set()
@@ -235,14 +220,7 @@ def allocate(
         if held > 0:
             for p in rest:
                 share[p] = share[p] * pool / held
-    share.update(zeros)
-    return Allocation(
-        share=share,
-        floored=pinned,
-        weighted_deficit=weighted,
-        floor=floor,
-        external=set(skipped),
-    )
+    return Allocation(share=share, floored=pinned, weighted_deficit=weighted, floor=floor)
 
 
 def fold_dynamical_intent(
@@ -282,7 +260,6 @@ class FloorLedger:
     """
 
     floor: float = FLOOR_FRACTION
-    external: set = field(default_factory=set)
     trigger_batches: float = FLOOR_DEBT_TRIGGER_BATCHES
     servable_minutes: dict = field(default_factory=dict)
     total_minutes: float = 0.0
@@ -295,8 +272,6 @@ class FloorLedger:
         self.total_minutes += minutes
         self.batches += 1
         for partition in servable:
-            if partition in self.external:
-                continue  # no clock, therefore no claim
             self.servable_minutes[partition] = self.servable_minutes.get(partition, 0.0) + minutes
 
     def entitled(self) -> dict:
@@ -349,8 +324,6 @@ class FloorLedger:
         allocated = self.floor * self.total_minutes
         rows, alarms = {}, []
         for partition in partitions:
-            if partition in self.external:
-                continue  # allocated nothing on purpose
             spent = float(realized.get(partition, 0.0))
             servable = float(self.servable_minutes.get(partition, 0.0))
             unspent = (1.0 - spent / allocated) if allocated > 0 else None
@@ -388,7 +361,6 @@ class FloorLedger:
         return {
             "floor": self.floor,
             "trigger_batches": self.trigger_batches,
-            "external": sorted(self.external),
             "servable_minutes": self.servable_minutes,
             "total_minutes": self.total_minutes,
             "batches": self.batches,
@@ -436,7 +408,7 @@ def exploration_slots(intended: dict, novel_queues: dict, n_slots: int) -> tuple
     partitions that can actually seat a share slot.
 
     A partition with intent zero and novel nodes still cannot be seated here — it
-    is externally supplied or capped, and the share is not a way around either.
+    is capped, and the share is not a way around that.
     Where no partition carries intent at all, the share falls back to spreading
     over whoever has the nodes, which is what a cold allocation already does one
     level up.

@@ -18,7 +18,11 @@ from fractal_wallpapers.discovery import pools
 from fractal_wallpapers.discovery.walk import Limits, Walk
 from fractal_wallpapers.supply import proven
 from fractal_wallpapers.supply import refill as refill_module
-from fractal_wallpapers.supply.partitions import CLASSIC_PHOENIX, PARAMETER_PLANES
+from fractal_wallpapers.supply.partitions import (
+    ALL_PARTITIONS,
+    CLASSIC_PHOENIX,
+    PARAMETER_PLANES,
+)
 from fractal_wallpapers.supply.refill import Refill
 
 MANDELBROT = {"kind": "mandelbrot"}
@@ -126,10 +130,12 @@ def test_a_rule_label_is_not_a_proven_root() -> None:
     assert [row["viewport"]["center_re"] for row in derived] == ["0.2"]
 
 
-def test_the_dynamical_partitions_are_served_and_the_pinned_phoenix_is_not() -> None:
+def test_every_registered_partition_is_served_including_the_pinned_phoenix() -> None:
     """The planes are served because they have no sampler; the dynamical families
-    are served because theirs cannot express a frame. `phoenix:classic` is one
-    pinned parameter point another leg fills, and it is in no channel at all."""
+    because theirs cannot express a frame; `phoenix:classic` because one pinned
+    point has exactly one fresh root in existence, so a labelled place is most of
+    what it can be handed. It was excluded until 2026-09-02, which left its q3+
+    labels the only ones in the store that became no roots."""
     rows = corpus(
         label(JULIA, 4, "0.1"),
         label(PHOENIX, 4, "0.2"),
@@ -137,10 +143,9 @@ def test_the_dynamical_partitions_are_served_and_the_pinned_phoenix_is_not() -> 
         label(MANDELBROT, 4, "0.4"),
     )
     record = proven.derive(rows=rows)["record"]
-    assert record["rows"] == 3
-    assert CLASSIC_PHOENIX not in record["partitions"]
-    assert set(record["partitions"]) == set(proven.SERVED)
-    assert set(PARAMETER_PLANES) < set(proven.SERVED)
+    assert record["rows"] == 4
+    assert set(record["partitions"]) == set(proven.SERVED) == set(ALL_PARTITIONS)
+    assert record["partitions"][CLASSIC_PHOENIX] == 1
     assert record["partitions"]["julia:mandelbrot"] == 1
     assert record["partitions"]["phoenix"] == 1
 
@@ -216,7 +221,6 @@ def refill_of(tmp_path, live, monkeypatch, **kwargs) -> tuple[Walk, Refill]:
         walk,
         low_water=2,
         per_draw=2,
-        external={CLASSIC_PHOENIX},
         partitions=list(PARAMETER_PLANES),
         seeds=None,
         proven=live,
@@ -293,7 +297,6 @@ def test_a_seed_file_and_the_proven_channel_share_one_queue(tmp_path) -> None:
         walk,
         low_water=2,
         per_draw=9,
-        external={CLASSIC_PHOENIX},
         partitions=list(PARAMETER_PLANES),
         seeds=seeds,
         proven=channel(),
@@ -366,12 +369,16 @@ def test_one_queue_holds_a_parameter_and_a_place_and_tells_them_apart_by_shape(
         refill._root_of("julia:mandelbrot", object(), 2)
 
 
-def test_the_pinned_classic_phoenix_is_still_refused_a_channel(tmp_path) -> None:
-    """It has no pool, no proven roots and no twin, and another leg of the
-    project fills it. A list that grew must not sweep it up."""
+def test_the_pinned_classic_phoenix_draws_one_fresh_root_and_its_proven_places(
+    tmp_path,
+) -> None:
+    """Its queue is the one thing a pinned plane can offer — the home view — with
+    every labelled place interleaved through it. It was refused a channel outright
+    until 2026-09-02, first and unconditionally, so its labels became no roots and
+    no walk ever rendered a frame of it."""
     walk = Walk(out_dir=tmp_path / "run", seed=1, limits=Limits(batch=2))
     live = proven.build(rows=corpus(label(CLASSIC, 4, "0.3")), partitions=[CLASSIC_PHOENIX])
-    assert live.partitions == (), "no served partition, so no queue"
+    assert live.partitions == (CLASSIC_PHOENIX,), "served, so it has a queue"
 
     refill = Refill(
         walk,
@@ -380,9 +387,24 @@ def test_the_pinned_classic_phoenix_is_still_refused_a_channel(tmp_path) -> None
         seeds=None,
         proven=proven.build(rows=corpus(label(CLASSIC, 4, "0.3"), label(PHOENIX, 4, "0.4"))),
     )
-    assert refill.has_channel(CLASSIC_PHOENIX) is False
+    assert refill.has_channel(CLASSIC_PHOENIX) is True
     assert refill.has_channel("phoenix") is True
-    assert refill.starved(dict.fromkeys([CLASSIC_PHOENIX, "phoenix"], 0), batch=0) == ["phoenix"]
+    assert refill.starved(dict.fromkeys([CLASSIC_PHOENIX, "phoenix"], 0), batch=0) == [
+        CLASSIC_PHOENIX,
+        "phoenix",
+    ]
+
+    queue = refill._pool(CLASSIC_PHOENIX)
+    assert len(queue) == 2, "the home view, and the one labelled place"
+    roots = {
+        root["source"]: root
+        for root in (refill._root_of(CLASSIC_PHOENIX, entry, at) for at, entry in enumerate(queue))
+    }
+    fresh, proven_root = roots["classic_phoenix_point"], roots["seed_file"]
+    assert fresh["viewport"] is None, "a fresh root comes up at the home view"
+    assert fresh["provenance"]["file"] is None, "synthesized, not read out of a pool file"
+    assert proven_root["provenance"]["channel"] == proven.CHANNEL
+    assert proven_root["viewport"] is not None, "a labelled place carries its own frame"
 
 
 def test_the_census_says_how_much_of_a_queue_came_from_the_label_store(
@@ -450,18 +472,18 @@ def test_a_channel_name_nobody_registered_is_refused_at_the_parser() -> None:
             cli.build_parser().parse_args(["harvest", "--root-channel", name])
 
 
-def test_a_partition_the_channel_does_not_serve_is_refused_at_the_parser() -> None:
-    """`derive` filters on the list it is handed, so a subcommand that passed one
-    through unchecked would print a seed set for the pinned classic phoenix — a
-    file no harvest can consume, reading exactly like one it can."""
+def test_the_parser_offers_exactly_the_partitions_the_channel_serves() -> None:
+    """`derive` filters on the list it is handed, so a subcommand offering a
+    partition the channel does not serve would print an empty seed set reading
+    exactly like a full one. The two lists are the same list now."""
     from fractal_wallpapers import cli
 
     with pytest.raises(SystemExit):
-        cli.build_parser().parse_args(["derive-proven-seeds", "--partition", CLASSIC_PHOENIX])
+        cli.build_parser().parse_args(["derive-proven-seeds", "--partition", "nonesuch"])
     parsed = cli.build_parser().parse_args(
-        ["derive-proven-seeds", "--partition", "julia:mandelbrot"]
+        ["derive-proven-seeds", "--partition", CLASSIC_PHOENIX, "--partition", "julia:mandelbrot"]
     )
-    assert parsed.partition == ["julia:mandelbrot"]
+    assert parsed.partition == [CLASSIC_PHOENIX, "julia:mandelbrot"]
 
 
 @pytest.mark.slow

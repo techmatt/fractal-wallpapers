@@ -17,11 +17,14 @@ partition quietly deflates every other ratio.
 
 A ratio of zero is refused. A partition that should get none of a release is
 retired from the registry; zeroing leaves it registered, floored, censused and
-permanently starved. A partition the walk cannot feed carries
-`externally_supplied` instead, which keeps its ratio and takes away only its share
-of the clock — `phoenix:classic` is the one, because its plane is a single pinned
-parameter point and new material there comes from descending that plane rather
-than from anything a walk can draw.
+permanently starved. **A row is a ratio and there is no second kind of entry.**
+There was one until 2026-09-02: `externally_supplied`, on `phoenix:classic`, which
+kept its ratio and took away its share of the clock, its floor, and its place in
+the starvation census. No job outside the walk ever filled it, so what the flag
+bought was silence — the partition was zero at every stage from the walk onward
+and the one report that would have said so had been switched off. A partition the
+walk cannot currently feed is *starved*, and starvation is something this engine
+already knows how to say.
 
 **The two price tables are evidence and policy, kept apart.**
 `cost_to_find_measured.json` is what a run actually spent per unit of currency,
