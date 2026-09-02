@@ -17,6 +17,7 @@ the state above and is invisible until somebody runs `check`.
 
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -90,21 +91,27 @@ def a_row(key: str = "aaaa", place: str = "place-a", **over) -> dict:
 
 
 def redirect(monkeypatch, live, copies, manifests) -> None:
-    """Point the whole store at a temporary one. **All four names, every time.**
+    """Point the whole store at a temporary one. **All five names, every time.**
 
-    `flatness.sidecar_path` is the one a caller forgets, because it is reached
-    through another module — and `merge` both fills that sidecar and prunes it.
-    A test that redirected three of the four rewrote this machine's real sidecar
-    to hold the keys of a temporary ledger. `candidate_ledger.prune` refuses a
-    store whose three files are in more than one directory now, so the same
-    mistake is a raise rather than a loss; this is what makes the redirect one
-    thing to get right rather than four.
+    The two reached through another module are the ones a caller forgets, and
+    `merge` touches both: it fills and prunes `flatness.sidecar_path`, and it
+    mirrors `signatures.sidecar_path`. A test that redirected three of the four
+    rewrote this machine's real flatness sidecar to hold the keys of a temporary
+    ledger. `candidate_ledger.prune` refuses a store whose three files are in more
+    than one directory now, so the same mistake is a raise rather than a loss;
+    this is what makes the redirect one thing to get right rather than five.
+
+    The signature sidecar has no such raise behind it, and its failure is quieter
+    and larger: `merge` only ever *copies* it, so an unredirected one would put
+    68.6 MB of this machine's real store into `tmp_path` on every merge in this
+    file rather than corrupt anything.
     """
-    from fractal_wallpapers.curation import flatness
+    from fractal_wallpapers.curation import flatness, signatures
 
     monkeypatch.setattr(candidate_ledger, "rows_path", lambda: live / "rows.jsonl")
     monkeypatch.setattr(candidate_ledger, "scores_path", lambda: live / "scores.jsonl")
     monkeypatch.setattr(flatness, "sidecar_path", lambda: live / flatness.SIDECAR_NAME)
+    monkeypatch.setattr(signatures, "sidecar_path", lambda: live / signatures.SIDECAR_NAME)
     monkeypatch.setattr(candidate_ledger, "backup_path", lambda name: copies / name)
     monkeypatch.setattr(candidate_ledger, "manifest_dir", lambda: manifests)
 
@@ -246,6 +253,78 @@ def test_the_door_records_the_flatness_sidecar_with_the_other_two(tmp_path, monk
     ).read_bytes()
     named = [name for name in report["recorded"]["manifests"] if "flatness" in name]
     assert len(named) == 1, report["recorded"]["manifests"]
+
+
+def test_the_door_mirrors_the_reduced_signature_sidecar_too(tmp_path, monkeypatch) -> None:
+    """The fourth file of the store, copied rather than left to be re-derived.
+
+    It was outside the mirror while the reduction ran at 1024 directions and the
+    store was ~245 MB. At 256 it is 68.6 MB, and a restore that skipped it paid
+    minutes of `curate signatures sweep` over the three-worker pool for bytes a
+    copy already had. `merge` does not FILL this one — nothing here does — so the
+    pin is that a file which is there is mirrored and recorded.
+    """
+    from fractal_wallpapers.curation import signatures
+
+    live, copies, manifests = tmp_path / "live", tmp_path / "copy", tmp_path / "manifests"
+    for directory in (live, copies, manifests):
+        directory.mkdir()
+    redirect(monkeypatch, live, copies, manifests)
+    monkeypatch.setattr("fractal_wallpapers.paths.rehome", lambda _name: None)
+    signatures.write([signatures.row("aaaa", "artifacts/one.jpg", signatures.pack([0.0] * 4))])
+
+    report = candidate_ledger.merge([a_row()], [], log=lambda *_a, **_k: None)
+
+    assert report["recorded"]["signatures"] == 1
+    assert (copies / signatures.SIDECAR_NAME).read_bytes() == (
+        live / signatures.SIDECAR_NAME
+    ).read_bytes(), "the mirror holds the sidecar's bytes"
+    named = [name for name in report["recorded"]["manifests"] if "signatures" in name]
+    assert len(named) == 1, report["recorded"]["manifests"]
+
+
+def test_a_checkout_that_never_swept_signatures_merges_without_one(tmp_path, monkeypatch) -> None:
+    """No file is a state and not a loss, so the door records `None` and goes on.
+
+    Stronger than the flatness sidecar's version of this: `prune` rewrites that
+    one, so it exists by the time the save reaches it. Nothing in a merge writes
+    this one at all.
+    """
+    live, copies, manifests = tmp_path / "live", tmp_path / "copy", tmp_path / "manifests"
+    for directory in (live, copies, manifests):
+        directory.mkdir()
+    redirect(monkeypatch, live, copies, manifests)
+    monkeypatch.setattr("fractal_wallpapers.paths.rehome", lambda _name: None)
+
+    report = candidate_ledger.merge([a_row()], [], log=lambda *_a, **_k: None)
+
+    assert report["recorded"]["signatures"] is None
+    assert not (manifests / "signatures.manifest.json").exists()
+    assert report["recorded"]["rows"] == 1, "the rest of the store is recorded either way"
+
+
+def test_the_signature_manifest_counts_rows_by_the_shape_each_one_names(tmp_path) -> None:
+    """A mirror of bytes does not get to restate what those bytes are.
+
+    The sidecar is upserted by recipe key and nothing sweeps the old constants
+    out, so a live file that has outlived a change to either one holds both — the
+    real store held 11,454 rows at 4x256 and 182 still at 4x1024 on 2026-09-01.
+    A manifest stamped with the CURRENT shape would call those 182 rows something
+    they are not.
+    """
+    from fractal_wallpapers.curation import signatures
+
+    blocks, directions = signatures.shape()
+    path = tmp_path / "signatures.jsonl"
+    rows = [
+        signatures.row("aaaa", "a.jpg", signatures.pack([0.0] * 4)),
+        {**signatures.row("bbbb", "b.jpg", signatures.pack([0.0] * 4)), "directions": 1024},
+    ]
+    body = "".join(json.dumps(held) + chr(10) for held in rows)
+    path.write_text(body, encoding="utf-8", newline=chr(10))
+    facts = signatures._shapes(path)
+
+    assert facts["rows_by_shape"] == {f"{blocks}x{directions}": 1, f"{blocks}x1024": 1}
 
 
 def test_a_merge_that_swept_nothing_records_an_empty_sidecar_rather_than_none(

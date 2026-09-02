@@ -1136,16 +1136,19 @@ def merge(rows, scores, log=print) -> dict:
     pre-prune count would make [`durability.check`] read `short` on a store that
     is exactly what the rule says it should be.
 
-    **All three files are recorded, not two.** The flatness sidecar is written by
+    **All four files are recorded, not two.** The flatness sidecar is written by
     the sweep above and rewritten by the prune below, and for an era it was saved
     only when somebody ran `curate flatness save` by hand — so the one file whose
     absence silently unranks a merge's whole output was the one file the door did
-    not record. Note what this does *not* buy: `curate candidate-ledger check`
-    still reads the rows and the scores alone, so a short or missing sidecar is
-    not what makes that command exit 1. Extending it is a decision about what a
-    build failure is, and it has not been taken here.
+    not record. The reduced-signature sidecar joined it for the weaker but real
+    version of the same reason: nothing here fills it, but a restore without it
+    re-derives 68.6 MB of readings the mirror could have copied. Note what this
+    does *not* buy: `curate candidate-ledger check` still reads the rows and the
+    scores alone, so a short or missing sidecar is not what makes that command
+    exit 1. Extending it is a decision about what a build failure is, and it has
+    not been taken here.
     """
-    from fractal_wallpapers.curation import colorize, flatness, retention
+    from fractal_wallpapers.curation import colorize, flatness, retention, signatures
 
     # Before the upsert, because it is a reading of what the store held BEFORE
     # this leg's own rows joined it — see [`retention.repeat_draws`].
@@ -1176,6 +1179,14 @@ def merge(rows, scores, log=print) -> dict:
     # from turning a checkout that has never swept into a failed merge.
     if flatness.sidecar_path().is_file():
         saved["flatness"] = durability.save(flatness.durable(), log=log)
+    # The reduced-signature sidecar is the fourth, and conditional for a stronger
+    # version of the flatness sidecar's reason: nothing in a merge fills it, so on
+    # a checkout that has never run `curate signatures sweep` there is no file at
+    # all. Where there is one it is mirrored here rather than left to a restore to
+    # re-derive over the three-worker pool, which is minutes for bytes a copy
+    # already had.
+    if signatures.sidecar_path().is_file():
+        saved["signatures"] = durability.save(signatures.durable(), log=log)
     return {
         "rows_path": tracked_name(rows_file),
         "scores_path": tracked_name(scores_file),
@@ -1194,10 +1205,12 @@ def merge(rows, scores, log=print) -> dict:
             "rows": saved["rows"]["rows"],
             "scores": saved["scores"]["rows"],
             "flatness": saved["flatness"]["rows"] if "flatness" in saved else None,
+            "signatures": saved["signatures"]["rows"] if "signatures" in saved else None,
             "manifests": [
                 tracked_name(durable_rows().manifest),
                 tracked_name(durable_scores().manifest),
                 *([tracked_name(flatness.durable().manifest)] if "flatness" in saved else []),
+                *([tracked_name(signatures.durable().manifest)] if "signatures" in saved else []),
             ],
         },
     }

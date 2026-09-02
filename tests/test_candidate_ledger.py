@@ -262,8 +262,13 @@ def isolated(tmp_path, monkeypatch):
     does not move, because it moves the two row files directly. Without the
     redirect a synthetic three-row merge would upsert into this machine's real
     hundred-thousand-row sidecar.
+
+    The **reduced-signature sidecar** is the sixth and resolves the same way.
+    `merge` does not fill that one, only mirrors it, so the cost of forgetting it
+    is 68.6 MB copied into `tmp_path` per merge rather than a corrupted store —
+    still not something a unit test should do.
     """
-    from fractal_wallpapers.curation import flatness
+    from fractal_wallpapers.curation import flatness, signatures
 
     monkeypatch.setattr(candidate_ledger, "rows_path", lambda: tmp_path / "rows.jsonl")
     monkeypatch.setattr(candidate_ledger, "scores_path", lambda: tmp_path / "scores.jsonl")
@@ -271,6 +276,7 @@ def isolated(tmp_path, monkeypatch):
     monkeypatch.setattr(candidate_ledger, "manifest_dir", lambda: tmp_path / "manifests")
     monkeypatch.setattr(candidate_ledger, "_picture_of", lambda source: tmp_path / "nothing.jpg")
     monkeypatch.setattr(flatness, "sidecar_path", lambda: tmp_path / "flatness.jsonl")
+    monkeypatch.setattr(signatures, "sidecar_path", lambda: tmp_path / signatures.SIDECAR_NAME)
     return tmp_path
 
 
