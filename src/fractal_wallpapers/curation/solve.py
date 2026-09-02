@@ -439,6 +439,54 @@ def within(candidates: list[Candidate], locations) -> list[Candidate]:
 # --------------------------------------------------------------------------- #
 # The rank key.
 # --------------------------------------------------------------------------- #
+def preselection_for(cleared, radius: float | None = distinct.PRESELECT_RADIUS, log=print):
+    """The neutral pre-selection over one clearing pool, for a caller solving it at
+    several `n`. Hand the result back as `solve(preselected=...)`.
+
+    **It does not read `n` and never has.** The pre-selection asks whether two
+    places are the same place, over descriptors taken off a neutral render — so
+    every rung of a ladder over one pool computes the identical answer, and
+    PROFILE_solve_large_n measured that answer at **13.7 s** over 5,818 places, flat
+    in `n` and the largest single stage at n=250. A six-rung themed ladder was
+    paying eighty seconds for one result.
+
+    `None` for `radius` is "no pre-selection", and then there is nothing to share.
+    """
+    if radius is None:
+        return None
+    return distinct.preselect(cleared, radius=float(radius), log=log)
+
+
+def _shared_preselection(preselected: tuple, cleared: list, radius: float | None) -> tuple:
+    """One handed-in pre-selection, checked against the pool it is being reused over.
+
+    A shared derivation is only sound while the thing it was derived from has not
+    moved, and the failure is silent otherwise: a pre-selection taken over a
+    different clearing pool would refuse places this pass never asked about and
+    admit places it did. So the two counts the record already carries are compared
+    against the pool in hand, the same way [`curation.growth`] checks its own
+    reading of "what cleared" against the solve's.
+    """
+    kept, record = preselected
+    asked = int(record.get("candidates_asked", -1))
+    places = int(record.get("places_asked", -1))
+    mine = len(cleared)
+    my_places = len({candidate.location for candidate in cleared})
+    if asked != mine or places != my_places:
+        raise SolveRefused(
+            f"the pre-selection handed in was taken over {asked:,} candidate(s) at "
+            f"{places:,} place(s) and this pass clears {mine:,} at {my_places:,}. A shared "
+            "pre-selection is only sound over the pool it was computed on — see "
+            "solve.preselection_for"
+        )
+    if radius is not None and float(record.get("radius", -1.0)) != float(radius):
+        raise SolveRefused(
+            f"the pre-selection handed in was taken at radius {record.get('radius')} and "
+            f"this pass asked for {radius}"
+        )
+    return list(kept), record
+
+
 def rule_for(targets: dict | None = None) -> ceiling.Rule:
     """The ceiling's constants and targets.
 
@@ -1249,6 +1297,7 @@ def solve(
     swap: bool = True,
     drops: int = SWAP_DROPS,
     seconds: float | None = None,
+    preselected: tuple | None = None,
     log=print,
 ) -> dict:
     """One gallery, chosen. The record is the return value; nothing is written.
@@ -1267,6 +1316,11 @@ def solve(
     that many strongest places. `seconds` is a wall budget for the swap loop
     alone: the seed always runs, and what the clock stops is improvement rather
     than the answer.
+
+    `preselected` is [`preselection_for`]'s result, for a **ladder** solving one
+    pool at several `n`: the pre-selection does not read `n`, so every rung
+    recomputes the same 13.7 s answer. It is checked against the pool in hand
+    before it is used and a single pass is unchanged by it.
 
     `group_cap` names the palette-group cap rule and `key` the sort key. **Neither
     touches the pool**: the bars, the clearing rule and the neutral pre-selection
@@ -1369,7 +1423,11 @@ def solve(
     if radius is None:
         kept, preselection = list(cleared), {"skipped": "no neutral pre-selection was applied"}
     else:
-        kept, preselection = distinct.preselect(cleared, radius=float(radius), log=log)
+        if preselected is None:
+            kept, preselection = distinct.preselect(cleared, radius=float(radius), log=log)
+        else:
+            kept, preselection = _shared_preselection(preselected, cleared, radius)
+        preselection = {**preselection, "shared_across_rungs": preselected is not None}
         survived = {candidate.key for candidate in kept}
         for candidate in cleared:
             if candidate.key not in survived:

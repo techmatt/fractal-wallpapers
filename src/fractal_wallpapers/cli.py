@@ -1060,7 +1060,7 @@ def harvest_draws_views(args: argparse.Namespace) -> bool:
 def harvest(args: argparse.Namespace) -> int:
     """Run the production loop: keep finding material where it is scarcest."""
     from fractal_wallpapers.discovery.walk import Limits, Policy, Walk
-    from fractal_wallpapers.supply import autopsy, ledgers, novelty, release_mix, saturation, twins
+    from fractal_wallpapers.supply import autopsy, ledgers, novelty, saturation, twins
     from fractal_wallpapers.supply.census import stock_census
     from fractal_wallpapers.supply.harvest import Budget, Harvest
     from fractal_wallpapers.supply.partitions import ALL_PARTITIONS
@@ -1122,7 +1122,6 @@ def harvest(args: argparse.Namespace) -> int:
         floor=args.floor,
         prices_config=load_table(Path(args.prices) if args.prices else None),
         census=stock_census(partitions, discount=args.discount),
-        external=release_mix.externally_supplied(partitions),
         exploration=exploration,
     )
     # Primed before the first batch, off the same two legs of admitted stock the
@@ -1138,7 +1137,6 @@ def harvest(args: argparse.Namespace) -> int:
         cooldown=args.cooldown,
         share=args.refill_share,
         seeds=Path(args.seeds) if args.seeds else None,
-        external=quota.external,
         partitions=partitions,
         twins=twin_channel,
         proven=build_proven_channel(args, partitions),
@@ -1292,7 +1290,6 @@ def census(args: argparse.Namespace) -> int:
     partitions = list(ALL_PARTITIONS)
     stock_census = census_module.stock_census(partitions, discount=args.discount)
     ratios = release_mix.ratios(partitions)
-    external = release_mix.externally_supplied(partitions)
     seed = load_table(Path(args.prices) if args.prices else None)["prices"]
 
     labels = stock_census.currency
@@ -1302,15 +1299,14 @@ def census(args: argparse.Namespace) -> int:
     target, anchor = census_module.targets(stock, partitions, ratios)
     deficit = {p: max(0.0, target[p] - float(stock.get(p, 0.0))) for p in partitions}
 
-    labels_allocation = allocate(labels_deficit, seed, partitions, args.floor, external)
-    allocation = allocate(deficit, seed, partitions, args.floor, external)
+    labels_allocation = allocate(labels_deficit, seed, partitions, args.floor)
+    allocation = allocate(deficit, seed, partitions, args.floor)
     print(
         json.dumps(
             {
                 "currency": stock_census.summary(),
                 "target_rule": census_module.TARGET_RULE,
                 "ratio": ratios,
-                "externally_supplied": sorted(external),
                 "labels_only": {
                     "anchor": round(labels_anchor, 3),
                     "target": {p: round(labels_target[p], 3) for p in partitions},
@@ -3415,7 +3411,7 @@ def _curate_gallery_record(args: argparse.Namespace) -> int:
 
 def curate_solve(args: argparse.Namespace) -> int:
     """Choose the gallery: a stratified view, a greedy seed, and swaps to exhaustion."""
-    from fractal_wallpapers.curation import ceiling, headroom, solve
+    from fractal_wallpapers.curation import ceiling, solve
     from fractal_wallpapers.curation import release as release_module
 
     try:
@@ -3442,7 +3438,12 @@ def curate_solve(args: argparse.Namespace) -> int:
         # puts back the flat floor every gallery before the flip was seated under.
         floor = solve.mode_floor(args.n)
 
-    candidates, _costs, _refused = headroom.population()
+    # `solve.pool` and not `headroom.population`: the two build the same candidate
+    # list, but `population` materialises every ledger row to read a per-mode render
+    # cost off it, and this handler has never looked at that table. Streaming instead
+    # is 5.1 s over the store of 2026-09-02 and one fewer whole-ledger copy in a
+    # process that is already the pool-holding one.
+    candidates, _refused = solve.pool()
     try:
         order, coverage = solve.ranking_for(candidates, args.key)
         if coverage is not None:

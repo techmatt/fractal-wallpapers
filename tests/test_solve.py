@@ -2031,3 +2031,114 @@ def test_an_unthemed_pass_is_untouched_by_any_of_it():
     assert record["theme"] is None
     assert record["config"]["ceiling"]["group_cap_rule"] == ceiling.PROPORTIONAL
     assert record["config"]["ceiling"]["group_cap"] == ceiling.group_cap(150, ceiling.PROPORTIONAL)
+
+
+# --------------------------------------------------------------------------- #
+# The signature cache is a SETTING, and the gallery must not read it.
+# --------------------------------------------------------------------------- #
+#: `rules.clouds_for` as this module imported it, before the autouse fixture above
+#: replaces it. The test below wants the real one — a bounded `pixel_clouds.Clouds`
+#: whose eviction is the thing under test — and installs it back over the fixture,
+#: which is what that fixture's docstring says a test may do.
+REAL_CLOUDS_FOR = rules.clouds_for
+
+
+def test_the_cloud_cache_size_moves_what_a_pass_decodes_and_never_what_it_seats(
+    monkeypatch, tmp_path
+):
+    """**Bit-identity across `rules.SIGNATURE_CACHE`, and the constant read at call time.**
+
+    The cache went 256 -> 2048 in APPLY_solve_speedups because a swap pass re-tests
+    the same rows on every pass, and 256 entries against a view of eleven thousand
+    made passes two onward re-decode what pass one had read: 4,238 full signatures
+    for a leg that needs 1,459, and 111 s against 68.9 s at n=1000. It is a
+    **setting** — memory against decodes — and the gallery is not allowed to notice
+    it.
+
+    Two things are pinned, and the second is the one that would rot silently:
+
+    * the same seats in the same order, and the same objective, at two cache sizes,
+      which is what makes the constant safe to move again;
+    * that the small cache genuinely decodes MORE. `clouds_for` used to bind
+      `SIGNATURE_CACHE` as a **default argument**, so it captured the value at
+      import and moving the constant moved nothing at all. Put that back and these
+      two counts become equal, which is what the last assertion is for.
+
+    The real `clouds_for` runs here, over the real bounded `Clouds`. Only two things
+    are stood in for: `rehome`, so the fixture pictures resolve into `tmp_path`, and
+    `of_picture`, so a decode is arithmetic on the name rather than a JPEG. The
+    cache and its eviction are the shipped ones.
+    """
+    from pathlib import Path
+
+    from fractal_wallpapers import paths
+    from fractal_wallpapers.palettes import groups, pixel_clouds
+
+    decoded: list = []
+
+    def of_picture(picture):
+        import numpy
+
+        decoded.append(str(picture))
+        at = float(Path(picture).stem.removeprefix("seat"))
+        # A signature the BOUND CANNOT SETTLE, which is what makes the read cache
+        # bite at all. The bound reads block means over quantiles, so a signature
+        # that alternates +a / -a from one quantile to the next has every block mean
+        # at zero whatever `a` is: every pair looks like distance zero to the bound
+        # and every one of them has to be measured in full. The true distance is
+        # |a_i - a_j|, spread far beyond `ceiling.TAU`, so nothing is anybody's twin
+        # and the seating is not about the threshold.
+        flat = numpy.arange(groups.QUANTILES * pixel_clouds.DIRECTIONS)
+        sign = numpy.where((flat // pixel_clouds.DIRECTIONS) % 2 == 0, 1.0, -1.0)
+        return (sign * at * 0.1).astype("float32")
+
+    monkeypatch.setattr(pixel_clouds, "of_picture", of_picture)
+    monkeypatch.setattr(paths, "rehome", lambda stored, *_a, **_k: tmp_path / Path(stored).name)
+    monkeypatch.setattr(rules, "clouds_for", REAL_CLOUDS_FOR)
+
+    pool = []
+    for at in range(60):
+        # `Clouds.of` stats the path before it decodes, so the file has to exist.
+        # It is never read — `of_picture` above is what opens a picture, and it does not.
+        (tmp_path / f"seat{at}.jpg").touch()
+        pool.append(candidate(f"seat{at}", score=0.99 - at / 1000.0))
+
+    def seated_at(cache: int) -> tuple:
+        monkeypatch.setattr(rules, "SIGNATURE_CACHE", cache)
+        decoded.clear()
+        record = solve.solve(pool, n=20, key=solve.JUDGE_KEY, log=quiet)
+        return (
+            [row["key"] for row in record["seated"]],
+            record["objective"]["final"],
+            len(decoded),
+        )
+
+    small_keys, small_objective, small_decodes = seated_at(4)
+    large_keys, large_objective, large_decodes = seated_at(2048)
+
+    assert small_keys == large_keys, "the cache size moved the gallery"
+    assert small_objective == large_objective, "the cache size moved the objective"
+    assert small_decodes and large_decodes, "the twin rule opened nothing, so this pinned nothing"
+
+
+def test_the_cloud_cache_constant_is_read_at_call_time_and_not_bound_as_a_default(monkeypatch):
+    """The other half of the test above, and the half that would rot silently.
+
+    `clouds_for` was `def clouds_for(candidates, cache: int = SIGNATURE_CACHE)`, which
+    captures the constant **at import**. Every other reader of `SIGNATURE_CACHE` would
+    follow a change to it and this one would not, so raising the cache would have
+    measured no change and the obvious conclusion — that the cache was not the cost —
+    would have been wrong. It was the cost: 4,238 full signatures against 1,459, and
+    111 s against 68.9 s at n=1000.
+
+    Asked directly rather than through a pass, because the pass-level symptom needs a
+    view big enough to evict and that is not a fast-lane fixture.
+    """
+    monkeypatch.setattr(rules, "clouds_for", REAL_CLOUDS_FOR)
+    assert rules.clouds_for([]).cache == rules.SIGNATURE_CACHE
+    assert rules.clouds_for([], cache=11).cache == 11, "an explicit size still wins"
+    monkeypatch.setattr(rules, "SIGNATURE_CACHE", 7)
+    assert rules.clouds_for([]).cache == 7, (
+        "clouds_for is not reading SIGNATURE_CACHE at call time, so moving the "
+        "constant moves nothing"
+    )
