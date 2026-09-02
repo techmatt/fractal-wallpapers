@@ -130,9 +130,14 @@ rebuild *and* the fast lane until you do it.
 what CI runs and what runs before a checkpoint. The fast lane is for the
 edit-run loop and nothing else.
 
-Both are measured, not estimated: **3,371 tests in 6:41**, with the fast lane at
-**136.2 s over the 3,260 it holds**. On this machine, idle, 2026-09-02, at the
-commit that swept `artifacts/`. That reading was taken **right after** 41.5 GiB
+Both are measured, not estimated: **3,388 tests in 6:27**, with the fast lane at
+**139.0 s over the 3,276 it holds**. On this machine, idle, 2026-09-02, at the
+commit that added the viewport sampler — 17 more tests than the reading below and
+14 s faster, so the lane is flat and the entry is re-measured rather than moved.
+
+It read **3,371 tests in 6:41** with the fast lane at **136.2 s over 3,260**,
+idle, 2026-09-02, at the commit that swept `artifacts/`. That reading was taken
+**right after** 41.5 GiB
 and 31,426 paths came off the hot tier and 7.4 GiB moved to the archive — the
 conditions the paragraphs below say to suspect — and it did not move: it is 16%
 over the 5:45 below across 219 more tests, which is the per-test cost holding

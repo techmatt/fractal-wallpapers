@@ -26,6 +26,16 @@ manufactures the twin's supply. It hands over the same seed object the tracked
 pool does, through the same cursor and the same low-water mark; the only
 difference is that its list grows during the run.
 
+**A pinned plane gets fresh places from a sampler over its own view.** A pool
+hands over a parameter and a pinned plane has none left to vary, so its fresh
+supply used to be one home-view row and could never be a second — every further
+*place* had to come from the label store.
+[`fractal_wallpapers.discovery.viewport_sampler`] is the channel that makes
+places: a seeded jittered grid at a ladder of scales over the family's home box,
+every frame screened by the walk's own gate battery before it becomes a root. It
+serves the pinned planes and nothing else, and like the proven channel it is off
+unless a run asks for it by name.
+
 **Any partition can also be seeded from what a human already liked.** The proven
 channel — [`fractal_wallpapers.supply.proven`] — derives a root from every
 location the label store holds a keeper verdict on, and hands it over through the
@@ -133,10 +143,12 @@ class Refill:
         partitions=ALL_PARTITIONS,
         twins=None,
         proven=None,
+        sampler=None,
     ):
         self.walk = walk
         self.twins = twins
         self.proven = proven
+        self.sampler = sampler
         self.low_water = int(low_water)
         self.cooldown = int(cooldown)
         self.share = float(share)
@@ -189,6 +201,7 @@ class Refill:
             rows = pools.phoenix_pool()
         elif partition == CLASSIC_PHOENIX:
             rows = pools.classic_phoenix_pool()
+            rows = self._with_sampler(partition, rows)
         else:
             rows = (
                 [row for row in self._seed_rows() if _seed_partition(row) == partition]
@@ -209,6 +222,29 @@ class Refill:
         if not self._is_proven(partition):
             return rows
         return self.proven.pool(partition, rows)
+
+    def _with_sampler(self, partition: str, rows: list) -> list:
+        """`rows` with this partition's sampled viewports interleaved through them.
+
+        Before the proven interleave rather than after, so the three channels
+        reach the queue in the order they can open ground: the pool's one home
+        view, the sampler's fresh places, then the label store's proven ones. A
+        pinned plane's pool is a single row, so appending instead of interleaving
+        would decide by accident whether the home view is ever drawn.
+        """
+        if not self._is_sampler(partition):
+            return rows
+        return self.sampler.pool(partition, rows)
+
+    def _is_sampler(self, partition: str) -> bool:
+        """Whether the viewport sampler holds roots for this partition.
+
+        It serves the pinned planes alone. A parameter plane and a Julia twin
+        both have a fresh channel that hands over a parameter, and this one
+        hands over a place — offering it to them would be a second answer to a
+        question their own pools already answer.
+        """
+        return self.sampler is not None and partition in self.sampler.partitions
 
     def _is_twin(self, partition: str) -> bool:
         """Whether the twin channel is this partition's channel.
@@ -283,11 +319,13 @@ class Refill:
         with every queue empty, which is exactly the state that makes `deferred`'s
         reasons the ones that apply.
 
-        `pool` is the whole interleaved queue and `proven` is how much of it came
-        from the label store. Both, because on a partition fed by two channels
-        "entries left" alone cannot say what is left: a dynamical queue that has
-        run out of `c` and a dynamical queue that has run out of labelled places
-        exhaust in different ways and are fixed by different things.
+        `pool` is the whole interleaved queue, `proven` is how much of it came
+        from the label store and `sampled` how much of it the viewport sampler
+        drew. All three, because on a partition fed by several channels "entries
+        left" alone cannot say what is left: a dynamical queue that has run out
+        of `c`, one that has run out of labelled places and a pinned plane that
+        has walked out its ladder exhaust in different ways and are fixed by
+        different things.
         """
         empty = dict.fromkeys(self.partitions, 0)
         reasons = self.deferred(empty)
@@ -301,6 +339,9 @@ class Refill:
                 "channel": servable,
                 "pool": pool,
                 "proven": len(self.proven.seeds(partition)) if self._is_proven(partition) else 0,
+                "sampled": (
+                    len(self.sampler.seeds(partition)) if self._is_sampler(partition) else 0
+                ),
                 "drawn": drawn,
                 "remaining": max(0, pool - drawn),
                 "reason": reason,
@@ -315,6 +356,8 @@ class Refill:
                 line = f"pool {partition}: {state['remaining']} of {state['pool']} entries left"
                 if state["proven"]:
                     line += f", {state['proven']} of them proven roots"
+                if state["sampled"]:
+                    line += f", {state['sampled']} of them sampled viewports"
                 out.append(line)
             else:
                 out.append(f"pool {partition}: {state['reason']}")
@@ -333,6 +376,8 @@ class Refill:
                 reason = DEFERRAL[partition]
             elif self._is_twin(partition):
                 reason = self.twins.starvation(partition, drawn=self.cursor.get(partition, 0))
+            elif self._is_sampler(partition):
+                reason = self.sampler.starvation(partition, drawn=self.cursor.get(partition, 0))
             elif self.has_channel(partition):
                 # Asked before the missing-channel sentences, because a twin with
                 # proven roots and no twin channel has a channel: what it ran out
@@ -451,18 +496,29 @@ class Refill:
         )
 
     def _root_of_row(self, entry: dict, index: int) -> dict:
-        """A `{family, viewport}` row as a root: a seed file's, or the proven channel's.
+        """A `{family, viewport}` row as a root: a seed file's, the proven channel's,
+        or the viewport sampler's.
 
         The one door a root enters at a *place* rather than at a home view, which
-        is what the proven channel is worth on a dynamical partition: a `c`-pool
-        can express a parameter and nothing else.
+        is what the proven channel is worth on a dynamical partition and what the
+        sampler is worth on a pinned one: a `c`-pool can express a parameter and
+        nothing else, and a pinned plane has no parameter to express.
         """
         view = entry.get("viewport")
-        # The row's own channel, carried onto the root. A queue can hold two
+        # The row's own channel, carried onto the root. A queue can hold three
         # channels at once, and attributing a find afterwards should be a join on
         # a field rather than a guess at an id prefix.
         provenance = entry.get("provenance") or {}
         channel = provenance.get("channel")
+        # Whatever else the channel knew about this row travels with it: the
+        # proven channel's tier and label batch, the sampler's seed, rung and
+        # scale. The four fields below are computed here and win, so a channel
+        # cannot overwrite the root's own identity by naming one of them.
+        carried = {
+            key: value
+            for key, value in provenance.items()
+            if key not in ("seed_id", "channel", "file", "refill", "source")
+        }
         return {
             "family": entry["family"],
             "viewport": (
@@ -487,6 +543,7 @@ class Refill:
             # inheriting a pool file it was never in.
             "source": provenance.get("source", "seed_file"),
             "provenance": {
+                **carried,
                 "seed_id": entry.get("id", f"row{index:04d}"),
                 "channel": channel,
                 # Named only for a row that actually came out of one: a proven
@@ -527,6 +584,7 @@ class Refill:
             "remaining": {p: self.remaining(p) for p in self.partitions if self.has_channel(p)},
             "twins": None if self.twins is None else self.twins.summary(),
             "proven": None if self.proven is None else self.proven.summary(),
+            "sampler": None if self.sampler is None else self.sampler.summary(),
         }
 
 

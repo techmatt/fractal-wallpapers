@@ -12,6 +12,7 @@ nucleus    Newton on a nucleus, the atom instrument, the canonical key
 operators  reframing a found view onto the atoms around it
 ledger     one JSONL record, one schema, a fate on every row
 scoring    the seam a trained head arrives through
+viewport_sampler  fresh roots for a pinned plane: viewports drawn and screened
 ```
 """
 

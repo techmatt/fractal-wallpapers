@@ -240,6 +240,98 @@ def frames_path() -> Path:
     return under("curation", UNIT) / FRAMES_NAME
 
 
+def frames_backup_path() -> Path:
+    """The durable copy of the index: the archive tier where there is one, hot where not.
+
+    Off a root rather than through [`under`], for the reason
+    [`curation.durability.backup_path`] states: `under()` resolves to whichever
+    tier the subtree is already on, which for a copy that has never been written
+    is the hot one, beside the original it is supposed to survive.
+    """
+    from fractal_wallpapers.curation import durability
+    from fractal_wallpapers.paths import archive_root, hot_root
+
+    archive = archive_root()
+    root = hot_root() if archive is None else archive
+    return Path(root) / durability.BACKUP_UNIT / FRAMES_NAME
+
+
+def frames_manifest_path() -> Path:
+    """The tracked manifest: what the frame index was, last time anybody recorded it."""
+    from fractal_wallpapers.paths import repo_root
+
+    return repo_root() / "data" / "curation" / "hunt_frames.manifest.json"
+
+
+def frames_durable():
+    """The frame index as a [`curation.durability.Durable`] — saved, checked, restored.
+
+    **The one durable here that cannot be rebuilt at any price.** The sidecar is
+    a scoring pass, the amendment is a redraw, the sweep log is 8.7 hours of
+    renders; each of those is expensive and each of them is a command. This is
+    the index [`build_frames`] cut from a 97.8 MiB scan that no job in this
+    repository builds and that was deleted on 2026-09-02 — so `build_frames`
+    refuses, and the only copy of the 28,090 frame choices is the file itself.
+
+    Every mining leg reads it through [`frame_for`]. Losing it is not an error
+    anywhere: a location the index has no row for draws at the frame it already
+    carries, which is `frame_for`'s other half and the majority case. That is
+    exactly why it is guarded — a leg that lost the index renders successfully at
+    19,041 unrefined framings and says nothing about it.
+    """
+    from fractal_wallpapers.curation import durability
+
+    return durability.Durable(
+        name="the hunt frame index",
+        live=frames_path(),
+        copy=frames_backup_path(),
+        manifest=frames_manifest_path(),
+        why_not_tracked=(
+            "tens of megabytes of frame rows against a 1 MiB per-file history guard. The "
+            "manifest is what the history keeps: the row count, the byte count, the sha256, "
+            "the margin every row was chosen at and how many of them adopted a new framing."
+        ),
+        save_command="fractal-wallpapers curate frames save",
+        restore_command="fractal-wallpapers curate frames restore",
+        # There is no rebuild, and the string has to say so rather than name a
+        # command that refuses: `build_frames` reads a scan this repository has
+        # never built and no longer holds.
+        rebuild_command=(
+            "there is no rebuild — the refinement scan this index was cut from was deleted "
+            "on 2026-09-02 and nothing in this repository builds one, so `curate hunt "
+            "frames` refuses. Restore the copy"
+        ),
+        facts=_frames_facts,
+    )
+
+
+def _frames_facts(where: Path) -> dict:
+    """The columns the index adds to its manifest: the margin, and what it decided.
+
+    `adopted` is the half of the file that carries a *chosen* frame; the rest
+    carry the location's recorded one, stamped `used: original`. A manifest with
+    only a row count could not tell a restored index from one whose adopted rows
+    had gone, and the adopted rows are the whole value of the file.
+    """
+    margins: dict[str, int] = {}
+    adopted = 0
+    partitions: dict[str, int] = {}
+    with Path(where).open(encoding="utf-8") as handle:
+        for line in handle:
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            margins[str(row.get("margin"))] = margins.get(str(row.get("margin")), 0) + 1
+            adopted += bool(row.get("adopted"))
+            key = str(row.get("partition"))
+            partitions[key] = partitions.get(key, 0) + 1
+    return {
+        "adopted": adopted,
+        "rows_by_margin": dict(sorted(margins.items())),
+        "rows_by_partition": dict(sorted(partitions.items())),
+    }
+
+
 # --------------------------------------------------------------------------- #
 # The frame, looked up.
 # --------------------------------------------------------------------------- #
@@ -1495,6 +1587,9 @@ __all__ = [
     "drawable",
     "frame_for",
     "frames",
+    "frames_backup_path",
+    "frames_durable",
+    "frames_manifest_path",
     "frames_path",
     "fields_dir",
     "hunt_dir",

@@ -45,6 +45,7 @@ fractal-wallpapers curate score --harvest artifacts/harvest_run3   # through the
 fractal-wallpapers curate sidecar save                             # the supply, made durable
 fractal-wallpapers curate embed                                    # a vector per admitted location
 fractal-wallpapers curate embeddings save                          # the vectors, made durable
+fractal-wallpapers curate frames save                             # the frame index, made durable
 fractal-wallpapers curate neighbours -k 3 --sample 10              # does near mean alike?
 fractal-wallpapers curate plan --harvest artifacts/harvest_run3    # making nothing
 fractal-wallpapers curate run --run v1 --harvest artifacts/harvest_run3
@@ -2403,6 +2404,19 @@ all 28,090 of its rows (19,041 adopted) across, zero missing in either direction
 with the other durables rather than treating it as a cache. Nothing about a leg
 changes — `frame_for` reads the index, and a location it has no row for draws at the
 frame it already carries, which was already the majority case.
+
+**It is registered as a durable, and it is the guarded file whose loss is
+silent.** `curate frames save|check|restore`, a copy under
+`<archive>/curation_backup/frames.jsonl`, a tracked manifest at
+`data/curation/hunt_frames.manifest.json`, and a place in `durability.guarded()`
+so `curate run` refuses without it. Recorded 2026-09-02: **28,090 rows,
+18,115,525 bytes**, sha `8c5341114dee`, **19,041 of them adopted** — all at margin
+2.0, spread over nine partitions and none of them `phoenix:classic`. The manifest
+counts the adopted rows separately because they are the whole value of the file:
+the other 9,049 carry the framing their location already had, which `frame_for`
+would draw anyway. Its `Durable.rebuild_command` is a sentence rather than a
+command, because there is no rebuild at any price — the scan is gone and
+`curate hunt frames` refuses.
 
 **Until 2026-09-01 the rule was the other one and it was stale by construction.**
 `drawable` dropped a location the scan held no row for, with no count and no log
@@ -4800,8 +4814,11 @@ Serial, because the engine threads inside one render; measured on 2026-08-25 at
 **38 views/s** on the hot tier including the stamp write, so a whole 90k supply is
 about 40 minutes of engine plus the head's own pass. Idempotent and resumable: a
 second call over an unchanged supply through an unchanged engine writes nothing.
-The amendment is regenerable from the sidecar, the engine and the head, so unlike
-the sidecar it gets no durable copy and no manifest.
+The amendment is regenerable in principle — from the sidecar, the engine and the
+head — and only on a machine whose engine still fingerprints the same, which is
+why it stopped being treated as a cache on 2026-09-02: it has a durable copy and
+a tracked manifest like the sidecar (`curate amendments save|check|restore`), and
+`curate run` refuses without it.
 
 **Every reader of a seating score prefers the amendment, through one door.**
 `intake.read_scores` overlays it and returns the same row shape, so the five read
@@ -5064,9 +5081,11 @@ store by 10,669 rows (a GPU leg to remake), the reduced-signature sidecar by
 21.7 MB — while the ledger's `rows`/`scores`/`flatness`, saved that morning,
 matched their manifests to the byte. So the pre-flight for any tree surgery is
 `curate sidecar save`, `curate embeddings save` and `curate signatures save`
-first, and `check` on all of them after. `score_amendments.jsonl` is the one file
-under the tree with no durable at all (above), which is fine while it is
-regenerable and is worth remembering when the sidecar it is derived from is not.
+first, and `check` on all of them after. Both files that had no durable at all on
+that date have one now: `score_amendments.jsonl` (`curate amendments`) and
+`artifacts/curation/hunt/frames.jsonl` (`curate frames`), and the guard at the top
+of `curate run` covers all three of the supply, the amendment and the frame
+index.
 
 **A run name is claimed once.** A `curate run` whose name already has a
 `run_plan.json` refuses: continuing an interrupted run is `--resume`, and it is a

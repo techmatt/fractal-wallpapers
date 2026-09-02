@@ -17,6 +17,7 @@ ledger     one JSONL record, one schema, a fate on every row
 scoring    the seam a trained head arrives through
 identity   why the gate render is the picture that head was trained on
 boundary   a seeded uniform draw, screened by those same gates
+viewport_sampler  the same idea as a root channel, for a plane with no parameter
 ```
 
 The one thing a walk does that is not in this package: when it **closes**, it
@@ -715,6 +716,55 @@ location manifest that feeds straight into `render --manifest` or
 
 ```
 fractal-wallpapers sample-boundary --keep 12 --attempts 1024 --seed 1
+```
+
+## The viewport sampler: a root channel for a plane with no parameter
+
+**A pinned plane's fresh supply used to be one row, by construction.** Every pool
+in this project hands over a *parameter* — a `c`, a phoenix `(c, p, z₋₁)` — and
+the walk descends from the home frame it implies. `phoenix:classic` is Ushiki's
+single point, so there is no parameter left to vary and the only thing a fresh
+root can differ in is the frame. `pools.classic_phoenix_pool()` is that one row;
+everything else the partition had came from the label store, which made its
+ceiling `1 + its labelled q3+ places` and its first leg exhaust itself at 2% of a
+thirty-minute budget.
+
+`viewport_sampler` is the channel that makes places. It is `sample-boundary`'s
+idea pointed at supply instead of at measurement: draw viewports over the
+family's own home box, screen every one through `engine.screen` — the walk's own
+battery, not a second one — and hand the survivors over as roots.
+
+**The ladder is octaves, not a width band.** Rung `k` is a `2^k × 2^k` jittered
+grid at width `home/2^k`, which tiles the home box exactly, so a run gets whole
+coverage at each of four scales rather than a cloud of widths wherever a band was
+set. Rung 0 is the home view and the sampler does not draw it — the pool already
+hands that over, and restating it would put one frame in the queue twice under
+two names. The default ladder is four rungs, `4 + 16 + 64 + 256 = 340` frames;
+`--sampler-rungs` is the knob and a fifth rung alone is 1,024 more.
+
+**The jitter is what makes it a sample rather than a lattice.** Each frame's
+centre is displaced inside its own cell by up to half a half-cell, drawn from a
+digest of `(seed, rung, cell)` rather than from a shared stream — so the draw is
+reproducible, and adding a rung later does not move the rungs already there.
+
+**Nothing ranks a viewport before the walk sees it.** The gates admit and the
+head is never asked: a head's opinion of a *root* frame is not evidence about
+what lies below it, and ranking there would be gate-and-forget on the one channel
+that can open the plane. Every attempt is written to the run's ledger as a
+`sampler_draw` row with the gate that refused it, so a rung that produced nothing
+says so.
+
+**Measured on classic phoenix, 2026-09-02** (four rungs, 384-pixel node width):
+**36 roots out of 340 draws in 8.3 s at the production seed 0**, and 37 in 8.5 s
+at seed 20260902 — a 10.6–10.9% yield either way. Refusals at seed 0 were 263
+`flat`, 35 `occupancy_floor`, 6 `interior_cap`, and the yield climbs with the
+rung (0/4, 2/16, 8/64, 26/256): the widest frames are mostly empty plane and read
+as flat, which is what the home framing's own margin looks like from inside a
+gate. The whole draw costs about eight seconds, which is why it is paid once when
+the run is built rather than inside the refill's share of the loop clock.
+
+```
+fractal-wallpapers harvest --minutes 10 --partition phoenix:classic     --root-channel proven --root-channel viewport_sampler
 ```
 
 **A node's foci are recorded only if asked.** The focus set — the peaks of the
