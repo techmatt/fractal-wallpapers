@@ -24,6 +24,7 @@ view       what one pass may reach: strata, and band-blind slices of them
 rules      one spelling per selection rule, over incremental state
 signatures the diversity rule's bound signature, swept once into a sidecar
 solve      THE gallery leg: the view, a greedy seed, and 1-swap improvement
+tentative  one solve recorded under a stamp, with IDs, aliases and a browser
 distinct   which places are visibly different places, decided before any colour
 selection  top-N per judge, under the slot and supply caps, the location rule
            — and the bar
@@ -69,6 +70,10 @@ fractal-wallpapers curate solve run --n 20 --no-render # THE gallery leg: decide
 fractal-wallpapers curate solve run --n 150            # the gallery, then the pictures
 fractal-wallpapers curate solve run --n 1000 --no-render   # ~6 min, scaled not measured
 fractal-wallpapers curate solve run --n 2000 --no-render   # the planning size, 10 min
+fractal-wallpapers curate gallery record                   # THAT solve, recorded. ~9 min
+fractal-wallpapers curate gallery browse <stamp>           # the page again, off the rows
+fractal-wallpapers curate gallery resolve <alias>,<alias>  # an ID back to a recipe
+fractal-wallpapers curate gallery list                     # every record on this machine
 fractal-wallpapers curate manufacture --step register --write          # BEFORE anything
 fractal-wallpapers curate manufacture --oversample 2.5                 # plan, build, select
 fractal-wallpapers curate manufacture --step verify --sheet artifacts/<sheet>
@@ -371,7 +376,7 @@ average and not a per-picture constant.
 ### The growth law
 
 **Rows per location are bounded by `RETAIN_PER_PAIR` times the modes tried
-there, plus the four protections. They are no longer a function of the attempts
+there, plus the five protections. They are no longer a function of the attempts
 made.** That sentence is the whole point of the store, and it holds because
 `candidate_ledger.prune` runs inside `candidate_ledger.merge` — THE door every
 leg comes through. A rule that ran anywhere else would be a rule the store
@@ -1396,6 +1401,67 @@ Four names sit outside `rules.RULES` and are kept apart from it deliberately:
 wallpaper), `below_its_mode_bar` (never entered the population) and
 `another_place_is_the_same_place` (the neutral pre-selection, at pool
 construction). A mine aimed at any of the four would be aimed at nothing.
+
+## `curate gallery` — a solve recorded under a name, and a browser over it
+
+```
+src/fractal_wallpapers/curation/tentative.py   the store, the aliases, the page
+artifacts/curation/tentative/<stamp>/gallery.jsonl   one row per seat
+artifacts/curation/tentative/<stamp>/manifest.json   what pool, what settings, what shortfall
+artifacts/curation/tentative/<stamp>/index.html      the browser, opened by double-clicking
+```
+
+```
+fractal-wallpapers curate gallery record                  # the production solve, recorded
+fractal-wallpapers curate gallery record --n 150          # a smaller one
+fractal-wallpapers curate gallery browse <stamp>          # write the page again
+fractal-wallpapers curate gallery resolve 49616c4b,a71f   # an ID or alias back to a recipe
+fractal-wallpapers curate gallery list                    # every record on this machine
+```
+
+A solve record is a **decision**, and `curate solve run --name n1000` rewrites it every
+time it is run. It is not something a person can point at. To say "use this wallpaper and
+that one" a reader needs a stable handle per picture, a page showing the pictures beside
+their handles, and a guarantee that the picture is still on disk next week. A
+**tentative gallery** is that: `record` runs `curate solve` with nothing changed — same
+pool, same bars, same rules, same objective, same draw seed — and writes the seats under
+a UTC stamp that is **never written over**, because the IDs in it are what a figure
+prompt names.
+
+**The ID is the ledger recipe key**, and the alias is its first eight characters,
+lengthened only for the group that collides. Both resolve; a click on the alias in the
+page copies the full key.
+
+**The record is a protection class in the prune.** `candidate_ledger.RETAINED_TENTATIVE`
+joins the four that were already there. It is needed for a sharper reason than the
+release row's: a seat is chosen on the *gallery's* objective, over a view, against the
+colour rules, and none of that is being in the top three of its own (location, mode)
+pair — so `RETAIN_PER_PAIR` drops these routinely, and it takes the picture with the
+row. Without the class an alias would stop resolving and nothing would say so.
+`tests/test_tentative.py` pins it through a real prune, on `saved_by_a_protection`,
+which counts exactly the protected keys the rank verdict dropped.
+
+**The page is one file and it opens over `file://`.** The rows are embedded as JSON
+rather than fetched — a `fetch` of a sibling file is refused there — the styling is
+inline, and the only external references are relative paths to the pool's own 640x360
+candidate JPEGs. Filters on mode, hue family, colour cell, partition and `centered`, all
+multi-select and all counted in the header; sort by rank, seat order or P(>=4); a search
+box over ID and alias; a selection tray that copies every selected ID as one line. The
+colour filters read a row's **whole** `cells`/`families` list rather than the leading
+one, because dominance is thresholded and filtering on the leader alone hides a green
+picture from the green filter whenever another colour leads it.
+
+**`centered` is joined at record time and cannot be read off a seat.** Nothing
+downstream of a walk carries the flag — not the embedding store, not the supply sidecar,
+not the candidate ledger — so it comes from [`depth.centered_locations`] over the walk
+ledgers, keyed on the location, which costs about 3.6 s once per record.
+
+**What the browser cannot show**, and each is a fact about the store rather than the
+page: the release-size picture, because a record is taken with `--no-render` and the
+tiles are the candidate renders the solve chose from; the palette group and the seating
+leg, which are on the solve record and not on a row; and any picture the prune had
+already swept before the record existed, which shows as a "no picture on this disk" tile
+and which the resolver reports as `picture_on_disk: false`.
 
 ## `curate headroom` — the upper bound the gallery leg is measured against
 

@@ -25,11 +25,13 @@ is a row whose pixels a reader can still open.
   span 0.367 to 0.950, which means one number cannot be the bar for all of them.
   A rank inside a (location, mode) group asks the same question at every mode and
   survives a retrain.
-* **Four protections**, each keeping a row the rank let go: a seat in a live
-  release row, a human rejection, a human label joining it, and a row named by
-  the rank key's own fitted population. They are spelled and applied in
-  [`candidate_ledger.RETAINED_REASONS`], beside the transaction that acts on
-  them.
+* **Five protections**, each keeping a row the rank let go: a seat in a live
+  release row, a human rejection, a human label joining it, a row named by the
+  rank key's own fitted population, and a seat in a **tentative gallery** —
+  [`curation.tentative`], a gallery recorded under a name so that its pictures
+  can be referred to by ID, which is a promise the rank would otherwise break.
+  They are spelled and applied in [`candidate_ledger.RETAINED_REASONS`], beside
+  the transaction that acts on them.
 
 Everything else loses its row and its picture together.
 
@@ -194,7 +196,7 @@ def decide(rows: list, scores: dict | None = None, keep: int | None = None) -> d
 
 def kept(reason: str) -> bool:
     """Does this reason keep the row, and the picture on it? Everything but
-    [`DROPPED`] does — the four protections included, which is why this takes a
+    [`DROPPED`] does — the five protections included, which is why this takes a
     reason rather than testing against [`RANKED`]."""
     return reason != DROPPED
 
