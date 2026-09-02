@@ -82,6 +82,12 @@ These were decided once, at the first commit, because each is expensive to rever
   the box swapping rather than two legs finishing sooner, and a lane sharing the
   machine with one is a lane whose wall-clock guards start failing for a reason
   that is not in the code.
+- **Search the source with `git grep`, never `grep -r` from the root.** This checkout
+  carries a hundred gigabytes and four hundred thousand files of untracked
+  `artifacts/`, plus `.venv/`, `models/` and `engine/target/`, against under two
+  thousand tracked files. A recursive grep reads all of it and takes tens of minutes;
+  `git grep` walks the index and answers in a fraction of a second. `rg` is fine too —
+  it honours `.gitignore` — but `grep --include=*` does not, and that is the trap.
 - **The base install stays torch-free on the `fetch-weights` path.** `pip install
   -e .` buys the engine, the walk, the supply engine and the labeling rig; the
   `models` extra is two gigabytes of CUDA wheels a clone that only renders should
