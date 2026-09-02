@@ -75,6 +75,13 @@ These were decided once, at the first commit, because each is expensive to rever
   [`process_control.child_priority_flags`], so the priority half is not
   something a caller has to remember; the worker count is the caller's and
   three is the number.
+- **ONE POOL-HOLDING PROCESS PER BOX.** Anything that loads the candidate pool —
+  `curate growth`, `curate solve`, `curate gallery record`, and the slow test lane
+  counts as one — never runs concurrently with another on the same machine. The
+  pool is hundreds of megabytes read whole and held whole; two of them at once is
+  the box swapping rather than two legs finishing sooner, and a lane sharing the
+  machine with one is a lane whose wall-clock guards start failing for a reason
+  that is not in the code.
 - **The base install stays torch-free on the `fetch-weights` path.** `pip install
   -e .` buys the engine, the walk, the supply engine and the labeling rig; the
   `models` extra is two gigabytes of CUDA wheels a clone that only renders should

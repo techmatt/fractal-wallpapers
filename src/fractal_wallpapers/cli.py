@@ -3369,11 +3369,17 @@ def _curate_gallery_record(args: argparse.Namespace) -> int:
     except solve.SolveRefused as refusal:
         print(refusal)
         return 1
-    name = args.solve_name or f"tentative_n{args.n}"
+    # One stamp for both halves: the solve record's directory carries the same
+    # name as the tentative folder, so successive records at the same `n` coexist
+    # instead of the second overwriting the first's decision. The manifest's
+    # `record` path is derived from this name, so it keeps pointing at the solve
+    # that chose those seats.
+    stamp = tentative.stamp_now()
+    name = args.solve_name or f"tentative_n{args.n}_{stamp}"
     print(f"{display_path(solve.write_record(name, record))}")
     try:
         directory = tentative.write(
-            record, candidates=candidates, solve_name=name, pool_refused=refused
+            record, candidates=candidates, solve_name=name, pool_refused=refused, stamp=stamp
         )
     except tentative.TentativeRefused as refusal:
         print(refusal)
@@ -8063,7 +8069,8 @@ def curate_commands(subcommands) -> None:
     browsing.add_argument(
         "--solve-name",
         help="with `record`: what to call the solve's own output directory under "
-        "artifacts/curation/solve (default `tentative_n<N>`)",
+        "artifacts/curation/solve (default `tentative_n<N>_<stamp>`, the tentative "
+        "record's own stamp, so successive records at the same N coexist)",
     )
     browsing.add_argument(
         "--key",
