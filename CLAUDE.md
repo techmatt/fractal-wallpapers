@@ -247,6 +247,34 @@ Each prompt in this project ends the same way:
   running, under a message about something else entirely. Nothing was lost and the
   history is wrong anyway, which is the cheap version of this failure.
 
+### Staging a prompt
+
+**"stage `<prompt>.md`" means prepare, not run.** It is how a second prompt gets
+written and thought through while the first one still holds the repository, and the
+whole point is that it costs the live prompt nothing:
+
+- Read the named prompt file and whatever tracked code, records and READMEs it
+  points at. Reading is unlimited; run read-only commands freely.
+- **Do not dirty the tree.** No edits to tracked files, no new files in the
+  checkout, nothing staged, no commits, no branch. Anything that has to be written
+  while staging — notes, a scratch script, sample output — goes to the scratchpad
+  directory outside the checkout, never to `scratch/` or `artifacts/`.
+- **Do not touch what the live prompt is using.** No render legs, no training, no
+  pool-holding process, no slow lane — the one-pool-holding-process rule and the
+  three-worker rule both still bind, and the process holding them is somebody
+  else's. `git status` coming back dirty is expected; leave every file in it alone
+  and do not try to work out whose it is.
+- Produce a plan: what will change, in which files, in what order, what gets
+  measured or rendered, what the report will have to answer, and which steps are
+  long enough to background.
+- **Then stop and wait.** Say the plan is ready and that the tree is not yours yet.
+  Matt hands over the lock explicitly; `git status` going clean on its own is not
+  the handover.
+
+On being given the lock, re-check `git status` and re-read anything the other
+prompt committed under you before executing — a plan staged against the old tree
+is a plan that may have been overtaken.
+
 ## Rules
 
 - Commit to `main` only.
