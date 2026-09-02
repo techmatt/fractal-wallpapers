@@ -184,9 +184,7 @@ class Quota:
 
         guaranteed = [p for p in claimants if p in self._servable][: int(n_slots)]
         post_floor = max(0, int(n_slots) - len(guaranteed))
-        share, share_trace = self._share_slots(
-            effective, queues, novel_queues, guaranteed, post_floor
-        )
+        share, share_trace = self._share_slots(queues, novel_queues, guaranteed, post_floor)
         taken = sum(share.values())
         # What the contest may still seat. The share's nodes are gone from the
         # queue it reads, so a partition cannot be allocated the same node twice.
@@ -227,14 +225,17 @@ class Quota:
         return share, slots, self._trace
 
     def _share_slots(
-        self, effective: dict, queues: dict, novel_queues: dict | None, guaranteed, post_floor: int
+        self, queues: dict, novel_queues: dict | None, guaranteed, post_floor: int
     ) -> tuple[dict, dict]:
         """The exploration share's slots, and what decided them.
 
         The per-partition cap is the partition's stock of novel-lineage nodes,
         less one node in any partition the floor has guaranteed: the guarantee is
         a claim on a *node*, not only on a slot, and a share that emptied the
-        queue would honour the count and starve the partition anyway.
+        queue would honour the count and starve the partition anyway. That cap is
+        also the whole of the membership — the intent vector is deliberately not
+        passed down, because weighting the share by an intent a floored partition
+        had already spent is exactly what stopped it reaching them.
         """
         if self.exploration is None or not novel_queues:
             return dict.fromkeys(self.partitions, 0), {"status": "off"}
@@ -248,7 +249,10 @@ class Quota:
                 available = min(available, max(0, int(queues.get(partition, 0)) - 1))
             caps[partition] = max(0, available)
         wanted = self.exploration.split(post_floor)
-        slots, trace = exploration_slots(effective, caps, wanted)
+        # `taken` is the share's own per-partition tally, which the run already
+        # checkpoints — so the evenness the share is carrying survives a resume
+        # for the same reason its price does, and without a second store.
+        slots, trace = exploration_slots(caps, wanted, taken=self.exploration.taken)
         return slots, {
             "status": "on",
             "share": round(self.exploration.share, 4),

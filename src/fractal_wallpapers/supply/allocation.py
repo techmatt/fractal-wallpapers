@@ -87,6 +87,17 @@ this module exists to close. [`exploration_slots`] therefore divides only the
 *post-floor* remainder, and its per-partition cap leaves a claimant a node to be
 guaranteed with.
 
+**The floor and the share are two budgets, and neither is spent out of the
+other.** The share used to be apportioned by the same intent the contest reads,
+which quietly made them one budget: a partition whose intent *is* the floor has
+spent that intent on its floor slots, so it carried a vanishing weight in the
+draw that followed and never won one. Measured over the ten-minute
+all-partition leg of 2026-09-01, the four Julia twins held a non-empty
+novel-root queue in all 114 batches and took **0 of the run's 326 exploration
+slots**; `mandelbrot` took 179. So [`exploration_slots`] no longer sees an
+intent vector at all — it cannot weight by a floor it is not given — and
+divides its budget over the partitions that have a novel node to spend it on.
+
 The share's membership and its self-pricing live in
 [`fractal_wallpapers.supply.novelty`]; what is here is only where it sits in the
 order, because that is a fact about the allocation and not about novelty.
@@ -395,37 +406,59 @@ def share_gaps(intended: dict, realized: dict, servable) -> dict:
     return gaps
 
 
-def exploration_slots(intended: dict, novel_queues: dict, n_slots: int) -> tuple[dict, dict]:
-    """`(slots, trace)` — the protected exploration share, over the partitions that
-    have a novel-lineage node to spend it on.
+def exploration_slots(
+    novel_queues: dict, n_slots: int, taken: dict | None = None
+) -> tuple[dict, dict]:
+    """`(slots, trace)` — the protected exploration share, spread evenly over the
+    partitions that have a novel-lineage node to spend it on.
 
-    **Apportioned by the run's own intent, not by where the novelty happens to
-    be.** The share protects novelty; it does not re-decide the mix. Weighting it
-    by each partition's stock of novel nodes would let one partition's fresh
-    supply quietly move the release ratios the whole allocator exists to hold, and
-    the realized-versus-intended report would show a miss with no named cause. So
-    the weights are the same effective intent the contest reads, restricted to the
-    partitions that can actually seat a share slot.
+    **Drawable is the whole of the membership, and intent is not an input.** A
+    partition is drawable here if it has a novel node, and every drawable
+    partition is owed the same number of exploration slots as every other. The
+    share protects novelty; it does not re-decide the mix, and it no longer lets
+    the mix decide *it*. There is deliberately no intent vector in the signature:
+    the defect this replaced was weighting the draw by an intent that a floored
+    partition had already spent, and a rule cannot re-acquire that dependency by
+    accident if it is never handed the vector.
 
-    A partition with intent zero and novel nodes still cannot be seated here — it
-    is capped, and the share is not a way around that.
-    Where no partition carries intent at all, the share falls back to spreading
-    over whoever has the nodes, which is what a cold allocation already does one
-    level up.
+    **Evenness is carried across batches, because a batch is too small to hold
+    it.** A leg wants one or two share slots at a time against nine or ten
+    drawable partitions, so within a single call there is nothing to be even
+    about — spreading uniformly *inside* a batch just hands every slot to
+    whichever partition wins the tie-break, which measured 114 of 326 slots to
+    one partition and still zeroed another. So `taken` is the run's own
+    per-partition tally of share slots so far, and the weight is how far below
+    the drawable set's running mean each partition sits. Largest-deficit
+    sequencing then continues one long even spread across the whole run rather
+    than restarting it every batch.
+
+    The invariant is enforced rather than hoped for: **while the budget has at
+    least as many slots as there are drawable partitions, every drawable
+    partition is guaranteed one.** Below that the budget cannot seat everybody by
+    arithmetic, and the carry is what makes the ones it skips first in line next
+    time.
     """
-    seatable = {p: int(n) for p, n in novel_queues.items() if int(n) > 0}
-    if n_slots <= 0 or not seatable:
+    drawable = {p: int(n) for p, n in novel_queues.items() if int(n) > 0}
+    if n_slots <= 0 or not drawable:
         return dict.fromkeys(novel_queues, 0), {"weight_source": "none", "wanted": max(0, n_slots)}
-    weights = {p: max(0.0, float(intended.get(p, 0.0))) for p in seatable}
-    source = "intent"
-    if sum(weights.values()) <= 0.0:
-        weights = {p: float(n) for p, n in seatable.items()}
-        source = "available"
-    allocated = allocate_slots(weights, n_slots, caps=seatable)
+    history = {p: max(0, int((taken or {}).get(p, 0))) for p in drawable}
+    # The mean the budget is about to move the set towards, over the drawable set
+    # only: a partition that is not drawable this batch has no claim to press and
+    # its history must not tilt the ones that do.
+    mean = (sum(history.values()) + int(n_slots)) / len(drawable)
+    weights = {p: max(1e-9, mean - history[p]) for p in drawable}
+    # Below one slot per drawable partition the guarantee is not arithmetically
+    # available, and `allocate_slots` refuses to pro-rate one rather than
+    # pretending. Above it, it is exact.
+    guaranteed = tuple(sorted(drawable)) if n_slots >= len(drawable) else ()
+    allocated = allocate_slots(weights, n_slots, caps=drawable, guaranteed=guaranteed)
     slots = {p: int(allocated.get(p, 0)) for p in novel_queues}
     return slots, {
-        "weight_source": source,
+        "weight_source": "even_carry",
         "wanted": int(n_slots),
+        "drawable": len(drawable),
+        "guaranteed_all": bool(guaranteed),
+        "carried": {p: n for p, n in sorted(history.items()) if n},
         "novel_queues": {p: int(n) for p, n in sorted(novel_queues.items()) if n},
     }
 
