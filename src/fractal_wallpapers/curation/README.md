@@ -1409,6 +1409,7 @@ src/fractal_wallpapers/curation/tentative.py   the store, the aliases, the page
 artifacts/curation/tentative/<stamp>/gallery.jsonl   one row per seat
 artifacts/curation/tentative/<stamp>/manifest.json   what pool, what settings, what shortfall
 artifacts/curation/tentative/<stamp>/index.html      the browser, opened by double-clicking
+artifacts/curation/solve/tentative_n<N>_<stamp>/     that record's own solve, under the same stamp
 ```
 
 ```
@@ -1431,6 +1432,17 @@ prompt names.
 **The ID is the ledger recipe key**, and the alias is its first eight characters,
 lengthened only for the group that collides. Both resolve; a click on the alias in the
 page copies the full key.
+
+**The solve half is stamped too, with the same stamp.** `record` writes its solve record
+to `artifacts/curation/solve/tentative_n<N>_<stamp>/`, not to `tentative_n<N>/` — the
+stamp is the tentative folder's own, so the manifest's `solve.record` path points at the
+solve that chose those seats and two records at the same `n` coexist instead of the
+second overwriting the first's decision. `--solve-name` still names the directory
+outright for a caller who wants to. It was not always so, and the two stamps recorded
+before this landed share one unstamped solve directory: the earlier one's manifest names
+a record that the later run overwrote, so that gallery's `config`, `shortfalls` and
+`diversity_refusals` are gone. The rows, the manifest and the page are intact — those
+were always stamped — so nothing a figure prompt names was lost.
 
 **`index.html` is the standing debug tool for figure selection** — open the stamp's page
 and filter by mode, cell, hue family or partition to find the wallpaper a figure wants,
