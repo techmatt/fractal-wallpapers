@@ -143,6 +143,22 @@ costs one root served twice rather than re-ordering everything behind it. The
 root id is that same digest, so a root's provenance names a place rather than a
 position.
 
+**`externally_supplied` has no supplier, and the partition is empty everywhere
+downstream.** Audited 2026-09-02 (`AUDIT_phoenix_classic_funnel`). The flag costs
+`phoenix:classic` three separate things — share `0.0` from `allocation.allocate`
+before the floor loop runs, a first-and-unconditional `False` from
+`refill.has_channel`, and exclusion from `proven.SERVED` — and **no job outside the
+walk fills it in this repository.** No tracked pool holds the point: the phoenix
+seed pool's 96 rows all resolve to varied `phoenix`, the plane pool and the deep
+run's anchors are parameter planes only, and `data/anchors.jsonl`'s one classic row
+feeds engine comparison rather than supply. Measured consequence: **0 candidate rows
+across all 41 walk ledgers on both tiers**, and therefore 0 in the supply sidecar, 0
+embedded, 0 in the candidate ledger and 0 eligible — against 3,336 admitted and 452
+eligible for varied `phoenix`. Nothing downstream refuses it; the location head
+clears 6 of its 7 q3+ labels over the junk floor. A partition can be flagged
+externally supplied and starve in complete silence, because the flag also takes it
+out of the starvation census.
+
 **The mix is decided where the batch is popped.** Weighting the *root draw* by
 family cannot enforce a mix: anything that only changes what enters the frontier
 is diluted by whatever multiplies fastest inside it. In the source project an
