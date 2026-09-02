@@ -3386,6 +3386,54 @@ def curate_solve(args: argparse.Namespace) -> int:
     return 0
 
 
+def curate_growth(args: argparse.Namespace) -> int:
+    """What N candidates' worth of mining buys, at gallery size n."""
+    from fractal_wallpapers.curation import growth
+
+    if args.what == "plot":
+        from fractal_wallpapers.curation import growth_plot
+
+        if not args.stamp:
+            held = growth.stamps()
+            print("name a stamped run to draw. On this machine: " + (", ".join(held) or "none"))
+            return 1
+        try:
+            print(f"{display_path(growth_plot.plot(args.stamp))}")
+        except (growth.GrowthRefused, growth_plot.PlotRefused) as refusal:
+            print(refusal)
+            return 1
+        return 0
+    stamp = args.name or growth.stamp_now()
+    try:
+        # The folder is claimed FIRST and each cell is appended as it lands, so a
+        # sweep of hours that dies at cell fifteen leaves the fourteen it measured.
+        # The manifest is written last and is what says the run finished.
+        directory = growth.start_run(stamp)
+        rows, manifest = growth.sweep(
+            stamp=stamp,
+            denominators=tuple(args.fraction) if args.fraction else growth.DENOMINATORS,
+            sizes=tuple(args.n) if args.n else growth.SIZES,
+            seeds=tuple(args.seed) if args.seed else growth.SEEDS,
+            swap_seconds=args.swap_seconds,
+            sink=lambda held: growth.append_rows(directory, held),
+        )
+        growth.write_manifest(directory, manifest)
+    except growth.GrowthRefused as refusal:
+        print(refusal)
+        return 1
+    print(f"{display_path(directory)}")
+    print(json.dumps(manifest["pool"], indent=2))
+    for row in rows:
+        print(
+            f"{row['rung']:>5} seed={row['seed']} n={row['n']:>5}: "
+            f"{row['filled']:>5} seat(s), "
+            f"{'-' if row['fill'] is None else format(row['fill'], '.1%'):>6}, "
+            f"{row['floors_met']}/{row['floors_in_the_roster']} floor(s), "
+            f"lift {row['selection_lift']}, {row['solve_seconds']}s"
+        )
+    return 0
+
+
 def curate_headroom(args: argparse.Namespace) -> int:
     """Census the ledger's headroom: what each constraint needs, holds, and costs."""
     from fractal_wallpapers.curation import headroom
@@ -7340,6 +7388,7 @@ def curate_commands(subcommands) -> None:
     from fractal_wallpapers.curation import distinct as distinct_module
     from fractal_wallpapers.curation import embeddings as embeddings_module
     from fractal_wallpapers.curation import flatness as flatness_module
+    from fractal_wallpapers.curation import growth as growth_module
     from fractal_wallpapers.curation import headroom as headroom_module
     from fractal_wallpapers.curation import hunt as hunt_module
     from fractal_wallpapers.curation import mine as mine_module
@@ -8116,6 +8165,69 @@ def curate_commands(subcommands) -> None:
         "before/after over several variants wants — one directory of sheets to look at",
     )
     solving.set_defaults(handler=curate_solve)
+
+    growing = steps.add_parser(
+        "growth",
+        help="what N candidates' worth of mining buys, at every gallery size",
+        description=(
+            "A re-runnable instrument. The history was never snapshotted, so the curve is "
+            "read off the pool as it stands: draw a fraction of the VISITS that made it — "
+            "a visit is (location, leg), never a row, because drawing rows would be the "
+            "same history with the depth arm switched off — and solve the gallery over "
+            "what those visits produced. Every rung is solved by production's own "
+            "`curate solve run`, at the same bars, floors, allowances and objective; "
+            "restricting the pool is the only difference, and the restriction is in "
+            "memory and never touches the ledger. A subsample that cannot fill n is a "
+            "FINDING, not an error. Each run writes a new stamped folder and overwrites "
+            "none, so re-running after each mining leg accumulates a chronological series."
+        ),
+    )
+    growing.add_argument(
+        "what",
+        choices=["run", "plot"],
+        help="`run` sweeps the rungs and writes a stamped folder; `plot` draws a finished "
+        "one into scratch/",
+    )
+    growing.add_argument(
+        "stamp",
+        nargs="?",
+        help="with `plot`: which stamped run to draw",
+    )
+    growing.add_argument(
+        "--name",
+        help="what to call this run's stamped folder (default: the UTC clock, to the "
+        "second). A folder that already exists is refused rather than overwritten",
+    )
+    growing.add_argument(
+        "--fraction",
+        type=int,
+        action="append",
+        metavar="DENOMINATOR",
+        help="a rung, named by the DENOMINATOR of the fraction of visits it draws — `8` "
+        f"is one visit in eight, `1` is the whole pool (default "
+        f"{list(growth_module.DENOMINATORS)})",
+    )
+    growing.add_argument(
+        "--n",
+        type=int,
+        action="append",
+        help=f"a gallery size to solve at (default {list(growth_module.SIZES)}). 2000 comes "
+        "back the moment the pool can seat it",
+    )
+    growing.add_argument(
+        "--seed",
+        type=int,
+        action="append",
+        help=f"a draw seed for the rungs below the whole pool (default "
+        f"{list(growth_module.SEEDS)}). The whole pool is not drawn and takes none",
+    )
+    growing.add_argument(
+        "--swap-seconds",
+        type=float,
+        help="a wall budget for each solve's swap loop. Unset is production, which is "
+        "unbounded — set it and the rows are no longer comparable with an unbudgeted run",
+    )
+    growing.set_defaults(handler=curate_growth)
 
     headroom_step = steps.add_parser(
         "headroom",

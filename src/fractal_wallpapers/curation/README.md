@@ -2073,6 +2073,82 @@ The seats are weak — worst seated rank key 0.0125 (lime) and 0.0241 (green) at
 against 0.418 for the main gallery at n=150 — which is what the relaxed bar buys.
 A themed solve costs 3–8 s at every rung, because the geometry rule opens no picture.
 
+## `curate growth` — what more mining buys, at every gallery size
+
+The question a mining leg is bought to move, asked with numbers: **does N
+candidates' worth of mining buy a better gallery, and at which sizes?** Nothing in
+this repository can answer it from the history, because the history was never
+snapshotted — the candidate ledger is a live store that grows and is pruned, and
+no copy of the pool as it stood in August exists to solve against.
+
+So `curation/growth.py` asks it the other way round, from the pool as it stands.
+Draw a **fraction of the visits** that made this pool, solve the gallery over what
+those visits produced, and read the curve off the rungs. Re-run after each mining
+leg, it accumulates a chronological series on its own: each run is a new stamped
+folder under `artifacts/curation/growth/<stamp>/`, nothing overwrites a
+predecessor, and the top rung of the next run is the pool this one could only
+reach by extrapolating.
+
+```
+fractal-wallpapers curate growth run                    # the whole ladder
+fractal-wallpapers curate growth run --fraction 8 --n 1000 --name probe
+fractal-wallpapers curate growth plot <stamp>           # six PNGs into scratch/
+```
+
+### The unit of subsampling is a VISIT, and that is the whole design
+
+A **visit** is `(location, leg)` — one mining leg opening one place, read off each
+ledger row's `location.key` and its `provenance.run`. Drawing *rows* instead would
+not be a smaller history: it would be the same history with the depth arm silently
+switched off, and it would price a place at a twelfth of what a place costs. A
+visit comes with every candidate row it produced, whole.
+
+Rows carrying no `provenance.run` — the pre-ledger imports — form **one pseudo-leg
+per location**, so each such place is a visit of its own rather than one enormous
+visit nothing could subsample. On this store today that case is empty: all 177,993
+rows name one of 54 legs, over 21,813 places and **27,630 visits**.
+
+### Restricting the pool is the only change, and that is enforceable
+
+Every rung is solved by `solve.solve` with nothing but `n` and the restricted
+candidate list — no radius, no cap, no draw seed, no floor of its own — so a rung's
+gallery is the gallery `curate solve run` would have chosen from that pool.
+`tests/test_growth.py` pins it by solving the top rung twice, once through the
+sweep and once directly, and comparing.
+
+The fitted rank order is computed **once** over the whole pool and restricted,
+which is identical to computing it per subsample: `rank_key.order_for` scores each
+candidate against a key loaded from disk and never against its neighbours. That is
+what makes 114 solves affordable — the flatness sidecar and the location readings
+are read once instead of once a cell.
+
+A subsample that cannot fill `n` is a **finding**, not an error. That is the curve.
+
+### The output schema is the durable part
+
+`growth.jsonl` is what the website's `pipeline-growth` figure bakes from, so the
+schema is documented at the top of `growth.py` — every field, its unit, and which
+of them are approximate — and `curation/growth_plot.py` is deliberately not its
+only reader. Two labels are approximate and say so on every row: `attempts` counts
+the ledger rows *surviving* in the drawn visits, and retention keeps three per
+`(location, mode)`, so it is a floor on what was attempted; `mining_seconds` sums
+`hunt.seconds` over the same rows and is blind to any row written before that
+stamp existed. Both are summed over the visits actually drawn rather than scaled
+from the nominal fraction, because the draw is random and its realized effort is
+not its expected effort.
+
+`manifest.json` beside it carries the **pool stamp** — a sha256 over the sorted
+candidate keys — which is what says whether two runs are comparable directly or
+only as a series.
+
+The plots are `scratch/growth_<stamp>/`: fill %, seated median, seated p10,
+selection lift, floors met and colour spread, all against `n`, one line per rung
+with a min/max band across the three seeds and a legend in millions of attempts.
+`matplotlib` is **not** a dependency of this project and is not in any extra — the
+jsonl is the product and the pictures are a convenience — so `curate growth plot`
+refuses with the install line if it is absent: `uv pip install matplotlib` against
+the checkout's `.venv`, which is what this machine has.
+
 ## `curate hunt` — rendering into a shortage instead of around it
 
 The solve above turns an impossible gallery into a **work order**. This is what
