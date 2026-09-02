@@ -94,8 +94,7 @@ from pathlib import Path
 from fractal_wallpapers.supply import currency as money
 from fractal_wallpapers.supply.location import key_of_row
 from fractal_wallpapers.supply.partitions import (
-    DYNAMICAL_PLANES,
-    PARAMETER_PLANES,
+    ALL_PARTITIONS,
     partition_of_family,
 )
 
@@ -117,16 +116,18 @@ TIER_FLOOR = min(money.CLASS_WEIGHT)
 #: would leave the run with no way to find anywhere a human has not been.
 RATIO = 2
 
-#: The partitions this channel serves: every one that has a queue of its own to
-#: interleave with. That is all of them but `phoenix:classic`, which has no
-#: channel at all and is filled from outside the walk.
-#:
-#: The two halves are served for different reasons — the planes have no sampler,
-#: the dynamical families have a sampler that cannot express a viewport — and one
-#: consequence is shared: a partition's queue now holds **two shapes of entry**,
-#: a pool's typed seed and a proven row, and the refill resolves that once rather
+#: The partitions this channel serves: every registered one. Each has a queue of
+#: its own to interleave with, and they are served for three different reasons —
+#: the planes have no sampler, the dynamical families have a sampler that cannot
+#: express a viewport, and the pinned classic phoenix has one fresh root in
+#: existence, so a labelled place is most of what it can be handed. One
+#: consequence is shared: a partition's queue holds **two shapes of entry**, a
+#: pool's typed seed and a proven row, and the refill resolves that once rather
 #: than per partition.
-SERVED = (*PARAMETER_PLANES, *DYNAMICAL_PLANES, "phoenix")
+#:
+#: It excluded `phoenix:classic` until 2026-09-02, which left its q3+ labels the
+#: only ones in the store that became no roots.
+SERVED = ALL_PARTITIONS
 
 #: Characters of the location digest an id carries. 48 bits over a corpus of a
 #: few thousand locations; the digest is the sort key as well, so a collision

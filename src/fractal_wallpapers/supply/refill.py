@@ -48,11 +48,12 @@ indistinguishable from a healthy one — which is how a run once went four hundr
 batches with eight empty queues and no refills, reporting nothing. Deferral is a
 statement: *this partition is below its mark, and here is why no draw can help.*
 
-**An externally-supplied partition is neither starved nor deferred.** No channel
-inside the walk feeds it, so an empty queue is its normal state; reporting it
-every batch is a permanent false alarm, and a row that is always red trains the
-reader to ignore the whole census — which is the opposite of what the census is
-for.
+**Every registered partition is either served or deferred with a reason.** There
+is no third state. `phoenix:classic` was one until 2026-09-02 — refused a channel
+first and unconditionally, on the ground that a leg outside the walk filled it —
+and because that refusal also took it out of the starvation census, its being
+empty everywhere downstream went unreported for the life of the project. A
+partition nothing can feed is starved and says so.
 """
 
 from __future__ import annotations
@@ -64,6 +65,7 @@ from fractal_wallpapers.discovery import pools
 from fractal_wallpapers.supply import proven as proven_channel
 from fractal_wallpapers.supply.partitions import (
     ALL_PARTITIONS,
+    CLASSIC_PHOENIX,
     is_dynamical,
     parameter_plane_of,
     partition_of_family,
@@ -102,11 +104,6 @@ NO_SEED_FILE = (
     "derive-plane-seeds --write`, or add `--root-channel proven`."
 )
 
-#: Why an externally-supplied partition has no pool. It is not starvation and it
-#: is not a missing channel: another leg of the project fills it, so the refill
-#: has nothing to say about it and says that rather than reporting an empty pool.
-EXTERNALLY_SUPPLIED = "externally supplied: another leg fills this partition, no draw is made"
-
 
 def _tracked_plane_pool() -> Path | None:
     """The shipped parameter-plane pool, or `None` on a clone that has not derived it."""
@@ -133,7 +130,6 @@ class Refill:
         share: float = SHARE,
         per_draw: int | None = None,
         seeds: Path | None = None,
-        external=(),
         partitions=ALL_PARTITIONS,
         twins=None,
         proven=None,
@@ -146,7 +142,6 @@ class Refill:
         self.share = float(share)
         self.per_draw = int(per_draw if per_draw is not None else low_water)
         self.partitions = list(partitions)
-        self.external = set(external)
         self.seconds = 0.0
         self.draws = 0
         self.roots_added = 0
@@ -192,6 +187,8 @@ class Refill:
             rows = pools.julia_pool()
         elif partition == "phoenix":
             rows = pools.phoenix_pool()
+        elif partition == CLASSIC_PHOENIX:
+            rows = pools.classic_phoenix_pool()
         else:
             rows = (
                 [row for row in self._seed_rows() if _seed_partition(row) == partition]
@@ -236,15 +233,14 @@ class Refill:
     def has_channel(self, partition: str) -> bool:
         """Whether any draw could serve this partition at all.
 
-        The refusal of the pinned classic phoenix is first and unconditional:
-        no channel in the walk feeds one parameter point, and it must not
-        acquire one by being swept up in a list that grew.
+        The three partitions named outright are the ones with a pool of their own
+        in this repository. `phoenix:classic` is one of them: its pool is a single
+        row by construction, because the plane is one pinned parameter point and
+        the only thing a fresh root there can vary is the frame.
         """
-        if partition in self.external or partition in DEFERRAL:
+        if partition in DEFERRAL:
             return False
-        if partition == "phoenix:classic":
-            return False
-        if partition in ("julia:mandelbrot", "phoenix"):
+        if partition in ("julia:mandelbrot", "phoenix", CLASSIC_PHOENIX):
             return True
         if is_dynamical(partition):
             return self._is_twin(partition) or self._is_proven(partition)
@@ -301,8 +297,6 @@ class Refill:
             pool = len(self._pool(partition)) if servable else 0
             drawn = self.cursor.get(partition, 0)
             reason = (reasons.get(partition) or {}).get("reason")
-            if reason is None and partition in self.external:
-                reason = EXTERNALLY_SUPPLIED
             out[partition] = {
                 "channel": servable,
                 "pool": pool,
@@ -328,11 +322,9 @@ class Refill:
 
     def deferred(self, queues: dict) -> dict:
         """Partitions below the low-water that no draw will be made for, each with
-        the reason. Externally-supplied partitions are absent by design."""
+        the reason. Every registered partition can appear here."""
         out = {}
         for partition in self.partitions:
-            if partition in self.external:
-                continue
             if queues.get(partition, 0) >= self.low_water:
                 continue
             if self.has_channel(partition) and self.remaining(partition) > 0:
@@ -469,7 +461,8 @@ class Refill:
         # The row's own channel, carried onto the root. A queue can hold two
         # channels at once, and attributing a find afterwards should be a join on
         # a field rather than a guess at an id prefix.
-        channel = (entry.get("provenance") or {}).get("channel")
+        provenance = entry.get("provenance") or {}
+        channel = provenance.get("channel")
         return {
             "family": entry["family"],
             "viewport": (
@@ -488,15 +481,20 @@ class Refill:
             # door and is not graced. That is the right answer rather than an
             # oversight: the grace pays for the descent out of a home frame
             # nobody chose, and a row did not start at one.
-            "source": "seed_file",
+            # A row may name its own, and one that does not came out of the seed
+            # file. The passthrough is what lets a *synthesized* row — the pinned
+            # plane's single home view — say where it came from instead of
+            # inheriting a pool file it was never in.
+            "source": provenance.get("source", "seed_file"),
             "provenance": {
                 "seed_id": entry.get("id", f"row{index:04d}"),
                 "channel": channel,
                 # Named only for a row that actually came out of one: a proven
                 # root is derived, and a file name beside it is a provenance
                 # field that reads true and is not.
-                "file": (
-                    self._seeds.name if self._seeds and channel != proven_channel.CHANNEL else None
+                "file": provenance.get(
+                    "file",
+                    self._seeds.name if self._seeds and channel != proven_channel.CHANNEL else None,
                 ),
                 "refill": True,
             },
@@ -541,7 +539,6 @@ __all__ = [
     "COOLDOWN",
     "DEFERRAL",
     "LOW_WATER",
-    "EXTERNALLY_SUPPLIED",
     "NO_SEED_FILE",
     "NO_TWIN_CHANNEL",
     "SHARE",

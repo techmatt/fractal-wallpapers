@@ -46,17 +46,19 @@ def test_a_zero_ratio_is_refused_rather_than_treated_as_a_retirement() -> None:
         release_mix.check_complete(entries)
 
 
-def test_externally_supplied_is_a_flag_and_not_a_zero_ratio() -> None:
-    """Classic phoenix is still that much of a release. What it loses is the
-    clock, not its share of the intent — so the zero-ratio refusal applies to it
-    exactly as to everything else."""
-    assert release_mix.is_externally_supplied(CLASSIC_PHOENIX)
+def test_a_row_is_a_ratio_and_the_table_holds_no_second_kind_of_entry() -> None:
+    """The table carried an `externally_supplied` flag on `phoenix:classic` until
+    2026-09-02, and it took the partition out of the clock, the floor and the
+    starvation census at once — so the partition was empty everywhere downstream
+    and nothing reported it. A row is a ratio now, and the smallest ratio in the
+    table is refused a zero exactly like the largest."""
     assert release_mix.ratio_of(CLASSIC_PHOENIX) == pytest.approx(0.2)
-    assert release_mix.externally_supplied() == {CLASSIC_PHOENIX}
+    assert not hasattr(release_mix, "is_externally_supplied")
+    assert all(set(entry) <= {"ratio", "why"} for entry in release_mix.entries().values())
 
     entries = release_mix.entries()
-    entries[CLASSIC_PHOENIX] = {"ratio": 0.0, "externally_supplied": True}
-    with pytest.raises(release_mix.ReleaseMixError):
+    entries[CLASSIC_PHOENIX] = {"ratio": 0.0}
+    with pytest.raises(release_mix.ReleaseMixError, match="RETIRED"):
         release_mix.check_complete(entries)
 
 

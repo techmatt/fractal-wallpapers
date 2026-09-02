@@ -15,7 +15,6 @@ import pytest
 from fractal_wallpapers import engine
 from fractal_wallpapers.discovery import ledger as ledger_module
 from fractal_wallpapers.discovery.walk import Limits, Policy, Walk
-from fractal_wallpapers.supply import refill as refill_module
 from fractal_wallpapers.supply.census import Census, MachineStock
 from fractal_wallpapers.supply.harvest import Budget, Harvest, ReconcileError
 from fractal_wallpapers.supply.partitions import ALL_PARTITIONS, CLASSIC_PHOENIX
@@ -30,6 +29,7 @@ from fractal_wallpapers.supply.refill import Refill
 POOL_FED = [
     "julia:mandelbrot",
     "phoenix",
+    CLASSIC_PHOENIX,
     "mandelbrot",
     "multibrot3",
     "multibrot4",
@@ -64,7 +64,6 @@ def census(currency: dict | None = None, partitions=ALL_PARTITIONS) -> Census:
 
 
 def quota(currency=None, partitions=ALL_PARTITIONS, **kwargs) -> Quota:
-    kwargs.setdefault("external", {CLASSIC_PHOENIX})
     kwargs.setdefault("prices_config", load_table())
     return Quota(partitions, census=census(currency, partitions), **kwargs)
 
@@ -76,13 +75,13 @@ def quota(currency=None, partitions=ALL_PARTITIONS, **kwargs) -> Quota:
 
 def test_a_cold_start_allocation_is_well_defined() -> None:
     """No labels and no finds anywhere is this repository's state today. Every
-    deficit is zero, so the clock spreads uniformly over the partitions a walk can
-    serve — decided, not floored, and reported as such."""
+    deficit is zero, so the clock spreads uniformly over every registered
+    partition — decided, not floored, and reported as such."""
     allocation = quota().allocation()
-    served = [p for p in ALL_PARTITIONS if p != CLASSIC_PHOENIX]
     assert sum(allocation.share.values()) == pytest.approx(1.0)
-    assert allocation.share[CLASSIC_PHOENIX] == 0.0
-    assert all(allocation.share[p] == pytest.approx(1 / len(served)) for p in served)
+    assert all(
+        allocation.share[p] == pytest.approx(1 / len(ALL_PARTITIONS)) for p in ALL_PARTITIONS
+    )
     assert allocation.floored == set(), "a cold start was not decided by the floor"
 
 
@@ -97,7 +96,7 @@ def test_the_machine_leg_moves_the_deficit_and_both_reads_are_kept() -> None:
         discount=0.2,
         partitions=tuple(ALL_PARTITIONS),
     )
-    held = Quota(ALL_PARTITIONS, census=stock, external={CLASSIC_PHOENIX})
+    held = Quota(ALL_PARTITIONS, census=stock)
     assert held.stock["phoenix"] == pytest.approx(10.0)
     assert held.deficit["phoenix"] == pytest.approx(0.0), "ten against a ratio-1 target of ten"
     assert held.deficit_labels_only["phoenix"] == pytest.approx(10.0)
@@ -110,7 +109,7 @@ def test_the_realized_mix_converges_on_the_intent_whatever_a_partition_costs() -
     share of the clock, because the share is denominated in minutes."""
     held = quota({"mandelbrot": 100.0})
     minutes = {p: (0.05 if p.startswith("julia:") else 1.0) for p in ALL_PARTITIONS}
-    served = [p for p in ALL_PARTITIONS if p != CLASSIC_PHOENIX]
+    served = list(ALL_PARTITIONS)
     queues = dict.fromkeys(served, 50)
     for _ in range(400):
         _, slots, _ = held.slots(queues, 8)
@@ -136,7 +135,7 @@ def test_a_partition_that_finds_nothing_at_all_is_capped_out_of_service() -> Non
     """An unbounded stall on a queue full of dead ground would otherwise eat that
     partition's whole share of the run."""
     held = quota()
-    served = [p for p in ALL_PARTITIONS if p != CLASSIC_PHOENIX]
+    served = list(ALL_PARTITIONS)
     queues = dict.fromkeys(served, 50)
     for _ in range(200):
         _, slots, _ = held.slots(queues, 8)
@@ -155,7 +154,7 @@ def test_the_floor_is_held_over_a_run_and_not_merely_allocated() -> None:
     is the failure the carry exists for. Twenty batches at a 5% floor is the exact
     bound, so a run of a hundred has no excuse."""
     held = quota({"mandelbrot": 1000.0})
-    served = [p for p in ALL_PARTITIONS if p != CLASSIC_PHOENIX]
+    served = list(ALL_PARTITIONS)
     queues = dict.fromkeys(served, 50)
     for _ in range(100):
         _, slots, _ = held.slots(queues, 4)
@@ -171,17 +170,22 @@ def test_the_floor_is_held_over_a_run_and_not_merely_allocated() -> None:
     assert all(held.realized.minutes[p] > 0 for p in served)
 
 
-def test_an_externally_supplied_partition_is_never_served_and_keeps_its_books() -> None:
-    """It loses the clock and nothing else: the ratio, the target, the deficit and
-    every tally key stay, because they are statements about labels and stay true."""
+def test_the_smallest_partition_is_served_and_floored_like_every_other() -> None:
+    """`phoenix:classic` kept its ratio, its target and its deficit while being
+    given share 0.0 and taken out of the floor's books entirely — so its permanent
+    emptiness was never anybody's alarm. It is on the clock now: a queue at the
+    low water buys it slots, and the floor keeps books on it that `unspent_floor`
+    can report."""
     held = quota({"mandelbrot": 30.0})
     queues = dict.fromkeys(ALL_PARTITIONS, 50)
     _, slots, _ = held.slots(queues, 8)
-    assert slots[CLASSIC_PHOENIX] == 0
     assert held.ratios[CLASSIC_PHOENIX] == pytest.approx(0.2)
     assert held.target[CLASSIC_PHOENIX] == pytest.approx(2.0)
     assert CLASSIC_PHOENIX in held.deficit
-    assert CLASSIC_PHOENIX not in held.unspent_floor()["per_partition"]
+    assert held.allocation().share[CLASSIC_PHOENIX] >= held.floor
+    held.floor_ledger.settle(ALL_PARTITIONS, 10.0)
+    assert CLASSIC_PHOENIX in held.unspent_floor()["per_partition"]
+    assert sum(slots.values()) == 8
 
 
 def test_a_capped_partition_keeps_its_intent_and_loses_its_slots() -> None:
@@ -342,7 +346,7 @@ def test_a_smoke_harvest_serves_more_than_one_partition_and_balances(tmp_path) -
         quota(run_dir=tmp_path / "run"),
         budget=Budget(minutes=0.0, batches=2),
         batch_size=4,
-        refill=Refill(walk, low_water=2, per_draw=2, external={CLASSIC_PHOENIX}),
+        refill=Refill(walk, low_water=2, per_draw=2),
     )
     summary = run.run()
 
@@ -363,13 +367,18 @@ def test_a_smoke_harvest_serves_more_than_one_partition_and_balances(tmp_path) -
     assert (tmp_path / "run" / "quota.jsonl").is_file()
 
     # The partitions no channel can feed are named with a reason, never silently
-    # absent — and the externally-supplied one is not called starved at all.
-    # `mandelbrot` used to be on that list; the tracked plane seed pool is what
-    # took it off, and a run that cannot refill four of ten partitions is the
-    # state the first production run stalled in.
+    # absent. `mandelbrot` used to be on that list; the tracked plane seed pool is
+    # what took it off, and a run that cannot refill four of ten partitions is the
+    # state the first production run stalled in. `phoenix:classic` used to be
+    # absent from this dict *and* from the starvation census, which is how it
+    # stayed empty everywhere downstream with nothing reporting it. It is here
+    # now, saying the true thing: a pinned plane has one fresh root in existence,
+    # this run drew it, and without the proven channel there is no second place to
+    # hand over. That sentence is the whole point of admitting the partition.
     deferred = summary["refill"]["deferred"]
     assert "mandelbrot" not in deferred, "the plane seed pool is the channel it now has"
-    assert CLASSIC_PHOENIX not in deferred
+    assert "pool is exhausted" in deferred[CLASSIC_PHOENIX]["reason"]
+    assert run.refill.cursor[CLASSIC_PHOENIX] == 1, "the home view, drawn once"
     # No twin channel was wired into this run, and the deferral says exactly that
     # rather than the old standing claim that no such channel could exist.
     assert "no twin channel is wired into this run" in deferred["julia:multibrot3"]["reason"]
@@ -381,7 +390,8 @@ def test_a_smoke_harvest_serves_more_than_one_partition_and_balances(tmp_path) -
     # read the following morning.
     state = run.refill.pool_state()
     assert set(state) == set(run.refill.partitions)
-    assert state[CLASSIC_PHOENIX]["reason"] == refill_module.EXTERNALLY_SUPPLIED
+    assert state[CLASSIC_PHOENIX]["pool"] == 1, "one pinned point, so one fresh root"
+    assert state[CLASSIC_PHOENIX]["reason"] == deferred[CLASSIC_PHOENIX]["reason"]
     assert state["julia:multibrot3"]["reason"] == deferred["julia:multibrot3"]["reason"]
     served_pool = state["julia:mandelbrot"]
     assert served_pool["reason"] is None and served_pool["pool"] > 0
@@ -407,7 +417,7 @@ def test_a_killed_run_resumes_rather_than_restarting(tmp_path) -> None:
             quota(run_dir=tmp_path / "run"),
             budget=Budget(minutes=0.0, batches=batches),
             batch_size=4,
-            refill=Refill(walk, low_water=2, per_draw=2, external={CLASSIC_PHOENIX}),
+            refill=Refill(walk, low_water=2, per_draw=2),
         )
 
     first = build(1)

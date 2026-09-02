@@ -83,7 +83,6 @@ class Quota:
         prices_config: dict | None = None,
         census: census_module.Census | None = None,
         ratios: dict | None = None,
-        external: set | None = None,
         twin_route_gain: float = TWIN_ROUTE_GAIN,
         exploration=None,
     ):
@@ -97,13 +96,6 @@ class Quota:
         #: object that divides those is the only one that can enforce an order
         #: between three claims.
         self.exploration = exploration
-        # Resolved ONCE at construction from the shipped table and passed to every
-        # allocation. The flag is a property of the policy, not of the run, so
-        # re-reading it per batch would let a mid-run edit move an allocation the
-        # run is already being scored against.
-        self.external = set(
-            external if external is not None else release_mix.externally_supplied(self.partitions)
-        )
         self.census = census if census is not None else census_module.stock_census(self.partitions)
         # THE quantity both the target's anchor and the deficit read. Held once
         # rather than recomputed at two sites, so they cannot come to disagree.
@@ -122,7 +114,7 @@ class Quota:
             for p in self.partitions
         }
         self.cost = CostToFind(self.partitions, prices_config)
-        self.floor_ledger = FloorLedger(floor=self.floor, external=set(self.external))
+        self.floor_ledger = FloorLedger(floor=self.floor)
         self.realized = Realized(
             minutes=dict.fromkeys(self.partitions, 0.0),
             by_bucket={p: {"floor": 0.0, "deficit": 0.0} for p in self.partitions},
@@ -146,9 +138,7 @@ class Quota:
     # ---------------------------------------------------------- allocation
 
     def allocation(self) -> Allocation:
-        return allocate(
-            self.deficit, self.cost.prices(), self.partitions, self.floor, external=self.external
-        )
+        return allocate(self.deficit, self.cost.prices(), self.partitions, self.floor)
 
     def minutes_per_slot(self) -> dict:
         """What a node has actually been costing, per partition.
@@ -482,7 +472,6 @@ class Quota:
     def summary(self) -> dict:
         return {
             "currency": self.census.summary(),
-            "externally_supplied": sorted(self.external),
             "stock": {p: round(self.stock.get(p, 0.0), 3) for p in self.partitions},
             "target": {p: round(self.target.get(p, 0.0), 3) for p in self.partitions},
             "target_rule": census_module.TARGET_RULE,

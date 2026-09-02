@@ -170,12 +170,16 @@ def test_the_seed_table_round_trips_through_its_real_consumer() -> None:
     assert cost.ema == table["price_ema"]
 
 
-def test_an_externally_supplied_partition_carries_a_stated_absence() -> None:
-    """No walk ever serves it, so no walk can ever price it. The row is a
-    permanent stated absence rather than a measurement waiting to arrive."""
+def test_a_partition_no_source_run_priced_carries_a_stated_absence() -> None:
+    """Minutes over zero units is no measurement, so the row carries the flat seed
+    and is stamped `defaulted`. Dropping it would make "never served" and "never
+    tracked" indistinguishable — which is exactly the silence the shipped table
+    has to be able to break."""
     measured = prices.load_table(prices.measured_table_path())
-    assert CLASSIC_PHOENIX in measured["_provenance"]["defaulted"]
-    assert measured["prices"][CLASSIC_PHOENIX] == prices.SEED_PRICE
+    defaulted = measured["_provenance"]["defaulted"]
+    assert CLASSIC_PHOENIX in defaulted, "no run has served it yet"
+    assert set(defaulted) <= set(measured["prices"])
+    assert all(measured["prices"][p] == prices.SEED_PRICE for p in defaulted)
 
 
 # --------------------------------------------------------------------------- #

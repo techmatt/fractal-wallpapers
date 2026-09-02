@@ -26,17 +26,17 @@ other ratio.
 floored, censused, and permanently starved, and every report about it afterwards
 describes a decision nobody made.
 
-**Externally supplied is the special case, and it is not a zero ratio.** Classic
-phoenix keeps its 0.2 — it is still that much of a release, and the intake still
-weighs it at that — but no walk can produce a single classic look, because its
-one supply channel is a standalone descent of the pinned plane. So it keeps its
-ratio and its key everywhere, and loses only the clock: no share, no floor, no
-floor carry, and no starvation alarm for a queue whose empty state is normal.
-Before that flag existed, three separate readers each concluded the same wrong
-thing from the same silence — the census reported a starved partition, the floor
-reserved it a slice of every run, and the allocator allocated against a deficit it
-could never close. All three were right about what they could see, and all three
-were describing a job that was never going to run.
+**There is no second kind of entry.** A row is a ratio and nothing else, and
+every registered partition is served by the walk on the same terms. This table
+carried an `externally_supplied` flag until 2026-09-02, on `phoenix:classic`
+alone: it kept its ratio and lost the clock — no share, no floor, no floor carry,
+no starvation alarm — on the ground that a job outside the walk supplied it. That
+job never existed in this repository (`AUDIT_phoenix_classic_funnel`), so the
+flag bought silence rather than accuracy: the partition was zero at every stage
+from the walk onward and nothing reported it, because the flag also took it out
+of the census that would have. The flag and its plumbing are gone rather than set
+false, and what stands in their place is the ordinary machinery — a partition the
+walk cannot feed *is* starved, and says so.
 """
 
 from __future__ import annotations
@@ -80,9 +80,8 @@ def check_complete(entries: dict, partitions=ALL_PARTITIONS) -> None:
         raise ReleaseMixError(
             f"non-positive release-mix ratio for {zeroed}. A partition that should get none "
             f"of a release is RETIRED from the registry, not zeroed here — a zero ratio "
-            f"leaves it registered, floored, censused and permanently starved. A partition "
-            f"the walk cannot feed is marked `externally_supplied` instead, which keeps its "
-            f"ratio and takes away only its share of the clock."
+            f"leaves it registered, floored, censused and permanently starved, and every "
+            f"report about it afterwards describes a decision nobody made."
         )
 
 
@@ -131,28 +130,11 @@ def shares(partitions=ALL_PARTITIONS, path: Path | None = None) -> dict:
     return {p: v / total for p, v in table.items()} if total > 0 else dict.fromkeys(table, 0.0)
 
 
-def is_externally_supplied(partition: str, path: Path | None = None) -> bool:
-    """Whether this partition's supply comes from a job outside the walk.
-
-    THE predicate. Every skip site imports it rather than testing for a partition
-    by name, so a second externally-supplied partition is one table edit and no
-    code change.
-    """
-    table = _load(str(path or table_path()))
-    return bool((table.get(partition) or {}).get("externally_supplied", False))
-
-
-def externally_supplied(partitions=ALL_PARTITIONS, path: Path | None = None) -> set:
-    """The flagged subset of `partitions`."""
-    return {p for p in partitions if is_externally_supplied(p, path)}
-
-
 def summary(partitions=ALL_PARTITIONS, path: Path | None = None) -> dict:
     """The whole policy as one record, for a run's config."""
     return {
         "ratio": ratios(partitions, path),
         "share": {p: round(v, 6) for p, v in shares(partitions, path).items()},
-        "externally_supplied": sorted(externally_supplied(partitions, path)),
         "source": str((path or table_path()).name),
     }
 
@@ -161,8 +143,6 @@ __all__ = [
     "ReleaseMixError",
     "check_complete",
     "entries",
-    "externally_supplied",
-    "is_externally_supplied",
     "ratio_of",
     "ratios",
     "shares",

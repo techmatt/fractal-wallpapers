@@ -94,24 +94,20 @@ def test_an_infeasible_floor_degrades_to_uniform_and_says_so() -> None:
     assert allocation.floored == set(FOUR)
 
 
-def test_an_externally_supplied_partition_gets_zero_and_keeps_its_key() -> None:
-    """An explicit zero reads as `allocated nothing on purpose`; a missing key
-    reads as a partition nobody tracked."""
-    allocation = allocate({p: 10.0 for p in FOUR}, FLAT, FOUR, floor=0.05, external={"d"})
-    assert allocation.share["d"] == 0.0
-    assert "d" in allocation.share and allocation.external == {"d"}
-    assert sum(allocation.share.values()) == pytest.approx(1.0)
-    assert "d" not in allocation.floored, "never pinned up to the floor either"
-
-
-def test_the_shipped_partition_set_allocates_with_classic_held_out() -> None:
+def test_every_registered_partition_is_allocated_and_none_is_held_out() -> None:
+    """The allocator has no held-out set. It had one until 2026-09-02 — the
+    `externally_supplied` flag gave `phoenix:classic` share 0.0 before the floor
+    loop ran, and took it out of the starvation census that would have said so.
+    A partition that should get none of the clock is retired from the registry;
+    one nothing can currently feed is starved, which is a different report."""
     allocation = allocate(
         dict.fromkeys(ALL_PARTITIONS, 0.0),
         dict.fromkeys(ALL_PARTITIONS, 1.0),
         ALL_PARTITIONS,
-        external={CLASSIC_PHOENIX},
     )
-    assert allocation.share[CLASSIC_PHOENIX] == 0.0
+    assert set(allocation.share) == set(ALL_PARTITIONS)
+    assert all(v > 0.0 for v in allocation.share.values())
+    assert allocation.share[CLASSIC_PHOENIX] == pytest.approx(1 / len(ALL_PARTITIONS))
     assert sum(allocation.share.values()) == pytest.approx(1.0)
 
 
@@ -179,13 +175,6 @@ def test_entitlement_accrues_only_over_minutes_a_partition_was_servable() -> Non
         ledger.settle(["awake"], 1.0)
     assert ledger.entitled().get("asleep") is None
     assert ledger.debts({})["awake"] == pytest.approx(0.5)
-
-
-def test_an_externally_supplied_partition_banks_no_claim() -> None:
-    ledger = FloorLedger(floor=0.05, external={"outside"})
-    ledger.settle(["inside", "outside"], 10.0)
-    assert "outside" not in ledger.entitled()
-    assert ledger.unspent({}, ["inside", "outside"])["per_partition"].keys() == {"inside"}
 
 
 def test_a_debt_is_a_claim_and_never_a_negative_balance() -> None:

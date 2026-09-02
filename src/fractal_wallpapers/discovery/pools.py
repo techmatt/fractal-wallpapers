@@ -189,6 +189,40 @@ def phoenix_pool(path: Path | None = None) -> list[PhoenixSeed]:
     ]
 
 
+def classic_phoenix_pool() -> list[dict]:
+    """The pinned classic phoenix plane's fresh roots: one home view, and that is all.
+
+    **Not a pool that is small — a pool that is one row by construction.** Every
+    other channel here hands over a *parameter*, and the walk descends from the
+    home frame it implies. The classic plane has no parameter left to vary: it is
+    Ushiki's single point, so the only thing a fresh root can differ in is the
+    frame, and varying the frame is what the walk itself does. A second row would
+    have to be a second *place*, which is exactly what the proven channel supplies
+    from the label store and what this one cannot invent.
+
+    It is a row rather than a typed seed because a row is what carries a place.
+    Nothing is read off disk: the constants are the registry's, so the point the
+    walk is rooted at and the point [`partition_of_family`] resolves against
+    cannot drift apart.
+    """
+    from fractal_wallpapers.supply.partitions import CLASSIC_PHOENIX_POINT
+
+    c, p, z_prev = CLASSIC_PHOENIX_POINT
+    return [
+        {
+            "schema": 1,
+            "id": "phoenix-classic-home",
+            "family": {
+                "kind": "phoenix",
+                "c": [repr(c[0]), repr(c[1])],
+                "p": [repr(p[0]), repr(p[1])],
+                "z_prev": [repr(z_prev[0]), repr(z_prev[1])],
+            },
+            "provenance": {"channel": "home_view", "source": "classic_phoenix_point", "file": None},
+        }
+    ]
+
+
 def plane_pool(path: Path | None = None) -> list[dict]:
     """The tracked parameter-plane seed pool, with its invariants checked at load.
 

@@ -95,6 +95,7 @@ from pathlib import Path
 
 from fractal_wallpapers.curation import candidate_ledger, framing, recipes
 from fractal_wallpapers.paths import rehome, tracked_name, under
+from fractal_wallpapers.supply.partitions import ALL_PARTITIONS
 
 #: The schema every record and every row this module writes carries.
 SCHEMA = 1
@@ -468,12 +469,18 @@ def unframed(rows: list, index: dict) -> list:
     return [row for row in rows if wants_framing(row, index)]
 
 
-def drawable(rows: list, opened: set) -> dict:
+def drawable(rows: list, opened: set, partitions=ALL_PARTITIONS) -> dict:
     """`{partition: [rows]}` — admitted, and carrying no ledger recipe yet.
 
     That is the whole of the rule. `rows` has already been through
     [`scanned`]'s admission — the location head's rating over the junk floor —
     and what is subtracted here is the places the ledger already stands on.
+
+    **Every registered partition gets a key, empty or not.** A partition with no
+    drawable rows used to be absent rather than zero, so it could not appear as a
+    refusal anywhere in the hunt's own records — and `phoenix:classic` spent the
+    project's whole history at zero without one report saying so. A table that
+    omits a partition and a table that reports it empty are different statements.
 
     **A framing row is not part of it.** It used to be: a location the pool-wide
     scan did not hold was dropped rather than drawn at its recorded frame, which
@@ -483,7 +490,7 @@ def drawable(rows: list, opened: set) -> dict:
     reframing channel among them. A location with no scan row draws at the frame
     it already has, through [`frame_for`].
     """
-    out: dict = {}
+    out: dict = {p: [] for p in partitions}
     for row in rows:
         key = str(row["key"])
         if key in opened:

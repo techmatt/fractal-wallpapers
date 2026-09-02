@@ -128,10 +128,10 @@ times in three. Run the leg with `--partition <dynamical> --root-channel proven`
 Its **tier floor is `min(currency.CLASS_WEIGHT)`** — the currency's own bottom
 class rather than a fresh cut, which is tier **3**, so what counts as a proven
 place is exactly what counts as a keeper and moving one moves both. It serves
-**nine partitions**: `proven.SERVED` is every registered partition but
-`phoenix:classic`, which is out of this channel as it is out of every other —
-its plane is one pinned parameter point, it has no queue of its own to interleave
-with, and `release_mix.json` carries it as `externally_supplied`. The pool is
+**every registered partition**: `proven.SERVED` is `ALL_PARTITIONS`. It excluded
+`phoenix:classic` until 2026-09-02, which left that partition's q3+ labels the
+only ones in the store that became no roots; its queue now interleaves those
+labelled places through the single home-view root a pinned plane has. The pool is
 **interleaved at
 `RATIO` (2) proven entries per pool entry**, never substituted: a channel fed by
 this project's own past output cannot open new ground, so the fresh pool has to
@@ -143,21 +143,46 @@ costs one root served twice rather than re-ordering everything behind it. The
 root id is that same digest, so a root's provenance names a place rather than a
 position.
 
-**`externally_supplied` has no supplier, and the partition is empty everywhere
-downstream.** Audited 2026-09-02 (`AUDIT_phoenix_classic_funnel`). The flag costs
-`phoenix:classic` three separate things — share `0.0` from `allocation.allocate`
-before the floor loop runs, a first-and-unconditional `False` from
-`refill.has_channel`, and exclusion from `proven.SERVED` — and **no job outside the
-walk fills it in this repository.** No tracked pool holds the point: the phoenix
-seed pool's 96 rows all resolve to varied `phoenix`, the plane pool and the deep
-run's anchors are parameter planes only, and `data/anchors.jsonl`'s one classic row
-feeds engine comparison rather than supply. Measured consequence: **0 candidate rows
-across all 41 walk ledgers on both tiers**, and therefore 0 in the supply sidecar, 0
-embedded, 0 in the candidate ledger and 0 eligible — against 3,336 admitted and 452
-eligible for varied `phoenix`. Nothing downstream refuses it; the location head
-clears 6 of its 7 q3+ labels over the junk floor. A partition can be flagged
-externally supplied and starve in complete silence, because the flag also takes it
-out of the starvation census.
+**`externally_supplied` was a declaration with no supplier behind it, and it is
+gone.** Audited 2026-09-02 (`AUDIT_phoenix_classic_funnel`), removed the same day.
+The flag cost `phoenix:classic` three separate things — share `0.0` from
+`allocation.allocate` before the floor loop ran, a first-and-unconditional `False`
+from `refill.has_channel`, and exclusion from `proven.SERVED` — and **no job
+outside the walk ever filled it in this repository.** Measured consequence: **0
+candidate rows across all 41 walk ledgers on both tiers**, and therefore 0 in the
+supply sidecar, 0 embedded, 0 in the candidate ledger and 0 eligible — against
+3,336 admitted and 452 eligible for varied `phoenix`. Nothing downstream refused
+it; the location head clears 6 of its 7 q3+ labels over the junk floor. **The
+lesson is the third consequence rather than the first two**: a partition can be
+declared out of the walk and starve in complete silence, because the same
+declaration takes it out of the census that reports starvation. The flag and its
+plumbing are deleted rather than set false — `Allocation.external`,
+`FloorLedger.external`, `Quota.external`, `Refill.external` and
+`release_mix.is_externally_supplied` are all gone — so there is no held-out set
+for a partition to be put back into.
+
+**Measured on the first leg that ever walked it** (2026-09-02,
+`CRAWL_phoenix_classic_30min`, 8 roots, proven channel on): the leg stopped on
+`nothing servable` at **0.66 active minutes of a 30-minute budget** — 120 frames,
+97 scored, **8 admitted (6.7%)** against 54.0% for varied `phoenix` on a
+comparable leg, 74 refused at the junk floor. **All 8 admissions came from proven
+roots; the one fresh home-view root returned zero**, and only 2 of the 8 roots
+booked anything. It died because `growth_per_expansion` came out **0.767** — under
+1, so a frontier fed only by its own admissions shrinks — and the in-walk
+reframing channel cannot prop it up: `reframing_undefined` fired on all 23
+frontier nodes, because a dynamical viewport has no parameter-plane nucleus. **The
+partition's supply ceiling is `1 + its labelled q3+ places`**, which is 8 today.
+By the walk's own saturation distance 5 of the 8 admissions sit inside an earlier
+one, so the plane converges on a few basins rather than offering variety.
+
+**A pinned plane's fresh-root pool is one row, by construction.** No tracked pool
+held the classic point: the phoenix seed pool's 96 rows all resolve to varied
+`phoenix`, the plane pool and the deep run's anchors are parameter planes only,
+and `data/anchors.jsonl`'s one classic row feeds engine comparison rather than
+supply. `pools.classic_phoenix_pool()` is that missing row and there will never be
+a second: the plane is one parameter point, so the only thing a fresh root can
+vary is the frame, and varying the frame is what the walk does. Every further
+*place* comes from the proven channel.
 
 **The mix is decided where the batch is popped.** Weighting the *root draw* by
 family cannot enforce a mix: anything that only changes what enters the frontier
@@ -369,6 +394,14 @@ channels deep exhausts two ways — `pool julia:mandelbrot: 1036 of 1036 entries
 left, 827 of them proven roots` — and running out of `c` and running out of
 labelled places are fixed by different things.
 
+**Redirect a harvest's stdout through `python -u`.** It is block-buffered
+otherwise, so a backgrounded leg writes an empty log for its whole first stretch
+and there is no way to tell a run that is loading its ledgers from one that has
+hung. The startup itself is not quick — the novelty and saturation memories are
+built over every ledger under `--ledgers` before the first batch, which was about
+**two minutes and 115 CPU-seconds over 7 ledgers** on 2026-09-02 — so the silence
+is long enough to be worth reading.
+
 **`--minutes` is also the only backstop a harvest has** — there is no
 `--wall-budget` here, that flag belongs to `curate run`. It is a hard one: the loop
 refuses to *start* a batch when the spent minutes plus the running mean batch would
@@ -386,6 +419,7 @@ fractal-wallpapers harvest --exploration-floor 0.25 --exploration-start 0.45
 fractal-wallpapers harvest --no-exploration --lineage-discount 0   # neither lever
 fractal-wallpapers harvest --partition mandelbrot --root-channel proven
 fractal-wallpapers harvest --partition phoenix --root-channel proven      # at labelled frames
+fractal-wallpapers harvest --partition phoenix:classic --root-channel proven  # the pinned plane
 fractal-wallpapers derive-proven-seeds --partition mandelbrot --write   # to read it
 fractal-wallpapers harvest --partition mandelbrot --seeds seeds.jsonl   # one leg, one book
 fractal-wallpapers derive-prices --run artifacts/harvest --regularize --write

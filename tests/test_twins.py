@@ -15,7 +15,7 @@ from fractal_wallpapers.discovery.pools import C_SPACING_FLOOR
 from fractal_wallpapers.discovery.walk import Limits, Policy, Walk
 from fractal_wallpapers.supply import twins
 from fractal_wallpapers.supply.harvest import Budget, Harvest
-from fractal_wallpapers.supply.partitions import CLASSIC_PHOENIX, DYNAMICAL_PLANES, dynamical_twin
+from fractal_wallpapers.supply.partitions import DYNAMICAL_PLANES, dynamical_twin
 from fractal_wallpapers.supply.refill import Refill
 from test_harvest import quota
 
@@ -170,7 +170,6 @@ def refill_of(tmp_path, live) -> tuple[Walk, Refill]:
         walk,
         low_water=2,
         per_draw=2,
-        external={CLASSIC_PHOENIX},
         twins=live,
         partitions=THE_TWINS,
     )
@@ -250,7 +249,6 @@ def test_a_harvest_serves_a_twin_off_a_derived_parameter(tmp_path) -> None:
             walk,
             low_water=2,
             per_draw=2,
-            external={CLASSIC_PHOENIX},
             twins=live,
             partitions=THE_TWINS,
         ),
@@ -289,7 +287,6 @@ def test_a_resumed_run_keeps_the_parameters_its_floor_was_spaced_against(tmp_pat
                 walk,
                 low_water=2,
                 per_draw=2,
-                external={CLASSIC_PHOENIX},
                 twins=live,
                 partitions=THE_TWINS,
             ),
