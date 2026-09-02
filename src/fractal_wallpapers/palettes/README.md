@@ -285,7 +285,8 @@ none. There is no floor under the raw share — mean neutral share over gallery3
 
 `pixel_clouds` is the palette metric on **pixels**: the same M1 `groups` uses,
 over 4,096 seeded pixels of a render at census size instead of over a ramp. Two
-pictures at distance 0.0586 are the same wallpaper by the gallery pass's twin test.
+pictures at distance 0.03809 are the same wallpaper by the gallery pass's twin test
+(0.0586 until the 2026-09-02 ruling; see `curation.ceiling.TAU`).
 The two instruments do not substitute for each other — same-group pairs in
 gallery3 run 0.0121 to 0.4111, a 34× range whose median sits *above* the median
 nearest-neighbour distance of the gallery at large.

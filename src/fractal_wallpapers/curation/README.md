@@ -179,7 +179,7 @@ dominance   pro rata: with n seats filled including this one, a colour may hold
             floor(K x t x n) + 1 of them, K = 2, t uniform (1/48 a cell, 1/12 a
             family) unless a --target moved it. Only a candidate DOMINANT in an
             over-allowance colour is refused; carrying some of it is fine
-twin        no picture within 0.0586 of two already-shipped ones
+twin        no picture within 0.03809 of two already-shipped ones
 ```
 
 The pro-rata form is the fix for what a cumulative whole-gallery budget did: that
@@ -1432,6 +1432,17 @@ prompt names.
 lengthened only for the group that collides. Both resolve; a click on the alias in the
 page copies the full key.
 
+**`index.html` is the standing debug tool for figure selection** — open the stamp's page
+and filter by mode, cell, hue family or partition to find the wallpaper a figure wants,
+then `curate gallery resolve <alias>` to turn what you picked back into a recipe.
+
+**Three files a stamp are TRACKED, and the pictures are not.** `gallery.jsonl`,
+`manifest.json` and `index.html`, through a narrow un-ignore in `.gitignore` that names
+them one at a time. It is the one deliberate hole in `artifacts/` and it is there because
+the site's figures name wallpapers by these IDs: a clone that cannot resolve them cannot
+rebuild the site. A fourth file appearing in a stamp is ignored until somebody decides
+otherwise, which is why the un-ignore lists names rather than a pattern.
+
 **The record is a protection class in the prune.** `candidate_ledger.RETAINED_TENTATIVE`
 joins the four that were already there. It is needed for a sharper reason than the
 release row's: a seat is chosen on the *gallery's* objective, over a view, against the
@@ -1994,7 +2005,7 @@ an artificial floor of 1 it is 18 modes, one seat each but for `smooth` at 3.
 
 ### The twin test is the diversity rule, and it is the last one
 
-`ceiling.TAU = 0.0586` in the pixel-cloud metric, against every already-seated
+`ceiling.TAU = 0.03809` in the pixel-cloud metric, against every already-seated
 picture, sequentially. It is **not** in the solve and the solve's complexity does not
 change: a rule that reads the seats already taken costs one signature per surviving
 candidate, where a solver carries it as a quadratic family of rows.
@@ -2069,7 +2080,7 @@ twin test. They are near-orthogonal, so one rule cannot be both, and both are pl
 | question | rule | where it acts |
 |---|---|---|
 | the same place? | cosine `distinct.PRESELECT_RADIUS = 0.02` over the neutral descriptors | pool construction, before the walk |
-| one wallpaper? | `ceiling.TAU = 0.0586` in the pixel cloud | set-level, last rule of `curate solve` |
+| one wallpaper? | `ceiling.TAU = 0.03809` in the pixel cloud | set-level, last rule of `curate solve` |
 
 `RADII` stays a set of candidates to look at, and the sheet — near pairs at each
 radius, ordered by distance, as pictures — is the instrument. That is how

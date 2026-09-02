@@ -237,13 +237,37 @@ FAMILY_SHARE = 1.0 / 12.0
 
 #: Pixel-cloud distance under which two pictures are the same wallpaper.
 #:
-#: **0.0586**, Matt's, off the twins ladder. The curve there is steep and the
-#: band is narrow: over gallery3's walk 0.040 rejects 5 seats, 0.050 rejects 14,
-#: 0.060 rejects 30. Between those the test goes from a trim to a policy, and this
-#: sits just under the policy end. It is a number **in the all-pixel metric** and
-#: cannot be carried to the chromatic-only variant, which runs 5-15% lower at
-#: every percentile that matters.
-TAU = 0.0586
+#: **0.03809 since 2026-09-02** — Matt's ruling off `AUDIT_twin_refusals_short_modes`,
+#: and exactly 0.65 x the 0.0586 it had been. **Globally and as one number**: the
+#: signature is mode-agnostic and so is the rule, so there is no per-mode table here
+#: and there is not to be one.
+#:
+#: What the audit found. Over `overnight_after`, the n=2000 gallery that closed every
+#: census floor and still fell 68 seats short, the pairs the test was refusing stop
+#: reading as duplicates at about 0.65 of the old threshold — read off contact sheets
+#: of refused beside seated, per mode, and corroborated by a statistic nobody used to
+#: reach it: the share of refused pairs made with the **same palette map** runs 93-98%
+#: below 0.4 tau and collapses through 55% at 0.5-0.6 to 32% at 0.6-0.7 and 11% at
+#: 0.9-1.0, against a 0.2% base rate for two unrelated rows. 66% of all twin refusals
+#: sat above the new threshold, and all twenty of the farthest-refused pairs sat at the
+#: old one and were plainly different pictures.
+#:
+#: What it costs, measured before it was taken: the n=2000 seating goes 1,033 to 1,569
+#: with the shortfall 68 to 7, and the gallery then holds 3,795 pairs the old threshold
+#: would have refused. Those are the pairs the sheets say are not duplicates, and that
+#: is the whole of the ruling.
+#:
+#: **The known failure this does NOT fix** is structural rather than a matter of where
+#: the number sits: two near-white pictures with different geometry collapse in a
+#: signature over colour alone. A gate that asks colour AND geometry is what addresses
+#: that, and it is measured in `SET_twin_tau_0p65_and_geometry_gate` and not shipped.
+#:
+#: The old reading, kept because the shape of the argument still holds: the curve is
+#: steep and the band narrow — over gallery3's walk 0.040 rejected 5 seats, 0.050
+#: rejected 14, 0.060 rejected 30. It is a number **in the all-pixel metric** and
+#: cannot be carried to the chromatic-only variant, which runs 5-15% lower at every
+#: percentile that matters.
+TAU = 0.03809
 
 #: How many pictures inside [`TAU`] it takes to refuse. **Two**: one near
 #: neighbour is a collection with a pair in it, which is what a gallery of a

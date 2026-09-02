@@ -1,5 +1,24 @@
 scratch/
-artifacts/
+
+# `artifacts/` is runtime output and stays ignored — with ONE deliberate hole in
+# it, decided in SET_twin_tau_0p65_and_geometry_gate. A tentative gallery's three
+# text files are tracked, because the site's figures name wallpapers by the IDs in
+# them and a clone that cannot resolve those IDs cannot rebuild the site. The
+# PICTURES stay ignored: only `gallery.jsonl`, `manifest.json` and `index.html`
+# come through, and the un-ignore names them one by one rather than by pattern so
+# that a fourth file appearing in a stamp is ignored until somebody decides
+# otherwise. Git will not descend into an excluded DIRECTORY, which is why each
+# level is excluded by its contents (`dir/*`) and then re-included.
+artifacts/*
+!artifacts/curation/
+artifacts/curation/*
+!artifacts/curation/tentative/
+artifacts/curation/tentative/*
+!artifacts/curation/tentative/*/
+artifacts/curation/tentative/*/*
+!artifacts/curation/tentative/*/gallery.jsonl
+!artifacts/curation/tentative/*/manifest.json
+!artifacts/curation/tentative/*/index.html
 /labels/
 /local.toml
 models/**/*.pt
