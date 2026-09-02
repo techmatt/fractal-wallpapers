@@ -238,17 +238,65 @@ def test_the_share_rounds_up_so_a_small_batch_still_has_a_floor() -> None:
     assert share.split(8) == 4
 
 
-def test_the_exploration_share_is_apportioned_by_intent_and_capped_by_supply() -> None:
-    """The share protects novelty; it does not re-decide the mix."""
-    intent = {"mandelbrot": 0.8, "phoenix": 0.2, "multibrot3": 0.0}
-    slots, trace = exploration_slots(intent, {"mandelbrot": 10, "phoenix": 10, "multibrot3": 10}, 5)
-    assert slots["mandelbrot"] > slots["phoenix"] > 0
-    assert slots["multibrot3"] == 0, "no intent, no share slot"
-    assert sum(slots.values()) == 5
-    assert trace["weight_source"] == "intent"
-    # A partition with the intent and one novel node gets one slot and no more.
-    thin, _ = exploration_slots(intent, {"mandelbrot": 1, "phoenix": 10}, 5)
+def test_the_exploration_share_is_spread_evenly_over_drawable_and_capped_by_supply() -> None:
+    """Exploration is allotted to whoever can be explored, not to whoever the mix
+    already favours. Intent is not an input — it is not even in the signature."""
+    slots, trace = exploration_slots({"mandelbrot": 10, "phoenix": 10, "multibrot3": 10}, 6)
+    assert slots == {"mandelbrot": 2, "phoenix": 2, "multibrot3": 2}
+    assert sum(slots.values()) == 6
+    assert trace["weight_source"] == "even_carry"
+    assert trace["drawable"] == 3
+    # A partition with one novel node gets one slot and no more: supply still caps.
+    thin, _ = exploration_slots({"mandelbrot": 1, "phoenix": 10}, 5)
     assert thin["mandelbrot"] == 1
+    assert thin["phoenix"] == 4
+    # No novel node is the one way out of the draw.
+    none, trace = exploration_slots({"mandelbrot": 0, "phoenix": 10}, 4)
+    assert none["mandelbrot"] == 0
+    assert trace["drawable"] == 1
+
+
+def test_no_drawable_partition_is_zeroed_while_the_budget_can_seat_them_all() -> None:
+    """Matt's ruling, as an invariant rather than a tendency: floors and
+    exploration are two budgets, and carrying a floor cannot cost a partition its
+    exploration slot."""
+    drawable = {p: 10 for p in ALL_PARTITIONS}
+    for budget in range(len(drawable), len(drawable) * 3):
+        slots, trace = exploration_slots(drawable, budget)
+        assert trace["guaranteed_all"] is True
+        assert sum(slots.values()) == budget
+        assert min(slots.values()) >= 1, (
+            f"a drawable partition was zeroed at {budget} slots over {len(drawable)} partitions"
+        )
+    # One short of the precondition the guarantee is not claimed, and is not owed:
+    # `allocate_slots` refuses to pro-rate a guarantee rather than pretending.
+    slots, trace = exploration_slots(drawable, len(drawable) - 1)
+    assert trace["guaranteed_all"] is False
+    assert sum(slots.values()) == len(drawable) - 1
+
+
+def test_the_share_carries_its_evenness_across_batches_because_one_batch_cannot() -> None:
+    """A leg wants one or two share slots against nine drawable partitions, so
+    evenness only exists over the run. Without the carry the tie-break hands one
+    partition nearly everything; with it the spread is flat."""
+    drawable = {p: 100 for p in ALL_PARTITIONS}
+    carried: dict = {}
+    for _ in range(60):
+        slots, _ = exploration_slots(drawable, 2, taken=carried)
+        for partition, n in slots.items():
+            carried[partition] = carried.get(partition, 0) + n
+    assert sum(carried.values()) == 120
+    assert min(carried.values()) >= 1, "every drawable partition is reached over the run"
+    assert max(carried.values()) - min(carried.values()) <= 1, carried
+
+    # The same budget with no carry is what the defect looked like: one partition
+    # wins every tie-break and the spread is not flat.
+    flat: dict = {}
+    for _ in range(60):
+        slots, _ = exploration_slots(drawable, 2)
+        for partition, n in slots.items():
+            flat[partition] = flat.get(partition, 0) + n
+    assert max(flat.values()) > max(carried.values()), "the carry is what makes it even"
 
 
 # ------------------------------------------------------------ the ruled order
@@ -257,12 +305,21 @@ def test_the_exploration_share_is_apportioned_by_intent_and_capped_by_supply() -
 def test_a_starved_partition_is_served_even_when_the_share_would_take_the_slots() -> None:
     """The floor is the re-entry path for a mispriced partition and nothing below
     it may eat that. Here every post-floor slot the share could want exists, and
-    the claimant still comes out with one."""
+    the claimant still comes out with one.
+
+    The starved partition is the one with **no novel nodes**, which is now the
+    only way to build one: since the share is spread evenly over every drawable
+    partition rather than by intent, a partition the share can reach is a
+    partition the share keeps served. So what is starved here is what the share
+    cannot spend a slot on, and the floor is the only thing that can reach it.
+    """
     exploration = novelty.Exploration(floor=1.0, start=1.0)
     exploration.members = dict.fromkeys(range(1, 50), True)
     held = quota({"mandelbrot": 500.0}, exploration=exploration)
     queues = dict.fromkeys(ALL_PARTITIONS, 20)
     novel = dict.fromkeys(ALL_PARTITIONS, 20)
+    starved = ALL_PARTITIONS[-1]
+    novel[starved] = 0
 
     # Run long enough that the floor's carry comes due for the quiet partitions.
     for _ in range(40):
@@ -278,6 +335,7 @@ def test_a_starved_partition_is_served_even_when_the_share_would_take_the_slots(
     share, contest, trace = held.slots(queues, 4, novel)
     claimants = trace["guaranteed"]
     assert claimants, "the carry should have come due by batch twenty at a 5% floor"
+    assert starved in claimants, "the partition the share cannot reach is the one owed"
     for partition in claimants:
         assert contest.get(partition, 0) >= 1, (
             f"{partition} is owed the floor and the share took its slot"

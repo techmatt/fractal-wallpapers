@@ -111,7 +111,33 @@ served, **90 were proven and they returned 1,690 of the run's 1,789 admissions
 (94.5%)**. The rest is a rounding — 6 twin roots returned 57, 2 `ranked_harvest`
 pool roots returned 41, and the **21 `nucleus_grid` plane-pool roots and 4
 `home_view` roots returned nothing at all**. A quarter of the roots this run
-served booked zero. Note the root row says which channel it came from under
+served booked zero.
+
+**Read that as a fact about that leg and not about the channels** — swept across
+all 44 ledgers on both tiers on 2026-09-02, the two come apart. `nucleus_grid`
+is the fifth-largest channel this project has: **1,510 roots served for 1,766
+admissions**, across all four parameter planes (`multibrot5` 640, `multibrot3`
+415, `mandelbrot` 399, `multibrot4` 312), last booking on 2026-09-01. Its zero
+in the leg above is **truncation, not failure**: its 21 roots there found 552
+candidates and left **258 still `expandable`** when the ten-minute budget
+stopped, having reached depth 7 with nothing yet over the keeper floor. The same
+day's longer leg gave 140 `nucleus_grid` roots 4,256 candidates, depth 9, and
+**131 admissions**. `home_view` is the one that has never produced: **31 roots
+served over ten runs from 2026-08-20 to 2026-09-02, zero admissions, ever.**
+
+**And `home_view`'s zero is deterministic rather than unlucky.** Its four
+parameter-plane roots are a fixed frame — the whole plane — so every run walks
+the same four children to the same verdicts: 16 candidates, all at depth 2, all
+refused by the *structural* gates as `interior_cap` or `flat`, never scored at
+all, with all four root nodes dying `flat`. A home view is mostly interior or
+featureless wash, which is what the gates are for. It is not supply and was
+never meant to be: it is the fallback that keeps `has_channel` true for a family
+whose every atom the solver refused, and with 1,912 `nucleus_grid` rows shipped
+that fallback has not been needed once. The pinned plane's `home_view` row is a
+different population under the same channel name — separable only by partition,
+because the walk does not carry `provenance.source` onto a root row — and it is
+load-bearing for a different reason: `viewport_sampler` deliberately does not
+draw rung 0 *because* the pool hands that frame over. Note the root row says which channel it came from under
 `provenance.channel` and *not* under `source`, which names the pool file the
 entry was read out of: a tally by `source` puts 115 of these 128 roots under
 `seed_file` and cannot see the channel at all.
@@ -282,22 +308,41 @@ neighbourhood *no ledger* has ever booked an admission from, and prices that
 fraction against its own admission rate. Inside the share the head ranks and only
 the junk floor kills; the discount never reaches it.
 
-**The exploration share cannot reach a floored partition, and the partitions with
-the most unwalked ground are the floored ones.** Measured over a ten-minute
+**The exploration share is spread evenly over the drawable partitions, and it
+carries that evenness across batches.** A partition is drawable if it has a
+novel-lineage node to spend a slot on; every drawable partition is owed the same
+number of share slots as every other, and while the budget has at least as many
+slots as there are drawable partitions each is *guaranteed* one. Floors and
+exploration are two budgets that sum to the leg, and `exploration_slots` is not
+handed an intent vector at all — it cannot weight by a floor it never sees.
+
+Evenness has to be carried because a batch is too small to hold it: a leg wants
+one or two share slots at a time against nine or ten drawable partitions, so
+spreading uniformly *inside* a batch just gives every slot to whichever
+partition wins the tie-break. `Exploration.taken` is the carry, and the run
+already checkpoints it, so a resume keeps the spread for the same reason it
+keeps the price. Replaying the leg below under the new rule moves its 326 slots
+from `mandelbrot` 179 / `multibrot3` 84 / four Julia twins 0, to **36–37 each
+across all nine drawable partitions, with none at zero**.
+
+**What it replaced, and why the two levers composed badly.** Measured over a ten-minute
 all-partition leg on 2026-09-01: the four julia twins carried a **non-empty
 novel-root queue in all 114 batches** — peaks of 50, 53, 46 and 66 roots no ledger
 had booked from — and took **0 of the run's 326 exploration slots** between them,
 against 179 to `mandelbrot` and 84 to `multibrot3`. The mechanism is on every
-quota card as `share.weight_source`, which read `intent` in all 114: the share is
+quota card as `share.weight_source`, which read `intent` in all 114: the share was
 drawn over the post-floor pool weighted by each partition's *intended* share, and
-a partition whose intent is the 0.05 floor has spent that intent on its floor
-slots, so it carries a vanishing weight in the draw that follows. With `wanted`
-at one or two slots a batch, a floored partition essentially never wins one. The
+a partition whose intent is the 0.05 floor had spent that intent on its floor
+slots, so it carried a vanishing weight in the draw that followed. With `wanted`
+at one or two slots a batch, a floored partition essentially never won one. The
 run-wide realized share was **0.424**, comfortably over the 0.25 floor, which is
-why the run-wide number cannot see this — `quota.exploration.realized.per_partition`
-is where it shows, and a partition reading 0.0 there with a non-empty
-`novel_queues` entry is this. Nothing is broken: the floor and the share are two
-levers that compose badly, and which one should give is not settled here.
+why the run-wide number could not see it — `quota.exploration.realized.per_partition`
+is where it showed, and a partition reading 0.0 there with a non-empty
+`novel_queues` entry was this. Nothing was broken: the floor and the share were two
+levers that composed badly, and Matt's ruling settled which gives — the floor keeps
+its claim, and exploration stopped being allotted out of what the floor had spent.
+`share.weight_source` reads `even_carry` now, and a floored partition reading 0.0
+against a non-empty `novel_queues` is a defect again rather than the design.
 
 **A run's `--ledgers` names one root, and the two cross-run indexes are only as
 wide as it.** Both `saturation` and `novelty` read the tree that flag points at,
