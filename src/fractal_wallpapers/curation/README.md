@@ -2320,6 +2320,15 @@ jsonl is the product and the pictures are a convenience — so `curate growth pl
 refuses with the install line if it is absent: `uv pip install matplotlib` against
 the checkout's `.venv`, which is what this machine has.
 
+**Four finished labeling subtrees are on the archive tier as of 2026-09-02** —
+`mode_sheet`, `calibration`, `correction` and `palette_mass_sweep_calib`, 0.57 GiB over
+1,577 files. They were promoted to **top-level names** first and archived as
+themselves, because the unit of tiering is a top-level name and `curation` is the live
+pool: archiving one of its children in place would put `curation` in both tiers and
+every `under("curation", …)` would raise `TierCollision`. Nothing addresses the four by
+path, so the promotion costs nothing; each comes back with one command, e.g.
+`fractal-wallpapers storage restore mode_sheet`.
+
 ## `curate hunt` — rendering into a shortage instead of around it
 
 The solve above turns an impossible gallery into a **work order**. This is what
@@ -4162,10 +4171,33 @@ glance: **0** is a killed leg to re-merge or delete, a **large** number is a
 backfilled leg that cannot be re-merged at all.
 
 **Dry-run 2026-09-02** over 187,976 pictures: 32 unmerged legs holding **20,723
-pictures (3.09 GiB)** skipped — 22 backfilled `runs` legs and 10 killed ones — and
-**1,135 named by no ledger row (182.2 MiB)**, every one of them in two merged `depth`
-legs (`breadth_strange` 883, `smooth500_pilot` 252). The rule this replaced kept those
-1,135 because those legs' `sequence.jsonl` still names them, and deleted 24.
+pictures (3.09 GiB)** skipped — **22 killed** (10 `depth`/`mine` legs and 12 `runs`
+smoke legs, 5,238 pictures) and **10 backfilled `runs` legs** (15,485 pictures, 11,875
+of them ledger-named) — and **1,135 named by no ledger row (182.2 MiB)**, every one of
+them in two merged `depth` legs (`breadth_strange` 883, `smooth500_pilot` 252). The
+rule this replaced kept those 1,135 because those legs' `sequence.jsonl` still names
+them, and deleted 24.
+
+**All three were then taken, on Matt's ruling, 2026-09-02.** The 1,135 went with a
+plain `--apply` (0.178 GiB). The 10 backfilled legs were named with `--leg` and lost
+their **3,610** un-decided attempts and 1,468 levelled colormaps (0.624 GiB), keeping
+every picture their decision stores named. The 22 killed legs went **whole** — not
+through this sweep, which is pictures-only by design, but through a one-off that
+checked each path against the hot root and the leg shape first: **1.81 GiB over 11,216
+files**, most of it the `fields/` and `candidates/` beside the pictures. Afterwards the
+pool is exactly consistent: **177,993 pictures on disk against 177,993 ledger rows, 0
+named by nothing**, and the only unmerged legs left are the 10 backfilled ones where
+every remaining picture is ledger-named.
+
+**An unmerged leg is swept only when somebody names it.** `--leg <name>` takes one
+(as the listing prints it, or just its last component) and is repeatable;
+`--include-unmerged` takes all of them. A named leg is swept under the **same rule as
+a merged one** — what the ledger names is kept, the rest goes — which is why the two
+kinds need no separate handling: a killed leg has no rows and loses everything, a
+backfilled `runs` leg loses only the renders nothing decided about. They are reported
+apart, under `swept_unmerged`, so a person who named a leg can read back what naming
+it cost. The listing stays the default precisely so that taking one is a sentence
+somebody typed after reading it.
 
 The safety is three properties and none of them is a promise made in a comment: the
 enumeration is `<subtree>/<leg>/pictures` at a **fixed depth**, so a leg's `fields/` is

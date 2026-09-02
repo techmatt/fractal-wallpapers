@@ -1115,6 +1115,69 @@ def test_a_backfilled_leg_is_not_a_merged_leg_however_many_rows_name_it(swept):
     assert (pictures / "an_attempt.jpg").is_file()
 
 
+def test_an_unmerged_leg_is_swept_only_when_the_caller_names_it(swept):
+    """The listing is the safety and naming a leg is the whole of how it is spent.
+    Named, an unmerged leg is swept under the SAME rule as a merged one — what the
+    ledger names is kept, the rest goes — which is why the two kinds need no
+    separate handling: a killed leg has no rows and loses everything, a backfilled
+    `runs` leg keeps every picture its decision stores named."""
+    killed = a_leg(swept, "depth", "p1_near", ("a", "b"))
+    backfilled = a_leg(swept, "runs", "gallery4", ("decided", "an_attempt"))
+    candidate_ledger.write(
+        [a_ledger_row("artifacts/curation/runs/gallery4/pictures/decided.jpg", merged=False)]
+    )
+
+    # Unnamed, both are listed and neither is touched.
+    listed = candidate_ledger.orphans(apply=True, log=lambda *_: None)
+    assert listed["unmerged_legs"] == 2
+    assert listed["swept_unmerged"] == []
+    assert (killed / "a.jpg").is_file() and (backfilled / "an_attempt.jpg").is_file()
+
+    # Named — by its tail here, which is what a person reading the listing types.
+    record = candidate_ledger.orphans(
+        apply=True, unmerged=("p1_near", "gallery4"), log=lambda *_: None
+    )
+    assert record["unmerged_legs"] == 0, "both were named, so neither is merely listed"
+    assert record["swept_unmerged_legs"] == 2
+    assert record["swept_unmerged_pictures"] == 3
+    assert not (killed / "a.jpg").exists() and not (killed / "b.jpg").exists()
+    assert not (backfilled / "an_attempt.jpg").exists()
+    assert (backfilled / "decided.jpg").is_file(), "the ledger names it, so it stays"
+
+
+def test_naming_one_unmerged_leg_leaves_the_others_listed(swept):
+    """Per leg, because the three rulings this was built for were three different
+    decisions about three different sets of legs."""
+    kept = a_leg(swept, "depth", "lav2", ("a",))
+    a_leg(swept, "depth", "teal_pilot", ("b",))
+    candidate_ledger.write([])
+
+    record = candidate_ledger.orphans(
+        apply=True, unmerged=("artifacts/curation/depth/teal_pilot",), log=lambda *_: None
+    )
+
+    assert [held["leg"] for held in record["unmerged"]] == ["artifacts/curation/depth/lav2"]
+    assert [held["leg"] for held in record["swept_unmerged"]] == [
+        "artifacts/curation/depth/teal_pilot"
+    ]
+    assert (kept / "a.jpg").is_file()
+
+
+def test_all_unmerged_is_a_word_and_not_a_bare_true(swept):
+    """One type for the parameter: a caller either names legs or names all of them,
+    and a string that is neither is refused rather than read as an empty list."""
+    a_leg(swept, "depth", "a_leg", ("a",))
+    candidate_ledger.write([])
+
+    record = candidate_ledger.orphans(
+        apply=False, unmerged=candidate_ledger.ALL_UNMERGED, log=lambda *_: None
+    )
+    assert record["swept_unmerged_legs"] == 1
+
+    with pytest.raises(candidate_ledger.LedgerError):
+        candidate_ledger.orphans(unmerged="a_leg", log=lambda *_: None)
+
+
 def test_the_sweep_cannot_reach_a_leg_s_fields_however_large_they_get(swept):
     """`fields/` is 6.2 GiB of `.f32` that no record names, and it is NOT this
     command's to delete — the enumeration is a fixed shape at a fixed depth, so a

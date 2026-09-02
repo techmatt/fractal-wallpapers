@@ -3351,6 +3351,20 @@ def curate_gallery_store(args: argparse.Namespace) -> int:
     return 0
 
 
+def orphan_unmerged(args: argparse.Namespace):
+    """Which unmerged legs `orphans` was told to sweep: named, all, or none.
+
+    None is the default and is the whole safety of the listing: a leg the ledger
+    has never heard of is real work with no row anywhere, and it is swept only
+    because somebody read the list and typed its name.
+    """
+    from fractal_wallpapers.curation import candidate_ledger
+
+    if getattr(args, "include_unmerged", False):
+        return candidate_ledger.ALL_UNMERGED
+    return tuple(getattr(args, "leg", None) or ())
+
+
 def curate_candidate_ledger(args: argparse.Namespace) -> int:
     """Backfill the candidate ledger, census it, or keep its two files durable."""
     from fractal_wallpapers.curation import candidate_ledger, durability
@@ -3360,7 +3374,9 @@ def curate_candidate_ledger(args: argparse.Namespace) -> int:
         "census": lambda: candidate_ledger.census(n=args.n),
         "save": candidate_ledger.save,
         "check": candidate_ledger.check,
-        "orphans": lambda: candidate_ledger.orphans(apply=args.apply),
+        "orphans": lambda: candidate_ledger.orphans(
+            apply=args.apply, unmerged=orphan_unmerged(args)
+        ),
         "pictures": candidate_ledger.picture_census,
         "prune": lambda: candidate_ledger.prune(keep=args.keep, apply=not args.dry_run),
         "re-render": lambda: candidate_ledger.re_render(limit=args.limit, workers=args.workers),
@@ -8197,6 +8213,23 @@ def curate_commands(subcommands) -> None:
         "run, which is the opposite way round from `prune` and deliberately so — a prune "
         "decides about rows it can see, and this decides about files nothing wrote down. "
         "Read the `unmerged` list first: those legs are skipped either way",
+    )
+    ledger_store.add_argument(
+        "--leg",
+        action="append",
+        metavar="NAME",
+        help="with `orphans`: also sweep this UNMERGED leg, which the sweep otherwise only "
+        "lists. Repeatable, and takes the name as the listing prints it or just its last "
+        "component. A named leg is swept under the same rule as a merged one — what the "
+        "ledger names is kept, the rest goes — so a killed leg loses everything and a "
+        "backfilled `runs` leg loses only the renders nothing decided about",
+    )
+    ledger_store.add_argument(
+        "--include-unmerged",
+        action="store_true",
+        help="with `orphans`: sweep every unmerged leg the listing holds, as though each "
+        "had been named. The listing stays the default precisely so that this is a "
+        "sentence somebody typed after reading it",
     )
     ledger_store.add_argument(
         "--recolour",

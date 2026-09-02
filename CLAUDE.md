@@ -66,6 +66,23 @@ These were decided once, at the first commit, because each is expensive to rever
   text file opens it `newline="\n"`: `.gitattributes` normalizes what git
   stores, and this is what stops a Windows run dirtying every line of a file it
   rewrote.
+- **Where a file under `artifacts/` belongs is a three-way decision, and it is
+  made once per subtree.** *Hot* (`artifacts/`) is what a live command in the loop
+  reads: the pool's pictures and rows, the sidecars, the current records. Its file
+  count is the pool's and is not a target to drive down. *Archive*
+  (`E:\FractalStorage`, `storage archive <name>`) is finished bulk worth keeping
+  that nothing reads routinely — training material, finished legs, look sheets —
+  and it must be restored before reuse. *Delete* is everything regenerable from
+  what is hot and everything unreferenced; if nothing will want a thing back, its
+  builder goes with it. The unit of the first two is a **top-level name**, so a
+  subtree that has to move on its own gets promoted to one first — `curation`
+  itself can never move, because it is the live pool.
+- **A picture with no ledger row is garbage, and there is a sweep for it.**
+  `curate candidate-ledger orphans` lists by default and deletes with `--apply`.
+  Run it after any killed leg and periodically. **An unmerged leg is listed and
+  never swept unread**: it is real work with no row anywhere, so it is taken only
+  when somebody reads the listing and names it (`--leg <name>`, or
+  `--include-unmerged` for all of them).
 - **The render pool is three workers at below-normal priority.** That is the
   standard shape of every leg that drives the engine — a measure pass, a sheet
   build, a hunt, a mine — and it is a rule about this machine rather than a

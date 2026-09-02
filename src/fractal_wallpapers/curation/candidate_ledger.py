@@ -999,7 +999,36 @@ def _named_by_the_ledger(tiers) -> tuple[dict, set]:
     return wanted, stamped
 
 
-def orphans(apply: bool = False, log=print) -> dict:
+#: What [`orphans`]'s `unmerged` takes to mean *every leg it would otherwise list*.
+#: A string rather than a bool so the parameter has one type: a caller either
+#: names legs or names all of them, and there is no third spelling.
+ALL_UNMERGED = "all"
+
+
+def _unmerged_wanted(unmerged: tuple | str) -> set | str:
+    """The caller's `unmerged` argument as the thing [`_is_named`] can ask about."""
+    if unmerged == ALL_UNMERGED:
+        return ALL_UNMERGED
+    if isinstance(unmerged, str):
+        raise LedgerError(
+            f"{unmerged!r} is not a leg list. Pass leg names, or "
+            f"candidate_ledger.ALL_UNMERGED for every one of them."
+        )
+    return {str(name).replace(chr(92), "/").rstrip("/") for name in unmerged}
+
+
+def _is_named(leg: str, named: set | str) -> bool:
+    """Whether the caller asked for this unmerged leg, by tracked name or by tail.
+
+    Both spellings, because the listing prints the tracked name and a person
+    reading it types the part that identifies the leg.
+    """
+    if named == ALL_UNMERGED:
+        return True
+    return bool(named) and (leg in named or leg.rsplit("/", 1)[-1] in named)
+
+
+def orphans(apply: bool = False, unmerged: tuple | str = (), log=print) -> dict:
     """Pictures in the pool subtrees that **nothing** names. The backstop under [`prune`].
 
     [`prune`] is the retention rule and it runs from [`merge`], so every leg that
@@ -1017,12 +1046,23 @@ def orphans(apply: bool = False, log=print) -> dict:
     and keeping it because the leg's own `sequence.jsonl` still mentions it is
     keeping a file against a decision rather than against an absence.
 
-    A leg that has **not** merged is the opposite case and it is not swept at all.
-    Its pictures are real work with no row anywhere, which is precisely what this
-    command exists for and precisely what it must not delete on its own: the fix
-    is a `merge`, which costs nothing on a partial, or a deliberate `rm`. Those
-    legs are **skipped and listed** on the record under `unmerged`, with the count
-    and the bytes each is holding, for a person to act on.
+    A leg that has **not** merged is the opposite case and it is not swept **unless
+    a caller names it**. Its pictures are real work with no row anywhere, which is
+    precisely what this command exists for and precisely what it must not decide
+    about on its own: the fix is a `merge`, which costs nothing on a partial, a
+    deliberate `rm`, or this sweep pointed at it by name. Left alone, those legs
+    are **skipped and listed** on the record under `unmerged`, with the count and
+    the bytes each is holding, for a person to act on.
+
+    `unmerged` is that pointing: leg names — as the listing prints them, or their
+    last component — or [`ALL_UNMERGED`]. A named leg is swept **under the same
+    rule as a merged one**: what the ledger names is kept and the rest goes. That
+    is one rule rather than two, and it is why the two kinds of unmerged leg need
+    no separate handling — a killed leg has no rows, so all of it goes; a
+    backfilled `runs` leg keeps every picture its decision stores named and loses
+    the renders nothing decided about. The record reports them apart from the
+    ordinary sweep, under `swept_unmerged`, because a person who named a leg
+    should be able to read back what naming it cost.
 
     **The stamp is the `hunt` block, read off the ledger and not off a file** — see
     [`_named_by_the_ledger`], which works it out in the pass it was already making.
@@ -1062,6 +1102,7 @@ def orphans(apply: bool = False, log=print) -> dict:
     from fractal_wallpapers.paths import Tiers
 
     started = time.time()
+    named = _unmerged_wanted(unmerged)
     tiers = Tiers.current()
     roots = [Path(root).resolve() for root in (tiers.hot, tiers.archive) if root is not None]
     wanted, stamped = _named_by_the_ledger(tiers)
@@ -1069,6 +1110,7 @@ def orphans(apply: bool = False, log=print) -> dict:
     by_subtree: dict = {}
     doomed: list = []
     unmerged: list = []
+    swept: list = []
     ledger_only: Counter = Counter()
     for where in picture_dirs():
         # The check at the point of decision, and not carried over from the
@@ -1106,14 +1148,16 @@ def orphans(apply: bool = False, log=print) -> dict:
         cell["pictures"] += len(stems)
 
         held = wanted.get(where, set())
-        if where not in stamped:
-            # No merge stamp: the ledger has never heard of this leg, so nothing
-            # here is decidable and none of it is swept. Listed instead.
+        leg_name = tracked_name(where.parent)
+        if where not in stamped and not _is_named(leg_name, named):
+            # No merge stamp and nobody named it: the ledger has never heard of
+            # this leg, so nothing here is decidable and none of it is swept.
+            # Listed instead.
             cell["unmerged_legs"] += 1
             cell["skipped_unmerged"] += len(stems)
             unmerged.append(
                 {
-                    "leg": tracked_name(where.parent),
+                    "leg": leg_name,
                     "pictures": len(stems),
                     "ledger_named": len(held),
                     "bytes": sum(stems.values()),
@@ -1123,6 +1167,20 @@ def orphans(apply: bool = False, log=print) -> dict:
             continue
         unnamed = sorted(name for name in stems if name not in held)
         cell["named_by_the_ledger"] += len(stems) - len(unnamed)
+        if where not in stamped:
+            # Named by the caller, so swept under the merged rule — and counted
+            # apart, because "you asked for this leg" and "the retention rule
+            # already decided about this file" are different sentences.
+            swept.append(
+                {
+                    "leg": leg_name,
+                    "pictures": len(stems),
+                    "ledger_named": len(held),
+                    "deleting": len(unnamed),
+                    "bytes": sum(stems[name] for name in unnamed),
+                    "why": "unmerged, named by the caller",
+                }
+            )
         if not unnamed:
             continue
         ledger_only[subtree] += len(unnamed)
@@ -1143,12 +1201,22 @@ def orphans(apply: bool = False, log=print) -> dict:
         "unmerged": sorted(unmerged, key=lambda held: -held["pictures"]),
         "unmerged_legs": len(unmerged),
         "skipped_unmerged": sum(cell["skipped_unmerged"] for cell in by_subtree.values()),
+        "swept_unmerged": sorted(swept, key=lambda held: -held["deleting"]),
+        "swept_unmerged_legs": len(swept),
+        "swept_unmerged_pictures": sum(held["deleting"] for held in swept),
+        "swept_unmerged_bytes": sum(held["bytes"] for held in swept),
     }
     log(
         f"[orphans] {record['pictures_on_disk']:,} pictures; "
         f"{len(unmerged):,} unmerged leg(s) holding {record['skipped_unmerged']:,} were "
         f"skipped, and {len(doomed):,} of the rest are named by no ledger row"
     )
+    for held in record["swept_unmerged"]:
+        log(
+            f"[orphans] unmerged and named by the caller: {held['leg']} — deleting "
+            f"{held['deleting']:,} of {held['pictures']:,} picture(s), keeping the "
+            f"{held['ledger_named']:,} the ledger names"
+        )
     for held in record["unmerged"]:
         log(
             f"[orphans] unmerged — re-merge or delete: {held['leg']} "
@@ -2529,6 +2597,7 @@ __all__ = [
     "LedgerError",
     "MADE_IT",
     "ROWS_NAME",
+    "ALL_UNMERGED",
     "SCHEMA",
     "SCORES_NAME",
     "UNIT",
