@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "path": "artifacts/curation/hunt/frames.jsonl",
+  "copy": "artifacts/curation_backup/frames.jsonl",
+  "rows": 28090,
+  "bytes": 18115525,
+  "sha256": "8c5341114dee9e49f9c4f57c52668c808ed0723fb24d4a1cfe1ecca75b36e818",
+  "adopted": 19041,
+  "rows_by_margin": {
+    "2.0": 28090
+  },
+  "rows_by_partition": {
+    "julia:mandelbrot": 5311,
+    "julia:multibrot3": 4468,
+    "julia:multibrot4": 3789,
+    "julia:multibrot5": 3694,
+    "mandelbrot": 3862,
+    "multibrot3": 1658,
+    "multibrot4": 1563,
+    "multibrot5": 2063,
+    "phoenix": 1682
+  },
+  "recorded": "2026-09-02",
+  "why_not_tracked": "tens of megabytes of frame rows against a 1 MiB per-file history guard. The manifest is what the history keeps: the row count, the byte count, the sha256, the margin every row was chosen at and how many of them adopted a new framing."
+}

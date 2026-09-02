@@ -829,6 +829,20 @@ def derive_proven_seeds(args: argparse.Namespace) -> int:
     return 0
 
 
+def walk_default(name: str):
+    """One of the walk's own limits, for a flag default that cannot drift from it."""
+    from fractal_wallpapers.discovery.walk import Limits
+
+    return getattr(Limits(), name)
+
+
+def sampler_default(name: str):
+    """One of the viewport sampler's constants, for a help string that cannot drift."""
+    from fractal_wallpapers.discovery import viewport_sampler
+
+    return getattr(viewport_sampler, name)
+
+
 def build_proven_channel(args: argparse.Namespace, partitions):
     """The proven-label channel this run asked for by name, or `None`.
 
@@ -842,6 +856,34 @@ def build_proven_channel(args: argparse.Namespace, partitions):
     if proven.CHANNEL not in (getattr(args, "root_channels", None) or ()):
         return None
     return proven.build(partitions=partitions)
+
+
+def build_sampler_channel(args: argparse.Namespace, partitions, walk_run, log=print):
+    """The viewport sampler this run asked for by name, or `None`.
+
+    Drawn and screened when the run is built rather than at the first refill: the
+    ladder is a few hundred frames through the gate battery, which is seconds,
+    and paying it inside the refill's share of the loop clock would price a
+    channel's whole supply against a bound meant for a draw.
+
+    The run's own seed, so two harvests at one seed sample the same viewports and
+    a resumed session re-derives the list its cursor is standing in. The walk's
+    ledger, so every attempt and its fate land in the run's record rather than
+    only in a summary.
+    """
+    from fractal_wallpapers.discovery import viewport_sampler
+
+    if viewport_sampler.CHANNEL not in (getattr(args, "root_channels", None) or ()):
+        return None
+    return viewport_sampler.build(
+        partitions=partitions,
+        seed=args.seed,
+        rungs=args.sampler_rungs,
+        colormap=args.colormap,
+        node_width=args.node_width,
+        ledger=walk_run.ledger,
+        log=log,
+    )
 
 
 def build_scorer(args: argparse.Namespace, log=print):
@@ -926,6 +968,7 @@ def walk(args: argparse.Namespace) -> int:
             batch=args.batch,
             batches=args.batches,
             root_expansions=args.root_expansions,
+            pinned_root_expansions=args.pinned_root_expansions,
             probe_probability=args.probe,
             plane_grace_rungs=args.plane_grace_rungs,
             **refine_limits(args),
@@ -1073,6 +1116,7 @@ def harvest(args: argparse.Namespace) -> int:
     limits = Limits(
         batch=args.batch,
         root_expansions=args.root_expansions,
+        pinned_root_expansions=args.pinned_root_expansions,
         plane_grace_rungs=args.plane_grace_rungs,
         **refine_limits(args),
         # `None` and not `0`: zero is a real answer to "how many admissions may a
@@ -1140,6 +1184,7 @@ def harvest(args: argparse.Namespace) -> int:
         partitions=partitions,
         twins=twin_channel,
         proven=build_proven_channel(args, partitions),
+        sampler=build_sampler_channel(args, partitions, walk_run),
     )
     memory = None if args.no_saturation else saturation.build(paths=ledger_files)
     run = Harvest(
@@ -2998,6 +3043,27 @@ def curate_amendments(args: argparse.Namespace) -> int:
     return 0
 
 
+def curate_frames(args: argparse.Namespace) -> int:
+    """Record, check or restore the hunt frame index against its tracked manifest."""
+    from fractal_wallpapers.curation import durability, hunt
+
+    durable = hunt.frames_durable()
+    doing = {
+        "save": lambda: durability.save(durable),
+        "check": lambda: durability.check(durable),
+        "restore": lambda: durability.restore(durable, force=args.force),
+    }[args.what]
+    try:
+        report = doing()
+    except durability.DurableLost as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps(report, indent=2))
+    if args.what == "check" and report.get("verdict") in {"short", "missing"}:
+        return 1
+    return 0
+
+
 def curate_mass_sweep(args: argparse.Namespace) -> int:
     """Record, check or restore the colour-mass sweep log against its tracked manifest."""
     from fractal_wallpapers.curation import durability
@@ -4710,8 +4776,17 @@ def build_parser() -> argparse.ArgumentParser:
     search.add_argument(
         "--root-expansions",
         type=int,
-        default=12,
-        help="expansions any one root may pay for, its reframings included",
+        default=walk_default("root_expansions"),
+        help=f"expansions any one root may pay for, its reframings included "
+        f"(default: {walk_default('root_expansions')})",
+    )
+    search.add_argument(
+        "--pinned-root-expansions",
+        type=int,
+        default=walk_default("pinned_root_expansions"),
+        help=f"the same, for a root on a pinned plane, which has no free parameter and "
+        f"therefore no second root to answer a dead lineage with "
+        f"(default: {walk_default('pinned_root_expansions')})",
     )
     search.add_argument("--candidates", type=int, default=4, help="candidates drawn per node")
     search.add_argument(
@@ -4973,8 +5048,19 @@ def build_parser() -> argparse.ArgumentParser:
     production.add_argument(
         "--root-expansions",
         type=int,
-        default=12,
-        help="expansions any one root may pay for, its reframings included",
+        default=walk_default("root_expansions"),
+        help=f"expansions any one root may pay for, its reframings included "
+        f"(default: {walk_default('root_expansions')})",
+    )
+    production.add_argument(
+        "--pinned-root-expansions",
+        type=int,
+        default=walk_default("pinned_root_expansions"),
+        help=f"the same, for a root on a pinned plane. Higher because a pinned plane has no "
+        f"free parameter, so a lineage the cap closes is not replaced by a fresh root "
+        f"somewhere else. Measured on the first leg that ever walked one: its two "
+        f"productive roots hit the ordinary cap while still finding "
+        f"(default: {walk_default('pinned_root_expansions')})",
     )
     production.add_argument("--candidates", type=int, default=4, help="candidates drawn per node")
     production.add_argument(
@@ -5126,12 +5212,24 @@ def build_parser() -> argparse.ArgumentParser:
         "--root-channel",
         action="append",
         dest="root_channels",
-        choices=[proven_default("CHANNEL")],
+        choices=[proven_default("CHANNEL"), sampler_default("CHANNEL")],
         help=f"draw roots from this channel as well as the partition's own pool; "
         f"repeatable. {proven_default('CHANNEL')!r} roots the walk at every location a human "
         f"has scored a keeper, interleaved with the pool rather than replacing it — on the "
         f"dynamical partitions at the labelled viewport, which is a frame their `c`-pools "
-        f"cannot express",
+        f"cannot express. {sampler_default('CHANNEL')!r} draws viewports over a PINNED "
+        f"plane's own home view at a ladder of scales and keeps the ones the structural "
+        f"gates pass, which is the only way a plane with no free parameter gets a fresh "
+        f"place at all",
+    )
+    production.add_argument(
+        "--sampler-rungs",
+        type=int,
+        default=sampler_default("RUNGS"),
+        help=f"octaves in from the home width the viewport sampler draws over, each rung a "
+        f"2^k x 2^k jittered grid at width home/2^k (default: {sampler_default('RUNGS')}, "
+        f"which is {sum(4**k for k in range(1, sampler_default('RUNGS') + 1))} frames). Read "
+        f"only with --root-channel {sampler_default('CHANNEL')}",
     )
     production.add_argument(
         "--ledgers",
@@ -7615,6 +7713,35 @@ def curate_commands(subcommands) -> None:
         "manifest records. Those rows are a redraw nobody has saved yet",
     )
     amendments.set_defaults(handler=curate_amendments)
+
+    frames = steps.add_parser(
+        "frames",
+        help="the hunt frame index's durability: record it, check it, restore it",
+        description=(
+            "artifacts/curation/hunt/frames.jsonl is the frame every mining leg draws a "
+            "location at, looked up through `hunt.frame_for`. It was cut from a 97.8 MiB "
+            "pool-wide refinement scan that no job in this repository builds and that was "
+            "deleted on 2026-09-02, so `curate hunt frames` refuses and there is no rebuild "
+            "at any price — this file is the only copy of those frame choices. Losing it is "
+            "silent by design: a location it has no row for draws at the frame it already "
+            "carries. So the bytes go to the archive tier, the history keeps the manifest, "
+            "and `curate run` refuses to start without it."
+        ),
+    )
+    frames.add_argument(
+        "what",
+        choices=["check", "save", "restore"],
+        help="check the live index against the manifest, save a fresh copy and manifest, "
+        "or restore the copy",
+    )
+    frames.add_argument(
+        "--force",
+        action="store_true",
+        help="with `restore`: overwrite a live index that holds MORE rows than the manifest "
+        "records. There is no job that appends to this file, so that is a state to explain "
+        "rather than one to overwrite",
+    )
+    frames.set_defaults(handler=curate_frames)
 
     mass_sweep = steps.add_parser(
         "mass-sweep",

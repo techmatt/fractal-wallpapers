@@ -48,6 +48,19 @@ PARAMETER_PLANES = ("mandelbrot", "multibrot3", "multibrot4", "multibrot5")
 #: The dynamical twin of each parameter plane.
 DYNAMICAL_PLANES = tuple(f"julia:{plane}" for plane in PARAMETER_PLANES)
 
+#: The partitions whose parameters are pinned: a dynamical plane with nothing
+#: left to vary but the frame.
+#:
+#: One today, and the tuple is here so the next one is a row rather than a
+#: rewrite. It is what separates the two kinds of dynamical partition wherever
+#: that difference decides something: a `julia:*` partition is a *different
+#: fractal per `c`* and is fed by a pool of parameters, and a pinned plane is one
+#: fractal whose whole supply is places on it. Two consequences hang off this
+#: tuple — [`fractal_wallpapers.discovery.viewport_sampler`], which is the only
+#: fresh-root channel a pinned plane can have, and the walk's raised expansion
+#: budget, because a pinned plane's frontier cannot be fed by a second root.
+PINNED_PLANES = (CLASSIC_PHOENIX,)
+
 #: Every partition that can reach a release, in canonical report order.
 #:
 #: Derivations and tallies walk this, so a partition that got nothing is stamped
@@ -75,6 +88,17 @@ def registered(partition: str) -> str:
 def is_dynamical(partition: str) -> bool:
     """Whether this partition is a Julia plane — fed only through its parent."""
     return partition.startswith("julia:")
+
+
+def is_pinned(partition: str) -> bool:
+    """Whether this partition's parameters are pinned, so only its frame can vary.
+
+    Asked rather than tested against the one name, because everything that turns
+    on it is a rule about *pinned planes* and not about classic phoenix: a pool
+    that can only ever hold one row, a sampler that draws places instead of
+    parameters, and an expansion budget raised because no second root is coming.
+    """
+    return partition in PINNED_PLANES
 
 
 def parameter_plane_of(partition: str) -> str | None:
@@ -186,11 +210,13 @@ __all__ = [
     "CLASSIC_PHOENIX_POINT",
     "DYNAMICAL_PLANES",
     "PARAMETER_PLANES",
+    "PINNED_PLANES",
     "UnregisteredPartition",
     "degree_of_plane",
     "dynamical_twin",
     "is_classic_phoenix",
     "is_dynamical",
+    "is_pinned",
     "parameter_plane_of",
     "partition_of_family",
     "partition_of_row",

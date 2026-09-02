@@ -14,12 +14,14 @@ copy on the other disk, a manifest in the history saying how many rows and which
 bytes that copy is, a restore that counts before it believes, and a refusal at
 the top of `curate run` when the live file has gone missing or gone short.
 
-## One implementation, two files, and there will be more
+## One implementation, several files, and there will be more
 
 The sidecar was the first of these and for a while it was the only one, so this
 module was written around it. It is not the only one now:
-`curation.embeddings` keeps the neutral-render vectors the same way, for the
-same reason — a JSONL under `artifacts/` that costs a GPU leg to make again. So
+`curation.embeddings` keeps the neutral-render vectors the same way, the score
+amendment and the hunt frame index the same way again, for the same reason — a
+JSONL under `artifacts/` that costs a GPU leg to make again, or that cannot be
+made again at all. So
 the three verbs take a [`Durable`], which is the whole of what save, check and
 restore need to know about a file: where it lives, where its copy goes, which
 tracked manifest describes it, and the commands to name in a refusal. The
@@ -28,10 +30,10 @@ it.
 
 [`guard`] is the one thing here that names its own list rather than taking a
 [`Durable`] from the caller: a run refuses over the files in [`guarded`], which
-are the supply and the score amendment, and over nothing else. A file earns a
-place on that list by being unrecoverable *and* by being an input the run reads
-without asking — a shorter one would send the leg out over a supply nobody said
-had shrunk.
+are the supply, the score amendment and the hunt frame index, and over nothing
+else. A file earns a place on that list by being unrecoverable *and* by being an
+input the run reads without asking — a shorter one would send the leg out over a
+supply nobody said had shrunk, or over framings nobody said had gone.
 
 ## Why it is archived under a manifest rather than tracked
 
@@ -96,7 +98,7 @@ CHUNK = 1 << 20
 
 #: What each of [`guarded`]'s files is called in a refusal and in the line the
 #: guard prints. Short, because they are read at the top of every run's log.
-GUARD_TAGS = ("sidecar", "amendment")
+GUARD_TAGS = ("sidecar", "amendment", "frames")
 
 
 class DurableLost(RuntimeError):
@@ -400,25 +402,30 @@ def restore(durable: Durable | None = None, force: bool = False, log=print) -> d
 # The guard a run makes before it does anything else.
 # --------------------------------------------------------------------------- #
 def guarded() -> tuple[Durable, ...]:
-    """The files a `curate run` refuses to start without. **Two**, and the list is here.
+    """The files a `curate run` refuses to start without. **Three**, and the list is here.
 
-    Both are inputs a run reads without being asked to, and neither can be
-    recovered from afterwards:
+    All three are inputs a run reads without being asked to, and none of them can
+    be recovered from afterwards:
 
     * the **supply sidecar**, which is the standing supply the leg is offered;
     * the **score amendment**, which every reader of a seating score overlays on
       that sidecar — so a run started without it is not offered a smaller supply,
       it is offered the same supply at scores nobody has corrected. That is the
-      worse of the two failures, because the count would look right.
+      worse of the two failures, because the count would look right;
+    * the **hunt frame index**, which every mining leg draws its framings through.
+      Its failure is the same shape and it is the least recoverable of the three:
+      a location the index has no row for draws at the frame it already carries,
+      by design, so a leg that lost the index renders a whole night successfully
+      at unrefined framings and reports nothing unusual.
 
     A file is not on this list merely for being expensive. The embedding store
     and the two ledger sidecars are all expensive and all absent here: a run that
     starts without them fails loudly at the step that needs them, which is a
     different thing from a run that starts and quietly decides on stale numbers.
     """
-    from fractal_wallpapers.curation import amend
+    from fractal_wallpapers.curation import amend, hunt
 
-    return (sidecar(), amend.durable())
+    return (sidecar(), amend.durable(), hunt.frames_durable())
 
 
 def guard_one(durable: Durable, tag: str, log=print) -> dict:

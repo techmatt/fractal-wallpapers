@@ -46,11 +46,12 @@ def sidecar(tmp_path, monkeypatch):
 
 @pytest.fixture
 def guarded(sidecar, tmp_path, monkeypatch):
-    """Both files a run refuses to start without, inside `tmp_path`.
+    """Every file a run refuses to start without, inside `tmp_path`.
 
-    The guard reads two files now, so a fixture that redirected one of them would
-    leave the other pointed at this machine's real amendment — a unit test asking
-    a hundred-thousand-row question about the live tree.
+    The guard reads three files now, so a fixture that redirected one of them
+    would leave the others pointed at this machine's real amendment and real
+    frame index — a unit test asking a hundred-thousand-row question about the
+    live tree.
     """
     live, _, _ = sidecar
     amendment = tmp_path / "hot" / "curation" / "score_amendments.jsonl"
@@ -64,8 +65,22 @@ def guarded(sidecar, tmp_path, monkeypatch):
         restore_command="fractal-wallpapers curate amendments restore",
         rebuild_command="fractal-wallpapers curate redraw",
     )
-    monkeypatch.setattr(durability, "guarded", lambda: (durability.sidecar(), durable))
-    return live, amendment, durable
+    index = tmp_path / "hot" / "curation" / "hunt" / "frames.jsonl"
+    index.parent.mkdir(parents=True, exist_ok=True)
+    index_durable = durability.Durable(
+        name="the hunt frame index",
+        live=index,
+        copy=tmp_path / "cold" / durability.BACKUP_UNIT / "frames.jsonl",
+        manifest=tmp_path / "hunt_frames.manifest.json",
+        why_not_tracked="tens of megabytes against a 1 MiB per-file history guard.",
+        save_command="fractal-wallpapers curate frames save",
+        restore_command="fractal-wallpapers curate frames restore",
+        rebuild_command="there is no rebuild — restore the copy",
+    )
+    monkeypatch.setattr(
+        durability, "guarded", lambda: (durability.sidecar(), durable, index_durable)
+    )
+    return live, amendment, durable, index, index_durable
 
 
 def write_rows(path, count: int, salt: str = "") -> None:
@@ -198,7 +213,7 @@ def test_a_verified_copy_comes_back_byte_for_byte(sidecar) -> None:
 def test_the_guard_refuses_a_missing_or_shortened_sidecar_and_names_the_way_back(
     guarded,
 ) -> None:
-    live, _, _ = guarded
+    live, *_ = guarded
     write_rows(live, 50)
     durability.save(log=lambda *_: None)
 
@@ -218,7 +233,7 @@ def test_the_guard_refuses_a_shortened_amendment_too(guarded) -> None:
     sidecar's. A missing amendment does not shrink the supply — every count comes
     out right — it puts the seating silently back on the scores the re-read
     corrected. So it refuses on the same rule and names its own way back."""
-    live, amendment, durable = guarded
+    live, amendment, durable, _, _ = guarded
     write_rows(live, 50)
     durability.save(log=lambda *_: None)
     write_rows(amendment, 40)
@@ -241,7 +256,7 @@ def test_the_guard_refuses_a_shortened_amendment_too(guarded) -> None:
 def test_a_grown_amendment_is_the_ordinary_state_and_passes(guarded) -> None:
     """A redraw nobody has saved yet is what `curate redraw` leaves behind, and a
     guard that refused there would refuse the run after every refresh."""
-    live, amendment, durable = guarded
+    live, amendment, durable, _, _ = guarded
     write_rows(live, 50)
     durability.save(log=lambda *_: None)
     write_rows(amendment, 40)
@@ -254,25 +269,60 @@ def test_a_grown_amendment_is_the_ordinary_state_and_passes(guarded) -> None:
 def test_the_guard_is_silent_where_nothing_has_recorded_the_files(guarded) -> None:
     """A fresh clone has no manifest and therefore nothing to be short of. A guard
     that refused there would refuse every first run."""
-    live, amendment, _ = guarded
-    unrecorded = {"sidecar": {"verdict": "unrecorded"}, "amendment": {"verdict": "unrecorded"}}
+    live, amendment, _, index, _ = guarded
+    unrecorded = {
+        "sidecar": {"verdict": "unrecorded"},
+        "amendment": {"verdict": "unrecorded"},
+        "frames": {"verdict": "unrecorded"},
+    }
 
     assert durability.guard(log=lambda *_: None) == unrecorded
     write_rows(live, 1)
     write_rows(amendment, 1)
+    write_rows(index, 1)
     assert durability.guard(log=lambda *_: None) == unrecorded
 
 
-def test_the_guarded_list_is_the_supply_and_the_amendment_and_nothing_else() -> None:
+def test_the_guard_refuses_a_shortened_frame_index_and_offers_no_rebuild(guarded) -> None:
+    """The third guarded file, and the one whose loss is most nearly silent. A
+    location the index holds no row for draws at the frame it already carries —
+    by design — so a leg that lost the index renders a whole night successfully
+    at unrefined framings and reports nothing. Nothing rebuilds it either: the
+    scan it was cut from is deleted and no job here makes one, so the refusal
+    names the restore and says there is no rebuild rather than naming a command
+    that would refuse."""
+    live, _, _, index, index_durable = guarded
+    write_rows(live, 50)
+    durability.save(log=lambda *_: None)
+    write_rows(index, 30)
+    durability.save(index_durable, log=lambda *_: None)
+
+    assert durability.guard(log=lambda *_: None)["frames"] == {
+        "verdict": "ok",
+        "rows": 30,
+        "recorded": 30,
+    }
+
+    write_rows(index, 29)
+    with pytest.raises(durability.DurableLost, match="curate frames restore"):
+        durability.guard(log=lambda *_: None)
+
+    index.unlink()
+    with pytest.raises(durability.DurableLost, match="there is no rebuild"):
+        durability.guard(log=lambda *_: None)
+
+
+def test_the_guarded_list_is_the_supply_the_amendment_and_the_frame_index() -> None:
     """The list is a decision, not an accident of what happens to be expensive.
     The embedding store and the two ledger sidecars are all costly and none of
     them is here: a run that starts without those fails loudly at the step that
     needs them, which is a different thing from a run that starts and quietly
-    decides on stale numbers."""
-    from fractal_wallpapers.curation import amend
+    decides on stale numbers — or, for the frame index, one that quietly decides
+    on frames nobody refined."""
+    from fractal_wallpapers.curation import amend, hunt
 
     named = [durable.live.name for durable in durability.guarded()]
-    assert named == [durability.SIDECAR_NAME, amend.AMENDMENTS_NAME]
+    assert named == [durability.SIDECAR_NAME, amend.AMENDMENTS_NAME, hunt.FRAMES_NAME]
     assert len(durability.GUARD_TAGS) == len(named)
 
 
@@ -320,6 +370,25 @@ def test_the_tracked_manifest_describes_an_amendment_and_names_a_copy() -> None:
     # Keyed on (location, engine), so the per-build split has to add up and a
     # manifest giving one number would describe a population that does not exist.
     assert record["rows"] == sum(record["rows_by_engine"].values())
+
+
+def test_the_tracked_manifest_describes_a_frame_index_and_names_a_copy() -> None:
+    from fractal_wallpapers.curation import hunt
+
+    durable = hunt.frames_durable()
+    record = durability.read_manifest(durable)
+    if record is None:
+        pytest.skip("no frame index has been recorded in this checkout")
+    assert record["path"].endswith(hunt.FRAMES_NAME)
+    assert record["copy"].startswith(f"artifacts/{durability.BACKUP_UNIT}/")
+    assert record["rows"] > 0
+    assert len(record["sha256"]) == 64
+    # The adopted rows are the whole value of the file: the rest carry the
+    # framing their location already had, which `frame_for` would have drawn
+    # anyway. A manifest that counted only rows could not tell a restored index
+    # from one whose choices had gone.
+    assert 0 < record["adopted"] <= record["rows"]
+    assert record["rows"] == sum(record["rows_by_partition"].values())
 
 
 def test_the_ledger_provenance_record_agrees_with_the_release_store() -> None:

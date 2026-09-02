@@ -197,6 +197,24 @@ class Limits:
     batches: int = 4
     #: Expansions any one root may pay for, its reframings included.
     root_expansions: int = 12
+    #: The same, for a root on a **pinned plane** — one with no free parameter,
+    #: so every place on it has to come out of the frame.
+    #:
+    #: **Three times the ordinary budget, and the number is a measurement.** The
+    #: first leg that ever walked `phoenix:classic` (`CRAWL_phoenix_classic_30min`,
+    #: 2026-09-02) stopped on `nothing servable` at 0.66 of its 30 minutes, and the
+    #: ledger says why: of its 8 roots, 6 were expanded once each and the **two
+    #: that booked every admission hit 12 expansions exactly** — the cap — while
+    #: still producing expandable nodes at depth 6. The frontier did not die on
+    #: its own; the cap closed the only two lineages that were feeding it.
+    #:
+    #: Raised for pinned planes alone because the reason is theirs: every other
+    #: partition answers a dead lineage with a fresh root carrying a fresh
+    #: parameter, and a pinned plane has no parameter to vary — so what a root
+    #: does not reach, nothing else will. At the crawl's measured ~45 expansions
+    #: an active minute, 36 is about a twelfth of a ten-minute leg in one lineage,
+    #: which is a bound rather than a licence.
+    pinned_root_expansions: int = 36
     #: Share of a batch's slots reserved for roots nothing has expanded yet.
     breadth_floor: float = 0.25
     #: Slots per batch reserved for reframing-originated nodes.
@@ -467,6 +485,10 @@ class Walk:
         self.governor = operators.ProbeGovernor(self.limits.probe_probability, self.rng)
         self.frontier: list[dict] = []
         self.expansions: dict[int, int] = {}
+        #: Each root's expansion budget, worked out once per root. A cache and
+        #: not a record: [`root_budget`] derives it from the root's own family,
+        #: so a resumed session rebuilds it without being handed anything.
+        self._root_budgets: dict[int, int] = {}
         #: Admissions booked per root — the lineage cap's counter, and a table
         #: worth having whether or not a cap is set: "741 admissions off 15 of 48
         #: roots" is a sentence about a finished run that nothing else records.
@@ -698,17 +720,53 @@ class Walk:
         self.frontier.sort(key=lambda node: -node["priority"])
         del self.frontier[self.limits.frontier_cap :]
 
+    def root_budget(self, root_id: int) -> int:
+        """Expansions this particular root may pay for.
+
+        [`Limits.root_expansions`] everywhere but a pinned plane, which gets
+        [`Limits.pinned_root_expansions`] for the reason that field states.
+        Derived from the root's own family rather than stored beside it, so a
+        resumed session — which restores `roots` and rebuilds nothing else — gets
+        the same answer for a root the first session drew.
+
+        A family the registry does not recognize takes the ordinary budget. This
+        is a *policy* lookup on a walk that may be pointed at anything, so a
+        render-only family must not make it raise.
+        """
+        cached = self._root_budgets.get(root_id)
+        if cached is not None:
+            return cached
+        from fractal_wallpapers.supply.partitions import (
+            UnregisteredPartition,
+            is_pinned,
+            partition_of_family,
+        )
+
+        budget = self.limits.root_expansions
+        record = self.roots.get(root_id) or {}
+        family = record.get("family")
+        if isinstance(family, dict):
+            try:
+                if is_pinned(partition_of_family(family)):
+                    budget = self.limits.pinned_root_expansions
+            except UnregisteredPartition:
+                budget = self.limits.root_expansions
+        self._root_budgets[root_id] = budget
+        return budget
+
     def evict_capped(self) -> None:
         """Drop every node whose root has spent its expansion budget.
 
         *Evicted*, not skipped — see the module docstring for why skipping is not
         enough. Idempotent, so a caller that pops several times per batch can run
         it once at the top and get the same frontier either way.
+
+        The budget is per root and not per run: see [`root_budget`].
         """
         self.frontier = [
             node
             for node in self.frontier
-            if self.expansions.get(node["root_id"], 0) < self.limits.root_expansions
+            if self.expansions.get(node["root_id"], 0) < self.root_budget(node["root_id"])
         ]
 
     # ----------------------------------------------------------- lineage cap

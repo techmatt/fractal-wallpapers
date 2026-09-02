@@ -175,6 +175,49 @@ partition's supply ceiling is `1 + its labelled q3+ places`**, which is 8 today.
 By the walk's own saturation distance 5 of the 8 admissions sit inside an earlier
 one, so the plane converges on a few basins rather than offering variety.
 
+**The viewport sampler is the channel that gives it a second one.**
+`discovery.viewport_sampler`, `--root-channel viewport_sampler`, and it serves
+`partitions.PINNED_PLANES` and nothing else: a parameter plane and a Julia twin
+both have a fresh channel that hands over a *parameter*, and this one hands over
+a *place*. It draws a jittered grid over the family's own home box at a ladder of
+octaves — rung `k` is `2^k x 2^k` frames at width `home/2^k` — screens every one
+through `engine.screen`, and keeps what clears all three gates. Nothing ranks a
+viewport before the walk sees it.
+
+**Measured on the first leg to use it** (2026-09-02, seed 0, four rungs, ten
+active minutes budgeted): **36 roots out of 340 draws in 8.3 s**, a 10.9% yield,
+refusals 263 `flat` / 35 `occupancy_floor` / 6 `interior_cap`, and the yield
+climbs with the rung (0/4, 2/16, 8/64, 26/256) because the widest frames are
+mostly the home framing's own margin. The partition's queue opened at **44
+entries against the crawl's 8**.
+
+| | crawl, 2026-09-02 | sampler leg, 2026-09-02 |
+|---|--:|--:|
+| roots served | 8 | 24 |
+| active minutes | 0.66 of 30 | 2.60 of 10 |
+| batches | 6 | 27 |
+| frames found | 120 | 472 |
+| **admitted** | **8** | **23** |
+| `growth_per_expansion` | 0.767 | 0.881 |
+| deepest rung reached | 7 | 14 |
+| drawable after merge | 23 | **121** |
+
+**The sampler's own admissions are 5 of the 23, off 3 of its 16 served roots** —
+small, and it is the first time a *fresh* root on this partition has booked
+anything at all: the crawl's one home-view root returned zero, which is what
+`home_view` roots do everywhere else. The other 18 came off proven roots, and
+`P(>=4)` is still ~0 across the set (max 0.0378, median 0.0001) against `P(>=3)`
+up to 0.893. The sampler opens the plane; it does not make the plane better.
+
+**And the binding constraint moved.** The leg stopped on `nothing servable`
+again, but not for the crawl's reason: it had drawn **24 of its 44 entries** and
+`deferred` was empty. The refill hands over `per_draw = low_water = 8` roots and
+then leaves that partition alone for `COOLDOWN = 10` batches; the walk drained
+the batch-22 draw in five batches, the frontier emptied, and the refill was not
+due. Twenty screened viewports were still on the shelf. A real leg on a pinned
+plane therefore wants `--low-water` and `--cooldown` moved before it wants more
+rungs.
+
 **A pinned plane's fresh-root pool is one row, by construction.** No tracked pool
 held the classic point: the phoenix seed pool's 96 rows all resolve to varied
 `phoenix`, the plane pool and the deep run's anchors are parameter planes only,
@@ -419,7 +462,7 @@ fractal-wallpapers harvest --exploration-floor 0.25 --exploration-start 0.45
 fractal-wallpapers harvest --no-exploration --lineage-discount 0   # neither lever
 fractal-wallpapers harvest --partition mandelbrot --root-channel proven
 fractal-wallpapers harvest --partition phoenix --root-channel proven      # at labelled frames
-fractal-wallpapers harvest --partition phoenix:classic --root-channel proven  # the pinned plane
+fractal-wallpapers harvest --partition phoenix:classic --root-channel proven --root-channel viewport_sampler
 fractal-wallpapers derive-proven-seeds --partition mandelbrot --write   # to read it
 fractal-wallpapers harvest --partition mandelbrot --seeds seeds.jsonl   # one leg, one book
 fractal-wallpapers derive-prices --run artifacts/harvest --regularize --write
