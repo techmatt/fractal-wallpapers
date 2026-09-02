@@ -773,6 +773,24 @@ Nothing pads. A demand the pool cannot fill is still short, still recorded and
 still minimized by tier 2 — a shortfall is a finding, never something the leg
 repairs by seating something it should not.
 
+### The sweep belongs at BOTH ends of a mining leg
+
+`curate signatures sweep` is cheap and incremental, and the trap is treating it as a
+thing you do before a leg. It is keyed on the **picture**, so a leg that merges tens
+of thousands of new clearing candidates leaves the sidecar answering for a pool that
+no longer exists, and the next solve derives the difference *inside itself*, serially,
+one decode at a time.
+
+Measured, `MINE_overnight_full_roster_centered` 2026-09-02: the sweep ran as a
+pre-step at 18:28 and left 11,919 rows; the leg then took the clearing pool
+11,711 → **15,546** and the post-preselection view 9,864 → **13,198**. The n=2000
+solve that followed ran **2,185 s against the same solve's 618 s** the day before. The sweep run
+afterwards read the difference — **3,835 rows in 31.53 s** over three workers — which is what the
+solve had been doing one decode at a time.
+
+So: sweep before the leg *and* after the last merge. `curate signatures coverage`
+answers whether it is needed in one pass and costs nothing.
+
 ### The bound signature is swept once, not derived per pass
 
 The twin rule is the only one that opens a picture, and what one signature costs is
@@ -2908,6 +2926,92 @@ for it two ways: the mean rate is measured on the same mixture by the leg's own
 pilot, and the arm gets its **own leg with its own wall budget** rather than a share
 of a shared plan. That is the general answer to *a share of counts is not a share of
 seconds*: run the arms as separate legs and the wall clock is the share.
+
+### What the four knobs bought, measured overnight 2026-09-01/02
+
+`MINE_overnight_full_roster_centered`: four arms as four separate legs, each with its
+own wall budget and its own pilot, 88,022 candidates in 40,825 s of render wall
+(11.34 h) and 122,055 engine seconds at concurrency 2.990.
+
+| arm | roster | population | cand | places | s/cand pilot → main | share of seconds |
+|---|---|---|---|---|---|---|
+| A | 9 dear + `smooth` + `exp_smoothing`, width 22 | never-opened `centered` | 17,694 | 807 | 3.095 → 3.155 | 45.6% (50 asked) |
+| B | 6 short dear, `--floor-width 4` | opened, no dear attempt | 11,313 | 472 | 2.547 → 2.722 | 25.1% (25) |
+| C | 5 field, width 40 | never-opened, non-centered | 45,675 | 1,146 | 0.585 → 0.618 | 23.0% (20) |
+| D | 5 field, aimed at 6 thin cells | never-opened, top half | 13,340 | 544 | 0.567 → 0.575 | 6.3% (5) |
+
+**It closed every mode floor at n=2000**: the census went from `mode_floors` short by
+56 to `nothing provably short`. `smooth_mean_angle` 35 → 78 seats, `smooth_angle_min`
+37 → 90, `direct_trap_multiply` 23 → 74, `itinerary` 59 → 109. That is the sequel to
+*A GENERAL leg cannot close a floor* above: the diagnosis was right and the fix is
+`--modes` naming the dear half, which arms A and B did.
+
+**A share is a share of seconds when each arm is its own leg.** The warning two
+sections up — a 5%-declared arm taking 25% of the budget — is a property of `weave`
+holding arm proportions in *counts* inside one plan. Across legs it cannot arise: the
+budget is wall seconds and the clock is the share. Every arm landed within 4.4 points
+of its declared share, and every pilot priced its main leg to within 7%.
+
+**Rank-conditioning is worth more on a dear roster than on a field one.** Both arms
+drew a top-4-band ranked arm against an unconditioned flat control over the same pool:
+
+| arm | ranked clearing places | flat control | lift | engine s a clearing place |
+|---|---|---|---|---|
+| A, dear roster | 332/565 = 58.8% | 70/188 = 37.2% | **1.58x** | 119.3 against 179.2 |
+| C, field roster | 388/743 = 52.2% | 99/248 = 39.9% | **1.31x** | 45.3 against 69.3 |
+
+Not comparable to `general20`'s 1.07x, and the difference is the draw rather than the
+population: that leg's ranked arm spanned the whole rank range, so it and its uniform
+control covered one population and could not differ. A's fitted slope over ten bands
+is an odds ratio of **0.837 a band**, 0.626 clearing at band 0 to 0.252 at band 9.
+
+**A pilot prices an arm's pooled rate and not its modes.** B's 40-place pilot read
+`smooth_angle_min` and `smooth_mean_angle` at 1 clearing candidate in 160 each — and
+over 1,725 each they returned 51 and 40. At a ~1% rate a 160-candidate sample expects
+1.6 and measures nothing. A_pilot erred the other way: `direct_trap_screen` read 6.6%
+on 54 places and 0.73% on 753. Size a pilot for the rate that sizes the plan; do not
+demote a mode on one.
+
+**Aiming the palette buys a thin cell 19-50x cheaper than the census prices it.** Win
+here is dominant in the cell *and* clearing its mode's bar:
+
+| cell | aimed hit | flat hit | lift | aimed engine s a win | flat s a win | census estimate |
+|---|---|---|---|---|---|---|
+| `light_vivid_lime` | 62.1% | 3.6% | 17.4x | **34.0** | 839 | 1,015 |
+| `dark_vivid_lime` | 48.8% | 1.7% | 29.1x | **45.5** | 1,678 | 1,495 |
+| `dark_vivid_yellow` | 52.9% | 1.5% | 34.7x | **33.1** | 1,678 | 632 |
+| `light_vivid_teal` | 50.8% | 1.9% | 26.8x | **19.9** | no wins | 676 |
+
+The flat control's realized cost brackets the census's estimate, which is a check on
+the census. But that estimate is **unconditioned**, and a census row for a thin colour
+cell is therefore not the cost of buying that colour — it is the cost of waiting for
+it. Nothing downstream of the census knows this.
+
+### Retention discard is arithmetic, and no plan prints it
+
+`curate retention` keeps three rows per (location, mode), so what a leg loses at the
+merge is `(per_pair - 3) / per_pair` and nothing else. The same night, three shapes:
+
+| arm | width / modes | per pair | rows made | pruned | pictures |
+|---|---|---|---|---|---|
+| A | 22 / 11 | 2 | 17,694 | **0** | 0 |
+| B | 4 / 6 (floor width) | 4 | 11,313 | 2,822 (25%) | 0.36 GiB |
+| C | 40 / 5 | 8 | 45,675 | 28,526 (62.5%) | 4.21 GiB |
+| D | 40 / 5 | 8 | 13,340 | 8,324 (62.4%) | 1.25 GiB |
+
+Exact every time. **Breadth over modes is prune-free and depth in palettes is not** —
+which is not an argument against width, because the discarded rows are the ones a
+wider draw beat, and the clear rate they measured survives in `sequence.jsonl`. It is
+an argument for knowing the number first: `--floor-width 4` is one over the keep and
+costs a quarter of an arm's pictures for nothing, where `3` is free.
+
+### A scratch driver that calls `depth.run` needs a `__main__` guard
+
+Windows spawns worker processes by re-importing the entry module, so a driver with
+top-level code that reaches `depth.run` re-enters itself in every worker and the pool
+dies with `BrokenProcessPool` **after** the population read and the plan — a minute or
+two in, with nothing rendered. `curate depth` is safe because `cli.py` has the guard;
+anything under `scratch/` needs its own.
 
 ### What an arm can and cannot be credited with
 

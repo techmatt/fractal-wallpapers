@@ -1162,3 +1162,91 @@ def test_the_per_cell_hit_rate_reads_each_cell_against_the_whole_flat_control():
     assert first[depth.AIMED]["rate"] == pytest.approx(0.5)
     assert first[depth.FLAT]["candidates"] == 2, "and the whole control at every cell"
     assert out["cells"][THIN[1]][depth.AIMED]["candidates"] == 1
+
+
+def test_the_partition_lean_survives_a_truncation():
+    """The bug `overnight_c_pilot` found and the reason it was invisible.
+
+    The draw leaned correctly and the interleave handed every partition one place
+    a round, which put the whole surplus in the tail. A production leg is
+    clock-bound and truncates, so the tail is never reached: the plan said
+    39/38/17 and the leg realized 16-18 across all nine.
+    """
+    pool = pools({"mandelbrot": 60, "phoenix": 60, "julia:mandelbrot": 60})
+    banded = depth.ranked_bands(pool, heads(pool), bands=3)
+    weights = {"mandelbrot": 3, "julia:mandelbrot": 3}
+    drawn = depth.banded_places(banded, seed=5, count=90, partition_weights=weights)
+    whole = {name: sum(1 for row in drawn if row["partition"] == name) for name in pool}
+    assert whole["mandelbrot"] > whole["phoenix"], "the draw leans"
+    # And the PREFIX leans too, which is the whole point: what a truncated leg
+    # takes is a prefix of this order.
+    for cut in (18, 36, 54):
+        head = drawn[:cut]
+        tally = {name: sum(1 for row in head if row["partition"] == name) for name in pool}
+        assert tally["mandelbrot"] > tally["phoenix"], (
+            f"the first {cut} places came out {tally}, which is the flat spread the "
+            f"unweighted interleave used to give"
+        )
+        assert tally["phoenix"] > 0, "and a lean is never a gate"
+
+
+def test_an_unweighted_interleave_is_still_one_place_a_partition_a_round():
+    places = [{"key": f"{name}-{at}", "partition": name} for name in ("a", "b") for at in range(3)]
+    out = depth._interleave_by_partition(places)
+    assert [row["partition"] for row in out] == ["a", "b", "a", "b", "a", "b"]
+
+
+def test_a_weighted_interleave_gives_a_partition_its_turns_a_round():
+    places = [{"key": f"{name}-{at}", "partition": name} for name in ("a", "b") for at in range(6)]
+    out = depth._interleave_by_partition(places, {"a": 2})
+    assert [row["partition"] for row in out][:6] == ["a", "a", "b", "a", "a", "b"]
+    assert len(out) == len(places), "and nothing is dropped"
+
+
+def test_a_zero_weight_at_the_interleave_does_not_starve_a_partition_the_draw_kept():
+    places = [{"key": "a-0", "partition": "a"}, {"key": "b-0", "partition": "b"}]
+    out = depth._interleave_by_partition(places, {"b": 0})
+    assert {row["partition"] for row in out} == {"a", "b"}
+
+
+def test_the_flat_control_leans_the_same_way_the_ranked_draw_does():
+    """Otherwise the control is drawn from a different partition mix than the arm
+    it controls, which is the same failure `--centered` avoids one axis up."""
+    _plan, shape = build_a_plan(partition_weights={"mandelbrot": 3})
+    ranked = shape["ranked_by_partition"]
+    flat = shape["flat_wanted_by_partition"]
+    assert ranked["mandelbrot"] > ranked["phoenix"]
+    assert flat["mandelbrot"] > flat["phoenix"]
+
+
+def test_a_truncated_aimed_arm_still_holds_every_cell():
+    """The bug `overnight_d_pilot` found: the per-cell blocks were concatenated,
+    so a leg that stopped early served the leading cells and starved the trailing
+    ones. Six cells asked for, 2,570 of 4,240 candidates made, and the last two
+    got zero. Every prefix has to hold every cell."""
+    plan, shape = build_a_plan(shares=AIMED_SHARES, cell=THIN)
+    aimed = [shot for shot in plan if shot.arm == depth.AIMED]
+    assert len(aimed) > 3 * len(THIN)
+    assert shape["cells"] == THIN
+    for share in (0.25, 0.5, 0.75):
+        cut = aimed[: max(len(THIN), int(len(aimed) * share))]
+        assert {shot.cell for shot in cut} == set(THIN), (
+            f"the first {share:.0%} of the aimed arm holds {sorted({s.cell for s in cut})}"
+        )
+
+
+def test_the_aimed_cells_are_cycled_over_places_and_not_blocked():
+    plan, _shape = build_a_plan(shares=AIMED_SHARES, cell=THIN)
+    aimed = [shot for shot in plan if shot.arm == depth.AIMED]
+    by_place: dict = {}
+    for shot in aimed:
+        by_place.setdefault(shot.location, set()).add(shot.cell)
+    assert all(len(held) == 1 for held in by_place.values()), "one place, one cell"
+    order = []
+    for shot in aimed:
+        if not order or order[-1] != shot.cell:
+            order.append(shot.cell)
+    assert len(order) > len(THIN), (
+        "the cell changes many times down the arm; a blocked plan changes it "
+        f"{len(THIN)} times and no more"
+    )
