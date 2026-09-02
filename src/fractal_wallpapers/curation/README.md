@@ -1027,6 +1027,40 @@ slack 0 unless a `--twin` sweep is handed in, so the one block that would bound 
 is the opt-in one. At 4,791 places that sweep is the minutes-to-hours leg — an attempt was
 stopped unfinished at ~40 min — and everything above says the next census should pay for it.
 
+### And the threshold it binds at is too high — `AUDIT_twin_refusals_short_modes`
+
+Audited on 2026-09-02 over `overnight_after`, the n=2000 gallery that closed every census
+floor and still fell 68 seats short. **The pairs the twin test refuses stop being duplicates
+at about 0.65 τ**, read off contact sheets of refused ↔ seated pairs, per mode: ~0.60 τ for
+`direct_trap_multiply`, ~0.62 for `smooth_stripe` and `smooth_angle_min`, ~0.58 for
+`smooth_mean_angle`, and ~0.72 for `direct_trap_screen`, whose pool is one look and so reads
+as similar further out. An independent statistic agrees and was not used to reach it: the
+share of refused pairs made with the **same palette map** runs 93-98% below 0.4 τ and
+collapses through 55% at 0.5-0.6 τ to 32% at 0.6-0.7 and 11% at 0.9-1.0, against a 0.2% base
+rate. **66% of all twin refusals sit above 0.65 τ**, and all twenty of the farthest-refused
+pairs sit at the threshold itself and are plainly different pictures.
+
+Solved at **0.65 τ globally the gallery goes 1,033 → 1,569 seats and the shortfall 68 → 7**,
+four of the five short modes closing outright. Two costs: **500 of the 1,033 seated pictures
+are not in it** — the lexicographic objective reshuffles once there are more seats to fill —
+and it holds **3,795 pairs the shipped threshold would refuse** against zero today. No ruling
+was taken and `TAU` is unchanged.
+
+**The record is already the refusal log, so an audit like this needs no re-solve.**
+`solve.json`'s `diversity_refusals` carries, per refused candidate, the seat it collided with,
+the measured distance and how many seats were inside the threshold. Two things to know when
+reading it. The named seat is the seat **at the moment of refusal** and the swap loop may have
+taken it back out afterwards — 930 of 6,976 here, carried by only 77 distinct keys — so a
+reader joining against the finished `seated` block silently loses them. And `same_location` is
+**structurally zero**: `location` precedes `twin` in [`rules.RULES`], so a candidate standing
+where a seat already stands never reaches the twin test at all.
+
+**A wider radius needs no solve either.** It can never add a seat, so its whole effect is the
+seated pairs falling inside the new radius, each of which must lose one member: the seats
+given up are a minimum vertex cover of that graph. Over `overnight_after` that is 389-765 of
+1,033 seats at 1.25 τ and 458-911 at 1.5 τ, before any refill — which is why the widening
+what-if was priced this way rather than solved.
+
 ### The twin metric's two costs, both now taken
 
 Measured in `SOLVE_census_n2000` and taken in `EDIT_twin_metric_directions`. They are
