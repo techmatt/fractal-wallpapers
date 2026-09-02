@@ -2831,6 +2831,84 @@ leg is a **prefix** of the plan it was given rather than a different plan, which
 what makes the weave's arm proportions hold at any cut. And "what would this leg have
 found at `k = 17`" is arithmetic over `sequence.jsonl` rather than a second run.
 
+### Four knobs a general leg needs, added 2026-09-01
+
+`MINE_overnight_full_roster_centered` wanted a leg that advanced the whole pool at
+once while over-serving one population, and four things it asked for had no
+spelling. Each is a plan-time filter or weight; none of them adds a store.
+
+```
+--centered {any,only,exclude}      the never-opened pool, cut on the walk ledger's flag
+--partition-weights JSON           turns a round per PARTITION in the ranked draw
+--floor-untried [MODE ...]         narrow the floor draw to places never tried in those modes
+--cell CELL [CELL ...]             the aimed arm over several cells at once
+```
+
+**`centered` lives on the walk-ledger row and nothing under the draw carries it.**
+A nucleus location is `centered` — its centre *is* the location and its scale is the
+rung its head picked out of `discovery.reframing.RUNGS` — and `curation.framing`
+reads the flag off the row that recorded the find. The embedding store drops it and
+so does the supply sidecar, and `hunt.scanned`'s population is the embedding store's
+rows: a draw that asked the pool directly would answer *not centered* for every
+location in the collection, silently and with no error. So `depth.centered_locations`
+joins it back at plan time, keyed on `supply.location.text_of_row` — the key the
+embedding rows already carry — over `supply.ledgers.ledger_paths()`, read-only.
+**3.6 s over 41 ledgers and 184,967 rows**, cached for the process. Deliberately not
+a fourth sidecar: a manifest, a mirror and a staleness rule for a boolean that is
+settled the moment a walk writes the row would cost more than the join does.
+
+**The centered population is four partitions, not nine.** Measured 2026-09-01:
+**5,805** centered location keys across every walk ledger, of which **4,797 of the
+19,623 drawable** — admitted, above the junk floor, and carrying no ledger recipe.
+Every one of them is in a *parameter* plane: `multibrot5` 2,534, `multibrot4` 1,648,
+`multibrot3` 394, `mandelbrot` 221, and **zero** in the four `julia:*` partitions and
+in `phoenix`. That is not a gap in the join, it is what a nucleus is: the operators
+that snap to an atom run on the parameter planes. So a coverage floor over partitions
+cannot be met by a centered arm and has to be met beside it.
+
+**`--partition-weights` is the soft lean, and it is a different axis from
+`--band-weights`.** A band weight says what a stretch of the head's rank axis is
+worth and is a *measured* number; a partition weight says how much of the release a
+family is owed and is a *declared* one, off `data/supply/release_mix.json`. They
+multiply in `_cell_turns`, and neither is a floor: a partition left out still gets
+its turn a round and none is capped, so the shape stays "everyone, some more than
+others". `_interleave_by_partition` still orders the result one place per partition
+in turn, so a truncated leg keeps an even spread whatever the counts were.
+
+**`--floor-untried` is the opened-but-shallow population.** The floor draw stands on
+`proven_places` — a location already over the seating bar — and this narrows that to
+places holding **no recipe at all** in the named modes; unsaid, `depth.dear_modes()`,
+the nine a dumped field cannot serve. The field there is known good and the whole
+dear half of the roster has never been asked. Measured 2026-09-01: **19,504** opened
+locations, **4,319** with any dear attempt, so **15,185** are untried and **15,169**
+of those still resolve to a renderable row.
+
+**`--cell` takes several cells and one place is aimed at exactly one.** The arm's
+places are split round-robin over the cells in the order asked, so a leg sent at the
+pool's thinnest colours serves them evenly and a truncation truncates them alike; a
+place whose palettes came from two carrier tables could not answer *dominant in the
+cell it was drawn for*, which is what the hit rate counts. `hit_rate` and
+`dominant_and_clearing` return one block per cell, each read against the **whole**
+flat control — the control is the same draw at every cell and splitting it would
+price each cell's baseline off a fraction of it. A cell the carrier table cannot
+serve out of the run's own map pool is **dropped at the plan and named** in
+`shape.cells_unservable`, rather than left to `aimed_maps`' fallback: falling back to
+a flat draw is right for one cell of many going thin mid-run and wrong as a plan,
+because it would spend an aimed share on a second control and report it as a cell
+that was served and bought nothing. On 2026-09-01 the table served **all 48** cells
+out of the 822-map pool, so the drop has never fired in production.
+
+**A dear roster beside a field roster is what arm A is, and the warning above still
+holds for prices.** "Do not put a composite on a roster beside field modes" is about
+*pricing*: `plan_cycled_modes` cycles uniformly, so the dear modes take an equal
+count and most of the seconds, and one `--rate` is then a mean over per-candidate
+costs that differ by an order of magnitude. A leg that wants **breadth at a place**
+— see it eleven ways rather than three of fourteen — accepts exactly that, and pays
+for it two ways: the mean rate is measured on the same mixture by the leg's own
+pilot, and the arm gets its **own leg with its own wall budget** rather than a share
+of a shared plan. That is the general answer to *a share of counts is not a share of
+seconds*: run the arms as separate legs and the wall clock is the share.
+
 ### What an arm can and cannot be credited with
 
 **The record credits its arms; the ledger does not.** `depth.json` carries the

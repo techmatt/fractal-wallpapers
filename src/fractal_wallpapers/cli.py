@@ -3806,10 +3806,17 @@ def curate_depth(args: argparse.Namespace) -> int:
             "shares": json.loads(args.shares) if args.shares else None,
             "band_weights": json.loads(args.band_weights) if args.band_weights else None,
             "floor_modes": args.floor_modes,
+            "floor_untried": (
+                None if args.floor_untried is None else (args.floor_untried or depth.dear_modes())
+            ),
             "floor_width": args.floor_width,
             "floor_seats": args.floor_seats,
             "roster": args.modes,
             "cell": args.cell,
+            "centered": args.centered,
+            "partition_weights": (
+                json.loads(args.partition_weights) if args.partition_weights else None
+            ),
             "breadth_demoted": (
                 depth.BREADTH_DEMOTED if args.breadth_demoted is None else args.breadth_demoted
             ),
@@ -8638,12 +8645,43 @@ def curate_commands(subcommands) -> None:
     depth_step.add_argument(
         "--cell",
         metavar="CELL",
-        help="the codebook cell the CONDITIONED draw aims its palette ask at, e.g. "
+        nargs="+",
+        help="the codebook cell or cells the CONDITIONED draw aims its palette ask at, e.g. "
         "dark_vivid_green. The arm is the flat draw with its maps drawn through the "
         "carrier table instead of uniformly, so the flat draw is its control. It is "
         "draw-biased and verdict-measured: the table decides which maps are offered and "
         "nothing else, and what a candidate is dominant in is read off its own render. "
+        "Several cells split the arm's places round-robin, one cell each, so a leg sent "
+        "at the pool's thinnest colours serves them evenly; a cell the carrier table "
+        "cannot serve out of this map pool is dropped and named. "
         "Needs a share — pass --shares with a 'conditioned' entry",
+    )
+    depth_step.add_argument(
+        "--partition-weights",
+        metavar="JSON",
+        help="how many turns a round each PARTITION gets in the ranked draw, as JSON keyed "
+        'by partition, e.g. \'{"mandelbrot": 3, "julia:mandelbrot": 3}\'. A partition left '
+        "out gets one turn. A soft lean and never a floor — nothing is capped and nothing "
+        "is starved — which is how a production leg follows data/supply/release_mix.json "
+        "without turning a ratio table into a quota",
+    )
+    depth_step.add_argument(
+        "--centered",
+        choices=list(depth_module.CENTERED_CHOICES),
+        default=depth_module.CENTERED_ANY,
+        help="what the breadth draws do about the walk ledger's `centered` flag: draw only "
+        "centered locations, only the rest, or (default) every drawable location. The flag "
+        "lives on the walk-ledger row and neither the embedding store nor the supply "
+        "sidecar carries it, so it is joined back at plan time",
+    )
+    depth_step.add_argument(
+        "--floor-untried",
+        metavar="MODE",
+        nargs="*",
+        help="narrow the mode-floor draw's population to opened locations with NO attempt "
+        "in any of these modes. Given with no mode named, that is every mode a dumped "
+        "field cannot serve — the dear half of the roster — which is the opened-but-shallow "
+        "population: the field is known good and the dear modes have never been asked",
     )
     depth_step.add_argument(
         "--breadth-demoted",

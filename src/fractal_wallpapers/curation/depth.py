@@ -46,6 +46,7 @@ absurd.
 from __future__ import annotations
 
 import collections
+import functools
 import json
 import math
 import random
@@ -136,6 +137,13 @@ BREADTH_DEMOTED: tuple[str, ...] = ()
 #: The seed every draw here is taken under unless a caller names another.
 DEFAULT_SEED = 20260827
 
+#: What a breadth draw does about the `centered` flag. `only` and `exclude` cut
+#: the never-opened pool the two breadth draws and the aimed draw are taken over;
+#: `any` is every drawable location and is the default, which is what every leg
+#: before the flag existed drew.
+CENTERED_ANY, CENTERED_ONLY, CENTERED_EXCLUDE = "any", "only", "exclude"
+CENTERED_CHOICES = (CENTERED_ANY, CENTERED_ONLY, CENTERED_EXCLUDE)
+
 #: How long a depth run may spend **rendering**, in seconds.
 BUDGET_SECONDS = 5400.0
 
@@ -210,6 +218,100 @@ def field_modes() -> list[str]:
     from fractal_wallpapers.curation import colorize
 
     return [mode for mode in mine._accepted_modes() if colorize.shareable(mode)]
+
+
+def dear_modes() -> list[str]:
+    """Every **accepted** mode a dumped field cannot serve — [`field_modes`]'s complement.
+
+    The nine the census keeps finding at or under their seat floors, and the
+    reason is the same one that makes them dear: no shared field, so a palette
+    at one of these is a whole render rather than a recolour of one already
+    made. Named here rather than listed anywhere, so a coloring added to the
+    catalogue joins the right half of this split without an edit.
+    """
+    from fractal_wallpapers.curation import colorize
+
+    return [mode for mode in mine._accepted_modes() if not colorize.shareable(mode)]
+
+
+@functools.cache
+def centered_locations() -> frozenset:
+    """Every location key a walk ledger calls `centered`. A plan-time join, not a store.
+
+    The flag is a fact about how a location was **found** — a nucleus location is
+    centered, so its centre is the location and its scale is the rung its head
+    picked ([`discovery.reframing`]) — and it rides on the walk-ledger row that
+    recorded the find. Nothing downstream carries it: the embedding store and the
+    supply sidecar both drop it, so [`curation.hunt.scanned`]'s population, which
+    is what every draw here is taken over, cannot answer the question at all.
+
+    So it is joined back at plan time, keyed on [`supply.location.text_of_row`] —
+    the same key the embedding store's rows carry — and the ledgers are read
+    read-only. **Deliberately not a sidecar**: a fourth store beside the scores
+    would need its own manifest, its own mirror and its own staleness rule for a
+    boolean that is settled the moment a walk writes the row, and the whole join
+    is 3.6 s over 41 ledgers and 185k rows. Cached for the process because
+    [`build_plan`] may be called more than once in one.
+    """
+    from fractal_wallpapers.supply import ledgers, location
+
+    out: set = set()
+    for path in ledgers.ledger_paths():
+        for row in ledgers.rows(path):
+            if not row.get("centered"):
+                continue
+            key = location.text_of_row(row)
+            if key is not None:
+                out.add(key)
+    return frozenset(out)
+
+
+def by_centered(pools: dict, which: str, log=print) -> dict:
+    """`pools` cut to the centered locations, to the rest, or left whole.
+
+    The cut is on the pool the breadth draws band, so it moves the ranked draw,
+    its flat control and the aimed draw alike: a control drawn from a different
+    population than the arm it controls is not a control.
+    """
+    which = str(which or CENTERED_ANY)
+    if which not in CENTERED_CHOICES:
+        raise DepthRefused(f"--centered {which!r} is not one of {list(CENTERED_CHOICES)}")
+    if which == CENTERED_ANY:
+        return pools
+    keys = centered_locations()
+    want = which == CENTERED_ONLY
+    out = {
+        name: [row for row in held if (str(row["key"]) in keys) == want]
+        for name, held in pools.items()
+    }
+    out = {name: held for name, held in out.items() if held}
+    log(
+        f"[depth] centered={which}: {sum(len(held) for held in out.values()):,} of "
+        f"{sum(len(held) for held in pools.values()):,} drawable location(s) over "
+        f"{len(out)} of {len(pools)} partition(s)"
+    )
+    return out
+
+
+def without_mode_attempt(rows: list, modes: list) -> set:
+    """Opened locations holding NO recipe in any of `modes`.
+
+    The population an *opened-but-shallow* draw wants: the field there is known
+    good — something has been rendered at the place and judged — and the whole
+    half of the roster a dumped field cannot serve has never been tried on it.
+    A location with one such attempt is out, because the question this draw asks
+    is whether the dear modes reach a place at all and one attempt has already
+    asked it.
+    """
+    wanted = set(modes)
+    opened: set = set()
+    tried: set = set()
+    for row in rows:
+        key = str((row.get("location") or {})["key"])
+        opened.add(key)
+        if str((row.get("recipe") or {}).get("mode")) in wanted:
+            tried.add(key)
+    return opened - tried
 
 
 # --------------------------------------------------------------------------- #
@@ -357,7 +459,13 @@ def ranked_bands(pools: dict, head_scores: dict, bands: int = RANK_BANDS) -> dic
     return out
 
 
-def banded_places(banded: dict, seed: int, count: int, weights: dict | None = None) -> list:
+def banded_places(
+    banded: dict,
+    seed: int,
+    count: int,
+    weights: dict | None = None,
+    partition_weights: dict | None = None,
+) -> list:
     """`count` never-opened locations spread evenly over every (partition, band) cell.
 
     Round-robin over the cells rather than proportional to what each holds, for
@@ -365,6 +473,13 @@ def banded_places(banded: dict, seed: int, count: int, weights: dict | None = No
     bought here is a **curve**, and a draw proportional to stock would put nine
     tenths of it in the bands the pool happens to be fat in and leave the ends —
     which are the whole question — with two locations each.
+
+    `partition_weights` bends that round robin without breaking it: a partition
+    named there gets that many turns a round instead of one, which is how a
+    production leg leans toward `data/supply/release_mix.json` **softly**. It is
+    a weight and never a floor — a partition left out still gets its turn, and no
+    partition is capped — so the shape stays "everyone, some more than others"
+    rather than "these and then whatever is left".
     """
     cells = []
     for name in sorted(banded):
@@ -372,7 +487,7 @@ def banded_places(banded: dict, seed: int, count: int, weights: dict | None = No
             if held:
                 drawn = random.Random(hunt.seed_of(seed, name, at)).sample(held, len(held))
                 cells.append(((name, at), drawn))
-    order = _weighted_order([key for key, _held in cells], weights)
+    order = _weighted_order([key for key, _held in cells], weights, partition_weights)
     stock = dict(cells)
     at_cell = dict.fromkeys(stock, 0)
     out: list = []
@@ -391,26 +506,37 @@ def banded_places(banded: dict, seed: int, count: int, weights: dict | None = No
     return _interleave_by_partition(out)
 
 
-def _weighted_order(cells: list, weights: dict | None) -> list:
-    """One round of the draw, each band appearing as often as its weight.
+def _weighted_order(cells: list, weights: dict | None, partitions: dict | None = None) -> list:
+    """One round of the draw, each cell appearing as often as its weight.
 
     Unweighted, every (partition, band) cell gets one turn a round, which is the
     even spread a **measurement** wants. A production run knows what each band is
     worth — the measuring run reports primed-per-hour by band — and buys more
     turns where it pays, which is [`hunt._turns`]'s work order one axis down.
-    Weights are per band and not per partition: what a depth run measures is a
-    band's rate pooled over partitions, and weighting per partition would spend a
-    measurement nobody has.
+
+    The two axes multiply, and they mean different things. A band weight says
+    what a stretch of the head's rank axis is worth and is a *measured* number;
+    a partition weight says how much of the release a family is owed and is a
+    *declared* one, read off `data/supply/release_mix.json`. A measuring run
+    leaves both alone; a production run may bend either.
     """
-    if not weights:
+    if not weights and not partitions:
         return list(cells)
+    turns = {key: _cell_turns(weights, partitions, key) for key in cells}
     out: list = []
-    highest = max(_turns_for(weights, at) for _name, at in cells)
-    for turn in range(max(1, highest)):
+    for turn in range(max(1, max(turns.values(), default=1))):
         for key in cells:
-            if turn < _turns_for(weights, key[1]):
+            if turn < turns[key]:
                 out.append(key)
     return out or list(cells)
+
+
+def _cell_turns(weights: dict | None, partitions: dict | None, key: tuple) -> int:
+    """How many turns a round one (partition, band) cell gets. 0 skips it."""
+    name, at = key
+    return max(0, _turns_for(weights or {}, at)) * max(
+        0, int(round(float((partitions or {}).get(str(name), 1.0))))
+    )
 
 
 def _turns_for(weights: dict, at: int) -> int:
@@ -671,6 +797,35 @@ def aimed_maps(cell: str):
     return draw
 
 
+def _plan_aimed(places: list, cells: list, roster: list, maps: list, seed: int, width: int):
+    """The aimed arm over one cell or several, each place aimed at exactly one.
+
+    Round-robin over the cells in the order they were asked for, so a leg sent to
+    the pool's thinnest colours spends itself evenly over them and a truncation
+    truncates them alike. One place is aimed at one cell and never at a mixture:
+    the hit rate this arm reports is `dominant in the cell it was drawn for`, and
+    a place whose palettes came from two carrier tables could not answer it.
+    """
+    if not places or not cells:
+        return []
+    out: list = []
+    for at, one in enumerate(cells):
+        mine_places = places[at :: len(cells)]
+        if not mine_places:
+            continue
+        out += plan_cycled_modes(
+            AIMED,
+            mine_places,
+            roster,
+            maps,
+            seed,
+            width,
+            draw=aimed_maps(one),
+            cell=one,
+        )
+    return out
+
+
 def plan_cycled_modes(
     arm: str, places: list, roster: list, maps: list, seed: int, width: int, draw=None, cell=None
 ):
@@ -758,10 +913,13 @@ def build_plan(
     top_bands: int | None = None,
     roster: list | None = None,
     breadth_demoted: tuple | list = BREADTH_DEMOTED,
-    cell: str | None = None,
+    cell: str | list | tuple | None = None,
     shares: dict | None = None,
     band_weights: dict | None = None,
+    partition_weights: dict | None = None,
+    centered: str = CENTERED_ANY,
     floor_modes: list | None = None,
+    floor_untried: list | None = None,
     floor_seats: int = 10,
     floor_width: int = FLOOR_WIDTH,
     workers: int = 1,
@@ -805,22 +963,42 @@ def build_plan(
         )
     maps = list(colorize.pool(seed))
     shares = {**SHARES, **dict(shares or {})}
-    if shares.get(AIMED) and not cell:
+    if cell is None:
+        asked_cells: list[str] = []
+    else:
+        asked_cells = [str(cell)] if isinstance(cell, str) else [str(one) for one in cell]
+    if shares.get(AIMED) and not asked_cells:
         raise DepthRefused(
             f"a {AIMED!r} share of {shares[AIMED]} was given and no --cell to aim it at. "
             f"The arm is the flat draw with its palette ask biased toward one codebook "
             f"cell; without the cell it would be a second flat draw wearing another name."
         )
-    if cell and not shares.get(AIMED):
+    if asked_cells and not shares.get(AIMED):
         raise DepthRefused(
-            f"--cell {cell} was given and the {AIMED!r} draw has no share of the budget, "
-            f"so nothing would be aimed at it. Pass --shares with a {AIMED!r} entry."
+            f"--cell {asked_cells} was given and the {AIMED!r} draw has no share of the "
+            f"budget, so nothing would be aimed at it. Pass --shares with a {AIMED!r} entry."
         )
-    if cell and str(cell) not in set(dominance.cells()):
+    known_cells = set(dominance.cells())
+    for one in asked_cells:
+        if one not in known_cells:
+            raise DepthRefused(
+                f"{one!r} is not a codebook cell. A misspelt cell would plan an aimed arm "
+                f"no map carries and report it as a draw that bought nothing."
+            )
+    # A cell no map in this pool carries is dropped HERE and named, rather than
+    # left to [`aimed_maps`]'s fallback: the fallback keeps the arm alive by
+    # drawing flat, which is right for one cell of many going thin mid-run and
+    # wrong as a plan — it would spend an aimed share on a control and report it
+    # as a cell that was served and bought nothing.
+    unservable = [one for one in asked_cells if not hunt.conditioned_maps(one, 1, maps, seed)]
+    cells = [one for one in asked_cells if one not in set(unservable)]
+    if asked_cells and not cells:
         raise DepthRefused(
-            f"{cell!r} is not a codebook cell. A misspelt cell would plan an aimed arm "
-            f"no map carries and report it as a draw that bought nothing."
+            f"the carrier table serves none of {asked_cells} out of this map pool, so the "
+            f"{AIMED!r} draw has nothing to aim. Name a cell some map carries."
         )
+    if unservable:
+        log(f"[depth] the carrier table cannot serve {unservable} out of this pool: skipped")
     planned = PLAN_HEADROOM * max(1, int(workers)) * float(budget) / max(float(rate), 1e-6)
     want = {arm: int(planned * float(share)) for arm, share in shares.items()}
     short = deficient_modes(world["rows"], world["ledger_scores"], floor=int(floor_seats))
@@ -841,9 +1019,16 @@ def build_plan(
         if want.get(NEAR)
         else []
     )
-    banded = ranked_bands(world["pools"], world["head_scores"], bands)
+    pools = by_centered(world["pools"], centered, log=log)
+    banded = ranked_bands(pools, world["head_scores"], bands)
     ranked = (
-        banded_places(banded, seed, max(1, want[RANKED] // max(1, width)), weights=band_weights)
+        banded_places(
+            banded,
+            seed,
+            max(1, want[RANKED] // max(1, width)),
+            weights=band_weights,
+            partition_weights=partition_weights,
+        )
         if want.get(RANKED)
         else []
     )
@@ -873,8 +1058,21 @@ def build_plan(
         else []
     )
     per_place = max(1, int(floor_width) * max(1, len(wanted_floor_modes)))
+    # The floor draw's population, narrowed where a caller asked for the places
+    # that have never been tried in the dear half of the roster at all. `best` is
+    # read over every mode, so an untried place still has to have proved itself
+    # somewhere before it is spent on: what is being varied is the mode.
+    floor_pool = world["best"]
+    untried_pool = None
+    if floor_untried:
+        untried_pool = without_mode_attempt(world["rows"], list(floor_untried))
+        floor_pool = {key: held for key, held in floor_pool.items() if key in untried_pool}
+        log(
+            f"[depth] {len(floor_pool):,} opened location(s) with no attempt in any of "
+            f"{sorted(floor_untried)}"
+        )
     proven = (
-        proven_places(world["best"], world["by_key"], seed, max(1, want[FLOOR] // per_place))
+        proven_places(floor_pool, world["by_key"], seed, max(1, want[FLOOR] // per_place))
         if want.get(FLOOR)
         else []
     )
@@ -883,11 +1081,7 @@ def build_plan(
         RANKED: plan_cycled_modes(RANKED, ranked, breadth, maps, seed, width),
         FLAT: plan_cycled_modes(FLAT, flat, breadth, maps, seed, width),
         FLOOR: plan_floor(proven, wanted_floor_modes, world["taken"], maps, seed, floor_width),
-        AIMED: plan_cycled_modes(
-            AIMED, aimed, breadth, maps, seed + 2, width, draw=aimed_maps(cell), cell=cell
-        )
-        if aimed
-        else [],
+        AIMED: _plan_aimed(aimed, cells, breadth, maps, seed + 2, width),
     }
     for arm, held in plans.items():
         if not held:
@@ -919,7 +1113,19 @@ def build_plan(
             FLOOR: {"places": int(seed), "candidates": int(seed)},
             AIMED: {"places": int(seed) + 2, "candidates": int(seed) + 2},
         },
-        "cell": None if cell is None else str(cell),
+        "cell": cells[0] if len(cells) == 1 else (cells or None),
+        "cells": cells,
+        "cells_unservable": unservable,
+        "centered": str(centered),
+        "centered_drawable": {
+            name: sum(1 for row in held if str(row["key"]) in centered_locations())
+            for name, held in sorted(world["pools"].items())
+        },
+        "drawable": {name: len(held) for name, held in sorted(world["pools"].items())},
+        "drawn_from": {name: len(held) for name, held in sorted(pools.items())},
+        "partition_weights": dict(partition_weights or {}),
+        "floor_untried": list(floor_untried or []),
+        "floor_population": len(floor_pool),
         "roster": roster,
         "breadth_roster": breadth,
         "mode_policy": mode_policy.record(),
@@ -1138,10 +1344,13 @@ def run(
     top_bands: int | None = None,
     roster: list | None = None,
     breadth_demoted: tuple | list = BREADTH_DEMOTED,
-    cell: str | None = None,
+    cell: str | list | tuple | None = None,
     shares: dict | None = None,
     band_weights: dict | None = None,
+    partition_weights: dict | None = None,
+    centered: str = CENTERED_ANY,
     floor_modes: list | None = None,
+    floor_untried: list | None = None,
     floor_width: int = FLOOR_WIDTH,
     floor_seats: int = 10,
     workers: int = DEFAULT_WORKERS,
@@ -1199,7 +1408,10 @@ def run(
         cell=cell,
         shares=shares,
         band_weights=band_weights,
+        partition_weights=partition_weights,
+        centered=centered,
         floor_modes=floor_modes,
+        floor_untried=floor_untried,
         floor_width=floor_width,
         floor_seats=floor_seats,
         workers=workers,
@@ -1293,6 +1505,11 @@ def run(
             "rank_fraction": shot.rank_fraction,
             "mode": shot.mode,
             "mode_kind": mine._kind_of(shot.mode),
+            # The cell this candidate's palette was drawn FOR, and `None` off the
+            # aimed arm. Carried on the made row and not only on the ledger row
+            # because a multi-cell aimed arm's readouts are per cell, and a row
+            # that had forgotten which table offered its map could not be in one.
+            "drawn_for": shot.cell,
             "texture_flat": result["texture_flat"],
             "colormap": shot.colormap,
             "palette_group": recipe.palette_group,
@@ -1555,6 +1772,16 @@ def hit_rate(made: list, cell: str | None) -> dict | None:
     """
     if not cell:
         return None
+    if not isinstance(cell, str):
+        asked = [str(one) for one in cell]
+        if len(asked) != 1:
+            return {
+                "cells": {one: hit_rate(_aimed_at(made, one), one) for one in asked},
+                "reads": "one block per cell, each against the WHOLE flat control: the "
+                "control is the same draw at every cell and splitting it would price each "
+                "cell's baseline off a fraction of it",
+            }
+        cell = asked[0]
     out: dict = {"cell": str(cell)}
     for arm in (AIMED, FLAT):
         held = [row for row in made if row["arm"] == arm]
@@ -1574,6 +1801,19 @@ def hit_rate(made: list, cell: str | None) -> dict | None:
     # because every candidate is a candidate whatever colour it came out.
     out["renders_per_hit"] = round(1.0 / aimed, 3) if aimed else None
     return out
+
+
+def _aimed_at(made: list, cell: str) -> list:
+    """`made` with the aimed arm cut to the candidates drawn for one cell.
+
+    Every other arm passes through whole, so the flat control a per-cell block is
+    read against is the same control at every cell.
+    """
+    return [
+        row
+        for row in made
+        if row.get("arm") != AIMED or str(row.get("drawn_for") or "") == str(cell)
+    ]
 
 
 def mode_bars(rows=None, log=lambda *_args: None) -> dict:
@@ -1656,6 +1896,16 @@ def dominant_and_clearing(made: list, cell: str | None, table: dict) -> dict | N
     """
     if not cell:
         return None
+    if not isinstance(cell, str):
+        asked = [str(one) for one in cell]
+        if len(asked) != 1:
+            return {
+                "cells": {
+                    one: dominant_and_clearing(_aimed_at(made, one), one, table) for one in asked
+                },
+                "reads": "one block per cell, each against the WHOLE flat control",
+            }
+        cell = asked[0]
     out: dict = {
         "cell": str(cell),
         "bars": {
