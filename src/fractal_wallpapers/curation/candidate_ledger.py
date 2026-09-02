@@ -1228,19 +1228,28 @@ def merge(rows, scores, log=print) -> dict:
 #: have lost its picture. That second spelling is gone.
 RETAIN_PER_PAIR = 3
 
-#: Why a row survives [`prune`]. The first is [`retention.RANKED`]; the four
+#: Why a row survives [`prune`]. The first is [`retention.RANKED`]; the five
 #: after it are the protections, and each one keeps a row the rank let go.
 RETAINED_RANKED = "ranked"
 RETAINED_SEATED = "seated_in_a_live_release_row"
 RETAINED_REJECTED = "carries_a_human_rejected_verdict"
 RETAINED_LABELED = "a_label_row_joins_to_it"
 RETAINED_FITTED = "named_by_the_rank_key_population"
+#: A seat in a **tentative gallery** — [`curation.tentative`] — which is a
+#: recorded gallery somebody has started referring to pictures by. It protects
+#: for the same reason a live release row does and needs its own class for a
+#: sharper one: a seat is chosen on the gallery's objective, over a view, against
+#: the colour rules, and none of that is being in the top three of its own
+#: (location, mode) pair, so the rank drops these routinely. An ID that stopped
+#: resolving would take its picture with it and there is no way to notice.
+RETAINED_TENTATIVE = "seated_in_a_tentative_gallery"
 RETAINED_REASONS = (
     RETAINED_RANKED,
     RETAINED_SEATED,
     RETAINED_REJECTED,
     RETAINED_LABELED,
     RETAINED_FITTED,
+    RETAINED_TENTATIVE,
 )
 
 
@@ -1263,10 +1272,11 @@ def prune(keep: int = RETAIN_PER_PAIR, apply: bool = True, log=print) -> dict:
     Top-`keep` per (location, `recipe.mode`) ranked by the shipped
     [`curation.rank_key`], through [`retention.decide`] rather than a second
     selector — the same body the article teaches the rule with, handed rank values
-    instead of a raw `P(>=4)`. Four protections keep a row the rank let go: a seat
-    in a live release row, a human rejection, a human label joining it, and a row
-    named by the rank key's own tracked population file, whose fit stops being
-    reproducible if one of them goes.
+    instead of a raw `P(>=4)`. Five protections keep a row the rank let go: a seat
+    in a live release row, a human rejection, a human label joining it, a row named
+    by the rank key's own tracked population file (whose fit stops being
+    reproducible if one of them goes), and a seat in a **tentative gallery**,
+    whose whole point is that its IDs stay resolvable.
 
     A dropped row loses **its picture in the same call**. That is the one rule
     now: until 2026-08-29 the pictures were swept on their own ranking at their
@@ -1578,8 +1588,8 @@ def _prune_ranks(meta: list, log=print) -> tuple[dict, dict]:
 
 
 def _prune_protections(meta: list, log=print) -> dict:
-    """`{reason: {keys}}` for the four things kept whatever the rank says."""
-    from fractal_wallpapers.curation import rank_key, retention, served_locations
+    """`{reason: {keys}}` for the five things kept whatever the rank says."""
+    from fractal_wallpapers.curation import rank_key, retention, served_locations, tentative
 
     index = served_locations.build()
     live: set = set()
@@ -1589,6 +1599,7 @@ def _prune_protections(meta: list, log=print) -> dict:
         if source.get("run") is not None:
             live.add((str(source.get("run")), str(source.get("candidate"))))
     marked = retention.labeled_renders()
+    recorded = tentative.protected_keys()
     fitted = {
         str(json.loads(line)["recipe_key"])
         for line in rank_key.population_path().read_text(encoding="utf-8").splitlines()
@@ -1603,9 +1614,13 @@ def _prune_protections(meta: list, log=print) -> dict:
         RETAINED_REJECTED: {held["key"] for held in meta if held["rejected"]},
         RETAINED_LABELED: {held["key"] for held in meta if held["render_key"] in marked},
         RETAINED_FITTED: {held["key"] for held in meta if held["key"] in fitted},
+        RETAINED_TENTATIVE: {held["key"] for held in meta if held["key"] in recorded},
     }
     named = ", ".join(f"{name} {len(found):,}" for name, found in out.items())
-    log(f"[prune] protections: {named}; the population file names {len(fitted):,} recipe(s)")
+    log(
+        f"[prune] protections: {named}; the population file names {len(fitted):,} recipe(s) "
+        f"and {len(tentative.stamps())} recorded gallery/ies name {len(recorded):,}"
+    )
     return out
 
 

@@ -3302,6 +3302,89 @@ def curate_candidate_ledger(args: argparse.Namespace) -> int:
     return 0
 
 
+def curate_gallery(args: argparse.Namespace) -> int:
+    """Record a solve as a tentative gallery, browse it, or resolve one of its IDs."""
+    from fractal_wallpapers.curation import tentative
+
+    if args.what == "list":
+        held = tentative.stamps()
+        if not held:
+            print("no tentative gallery has been recorded on this machine.")
+            return 1
+        for stamp in held:
+            rows = tentative.read_rows(stamp)
+            manifest = tentative.read_manifest(stamp)
+            print(
+                f"{stamp}  {len(rows):>5} seat(s) of {manifest['seats']['asked']}, "
+                f"{display_path(tentative.gallery_dir(stamp))}"
+            )
+        return 0
+
+    if args.what == "record":
+        return _curate_gallery_record(args)
+
+    # `browse <stamp>` and `browse --stamp <stamp>` are one command, because a
+    # reader who has just seen a stamp printed will type it either way and the
+    # cost of not accepting both is a page silently written for a DIFFERENT
+    # record — the positional was ignored and the newest one rebuilt.
+    named = [part for text in (args.id or ()) for part in str(text).split(",") if part.strip()]
+    try:
+        if args.what == "browse":
+            if len(named) > 1:
+                print(f"`browse` writes one record's page; {len(named)} were named.")
+                return 1
+            if named and args.stamp and named[0] != args.stamp:
+                print(f"two different stamps were named: {named[0]} and {args.stamp}.")
+                return 1
+            print(f"{display_path(tentative.page(args.stamp or (named[0] if named else None)))}")
+            return 0
+        # resolve: a comma list, so one invocation answers a whole figure prompt.
+        if not named:
+            print("name at least one ID or alias to resolve.")
+            return 1
+        answers = tentative.resolve(named, stamp=args.stamp)
+    except tentative.TentativeRefused as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps(answers, indent=2))
+    return 0 if all(held["found"] for held in answers) else 1
+
+
+def _curate_gallery_record(args: argparse.Namespace) -> int:
+    """The production solve, run once and recorded under a stamp that never moves."""
+    from fractal_wallpapers.curation import headroom, solve, tentative
+
+    candidates, _costs, refused = headroom.population()
+    try:
+        order, coverage = solve.ranking_for(candidates, args.key)
+        record = solve.solve(
+            candidates,
+            n=args.n,
+            order=order,
+            coverage=coverage,
+            key=args.key,
+            swap=not args.no_swap,
+            seconds=args.swap_seconds,
+        )
+    except solve.SolveRefused as refusal:
+        print(refusal)
+        return 1
+    name = args.solve_name or f"tentative_n{args.n}"
+    print(f"{display_path(solve.write_record(name, record))}")
+    try:
+        directory = tentative.write(
+            record, candidates=candidates, solve_name=name, pool_refused=refused
+        )
+    except tentative.TentativeRefused as refusal:
+        print(refusal)
+        return 1
+    stamp = directory.name
+    print(f"{display_path(tentative.page(stamp))}")
+    manifest = tentative.read_manifest(stamp)
+    print(json.dumps({"stamp": stamp, **manifest["seats"], "counts": manifest["counts"]}, indent=2))
+    return 0
+
+
 def curate_solve(args: argparse.Namespace) -> int:
     """Choose the gallery: a stratified view, a greedy seed, and swaps to exhaustion."""
     from fractal_wallpapers.curation import ceiling, headroom, solve
@@ -7398,6 +7481,7 @@ def curate_commands(subcommands) -> None:
     from fractal_wallpapers.curation import shrinkage as shrinkage_module
     from fractal_wallpapers.curation import signatures as signatures_module
     from fractal_wallpapers.curation import solve as solve_module
+    from fractal_wallpapers.curation import tentative as tentative_module
     from fractal_wallpapers.curation import view as view_module
 
     curating = subcommands.add_parser(
@@ -7931,6 +8015,76 @@ def curate_commands(subcommands) -> None:
         "record. Those rows are recipes nobody has saved yet",
     )
     ledger_store.set_defaults(handler=curate_candidate_ledger)
+
+    browsing = steps.add_parser(
+        "gallery",
+        help="a solve recorded under a stamp, and a local page for referring to its pictures",
+        description=(
+            "A TENTATIVE GALLERY: the production solve, recorded once under a UTC stamp that "
+            "is never written over, so a person can point at a picture and be understood. "
+            "`record` runs the solve and writes `gallery.jsonl` (one row per seat, carrying "
+            "the ledger recipe key that IS the ID, a short alias, the mode, the partition, "
+            "the dominant colour cell and hue family, `centered`, the rank and P(>=4), the "
+            "seat order and the stored picture), `manifest.json` beside it, and the page. "
+            "`browse` writes that page again: one self-contained HTML file, no server, "
+            "opened from the file system, filtering on every column and copying an ID to "
+            "the clipboard on a click. `resolve` turns an ID or alias back into a row, a "
+            "recipe and a location. The seats a record names are a PROTECTION CLASS in "
+            "`curate candidate-ledger prune` — an ID that stopped resolving would take its "
+            "picture with it, and nothing would notice."
+        ),
+    )
+    browsing.add_argument(
+        "what",
+        choices=["record", "browse", "resolve", "list"],
+        help="run the solve and record it; write the page again; look one ID up; or list "
+        "every recorded gallery on this machine",
+    )
+    browsing.add_argument(
+        "id",
+        nargs="*",
+        help="with `resolve`: the IDs or aliases to look up, as arguments or as one "
+        "comma-separated list. With `browse`: the stamp, which `--stamp` also names",
+    )
+    browsing.add_argument(
+        "--stamp",
+        help="which recorded gallery to browse or resolve against (default the newest). "
+        "Ignored by `record`, which always writes a new one",
+    )
+    browsing.add_argument(
+        "--n",
+        type=int,
+        default=tentative_module.RECORDED_SEATS,
+        help=f"with `record`: how many wallpapers to seat (default "
+        f"{tentative_module.RECORDED_SEATS}). The "
+        "solve is `curate solve run` with nothing changed — same pool, same bars, same "
+        "rules, same objective — so a recorded gallery is reproducible from its manifest",
+    )
+    browsing.add_argument(
+        "--solve-name",
+        help="with `record`: what to call the solve's own output directory under "
+        "artifacts/curation/solve (default `tentative_n<N>`)",
+    )
+    browsing.add_argument(
+        "--key",
+        choices=list(solve_module.KEYS),
+        default=solve_module.DEFAULT_KEY,
+        help=f"with `record`: the sort key the solve is walked in (default "
+        f"{solve_module.DEFAULT_KEY})",
+    )
+    browsing.add_argument(
+        "--no-swap",
+        action="store_true",
+        help="with `record`: take the greedy seed and stop, skipping the improvement loop",
+    )
+    browsing.add_argument(
+        "--swap-seconds",
+        type=float,
+        default=None,
+        metavar="SECONDS",
+        help="with `record`: a wall budget for the swap loop alone. The seed always runs",
+    )
+    browsing.set_defaults(handler=curate_gallery)
 
     solving = steps.add_parser(
         "solve",
@@ -8889,7 +9043,7 @@ def curate_commands(subcommands) -> None:
             "they name are about 600 GB, so storage has to scale with the locations "
             "explored and not with the attempts made. The rule keeps the top "
             f"{candidate_ledger_module.RETAIN_PER_PAIR} per (location, mode) ranked WITHIN "
-            "the pair by the shipped rank key, plus four protections, and a picture is "
+            "the pair by the shipped rank key, plus five protections, and a picture is "
             "kept if and only if its row is. This builds the three counts that dropping "
             "the rest must not destroy: the (location, mode) cursor into the palette draw, "
             "the (colormap, mode) success table, and what each place has been made to look "

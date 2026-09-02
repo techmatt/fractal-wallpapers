@@ -700,7 +700,7 @@ def test_rows_per_location_mode_cannot_exceed_the_constant_unless_a_protection_n
     """**The growth law.** Without this the file is back where it started in a
     few weeks: a rule nothing enforces is not a rule.
 
-    The bound is `RETAIN_PER_PAIR` *plus whatever the four protections carry*, and
+    The bound is `RETAIN_PER_PAIR` *plus whatever the five protections carry*, and
     it is stated that way because the protections genuinely do exceed it — over
     the store on 2026-08-29, 395 of 48,154 pairs held more than three rows and the
     425 rows beyond the constant are exactly the 425 the protections saved. A
