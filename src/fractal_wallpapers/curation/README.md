@@ -3204,13 +3204,25 @@ wider draw beat, and the clear rate they measured survives in `sequence.jsonl`. 
 an argument for knowing the number first: `--floor-width 4` is one over the keep and
 costs a quarter of an arm's pictures for nothing, where `3` is free.
 
-### A scratch driver that calls `depth.run` needs a `__main__` guard
+### A scratch driver that drives a render pool needs a `__main__` guard
 
 Windows spawns worker processes by re-importing the entry module, so a driver with
 top-level code that reaches `depth.run` re-enters itself in every worker and the pool
 dies with `BrokenProcessPool` **after** the population read and the plan — a minute or
 two in, with nothing rendered. `curate depth` is safe because `cli.py` has the guard;
 anything under `scratch/` needs its own.
+
+**It is every entry to a spawning pool, not just `depth.run`, and the other failure
+mode is worse than a `BrokenProcessPool`.** `solve.render_seats` — reusable for an
+ad-hoc sheet, since `where=` redirects the output and any dict with a `seated` list
+of keyed rows will do — reaches `release.run_pass`, which is also a spawning
+executor. A guardless driver there does not die: each worker re-runs the whole leg,
+which spawns three more workers, and the leg **recursively spawns** while writing
+real pictures the whole time. What it looks like is a render that appears to be
+working, several dozen idle `python.exe` and a `[solve] N seat(s) to render` line
+printed once per generation. Kill the tree rather than waiting for it, and throw the
+pictures away — a partially written PNG can still answer `_already` with the right
+resolution, so a re-run would carry the corrupt ones across.
 
 ### What an arm can and cannot be credited with
 
