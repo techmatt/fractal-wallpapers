@@ -697,8 +697,8 @@ artifacts/curation/solve/<name>/contact_sheet.html  the seats, and what each rul
 ```
 fractal-wallpapers curate solve run --n 150                  # one gallery, rendered
 fractal-wallpapers curate solve run --n 150 --no-render      # decide, render nothing
-fractal-wallpapers curate solve run --n 1000 --no-render     # ~6 min, scaled not measured
-fractal-wallpapers curate solve run --n 2000 --no-render     # THE planning size (Matt), 10 min
+fractal-wallpapers curate solve run --n 1000 --no-render     # 52 s + ~19 s pool, measured
+fractal-wallpapers curate solve run --n 2000 --no-render     # THE planning size (Matt)
 fractal-wallpapers curate solve run --n 150 --no-swap        # the greedy seed alone
 fractal-wallpapers curate solve run --n 150 --swap-seconds 300   # a clock on the loop only
 fractal-wallpapers curate solve run --n 150 --flat-floor     # the pre-2026-08-31 mode floor
@@ -922,6 +922,30 @@ Deriving the reduced form through the bounded cache instead is what a view large
 than that cache cannot afford: measured before this store existed, **24,969
 signatures for an 8,704-row view — 2.9 decodes a row** — and a pass cost the same
 whether it took forty-seven swaps or none.
+
+**The bounded cache under it is `rules.SIGNATURE_CACHE` and it is 2048, which is
+256 MiB a solve process.** It was 256 — 32 MiB — until `PROFILE_solve_large_n`
+measured what that cost. A swap pass re-tests about 870 of the same rows on every
+pass, and 256 entries against a view of 11,690 meant passes two, three and four
+re-decoded what pass one had already read: **4,238 full signatures made for a leg
+that needs 1,459**, and n=1000 at 112.4 s against 52.0 s. That 256 MiB is a real
+charge against the **one pool-holding process per box** rule in the root
+`CLAUDE.md` — the pool itself is the hundreds of megabytes that rule is about, and
+this now sits beside it in the same process. Two solves at once was already
+forbidden; this is one more reason.
+
+Two smaller changes landed with it and neither is a knob. `Twins.hold` no longer
+decodes a seat's full cloud when it sits down — the bound settles 99.77% of a
+seat's comparisons off the reduced form, so the cloud is read on first real need
+and **495 of 912 seats** were ever read at n=1000. And `Twins.within` runs a scalar
+**norm screen** in front of the reduced bound: `| |a|₁ − |b|₁ | ≤ |a − b|₁`, so a
+seat the screen puts beyond `TAU` provably cannot be a twin, and it settled
+3,004,576 of 4,173,399 seat comparisons before anything was subtracted. All three
+are **bit-identical** — same seats, same order, same objective at n=250 and n=1000,
+with `full_signatures_fetched` and `seat_comparisons_measured` unmoved, which is
+what says the screen changed only the arithmetic. `tests/test_solve.py` pins the
+cache's identity and that `clouds_for` reads the constant **at call time**: it used
+to bind it as a default argument, so moving the constant moved nothing.
 
 ### What it costs, measured on this machine
 

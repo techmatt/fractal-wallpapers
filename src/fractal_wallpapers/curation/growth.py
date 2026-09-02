@@ -375,11 +375,18 @@ def cell(
     bars and the clearing rule do not read `n` — and the derivation is checked
     against the count [`solve.solve`] puts on its own record, so the two readings
     of "what cleared" cannot silently part company.
+
+    The **neutral pre-selection** is derived once here for the same reason and on
+    the same terms. It does not read `n` either, and it is the more expensive of
+    the two by a long way: 13.7 s over 5,818 places against 0.33 s for the bars,
+    so a cell walking six sizes was spending over a minute recomputing one answer.
+    [`solve.solve`] checks it against the pool it is handed before using it.
     """
     from fractal_wallpapers.curation import headroom
 
     table = headroom.bars(candidates)
     cleared = headroom.clearing(candidates, table)
+    preselected = solve.preselection_for(cleared, log=log)
     eligible = {
         "rank": quantiles(solve.value_of(held, order) for held in cleared),
         "p_ge4": quantiles(held.score for held in cleared),
@@ -393,6 +400,7 @@ def cell(
             order=order,
             coverage=coverage,
             seconds=swap_seconds,
+            preselected=preselected,
             log=log,
         )
         if record["population"]["clearing"] != len(cleared):

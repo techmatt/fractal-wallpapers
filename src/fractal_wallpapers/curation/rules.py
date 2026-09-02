@@ -122,11 +122,25 @@ def rules_for(diversity) -> tuple:
 TWIN_NEIGHBOURS = 1
 
 #: How many signatures the diversity rule's pixel-cloud cache holds before it
-#: forgets the oldest. 256 is 32 MiB at [`pixel_clouds.DIRECTIONS`] = 256, and was
-#: 128 MiB at 1024. The seated are **held** and never counted
-#: against it; what this buys is the second and third offer of a candidate the
-#: swap loop keeps coming back to.
-SIGNATURE_CACHE = 256
+#: forgets the oldest. The seated are **held** and never counted against it; what
+#: this buys is the second and third offer of a candidate the swap loop keeps
+#: coming back to.
+#:
+#: **2048, and it was 256 until PROFILE_solve_large_n measured what 256 cost.** A
+#: swap pass at n=1000 re-tests about 870 of the same rows on every pass, and 256
+#: entries against a view of 11,690 meant passes two, three and four re-decoded
+#: what pass one had already read: 4,238 full signatures made for a leg that needs
+#: 1,459. Raising it alone took the leg from 111 s to 68.9 s over a **bit-identical**
+#: gallery — the largest single win in that profile, and a constant rather than an
+#: algorithm.
+#:
+#: The price is memory: 128 KiB a signature at [`pixel_clouds.DIRECTIONS`] = 256,
+#: so this is **256 MiB** held by one solve process against 32 MiB before (and it
+#: would have been 1 GiB at the 1024 directions the metric used to run at, which is
+#: why the number could not have been this before that came down). That is a real
+#: cost on the one-pool-holding-process rule and it is written down in
+#: `curation/README.md` beside it.
+SIGNATURE_CACHE = 2048
 
 #: The radius the **themed** diversity rule refuses inside, in [`distinct.METRIC`].
 #:
@@ -214,13 +228,19 @@ def bound_width() -> int:
     return pixel_clouds.DIRECTIONS * BOUND_BLOCKS
 
 
-def clouds_for(candidates, cache: int = SIGNATURE_CACHE):
+def clouds_for(candidates, cache: int | None = None):
     """A [`pixel_clouds.Clouds`] over a view, addressed by **candidate key**.
 
     By key and not by path because the diversity rule is per candidate: one place
     may carry fifty rows, they are fifty different pictures, and the rule is about
     the pictures. A row whose picture is not on disk reads as `None`, which
     [`Twins`] refuses on rather than admits — see [`RULES`].
+
+    `cache` is read from [`SIGNATURE_CACHE`] **at call time** and never bound as a
+    default. It used to be `cache: int = SIGNATURE_CACHE`, which captures the
+    constant at import: moving the constant then moved every reader of it *except*
+    this one, so a caller raising it would have measured no change and concluded
+    the cache was not the cost. `None` is "the shipped size".
     """
     from pathlib import Path
 
@@ -236,7 +256,7 @@ def clouds_for(candidates, cache: int = SIGNATURE_CACHE):
         where = Path(rehome(held))
         return where if where.is_file() else None
 
-    return pixel_clouds.Clouds(path_of, cache=int(cache))
+    return pixel_clouds.Clouds(path_of, cache=int(SIGNATURE_CACHE if cache is None else cache))
 
 
 def _intersect(wanted: list, everything) -> set:
@@ -293,8 +313,15 @@ class Twins:
         self.keys: list = []
         self._reduced: list = []
         self._stack = None
+        #: `|a|` per row of [`_stack`], rebuilt with it. The norm screen's whole
+        #: store — one float a seat against the seat's own 1,024.
+        self._norms = None
         self._live: list = []
         self._at: dict = {}
+        #: The seated keys whose FULL cloud has actually been decoded. A seat is
+        #: registered by [`hold`] and lands here only when something needs to
+        #: measure against it — see [`cloud_of_seat`].
+        self._decoded: set = set()
         #: `{key: its reduced signature}`, made once and kept for the life of the
         #: pass. **This is the one store that decides what a pass costs.** See
         #: [`reduced_of`].
@@ -309,6 +336,10 @@ class Twins:
         self.reduced_from_the_sidecar = len(self._mine)
         self.tested = 0
         self.settled_by_the_bound = 0
+        #: How many of [`settled_by_the_bound`] the scalar norm screen settled
+        #: before the reduced form was subtracted at all. On the record because a
+        #: prune that stopped firing should be visible rather than inferred.
+        self.settled_by_the_norm_screen = 0
         self.measured = 0
         self.without_a_picture = 0
         self.reduced_made = 0
@@ -363,6 +394,19 @@ class Twins:
         A **dict** instead of a list says the picture could not be read, which is
         a refusal under its own name: "I could not read this" is not "this is a
         duplicate", and the two go to different places in the rejection ledger.
+
+        ## Two bounds, and the cheap one runs first
+
+        The reduced bound below is `O(seats x BOUND_BLOCKS x DIRECTIONS)` of
+        subtraction — a thousand floats a seat. In front of it sits a **scalar** per
+        seat: the reverse triangle inequality on the L1 norm,
+        `| |a|_1 - |b|_1 | <= |a - b|_1`, so a seat the screen puts at or beyond
+        [`tau`] has its reduced bound at or beyond `tau` too and provably cannot be
+        a twin. Every survivor still gets the full reduced bound, so `close` is the
+        same set either way and the gallery is unchanged.
+
+        Measured over this pool at 900 seats: the screen settles **69.3%** of seat
+        comparisons on its own and takes a test from 2.96 ms to 1.19 ms.
         """
         import numpy
 
@@ -377,11 +421,23 @@ class Twins:
             self._stack = (
                 numpy.stack([self._reduced[at] for at in self._live]) if self._live else None
             )
+            self._norms = (
+                None
+                if self._stack is None
+                else numpy.abs(self._stack).sum(axis=1, dtype=numpy.float64)
+            )
         if self._stack is None:
             return []
         self.tested += 1
-        lower = numpy.abs(self._stack - mine).sum(axis=1, dtype=numpy.float64) / bound_width()
-        close = [self._live[int(at)] for at in numpy.nonzero(lower < self.tau)[0]]
+        width = bound_width()
+        screened = numpy.abs(self._norms - float(numpy.abs(mine).sum(dtype=numpy.float64))) / width
+        live = numpy.nonzero(screened < self.tau)[0]
+        self.settled_by_the_norm_screen += len(self._live) - len(live)
+        if len(live):
+            lower = numpy.abs(self._stack[live] - mine).sum(axis=1, dtype=numpy.float64) / width
+            close = [self._live[int(live[at])] for at in numpy.nonzero(lower < self.tau)[0]]
+        else:
+            close = []
         self.settled_by_the_bound += len(self._live) - len(close)
         if not close:
             # The ordinary case by a long way, and the reason the full signature is
@@ -397,18 +453,48 @@ class Twins:
         near = []
         for at in close:
             self.measured += 1
-            gap = pixel_clouds.distance(made, self.clouds.of(self.keys[at]))
+            gap = pixel_clouds.distance(made, self.cloud_of_seat(self.keys[at]))
             if gap < self.tau:
                 near.append((round(float(gap), 6), self.keys[at]))
         near.sort()
         return near
 
+    def cloud_of_seat(self, name: str):
+        """One seated picture's FULL cloud, decoded on first need and held after.
+
+        The other half of [`hold`]'s laziness. The first candidate whose bound
+        cannot settle this seat pays for the decode; from then on the seat is in
+        the [`pixel_clouds.Clouds`] held store, which is unbounded, so a seat that
+        is measured against once is never re-read however long the pass runs.
+        """
+        made = self.clouds.of(str(name))
+        if made is not None and str(name) not in self._decoded:
+            # Promote out of the bounded read cache. `Clouds.hold` re-asks `of`,
+            # which is the hit this call just made.
+            self.clouds.hold(str(name))
+            self._decoded.add(str(name))
+        return made
+
     def hold(self, key: str) -> bool:
-        """Keep one seated picture's signature, in both forms. `False` if it has none."""
+        """Register one seat. `False` if it has no reduced signature.
+
+        **The full cloud is NOT decoded here**, and that is the change
+        PROFILE_solve_large_n bought. The bound settles 99.77% of a seat's
+        comparisons off the 4 KiB reduced form, so decoding its 128 KiB cloud the
+        moment it sits down pays 16.8 ms for something most seats never need: 912
+        decodes at n=1000, of which the leg went on to read 523. What a seat needs
+        to be *screened* is its reduced signature, which is in [`_reduced`] and
+        usually came from the sidecar without opening anything at all; the full
+        cloud is fetched by [`cloud_of_seat`] the first time a bound cannot settle.
+
+        This was PARKED in `solver_design.md` as a memory question — 334 MB of held
+        signatures at 653 seats — and it is a **time** win as well, which is what
+        the profile added. Holding is still unbounded, so the memory half is
+        unchanged for a seat that does get read.
+        """
         mine = self.reduced_of(key)
         if mine is None:
             return False
-        self.clouds.hold(str(key))
         self._at[str(key)] = len(self.keys)
         self.keys.append(str(key))
         self._reduced.append(mine)
@@ -421,7 +507,10 @@ class Twins:
         if at is None:
             return False
         self.keys[at] = None
+        # A no-op for a seat nothing ever measured against, which is now most of
+        # them: `let_go` only moves what the held store actually holds.
         self.clouds.let_go(str(key))
+        self._decoded.discard(str(key))
         self._stack = None
         return True
 
@@ -446,7 +535,16 @@ class Twins:
             "bound": BOUND,
             "candidates_tested": self.tested,
             "seat_comparisons_settled_by_the_bound": self.settled_by_the_bound,
+            "seat_comparisons_settled_by_the_norm_screen": self.settled_by_the_norm_screen,
+            "norm_screen": "the reverse triangle inequality on the L1 norm, a scalar a seat "
+            "in front of the reduced bound. A subset of the line above: every comparison the "
+            "screen settles the reduced bound would have settled too, so `close` and the "
+            "gallery are unchanged and only the arithmetic is",
             "seat_comparisons_measured": self.measured,
+            "seated_pictures_decoded": len(self._decoded),
+            "seated_pictures_decoded_is": "the seats something actually had to measure "
+            "against. A seat's full cloud is read on first need and not at seat time — see "
+            "rules.Twins.hold",
             "reduced_signatures_kept": len(self._mine),
             "reduced_signatures_made": self.reduced_made,
             "reduced_signature_hits": self.reduced_hits,
