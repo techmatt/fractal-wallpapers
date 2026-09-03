@@ -137,9 +137,25 @@ against **70.9%** below. The per-mode table off these rows is thin and argmax-sh
 and both caveats are in [`../batch_caveats.md`](../batch_caveats.md) under BAND-DRAW,
 which also records the six cards whose places were already labelled.
 
+**And the newest batch buys three populations at once, of which this store gets
+two and a half.** `judge_band_20260903`'s strange sheet is 177 cards — S2's whole
+120-card band across sixteen modes, 55 of S3's rare-colour cards and two `itinerary`
+strays tagged S1. All 177 route here on the built join and the ingest resolved 177
+of 177 with nothing withheld, **177 fresh and 0 revised**, moving this store from
+5,403 rows to **5,580** and from 2,276 locations to **2,453**. The two slices are
+ordered differently and must not be pooled: on S3 the judge ranks well inside its
+own top — Spearman **0.446** on the draw column and **0.491** at label geometry over
+60 — while S2's ordering is mostly its four `MODE_POLICY` weight-0 modes, falling
+from 0.240 (p=0.008) to **0.155 (p=0.11)** on the draw column once their twelve
+cards come out. S2 also cannot answer the 3-vs-4 crossing it was cut for: the
+mode-balanced rule took each mode's top, so 118 of its 120 sit above 0.5. The
+per-mode table is thin, top-of-band and argmax-free but score-conditioned; the
+per-colour-family reading is where the disagreement lives. All of it is in
+[`../batch_caveats.md`](../batch_caveats.md) under THREE-SLICES.
+
 **What a registration does not say is in
 [`../batch_caveats.md`](../batch_caveats.md)**: how a live population was actually
-assembled, and what a rate quoted off it without that is wrong about. Four of this
+assembled, and what a rate quoted off it without that is wrong about. Nine of this
 store's batches have an entry there — including `under_seen_modes`, whose page was
 swept from position 270 and whose last 235 rows are the head's own decode restated
 rather than a verdict.
