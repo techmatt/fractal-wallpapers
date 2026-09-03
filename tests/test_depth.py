@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import pytest
 
-from fractal_wallpapers.curation import depth, hunt
+from fractal_wallpapers.curation import colorize, depth, hunt, mine
 
 PARTITIONS = ("mandelbrot", "phoenix", "julia:mandelbrot")
 
@@ -1250,3 +1250,139 @@ def test_the_aimed_cells_are_cycled_over_places_and_not_blocked():
         "the cell changes many times down the arm; a blocked plan changes it "
         f"{len(THIN)} times and no more"
     )
+
+
+# --------------------------------------------------------------------------- #
+# A leg names a (mode, settings) pair.
+# --------------------------------------------------------------------------- #
+#: A map pool wide enough that four variants at a place cannot collide by
+#: exhaustion — the point being tested is that they draw APART, not that they
+#: run out together.
+MAPS = [f"map{at}" for at in range(20)]
+
+VARIANTS = [
+    "direct_trap_multiply",
+    "direct_trap_multiply@opacity=0.6",
+    "direct_trap_multiply@threshold=0.2",
+    "direct_trap_multiply@opacity=0.6,threshold=0.2",
+]
+
+
+def test_every_variant_at_a_place_draws_its_own_palettes():
+    """The failure this hook exists to avoid, pinned.
+
+    Four variants of one mode keyed on the bare name share one seeded sample: the
+    same map for all four at every place, and the leg is a comparison of one
+    picture against itself. Keyed on `(mode, settings)` each draws as its own
+    mode, which is what it is — a different recipe key, a different picture.
+    """
+    places = pools({"mandelbrot": 3})["mandelbrot"]
+    shots = depth.plan_cycled_modes(depth.FLAT, places, VARIANTS, MAPS, seed=5, width=len(VARIANTS))
+    by_place: dict = {}
+    for shot in shots:
+        by_place.setdefault(shot.location, []).append(shot)
+    assert by_place, "the draw made nothing"
+    for held in by_place.values():
+        assert len(held) == len(VARIANTS), "every place gets every variant"
+        assert {frozenset(shot.mode_params.items()) for shot in held} == {
+            frozenset(depth.entry_of(one)[1].items()) for one in VARIANTS
+        }
+        assert {shot.mode for shot in held} == {"direct_trap_multiply"}, (
+            "the mode stays a catalog name; mode_policy.check pins the roster against "
+            "the engine and would refuse an invented one"
+        )
+        assert len({shot.colormap for shot in held}) > 1, (
+            "the four variants drew one map between them, so the leg compares nothing"
+        )
+
+
+def test_a_bare_roster_draws_exactly_what_it_drew_before_settings_existed():
+    """The re-seeding this change must not do.
+
+    `spelled` is the bare mode wherever there are no settings, so the palette
+    seed, the `taken` key and the plan are byte for byte what they were. A hook
+    that moved them would have re-drawn every leg in this project's history into
+    a different plan under the same seed.
+    """
+    places = pools({"mandelbrot": 4})["mandelbrot"]
+    roster = ["smooth", "tia"]
+    shots = depth.plan_cycled_modes(depth.FLAT, places, roster, MAPS, seed=5, width=6)
+    assert shots and all(shot.mode_params == {} for shot in shots)
+    assert all("mode_params" not in shot.named() for shot in shots), (
+        "a bare draw's ledger row carries no empty settings block"
+    )
+    # The seed a bare mode draws under is the mode itself, unchanged.
+    assert hunt.seed_of(5, places[0]["key"], "smooth") == hunt.seed_of(
+        5, places[0]["key"], colorize.spelled("smooth", {})
+    )
+
+
+def test_a_variant_is_not_starved_of_the_maps_the_shipped_mode_already_spent():
+    """`taken` is per (mode, settings) too, and this is why it has to be.
+
+    A variant that inherited the shipped mode's spent maps would be refused most
+    of the pool at exactly the places that have been mined most — which are the
+    places a variant is aimed at. Every row written before settings existed spells
+    as its bare mode, so nothing already recorded moves.
+    """
+    place = pools({"mandelbrot": 1})["mandelbrot"]
+    key = place[0]["key"]
+    taken = {(key, "direct_trap_multiply"): set(MAPS[:-1])}
+    shipped = depth.plan_floor(place, ["direct_trap_multiply"], taken, MAPS, seed=3, width=4)
+    varied = depth.plan_floor(
+        place, ["direct_trap_multiply@opacity=0.6"], taken, MAPS, seed=3, width=4
+    )
+    assert len(shipped) == 1, "one map is free at the shipped mode"
+    assert len(varied) == 4, "every map is free at a pair nothing has been drawn at"
+    assert all(shot.mode_params == {"opacity": 0.6} for shot in varied)
+
+
+def test_the_ledger_row_carries_the_settings_and_only_when_there_are_some():
+    shot = depth.plan_floor(
+        pools({"mandelbrot": 1})["mandelbrot"],
+        ["direct_trap_multiply@opacity=0.4"],
+        {},
+        MAPS,
+        seed=3,
+        width=1,
+    )[0]
+    assert shot.named()["mode_params"] == {"opacity": 0.4}
+    assert shot.named()["mode"] == "direct_trap_multiply"
+
+
+def test_a_taken_map_table_spells_a_varied_row_apart_from_the_shipped_one():
+    """`mine.taken_maps` reads the store, so this is the read side of the same rule."""
+
+    def row(key, mode, params, colormap):
+        return {
+            "location": {"key": key},
+            "recipe": {"mode": mode, "mode_params": params, "colormap": colormap},
+        }
+
+    table = mine.taken_maps(
+        [
+            row("p", "direct_trap_multiply", {}, "viridis"),
+            row("p", "direct_trap_multiply", {"opacity": 0.6}, "magma"),
+        ]
+    )
+    assert table[("p", "direct_trap_multiply")] == {"viridis"}
+    assert table[("p", "direct_trap_multiply@opacity=0.6")] == {"magma"}
+
+
+def test_a_places_manifest_is_a_file_of_keys_and_says_so_when_it_is_not(tmp_path):
+    """A manifest and never a list of arguments: this population is hundreds long."""
+    path = tmp_path / "places.jsonl"
+    path.write_text(
+        '{"schema": 1, "key": "a"}\n\n{"schema": 1, "key": "b"}\n{"schema": 1, "key": "a"}\n',
+        encoding="utf-8",
+    )
+    assert depth.read_places(path) == ["a", "b"], "duplicates drop and file order holds"
+
+    (tmp_path / "wrong.jsonl").write_text('{"schema": 9, "key": "a"}\n', encoding="utf-8")
+    with pytest.raises(depth.DepthRefused):
+        depth.read_places(tmp_path / "wrong.jsonl")
+    with pytest.raises(depth.DepthRefused):
+        depth.read_places(tmp_path / "absent.jsonl")
+    (tmp_path / "empty.jsonl").write_text("", encoding="utf-8")
+    with pytest.raises(depth.DepthRefused):
+        depth.read_places(tmp_path / "empty.jsonl")

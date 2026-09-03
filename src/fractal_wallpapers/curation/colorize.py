@@ -166,6 +166,102 @@ def modes_drawn_for(plan, seed) -> list[str]:
     return random.Random((seed, plan.head, plan.key).__str__()).sample(roster, wanted)
 
 
+#: What separates a mode from its settings on a roster, and what separates the
+#: settings from each other. `@` and `,` because `:` is already a partition's
+#: separator (`julia:multibrot4`) and a roster entry is read beside partition
+#: names constantly.
+SETTINGS_MARK = "@"
+SETTINGS_JOIN = ","
+
+
+def roster_entry(text: str) -> tuple[str, dict]:
+    """One roster entry — `mode`, or `mode@opacity=0.6,threshold=0.2` — read apart.
+
+    **A leg names a `(mode, settings)` pair and the mode stays a catalog name.**
+    That is the whole discipline here. `renders.coloring_of` already writes a
+    direct trap's `opacity` and `threshold` into the coloring block, and
+    `recipes.KEYED` already holds `mode_params`, so a varied entry is a new recipe
+    key and nothing that exists moves: no re-key, no re-render of anything already
+    made, no human label voided. Inventing a *name* for the variant instead would
+    do the opposite — [`mode_policy.check`] refuses unless its table and the
+    engine's catalog describe the same roster, and a name the engine never heard
+    of fails that on the way in.
+
+    The settings are floats and are **not** validated against the mode here.
+    [`renders.coloring_of`] is the one owner of which settings a coloring takes,
+    and a second copy of that list is how the two come to disagree; a caller that
+    wants the refusal early asks it, which is what [`check_roster`] does.
+    """
+    text = str(text).strip()
+    if SETTINGS_MARK not in text:
+        return text, {}
+    mode, _, spelled = text.partition(SETTINGS_MARK)
+    settings: dict = {}
+    for part in spelled.split(SETTINGS_JOIN):
+        name, mark, value = part.partition("=")
+        if not mark or not name.strip():
+            raise ColorizeError(
+                f"{text!r}: {part!r} is not a setting. A roster entry is a mode, or a mode "
+                f"and its settings as 'mode{SETTINGS_MARK}name=value{SETTINGS_JOIN}name=value'."
+            )
+        name = name.strip()
+        if name in settings:
+            raise ColorizeError(f"{text!r} names {name!r} twice, and they disagree")
+        try:
+            settings[name] = float(value)
+        except ValueError as bad:
+            raise ColorizeError(f"{text!r}: {name}={value!r} is not a number") from bad
+    if not mode.strip():
+        raise ColorizeError(f"{text!r} carries settings and no mode to apply them to")
+    return mode.strip(), settings
+
+
+def spelled(mode: str, settings: dict | None = None) -> str:
+    """A `(mode, settings)` pair as one string. [`roster_entry`]'s inverse.
+
+    **The key a draw is taken per.** A palette draw keyed on the bare mode would
+    hand four variants of one mode a single seeded sample between them — the same
+    map for all four at a place, and worse, one shared `taken` set, so the second
+    variant would be refused every map the first spent. Keyed on this, each
+    `(mode, settings)` pair draws as its own mode, which is what it is: a
+    different recipe key, a different picture, a different row.
+
+    Sorted, so two spellings of one pair are one string.
+    """
+    settings = dict(settings or {})
+    if not settings:
+        return str(mode)
+    body = SETTINGS_JOIN.join(f"{name}={settings[name]:g}" for name in sorted(settings))
+    return f"{mode}{SETTINGS_MARK}{body}"
+
+
+def check_roster(entries: list, family: dict, log=print) -> list[tuple[str, dict]]:
+    """Every roster entry read apart and proved renderable, before anything renders.
+
+    Through [`renders.coloring_of`] on a stand-in row, which is the one owner of
+    what a coloring takes: an entry naming a setting its mode does not have, or a
+    mode the engine does not know, is refused here rather than three thousand
+    candidates into a leg. `family` is a real one from the population, because
+    `coloring_of` opens the itinerary address against the plane.
+    """
+    from fractal_wallpapers.models import renders
+
+    out: list[tuple[str, dict]] = []
+    for entry in entries:
+        mode, settings = roster_entry(entry)
+        try:
+            renders.coloring_of(
+                {"mode": mode, "mode_params": settings, "curve": CURVE, "family": family}
+            )
+        except renders.RenderCacheError as refusal:
+            raise ColorizeError(f"roster entry {entry!r}: {refusal}") from refusal
+        out.append((mode, settings))
+    varied = [spelled(mode, settings) for mode, settings in out if settings]
+    if varied:
+        log(f"[roster] {len(out)} entr(ies), {len(varied)} carrying settings: {varied}")
+    return out
+
+
 def kind_of(mode: str) -> str:
     """A mode's coloring kind — `field`, `composite` or `direct`."""
     from fractal_wallpapers.models import renders
@@ -460,13 +556,27 @@ def sweep_fields(directory: Path, keep: int = FIELDS_KEPT, protect: set | None =
 # --------------------------------------------------------------------------- #
 # The render, and the operator on it.
 # --------------------------------------------------------------------------- #
-def render_row(row: dict, mode: str, colormap: str, cyclic: set[str], render: dict | None = None):
-    """One candidate as the render-cache row its picture is made from."""
+def render_row(
+    row: dict,
+    mode: str,
+    colormap: str,
+    cyclic: set[str],
+    render: dict | None = None,
+    mode_params: dict | None = None,
+):
+    """One candidate as the render-cache row its picture is made from.
+
+    `mode_params` is what a leg naming a `(mode, settings)` pair on its roster
+    carries down to here — see [`roster_entry`]. It lands in the coloring block
+    through `renders.coloring_of`, so it is in the recipe key, in the job name and
+    on the ledger row's own `recipe`, which is what makes a varied candidate a new
+    picture rather than an overwrite of the shipped one.
+    """
     return {
         "family": row["family"],
         "viewport": row["viewport"],
         "mode": mode,
-        "mode_params": {},
+        "mode_params": dict(mode_params or {}),
         "curve": CURVE,
         "colormap": colormap,
         "recipe": _plain_recipe(colormap not in cyclic),
@@ -506,19 +616,33 @@ def tick() -> float:
 
 
 def _shared_field(
-    row: dict, mode: str, render_geometry: dict | None, fields: Path | None
+    row: dict,
+    mode: str,
+    render_geometry: dict | None,
+    fields: Path | None,
+    mode_params: dict | None = None,
 ) -> Path | None:
     """The dumped field this candidate can be a recolour of, or `None`.
 
-    `None` twice over, for two reasons and neither of them a caller's: **no field
-    cache was offered** — a one-off picture at a seat has no second palette to
-    amortise a dump over — or **this coloring has no single scalar field**, which
-    is the engine's word and covers the composites, the modulate and the direct
-    traps. A dump the engine refuses costs nothing but the crossing, because it
-    refuses before it iterates; the refusal is remembered against the mode anyway,
-    so a mine that draws `threads` four hundred times pays it once.
+    `None` three times over, and none of them a caller's: **no field cache was
+    offered** — a one-off picture at a seat has no second palette to amortise a
+    dump over — or **this coloring has no single scalar field**, which is the
+    engine's word and covers the composites, the modulate and the direct traps, or
+    **this candidate carries mode settings**. A dump the engine refuses costs
+    nothing but the crossing, because it refuses before it iterates; the refusal is
+    remembered against the mode anyway, so a mine that draws `threads` four hundred
+    times pays it once.
+
+    The third is the one worth stating. `renders.FIELD_IDENTITY` holds
+    `mode_params`, so a field's name is *supposed* to depend on the settings — but
+    [`field_row`] pins them to `{}` because nothing had ever varied them, and a
+    varied candidate served out of that cache would be a recolour of the shipped
+    mode's field wearing the variant's name. That is thirty-two wrong pictures per
+    place, which is exactly the failure `field_job_name` refuses at. So a candidate
+    with settings takes the render path, which is where every direct trap already
+    is: the modes this door was opened for cannot dump anyway.
     """
-    if fields is None or not shareable(mode):
+    if fields is None or not shareable(mode) or dict(mode_params or {}):
         return None
     try:
         return field_of(row, Path(fields), mode=mode, render_geometry=render_geometry)
@@ -541,6 +665,7 @@ def render(
     fields: Path | None = None,
     meter: dict | None = None,
     reported: dict | None = None,
+    mode_params: dict | None = None,
 ) -> tuple[Path, dict | None]:
     """Render one candidate and level it. `(picture, stamp)`; the stamp may be `None`.
 
@@ -562,6 +687,13 @@ def render(
     modulate and a direct trap have no single scalar field behind them, the engine
     refuses to dump one, and those take the render path exactly as they did. A
     caller asks for a candidate; [`_shared_field`] decides, once per mode.
+
+    `mode_params` is the mode's own settings, where a leg named a `(mode,
+    settings)` pair on its roster ([`roster_entry`]). It reaches the coloring block
+    through [`render_row`], so it is in the recipe key and in the job name: a
+    varied candidate is a **new** picture beside the shipped one and never an
+    overwrite of it. It also takes the render path unconditionally — see
+    [`_shared_field`].
 
     The two paths are held to producing the *same bytes* — not a similar picture,
     the same file — by `test_a_recolour_is_the_render_byte_for_byte`, because a
@@ -599,7 +731,7 @@ def render(
 
     output = Path(output)
     scratch = writing_path(output)
-    recipe = render_row(row, mode, colormap, cyclic, render_geometry)
+    recipe = render_row(row, mode, colormap, cyclic, render_geometry, mode_params)
     spec = renders.spec_of(recipe, scratch)
     mirror = bool(recipe["recipe"]["mirror"])
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -609,7 +741,7 @@ def render(
         ticks[stage] = ticks.get(stage, 0.0) + (tick() - since)
 
     at = tick()
-    field = _shared_field(row, mode, render_geometry, fields)
+    field = _shared_field(row, mode, render_geometry, fields, mode_params)
     spent("dump", at)
 
     def paint(stage: str, colormap_dir: Path | None = None) -> None:

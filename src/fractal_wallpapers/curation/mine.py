@@ -54,6 +54,7 @@ import random
 import statistics
 import time
 from dataclasses import dataclass
+from dataclasses import field as dataclass_field
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -191,16 +192,27 @@ def best_by_location(rows: list, scores: dict) -> dict:
 
 
 def taken_maps(rows: list) -> dict:
-    """`{(location, mode): {colormaps already rendered there}}`.
+    """`{(location, mode with its settings): {colormaps already rendered there}}`.
 
     What stops a DEEPEN draw offering a place a map it already carries: the
     recipe key would collide, the loop would skip it, and the arm would report a
     k it never actually reached.
+
+    **The mode half is [`colorize.spelled`] and not the bare mode**, so a mode
+    drawn under settings has its own set. That is the same distinction the recipe
+    key already makes — `mode_params` is in `recipes.KEYED` — and getting it wrong
+    goes the expensive way: a `direct_trap_multiply@opacity=0.6` sharing the
+    shipped mode's set would be refused every map the shipped one had ever spent,
+    at exactly the places that hold the most of them. Every row written before
+    anything carried settings spells as its bare mode, so no existing key moves.
     """
+    from fractal_wallpapers.curation import colorize
+
     out: dict = {}
     for row in rows:
         recipe = row.get("recipe") or {}
-        key = (str((row.get("location") or {})["key"]), str(recipe.get("mode")))
+        mode = colorize.spelled(str(recipe.get("mode")), recipe.get("mode_params"))
+        key = (str((row.get("location") or {})["key"]), mode)
         out.setdefault(key, set()).add(str(recipe.get("colormap")))
     return out
 
@@ -317,6 +329,10 @@ class Unit:
     #: stratifier asked for. A prior about the draw and never a claim about the
     #: picture, whose colour is read off its own render.
     band: str
+    #: The mode's own settings — [`hunt.Try.mode_params`], same name and same
+    #: reason: these three intentions are one duck type and [`hunt.Maker`] reads
+    #: whichever it is handed. Empty for every arm this module draws.
+    mode_params: dict = dataclass_field(default_factory=dict)
 
     def named(self) -> dict:
         """This intention as the ledger row carries it.
@@ -329,13 +345,16 @@ class Unit:
         A row that does not say which candidate at its location it was cannot
         be corrected at all.
         """
-        return {
+        out = {
             "leg": self.arm,
             "mode": self.mode,
             "colormap": self.colormap,
             "band": self.band,
             "k": self.k,
         }
+        if self.mode_params:
+            out["mode_params"] = dict(self.mode_params)
+        return out
 
 
 def plan_deepen(places: list, taken: dict, maps: list, seed: int, k: int, band: str) -> list:

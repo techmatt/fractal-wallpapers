@@ -1468,3 +1468,66 @@ def test_a_rescore_resumes_off_the_chunk_file_it_left_behind(isolated, monkeypat
 
     assert record["read"] == 1
     assert candidate_ledger.scores_by_recipe(artifact="new")["a"]["p_ge4"] == 0.7
+
+
+def test_the_prune_s_own_stub_carries_the_mode_s_settings(tmp_path):
+    """The 2026-09-02 incident, as the two lines that would have caught it.
+
+    `prune` does not hand `retention.decide` the ledger rows — it hands it stubs
+    built from a streamed metadata pass, and that stub carried `mode` alone. So
+    `_pair_of` could not see `mode_params` however carefully it read for them, and
+    five colorings at one place were one pair of three seats: **188 of a 308-row
+    variant sweep were deleted with their pictures in the same transaction that
+    admitted them.** Pinned at the seam rather than end to end, because the seam
+    is where the fact was dropped.
+    """
+    from fractal_wallpapers.curation import retention
+    from fractal_wallpapers.labeling import finished
+
+    path = tmp_path / "rows.jsonl"
+    settings = [{}, {"opacity": 0.6}, {"opacity": 0.6, "threshold": 0.2}]
+    with path.open("w", encoding="utf-8", newline="\n") as handle:
+        for at, params in enumerate(settings):
+            handle.write(
+                json.dumps(
+                    {
+                        "schema": 1,
+                        "key": f"k{at}",
+                        "location": {"key": "one_place"},
+                        "recipe": {
+                            "mode": "direct_trap_multiply",
+                            "mode_params": params,
+                            "family": {"kind": "julia", "degree": 4, "c": ["-0.8", "0.07"]},
+                            "viewport": {
+                                "center_re": "0.1",
+                                "center_im": "0.2",
+                                "width": "0.5",
+                            },
+                            "curve": "linear",
+                            "colormap": "viridis",
+                            "palette": finished.recipe(),
+                        },
+                        "picture": f"p{at}.jpg",
+                    }
+                )
+                + "\n"
+            )
+
+    meta = candidate_ledger._prune_meta(path, log=lambda *_: None)
+    assert [held["settings"] for held in meta] == settings
+    stubs = [
+        {
+            "key": held["key"],
+            "location": {"key": held["place"]},
+            "recipe": {"mode": held["mode"], "mode_params": held["settings"]},
+            "picture": held["picture"],
+        }
+        for held in meta
+    ]
+    assert len({retention._pair_of(stub) for stub in stubs}) == len(settings), (
+        "three colorings at one place are three pairs; as one pair the rank keeps "
+        "the top three of them and the sweep is deleted as it lands"
+    )
+    # And the bare mode is still what the rank key's fitted population sees: a
+    # variant is ranked as what it is a variant OF.
+    assert {held["mode"] for held in meta} == {"direct_trap_multiply"}

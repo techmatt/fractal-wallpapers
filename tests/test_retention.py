@@ -310,3 +310,39 @@ def test_the_policy_keeps_every_human_labeled_row_on_the_real_store(tracked_ledg
         "every labeled row is already inside the rank, so this cannot tell whether the "
         "protection is applied at all"
     )
+
+
+def test_a_mode_under_its_own_settings_is_its_own_pair():
+    """Otherwise the prune deletes a variant sweep in the transaction that admits it.
+
+    `mode_params` is keyed in the recipe, so `direct_trap_multiply@opacity=0.6` is
+    a different picture in exactly the sense `direct_trap_screen` is. Sharing one
+    pair's three seats with the shipped mode is not neutral: the rank key ranks by
+    what the judge thinks, and on this mode the judge rewards the whitewash the
+    settings exist to fix, so the shipped rows win and the tinted ones go.
+    """
+
+    def row(mode, params):
+        return {"location": {"key": "p"}, "recipe": {"mode": mode, "mode_params": params}}
+
+    pairs = {
+        retention._pair_of(row("direct_trap_multiply", {})),
+        retention._pair_of(row("direct_trap_multiply", {"opacity": 0.6})),
+        retention._pair_of(row("direct_trap_multiply", {"threshold": 0.2})),
+        retention._pair_of(row("direct_trap_multiply", {"opacity": 0.6, "threshold": 0.2})),
+    }
+    assert len(pairs) == 4, "five colorings at a place are not one pair"
+
+
+def test_a_row_carrying_no_settings_keeps_the_pair_it_has_always_had():
+    """The whole store predates settings, so re-grouping any of it would be a
+    silent re-prune of two hundred thousand rows. `spelled` is the bare mode
+    wherever there are none, and this is that promise as an assertion."""
+    for absent in ({}, None):
+        assert retention._pair_of(
+            {"location": {"key": "p"}, "recipe": {"mode": "smooth", "mode_params": absent}}
+        ) == ("p", "smooth")
+    assert retention._pair_of({"location": {"key": "p"}, "recipe": {"mode": "smooth"}}) == (
+        "p",
+        "smooth",
+    )

@@ -310,6 +310,68 @@ byte" is load-bearing for the candidate ledger rather than only for exploration.
 `tests/test_modes.py` pins all four curves, each held to *moving* the picture so
 the test cannot pass by testing nothing.
 
+## The direct traps: a blend from white is not a screen upside down
+
+Four production modes make no field at all. `direct_trap::Painter::trace` watches
+the orbit and composites a gradient sample into the pixel at **every** near miss,
+so a pixel is the stack of every approach the orbit made, in order. That has one
+consequence the module used to state backwards, and it cost this project a whole
+mode's worth of pale pictures before anybody measured it.
+
+`direct_trap_screen` starts from black and screens; `direct_trap_multiply` starts
+from white and multiplies. Black absorbs a multiply, so the mode that multiplies
+*has* to start from white — but the two constructions are symmetric **in linear
+light and nowhere else**. For a neutral, Oklab `L = v^(1/3)`, so `dL/dv` is 0.333
+at white and 8.33 at `L = 0.2`. A multiply from white can lose at most
+`1 - opacity*(1 - sample)` of its ground per hit: 9.3 hits to reach `L = 0.5` at
+the impossible best case of alpha 0.20 and sample 0, and about 29 at a typical
+alpha 0.10 and sample 0.30. A screen from black clears `L = 0.2` in half a hit.
+
+Measured on the two modes' clearing candidates — near-white being the share of the
+frame at `L >= 0.90` and chroma `<= 0.06`:
+
+| mode | rows | in-mask chroma p50 | near-white p50 / p90 / max |
+|---|--:|--:|--:|
+| `direct_trap_multiply` | 138 | 0.011 | **0.434 / 0.708 / 0.950** |
+| `direct_trap_screen` | 134 | 0.046 | 0.005 / 0.061 / 0.360 |
+| `direct_trap_lines` | 82 | 0.045 | 0.084 / 0.456 / 0.924 |
+| `direct_trap_ring` | 29 | 0.047 | 0.053 / 0.358 / 0.555 |
+
+A matched test settles that it is the blend and not anything around it: same
+`Shape::Cross`, same threshold, same opacity, same place and same map, so the hit
+set and every per-hit alpha are identical and only `merge` and `start_color`
+differ. Multiply moves the frame **further** in linear light (0.0897 against
+0.0114 on one pair) and 7-25x **less** in Oklab (0.032 against 0.215). It is not
+autolevel — `applies_to` answers only for `field` and `composite`, and every one
+of those 138 rows carries `autolevel = null`. It is not the palette fold, which
+runs the other way: forced onto one location, a plain map is *whiter* than the
+same map mirrored, because folding halves how far up the ramp a key reaches. And
+it is not the colormap: Spearman(near-white, the map's mean spent Oklab L) is
+0.101, and restricting to the 143 darkest of 901 maps moves the median 0.434 to
+about 0.418. `direct_trap_multiply` already carries twice `direct_trap_screen`'s
+threshold and 1.33x its opacity, and it is still the pale one.
+
+**The fix is a mode-param variant, not an engine change.** `renders.coloring_of`
+writes a row's `opacity` and `threshold` into the coloring block, so a varied row
+is a new recipe key: nothing re-keys, no cached picture changes underneath its
+name, and no human label is voided. Editing the constants at `mode.rs` instead
+re-keys all 4,733 `direct_trap_multiply` rows the ledger holds, voids their
+sidecar scores, forces a full re-render — a direct trap cannot dump, so a recolour
+is a render — and invalidates 406 of the 5,110 human verdicts in the strange-render
+store, because they were cast on pictures that would no longer exist.
+
+**And an engine-side pixel change here used to be invisible twice over.** The
+recipe key digests the catalog block, which carries `shape`, `trap_radius`,
+`threshold`, `opacity`, `merge`, `start_color` and `transform` — and no
+arithmetic. So a whole-frame normalization, a gamma before the multiply, or a
+second clamp beside `SCREEN_CROSS_OPACITY_CAP` would change every direct-trap
+picture in the project while every file name held. The engine fingerprint did not
+catch it either: its probe set drew six field-and-composite modes and no direct
+trap. `engine_fingerprint.TRAP_PROBES` closes that half — one probe per trap,
+digested into `coverage()` rather than into the stamp, so the sample widens
+without restamping the views already on disk. What is still unguarded is the
+candidate pool itself, whose rows carry no engine at all.
+
 ## The colormap: stops on disk, a folded table in the engine
 
 A file in `data/palettes` is **control points**, never a gradient, and it ships at

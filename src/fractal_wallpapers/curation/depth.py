@@ -53,6 +53,7 @@ import random
 import statistics
 import time
 from dataclasses import dataclass
+from dataclasses import field as dataclass_field
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -348,6 +349,11 @@ class Shot:
     #: about the map, never a claim about the picture, whose colour is read off
     #: its own render like every other candidate's.
     cell: str | None = None
+    #: The mode's own settings, where this leg's roster named a `(mode, settings)`
+    #: pair — [`colorize.roster_entry`]. Empty where it named a bare mode, which is
+    #: every entry until somebody passes one. [`hunt.Try.mode_params`]'s member,
+    #: same name and same reason.
+    mode_params: dict = dataclass_field(default_factory=dict)
 
     def named(self) -> dict:
         """This intention as the ledger row carries it.
@@ -369,6 +375,8 @@ class Shot:
         }
         if self.cell is not None:
             out["drawn_for"] = self.cell
+        if self.mode_params:
+            out["mode_params"] = dict(self.mode_params)
         return out
 
 
@@ -648,22 +656,30 @@ def plan_floor(places: list, modes: list, taken: dict, maps: list, seed: int, wi
     a run cut short by the clock should have spent itself evenly over the modes
     it was sent to serve, not filled the first two of them.
     """
+    from fractal_wallpapers.curation import colorize
+
     out: list = []
-    modes = list(modes)
+    modes = [entry_of(one) for one in modes]
     if not modes:
         return out
     for row in places:
         key = str(row["key"])
         per_mode: dict = {}
         for at in range(int(width) * len(modes)):
-            mode = modes[at % len(modes)]
-            if mode not in per_mode:
-                spent = taken.get((key, mode), set())
+            mode, settings = modes[at % len(modes)]
+            # Per (mode, settings) throughout — the draw AND the `taken` lookup.
+            # See `plan_cycled_modes` for the draw and `mine.taken_maps` for the
+            # store: a variant that inherited the shipped mode's spent maps would
+            # be starved worst at the places that have been mined most, which are
+            # exactly the places a variant is aimed at.
+            entry = colorize.spelled(mode, settings)
+            if entry not in per_mode:
+                spent = taken.get((key, entry), set())
                 free = [name for name in maps if name not in spent]
-                pick = random.Random(hunt.seed_of(seed, key, mode))
-                per_mode[mode] = pick.sample(free, min(int(width), len(free)))
+                pick = random.Random(hunt.seed_of(seed, key, entry))
+                per_mode[entry] = pick.sample(free, min(int(width), len(free)))
             turn = at // len(modes)
-            if turn >= len(per_mode[mode]):
+            if turn >= len(per_mode[entry]):
                 continue
             out.append(
                 Shot(
@@ -671,7 +687,8 @@ def plan_floor(places: list, modes: list, taken: dict, maps: list, seed: int, wi
                     location=key,
                     partition=str(row["partition"]),
                     mode=str(mode),
-                    colormap=str(per_mode[mode][turn]),
+                    mode_params=settings,
+                    colormap=str(per_mode[entry][turn]),
                     k=at + 1,
                     band="proven",
                     rank=None,
@@ -848,6 +865,61 @@ def _plan_aimed(places: list, cells: list, roster: list, maps: list, seed: int, 
     return out
 
 
+#: The schema a places manifest carries.
+PLACES_SCHEMA = 1
+
+
+def read_places(path) -> list[str]:
+    """The location keys a **places manifest** names, in file order.
+
+    A JSONL like every other record here — one object a line, an integer `schema`,
+    and a `key` holding the location key exactly as `supply.location.text_of_row`
+    spells it. A **file** and never a list of arguments: this population is
+    hundreds of places long and a Windows command line overflows a long way before
+    that does.
+
+    Duplicates are dropped and the first occurrence keeps its place, so a manifest
+    concatenated out of two overlapping reads names each place once.
+    """
+    path = Path(path)
+    if not path.is_file():
+        raise DepthRefused(f"{path} is not a file, so there is no named population to draw.")
+    out: list[str] = []
+    seen: set[str] = set()
+    for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        if row.get("schema") != PLACES_SCHEMA:
+            raise DepthRefused(
+                f"{path}:{number}: schema {row.get('schema')!r}, expected {PLACES_SCHEMA}"
+            )
+        key = str(row["key"])
+        if key not in seen:
+            seen.add(key)
+            out.append(key)
+    if not out:
+        raise DepthRefused(f"{path} names no place.")
+    return out
+
+
+def entry_of(one) -> tuple[str, dict]:
+    """One roster element as `(mode, settings)`, whichever way it was spelled.
+
+    A roster element is a string — `smooth`, or `direct_trap_multiply@opacity=0.6`
+    — or an already-read pair. Both, because [`build_plan`] reads the roster once
+    and the draws below are also called directly by tests and by `_plan_aimed`
+    with plain mode names; a draw that accepted only one of the two would make
+    "which end parses the roster" a thing every caller has to remember.
+    """
+    from fractal_wallpapers.curation import colorize
+
+    if isinstance(one, str):
+        return colorize.roster_entry(one)
+    mode, settings = one
+    return str(mode), dict(settings or {})
+
+
 def plan_cycled_modes(
     arm: str, places: list, roster: list, maps: list, seed: int, width: int, draw=None, cell=None
 ):
@@ -872,8 +944,10 @@ def plan_cycled_modes(
     is the same draw, which is what makes an aimed arm and a flat arm comparable
     at all.
     """
+    from fractal_wallpapers.curation import colorize
+
     out: list = []
-    roster = list(roster)
+    roster = [entry_of(one) for one in roster]
     draw = flat_maps if draw is None else draw
     for row in places:
         key = str(row["key"])
@@ -881,10 +955,16 @@ def plan_cycled_modes(
         offset = rng.randrange(len(roster)) if roster else 0
         per_mode: dict = {}
         for at in range(int(width)):
-            mode = roster[(offset + at) % len(roster)]
-            if mode not in per_mode:
-                per_mode[mode] = draw(hunt.seed_of(seed, key, mode), mode, int(width), maps)
-            spent = per_mode[mode]
+            mode, settings = roster[(offset + at) % len(roster)]
+            # **The palette draw is per (mode, settings), not per mode.** Four
+            # variants of one mode keyed on the bare name would share a single
+            # seeded sample — the same map for all four at every place, which is
+            # a comparison of one picture against itself. `spelled` is the bare
+            # mode wherever there are no settings, so no draw already taken moves.
+            entry = colorize.spelled(mode, settings)
+            if entry not in per_mode:
+                per_mode[entry] = draw(hunt.seed_of(seed, key, entry), mode, int(width), maps)
+            spent = per_mode[entry]
             turn = at // len(roster)
             if turn >= len(spent):
                 continue
@@ -894,6 +974,7 @@ def plan_cycled_modes(
                     location=key,
                     partition=str(row["partition"]),
                     mode=str(mode),
+                    mode_params=settings,
                     colormap=str(spent[turn]),
                     k=at + 1,
                     band=f"band{int(row.get('rank_band', -1)):02d}",
@@ -942,6 +1023,7 @@ def build_plan(
     centered: str = CENTERED_ANY,
     floor_modes: list | None = None,
     floor_untried: list | None = None,
+    floor_places: list | None = None,
     floor_seats: int = 10,
     floor_width: int = FLOOR_WIDTH,
     workers: int = 1,
@@ -972,11 +1054,22 @@ def build_plan(
             "no shareable mode survives curation.mode_policy, so a depth run has "
             "nothing it can afford to render forty of."
         )
+    # **The roster is read apart once, here, and proved renderable before anything
+    # renders.** An entry may name a mode's own settings
+    # (`direct_trap_multiply@opacity=0.6`), which is a different recipe key and so
+    # a different picture beside the shipped one — see [`colorize.roster_entry`].
+    # `check_roster` puts each entry through `renders.coloring_of`, so a setting a
+    # mode does not take is refused now rather than three thousand candidates in.
+    entries = colorize.check_roster(roster, next(iter(world["by_key"].values()))["family"], log=log)
+    roster = [colorize.spelled(mode, settings) for mode, settings in entries]
+    named = [mode for mode, _settings in entries]
     # The near band holds an incumbent's mode and the two breadth draws cycle a
     # roster, so they do not have to be the same set. [`BREADTH_DEMOTED`] is the
     # difference: a mode that pays at depth and not at width stays eligible as an
-    # incumbent and stops being cycled at forty fresh places.
-    breadth = [mode for mode in roster if mode not in set(breadth_demoted)]
+    # incumbent and stops being cycled at forty fresh places. Demotion names a
+    # **mode**, so it takes every variant of that mode with it — a mode not worth
+    # forty fresh places is not worth them under other settings either.
+    breadth = [one for one in entries if one[0] not in set(breadth_demoted)]
     if not breadth:
         raise DepthRefused(
             f"every mode on the roster {sorted(roster)} is demoted out of breadth by "
@@ -1025,7 +1118,14 @@ def build_plan(
     want = {arm: int(planned * float(share)) for arm, share in shares.items()}
     short = deficient_modes(world["rows"], world["ledger_scores"], floor=int(floor_seats))
     wanted_floor_modes = list(floor_modes if floor_modes is not None else short)
-    best_field = best_field_by_location(world["rows"], world["ledger_scores"], set(roster))
+    # The floor draw escapes the roster, so its modes are read apart and proved
+    # separately — and they take settings too, which is what makes this the arm a
+    # `(mode, settings)` leg over named, already-proven places runs on.
+    if wanted_floor_modes and shares.get(FLOOR):
+        colorize.check_roster(
+            wanted_floor_modes, next(iter(world["by_key"].values()))["family"], log=log
+        )
+    best_field = best_field_by_location(world["rows"], world["ledger_scores"], set(named))
     # A draw given no share is not drawn at all. `weave` would sort a zero-share
     # draw's candidates to the end where nothing would ever start them, but the
     # plan would still say it holds them and the record would report locations
@@ -1095,6 +1195,29 @@ def build_plan(
     # read over every mode, so an untried place still has to have proved itself
     # somewhere before it is spent on: what is being varied is the mode.
     floor_pool = world["best"]
+    # **A named population, and the one place a leg says WHICH places.** Every
+    # other draw here picks its own places off a rank, a band or a bar; this takes
+    # the list. It narrows the floor draw and nothing else, because the floor draw
+    # is already the one over opened, proven locations — which is what a list of
+    # places somebody read off the ledger always is. A key the pool does not hold
+    # is named rather than dropped in silence: it means the place was never opened,
+    # or is under the junk floor now, and a leg that quietly planned fewer places
+    # than it was given would report a rate over a population nobody chose.
+    if floor_places:
+        wanted = {str(one) for one in floor_places}
+        absent = wanted - set(floor_pool)
+        floor_pool = {key: held for key, held in floor_pool.items() if key in wanted}
+        log(
+            f"[depth] --floor-places: {len(floor_pool):,} of {len(wanted):,} named place(s) "
+            f"are opened and drawable"
+        )
+        if absent:
+            log(f"[depth] {len(absent):,} named place(s) are not in the opened pool: skipped")
+        if not floor_pool:
+            raise DepthRefused(
+                f"none of the {len(wanted):,} place(s) in --floor-places is an opened, "
+                f"drawable location, so the floor draw has nothing to stand on."
+            )
     untried_pool = None
     if floor_untried:
         untried_pool = without_mode_attempt(world["rows"], list(floor_untried))
@@ -1157,9 +1280,10 @@ def build_plan(
         "drawn_from": {name: len(held) for name, held in sorted(pools.items())},
         "partition_weights": dict(partition_weights or {}),
         "floor_untried": list(floor_untried or []),
+        "floor_places_named": len(floor_places or []),
         "floor_population": len(floor_pool),
         "roster": roster,
-        "breadth_roster": breadth,
+        "breadth_roster": [colorize.spelled(mode, settings) for mode, settings in breadth],
         "mode_policy": mode_policy.record(),
         "breadth_demoted": list(breadth_demoted),
         "maps_in_pool": len(maps),
@@ -1383,6 +1507,7 @@ def run(
     centered: str = CENTERED_ANY,
     floor_modes: list | None = None,
     floor_untried: list | None = None,
+    floor_places: list | None = None,
     floor_width: int = FLOOR_WIDTH,
     floor_seats: int = 10,
     workers: int = DEFAULT_WORKERS,
@@ -1444,6 +1569,7 @@ def run(
         centered=centered,
         floor_modes=floor_modes,
         floor_untried=floor_untried,
+        floor_places=floor_places,
         floor_width=floor_width,
         floor_seats=floor_seats,
         workers=workers,
