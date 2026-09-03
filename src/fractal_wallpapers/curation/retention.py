@@ -98,10 +98,37 @@ class RetentionError(RuntimeError):
 
 
 def _pair_of(row: dict) -> tuple:
-    """`(location key, mode)` — the unit the ranking and the cursor are per."""
+    """`(location key, mode with its settings)` — the unit the ranking and the cursor are per.
+
+    **The mode half is [`colorize.spelled`], so a mode drawn under its own
+    settings is its own pair.** `mode_params` is a keyed member of the recipe —
+    `direct_trap_multiply@opacity=0.6` is a different key, a different file and a
+    different picture — so it is a different coloring in exactly the sense
+    `direct_trap_screen` is, and nobody would ask screen and multiply to compete
+    for one pair's three seats.
+
+    Sharing a pair is not neutral here, it is directional, and it points the wrong
+    way. The rank key ranks within a pair by what the judge thinks, and on
+    `direct_trap_multiply` that judge rewards precisely the fault a setting exists
+    to fix: Spearman(in-mask chroma, `P(>=4)`) is **-0.269** over its clearing
+    rows. A shared pair would therefore keep the whitest three of five at every
+    place — deleting a variant sweep in the same transaction that admitted it, and
+    hardest at the places that have been mined most, which are the places a sweep
+    is aimed at.
+
+    **No pair that exists moves.** Every row this store has ever held carries no
+    settings and [`colorize.spelled`] is the bare mode wherever there are none, so
+    this re-groups nothing already written. What it costs is bounded and is paid
+    only where somebody varies a mode deliberately: such a place keeps
+    [`candidate_ledger.RETAIN_PER_PAIR`] rows per **coloring** rather than three
+    across all of them.
+    """
+    from fractal_wallpapers.curation import colorize
+
+    recipe = row.get("recipe") or {}
     return (
         str((row.get("location") or {}).get("key")),
-        str((row.get("recipe") or {}).get("mode")),
+        colorize.spelled(str(recipe.get("mode")), recipe.get("mode_params")),
     )
 
 

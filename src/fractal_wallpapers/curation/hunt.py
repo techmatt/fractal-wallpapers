@@ -90,6 +90,7 @@ import json
 import random
 import time
 from dataclasses import dataclass
+from dataclasses import field as dataclass_field
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -629,16 +630,26 @@ class Try:
     #: but the ledger row is corrected on it downstream all the same — see
     #: [`mine.Unit.named`] — so it is stamped rather than inferred.
     k: int = 1
+    #: The mode's own settings, where the leg named a `(mode, settings)` pair on
+    #: its roster ([`colorize.roster_entry`]). Empty for every draw that names a
+    #: bare mode, which is every draw a hunt takes today. Read by
+    #: [`Maker.recipe_for`], which is why [`mine.Unit`] and [`depth.Shot`] carry
+    #: the same member under the same name: those three are one duck type and the
+    #: maker reads whichever it is handed.
+    mode_params: dict = dataclass_field(default_factory=dict)
 
     def named(self) -> dict:
         """This intention as the ledger row carries it."""
-        return {
+        out = {
             "leg": self.leg,
             "mode": self.mode,
             "colormap": self.colormap,
             "drawn_for": self.cell,
             "k": self.k,
         }
+        if self.mode_params:
+            out["mode_params"] = dict(self.mode_params)
+        return out
 
 
 def modes_for(key: str, count: int, seed: int, roster: tuple) -> list[str]:
@@ -976,6 +987,11 @@ class Maker:
         too. That is what makes *have we already made this picture* a question a
         hunt can ask before it spends the render, which is the whole reason
         [`curation.candidate_ledger`] exists.
+
+        `mode_params` comes off the intention rather than being pinned empty here,
+        which is the whole of what lets a leg name a `(mode, settings)` pair on its
+        roster. `recipes.KEYED` holds it, so a varied candidate takes its own key
+        and its own file and cannot overwrite the shipped mode's picture.
         """
         from fractal_wallpapers.curation import colorize
         from fractal_wallpapers.labeling import finished
@@ -987,7 +1003,7 @@ class Maker:
             maxiter=int(frame["maxiter"]),
             regime=recipes.CANDIDATE_REGIME,
             mode=plan.mode,
-            mode_params={},
+            mode_params=dict(plan.mode_params or {}),
             curve=colorize.CURVE,
             colormap=plan.colormap,
             palette=finished.recipe(mirror=plan.colormap not in self.cyclic),
@@ -1047,6 +1063,7 @@ class Maker:
             band=self.band,
             fields=self.fields,
             reported=reported,
+            mode_params=dict(plan.mode_params or {}),
         )
         verdict = colorize.score_picture(self.judge(), picture)
         reading = dominance.of_picture(picture)

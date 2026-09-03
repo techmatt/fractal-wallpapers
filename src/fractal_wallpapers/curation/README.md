@@ -2955,6 +2955,65 @@ fractal-wallpapers curate depth merge --name d1                             # fo
 fractal-wallpapers curate depth sheet --name d1                             # redraw the autopsy
 ```
 
+### A roster entry is a mode, or a mode with its own settings
+
+`--modes` and `--floor-modes` take `direct_trap_multiply@opacity=0.6,threshold=0.2`
+as readily as `smooth`. **The mode stays a catalog name and the settings ride
+beside it**, which is the whole discipline: `mode_policy.check` refuses unless its
+table and the engine's catalog describe the same roster, so inventing a *name* for
+a variant fails on the way in, while varying `mode_params` is something
+`renders.coloring_of` has always supported and `recipes.KEYED` has always keyed.
+
+So a varied entry is a **new recipe key and a new job name**. Nothing re-keys,
+nothing already rendered changes underneath its name, no sidecar score is voided
+and no human label is invalidated. Measured on a live row:
+`direct_trap_multiply` is key `0362d0cf894fb19e`; at `opacity=0.6` it is
+`5b6d50a57287c064`, at `threshold=0.2` it is `b9f922488ff5164f`, and at both it is
+`9fbabfc75e894f89`. The settings that are *not* overridden keep the catalogued
+value — the `opacity=0.6` variant still carries the shipped `threshold` of 0.1 —
+which is the difference between this and editing `engine/src/mode.rs`, where the
+same change re-keys every row the ledger holds in that mode and voids every label
+cast on one.
+
+Four things follow, and each of them is a place this was got wrong first:
+
+- **The palette draw is per `(mode, settings)`**, through `colorize.spelled`. Four
+  variants keyed on the bare mode share one seeded sample — the same map for all
+  four at every place — and the leg compares one picture against itself.
+- **`mine.taken_maps` is per `(mode, settings)`** for the mirror reason: a variant
+  inheriting the shipped mode's spent maps is refused most of the pool at exactly
+  the places that have been mined most, which are the places a variant is aimed at.
+- **A candidate carrying settings never takes the shared field.**
+  `colorize.field_row` pins `mode_params` to `{}`, so a dump is filed under the
+  bare mode's name; a varied candidate served out of that cache would be a
+  recolour of the shipped mode's field wearing the variant's name. It takes the
+  render path, where every direct trap already is.
+- **`colorize.spelled` is the bare mode wherever there are no settings**, so every
+  seed, every `taken` key and every plan this project has ever taken is unmoved.
+
+**Retention does not know about any of this, and that is a live hazard.**
+`retention._pair_of` is `(location, mode)` and `RETAIN_PER_PAIR` is 3, so five
+rows at one place — the shipped one and four variants — are one pair, and a prune
+keeps three of them by the shipped rank key. On `direct_trap_multiply` that
+ranking prefers the *whitest*: Spearman(in-mask chroma, `P(>=4)`) is **-0.269**
+over its clearing rows. So a prune taken before somebody labels a variant sweep
+deletes preferentially the rows the sweep was run to find. A labelled render is
+protected, so the window is between the merge and the sitting.
+
+### The floor draw is the one that takes a named population
+
+`--floor-places FILE` is a places **manifest** — a JSONL of `{"schema": 1, "key":
+...}` — and it is the only flag here that says *which* places. Every other draw
+picks its own off a rank, a band or a bar. It narrows the mode-floor draw alone,
+because that draw is already the one over opened, proven locations, and a list of
+places somebody read off the ledger is always exactly that. Keys the opened pool
+does not hold are counted and named rather than dropped in silence: a leg that
+quietly planned fewer places than it was handed would report a rate over a
+population nobody chose.
+
+A file and never arguments, on the standing rule — this population is hundreds of
+places long and a Windows command line overflows a long way before it does.
+
 **Field modes only, and every conclusion is conditional on that.** A composite at
 forty candidates is **212 s a location, measured** — one arm's worth of places would
 eat a ninety-minute budget — so the roster is `depth.field_modes()`: the shareable
@@ -3933,6 +3992,37 @@ median **0.805** with only 4 under 0.5. That audit's population is conditioned o
 already clearing and this one is a fresh draw, so the two do not contradict — but
 eleven candidates on one plane settle nothing about a mode that has 77 good ones
 elsewhere.
+
+| 1.500 | 4 `direct_trap_multiply` **variants**, known places | 3 | 4 | 09-02 | 308 cand / the 77 places holding a clearing dtm row | `dtm_known_pilot` |
+| 5.280 | the same 4 variants, breadth over never-opened | 3 | 4 | 09-02 | 1,362 cand / 2,403 s, 2,018 unstarted on the clock | `dtm_variants` |
+
+**Those two rows are the same roster over two populations, and they are 3.5x apart.**
+The pilot priced the 77 known places — `julia:*` and `multibrot*`, median maxiter about
+8k — and the leg it sized then spent most of its clock somewhere else entirely. Its own
+per-partition table says where:
+
+| partition | cand | s/cand mean | median | max | share of the leg's engine seconds |
+|---|--:|--:|--:|--:|--:|
+| `phoenix:classic` | 72 | **51.46** | 26.20 | 280.15 | **51.5%** |
+| `phoenix` | 72 | 12.01 | 2.91 | 87.59 | 12.0% |
+| `mandelbrot` | 80 | 5.11 | 3.16 | 33.35 | 5.7% |
+| `multibrot5` | 96 | 3.26 | 1.98 | 32.06 | 4.4% |
+| every `julia:*` | 742 | 1.18-2.70 | ~1.1 | 25.31 | 15.4% |
+
+**144 candidates of 1,362 — 10.6% — took 63.6% of the engine time**, and 72 of them took
+half of it on their own. `phoenix:classic` was opened into the candidate ledger for the
+first time on 2026-09-02 (`c8a82d6`), which priced its eleven-mode roster at 53.5 s a
+candidate against 3.155 on the parameter planes for exactly the reasons that apply here:
+its places carry 12k-22k maxiter and a direct trap has no field to dump. Those places are
+now in the **never-opened breadth pool**, so every breadth draw taken from this date
+forward inherits that tail whether or not it means to.
+
+Two rules follow, and the second is the one that cost a leg. **Pilot the population, not
+just the roster** — the standing caveat above says a rate is a joint fact about the roster,
+the width and the geometry, and the population belongs in that list ahead of most of them.
+And **a pilot over a named, already-opened population does not price a breadth arm at all**:
+the known places are selected and shallow, the never-opened pool is neither, and the two
+differ here by more than any roster change in this table.
 
 **The three 09-01 rows are one matched pilot** — `ranked_bands` at share 1.0, seed
 20260901, the never-opened drawable pool banded across the whole rank range, nothing

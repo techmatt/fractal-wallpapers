@@ -1578,7 +1578,7 @@ def hunt_block(named: dict | None) -> dict:
 def prune(keep: int = RETAIN_PER_PAIR, apply: bool = True, log=print) -> dict:
     """Bring the store back to the settled rule. **Rows and their pictures, together.**
 
-    Top-`keep` per (location, `recipe.mode`) ranked by the shipped
+    Top-`keep` per (location, `recipe.mode` **with its `mode_params`**) ranked by the shipped
     [`curation.rank_key`], through [`retention.decide`] rather than a second
     selector — the same body the article teaches the rule with, handed rank values
     instead of a raw `P(>=4)`. Five protections keep a row the rank let go: a seat
@@ -1642,7 +1642,7 @@ def prune(keep: int = RETAIN_PER_PAIR, apply: bool = True, log=print) -> dict:
         {
             "key": held["key"],
             "location": {"key": held["place"]},
-            "recipe": {"mode": held["mode"]},
+            "recipe": {"mode": held["mode"], "mode_params": held["settings"]},
             "picture": held["picture"],
         }
         for held in meta
@@ -1837,6 +1837,16 @@ def _prune_meta(path: Path, log=print) -> list[dict]:
                 "key": str(held["key"]),
                 "place": str((held.get("location") or {}).get("key")),
                 "mode": str((held.get("recipe") or {}).get("mode")),
+                # The mode's own settings travel too, and they travel APART from
+                # `mode` on purpose. `retention._pair_of` groups on the two
+                # together, because a mode under settings is its own coloring and
+                # its own recipe key; `_Pooled.mode` below stays the bare mode,
+                # because the rank key's fitted population is per raw mode and a
+                # variant is ranked as what it is a variant OF. Getting these the
+                # same way round cost 188 rows and their pictures on 2026-09-02:
+                # the stub handed to `decide` carried `mode` alone, so five
+                # colorings at a place were still one pair of three seats.
+                "settings": dict((held.get("recipe") or {}).get("mode_params") or {}),
                 "cells": tuple(colour.get("cells") or ()),
                 "rejected": bool(held.get("rejected")),
                 "picture": held.get("picture"),

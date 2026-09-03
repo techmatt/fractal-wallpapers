@@ -250,8 +250,16 @@ impl Painter {
         let bailout_sq = BAILOUT * BAILOUT;
         let (mut z, mut z_prev, c) = family.seed(pixel);
         // The background the samples land on. Black absorbs the multiplicative
-        // blends, which is why the mode that multiplies starts from white: dark
-        // lace on a light ground is the same construction upside down.
+        // blends, so the mode that multiplies has to start from white — but it is
+        // NOT the screened construction upside down, and reading it that way is
+        // how `direct_trap_multiply` came to be the whitewashed mode. The two are
+        // symmetric in linear light and nowhere else: for a neutral, Oklab
+        // `L = v^(1/3)`, so `dL/dv` is 0.333 at white and 8.33 at `L = 0.2`. A
+        // multiply from white loses at most `1 - opacity*(1 - sample)` of the
+        // ground per hit — about 29 hits to reach `L = 0.5` at a typical alpha
+        // 0.10 and sample 0.30 — where a screen from black clears `L = 0.2` in
+        // half a hit. That is why this mode carries twice the screened cross's
+        // threshold and 1.33x its opacity and still comes back the pale one.
         let mut color = self.start_color;
 
         for _ in 1..=maxiter {

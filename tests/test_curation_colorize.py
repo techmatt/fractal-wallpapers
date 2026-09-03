@@ -780,3 +780,149 @@ def test_the_palette_head_s_own_fields_are_not_swept(tmp_path) -> None:
     assert colorize.sweep_fields(directory, keep=1, protect=protect) == 3
     left = sorted(path.name for path in directory.glob("*.f32"))
     assert left == ["f0.f32", "f1.f32", "f5.f32"], left
+
+
+# --------------------------------------------------------------------------- #
+# A roster entry is a mode and its settings.
+# --------------------------------------------------------------------------- #
+JULIA = {"kind": "julia", "degree": 4, "c": ["-0.8000969197766781", "0.07666925698290561"]}
+
+
+def test_a_roster_entry_is_a_bare_mode_or_a_mode_with_its_settings() -> None:
+    """The spelling, and that it round-trips.
+
+    `@` and `,` rather than `:` because a roster entry is read beside partition
+    names — `julia:multibrot4` — constantly, and one separator for two things is
+    how a leg comes to be pointed at a partition it never meant.
+    """
+    assert colorize.roster_entry("smooth") == ("smooth", {})
+    assert colorize.roster_entry("direct_trap_multiply@opacity=0.6,threshold=0.2") == (
+        "direct_trap_multiply",
+        {"opacity": 0.6, "threshold": 0.2},
+    )
+    assert colorize.roster_entry(" direct_trap_multiply@ opacity =0.4 ") == (
+        "direct_trap_multiply",
+        {"opacity": 0.4},
+    )
+
+
+def test_a_bare_mode_spells_as_itself_so_no_draw_already_taken_moves() -> None:
+    """The property every seeded draw in the mining loop leans on.
+
+    `spelled` is the key a palette draw and `mine.taken_maps` are per, and both
+    used to be keyed on the bare mode. They still are wherever there are no
+    settings — which is every row this project has ever written — so the change
+    re-seeds nothing and re-keys nothing.
+    """
+    assert colorize.spelled("smooth") == "smooth"
+    assert colorize.spelled("smooth", {}) == "smooth"
+    assert colorize.spelled("smooth", None) == "smooth"
+    # Sorted, so one pair has one spelling however the caller wrote it.
+    assert colorize.spelled("direct_trap_multiply", {"threshold": 0.2, "opacity": 0.6}) == (
+        "direct_trap_multiply@opacity=0.6,threshold=0.2"
+    )
+    assert colorize.spelled(
+        "direct_trap_multiply", {"opacity": 0.6, "threshold": 0.2}
+    ) == colorize.spelled("direct_trap_multiply", {"threshold": 0.2, "opacity": 0.6})
+
+
+def test_the_settings_and_the_mode_round_trip_through_the_spelling() -> None:
+    for mode, settings in [
+        ("smooth", {}),
+        ("direct_trap_multiply", {"opacity": 0.6}),
+        ("direct_trap_multiply", {"opacity": 0.4, "threshold": 0.2}),
+    ]:
+        assert colorize.roster_entry(colorize.spelled(mode, settings)) == (mode, settings)
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "direct_trap_multiply@opacity",
+        "direct_trap_multiply@=0.6",
+        "direct_trap_multiply@opacity=wide",
+        "direct_trap_multiply@opacity=0.6,opacity=0.4",
+        "@opacity=0.6",
+    ],
+)
+def test_a_roster_entry_that_is_not_a_mode_and_its_settings_is_refused(text) -> None:
+    with pytest.raises(colorize.ColorizeError):
+        colorize.roster_entry(text)
+
+
+def test_a_setting_a_mode_does_not_take_is_refused_before_anything_renders() -> None:
+    """At plan time, through the one owner of what a coloring takes.
+
+    `renders.coloring_of` decides which settings a coloring has, and a second copy
+    of that list here is how the two come to disagree. The value of asking early is
+    the whole of it: a leg is three thousand candidates long, and a refusal on the
+    first one is a leg that has to be started again.
+    """
+    assert colorize.check_roster(
+        ["smooth", "direct_trap_multiply@opacity=0.6"], JULIA, log=_quiet
+    ) == [
+        ("smooth", {}),
+        ("direct_trap_multiply", {"opacity": 0.6}),
+    ]
+    for bad in ["direct_trap_multiply@wibble=0.6", "smooth@opacity=0.6", "nosuchmode"]:
+        with pytest.raises(colorize.ColorizeError):
+            colorize.check_roster([bad], JULIA, log=_quiet)
+
+
+def _quiet(*_args, **_kwargs) -> None:
+    """A log that says nothing, so a check under test does not print."""
+
+
+def test_a_render_row_carries_the_settings_into_the_coloring_block() -> None:
+    """Which is what makes a varied candidate a NEW picture rather than an overwrite.
+
+    `mode_params` is in `recipes.KEYED` and in `renders.SPEC_MEMBERS`, so it is in
+    the recipe key and in the job name. The shipped constants that were not
+    overridden survive — the variant moves `opacity` and keeps the catalogued
+    `threshold` — which is the difference between a mode-param variant and an edit
+    to the catalog.
+    """
+    row = {
+        "family": JULIA,
+        "viewport": {"center_re": "0", "center_im": "0", "width": "1"},
+        "maxiter": 4000,
+    }
+    plain = colorize.render_row(
+        row, "direct_trap_multiply", "twilight_shifted", {"twilight_shifted"}
+    )
+    varied = colorize.render_row(
+        row,
+        "direct_trap_multiply",
+        "twilight_shifted",
+        {"twilight_shifted"},
+        mode_params={"opacity": 0.6},
+    )
+    assert plain["mode_params"] == {}
+    assert varied["mode_params"] == {"opacity": 0.6}
+
+    from fractal_wallpapers.models import renders
+
+    assert renders.coloring_of(plain)["opacity"] == 0.2
+    assert renders.coloring_of(varied)["opacity"] == 0.6
+    assert renders.coloring_of(varied)["threshold"] == renders.coloring_of(plain)["threshold"]
+    assert renders.job_name(plain) != renders.job_name(varied)
+
+
+def test_a_candidate_carrying_settings_never_takes_the_shared_field(tmp_path) -> None:
+    """`field_row` pins `mode_params` to `{}`, so a shared field cannot serve one.
+
+    `renders.FIELD_IDENTITY` holds `mode_params` — a field's name is supposed to
+    depend on the settings — but nothing has ever varied them, so the dump is
+    written under the bare mode's name. A varied candidate served out of that
+    cache would be a recolour of the shipped mode's field wearing the variant's
+    name: the same failure `field_job_name` refuses at, arriving by a different
+    door. So it takes the render path, where every direct trap already is.
+    """
+    row = {
+        "family": JULIA,
+        "viewport": {"center_re": "0", "center_im": "0", "width": "1"},
+        "maxiter": 4000,
+    }
+    assert colorize._shared_field(row, "smooth", None, None) is None, "no cache offered"
+    assert colorize._shared_field(row, "smooth", None, tmp_path, {"opacity": 0.6}) is None
+    assert colorize._shared_field(row, "direct_trap_multiply", None, tmp_path) is None

@@ -7,11 +7,13 @@ crate, so a probe render skips rather than fails when the engine is absent.
 from __future__ import annotations
 
 import json
+import tempfile
+from pathlib import Path
 
 import pytest
 
 from fractal_wallpapers import engine, engine_fingerprint
-from fractal_wallpapers.curation import amend, intake
+from fractal_wallpapers.curation import amend, intake, mode_policy
 from fractal_wallpapers.models import location_view, renders, tiles
 
 try:
@@ -48,6 +50,51 @@ def test_the_probe_set_spans_the_families_and_modes_a_change_can_hide_in() -> No
     # Both planes, and the mode whose address opens differently on each.
     assert "itinerary" in modes
     assert kinds & engine.DYNAMICAL_KINDS and kinds & engine.PARAMETER_KINDS
+
+
+def test_the_stamped_half_is_a_prefix_and_its_order_is_the_promise() -> None:
+    """`current` is a digest of a tuple every stamp on disk already names.
+
+    `_digest` takes a COUNT, so the identity digest is the first
+    `len(IDENTITY_PROBES)` marks of `PROBES` — which is only the number every
+    `drawn_by.jsonl` carries while the six stay first and stay in order. A probe
+    inserted among them, or reordered, restamps every view this project has drawn.
+    Widening the sample is `TRAP_PROBES` and costs nothing; this is what it is
+    kept away from.
+    """
+    identity = engine_fingerprint.IDENTITY_PROBES
+    assert engine_fingerprint.PROBES[: len(identity)] == identity
+    assert identity + engine_fingerprint.TRAP_PROBES == engine_fingerprint.PROBES
+    # The six, by name and in order. Spelled out because this is the pinned half.
+    assert [probe["mode"] for probe in identity] == [
+        "smooth",
+        "tia",
+        "stripe",
+        "gaussian_int",
+        "itinerary",
+        "smooth_trap_circle",
+    ]
+
+
+def test_every_direct_trap_the_engine_draws_is_probed_and_none_is_in_the_stamp() -> None:
+    """The gap `TRAP_PROBES` exists to close, stated as an assertion.
+
+    A direct trap makes no field, so none of its arithmetic is on the path the six
+    walk — and none of it is in the recipe key either, because the catalog block
+    carries the trap's shape and constants and no arithmetic. So an engine-side
+    pixel change to one of these was invisible to both. Held to the mode table
+    rather than to a list here, so a fifth direct trap fails this rather than
+    quietly going unprobed — and that table is itself pinned against the engine's
+    own catalog by `mode_policy.check`, so this needs no engine crossing to be a
+    claim about the engine.
+
+    The niche `direct_trap_ring` is probed like the other three: what a build
+    *draws* is a wider question than what production may pick, and a mode nobody
+    draws today is exactly the one whose pixels move unnoticed.
+    """
+    traps = {name for name in mode_policy.MODE_POLICY if name.startswith("direct_trap_")}
+    assert traps == {probe["mode"] for probe in engine_fingerprint.TRAP_PROBES}
+    assert not traps & {probe["mode"] for probe in engine_fingerprint.IDENTITY_PROBES}
 
 
 def test_every_probe_is_written_out_whole() -> None:
@@ -93,14 +140,120 @@ def test_the_fingerprint_moves_when_a_probe_moves(monkeypatch) -> None:
     the first probe.
     """
     was = engine_fingerprint.current()
-    monkeypatch.setattr(engine_fingerprint, "PROBES", engine_fingerprint.PROBES[:-1])
-    engine_fingerprint.current.cache_clear()
-    engine_fingerprint._of.cache_clear()
+    monkeypatch.setattr(
+        engine_fingerprint, "IDENTITY_PROBES", engine_fingerprint.IDENTITY_PROBES[:-1]
+    )
+    _forget_digests()
     try:
         assert engine_fingerprint.current() != was
     finally:
-        engine_fingerprint.current.cache_clear()
-        engine_fingerprint._of.cache_clear()
+        _forget_digests()
+
+
+def _forget_digests() -> None:
+    """Drop every cached render and digest, so the next ask draws again."""
+    engine_fingerprint.current.cache_clear()
+    engine_fingerprint.coverage.cache_clear()
+    engine_fingerprint._digest.cache_clear()
+    engine_fingerprint._mark.cache_clear()
+
+
+@pytest.mark.slow
+@needs_engine
+def test_a_moved_direct_trap_moves_the_coverage_and_leaves_every_stamp_alone() -> None:
+    """The whole point of the split, as the two assertions it comes down to.
+
+    A probe dropped from the trap half moves `coverage` and does not move
+    `current` — which is what makes the trap probes addable at all, since
+    `current` is the number 48,571 stamped views on this machine already carry. A
+    probe dropped from the identity half moves both, because the identity digest
+    is the coverage digest's prefix.
+
+    Stands in for "a build whose direct traps changed", the way its sibling above
+    stands in for "another binary": a test cannot compile a second engine, so it
+    moves the probe set instead.
+    """
+    stamp, wide = engine_fingerprint.current(), engine_fingerprint.coverage()
+    assert stamp != wide
+
+    original = engine_fingerprint.PROBES
+    try:
+        engine_fingerprint.PROBES = original[:-1]
+        _forget_digests()
+        assert engine_fingerprint.coverage() != wide, "a dropped trap probe must be seen"
+        assert engine_fingerprint.current() == stamp, "and must not restamp a single view"
+
+        engine_fingerprint.PROBES = original[1:]
+        _forget_digests()
+        assert engine_fingerprint.current() != stamp
+        assert engine_fingerprint.coverage() != wide
+    finally:
+        engine_fingerprint.PROBES = original
+        _forget_digests()
+
+
+@pytest.mark.slow
+@needs_engine
+def test_every_trap_probe_paints_a_frame_with_something_in_it() -> None:
+    """A probe the orbit never reaches is a flat frame and guards nothing.
+
+    A direct trap paints only where an iterate passes close to its shape, so a
+    place chosen badly gives back the start colour and every arithmetic change
+    inside `Painter::trace` leaves it identical. Each of these four stands on a
+    location the candidate ledger holds a clearing row at in that mode, and this
+    is the assertion that says so — cheap, and the thing that would catch a probe
+    whose viewport was edited to somewhere the shape is never hit.
+    """
+    import numpy
+    from PIL import Image
+
+    for index, probe in enumerate(engine_fingerprint.TRAP_PROBES):
+        at = len(engine_fingerprint.IDENTITY_PROBES) + index
+        with tempfile.TemporaryDirectory() as where:
+            output = Path(where) / "probe.png"
+            engine.run("render", renders.spec_of(engine_fingerprint.probe_row(probe), output))
+            pixels = numpy.asarray(Image.open(output).convert("RGB")).reshape(-1, 3)
+        distinct = len(numpy.unique(pixels, axis=0))
+        assert distinct > 1000, f"probe {at} ({probe['mode']}) drew {distinct} colour(s)"
+
+
+@pytest.mark.slow
+@needs_engine
+def test_the_multiply_probe_still_lands_where_the_whitewash_was_measured() -> None:
+    """The one probe read as a picture rather than as bytes, and why.
+
+    `direct_trap_multiply` composites from a **white** ground through
+    `Blend::Multiply`, and the audit's finding is that this loses almost nothing
+    perceptually per hit: for a neutral Oklab `L = v^(1/3)`, so `dL/dv` is 0.333 at
+    white against 8.33 at `L = 0.2`. A whole-frame normalization, a gamma before
+    the multiply, or a second saturation clamp would all move that — and all three
+    are changes the recipe key cannot see, because the catalog block carries the
+    trap's constants and no arithmetic.
+
+    A **band on a share**, never a byte pin. This suite pins no engine bytes
+    across platforms and CI runs two, and a share of a 384x216 frame does not move
+    on last-bit float noise. Measured 2026-09-02 on this build: near-white
+    0.2187, L median 0.8191. The band is wide enough for a rebuild and far too
+    narrow for an arithmetic change — a gamma on the sample takes this frame past
+    0.5, and dropping the multiply for a screen takes it under 0.01.
+    """
+    import numpy
+    from PIL import Image
+
+    from fractal_wallpapers.palettes import space
+
+    probe = next(
+        one for one in engine_fingerprint.TRAP_PROBES if one["mode"] == "direct_trap_multiply"
+    )
+    with tempfile.TemporaryDirectory() as where:
+        output = Path(where) / "probe.png"
+        engine.run("render", renders.spec_of(engine_fingerprint.probe_row(probe), output))
+        picture = numpy.asarray(Image.open(output).convert("RGB"))
+    lightness, chroma = space.lightness_and_chroma(picture)
+    # The audit's reading: the share of the frame that is light AND uncoloured.
+    near_white = float(numpy.mean((lightness >= 0.90) & (chroma <= 0.06)))
+    assert 0.12 <= near_white <= 0.32, near_white
+    assert 0.74 <= float(numpy.median(lightness)) <= 0.89
 
 
 # --------------------------------------------------------------------------- #

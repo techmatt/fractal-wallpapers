@@ -63,6 +63,26 @@ def test_a_row_missing_its_mode_settings_is_refused() -> None:
         a_row(mode_params=None)
 
 
+def test_a_verdict_on_a_mode_under_its_own_settings_is_a_row_of_its_own() -> None:
+    """The label side of a mode-param variant, which is what makes one usable at all.
+
+    `direct_trap_multiply@opacity=0.6` is a different recipe key and therefore a
+    different picture; a store that joined it onto the shipped mode's row would
+    put a verdict cast on the tinted picture onto the white one, and latest-wins
+    would then quietly overwrite one of them. `render_key` carries the settings, so
+    the five parameter sets at one place, map and recipe are five identities — and
+    the writer takes each of them, because a picture somebody judged is a picture
+    somebody judged.
+    """
+    settings = [{}, {"opacity": 0.6}, {"threshold": 0.2}, {"opacity": 0.6, "threshold": 0.2}]
+    rows = [a_row(mode="direct_trap_multiply", mode_params=one) for one in settings]
+    assert len({finished.render_key(row) for row in rows}) == len(settings)
+    assert [row["mode_params"] for row in rows] == settings
+    # And the settings are the ONLY thing separating them: same place, same map,
+    # same recipe, same mode name.
+    assert len({row["mode"] for row in rows}) == 1
+
+
 def test_one_scale_for_every_head_and_it_is_not_the_shipped_model_s_class_count() -> None:
     """Matt's ratified decision. `strange_render` was *collected* on three tiers
     and its first judge trained on three classes; neither was a ceiling on what a

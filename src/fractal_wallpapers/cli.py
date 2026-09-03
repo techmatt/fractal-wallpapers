@@ -4059,6 +4059,9 @@ def curate_depth(args: argparse.Namespace) -> int:
             "floor_untried": (
                 None if args.floor_untried is None else (args.floor_untried or depth.dear_modes())
             ),
+            "floor_places": (
+                None if args.floor_places is None else depth.read_places(args.floor_places)
+            ),
             "floor_width": args.floor_width,
             "floor_seats": args.floor_seats,
             "roster": args.modes,
@@ -9144,7 +9147,11 @@ def curate_commands(subcommands) -> None:
         metavar="MODE",
         nargs="+",
         help="the modes this run can afford at all — what the breadth draws cycle, and "
-        "what a near-band incumbent must be in to enter that draw. Unsaid, every shareable "
+        "what a near-band incumbent must be in to enter that draw. An entry is a MODE, or "
+        "a mode with its own settings: `direct_trap_multiply@opacity=0.6,threshold=0.2` is "
+        "a different recipe key and so a different picture beside the shipped one — nothing "
+        "re-keys, nothing re-renders and no label is voided. Settings a mode does not take "
+        "are refused at plan time. Unsaid, every shareable "
         "mode curation.mode_policy accepts. Narrowing it is how a run at a small width "
         "keeps the dump amortised: one field is dumped per (location, mode), so six modes "
         "at twelve candidates pays six dumps and three modes pays three. To drop a mode "
@@ -9204,8 +9211,20 @@ def curate_commands(subcommands) -> None:
         "--floor-modes",
         metavar="MODE",
         nargs="+",
-        help="the modes the mode-floor draw serves. Unsaid, it serves every mode the ledger "
-        "says is short of --floor-seats seats today, worst first",
+        help="the modes the mode-floor draw serves, each of them a MODE or a mode with its "
+        "own settings (`direct_trap_multiply@opacity=0.6,threshold=0.2`). Unsaid, it serves "
+        "every mode the ledger says is short of --floor-seats seats today, worst first",
+    )
+    depth_step.add_argument(
+        "--floor-places",
+        metavar="FILE",
+        help='a places MANIFEST — a JSONL of {"schema": 1, "key": ...} rows — naming the '
+        "locations the mode-floor draw may stand on. This is the one flag that says WHICH "
+        "places: every other draw here picks its own off a rank, a band or a bar. A file "
+        "rather than arguments because the population is hundreds of places long. It "
+        "narrows the floor draw alone, which is already the draw over opened, proven "
+        "locations — and that is what a list somebody read off the ledger always is. Keys "
+        "the opened pool does not hold are counted and named",
     )
     depth_step.add_argument(
         "--floor-width",
