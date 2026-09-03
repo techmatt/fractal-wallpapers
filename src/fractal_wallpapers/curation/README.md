@@ -3290,6 +3290,26 @@ own wall budget and its own pilot, 88,022 candidates in 40,825 s of render wall
 | C | 5 field, width 40 | never-opened, non-centered | 45,675 | 1,146 | 0.585 → 0.618 | 23.0% (20) |
 | D | 5 field, aimed at 6 thin cells | never-opened, top half | 13,340 | 544 | 0.567 → 0.575 | 6.3% (5) |
 
+**Arm A's roster is now declared and it is ten, not eleven.** It ran out of a
+scratch driver, and this table was the only record of what it drew — a roster
+nothing tracks is a roster every ruling about it has to be remembered rather than
+read. `depth.centered_modes()` is it: `dear_modes()` plus `CENTERED_FIELD`
+(`smooth`, `exp_smoothing`), less `CENTERED_EXCLUDED`. Before, the eleven above:
+`smooth_mean_angle`, `smooth_angle_min`, `smooth_stripe`, `smooth_curvature`,
+`direct_trap_screen`, `direct_trap_multiply`, `direct_trap_lines`, `threads`,
+`itinerary`, `smooth`, `exp_smoothing`. After, those ten less
+**`direct_trap_lines`** — Matt's ruling of 2026-09-02, off the eye-check sheet
+`8ce5def` reports: every `direct_trap_lines` seat in the newest n=2000 baseline
+read against every centered candidate clearing the mode's own bar, and the verdict
+is that it is not a centered mode.
+
+**That is one arm's draw and nothing else.** The mode is still `mode_policy`
+weight 1, still on `dear_modes()`, still drawn by every other leg, and its seat
+floor is unmoved; every row, picture and label already taken in it stands. A
+roster says where an arm spends and a weight says what a mode is worth, and
+`tests/test_depth.py` pins the two apart so the next roster ruling does not read
+as a demotion.
+
 **It closed every mode floor at n=2000**: the census went from `mode_floors` short by
 56 to `nothing provably short`. `smooth_mean_angle` 35 → 78 seats, `smooth_angle_min`
 37 → 90, `direct_trap_multiply` 23 → 74, `itinerary` 59 → 109. That is the sequel to
@@ -4661,11 +4681,12 @@ pictures the head reads are the smooth renders it was distilled on. The chosen
 map then colours whatever mode the attempt actually draws.
 
 **And the anchor draw is the whole of it: there is no palette-cluster cap at
-release.** `data/palettes/clusters.jsonl` exists and groups the library sixteen
-ways, but it is a *figure's* record — `palettes clusters` is its only reader, and
-nothing in selection, in the release path or in the gallery pass consults it. So
-two seated rows may land in one cluster, and what stops that is the without-
-replacement anchor draw upstream rather than a cap downstream. This is a
+release.** Nothing in selection, in the release path or in the gallery pass
+groups the library at all. (A sixteen-way clustering was tracked beside the maps
+until 2026-09-02 as a figure's record, read by nothing but the command that wrote
+it; the website groups by dominant hue and it was deleted.) So two seated rows may
+land in one region of palette space, and what stops that is the without-replacement
+anchor draw upstream rather than a cap downstream. This is a
 deliberate gap and not an oversight: palette-level diversity across the
 collection is the colour-coverage floor's question, and until that leg exists the
 honest statement is that nothing enforces it.

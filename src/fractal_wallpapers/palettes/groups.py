@@ -84,11 +84,11 @@ from fractal_wallpapers.paths import colormap_dir
 #: The schema every row of the record carries, from its first line.
 SCHEMA = 1
 
-#: What the file is called, beside the maps it groups. JSONL, and — as with
-#: [`fractal_wallpapers.palettes.clusters`] — that is not a style choice: every
-#: reader of the colormap library globs `data/palettes/*.json` and takes the stem
-#: as a map name, so a `.json` file in there would be read as a colormap by the
-#: pool, the cyclic table and `tests/test_colormaps.py` alike.
+#: What the file is called, beside the maps it groups. JSONL, and that is not a
+#: style choice: every reader of the colormap library globs `data/palettes/*.json`
+#: and takes the stem as a map name, so a `.json` file in there would be read as a
+#: colormap by the pool, the cyclic table, this module's own [`library`] and
+#: `tests/test_colormaps.py` alike.
 RECORD_NAME = "groups.jsonl"
 
 #: The two kinds of row the record holds: one header, then one row per group.
@@ -132,10 +132,10 @@ QUANTILES = 128
 #: Every merge it makes was reviewed by eye and approved.
 CUT = 0.039735
 
-#: Decimals the distance matrix is rounded to before linkage. As in
-#: [`fractal_wallpapers.palettes.clusters`]: the projection runs through a matrix
-#: product, that is not bit-identical across BLAS implementations, and rounding
-#: turns a platform difference into an exact tie that merges in index order.
+#: Decimals the distance matrix is rounded to before linkage. The projection runs
+#: through a matrix product, that is not bit-identical across BLAS implementations,
+#: and rounding turns a platform difference into an exact tie that merges in index
+#: order — which is what makes the committed table a function of the library alone.
 PLACES = 9
 
 #: The read-time collapse's switch, and its one override. Shipping on; the
@@ -173,10 +173,13 @@ class GroupError(RuntimeError):
 # The metric.
 # --------------------------------------------------------------------------- #
 def library(directory: Path | None = None) -> list[str]:
-    """Every tracked map, by name, in sorted order."""
-    from fractal_wallpapers.palettes import clusters
+    """Every tracked map, by name, in sorted order.
 
-    return clusters.library(directory)
+    A glob of `*.json` and the stem of each, which is what every other reader of
+    the library does — and the reason [`RECORD_NAME`] is a `.jsonl`.
+    """
+    directory = Path(directory) if directory is not None else colormap_dir()
+    return sorted(path.stem for path in directory.glob("*.json"))
 
 
 def cloud(name: str, samples: int = SAMPLES):

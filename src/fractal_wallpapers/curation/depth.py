@@ -235,6 +235,46 @@ def dear_modes() -> list[str]:
     return [mode for mode in mine._accepted_modes() if not colorize.shareable(mode)]
 
 
+#: The two **field** modes the centered roster carries beside the dear nine, as
+#: arm A ran them on 2026-09-01/02. Not `field_modes()`: the point of that arm is
+#: breadth over the dear half at a place, and the shareable modes are there as the
+#: cheap incumbent and the cheap alternative to it rather than as a roster of their
+#: own — they cost one dump between all their palettes and the nine cost a render
+#: each.
+CENTERED_FIELD: tuple[str, ...] = ("smooth", "exp_smoothing")
+
+#: What the centered roster does **not** draw, and why. `direct_trap_lines` is off
+#: it on Matt's ruling of 2026-09-02, taken off the eye-check sheet `8ce5def`
+#: reports: every `direct_trap_lines` seat in the newest n=2000 baseline, read
+#: against every centered candidate clearing the mode's own bar, and the verdict
+#: is that it is not a centered mode.
+#:
+#: **This is the centered draw alone.** The mode keeps its [`curation.mode_policy`]
+#: weight — 1, accepted — and its seat floor; every row, picture and label already
+#: taken in it stands; and every other leg still draws it. A roster is where a leg
+#: spends, and a weight is what a mode is worth; taking a mode off one arm's draw
+#: is not a demotion and must not be written as one.
+CENTERED_EXCLUDED: tuple[str, ...] = ("direct_trap_lines",)
+
+
+def centered_modes() -> list[str]:
+    """The roster a leg over the **centered** population draws.
+
+    [`dear_modes`] plus [`CENTERED_FIELD`], less [`CENTERED_EXCLUDED`] — the
+    eleven-mode roster arm A ran overnight on 2026-09-01/02 at width 22, minus the
+    one mode the sheet ruled off it. Ten now.
+
+    Declared here rather than left to whichever driver runs the leg, because it
+    *was* left there: the arm ran out of a scratch file, `curation/README.md`'s
+    table is the only record of what it drew, and a ruling about a roster nothing
+    tracks is a ruling that has to be remembered rather than read. The derivation
+    is kept — a mode added to the engine's catalogue and given a weight joins the
+    dear half without an edit here — and only the exclusion is written out.
+    """
+    roster = [*dear_modes(), *CENTERED_FIELD]
+    return [mode for mode in roster if mode not in CENTERED_EXCLUDED]
+
+
 @functools.cache
 def centered_locations() -> frozenset:
     """Every location key a walk ledger calls `centered`. A plan-time join, not a store.
@@ -2390,6 +2430,7 @@ __all__ = [
     "deficient_modes",
     "depth_dir",
     "aimed_maps",
+    "centered_modes",
     "field_modes",
     "flat_maps",
     "fields_dir",

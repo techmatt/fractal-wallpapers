@@ -108,7 +108,7 @@ def test_the_batch_name_is_where_the_run_knobs_come_from() -> None:
 
 
 def test_the_record_never_lands_where_a_colormap_would_be_read() -> None:
-    """Same rule the clustering follows: `data/palettes/*.json` is the map library,
+    """Same rule the grouping follows: `data/palettes/*.json` is the map library,
     and a file in there that is not a map would be read as one."""
     assert provenance.record_path().suffix != ".json"
     assert provenance.record_path().stem not in {
