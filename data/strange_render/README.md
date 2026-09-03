@@ -153,6 +153,28 @@ per-mode table is thin, top-of-band and argmax-free but score-conditioned; the
 per-colour-family reading is where the disagreement lives. All of it is in
 [`../batch_caveats.md`](../batch_caveats.md) under THREE-SLICES.
 
+**And the newest batch buys a fresh plane, and finds the judge with no fours to
+give.** `phoenix_classic_20260903`, 2026-09-03: 34 verdicts here, one card per
+location, the 34 places a twenty-minute depth leg opened on `phoenix:classic` where
+the render judge routed the place's best candidate to this store. All 34 route here
+on the built join and the ingest resolved 34 of 34 with nothing withheld, **34 fresh
+and 0 revised**, moving this store from 5,580 rows to **5,614** and from 2,453
+locations to **2,487**. It is anchored and score-conditioned, so it is training
+material. The reading is the sharpest disagreement this store has recorded: the head
+**suggested a four on none of the 34 cards** — its whole page is 14 twos and 20
+threes — and a person cast **16**, every one of them out of a suggestion of 2 or 3,
+twelve at a label-geometry `P(>=4)` under 0.02 and the lowest at **0.001**. Nor does
+it order what it did offer: Spearman(tier, `P(>=4)`) is **-0.078** on the draw column
+and **+0.018** at label geometry over 34 rows, and the head's own suggestion reads
+**-0.049**. The plane's mode order survives while its tiers do not:
+`direct_trap_screen` is the judge's best mode on the page at 83% over
+`P(>=3) >= 0.50`, as it was over the leg's 103 candidates at 80% — and it is fifth of
+eight by a person's mean tier at 2 fours in 6, while `smooth_angle_min` takes **6 of
+7**. Every n here is single digits and the cards are argmaxes over three modes a
+place, so no rate off them differences one mode against another; that caveat and the
+sitting's numbers are in [`../batch_caveats.md`](../batch_caveats.md) under
+ONE-CARD-A-PLACE.
+
 **What a registration does not say is in
 [`../batch_caveats.md`](../batch_caveats.md)**: how a live population was actually
 assembled, and what a rate quoted off it without that is wrong about. Nine of this

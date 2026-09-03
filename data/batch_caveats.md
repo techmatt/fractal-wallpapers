@@ -433,6 +433,33 @@ checked against `pins.every_pinned` (1,452), `smooth_render`'s 277 and
 finished-store row before this sheet, which is what a leg over never-opened
 locations should look like.
 
+**Ingested 2026-09-03, and the strange page only: 34 of the 35.** The one-card
+`smooth_render` page was served and never exported —
+`labels/smooth_render.phoenix_classic_20260903.json` does not exist anywhere in the
+checkout, while its sheet, its render and its levelled map all do
+(`scratch/phoenix_classic_20m/smooth_render`). A drop is the only record a page
+leaves, so the card is re-labellable at zero render cost and is *not* recoverable
+without re-serving. `smooth_render` is therefore unchanged by this batch: 210
+`phoenix:classic` rows, 20 of them q4, exactly as before. The strange ingest read
+34 on the sheet / 34 exported / 0 not acted on / 0 withheld, 34 fresh and 0 revised,
+pin ok at 180 pinned places and `asserted_before_writing: true`; a second run reports
+`already stored: 34, to write: 0`.
+
+**The head suggested no fours at all, and a person cast sixteen.** Its page is 14
+twos and 20 threes; the verdicts are 18 threes and 16 fours, and **every four came
+out of a 2 or a 3** — seven from twos, nine from threes. Twelve of the sixteen sit
+under a label-geometry `P(>=4)` of 0.02. That is the ceiling in this entry's last
+paragraph being *reached* rather than merely warned about, and it is the reason a
+`P(>=4)` bar read off this plane means nothing today.
+
+**After the sitting the plane holds 72 q3+ places, 29 of them with a q4** — against
+the 38 and 13 below, which were the pre-sitting figures. **34 of those 72 roots are
+this one page**, so a single 34-card sheet is now 47% of `phoenix:classic`'s entire
+proven supply and 16 of its 24 tier-4-credited roots. Note the two ways to count a
+four here: 29 places *hold* a q4 verdict somewhere, while the proven channel credits
+a place to the first store that has it and reads **24** at tier 4 — the channel's
+number is the one a root draw sees.
+
 ---
 
 ## Five batches reach the candidate ledger; the other twenty-one do not
