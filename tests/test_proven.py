@@ -162,6 +162,92 @@ def test_a_derived_row_is_a_seed_file_row() -> None:
 
 
 # --------------------------------------------------------------------------- #
+# the three stores
+# --------------------------------------------------------------------------- #
+
+
+def finished(family: dict, score: int, re: str, head: str = "smooth_render", **extra) -> tuple:
+    """One resolved finished-render row, as `finished_verdicts` hands it over."""
+    return head, label(family, score, re, **extra)
+
+
+def test_a_finished_render_keeper_is_a_root_and_says_which_store_proved_it() -> None:
+    """Matt's ruling, 2026-09-03: a place where a finished render was labelled q3+
+    is a proven neighbourhood. It is served exactly as a location keeper is, and
+    the only thing that separates the two on the row is `provenance.store`."""
+    derived = proven.derive(rows=[], finished_rows=[finished(MANDELBROT, 3, "0.1")])
+    assert derived["record"]["rows"] == 1
+    root = derived["rows"][0]
+    assert root["provenance"]["channel"] == proven.CHANNEL
+    assert root["provenance"]["store"] == "smooth_render"
+    assert root["viewport"] == view("0.1"), "at the place's own viewport"
+    assert derived["record"]["stores"] == {
+        "location": 0,
+        "smooth_render": 1,
+        "strange_render": 0,
+    }
+
+
+def test_the_tier_floor_is_the_same_floor_in_a_finished_store() -> None:
+    """The floor is the currency's bottom class and not a per-store cut, so a q2
+    picture buys no root however it was collected."""
+    below = proven.derive(
+        rows=[], finished_rows=[finished(MANDELBROT, 2, "0.1", head="strange_render")]
+    )
+    assert below["record"]["rows"] == 0
+    above = proven.derive(
+        rows=[], finished_rows=[finished(MANDELBROT, 3, "0.1", head="strange_render")]
+    )
+    assert above["record"]["rows"] == 1
+
+
+def test_a_place_both_stores_hold_is_one_root_credited_to_the_location_store() -> None:
+    """The dedup is on the PLACE. A location verdict is about the place itself and
+    a finished-render verdict is about a picture standing on it, so the location
+    store is credited where both hold one — and a place holding several judged
+    pictures still yields one root."""
+    derived = proven.derive(
+        rows=corpus(label(MANDELBROT, 3, "0.1")),
+        finished_rows=[
+            finished(MANDELBROT, 4, "0.1"),
+            finished(MANDELBROT, 4, "0.1", head="strange_render"),
+            finished(MANDELBROT, 4, "0.2"),
+        ],
+    )
+    assert derived["record"]["rows"] == 2
+    stored = {row["viewport"]["center_re"]: row["provenance"] for row in derived["rows"]}
+    assert stored["0.1"]["store"] == "location"
+    assert stored["0.1"]["tier"] == 3, "the location row wins the place, tier and all"
+    assert stored["0.2"]["store"] == "smooth_render"
+    assert derived["record"]["stores"] == {
+        "location": 1,
+        "smooth_render": 1,
+        "strange_render": 0,
+    }
+
+
+def test_a_checkout_with_no_finished_verdicts_derives_what_it_always_did() -> None:
+    """The union only ever adds places. With the finished side empty the set is
+    the location store's, row for row and byte for byte."""
+    rows = corpus(label(MANDELBROT, 4, "0.1"), label(MULTIBROT3, 3, "0.3"))
+    alone = proven.derive(rows=rows)
+    unioned = proven.derive(rows=rows, finished_rows=[])
+    assert proven.render(alone["rows"]) == proven.render(unioned["rows"])
+    assert alone["record"]["rows"] == unioned["record"]["rows"] == 2
+    assert alone["record"]["stores"]["location"] == 2
+
+
+def test_naming_either_corpus_reads_neither_store_off_disk() -> None:
+    """Injection is all-or-nothing: a test that hands over a corpus is asking
+    about that corpus, and a derive that unioned it with the checkout's own stores
+    would answer about something else."""
+    only_finished = proven.derive(finished_rows=[finished(MANDELBROT, 4, "0.1")])
+    assert only_finished["record"]["stores"]["location"] == 0
+    only_location = proven.derive(rows=corpus(label(MANDELBROT, 4, "0.1")))
+    assert only_location["record"]["stores"]["smooth_render"] == 0
+
+
+# --------------------------------------------------------------------------- #
 # the interleave, and the comparison
 # --------------------------------------------------------------------------- #
 

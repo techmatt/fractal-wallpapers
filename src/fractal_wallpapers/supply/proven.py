@@ -80,23 +80,34 @@ channel can renew on its own. **The supply runs out at the rate the label store
 grows**, which is the honest reading of a channel that feeds on its own past
 output, and it is why the fresh pool is interleaved rather than displaced.
 
-**And the store it reads is the LOCATION store, which is the one this channel's
-own name does not say.** `census.label_rows` is `labeling.store.resolved()` —
-`data/labels` — so a verdict in either finished-render store buys no root, however
-high the tier. The two stores answer different questions: a finished-render 4 says
-*this picture* is worth keeping, and a root is a claim that *this place* is worth
-descending beside. Nothing in `supply/` or `discovery/` reads `finished.resolved`,
-and that is deliberate rather than a gap somebody forgot to close.
+## Three stores, one root per place
 
-It is worth stating because the arithmetic looks like it should work and does not.
-`phoenix_q3q4_20260903` landed **179 q3+ finished-render verdicts on 179 phoenix
-places** on 2026-09-03 — 174 `phoenix`, 5 `phoenix:classic` — and this channel did
-not move: 2,960 roots before and after, `phoenix` 384 and `phoenix:classic` 7 on
-both sides. One of those 200 places is known to the location store at all. Read as
-roots they would be a **45%** rise on `phoenix` and a **71%** one on
-`phoenix:classic`, so the gap is the size of the channel's whole phoenix supply and
-not a rounding error. Whether to close it is a decision about what "proven" means;
-what is not open is reading a finished-render sitting as though it already had.
+**The store it reads was the LOCATION store alone until 2026-09-03**, which is the
+one this channel's own name does not say. A finished-render verdict bought no root
+however high the tier, on the reading that the two stores answer different
+questions: a finished-render 4 says *this picture* is worth keeping, and a root is
+a claim that *this place* is worth descending beside.
+
+That reading was overturned on the arithmetic. `phoenix_q3q4_20260903` landed
+**179 q3+ finished-render verdicts on 179 phoenix places** on 2026-09-03 — 174
+`phoenix`, 5 `phoenix:classic` — and the channel did not move: 2,960 roots before
+and after, `phoenix` 384 and `phoenix:classic` 7 on both sides, with **one** of
+those 200 places known to the location store at all. The gap was the size of the
+channel's whole phoenix supply rather than a rounding error, so Matt ruled a place
+where a finished render was labelled q3+ a proven neighbourhood, and [`derive`]
+unions all three stores.
+
+**A place yields one root, whichever stores hold it.** The union is deduplicated
+on the location key and credited to the first store in [`stores`] that holds it —
+the location store first, because its verdict is about the place itself and a
+finished-render verdict is about a picture that happens to stand there. Which one
+paid is on the row, at `provenance.store`, so a queue can be read back by source.
+Latest-wins already applies *inside* each store: every one of the three is read
+through its own resolver, which hands back one row per identity.
+
+Nothing else moves. The channel is still off unless a run names it, a root is
+still served at the place's own viewport, and `provenance.channel` is still
+[`CHANNEL`] for all three sources — what changed is how many places qualify.
 
 The tier floor is the currency's own bottom class, not a new cut: a class the
 weights table pays for is a keeper, here as everywhere else.
@@ -152,6 +163,41 @@ SERVED = ALL_PARTITIONS
 #: would be two rows in one place in the queue rather than a lost root.
 ID_DIGITS = 12
 
+#: What the location store is called on a root's `provenance.store`. The two
+#: finished-render stores are called by their head's own name, so the three
+#: spellings a root can carry are this and [`labeling.finished.HEADS`].
+LOCATION_STORE = "location"
+
+
+def stores() -> tuple[str, ...]:
+    """Every store this channel reads, in the order a place is credited to one.
+
+    A function and not a constant because the finished-render heads live behind a
+    lazy import: this module is on the supply path and `labeling.finished` routes
+    back through `curation` for [`labeling.finished.routed_to`], so importing it
+    at module scope is a cycle rather than a saving.
+    """
+    from fractal_wallpapers.labeling import finished
+
+    return (LOCATION_STORE, *finished.HEADS)
+
+
+def finished_verdicts(heads=None) -> list[tuple[str, dict]]:
+    """`(head, row)` for every current verdict in each finished-render store.
+
+    One row per *render*, which is what those stores resolve to — so a place
+    holding four judged pictures arrives here four times and [`derive`] keeps the
+    first. That is deliberate: the dedup is on the place either way, and
+    collapsing here would have to pick a winner using a rule this module does not
+    own.
+    """
+    from fractal_wallpapers.labeling import finished
+
+    out: list[tuple[str, dict]] = []
+    for head in finished.HEADS if heads is None else heads:
+        out += [(head, row) for row in finished.resolved(head).scored()]
+    return out
+
 
 def digest_of(key: tuple) -> str:
     """A stable digest of one location key, identical on every machine.
@@ -180,8 +226,14 @@ def qualifies(row: dict, tier_floor: int) -> bool:
     return score is not None and int(score) >= int(tier_floor) and row.get("origin") == store.HUMAN
 
 
-def seed_row(row: dict, key: tuple) -> dict:
-    """One label row as the seed row a walk can be rooted at."""
+def seed_row(row: dict, key: tuple, store: str = LOCATION_STORE) -> dict:
+    """One label row as the seed row a walk can be rooted at.
+
+    `store` is which of [`stores`] the verdict was cast in. It rides on the
+    provenance rather than on the channel: a root off a finished-render 4 is
+    served exactly as a root off a location 4 is, and the only thing anybody can
+    do with the difference is read it back.
+    """
     return {
         "schema": SCHEMA,
         "id": seed_id(key),
@@ -189,6 +241,7 @@ def seed_row(row: dict, key: tuple) -> dict:
         "viewport": row["viewport"],
         "provenance": {
             "channel": CHANNEL,
+            "store": str(store),
             "tier": int(row["score"]),
             "batch": row.get("batch"),
         },
@@ -201,20 +254,38 @@ def derive(
     partitions=SERVED,
     label_paths=None,
     rows: list[dict] | None = None,
+    finished_rows: list[tuple[str, dict]] | None = None,
 ) -> dict:
-    """Build the proven seed set from the label store. `{rows, record}`.
+    """Build the proven seed set from all three label stores. `{rows, record}`.
 
     Deterministic for a fixed store: no draw, no clock, and a total order that
-    does not depend on the order the rows were read in.
+    does not depend on the order the rows were read in. **One root per place**,
+    credited to the first of [`stores`] that holds it.
+
+    **Injection is all-or-nothing.** `rows` is the location store's resolved rows
+    and `finished_rows` is [`finished_verdicts`]'s output, and naming *either* of
+    them means the caller is handing over the whole corpus — the other side reads
+    as empty rather than falling back to disk. A test that passes a corpus is
+    asking about that corpus, and a derive that quietly unioned it with whatever
+    the checkout's own stores hold would answer about something else.
     """
     from fractal_wallpapers.supply import census
 
     served = tuple(partitions)
-    resolved = census.label_rows(label_paths) if rows is None else list(rows)
+    injected = rows is not None or finished_rows is not None
+    if injected:
+        sourced = [(LOCATION_STORE, row) for row in (rows or [])]
+        sourced += list(finished_rows or [])
+    else:
+        sourced = [(LOCATION_STORE, row) for row in census.label_rows(label_paths)]
+        sourced += finished_verdicts()
+
     kept: list[tuple[str, dict]] = []
     tiers: Counter = Counter()
     per_partition: Counter = Counter()
-    for row in resolved:
+    per_store: Counter = Counter()
+    seen: set = set()
+    for store, row in sourced:
         if not qualifies(row, tier_floor):
             continue
         # The key first: it is `None` for exactly the rows whose partition cannot
@@ -222,12 +293,16 @@ def derive(
         key = key_of_row(row)
         if key is None:
             continue
+        if key in seen:
+            continue
         partition = partition_of_family(row["family"])
         if partition not in served:
             continue
-        kept.append((partition, seed_row(row, key)))
+        seen.add(key)
+        kept.append((partition, seed_row(row, key, store)))
         tiers[int(row["score"])] += 1
         per_partition[partition] += 1
+        per_store[store] += 1
 
     # Best tier first, then the location's digest: see the module docstring.
     # The digest is already the tail of the id, so the sort reads it back rather
@@ -241,8 +316,9 @@ def derive(
             "tier_floor": int(tier_floor),
             "partitions": {p: per_partition.get(p, 0) for p in served},
             "tiers": {str(tier): tiers[tier] for tier in sorted(tiers, reverse=True)},
+            "stores": {name: per_store.get(name, 0) for name in stores()},
             "rows": len(ordered),
-            "labels_read": len(resolved),
+            "labels_read": len(sourced),
         },
     }
 
@@ -393,6 +469,7 @@ def build(
     partitions=SERVED,
     label_paths=None,
     rows: list[dict] | None = None,
+    finished_rows: list[tuple[str, dict]] | None = None,
     ratio: int = RATIO,
 ) -> ProvenChannel:
     """The channel a harvest holds, derived from the label store as it stands.
@@ -403,13 +480,20 @@ def build(
     registry.
     """
     served = tuple(p for p in partitions if p in SERVED)
-    derived = derive(tier_floor=tier_floor, partitions=served, label_paths=label_paths, rows=rows)
+    derived = derive(
+        tier_floor=tier_floor,
+        partitions=served,
+        label_paths=label_paths,
+        rows=rows,
+        finished_rows=finished_rows,
+    )
     return ProvenChannel(derived["rows"], record=derived["record"], ratio=ratio, partitions=served)
 
 
 __all__ = [
     "CHANNEL",
     "ID_DIGITS",
+    "LOCATION_STORE",
     "RATIO",
     "SCHEMA",
     "SERVED",
@@ -420,10 +504,12 @@ __all__ = [
     "compare",
     "derive",
     "digest_of",
+    "finished_verdicts",
     "interleave",
     "qualifies",
     "render",
     "seed_id",
     "seed_row",
+    "stores",
     "write",
 ]

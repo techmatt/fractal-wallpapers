@@ -4114,6 +4114,7 @@ that leg's contention: three engines cost about 1.6–1.8x per candidate over on
 | 0.5461 | 5 accepted **field** modes, all three arms | 3 | 40 | 09-01 | 6,557 cand / 208 blocks | `general20` |
 | 56.92 | 9 dear + `smooth` + `exp_smoothing`, **`phoenix:classic`** | 3 | 22 | 09-02 | 16 cand / 20 blocks | `pc_pilot` |
 | 53.54 | the same roster, same plane | 3 | 11 | 09-02 | 103 cand / 13 blocks | `pc1` |
+| 35.28 | the same roster, same plane, width 3 | 3 | 3 | 09-03 | 103 cand / 35 blocks | `pc20m` |
 
 **The two 09-02 rows are the same roster as arm A at 17x its price, and the plane
 is the whole difference.** Arm A ran nine dear modes plus `smooth` and
@@ -4131,6 +4132,25 @@ material, and a leg sized off any of them would have over-planned this one by mo
 than an order of magnitude. At 53.5 s a candidate, an hour on three engines buys
 about 200 candidates here against arm A's 3,400.
 
+**The plane's price is not a constant of the plane, and `pc20m` is the evidence.**
+Six hours after `pc1`, the same roster over the same partition read **35.28 s** a
+candidate against 53.54 — a **34% fall** — and none of the things that explain a
+price moved. Maxiter: mean 15,770 against 14,443, medians 13,445 and 13,494, and
+the same 1.3e-2 median frame width. The kind mix: composite 47 both, direct 27
+against 28, field 20 against 17, modulate 9 against 11. The stage shares: paint
+0.713 → 0.699, repaint 0.208 → 0.223, dump 0.061 → 0.058. Every mode fell by
+roughly a third at once — `direct_trap_screen` 20.8 → 14.2, `smooth_stripe` 111.0
+→ 56.3, `smooth_mean_angle` 72.2 → 48.6 — which is what a machine moving looks
+like and not what a draw moving looks like.
+
+The practical consequence is the *other* direction from the one this table was
+built to warn about. A rate carried in from six hours earlier over-priced the leg
+by 52%, and only [`depth.PLAN_HEADROOM`]'s 1.6 kept it from stopping early with
+its budget unspent: `pc20m` planned 105 and made 103, landing at 1,218.6 s of
+render wall against 1,200 allowed. **Pilot the plane again rather than reading a
+figure off this table**, and treat the headroom as the thing that absorbs the
+error rather than as slack.
+
 **And on this plane the cheap modes are the ones that pay.** Over the 119
 candidates of `pc_pilot` + `pc1`, clear rate at `P(>=3) >= 0.50` against mean
 seconds a candidate: `direct_trap_screen` **72.7% at 20.8 s**, `direct_trap_lines`
@@ -4140,6 +4160,25 @@ seconds a candidate: `direct_trap_screen` **72.7% at 20.8 s**, `direct_trap_line
 `direct_trap_multiply` **0 of 11 at 84.2 s**. The two cheap direct traps are the best
 on both bars and the expensive composites are not earning their 3-5x here, so a
 second leg on this plane should be direct-trap-first.
+
+**`pc20m` re-ran that reading over 35 fresh places and it holds at the top and
+falls apart in the middle.** Its 103 candidates at width 3 clear `P(>=3) >= 0.50`
+at 29.1% against `pc1`'s 33.6%, and `direct_trap_screen` is the best mode on the
+plane a second time — **80.0% of 10 at 14.2 s**, the cheapest thing on the roster
+and the one that clears most. Below it the order does not survive: `smooth_stripe`
+55.6%, `smooth_curvature` 50.0%, `smooth_angle_min` 45.5%, `smooth_mean_angle`
+42.9%, `threads` 20.0%, and then **`direct_trap_lines` collapses from 63.6% to
+11.1%** while `smooth` goes 30.0% to **0 of 9**. So one claim is reproduced —
+the cheapest direct trap pays best here — and the rest of the ranking is noise at
+these n.
+
+**What did not reproduce at all is the top end. `P(>=4) >= 0.50` is 0 of 103**,
+against `pc1`'s 5 of 103, and the leg's whole maximum is **0.371**. Both legs drew
+never-opened places on the same partition under the same roster; this one drew 35
+places across all ten rank bands where `pc1` drew 13, so the wider draw reached
+further down the location head's rank and found no q4 at all. A per-place maximum
+over **three** modes rather than eleven is part of it and cannot be the whole of
+it: the ceiling moved from 0.723 to 0.371.
 
 **Every cell of that is n = 10 or 11, which is one pass of the roster at each place,
 and it prices an arm rather than a mode** — `MINE_overnight_full_roster_centered`'s

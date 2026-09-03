@@ -339,6 +339,55 @@ bought that.
 
 ---
 
+## ONE-CARD-A-PLACE — `phoenix_classic_20260903` is a leg's own places, best card each
+
+*Registries: both. 35 rows over 35 distinct locations, cut as two sheets —
+`smooth_render` 1 and `strange_render` 34. Registered 2026-09-03.*
+
+The population is one depth leg and nothing else. `pc20m` ran twenty minutes on
+`phoenix:classic` at width 3 over the full eleven-mode roster and opened **35
+never-opened locations**, 103 candidates; this batch is those 35 places, one card
+each, and the card is the place's **best candidate by the render judge's `P(>=4)`**
+at `640x360ss2`. So it is score-conditioned twice: the leg's ranked arm chose the
+places on the *location* head's rank within partition, and this chose the card on
+the *render* judge's.
+
+Three things a rate off these rows would get wrong.
+
+**A per-mode rate is a rate over argmaxes.** Which mode a place appears under is
+the render judge's pick among the three that place was offered, so the eight modes
+on the strange page stand on eight disjoint sets of places and cannot be
+differenced against each other. The leg's own per-mode rates, over the full 103
+candidates rather than the 35 winners, are in `curation/README.md`.
+
+**The whole batch sits below the judge's own q4 bar.** Not one of the 103
+candidates cleared `P(>=4) >= 0.50` and the leg's maximum is **0.371**, so the
+strongest card on the page is a place the judge is unsure about. The page runs
+0.3709 down to 0.0005 on the strange side and holds a single 0.0045 card on the
+smooth. Read it as *what the judge thinks is the best of a fresh plane*, never as
+a keeper population.
+
+**Every clear rate on this plane is a ceiling.** The render judge carries almost
+no `phoenix:classic` q4 labels — 38 places in the whole project hold a human q3+
+verdict there, 13 of them q4 — so its probabilities on this partition are an
+extrapolation. That is the reason this sitting exists.
+
+**Four of the six `itinerary` cards are degenerate modulates.** The engine reported
+`texture_flat` at `1280x720ss2` on all four; `texture_flat.KEYED` holds the
+geometry and nothing has measured this plane's modulates there, so
+`finished.routes_to` calls them not-flat and they ingest strange — while being the
+smooth judge's material by the project's own rule. The measure pass holds the
+measurement (`scratch/phoenix_classic_20m/strange_render/measure.json`) if anybody
+wants to extend the register.
+
+**Nothing was dropped for a pin, and nothing was already labelled.** All 35 places
+checked against `pins.every_pinned` (1,452), `smooth_render`'s 277 and
+`strange_render`'s 180 — none is pinned, and none of the 35 carried a
+finished-store row before this sheet, which is what a leg over never-opened
+locations should look like.
+
+---
+
 ## Five batches reach the candidate ledger; the other twenty-one do not
 
 *Registries: both. Measured 2026-08-28 over the 9,427 resolved scored rows.*
