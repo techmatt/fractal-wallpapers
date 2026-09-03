@@ -3893,6 +3893,46 @@ that leg's contention: three engines cost about 1.6–1.8x per candidate over on
 | 1.883 | 3 accepted **direct traps** | 3 | 40 | 09-01 | 1,440 cand / 36 whole visits | `audit_direct40` |
 | 7.360 | 5 **composites** + `itinerary` | 3 | 40 | 09-01 | 328 cand / 7 whole visits | `audit_comp40` |
 | 0.5461 | 5 accepted **field** modes, all three arms | 3 | 40 | 09-01 | 6,557 cand / 208 blocks | `general20` |
+| 56.92 | 9 dear + `smooth` + `exp_smoothing`, **`phoenix:classic`** | 3 | 22 | 09-02 | 16 cand / 20 blocks | `pc_pilot` |
+| 53.54 | the same roster, same plane | 3 | 11 | 09-02 | 103 cand / 13 blocks | `pc1` |
+
+**The two 09-02 rows are the same roster as arm A at 17x its price, and the plane
+is the whole difference.** Arm A ran nine dear modes plus `smooth` and
+`exp_smoothing` at **3.155 s** a candidate over never-opened *centered* parameter-plane
+locations; the identical roster over `phoenix:classic` reads **53.5**. Nothing about
+the roster moved. What moved is **maxiter**: this plane's admitted places sit at
+widths around 1e-4 and carry **12,243–21,702** iterations, and nine of the eleven
+modes are composites or direct traps with no field to dump, so there is nothing to
+amortise the depth against. The pilot predicted the main leg to within **6%** — the
+rate is stable, it is simply large.
+
+**So price a leg on the partition it will actually draw, not only on the roster.**
+Every other row in this table was measured over parameter-plane or `julia:*`
+material, and a leg sized off any of them would have over-planned this one by more
+than an order of magnitude. At 53.5 s a candidate, an hour on three engines buys
+about 200 candidates here against arm A's 3,400.
+
+**And on this plane the cheap modes are the ones that pay.** Over the 119
+candidates of `pc_pilot` + `pc1`, clear rate at `P(>=3) >= 0.50` against mean
+seconds a candidate: `direct_trap_screen` **72.7% at 20.8 s**, `direct_trap_lines`
+63.6% at 22.3 s, `smooth_stripe` 54.5% at 111.0 s, `smooth_mean_angle` 45.5% at
+72.2 s, `smooth` 30.0% at 14.0 s, `smooth_angle_min` / `smooth_curvature` /
+`threads` 27.3%, `itinerary` 10.0% at 83.9 s, `exp_smoothing` 9.1%, and
+`direct_trap_multiply` **0 of 11 at 84.2 s**. The two cheap direct traps are the best
+on both bars and the expensive composites are not earning their 3-5x here, so a
+second leg on this plane should be direct-trap-first.
+
+**Every cell of that is n = 10 or 11, which is one pass of the roster at each place,
+and it prices an arm rather than a mode** — `MINE_overnight_full_roster_centered`'s
+own lesson, where a 40-place pilot read two modes at 1 clearing candidate in 160 and
+they returned 51 and 40 over 1,725 each. Read the table as *where to point the next
+leg*, not as a ruling on any mode. In particular the `direct_trap_multiply` zero is
+**not** evidence against that mode: `AUDIT_direct_trap_multiply_whitewash`, the same
+day, re-read 77 of its clearing locations fresh at label geometry and found `P(>=4)`
+median **0.805** with only 4 under 0.5. That audit's population is conditioned on
+already clearing and this one is a fresh draw, so the two do not contradict — but
+eleven candidates on one plane settle nothing about a mode that has 77 good ones
+elsewhere.
 
 **The three 09-01 rows are one matched pilot** — `ranked_bands` at share 1.0, seed
 20260901, the never-opened drawable pool banded across the whole rank range, nothing

@@ -244,6 +244,58 @@ due. Twenty screened viewports were still on the shelf. A real leg on a pinned
 plane therefore wants `--low-water` and `--cooldown` moved before it wants more
 rungs.
 
+**And the cadence was the whole of it.** `LEG_phoenix_classic_supply`,
+2026-09-02, seed 0, six rungs, `--low-water 16 --cooldown 1`: **the first
+`phoenix:classic` leg ever to stop on its own clock** rather than on `nothing
+servable`. 18.3 active minutes of an 18-minute budget over 88 batches, **199
+admissions (197 distinct) against the smoke's 23 and the crawl's 8**, and the
+frontier still held 22 nodes when the budget ran out.
+
+**Why those two numbers.** `COOLDOWN` exists so a partition whose supply is
+exhausted is not re-drawn every batch to prove it — but [`Refill.starved`]
+already skips a partition with `remaining <= 0`, so on a live shelf the cooldown
+can only ever hold *screened viewports* idle, which is what it did to the smoke.
+At **1** the refill is due every batch and the draw is decided by the low-water
+mark alone. `per_draw` has no CLI lever — `Refill.__init__` defaults it to
+`low_water` and no flag sets it — so **`--low-water` is one knob doing two jobs**,
+the trigger level and the draw size. At the shipped 8 it is exactly
+`Limits.batch`, so the refill fires only once the frontier can no longer fill a
+batch and hands over exactly one batch's worth; at **16** it fires with a batch
+still in hand and hands over two. Ten draws, sixteen roots each, **0 deferred and
+0.0% of the refill share spent** — the draw is free on a pinned plane, and the
+affordability bound that was meant to protect the clock was never the one acting.
+
+**The shipped defaults are not wrong and are not changed.** They are sized for a
+ten-partition production run, where a draw every batch for every starved
+partition is a real cost. These are run flags for a single-partition leg on a
+pinned plane, which is where they belong.
+
+**Six rungs was over-provisioned, and the leg says so.** The ladder drew **426
+survivors of 5,460 frames in 130.6 s** (7.8%), and the yield *falls* with the
+rung past 4 — 0/4, 2/16, 8/64, 26/256, 91/1024, 299/4096, so 12.5%, 12.5%,
+10.2%, 8.9%, **7.3%** — which reverses the reading taken over four rungs. The leg
+served **160 of its 434 entries and left 274 on the shelf**. Four rungs (340
+frames, 8 s) would have fed it with room to spare; the extra two cost 122 s of
+screening on every session, resume included, and bought nothing this leg reached.
+
+**What a rung is worth is per root, not per frame.** Admissions by the rung the
+root was drawn at: rung 2 **3** off 2 roots, rung 3 **9** off 8, rung 4 **52** off
+26, rung 5 **64** off 71, rung 6 **52** off 45, and the proven channel **19** off
+7. So **rung 4 is the productive one** — 2.0 admissions a root against 0.90 at
+rung 5 and 1.16 at rung 6 — and the deeper rungs buy volume rather than yield. A
+leg wanting places cheaply should widen rung 4 before it adds a rung.
+
+**`pinned_root_expansions = 36` binds, on 4 roots of 160**, at 37, 37, 38 and 40
+expansions, every one of them a sampled viewport and every one in the productive
+tail — against **75 of 160 roots that died at one expansion**. The cap is doing
+what it was raised to do and is not this leg's constraint.
+
+**58 lineages booked, against the smoke's 7.** `top5_share` fell 0.913 → 0.342,
+so the admissions are spread rather than piled on two roots. Basin overlap went
+the other way and is the thing to watch: **0.683 of admissions sit inside an
+earlier one** by the walk's own saturation distance, against 0.609 for the smoke.
+More roots reach more of the plane and still converge on the same basins.
+
 **A pinned plane's fresh-root pool is one row, by construction.** No tracked pool
 held the classic point: the phoenix seed pool's 96 rows all resolve to varied
 `phoenix`, the plane pool and the deep run's anchors are parameter planes only,
