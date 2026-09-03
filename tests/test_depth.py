@@ -1044,6 +1044,79 @@ def test_the_dear_modes_are_exactly_what_a_dumped_field_cannot_serve():
 
 
 # --------------------------------------------------------------------------- #
+# The autolevel stamp: what a sequence row says its picture can be redrawn from.
+# --------------------------------------------------------------------------- #
+def test_a_row_that_acted_and_kept_its_curve_replays():
+    row = {"acted": True, "autolevel": {"acted": True, "curve": {"applies": True}}}
+    assert depth.levelling_of(row) == depth.REPLAYED
+
+
+def test_a_row_the_operator_left_alone_is_the_engines_own_bytes():
+    """Both spellings of it: the stamp that says so, and the pre-stamp row whose
+    boolean says so. An in-band picture is the switch-off render either way."""
+    assert depth.levelling_of({"acted": False, "autolevel": {"acted": False}}) == depth.UNTOUCHED
+    assert depth.levelling_of({"acted": False}) == depth.UNTOUCHED
+
+
+def test_a_pre_stamp_row_that_acted_is_unrecoverable_and_never_reads_as_untouched():
+    """Every depth row written before 2026-09-02 — 241,552 of 457,143 — is this.
+
+    The trap the reader exists to avoid: an absent stamp is falsy, so the obvious
+    `stamp.get("acted")` answers *untouched* for a row that says on its face that
+    the operator fired. That would have the library claim a render through a
+    rebuilt colormap is the engine's own bytes.
+    """
+    assert depth.levelling_of({"acted": True}) == depth.ACTED_UNRECOVERABLE
+    assert depth.levelling_of({"acted": True, "autolevel": None}) == depth.ACTED_UNRECOVERABLE
+
+
+def test_a_stamp_that_acted_without_a_curve_is_unrecoverable_too():
+    """`stops_from_stamp` rebuilds the stop list out of `curve` and nothing else,
+    so a stamp missing it is a stamp that cannot replay however complete it looks."""
+    assert depth.levelling_of({"acted": True, "autolevel": {"acted": True}}) == (
+        depth.ACTED_UNRECOVERABLE
+    )
+
+
+def test_the_worker_hands_the_whole_stamp_back_and_not_just_the_boolean(monkeypatch):
+    """The process boundary is where this was lost and where it can be lost again.
+
+    A worker returns a **dict** and not `mine.make`'s result, so a key added to
+    `mine.make` alone never reaches the parent — and the parent writes the record.
+    This calls the block function itself rather than trusting the spelling.
+    """
+    stamp = {"operator": "band_autolevel/v1", "acted": True, "curve": {"applies": True}}
+    monkeypatch.setattr(depth, "_maker_for", lambda *_a: object())
+    monkeypatch.setattr(
+        depth.mine,
+        "make",
+        lambda *_a, **_k: {
+            "picture": "p.jpg",
+            "stages": mine.Stages(),
+            "verdict": {"p_ge4": 0.5, "p_ge3": 0.9},
+            "acted": True,
+            "autolevel": stamp,
+            "colour": {},
+            "cells": [],
+            "texture_flat": False,
+        },
+    )
+    shot = depth.Shot(
+        arm=depth.RANKED,
+        location="a",
+        partition="mandelbrot",
+        mode="smooth",
+        colormap="Faded Salon",
+        k=1,
+        band="0",
+    )
+    payload = ("run", "cpu", "fields", "pictures", [(0, shot, {}, {}, None, "k")], 1e18)
+    [(_at, result)] = depth._render_block(payload)
+    assert result["autolevel"] == stamp
+    assert result["acted"] is True, "the boolean stays beside the stamp, not instead of it"
+
+
+# --------------------------------------------------------------------------- #
 # The centered roster: what an arm over the centered population draws.
 # --------------------------------------------------------------------------- #
 def test_the_centered_roster_is_the_dear_half_and_two_field_modes_less_the_ruling():

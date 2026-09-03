@@ -147,13 +147,14 @@ rebuild *and* the fast lane until you do it.
 what CI runs and what runs before a checkpoint. The fast lane is for the
 edit-run loop and nothing else.
 
-Both are measured, not estimated. The fast lane is **140.12 s over the 3,302 it
-holds**, of 3,416 there are — on this machine, idle, 2026-09-02, at the commit
-that deleted the palette clustering. The slow lane was **not** re-run there and
-its last reading stands below: **6:27**, over 3,388 tests, at the commit that
-added the viewport sampler, where the fast lane read **139.0 s over 3,276**. So
-the fast lane is flat across 26 more tests — 1.1 s and 0.8% apart — and this
-entry is re-measured rather than moved.
+Both are measured, not estimated. The fast lane is **142.06 s over the 3,307 it
+holds**, of 3,423 there are — on this machine, idle, 2026-09-02, at the commit
+that gave the depth record its autolevel stamp. It read **140.12 s over 3,302**
+two commits earlier, and **139.0 s over 3,276** at the commit that added the
+viewport sampler. The slow lane has **not** been re-run since that last one and
+its reading stands: **6:27** over 3,388 tests. So the fast lane is flat across 31
+more tests — 3.1 s and 2.2% apart — and this entry is re-measured rather than
+moved.
 
 **A reading taken beside a leg is a reading of the leg.** The same lane read
 **404.6 s over 3,281** earlier that day with a mining leg holding the render pool,

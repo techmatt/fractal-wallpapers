@@ -2543,6 +2543,23 @@ and no picture moves — the recipe still says `itinerary` and the file on disk 
 untouched. The register behind it, and what it costs to fill, is
 [`data/coloring/README.md`](../../../data/coloring/README.md).
 
+**A recorded gallery seat's `mode` is the ROUTED mode, and the catalogue mode is
+only on the ledger row.** `solve.pool` takes `routed_mode_of` before it asks the
+roster and the seat carries what came out, so `tentative.rows_of` writes it to
+`gallery.jsonl` and a reader comparing that against the ledger's `recipe.mode`
+finds them unequal on exactly the degenerate modulates. **The one place the
+catalogue mode can be read back is `recipe["mode"]` on the candidate-ledger row the
+seat's `key` names** — `recipes.of_record(row["recipe"]).mode` — and it sits on the
+same row as the `texture_flat` boolean that explains the difference, so nothing is
+lost and no reader needs a workaround. Measured on stamp `20260902T161757Z`:
+**18 of 746 seats** disagree, every one of them seat `smooth` against recipe
+`itinerary`, and every one carries `texture_flat: true`. They span nine run stores,
+so it is not a property of one leg. Ten of the eighteen were rendered after the
+engine began reporting the flag and carry its own word; the other eight predate it
+and were filled by the backfill register, where `texture_flat.flat_for` answers
+`true` for all eight and `false` for the ten it was never asked to probe. Both
+routes agree, and `routed_mode_of` answers `smooth` for all eighteen.
+
 **The 0 is wired in three places.** A weight-0 mode is out of
 the **labeling rosters** and the **default mining rosters** (both through
 `colorize.modes_for`, `mine._accepted_modes` and `hunt.plan`, so the mode draw, the
@@ -3013,6 +3030,57 @@ population nobody chose.
 
 A file and never arguments, on the standing rule — this population is hundreds of
 places long and a Windows command line overflows a long way before it does.
+
+### `sequence.jsonl` carries the whole autolevel stamp, and did not until 2026-09-02
+
+**A boolean is not a record of what the operator did.** `band_autolevel/v1` renders
+an acting candidate through a colormap it re-bakes from the tone band, so the
+picture is not the engine's own bytes and nothing but the *curve* rebuilds it —
+`autolevel.stops_from_stamp` reads `curve` and nothing else. The ledger row keeps
+only the **reduced** stamp (operator, switch, band sha256), deliberately: the curve
+is derived from the render and is not part of a recipe's identity. So the curve
+lives on the run's own record or nowhere, and for `depth` it was nowhere.
+
+`reframe_draw` puts the whole stamp on each `attempts.jsonl` row and a gallery
+`runs` pass writes it to `release/autolevel_stamps.jsonl`; the depth sequence row
+now carries it under the same key, `autolevel`, in the same shape, whenever there
+is one to carry (`None` only with the switch off). One spelling across all three,
+which is what lets the website's `builder/picks.py` read a stamp out of any run
+store with one branch.
+
+**Re-measuring is not a substitute and the numbers say so.** The same frame
+redrawn and re-measured derives a black point of **0.6336** against the **0.5953**
+the run stamped, on `ed49980b` — so a seat redrawn off a re-measurement is a
+different picture published under the same name.
+
+**Old rows are left exactly as they are.** A tracked record is never edited in
+place, and a curve back-filled from a re-measurement would be a *worse* record than
+an absent one: it would look replayable and be wrong. `depth.levelling_of` reads a
+row and answers `untouched`, `replayed` or `acted_unrecoverable` — the website's own
+three words — and **241,552 of the 457,143 depth rows across 51 runs (52.8%) are
+`acted_unrecoverable` forever**. The way out for one of them is its own file, which
+is what `picks.seat_picture` copies. The trap the reader exists to avoid: an absent
+stamp is falsy, so the obvious `stamp.get("acted")` answers *untouched* for a row
+whose boolean says the operator fired.
+
+**What it costs: ~1.16 KiB a row**, measured over `reframe_draw/q4_1h`'s 1,796
+stamps — 1,167 bytes median on an acted row, 1,149 on one left alone, `band` 300 of
+it, `curve` 373, `measured` 338. Against the sequence row's current ~824 bytes that
+is roughly double. It is worth it and it is affordable for one reason: **it lands on
+the run record, not on a durable store.** `artifacts/curation/depth/<run>/` is hot
+tier and regenerable-or-discardable by the three-way rule; the candidate ledger,
+which is the thing that has to stay small forever, is untouched and still carries
+the reduced stamp alone. An arm A-sized leg (17,694 candidates) adds about 20 MiB.
+
+The stamp is written on the **sequence** row and not on the in-memory `made` row:
+`made` is held whole for the length of the leg and feeds `curves`, `by_mode` and
+`rank_readout`, none of which reads a stamp.
+
+**`mine` has the same gap and this did not close it.** Its `rows.jsonl` is ledger
+rows, so it carries the reduced stamp and no `acted` at all; the boolean is on
+`profile.jsonl`, which nothing joins by key. `mine.make` now returns the whole stamp
+— that is where depth's comes from — so closing it is a one-line change at that
+leg's writer whenever somebody wants it.
 
 **Field modes only, and every conclusion is conditional on that.** A composite at
 forty candidates is **212 s a location, measured** — one arm's worth of places would
