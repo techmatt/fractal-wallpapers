@@ -121,6 +121,22 @@ the card is the judge's own argmax over the four. That is
 [`../batch_caveats.md`](../batch_caveats.md)'s ARGMAX-PER-PLACE entry, and the
 matched page that would settle it has never been served.
 
+**And the newest batch buys a plane at the judge's own crossing, and finds the
+judge cannot see it.** `phoenix_q3q4_20260903`, 2026-09-03: 105 verdicts here beside
+95 in `smooth_render`, one card per location, drawn as the 100 phoenix locations
+immediately above and the 100 immediately below the shipped judge's
+`P(>=4) = 0.5`. Routing was asked of `finished.routes_to` on each built join rather
+than of the ledger's stored flag — 105 of 105 route here — and the ingest resolved
+105 of 105 with nothing withheld, **103 fresh and 2 revised**, moving this store from
+5,298 rows to **5,403** and from 2,174 locations to **2,276**. It is anchored and
+score-conditioned, so it is training material. The reading worth having is negative:
+inside the band the judge's score does not order a person's tiers — Spearman
+**+0.020** on the draw column, **+0.192** at label geometry over 105 rows — while the
+same judge separates keepers from the rest at label geometry, q3+ **94.0%** above 0.5
+against **70.9%** below. The per-mode table off these rows is thin and argmax-shaped
+and both caveats are in [`../batch_caveats.md`](../batch_caveats.md) under BAND-DRAW,
+which also records the six cards whose places were already labelled.
+
 **What a registration does not say is in
 [`../batch_caveats.md`](../batch_caveats.md)**: how a live population was actually
 assembled, and what a rate quoted off it without that is wrong about. Four of this

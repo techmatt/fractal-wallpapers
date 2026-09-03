@@ -156,6 +156,11 @@ its reading stands: **6:27** over 3,388 tests. So the fast lane is flat across 3
 more tests — 3.1 s and 2.2% apart — and this entry is re-measured rather than
 moved.
 
+It read **156.01 s over 3,336** immediately after the phoenix band sitting landed
+200 rows across both finished-render stores, idle, 2026-09-02 — 9.8% over the
+figure above across 29 more tests, which is the per-test cost holding flat and is
+recorded here because it is a reading taken right after a store grew.
+
 **A reading taken beside a leg is a reading of the leg.** The same lane read
 **404.6 s over 3,281** earlier that day with a mining leg holding the render pool,
 which is 2.9x the idle figure over the same tests. That is the paragraph below

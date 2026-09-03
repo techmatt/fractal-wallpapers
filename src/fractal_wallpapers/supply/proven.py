@@ -80,6 +80,24 @@ channel can renew on its own. **The supply runs out at the rate the label store
 grows**, which is the honest reading of a channel that feeds on its own past
 output, and it is why the fresh pool is interleaved rather than displaced.
 
+**And the store it reads is the LOCATION store, which is the one this channel's
+own name does not say.** `census.label_rows` is `labeling.store.resolved()` —
+`data/labels` — so a verdict in either finished-render store buys no root, however
+high the tier. The two stores answer different questions: a finished-render 4 says
+*this picture* is worth keeping, and a root is a claim that *this place* is worth
+descending beside. Nothing in `supply/` or `discovery/` reads `finished.resolved`,
+and that is deliberate rather than a gap somebody forgot to close.
+
+It is worth stating because the arithmetic looks like it should work and does not.
+`phoenix_q3q4_20260903` landed **179 q3+ finished-render verdicts on 179 phoenix
+places** on 2026-09-03 — 174 `phoenix`, 5 `phoenix:classic` — and this channel did
+not move: 2,960 roots before and after, `phoenix` 384 and `phoenix:classic` 7 on
+both sides. One of those 200 places is known to the location store at all. Read as
+roots they would be a **45%** rise on `phoenix` and a **71%** one on
+`phoenix:classic`, so the gap is the size of the channel's whole phoenix supply and
+not a rounding error. Whether to close it is a decision about what "proven" means;
+what is not open is reading a finished-render sitting as though it already had.
+
 The tier floor is the currency's own bottom class, not a new cut: a class the
 weights table pays for is a keeper, here as everywhere else.
 """

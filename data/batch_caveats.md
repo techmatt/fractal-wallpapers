@@ -245,6 +245,32 @@ on disjoint sets of places.
 277, `strange_render` 180 — and **none** is pinned. Excluding the 97 phoenix
 locations that already carry a finished-store row is what bought most of that.
 
+**The exclusion leaked, and six cards landed on already-labelled places.** The
+method line above says every location already carrying a row in either finished
+store was excluded; at ingest, **6 of the 200** places already held one — two in
+`smooth_render` (both `smooth_decision_bands`), four reaching `strange_render`
+(`sparse_mode_head_top` twice, `p_ge4_calibration_strange`, and one whose prior row
+is in the *other* store). Two of the six are exact **render-key** matches and landed
+as revisions rather than fresh rows: a `direct_trap_lines` picture raised 2 to 3, and
+a `smooth_stripe` one restated at 3. No instrument was spent — all three prior
+batches are train-side and no place is pinned — and nothing is lost, because a
+revision is a new row over a readable old one. It is a defect in that draw and not
+in a shared helper: the place keys are digit-identical on both sides, so the join
+that finds them now would have found them then, and `judge_band_20260903`'s draw
+hours later makes the identical exclusion claim and misses **0 of 300**.
+
+**The sitting is in, and the band has no q4 signal in it — which is the answer to
+what it was cut to ask.** 200 verdicts, 2026-09-03. Over both stores the judge's
+score does not order Matt's tiers inside this band at all: Spearman(`P(>=4)`, tier)
+is **-0.029** on the `640x360ss2` column the draw was made on (p=0.69) and **+0.068**
+at label geometry (p=0.34), and **39 of his 73 fours sit below 0.5** on the draw
+column. Split at 0.5 the q4 rate runs **34.0% above against 39.0% below** — the wrong
+way round. So a rate off these rows is not merely conditional on the band, it is a
+rate over a population this judge cannot rank, and no threshold rescues it: the
+best-separating cut for a four peaks at balanced accuracy **0.52-0.57**, which is
+chance. What does survive is one reading and only at label geometry: on
+`strange_render`, q3+ runs **94.0%** above 0.5 against **70.9%** below.
+
 ---
 
 ## THREE-SLICES — `judge_band_20260903` is three populations under one name
