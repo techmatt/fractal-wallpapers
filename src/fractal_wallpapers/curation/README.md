@@ -18,6 +18,7 @@ budget     how many pictures to make, and for which judge
 colorize   a candidate set of maps, the head's pick, a render, a verdict
 framing    where a location's attempts are framed, decided before they render
 recipes    what decides a candidate's pixels, as one value with one key
+draw_weights  what a partition is worth in a breadth draw, in one table
 candidate_ledger  every recipe ever rendered, one row each, with its colour
 headroom   what each selection constraint needs, holds, and costs to buy — no solver
 view       what one pass may reach: strata, and band-blind slices of them
@@ -665,6 +666,27 @@ disk, none is recipe-only, and **no candidate render in any pass or any run
 carries an engine stamp** — `engine_fingerprint` stamps a view directory and
 candidates were never written to one — so the whole backfilled pool is
 pre-stamp material accepted as unknown-engine, by rule.
+
+**A row written from 2026-09-02 says which build drew it, and nothing acts on
+it.** `candidate_ledger.row` takes the identity digest — `engine_fingerprint`'s
+six `IDENTITY_PROBES`, the one digest a stamp carries — under the top-level
+`engine` field, and the three legs that write rows (`hunt`, `mine`, `depth`) ask
+for it **once, before their render loop**, through `candidate_ledger.live_engine`:
+the first call costs six probe renders and is cached for the process, so a
+per-row ask would have hidden that cost across a hundred thousand rows. An engine
+that will not fingerprint gives `UNKNOWN_ENGINE` rather than raising — a leg that
+has already made pictures must not fail while writing them down.
+
+It is **provenance and never a gate**, which is the whole ruling. The field is
+outside `recipe`, so no recipe key moves and no picture is re-rendered for having
+been stamped; `finished.check`, `curate solve` and `curate headroom` do not read
+it; and a row whose stamp disagrees with the live build is admitted, scored and
+seatable like any other. `candidate_ledger.engine_of` is the one reader-side
+spelling and a missing field reads `unknown`, which is what the whole standing
+pool is. Existing rows are untouched and there is no backfill: a backfill
+**carries** whatever stamp a row already had rather than stamping it with today's
+build, because the decision stores it re-derives from say nothing about an
+engine. The cost is about **30 bytes on a ~1,290-byte row, 2.3%**.
 
 **The census, at N=20.** Nothing binds. All 48 colour cells, all 12 families, all
 18 production modes and all 822 drawable palette groups are held; none is empty.
@@ -3275,7 +3297,8 @@ spelling. Each is a plan-time filter or weight; none of them adds a store.
 
 ```
 --centered {any,only,exclude}      the never-opened pool, cut on the walk ledger's flag
---partition-weights JSON           turns a round per PARTITION in the ranked draw
+--partition-weights JSON           each PARTITION's share of the breadth draw, merged
+                                   over the standing curation.draw_weights table
 --floor-untried [MODE ...]         narrow the floor draw to places never tried in those modes
 --cell CELL [CELL ...]             the aimed arm over several cells at once
 ```
@@ -3304,12 +3327,61 @@ cannot be met by a centered arm and has to be met beside it.
 
 **`--partition-weights` is the soft lean, and it is a different axis from
 `--band-weights`.** A band weight says what a stretch of the head's rank axis is
-worth and is a *measured* number; a partition weight says how much of the release a
-family is owed and is a *declared* one, off `data/supply/release_mix.json`. They
-multiply in `_cell_turns`, and neither is a floor: a partition left out still gets
-its turn a round and none is capped, so the shape stays "everyone, some more than
-others". `_interleave_by_partition` still orders the result one place per partition
-in turn, so a truncated leg keeps an even spread whatever the counts were.
+worth and is a *measured* number; a partition weight says what a family is worth
+in a draw and is a *declared* one. They multiply in `_cell_turns`, and neither is
+a floor: a partition left out still gets its turn a round and none is capped, so
+the shape stays "everyone, some more than others". `_interleave_by_partition`
+takes the **same table the draw was taken under** — it did not until the
+`overnight_c_pilot` reading below, and an unweighted interleave puts a leaned
+draw's whole surplus in the tail a clock-bound leg never reaches.
+
+### The standing draw-weight table, ruled 2026-09-02
+
+`curation/draw_weights.py` is the one table and the one copy of the turn
+arithmetic three draws share — `hunt`'s unconditional leg, `mine`'s two
+`breadth_*` arms and `depth`'s ranked draw with the two matched arms sized off
+it. Every partition is 1.0 except **`phoenix` and `phoenix:classic` at 0.25**.
+
+The reading behind it is `dtm_variants` (1,362 candidates, 7,190.6 s): those two
+partitions took **63.5% of the leg's clock for 10.6% of its candidates**, with
+`phoenix:classic` alone at **51.5% of the clock for 5.3%** — 51.46 s a candidate
+against 1.18 for `julia:multibrot5`. A weight scales a share and never removes a
+partition, so the table holds a quarter and never a zero: a partition that should
+get none of a release is *retired* from the registry, which is the rule
+`release_mix.json` already states for its ratios.
+
+```
+--partition-weights '{"phoenix:classic": 1}'      # an aimed leg, at full weight
+--partition-weights '{"mandelbrot": 3}'           # a release-mix lean, phoenix still 0.25
+--partition-weights '{"phoenix": 0}'              # out of THIS leg's draw, by explicit ask
+```
+
+**The override is merged over the table rather than replacing it**, so a leg says
+what it is changing: a leg leaning toward the release mix cannot silently
+re-inflate the pinned plane by not mentioning it, and a leg aimed at a phoenix
+plane names one key. It reaches the plan and not only the declaration — the
+record's `partition_weights` is the table the leg **ran**, and
+`partition_weights_default` is what it inherited. Three things are deliberately
+outside it: `hunt`'s conditioned leg (a work order already says which partitions
+it means), the walk, harvest-production and proving legs' own `--partition`, and
+the two other axes — `--band-weights` and `release_mix.json` — which multiply
+with this rather than being overridden by it. `--centered only` is **not** an
+exemption: it is a filter on the same breadth draw, so it draws under the table
+like everything else, and a centered leg aimed at a dear partition uses the
+override above.
+
+Fractional weights only started acting on 2026-09-02. All three sites did the
+arithmetic as `int(round(weight))`, which turns 0.25 into **zero turns** in the
+ranked draw — the partition gone, which the rule forbids — and into **one turn**
+at the interleave and in `hunt._turns`, which is no lean at all.
+`draw_weights.turns_of` scales the table so its smallest positive weight buys one
+turn, leaves an all-integer table exactly as it was, and `draw_weights.order`
+lays the round out so every **prefix** leans too.
+
+And a partition that drew nothing is now reported as a **zero** rather than being
+absent from the record: `dtm_breadth2` ran `phoenix: 0` and its `depth.json` has
+no phoenix key at all, so a partition a leg deliberately left out cannot be told
+from one that did not exist when the leg ran.
 
 **`--floor-untried` is the opened-but-shallow population.** The floor draw stands on
 `proven_places` — a location already over the seating bar — and this narrows that to

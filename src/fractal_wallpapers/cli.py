@@ -9145,11 +9145,13 @@ def curate_commands(subcommands) -> None:
     depth_step.add_argument(
         "--partition-weights",
         metavar="JSON",
-        help="how many turns a round each PARTITION gets in the ranked draw, as JSON keyed "
-        'by partition, e.g. \'{"mandelbrot": 3, "julia:mandelbrot": 3}\'. A partition left '
-        "out gets one turn. A soft lean and never a floor — nothing is capped and nothing "
-        "is starved — which is how a production leg follows data/supply/release_mix.json "
-        "without turning a ratio table into a quota",
+        help="what share of the breadth draw each PARTITION gets, as JSON keyed by "
+        'partition, e.g. \'{"mandelbrot": 3, "julia:mandelbrot": 3}\'. Fractions are '
+        "allowed, and this is MERGED OVER the standing table in curation.draw_weights "
+        "(phoenix and phoenix:classic at 0.25, every other partition at 1.0) rather than "
+        "replacing it, so a leg says what it is changing. A soft lean and never a floor: "
+        "a partition left out keeps its standing weight, nothing is capped, and a "
+        "partition is out of the draw only where a weight of 0 is named here",
     )
     depth_step.add_argument(
         "--centered",

@@ -179,6 +179,29 @@ def test_a_location_the_head_cannot_score_sorts_last_rather_than_being_dropped()
     assert [row["key"] for row in drawn] == ["mandelbrot-1", "mandelbrot-0"]
 
 
+def test_both_breadth_arms_here_run_under_the_standing_partition_weights():
+    """The arms are spelled `breadth_ranked` and `breadth_flat`, so they are
+    breadth arms and inherit the table [`curation.draw_weights`] holds. A mine is
+    a measurement of what a route costs and takes no weight of its own; what it
+    must not do is price a route under a draw the rest of the project has stopped
+    taking."""
+    from fractal_wallpapers.curation import draw_weights
+
+    held = pools({"mandelbrot": 40, "phoenix": 40})
+    head = {str(row["key"]): {"p_ge3": 0.5} for rows in held.values() for row in rows}
+    drawn = mine.ranked_places(held, head, seed=1, count=20, weights=draw_weights.table())
+    tally = {name: sum(1 for row in drawn if row["partition"] == name) for name in held}
+    assert tally["phoenix"] > 0, "a weight is never a gate"
+    assert tally["phoenix"] * 2 < tally["mandelbrot"], tally
+
+
+def test_an_unweighted_mine_draw_is_the_round_robin_it_always_was():
+    held = pools({"mandelbrot": 3, "phoenix": 3})
+    head = {str(row["key"]): {"p_ge3": 0.5} for rows in held.values() for row in rows}
+    drawn = [row["partition"] for row in mine.ranked_places(held, head, seed=1, count=4)]
+    assert drawn == ["mandelbrot", "phoenix", "mandelbrot", "phoenix"]
+
+
 def test_flat_takes_exactly_the_per_partition_counts_it_is_matched_to():
     held = pools({"mandelbrot": 20, "phoenix": 20, "julia:mandelbrot": 20})
     drawn = mine.flat_places(held, seed=5, want={"mandelbrot": 4, "phoenix": 2})

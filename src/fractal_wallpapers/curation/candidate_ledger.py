@@ -114,6 +114,11 @@ SCORES_NAME = "scores.jsonl"
 #: the property that makes it safe to compare against.
 UNKNOWN_ENGINE = engine_fingerprint.UNKNOWN
 
+#: What a row calls the build that drew it. One field, sixteen hex characters and
+#: about 30 bytes against a row's ~1,290 — 2.3% — which is the whole cost of a
+#: pool that can be asked, in a year, which engine made a picture.
+ENGINE_FIELD = "engine"
+
 #: Which store a backfilled row came out of. A run records every scored candidate
 #: in the tracked release store; a gallery pass records its attempts in
 #: [`curation.gallery_store`] instead.
@@ -252,6 +257,7 @@ def row(
     picture: str | None = None,
     rejected: dict | None = None,
     texture_flat: bool = False,
+    engine: str | None = None,
 ) -> dict:
     """One ledger row: a recipe, where it stands, what colour it is, who made it.
 
@@ -333,6 +339,12 @@ def row(
         # sixteen of the seventeen.
         "texture_flat": bool(texture_flat),
         "colour": colour_kept(colour),
+        # Which build drew the pixels, as PROVENANCE and nothing else — see
+        # [`engine_of`] for what does not read it. Unsaid is [`UNKNOWN_ENGINE`]:
+        # this function renders nothing and asks nothing, so a caller that did
+        # not name a build did not have one, and the whole backfilled pool is
+        # exactly that. It is outside `recipe`, so the recipe key does not move.
+        ENGINE_FIELD: str(engine or UNKNOWN_ENGINE),
         "provenance": {
             "run": source.get("run"),
             "candidate": source.get("candidate"),
@@ -365,6 +377,44 @@ def live_artifact() -> str:
     from fractal_wallpapers.curation import floors
 
     return floors.live_stamp(floors.SCORING_HEAD)
+
+
+def live_engine() -> str:
+    """The build a leg is drawing with, or [`UNKNOWN_ENGINE`] where it cannot be asked.
+
+    **Called once by a leg, before its render loop, and never per row.**
+    [`engine_fingerprint.current`] costs six renders the first time a process asks
+    and is cached after that, so the cost is real and it is paid where a leg can
+    see it — not spread invisibly over a hundred thousand row builds.
+
+    An engine that will not fingerprint gives [`UNKNOWN_ENGINE`] rather than
+    raising. This field is **provenance and never a gate**: a leg that has already
+    made pictures must not fail at the moment it writes them down because the
+    probe set would not render, and a row that says "nobody wrote it down" is
+    exactly what such a leg produced.
+    """
+    try:
+        return engine_fingerprint.current()
+    except (engine_fingerprint.FingerprintError, OSError, RuntimeError):
+        return UNKNOWN_ENGINE
+
+
+def engine_of(stored: dict) -> str:
+    """The build a row says drew it. [`UNKNOWN_ENGINE`] where the row says nothing.
+
+    **One spelling, reader-side.** The whole standing pool predates the stamp, so
+    a missing field is the ordinary case and not an error; a reader that spelled
+    it `None`, `""` and `"unknown"` in three places would have three different
+    populations of pre-stamp material.
+
+    Nothing in this project **acts** on the answer. It is not in the recipe key,
+    [`labeling.finished.check`] does not read it, `curate solve` and
+    `curate headroom` do not read it, and a row whose stamp disagrees with the
+    live build is admitted, scored and seatable exactly like any other. The
+    guard that a picture is still the picture that was judged is a *re-render*
+    (`tests/test_renders.py`), and this field does not become one.
+    """
+    return str((stored or {}).get(ENGINE_FIELD) or UNKNOWN_ENGINE)
 
 
 def scores_by_recipe(scores=None, artifact: str | None = None, regime: str | None = None) -> dict:
@@ -2160,6 +2210,15 @@ def backfill(recolour: bool = False, log=print) -> dict:
                 picture=None if picture is None else tracked_name(picture),
                 rejected=rejected,
                 texture_flat=flat,
+                # **Carried, never re-asked.** A backfill re-derives a row from
+                # the decision stores and the picture on disk, and neither says
+                # which build drew it — but the row standing here may already
+                # say, and this function rewrites every row it touches. Stamping
+                # with the *live* build would be a lie about an old picture and
+                # dropping the field would make a backfill quietly un-stamp the
+                # pool. Absent on both sides, the answer is unknown-engine, which
+                # is what the whole backfilled pool is.
+                engine=engine_of(known.get(key) or {}),
             )
         )
         scores.extend(_scores_for(key, recipe, every_row, artifacts))
@@ -2611,6 +2670,7 @@ __all__ = [
     "SCHEMA",
     "SCORES_NAME",
     "UNIT",
+    "ENGINE_FIELD",
     "UNKNOWN_ENGINE",
     "backfill",
     "canonical_artifacts",
@@ -2619,12 +2679,14 @@ __all__ = [
     "colour_block",
     "colour_kept",
     "delete_pictures",
+    "engine_of",
     "hunt_block",
     "durable_rows",
     "durable_scores",
     "feasibility",
     "k_of",
     "live_artifact",
+    "live_engine",
     "manifest_dir",
     "missing_pictures",
     "merge",

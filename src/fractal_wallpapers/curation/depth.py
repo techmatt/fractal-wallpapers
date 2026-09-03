@@ -57,7 +57,15 @@ from dataclasses import field as dataclass_field
 from datetime import UTC, datetime
 from pathlib import Path
 
-from fractal_wallpapers.curation import candidate_ledger, framing, hunt, mine, recipes, release
+from fractal_wallpapers.curation import (
+    candidate_ledger,
+    draw_weights,
+    framing,
+    hunt,
+    mine,
+    recipes,
+    release,
+)
 from fractal_wallpapers.paths import tracked_name, under
 
 #: The schema every record and every row this module writes carries.
@@ -561,11 +569,18 @@ def banded_places(
     which are the whole question — with two locations each.
 
     `partition_weights` bends that round robin without breaking it: a partition
-    named there gets that many turns a round instead of one, which is how a
-    production leg leans toward `data/supply/release_mix.json` **softly**. It is
-    a weight and never a floor — a partition left out still gets its turn, and no
-    partition is capped — so the shape stays "everyone, some more than others"
-    rather than "these and then whatever is left".
+    gets turns a round in proportion to its weight rather than one, which is how a
+    leg leans **softly** — toward `data/supply/release_mix.json`, or away from
+    what a partition costs to render. It is a weight and never a floor: a
+    partition left out still gets its turn and none is capped, so the shape stays
+    "everyone, some more than others" rather than "these and then whatever is
+    left". Fractions act, which they did not until 2026-09-02 — see
+    [`curation.draw_weights.turns_of`].
+
+    **The table itself is resolved in [`build_plan`] and not here.** This takes
+    what it is given, so a caller measuring the draw can hand it nothing and get
+    the even spread; a leg gets the standing table with its own overrides merged
+    over it, and the record reports the table the leg actually ran.
     """
     cells = []
     for name in sorted(banded):
@@ -602,13 +617,18 @@ def _weighted_order(cells: list, weights: dict | None, partitions: dict | None =
 
     The two axes multiply, and they mean different things. A band weight says
     what a stretch of the head's rank axis is worth and is a *measured* number;
-    a partition weight says how much of the release a family is owed and is a
-    *declared* one, read off `data/supply/release_mix.json`. A measuring run
-    leaves both alone; a production run may bend either.
+    a partition weight says what a family is worth in a draw — how much of the
+    release it is owed, off `data/supply/release_mix.json`, against what it costs
+    to render, off [`curation.draw_weights`] — and is a *declared* one. A
+    measuring run leaves both alone; a production run may bend either.
     """
     if not weights and not partitions:
         return list(cells)
-    turns = {key: _cell_turns(weights, partitions, key) for key in cells}
+    # The partition half is scaled once over the whole table rather than read
+    # per cell, because a fractional weight only means anything against the
+    # others: 0.25 is a quarter of a turn on its own and one turn against four.
+    per_partition = draw_weights.turns_of({name for name, _at in cells}, partitions)
+    turns = {key: _cell_turns(weights, per_partition, key) for key in cells}
     out: list = []
     for turn in range(max(1, max(turns.values(), default=1))):
         for key in cells:
@@ -617,12 +637,16 @@ def _weighted_order(cells: list, weights: dict | None, partitions: dict | None =
     return out or list(cells)
 
 
-def _cell_turns(weights: dict | None, partitions: dict | None, key: tuple) -> int:
-    """How many turns a round one (partition, band) cell gets. 0 skips it."""
+def _cell_turns(weights: dict | None, partition_turns: dict, key: tuple) -> int:
+    """How many turns a round one (partition, band) cell gets. 0 skips it.
+
+    `partition_turns` is [`curation.draw_weights.turns_of`]'s output and not the
+    weight table: the scaling that turns 0.25 into one turn against four is over
+    the whole table at once, and a per-cell `round()` of it is the bug that made
+    a quarter-weight partition disappear from the draw entirely.
+    """
     name, at = key
-    return max(0, _turns_for(weights or {}, at)) * max(
-        0, int(round(float((partitions or {}).get(str(name), 1.0))))
-    )
+    return max(0, _turns_for(weights or {}, at)) * max(0, int(partition_turns.get(str(name), 1)))
 
 
 def _turns_for(weights: dict, at: int) -> int:
@@ -673,7 +697,7 @@ def strongest_bands(banded: dict, keep: int | None) -> dict:
     return {name: list(held)[:keep] for name, held in banded.items()}
 
 
-def spread_over_partitions(banded: dict, places: int) -> dict:
+def spread_over_partitions(banded: dict, places: int, weights: dict | None = None) -> dict:
     """`places` locations spread round-robin over the partitions that hold stock.
 
     The partition mix a matched draw takes when there is **no ranked draw to
@@ -682,19 +706,27 @@ def spread_over_partitions(banded: dict, places: int) -> dict:
     controls beside it; a run that is only the two matched arms would size them
     off a draw it did not take, which is a mix of zero.
 
-    Round-robin and not proportional, for [`banded_places`]'s reason: what is
-    being bought is a comparison between two arms, and a draw proportional to
-    stock would put most of both arms in whichever partition the pool happens to
-    be fat in and read as a fact about the colour.
+    Round-robin and not proportional to stock, for [`banded_places`]'s reason:
+    what is being bought is a comparison between two arms, and a draw
+    proportional to stock would put most of both arms in whichever partition the
+    pool happens to be fat in and read as a fact about the colour. `weights`
+    bends the round the same way it bends the ranked draw's — this is the matched
+    arms' own mix when there is no ranked draw to inherit one from, so a leg of
+    matched arms alone must lean the same way a leg with a ranked draw does.
+
+    A partition that holds stock and drew nothing comes back a **zero**; one that
+    holds no stock at all is absent, which is the different fact `drawn_from`
+    already reports.
     """
     stock = {name: sum(len(band) for band in held) for name, held in banded.items()}
     out: dict = dict.fromkeys(sorted(name for name, held in stock.items() if held), 0)
     if not out:
         return {}
+    order = draw_weights.order(list(out), weights)
     given = 0
     while given < int(places):
         took = False
-        for name in list(out):
+        for name in order:
             if given >= int(places):
                 break
             if out[name] < stock[name]:
@@ -703,7 +735,7 @@ def spread_over_partitions(banded: dict, places: int) -> dict:
                 took = True
         if not took:
             break
-    return {name: count for name, count in out.items() if count}
+    return dict(out)
 
 
 def proven_places(best: dict, places: dict, seed: int, count: int, bar: float = SEATING_BAR):
@@ -819,15 +851,16 @@ def _interleave_by_partition(places: list, weights: dict | None = None) -> list:
     for row in places:
         pools.setdefault(str(row["partition"]), []).append(row)
     order = sorted(pools)
+    turns = draw_weights.turns_of(order, weights, floor=1)
     at = dict.fromkeys(order, 0)
     out: list = []
     while len(out) < len(places):
         took = False
         for name in order:
-            # `max(1, ...)`: a weight here is a lean and never a gate. A partition
+            # `floor=1`: a weight here is a lean and never a gate. A partition
             # in `places` was already chosen by the draw, and dropping it at the
             # interleave would starve a partition the draw deliberately kept.
-            for _turn in range(max(1, int(round(float((weights or {}).get(name, 1.0)))))):
+            for _turn in range(turns[name]):
                 if at[name] < len(pools[name]):
                     out.append(pools[name][at[name]])
                     at[name] += 1
@@ -1126,6 +1159,11 @@ def build_plan(
     from fractal_wallpapers.curation import colorize, mode_policy
     from fractal_wallpapers.palettes import dominance
 
+    # **The standing draw-weight table is resolved here and nowhere lower**, so
+    # every arm below draws under one table and the record reports the table the
+    # leg actually ran. `--partition-weights` is merged over it rather than
+    # replacing it — see [`curation.draw_weights.table`].
+    partition_weights = draw_weights.table(partition_weights)
     roster = list(roster if roster is not None else field_modes())
     if not roster:
         raise DepthRefused(
@@ -1232,7 +1270,13 @@ def build_plan(
         if want.get(RANKED)
         else []
     )
-    counts = collections.Counter(str(row["partition"]) for row in ranked)
+    # Tallied over the pool that was drawn FROM and not over what was drawn, so a
+    # partition the draw took nothing from reports a zero. Absence and zero are
+    # different facts and the record used to spell them the same way: `dtm_breadth2`
+    # ran `phoenix: 0` and its record has no phoenix key at all.
+    counts = draw_weights.tallied(
+        pools, collections.Counter(str(row["partition"]) for row in ranked)
+    )
     picked = {str(row["key"]) for row in ranked}
     # The two matched arms draw out of one band cut, so `--top-bands` moves both
     # or neither: a control taken from a different stretch of the rank axis than
@@ -1242,11 +1286,23 @@ def build_plan(
         # Sized off the ranked draw's realized partition counts, which is what a
         # run measuring the curve and buying the controls beside it wants.
         scale = float(shares[FLAT]) / max(1e-9, float(shares[RANKED]))
-        flat_want = {name: max(1, round(count * scale)) for name, count in counts.items()}
-        aimed_want = {name: max(1, round(count * scale)) for name, count in counts.items()}
+        # `max(1, ...)` on a partition the ranked draw actually reached, and a
+        # plain zero on one it did not: the matched arms are matched to the ranked
+        # draw, so a partition that draw was told to leave out cannot come back
+        # here with a floor of one.
+        flat_want = {
+            name: (max(1, round(count * scale)) if count else 0) for name, count in counts.items()
+        }
+        aimed_want = {
+            name: (max(1, round(count * scale)) if count else 0) for name, count in counts.items()
+        }
     else:
-        flat_want = spread_over_partitions(matched, max(1, want.get(FLAT, 0) // max(1, width)))
-        aimed_want = spread_over_partitions(matched, max(1, want.get(AIMED, 0) // max(1, width)))
+        flat_want = spread_over_partitions(
+            matched, max(1, want.get(FLAT, 0) // max(1, width)), partition_weights
+        )
+        aimed_want = spread_over_partitions(
+            matched, max(1, want.get(AIMED, 0) // max(1, width)), partition_weights
+        )
     flat = (
         flat_places(matched, picked, seed + 1, flat_want, partition_weights)
         if want.get(FLAT)
@@ -1356,7 +1412,8 @@ def build_plan(
         },
         "drawable": {name: len(held) for name, held in sorted(world["pools"].items())},
         "drawn_from": {name: len(held) for name, held in sorted(pools.items())},
-        "partition_weights": dict(partition_weights or {}),
+        "partition_weights": dict(partition_weights),
+        "partition_weights_default": draw_weights.table(),
         "floor_untried": list(floor_untried or []),
         "floor_places_named": len(floor_places or []),
         "floor_population": len(floor_pool),
@@ -1660,6 +1717,9 @@ def run(
     )
     # The parent's own Maker resolves recipes and sweeps the field cache; it never
     # judges, so it never loads the judge. The workers hold theirs.
+    # Once, before anything renders: the build every row this leg writes will name.
+    # See [`candidate_ledger.live_engine`] for why it is not asked per row.
+    build = candidate_ledger.live_engine()
     maker = hunt.Maker(name, device=device, log=log, fields=fields_dir(name))
     price = hunt.Price()
     clock = mine.Clock()
@@ -1717,6 +1777,7 @@ def run(
             colour=result["colour"],
             picture=tracked_name(Path(result["picture"])),
             texture_flat=result["texture_flat"],
+            engine=build,
         )
         stored["hunt"] = candidate_ledger.hunt_block(
             {"seconds": round(stages.total(), 3), **shot.named()}

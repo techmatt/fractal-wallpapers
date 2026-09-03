@@ -540,6 +540,10 @@ ROW_MEMBERS = {
         # routers and the mode floors that follow the pool.
         "texture_flat",
         "colour",
+        # The build that drew the pixels, added 2026-09-02. The one member here
+        # nothing reads on purpose: it is provenance, about 30 bytes on a ~1,290
+        # byte row, and the rule is that no reader may ever act on it.
+        "engine",
         "provenance",
         "picture",
         "rejected",
@@ -1531,3 +1535,129 @@ def test_the_prune_s_own_stub_carries_the_mode_s_settings(tmp_path):
     # And the bare mode is still what the rank key's fitted population sees: a
     # variant is ranked as what it is a variant OF.
     assert {held["mode"] for held in meta} == {"direct_trap_multiply"}
+
+
+# --------------------------------------------------------------------------- #
+# Which engine drew it: provenance, and never a gate.
+# --------------------------------------------------------------------------- #
+def a_row(**over):
+    """One fresh ledger row off the fixture decision, `over` passed to `row`."""
+    made = decision()
+    recipe = recipes.of_decision(made)
+    return candidate_ledger.row(
+        recipe=recipe,
+        key=recipes.key_of(recipe),
+        source=made,
+        colour=None,
+        picture=None,
+        **over,
+    )
+
+
+def test_a_fresh_row_carries_the_build_the_leg_named():
+    stored = a_row(engine="0123456789abcdef")
+    assert stored[candidate_ledger.ENGINE_FIELD] == "0123456789abcdef"
+    assert candidate_ledger.engine_of(stored) == "0123456789abcdef"
+
+
+def test_a_row_nobody_named_a_build_for_reads_unknown_engine_in_one_spelling():
+    """The whole standing pool is pre-stamp material, so a missing field is the
+    ordinary case: three spellings of it would be three populations."""
+    stored = a_row()
+    assert stored[candidate_ledger.ENGINE_FIELD] == candidate_ledger.UNKNOWN_ENGINE
+    assert candidate_ledger.engine_of(stored) == candidate_ledger.UNKNOWN_ENGINE
+    assert candidate_ledger.engine_of({}) == candidate_ledger.UNKNOWN_ENGINE
+    assert candidate_ledger.engine_of({"engine": None}) == candidate_ledger.UNKNOWN_ENGINE
+
+
+def test_the_stamp_is_not_in_the_recipe_key():
+    """The one property that makes this safe to add to a store of 180,000 rows:
+    a stamped and an unstamped copy of one spec are the same recipe, so no
+    existing key moves and no picture is re-rendered for having been stamped."""
+    stamped, bare = a_row(engine="0123456789abcdef"), a_row()
+    assert stamped["key"] == bare["key"]
+    assert stamped["recipe"] == bare["recipe"]
+    assert candidate_ledger.ENGINE_FIELD not in stamped["recipe"]
+    assert recipes.key_of(recipes.of_record(stamped["recipe"])) == stamped["key"]
+    # And the same pixels: `Recipe.row` is the bridge to the engine spec
+    # [`renders.spec_of`] reads, so a stamped row re-renders to the same picture.
+    stamped_spec = renders.spec_of(recipes.of_record(stamped["recipe"]).row(), Path("out.jpg"))
+    assert stamped_spec == renders.spec_of(recipes.of_record(bare["recipe"]).row(), Path("out.jpg"))
+
+
+def test_a_row_stamped_by_another_build_is_admitted_scored_and_seatable(isolated):
+    """A mismatch is a fact about which engine drew a picture and never a verdict
+    on the picture. Nothing here refuses it, voids it, or re-renders it."""
+    stale = a_row(engine="ffffffffffffffff")
+    scored = candidate_ledger.score_row(
+        key=stale["key"],
+        artifact="art",
+        regime=recipes.CANDIDATE_REGIME.spelled,
+        head="field",
+        read={"p_ge4": 0.9, "p_ge3": 0.95},
+        source=decision(),
+    )
+    candidate_ledger.merge([stale], [scored], log=lambda *_: None)
+    (back,) = candidate_ledger.read()
+    assert candidate_ledger.engine_of(back) == "ffffffffffffffff", "the merge kept the field"
+    assert back["key"] == stale["key"], "and the key it is joined on did not move"
+    assert candidate_ledger.scores_by_recipe(artifact="art")[back["key"]]["p_ge4"] == 0.9
+
+
+def test_nothing_downstream_reads_the_stamp():
+    """Provenance is a field a person reads later, and the moment something acts
+    on it the pre-stamp pool becomes a population that fails a check nobody
+    intended. Held on the source, because a behavioural test can only prove the
+    readers that exist today do not read it."""
+    from fractal_wallpapers.curation import headroom, solve
+    from fractal_wallpapers.labeling import finished
+
+    for module in (finished, solve, headroom):
+        text = Path(module.__file__).read_text(encoding="utf-8")
+        assert f'"{candidate_ledger.ENGINE_FIELD}"' not in text, module.__name__
+        assert "engine_of" not in text, module.__name__
+
+
+def test_every_leg_that_makes_a_row_names_the_build_it_drew_with():
+    """Three legs write ledger rows and each has to pass the stamp; a leg that
+    forgot would write unknown-engine rows on a machine that could have said."""
+    import ast
+
+    for name in ("hunt", "depth", "mine"):
+        source = Path(f"src/fractal_wallpapers/curation/{name}.py").read_text(encoding="utf-8")
+        calls = [
+            node
+            for node in ast.walk(ast.parse(source))
+            if isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "row"
+            and isinstance(node.func.value, ast.Name)
+            and node.func.value.id == "candidate_ledger"
+        ]
+        assert calls, f"{name} no longer builds ledger rows — has the door moved?"
+        for call in calls:
+            named = {keyword.arg for keyword in call.keywords}
+            assert "engine" in named, f"{name}.py line {call.lineno} writes an unstamped row"
+        assert "candidate_ledger.live_engine()" in source, (
+            f"{name} must ask for the build once, before its render loop"
+        )
+
+
+def test_a_backfill_carries_a_stamp_rather_than_erasing_or_inventing_one(isolated, monkeypatch):
+    """A backfill rewrites every row from the decision stores, which say nothing
+    about a build. Stamping with the live one would be a lie about an old
+    picture, and dropping the field would quietly un-stamp the pool."""
+    monkeypatch.setattr(
+        candidate_ledger,
+        "sources",
+        lambda: [{**decision(), "_store": candidate_ledger.FROM_GALLERY}],
+    )
+    candidate_ledger.backfill(log=lambda *_: None)
+    (bare,) = candidate_ledger.read()
+    assert candidate_ledger.engine_of(bare) == candidate_ledger.UNKNOWN_ENGINE
+
+    stamped = {**bare, candidate_ledger.ENGINE_FIELD: "0123456789abcdef"}
+    candidate_ledger.merge([stamped], [], log=lambda *_: None)
+    candidate_ledger.backfill(log=lambda *_: None)
+    (after,) = candidate_ledger.read()
+    assert candidate_ledger.engine_of(after) == "0123456789abcdef"
