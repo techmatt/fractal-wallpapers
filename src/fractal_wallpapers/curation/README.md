@@ -1491,6 +1491,13 @@ pool, same bars, same rules, same objective, same draw seed — and writes the s
 a UTC stamp that is **never written over**, because the IDs in it are what a figure
 prompt names.
 
+**A record is about a minute and a half, not the hours a leg is.** At `n=1000` over a
+pool of ~169,000 candidates it ran **89 s end to end** — 58.5 s of that the solve
+itself, the rest the pool load, the `centered` join and the page. Nothing here renders:
+`record` is taken with `--no-render` and the tiles are the candidate pictures the solve
+chose from, so the cost is reading and arithmetic. It still holds the pool, so it is one
+of the processes the one-pool-holding-process rule counts.
+
 **The ID is the ledger recipe key**, and the alias is its first eight characters,
 lengthened only for the group that collides. Both resolve; a click on the alias in the
 page copies the full key.
