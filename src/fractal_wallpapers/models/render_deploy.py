@@ -53,9 +53,11 @@ consequences of the trainer's own guard rather than a rule this module adds — 
 blind sheets stay unspent because nothing here reads them, not because anything
 here was designed around them.
 
-That closure is 802 rows of 10,299 at this writing, 598 of them pinned outright.
+That closure is 837 rows of 11,019 at this writing, 598 of them pinned outright.
 It is under the 20% the split wants, so the draw fills the rest at random and the
-holdout lands on its share rather than overshooting it.
+holdout lands on its share rather than overshooting it. It was 802 of 10,299 for
+the `deploy` band; the pinned count is the same 598 both times, because a sitting
+grows the training side and the pin is the thing that never moves.
 
 ## The stopping rule is AVERAGE PRECISION at `>=3`
 
@@ -143,6 +145,29 @@ SEEDS: tuple[int, ...] = (0, 1, 2)
 #: The name each seed's run and directory carries under `models/render/`.
 RUN_PREFIX = "deploy_seed"
 
+#: The band a run belongs to, and the first half of every name in it. One band is
+#: one whole pass of this module — three seeds over the corpus as it stood — and
+#: the band is in the name so that a later pass does not land on an earlier one's
+#: checkpoints. [`DEPLOY`] is the pass that shipped weights-v5 and keeps the bare
+#: `deploy_seed<N>` names it was written under; every later band prefixes its own.
+DEPLOY = "deploy"
+BAND = DEPLOY
+
+#: What each band was, in one sentence. A band that is not here is a scratch pass:
+#: nothing reads it and no artifact came out of it.
+BANDS: dict[str, str] = {
+    DEPLOY: (
+        "the first pass of this module, 2026-08-30. Shipped weights-v5 out of "
+        "deploy_seed1 at epoch 17, its chosen epochs 3/17/9 — a spread of fourteen, so "
+        "the rule was not reading signal, and the shipping seed stopped at the cap"
+    ),
+    "deploy_v6": (
+        "the same recipe and the same rule over the stores after the dtm-variants, "
+        "judge-band, phoenix-q3q4 and phoenix-classic sittings landed, 2026-09-03. No "
+        "recipe key moves; the corpus is what grew. Shipped weights-v6"
+    ),
+}
+
 #: The fractions every epoch's precision is reported at. 0.10 is about the rate
 #: the seating stage admits at (9.76% of the ledger's live score rows clear
 #: `curation.mine.SEATING_BAR`); 0.04 is about the primed bar's (3.88% clear
@@ -174,13 +199,21 @@ def root() -> Path:
     return under("render_deploy")
 
 
-def run_name(seed: int) -> str:
-    return f"{RUN_PREFIX}{int(seed)}"
+def run_name(seed: int, band: str = BAND) -> str:
+    """`deploy_seed<N>` for the first band, `<band>_seed<N>` for every later one.
+
+    The first band's names are bare because they were written before there was a
+    second one and its records are on disk under them. Renaming those would make
+    every report that quotes `deploy_seed1` wrong about a run that still exists.
+    """
+    if str(band) == DEPLOY:
+        return f"{RUN_PREFIX}{int(seed)}"
+    return f"{band}_seed{int(seed)}"
 
 
-def run_dir(seed: int) -> Path:
+def run_dir(seed: int, band: str = BAND) -> Path:
     """Where one seed's checkpoints land: beside the shipped heads, as bands do."""
-    return render_train.head_dir(run_name(seed))
+    return render_train.head_dir(run_name(seed, band))
 
 
 # --------------------------------------------------------------------------- #
@@ -315,9 +348,22 @@ def sides_for(seed: int, population=None) -> tuple[list[dict], list, dict]:
     return rows, pictures, split
 
 
-def write_split(seed: int) -> tuple[Path, dict]:
+def split_path(seed: int, band: str = BAND) -> Path:
+    """Where one seed's split record lands. The first band's names stay bare."""
+    stem = f"split_seed{int(seed)}" if str(band) == DEPLOY else f"split_{band}_seed{int(seed)}"
+    return root() / f"{stem}.json"
+
+
+def choice_path(band: str = BAND) -> Path:
+    """Where one band's three curves and its pick land."""
+    return root() / ("choice.json" if str(band) == DEPLOY else f"choice_{band}.json")
+
+
+def write_split(seed: int, band: str = BAND) -> tuple[Path, dict]:
     _rows, _pictures, split = sides_for(seed)
-    path = root() / f"split_seed{int(seed)}.json"
+    split["band"] = str(band)
+    split["run"] = run_name(seed, band)
+    path = split_path(seed, band)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(split, indent=1) + "\n", encoding="utf-8", newline="\n")
     return path, split
@@ -429,12 +475,20 @@ def readouts(labels, probabilities, classes: int) -> dict:
 # --------------------------------------------------------------------------- #
 # The runs.
 # --------------------------------------------------------------------------- #
-def fit(seed: int, device: str = "auto", epochs: int | None = None, rule: str = RULE, log=None):
+def fit(
+    seed: int,
+    device: str = "auto",
+    epochs: int | None = None,
+    rule: str = RULE,
+    band: str = BAND,
+    workers: int | None = None,
+    log=None,
+):
     """Train one seed of the head that ships: the incumbent recipe, the new rule."""
     if rule not in RULES:
         raise DeployError(f"{rule!r} is not a stopping rule here; they are {sorted(RULES)}")
     objective, says = RULES[rule]
-    directory = run_dir(seed)
+    directory = run_dir(seed, band)
     directory.mkdir(parents=True, exist_ok=True)
 
     def split():
@@ -445,7 +499,7 @@ def fit(seed: int, device: str = "auto", epochs: int | None = None, rule: str = 
         device=device,
         epochs=EPOCHS if epochs is None else int(epochs),
         seed=int(seed),
-        run_name=run_name(seed),
+        run_name=run_name(seed, band),
         backbone=render_train.CANDIDATES["enlarged_corpus"]["backbone"],
         target_dims=None,
         split=split,
@@ -454,19 +508,21 @@ def fit(seed: int, device: str = "auto", epochs: int | None = None, rule: str = 
         selection_says=says,
         patience=PATIENCE,
         readouts=readouts,
+        workers=workers,
         log=log or train.say,
     )
 
 
-def epoch_curve(seed: int) -> dict:
+def epoch_curve(seed: int, band: str = BAND) -> dict:
     """What one seed's rule saw, epoch by epoch, and where it stopped."""
-    path = run_dir(seed) / "metrics.json"
+    path = run_dir(seed, band) / "metrics.json"
     if not path.is_file():
         raise DeployError(f"{path} does not exist — seed {seed} wrote no trace")
     record = json.loads(path.read_text(encoding="utf-8"))
     history = record.get("history") or []
     return {
-        "run": run_name(seed),
+        "run": run_name(seed, band),
+        "band": str(band),
         "seed": int(seed),
         "rule": record.get("selection_metric"),
         "epochs_run": len(history),
@@ -501,7 +557,7 @@ def epoch_curve(seed: int) -> dict:
     }
 
 
-def choose(seeds=SEEDS) -> dict:
+def choose(seeds=SEEDS, band: str = BAND) -> dict:
     """The three curves side by side, and the seed that ships.
 
     **The best chosen-epoch statistic wins**, which is the rule declared before
@@ -509,7 +565,7 @@ def choose(seeds=SEEDS) -> dict:
     because it is the read on whether the rule is trustworthy at all: epochs that
     cluster say it is reading signal, epochs three seeds apart say it is not.
     """
-    curves = [epoch_curve(seed) for seed in seeds]
+    curves = [epoch_curve(seed, band) for seed in seeds]
     scored = [curve for curve in curves if curve["chosen_objective"] is not None]
     if not scored:
         raise DeployError("no seed recorded a chosen objective, so there is nothing to choose on")
@@ -517,6 +573,8 @@ def choose(seeds=SEEDS) -> dict:
     epochs = [curve["best_epoch"] for curve in scored]
     return {
         "schema": SCHEMA,
+        "band": str(band),
+        "was": BANDS.get(str(band), "a scratch pass: no artifact came out of it"),
         "rule": RULE,
         "says": RULES[RULE][1],
         "seeds": list(seeds),
@@ -526,7 +584,7 @@ def choose(seeds=SEEDS) -> dict:
             "run": winner["run"],
             "epoch": winner["best_epoch"],
             "chosen_objective": winner["chosen_objective"],
-            "checkpoint": str(run_dir(winner["seed"]) / "best.pt"),
+            "checkpoint": str(run_dir(winner["seed"], band) / "best.pt"),
         },
         "chosen_epochs": epochs,
         "epoch_spread": (max(epochs) - min(epochs)) if epochs else None,
@@ -538,9 +596,9 @@ def choose(seeds=SEEDS) -> dict:
     }
 
 
-def write_choice(seeds=SEEDS) -> tuple[Path, dict]:
-    document = choose(seeds)
-    path = root() / "choice.json"
+def write_choice(seeds=SEEDS, band: str = BAND) -> tuple[Path, dict]:
+    document = choose(seeds, band)
+    path = choice_path(band)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(document, indent=1) + "\n", encoding="utf-8", newline="\n")
     return path, document
@@ -548,6 +606,9 @@ def write_choice(seeds=SEEDS) -> tuple[Path, dict]:
 
 __all__ = [
     "AUC_SAYS",
+    "BAND",
+    "BANDS",
+    "DEPLOY",
     "AVERAGE_PRECISION_SAYS",
     "EPOCHS",
     "HIT_TIER",
@@ -566,6 +627,7 @@ __all__ = [
     "DeployError",
     "auc_selection",
     "average_precision_selection",
+    "choice_path",
     "choose",
     "epoch_curve",
     "fit",
@@ -577,6 +639,7 @@ __all__ = [
     "run_dir",
     "run_name",
     "sides_for",
+    "split_path",
     "write_choice",
     "write_split",
 ]

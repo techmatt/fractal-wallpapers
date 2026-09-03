@@ -1983,8 +1983,9 @@ def renders_deploy_split(args: argparse.Namespace) -> int:
     """What one seed's holdout holds, before anything is fitted on it."""
     from fractal_wallpapers.models import render_cv, render_deploy
 
+    band = args.band or render_deploy.BAND
     try:
-        path, split = render_deploy.write_split(args.seed)
+        path, split = render_deploy.write_split(args.seed, band=band)
     except (render_cv.CrossValidationError, render_deploy.DeployError) as refusal:
         print(refusal)
         return 1
@@ -1999,7 +2000,12 @@ def renders_deploy_fit(args: argparse.Namespace) -> int:
 
     try:
         record = render_deploy.fit(
-            args.seed, device=args.device, epochs=args.epochs, rule=args.rule
+            args.seed,
+            device=args.device,
+            epochs=args.epochs,
+            rule=args.rule,
+            band=args.band or render_deploy.BAND,
+            workers=args.workers,
         )
     except (
         render_cv.CrossValidationError,
@@ -2023,7 +2029,7 @@ def renders_deploy_choose(args: argparse.Namespace) -> int:
         else render_deploy.SEEDS
     )
     try:
-        path, document = render_deploy.write_choice(seeds)
+        path, document = render_deploy.write_choice(seeds, band=args.band or render_deploy.BAND)
     except render_deploy.DeployError as refusal:
         print(refusal)
         return 1
@@ -5973,6 +5979,16 @@ def render_commands(subcommands) -> None:
         help="what one seed's holdout holds, before anything is fitted on it",
     )
     deploy_split.add_argument("--seed", type=int, default=0, help="which seed's split")
+    deploy_split.add_argument(
+        "--band",
+        # The default lives in the module and is resolved in the handler, not
+        # here: this parser is built on the base install, where the module's
+        # import graph is not available. `tests/test_base_install.py` says so.
+        help="which pass of this module the run belongs to (default: the module's, "
+        "`deploy`, which is the pass that shipped weights-v5). One band is three seeds "
+        "over the corpus as it stood, and the band is in every run name so a later pass "
+        "does not land on an earlier one's checkpoints",
+    )
     deploy_split.set_defaults(handler=renders_deploy_split)
 
     deploy_fitting = deployings.add_parser(
@@ -5983,10 +5999,27 @@ def render_commands(subcommands) -> None:
     deploy_fitting.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
     deploy_fitting.add_argument("--epochs", type=int, help="override the epoch ceiling")
     deploy_fitting.add_argument(
+        "--workers",
+        type=int,
+        help="loader subprocesses (default: the recipe's). An I/O knob and not a recipe "
+        "key, written into the run's config like every other value. Each one re-imports "
+        "torch on Windows, so this is what a box with no commit charge left is given",
+    )
+    deploy_fitting.add_argument(
         "--rule",
         default="average_precision",
         choices=("average_precision", "auc"),
         help="the stopping rule; AUC is the stated fallback",
+    )
+    deploy_fitting.add_argument(
+        "--band",
+        # The default lives in the module and is resolved in the handler, not
+        # here: this parser is built on the base install, where the module's
+        # import graph is not available. `tests/test_base_install.py` says so.
+        help="which pass of this module the run belongs to (default: the module's, "
+        "`deploy`, which is the pass that shipped weights-v5). One band is three seeds "
+        "over the corpus as it stood, and the band is in every run name so a later pass "
+        "does not land on an earlier one's checkpoints",
     )
     deploy_fitting.set_defaults(handler=renders_deploy_fit)
 
@@ -5995,6 +6028,16 @@ def render_commands(subcommands) -> None:
         help="the seeds' epoch tables side by side, and the one that ships",
     )
     deploy_choosing.add_argument("--seeds", help="which seeds, comma separated (default: all)")
+    deploy_choosing.add_argument(
+        "--band",
+        # The default lives in the module and is resolved in the handler, not
+        # here: this parser is built on the base install, where the module's
+        # import graph is not available. `tests/test_base_install.py` says so.
+        help="which pass of this module the run belongs to (default: the module's, "
+        "`deploy`, which is the pass that shipped weights-v5). One band is three seeds "
+        "over the corpus as it stood, and the band is in every run name so a later pass "
+        "does not land on an earlier one's checkpoints",
+    )
     deploy_choosing.set_defaults(handler=renders_deploy_choose)
 
     dosing = steps.add_parser(

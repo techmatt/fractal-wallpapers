@@ -752,6 +752,7 @@ def run(
     second_selection_says: str | None = None,
     patience: int | None = None,
     readouts=None,
+    workers: int | None = None,
     log=train.say,
 ) -> dict:
     """Train the candidate at one seed, and write its checkpoints and records.
@@ -799,6 +800,14 @@ def run(
     comparison would be between a rule and a budget. `None` runs the recipe's
     full epoch count, which is what every band on the record did.
 
+    **`workers` moves how many subprocesses the loader fetches with, and nothing
+    else.** It is an I/O knob rather than a recipe key — the sampler's order is a
+    function of the seed and not of who fetches — but it is written into the run's
+    config like every other value, because a run that loaded differently and said
+    it did not is a run nobody can price. It exists because a Windows loader
+    worker re-imports torch, and on a box whose commit charge is nearly spent that
+    import fails while the run's own already succeeded.
+
     **`readouts` adds numbers to the per-epoch record and decides nothing.** It
     takes `(labels, probabilities, classes)` — the same arguments `selection`
     takes — and returns a mapping merged into that epoch's row. It exists so a
@@ -818,6 +827,8 @@ def run(
         recipe["epochs"] = int(epochs)
     if seed is not None:
         recipe["seed"] = int(seed)
+    if workers is not None:
+        recipe["workers"] = int(workers)
     # The band's DECLARED backbone, not the module's default. `RECIPE` carries
     # the first candidate's medium, and every band since has re-asked that one
     # value in its own declaration — so a named run takes its band's value and a

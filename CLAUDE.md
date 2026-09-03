@@ -161,6 +161,17 @@ It read **156.01 s over 3,336** immediately after the phoenix band sitting lande
 figure above across 29 more tests, which is the per-test cost holding flat and is
 recorded here because it is a reading taken right after a store grew.
 
+It read **160.75 s over 3,341** at the weights-v6 flip, idle, 2026-09-03 — 3.0%
+over that across five more tests. This one is worth having because of what had just
+happened to the stores it reads: the two label corpora had grown to 11,272 pictures,
+the render cache to 11,272 crops, and **the candidate ledger's score sidecar had
+gone from 306,431 rows and 150 MB to 486,666 rows and 239 MB** in the same session,
+because a judge flip writes a second full set of readings beside the first and
+retires nothing. That is the largest single-session growth this store has seen since
+the 2026-08-29 episode above, and the lane did not move for it. So a judge adoption
+is **not** one of the things that prices this lane, and the seven guards that sweep
+the ledger read it through `conftest.tracked_ledger` once whatever it holds.
+
 **A reading taken beside a leg is a reading of the leg.** The same lane read
 **404.6 s over 3,281** earlier that day with a mining leg holding the render pool,
 which is 2.9x the idle figure over the same tests. That is the paragraph below

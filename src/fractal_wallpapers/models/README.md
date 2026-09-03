@@ -613,10 +613,12 @@ honestly, and nothing in this module is a level or a comparison.
 `render_train.run` refuses to train on a place pinned to a blind sheet and refuses
 to early-stop on one, so a lineage carrying a pinned place is held out and the
 pinned rows themselves land on the `eval` side the loop never touches — out of the
-stopping statistic, and unspent. On the stores of 2026-08-30 that closure is 802
-rows of 10,299 with 598 pinned outright, comfortably under the 20% the split
-wants, so the draw fills the rest at random: **train 8,239, stopping 1,462, pinned
-598**, holdout exactly 20.0% at all three seeds.
+stopping statistic, and unspent. On the stores of 2026-09-03 that closure is 837
+rows of 11,019 with 598 pinned outright, comfortably under the 20% the split
+wants, so the draw fills the rest at random: **train 8,815, stopping 1,606, pinned
+598**, holdout exactly 20.0% at all three seeds. It read 802 of 10,299 and train
+8,239 / stopping 1,462 for the `deploy` band on 2026-08-30 — the pinned 598 is
+unchanged across both, which is what a pin is for.
 
 **The epoch is chosen by average precision at `≥3`** over the non-pinned part of
 the holdout, ranked by the head's own `P(≥3)`. Not the incumbent's pooled cutpoint

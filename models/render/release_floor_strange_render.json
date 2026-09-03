@@ -2,33 +2,33 @@
   "schema": 1,
   "head": "render",
   "kind": "strange_render",
-  "head_sha256": "2b1771ab9cd9d7b7ac5a75d7921c31bbc55756c0ec05eb545b782392094bd63a",
-  "value": 0.769,
-  "crossing": 0.768239,
-  "rounded_up_3_places": 0.769,
-  "rounded_up_to_0_005": 0.77,
+  "head_sha256": "481fe0582328f0de8d64d8e0ddc9a0bde1f044419e2074af6a559239b5792d46",
+  "value": 0.784,
+  "crossing": 0.7834,
+  "rounded_up_3_places": 0.784,
+  "rounded_up_to_0_005": 0.785,
   "at": 0.5,
   "keeper_tier": 3,
   "interval_95": {
     "resamples": 1000,
-    "low": 0.6186,
-    "high": 0.8806,
+    "low": 0.7274,
+    "high": 0.891,
     "no_crossing": 0
   },
   "population": {
-    "pictures": 4656,
-    "places": 2001,
-    "store_rows": 5110,
-    "superseded": 454,
-    "keepers": 1523,
-    "keeper_share": 0.3271,
-    "below_the_floor": 3270
+    "pictures": 5158,
+    "places": 2487,
+    "store_rows": 5614,
+    "superseded": 456,
+    "keepers": 1914,
+    "keeper_share": 0.3711,
+    "below_the_floor": 3227
   },
   "inputs": {
-    "labels_sha256": "e0ab2079a2e20120d9fdcf3f5bf72b02217ade876213c2eff688db8c6dff653b",
-    "scores_sha256": "9e492dc3381a622f5a8607fcba0b1af73587052c7676e79702fd0f75e4666e11",
+    "labels_sha256": "f012fa829fb890297209de39c5d059600c0a9744bc7055b4b387d86ea172a922",
+    "scores_sha256": "b2b416b6d6244d4bff64a294ffcc4d9a264e282db98688b1880d7be429b04653",
     "classes": 4
   },
-  "method": "the labels-derived crossover. Isotonic regression (pool-adjacent-violators, ties pooled, non-decreasing) of P(the human said >=3) against this head's own P(>=3), over all 4656 labeled strange_render pictures scored through the shipped render artifact; the crossing is the LOWEST score whose fitted agreement reaches 0.5, and the floor is that crossing rounded UP. Rounded up because a floor rounded down admits material the fit did not vouch for.",
-  "reference_pool": "all 4656 labeled strange_render pictures, over 2001 places, read through the shipped render"
+  "method": "the labels-derived crossover. Isotonic regression (pool-adjacent-violators, ties pooled, non-decreasing) of P(the human said >=3) against this head's own P(>=3), over all 5158 labeled strange_render pictures scored through the shipped render artifact; the crossing is the LOWEST score whose fitted agreement reaches 0.5, and the floor is that crossing rounded UP. Rounded up because a floor rounded down admits material the fit did not vouch for.",
+  "reference_pool": "all 5158 labeled strange_render pictures, over 2487 places, read through the shipped render"
 }
