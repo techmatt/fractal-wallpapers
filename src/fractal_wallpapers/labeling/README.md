@@ -116,6 +116,17 @@ sheets cut for the same judge cannot overwrite each other (see [`export_control.
 against its sheet; until then the store is untouched. Drops written before sheets carried
 their own name are called `<head>.json`, and re-ingesting one needs an explicit `--labels`.
 
+**A page that is never exported leaves nothing, and a small page is how that
+happens.** The drop is a page's only record: the sheet, the renders and the levelled
+maps all survive a closed browser and none of them carries a verdict. So a sitting is
+finished when its drops are on disk, not when its servers are stopped — count them
+against `label sheets --drops` before tearing one down.
+`phoenix_classic_20260903` is the case, and it is the *one-card* half of it that went
+missing: the 34-card strange page exported and the single-card smooth page did not,
+so 34 of 35 verdicts survive and the last one has to be re-served. Re-serving costs
+nothing but the operator's second look — the picture is already rendered, so
+`label build` reports `rendered: 0` and serves exactly what was measured.
+
 **The second half of a drop's name is the BATCH, not the sheet directory** —
 `store.export_path(manifest["head"], manifest["batch"])` is what both `label serve` and
 `label sheets --drops` print. So the collision that name prevents is two *batches* under
