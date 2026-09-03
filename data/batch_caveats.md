@@ -210,6 +210,43 @@ over the hand-cast prefix, and the second is the one to quote.
 
 ---
 
+## BAND-DRAW — `phoenix_q3q4_20260903` straddles the judge's own 0.5 crossing
+
+*Registries: both. 200 rows over 200 distinct locations, cut as two sheets —
+`smooth_render` 95, `strange_render` 105 — because the batch spans both kinds.*
+
+One candidate-ledger row per LOCATION on `phoenix` and `phoenix:classic` — the
+location's best row by the shipped render judge's `P(>=4)` at `640x360ss2` — with
+every location already carrying a row in either finished store excluded, and then
+the **100 locations immediately above and the 100 immediately below
+`P(>=4) = 0.5`**. The band runs 0.7815 down to 0.2268 and crosses at 0.5030/0.4991.
+
+**It is not the top of the pool, and the prompt that commissioned it assumed it
+would be.** Ordering the eligible 1,438 locations by `P(>=4)` and taking 200 gives
+a page running 1.0000 down to only **0.8608** — the judge's q4-confident head and
+nothing else, on a plane whose pool is deep enough that two hundred rows never
+leave it. This batch exists to find places the judge holds at q3 that are really
+q4, and that population is at the boundary rather than at the top.
+
+**So every rate read off these rows is conditional on the judge having put the
+place near its own crossing.** It is not a base rate about the phoenix planes, and
+it is not differenceable against a top-of-pool batch like `seated_and_head_top`:
+half of this page is drawn from below a score the other batch's population never
+went near.
+
+**One row per location, and the row is the location's argmax over modes.** Which
+mode a place appears under is the judge's own pick among that place's candidates,
+the same shape `dtm_variants_20260902` has one section up — so a per-mode rate off
+these labels is conditional on the mode having won its place, and the modes stand
+on disjoint sets of places.
+
+**Nothing was dropped for a pin.** All 200 places were checked against
+`pins.every_pinned` (1,452 places) and against both finished pins — `smooth_render`
+277, `strange_render` 180 — and **none** is pinned. Excluding the 97 phoenix
+locations that already carry a finished-store row is what bought most of that.
+
+---
+
 ## Five batches reach the candidate ledger; the other twenty-one do not
 
 *Registries: both. Measured 2026-08-28 over the 9,427 resolved scored rows.*
