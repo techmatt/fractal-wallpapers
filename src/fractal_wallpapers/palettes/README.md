@@ -3,7 +3,6 @@ Which colors are available: palette assets, palette generation, and palette cura
 ```
 fractal-wallpapers palettes ingest --drop rare-colors-2026-08
 fractal-wallpapers palettes provenance --source <archive> --images <pictures>
-fractal-wallpapers palettes clusters
 fractal-wallpapers palettes groups
 fractal-wallpapers palettes reference-fields
 fractal-wallpapers palettes carriers
@@ -112,7 +111,7 @@ are named in the record's header, and `groups.jsonl`'s `marks` field points at i
 
 **Library, candidate pool, drawn set — three counts, and none of them is the same
 number.** The **library** is every file in `data/palettes`: **901** maps
-(`groups.library`, which is `clusters.library`). The **candidate pool** is
+(`groups.library`). The **candidate pool** is
 `models.palette_sets.pool()["pool"]`, **900** — 700 maps inherited as a *subset* of
 the source project's own 987-map pool (nothing was brought across to round the
 number up) plus the 200 of the one admitted drop. The one library map it does not
@@ -305,13 +304,9 @@ project; `--images` is the directory of pictures the extracted maps were read
 from, and without it a row records the stem it carries and says the extension was
 not recovered.
 
-`clusters` groups the whole library — Ward's linkage over `space.distances`, cut
-at sixteen, each cluster listing the five members nearest its own middle — into
-`data/palettes/clusters.jsonl`. The distance matrix is rounded to twelve decimals
-before linkage so the merge order cannot depend on the platform's BLAS, which is
-what lets `tests/test_palette_clusters.py` hold the committed file to
-regeneration. Both records are `.jsonl` rather than `.json` **because every reader
-of the library globs `data/palettes/*.json` and takes the stem as a map name**.
+Every record written beside the maps is `.jsonl` rather than `.json` **because
+every reader of the library globs `data/palettes/*.json` and takes the stem as a
+map name** — a record written as `.json` would be read as a colormap with no stops.
 
 `strip` draws one map's gradient as a picture. It computes no colour: it writes a
 horizontal ramp in the engine's own dump format and calls `recolor`, so the strip

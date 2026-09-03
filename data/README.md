@@ -37,10 +37,11 @@ that does not announce itself is the kind of thing a reader takes for evidence.
 hand and are the ones a render chooses from; the rest arrived with the
 finished-render corpora and with the palette head's vendored candidate sets,
 because a row — or a recorded decision — naming a map nobody holds is about a
-picture nobody can rebuild. Two files in there are not maps and are named `.jsonl`
-so no reader globbing `*.json` mistakes them for one: `provenance.jsonl` says how
-the authored and extracted maps were made, and `clusters.jsonl` groups the library
-for a figure. `batches/` holds the generator runs that authored the maps added
+picture nobody can rebuild. The files in there that are not maps are named
+`.jsonl` so no reader globbing `*.json` mistakes them for one: `provenance.jsonl`
+says how the authored and extracted maps were made, and `groups.jsonl` says which
+maps are near enough to be one choice.
+`batches/` holds the generator runs that authored the maps added
 since, one directory per drop, and is the other half of what `provenance.jsonl`
 records.
 

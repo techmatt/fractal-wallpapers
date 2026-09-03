@@ -20,7 +20,6 @@ from fractal_wallpapers import schedule as schedule_module
 from fractal_wallpapers.curation import manufacture as manufacture_module
 from fractal_wallpapers.labeling import sheets as sheets_module
 from fractal_wallpapers.labeling.finished import HEADS as FINISHED_HEADS
-from fractal_wallpapers.palettes import clusters as palette_clusters
 from fractal_wallpapers.palettes import color_mass as color_mass_module
 from fractal_wallpapers.palettes import groups as palette_groups
 from fractal_wallpapers.palettes import strip as palette_strip
@@ -2457,17 +2456,6 @@ def palettes_ingest(args: argparse.Namespace) -> int:
         print(refusal)
         return 1
     print(json.dumps(report, indent=2, ensure_ascii=False))
-    return 0
-
-
-def palettes_clusters(args: argparse.Namespace) -> int:
-    """Regroup the library and rewrite the tracked clustering."""
-    try:
-        report = palette_clusters.run(count=args.clusters)
-    except palette_clusters.ClusterError as refusal:
-        print(refusal)
-        return 1
-    print(json.dumps(report, indent=2))
     return 0
 
 
@@ -6399,12 +6387,12 @@ def library_commands(subcommands) -> None:
     """
     group = subcommands.add_parser(
         "palettes",
-        help="the colormap library: ingest, provenance, clusters, groups, and a map's gradient",
+        help="the colormap library: ingest, provenance, groups, and a map's gradient",
         description=(
             "The maps themselves, not the head that picks between them. `ingest` densifies "
             "a drop of authored palettes into the library, `provenance` rebuilds the record "
-            "of how the made maps were made, `clusters` regroups the library into sixteen "
-            "families, `groups` says which maps are near enough to be one choice, "
+            "of how the made maps were made, `groups` says which maps are near enough to "
+            "be one choice, "
             "`reference-fields` remakes the pictures a palette sheet is judged on, "
             "`carriers` says which map can make a picture of which colour, and "
             "`strip` draws one map's gradient the way a render spends it."
@@ -6444,23 +6432,6 @@ def library_commands(subcommands) -> None:
         ),
     )
     recovering.set_defaults(handler=palettes_provenance)
-
-    grouping = steps.add_parser(
-        "clusters",
-        help="regroup the library and rewrite the tracked clustering",
-        description=(
-            "Ward's linkage over palette space, cut at sixteen, each cluster shown by its "
-            "five most central maps. A pure function of the tracked library, which is what "
-            "lets a test hold the committed file to this command's own output."
-        ),
-    )
-    grouping.add_argument(
-        "--clusters",
-        type=int,
-        default=palette_clusters.CLUSTERS,
-        help=f"how many groups to cut the tree into (default: {palette_clusters.CLUSTERS})",
-    )
-    grouping.set_defaults(handler=palettes_clusters)
 
     collapsing = steps.add_parser(
         "groups",

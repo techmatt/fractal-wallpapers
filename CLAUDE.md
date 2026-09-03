@@ -147,10 +147,19 @@ rebuild *and* the fast lane until you do it.
 what CI runs and what runs before a checkpoint. The fast lane is for the
 edit-run loop and nothing else.
 
-Both are measured, not estimated: **3,388 tests in 6:27**, with the fast lane at
-**139.0 s over the 3,276 it holds**. On this machine, idle, 2026-09-02, at the
-commit that added the viewport sampler — 17 more tests than the reading below and
-14 s faster, so the lane is flat and the entry is re-measured rather than moved.
+Both are measured, not estimated. The fast lane is **140.12 s over the 3,302 it
+holds**, of 3,416 there are — on this machine, idle, 2026-09-02, at the commit
+that deleted the palette clustering. The slow lane was **not** re-run there and
+its last reading stands below: **6:27**, over 3,388 tests, at the commit that
+added the viewport sampler, where the fast lane read **139.0 s over 3,276**. So
+the fast lane is flat across 26 more tests — 1.1 s and 0.8% apart — and this
+entry is re-measured rather than moved.
+
+**A reading taken beside a leg is a reading of the leg.** The same lane read
+**404.6 s over 3,281** earlier that day with a mining leg holding the render pool,
+which is 2.9x the idle figure over the same tests. That is the paragraph below
+about an idle machine, priced: before believing a lane has slowed, check what else
+is on the box, and re-run it alone.
 
 It read **3,371 tests in 6:41** with the fast lane at **136.2 s over 3,260**,
 idle, 2026-09-02, at the commit that swept `artifacts/`. That reading was taken

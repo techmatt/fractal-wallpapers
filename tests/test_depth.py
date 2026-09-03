@@ -1043,6 +1043,46 @@ def test_the_dear_modes_are_exactly_what_a_dumped_field_cannot_serve():
         assert not colorize.shareable(mode)
 
 
+# --------------------------------------------------------------------------- #
+# The centered roster: what an arm over the centered population draws.
+# --------------------------------------------------------------------------- #
+def test_the_centered_roster_is_the_dear_half_and_two_field_modes_less_the_ruling():
+    """The eleven arm A ran, minus the one the eye-check sheet took off it.
+
+    Pinned as a derivation and not as a list of names, so a mode that arrives in
+    the engine's catalogue and is given a weight joins it without an edit — the
+    only thing written out is the exclusion, which is a ruling.
+    """
+    roster = depth.centered_modes()
+    assert set(roster) == (set(depth.dear_modes()) | set(depth.CENTERED_FIELD)) - set(
+        depth.CENTERED_EXCLUDED
+    )
+    assert len(roster) == len(set(roster)), "a cycled roster must not draw a mode twice a turn"
+    for mode in depth.CENTERED_FIELD:
+        assert colorize.shareable(mode), "the cheap half of this roster is the shareable half"
+
+
+def test_direct_trap_lines_is_off_the_centered_draw_and_nothing_else():
+    """Matt's ruling, 2026-09-02: not a centered mode. A roster is where one arm
+    spends and a weight is what a mode is worth, so the mode keeps its standing,
+    its seat floor and every row already taken in it — it is out of this draw and
+    out of nothing else. A test that let the two move together would make the next
+    roster ruling read as a demotion."""
+    from fractal_wallpapers.curation import mode_policy
+
+    assert "direct_trap_lines" not in depth.centered_modes()
+    assert "direct_trap_lines" in depth.dear_modes(), "still dear, still drawn elsewhere"
+    assert mode_policy.weight_of("direct_trap_lines") == mode_policy.NORMAL
+
+
+def test_every_mode_the_centered_roster_names_is_one_the_project_still_buys():
+    """`CENTERED_FIELD` is written out, so it can outlive a weight-0 ruling that
+    took one of its members out of every other draw. This is what would catch it."""
+    from fractal_wallpapers.curation import mine as mine_module
+
+    assert set(depth.centered_modes()) <= set(mine_module._accepted_modes())
+
+
 def test_a_place_with_one_dear_attempt_is_out_of_the_untried_population():
     rows = [
         ledger_row("r1", "a", mode="smooth"),
