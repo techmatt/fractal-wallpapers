@@ -320,6 +320,20 @@ true of, and hands the answer to `routed_to`. `check` uses it at the writer and
 paragraph above describes — and for the same reason, since the rows already on record
 are originals and are never rewritten.
 
+**And a pool row's own `texture_flat` does not survive the trip to label geometry.**
+`coloring.texture_flat.KEYED` holds `resolution` and `supersample`, so the register
+entry a candidate earned at 640x360 ss2 is not the key the sheet's 1280x720 ss2 join
+computes — `flat_for` misses, reads `False`, and `routes_to` sends the row to the
+strange store while `hunt.kind_of` off the ledger row's stored flag sends it to the
+smooth one. The two disagree exactly on the degenerate modulates, and `check` refuses
+at the writer, after the page has been cut and labelled. So **a sheet drawn out of the
+pool routes by `finished.routes_to` on the join it is about to render**, never by
+`kind_of` on the ledger row. `phoenix_q3q4_20260903` is where this was found: its
+top-200 draw held two `itinerary` rows carrying `texture_flat: true`, which the ledger
+routes smooth and the sheet routes strange. The way to make the two agree is to
+measure the modulate at label geometry and extend the register; nothing does that
+today, and nothing needs to while the routing is asked of the join.
+
 **`--reuse-renders` misses every pool row, and it is not a near miss.** Candidates are
 rendered at 640x360 ss2 and a finished sheet serves 1280x720 ss2; the cache keys a picture
 by a digest of the whole engine spec, so the geometry alone makes it a different name.
@@ -403,6 +417,32 @@ the ground, and the operator is excluded at the site that decides. Four of
 `under_seen_modes`' nine modes are direct traps, so 224 of its 504 units skipped the
 operator entirely and 108 of the remaining 280 were actually levelled. Estimate a mixed
 sheet by kind, not by unit count.
+
+
+**A varied-`phoenix` pool sheet is cheap, and the pinned plane's 17x does not
+carry over.** `phoenix_q3q4_20260903`, 2026-09-02: 200 units at 1280x720 ss2,
+mean maxiter 10,706, measure pass **726.4 s wall at three workers** — 95 smooth
+units in 123.6 s (1.39 s/unit wall, 4.11 s/unit work) and 105 strange in 602.8 s
+(6.15 s/unit wall, 18.10 s/unit work). `LEG_phoenix_classic_supply` priced
+`phoenix:classic` at **56.9 s a candidate** against 3.2 for the parameter planes,
+and reading that as "phoenix is dear" over-budgets this sheet by an order of
+magnitude: that leg's material sat near 1e-4 at 12,243-21,702 maxiter, and varied
+`phoenix` drawn at the judge's own q3/q4 crossing does not.
+
+**And the mode mix moves it 15x within one sheet.** Measured s/unit of work over
+the 187 units the full pass made: `stripe` **44.2**, `smooth_angle_min` 45.5,
+`direct_trap_lines` 43.0, `direct_trap_screen` 25.3, `direct_trap_multiply` 21.3,
+`smooth_stripe` 19.9, `gaussian_int` 17.8, `tia` 14.9, `smooth_mean_angle` 13.1,
+`curvature` 10.0, `exp_smoothing` 9.2, `itinerary` 7.8, `smooth` **4.1**,
+`smooth_curvature` 4.6, `threads` 3.0.
+
+**A stride pilot is not a mode sample, and this is the cheap way to learn it.**
+Seven units taken at stride 16 off the strange plan priced it at 1.93 s/unit wall;
+the full pass came in at 6.15, because those seven drew `exp_smoothing`,
+`gaussian_int`, `tia` and one direct trap and missed all nineteen composites. A
+pilot over a sheet whose cost is a mode mix has to be **stratified by mode**, not
+strided over the file — one unit of each mode present is thirteen renders here and
+would have priced the page inside 20%.
 
 **The render pool is three workers at below-normal priority** — `CLAUDE.md`'s rule, and the
 priority half is now `engine.run`'s rather than a caller's. Measured on `under_seen_modes`,
