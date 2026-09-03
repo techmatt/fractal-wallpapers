@@ -150,10 +150,13 @@ home-view root is the same point every prior run rooted at, so 90%+ of pool and
 twin roots enter already saturated, where a labelled frame enters clean about two
 times in three. Run the leg with `--partition <dynamical> --root-channel proven`.
 
-**Four things about the channel are decided in `proven.py` and nowhere else.**
+**Five things about the channel are decided in `proven.py` and nowhere else.**
 Its **tier floor is `min(currency.CLASS_WEIGHT)`** — the currency's own bottom
 class rather than a fresh cut, which is tier **3**, so what counts as a proven
-place is exactly what counts as a keeper and moving one moves both. It serves
+place is exactly what counts as a keeper and moving one moves both. It reads
+**all three label stores** — the location store and both finished-render stores,
+`proven.stores()` — unioned and deduplicated on the place, each root credited on
+`provenance.store` to the first store that holds it. It serves
 **every registered partition**: `proven.SERVED` is `ALL_PARTITIONS`. It excluded
 `phoenix:classic` until 2026-09-02, which left that partition's q3+ labels the
 only ones in the store that became no roots; its queue now interleaves those
@@ -168,6 +171,24 @@ machine and stable as the label store grows, so a cursor one insertion ahead
 costs one root served twice rather than re-ordering everything behind it. The
 root id is that same digest, so a root's provenance names a place rather than a
 position.
+
+**The finished-render stores became roots on 2026-09-03, and the channel grew
+85%.** Until then `proven.derive` read `census.label_rows` — the location store —
+alone, so a finished-render 4 bought nothing; `phoenix_q3q4_20260903` landed 179
+q3+ verdicts on 179 phoenix places and the channel did not move by a single root.
+Matt ruled a q3+ finished render a proven neighbourhood, and `derive` now unions
+all three stores. Measured across the same tracked stores, before → after:
+
+| | roots | `phoenix` | `phoenix:classic` |
+|---|--:|--:|--:|
+| location store alone | 2,960 | 384 | 7 |
+| all three stores | **5,484** | **697** | **38** |
+
+By store the union is 2,960 location, 1,799 `smooth_render` and 725
+`strange_render` — 23,001 rows read against the location store's 12,063 — and the
+pinned plane is the one that moves most, 5.4x, because almost nothing it holds has
+ever been labelled as a *place*. A place several judged pictures stand on is still
+one root: the dedup is on the location key, not on the render.
 
 **`externally_supplied` was a declaration with no supplier behind it, and it is
 gone.** Audited 2026-09-02 (`AUDIT_phoenix_classic_funnel`), removed the same day.
@@ -227,6 +248,13 @@ entries against the crawl's 8**.
 | `growth_per_expansion` | 0.767 | 0.881 |
 | deepest rung reached | 7 | 14 |
 | drawable after merge | 23 | **121** |
+
+**Those two `drawable` figures are snapshots and they are stale.** The 199
+admissions of `LEG_phoenix_classic_supply` went in the same day, and
+`hunt.drawable` on this partition read **652** on 2026-09-03 — after `pc1` and
+`pc20m` had opened 46 of its places between them. So the branch a leg is tempted
+to write, *crawl first if the shelf is thin*, has not been the live branch since
+2026-09-02: ask `hunt.drawable` rather than quoting a row of this table.
 
 **The sampler's own admissions are 5 of the 23, off 3 of its 16 served roots** —
 small, and it is the first time a *fresh* root on this partition has booked

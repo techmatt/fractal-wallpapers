@@ -465,6 +465,23 @@ over the same geometry. The operator re-baked a map on **107 of 300** (45 smooth
 and 128 units re-rendered from the plan afterwards — every levelled one — matched
 byte for byte.
 
+**The pinned plane's own sheet price, measured: 54.1 s a unit at three workers.**
+`phoenix_classic_20260903` (2026-09-03) measured 34 strange units in **1,838 s**
+wall and 5,325 s of work — 156.6 s of work a unit, which is **26x**
+`sparse_mode_head_top`'s 2.8 and 9x `smooth_decision_bands`' 5.9. This is the
+`phoenix:classic` 17x arriving at the sheet: the same material the candidate leg
+priced at 35.3 s a candidate at `640x360ss2`, re-rendered at four times the
+pixels. Inside the page the spread is 9x — `direct_trap_screen` 41-45 s against
+`threads` and `smooth_mean_angle` at 331-368 — so the mode-mix rule below still
+holds; what changes is the constant. The one smooth unit cost 16.7 s. **Budget a
+pinned-plane sheet at about a minute a card, and a parameter-plane sheet at a few
+seconds**, and do not carry either figure across.
+
+The operator was offered **21 of 34** (the other 13 are direct traps and the
+modes `autolevel.applies_to` excludes) and **acted on 11**, 32.4% of the page —
+between `seated_and_head_top`'s 43% and nothing, on a population an order of
+magnitude dearer. Both builds reported `rendered: 0, reused_from_cache: 0`.
+
 **Write the operator's `leveled` directory back into the plan before the build.**
 `colorize.render` names it `<stem>.leveled` beside the picture and a plan that
 does not carry the key renders through the library's base map instead: the build
