@@ -266,17 +266,18 @@ def test_the_committed_records_agree_with_the_heights_in_floors() -> None:
 
 
 def test_the_strange_bar_reproduces_on_the_scale_it_is_stamped_with() -> None:
-    """Re-fitted again at the weights-v5 flip: 0.768239 on the deploy_seed1 judge's
-    scale, 0.770 on the 0.005 grid, against 0.573085/0.575 on the artifact it
-    replaced. THAT it acts is unchanged and is the 2026-08-17 ruling; the height
+    """Re-fitted again at the weights-v6 flip: 0.783400 on the deploy_v6_seed0
+    judge's scale, 0.785 on the 0.005 grid, against 0.768239/0.770 on the artifact
+    it replaced. THAT it acts is unchanged and is the 2026-08-17 ruling; the height
     moved, which is what a re-fit is for.
 
-    **Both causes are named, because both moved it — in opposite directions.** The
-    same fit on the retired weights-v4 artifact over this same store crosses
-    0.542695, so the 1,334 rows the store grew by are worth -0.030 and the new
-    scale is worth +0.226. A method that netted the two would understate both, and
-    a reader who took 0.770 for a stricter bar than 0.575 would have it backwards:
-    the keeper share went UP, 24.1% to 32.7%.
+    **Both causes are named, and this time one of them is exactly zero.** The same
+    fit on the retired weights-v5 artifact over this same GROWN store crosses
+    0.768239 — the figure v5 recorded over the smaller store, to all six places —
+    so the 502 rows this store grew by are worth nothing at all and the scale is
+    worth the whole +0.015161. The keeper share still went up, 32.7% to 37.1%, and
+    that is the labels rather than the head: it is the same number the retired
+    artifact reads over the same rows.
     """
     import json
 
@@ -286,10 +287,10 @@ def test_the_strange_bar_reproduces_on_the_scale_it_is_stamped_with() -> None:
     if not path.is_file():
         pytest.skip("the strange head has not been fitted in this checkout")
     record = json.loads(path.read_text(encoding="utf-8"))
-    assert record["rounded_up_to_0_005"] == floors.STRANGE_RELEASE_BAR.value == 0.770
-    assert "0.768239" in floors.STRANGE_RELEASE_BAR.method
-    assert "0.542695" in floors.STRANGE_RELEASE_BAR.method, "the corpus half of the move"
-    assert abs(record["crossing"] - 0.768239) < 0.0005
+    assert record["rounded_up_to_0_005"] == floors.STRANGE_RELEASE_BAR.value == 0.785
+    assert "0.783400" in floors.STRANGE_RELEASE_BAR.method
+    assert "0.768239" in floors.STRANGE_RELEASE_BAR.method, "the corpus half of the move"
+    assert abs(record["crossing"] - 0.783400) < 0.0005
     assert floors.STRANGE_RELEASE_BAR.head_sha256 == record["head_sha256"]
 
 
@@ -298,14 +299,14 @@ def test_the_smooth_floor_is_recorded_and_does_not_gate() -> None:
     `ACTING_RELEASE_BARS` is the single place that says which a head has."""
     from fractal_wallpapers.curation import floors
 
-    assert floors.SMOOTH_RELEASE_FLOOR.value == 0.620
-    assert "0.618260" in floors.SMOOTH_RELEASE_FLOOR.method
-    assert "0.536564" in floors.SMOOTH_RELEASE_FLOOR.method, "the corpus half of the move"
+    assert floors.SMOOTH_RELEASE_FLOOR.value == 0.780
+    assert "0.779545" in floors.SMOOTH_RELEASE_FLOOR.method
+    assert "0.618260" in floors.SMOOTH_RELEASE_FLOOR.method, "the corpus half of the move"
     assert "smooth_render" not in floors.ACTING_RELEASE_BARS
     assert "smooth_render" in floors.MEASURED_RELEASE_FLOORS
     assert floors.release_bar("smooth_render") is None
     assert floors.release_cut("smooth_render").value == floors.RELEASE_ADVISORY
 
     banner = floors.summary()["advisory"]
-    assert banner["measured_but_not_acting"]["smooth_render"]["value"] == 0.620
+    assert banner["measured_but_not_acting"]["smooth_render"]["value"] == 0.780
     assert "strange_render" not in banner["measured_but_not_acting"]

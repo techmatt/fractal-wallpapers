@@ -15,15 +15,24 @@ one of those two; the **head** is this one.
 
 ## What ships
 
-`render.fp16.pt`, staged from `deploy_seed1` — the seed of `renders deploy`'s
-three whose chosen epoch scored best on its own stopping slice, AP(>=3) 0.8765 at
-epoch 17 against 0.8745 at epoch 3 and 0.8498 at epoch 9. It succeeded
-`enlarged_corpus_seed1` on 2026-08-30 as **weights-v5**, at the same recipe and the
-same backbone, fitted on 8,239 pictures against that head's 7,498.
+`render.fp16.pt`, staged from `deploy_v6_seed0` — the seed of the `deploy_v6`
+band's three whose chosen epoch scored best on its own stopping slice, AP(>=3)
+0.8788 at epoch 12 against 0.8706 at epoch 13 and 0.8577 at epoch 9. It succeeded
+`deploy_seed1` on 2026-09-03 as **weights-v6**, at the same recipe and the same
+backbone, fitted on 8,815 pictures against that head's 8,239. v5's three runs stay
+on disk under their own names and `render.v5.fp16.pt` sits beside the shipped
+artifact, so a revert is one act: re-ship `deploy_seed1` at `weights-v5`.
 
-⚠ **Those three APs are read on three different 1,462-row slices**, because the
-seed moves the split as well as the initialization. The 0.002 between the first two
+⚠ **Those three APs are read on three different 1,606-row slices**, because the
+seed moves the split as well as the initialization. The 0.008 between the first two
 is not a comparison of two heads, and no number from this band is a level.
+
+**The chosen epochs CLUSTERED this time — 12, 13 and 9, a spread of 4** — where
+v5's were 3, 17 and 9, a spread of 14. Three curves agreeing about where the
+stopping rule peaks is the only evidence this module can offer that the rule is
+reading signal rather than noise, and v5's band could not offer it. The shipping
+seed also stopped on its patience at epoch 18 rather than running into the cap, so
+the uncapped final refit v5's band earned was not owed here and was not run.
 
 The weights are not tracked. `best.pt` and `last.pt` are what training leaves in
 full precision, and `fractal-wallpapers fetch-weights` downloads the halved
@@ -36,24 +45,29 @@ floor is *for* and the head it is *on* are different names now, and the record
 carries both.
 
 ```text
-strange_render   0.770   ACTING at release selection      crossing 0.768239
-smooth_render    0.620   measured, advisory at release    crossing 0.618260
+strange_render   0.785   ACTING at release selection      crossing 0.783400
+smooth_render    0.780   measured, advisory at release    crossing 0.779545
                          and ACTING in the gallery pass
 ```
 
 **A flip moves these two for two reasons and the record separates them.** The store
 grows and the scale moves, and a method that credited the whole move to one of them
-would misstate a number somebody restates again. Fit on the *retired* weights-v4
-artifact over the stores as they stand now, the strange crossing is 0.542695 and the
-smooth is 0.536564 — so at the weights-v5 flip the two causes pull **opposite ways**
-on the strange bar, the 1,334 new rows worth -0.030 against the scale's +0.226, and
-on the smooth floor the store is worth nothing at all (0.0006) and the scale is the
-whole +0.082.
+would misstate a number somebody restates again. Fit on the *retired* weights-v5
+artifact over the stores as they stand now, the strange crossing is **0.768239** and
+the smooth is **0.618260** — which are v5's own recorded crossings to all six places.
+So at the weights-v6 flip the corpus half is **exactly zero on both heads**: the 722
+rows the two stores grew by moved neither height at all, and the scale is the whole
+of +0.015161 on the strange bar and +0.161285 on the smooth floor.
 
-⚠ **Read the heights against their own scale and never against the last one.** 0.770
-is not a stricter bar than 0.575 was; it is the same crossing on a judge that reads
-higher. The share of the strange corpus below the floor went 24.1% keepers at 0.575
-to 32.7% keepers at 0.770 — the population *above* the bar grew.
+⚠ **Read the heights against their own scale and never against the last one.** 0.785
+is not a stricter bar than 0.770 was; it is very nearly the same crossing on a judge
+that reads a little higher. The keeper share is 37.1% on both artifacts over the same
+rows, because a keeper share is a fact about the labels and not about the head.
+
+⚠ **The two heights have nearly converged and that is new.** They sat 0.150 apart on
+v5 and sit 0.005 apart on v6, because the smooth crossing moved ten times as far as
+the strange one. The kinds are still two corpora with two fits; what changed is that
+the joint head now says almost the same thing about where a keeper starts in each.
 
 Both were re-fitted by `head floor --head <kind>` when the judge changed, and both
 reproduce on re-fit — that check is the STOP condition, and it now bites on a
@@ -65,6 +79,37 @@ scale did.
 fractal-wallpapers head floor --head strange_render     # re-fit, must reproduce
 fractal-wallpapers curate rescore                       # the pool onto this scale
 ```
+
+## The retrain that adopted: `deploy_v6`, 2026-09-03
+
+Four sittings — `dtm_variants_20260902`, `judge_band_20260903`,
+`phoenix_q3q4_20260903` and `phoenix_classic_20260903` — grew the two stores by 722
+rows, 264 of them fours, and this band is v5's recipe run again over them. Nothing
+about capacity, aspect, input size, architecture or the stopping rule moves; the
+corpus is what changed, and the pooled population went 10,299 pictures over 3,649
+lineages to **11,019 over 4,167**, training side 8,239 to **8,815**.
+
+```text
+deploy_v6_seed0   epoch 12   AP(>=3) 0.8788   AUC(>=3) 0.8919   p@10% 0.9814   ships
+deploy_v6_seed1   epoch 13   AP(>=3) 0.8706                     19 of 20 epochs
+deploy_v6_seed2   epoch  9   AP(>=3) 0.8577                     16 of 20 epochs
+```
+
+**There is no bar and no acceptance read here, by Matt's ruling for this retrain:**
+adoption was unconditional, there is no incumbent comparison and no eval instrument,
+and the acceptance is his eye on the sheets the flip produced. So this band writes no
+`bar_*.json` and no `comparison_*.json`, and `renders ship` passed the gate it always
+reads — `comparison_enlarged_corpus.json`, which is a *different band's* verdict and
+which this band did not earn. That is worth knowing before anybody reads the ship log
+as though something had judged v6.
+
+The pinned rows are untouched: 598 of them, at identical tiers to v5's band, on the
+side the loop never reads. **Both blind sheets are as unspent after this flip as
+before it.**
+
+`--band` is what keeps two passes of `renders deploy` apart. The first band's runs
+keep their bare `deploy_seed<N>` names because their records are on disk under them;
+every later band prefixes its own, and `render_deploy.BANDS` says what each one was.
 
 ## The retrain that adopted: `enlarged_corpus`, 2026-08-24
 
@@ -155,10 +200,31 @@ rather than the module default. So the `--backbone` above is for a run name no b
 claims — under one that a band does, a value contradicting the declaration is
 refused rather than obeyed.
 
-**Two runs at a time is the right way to spend this machine.** The pipeline is
-data-loading bound, not compute bound: the GPU sits at ~20% and an epoch costs
-~68 s alone against ~80 s with a second run beside it. Both render caches have to
-be **hot** first — `storage restore renders`, 3.9 GiB over 8,021 files.
+**ONE run at a time, and the reason is the commit charge rather than the GPU.**
+This used to say two at a time — the pipeline is data-loading bound, the GPU sits at
+~20%, and an epoch cost ~68 s alone against ~80 s with a second run beside it. That
+advice cost the `deploy_v6` band about an hour on 2026-09-03, because two runs at
+once is what this box can no longer afford.
+
+A trainer commits ~3.9 GiB and **every Windows loader worker re-imports torch for
+~1.05 GiB more**, so the recipe's four workers is ~8.1 GiB a run. This machine's
+commit limit is 127.8 GiB and about 117 GiB of it is already committed by something
+that is not any process's private bytes — every process together accounts for 36.8
+GiB and the pools for 5 GiB. Under 10 GiB free is one run's worth. The failure is
+`OSError: [WinError 1455] The paging file is too small`, raised out of
+`torch/__init__.py` loading `cufft64_11.dll`, and it is **not** a page-file setting:
+`C:\pagefile.sys` is 96 GiB with 3 GiB in use.
+
+So: one seed at a time, and `renders deploy fit --workers 2`. An epoch costs 124 s
+that way against the ~75 s the band before it managed at four. Two more things are
+worth knowing. The commit does come back when a trainer is killed — 127.5 GiB fell
+to 117.0 GiB — so there is no leak to chase, only a baseline to live under. And a
+killed *shell* does not kill the fit it launched, so an abandoned attempt goes on
+holding its 9 GiB and the next launch fails for a reason that looks like the first
+one; check for a live `fractal-wallpapers renders deploy fit` before relaunching.
+
+Both render caches have to be **hot** first — `storage restore renders`, 5.08 GiB
+over 10,558 files, 77 s off the archive at 137 files/s.
 
 ## What the study found
 

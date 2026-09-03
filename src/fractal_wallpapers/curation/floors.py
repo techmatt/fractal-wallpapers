@@ -92,33 +92,43 @@ in a `method` string for five days: `grep -rn isotonic` reached one assertion in
 the suite and nothing else, so the one cut in this project that removes a
 finished picture was the one nobody could re-derive. It is a command now —
 `fractal-wallpapers head floor --head <head>` — and the heights below are what it
-last produced, on the shipped judge and the stores as they stood on 2026-08-30:
-**0.770** on the strange head (crossing 0.768239) and **0.620** on the smooth one
-(crossing 0.618260). Both records are under
+last produced, on the shipped judge and the stores as they stood on 2026-09-03:
+**0.785** on the strange head (crossing 0.783400) and **0.780** on the smooth one
+(crossing 0.779545). Both records are under
 `models/render/release_floor_<kind>.json`.
 
 The smooth height is [`SMOOTH_RELEASE_FLOOR`] and it **does not act**.
 [`ACTING_RELEASE_BARS`] is still the single place that answers whether a head
 gates, and the smooth head's cut is still the advisory; what the measurement adds
 is that the advisory's 0.50 can now be read against a number somebody measured —
-the head stops disagreeing with its labelers at 0.620, not at the midpoint of its
+the head stops disagreeing with its labelers at 0.780, not at the midpoint of its
 own scale. Promoting it is a decision of the kind Matt took for the strange head,
 off a sheet rather than off a curve.
 
 **Both measured floors are on one 0.005 grid** (Matt's ruling, 2026-08-22): two
 floors reported on two grids is a comparison that says nothing, so the crossing is
 rounded up on 0.005 and never at three places. That is a rounding rule and not a
-re-fit; what moved the heights themselves was the 2026-08-30 re-measurement on the
-weights-v5 judge, and each `Restatement` below carries its own crossing.
+re-fit; what moved the heights themselves was the 2026-09-03 re-measurement on the
+weights-v6 judge, and each `Restatement` below carries its own crossing.
 
-⚠ **The weights-v5 flip moved both a long way — 0.575 to 0.770 and 0.540 to
-0.620 — and almost none of it is the corpus.** Both restatements below carry the
-control that says so: the retired weights-v4 artifact re-fitted over the *same*
-stores crosses 0.542695 and 0.536564, so the new judge simply reads higher on its
-own scale. A reader comparing 0.770 against 0.575 as though they were two numbers
-about the same probability scale would conclude the bar got four times stricter,
-and it did not — the scale moved under it, which is the whole reason a height in
-this file is a `Restatement` and not a float.
+⚠ **At the weights-v6 flip the corpus was worth EXACTLY NOTHING and the scale was
+the whole of the move.** The retired weights-v5 artifact re-fitted over the stores
+as they stand now crosses 0.768239 and 0.618260 — the same six figures it recorded
+over the stores it was trained on, so the 722 rows the two stores grew by moved
+neither height at all, not even at the sixth decimal. Every bit of 0.770 → 0.785
+and 0.620 → 0.780 is the new judge reading higher on its own scale. The v5 flip
+before it split the same way and less cleanly (0.575 → 0.770 and 0.540 → 0.620,
+against a v4 control at 0.542695 and 0.536564), so this is the second flip running
+where a reader who compared the heights as though they were two numbers about one
+probability scale would conclude the bar got stricter, and it did not. That is the
+whole reason a height in this file is a `Restatement` and not a float.
+
+⚠ **And the two heights have very nearly converged, which is new.** They sat 0.150
+apart on v5 (0.770 against 0.620) and sit 0.005 apart on v6 (0.785 against 0.780),
+because the smooth crossing moved +0.161285 against the strange one's +0.015161.
+The kinds have not become one question — the floors are still fitted per kind on
+two corpora — but the joint head now says nearly the same thing about where a
+keeper starts in each of them, where it used to say two quite different things.
 
 That split is why there are two types, and they live in [`fractal_wallpapers.cuts`]
 rather than here: three of the four acting cuts sit on the location head's scale
@@ -257,28 +267,28 @@ RELEASE_ADVISORY = 0.50
 #: way a release bar can honestly be restated, off the verdicts a person actually
 #: cast, and it landed well above where policy had left it.
 STRANGE_RELEASE_BAR = Restatement(
-    value=0.770,
-    head_sha256="2b1771ab9cd9d7b7ac5a75d7921c31bbc55756c0ec05eb545b782392094bd63a",
+    value=0.785,
+    head_sha256="481fe0582328f0de8d64d8e0ddc9a0bde1f044419e2074af6a559239b5792d46",
     method=(
         "the labels-derived crossover, re-fitted on the SHIPPED RENDER judge by "
         "`head floor --head strange_render`. Isotonic regression of P(the human said >=3) "
-        "against the judge's own P(>=3), over all 4,656 labeled strange_render pictures, "
+        "against the judge's own P(>=3), over all 5,158 labeled strange_render pictures, "
         "ties pooled, non-decreasing; the crossing is the LOWEST score whose fitted "
         "agreement reaches a half, and the bar is that crossing rounded up to the next "
-        "0.005. Crossing 0.768239, 95% cluster bootstrap over places [0.619, 0.881]. "
-        "1,523 of the 4,656 are keepers (32.7%). STILL A >=3 BAR: the judge's fourth class "
+        "0.005. Crossing 0.783400, 95% cluster bootstrap over places [0.727, 0.891]. "
+        "1,914 of the 5,158 are keepers (37.1%). STILL A >=3 BAR: the judge's fourth class "
         "is preferred where it appears and gates nothing. THAT the cut acts is unchanged "
-        "and is Matt's review verdict of 2026-08-17; only the height moved. TWO THINGS "
-        "moved it and they pull OPPOSITE ways: the same fit on the RETIRED weights-v4 "
-        "artifact over this same store crosses 0.542695, so the 1,334 rows the store grew "
-        "by are worth -0.030 and the new scale is worth +0.226. The scale is the whole of "
-        "the move and then some, and a method that netted them would understate both."
+        "and is Matt's review verdict of 2026-08-17; only the height moved. THE SCALE IS "
+        "THE WHOLE OF THE MOVE: the same fit on the RETIRED weights-v5 artifact over this "
+        "same grown store crosses 0.768239, which is the figure v5 recorded over the "
+        "smaller store to all six places, so the 502 rows this store grew by are worth "
+        "nothing at all and the new scale is worth the whole +0.015161."
     ),
     reference_pool=(
-        "all 4,656 labeled strange_render pictures, over 2,001 places, read through the "
+        "all 5,158 labeled strange_render pictures, over 2,487 places, read through the "
         "shipped render artifact"
     ),
-    date="2026-08-30",
+    date="2026-09-03",
 )
 
 #: **The smooth head's measured release floor**, which does not act.
@@ -306,28 +316,31 @@ STRANGE_RELEASE_BAR = Restatement(
 #: is the command that produced it — the strange bar's own crossover lived as
 #: prose for five days and could not be checked by anybody.
 SMOOTH_RELEASE_FLOOR = Restatement(
-    value=0.620,
-    head_sha256="2b1771ab9cd9d7b7ac5a75d7921c31bbc55756c0ec05eb545b782392094bd63a",
+    value=0.780,
+    head_sha256="481fe0582328f0de8d64d8e0ddc9a0bde1f044419e2074af6a559239b5792d46",
     method=(
         "the labels-derived crossover, re-fitted on the SHIPPED RENDER judge by "
         "`head floor --head smooth_render`. Isotonic regression (pool-adjacent-violators, "
         "ties pooled, non-decreasing) of P(the human said >=3) against the judge's own "
-        "P(>=3), over all 5,896 labeled smooth_render pictures; the crossing is the LOWEST "
+        "P(>=3), over all 6,114 labeled smooth_render pictures; the crossing is the LOWEST "
         "score whose fitted agreement reaches a half, and the floor is that crossing "
-        "rounded UP on the 0.005 grid both heights sit on. Crossing 0.618260, 95% cluster "
-        "bootstrap over places [0.490, 0.683]. 2,849 of the 5,896 are keepers (48.3%). "
+        "rounded UP on the 0.005 grid both heights sit on. Crossing 0.779545, 95% cluster "
+        "bootstrap over places [0.692, 0.835]. 3,062 of the 6,114 are keepers (50.1%). "
         "ADVISORY EVERYWHERE, and there is no leg in which it is not: nothing reads it "
         "at a run's release and nothing reads it at selection, `ACTING_RELEASE_BARS` "
         "holding the strange bar alone. The whole of the move "
-        "is the scale: the same fit on the RETIRED weights-v4 artifact over this same store "
-        "crosses 0.536564, which is where it stood at the last restatement to within "
-        "0.0006, so the 716 rows the store grew by moved this height by nothing at all."
+        "is the scale: the same fit on the RETIRED weights-v5 artifact over this same "
+        "grown store crosses 0.618260, which is v5's own recorded figure to all six "
+        "places, so the 218 rows the store grew by moved this height by nothing at all "
+        "and the new scale is worth the whole +0.161285. That is ten times what the same "
+        "flip was worth on the strange bar, and it is what brought the two heights from "
+        "0.150 apart to 0.005 apart."
     ),
     reference_pool=(
-        "all 5,896 labeled smooth_render pictures, over 2,728 places, read through the "
+        "all 6,114 labeled smooth_render pictures, over 2,944 places, read through the "
         "shipped render artifact"
     ),
-    date="2026-08-30",
+    date="2026-09-03",
 )
 
 #: Which render heads' release cut ACTS, and at what height. Everything not in
