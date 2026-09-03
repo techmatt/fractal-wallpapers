@@ -236,6 +236,95 @@ def observations(row: dict) -> int:
     return sum(int(counts.get(name, 0)) for name in SOURCES)
 
 
+def delivers(cell: str, group: str, table: dict, prior: float = 0.0, modes=None) -> float:
+    """How much of `cell` one palette group is expected to put on a picture.
+
+    **Mode-conditional mass where it exists, the carrier prior where it does not.**
+    The mass map is keyed on `(group, mode)` and the carrier table on the map, so
+    the two answer the same question at different keys and only one of them is a
+    measurement of the pipeline; `prior` — the group's carrier mean for the cell —
+    is consulted for a group with no mass row at all (one of the 823 today) and
+    never to overrule one that has.
+
+    The **max** over `modes` and not the mean, because a run's map pool is shared
+    by every arm and every mode in it: a map dropped for failing on modes the leg
+    will not run is a map narrowed away for nothing. `modes` unsaid is
+    [`curation.mode_policy.accepted`], which is the set a leg may actually render —
+    the four measured modes outside it include the noisy ones this module's own
+    docstring warns are not lookups into their colormap.
+
+    **A caller in a loop resolves `modes` once and hands it in.** `accepted()` reads
+    its record on every call at about 13 ms, which is nothing once and 54 seconds
+    over the 4,110 (map, cell) pairs a five-cell cut of the pool asks — which is
+    what this cost before [`delivering`] hoisted it.
+    """
+    from fractal_wallpapers.curation import mode_policy
+
+    wanted = mode_policy.accepted() if modes is None else modes
+    best = None
+    for mode in wanted:
+        row = table.get((str(group), str(mode)))
+        if row is not None:
+            share = share_of(row, str(cell))
+            best = share if best is None else max(best, share)
+    return float(prior) if best is None else best
+
+
+def delivering(cells, cutoff: float | None = None, within=None, modes=None) -> list[str]:
+    """Every map expected to deliver **any** of `cells` at or above `cutoff`.
+
+    The palette neighbourhood a cell-aimed draw offers. Any and not all: a leg
+    listing five thin cells wants the maps that serve one of them, and a pool cut
+    to the maps that serve all five is a pool cut to almost nothing.
+
+    `cutoff` unsaid is [`palettes.dominance.CELL_LEAD`] rather than a constant of
+    this module's own. A row here is the mean chromatic share a pair puts on a
+    picture and `CELL_LEAD` is the share at which a cell *leads* one, so the
+    default reads as **this pair's expected colour in the cell is at least what a
+    cell needs to be dominant at**. It is also the loosest value that is still a
+    bound at this library: at `0.10` the thinnest cell offers 40 maps of the
+    collapsed pool and at `0.15` it offers 28, under the 32
+    [`curation.colorize.CANDIDATES`] asks for.
+
+    `within` is the maps the caller may actually draw — a run's collapsed
+    `colorize.pool` — and the result keeps its order, so a caller narrowing a pool
+    hands one back in the same order it was given. Unsaid, the whole shipped
+    library through [`palettes.groups.library`].
+
+    This is a **draw filter and nothing else**, on [`curation.depth.read_maps`]'
+    standing: it re-marks no map, folds none, moves no bar and writes nothing back
+    to the tracked colour records.
+    """
+    from fractal_wallpapers.curation import mode_policy
+    from fractal_wallpapers.palettes import carriers, dominance, groups
+
+    wanted = [str(one) for one in cells]
+    if not wanted:
+        raise ColorMassError("delivering() was asked for no cell, so it has nothing to cut on.")
+    known = set(dominance.cells())
+    unknown = [one for one in wanted if one not in known]
+    if unknown:
+        raise ColorMassError(
+            f"{unknown[0]!r} is not a codebook cell, so no map can be measured against it. "
+            f"A misspelt cell would narrow a pool nobody chose."
+        )
+    bar = dominance.CELL_LEAD if cutoff is None else float(cutoff)
+    roster = tuple(mode_policy.accepted() if modes is None else modes)
+    offered = list(groups.library()) if within is None else [str(one) for one in within]
+    table = read()
+    member = groups.member_groups()
+    carrier_table = carriers.table()
+    priors = {cell: carrier_table.get(cell, {}) for cell in wanted}
+    out = []
+    for name in offered:
+        group = groups.group_of(name, member)
+        for cell in wanted:
+            if delivers(cell, group, table, priors[cell].get(name, 0.0), roster) >= bar:
+                out.append(name)
+                break
+    return out
+
+
 # --------------------------------------------------------------------------- #
 # Writing.
 # --------------------------------------------------------------------------- #
@@ -649,6 +738,8 @@ __all__ = [
     "SWEEP_UNIT",
     "build",
     "check_sweep_log",
+    "delivering",
+    "delivers",
     "measured_modes",
     "method_row",
     "observations",

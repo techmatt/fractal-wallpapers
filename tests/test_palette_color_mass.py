@@ -230,3 +230,71 @@ def test_a_failed_sweep_render_refuses_rather_than_leaving_a_hole(tmp_path, monk
     )
     with pytest.raises(color_mass.ColorMassError, match="failed render"):
         color_mass.tally(census, sweep, log=lambda *_: None)
+
+
+# --------------------------------------------------------------------------- #
+# The draw filter.
+# --------------------------------------------------------------------------- #
+def test_delivering_takes_any_listed_cell_and_keeps_the_order_it_was_given() -> None:
+    """**Any and not all.** A leg listing five thin cells wants the maps that serve
+    one of them; the maps that serve all five are almost none, and a pool cut that
+    way could not stand up a 32-map neighbourhood for any of them.
+
+    Order is the caller's, so a caller narrowing a pool gets one back in the shape
+    it handed over — which is what lets `depth.build_plan` apply this over whatever
+    the maps manifest left without re-sorting a pool between two filters.
+    """
+    pool = groups.library()
+    lime = color_mass.delivering(["dark_vivid_lime"], within=pool)
+    yellow = color_mass.delivering(["dark_vivid_yellow"], within=pool)
+    both = color_mass.delivering(["dark_vivid_lime", "dark_vivid_yellow"], within=pool)
+    assert set(both) == set(lime) | set(yellow)
+    assert both == [name for name in pool if name in set(both)], "the pool's own order"
+    assert len(both) < len(pool), "a filter that keeps everything is not a filter"
+
+
+def test_delivering_reads_the_cutoff_off_the_dominance_rule_and_tightens_with_it() -> None:
+    """The default is `dominance.CELL_LEAD` and not a constant of this module's, so
+    "delivers" means "expected to be dominant here" rather than a number somebody
+    chose beside one. Raising it can only take maps away."""
+    pool = groups.library()
+    default = color_mass.delivering(["dark_vivid_yellow"], within=pool)
+    named = color_mass.delivering(["dark_vivid_yellow"], cutoff=dominance.CELL_LEAD, within=pool)
+    tighter = color_mass.delivering(["dark_vivid_yellow"], cutoff=0.30, within=pool)
+    assert default == named
+    assert set(tighter) < set(default)
+
+
+def test_delivering_refuses_a_cell_the_codebook_does_not_hold() -> None:
+    """A misspelt cell would narrow a pool nobody chose, and would do it quietly:
+    every map would miss the cutoff for a name no row carries and the cut would
+    come back empty for a reason that looks like a thin library."""
+    with pytest.raises(color_mass.ColorMassError, match="codebook cell"):
+        color_mass.delivering(["dark_vivid_limes"])
+    with pytest.raises(color_mass.ColorMassError):
+        color_mass.delivering([])
+
+
+def test_delivers_takes_the_carrier_prior_only_where_there_is_no_mass_row() -> None:
+    """The two tables answer the same question at different keys and only one of
+    them is a measurement of this pipeline, so the prior is a fallback and never an
+    overrule. A group with a row reads 0.0 for a cell that row does not carry —
+    which is a measured floor, not missing data — and the prior is not consulted."""
+    table = {("g1", "smooth"): {"cells": {"dark_vivid_lime": 0.4}}}
+    assert color_mass.delivers("dark_vivid_lime", "g1", table, 0.9, ["smooth"]) == 0.4
+    assert color_mass.delivers("dark_vivid_yellow", "g1", table, 0.9, ["smooth"]) == 0.0
+    assert color_mass.delivers("dark_vivid_lime", "g2", table, 0.9, ["smooth"]) == 0.9
+    assert color_mass.delivers("dark_vivid_lime", "g2", table, 0.0, ["smooth"]) == 0.0
+
+
+def test_delivers_takes_the_max_over_the_modes_and_not_the_mean() -> None:
+    """A run's map pool is shared by every arm and every mode in it, so a map is
+    offerable when ANY mode the leg may render delivers the cell with it. A mean
+    would drop a map that is the library's best answer in one mode because it is
+    ordinary in thirteen others."""
+    table = {
+        ("g1", "smooth"): {"cells": {"dark_vivid_lime": 0.02}},
+        ("g1", "stripe"): {"cells": {"dark_vivid_lime": 0.55}},
+    }
+    assert color_mass.delivers("dark_vivid_lime", "g1", table, 0.0, ["smooth", "stripe"]) == 0.55
+    assert color_mass.delivers("dark_vivid_lime", "g1", table, 0.0, ["smooth"]) == 0.02

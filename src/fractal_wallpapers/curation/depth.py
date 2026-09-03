@@ -1178,6 +1178,8 @@ def build_plan(
     partition_weights: dict | None = None,
     centered: str = CENTERED_ANY,
     draw_maps: list | None = None,
+    draw_cells: list | None = None,
+    draw_cutoff: float | None = None,
     floor_modes: list | None = None,
     floor_untried: list | None = None,
     floor_places: list | None = None,
@@ -1203,7 +1205,7 @@ def build_plan(
     of seats.
     """
     from fractal_wallpapers.curation import colorize, mode_policy
-    from fractal_wallpapers.palettes import dominance
+    from fractal_wallpapers.palettes import color_mass, dominance
 
     # **The standing draw-weight table is resolved here and nowhere lower**, so
     # every arm below draws under one table and the record reports the table the
@@ -1268,6 +1270,31 @@ def build_plan(
         log(
             f"[depth] the maps manifest draws {len(maps):,} of the pool's "
             f"{pool_offered:,}: {pool_offered - len(maps):,} map(s) out of the draw"
+        )
+    # **The cell filter, second, over whatever the manifest left.** The two
+    # compose and both apply: `--draw-maps` is a list somebody cut by hand and
+    # `--draw-cells` is a rule, and a leg that gave both meant the intersection.
+    # Sparse and unsaid it does nothing at all — an unnarrowed run draws
+    # `colorize.pool` exactly as it did before this flag existed, which is what
+    # `tests/test_depth.py` pins.
+    after_manifest = len(maps)
+    wanted_cells = [str(one) for one in (draw_cells or [])]
+    if wanted_cells:
+        bar = dominance.CELL_LEAD if draw_cutoff is None else float(draw_cutoff)
+        try:
+            maps = color_mass.delivering(wanted_cells, cutoff=bar, within=maps)
+        except color_mass.ColorMassError as refusal:
+            raise DepthRefused(str(refusal)) from refusal
+        if len(maps) < colorize.CANDIDATES:
+            raise DepthRefused(
+                f"the cells {sorted(wanted_cells)} leave {len(maps)} map(s) of "
+                f"{after_manifest:,} at a cutoff of {bar}, and the palette head asks a "
+                f"{colorize.CANDIDATES}-map neighbourhood of each anchor. Lower --draw-cutoff "
+                f"or list more cells."
+            )
+        log(
+            f"[depth] the cells {sorted(wanted_cells)} at >= {bar} draw {len(maps):,} of "
+            f"{after_manifest:,}: {after_manifest - len(maps):,} map(s) out of the draw"
         )
     shares = {**SHARES, **dict(shares or {})}
     if cell is None:
@@ -1468,11 +1495,27 @@ def build_plan(
         "top_bands": None if top_bands is None else int(top_bands),
         "matched_arms_sized_from": RANKED if ranked else "their own shares",
         "maps_offered": pool_offered,
+        "maps_after_the_manifest": after_manifest,
         "maps_drawn_from": len(maps),
         "maps_narrowed": draw_maps is not None,
         "maps_narrowed_is": "a DRAW FILTER and nothing else — see `read_maps`. The pool is "
         "`colorize.pool` at this seed; a narrowed run re-marks no map and writes nothing "
         "back to the tracked colour records",
+        # The cell cut is reported apart from the manifest cut because the two are
+        # different facts about the same pool: one is a list somebody wrote down,
+        # the other is a rule with a threshold, and a reader pricing a narrowed leg
+        # needs to know which of them took the maps away.
+        "draw_cells": wanted_cells or None,
+        "draw_cutoff": (
+            None
+            if not wanted_cells
+            else (dominance.CELL_LEAD if draw_cutoff is None else float(draw_cutoff))
+        ),
+        "cells_narrowed": bool(wanted_cells),
+        "cells_narrowed_is": "the same DRAW FILTER, cut by rule instead of by hand: the maps "
+        "`palettes.color_mass.delivering` expects to put >= the cutoff of the picture's "
+        "colour in ANY listed cell, mode-conditional mass where there is one and the carrier "
+        "prior where there is not. It composes with the manifest and re-marks nothing",
         # Every draw here is seeded and the seeds are not one seed: a place draw
         # and a palette draw at the same arm are taken under different ones, and
         # a run nobody can re-take is a measurement nobody can check.
@@ -1728,6 +1771,8 @@ def run(
     partition_weights: dict | None = None,
     centered: str = CENTERED_ANY,
     draw_maps: list | None = None,
+    draw_cells: list | None = None,
+    draw_cutoff: float | None = None,
     floor_modes: list | None = None,
     floor_untried: list | None = None,
     floor_places: list | None = None,
@@ -1791,6 +1836,8 @@ def run(
         partition_weights=partition_weights,
         centered=centered,
         draw_maps=draw_maps,
+        draw_cells=draw_cells,
+        draw_cutoff=draw_cutoff,
         floor_modes=floor_modes,
         floor_untried=floor_untried,
         floor_places=floor_places,
@@ -1864,7 +1911,16 @@ def run(
             engine=build,
         )
         stored["hunt"] = candidate_ledger.hunt_block(
-            {"seconds": round(stages.total(), 3), **shot.named()}
+            {
+                "seconds": round(stages.total(), 3),
+                **shot.named(),
+                # The leg's palette narrowing, on every row the leg made rather
+                # than on the aimed arm's alone: `--draw-cells` cuts the pool
+                # ALL FIVE draws offer, so every row here was drawn out of a
+                # colour-narrowed neighbourhood and none of them is base rate.
+                # `drawn_for` beside it stays the aimed arm's alone.
+                "drawn_cells": list(shape["draw_cells"] or ()),
+            }
         )
         scored = candidate_ledger.score_row(
             key=key,

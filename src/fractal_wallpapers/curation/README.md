@@ -1737,14 +1737,27 @@ drawn, and since 2026-08-28 the ledger carries a conditioned arm: 3,042 rows dra
 *for* `light_vivid_teal`, merged beside their own 3,041-row flat control. So a
 census taken after that date reports an unconditioned rate on every cell except the
 one an arm aimed at, and on that one it reports an aimed leg's rate under the
-estimator's name. The separator is **`hunt.drawn_for`**, and it is exact: it is
-present on the aimed row alone and absent on every other row in the store — the
+estimator's name. The separator is **`hunt.drawn_for`**, and it is exact by
+construction: it is written on the aimed row alone and on no other row — the
 control arm's included, which is what makes the control still readable as base
 rate. Drop those rows *before* the census to read the true rate; there is no
 correction to apply afterwards, because the aimed rows move the numerator and the
 denominator by different factors. The same caveat rides on `depth.mode_bars`'
 `ledger_clear_rate`, which is the base rate the next arm's clear rate will be
 quoted against.
+
+**And for four days the separator was not on any row at all, which is a hole this
+store keeps.** `449643d` (2026-08-29) cut the ledger row to its readers by tracing
+sixteen call sites, found nothing in *code* reading `hunt.drawn_for`, and took it
+off with six other `hunt` fields — the paragraph above is a reader with a person on
+the end of it, and a trace of call sites cannot see one. The same commit rewrote
+the whole store, so **the 3,042 rows the conditioned arm merged before that date
+have no stamp and can never be filtered out of a rate taken over them**; measured
+2026-09-03, `drawn_for` appears on 0 of the store's rows. `candidate_ledger.ASKED_FOR`
+restores it and `tests/test_candidate_ledger.py` pins it, which repairs the next
+aimed leg and no earlier one. The lesson is the general one and it is cheap to
+state: **a field a README tells a human to filter on is a field with a reader**, and
+the trace has to include the prose.
 
 **And it under-prices a win that only a non-shareable mode can deliver, by up to
 an order of magnitude.** `seconds_per_win` is `renders_per_win` — a count over the
@@ -3096,6 +3109,45 @@ Two refusals, both of them the design working:
 - **A manifest leaving fewer than `colorize.CANDIDATES` maps is refused**, because
   the palette head asks a 32-map neighbourhood of each anchor and a pool that
   cannot serve one is a head answering a different question.
+
+### `--draw-cells` is the same filter cut by RULE instead of by hand
+
+`--draw-cells CELL …` narrows the same pool `--draw-maps` narrows, and the two
+**compose — both filters apply**, because a manifest is a list somebody wrote down
+and this is a rule with a threshold, and a leg that gave both meant the
+intersection. Sparse, and unsaid it is every cell, which is `colorize.pool`
+untouched and bit-for-bit what a run drew before the flag existed.
+
+A map is kept when **any** listed cell clears the cutoff — not all of them, because
+a pool cut to the maps serving all five thin cells at once is a pool that cannot
+stand up a 32-map neighbourhood for one of them. The probability is
+`palettes.color_mass.delivering`: **mode-conditional mass where there is a row for
+the map's palette group, the carrier prior where there is not** (822 of 823 groups
+are measured), and the **max** over `mode_policy.accepted()` rather than the mean,
+because the pool is shared by every arm and every mode in the leg — a map dropped
+for failing on modes the leg will not run is a map narrowed away for nothing.
+
+`--draw-cutoff` defaults to `palettes.dominance.CELL_LEAD` (0.10) rather than to a
+constant of its own, so the filter reads as *this pair is expected to be dominant
+here*. It is also the loosest value that is still a bound at this library: at 0.10
+the thinnest cell (`dark_vivid_lime`) offers 40 maps of the 822-map collapsed pool
+and at 0.15 it offers 28, under `colorize.CANDIDATES`. Narrowing below the
+neighbourhood is refused, and the message names the cutoff because the cutoff is
+the knob that fixes it.
+
+**It reaches the near band, and that is the point.** The near band deepens a place
+whose field is already dumped, so a recolour there costs a colour pass and nothing
+else — the cheapest colour a leg can buy. Narrowing only the breadth draws would
+leave the cheap arm spending its width on the colours the seating is already full
+of. `plan.maps_after_the_manifest` against `plan.maps_drawn_from` says what each of
+the two filters took.
+
+**Every row a narrowed leg writes is stamped `hunt.drawn_cells`**, on the same
+contamination rule as `drawn_for` above and for a wider reason: `--draw-cells` cuts
+the pool *all five* draws offer, so no row of such a leg is a base rate, the flat
+control arm's included. `drawn_for` beside it stays the aimed arm's alone. The two
+are `candidate_ledger.ASKED_FOR` and both are written only when there is an ask, so
+an unnarrowed row carries the two fields the block has always carried.
 
 ### `sequence.jsonl` carries the whole autolevel stamp, and did not until 2026-09-02
 

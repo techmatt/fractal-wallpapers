@@ -1612,17 +1612,42 @@ RETAINED_REASONS = (
 )
 
 
-def hunt_block(named: dict | None) -> dict:
-    """The `hunt` block as the row keeps it: the seconds, and which draw this was.
+#: The two fields of the block that say the row's palette was **asked for a
+#: colour**, so a rate taken over the store can drop it. `drawn_for` is the aimed
+#: arm's own cell, present on that arm's rows alone; `drawn_cells` is the whole
+#: leg's `--draw-cells` narrowing and is on every row such a leg made. Both are
+#: written only when the draw named one, so a row from an unnarrowed leg carries
+#: the two fields this block has always carried and nothing more.
+ASKED_FOR = ("drawn_for", "drawn_cells")
 
-    Two fields of nine. `seconds` is what [`headroom.render_cost`] prices a leg
-    off; `k` is what [`k_of`] hands the winner's-curse correction, and it is the
-    one field of the block that cannot be recovered from anywhere else. The other
-    seven were the leg's name (which is `provenance.run`), its mode and its
-    colormap (which are the recipe's), and four numbers about the draw that only
-    the leg's own record ever read.
+
+def hunt_block(named: dict | None) -> dict:
+    """The `hunt` block as the row keeps it: the seconds, the draw, and the colour ask.
+
+    Two fields of nine, plus [`ASKED_FOR`] where there is an ask to carry.
+    `seconds` is what [`headroom.render_cost`] prices a leg off; `k` is what
+    [`k_of`] hands the winner's-curse correction, and it is the one field of the
+    block that cannot be recovered from anywhere else. The other seven were the
+    leg's name (which is `provenance.run`), its mode and its colormap (which are
+    the recipe's), and four numbers about the draw that only the leg's own record
+    ever read.
+
+    **`drawn_for` was one of the seven and should not have been, and the store
+    carries the hole.** `curation/README.md` names `hunt.drawn_for` as the exact
+    separator a census drops before reading an unconditioned rate — but that is a
+    reader with a person on the end of it, not a call site, and the 2026-08-29
+    trace-of-readers cut found no code reading it and took it off. The whole store
+    was rewritten in the same commit, so **the 3,042 rows the conditioned arm
+    merged before that date have no stamp and cannot be filtered out of any rate
+    taken over them, ever**. It is restored here, which repairs the next aimed leg
+    and not any earlier one.
     """
-    return {"seconds": (named or {}).get("seconds"), "k": (named or {}).get("k")}
+    out = {"seconds": (named or {}).get("seconds"), "k": (named or {}).get("k")}
+    for field in ASKED_FOR:
+        held = (named or {}).get(field)
+        if held:
+            out[field] = held
+    return out
 
 
 def prune(keep: int = RETAIN_PER_PAIR, apply: bool = True, log=print) -> dict:

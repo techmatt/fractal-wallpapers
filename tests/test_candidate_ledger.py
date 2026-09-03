@@ -596,9 +596,18 @@ def test_the_colour_block_keeps_the_verdict_and_not_the_shares():
     assert candidate_ledger.colour_kept({}) is None
 
 
-def test_the_hunt_block_keeps_the_seconds_and_the_draw_and_nothing_else():
-    """Two fields of nine. `seconds` prices a leg and `k` corrects the winner's
-    curse; the other seven were the recipe's or the run's, spelled again."""
+def test_the_hunt_block_keeps_the_seconds_the_draw_and_the_colour_ask():
+    """Two fields of nine, plus the ask. `seconds` prices a leg and `k` corrects
+    the winner's curse; six of the other seven were the recipe's or the run's,
+    spelled again.
+
+    **The seventh was `drawn_for` and taking it off was wrong.** It is the exact
+    separator `curation/README.md` tells a census to drop before reading an
+    unconditioned rate, but that reader has a person on the end of it rather than a
+    call site, so the 2026-08-29 trace-of-readers cut could not see it. The store
+    was rewritten in the same commit and the aimed rows already in it lost the
+    stamp for good — this pins that the next one keeps it.
+    """
     block = candidate_ledger.hunt_block(
         {
             "name": "a_leg",
@@ -610,10 +619,30 @@ def test_the_hunt_block_keeps_the_seconds_and_the_draw_and_nothing_else():
             "k": 10,
             "rank": 14,
             "drawn_for": "light_vivid_teal",
+            "drawn_cells": ["light_vivid_lime", "dark_vivid_lime"],
         }
     )
-    assert block == {"seconds": 0.09, "k": 10}
+    assert block == {
+        "seconds": 0.09,
+        "k": 10,
+        "drawn_for": "light_vivid_teal",
+        "drawn_cells": ["light_vivid_lime", "dark_vivid_lime"],
+    }
     assert candidate_ledger.k_of({"hunt": block}) == 10
+
+
+def test_a_row_with_no_colour_ask_carries_the_two_fields_it_always_carried():
+    """**The unnarrowed row does not move.** Every one of this store's 201,174 rows
+    was written by a leg that asked for no colour, and a block that spelled the two
+    asks as `None` would put four megabytes of nulls into the next rewrite and make
+    `drawn_for`'s presence — which is what makes the filter *exact* — stop being a
+    presence at all."""
+    assert candidate_ledger.hunt_block({"seconds": 0.09, "k": 10}) == {"seconds": 0.09, "k": 10}
+    assert candidate_ledger.hunt_block({"seconds": 0.09, "k": 10, "drawn_cells": []}) == {
+        "seconds": 0.09,
+        "k": 10,
+    }, "an empty narrowing is not a narrowing"
+    assert candidate_ledger.hunt_block(None) == {"seconds": None, "k": None}
 
 
 def test_a_recipe_read_back_off_a_stored_row_recomputes_the_row_s_own_key():

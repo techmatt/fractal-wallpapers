@@ -312,6 +312,52 @@ def probe(job: dict) -> dict:
     }
 
 
+def extend_with(row: dict, log=print) -> bool:
+    """Measure ONE render's texture, append it to the register, and answer.
+
+    **The register self-extends at ingest rather than waiting for a backfill.**
+    A geometry the register has not reached is not a rare case — the two the
+    pipeline uses are 640x360ss2 for a candidate and 1280x720ss2 for a label, they
+    are separate identities by [`field_key`], and the second is only ever created
+    by somebody putting a picture on a sheet. Measured 2026-09-03, **23 of the 224
+    label rows in a mode with a texture had no entry**; every one of them routed on
+    `flat_for`'s unmeasured `False`, which is `strange_render`, and a flat one among
+    them is a smooth-by-rule picture sitting in the strange store.
+
+    **It never rewrites an entry and never re-keys a row.** A key already held is
+    returned from the register untouched — a second measurement of one identity
+    would be a second answer to a question that has one, and the first is the one
+    every stored routing was decided under.
+
+    Refuses to guess: a mode with no texture is `False` without a render, and a row
+    this cannot key raises, because a register that grew a row under a key nobody
+    can recompute would be worse than the hole it filled.
+    """
+    if not has_a_texture(row.get("mode")):
+        return False
+    key = field_key(row)
+    entries = read_entries()
+    if key in entries:
+        return bool(entries[key]["flat"])
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as workdir:
+        answer = probe({"field": key, "row": row, "output": Path(workdir) / f"{key}.png"})
+    if "flat" not in answer:
+        raise RegisterError(
+            f"the span test for {key} did not answer: {answer.get('why')}. A row routed on a "
+            f"failed probe would be routed on this function's default rather than on a "
+            f"measurement, and nothing downstream could tell the two apart."
+        )
+    entries[key] = entry(key, row, bool(answer["flat"]), partition=row.get("partition"))
+    write(entries, log=log)
+    log(
+        f"[texture-flat] {key} measured at {row.get('resolution')}ss{row.get('supersample')}: "
+        f"flat={answer['flat']} in {answer.get('seconds')}s"
+    )
+    return bool(answer["flat"])
+
+
 def unmeasured(rows: list[dict], entries: dict | None = None) -> dict[str, dict]:
     """`{field key: one row standing for it}` for every identity not yet measured.
 
