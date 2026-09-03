@@ -763,6 +763,23 @@ as flat, which is what the home framing's own margin looks like from inside a
 gate. The whole draw costs about eight seconds, which is why it is paid once when
 the run is built rather than inside the refill's share of the loop clock.
 
+**The yield turns over past rung 4, and the four-rung reading above is the half
+of the curve that climbs.** Measured at **six** rungs, seed 0, 2026-09-02:
+**426 survivors of 5,460 frames in 130.6 s**, by rung 0/4, 2/16, 8/64, 26/256,
+91/1024, 299/4096 — 12.5%, 12.5%, 10.2%, 8.9%, **7.3%**. It climbs to rung 4 and
+falls after it, as the frames get small enough that `flat` takes them: 3,552 of
+rung 6's 4,096 draws. The cost is `4^k` a rung and the screen is serial, so the
+fifth and sixth rungs together are **122 s of every session, a resume included**,
+against eight seconds for the first four.
+
+**So add a rung only when a leg has actually walked its shelf out.** The leg that
+measured this served **160 of the 434 entries the six-rung ladder gave it** and
+left 274 unserved; four rungs would have fed it. What that leg was short of was
+never viewports — see *the cadence was the whole of it* in `supply/README.md`.
+Per root rather than per frame, **rung 4 is the productive one**: 2.0 admissions a
+root against 0.90 at rung 5 and 1.16 at rung 6. A denser draw at rung 4 is the
+cheaper way to more places than a rung below it.
+
 ```
 fractal-wallpapers harvest --minutes 10 --partition phoenix:classic     --root-channel proven --root-channel viewport_sampler
 ```
