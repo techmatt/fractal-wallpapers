@@ -357,8 +357,30 @@ is a new recipe key: nothing re-keys, no cached picture changes underneath its
 name, and no human label is voided. Editing the constants at `mode.rs` instead
 re-keys all 4,733 `direct_trap_multiply` rows the ledger holds, voids their
 sidecar scores, forces a full re-render — a direct trap cannot dump, so a recolour
-is a render — and invalidates 406 of the 5,110 human verdicts in the strange-render
-store, because they were cast on pictures that would no longer exist.
+is a render — and invalidates **594 of the 5,298** human verdicts in the
+strange-render store (406 of 5,110 before `dtm_variants_20260902` landed), because
+they were cast on pictures that would no longer exist. Only 44 of the 594 override
+both knobs, so a change to either constant reaches all but those.
+
+**The variants were drawn, served and judged, and they do fix the whitewash.**
+`dtm_variants_20260902`, 188 human verdicts at label geometry, 2026-09-03. All four
+cells collapse the near-white share against the shipped mode's 0.434 median:
+`opacity=0.4` to 0.094, `opacity=0.6` to 0.032, `threshold=0.2` to 0.011, and both
+raised to 0.000. Matt's tier-4 rate over the batch is 21.8% against 1.8% on the 55
+shipped-setting rows this store already held, and the top tier is the whole of the
+gain — the three single-knob cells sit at 65.9-78.8% tier-3-or-better and mean tier
+2.92-2.95, while raising **both** knobs together overshoots: mean tier 1.93, 25.0%
+tier-3-or-better, and no ground left to lose.
+
+**And the bias is the judge's alone.** On the three single-knob cells
+Spearman(chroma, `P(>=4)`) is **-0.291**, which reproduces the -0.269 above on a
+population the audit never saw; Spearman(chroma, Matt's tier) over the same rows is
+**+0.023**. The eye is indifferent to chroma and the judge is against it, so the
+disagreement between them is chroma-shaped: ranking the 188 by tier against ranking
+them by `P(>=4)`, Spearman(rank gap, chroma) is **-0.271** (p = 0.0002, -0.318 with
+the over-inked cell dropped). On a matched page — same place, same map, only the
+settings swapped — the judge's `P(>=4)` falls on 16-19 of 20 pairs per cell, by a
+median 0.37 to 0.73. Nothing here changes a roster; the cells are Matt's to dictate.
 
 **And an engine-side pixel change here used to be invisible twice over.** The
 recipe key digests the catalog block, which carries `shape`, `trap_radius`,

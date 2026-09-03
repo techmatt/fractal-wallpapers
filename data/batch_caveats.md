@@ -169,11 +169,44 @@ page actually serves. Over the seats the two differ by `-0.0020` in the mean and
 by as much as `0.27` on 14 individual rows, so a per-row agreement rate computed
 against the wrong one is wrong by more than it looks. Both live on the sheet row
 under `artifacts/`, which is ignored; the stored row here carries neither, and
-reaches them only through its own `sheet` and `unit`. This batch is the only one
-in either store whose sheet carries `selected_on` at all — 200 rows of 9,427 —
-so it is the only place the pair can be read per row rather than reconstructed.
+reaches them only through its own `sheet` and `unit`. It was the only
+batch in either store whose sheet carried `selected_on` at all — 200 rows of
+9,427 — until `dtm_variants_20260902` cut 188 more the same way on 2026-09-03,
+so the pair is readable per row on those two sheets and reconstructed everywhere
+else.
 Reconstructing it off the ledger is exact where it is possible: today's ledger
 `P(>=4)` equals `selected_on` on all 200, to the last digit.
+
+---
+
+## ARGMAX-PER-PLACE — `dtm_variants_20260902` cells are the judge's pick, not a draw
+
+*Registry: `strange_render`. 188 rows, one per location, ingested 2026-09-03.*
+
+The batch sweeps four `direct_trap_multiply` mode-param cells — `opacity=0.4`,
+`opacity=0.6`, `threshold=0.2`, and both raised — and the mining legs drew them
+**balanced**, 1,248-1,249 candidates each over four legs. The page did not. It is
+one card per location, and the card is that location's **best clearing row by the
+candidate column's `P(>=3)`** — so which cell a place appears under is the render
+judge's own argmax over the four, and a cell's 41-52 rows are the places where that
+cell beat the other three by that reading.
+
+So a per-cell rate off these labels is conditional on the judge having preferred
+the cell there, and the four cells stand on four disjoint sets of places. Two
+things follow for anybody reading the cell table. A cell's human rate cannot be
+differenced against another cell's as if the settings were the only thing that
+moved; and the cell that reads worst — `opacity=0.6,threshold=0.2`, mean tier 1.93
+against 2.92-2.95 — is by construction the set of places where the *most* inked
+variant was nonetheless the judge's pick, which is a population as much as it is a
+setting. The unconfounded design exists and is `scratch/dtm_variants/variants/`:
+20 places x 5 settings, same map, only the settings swapped. **It is a preview page
+with no export path, so it has no verdicts on it**, and none of its 20 places is on
+the labelled sheet. Serving it is what would settle the cell question.
+
+**And the page was swept.** The last override is at position 164 of 188; the final
+24 rows are the head's own 1s restated, and every one of the batch's 24 tier-1
+verdicts is in that suffix. The correction rate is 47.9% over the page and 54.9%
+over the hand-cast prefix, and the second is the one to quote.
 
 ---
 
