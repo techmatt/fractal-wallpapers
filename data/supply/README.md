@@ -26,6 +26,15 @@ and the one report that would have said so had been switched off. A partition th
 walk cannot currently feed is *starved*, and starvation is something this engine
 already knows how to say.
 
+**A release ratio is not a draw weight.** This table says how much of a
+*release* a partition is owed; `curation/draw_weights.py` says what a partition
+is worth in a *breadth draw*, given what it costs to render — `phoenix` and
+`phoenix:classic` at 0.25 there since 2026-09-02, on `dtm_variants` spending
+63.5% of a leg's clock on 10.6% of its candidates. The two are read at different
+stages, neither derives the other, and a leg may lean on both at once: they
+multiply. `phoenix:classic` sitting at 0.2 here and 0.25 there is not a
+disagreement, it is two questions.
+
 **The two price tables are evidence and policy, kept apart.**
 `cost_to_find_measured.json` is what a run actually spent per unit of currency,
 summed and divided once; nothing reads it at run time. `cost_to_find.json` is that

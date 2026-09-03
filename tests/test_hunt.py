@@ -232,6 +232,45 @@ def test_the_same_seed_draws_the_same_places():
     assert one != [row["key"] for row in hunt.spread(pools(counts), 8, seed=8)]
 
 
+def _any_map(monkeypatch):
+    """The carrier table serving any cell out of a one-map pool, as the shape
+    tests above do — these two are about the PLACE draw and not about colour."""
+    import fractal_wallpapers.palettes.carriers as carrier_table
+
+    monkeypatch.setattr(carrier_table, "draw", lambda cell, count, seed, **_: ["m"] * count)
+
+
+def test_the_breadth_leg_draws_under_the_standing_partition_weights(monkeypatch):
+    """The unconditional leg IS a breadth leg, so it inherits the table like the
+    other two. Ruled 2026-09-02 on what the dear partitions cost per candidate."""
+    _any_map(monkeypatch)
+    held = pools({"mandelbrot": 60, "phoenix": 60})
+    intended = hunt.plan(held, seed=1, unconditional=45, pool=["m"], log=lambda *_: None)
+    tally = {name: sum(1 for one in intended if one.partition == name) for name in held}
+    assert tally["phoenix"] > 0, "a weight is never a gate"
+    assert tally["phoenix"] * 2 < tally["mandelbrot"], tally
+
+
+def test_the_aimed_leg_keeps_its_own_domain(monkeypatch):
+    """A leg sent at a shortage already says which partitions it means, and what a
+    partition costs to render is a fact about a BREADTH draw. So the work order
+    stands alone: a conditioned leg told nothing draws every partition evenly."""
+    _any_map(monkeypatch)
+    held = pools({"mandelbrot": 60, "phoenix": 60})
+    intended = hunt.plan(
+        held,
+        seed=1,
+        conditioned=45,
+        cell="dark_vivid_lime",
+        pool=["m"],
+        log=lambda *_: None,
+    )
+    tally = {name: sum(1 for one in intended if one.partition == name) for name in held}
+    # Within one location of each other — an odd number of places cannot split in
+    # two — and nowhere near the four-to-one the breadth leg above draws at.
+    assert abs(tally["mandelbrot"] - tally["phoenix"]) <= hunt.PER_LOCATION, tally
+
+
 def test_a_work_order_is_proportional_over_every_prefix_and_not_only_over_a_round():
     """The bug this exists for: a blocked round only acts if the leg outruns it.
 

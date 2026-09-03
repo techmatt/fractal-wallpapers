@@ -768,19 +768,16 @@ def spread(pools: dict, count: int, seed: int, weights: dict | None = None) -> l
 def _turns(order: list, weights: dict | None) -> list:
     """One round of the draw: each partition as often as its weight, **interleaved**.
 
-    Interleaved and not blocked, which is the whole of it. A work order reading
-    `julia:mandelbrot 19, mandelbrot 6, ...` as nineteen consecutive turns spends
-    the first forty-four-turn round's opening nineteen on one partition, and a leg
-    shorter than that round never reaches the second — a proportional order that
-    is not proportional over any prefix is a work order that only acts if the leg
-    is long. Each partition's k-th turn is placed at `(k + 0.5) / weight` and the
-    turns are sorted on that, so every prefix is proportional too.
+    [`curation.draw_weights.order`], which is now the only copy of this
+    arithmetic — the interleave, and the scaling that lets a *fractional* weight
+    act at all. `floor=1`, which is the rule this site has always held: a work
+    order is a shortage's, and a partition it does not mention still gets its
+    turn. An integer table comes out of the shared helper as the turns it always
+    was, so a work order this project has already passed draws what it drew.
     """
-    placed = []
-    for name in order:
-        weight = max(1, int((weights or {}).get(name, 1)))
-        placed += [((at + 0.5) / weight, name) for at in range(weight)]
-    return [name for _at, name in sorted(placed, key=lambda item: (item[0], item[1]))]
+    from fractal_wallpapers.curation import draw_weights
+
+    return draw_weights.order(order, weights, floor=1)
 
 
 def plan(
@@ -802,7 +799,7 @@ def plan(
     have bought all of one leg and none of the other, which answers neither of the
     two questions it was sent to ask.
     """
-    from fractal_wallpapers.curation import colorize, mode_policy
+    from fractal_wallpapers.curation import colorize, draw_weights, mode_policy
     from fractal_wallpapers.palettes import dominance
 
     maps = list(colorize.pool(seed) if pool is None else pool)
@@ -810,9 +807,18 @@ def plan(
     # mode, and [`curation.mode_policy`] weight 0 is the ruling that this project
     # has stopped buying that one. Its existing material stands.
     roster = tuple(mode_policy.accepted())
+    # The breadth leg draws under the standing weight table and the aimed one does
+    # not: what a partition costs to render is a fact about a *breadth* draw, and
+    # a leg sent at a shortage is already saying which partitions it means. See
+    # [`curation.draw_weights`] for the table and for the override.
     breadth = _leg(
         UNCONDITIONAL,
-        spread(pools, -(-int(unconditional) // max(1, per_location)), seed),
+        spread(
+            pools,
+            -(-int(unconditional) // max(1, per_location)),
+            seed,
+            weights=draw_weights.table(),
+        ),
         per_location,
         seed,
         roster,
@@ -1201,6 +1207,8 @@ def run(
         f"ledger recipe, over {len(pools)} partition(s); {len(opened):,} are already open, "
         f"and {at_recorded:,} draw at the frame they already carry"
     )
+    from fractal_wallpapers.curation import draw_weights
+
     intended = plan(
         pools,
         seed=seed,
@@ -1212,6 +1220,9 @@ def run(
         log=log,
     )
     by_key = {str(row["key"]): row for row in places}
+    # Once, before anything renders: the build every row this leg writes will name.
+    # See [`candidate_ledger.live_engine`] for why it is not asked per row.
+    build = candidate_ledger.live_engine()
     maker = Maker(name, device=device, log=log)
     price = Price()
     rows_file = rows_path(name)
@@ -1264,6 +1275,7 @@ def run(
             colour=result["colour"],
             picture=tracked_name(result["picture"]),
             texture_flat=result["texture_flat"],
+            engine=build,
         )
         stored["hunt"] = candidate_ledger.hunt_block(
             {"seconds": result["seconds"], **intent.named()}
@@ -1318,6 +1330,7 @@ def run(
             "conditioned": int(conditioned),
             "cell": cell,
             "work_order": dict(work_order or {}),
+            "partition_draw_weights": draw_weights.table(),
             "margin": float(margin),
             "regime": recipes.CANDIDATE_REGIME.spelled,
             "judge_artifact": artifact,

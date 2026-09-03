@@ -592,7 +592,10 @@ def test_the_two_matched_arms_are_drawn_when_the_ranked_draw_takes_no_share():
     plan, shape = build_a_plan(shares=MATCHED_SHARES, cell="dark_vivid_green")
     assert {shot.arm for shot in plan} == {depth.FLAT, depth.AIMED}
     assert shape["matched_arms_sized_from"] == "their own shares"
-    assert shape["ranked_by_partition"] == {}
+    # Every drawable partition at zero, and not an empty dict: a draw that took
+    # nothing and a draw that was never offered a partition are different facts,
+    # and the record spelled them the same way until 2026-09-02.
+    assert shape["ranked_by_partition"] == dict.fromkeys(PARTITIONS, 0)
     assert shape["matched_mix_agrees"], "the arm and its control ask for one mix"
 
 
@@ -1020,6 +1023,68 @@ def test_the_band_axis_and_the_partition_axis_multiply():
         for name in ("mandelbrot", "phoenix")
     }
     assert tally["mandelbrot"] > tally["phoenix"]
+
+
+def test_the_standing_table_downweights_phoenix_in_the_plan_the_leg_actually_takes():
+    """Ruled 2026-09-02 on `dtm_variants`: `phoenix:classic` took 51.5% of that
+    leg's clock for 5.3% of its candidates, and `phoenix` a further 12.0%. The
+    weight is read off the PLAN and not off the declared table — a design the
+    launch does not read is not the design.
+    """
+    from fractal_wallpapers.curation import draw_weights
+
+    _plan, shape = build_a_plan()
+    assert shape["partition_weights"] == draw_weights.table(), "the leg inherits the default"
+    ranked = shape["ranked_by_partition"]
+    assert ranked["phoenix"] > 0, "a weight is never a gate"
+    assert ranked["phoenix"] * 2 < ranked["mandelbrot"], (
+        f"phoenix drew {ranked} against a quarter weight on an equally stocked pool"
+    )
+    flat = shape["flat_wanted_by_partition"]
+    assert flat["phoenix"] * 2 < flat["mandelbrot"], "and the matched control leans with it"
+
+
+def test_a_named_partition_weight_draws_that_partition_at_full_weight_again():
+    """The override an aimed leg needs, and it names only what it is changing."""
+    _plan, shape = build_a_plan(partition_weights={"phoenix": 1.0})
+    ranked = shape["ranked_by_partition"]
+    assert ranked["phoenix"] >= ranked["mandelbrot"] * 0.8, (
+        f"an aimed leg must be able to draw a phoenix plane at full weight: {ranked}"
+    )
+    assert shape["partition_weights"]["phoenix:classic"] == 0.25, (
+        "and the partitions it did not name keep their standing weight"
+    )
+
+
+def test_a_zero_weight_partition_is_reported_as_a_zero_and_not_as_an_absence():
+    """`dtm_breadth2` ran `phoenix: 0` and its record has no phoenix key at all,
+    so a partition the leg deliberately left out cannot be told from one that did
+    not exist when the leg ran."""
+    _plan, shape = build_a_plan(partition_weights={"phoenix": 0})
+    assert shape["ranked_by_partition"]["phoenix"] == 0
+    assert shape["flat_wanted_by_partition"]["phoenix"] == 0
+    assert set(shape["ranked_by_partition"]) == set(PARTITIONS)
+    assert shape["arms"][depth.RANKED]["partitions"].get("phoenix", 0) == 0
+
+
+def test_the_matched_arms_lean_when_there_is_no_ranked_draw_to_inherit_a_mix_from():
+    """A leg of matched arms alone sizes itself off `spread_over_partitions`, and
+    an unweighted spread there would draw the dear partition at full share
+    through the one door the ranked draw does not stand in."""
+    _plan, shape = build_a_plan(shares=MATCHED_SHARES, cell="dark_vivid_green")
+    flat = shape["flat_wanted_by_partition"]
+    assert flat["phoenix"] * 2 < flat["mandelbrot"], flat
+
+
+def test_a_quarter_weight_survives_the_rounding_that_used_to_erase_it():
+    """`int(round(0.25))` is 0, which is how a downweight becomes a deletion.
+    Drawn straight, so the guard is on the draw and not on the plan around it."""
+    pool = pools({"mandelbrot": 60, "phoenix": 60})
+    banded = depth.ranked_bands(pool, heads(pool), bands=3)
+    drawn = depth.banded_places(banded, seed=5, count=40, partition_weights={"phoenix": 0.25})
+    tally = {name: sum(1 for row in drawn if row["partition"] == name) for name in pool}
+    assert tally["phoenix"] > 0, "the partition is still drawn"
+    assert tally["phoenix"] * 2 < tally["mandelbrot"], tally
 
 
 def test_an_unweighted_draw_is_unchanged_by_the_new_axis():

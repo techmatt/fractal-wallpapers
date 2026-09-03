@@ -58,7 +58,7 @@ from dataclasses import field as dataclass_field
 from datetime import UTC, datetime
 from pathlib import Path
 
-from fractal_wallpapers.curation import candidate_ledger, framing, hunt, recipes
+from fractal_wallpapers.curation import candidate_ledger, draw_weights, framing, hunt, recipes
 from fractal_wallpapers.paths import tracked_name, under
 
 #: The schema every record and every row this module writes carries.
@@ -242,7 +242,9 @@ def deepen_places(best: dict, places: dict, band: tuple, seed: int, count: int) 
     return hunt.spread(pools, count, seed)
 
 
-def ranked_places(pools: dict, head_scores: dict, seed: int, count: int) -> list:
+def ranked_places(
+    pools: dict, head_scores: dict, seed: int, count: int, weights: dict | None = None
+) -> list:
     """`count` never-opened locations, best-first **within** each partition.
 
     The rank is the location head's `P(>=3)` off the intake sidecar, which is what
@@ -261,10 +263,10 @@ def ranked_places(pools: dict, head_scores: dict, seed: int, count: int) -> list
         )
         for name, rows in pools.items()
     }
-    return _round_robin(ordered, count)
+    return _round_robin(ordered, count, weights)
 
 
-def flat_places(pools: dict, seed: int, want: dict) -> list:
+def flat_places(pools: dict, seed: int, want: dict, weights: dict | None = None) -> list:
     """Never-opened locations with no quality conditioning, `want` many per partition.
 
     `want` is the ranked arm's realised per-partition count scaled to this arm's
@@ -280,13 +282,19 @@ def flat_places(pools: dict, seed: int, want: dict) -> list:
         if take <= 0 or not held:
             continue
         out += random.Random(hunt.seed_of(seed, name)).sample(held, min(take, len(held)))
-    return _interleave_by_partition(out)
+    return _interleave_by_partition(out, weights)
 
 
-def _round_robin(pools: dict, count: int) -> list:
-    """One place from each partition in turn, in partition-name order."""
-    order = sorted(pools)
-    at = {name: 0 for name in order}
+def _round_robin(pools: dict, count: int, weights: dict | None = None) -> list:
+    """One place from each partition in turn, in partition-name order.
+
+    `weights` many a round where a partition carries one — the standing
+    [`curation.draw_weights`] table, which both `breadth_*` arms here run under.
+    A partition it leaves out still gets its turn; one weighted below the rest
+    gets fewer, and the round is laid out so a truncated leg's prefix leans too.
+    """
+    order = draw_weights.order(sorted(pools), weights)
+    at = dict.fromkeys(sorted(pools), 0)
     out: list = []
     while len(out) < count:
         took = False
@@ -302,12 +310,18 @@ def _round_robin(pools: dict, count: int) -> list:
     return out
 
 
-def _interleave_by_partition(places: list) -> list:
-    """The same round-robin shape, over places already drawn."""
+def _interleave_by_partition(places: list, weights: dict | None = None) -> list:
+    """The same round-robin shape, over places already drawn.
+
+    Weighted with the same table the draw was taken under, for
+    [`depth._interleave_by_partition`]'s measured reason: a clock-bound leg
+    truncates, and an unweighted interleave puts a leaned draw's whole surplus in
+    the tail where the leg never reaches it.
+    """
     pools: dict = {}
     for row in places:
         pools.setdefault(str(row["partition"]), []).append(row)
-    return _round_robin(pools, len(places))
+    return _round_robin(pools, len(places), weights)
 
 
 # --------------------------------------------------------------------------- #
@@ -717,8 +731,16 @@ def build_plan(
         places = deepen_places(world["best"], world["by_key"], bounds, seed, per_band)
         deepen += plan_deepen(places, world["taken"], maps, seed, k, band)
     ranked_wanted = max(1, want[RANKED] // max(1, per_location))
-    ranked = ranked_places(world["pools"], world["head_scores"], seed, ranked_wanted)
-    counts = collections.Counter(str(row["partition"]) for row in ranked)
+    # Both arms here are breadth arms — they are spelled `breadth_ranked` and
+    # `breadth_flat` — so they run under the standing draw-weight table like every
+    # other one. A mine takes no weight of its own: it is a *measurement* of what a
+    # route costs, and the one thing it must not do is leave the table this
+    # project's breadth legs are priced under.
+    weights = draw_weights.table()
+    ranked = ranked_places(world["pools"], world["head_scores"], seed, ranked_wanted, weights)
+    counts = draw_weights.tallied(
+        world["pools"], collections.Counter(str(row["partition"]) for row in ranked)
+    )
     # The flat arm is matched to the ranked arm's realised per-partition counts,
     # scaled by the two arms' shares, and drawn from the pool with the ranked
     # arm's own places removed so no location stands in both.
@@ -728,8 +750,10 @@ def build_plan(
         name: [row for row in held if str(row["key"]) not in picked]
         for name, held in world["pools"].items()
     }
-    flat_want = {name: max(1, round(count * scale)) for name, count in counts.items()}
-    flat = flat_places(left, seed + 1, flat_want)
+    flat_want = {
+        name: (max(1, round(count * scale)) if count else 0) for name, count in counts.items()
+    }
+    flat = flat_places(left, seed + 1, flat_want, weights)
     plans = {
         DEEPEN: deepen,
         RANKED: plan_breadth(RANKED, ranked, maps, seed, per_location),
@@ -747,6 +771,7 @@ def build_plan(
         "k": int(k),
         "per_location": int(per_location),
         "maps_in_pool": len(maps),
+        "partition_draw_weights": weights,
         "wanted": want,
         "ranked_by_partition": dict(sorted(counts.items())),
         "flat_wanted_by_partition": dict(sorted(flat_want.items())),
@@ -803,6 +828,9 @@ def run(
         per_location=per_location,
         log=log,
     )
+    # Once, before anything renders: the build every row this leg writes will name.
+    # See [`candidate_ledger.live_engine`] for why it is not asked per row.
+    build = candidate_ledger.live_engine()
     maker = hunt.Maker(name, device=device, log=log, fields=fields_dir(name))
     price = hunt.Price()
     clock = Clock()
@@ -860,6 +888,7 @@ def run(
             colour=result["colour"],
             picture=tracked_name(result["picture"]),
             texture_flat=result["texture_flat"],
+            engine=build,
         )
         stored["hunt"] = candidate_ledger.hunt_block(
             {"seconds": round(stages.total(), 3), **unit.named()}
