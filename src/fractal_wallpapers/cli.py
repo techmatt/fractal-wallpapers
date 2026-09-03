@@ -3524,6 +3524,11 @@ def curate_solve(args: argparse.Namespace) -> int:
     # cost off it, and this handler has never looked at that table. Streaming instead
     # is 5.1 s over the store of 2026-09-02 and one fewer whole-ledger copy in a
     # process that is already the pool-holding one.
+    explain = None
+    if args.explain_seats_of:
+        explain = [str(row["key"]) for row in solve.read_record(args.explain_seats_of)["seated"]]
+        print(f"[solve] explaining {len(explain):,} seat(s) of {args.explain_seats_of!r} by name")
+
     candidates, _refused = solve.pool()
     try:
         order, coverage = solve.ranking_for(candidates, args.key)
@@ -3549,6 +3554,7 @@ def curate_solve(args: argparse.Namespace) -> int:
             draw_seed=args.draw_seed,
             swap=not args.no_swap,
             seconds=args.swap_seconds,
+            explain=explain,
         )
     except solve.SolveRefused as refusal:
         print(refusal)
@@ -4056,6 +4062,7 @@ def curate_depth(args: argparse.Namespace) -> int:
             "floor_places": (
                 None if args.floor_places is None else depth.read_places(args.floor_places)
             ),
+            "draw_maps": (None if args.draw_maps is None else depth.read_maps(args.draw_maps)),
             "floor_width": args.floor_width,
             "floor_seats": args.floor_seats,
             "roster": args.modes,
@@ -8495,6 +8502,18 @@ def curate_commands(subcommands) -> None:
         "stops on is valid. Unset is until a full pass finds no improving swap",
     )
     solving.add_argument(
+        "--explain-seats-of",
+        metavar="NAME",
+        help="an earlier solve record whose seats this pass explains ONE AT A TIME, into "
+        "`rejection.explained`: every key it seated comes back either `seated` or with the "
+        "rule that refused it here. The aggregate beside it says which rules cost this pass "
+        "its seats; this says what happened to a named picture, which is the question a "
+        "before/after sheet asks and the only one the aggregate cannot answer. Named rather "
+        "than automatic because the refusal map is one entry per candidate over a hundred "
+        "and fifty thousand of them, and a record carrying all of it would be forty times "
+        "the size of the one carrying the decisions",
+    )
+    solving.add_argument(
         "--rows-per-seat",
         type=int,
         default=view_module.ROWS_PER_SEAT,
@@ -9241,6 +9260,20 @@ def curate_commands(subcommands) -> None:
         "narrows the floor draw alone, which is already the draw over opened, proven "
         "locations — and that is what a list somebody read off the ledger always is. Keys "
         "the opened pool does not hold are counted and named",
+    )
+    depth_step.add_argument(
+        "--draw-maps",
+        metavar="FILE",
+        help='a maps MANIFEST — a JSONL of {"schema": 1, "map": ...} rows — naming the '
+        "colormaps every draw here may offer. The palette twin of --floor-places, and a "
+        "DRAW FILTER and nothing else: it re-marks no map, folds none, moves no bar and "
+        "writes nothing back to the tracked colour records. Unsaid, a run draws the whole "
+        "of `colorize.pool`. Narrowing it is how a leg aimed at the colours a seating is "
+        "thin in stops spending its palettes on the colours that are already full — and "
+        "the narrowed pool still has to hold a 32-map neighbourhood, or the run is "
+        "refused. A map the drawable pool has stood down is refused rather than dropped "
+        "quietly, because a manifest cut against the library and spent against the pool "
+        "is a narrowing nobody can read off the record",
     )
     depth_step.add_argument(
         "--floor-width",

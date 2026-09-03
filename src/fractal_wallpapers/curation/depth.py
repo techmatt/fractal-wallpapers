@@ -979,6 +979,9 @@ def _plan_aimed(places: list, cells: list, roster: list, maps: list, seed: int, 
 #: The schema a places manifest carries.
 PLACES_SCHEMA = 1
 
+#: A maps manifest's row schema — [`read_maps`].
+MAPS_SCHEMA = 1
+
 
 def read_places(path) -> list[str]:
     """The location keys a **places manifest** names, in file order.
@@ -1011,6 +1014,48 @@ def read_places(path) -> list[str]:
             out.append(key)
     if not out:
         raise DepthRefused(f"{path} names no place.")
+    return out
+
+
+def read_maps(path) -> list[str]:
+    """The colormap names a **maps manifest** names, in file order.
+
+    The palette twin of [`read_places`], and it narrows the same way: a JSONL, one
+    object a line, an integer `schema`, and a `map` holding the colormap's name as
+    `data/palettes/` spells it. A **file** rather than arguments because a pool
+    narrowed off a colour read is hundreds of names long.
+
+    This is a **draw filter and nothing else**. It says which maps a run may
+    offer; it re-marks no map, folds none, moves no bar and writes nothing back to
+    the tracked colour records. A map the drawable pool does not hold is refused
+    here rather than silently ignored, because a manifest cut against one pool and
+    spent against another is a narrowing nobody can read off the record.
+    """
+    path = Path(path)
+    if not path.is_file():
+        raise DepthRefused(f"{path} is not a file, so there is no named pool to draw from.")
+    out: list[str] = []
+    seen: set[str] = set()
+    for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        if row.get("schema") != MAPS_SCHEMA:
+            raise DepthRefused(
+                f"{path}:{number}: schema {row.get('schema')!r}, expected {MAPS_SCHEMA}"
+            )
+        # A `kind: "method"` header is this project's spelling for "how this record
+        # was cut", and a manifest somebody has to read back six weeks later wants
+        # one. It is skipped rather than refused, and it is the only row that may
+        # name no map.
+        if str(row.get("kind")) == "method":
+            continue
+        name = str(row["map"])
+        if name not in seen:
+            seen.add(name)
+            out.append(name)
+    if not out:
+        raise DepthRefused(f"{path} names no map.")
     return out
 
 
@@ -1132,6 +1177,7 @@ def build_plan(
     band_weights: dict | None = None,
     partition_weights: dict | None = None,
     centered: str = CENTERED_ANY,
+    draw_maps: list | None = None,
     floor_modes: list | None = None,
     floor_untried: list | None = None,
     floor_places: list | None = None,
@@ -1193,6 +1239,36 @@ def build_plan(
             f"cycle. Narrow the demotion or widen --modes."
         )
     maps = list(colorize.pool(seed))
+    # **The draw filter, applied once, here.** Every arm below draws its palettes
+    # out of `maps`, so narrowing it narrows the run and nothing else: no verdict,
+    # no bar and no retention rule reads this, and the tracked colour records are
+    # not touched. The drawable pool is `colorize.pool`'s, so a manifest naming a
+    # map that pool stood down is refused rather than dropped quietly — see
+    # [`read_maps`].
+    pool_offered = len(maps)
+    if draw_maps is not None:
+        wanted = list(dict.fromkeys(str(one) for one in draw_maps))
+        held = set(maps)
+        absent = [one for one in wanted if one not in held]
+        if absent:
+            raise DepthRefused(
+                f"the maps manifest names {len(absent)} map(s) the drawable pool of "
+                f"{pool_offered} does not hold, the first of them {absent[0]!r}. The pool is "
+                f"`colorize.pool` at this run's seed, which stands one member of each palette "
+                f"group up; a manifest cut against the library rather than against the pool is "
+                f"the usual cause."
+            )
+        maps = [one for one in maps if one in set(wanted)]
+        if len(maps) < colorize.CANDIDATES:
+            raise DepthRefused(
+                f"the maps manifest leaves {len(maps)} map(s) and the palette head asks a "
+                f"{colorize.CANDIDATES}-map neighbourhood of each anchor, so the narrowed pool "
+                f"cannot serve one. Widen the cut."
+            )
+        log(
+            f"[depth] the maps manifest draws {len(maps):,} of the pool's "
+            f"{pool_offered:,}: {pool_offered - len(maps):,} map(s) out of the draw"
+        )
     shares = {**SHARES, **dict(shares or {})}
     if cell is None:
         asked_cells: list[str] = []
@@ -1391,6 +1467,12 @@ def build_plan(
         "rank_bands": int(bands),
         "top_bands": None if top_bands is None else int(top_bands),
         "matched_arms_sized_from": RANKED if ranked else "their own shares",
+        "maps_offered": pool_offered,
+        "maps_drawn_from": len(maps),
+        "maps_narrowed": draw_maps is not None,
+        "maps_narrowed_is": "a DRAW FILTER and nothing else — see `read_maps`. The pool is "
+        "`colorize.pool` at this seed; a narrowed run re-marks no map and writes nothing "
+        "back to the tracked colour records",
         # Every draw here is seeded and the seeds are not one seed: a place draw
         # and a palette draw at the same arm are taken under different ones, and
         # a run nobody can re-take is a measurement nobody can check.
@@ -1645,6 +1727,7 @@ def run(
     band_weights: dict | None = None,
     partition_weights: dict | None = None,
     centered: str = CENTERED_ANY,
+    draw_maps: list | None = None,
     floor_modes: list | None = None,
     floor_untried: list | None = None,
     floor_places: list | None = None,
@@ -1707,6 +1790,7 @@ def run(
         band_weights=band_weights,
         partition_weights=partition_weights,
         centered=centered,
+        draw_maps=draw_maps,
         floor_modes=floor_modes,
         floor_untried=floor_untried,
         floor_places=floor_places,
@@ -1806,6 +1890,12 @@ def run(
             "rank": shot.rank,
             "rank_fraction": shot.rank_fraction,
             "mode": shot.mode,
+            # The settings this candidate was drawn under, `{}` for the bare mode.
+            # On the row because a leg run at `(mode, settings)` whose readout keyed
+            # on the bare mode reported five recipes as one — which is the split the
+            # `direct_trap_multiply` variant sweep was run to get and could not read
+            # back off its own record.
+            "mode_params": dict(shot.mode_params),
             "mode_kind": mine._kind_of(shot.mode),
             # The cell this candidate's palette was drawn FOR, and `None` off the
             # aimed arm. Carried on the made row and not only on the ledger row
@@ -1912,6 +2002,9 @@ def run(
             "workers": counts["workers"],
             "workers_asked": int(workers),
             "judge_artifact": artifact,
+            "maps_offered": shape["maps_offered"],
+            "maps_drawn_from": shape["maps_drawn_from"],
+            "maps_narrowed": shape["maps_narrowed"],
             "field_modes_only": True,
             "cell": shape.get("cell"),
         },
@@ -2264,10 +2357,21 @@ def dominant_and_clearing(made: list, cell: str | None, table: dict) -> dict | N
 
 
 def by_mode(made: list, bars=(SEATING_BAR, PRIMED_BAR)) -> dict:
-    """Per mode: what it cost, what it cleared, and over how many distinct locations."""
+    """Per mode: what it cost, what it cleared, and over how many distinct locations.
+
+    Keyed on the **spelled entry** — `direct_trap_multiply@opacity=0.6` is its own
+    row beside the bare mode — because that is the unit the leg was sent at. A
+    readout that keyed on the bare mode reported five recipes as one, which is
+    exactly the number a variant sweep exists to produce.
+    """
+    from fractal_wallpapers.curation import colorize
+
+    def spelled(row: dict) -> str:
+        return colorize.spelled(str(row["mode"]), row.get("mode_params") or {})
+
     out: dict = {}
-    for mode in sorted({row["mode"] for row in made}):
-        held = [row for row in made if row["mode"] == mode]
+    for mode in sorted({spelled(row) for row in made}):
+        held = [row for row in made if spelled(row) == mode]
         block = {
             "candidates": len(held),
             "locations": len({row["location"] for row in held}),
@@ -2518,6 +2622,7 @@ __all__ = [
     "MEASURING",
     "NEAR",
     "PICTURES",
+    "MAPS_SCHEMA",
     "PLAN_HEADROOM",
     "PRIMED_BAR",
     "RANKED",
@@ -2559,6 +2664,7 @@ __all__ = [
     "proven_places",
     "ranked_bands",
     "rank_readout",
+    "read_maps",
     "read_sequence",
     "record_path",
     "rejects",

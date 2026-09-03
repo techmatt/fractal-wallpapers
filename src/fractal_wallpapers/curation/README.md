@@ -1449,6 +1449,21 @@ wallpaper), `below_its_mode_bar` (never entered the population) and
 `another_place_is_the_same_place` (the neutral pre-selection, at pool
 construction). A mine aimed at any of the four would be aimed at nothing.
 
+#### `--explain-seats-of` answers the other question: what happened to THIS picture
+
+The aggregate above is denominated in counts, so it can say *which rules cost this
+pass its seats* and never *which of yesterday's seats each rule took*. A before/after
+sheet needs the second on every card, and `--explain-seats-of <earlier record>` is
+where it comes from: the pass reads that record's seats, and writes one entry each
+into `rejection.explained` — `seated` if this gallery holds it, `not in the pool` if
+the pool no longer has it at all, and otherwise the rule that refused it, in the same
+vocabulary `reasons` counts.
+
+**Named and never automatic.** The refusal map is one entry per candidate over a
+hundred and fifty thousand of them; a record carrying all of it would be some forty
+times the size of the one carrying the decisions. So the block is absent unless
+somebody asked for it, and it holds exactly the keys they asked about.
+
 ## `curate gallery` — a solve recorded under a name, and a browser over it
 
 ```
@@ -3052,6 +3067,35 @@ population nobody chose.
 
 A file and never arguments, on the standing rule — this population is hundreds of
 places long and a Windows command line overflows a long way before it does.
+
+### `--draw-maps` is the palette twin of it, and it is a draw filter and nothing else
+
+`--draw-maps FILE` is a maps **manifest** — a JSONL of `{"schema": 1, "map": ...}`
+rows, plus a `kind: "method"` header row that says how the cut was made and is the
+one row that may name no map. It narrows what **every** draw in the run may offer,
+which `--floor-places` deliberately does not: places are one draw's business and
+palettes are all of them.
+
+**It re-marks nothing.** No verdict, bar, retention rule or tracked colour record
+reads it; a narrowed run writes the same rows a wide one would have, keyed the same
+way, and the record says what it drew from (`config.maps_offered`,
+`maps_drawn_from`, `maps_narrowed`). It is the mechanism for a leg aimed at the
+colours a seating is thin in — cut the manifest off `data/palettes/color_mass/`,
+drop the maps whose mass sits in the cells the seating is already full of, and the
+run spends its palettes where a seat is still available.
+
+Two refusals, both of them the design working:
+
+- **A map the drawable pool does not hold is refused**, not dropped. The pool is
+  `colorize.pool` at the **run's seed**, and the palette-group collapse stands a
+  *different member* of each group up on a different seed — so a manifest cut at
+  seed 0 and spent at seed 20260903 names maps that pool does not hold. Cut the
+  manifest at the seed it will be spent at. (The colour decision is per *group*,
+  which is what `color_mass` is keyed on, so re-cutting at another seed keeps the
+  same groups and changes only which member stands up.)
+- **A manifest leaving fewer than `colorize.CANDIDATES` maps is refused**, because
+  the palette head asks a 32-map neighbourhood of each anchor and a pool that
+  cannot serve one is a head answering a different question.
 
 ### `sequence.jsonl` carries the whole autolevel stamp, and did not until 2026-09-02
 
