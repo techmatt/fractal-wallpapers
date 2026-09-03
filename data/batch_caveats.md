@@ -171,9 +171,12 @@ against the wrong one is wrong by more than it looks. Both live on the sheet row
 under `artifacts/`, which is ignored; the stored row here carries neither, and
 reaches them only through its own `sheet` and `unit`. It was the only
 batch in either store whose sheet carried `selected_on` at all — 200 rows of
-9,427 — until `dtm_variants_20260902` cut 188 more the same way on 2026-09-03,
-so the pair is readable per row on those two sheets and reconstructed everywhere
-else.
+9,427 — until three more cut the same way on 2026-09-03:
+`dtm_variants_20260902` (188), `phoenix_q3q4_20260903` (200) and
+`judge_band_20260903` (300). So the pair is readable per row on **four** sheets
+and 888 rows, and reconstructed everywhere else. (The 14-unit
+`phoenix_classic_leg` sheet carries none, so a sheet's date does not answer
+this — ask the row.)
 Reconstructing it off the ledger is exact where it is possible: today's ledger
 `P(>=4)` equals `selected_on` on all 200, to the last digit.
 
@@ -336,6 +339,50 @@ and not four; nothing has extended the register at that geometry.
 `pins.every_pinned` (1,452) and `smooth_render`'s own pinned set — **none** is
 pinned. Excluding the 19,302 rows sitting on already-labelled places is what
 bought that.
+
+**The sitting is in, and the three slices are ordered three different ways — which
+is the case against pooling them, measured.** 300 verdicts, 2026-09-03.
+Spearman(`P(>=4)`, tier) at label geometry runs **0.113 (p=0.22) on S1, 0.341
+(p=0.0001) on S2 and 0.491 (p=0.0001) on S3**, and pooled over all 300 the draw
+column reads **0.083 (p=0.15)** — a union that looks unordered while two of its
+three parts are ordered. Per slice: S1 q4 **0.339** and q3+ 0.975 over 118 smooth
+cards; S2 q4 0.525, q3+ 0.917; S3 q4 0.500, q3+ 0.867.
+
+**S1's disorder is not its narrowness.** Re-scored at label geometry the 0.0086
+sliver spreads to **0.700–0.996**, 34x the width, and the tiers still do not follow
+it (0.113, p=0.22); top 30 against bottom 30 by draw score is q4 0.333 against
+0.367. Given a real spread over the same pictures the judge orders them no better,
+so nothing is bought by re-cutting S1 wider — the addendum that would have done it
+was never run.
+
+**S2 cannot answer the 3-vs-4 crossing it was cut for, because the mode balance
+took each mode's top.** The band runs 0.4145–0.9499 but **118 of the 120 sit above
+0.5** — the two below are the whole `smooth_trap_circle` and one `gaussian_int` —
+so there is no below-bar arm to difference against, and walking the judge's own
+order the q4 rate never falls under a half at any depth. Read S2 as a top-of-band
+per-mode page, never as a band split. **And its ordering is mostly the ruled-out
+modes**: dropping the twelve weight-0 cards takes the draw column's rho from 0.240
+(p=0.008) to **0.155 (p=0.11)**, while label geometry survives at 0.252 (p=0.009).
+Those twelve read q3+ 0.583 / q4 0.250 against the 108 weighted cards' 0.954 /
+0.556, which is the eye agreeing with `MODE_POLICY` — confounded with score (mean
+0.612 against 0.895) and n=12.
+
+**S3 is the only slice the judge ranks inside its own top, and the disagreement
+there is colour-shaped.** All 60 clear the bar and the ordering is still the
+strongest of the three (0.446 drawn, 0.491 label; 0.441/0.493 on the 55 strange
+cards alone). Per colour family the judge sits at 0.91–1.00 mean `P(>=4)` almost
+everywhere while the eye runs q3+ 0.667 to 1.000: `purple` (n=9) and `lime` (n=3)
+are read 0.989 and 0.987 and given mean tier 3.00 and 2.67, against `orange` and
+`red` at 1.000 q3+. Families overlap — a card dominant in several cells is counted
+in each — so the per-family n's sum past 60.
+
+**Every correction runs down, and the up direction is close to untestable here.**
+162 corrections, **0 upward**: the head suggested 294 fours, Matt cast 134, and all
+134 came out of those 294. Correction rate is 64.2% (79/123) smooth and 46.9%
+(83/177) strange, neither page swept — last override at 119 of 123 and 177 of 177.
+With a 4 prefilled on 98% of the page a correction rate off this batch measures
+downward disagreement alone, which is the anchoring the registration warns about
+rather than a defect in the draw.
 
 ---
 
