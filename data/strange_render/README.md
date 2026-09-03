@@ -106,6 +106,21 @@ and it lifted `smooth_mean_angle`, `gaussian_int`, `smooth_curvature` and
 Under-seen here means keepers, not rows: `direct_trap_multiply` was already this
 store's largest mode at 338 rows and had 73 of them at `>=3`.
 
+**And the newest batch buys a parameter space rather than a mode.**
+`dtm_variants_20260902`, 2026-09-03: 188 verdicts, one per location, over four
+`direct_trap_multiply` mode-param cells cut to answer whether the mode's whitewash
+is a defect of the settings. All 188 route here and the ingest resolved 188 of 188
+with nothing withheld, nothing already stored and nothing revised, moving this store
+from 5,110 rows to 5,298 and from 2,001 locations to 2,174. It is anchored and
+score-conditioned, so it is training material. Two readings off it are worth having
+and one is not: the mode's tier-4 rate rises from 1.8% at the shipped settings to
+21.8% under the variants, and the render judge's chroma penalty reproduces at
+Spearman = -0.291 while a person's tiers sit at +0.023 — but the **per-cell** rates
+are not a comparison between settings, because the page is one card per location and
+the card is the judge's own argmax over the four. That is
+[`../batch_caveats.md`](../batch_caveats.md)'s ARGMAX-PER-PLACE entry, and the
+matched page that would settle it has never been served.
+
 **What a registration does not say is in
 [`../batch_caveats.md`](../batch_caveats.md)**: how a live population was actually
 assembled, and what a rate quoted off it without that is wrong about. Four of this
