@@ -452,6 +452,29 @@ of the workers for a sixth more per unit, which is what a leg that has to share 
 should be paying. `label build` is serial and is one engine whatever the pool is.
 
 
+**A roster-wide band draw prices at four times a single-plane one, and the split is
+the mode mix.** `judge_band_20260903` (2026-09-03) measured 300 units at three
+workers in **899.8 s**, zero errors: `smooth_render`'s 123 in 146.3 s (**1.19
+s/unit wall**, 3.53 s/unit work) and `strange_render`'s 177 in 753.5 s (**4.26
+s/unit wall**, 12.66 s/unit work). The smooth half sits on
+`phoenix_q3q4_20260903`'s 1.39 despite being drawn from the top of its band across
+eight partitions, so a top-of-pool draw is not dear by itself — what is dear is
+composites, and the strange sheet's sixteen modes cost 3.6x the smooth sheet's one
+over the same geometry. The operator re-baked a map on **107 of 300** (45 smooth,
+62 strange). Both `label build` legs reported `rendered: 0, reused_from_cache: 0`,
+and 128 units re-rendered from the plan afterwards — every levelled one — matched
+byte for byte.
+
+**Write the operator's `leveled` directory back into the plan before the build.**
+`colorize.render` names it `<stem>.leveled` beside the picture and a plan that
+does not carry the key renders through the library's base map instead: the build
+itself will not notice, because `cut` skips a unit whose picture is already on
+disk and reports `rendered: 0` either way. The gap only opens when somebody
+rebuilds the sheet after the pictures are gone, and then it is a different picture
+under the same identity on every levelled row — 107 of 300 here. `judge_band`'s
+plans were repaired from `measure.json` and re-verified before the byte-for-byte
+check, which is the check that would have caught it.
+
 ### A blind page is cut and then stripped
 
 The page renders three things that describe a picture rather than being it, and a sheet
@@ -701,6 +724,25 @@ And `occupancy` is **absent on rows refused for `interior_cap`**, which is not m
 data but the refusal order showing through: the frame was thrown out before anything
 measured it. Any rate computed over occupancy has a smaller denominator than the sheet,
 and the rows it drops are the interior-heavy ones.
+
+#### A slice tag survives ingest only as a UNIT-ID BLOCK
+
+A draw made of several populations wants the population on the stored row, and
+the obvious places do not carry it: `intake._finished_row` writes the join, the
+batch, the sheet name, the unit and the suggested tier, so `facts` and
+`selected_on` die with the sheet directory — which is untracked and disposable.
+`section` does not reach the store row either.
+
+What survives is the **id**, and `section` is what shapes it. `build` fixes the
+order before it numbers anything, `finished_source.order` sorts sections in the
+order the plan introduced them and each good→bad inside, so a sectioned plan
+comes back as contiguous `u####` blocks, one per section. Write the ranges down
+beside the batch — `data/batch_caveats.md` is where — and a per-slice read off
+`finished.resolved(head)` is a comparison on the unit id and needs nothing else.
+
+The cost is that the page no longer reads good→bad end to end: it reads
+good→bad *within* each block. `judge_band_20260903` is the worked example, at
+three slices over two sheets.
 
 ## Re-rendering a stored row is `renders.spec_of`, never `colorize.render`
 
