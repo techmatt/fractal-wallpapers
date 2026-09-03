@@ -204,6 +204,44 @@ def pictures_dir(name: str) -> Path:
 
 
 # --------------------------------------------------------------------------- #
+# What a sequence row says about the autolevel operator.
+# --------------------------------------------------------------------------- #
+#: The three answers [`levelling_of`] gives, in the one word a caller branches on.
+#: The spelling is the website's `builder/picks.py`, deliberately: it is the reader
+#: that has to decide what to publish for a seat, and two vocabularies for one
+#: three-way answer is how the two sides stop agreeing about what they mean.
+UNTOUCHED, REPLAYED, ACTED_UNRECOVERABLE = "untouched", "replayed", "acted_unrecoverable"
+
+
+def levelling_of(row: dict) -> str:
+    """What one `sequence.jsonl` row's picture can be redrawn from.
+
+    * [`UNTOUCHED`] — the operator measured the render as already in band, so the
+      picture is the engine's own bytes and the switch-off render *is* it.
+    * [`REPLAYED`] — the operator acted and the row carries the curve, so
+      [`coloring.autolevel.stops_from_stamp`] rebuilds the exact stop list and the
+      render through it is the picture, with no image and no re-measurement.
+    * [`ACTED_UNRECOVERABLE`] — the operator acted and the row carries only the
+      boolean. **Every depth row written before 2026-09-02 is this**: 241,552 of
+      the 457,143 across 51 runs, 52.8%. Nothing here fixes them and nothing should
+      try — a tracked record is never edited in place, and a curve re-measured off
+      the picture is a *different* curve. Measured on `ed49980b`: re-measuring
+      derives a black point of 0.6336 against the 0.5953 the run stamped, so a
+      redraw from a re-measurement publishes a different picture and calls it the
+      same one. The way out is the row's own file, never a re-render.
+    """
+    stamp = row.get("autolevel") or {}
+    if not stamp.get("acted"):
+        # An absent stamp and a stamp that did not act are one case *only* where
+        # the row also says the operator did not act. A pre-2026-09-02 row carries
+        # `acted` and no stamp at all, and reading that as untouched would be the
+        # library answering "this is the engine's own bytes" about a picture that
+        # is a render through a colormap nothing here can rebuild.
+        return ACTED_UNRECOVERABLE if row.get("acted") else UNTOUCHED
+    return REPLAYED if stamp.get("curve") else ACTED_UNRECOVERABLE
+
+
+# --------------------------------------------------------------------------- #
 # The roster.
 # --------------------------------------------------------------------------- #
 def field_modes() -> list[str]:
@@ -1437,6 +1475,11 @@ def _render_block(payload: tuple) -> list:
                     "colour": result["colour"],
                     "cells": result["cells"],
                     "acted": bool(result["acted"]),
+                    # The whole autolevel stamp, not the boolean beside it. A
+                    # candidate the operator acted on is a render through a rebuilt
+                    # colormap, and `curve` is the only thing that rebuilds it —
+                    # see [`levelling_of`] for what a row without one is worth.
+                    "autolevel": result["autolevel"],
                     # The engine's own word about the modulate texture, carried
                     # across the process boundary because the parent decides the
                     # row's head and the ledger's flag off it. Everything `take`
@@ -1721,7 +1764,16 @@ def run(
             "picture": tracked_name(Path(result["picture"])),
         }
         made.append(row)
-        hunt._append(sequence_file, {"schema": SCHEMA, "at": at, **row})
+        # On the **sequence** row and not on `row`: `made` is held whole for the
+        # length of the leg and feeds `curves`, `by_mode` and `rank_readout`, none
+        # of which reads a stamp, so a kilobyte a candidate there would be twenty
+        # megabytes of an arm's readouts carrying a curve nothing in them wants.
+        # `sequence.jsonl` is the record that answers "which picture was this",
+        # and it is what the website's `picks.run_stamp` reads a depth row out of.
+        hunt._append(
+            sequence_file,
+            {"schema": SCHEMA, "at": at, **row, "autolevel": result["autolevel"]},
+        )
         clock.add(
             stages,
             {
@@ -2431,6 +2483,7 @@ __all__ = [
     "depth_dir",
     "aimed_maps",
     "centered_modes",
+    "levelling_of",
     "field_modes",
     "flat_maps",
     "fields_dir",

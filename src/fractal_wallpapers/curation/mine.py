@@ -620,6 +620,13 @@ def make(
         "stages": stages,
         "verdict": verdict,
         "acted": bool((stamp or {}).get("acted")),
+        # The **whole** stamp, and `acted` beside it rather than instead of it.
+        # `acted` is a boolean a curve cannot be rebuilt from, and a leg that
+        # recorded only the boolean recorded that its picture is unreproducible:
+        # [`coloring.autolevel.stops_from_stamp`] needs `curve`, and re-measuring
+        # the render derives a different black point. `None` with the switch off,
+        # which is the one case there is nothing to carry.
+        "autolevel": stamp,
         "colour": candidate_ledger.colour_block(reading),
         "cells": list(reading.cells),
         # See [`hunt.Maker.make`]: the engine's word, not a reading of the picture.
