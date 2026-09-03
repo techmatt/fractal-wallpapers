@@ -249,7 +249,7 @@ def routed_to(mode: str, texture_flat: bool = False) -> str:
     return hunt.kind_of(mode, texture_flat)
 
 
-def routes_to(row: dict) -> str:
+def routes_to(row: dict, extend: bool = False) -> str:
     """Which store one **row** belongs in, its texture's degeneracy included.
 
     THE call a reader of a stored corpus makes. A finished-render row carries
@@ -261,14 +261,35 @@ def routes_to(row: dict) -> str:
     every reader concluded before the flag existed. That is why the register is
     tracked: routing that differed between two checkouts of one commit would be
     two corpora wearing one name.
+
+    ## `extend` is for the WRITE path and is off everywhere else
+
+    `extend=True` measures a register MISS instead of defaulting it — one render
+    at the row's own geometry through
+    [`coloring.texture_flat.extend_with`], appended to the tracked register, and
+    the row then routed on the measurement. It is what [`append`] passes, because
+    ingest is the one moment a row's identity is new and the one moment somebody
+    is waiting on a handful of rows rather than sweeping a corpus.
+
+    **It must stay off by default and the reason is arithmetic.** This is called
+    per row by `finished_train.population` over both stores — 4,235 rows today —
+    and by every reader of a stored corpus. A default that rendered on a miss
+    would turn a corpus read into a render leg, silently, on a machine that may
+    already be running one.
     """
     from fractal_wallpapers.coloring import texture_flat
 
-    return routed_to(row.get("mode"), texture_flat.flat_for(row))
+    flat = texture_flat.extend_with(row) if extend else texture_flat.flat_for(row)
+    return routed_to(row.get("mode"), flat)
 
 
-def check(head: str, row: dict) -> dict:
-    """Return `row`, having proved it is a finished-render row for this judge."""
+def check(head: str, row: dict, extend: bool = False) -> dict:
+    """Return `row`, having proved it is a finished-render row for this judge.
+
+    `extend` is [`routes_to`]'s and carries its warning: on the write path it is
+    `True` and a register MISS costs one render, everywhere else it is `False` and
+    a miss routes on the unmeasured default.
+    """
     if row.get("schema") != SCHEMA:
         raise FinishedError(f"schema {row.get('schema')!r}, expected {SCHEMA}")
     batch = row.get("batch")
@@ -295,7 +316,7 @@ def check(head: str, row: dict) -> dict:
             "palette pass on the same line, or it is a verdict about a picture nobody can "
             "rebuild"
         )
-    routed = routes_to(row)
+    routed = routes_to(row, extend=extend)
     if routed != head:
         # Which of the two reasons, because they read very differently to whoever
         # has to act on this. The mode being in the wrong store is a mistake at
@@ -380,8 +401,15 @@ def render_row(
     return check(head, row)
 
 
-def append(head: str, rows: list[dict], known: dict | None = None) -> Path:
-    """THE writer. Append checked rows to their batch's file and return its path."""
+def append(head: str, rows: list[dict], known: dict | None = None, extend: bool = True) -> Path:
+    """THE writer. Append checked rows to their batch's file and return its path.
+
+    **`extend` is on here and off everywhere else**, which is what makes the
+    texture register self-extending: a sheet ingest is where a render identity is
+    new, so a MISS is measured now rather than left for a backfill that has to
+    find it again later. See [`routes_to`] for the cost and for why no reader gets
+    this default.
+    """
     if not rows:
         raise FinishedError("nothing to append")
     batches = {row.get("batch") for row in rows}
@@ -394,7 +422,7 @@ def append(head: str, rows: list[dict], known: dict | None = None) -> Path:
             f"batch {name!r} has no registration in the {head} store. Register it before its "
             "first row exists — afterwards, how it was drawn is answered from memory."
         )
-    checked = [check(head, row) for row in rows]
+    checked = [check(head, row, extend=extend) for row in rows]
     path = batch_path(head, name)
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8", newline="\n") as handle:

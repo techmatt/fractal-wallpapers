@@ -4063,6 +4063,8 @@ def curate_depth(args: argparse.Namespace) -> int:
                 None if args.floor_places is None else depth.read_places(args.floor_places)
             ),
             "draw_maps": (None if args.draw_maps is None else depth.read_maps(args.draw_maps)),
+            "draw_cells": args.draw_cells,
+            "draw_cutoff": args.draw_cutoff,
             "floor_width": args.floor_width,
             "floor_seats": args.floor_seats,
             "roster": args.modes,
@@ -7658,6 +7660,7 @@ def curate_commands(subcommands) -> None:
     from fractal_wallpapers.curation import solve as solve_module
     from fractal_wallpapers.curation import tentative as tentative_module
     from fractal_wallpapers.curation import view as view_module
+    from fractal_wallpapers.palettes import dominance as dominance_module
 
     curating = subcommands.add_parser(
         "curate",
@@ -9274,6 +9277,34 @@ def curate_commands(subcommands) -> None:
         "refused. A map the drawable pool has stood down is refused rather than dropped "
         "quietly, because a manifest cut against the library and spent against the pool "
         "is a narrowing nobody can read off the record",
+    )
+    depth_step.add_argument(
+        "--draw-cells",
+        nargs="+",
+        metavar="CELL",
+        help="codebook cells the palettes every draw here offers must be expected to "
+        "DELIVER. The rule-shaped twin of --draw-maps and it composes with it — both "
+        "filters apply — and it is the same DRAW FILTER and nothing else: it re-marks no "
+        "map, moves no bar and writes nothing back to the tracked colour records. A map is "
+        "kept when its palette group is expected to put at least --draw-cutoff of a "
+        "picture's colour in ANY listed cell, read off data/palettes/color_mass/ where "
+        "there is a row for the group and off the carrier table where there is not. Unsaid, "
+        "every cell, which is the whole of colorize.pool and what a run drew before this "
+        "flag existed. The narrowed pool still has to hold a 32-map neighbourhood or the "
+        "run is refused. Every row the leg writes is stamped hunt.drawn_cells, because a "
+        "colour-narrowed leg is not a base rate",
+    )
+    depth_step.add_argument(
+        "--draw-cutoff",
+        type=float,
+        default=None,
+        metavar="SHARE",
+        help=f"the share of a picture's colour a map must be expected to put in a "
+        f"--draw-cells cell (default {dominance_module.CELL_LEAD}, which is "
+        f"palettes.dominance.CELL_LEAD — the share at which a cell LEADS a picture, so the "
+        f"default reads as 'expected to be dominant here'). Raising it narrows harder and "
+        f"the thinnest cell in this library runs out of the 32-map neighbourhood between "
+        f"0.10 and 0.15",
     )
     depth_step.add_argument(
         "--floor-width",

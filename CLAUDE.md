@@ -173,6 +173,11 @@ both times. That is the commit-charge ceiling `models/render/README.md` document
 parent holds ~3.3 GB and each of three workers ~0.9 GB), not the wall-clock guard the
 paragraph below describes. Run the lane after the leg, never beside it.
 
+It read **163.85 s over 3,361** at the `--draw-cells` build, idle, 2026-09-03 —
+1.9% over the reading below across twenty more tests, taken right after a
+ten-minute near-band leg merged 4,204 candidates and the prune took the ledger
+194,037 -> 198,241 -> 194,114. Another merge, another flat lane.
+
 It read **160.75 s over 3,341** at the weights-v6 flip, idle, 2026-09-03 — 3.0%
 over that across five more tests. This one is worth having because of what had just
 happened to the stores it reads: the two label corpora had grown to 11,272 pictures,

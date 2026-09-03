@@ -64,6 +64,26 @@ is not a stricter bar than 0.770 was; it is very nearly the same crossing on a j
 that reads a little higher. The keeper share is 37.1% on both artifacts over the same
 rows, because a keeper share is a fact about the labels and not about the head.
 
+⚠ **The floor is fitted on a corpus that is largely a selection, so the baseline
+IS the thing to chase.** A crossing is a point on the labels, and the labels are
+whatever got put on a sheet. Of the **4,235 rows across the two stores**, the sheets
+whose whole design is to escape the top are **1,746 (41%)** — `manufactured_rare_colors`
+(496), `under_seen_modes` (504), `smooth_decision_bands` (500) and the two
+`p_ge4_calibration_*` slices (246). The other **2,489 (59%)** are the base stores and
+the named top cuts, `seated_and_head_top` and `sparse_mode_head_top` among them, and
+to that extent what the judge learns a keeper looks like is what earlier judges already
+promoted. The counterweights exist precisely because that is true. So this is
+not a leak to plug somewhere else — there is no separate defect, the composition of
+the corpus is the effect, and the only instrument that moves it is what gets drawn
+next.
+
+It is measurable downstream and it has been measured. Over the 169,082 candidates in
+the ledger on 2026-09-03, the five colour cells thinnest in a 2000-seat solve clear
+their own mode's bar at **4.3–9.1%** against a ledger-wide **12.6%**, while every one
+of them has 24+ carriers in the library and 2,050+ rendered candidates on record. The
+library can make those colours and the draw does make them; the judge does not keep
+them. `scratch/draw_cells/read.md` carries the table.
+
 ⚠ **The two heights have nearly converged and that is new.** They sat 0.150 apart on
 v5 and sit 0.005 apart on v6, because the smooth crossing moved ten times as far as
 the strange one. The kinds are still two corpora with two fits; what changed is that

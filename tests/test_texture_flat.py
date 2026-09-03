@@ -411,3 +411,110 @@ def test_the_register_round_trips_and_is_written_in_key_order(tmp_path, monkeypa
     assert b"\r\n" not in written
     assert texture_flat.read_entries() == entries
     assert texture_flat.register(reread=True) == {"ffff": True, "0000": False}
+
+
+# --------------------------------------------------------------------------- #
+# The register self-extends at ingest.
+# --------------------------------------------------------------------------- #
+def test_a_register_miss_at_ingest_is_measured_and_appended_rather_than_defaulted(
+    tmp_path, monkeypatch
+):
+    """**The hole this closes.** The candidate geometry and the label geometry are
+    two identities by `field_key`, and the second is only ever created by somebody
+    putting a picture on a sheet — so an ingest is exactly where a MISS appears.
+    Measured 2026-09-03, 23 of the 224 label rows in a mode with a texture had no
+    entry, and each routed on `flat_for`'s unmeasured `False`.
+
+    A flat one among them is the failure: the picture is the smooth field spent by
+    rank bit for bit, the row belongs in the smooth store, and it lands in the
+    strange one under a default nothing downstream can tell from a measurement.
+    """
+    monkeypatch.setattr(texture_flat, "path", lambda: tmp_path / "texture_flat.jsonl")
+    monkeypatch.setattr(texture_flat, "_REGISTER", None)
+    row = _label_row()
+    key = texture_flat.field_key(row)
+    probed = []
+
+    def probe(job):
+        probed.append(job["field"])
+        return {"field": job["field"], "flat": True, "seconds": 4.2}
+
+    monkeypatch.setattr(texture_flat, "probe", probe)
+
+    assert finished.routes_to(row) == "strange_render", "the plain read still defaults"
+    assert probed == [], "a reader must never render"
+
+    assert finished.routes_to(row, extend=True) == "smooth_render"
+    assert probed == [key], "one render, at the row's own geometry"
+    stored = texture_flat.read_entries()
+    assert stored[key]["flat"] is True
+    assert stored[key]["resolution"] == [1280, 720] and stored[key]["supersample"] == 2
+
+    # The register now answers, so the plain read agrees with the measured one and
+    # the second ingest of the same identity costs nothing.
+    assert finished.routes_to(row) == "smooth_render"
+    assert finished.routes_to(row, extend=True) == "smooth_render"
+    assert probed == [key], "an entry already held is never re-measured"
+
+
+def test_extending_never_rewrites_an_entry_and_never_re_keys_a_row(tmp_path, monkeypatch):
+    """A second measurement of one identity would be a second answer to a question
+    that has one, and the first is the answer every stored routing was decided
+    under. So a held key comes back off the register without a render, even when a
+    fresh probe would disagree."""
+    monkeypatch.setattr(texture_flat, "path", lambda: tmp_path / "texture_flat.jsonl")
+    monkeypatch.setattr(texture_flat, "_REGISTER", None)
+    row = _label_row()
+    key = texture_flat.field_key(row)
+    texture_flat.write(
+        {key: texture_flat.entry(key, row, False, "mandelbrot")}, log=lambda *_: None
+    )
+
+    def refuse(job):
+        raise AssertionError("a held identity must not be re-probed")
+
+    monkeypatch.setattr(texture_flat, "probe", refuse)
+    assert texture_flat.extend_with(row, log=lambda *_: None) is False
+    assert texture_flat.read_entries()[key]["flat"] is False
+
+
+def test_a_failed_span_test_refuses_rather_than_routing_on_the_default(tmp_path, monkeypatch):
+    """A row routed on a failed probe would be routed on `flat_for`'s default while
+    looking like a measurement, and nothing downstream could tell the two apart."""
+    monkeypatch.setattr(texture_flat, "path", lambda: tmp_path / "texture_flat.jsonl")
+    monkeypatch.setattr(texture_flat, "_REGISTER", None)
+    monkeypatch.setattr(
+        texture_flat, "probe", lambda job: {"field": job["field"], "why": "engine died"}
+    )
+    with pytest.raises(texture_flat.RegisterError, match="engine died"):
+        texture_flat.extend_with(_label_row(), log=lambda *_: None)
+    assert texture_flat.read_entries() == {}, "a failure leaves no entry behind"
+
+
+def test_a_mode_with_no_texture_is_answered_without_a_render(tmp_path, monkeypatch):
+    """Sixteen of the seventeen production modes have no texture layer at all, and
+    an ingest of them must not pay a probe to be told so."""
+    monkeypatch.setattr(texture_flat, "path", lambda: tmp_path / "texture_flat.jsonl")
+    monkeypatch.setattr(texture_flat, "_REGISTER", None)
+    monkeypatch.setattr(
+        texture_flat, "probe", lambda job: pytest.fail("a textureless mode was probed")
+    )
+    assert texture_flat.extend_with(_label_row(mode="smooth")) is False
+
+
+def test_the_writer_extends_and_every_reader_does_not(tmp_path, monkeypatch):
+    """`append` is the one caller that measures a miss. A default that rendered on
+    a read would turn `finished_train.population`'s per-row routing over 4,235 rows
+    into a render leg, silently, on a machine that may already be running one."""
+    monkeypatch.setattr(texture_flat, "path", lambda: tmp_path / "texture_flat.jsonl")
+    monkeypatch.setattr(texture_flat, "_REGISTER", None)
+    asked = []
+    monkeypatch.setattr(
+        texture_flat, "extend_with", lambda row, log=print: asked.append("extended") or False
+    )
+    monkeypatch.setattr(texture_flat, "flat_for", lambda row: asked.append("read") or False)
+    row = _label_row()
+    finished.check("strange_render", row)
+    assert asked == ["read"]
+    finished.check("strange_render", row, extend=True)
+    assert asked == ["read", "extended"]

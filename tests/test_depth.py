@@ -19,6 +19,7 @@ from __future__ import annotations
 import pytest
 
 from fractal_wallpapers.curation import colorize, depth, hunt, mine
+from fractal_wallpapers.palettes import color_mass, dominance
 
 PARTITIONS = ("mandelbrot", "phoenix", "julia:mandelbrot")
 
@@ -1596,6 +1597,80 @@ def test_a_maps_manifest_is_the_palette_twin_and_carries_the_cut_that_made_it(tm
     )
     with pytest.raises(depth.DepthRefused):
         depth.read_maps(tmp_path / "header.jsonl")
+
+
+# --------------------------------------------------------------------------- #
+# The cell filter.
+# --------------------------------------------------------------------------- #
+def test_no_draw_cells_draws_the_whole_pool_exactly_as_it_did_before_the_flag():
+    """**The default is bit-for-bit today's behaviour**, and this is the pin.
+
+    A sparse list unsaid — and an empty one, which is what `--draw-cells` with no
+    values parses to — must not enter the narrowing path at all: the same plan, the
+    same colormap on every shot, and a shape whose two map counts agree.
+    """
+    plan, shape = build_a_plan()
+    empty, empty_shape = build_a_plan(draw_cells=[])
+    assert [shot.colormap for shot in plan] == [shot.colormap for shot in empty]
+    assert shape["maps_drawn_from"] == shape["maps_offered"] == len(colorize.pool(11))
+    assert shape["maps_after_the_manifest"] == shape["maps_offered"]
+    assert shape["cells_narrowed"] is False and shape["draw_cells"] is None
+    assert shape["draw_cutoff"] is None
+    assert empty_shape["cells_narrowed"] is False
+
+
+def test_draw_cells_narrows_every_arm_including_the_near_band():
+    """The point of the flag: a recolour costs a colour pass at the near band too.
+
+    Narrowing only the breadth draws would leave the arm that deepens an already
+    proven place — the cheapest colour a leg can buy, because the field is already
+    dumped — spending its width on the palettes the seating is already full of.
+    """
+    cell = "dark_vivid_lime"
+    plan, shape = build_a_plan(draw_cells=[cell])
+    offered = set(color_mass.delivering([cell], within=colorize.pool(11)))
+    assert offered, "the fixture's pool must serve the cell or this pins nothing"
+    assert shape["cells_narrowed"] is True
+    assert shape["draw_cells"] == [cell]
+    assert shape["draw_cutoff"] == dominance.CELL_LEAD
+    assert shape["maps_drawn_from"] == len(offered) < shape["maps_offered"]
+    assert {shot.colormap for shot in plan} <= offered
+    near = [shot for shot in plan if shot.arm == depth.NEAR]
+    assert near, "the fixture holds a near band and this is the arm the flag is for"
+    assert {shot.colormap for shot in near} <= offered
+
+
+def test_the_cell_filter_composes_with_the_maps_manifest_and_both_apply():
+    """Two filters, one pool. A leg that gave both meant the intersection."""
+    cell = "dark_vivid_lime"
+    pool = colorize.pool(11)
+    serves = color_mass.delivering([cell], within=pool)
+    # A manifest holding the cell's maps and a hundred that do not carry it, so the
+    # two cuts disagree and the plan can only be drawn from where they agree.
+    others = [name for name in pool if name not in set(serves)][:100]
+    manifest = serves[: colorize.CANDIDATES + 8] + others
+    plan, shape = build_a_plan(draw_maps=manifest, draw_cells=[cell])
+    assert shape["maps_after_the_manifest"] == len(manifest)
+    assert shape["maps_drawn_from"] == colorize.CANDIDATES + 8
+    assert shape["maps_narrowed"] is True and shape["cells_narrowed"] is True
+    assert {shot.colormap for shot in plan} <= set(serves[: colorize.CANDIDATES + 8])
+
+
+def test_a_cell_cut_that_cannot_serve_a_neighbourhood_is_refused():
+    """The palette head asks 32 maps of each anchor, so a pool that cannot serve
+    one is a head answering a different question — `read_maps`' refusal, by rule
+    rather than by manifest. The message names the cutoff, because the cutoff is
+    the knob that fixes it."""
+    with pytest.raises(depth.DepthRefused) as refusal:
+        build_a_plan(draw_cells=["dark_vivid_lime"], draw_cutoff=0.99)
+    assert "--draw-cutoff" in str(refusal.value)
+    assert str(colorize.CANDIDATES) in str(refusal.value)
+
+
+def test_a_misspelt_draw_cell_is_refused_rather_than_narrowing_to_nothing():
+    with pytest.raises(depth.DepthRefused) as refusal:
+        build_a_plan(draw_cells=["dark_vivid_limes"])
+    assert "codebook cell" in str(refusal.value)
 
 
 def test_a_variant_is_its_own_row_in_the_by_mode_readout():

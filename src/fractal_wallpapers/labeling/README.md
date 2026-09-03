@@ -342,8 +342,33 @@ pool routes by `finished.routes_to` on the join it is about to render**, never b
 `kind_of` on the ledger row. `phoenix_q3q4_20260903` is where this was found: its
 top-200 draw held two `itinerary` rows carrying `texture_flat: true`, which the ledger
 routes smooth and the sheet routes strange. The way to make the two agree is to
-measure the modulate at label geometry and extend the register; nothing does that
-today, and nothing needs to while the routing is asked of the join.
+measure the modulate at label geometry and extend the register, and **since
+2026-09-03 the ingest does exactly that**.
+
+**"Ask the routing of the join" is only right when the join has been measured, and
+on a MISS it has not been — it has been defaulted.** `flat_for` answers `False` for
+an identity the register does not hold, which is `strange_render`, so a modulate
+that really is flat at 1280x720 ss2 is written to the strange store *without a
+refusal*: `check` compares two answers and both of them say strange. The disagreement
+the paragraph above describes is the visible half of the failure and the quiet half
+is this one. It fired twice at checkpoint 103, and it was 23 of the 224 label rows in
+a mode with a texture at the time of the fix.
+
+So `finished.append` — THE writer, and the one place a render identity is new — passes
+`extend=True` down through `check` to `routes_to`, and a MISS there runs the engine's
+span test at the row's own geometry through `coloring.texture_flat.extend_with`,
+**appends** the entry to the tracked register and routes on the measurement. The
+register self-extends at ingest instead of needing a backfill that has to find the
+same rows again later. It never rewrites an entry — a held key comes back off the
+register with no render, because a second measurement of one identity is a second
+answer to a question that has one — and it never re-keys a label row. A failed span
+test **refuses**, rather than letting a row route on the default while looking like a
+measurement.
+
+`extend` is off for every reader and that is load-bearing: `routes_to` is called per
+row by `finished_train.population` over both stores, and a default that rendered on a
+miss would turn a corpus read into a render leg, silently, on a machine that may
+already be running one.
 
 **`--reuse-renders` misses every pool row, and it is not a near miss.** Candidates are
 rendered at 640x360 ss2 and a finished sheet serves 1280x720 ss2; the cache keys a picture

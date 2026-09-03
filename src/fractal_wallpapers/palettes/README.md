@@ -252,6 +252,24 @@ a cell nor carry a family — so a row holds about nine cells and the residual i
 on, because a mean whose evidence is all levelled is a different prediction, and how many
 made no chromatic pixel at all (1,793 of 42,734 did, and they are in the denominator).
 
+**`color_mass.delivering(cells, cutoff, within)` is the one reader that turns the map into
+a cut**, and it is what `curate depth --draw-cells` narrows its palette pool with. It
+answers *which maps are expected to put at least `cutoff` of a picture's colour in any of
+these cells*, taking **mode-conditional mass where there is a row for the map's group and
+the carrier prior where there is not** — the two tables answer the same question at
+different keys, and only one of them is a measurement of this pipeline, so the prior is a
+fallback and never an overrule. The **max** over `mode_policy.accepted()` and not the mean,
+because a run's map pool is shared by every arm and every mode in it. `cutoff` unsaid is
+`dominance.CELL_LEAD`, so the default reads as *expected to be dominant here*; the thinnest
+cell in this library runs out of `colorize.CANDIDATES` between 0.10 and 0.15, which is what
+makes 0.10 the loosest value that is still a bound. It is a **draw filter and nothing
+else**: it re-marks no map, folds none and writes nothing back to the tracked records.
+
+**Resolve the mode roster once when calling `delivers` in a loop.** `mode_policy.accepted()`
+re-reads its record at about 13 ms a call, which is nothing once and **54 seconds** over the
+4,110 (map, cell) pairs a five-cell cut of the pool asks — the shape `delivering` had before
+it hoisted the call, and the same trap for any other caller.
+
 The four `NOISY_MODES` — `gaussian_int`, `direct_trap_multiply`, `_ring`, `_screen` — are
 **flagged in each file's header and kept**. Their pictures are not lookups into their own
 maps, so the ramp bound does not apply to them; what they read is still what the pipeline
