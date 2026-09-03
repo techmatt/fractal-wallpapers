@@ -247,6 +247,72 @@ locations that already carry a finished-store row is what bought most of that.
 
 ---
 
+## THREE-SLICES — `judge_band_20260903` is three populations under one name
+
+*Registries: both. 300 cards over 300 distinct locations, cut as two sheets —
+`smooth_render` 123, `strange_render` 177 — because the batch spans both kinds.*
+
+One candidate-ledger row per LOCATION, the location's best by the shipped render
+judge's `P(>=4)` at `640x360ss2`, with no location in two slices. Excluded before
+the draw: the `phoenix`/`phoenix:classic` partitions and every
+`direct_trap_multiply` row (both have their own sittings), every location already
+carrying a row in either finished store, and every place in `pins.every_pinned`.
+
+**The three slices answer three different questions and no rate pools across
+them.** S1 is smooth's top end, S2 is the 3-vs-4 band across the roster, S3 is
+rare colours. A number quoted over "this batch" is a number over a union nobody
+designed.
+
+**The slice is recoverable off a stored row only through the UNIT ID.**
+`intake._finished_row` writes the join, the batch, the sheet name, the unit and
+the suggested tier — not `facts`, not `selected_on`, not `section`. The sheets
+were cut with `section` set to the slice, so the ids came out in contiguous
+blocks, and these are them:
+
+| sheet | S1 | S2 | S3 |
+|---|---|---|---|
+| `smooth_render` (123) | u0001–u0118 | — | u0119–u0123 |
+| `strange_render` (177) | u0001–u0002 | u0003–u0122 | u0123–u0177 |
+
+**S1 is a sliver at the band ceiling, not the band.** The rule was "the band
+`P(>=4)` in [0.40,0.95), ordered by score, top 120", and the smooth band holds
+**3,018 locations** — so the top 120 spans **0.9414 to 0.9500**, 0.0086 wide, and
+holds not one of the head's threes. It is the marginal-four end and it is what
+"smooth's top end" asked for; the slice that actually crosses the 3/4 boundary is
+S2, at 0.4145 to 0.9499. Nothing about S1 is a reading over the band.
+
+**S2's mode balance is the draw's, and four of its modes are ruled out of
+production.** 120 split over the **16** strange-kind modes the band population
+holds — `tail_itinerary` has none — as twelve modes at 9 and then
+`gaussian_int` 7, `direct_trap_ring` 3, `trap_circle` 1, `smooth_trap_circle` 1.
+The last four are `MODE_POLICY` weight 0: renderable by name, out of every draw
+and out of the gallery. They are on the page because a judge scores pictures
+rather than material standing, but a per-mode rate off them describes stock
+nothing will seat.
+
+**S3's cells are the ones the last solve did not fill.** Bar-clearing rows
+(`P(>=4) >= 0.50`) whose dominant cell is below the allowance of **84** on
+`solve/empty_modes_n2000`, taken 2026-09-02T16:41:50Z — 27 of the 48 cells are
+below it and 21 sit exactly at it, which is why that record's `over_allowance` is
+empty. The 60 cards cover **24 of the 27**; `dark_vivid_lime`, `dark_vivid_yellow`
+and `light_vivid_lime` are not represented. Taking S1 and S2 first cost S3 178 of
+its 3,891 eligible locations and did not bind.
+
+**Four `itinerary` cards are in the strange store and are the smooth judge's
+material.** They carry `texture_flat: true` at candidate geometry, which routes
+them smooth off the ledger, and the register misses at label geometry so
+`routes_to` sends them strange. They are tagged S1 (2) and S3 (2) on the strange
+sheet. Nine cards in all read flat at `1280x720ss2` when the measure pass asked
+the engine directly, so the count of degenerate modulates on that sheet is nine
+and not four; nothing has extended the register at that geometry.
+
+**Nothing was dropped for a pin.** All 300 places checked against
+`pins.every_pinned` (1,452) and `smooth_render`'s own pinned set — **none** is
+pinned. Excluding the 19,302 rows sitting on already-labelled places is what
+bought that.
+
+---
+
 ## Five batches reach the candidate ledger; the other twenty-one do not
 
 *Registries: both. Measured 2026-08-28 over the 9,427 resolved scored rows.*
