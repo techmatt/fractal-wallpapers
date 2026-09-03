@@ -161,6 +161,18 @@ It read **156.01 s over 3,336** immediately after the phoenix band sitting lande
 figure above across 29 more tests, which is the per-test cost holding flat and is
 recorded here because it is a reading taken right after a store grew.
 
+It read **157.21 s over 3,345** at the end of the `MINE_diverse_0903` leg, idle,
+2026-09-03 — four more tests than the reading below and 2.2% *under* it, taken right after a
+session that put **18,940 candidates into the ledger (182,235 -> 201,174 recipes)** and grew
+the score sidecar past half a million rows. Two store growths in one day and the lane has not
+moved for either.
+
+**The lane does not merely slow beside a render leg on this box — it dies.** Run twice while
+the leg's three engines held the pool, it was killed at 77% with no summary and no traceback
+both times. That is the commit-charge ceiling `models/render/README.md` documents (the leg's
+parent holds ~3.3 GB and each of three workers ~0.9 GB), not the wall-clock guard the
+paragraph below describes. Run the lane after the leg, never beside it.
+
 It read **160.75 s over 3,341** at the weights-v6 flip, idle, 2026-09-03 — 3.0%
 over that across five more tests. This one is worth having because of what had just
 happened to the stores it reads: the two label corpora had grown to 11,272 pictures,

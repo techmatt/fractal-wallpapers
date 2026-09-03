@@ -1564,3 +1564,69 @@ def test_a_places_manifest_is_a_file_of_keys_and_says_so_when_it_is_not(tmp_path
     (tmp_path / "empty.jsonl").write_text("", encoding="utf-8")
     with pytest.raises(depth.DepthRefused):
         depth.read_places(tmp_path / "empty.jsonl")
+
+
+def test_a_maps_manifest_is_the_palette_twin_and_carries_the_cut_that_made_it(tmp_path):
+    """A draw filter read off a file, with the method row that says how it was cut.
+
+    The header row is the one row that may name no map: a manifest somebody has to
+    read back six weeks later wants the cut written beside the names, and every
+    other record in this project spells that `kind: "method"`.
+    """
+    path = tmp_path / "maps.jsonl"
+    path.write_text(
+        '{"schema": 1, "kind": "method", "cut": 0.6}\n'
+        '{"schema": 1, "map": "viridis"}\n\n'
+        '{"schema": 1, "map": "magma"}\n'
+        '{"schema": 1, "map": "viridis"}\n',
+        encoding="utf-8",
+    )
+    assert depth.read_maps(path) == ["viridis", "magma"], "duplicates drop and file order holds"
+
+    (tmp_path / "wrong.jsonl").write_text('{"schema": 9, "map": "viridis"}\n', encoding="utf-8")
+    with pytest.raises(depth.DepthRefused):
+        depth.read_maps(tmp_path / "wrong.jsonl")
+    with pytest.raises(depth.DepthRefused):
+        depth.read_maps(tmp_path / "absent.jsonl")
+    (tmp_path / "empty.jsonl").write_text("", encoding="utf-8")
+    with pytest.raises(depth.DepthRefused):
+        depth.read_maps(tmp_path / "empty.jsonl")
+    (tmp_path / "header.jsonl").write_text(
+        '{"schema": 1, "kind": "method", "cut": 0.6}\n', encoding="utf-8"
+    )
+    with pytest.raises(depth.DepthRefused):
+        depth.read_maps(tmp_path / "header.jsonl")
+
+
+def test_a_variant_is_its_own_row_in_the_by_mode_readout():
+    """A leg sent at `(mode, settings)` has to be able to read its arms apart.
+
+    The readout keyed on the bare mode until 2026-09-03, so a run that made the
+    shipped `direct_trap_multiply` beside four of its variants reported one row
+    covering five recipes — the split the sweep was run to get, unreadable off its
+    own record.
+    """
+
+    def made(mode, params, score):
+        return {
+            "mode": mode,
+            "mode_params": params,
+            "location": f"p{score}",
+            "p_ge4": score,
+            "seconds": 1.0,
+        }
+
+    table = depth.by_mode(
+        [
+            made("direct_trap_multiply", {}, 0.10),
+            made("direct_trap_multiply", {"opacity": 0.6}, 0.80),
+            made("direct_trap_multiply", {"opacity": 0.6}, 0.90),
+            made("smooth", {}, 0.60),
+        ]
+    )
+    assert set(table) == {"direct_trap_multiply", "direct_trap_multiply@opacity=0.6", "smooth"}
+    assert table["direct_trap_multiply"]["candidates"] == 1
+    over = depth._tag(depth.SEATING_BAR)
+    assert table["direct_trap_multiply"][over]["candidates_clearing"] == 0
+    assert table["direct_trap_multiply@opacity=0.6"]["candidates"] == 2
+    assert table["direct_trap_multiply@opacity=0.6"][over]["candidates_clearing"] == 2

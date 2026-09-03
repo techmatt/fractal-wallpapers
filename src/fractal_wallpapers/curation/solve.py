@@ -223,6 +223,11 @@ UNSEATED = "the_leg_had_no_seat_left"
 #: selection rule — it never entered the population the leg chooses from.
 BELOW_BAR = "below_its_mode_bar"
 
+#: [`explained`]'s two answers that are not refusals: the key is in this gallery,
+#: and the key is not in this pool at all (retired, pruned, or never here).
+SEATED = "seated"
+GONE = "not in the pool"
+
 #: What a candidate whose **place** the neutral pre-selection refused is recorded
 #: as. Kept apart from [`rules.RULES`] for the same reason [`BELOW_BAR`] is: it
 #: is pool construction and not a seat this leg declined to give.
@@ -1298,6 +1303,7 @@ def solve(
     drops: int = SWAP_DROPS,
     seconds: float | None = None,
     preselected: tuple | None = None,
+    explain: set | frozenset | list | None = None,
     log=print,
 ) -> dict:
     """One gallery, chosen. The record is the return value; nothing is written.
@@ -1658,9 +1664,10 @@ def solve(
         "diversity": None if twins is None else twins.record(),
         "diversity_refusals": dict(sorted(state.refused_for.items())),
         "expand": expand(viewed, gallery, refused),
-        "rejection": rejection(
-            candidates, refused, log=log, order=rules.rules_for(state.diversity)
-        ),
+        "rejection": {
+            **rejection(candidates, refused, log=log, order=rules.rules_for(state.diversity)),
+            **explained(explain, refused, gallery),
+        },
         "samples": samples(
             candidates, refused, against=_lost_to(state, preselection, cleared), rank=rank
         ),
@@ -2190,6 +2197,38 @@ def rejection(candidates, refused: dict, log=print, order: tuple | None = None) 
     }
 
 
+def explained(keys, refused: dict, gallery) -> dict:
+    """`{"explained": {key: reason}}` for a named handful of candidate keys.
+
+    The aggregate above answers *which rules cost this pass its seats*; this
+    answers *what happened to THIS picture*, which is the question a before/after
+    sheet asks and the only one the aggregate cannot. A re-solve names the
+    previous record's seats and every one of them comes back either `seated` or
+    with the rule that took it — per card, rather than as a column somebody has to
+    guess their row's place in.
+
+    Written for a named set and never for the whole population: the refusal map is
+    one entry per candidate over a hundred and fifty thousand of them, and a record
+    carrying all of it would be forty times the size of the one carrying the
+    decisions.
+    """
+    if keys is None:
+        return {}
+    wanted = [str(one) for one in keys]
+    out = {}
+    for key_name in wanted:
+        if gallery.state.holds(key_name):
+            out[key_name] = SEATED
+        else:
+            out[key_name] = str(refused.get(key_name, GONE))
+    return {
+        "explained": out,
+        "explained_is": f"one entry per key ASKED about: `{SEATED}` is in this gallery, "
+        f"`{GONE}` is not in this pool at all any more, and anything else is the rule "
+        "that refused it — the same vocabulary `reasons` counts",
+    }
+
+
 def samples(candidates, refused: dict, count: int = SHOWN, against: dict | None = None, rank=None):
     """`{rule: the strongest few it refused}` — the visual half of the ledger.
 
@@ -2632,6 +2671,8 @@ def contact_sheet(name: str, record: dict, rejected=None, output=None) -> Path:
 
 __all__ = [
     "BELOW_BAR",
+    "GONE",
+    "SEATED",
     "BOTTOM_QUARTILE",
     "DEFAULT_GROUP_CAP",
     "DEFAULT_KEY",
@@ -2673,6 +2714,7 @@ __all__ = [
     "ranking",
     "ranking_for",
     "read_record",
+    "explained",
     "rejection",
     "release_regime",
     "render_seats",

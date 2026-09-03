@@ -2142,3 +2142,38 @@ def test_the_cloud_cache_constant_is_read_at_call_time_and_not_bound_as_a_defaul
         "clouds_for is not reading SIGNATURE_CACHE at call time, so moving the "
         "constant moves nothing"
     )
+
+
+def test_a_named_key_comes_back_seated_or_with_the_rule_that_refused_it():
+    """`--explain-seats-of`'s half: what happened to THIS picture, per key.
+
+    The aggregate beside it says which rules cost a pass its seats and cannot say
+    which of yesterday's seats each rule took, because it is denominated in counts.
+    A before/after sheet needs the second answer on every card, so the pass writes
+    it down for a named set — and only a named set: the refusal map is one entry
+    per candidate over a hundred and fifty thousand of them.
+    """
+    pool = deep_and_shallow()
+    asked = ["deep0", "deep1", "thin1", "thin2", "a key this pool never held"]
+    record = solve.solve(pool, n=2, floor=1, key=solve.JUDGE_KEY, explain=asked, log=quiet)
+
+    explained = record["rejection"]["explained"]
+    assert set(explained) == set(asked), "one entry per key ASKED about, hit or miss"
+    seated = {seat["key"] for seat in record["seated"]}
+    for key in asked:
+        if key in seated:
+            assert explained[key] == solve.SEATED
+        else:
+            assert explained[key] != solve.SEATED
+    assert explained["a key this pool never held"] == solve.GONE, (
+        "a key the pool does not hold is not a refusal and does not get spelled as one"
+    )
+    assert any(explained[key] == solve.SEATED for key in asked), "the thin modes take the seats"
+    assert "explained_is" in record["rejection"], "the vocabulary is named beside the answers"
+
+
+def test_a_pass_asked_to_explain_nothing_records_no_explanation_block():
+    """The whole population is never explained, so the block is absent by default."""
+    record = solve.solve(deep_and_shallow(), n=2, floor=1, key=solve.JUDGE_KEY, log=quiet)
+    assert "explained" not in record["rejection"]
+    assert record["rejection"]["reasons"], "the aggregate is always there"
