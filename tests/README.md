@@ -38,6 +38,42 @@ cost to whichever sibling reads the cache next. Three of the first round's marks
 bought nothing until their partner was marked too. Measure the fast lane after
 marking, not before.
 
+## What "the fast-lane count" means
+
+One definition, because three sessions on one tree wrote down three totals and
+spent two commits arguing about it. `pytest -q` ends on a line of the shape
+`P passed, S skipped, D deselected`, and the count this project records is
+**`P + S`, the number pytest selected**, with `D` beside it:
+
+- **Selected** is every test collected and not held back. It is what the clock
+  is a price for, so a reading gives it and the clock together or gives neither.
+- **Deselected** is the slow lane and nothing else — `conftest.pytest_collection_
+  modifyitems` removes exactly the `slow`-marked and says how many.
+- **Skipped** is a test that was collected, ran its guard and declined. Two
+  conditions do it here: no release engine at `engine/target/release`, which the
+  walk and render guards ask through `engine.engine_path`, and an `importorskip`
+  *inside* a test body.
+- **Not collected** is the one that does not appear in the total at all, and it
+  is the trap. A module-level `pytest.importorskip` stops the module being
+  imported, so its tests are absent rather than skipped — 8 modules gate that way
+  on `torch`, 5 on `PIL`, both of them the `models` extra. The lane now prints a
+  red line naming them and what is missing; before it did, they were silent.
+
+**A reading is comparable only against another taken on `.[dev,models]` with a
+release engine built.** Anything else is a different suite wearing the same name.
+
+### The 3,383, resolved
+
+It was an interpreter with no `torch`. Masking `torch` and `timm` at `2bde06e`
+reproduces the logged reading to the unit — `3371 passed, 14 skipped, 109
+deselected`, which at `9a62672`'s two-tests-fewer tree is exactly the **3,369
+passed / 14 skipped / 109 deselected** written down that evening. The eight
+torch-gated modules drop 65 fast tests and 5 slow ones, which is why the
+deselected count fell from 114 to 109 as well; the fourteen skips are those eight
+modules plus six test-level ones. Nothing was wrong with the tree, `test_colormaps.py`
+was never the variable, and no test had been added or removed — the interpreter
+was short two gigabytes of CUDA wheels and the lane had no way to say so.
+
 ## Shared readings of the tracked records
 
 `conftest.py` holds session-scoped fixtures over the records this repository
@@ -211,6 +247,26 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+It read **121.82 s over 3,451, 114 deselected, nothing skipped** at the wrapup, idle,
+2026-09-04. Nine tests more than the reading below — five for the lane's own new
+reporting, one for the pool, three for the recorded gallery — and 0.23 s under it,
+which is flat.
+
+**And it closes the 57.** They were an interpreter without `torch`. Masking `torch`
+and `timm` on this tree collects 3,377 / 3,486 with 109 deselected and runs `3371
+passed, 14 skipped, 109 deselected`; subtract the two guards the help grouping added
+and that is **3,369 passed / 14 skipped / 109 deselected**, the reading three entries
+down, to the unit. Eight modules gate on `torch` with a module-level
+`importorskip` and five on `PIL`, and a module-level `importorskip` is not a skip of
+that module's tests — the module never imports, so its tests are missing from the
+collected total rather than counted. Those eight carry 65 fast tests and 5 slow ones,
+which is the 57 (65 less the 8 that came back as skips) *and* the 114 → 109 fall in
+the deselected count that made the reading look like a different suite. `def test_` is
+2,556 at every commit from `9a62672` to here and `data/palettes` holds 901 colormaps
+at every one of them, so neither the suite nor `test_colormaps.py` ever moved. The
+lane now prints a red line naming the missing import; before this it went short in
+silence, which is the only reason a reading like that could be written down.
+
 It read **122.05 s over 3,442** at the help grouping, idle, 2026-09-04 — 3.55 s over
 the reading below, across the two guards that prompt added, which is what a change that
 only regroups `--help` text should cost. **The collection count is the interesting
@@ -222,7 +278,9 @@ that warning says `9a62672` and HEAD both collected 3,375 the evening it was wri
 and HEAD collects 3,440 today, twice in a row. `tests/test_colormaps.py` parametrizes
 over the colormaps on disk and is the one collection here that data could move — it is
 902 today and `data/palettes` has held 912 tracked JSONs across all four commits, so it
-is not that. Left unexplained rather than edited.
+is not that. Left unexplained rather than edited — and it was right not to be: the
+entry above resolves it, and this one had already narrowed it to everything except the
+interpreter.
 
 It read **118.50 s over 3,383** at the manifest guard, idle, 2026-09-04 — against
 **177.48 s over the same 3,383**, measured the same evening on the same idle box by

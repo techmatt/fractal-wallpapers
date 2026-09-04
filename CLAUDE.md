@@ -168,9 +168,16 @@ here because this file is loaded into every session in this repository and a
 chronological log is not a rule. What stays here is the current figure and the rules
 the log produced.
 
-The fast lane is **122.05 s over the 3,442 it holds**, on this machine, idle,
-2026-09-04, at the help-grouping commit. The slow lane's **7:14 over 3,552** stands
-from the `run_layout` extraction and has not been re-run since.
+The fast lane is **121.82 s over the 3,451 it holds**, on this machine, idle,
+2026-09-04, at the wrapup commit — nine tests more than the help grouping and flat
+against it. The slow lane's **7:14 over 3,552** stands from the `run_layout`
+extraction and has not been re-run since.
+
+**What the count means is defined once, in
+[`tests/README.md`](tests/README.md#what-the-fast-lane-count-means)**, and a reading
+is comparable only against another taken on a `.[dev,models]` install with a release
+engine built. Selected and deselected both, or neither — the clock alone has been
+written down here twice and both times it was the count that settled the argument.
 
 **The 118.50 s this figure came off was a third off, and not an optimisation.** The
 same tree at
@@ -182,15 +189,16 @@ Redirecting at the tier roots instead moved them, and the price went with them. 
 figure is a lane that stopped pricing data it was never meant to read — and the rule
 that follows is the one below about redirecting at the roots.
 
-⚠ **The reading this replaces does not reproduce.** `tests/README.md` logs the `cli`
-split at "170.30 s over 3,440"; that same commit collects **3,375 selected / 3,484
-total** today and runs 3,369 passed / 14 skipped in 177.48 s. The count is 57 short of
-what was written down and nothing since has added or removed a test. Unexplained, left
-in the log rather than edited — and at the help grouping it came back: HEAD collects
-**3,440** again, twice in a row, over a suite three commits later that adds no test. So
-**the collected count is not stable between sessions on an unchanged tree**, which is
-the reason to record the count beside the clock and never to reconcile one against a
-reading taken on another day.
+**The 57 that would not reproduce were an interpreter with no `torch`, and the lane
+now says so out loud.** Masking `torch` and `timm` reproduces the whole logged reading
+to the unit — 3,369 passed / 14 skipped / 109 deselected. A module-level
+`pytest.importorskip` does not skip a module's tests, it stops the module being
+collected at all, so eight torch-gated files took 65 fast tests and 5 slow ones out of
+the totals and left eight "skipped" behind. The tree was never the variable and
+`test_colormaps.py` never was either. `conftest` prints a red line naming the missing
+import now, because the whole failure was that nothing on screen said the suite had
+shrunk. **A count is not stable across interpreters, only across installs**, which is
+why the standing figure names the install it was taken on.
 
 **Its first reading that session was 300.7 s and the extra 135 s was a defect, not the
 box.** That run also failed `test_training_resume.py` on a CUDA OOM with six other
