@@ -159,7 +159,7 @@ just its own file.
 test there is, and that is what CI runs and what runs before a checkpoint. The
 fast lane is for the edit-run loop and nothing else.
 
-Both are measured, not estimated. The **fast** lane is **98.78 s over the 3,565 it
+Both are measured, not estimated. The **fast** lane is **97.61 s over the 3,573 it
 holds, 116 deselected**, on this machine, 2026-09-04, on a `.[dev,models]` install
 with a release engine built. The **slow** lane is **6:31 over 3,681, nothing
 skipped**, same machine, same day. Every reading this lane has taken is in

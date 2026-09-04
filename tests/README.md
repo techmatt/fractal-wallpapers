@@ -326,6 +326,23 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+It read **97.61 s over 3,573, 116 deselected, nothing skipped** at the augmenting
+chain, 2026-09-04 — **eight tests more** than the reading below and **1.17 s under**
+its 98.78 s. The eight are the new stage's guards, and the reading is the answer to
+the obvious worry about it: the chain stage runs on **every** `solve.solve` call in
+the suite, of which there are 94, and it costs the lane nothing measurable. The
+pools these tests build are three to forty rows, where the index is a dictionary
+walk and the diversity rule is asked about almost nothing. A stage whose real cost
+is 46 s at n=750 is free at n=3, and that is the shape to expect from anything
+priced per candidate rather than per pass.
+
+One reading in the middle of that session was **134.28 s for `test_solve.py` alone**
+against 14.24 s and then 7.32 s for the same file minutes either side, with no
+single test over 0.36 s in the durations. It was the box and not the file, and it is
+written down because the first instinct — a new stage had just landed in exactly
+that file — was wrong, and the cheap check that settled it was re-running the one
+file rather than reasoning about the change.
+
 It read **104.29 s over 3,565, 116 deselected, nothing skipped** at the `CLAUDE.md`
 tidy, 2026-09-04 — the same 3,565 as the reading below and **5.51 s over it**, on a
 diff of three tracked `.md` files and no code at all. It is recorded rather than

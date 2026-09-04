@@ -57,7 +57,10 @@ distinct   which places are visibly different places, decided before any colour
 ceiling    the colour ceiling, and the targets that are the same feature with the sign flipped
 spiral_scores  `P(spiral)` per location, so a gallery cap has a share to act on
 served_locations  every location the collection has already released a wallpaper of
-solve      THE gallery leg: the view, a greedy seed, and 1-swap improvement
+solve      THE gallery leg: the view, a greedy seed, 1-swap improvement,
+           augmenting chains, and 1-swap improvement again
+augment    the stage that RAISES the seat count: one seat out, two in. A 1-swap
+           conserves the count, so tier 1 was frozen at the seed until this
 tentative  one solve recorded under a stamp, with IDs, aliases and a browser
 selection  top-N per judge, under the slot and supply caps, the location rule
            — and the bar
