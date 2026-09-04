@@ -155,6 +155,7 @@ import math
 import random
 import time
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
 
 from fractal_wallpapers import engine
@@ -170,6 +171,18 @@ SCHEMA = 1
 
 #: What this channel is called wherever a row's provenance is read back.
 CHANNEL = "reframing"
+
+#: The row a leg opens its ledger with, and what identifies the ledger as this
+#: channel's rather than a walk's.
+#:
+#: A name cannot do that job: `harvest_reframe_night` is a **walk** whose run
+#: directory says otherwise, and a leg called anything at all is still one of
+#: these. [`discovered_priors`] reads the first row and nothing else, which is one
+#: open per run directory.
+RUN_KIND = "reframing_run"
+
+#: The row a leg closes its ledger with. What [`rediscovery`] is read off.
+SUMMARY_KIND = "reframing_summary"
 
 #: The rungs, in atom sizes. See the module docstring for the measurement.
 #:
@@ -205,8 +218,10 @@ ENDS_READOUT = 2
 CENTERED = True
 
 #: Whether a continuing leg fires at the proven roots an earlier one already
-#: consumed. `False` is the plain continuation: what is left of the label store,
-#: then the promotions.
+#: consumed. `None` is the default and means **decide from the ledgers**
+#: ([`convergence`]); `False` is the plain continuation — what is left of the
+#: label store, then the promotions — and `True` fires at everything the chain
+#: has already spent.
 #:
 #: The lever exists because [`operators.expand_neighborhood`] **probes at
 #: random** — a ring of radii at a random angle, `NEIGHBOUR_PROBES` of them — so
@@ -216,7 +231,34 @@ CENTERED = True
 #: the earlier pass missed and nothing else. It is how the channel keeps
 #: yielding after its promotion queue converges, which it does: a generation
 #: returns well under one promotion per seed.
-REPROBE = False
+#:
+#: It defaults to a decision rather than to a value because the convergence it
+#: answers happens in about two hours and the flag was a thing a person had to
+#: remember afterwards. A leg launched into a converged chain without it spent
+#: 576 seeds for seven locations.
+REPROBE = None
+
+#: The share of the nuclei a leg's operators reach that it has **already found**,
+#: at or above which the chain counts as saturated and the next leg re-probes.
+#:
+#: Read off the priors' own summaries — every leg records `nucleus_already_found`
+#: beside what it wrote — and the threshold sits in the gap between the last leg
+#: that was still productive and the first that was not. The five legs of
+#: 2026-08-31 and 2026-09-01 read **13.5, 56.7, 68.8, 77.5 and 93.0%**: the 77.5%
+#: leg wrote 1,607 locations in 168 minutes and is not a leg to skip re-probing
+#: for, and the 93.0% one wrote **seven** locations for 576 seeds. So the line is
+#: drawn between them and not at either.
+#:
+#: A share is a share of what the *operators* reached, which is what was written
+#: plus what was refused for being already held, for having no offerable frame,
+#: and for a crashed batch — not a share of the queue, which was nowhere near
+#: empty in the leg that prompted this ([`convergence`]).
+SATURATED = 0.90
+
+#: Seeds a prior leg must have consumed before its re-discovery share is read at
+#: all. A leg that fired at nine seeds and found nothing new says nothing about a
+#: chain; the leg this threshold was measured on consumed 576.
+SATURATION_FLOOR = 100
 
 #: The period ceiling the seed snap scans to, over [`operators.MAX_PERIOD`]'s 64.
 #:
@@ -807,6 +849,227 @@ def candidate_row(
 
 
 # --------------------------------------------------------------------------- #
+# Finding the earlier legs, and reading whether the chain is spent.
+# --------------------------------------------------------------------------- #
+def first_row(path: Path) -> dict | None:
+    """A ledger's opening row, or `None` where it has none this reader can use.
+
+    One line, not one file: the population being classified is every walk ledger
+    under both tiers, some of them tens of megabytes, and each would be parsed
+    whole to learn a thing its first row says.
+    """
+    try:
+        with Path(path).open(encoding="utf-8") as handle:
+            for line in handle:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    return json.loads(line)
+                except json.JSONDecodeError:
+                    return None
+    except OSError:
+        return None
+    return None
+
+
+def is_a_leg(path: Path) -> bool:
+    """Whether a walk ledger is one of this channel's, off its own first row.
+
+    A **name** cannot answer this and must never be asked to: on this machine
+    `artifacts/harvest_reframe_night` is a walk, and a leg of this channel is
+    whatever its `--out-dir` was called. [`RUN_KIND`] is the answer and it is on
+    the first row of every leg ever written, because the header goes down before
+    the first seed is fired.
+    """
+    head = first_row(path)
+    return bool(head) and head.get("kind") == RUN_KIND and head.get("channel") == CHANNEL
+
+
+def when(head: dict | None, path: Path) -> str:
+    """When a leg ran, for ordering a chain: its own stamp, else its ledger's mtime.
+
+    Legs written before the header carried `started` fall back to the file. That
+    is sound here and is not sound in general — `storage` copies through
+    `shutil.copy2`, so archiving a leg preserves its mtime, but a tree copied by
+    hand does not and would reorder a chain silently. Both spellings are the same
+    fixed-width UTC format, so they sort against each other.
+
+    Ordering cannot come from the name: `<head>_g10` sorts before `<head>_g2`.
+    """
+    stamped = (head or {}).get("started")
+    if isinstance(stamped, str) and stamped:
+        return stamped
+    try:
+        seconds = Path(path).stat().st_mtime
+    except OSError:
+        return ""
+    return datetime.fromtimestamp(seconds, UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def discovered_priors(exclude: Path | None = None, log=print) -> tuple[list[Path], dict]:
+    """`(every earlier leg of this channel, oldest first, the record)`.
+
+    What `--prior` defaults to, and it defaults to it because naming them all by
+    hand is exactly the thing a person forgets: a leg handed only its immediate
+    predecessor re-writes what the legs before it found — 192 of one leg's 302
+    rows, measured 2026-09-01.
+
+    **Both tiers when the archive is reachable, hot alone when it is not**, and
+    the record says which. They are different populations, and the difference is
+    the point of archiving being reversible: a leg is a top-level name of the
+    regenerable tree, `storage archive` moves whole top-level names, and a chain
+    that forgot its archived links would re-find their atoms exactly as a
+    one-directory `--prior` does. Hot alone is therefore the **narrower** default
+    and the one that writes duplicates, which is why it is recorded as a note
+    rather than passed over — but it is not a refusal, because a machine with the
+    disk unplugged can still run a leg and every atom it re-finds costs engine
+    time rather than putting a wrong row anywhere. Measured on this machine
+    2026-09-03: all five legs are hot and the archive holds none of them, so the
+    two populations coincide today and the note is about tomorrow.
+
+    `exclude` is this run's own ledger. A leg whose `--out-dir` names a directory
+    an earlier killed leg already wrote into would otherwise inherit its own finds
+    and refuse every one of them as already found.
+    """
+    from fractal_wallpapers import paths
+    from fractal_wallpapers.supply import ledgers as union
+
+    tiers = paths.Tiers.current()
+    every = union.ledger_paths(exclude=exclude)
+    legs: list[tuple[str, str, Path]] = []
+    for path in every:
+        head = first_row(path)
+        if not head or head.get("kind") != RUN_KIND or head.get("channel") != CHANNEL:
+            continue
+        # Named by its run **directory**: that is what `--prior` takes, so the
+        # record is pasteable into the invocation that would name them by hand.
+        legs.append((when(head, path), paths.tracked_name(path.parent), path))
+    legs.sort()
+    record = {
+        "tiers": [paths.HOT, paths.ARCHIVE] if tiers.archive_is_reachable else [paths.HOT],
+        "archive_reachable": tiers.archive_is_reachable,
+        "ledgers_seen": len(every),
+        "legs": [name for _stamp, name, _path in legs],
+        "excluded": None if exclude is None else paths.tracked_name(exclude),
+    }
+    if not tiers.archive_is_reachable and tiers.archive is not None:
+        record["note"] = (
+            f"the archive ({tiers.archive}) is not mounted, so this chain is the HOT legs "
+            f"alone. An archived leg a run cannot see is a leg whose atoms it finds again and "
+            f"writes a second time."
+        )
+    log(f"[reframe] priors: {json.dumps(record)}")
+    return [path.parent for _stamp, _name, path in legs], record
+
+
+def rediscovery(summary: dict | None) -> dict | None:
+    """What share of the nuclei a leg's operators reached, it had already found.
+
+    The saturation reading, off a leg's own summary row and nothing else. The
+    denominator is what the **operators** reached — what was written, plus every
+    nucleus refused for being already held, for having no offerable frame, and
+    for a batch that crashed twice — and not the seed queue, which was 3,795 deep
+    in the leg that made this necessary.
+
+    `None` where the leg wrote no summary (it was killed) or reached nothing.
+    """
+    if not summary:
+        return None
+    counts = summary.get("counts") or {}
+    again = int(counts.get("nucleus_already_found", 0) or 0)
+    new = int(summary.get("locations") or 0)
+    lost = int(counts.get("nucleus_no_frame", 0) or 0)
+    lost += int(counts.get("nucleus_not_drawn", 0) or 0)
+    found = new + again + lost
+    if found <= 0:
+        return None
+    return {
+        "found": found,
+        "new": new,
+        "again": again,
+        "lost": lost,
+        "share": round(again / found, 4),
+        "seeds_consumed": int(summary.get("seeds_consumed") or 0),
+    }
+
+
+def convergence(earlier: dict | None, roots: list, carried: list) -> tuple[bool, dict]:
+    """`(whether the chain is spent, why)` — the branch `--reprobe` used to be.
+
+    `roots` and `carried` are what a **plain continuation** would fire at: the
+    proven roots the chain has got nothing from, and the promotions it has not
+    spent. Two clauses, both read, both on the record:
+
+    * **exhausted** — that queue is empty. Today this is the leg that raises
+      `no seed survives` and stops; a chain in this state has nothing to offer
+      except a second sample of a neighbourhood it has already probed, so
+      re-probing is the only thing left that is not a refusal.
+    * **saturated** — the queue is not empty and is not the constraint. The
+      chain's latest leg found [`SATURATED`] or more of its nuclei already held,
+      having consumed at least [`SATURATION_FLOOR`] seeds. Measured 2026-09-01:
+      the fifth leg on these roots spent 576 seeds, reached 100 nuclei, and 93 of
+      them were in the priors' `seen` set — seven new locations and one head-q4,
+      with 3,795 seeds still offered and the clock not binding.
+
+    The second clause exists because the first hardly ever fires. A root that was
+    consumed and returned **nothing** appears in no row, so it lands in neither
+    `fired` nor `spent` and a plain continuation offers it again: measured
+    2026-09-03 over the five legs on this machine, 635 of 2,153 proven roots are
+    in `fired`, and 977 of that gap is the label store having grown since. Queue
+    exhaustion is an honest floor and a useless trigger; what says a chain is
+    spent is what its last leg got for what it fired.
+    """
+    latest = None
+    for leg in reversed(((earlier or {}).get("record") or {}).get("priors", [])):
+        seen = leg.get("rediscovery")
+        if seen and seen["seeds_consumed"] >= SATURATION_FLOOR:
+            latest = leg
+            break
+    why = {
+        "converged": False,
+        "clause": None,
+        "saturated_at": SATURATED,
+        "saturation_floor": SATURATION_FLOOR,
+        "continuation_queue": {"roots": len(roots), "promotions": len(carried)},
+        "latest_leg": latest,
+    }
+    if not roots and not carried:
+        why["converged"] = True
+        why["clause"] = "exhausted"
+        why["because"] = (
+            "a plain continuation has no seed left: every proven root the chain got anything "
+            "from is off the queue and every promotion is spent. Re-probing is the only thing "
+            "left that is not a refusal."
+        )
+        return True, why
+    if latest is not None and latest["rediscovery"]["share"] >= SATURATED:
+        seen = latest["rediscovery"]
+        why["converged"] = True
+        why["clause"] = "saturated"
+        why["because"] = (
+            f"the chain's latest leg ({latest['prior']}) spent {seen['seeds_consumed']:,} "
+            f"seed(s) to reach {seen['found']:,} nucleus/nuclei, {seen['again']:,} of which it "
+            f"already held — {seen['share']:.1%}, at or over the {SATURATED:.0%} a chain is "
+            f"called spent at. The queue is not the constraint; the neighbourhoods are."
+        )
+        return True, why
+    if latest is None:
+        why["because"] = (
+            f"no leg of the chain consumed {SATURATION_FLOOR} seed(s) and wrote a summary, so "
+            f"there is no saturation reading, and the continuation queue is not empty."
+        )
+    else:
+        seen = latest["rediscovery"]
+        why["because"] = (
+            f"the chain's latest leg ({latest['prior']}) already held {seen['share']:.1%} of "
+            f"what it reached, under the {SATURATED:.0%} a chain is called spent at, and "
+            f"{len(roots):,} root(s) and {len(carried):,} promotion(s) are still unfired."
+        )
+    return False, why
+
+
+# --------------------------------------------------------------------------- #
 # The queue.
 # --------------------------------------------------------------------------- #
 def prior_run(directories, log=print) -> dict:
@@ -836,9 +1099,17 @@ def prior_run(directories, log=print) -> dict:
     * `promoted` — the chain's admitted rows as seeds, deduplicated on the atom
       and kept at the better class where two legs disagree about one.
 
+    Each leg's entry under `priors` also carries its `started` stamp and its
+    [`rediscovery`] reading, which is what [`convergence`] decides the re-probe
+    branch on. Both come off rows this already had in hand: the ledger is parsed
+    **once** and split by kind, where it used to be read through [`read`] and the
+    header and summary thrown away.
+
     Rows only; nothing here re-reads the head or re-decides a floor. `head_q4` is
     the flag the earlier run wrote, and the keeper class is its own recorded fate.
     """
+    from fractal_wallpapers import paths
+
     if isinstance(directories, (str, Path)):
         directories = [directories]
     found: set[str] = set()
@@ -854,7 +1125,12 @@ def prior_run(directories, log=print) -> dict:
                 f"{directory} holds no {ledger_module.LEDGER_NAME}, so it is not a run of this "
                 f"channel a later one could continue. Point --prior at an earlier --out-dir."
             )
-        rows = read(path)
+        every = ledger_module.read(path)
+        rows = [
+            row for row in every if row.get("kind") == "candidate" and row.get("channel") == CHANNEL
+        ]
+        head = next((row for row in every if row.get("kind") == RUN_KIND), None)
+        summary = next((row for row in reversed(every) if row.get("kind") == SUMMARY_KIND), None)
         for row in rows:
             block = row.get("reframing") or {}
             if row.get("atom_key"):
@@ -884,8 +1160,19 @@ def prior_run(directories, log=print) -> dict:
                 kind=CHANNEL,
                 source=source,
             )
-        per_run.append({"prior": str(path), "rows": len(rows)})
+        per_run.append(
+            {
+                "prior": paths.tracked_name(path),
+                "rows": len(rows),
+                "started": when(head, path),
+                "rediscovery": rediscovery(summary),
+            }
+        )
     promoted = list(best.values())
+    # Oldest first whatever order the caller named them in, so "the chain's
+    # latest leg" is a fact about when the legs ran rather than about how a
+    # command line was typed. [`convergence`] reads the last entry.
+    per_run.sort(key=lambda leg: (leg["started"], leg["prior"]))
     record = {
         "priors": per_run,
         "nuclei_found": len(found),
@@ -1098,6 +1385,11 @@ class Channel:
         """
         header = {
             "channel": CHANNEL,
+            # What orders a chain. [`discovered_priors`] falls back to the
+            # ledger's mtime for the legs written before this was stamped, which
+            # survives archiving (`storage` copies through `shutil.copy2`) but
+            # not a re-copy by hand.
+            "started": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "run_seed": self.seed,
             "rungs": list(self.rungs),
             "operators": list(OPERATORS),
@@ -1113,7 +1405,7 @@ class Channel:
                 "great_cut": money.GREAT_CUT,
             },
         }
-        self.ledger.write("reframing_run", **header)
+        self.ledger.write(RUN_KIND, **header)
         self.log(f"[reframe] {json.dumps(header)}")
 
         pending = queued([*roots, *(carried or [])])
@@ -1139,7 +1431,7 @@ class Channel:
             # of.
             pending = queued(promoted)
         report = self.summary([*roots, *(carried or [])], consumed, per_round)
-        self.ledger.write("reframing_summary", **report)
+        self.ledger.write(SUMMARY_KIND, **report)
         self.ledger.close()
         return report
 
@@ -1365,26 +1657,72 @@ def run(
     seed_batch: int = SEED_BATCH,
     max_period: int = SEED_SNAP_MAX_PERIOD,
     prior=None,
-    reprobe: bool = False,
+    reprobe: bool | None = REPROBE,
     log=print,
 ) -> dict:
-    """Derive the seeds and run the channel over them. What the command calls."""
+    """Derive the seeds and run the channel over them. What the command calls.
+
+    Two of this leg's arguments **default to a reading of the ledgers** rather
+    than to a value, because both were things a person had to remember and the
+    cost of forgetting either is silent:
+
+    * `prior=None` discovers every earlier leg of this channel on both tiers
+      ([`discovered_priors`]). An explicit list still wins and an empty one means
+      none, but either way the discovery runs, so a list that omits a leg the
+      ledgers know about is warned about.
+    * `reprobe=None` decides from the chain ([`convergence`]). `True` and `False`
+      are still obeyed exactly as before, and what the ledgers would have said is
+      recorded beside the flag either way.
+    """
+    from fractal_wallpapers import paths
     from fractal_wallpapers.labeling import pins as pin_module
 
     pinned = pin_module.every_pinned()
     found, record = seeds(tier_floor=tier_floor, partitions=partitions, pinned=pinned)
+    # This run's own ledger is excluded by the file rather than by the spelling,
+    # and it is excluded even when it does not exist yet: a leg re-using a killed
+    # leg's --out-dir would otherwise inherit its own finds.
+    known, discovery = discovered_priors(exclude=Path(out_dir) / ledger_module.LEDGER_NAME, log=log)
+    if prior is None:
+        prior, discovery["source"] = known, "discovered"
+    else:
+        prior = [Path(each) for each in prior]
+        discovery["source"] = "named"
+        named = {path.resolve() for path in prior}
+        omitted = [paths.tracked_name(path) for path in known if path.resolve() not in named]
+        discovery["omitted"] = omitted
+        if omitted:
+            log(
+                f"[reframe] WARNING: --prior names {len(prior)} leg(s) and the ledgers know of "
+                f"{len(omitted)} more ({', '.join(omitted)}). A leg that omits an earlier one "
+                f"re-finds its atoms and writes them a second time — 192 of one leg's 302 "
+                f"rows, measured 2026-09-01. Running anyway: naming fewer is allowed."
+            )
+    record["priors_seen"] = discovery
+    record["reprobe"] = None
+    record["reprobe_because"] = None
     carried: list[Seed] = []
     earlier = None
     if prior:
         earlier = prior_run(prior, log=log)
-        carried = earlier["promoted"]
+        # What a plain continuation would fire at. Both branches are derived
+        # before either is chosen, because the convergence reading is about this
+        # queue and the record has to carry it whichever way the leg went.
+        plain_roots = [seed for seed in found if seed.id not in earlier["fired"]]
+        plain_carried = [seed for seed in earlier["promoted"] if seed.id not in earlier["spent"]]
+        settled, why = convergence(earlier, plain_roots, plain_carried)
+        if reprobe is None:
+            reprobe, why["decided_by"] = settled, "ledgers"
+        else:
+            reprobe = bool(reprobe)
+            why["decided_by"] = "flag"
+            why["flag"] = reprobe
         before = len(found)
-        if not reprobe:
-            found = [seed for seed in found if seed.id not in earlier["fired"]]
-            carried = [seed for seed in carried if seed.id not in earlier["spent"]]
+        found, carried = (found, earlier["promoted"]) if reprobe else (plain_roots, plain_carried)
         record["refused_already_fired"] = before - len(found)
         record["carried"] = len(carried)
         record["reprobe"] = bool(reprobe)
+        record["reprobe_because"] = why
         record["seeds"] = len(found)
         record["sources"] = by_source(found)
     if roots is not None:
@@ -1394,7 +1732,9 @@ def run(
         raise ChannelRefused(
             "no seed survives: no proven parameter-plane location the pin allows, and no "
             "promotion carried in from a --prior run. Label some parameter-plane keepers, "
-            "widen --tier-floor, or point --prior at a run that admitted something."
+            "widen --tier-floor, or point --prior at a run that admitted something. On a "
+            "chain whose queue is spent this is reachable only under --no-reprobe: the "
+            "default reads the ledgers and re-probes instead of refusing."
         )
     channel = Channel(
         out_dir=out_dir,
@@ -1503,8 +1843,12 @@ __all__ = [
     "SEED_SNAP_MAX_PERIOD",
     "SEED_TIER_FLOOR",
     "SOURCES",
+    "SATURATED",
+    "SATURATION_FLOOR",
     "SCREEN_BATCH",
     "SCREEN_RETRIES",
+    "RUN_KIND",
+    "SUMMARY_KIND",
     "Channel",
     "ChannelRefused",
     "Nucleus",
@@ -1512,15 +1856,20 @@ __all__ = [
     "Seed",
     "by_source",
     "candidate_row",
+    "convergence",
+    "discovered_priors",
     "distinct_places",
     "end_picks",
     "fate_of",
     "fire",
+    "first_row",
     "frame_multiple",
     "frame_of",
+    "is_a_leg",
     "is_head_q4",
     "pick",
     "prior_run",
+    "rediscovery",
     "priority_of",
     "queued",
     "rank",
@@ -1531,4 +1880,5 @@ __all__ = [
     "screen_rungs",
     "seeds",
     "source_of_tier",
+    "when",
 ]

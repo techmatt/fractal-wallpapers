@@ -58,9 +58,14 @@ fractal-wallpapers reframe --minutes 20 --out-dir artifacts/reframe_g1
 fractal-wallpapers curate score --harvest artifacts/reframe_g1
 fractal-wallpapers curate embed                    # the merge is these two, in order
 
-# a later leg CONTINUES an earlier one rather than re-deriving its seeds
-fractal-wallpapers reframe --prior artifacts/reframe_g1 --out-dir artifacts/reframe_g2   --generations 40 --minutes 480
-fractal-wallpapers reframe --prior artifacts/reframe_g2 --out-dir artifacts/reframe_g3   --reprobe --seed 3 --minutes 120
+# a later leg continues the whole chain and decides its own re-probe: no flags
+fractal-wallpapers reframe --out-dir artifacts/reframe_g2   --generations 40 --minutes 480
+fractal-wallpapers reframe --out-dir artifacts/reframe_g3   --seed 3 --minutes 120
+
+# the overrides, for when the defaults are wrong about a particular night
+fractal-wallpapers reframe --out-dir artifacts/reframe_g4   --no-reprobe
+fractal-wallpapers reframe --out-dir artifacts/reframe_g5   --prior artifacts/reframe_g1 --reprobe
+fractal-wallpapers reframe --out-dir artifacts/reframe_g6   --no-prior
 ```
 
 **Merging a run into the standing pool is `curate score --harvest <dir>` and then
@@ -73,28 +78,89 @@ a minute for 788 rows and left the sidecar at 91,272 rows; `curate embed` wrote
 **663** vectors in 49.5 s and left the store complete over 29,083 admitted
 locations with 0 missing.
 
-**`--prior <dir>` continues an earlier run, it is not optional between legs, and
-it must name EVERY earlier leg.** The atom-key dedup is per run, so a second leg
-that re-derived its seeds off the label store fires the same roots at the same
-atoms and writes **every one of the first leg's nuclei a second time** — one
-nucleus in two ledgers, which is two location keys the moment the two legs pick
-different rungs, which is one atom in two seats. The flag is repeatable and a
-chain that names only the last link forgets everything before it: measured
-2026-09-01, a fourth leg handed only the third's ledger wrote **192 of its 302
-rows** on atoms the first leg already held. `--prior` hands the new leg the atom
-keys the chain found (they seed `seen`), the proven root ids it consumed (off the
-queue), every seed id it fired at, and its admitted rows as this leg's
-promotions, deduplicated on the atom at the better class. Note that "consumed" is
-read off the rows, so a root that produced nothing is invisible and is fired
-again — which is wanted, because the seed snap's ceiling has moved since.
+**A leg continues every earlier leg by default, and neither flag below is
+something a supervisor has to remember any more.** Both used to be: a `--prior`
+that named too few legs wrote duplicate rows, and a missing `--reprobe` on a spent
+chain bought seven locations for 576 seeds. Both are now read off the ledgers, and
+both are still overridable — the run record says which branch was taken, why, and
+what the ledgers would have said even when a flag overruled them.
 
-**`--reprobe` fires at the roots an earlier leg already spent.**
-`expand_neighborhood` probes at random, so a second pass at one root is a
-different sample of the same neighbourhood and reaches atoms the first missed. It
-is the lever that keeps the channel yielding after the promotion queue converges,
-and it does converge: generation 1 returned 496 promotions on 1,056 seeds, so each
-round is roughly half the last. Give the leg its own `--seed` or it draws the same
-probes.
+**`--prior <dir>` defaults to every earlier leg the ledgers hold**, and naming any
+is an override rather than a chore. The atom-key dedup is per run, so a leg that
+re-derived its seeds off the label store fires the same roots at the same atoms
+and writes **every one of the earlier leg's nuclei a second time** — one nucleus
+in two ledgers, which is two location keys the moment the two legs pick different
+rungs, which is one atom in two seats. A chain that names only its last link
+forgets everything before it: measured 2026-09-01, a fourth leg handed only the
+third's ledger wrote **192 of its 302 rows** on atoms the first leg already held.
+`--prior` hands the new leg the atom keys the chain found (they seed `seen`), the
+proven root ids it consumed (off the queue), every seed id it fired at, and its
+admitted rows as this leg's promotions, deduplicated on the atom at the better
+class. Note that "consumed" is read off the rows, so a root that produced nothing
+is invisible and is fired again — which is wanted, because the seed snap's ceiling
+has moved since, and which is also why convergence is not detected from it.
+
+* **A leg is found by its header row, never by its name.** Every ledger under both
+  tiers is opened, one line each, and kept if that line is `kind:
+  "reframing_run"`. `artifacts/harvest_reframe_night` is a **walk** and would be
+  taken by any name-matching rule; a leg called anything at all is still a leg.
+  Measured 2026-09-03: 0.17 s over the 44 walk ledgers on this machine, and 0.33 s
+  for `prior_run` to read the five legs' 21 MB.
+* **Both tiers when the archive is mounted, HOT alone when it is not**, and they
+  are different populations. A leg is a top-level name of the regenerable tree and
+  `storage archive` moves top-level names, so an archived leg is still a link of
+  the chain and a run that could not see it would re-find its atoms exactly as a
+  one-directory `--prior` does. Hot alone is therefore the **narrower** default
+  and the one that writes duplicates — so it is recorded as a stated note under
+  `priors_seen.note` rather than passed over, and it is not a refusal, because
+  every atom re-found costs engine time rather than putting a wrong row anywhere.
+  Measured 2026-09-03: all five legs are hot and the archive holds none of them,
+  so the two populations coincide today and the note is about tomorrow.
+* **Naming a list that omits a leg the ledgers hold is a WARNING**, never a
+  refusal, and the warning names the omitted run directories so it can be pasted
+  back into the invocation. `--no-prior` is the first-leg-of-a-chain spelling and
+  warns about every leg on the machine.
+* **A run is never its own prior.** The exclusion is by resolved file, and it
+  applies even before the ledger exists: a leg re-using a killed leg's `--out-dir`
+  would otherwise inherit its own finds and refuse all of them as already found.
+
+**`--reprobe` defaults to a reading of the chain.** It fires at the roots an
+earlier leg already spent: `expand_neighborhood` probes at random, so a second
+pass at one root is a different sample of the same neighbourhood and reaches atoms
+the first missed. The earlier legs' nuclei are still deduped, so nothing is
+written twice, and it is a **superset** of the plain continuation — no unfired
+root is skipped by re-probing, the queue simply also holds the spent ones, in the
+tier-then-digest order `supply.proven` imposed. Give the leg its own `--seed` or
+it draws the same probes. A chain counts as spent under either of two clauses,
+both computed and both on the record under `reprobe_because`:
+
+* **exhausted** — a plain continuation has no seed at all. That is the leg that
+  used to raise `no seed survives` and stop; re-probing is the only thing left
+  there that is not a refusal, so the default now takes it. Reachable under
+  `--no-reprobe` and not otherwise.
+* **saturated** — the chain's latest leg, having consumed at least 100 seeds,
+  already held **90% or more** of the nuclei its operators reached. The share is
+  of what the operators reached — rows written plus every nucleus refused as
+  already held, as having no offerable frame, and for a batch that crashed twice —
+  and *not* of the queue.
+
+**Queue exhaustion is an honest floor and a useless trigger, which is why the
+second clause exists.** A root that was consumed and returned nothing appears in
+no row, so it lands in neither the `fired` nor the `spent` set and a plain
+continuation offers it again; the fifth leg's 84 `matt_q4` seeds all returned
+nothing and are all still on the queue today. Measured 2026-09-03 over the five
+legs on this machine: **635 of 2,153 proven roots are in `fired`**, and 977 of
+that gap is simply the label store having grown from 1,176 roots to 2,153 since
+the legs ran. A leg launched now reads *saturated* with 1,518 roots and 3,253
+promotions still on its continuation queue, which is the whole point — the queue
+is not the constraint, the neighbourhoods are.
+
+The threshold is drawn between the last productive leg and the first spent one,
+and the five legs are the only measurement behind it (`re-discovery`, newest
+last): **13.5%** (792 new, 1,056 seeds), **56.7%**, **68.8%**, **77.5%** (1,607
+new in 168 minutes — not a leg to skip re-probing for), **93.0%** (seven new for
+576 seeds). The floor of 100 consumed seeds is there because a leg that fired at
+nine and found nothing new is not a measurement of anything.
 
 **Seeds are `proven` roots, q3 and q4, parameter planes only, minus every eval
 pin.** Off `supply.proven` rather than a second query over the label store; the
@@ -298,12 +364,16 @@ four earlier ledgers as `--prior` and no `--reprobe` spent **576 seeds** — the
 whole human queue, all 84 `matt_q4` and all 462 `matt_q3`, then 30 `head_q4` —
 and the operators found **100 nuclei of which 93 were already in the priors'
 `seen` set**. Seven new locations, one head-q4. The count is on the summary under
-`counts.nucleus_already_found`, and it is the number to read before deciding
-whether a leg wants `--reprobe`: the seed queue was not empty (3,795 offered) and
-the clock was not the binding constraint. Note also that **all 84 `matt_q4` seeds
-returned nothing** — the highest-priority class is the first the chain exhausts,
-because four earlier legs fired at it first, so a short leg's yield comes off
-`matt_q3` and the queue order works against a leg that will not run to the end.
+`counts.nucleus_already_found`, and it is **the number the re-probe default is now
+read off** rather than a number somebody has to read: the seed queue was not empty
+(3,795 offered) and the clock was not the binding constraint, which is why the
+saturation clause and not queue exhaustion is what detects this. Note also that
+**all 84 `matt_q4` seeds returned nothing** — the highest-priority class is the
+first the chain exhausts, because four earlier legs fired at it first, so a short
+leg's yield comes off `matt_q3` and the queue order works against a leg that will
+not run to the end. Those 84 are also why the `fired` set cannot answer this: a
+root that returned nothing is on no row, so a rule asking whether every proven
+root had fired would have called this leg unconverged.
 
 **Record and rank, never gate.** Every derived nucleus is scored and written
 whatever the head said. Neutral pre-selection distinctness (`curation.distinct`,
