@@ -168,11 +168,24 @@ here because this file is loaded into every session in this repository and a
 chronological log is not a rule. What stays here is the current figure and the rules
 the log produced.
 
-The fast lane is **166.63 s over the 3,438 it holds** and the slow lane **7:14 over
-3,552**, on this machine, idle, 2026-09-04, at the `run_layout` extraction. The slow
-lane had not been re-run since the viewport sampler and its **6:27 over 3,388** is what
-this replaces: 12% more clock over 4.8% more tests, which is the per-test cost drifting
-up rather than holding, and the first slow figure in this file that was not inherited.
+The fast lane is **118.50 s over the 3,383 it holds**, on this machine, idle,
+2026-09-04, at the manifest-guard commit. The slow lane's **7:14 over 3,552** stands
+from the `run_layout` extraction and has not been re-run since.
+
+**That 118.50 s is a third off and it is not an optimisation.** The same tree at
+`9a62672`, measured the same evening on the same idle box, is **177.48 s** over the
+same tests. The difference is three test files that had been reading this machine's
+**real** 67k-row supply sidecar and its real expressed readout on every test, because
+they redirected the ledger store per accessor and no accessor list named those two.
+Redirecting at the tier roots instead moved them, and the price went with them. So the
+figure is a lane that stopped pricing data it was never meant to read — and the rule
+that follows is the one below about redirecting at the roots.
+
+⚠ **The reading this replaces does not reproduce.** `tests/README.md` logs the `cli`
+split at "170.30 s over 3,440"; that same commit collects **3,375 selected / 3,484
+total** today and runs 3,369 passed / 14 skipped in 177.48 s. The count is 57 short of
+what was written down and nothing since has added or removed a test. Unexplained, left
+in the log rather than edited.
 
 **Its first reading that session was 300.7 s and the extra 135 s was a defect, not the
 box.** That run also failed `test_training_resume.py` on a CUDA OOM with six other
