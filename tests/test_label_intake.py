@@ -439,7 +439,12 @@ def test_the_sheet_s_head_decides_which_store_it_lands_in(tmp_path, store_dir, r
 def test_a_location_ingest_is_counted_and_idempotent_like_the_other(
     tmp_path, store_dir, registered
 ) -> None:
-    """The §2 guarantees were absent from `record` and are not optional now."""
+    """A re-ingest counts every row and writes none of them, byte for byte.
+
+    Both halves are the guarantee: a second pass reports what it saw as already
+    stored rather than as nothing, and leaves the batch file unchanged. `record`
+    had neither, which is how a re-run could look like a no-op and still append.
+    """
     registered("a_batch")
     stem = a_location_sheet(tmp_path)
     labels = an_export(tmp_path, {"u0001": 3, "u0002": 1, "u0003": 2})
