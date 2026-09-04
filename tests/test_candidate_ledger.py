@@ -11,13 +11,23 @@ picture writes a second row about the same pixels.
 from __future__ import annotations
 
 import dataclasses
+import importlib
 import json
+import pkgutil
 from pathlib import Path
 
 import pytest
 
 from fractal_wallpapers.curation import candidate_ledger, intake, recipes, release
 from fractal_wallpapers.models import renders
+
+#: Every module of the ledger package, discovered rather than listed: a guard
+#: that swept a hand-written set would go quiet the day somebody adds an eighth
+#: module, which is exactly when it has something to say.
+MODULES = tuple(
+    importlib.import_module(f"{candidate_ledger.__name__}.{info.name}")
+    for info in pkgutil.iter_modules(candidate_ledger.__path__)
+)
 
 BAND = "49d4f43b200904c5967df788308834be163698081d85802df978554261aa63a1"
 
@@ -270,11 +280,15 @@ def isolated(tmp_path, monkeypatch):
     """
     from fractal_wallpapers.curation import flatness, signatures
 
-    monkeypatch.setattr(candidate_ledger, "rows_path", lambda: tmp_path / "rows.jsonl")
-    monkeypatch.setattr(candidate_ledger, "scores_path", lambda: tmp_path / "scores.jsonl")
-    monkeypatch.setattr(candidate_ledger, "backup_path", lambda name: tmp_path / f"copy-{name}")
-    monkeypatch.setattr(candidate_ledger, "manifest_dir", lambda: tmp_path / "manifests")
-    monkeypatch.setattr(candidate_ledger, "_picture_of", lambda source: tmp_path / "nothing.jpg")
+    monkeypatch.setattr(candidate_ledger.store, "rows_path", lambda: tmp_path / "rows.jsonl")
+    monkeypatch.setattr(candidate_ledger.store, "scores_path", lambda: tmp_path / "scores.jsonl")
+    monkeypatch.setattr(
+        candidate_ledger.store, "backup_path", lambda name: tmp_path / f"copy-{name}"
+    )
+    monkeypatch.setattr(candidate_ledger.store, "manifest_dir", lambda: tmp_path / "manifests")
+    monkeypatch.setattr(
+        candidate_ledger.rebuild, "_picture_of", lambda source: tmp_path / "nothing.jpg"
+    )
     monkeypatch.setattr(flatness, "sidecar_path", lambda: tmp_path / "flatness.jsonl")
     monkeypatch.setattr(signatures, "sidecar_path", lambda: tmp_path / signatures.SIDECAR_NAME)
     return tmp_path
@@ -299,7 +313,7 @@ def test_backfill_holds_one_row_per_render_not_one_per_decision(isolated, monkey
     twin = decision(key="gallery8|gate|0031", run="gallery8", candidate="0031")
 
     monkeypatch.setattr(
-        candidate_ledger,
+        candidate_ledger.rebuild,
         "sources",
         lambda: [
             {**made, "_store": candidate_ledger.FROM_RELEASE},
@@ -321,7 +335,7 @@ def test_backfill_holds_one_row_per_render_not_one_per_decision(isolated, monkey
 def test_a_second_backfill_over_an_unchanged_pool_writes_the_same_bytes(isolated, monkeypatch):
     """A store that churned on a re-read would make every manifest a moving target."""
     monkeypatch.setattr(
-        candidate_ledger,
+        candidate_ledger.rebuild,
         "sources",
         lambda: [{**decision(), "_store": candidate_ledger.FROM_GALLERY}],
     )
@@ -983,7 +997,7 @@ def test_the_re_render_selects_on_the_retention_rule_and_nothing_else(isolated, 
         )
     candidate_ledger.write(rows)
 
-    monkeypatch.setattr(candidate_ledger, "present_pictures", lambda stored: {"kept"})
+    monkeypatch.setattr(candidate_ledger.store, "present_pictures", lambda stored: {"kept"})
     wanted = candidate_ledger.missing_pictures()
     assert [str(row["key"]) for row in wanted] == ["gone"]
 
@@ -1027,24 +1041,56 @@ def test_the_re_render_writes_pictures_and_nothing_else(isolated):
         assert forbidden not in source, forbidden
 
 
+def test_no_module_of_the_package_is_named_after_something_it_exports():
+    """The trap the split's own layout walked into, pinned so it stays walked out of.
+
+    A package cannot hold a module and a surface name of the same spelling. The
+    import system sets a submodule as an attribute of its package, and an
+    attribute that is already there is one `__getattr__` is never asked about — so
+    a `census.py` holding `census()` answers `candidate_ledger.census` with the
+    MODULE, silently, from whichever import happened to run first. That is why
+    the three are `door`, `rebuild` and `inventory` while the functions keep the
+    names the CLI spells.
+    """
+    import inspect
+
+    named = {module.__name__.rsplit(".", 1)[1] for module in MODULES}
+    surface = set(dir(candidate_ledger)) - named
+    assert not (named & surface), (
+        "a module of the package shares its name with something on the surface, so one of "
+        f"them is unreachable: {sorted(named & surface)}"
+    )
+    # The three that used to collide, asked directly: each is the function.
+    for name in ("merge", "census", "backfill"):
+        assert inspect.isfunction(getattr(candidate_ledger, name)), name
+
+
 def test_nothing_but_the_ledger_deletes_a_candidate_picture():
-    """One delete in this project, in one module, reachable from one function.
+    """One delete in this project, in one package, reachable from one function.
 
     Asked of **both** verbs, because a candidate now costs two things on disk. A
     picture is unlinked and a levelled colormap is a directory, so a sweeper that
     grew `rmtree` somewhere this only asked about `unlink` would be a second way
-    to destroy a candidate that this guard would have called clean."""
+    to destroy a candidate that this guard would have called clean.
+
+    It sweeps the package rather than one module's `vars()`, and asks whether a
+    function's `__module__` is *inside* the package rather than equal to it. Both
+    were the same question while the ledger was one file; after the split the
+    equality is false for every function there is, which would have made this
+    guard pass by finding nothing at all."""
     import inspect
 
     from fractal_wallpapers.curation import retention
 
+    def held_by_the_package():
+        for module in MODULES:
+            for name, held in vars(module).items():
+                if inspect.isfunction(held) and held.__module__ == module.__name__:
+                    yield name, held
+
     def owners(verb: str) -> list[str]:
         return sorted(
-            name
-            for name, held in vars(candidate_ledger).items()
-            if inspect.isfunction(held)
-            and held.__module__ == candidate_ledger.__name__
-            and verb in inspect.getsource(held)
+            name for name, held in held_by_the_package() if verb in inspect.getsource(held)
         )
 
     assert "unlink(" not in inspect.getsource(retention)
@@ -1059,7 +1105,8 @@ def test_nothing_but_the_ledger_deletes_a_candidate_picture():
     # One definition and one call site, and the call site is past every outcome
     # the JPEG can have — a second one inside a branch is how the sweep comes to
     # be skipped for exactly the rows whose picture was already the odd case.
-    assert inspect.getsource(candidate_ledger).count("_delete_colormap(") == 2
+    package = "".join(inspect.getsource(module) for module in MODULES)
+    assert package.count("_delete_colormap(") == 2
     assert "_delete_colormap(" in inspect.getsource(candidate_ledger.delete_pictures)
 
 
@@ -1301,7 +1348,7 @@ def test_a_directory_outside_the_tier_roots_refuses_before_anything_is_read(swep
     outside = swept.parent / "elsewhere" / "pictures"
     outside.mkdir(parents=True)
     a_pair(outside, "not_ours")
-    monkeypatch.setattr(candidate_ledger, "picture_dirs", lambda: [outside])
+    monkeypatch.setattr(candidate_ledger.sweep, "picture_dirs", lambda: [outside])
     candidate_ledger.write([])
 
     with pytest.raises(candidate_ledger.LedgerError, match="not under either tier root"):
@@ -1439,9 +1486,11 @@ def _rescored(isolated, monkeypatch, present, probabilities):
     from fractal_wallpapers.curation import colorize, durability
     from fractal_wallpapers.models import scoring, train
 
-    monkeypatch.setattr(candidate_ledger, "partial_scores_path", lambda: isolated / "partial.jsonl")
-    monkeypatch.setattr(candidate_ledger, "present_pictures", lambda rows: set(present))
-    monkeypatch.setattr(candidate_ledger, "live_artifact", lambda: "new")
+    monkeypatch.setattr(
+        candidate_ledger.rerender, "partial_scores_path", lambda: isolated / "partial.jsonl"
+    )
+    monkeypatch.setattr(candidate_ledger.store, "present_pictures", lambda rows: set(present))
+    monkeypatch.setattr(candidate_ledger.store, "live_artifact", lambda: "new")
     monkeypatch.setattr(colorize, "load_judge", lambda device="auto": (None, {"classes": 4}, "cpu"))
     monkeypatch.setattr(scoring, "transform_of", lambda config: None)
     monkeypatch.setattr(train, "score", lambda *a, **k: probabilities(*a, **k))
@@ -1529,7 +1578,9 @@ def test_a_rescore_resumes_off_the_chunk_file_it_left_behind(isolated, monkeypat
         picture=str(isolated / "a.jpg"),
     )
     candidate_ledger.write([row])
-    monkeypatch.setattr(candidate_ledger, "partial_scores_path", lambda: isolated / "partial.jsonl")
+    monkeypatch.setattr(
+        candidate_ledger.rerender, "partial_scores_path", lambda: isolated / "partial.jsonl"
+    )
     candidate_ledger._append_partial(
         [
             candidate_ledger.score_row(
@@ -1726,7 +1777,7 @@ def test_a_backfill_carries_a_stamp_rather_than_erasing_or_inventing_one(isolate
     about a build. Stamping with the live one would be a lie about an old
     picture, and dropping the field would quietly un-stamp the pool."""
     monkeypatch.setattr(
-        candidate_ledger,
+        candidate_ledger.rebuild,
         "sources",
         lambda: [{**decision(), "_store": candidate_ledger.FROM_GALLERY}],
     )

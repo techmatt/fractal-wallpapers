@@ -579,13 +579,15 @@ def a_ledger_row(key: str = "aaaa") -> dict:
 def test_merging_a_hunt_twice_writes_the_same_ledger(monkeypatch, tmp_path):
     """The ledger upserts by recipe, so a partial and a finished hunt merge alike."""
     monkeypatch.setattr(hunt, "hunt_dir", lambda name: tmp_path / str(name))
-    monkeypatch.setattr(candidate_ledger, "rows_path", lambda: tmp_path / "ledger.jsonl")
-    monkeypatch.setattr(candidate_ledger, "scores_path", lambda: tmp_path / "scores.jsonl")
+    monkeypatch.setattr(candidate_ledger.store, "rows_path", lambda: tmp_path / "ledger.jsonl")
+    monkeypatch.setattr(candidate_ledger.store, "scores_path", lambda: tmp_path / "scores.jsonl")
     # The copies and the manifests too: `candidate_ledger.merge` records what it
     # wrote, and an unredirected one lands on this machine's real archive tier
     # and in the tracked history. `tests/test_ledger_tracking.py` owns that rule.
-    monkeypatch.setattr(candidate_ledger, "backup_path", lambda name: tmp_path / f"copy-{name}")
-    monkeypatch.setattr(candidate_ledger, "manifest_dir", lambda: tmp_path / "manifests")
+    monkeypatch.setattr(
+        candidate_ledger.store, "backup_path", lambda name: tmp_path / f"copy-{name}"
+    )
+    monkeypatch.setattr(candidate_ledger.store, "manifest_dir", lambda: tmp_path / "manifests")
     # And the flatness sidecar, which is the fourth and the one a caller forgets,
     # because it is reached through another module. `merge` prunes now, and a
     # prune rewrites all three of the store's files against one set of keys — so
