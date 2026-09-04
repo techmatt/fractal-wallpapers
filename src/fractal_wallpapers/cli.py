@@ -1012,6 +1012,20 @@ def reframe(args: argparse.Namespace) -> int:
             "unclassed rows the supply engine cannot count."
         )
         return 1
+    if args.no_prior and args.prior:
+        print(
+            "--no-prior and --prior say opposite things about the same queue. Name the legs "
+            "to continue, or say --no-prior, or say neither and let the ledgers answer."
+        )
+        return 1
+    # None is not "no priors" here: it is what asks the ledgers. The empty list
+    # is how --no-prior says the other thing.
+    if args.no_prior:
+        prior = []
+    elif args.prior:
+        prior = [resolve_input(each) for each in args.prior]
+    else:
+        prior = None
     try:
         report = reframing.run(
             out_dir=resolve_output(args.out_dir),
@@ -1025,7 +1039,7 @@ def reframe(args: argparse.Namespace) -> int:
             roots=args.roots,
             seed_batch=args.seed_batch,
             max_period=args.seed_max_period,
-            prior=[resolve_input(each) for each in (args.prior or [])],
+            prior=prior,
             reprobe=args.reprobe,
         )
     except (reframing.ChannelRefused, reframing.PinnedPlace) as refusal:
@@ -5077,22 +5091,37 @@ def build_parser() -> argparse.ArgumentParser:
         "--prior",
         metavar="DIR",
         action="append",
-        help="an earlier run of this channel to continue (repeatable, and NAME THEM ALL). "
-        "Their nuclei are already found, so an atom reached again is counted rather than "
-        "written twice; the proven roots they consumed are off the queue; and their admitted "
-        "rows ARE this run's promotions — head-q4 first, then head-keeper, both behind "
-        "whatever is left of the label store. A leg handed only the last run of a chain "
-        "re-writes what the runs before it found: on 2026-08-31 that was 192 of one leg's "
-        "302 rows",
+        help="an earlier run of this channel to continue (repeatable). DEFAULT: every earlier "
+        "leg the ledgers know about, on both storage tiers, found by the run-header row rather "
+        "than by any name — so a chain continues itself and naming them is an override rather "
+        "than a chore. Their nuclei are already found, so an atom reached again is counted "
+        "rather than written twice; the proven roots they consumed are off the queue; and "
+        "their admitted rows ARE this run's promotions — head-q4 first, then head-keeper, both "
+        "behind whatever is left of the label store. Naming a list that omits a leg the "
+        "ledgers hold is a WARNING and not a refusal, because that leg's atoms then get "
+        "written twice: on 2026-09-01 a leg handed only its predecessor wrote 192 of its 302 "
+        "rows on atoms the first leg already held",
+    )
+    reframing_leg.add_argument(
+        "--no-prior",
+        action="store_true",
+        help="continue nothing: derive the seeds off the label store alone, as the first leg "
+        "of a chain does. This is what --prior defaulted to before the ledgers were consulted, "
+        "and on a machine that already holds legs it writes their nuclei a second time",
     )
     reframing_leg.add_argument(
         "--reprobe",
-        action="store_true",
-        help="with --prior: fire at the proven roots the earlier run already consumed as "
-        "well. `expand_neighborhood` probes at random, so a second pass at one root is a "
-        "different sample of its neighbourhood and reaches atoms the first missed; the "
-        "earlier run's nuclei are still deduped, so nothing is written twice. Give the leg "
-        "its own --seed or it draws the same probes",
+        action=argparse.BooleanOptionalAction,
+        default=reframing_default("REPROBE"),
+        help="fire at the proven roots an earlier leg already spent, as well as at what is "
+        "left. DEFAULT: read the chain and decide — a chain is spent when a plain continuation "
+        "has no seed at all, or when its latest leg (having consumed at least 100 seeds) "
+        "already held 90%% or more of the nuclei it reached. `expand_neighborhood` probes at "
+        "random, so a second pass at one root is a different sample of its neighbourhood and "
+        "reaches atoms the first missed; the earlier legs' nuclei are still deduped, so "
+        "nothing is written twice and no unfired root is skipped. --no-reprobe forces the "
+        "plain continuation. The run record says which branch was taken, why, and what the "
+        "ledgers would have said. Give the leg its own --seed or it draws the same probes",
     )
     reframing_leg.add_argument(
         "--seed-max-period",

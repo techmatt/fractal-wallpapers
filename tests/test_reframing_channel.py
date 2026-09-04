@@ -13,10 +13,14 @@ these guards a measurement of the engine instead.
 from __future__ import annotations
 
 import json
+import os
 import random
+from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
+from fractal_wallpapers import paths
 from fractal_wallpapers.discovery import ledger as ledger_module
 from fractal_wallpapers.discovery import operators, reframing
 from fractal_wallpapers.supply import currency as money
@@ -846,3 +850,408 @@ def test_the_ledger_is_readable_json_lines_carrying_their_own_join(tmp_path, mon
         if row["kind"] == "candidate":
             assert row["family"] and row["viewport"]
             assert location_key(row["family"], row["viewport"]) is not None
+
+
+# --------------------------------------------------------------------------- #
+# 7. The two defaults: which legs a run continues, and whether it re-probes.
+# --------------------------------------------------------------------------- #
+#
+# Both were rules a person had to remember between legs, and forgetting either is
+# silent: an omitted prior writes its atoms a second time, and a missing
+# `--reprobe` on a spent chain buys seven locations for 576 seeds. Nothing here
+# renders or reads a real store — the ledgers are two rows each, which is exactly
+# what the defaults are read off.
+
+
+def leg(directory, *, started=None, locations=0, again=0, consumed=0, rows=()):
+    """A leg's ledger, holding the two rows the defaults are decided on."""
+    directory = Path(directory)
+    directory.mkdir(parents=True, exist_ok=True)
+    header = {
+        "schema": ledger_module.SCHEMA,
+        "kind": reframing.RUN_KIND,
+        "channel": reframing.CHANNEL,
+    }
+    if started is not None:
+        header["started"] = started
+    summary = {
+        "schema": ledger_module.SCHEMA,
+        "kind": reframing.SUMMARY_KIND,
+        "channel": reframing.CHANNEL,
+        "locations": locations,
+        "seeds_consumed": consumed,
+        "counts": {"nucleus_already_found": again},
+    }
+    path = directory / ledgers.LEDGER_NAME
+    with path.open("w", encoding="utf-8", newline="\n") as handle:
+        for row in (header, *rows, summary):
+            handle.write(json.dumps(row) + "\n")
+    return directory
+
+
+def walk_ledger(directory):
+    """A ledger a *walk* wrote. The population discovery has to filter out."""
+    directory = Path(directory)
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / ledgers.LEDGER_NAME
+    row = {"schema": ledger_module.SCHEMA, "kind": "run", "seed": 0}
+    with path.open("w", encoding="utf-8", newline="\n") as handle:
+        handle.write(json.dumps(row) + "\n")
+    return directory
+
+
+def candidate(atom, seed_id, *, tier=4, head_q4=True, fate=ledger_module.SURVIVED):
+    """One of a leg's rows, as much of it as the queue reader looks at."""
+    return {
+        "schema": ledger_module.SCHEMA,
+        "kind": "candidate",
+        "channel": reframing.CHANNEL,
+        "atom_key": atom,
+        "root_id": atom,
+        "family": {"kind": "mandelbrot"},
+        "viewport": {"center_re": "-0.75", "center_im": "0.1", "width": "0.001"},
+        "fate": fate,
+        "reframing": {
+            "generation": 1,
+            "head_q4": head_q4,
+            "seed": {"id": seed_id, "kind": "proven", "tier": tier},
+        },
+    }
+
+
+@pytest.fixture
+def tiers(tmp_path, monkeypatch):
+    """A hot tier and an archive, both empty, both this test's alone."""
+    hot, cold = tmp_path / "hot", tmp_path / "cold"
+    hot.mkdir()
+    cold.mkdir()
+    monkeypatch.setenv(paths.HOT_ROOT_VARIABLE, str(hot))
+    monkeypatch.setenv(paths.ARCHIVE_ROOT_VARIABLE, str(cold))
+    return SimpleNamespace(hot=hot, cold=cold)
+
+
+def test_the_default_chain_is_every_leg_the_ledgers_hold(tiers) -> None:
+    """`--prior` with nothing named continues the whole chain, oldest first.
+
+    Naming them all is the thing a person forgets, and the leg that forgot cost
+    192 of its 302 rows to atoms an earlier leg already held.
+    """
+    leg(tiers.hot / "reframe_g1", started="2026-09-01T03:00:00Z")
+    leg(tiers.hot / "reframe_g2", started="2026-09-01T06:00:00Z")
+    found, record = reframing.discovered_priors(log=lambda *_a: None)
+    assert [path.name for path in found] == ["reframe_g1", "reframe_g2"]
+    assert record["legs"] == [
+        f"{paths.ARTIFACTS_NAME}/reframe_g1",
+        f"{paths.ARTIFACTS_NAME}/reframe_g2",
+    ]
+
+
+def test_a_leg_is_recognised_by_its_header_and_never_by_its_name(tiers) -> None:
+    """`artifacts/harvest_reframe_night` is a WALK. The name says otherwise and
+    the name is not what is asked: the run-header row is."""
+    walk_ledger(tiers.hot / "harvest_reframe_night")
+    leg(tiers.hot / "nightly", started="2026-09-01T03:00:00Z")
+    found, record = reframing.discovered_priors(log=lambda *_a: None)
+    assert [path.name for path in found] == ["nightly"]
+    assert record["ledgers_seen"] == 2, "both were looked at; one was refused on its header"
+    assert reframing.is_a_leg(tiers.hot / "nightly" / ledgers.LEDGER_NAME)
+    assert not reframing.is_a_leg(tiers.hot / "harvest_reframe_night" / ledgers.LEDGER_NAME)
+
+
+def test_the_chain_spans_both_tiers_and_the_record_says_which_it_read(tiers) -> None:
+    """A leg is a top-level name, `storage archive` moves top-level names, and a
+    chain that forgot its archived links would re-find their atoms."""
+    leg(tiers.hot / "reframe_g2", started="2026-09-01T06:00:00Z")
+    leg(tiers.cold / "reframe_g1", started="2026-09-01T03:00:00Z")
+    found, record = reframing.discovered_priors(log=lambda *_a: None)
+    assert [path.name for path in found] == ["reframe_g1", "reframe_g2"]
+    assert record["tiers"] == [paths.HOT, paths.ARCHIVE]
+    assert record["archive_reachable"] is True
+
+
+def test_an_unreachable_archive_narrows_the_chain_and_is_said_out_loud(tiers, monkeypatch) -> None:
+    """Hot alone is the narrower population and the one that writes duplicates,
+    so it is a stated note rather than a silent half-answer — and not a refusal,
+    because a leg on a machine with the disk unplugged still costs only time."""
+    leg(tiers.hot / "reframe_g2", started="2026-09-01T06:00:00Z")
+    leg(tiers.cold / "reframe_g1", started="2026-09-01T03:00:00Z")
+    monkeypatch.setenv(paths.ARCHIVE_ROOT_VARIABLE, str(tiers.cold / "unplugged"))
+    found, record = reframing.discovered_priors(log=lambda *_a: None)
+    assert [path.name for path in found] == ["reframe_g2"]
+    assert record["tiers"] == [paths.HOT]
+    assert record["archive_reachable"] is False
+    assert "not mounted" in record["note"]
+
+
+def test_a_chain_is_ordered_by_when_its_legs_ran_and_not_by_their_names(tiers) -> None:
+    """`reframe_g10` sorts before `reframe_g2` and ran after it. The stamp on the
+    header is what orders a chain, and a leg written before that stamp existed
+    falls back to its ledger's mtime — which `shutil.copy2` preserves, so
+    archiving a leg does not reorder it."""
+    leg(tiers.hot / "reframe_g10", started="2026-09-02T01:00:00Z")
+    leg(tiers.hot / "reframe_g2", started="2026-09-01T01:00:00Z")
+    unstamped = leg(tiers.hot / "reframe_g3")
+    os.utime(unstamped / ledgers.LEDGER_NAME, (0, 1_000_000_000))
+    found, _record = reframing.discovered_priors(log=lambda *_a: None)
+    assert [path.name for path in found] == ["reframe_g3", "reframe_g2", "reframe_g10"]
+    assert reframing.when(None, unstamped / ledgers.LEDGER_NAME).startswith("2001-09-09")
+
+
+def test_a_run_is_never_its_own_prior(tiers) -> None:
+    """A leg re-using a killed leg's --out-dir would otherwise inherit its own
+    finds and refuse every one of them as already found."""
+    own = leg(tiers.hot / "reframe_g7", started="2026-09-01T03:00:00Z")
+    leg(tiers.hot / "reframe_g1", started="2026-09-01T01:00:00Z")
+    found, record = reframing.discovered_priors(
+        exclude=own / ledgers.LEDGER_NAME, log=lambda *_a: None
+    )
+    assert [path.name for path in found] == ["reframe_g1"]
+    assert record["excluded"].endswith(f"reframe_g7/{ledgers.LEDGER_NAME}")
+
+
+def test_the_rediscovery_share_is_of_what_the_operators_reached(tiers) -> None:
+    """Not of the queue, which was 3,795 deep in the leg that made this necessary.
+    The denominator is what was written plus every nucleus refused for being held
+    already, for having no offerable frame, and for a batch that crashed twice."""
+    summary = {
+        "locations": 7,
+        "seeds_consumed": 576,
+        "counts": {
+            "nucleus_already_found": 91,
+            "nucleus_no_frame": 1,
+            "nucleus_not_drawn": 1,
+        },
+    }
+    seen = reframing.rediscovery(summary)
+    assert seen == {
+        "found": 100,
+        "new": 7,
+        "again": 91,
+        "lost": 2,
+        "share": 0.91,
+        "seeds_consumed": 576,
+    }
+    assert reframing.rediscovery(None) is None
+    assert reframing.rediscovery({"locations": 0, "counts": {}}) is None
+
+
+# --------------------------------------------------------------------------- #
+# 7b. The branch, through `run` itself.
+# --------------------------------------------------------------------------- #
+def proven(name, tier=4):
+    return reframing.Seed(
+        id=name,
+        family={"kind": "mandelbrot"},
+        viewport={"center_re": "-0.75", "center_im": "0.1", "width": "0.5"},
+        tier=tier,
+        generation=0,
+        source=reframing.source_of_tier(tier),
+    )
+
+
+def launched(monkeypatch, tmp_path, roots, **flags):
+    """`run` with the head, the engine and the label store stood in for.
+
+    What is under test is which seeds the leg is handed and what it wrote down
+    about deciding that, so everything downstream of the decision is a recorder.
+    """
+    from fractal_wallpapers.labeling import pins as pin_module
+
+    monkeypatch.setattr(pin_module, "every_pinned", lambda: set())
+    monkeypatch.setattr(reframing, "seeds", lambda **_k: (list(roots), {}))
+    taken = {}
+
+    class Recorder:
+        def __init__(self, **kwargs):
+            self.seen = set()
+            taken["channel"] = self
+
+        def run(self, fired, carried=None):
+            taken["fired"] = list(fired)
+            taken["carried"] = list(carried or [])
+            return {"counts": {}}
+
+    monkeypatch.setattr(reframing, "Channel", Recorder)
+    lines = []
+    report = reframing.run(
+        out_dir=tmp_path / "hot" / "reframe_new",
+        scorer=Stub(),
+        log=lines.append,
+        **flags,
+    )
+    return SimpleNamespace(
+        report=report,
+        record=report["seed_query"],
+        fired=taken.get("fired", []),
+        carried=taken.get("carried", []),
+        lines=lines,
+    )
+
+
+def spent_chain(tiers):
+    """The state of this machine on 2026-09-01: a chain whose last leg found 93%
+    of its nuclei already held, with a queue that was nowhere near empty."""
+    leg(
+        tiers.hot / "reframe_g5",
+        started="2026-09-01T12:00:00Z",
+        locations=1607,
+        again=5549,
+        consumed=4536,
+        rows=[candidate("atom-old", "root-fired")],
+    )
+    leg(
+        tiers.hot / "reframe_g6",
+        started="2026-09-02T01:00:00Z",
+        locations=7,
+        again=93,
+        consumed=576,
+    )
+
+
+def test_a_spent_chain_re_probes_without_being_asked(tiers, monkeypatch) -> None:
+    """The rule this default exists for. The chain's last leg spent 576 seeds to
+    write seven rows; a leg launched after it and given no flag used to fire at
+    what was left of the label store and find the same atoms again."""
+    spent_chain(tiers)
+    out = launched(monkeypatch, tiers.hot.parent, [proven("root-fired"), proven("root-fresh")])
+    why = out.record["reprobe_because"]
+    assert out.record["reprobe"] is True
+    assert why["clause"] == "saturated" and why["decided_by"] == "ledgers"
+    assert why["latest_leg"]["rediscovery"]["share"] == 0.93
+    assert {seed.id for seed in out.fired} == {"root-fired", "root-fresh"}
+    assert out.record["refused_already_fired"] == 0
+
+
+def test_a_chain_that_is_still_finding_things_is_left_alone(tiers, monkeypatch) -> None:
+    """A fresh, unconverged seed set behaves as it always did. The 77.5% leg wrote
+    1,607 locations in 168 minutes and is not a leg to skip re-probing for, which
+    is why the line is drawn above it."""
+    leg(
+        tiers.hot / "reframe_g5",
+        started="2026-09-01T12:00:00Z",
+        locations=1607,
+        again=5549,
+        consumed=4536,
+        rows=[candidate("atom-old", "root-fired")],
+    )
+    out = launched(monkeypatch, tiers.hot.parent, [proven("root-fired"), proven("root-fresh")])
+    why = out.record["reprobe_because"]
+    assert out.record["reprobe"] is False
+    assert why["converged"] is False and why["clause"] is None
+    assert why["latest_leg"]["rediscovery"]["share"] == 0.7754
+    assert [seed.id for seed in out.fired] == ["root-fresh"], "the spent root is off the queue"
+    assert out.record["refused_already_fired"] == 1
+
+
+def test_a_short_leg_says_nothing_about_a_chain(tiers, monkeypatch) -> None:
+    """A leg that fired at nine seeds and found nothing new is not a measurement.
+    The leg the threshold was taken from consumed 576."""
+    leg(
+        tiers.hot / "reframe_g6",
+        started="2026-09-02T01:00:00Z",
+        locations=0,
+        again=9,
+        consumed=9,
+        rows=[candidate("atom-old", "root-fired")],
+    )
+    out = launched(monkeypatch, tiers.hot.parent, [proven("root-fired"), proven("root-fresh")])
+    assert out.record["reprobe"] is False
+    assert out.record["reprobe_because"]["latest_leg"] is None
+    assert "no saturation reading" in out.record["reprobe_because"]["because"]
+
+
+def test_an_empty_continuation_queue_re_probes_rather_than_refusing(tiers, monkeypatch) -> None:
+    """The other clause, and the one the flag's absence used to turn into a stop:
+    every proven root the chain got something from is off the queue and every
+    promotion is spent, so `no seed survives` was the whole of the leg."""
+    leg(
+        tiers.hot / "reframe_g6",
+        started="2026-09-02T01:00:00Z",
+        locations=2,
+        again=0,
+        consumed=2,
+        rows=[
+            candidate("atom-old", "root-fired"),
+            # The promotion the chain then fired at, so it is spent too. A
+            # promotion nobody fired at is a queue that is not yet empty.
+            candidate("atom-new", "atom-old", head_q4=False, fate="refused"),
+        ],
+    )
+    out = launched(monkeypatch, tiers.hot.parent, [proven("root-fired")])
+    why = out.record["reprobe_because"]
+    assert out.record["reprobe"] is True
+    assert why["clause"] == "exhausted"
+    assert why["continuation_queue"] == {"roots": 0, "promotions": 0}
+    assert [seed.id for seed in out.fired] == ["root-fired"]
+
+
+def test_the_flag_still_wins_and_what_the_ledgers_said_is_recorded_beside_it(
+    tiers, monkeypatch
+) -> None:
+    """`--no-reprobe` on a spent chain is a person overruling the reading, which
+    is allowed and is not silent: the run record carries both."""
+    spent_chain(tiers)
+    out = launched(
+        monkeypatch, tiers.hot.parent, [proven("root-fired"), proven("root-fresh")], reprobe=False
+    )
+    why = out.record["reprobe_because"]
+    assert out.record["reprobe"] is False
+    assert why["decided_by"] == "flag" and why["flag"] is False
+    assert why["converged"] is True, "the reading stands whatever the flag did with it"
+    assert [seed.id for seed in out.fired] == ["root-fresh"]
+
+
+def test_a_leg_that_already_passed_both_flags_correctly_fires_at_the_same_seeds(
+    tiers, monkeypatch
+) -> None:
+    """Neither default changes anything for the invocation that was already right.
+
+    The old correct spelling on a spent chain is every leg named and `--reprobe`
+    given; the new one is neither flag. They must hand the channel the identical
+    queue, or this change is a behaviour change wearing a default's clothes.
+    """
+    spent_chain(tiers)
+    roots = [proven("root-fired"), proven("root-fresh")]
+    named = [tiers.hot / "reframe_g5", tiers.hot / "reframe_g6"]
+    old = launched(monkeypatch, tiers.hot.parent, roots, prior=named, reprobe=True)
+    new = launched(monkeypatch, tiers.hot.parent, roots)
+    assert [seed.id for seed in old.fired] == [seed.id for seed in new.fired]
+    assert [seed.id for seed in old.carried] == [seed.id for seed in new.carried]
+    assert old.record["priors_seen"]["source"] == "named"
+    assert new.record["priors_seen"]["source"] == "discovered"
+    assert old.record["priors_seen"]["omitted"] == []
+    assert not any("WARNING" in line for line in old.lines)
+
+
+def test_naming_fewer_priors_than_the_ledgers_hold_warns_and_runs_anyway(
+    tiers, monkeypatch
+) -> None:
+    """A WARNING, never a refusal. The cost of the omission is real — 192 of one
+    leg's 302 rows — and it is still the caller's to pay."""
+    spent_chain(tiers)
+    out = launched(
+        monkeypatch,
+        tiers.hot.parent,
+        [proven("root-fired")],
+        prior=[tiers.hot / "reframe_g6"],
+        reprobe=True,
+    )
+    # A run directory, because that is what --prior takes and what the warning
+    # has to be pasteable into.
+    assert out.record["priors_seen"]["omitted"] == [f"{paths.ARTIFACTS_NAME}/reframe_g5"]
+    assert any("WARNING" in line and "reframe_g5" in line for line in out.lines)
+    assert out.fired, "the leg ran"
+
+
+def test_continuing_nothing_is_sayable_and_is_the_loudest_thing_a_leg_can_do(
+    tiers, monkeypatch
+) -> None:
+    """`--no-prior` is the first-leg-of-a-chain spelling. On a machine that
+    already holds legs it writes their nuclei a second time, so every one of them
+    is named in the warning."""
+    spent_chain(tiers)
+    out = launched(monkeypatch, tiers.hot.parent, [proven("root-fired")], prior=[])
+    assert out.record["reprobe"] is None, "nothing to continue is nothing to re-probe"
+    assert len(out.record["priors_seen"]["omitted"]) == 2
+    assert any("WARNING" in line for line in out.lines)
+    assert [seed.id for seed in out.fired] == ["root-fired"]

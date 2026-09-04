@@ -185,6 +185,11 @@ rather than a store, hiding one call deep inside production code rather than in 
 test — every merge test in `tests/test_ledger_tracking.py` pays 4.5-10 s of the same
 read today.
 
+It read **165.17 s over 3,420** at the reframe defaults, idle, 2026-09-03 —
+fifteen more tests than the reading below and **1.4% under** it. The thirteen new
+guards cost 1.4 s between them: they decide two defaults off ledgers that are two
+rows each in `tmp_path`, and neither reads a store. Nothing grew this session.
+
 It read **167.53 s over 3,405** at the spiral probe, idle, 2026-09-03 — nine more
 tests than the reading below and **1.8% under** it, taken right after the spiral
 store's first sitting landed: 500 verdicts, 472 KB of rows, and the store went
