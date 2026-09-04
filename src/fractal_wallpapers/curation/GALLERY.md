@@ -972,6 +972,36 @@ hundred and fifty thousand of them; a record carrying all of it would be some fo
 times the size of the one carrying the decisions. So the block is absent unless
 somebody asked for it, and it holds exactly the keys they asked about.
 
+#### A scratch driver asks the same two questions
+
+`solve.solve` takes both halves in the signature and **neither has a CLI surface**,
+which is deliberate: they are how a one-off read is taken without a subcommand, a
+stamp or a record on disk.
+
+* **`candidates=` is the pool view.** Unasked, `solve` calls `solve.pool()` itself;
+  handed a list, it seats over exactly that list and nothing else re-derives it. Any
+  filter of `pool()`'s own return is therefore a legal pool, and the useful one is
+  *the pool less one leg's rows, by merge stamp* — which makes the pair of solves a
+  **counterfactual** and is how to ask **what did leg X buy**. The bars, the rank key
+  and the neutral pre-selection all read the rows in hand, so the narrowed pass is a
+  whole pass and not a replay.
+* **`explain=` is `--explain-seats-of` without the earlier record.** It takes any set
+  of recipe keys and fills `rejection.explained` from them, in the same vocabulary:
+  `seated`, `not in the pool`, or the rule that refused it. The flag's population is
+  one gallery's seats; this is any handful of keys a driver is curious about.
+
+Both were used this way in `READ_rare_cells_yield_0904` and
+`READ_solve_bound_and_profile_0904`, and the first of the two is the evidence that
+the door is a controlled read rather than an approximation: the pool with a night's
+whole merge removed reproduced the tracked `20260904T080248Z` **key for key** at 941
+seats, and the unfiltered pool reproduced `20260904T134242Z` key for key at 947.
+
+**One caveat, and it bites exactly this read.** The leg is a greedy seed and local
+search, not an exact optimum, and it is **not monotone in its candidate set** — the
+same night's pool seated 947 with all of its rows and 952 with its `phoenix` rows
+held out. A smaller pool seating more is a fact about the pass this project runs and
+never a proof that rows can lower an optimum.
+
 ## `curate solve record` — a solve recorded under a stamp, and a browser over it
 
 ```
@@ -1373,7 +1403,11 @@ the bars, and not only in the `spiral` block it was in. `config` is what a
 tentative gallery's tracked `manifest.json` carries whole, and the `spiral` block
 is not tracked at all — so until this moved, a tracked gallery could not say
 whether it had run capped. A reader had to infer it from a zero in the refusal
-column, which is exactly what a cap that ran and did not bind also produces.
+column, which is exactly what a cap that ran and did not bind also produces. **A
+growth row carries it too**, copied off `config` onto every rung by `growth.py`, for
+the same reason at one remove: a ladder is a series taken over weeks, and a rung
+drawn after the ruling is not comparable with one drawn before it, so each says
+which it is rather than leaving a reader to date it.
 
 **The flag is the seating's, and `curate solve` has no equivalent.** There the cap is a
 *generated pairwise row* and never a counted one: `solve.Pairs.rule_for` asks a same-group

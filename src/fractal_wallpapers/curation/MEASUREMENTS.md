@@ -183,6 +183,14 @@ cell with.
   reader comparing a mode's floor across two galleries has to read the record's own
   `mode_floors` block** rather than reconstructing it from a weight, which was
   possible while the division was clean and is not any more.
+* **The dated reason the weight went to 0**, from `EVAL_exp_smoothing_0904`: over
+  914 paired seats rendered both ways at 640x360 ss2, **902 (98.7%)** sit under the
+  website's `SEAT_TOLERANCE = 6.0`, the judge's `P(>=4)` correlates at Pearson
+  **r 0.99729** with a mean delta of +0.0022, and the twelve pairs at or over the
+  tolerance are **eleven varied `phoenix` and one `mandelbrot`** — while
+  `phoenix:classic`, the pinned plane, is the *most* identical partition on the
+  record. The separation is varied `phoenix` specifically and not the mode, which
+  is why this was a standing ruling and not a bar.
 * The halves are fractional, so they are integerized by **largest remainder**, ties
   by weight then by name. That is deliberately *not* `supply.apportion`'s rule,
   which is largest-*deficit* sequencing and whose subject is every prefix of a batch
@@ -345,6 +353,53 @@ The flat control's realized cost brackets the census's estimate, which is a chec
 the census. But that estimate is **unconditioned**, and a census row for a thin colour
 cell is therefore not the cost of buying that colour — it is the cost of waiting for
 it. Nothing downstream of the census knows this.
+
+## What the aim bought in SEATS, measured overnight 2026-09-03/04
+
+The section above prices a **win** — a candidate dominant in the thin cell *and*
+clearing its mode's bar. `READ_rare_cells_yield_0904` priced the **seat**, and they
+are not the same question: the 19-50x lift on wins is real and most of it does not
+reach the gallery.
+
+**The read is a counterfactual solve and not an attribution.** BEFORE is the live
+pool with the night's whole 16,731-row merge removed by merge stamp, and it
+reproduces the tracked `20260904T080248Z` key for key at 941 seats; the live pool
+reproduces `20260904T134242Z` key for key at 947. Both columns are re-solves of that
+pair, run through the pool-view door under *A scratch driver asks the same two
+questions* in [`GALLERY.md`](GALLERY.md).
+
+**Seats per 1,000 engine seconds at n = 1000**, ALL column: **C near band 4.52 ·
+A aimed 1.02 · A2 aimed 0.70 · B flat control 0.58**. The near band — places
+adjacent to ones already clearing, aimed at nothing — is the best seat-buyer of the
+four by about **4x**, on the arm the mine report had called the wrong instrument. On
+matched clocks the aim beats its control 2.05x in seats and 4x in listed-cell seats,
+far more than the +14% the same night read off clearing rows alone.
+
+**The aim's advantage does not survive the rung.** At n = 2000 the two converge to
+**1.353 against 1.209** per 1,000 s, within 12%, and the aimed cells go the wrong way
+(net -7 against the unlisted cells' +18). At n = 1000, 35 of 48 cells sit at the
+allowance and the aimed cells are the only ones with room; at n = 2000 only 26 of 48
+are, nothing is capped, and the best rows win regardless of colour. **The whole
+measurable worth of conditioning the palette is an artefact of the rung.**
+
+Three standing figures the night settled, each of which outlives its report:
+
+* **Fresh places clear at about a quarter of the pool's rate** — 3.5-4.4% against the
+  ledger-wide 12.6%. Size any never-opened draw on the lower number.
+* **The near band is exhaustible and the aimed arms are not.** It spent its 88
+  places in **446 s of a 2,700 s cap** and had nothing left to draw; the instrument
+  is a queue, so a leg that means to lean on it prices the queue rather than the
+  clock.
+* **What stops the supply is the colour ceiling, decisively.** Of the 228 places the
+  night opened holding a clearing row, 49 seated and **157 (69%) were refused by
+  `cell_allowance`**; row-wise, of 731 clearing rows, 49 seated and 415 went the same
+  way. Not the bar, and not held places — the night touched 467 places and **all 467
+  were new**, so no row it made ever competed with an incumbent at its own location.
+
+**This is seats per engine second and belongs nowhere near the table below**, which
+is `s/cand` per engine. A seat is an outcome of the whole leg plus a solve; a
+candidate is one 640x360 ss2 render. Mixing them prices a mine off a gallery's
+scarcity.
 
 ## Every per-candidate rate this project has measured
 
