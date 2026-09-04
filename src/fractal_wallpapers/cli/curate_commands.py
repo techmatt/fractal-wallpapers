@@ -1219,6 +1219,11 @@ def curate_depth(args: argparse.Namespace) -> int:
             "floor_places": (
                 None if args.floor_places is None else depth.read_places(args.floor_places)
             ),
+            # `near_named` and not `near_places`: inside `build_plan` a parameter
+            # of the flag's own name would shadow the draw it narrows.
+            "near_named": (
+                None if args.near_places is None else depth.read_places(args.near_places)
+            ),
             "draw_maps": (None if args.draw_maps is None else depth.read_maps(args.draw_maps)),
             "draw_cells": args.draw_cells,
             "draw_cutoff": args.draw_cutoff,
@@ -3392,6 +3397,19 @@ def add_commands(subcommands) -> None:
         "narrows the floor draw alone, which is already the draw over opened, proven "
         "locations — and that is what a list somebody read off the ledger always is. Keys "
         "the opened pool does not hold are counted and named",
+    )
+    populations.add_argument(
+        "--near-places",
+        metavar="FILE",
+        help='a places MANIFEST — the same JSONL of {"schema": 1, "key": ...} rows '
+        "--floor-places takes — naming the locations the NEAR-BAND draw may stand on. "
+        "Unsaid, the draw takes every place whose best candidate in a roster mode sits "
+        "between the two bars, which is a population built out of the whole history of "
+        "this pool. Narrowing it is how a leg says `the places this night opened`: a "
+        "near-band pass over a place already at the retention keep is ranked out as it "
+        "lands, so an unnarrowed pass spends most of its clock on rows the merge drops. "
+        "A named place holding no candidate in a mode this run can afford is counted and "
+        "named, and a manifest leaving none is refused",
     )
     populations.add_argument(
         "--floor-seats",

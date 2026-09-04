@@ -247,6 +247,13 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+It read **119.30 s over 3,454, 114 deselected, nothing skipped** at the rare-cell mine,
+idle, 2026-09-04 — three tests more than the reading below, all three the guards on
+`curate depth --near-places`, and 2.5 s under it. Flat, and taken after four render
+legs and four merges had put 16,731 rows into the candidate ledger: the store grew
+8.6% and the lane did not move, which is the first reading that says so since the
+tier-root redirect took the ledger out of the lane's price.
+
 It read **121.82 s over 3,451, 114 deselected, nothing skipped** at the wrapup, idle,
 2026-09-04. Nine tests more than the reading below — five for the lane's own new
 reporting, one for the pool, three for the recorded gallery — and 0.23 s under it,
