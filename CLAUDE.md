@@ -161,9 +161,11 @@ here because this file is loaded into every session in this repository and a
 chronological log is not a rule. What stays here is the current figure and the rules
 the log produced.
 
-The fast lane is **165.85 s over the 3,437 it holds**, on this machine, idle,
-2026-09-04, at the spiral share cap. The slow lane's reading stands at **6:27** over
-3,388 tests and has not been re-run since the viewport sampler landed.
+The fast lane is **166.63 s over the 3,438 it holds** and the slow lane **7:14 over
+3,552**, on this machine, idle, 2026-09-04, at the `run_layout` extraction. The slow
+lane had not been re-run since the viewport sampler and its **6:27 over 3,388** is what
+this replaces: 12% more clock over 4.8% more tests, which is the per-test cost drifting
+up rather than holding, and the first slow figure in this file that was not inherited.
 
 **Its first reading that session was 300.7 s and the extra 135 s was a defect, not the
 box.** That run also failed `test_training_resume.py` on a CUDA OOM with six other

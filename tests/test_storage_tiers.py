@@ -40,7 +40,7 @@ import pytest
 from fractal_wallpapers import cli, paths, storage
 from fractal_wallpapers.curation import binding
 from fractal_wallpapers.curation import intake as curation_intake
-from fractal_wallpapers.curation import run as curation_run
+from fractal_wallpapers.curation import run_layout as curation_run_layout
 from fractal_wallpapers.discovery import scoring as discovery_scoring
 from fractal_wallpapers.models import decisions, palette_corpus, regime_flips, renders
 from fractal_wallpapers.models import tiles as tile_module
@@ -156,7 +156,7 @@ def test_every_consumer_follows_the_tiers(tiered):
         "location views": discovery_scoring.view_dir(),
         "renders": renders.cache_dir("smooth_render"),
         "curation": curation_intake.store_dir(),
-        "a curation run": curation_run.run_dir("r"),
+        "a curation run": curation_run_layout.run_dir("r"),
         "regime flips": regime_flips.study_dir(),
         # Both of these were a bare `Path("artifacts") / ...` until 2026-09-02 —
         # relative to the SHELL's working directory, so on a machine with a moved

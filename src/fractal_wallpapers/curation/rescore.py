@@ -60,8 +60,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from fractal_wallpapers import paths
-from fractal_wallpapers.curation import records
-from fractal_wallpapers.curation import run as run_module
+from fractal_wallpapers.curation import records, run_layout
 
 #: The block a re-read writes. Named for what it is rather than for when it was
 #: written: `scores` is the run's own reading and this is the live head's, and a
@@ -122,7 +121,7 @@ def picture_of(row: dict, pool: dict | None = None):
     in one pass's pool twice.
     """
     run, candidate = origin_of(row, pool)
-    return run_module.run_dir(run) / PICTURES / f"{candidate}.jpg"
+    return run_layout.run_dir(run) / PICTURES / f"{candidate}.jpg"
 
 
 @functools.cache

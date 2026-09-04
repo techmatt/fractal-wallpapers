@@ -23,8 +23,7 @@ import os
 from pathlib import Path
 
 from fractal_wallpapers.coloring import autolevel
-from fractal_wallpapers.curation import colorize, records, release
-from fractal_wallpapers.curation import run as run_module
+from fractal_wallpapers.curation import colorize, records, release, run_layout
 from fractal_wallpapers.paths import colormap_dir
 
 
@@ -58,7 +57,7 @@ def released_rows(run: str) -> list[dict]:
 #: not a parameter — so this is a **reading of the store as it stands** and not a
 #: default anything new relies on. A row written since carries its own.
 UNRECORDED_REGIME = release.Regime(
-    tuple(run_module.RELEASE_RESOLUTION), run_module.RELEASE_SUPERSAMPLE
+    tuple(run_layout.RELEASE_RESOLUTION), run_layout.RELEASE_SUPERSAMPLE
 )
 
 
@@ -100,7 +99,7 @@ def tasks_of(run: str, rows: list[dict], directory: Path) -> list[release.Task]:
 
 def parity(run: str, rows: int = 2, workers: int = release.DEFAULT_WORKERS, log=print) -> dict:
     """Render a prefix of a real release plan serially and concurrently, and compare."""
-    directory = run_module.run_dir(run) / "parity"
+    directory = run_layout.run_dir(run) / "parity"
     plan = tasks_of(run, released_rows(run)[: max(1, int(rows))], directory)
     log(f"[parity] {len(plan)} row(s) of run {run}, both ways, into {directory}")
     return release.parity(plan, workers, directory, log)
@@ -119,7 +118,7 @@ def replay(run: str, log=print) -> dict:
       rebuilt from it with no image and no re-measurement, and the render through
       those stops must be identical.
     """
-    directory = run_module.run_dir(run) / "replay"
+    directory = run_layout.run_dir(run) / "replay"
     directory.mkdir(parents=True, exist_ok=True)
     from fractal_wallpapers import engine
     from fractal_wallpapers.models import palette_sets, renders
@@ -129,7 +128,7 @@ def replay(run: str, log=print) -> dict:
     out = []
     for row in released_rows(run):
         identifier = row["candidate"]
-        shipped = run_module.run_dir(run) / "release" / f"{identifier}.png"
+        shipped = run_layout.run_dir(run) / "release" / f"{identifier}.png"
         if not shipped.is_file():
             out.append({"candidate": identifier, "verdict": "NO_PICTURE"})
             continue
@@ -195,7 +194,7 @@ def replay(run: str, log=print) -> dict:
 
 
 def _stamps(run: str) -> dict:
-    path = run_module.run_dir(run) / "release" / "autolevel_stamps.jsonl"
+    path = run_layout.run_dir(run) / "release" / "autolevel_stamps.jsonl"
     if not path.is_file():
         return {}
     return {

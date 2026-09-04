@@ -108,7 +108,7 @@ def test_the_sheet_is_one_self_contained_file_that_says_what_it_dropped(
     in an ignored tree would arrive empty — and a page that held twenty of
     twenty-one rows without saying so could not be checked against the store."""
     records.use(tmp_path)
-    monkeypatch.setattr(below_bar.run_module, "run_dir", lambda run: tmp_path / run)
+    monkeypatch.setattr(below_bar.run_layout, "run_dir", lambda run: tmp_path / run)
     records.write_decisions(
         records.RELEASE, "whenever", [released("0000", UNDER), released("0001", UNDER - 0.1)]
     )

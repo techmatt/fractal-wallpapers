@@ -2084,10 +2084,9 @@ def sources() -> list[dict]:
 
 def _picture_of(source: dict) -> Path:
     """Where one row's own candidate render is, whether or not it is still there."""
-    from fractal_wallpapers.curation import rescore
-    from fractal_wallpapers.curation import run as run_module
+    from fractal_wallpapers.curation import rescore, run_layout
 
-    return run_module.run_dir(str(source["run"])) / rescore.PICTURES / f"{source['candidate']}.jpg"
+    return run_layout.run_dir(str(source["run"])) / rescore.PICTURES / f"{source['candidate']}.jpg"
 
 
 #: Which stage of a decision row is preferred as a render's own record where the
