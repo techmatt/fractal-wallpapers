@@ -407,7 +407,7 @@ def durable():
     tens of megabytes against a 1 MiB per-file history guard.
 
     Unlike every other durable here it is **append-only**, which is what makes
-    [`durability.guard`] worth extending to it: a shorter file is always a loss
+    [`durables.guard`] worth extending to it: a shorter file is always a loss
     and never an ordinary state.
     """
     from fractal_wallpapers.curation import durability

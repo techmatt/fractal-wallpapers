@@ -83,7 +83,7 @@ from pathlib import Path
 from fractal_wallpapers.curation import (
     binding,
     colorize,
-    durability,
+    durables,
     floors,
     intake,
     pacing,
@@ -175,8 +175,8 @@ def curate(
     # Before the run directory, before the plan, before a head is loaded: the
     # supply sidecar is the one input here that no later step could recover, and
     # a run that started without it would print a funnel over a supply that had
-    # silently shrunk. See [`durability.guard`].
-    durability.guard(log)
+    # silently shrunk. See [`durables.guard`].
+    durables.guard(log)
     clock = pacing.Clock(wall_budget, ceilings=ceilings)
     directory = run_dir(run)
     directory.mkdir(parents=True, exist_ok=True)

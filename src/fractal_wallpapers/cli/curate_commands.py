@@ -41,12 +41,13 @@ def curate_score(args: argparse.Namespace) -> int:
 
 def curate_sidecar(args: argparse.Namespace) -> int:
     """Record, check or restore the supply sidecar against its tracked manifest."""
-    from fractal_wallpapers.curation import durability
+    from fractal_wallpapers.curation import durability, durables
 
+    durable = durables.sidecar()
     doing = {
-        "save": lambda: durability.save(),
-        "check": lambda: durability.check(),
-        "restore": lambda: durability.restore(force=args.force),
+        "save": lambda: durability.save(durable),
+        "check": lambda: durability.check(durable),
+        "restore": lambda: durability.restore(durable, force=args.force),
     }[args.what]
     try:
         report = doing()

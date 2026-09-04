@@ -14,7 +14,7 @@ import json
 
 import pytest
 
-from fractal_wallpapers.curation import durability
+from fractal_wallpapers.curation import durability, durables
 
 ROW = {
     "schema": 1,
@@ -34,9 +34,9 @@ def sidecar(tmp_path, monkeypatch):
     copy = tmp_path / "cold" / durability.BACKUP_UNIT / "supply_scores.jsonl"
     manifest = tmp_path / "supply_scores.manifest.json"
     live.parent.mkdir(parents=True)
-    monkeypatch.setattr(durability, "sidecar_path", lambda: live)
-    monkeypatch.setattr(durability, "backup_path", lambda: copy)
-    monkeypatch.setattr(durability, "manifest_path", lambda: manifest)
+    monkeypatch.setattr(durables, "sidecar_path", lambda: live)
+    monkeypatch.setattr(durables, "backup_path", lambda: copy)
+    monkeypatch.setattr(durables, "manifest_path", lambda: manifest)
     # `restore` and `check` re-address the copy through `rehome`, which knows
     # nothing about a temporary tree; the fallback is `backup_path`, which is
     # what this fixture has already redirected.
@@ -77,9 +77,7 @@ def guarded(sidecar, tmp_path, monkeypatch):
         restore_command="fractal-wallpapers curate frames restore",
         rebuild_command="there is no rebuild — restore the copy",
     )
-    monkeypatch.setattr(
-        durability, "guarded", lambda: (durability.sidecar(), durable, index_durable)
-    )
+    monkeypatch.setattr(durables, "guarded", lambda: (durables.sidecar(), durable, index_durable))
     return live, amendment, durable, index, index_durable
 
 
@@ -97,7 +95,7 @@ def test_the_manifest_carries_the_count_the_hash_and_the_per_ledger_split(sideca
     live, copy, manifest = sidecar
     write_rows(live, 40)
 
-    record = durability.save(when="2026-01-01", log=lambda *_: None)
+    record = durability.save(durables.sidecar(), when="2026-01-01", log=lambda *_: None)
 
     assert record["rows"] == 40
     assert record["bytes"] == live.stat().st_size
@@ -116,7 +114,7 @@ def test_the_copy_is_a_copy_and_not_a_tier_move(sidecar) -> None:
     live, copy, _ = sidecar
     write_rows(live, 12)
 
-    durability.save(log=lambda *_: None)
+    durability.save(durables.sidecar(), log=lambda *_: None)
 
     assert live.is_file() and copy.is_file()
     assert live.read_bytes() == copy.read_bytes()
@@ -132,22 +130,22 @@ def test_a_scored_harvest_reads_as_grown_rather_than_as_a_fault(sidecar) -> None
     to ignore the one report that matters."""
     live, _, _ = sidecar
     write_rows(live, 10)
-    durability.save(log=lambda *_: None)
+    durability.save(durables.sidecar(), log=lambda *_: None)
     write_rows(live, 25)
 
-    assert durability.check(log=lambda *_: None)["verdict"] == "grown"
+    assert durability.check(durables.sidecar(), log=lambda *_: None)["verdict"] == "grown"
 
 
 def test_a_shorter_sidecar_reads_short_and_a_deleted_one_reads_missing(sidecar) -> None:
     live, _, _ = sidecar
     write_rows(live, 30)
-    durability.save(log=lambda *_: None)
+    durability.save(durables.sidecar(), log=lambda *_: None)
 
     write_rows(live, 4)
-    assert durability.check(log=lambda *_: None)["verdict"] == "short"
+    assert durability.check(durables.sidecar(), log=lambda *_: None)["verdict"] == "short"
 
     live.unlink()
-    assert durability.check(log=lambda *_: None)["verdict"] == "missing"
+    assert durability.check(durables.sidecar(), log=lambda *_: None)["verdict"] == "missing"
 
 
 def test_the_same_count_over_different_bytes_is_changed_and_not_ok(sidecar) -> None:
@@ -155,10 +153,10 @@ def test_the_same_count_over_different_bytes_is_changed_and_not_ok(sidecar) -> N
     the hash can, which is why both are on the manifest."""
     live, _, _ = sidecar
     write_rows(live, 16)
-    durability.save(log=lambda *_: None)
+    durability.save(durables.sidecar(), log=lambda *_: None)
     write_rows(live, 16, salt="x")
 
-    assert durability.check(log=lambda *_: None)["verdict"] == "changed"
+    assert durability.check(durables.sidecar(), log=lambda *_: None)["verdict"] == "changed"
 
 
 # --------------------------------------------------------------------------- #
@@ -167,12 +165,12 @@ def test_the_same_count_over_different_bytes_is_changed_and_not_ok(sidecar) -> N
 def test_restore_refuses_a_copy_that_is_not_what_the_manifest_says(sidecar) -> None:
     live, copy, _ = sidecar
     write_rows(live, 20)
-    durability.save(log=lambda *_: None)
+    durability.save(durables.sidecar(), log=lambda *_: None)
     write_rows(copy, 3)
     live.unlink()
 
     with pytest.raises(durability.DurableLost, match="Nothing was written"):
-        durability.restore(log=lambda *_: None)
+        durability.restore(durables.sidecar(), log=lambda *_: None)
     assert not live.exists()
 
 
@@ -183,25 +181,25 @@ def test_restore_refuses_to_overwrite_a_live_file_that_is_ahead_of_the_manifest(
     would delete exactly the rows the manifest exists to protect."""
     live, _, _ = sidecar
     write_rows(live, 10)
-    durability.save(log=lambda *_: None)
+    durability.save(durables.sidecar(), log=lambda *_: None)
     write_rows(live, 60)
 
     with pytest.raises(durability.DurableLost, match="AHEAD"):
-        durability.restore(log=lambda *_: None)
+        durability.restore(durables.sidecar(), log=lambda *_: None)
     assert durability.count_rows(live) == 60
 
-    durability.restore(force=True, log=lambda *_: None)
+    durability.restore(durables.sidecar(), force=True, log=lambda *_: None)
     assert durability.count_rows(live) == 10
 
 
 def test_a_verified_copy_comes_back_byte_for_byte(sidecar) -> None:
     live, _, _ = sidecar
     write_rows(live, 44)
-    record = durability.save(log=lambda *_: None)
+    record = durability.save(durables.sidecar(), log=lambda *_: None)
     before = live.read_bytes()
     live.unlink()
 
-    back = durability.restore(log=lambda *_: None)
+    back = durability.restore(durables.sidecar(), log=lambda *_: None)
 
     assert back["sha256"] == record["sha256"]
     assert live.read_bytes() == before
@@ -215,17 +213,17 @@ def test_the_guard_refuses_a_missing_or_shortened_sidecar_and_names_the_way_back
 ) -> None:
     live, *_ = guarded
     write_rows(live, 50)
-    durability.save(log=lambda *_: None)
+    durability.save(durables.sidecar(), log=lambda *_: None)
 
-    assert durability.guard(log=lambda *_: None)["sidecar"]["verdict"] == "ok"
+    assert durables.guard(log=lambda *_: None)["sidecar"]["verdict"] == "ok"
 
     write_rows(live, 49)
     with pytest.raises(durability.DurableLost, match="curate sidecar restore"):
-        durability.guard(log=lambda *_: None)
+        durables.guard(log=lambda *_: None)
 
     live.unlink()
     with pytest.raises(durability.DurableLost, match="curate sidecar restore"):
-        durability.guard(log=lambda *_: None)
+        durables.guard(log=lambda *_: None)
 
 
 def test_the_guard_refuses_a_shortened_amendment_too(guarded) -> None:
@@ -235,22 +233,22 @@ def test_the_guard_refuses_a_shortened_amendment_too(guarded) -> None:
     corrected. So it refuses on the same rule and names its own way back."""
     live, amendment, durable, _, _ = guarded
     write_rows(live, 50)
-    durability.save(log=lambda *_: None)
+    durability.save(durables.sidecar(), log=lambda *_: None)
     write_rows(amendment, 40)
     durability.save(durable, log=lambda *_: None)
 
-    verdicts = durability.guard(log=lambda *_: None)
+    verdicts = durables.guard(log=lambda *_: None)
     assert verdicts["sidecar"]["verdict"] == "ok"
     assert verdicts["amendment"] == {"verdict": "ok", "rows": 40, "recorded": 40}
 
     # Append-only, so shorter is always a loss and never an ordinary state.
     write_rows(amendment, 39)
     with pytest.raises(durability.DurableLost, match="curate amendments restore"):
-        durability.guard(log=lambda *_: None)
+        durables.guard(log=lambda *_: None)
 
     amendment.unlink()
     with pytest.raises(durability.DurableLost, match="curate redraw"):
-        durability.guard(log=lambda *_: None)
+        durables.guard(log=lambda *_: None)
 
 
 def test_a_grown_amendment_is_the_ordinary_state_and_passes(guarded) -> None:
@@ -258,12 +256,12 @@ def test_a_grown_amendment_is_the_ordinary_state_and_passes(guarded) -> None:
     guard that refused there would refuse the run after every refresh."""
     live, amendment, durable, _, _ = guarded
     write_rows(live, 50)
-    durability.save(log=lambda *_: None)
+    durability.save(durables.sidecar(), log=lambda *_: None)
     write_rows(amendment, 40)
     durability.save(durable, log=lambda *_: None)
     write_rows(amendment, 44)
 
-    assert durability.guard(log=lambda *_: None)["amendment"]["rows"] == 44
+    assert durables.guard(log=lambda *_: None)["amendment"]["rows"] == 44
 
 
 def test_the_guard_is_silent_where_nothing_has_recorded_the_files(guarded) -> None:
@@ -276,11 +274,11 @@ def test_the_guard_is_silent_where_nothing_has_recorded_the_files(guarded) -> No
         "frames": {"verdict": "unrecorded"},
     }
 
-    assert durability.guard(log=lambda *_: None) == unrecorded
+    assert durables.guard(log=lambda *_: None) == unrecorded
     write_rows(live, 1)
     write_rows(amendment, 1)
     write_rows(index, 1)
-    assert durability.guard(log=lambda *_: None) == unrecorded
+    assert durables.guard(log=lambda *_: None) == unrecorded
 
 
 def test_the_guard_refuses_a_shortened_frame_index_and_offers_no_rebuild(guarded) -> None:
@@ -293,11 +291,11 @@ def test_the_guard_refuses_a_shortened_frame_index_and_offers_no_rebuild(guarded
     that would refuse."""
     live, _, _, index, index_durable = guarded
     write_rows(live, 50)
-    durability.save(log=lambda *_: None)
+    durability.save(durables.sidecar(), log=lambda *_: None)
     write_rows(index, 30)
     durability.save(index_durable, log=lambda *_: None)
 
-    assert durability.guard(log=lambda *_: None)["frames"] == {
+    assert durables.guard(log=lambda *_: None)["frames"] == {
         "verdict": "ok",
         "rows": 30,
         "recorded": 30,
@@ -305,11 +303,11 @@ def test_the_guard_refuses_a_shortened_frame_index_and_offers_no_rebuild(guarded
 
     write_rows(index, 29)
     with pytest.raises(durability.DurableLost, match="curate frames restore"):
-        durability.guard(log=lambda *_: None)
+        durables.guard(log=lambda *_: None)
 
     index.unlink()
     with pytest.raises(durability.DurableLost, match="there is no rebuild"):
-        durability.guard(log=lambda *_: None)
+        durables.guard(log=lambda *_: None)
 
 
 def test_the_guarded_list_is_the_supply_the_amendment_and_the_frame_index() -> None:
@@ -321,9 +319,9 @@ def test_the_guarded_list_is_the_supply_the_amendment_and_the_frame_index() -> N
     on frames nobody refined."""
     from fractal_wallpapers.curation import amend, hunt
 
-    named = [durable.live.name for durable in durability.guarded()]
-    assert named == [durability.SIDECAR_NAME, amend.AMENDMENTS_NAME, hunt.FRAMES_NAME]
-    assert len(durability.GUARD_TAGS) == len(named)
+    named = [durable.live.name for durable in durables.guarded()]
+    assert named == [durables.SIDECAR_NAME, amend.AMENDMENTS_NAME, hunt.FRAMES_NAME]
+    assert len(durables.GUARD_TAGS) == len(named)
 
 
 def test_a_run_asks_the_guard_before_it_writes_a_plan(tmp_path, monkeypatch) -> None:
@@ -334,7 +332,7 @@ def test_a_run_asks_the_guard_before_it_writes_a_plan(tmp_path, monkeypatch) -> 
     def refuse(log=print):
         raise durability.DurableLost("gone")
 
-    monkeypatch.setattr(run_module.durability, "guard", refuse)
+    monkeypatch.setattr(run_module.durables, "guard", refuse)
     monkeypatch.setattr(run_module, "run_dir", lambda run: tmp_path / "runs" / run)
 
     with pytest.raises(durability.DurableLost):
@@ -346,7 +344,7 @@ def test_a_run_asks_the_guard_before_it_writes_a_plan(tmp_path, monkeypatch) -> 
 # The tracked records, against the tree they describe.
 # --------------------------------------------------------------------------- #
 def test_the_tracked_manifest_describes_a_sidecar_and_names_a_copy() -> None:
-    record = durability.read_manifest()
+    record = durability.read_manifest(durables.sidecar())
     if record is None:
         pytest.skip("no sidecar has been recorded in this checkout")
     assert record["path"].startswith("artifacts/")
