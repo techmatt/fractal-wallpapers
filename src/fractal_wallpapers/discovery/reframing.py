@@ -42,7 +42,7 @@ would count one find nine times in every book downstream. So every rung is
 drawn, every one is scored, every reading is on the row, and the location's own
 score is the rung the head picked. The rungs are **offered directly** rather
 than walked to, because the built refinement moves x1.414 a step
-([`curation.framing.WIDTH_LADDER`]) and cannot reach 128x from 8x in anything a
+([`curation.framing.WIDTH_LADDER`]) and cannot reach 256x from 16x in anything a
 window that size can express.
 
 **A nucleus location is `centered`.** The centre is the atom the operators
@@ -69,8 +69,8 @@ Measured body width of eleven ring-seeded atoms at 1280 px
 28-45 px at 64x. The band that reads as *a minibrot with detail around it* is
 50-100 px, which is the 32x rung; the walk's widest rung, 16x, is a factor of two
 too tight, and 48x and 64x sit below the band at roughly 38-61 px and 28-45 px.
-Scaled along the same measurement the ends land at 230-366 px (8x), 153-244 (12x),
-19-30 (96x) and 14-23 (128x).
+Scaled along the same measurement the outer rungs land at 19-30 px (96x), 14-23
+(128x), 10-15 (192x) and 7-11 (256x).
 
 The band was a prediction and the ladder is the measurement of it. Generation 1
 drew 16x, 24x and 32x on all 792 of its nuclei and the head-q4 rate rose monotone
@@ -85,29 +85,60 @@ and answered with the widest or narrowest width it was offered. What extending a
 ladder does about that is already on the record: under the three-rung ladder the
 outermost rung took **30.6%** of picks, and adding 48x and 64x did not drain that
 pile, it *moved* it — 32x settled to 23.0% and the new outer end took 19.8%. So
-the ladder carries two more rungs at each end at its own alternating step (x1.5,
-x1.333), and the honest claim for them is dilution and reach rather than a cure:
-37.3% of picks sat on an end at five rungs and about 22% will at nine. Every
-rung is drawn, scored and on the row either way, and [`Channel.summary`]'s
-`ends` block is where the next leg reads whether the new rungs took picks off
-the old ends.
+the ladder went to nine on 2026-09-01 by carrying two more rungs at each end at
+its own alternating step (x1.5, x1.333) — `{8, 12}` doubled four times — and the
+honest claim for them was dilution and reach rather than a cure: 37.3% of picks
+sat on an end at five rungs and about 22% would at nine. Every rung is drawn,
+scored and on the row either way, and [`Channel.summary`]'s `ends` block is where
+the next leg reads whether the new rungs took picks off the old ends.
 
-**8x is the inner stop.** The 2x frame is 50-75% interior and is refused outright
-by the walk's own `interior_cap`, and 4x is the walk's "is this atom any good"
-frame — a question this channel is not asking. 8x is neither: the body lands at
-230-366 px of 1280, which is 3-8% interior against a 30% cap.
+**Read on 2026-09-04, and the two ends answered differently, so the ladder moved
+outward rather than growing again.** Over `reframe_g7`'s 488 picks the old ends
+took 21.1% against 37.3 / 37.3 / 37.8% on the five-rung legs, so the extension
+did drain them. But the picks ran 2.7 / 4.9 / 9.4 / 12.9 / 13.1 / 10.9 / 11.7 /
+13.9 / **20.5%** outward from 8x: the inner end bought nothing at all — 8x took
+13 picks and **no** head-q4, 12x took 24 and two — while 128x was the single most
+picked rung and carried 50 of the 128 head-q4 (39%). Nine rungs stay nine: 8x and
+12x came off, 192x and 256x went on, and the ladder is now `{16, 24}` doubled
+four times at the same alternating step.
 
-**128x is the outer stop, and it is a judgement rather than a guard.** Nothing in
-the battery refuses it — a framing is refused as `width_over_root_scale` only past
-[`operators.MAX_WIDTH`], and over 6,590 nucleus rows the largest atom seen has a
-window scale of 8.5e-3, so the first rung that guard would refuse is **352x**.
-What stops the ladder at 128x is that the body is 14-23 px there: past it the
-picture is a speck in a field and stops being a minibrot frame at all.
+**16x is the inner stop, and unlike 8x it is one the ladder has measured.** 8x
+was neither the walk's 2x frame, which is 50-75% interior and refused outright by
+`interior_cap`, nor its 4x "is this atom any good" frame — it was offerable and
+it was drawn, and the head simply never wanted it. What stops the ladder at 16x
+is that reading and not a guard: the two rungs below it were paid for over 488
+picks and returned two head-q4 between them.
 
-What does bite, at the other end, is the f64 spacing wall on the deepest atoms —
-8x is offerable on 99.7% of those 6,590 rows and 12x on 99.8%, against 99.8% for
-16x itself. A rung the wall refuses is simply not drawn for that nucleus, which
-is what the ladder already did before it was extended.
+**256x is the outer stop, and `reframe_g8` is the first leg to find the head
+turning over before it.** Head-q4 as a share of what was drawn had risen at every
+rung the ladder ever offered — 2.5 / 3.3 / 5.8 / 6.0 / 6.4 / 8.8 / **10.2%**
+outward to 128x on the nine-rung leg before it. Over 251 locations it now reads
+1.6 / 3.6 / 4.4 / 8.0 / 6.4 / 8.4 / 8.8 / **9.6** / 8.8%: it peaks at **192x** and
+falls at 256x, which is the first turnover in this chain's history and the honest
+place to stop.
+
+A guard is also in sight for the first time. A framing is refused as
+`width_over_root_scale` only past [`operators.MAX_WIDTH`], and over 6,590 nucleus
+rows the largest atom seen has a window scale of 8.5e-3, so the first rung that
+guard would refuse is **352x**. At 128x that was a factor of 2.8 of headroom; at
+256x it is **1.38**, so the ladder cannot be doubled again whatever the pictures
+say, and it has never fired.
+
+**And the pictures are not what the 14-23 px reading feared.** Every one of the 27
+head-q4 picks at the two new rungs has the atom's interior at the centre of its
+frame — none is a filament frame — and the bodies measure **8-16 px at 192x and
+6-11 px at 256x** of a 1280 px frame, which is the scaling of the eleven-atom
+measurement holding to within a pixel. A minibrot at seven pixels is a speck in a
+field, and it is still a minibrot; what the ladder is now buying at its outer end
+is a subject the *location* head likes and nothing has yet asked a person about.
+
+The f64 spacing wall bit at the other end, and the drop takes the ladder out of
+its reach: 8x was offerable on 99.7% of those 6,590 rows and 12x on 99.8%,
+against 99.8% for 16x itself. A rung the wall refuses is simply not drawn for
+that nucleus, and the new rungs are the *most* offerable the ladder has — 192x
+and 256x were drawn on all 251 of that leg's nuclei where 16x and 24x reached
+248. What rises outward instead is the gate's own refusal rate, 242 of 248
+surviving at 16x against 228 of 251 at 256x.
 
 ## What is priced, and against what
 
@@ -190,22 +221,26 @@ SUMMARY_KIND = "reframing_summary"
 #: half an octave cannot turn 8x into 128x however many times it fires.
 #:
 #: The step alternates x1.5 and x1.333 and the ends continue it rather than
-#: inventing a spacing — the whole ladder is `{8, 12}` doubled four times. `8`
-#: and `12` came in below and `96` and `128` above because the five-rung ladder
-#: put **37.3%** of its picks on an end, and an end pick is the head saying it
-#: wanted a width it was never offered. It does not cure that: a near-flat pick
-#: over `k` rungs leaves `2/k` on the ends, so nine rungs buys about 22% and the
-#: widths themselves. [`ENDS_READOUT`] is what says whether it bought them.
-RUNGS: tuple[float, ...] = (8.0, 12.0, 16.0, 24.0, 32.0, 48.0, 64.0, 96.0, 128.0)
+#: inventing a spacing — the whole ladder is `{16, 24}` doubled four times. It
+#: was `{8, 12}` doubled four times until 2026-09-04, when the two inner rungs
+#: came off and `192` and `256` went on: over 488 picks 8x and 12x took 37
+#: between them and returned two head-q4, while the outer end took the most of
+#: both. A near-flat pick over `k` rungs leaves `2/k` on the ends whatever the
+#: rungs are, so nine rungs buys about 22% and the widths themselves —
+#: [`ENDS_READOUT`] is what says whether it bought them.
+RUNGS: tuple[float, ...] = (16.0, 24.0, 32.0, 48.0, 64.0, 96.0, 128.0, 192.0, 256.0)
 
-#: How many rungs at each end of [`RUNGS`] were added by the extension, so the
+#: How many rungs [`RUNGS`] gained at its inner end and at its outer end, so the
 #: `ends` readout can name the new ends and the old ones apart without a second
 #: copy of the ladder's history living in a caller.
 #:
-#: A number rather than the old ladder spelled out again: what the readout asks
-#: is "did the pile move off the ends it was on", and that question is about
-#: position in the ladder rather than about the values 16 and 64.
-ENDS_READOUT = 2
+#: A pair rather than a number because the ladder stopped growing symmetrically:
+#: the 2026-09-01 extension added two at each end and this was `2`, and the
+#: 2026-09-04 move added two at the outer end and **removed** two at the inner,
+#: which is `(0, 2)`. Counts rather than the old ladder spelled out again: what
+#: the readout asks is "did the pile move off the ends it was on", and that is a
+#: question about position in the ladder rather than about the values 16 and 128.
+ENDS_READOUT: tuple[int, int] = (0, 2)
 
 #: What a nucleus location's row says about its centre, and the contract
 #: [`curation.framing`] honours: the centre is the atom the operators solved for,
@@ -1213,28 +1248,36 @@ def by_source(seeds_: list[Seed]) -> dict:
     return {source: counts[source] for source in sorted(counts, key=priority_of)}
 
 
-def end_picks(picked: dict, ladder, added: int = ENDS_READOUT) -> dict:
+def end_picks(picked: dict, ladder, added: tuple[int, int] = ENDS_READOUT) -> dict:
     """Where a leg's picks landed relative to the ladder's ends.
 
-    `picked` is `{rung: count}` and `ladder` is the ladder that was offered. The
-    block splits the picks three ways — the `added` outermost and innermost rungs
-    at each end, the two rungs that were the ends before they arrived, and
-    everything strictly inside — because that is the one comparison that says
-    whether extending the ladder bought anything.
+    `picked` is `{rung: count}` and `ladder` is the ladder that was offered.
+    `added` is `(inner, outer)`: how many rungs the ladder gained at each end.
+    The block splits the picks three ways — those new rungs, the two rungs the
+    pile could pile on before they arrived, and everything strictly inside —
+    because that is the one comparison that says whether the move bought
+    anything.
 
     **A pick on a new end is not the failure an old-end pick was.** The old ends
     were the ladder's whole reach, so a pick there was the head asking for a width
     it could not be offered; a new end is a width that had never been drawn. What
     the shares answer is whether the pile moved off the old ends or merely moved
-    outward with them, which is what happened the last time this ladder grew.
+    outward with them, which is what happened the first time this ladder grew.
 
-    `added` rungs off each end of a ladder shorter than `2 * added + 2` would
-    overlap, so the split degrades to new-ends-and-interior rather than
+    `old_ends` is *the rungs that are ends no longer*, which is not the same as
+    "the rungs that were there before": the 2026-09-04 move dropped 8x and 12x, so
+    16x becomes an end by deletion rather than by anything being added under it,
+    and it is read here beside 128x for exactly that reason — both are rungs the
+    pile is now free to pile on and was not, or was, before.
+
+    `added` rungs off each end of a ladder too short to hold them and an interior
+    would overlap, so the split degrades to new-ends-and-interior rather than
     double-counting a rung into two buckets.
     """
+    inner, outer = added
     rungs = sorted(float(rung) for rung in ladder)
     total = sum(picked.values())
-    new_ends = set(rungs[:added]) | set(rungs[-added:] if added else [])
+    new_ends = set(rungs[:inner]) | set(rungs[len(rungs) - outer :] if outer else [])
     rest = [rung for rung in rungs if rung not in new_ends]
     old_ends = {rest[0], rest[-1]} if rest else set()
     buckets = {

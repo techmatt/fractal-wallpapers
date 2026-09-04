@@ -286,14 +286,15 @@ def test_the_head_picks_the_rung_and_the_row_says_which(tmp_path, monkeypatch) -
 # --------------------------------------------------------------------------- #
 # 4. The rung set.
 # --------------------------------------------------------------------------- #
-def test_the_rung_set_is_eight_to_one_hundred_and_twenty_eight_atom_sizes() -> None:
+def test_the_rung_set_is_sixteen_to_two_hundred_and_fifty_six_atom_sizes() -> None:
     """The band that reads as a minibrot with detail around it is 50-100 px of
-    body at 1280, which is the 32x rung, and the ladder brackets it four rungs
-    either side. The ends are where the extension went: over 5,773 locations the
-    five-rung ladder's pick came back near-flat — 17.5 / 22.2 / 23.0 / 17.5 /
-    19.8% — which puts 37.3% of picks on a rung that was the ladder's own reach
-    rather than the head's answer."""
-    assert reframing.RUNGS == (8.0, 12.0, 16.0, 24.0, 32.0, 48.0, 64.0, 96.0, 128.0)
+    body at 1280, which is the 32x rung, and the ladder brackets it two rungs
+    below and six above. It is not centred on that band because the head does not
+    want it to be: over `reframe_g7`'s 488 picks the two rungs below 16x took 37
+    between them and returned two head-q4, while the outermost rung took the most
+    picks and the most head-q4 of any. So the ladder stayed nine rungs long and
+    moved outward — 8x and 12x off, 192x and 256x on."""
+    assert reframing.RUNGS == (16.0, 24.0, 32.0, 48.0, 64.0, 96.0, 128.0, 192.0, 256.0)
 
 
 def test_the_ladder_ends_continue_its_own_step_rather_than_inventing_one() -> None:
@@ -308,12 +309,13 @@ def test_the_ladder_ends_continue_its_own_step_rather_than_inventing_one() -> No
 
 
 def test_the_inner_end_stops_above_the_walks_own_question() -> None:
-    """8x is the inner stop and the reason is not the same as 16x's used to be.
+    """16x is the inner stop and no guard is what puts it there.
 
     2x is 50-75% interior and the walk's `interior_cap` refuses it outright; 4x is
     the walk's "is this atom any good" frame and this channel is not asking that.
-    8x is neither — the body lands at 230-366 px of 1280, 3-8% interior against a
-    30% cap — so the guard that made "nothing below 16x" true was never about 8x.
+    8x was neither — it was offerable, it was drawn on a whole leg, and the head
+    did not want it — so what stops the ladder here is that reading and not a
+    guard, and the inner rung still has to clear the walk's own question.
     """
     from fractal_wallpapers.discovery import walk
 
@@ -324,18 +326,24 @@ def test_the_inner_end_stops_above_the_walks_own_question() -> None:
     assert 0.55 * (widest_body_px / 1280.0) ** 2 * (1280.0 / 720.0) < walk.Gates.interior_cap
 
 
-def test_the_outer_end_is_a_judgement_and_not_a_guard() -> None:
-    """Nothing in the battery refuses 128x on any atom this channel has seen.
+def test_the_outer_end_is_a_judgement_with_a_guard_now_in_sight() -> None:
+    """Nothing in the battery refuses 256x on any atom this channel has seen — but
+    the room to say that again has mostly been spent.
 
     `width_over_root_scale` fires past `operators.MAX_WIDTH`, and the largest atom
-    over 6,590 nucleus rows has a window scale of 8.5e-3 — so the first rung that
-    guard would refuse is 352x, not 48x. What stops the ladder at 128x is that the
-    body is 14-23 px there. A guard is not doing this and the docstring must not
-    claim one is.
+    over 6,590 nucleus rows has a window scale of 8.5e-3, so the first rung that
+    guard would refuse is 352x. At 128x that was 2.8x of headroom and the stop was
+    a judgement alone; at 256x it is 1.38x, so this ladder cannot be doubled again
+    and the next extension is a question about the guard rather than about the
+    picture. The pin is the margin, because the margin is what changed.
     """
     largest_window_scale_seen = 8.504e-3
+    first_refused = operators.MAX_WIDTH / largest_window_scale_seen
     assert max(reframing.RUNGS) * largest_window_scale_seen < operators.MAX_WIDTH
-    assert operators.MAX_WIDTH / largest_window_scale_seen > 2 * max(reframing.RUNGS)
+    assert 1.3 < first_refused / max(reframing.RUNGS) < 1.5
+    # And a doubling of the ladder would be refused outright on that atom, which
+    # is the claim the old 2x-headroom assertion used to carry and no longer can.
+    assert 2 * max(reframing.RUNGS) > first_refused
 
 
 def test_every_rung_is_drawn_and_scored_and_every_reading_is_on_the_row(
@@ -412,12 +420,17 @@ def test_the_summary_says_what_share_of_picks_landed_on_the_new_ends() -> None:
     is the head asking again for reach it was refused before. Both are on the
     block, apart, because "the pile moved outward with the ladder" and "the pile
     came off the ends" look identical in a single end-share number.
+
+    The split is asymmetric now and has to be: the 2026-09-04 move added two rungs
+    at the outer end and removed two at the inner, so 192x and 256x are the widths
+    that had never been drawn while 16x is an end by deletion and belongs with
+    128x among the rungs the pile is free to sit on.
     """
-    picked = {8.0: 2, 12.0: 3, 16.0: 4, 32.0: 6, 64.0: 3, 128.0: 2}
+    picked = {16.0: 4, 32.0: 6, 128.0: 3, 192.0: 5, 256.0: 2}
     block = reframing.end_picks(picked, reframing.RUNGS)
     assert block["picks"] == 20
-    assert block["new_ends"]["rungs"] == [8.0, 12.0, 96.0, 128.0]
-    assert block["old_ends"]["rungs"] == [16.0, 64.0]
+    assert block["new_ends"]["rungs"] == [192.0, 256.0]
+    assert block["old_ends"]["rungs"] == [16.0, 128.0]
     assert block["new_ends"]["picks"] == 7
     assert block["old_ends"]["picks"] == 7
     assert block["interior"]["picks"] == 6
@@ -435,8 +448,15 @@ def test_a_ladder_too_short_to_split_three_ways_does_not_double_count_a_rung(
     uninformative.
     """
     block = reframing.end_picks({16.0: 1, 32.0: 1}, (16.0, 24.0, 32.0))
-    assert block["old_ends"]["rungs"] == []
+    assert block["new_ends"]["rungs"] == [24.0, 32.0]
+    assert block["old_ends"]["rungs"] == [16.0]
+    assert block["interior"]["rungs"] == []
     assert sum(block[name]["picks"] for name in ("new_ends", "old_ends", "interior")) == 2
+    # Symmetric at both ends, which is what this was before 2026-09-04, and the
+    # ladder is then too short for any rung to be anything but a new end.
+    even = reframing.end_picks({16.0: 1, 32.0: 1}, (16.0, 24.0, 32.0), added=(2, 2))
+    assert even["new_ends"]["rungs"] == [16.0, 24.0, 32.0]
+    assert sum(even[name]["picks"] for name in ("new_ends", "old_ends", "interior")) == 2
 
 
 def test_the_run_summary_carries_the_end_block_over_the_ladder_it_ran(
@@ -449,7 +469,8 @@ def test_the_run_summary_carries_the_end_block_over_the_ladder_it_ran(
     run.run([ON_AN_ATOM])
     block = run.summary([], 1, [])["ends"]
     assert block["ladder"] == [16.0, 24.0, 32.0, 48.0, 64.0]
-    assert block["new_ends"]["rungs"] == [16.0, 24.0, 48.0, 64.0]
+    assert block["new_ends"]["rungs"] == [48.0, 64.0]
+    assert block["old_ends"]["rungs"] == [16.0, 32.0]
     assert block["picks"] == run.rows_written
 
 
