@@ -1,8 +1,9 @@
 """The run that makes the head that ships: three seeds, one holdout, one artifact.
 
 Every band before this one produced fold models and nothing deployable.
-[`render_cv`] screened three arms on one fifth of a five-way deal, [`render_grade`]
-graded two arms over all five at two seeds, and [`render_dose`] read a curve — and
+A cross-validation screen, since deleted, read three arms on one fifth of the
+[`render_folds`] deal, [`render_grade`] graded two arms over all five at two
+seeds, and [`render_dose`] read a curve — and
 none of them ever trained a head on a whole corpus, because none of them was
 supposed to. **This one is.** Three training runs that differ only in the seed,
 and the best of them ships.
@@ -119,7 +120,7 @@ from fractal_wallpapers.labeling import groups
 from fractal_wallpapers.models import (
     finished_train,
     metrics,
-    render_cv,
+    render_folds,
     render_train,
     train,
 )
@@ -236,7 +237,7 @@ def sides_for(seed: int, population=None) -> tuple[list[dict], list, dict]:
     statistic the epoch is chosen on without adding a constraint of this module's
     own.
     """
-    rows, pictures, record = population or render_cv.pool()
+    rows, pictures, record = population or render_folds.pool()
     grouping = groups.assign(rows)
     if grouping.n_unplaced:
         raise DeployError(

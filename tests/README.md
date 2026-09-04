@@ -42,20 +42,20 @@ marking, not before.
 
 `conftest.py` holds session-scoped fixtures over the records this repository
 tracks — `shipped_labels`, `shipped_scored`, `shipped_tile_plan`,
-`shipped_render_cache`, `shipped_cv_pool`, `distillation_rows`, and
+`shipped_render_cache`, `shipped_label_pool`, `distillation_rows`, and
 `tracked_ledger`. Each is a
 second or more to derive and the same every time it is asked, and more than one
 file asks. They are fixtures rather than module caches so the sharing is opt-in:
 a test that redirects a store to `tmp_path` does not ask for them and cannot be
 handed a reading of the tracked corpus by accident. Nothing writes to them.
 
-`shipped_cv_pool` is the second one to reach for by reflex, and it is a factory
+`shipped_label_pool` is the second one to reach for by reflex, and it is a factory
 rather than a value on purpose. `render_deploy.sides_for` assigns `picture.side`
 **in place**, so one shared list would carry whichever file ran last into
 whichever ran next; the fixture hands back fresh `Picture`s on every call — a
 `dataclasses.replace` a row, about ten milliseconds against four seconds — which
 is exactly the independence a second `pool()` call used to buy. Its `assignment`
-is the real `render_cv.assignment` with the shared pool patched under it, for
+is the real `render_folds.assignment` with the shared pool patched under it, for
 `shipped_render_cache`'s reason: a fixture that dealt the folds itself would be a
 second opinion about the deal.
 
@@ -85,7 +85,7 @@ out of the durations list, in the order they were worth:
 | --- | --- | --- |
 | 116.6s | 5.7s | `test_curation_colorize`'s byte-identity leg, on [`EXACTNESS_GEOMETRY`] |
 | 29.5s | — | its fallback leg, the same |
-| 52.4s | 6.3s | eight derivations of `render_cv.pool` collapsed to one — `conftest.shipped_cv_pool` |
+| 52.4s | 6.3s | eight derivations of `render_folds.pool` collapsed to one — `conftest.shipped_label_pool` |
 | ~10.5s a call | 9ms | `served_locations.build` asking `current_pass` once instead of once a row |
 
 And what is left, which is the list to read before touching this again:

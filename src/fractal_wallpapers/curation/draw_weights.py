@@ -14,6 +14,23 @@ against 1.18 for `julia:multibrot5`. `phoenix` took a further 12.0% at the same
 and every breadth arm inherits it, rather than each leg remembering to pass a
 weight it will only pass after somebody reads a price table.
 
+**What the quarter actually bought, measured over the nine legs that have run under
+it** (2026-09-04, `depth.json`'s `price` block against `budget.engine_seconds`;
+`pc20m` excluded as an aimed leg): `phoenix:classic` took **24.0% of 57,339 engine
+seconds** on 1,111 candidates at 12.41 s each, against a turns share of 1 of 34 —
+**2.94%**. So the downweight moved the pinned plane from the 51.5% above to 24.0%
+and it is **still 8.2x its turn**. `phoenix` proper is 6.7% and 2.3x, and its
+per-candidate price is inside the field; it is not what this table is for.
+
+Two things the pooled number hides, and both change what a further cut would buy.
+**The cost is the deep arms, not the draw**: the breadth and floor arms run 17-31 s
+a `phoenix:classic` candidate and reached 51.8% of one whole leg, while the near
+band and the `--draw-cells` legs run 1.2-1.5 s and sit at 8.6-16.7%. Same weight,
+same plane, an order of magnitude apart, because a near-band re-render is shallow.
+And **a `--centered only` leg draws no phoenix at all** — `centered_drawable` is 0
+for both planes against 591 and 617 drawable — so the weight is moot there and the
+plane cannot be bought on a centered leg at any weight.
+
 **A weight scales a share and never removes a partition.** The default table
 holds no zero: a partition that should get none of a release is *retired* from
 [`supply.partitions`], which is the same rule `data/supply/release_mix.json`

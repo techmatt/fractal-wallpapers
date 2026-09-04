@@ -15,21 +15,25 @@ from __future__ import annotations
 
 import pytest
 
-from fractal_wallpapers.models import render_cv, render_dose, render_grade, render_train
+from fractal_wallpapers.models import render_dose, render_grade, render_train
 
 TRAINED_ON = {"train", render_train.SELECTION}
 
 
 @pytest.fixture(scope="module")
-def dealt(shipped_render_cache, shipped_cv_pool):
+def dealt(shipped_render_cache, shipped_label_pool):
     """The population and the deal, derived once for every guard in this file.
 
-    The population through `conftest.shipped_cv_pool` — the session's one reading.
+    The population through `conftest.shipped_label_pool` — the session's one reading —
+    and the deal **derived** rather than read off disk. A written assignment is dealt
+    over the corpus of the day it was written, and these guards assert over row
+    indices into it, so a store that has grown since reds every one of them for a
+    reason that is not in the code. `assignment` is the same call a run makes.
     """
     short = {kind: len(shipped_render_cache.missing(kind)) for kind in render_train.KINDS}
     if any(short.values()):
         pytest.skip(f"the render cache is short {short} — `renders plan` then `renders build`")
-    return shipped_cv_pool.pool(), render_cv.read_assignment()
+    return shipped_label_pool.pool(), shipped_label_pool.assignment()
 
 
 def test_the_axis_is_cut_on_the_batch_and_the_cuts_are_ordered() -> None:

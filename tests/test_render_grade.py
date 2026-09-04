@@ -4,7 +4,7 @@ Four things a reader has to be able to check. That the stop slice is drawn over
 LINEAGES and comes out of the training side rather than the graded holdout —
 either failure makes the graded number optimistic and it could not also be the
 grading statistic. That the second stopping rule is rank-only, which is the whole
-of the argument that it is not `render_cv.top_cutpoint_selection`. That the seed
+of the argument that it is not the deleted screen's `top_cutpoint_selection`. That the seed
 band is averaged rather than maximized, because reporting the better of two draws
 reports the maximum of two draws as if it were the design. And that a crossover
 carries the sentence saying it is not a floor.
@@ -15,19 +15,23 @@ from __future__ import annotations
 import numpy
 import pytest
 
-from fractal_wallpapers.models import render_cv, render_grade, render_train
+from fractal_wallpapers.models import render_folds, render_grade, render_train
 
 
 @pytest.fixture(scope="module")
-def dealt(shipped_render_cache, shipped_cv_pool):
+def dealt(shipped_render_cache, shipped_label_pool):
     """The population and the deal, derived once for every guard in this file.
 
-    The population through `conftest.shipped_cv_pool` — the session's one reading.
+    The population through `conftest.shipped_label_pool` — the session's one reading —
+    and the deal **derived** rather than read off disk. A written assignment is dealt
+    over the corpus of the day it was written, and these guards assert over row
+    indices into it, so a store that has grown since reds every one of them for a
+    reason that is not in the code. `assignment` is the same call a run makes.
     """
     short = {kind: len(shipped_render_cache.missing(kind)) for kind in render_train.KINDS}
     if any(short.values()):
         pytest.skip(f"the render cache is short {short} — `renders plan` then `renders build`")
-    return shipped_cv_pool.pool(), render_cv.read_assignment()
+    return shipped_label_pool.pool(), shipped_label_pool.assignment()
 
 
 def an_out_of_fold_row(name: str, score: int, p_ge4: float, **changes) -> dict:
@@ -61,8 +65,8 @@ def test_the_second_rule_is_rank_only_and_cannot_be_gamed_by_under_confidence() 
     assert render_grade.negative_top_auc(labels, confident, 4) == render_grade.negative_top_auc(
         labels, shrunk, 4
     )
-    assert render_cv.top_cutpoint_loss(labels, confident, 4) != pytest.approx(
-        render_cv.top_cutpoint_loss(labels, shrunk, 4)
+    assert render_folds.top_cutpoint_loss(labels, confident, 4) != pytest.approx(
+        render_folds.top_cutpoint_loss(labels, shrunk, 4)
     )
 
 

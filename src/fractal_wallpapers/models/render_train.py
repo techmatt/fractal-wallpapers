@@ -766,10 +766,10 @@ def run(
 
     **`split` and `directory` are how a caller re-uses this loop over a different
     partition of the same corpus, and they exist for one caller.**
-    [`fractal_wallpapers.models.render_cv`] fits this recipe on cross-validation
-    folds — the same recipe over a different split, which must not become a
-    second implementation of it, because a baseline that is a re-typed trainer
-    measures the re-typing. `split` is called instead of [`population`] and
+    [`fractal_wallpapers.models.render_dose`] fits this recipe over the
+    [`render_folds`] deal — the same recipe over a different split, which must not
+    become a second implementation of it, because a baseline that is a re-typed
+    trainer measures the re-typing. `split` is called instead of [`population`] and
     returns what it returns; `directory` is where the checkpoints and records
     land, so a fold does not claim a run directory beside the shipped bands.
     Both default to what every band on the record was trained under, and the

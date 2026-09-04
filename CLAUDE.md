@@ -190,6 +190,20 @@ fifteen more tests than the reading below and **1.4% under** it. The thirteen ne
 guards cost 1.4 s between them: they decide two defaults off ledgers that are two
 rows each in `tmp_path`, and neither reads a store. Nothing grew this session.
 
+It read **164.85 s over 3,414** at the `render_cv` delete, idle, 2026-09-04 — 0.2%
+under the reading below across **six fewer** tests, which is `test_render_cv.py`'s six
+fast guards going with the harness. Worth having only for what it says about the two
+guards that changed underneath it: `test_render_dose` and `test_render_grade` now
+*derive* the lineage deal instead of reading the written one, and that cost the lane
+nothing because both are slow-lane and the derivation is the session's one pool read
+either way.
+
+**The reading before it, 173.35 s over the same 3,414, was taken beside a second
+copy of itself** — a backgrounded lane that had not finished when a foreground one
+started — and is 5.2% over this one. That is the "measure it on an idle machine"
+paragraph below priced at its cheapest: the other process does not have to be a
+render leg, and two pytest lanes are enough to move the digit.
+
 It read **167.53 s over 3,405** at the spiral probe, idle, 2026-09-03 — nine more
 tests than the reading below and **1.8% under** it, taken right after the spiral
 store's first sitting landed: 500 verdicts, 472 KB of rows, and the store went

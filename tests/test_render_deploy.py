@@ -15,7 +15,7 @@ the trainer's guard rather than a rule this module adds, and the guards below sa
 so by asserting on both halves of it.
 
 The rest is the stopping rule's own argument. It is rank-only, which is why it is
-not `render_cv.top_cutpoint_selection` — the arm that chose epoch 1 by refusing
+not the deleted screen's `top_cutpoint_selection` — the arm that chose epoch 1 by refusing
 to commit — and it reads a whole ranking rather than one k, which is what the
 rule it replaced did and what let a single row choose an epoch.
 """
@@ -25,23 +25,25 @@ from __future__ import annotations
 import numpy
 import pytest
 
-from fractal_wallpapers.models import render_cv, render_deploy, render_train
+from fractal_wallpapers.models import render_deploy, render_folds, render_train
 
 HOLDOUT = {render_deploy.STOPPING, render_deploy.PINNED}
 TOUCHED = {"train", render_deploy.STOPPING}
 
 
 @pytest.fixture(scope="module")
-def split(shipped_render_cache, shipped_cv_pool):
+def split(shipped_render_cache, shipped_label_pool):
     """One seed's split, derived once for every guard in this file.
 
-    The population through `conftest.shipped_cv_pool` — the session's one reading,
+    The population through `conftest.shipped_label_pool` — the session's one reading,
     which hands back its own `Picture`s so `sides_for` may assign them in place.
     """
     short = {kind: len(shipped_render_cache.missing(kind)) for kind in render_train.KINDS}
     if any(short.values()):
         pytest.skip(f"the render cache is short {short} — `renders plan` then `renders build`")
-    rows, pictures, record = render_deploy.sides_for(render_deploy.SEEDS[0], shipped_cv_pool.pool())
+    rows, pictures, record = render_deploy.sides_for(
+        render_deploy.SEEDS[0], shipped_label_pool.pool()
+    )
     return rows, pictures, record
 
 
@@ -83,8 +85,8 @@ def test_the_stopping_rule_is_rank_only_and_cannot_be_gamed_by_under_confidence(
     shrunk = numpy.array([[0.5 + (v - 0.5) * 0.02 for v in row] for row in confident])
     for rule, _says in render_deploy.RULES.values():
         assert rule(labels, confident, 4) == rule(labels, shrunk, 4)
-    assert render_cv.top_cutpoint_loss(labels, confident, 4) != pytest.approx(
-        render_cv.top_cutpoint_loss(labels, shrunk, 4)
+    assert render_folds.top_cutpoint_loss(labels, confident, 4) != pytest.approx(
+        render_folds.top_cutpoint_loss(labels, shrunk, 4)
     )
 
 
@@ -239,14 +241,14 @@ def test_the_stopping_slice_keeps_the_ones_and_twos(split) -> None:
 
 @pytest.mark.slow
 def test_the_three_seeds_draw_three_different_holdouts(
-    shipped_render_cache, shipped_cv_pool
+    shipped_render_cache, shipped_label_pool
 ) -> None:
     """The seed has to move the split, or three runs are one run three times.
 
     The pinned lineages are forced into every one of them and that part is meant
     to be identical; what has to differ is the draw on top.
 
-    A seed gets its own `Picture`s from `conftest.shipped_cv_pool` rather than its
+    A seed gets its own `Picture`s from `conftest.shipped_label_pool` rather than its
     own sweep of both stores. `sides_for` assigns them in place, so what the three
     draws need of each other is independence and not a re-derivation — this was
     three layouts and 20.8 s of the slow lane before the fixture existed.
@@ -256,7 +258,7 @@ def test_the_three_seeds_draw_three_different_holdouts(
         pytest.skip(f"the render cache is short {short}")
     drawn = []
     for seed in render_deploy.SEEDS:
-        _rows, pictures, record = render_deploy.sides_for(seed, shipped_cv_pool.pool())
+        _rows, pictures, record = render_deploy.sides_for(seed, shipped_label_pool.pool())
         drawn.append(
             frozenset(
                 (picture.kind, picture.name)
