@@ -34,7 +34,7 @@ one draw on two sides of the axis. A whole batch arrives or it does not.
 ## The holdout is FIXED, and this is where the design earns its keep
 
 Every point on the curve is read on **the same rows**: the five-way lineage deal
-[`render_cv.assignment`] already wrote, re-used rather than re-dealt. At every
+[`render_folds.assignment`] already wrote, re-used rather than re-dealt. At every
 dose, fold `k`'s model trains on that dose's rows *outside* fold `k`'s lineages
 and is read on fold `k`'s lineages — every row of them, whatever date they
 arrived. Pooled over the folds, the holdout is all 10,299 rows at every point on
@@ -82,7 +82,7 @@ from fractal_wallpapers.models import (
     finished_train,
     head,
     metrics,
-    render_cv,
+    render_folds,
     render_grade,
     render_train,
     train,
@@ -92,9 +92,9 @@ from fractal_wallpapers.paths import repo_root, under
 #: The schema every record here carries.
 SCHEMA = 1
 
-#: Draws in every interval here and its seed — [`render_cv`]'s own, so an
+#: Draws in every interval here and its seed — [`render_folds`]'s own, so an
 #: interval from this module and one from the grading band are the same statistic.
-DRAWS, BOOTSTRAP_SEED = render_cv.DRAWS, render_cv.BOOTSTRAP_SEED
+DRAWS, BOOTSTRAP_SEED = render_folds.DRAWS, render_folds.BOOTSTRAP_SEED
 
 #: The stop slice, taken from [`render_grade`] unchanged: a fifth of the training
 #: side's LINEAGE GROUPS, seeded per fold. It is drawn over the **whole** trainable
@@ -216,8 +216,8 @@ def sides_for(point: str, fold: int, document: dict | None = None, population=No
     if point not in POINTS:
         raise DoseError(f"{point!r} is not a dose point here; they are {sorted(POINTS)}")
     entry = POINTS[point]
-    document = document or render_cv.read_assignment()
-    rows, pictures, record = population or render_cv.pool()
+    document = document or render_folds.read_assignment()
+    rows, pictures, record = population or render_folds.pool()
     group_of_row = [int(group) for group in document["group_of_row"]]
     rows, pictures, base = render_grade.sides_for(fold, document, (rows, pictures, record))
 
@@ -329,8 +329,8 @@ def plan(folds=(0, 1, 2, 3, 4), points=None) -> dict:
     What a launch is priced off and what a report quotes: the dose axis in rows,
     the strange fours beside it, and the holdout that does not move.
     """
-    document = render_cv.read_assignment()
-    population = render_cv.pool()
+    document = render_folds.read_assignment()
+    population = render_folds.pool()
     out = {"schema": SCHEMA, "folds": list(folds), "points": []}
     for point in points or list(POINTS):
         cells = []
@@ -367,7 +367,7 @@ def fit(point: str, fold: int, device: str = "auto", epochs: int | None = None, 
     """Fit the incumbent recipe on one dose point and one fold."""
     if point not in POINTS:
         raise DoseError(f"{point!r} is not a dose point here; they are {sorted(POINTS)}")
-    document = render_cv.read_assignment()
+    document = render_folds.read_assignment()
     directory = run_dir(point, fold)
     directory.mkdir(parents=True, exist_ok=True)
 
@@ -400,7 +400,7 @@ def read_out_of_fold(point: str, fold: int, device: str = "auto", log=train.say)
     checkpoint = directory / render_grade.CHECKPOINTS[RULE]
     if not checkpoint.is_file():
         raise DoseError(f"{checkpoint} does not exist — fit the run before reading it")
-    document = render_cv.read_assignment()
+    document = render_folds.read_assignment()
     rows, pictures, _split = sides_for(point, fold, document)
     lineage = [int(group) for group in document["group_of_row"]]
     held = [

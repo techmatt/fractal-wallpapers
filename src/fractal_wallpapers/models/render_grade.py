@@ -1,7 +1,8 @@
 """Grading the render judge on a statistic that can resolve, and fitting the bar off it.
 
-[`fractal_wallpapers.models.render_cv`] screened three arms and came back null.
-The machinery was sound; the **declared slice** was not. It cut the motivating
+A cross-validation screen — deleted on 2026-09-04, recoverable from git history —
+read three arms over these folds and came back null. The machinery was sound; the
+**declared slice** was not. It cut the motivating
 population down to 43 strange rows — 25 fours against 18 non-fours — by
 restricting to the band where the shipped judge's `P(>=4)` sits in [0.60, 0.95),
 and a 95% interval on an AUC over 43 rows is about +/-0.19. Only an enormous
@@ -59,7 +60,7 @@ each rule's own epoch and the loop is the same loop.
 
 ## Selecting on stop-slice `AUC(>=4)` is NOT the arm that already failed
 
-`render_cv`'s `top_cutpoint_selection` chose **epoch 1** and cost the smooth side
+The screen's `top_cutpoint_selection` arm chose **epoch 1** and cost the smooth side
 significantly. That was a *proper scoring rule* — a cross-entropy — read at one
 rare cutpoint, and an under-confident head minimizes it by never committing, so
 selecting on it buys early stopping rather than ordering. AUC is rank-only: it
@@ -69,7 +70,7 @@ are not the same statistic, and the failure of one says nothing about the other.
 
 ## The split, and what is different from the screen's
 
-The folds are [`render_cv`]'s, re-used rather than re-dealt: the same lineage
+The folds are [`render_folds`]'s, re-used rather than re-dealt: the same lineage
 assignment, the same written artifact, the same exclusions. What changes is the
 **stop slice**. `render_train`'s own rule draws 10% of the training side's
 *places*, and a place is finer than a lineage — two near-duplicate frames can sit
@@ -101,7 +102,7 @@ from fractal_wallpapers.models import (
     finished_train,
     head,
     metrics,
-    render_cv,
+    render_folds,
     render_train,
     train,
 )
@@ -125,9 +126,9 @@ STOP_SEED = 0
 EPOCHS = 20
 PATIENCE = 6
 
-#: Draws in every interval here and its seed — [`render_cv`]'s own, so that an
+#: Draws in every interval here and its seed — [`render_folds`]'s own, so that an
 #: interval from that module and one from this are the same statistic.
-DRAWS, BOOTSTRAP_SEED = render_cv.DRAWS, render_cv.BOOTSTRAP_SEED
+DRAWS, BOOTSTRAP_SEED = render_folds.DRAWS, render_folds.BOOTSTRAP_SEED
 
 #: The two stopping rules, by the name every record and every table uses.
 SHIPPED_RULE = "cutpoint_cross_entropy"
@@ -214,7 +215,7 @@ def negative_top_auc(labels, probabilities, classes: int) -> float:
     reader has to keep apart.
 
     **Rank-only, and that is the whole reason it is not the arm that failed.**
-    `render_cv.top_cutpoint_loss` was a cross-entropy at this same boundary and
+    `render_folds.top_cutpoint_loss` was a cross-entropy at this same boundary and
     an under-confident head minimizes it by stopping at epoch 1. An AUC cannot be
     moved that way: shrinking every score toward the prior leaves the order
     alone.
@@ -243,13 +244,13 @@ AUC_SAYS = (
 def sides_for(fold: int, document: dict | None = None, population: tuple | None = None):
     """The population with every picture on the side this fold and rule put it.
 
-    [`render_cv.sides_for`] with one thing moved: the stop slice is drawn over
+    [`render_folds.sides_for`] with one thing moved: the stop slice is drawn over
     **lineage groups** at [`STOP_SHARE`] rather than over places at the trainer's
     own share. Holdout, exclusion and training sides are the screen's, unchanged,
     so the two modules grade the same partition of the same corpus.
     """
-    document = document or render_cv.read_assignment()
-    rows, pictures, record = population or render_cv.pool()
+    document = document or render_folds.read_assignment()
+    rows, pictures, record = population or render_folds.pool()
     fold_of_row = document["fold_of_row"]
     group_of_row = document["group_of_row"]
     if len(fold_of_row) != len(pictures):
@@ -325,7 +326,7 @@ def fit(arm: str, fold: int, seed: int, device: str = "auto", epochs: int | None
     """Fit one arm on one fold at one seed, through the trainer every band used."""
     if arm not in ARMS:
         raise GradingError(f"{arm!r} is not an arm here; the arms are {sorted(ARMS)}")
-    document = render_cv.read_assignment()
+    document = render_folds.read_assignment()
     directory = run_dir(arm, fold, seed)
     directory.mkdir(parents=True, exist_ok=True)
 
@@ -368,7 +369,7 @@ def read_out_of_fold(
     checkpoint = directory / CHECKPOINTS[rule]
     if not checkpoint.is_file():
         raise GradingError(f"{checkpoint} does not exist — fit the run before reading it")
-    document = render_cv.read_assignment()
+    document = render_folds.read_assignment()
     rows, pictures, _split = sides_for(fold, document)
     lineage = document["group_of_row"]
     held = [
