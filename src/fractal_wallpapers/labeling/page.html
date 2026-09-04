@@ -103,7 +103,15 @@ code{color:#9bb}
 // when the sheet was cut — good->bad where a head had an opinion, sections in
 // reading order, a seeded shuffle where there is no opinion at all — and an in-page
 // reshuffle would silently discard that decision.
-const WORD = {1:"does not work", 2:"unremarkable", 3:"worth keeping", 4:"the best of those"};
+// What a button says, per ordinal. The quality scale is the default because
+// three of the four stores cast on it; a sheet whose ordinals stand for named
+// classes rather than tiers ships its own map in the manifest, and then the
+// page prints the class instead of a tier's word. The page still casts numbers
+// either way — the export is one number per unit for every store there is, and
+// turning an ordinal into a class is the store's job at ingest, not the page's.
+const QUALITY_WORD =
+  {1:"does not work", 2:"unremarkable", 3:"worth keeping", 4:"the best of those"};
+let WORD = QUALITY_WORD;
 let MANIFEST = {}, ROWS = [], TIERS = [1,2,3,4], scores = {}, cur = 0, KEY = "label::";
 
 function el(id){ return document.getElementById(id); }
@@ -142,6 +150,7 @@ function adopt(){
 
 function start(){
   TIERS = MANIFEST.tiers || TIERS;
+  WORD = MANIFEST.words || QUALITY_WORD;
   KEY = "label::" + MANIFEST.batch + "::" + ROWS.length;
   try { scores = JSON.parse(localStorage.getItem(KEY)) || {}; } catch { scores = {}; }
   if (!Object.keys(scores).length) { scores = adopt(); if (Object.keys(scores).length) save(); }
@@ -155,9 +164,14 @@ function start(){
   // What a prefill IS, in the page's own words, because it is not always the same
   // thing: a revision sheet prefills the verdict this row already carries, and a
   // labeler who reads that as a model's guess is being told the wrong thing.
-  el("prefill").textContent = MANIFEST.suggested_by === "plan"
-    ? "the suggestion is the verdict this row already carries and stands until you change it"
-    : "the suggestion is a head's own decode and is not a label until you accept it";
+  // A sheet whose prefill is neither of the two this page knows about says what
+  // it is in its own words. Without that, a similarity hint on an attribute
+  // sheet reads to the labeler as "the verdict this row already carries", which
+  // is a sentence about a store that has never seen the row.
+  el("prefill").textContent = MANIFEST.prefill_note ? MANIFEST.prefill_note
+    : (MANIFEST.suggested_by === "plan"
+      ? "the suggestion is the verdict this row already carries and stands until you change it"
+      : "the suggestion is a head's own decode and is not a label until you accept it");
   // The sweep exists only when a head actually suggested something. With no head
   // there is nothing to accept, and a button that accepts nothing is a button that
   // will one day accept everything.
@@ -268,9 +282,13 @@ el("sweep").onclick = () => {
   const rest = ROWS.slice(cur).filter(r =>
     !scores[r.unit] && r.suggestion !== null && r.suggestion !== undefined);
   if (!rest.length) { alert("nothing below here carries a suggestion to accept"); return; }
-  if (!confirm("Accept the suggested tier for " + rest.length + " unlabeled row(s) from " +
-      "position " + (cur + 1) + " to the end? Each section is ordered good to bad, so this " +
-      "says everything below here is judged correctly already.")) return;
+  const ordered = (MANIFEST.order || "").indexOf("shuffle") < 0;
+  if (!confirm("Accept the suggestion for " + rest.length + " unlabeled row(s) from " +
+      "position " + (cur + 1) + " to the end? " + (ordered
+        ? "Each section is ordered good to bad, so this says everything below here is judged " +
+          "correctly already."
+        : "This page is SHUFFLED — position says nothing about whether the suggestions below " +
+          "here are right, so this accepts them sight unseen."))) return;
   for (const row of rest) scores[row.unit] = row.suggestion;
   save();
   show();

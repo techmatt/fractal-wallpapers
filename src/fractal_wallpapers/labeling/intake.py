@@ -12,17 +12,26 @@ writes rows that carry the join and nothing that points outward. After it has
 run, the sheet, the pictures and the page are all disposable, and the store still
 says exactly what a person said.
 
-## One path, two stores
+## One path, every store
 
-A location verdict and a finished-render verdict land in different stores, keyed
-on different things — the place, and the place *with* the whole recipe. That is
-the only difference between them, and it is a difference about *where a row
-goes*, not about what reaching a store costs. [`Records`] is that difference,
-spelled once: which join a sheet row has to hand over, what a row of it looks
-like, who keys it, who writes it, and what its pin is asserted on. Everything
-below is shared, so neither store can drift into a weaker set of guarantees than
-the other — which is what two ingest paths meant in practice, because only one of
-them ever grew the count checks.
+A location verdict, a finished-render verdict and a location *attribute* land in
+different stores, keyed on different things — the place, the place *with* the
+whole recipe, and the place again — and recording different verdicts: three of
+them a tier on one scale, the fourth a named class. Those are differences about
+*where a row goes* and *what a number on the page means*, not about what reaching
+a store costs. [`Records`] is that difference, spelled once: which join a sheet
+row has to hand over, what a row of it looks like, who keys it, who writes it,
+what its pin is asserted on, and which field its verdict is. Everything below is
+shared, so no store can drift into a weaker set of guarantees than the others —
+which is what two ingest paths meant in practice, because only one of them ever
+grew the count checks.
+
+**A page casts ordinals and a store records verdicts, and they are joined here.**
+The export is one number per unit for every store there is, because a second
+export shape would be a second answer to what a drop is. `verdict_of` turns that
+number into what the store keeps — the identity for a tier, the ordinal-to-class
+map for an attribute — once, at this seam, so the number never reaches a store
+that holds no numbers.
 
 ## The drop
 
@@ -82,7 +91,7 @@ from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
-from fractal_wallpapers.labeling import finished, pins, store
+from fractal_wallpapers.labeling import attributes, finished, pins, store
 from fractal_wallpapers.labeling import registry as registry_module
 from fractal_wallpapers.paths import writing_path
 
@@ -107,13 +116,14 @@ class IntakeError(ValueError):
 # --------------------------------------------------------------------------- #
 @dataclass(frozen=True)
 class Records:
-    """One store, and the four facts an ingest needs about it.
+    """One store, and the facts an ingest needs about it.
 
-    Not an abstraction over labels — an abstraction over *where a row goes*. The
-    join a sheet must hand over, the row that join becomes, the identity the
-    store resolves latest-wins on, and the coordinate its evaluation pin is
-    asserted at. Everything a guarantee is made of lives in [`run`] and is
-    written once for both.
+    Not an abstraction over labels — an abstraction over *where a row goes* and
+    *what the page's number meant*. The join a sheet must hand over, the row that
+    join becomes, the identity the store resolves latest-wins on, the coordinate
+    its evaluation pin is asserted at, and which field on a row is the verdict.
+    Everything a guarantee is made of lives in [`run`] and is written once for
+    all of them.
     """
 
     head: str
@@ -121,6 +131,8 @@ class Records:
     #: them cannot produce a row this repository will store, and finding that out
     #: at the writer one row at a time is finding it out too late.
     join_keys: tuple[str, ...]
+    #: The ordinals a page casts for this store. Ordinals, not verdicts: an
+    #: export is one number per unit for every store there is.
     tiers: tuple[int, ...]
     #: `(row) -> key | None`. The identity latest-wins resolves on.
     key: object
@@ -139,6 +151,17 @@ class Records:
     #: nor instrument, and [`run`] withholds it rather than writing it — see
     #: there for why refusing the whole drop would be the wrong answer.
     pinned_place: object = None
+    #: Which field on a stored row holds the verdict. `score` for the three
+    #: quality corpora; an attribute store holds `class` and deliberately holds
+    #: no `score` at all — see
+    #: [`fractal_wallpapers.labeling.attributes`]. Spelled here so that every
+    #: count, every comparison and every read-back below is field-addressed and
+    #: this step cannot come to mean one thing per store.
+    verdict_key: str = "score"
+    #: `(ordinal) -> what the store records`. Identity for a tier; the
+    #: ordinal-to-class map for an attribute. The page casts numbers either way,
+    #: and this is the one place a number becomes a verdict.
+    verdict_of: object = int
 
 
 LOCATION_JOIN_KEYS = ("family", "viewport", "render")
@@ -215,6 +238,52 @@ def _finished_row(sheet, unit: str, score: int, labeler: str, recorded_at: str |
     )
 
 
+def _attribute_row(sheet, unit: str, ordinal: int, labeler: str, recorded_at: str | None) -> dict:
+    """One attribute row: the place it keys on, and the picture it was cast from.
+
+    The join is a finished render and the identity is the **location** — the one
+    place in this rig where those two are not the same thing. The render block
+    travels whole so the sitting can be rebuilt, and `selected_on` travels with
+    it: an attribute row is the input to a probe, and a probe that could not see
+    which reading its population was drawn on could not say what it had measured.
+    """
+    from fractal_wallpapers.supply.partitions import partition_of_family
+
+    source = sheet.by_unit[unit]
+    join = source["join"]
+    family = join["family"]
+    partition = partition_of_family(family)
+    stated = join.get("partition")
+    if stated is not None and stated != partition:
+        raise IntakeError(
+            f"unit {unit!r} says it is partition {stated!r} and its family is {partition!r}. "
+            f"The family is the join; a disagreeing label on top of it is a second answer."
+        )
+    return attributes.attribute_row(
+        name=sheet.head,
+        batch=source["batch"],
+        verdict=attributes.class_of(sheet.head, int(ordinal)),
+        family=family,
+        viewport=join["viewport"],
+        render={
+            "mode": join["mode"],
+            "mode_params": join["mode_params"],
+            "curve": join["curve"],
+            "colormap": join["colormap"],
+            "recipe": join["recipe"],
+            **join["render"],
+        },
+        origin=store.HUMAN,
+        labeler=labeler,
+        recorded_at=recorded_at,
+        partition=partition,
+        sheet=sheet.name,
+        unit=unit,
+        suggested=source.get("suggestion"),
+        **({"selected_on": source["selected_on"]} if source.get("selected_on") else {}),
+    )
+
+
 def _finished_trespass(head: str):
     """`(row) -> bool` for one finished store: does this row trespass on the pin?
 
@@ -249,6 +318,43 @@ def records_for(head: str) -> Records:
             assert_pin=lambda rows: finished.assert_pin_holds(head, rows),
             pinned_place=_finished_trespass(head),
         )
+    if head in attributes.NAMES:
+        return Records(
+            head=head,
+            # A finished render's whole join, because that is the picture the
+            # labeler was shown — even though what the store keys on is the
+            # place inside it.
+            join_keys=FINISHED_JOIN_KEYS,
+            tiers=attributes.attribute(head).tiers,
+            key=attributes.place_of,
+            row_of=_attribute_row,
+            registry=lambda: attributes.registry(head),
+            resolved=lambda: attributes.resolved(head),
+            append=lambda rows, known: attributes.append(head, rows, known=known),
+            # NOT `attributes.assert_pin_holds`, and this is the one place an
+            # attribute store's guarantees are deliberately weaker than a
+            # finished store's. Over there the evaluation side is a whole batch
+            # cut blind, so a row from any other batch at one of its places is a
+            # trespass. Here the reservation is INTRA-batch — one batch holds
+            # both sides — so every row of the sitting is a "landing" row and a
+            # hundred of them sit on reserved places by construction. Asserting
+            # the pin here would refuse the drop it exists to collect. The pin
+            # forbids TRAINING on those places and is asserted by whoever builds
+            # a split, through `attributes.assert_pin_holds`.
+            assert_pin=lambda rows: {
+                "pinned_locations": len(attributes.pinned(head)),
+                "checked_rows": len(rows),
+                "ok": True,
+                "asserted": (
+                    "not at ingest: this store's reservation is intra-batch, so a verdict at a "
+                    "reserved place is the verdict the reservation was made to collect. The pin "
+                    "forbids training and is asserted against a split, not against a drop."
+                ),
+            },
+            # No trespass rule either, for the same reason.
+            verdict_key="class",
+            verdict_of=lambda ordinal: attributes.class_of(head, int(ordinal)),
+        )
     if head == "location":
         return Records(
             head=head,
@@ -262,8 +368,8 @@ def records_for(head: str) -> Records:
             assert_pin=pins.assert_none_training,
         )
     raise IntakeError(
-        f"unknown head {head!r} — a sheet is cut for one judge and lands in that judge's store. "
-        f"Known: {sorted({'location', *finished.HEADS})}"
+        f"unknown head {head!r} — a sheet is cut for one store and names it. "
+        f"Known: {sorted({'location', *finished.HEADS, *attributes.NAMES})}"
     )
 
 
@@ -277,6 +383,15 @@ def read_export(path: Path) -> dict[str, int]:
     Both are read, a null score is read as *not acted on* and dropped, and
     anything else is refused rather than coerced — a score that arrived as the
     string `"3"` is a page that changed under us.
+
+    **The number is an ORDINAL and the field is called `score` for every store,
+    including the ones that hold no scores.** It is what the labeler pressed, and
+    a second export shape per kind of store would be a second answer to what a
+    drop is — which is the collision `store.export_path` already exists to
+    prevent one level up. What that ordinal *means* is the store's, and
+    [`Records.verdict_of`] is where it becomes one: a `1` in an attribute
+    store's drop is the class `spiral`, and nothing downstream of that seam ever
+    sees the number again.
     """
     path = Path(path)
     if not path.is_file():
@@ -466,7 +581,7 @@ def already_says(records: Records, current: dict, row: dict) -> bool:
     if seen is None:
         return False
     return (
-        seen.get("score") == row.get("score")
+        seen.get(records.verdict_key) == row.get(records.verdict_key)
         and seen.get("origin") == row.get("origin")
         and seen.get("batch") == row.get("batch")
     )
@@ -506,6 +621,13 @@ def run(sheet: Path, labels=None, labeler: str = "", write: bool = False) -> dic
     if not export:
         raise IntakeError(f"{export_file} carries no scored unit; nothing to record")
 
+    unknown_ordinals = sorted({value for value in export.values() if value not in records.tiers})
+    if unknown_ordinals:
+        raise IntakeError(
+            f"the export casts {unknown_ordinals}, and a {head} page casts "
+            f"{list(records.tiers)}. A number outside the page's own buttons is not a verdict "
+            f"anybody could have meant."
+        )
     candidates = rows_of(read, records, export, labeler=labeler)
     if len(candidates) != len(export):
         raise IntakeError(
@@ -573,8 +695,10 @@ def run(sheet: Path, labels=None, labeler: str = "", write: bool = False) -> dic
             }
             for batch, count in sorted(Counter(row["batch"] for row in candidates).items())
         },
-        "tiers": {
-            str(tier): sum(1 for row in candidates if row["score"] == tier)
+        "verdicts": {
+            str(records.verdict_of(tier)): sum(
+                1 for row in candidates if row.get(records.verdict_key) == records.verdict_of(tier)
+            )
             for tier in records.tiers
         },
         "store before": before.summary(),
@@ -613,12 +737,13 @@ def run(sheet: Path, labels=None, labeler: str = "", write: bool = False) -> dic
     disagreements = [
         row["unit"]
         for row in candidates
-        if (after.current.get(records.key(row)) or {}).get("score") != row["score"]
+        if (after.current.get(records.key(row)) or {}).get(records.verdict_key)
+        != row.get(records.verdict_key)
     ]
     if disagreements:
         raise IntakeError(
-            f"{len(disagreements)} unit(s) do not read back at the tier they were exported at, "
-            f"e.g. {disagreements[:5]}"
+            f"{len(disagreements)} unit(s) do not read back at the verdict they were exported "
+            f"at, e.g. {disagreements[:5]}"
         )
 
     # The pin is asserted over the rows this ingest just wrote, and nothing else. The

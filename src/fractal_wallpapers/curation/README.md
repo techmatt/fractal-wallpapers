@@ -21,6 +21,7 @@ recipes    what decides a candidate's pixels, as one value with one key
 draw_weights  what a partition is worth in a breadth draw, in one table
 candidate_ledger  every recipe ever rendered, one row each, with its colour
 headroom   what each selection constraint needs, holds, and costs to buy — no solver
+pool_draw  the UNAIMED draw: N pool locations at random, one seat-ranked picture each
 view       what one pass may reach: strata, and band-blind slices of them
 rules      one spelling per selection rule, over incremental state
 signatures the diversity rule's bound signature, swept once into a sidecar
@@ -2300,6 +2301,58 @@ fills exactly through n=200 and lime never fills. `→ scratch/SOLVE_themed_lime
 The seats are weak — worst seated rank key 0.0125 (lime) and 0.0241 (green) at n=200,
 against 0.418 for the main gallery at n=150 — which is what the relaxed bar buys.
 A themed solve costs 3–8 s at every rung, because the geometry rule opens no picture.
+
+## `curate pool-draw` — the one draw that is not aimed at anything
+
+Every other sheet this project cuts is aimed: a band around a bar, a mode nobody
+has scored, the top of a ranked queue. Those measure a **correction**, and a rate
+read off one is a rate about the slice. A question like *what fraction of the
+places a gallery could seat are spirals* cannot be answered from any of them, and
+that is what this leg exists for.
+
+The population is stated once and taken whole: every location holding at least
+one candidate row that clears its own mode's bar in `headroom.bars`, read fresh.
+That is deliberately `headroom`'s set and not a second opinion about supply — a
+draw over a population the census does not agree exists is a draw nobody can
+quote a rate off. It reads **9,086 locations** out of a pool of 169,160
+candidates today (2026-09-03), on 21,544 clearing rows.
+
+**One picture per location, and it is the one the solve would seat.** A location
+carries dozens of candidates differing only in how they were coloured, so a
+random one would measure the palette draw as much as the place. Each drawn
+location is represented by its best-ranked clearing row under `solve.ranking` —
+the row a seating pass walking this pool reaches first — so the card carries the
+picture this project would actually ship from there, which is the only render a
+question about a gallery cap can honestly be asked about. The draw itself is over
+**locations**, uniformly and seeded, *after* that choice: drawing over rows would
+weight a place by how many recipes happen to sit on it, which is a fact about
+where mining legs have been.
+
+It writes a finished-render sheet plan and the record of the draw, and it writes
+nothing into any label store. Three things travel on each unit beyond the recipe:
+
+* `leveled` — the `<stem>.leveled/` beside the candidate's own picture where the
+  autolevel operator acted. **This is the one that gets forgotten**, and the
+  failure is silent: `SHEET_judge_band_300` shipped plans without it, and the
+  build did not notice because `cut` skips a unit whose picture already exists.
+  What breaks is reproducibility — a rebuild after a sweep serves a different
+  picture under the same identity. 105 of the 500 units in `spiral_500` carry
+  one.
+* `selected_on` — the reading the row was drawn on, at candidate geometry. The
+  sheet renders at label geometry and reads a different number there; carrying
+  both is what lets a later reader attribute a disagreement to the regime rather
+  than to the labeler.
+* `suggestion` and `columns`, where a prefill was asked for. `--like <alias>`
+  names seats in a tentative gallery whose neutral embeddings seed a centroid,
+  and each unit is prefilled by cosine to it, cut at the **median over the
+  sheet's own units** — so exactly half the page is prefilled either way and the
+  hint carries no claim about the rate it is being used to measure. Under five
+  aliases resolving, the sheet ships blind and the record names the ones that
+  were lost.
+
+**It holds the pool**, and the one-pool-holding-process rule binds: it streams
+the candidate ledger, reads the whole score sidecar, and resolves the rank key
+over two more stores. The `spiral_500` draw took about four minutes.
 
 ## `curate growth` — what more mining buys, at every gallery size
 

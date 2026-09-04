@@ -492,6 +492,52 @@ It is not a key problem and no re-keying fixes it; the geometry axis people reac
 for first accounts for **0 rows**. See
 [the recipe key's note](../src/fractal_wallpapers/curation/README.md).
 
+## `spiral_500_20260903` is UNIFORM OVER THE POOL, which is not uniform over anything else
+
+*Registry: `spiral/batches.jsonl`. 500 locations, 100 of them reserved. The first
+attribute batch, and the first batch here that records no tier.*
+
+Registered `score_unconditioned: false`, and the flag is right even though the
+draw is a seeded uniform sample. The 500 were drawn with no model in the choice
+*among* them, but the population they were drawn from is the candidate pool, and
+membership in that is the render judge's `P(>=4) >= 0.5` at candidate geometry —
+9,086 locations out of a store of 169,160 candidates. So the flag fails closed,
+correctly, and it costs this batch nothing: `eval_eligible` is not what protects
+the probe here.
+
+**What a rate off it means, and what it does not.** A spiral share measured on
+these 500 is a share of *the places a gallery could seat*. It is not a share of
+the locations this project has ever rendered, not a share of the walk's finds,
+and not a share of fractal space. That is the population the share cap will act
+on, which is why it is the one worth measuring — but a number quoted off it
+without that sentence is about a different set every time somebody guesses which.
+
+**A second conditioning, one level down.** Each location is represented by its
+best-ranked clearing row rather than by a random one of its candidates, so the
+*picture* on the card is selected by `solve.ranking`. That is the picture the
+project would ship from that place, and it is deliberate; it also means the
+sitting cannot say anything about how the answer would move under a different
+coloring of the same place. The row carries its whole render block so that
+question stays askable later, and 105 of the 500 went through the autolevel
+operator's re-baked map.
+
+**`anchored` is false and the page still prefilled every card.** The prefill is a
+cosine to the centroid of six locations Matt picked out of the
+`20260903T234205Z` tentative gallery — `f047b594`, `3c38e848`, `a513e397`,
+`769339fd`, `cbd3e34f`, `857dfb91`, all six resolving to neutral embeddings — cut
+at the median over the sheet's own 500 units, so exactly 250 were prefilled
+`spiral`. It is not any head's decode and not a tier, which is what `anchored`
+asks about, and the page says so in its own words. It is still a suggestion a
+labeler can agree with out of tiredness: the honest reading of an agreement rate
+here is agreement with *those six pictures*, and the threshold was a median
+rather than anything fitted, so it carries no prior about the answer.
+
+**The reservation is inside the batch.** 100 of the 500 are pinned in
+`spiral/eval_split.jsonl` at seed `20260903`, drawn before any verdict existed.
+There is no `eval_only` batch, because a second batch name would have printed on
+the reserved cards. Their verdicts are collected like every other and the ingest
+does not assert the pin; what the pin forbids is training on them.
+
 ---
 
 ### Reading this file from code

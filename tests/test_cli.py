@@ -137,9 +137,9 @@ def test_a_tile_build_names_the_regime_it_is_aimed_at() -> None:
         cli.tile_regime(parse(["tiles", "build", "--tile", "384"]))
 
 
-def test_the_labeling_rig_is_seven_steps_under_one_subcommand() -> None:
-    """Register, cut, list, serve, ingest, show, split — the order they happen in,
-    and every one of them a step somebody runs twice."""
+def test_the_labeling_rig_is_eight_steps_under_one_subcommand() -> None:
+    """Register, cut, list, serve, ingest, pin, show, split — the order they happen
+    in, and every one of them a step somebody runs twice."""
     parse = cli.build_parser().parse_args
     assert (
         parse(["label", "register", "--batch", "b", "--method", "m"]).handler is cli.label_register
@@ -148,10 +148,65 @@ def test_the_labeling_rig_is_seven_steps_under_one_subcommand() -> None:
     assert parse(["label", "sheets"]).handler is cli.label_sheets
     assert parse(["label", "serve", "--sheet", "d"]).handler is cli.label_serve
     assert parse(["label", "ingest", "--sheet", "s", "--labeler", "m"]).handler is cli.label_ingest
+    pin = ["label", "pin", "--head", "spiral", "--from-plan", "p"]
+    pin += ["--batch", "b", "--reserve", "1", "--seed", "0"]
+    assert parse(pin).handler is cli.label_pin
     assert parse(["label", "split"]).handler is cli.label_split
     assert parse(["label", "show"]).handler is cli.label_show
     with pytest.raises(SystemExit):
         parse(["label"])
+
+
+def test_a_pin_names_an_attribute_store_and_nothing_else() -> None:
+    """The reservation is intra-batch, and only an attribute store has one. A
+    finished store's evaluation side is a whole batch cut blind and `label
+    register --eval-only` is how it is declared."""
+    parse = cli.build_parser().parse_args
+    with pytest.raises(SystemExit):
+        parse(
+            ["label", "pin", "--head", "smooth_render", "--from-plan", "p"]
+            + ["--batch", "b", "--reserve", "1", "--seed", "0"]
+        )
+    assert not parse(
+        [
+            "label",
+            "pin",
+            "--head",
+            "spiral",
+            "--from-plan",
+            "p",
+            "--batch",
+            "b",
+            "--reserve",
+            "1",
+            "--seed",
+            "0",
+        ]
+    ).write
+
+
+def test_an_attribute_sheet_is_cut_for_a_store_that_is_not_a_judge() -> None:
+    """`--head` names a STORE. Three of the four it accepts are judges' and one is
+    not — an attribute is a fact about a place rather than an opinion about it,
+    and the rig routes it by the same flag either way."""
+    parse = cli.build_parser().parse_args
+    cut = parse(["label", "build", "--from-plan", "p", "--head", "spiral", "--batch", "b"])
+    assert cut.handler is cli.label_build and cut.head == "spiral"
+    assert "spiral" in cli.NON_LOCATION_HEADS
+    registered = parse(["label", "register", "--batch", "b", "--method", "m", "--head", "spiral"])
+    assert registered.handler is cli.label_register and registered.head == "spiral"
+
+
+def test_the_unaimed_draw_is_a_subcommand_that_names_its_seed() -> None:
+    """A base-rate population that could not be drawn again is a population
+    nobody can check."""
+    parse = cli.build_parser().parse_args
+    drawn = parse(["curate", "pool-draw", "--n", "500", "--seed", "3"])
+    assert drawn.handler is cli.curate_pool_draw and drawn.n == 500 and drawn.seed == 3
+    with pytest.raises(SystemExit):
+        parse(["curate", "pool-draw", "--n", "500"])
+    with pytest.raises(SystemExit):
+        parse(["curate", "pool-draw", "--seed", "3"])
 
 
 def test_there_is_one_path_into_the_stores_and_not_one_each() -> None:

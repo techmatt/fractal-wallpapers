@@ -42,7 +42,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from fractal_wallpapers.labeling import finished
+from fractal_wallpapers.labeling import attributes, finished
 
 PAGE = Path(__file__).with_name("page.html")
 
@@ -61,9 +61,10 @@ SAVE_PREFIX = "/labels/"
 
 
 #: Every name a drop may be saved under: one per label store. `location` is the
-#: location corpus, and the two finished-render names are the two stores rather
-#: than two judges — see [`target_of_save`].
-DROPS: tuple[str, ...] = ("location", *finished.HEADS)
+#: location corpus, the two finished-render names are the two stores rather than
+#: two judges — see [`target_of_save`] — and the rest are the location-attribute
+#: stores, which are not judges at all.
+DROPS: tuple[str, ...] = ("location", *finished.HEADS, *attributes.NAMES)
 
 
 def target_of_save(path: str) -> tuple[str, str] | None:
@@ -77,7 +78,8 @@ def target_of_save(path: str) -> tuple[str, str] | None:
     corpus a verdict lands in, and the two finished-render stores kept their names
     when the two judges they were named after became one — so a rig that validated
     against the roster would have started refusing `strange_render.json`, which is
-    still exactly where a strange verdict goes.
+    still exactly where a strange verdict goes. An attribute store has no model on
+    the roster at all, which is the same point one step further.
     """
     relative = urlsplit(path).path
     if not relative.startswith(SAVE_PREFIX):
