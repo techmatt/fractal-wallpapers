@@ -29,6 +29,23 @@ PARTITIONS = ("mandelbrot", "phoenix", "julia:mandelbrot")
 #: the ruling of 2026-09-04 was measured. `CHEAP_PHOENIX` is the same table with
 #: that one number moved, which is the other half of the ruling.
 FIXTURE_PRICES = {"mandelbrot": 4.0, "julia:mandelbrot": 2.0, "phoenix": 20.0}
+
+#: The scale [`a_world`] and [`build_a_plan`] run at, and the reason it is small.
+#:
+#: Every guard in this file is about the *shape* of a plan — which arms are drawn,
+#: how the shares divide, whether an arm and its control are disjoint, what the
+#: record says. None is about how many shots come back, and a plan's cost is
+#: linear in both of these. At 400 places a partition and a budget of 600 this
+#: module was **16.74 s of a 107 s fast lane**, 48 `build_a_plan` calls at about
+#: 0.3 s each; at these numbers it is a third of that and every assertion is the
+#: same assertion. Each arm still draws dozens of shots, which is what makes a
+#: disjointness or a roster claim mean anything.
+#:
+#: **Raise them rather than reason around them** if a guard ever needs a wider
+#: population — a plan that reads differently at scale is a finding, not a
+#: fixture to tune.
+PLACES = 120
+BUDGET = 200
 CHEAP_PHOENIX = {**FIXTURE_PRICES, "phoenix": 0.5}
 
 
@@ -414,7 +431,7 @@ def test_a_route_whose_stock_cannot_reach_the_target_says_so_rather_than_extrapo
 # --------------------------------------------------------------------------- #
 # The whole plan, on a world small enough to check by hand.
 # --------------------------------------------------------------------------- #
-def a_world(places=400, near=6):
+def a_world(places=PLACES, near=6):
     """A population with a pool to open, a near band to deepen, and proven places."""
     pool = pools(dict.fromkeys(PARTITIONS, places))
     index, by_key, rows, scores, best = {}, {}, [], {}, {}
@@ -449,12 +466,12 @@ def test_a_measuring_plan_takes_the_three_draws_and_leaves_the_floor_empty():
     assert shape["roster"] == depth.field_modes()
 
 
-def build_a_plan(**knobs):
+def build_a_plan(budget=BUDGET, places=PLACES, **knobs):
     return depth.build_plan(
-        a_world(),
+        a_world(places=places),
         seed=11,
         rate=0.3,
-        budget=600,
+        budget=budget,
         width=8,
         bands=5,
         log=lambda *_args: None,
@@ -826,9 +843,19 @@ def test_the_plan_is_sized_off_the_worker_count_because_the_rate_is_per_engine()
     leg on three engines can buy three times the plan in the same clock. Sizing
     off one engine plans a third of the hour and the leg stops having run out of
     plan rather than out of time — which reads on the record as a budget that was
-    not spent and is really a plan that was not written."""
-    one, shape_one = build_a_plan(workers=1)
-    three, shape_three = build_a_plan(workers=3)
+    not spent and is really a plan that was not written.
+
+    The one guard here that names its own scale rather than taking [`PLACES`] and
+    [`BUDGET`], and it needs **both** axes. A budget three engines cannot spend is
+    a budget the population capped, so at the module's 120 places a worker count
+    reads as 1.45x rather than as three — the pool binds before the clock does.
+    Widening the band to admit that would be the one change that stops this saying
+    anything: the claim is that three engines buy three times the plan, and it is
+    only a claim about the *sizing* while the places are there to be drawn. So the
+    guard states the wide world and pays for two plans over it.
+    """
+    one, shape_one = build_a_plan(workers=1, budget=600, places=400)
+    three, shape_three = build_a_plan(workers=3, budget=600, places=400)
     assert shape_three["workers_sized_for"] == 3
     assert len(three) > len(one), "three engines buy more plan in the same wall clock"
     # Not exactly 3x: each draw's candidate count is floored into whole locations
@@ -1057,7 +1084,7 @@ def test_a_misspelt_centred_filter_is_refused():
 def test_the_centered_cut_moves_the_ranked_draw_and_its_control_together(monkeypatch):
     """A control drawn from a different population than the arm it controls is
     not a control, so the cut lands on the pool both are banded out of."""
-    keys = frozenset(f"mandelbrot-{at:04d}" for at in range(400))
+    keys = frozenset(f"mandelbrot-{at:04d}" for at in range(PLACES))
     monkeypatch.setattr(depth, "centered_locations", lambda: keys)
     plan, shape = build_a_plan(centered=depth.CENTERED_ONLY)
     assert {shot.partition for shot in plan if shot.arm != depth.NEAR} == {"mandelbrot"}
@@ -1431,7 +1458,7 @@ def test_the_floor_draw_narrowed_to_untried_places_leaves_the_tried_ones_out():
         world,
         seed=11,
         rate=0.3,
-        budget=600,
+        budget=BUDGET,
         width=8,
         bands=5,
         shares={depth.NEAR: 0.0, depth.RANKED: 0.0, depth.FLAT: 0.0, depth.FLOOR: 1.0},

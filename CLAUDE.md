@@ -185,17 +185,25 @@ here because this file is loaded into every session in this repository and a
 chronological log is not a rule. What stays here is the current figure and the rules
 the log produced.
 
-The fast lane is **122.97 s over the 3,565 it holds**, on this machine, idle,
-2026-09-04, at the re-mode leg — twenty-seven tests more than the solve speedups'
-120.29 s and 2.68 s over it, about a tenth of a second a test. The slow lane is
-**6:31 over 3,681, nothing skipped**, on this machine, idle, 2026-09-04, at the
-same commit — thirty-three tests more than the `exp_smoothing` drop's 6:54 over
-3,648 and **24 s under it**. That is the first slow reading to fall while gaining
-tests, and the cause is the solve speedups of `4300e4b` rather than anything the
-re-mode leg did: this lane holds guards that run a solve pass, and that pass got
-faster. **A lane that gets cheaper with no test removed is benign only when
-something it prices got faster** — the rule below about suspecting a defect is
-about a lane getting *slower*, and this reading is its counter-example.
+The fast lane is **98.78 s over the 3,565 it holds**, 116 deselected, on this
+machine, 2026-09-04, at the temporary-directory fix — the same 3,565 as the
+reading it replaces, and **21.14 s under** the 119.92 s this session measured on
+that tree before touching it. Nothing was deleted and nothing moved lanes. Three
+parts, measured apart: the temporary directories **12.86 s**, [`test_depth`]'s
+fixture scale about **7 s**, and one shared parser for the nested-verb pin
+**2.5 s**. The slow lane's last trustworthy reading is the re-mode leg's **6:31
+over 3,681, nothing skipped**; this session could not better it, for the reason
+the next paragraph gives.
+
+**A slow reading taken beside a website run is not a reading, and this session
+has the receipt.** The lane read 7:00 against that 6:31 right after the fast lane
+had fallen a fifth — a shape no change in this repository can make, since the
+slow lane runs every fast test too. The discriminator was
+`test_autolevel_identity`, thirty-odd engine renders that none of these changes
+can reach: **31.08 s before, 34.24 s in the contaminated run, 32.31 s re-run on
+its own**. A tenth either way on an invariant guard is the whole of the anomaly.
+Re-run one untouched, engine-bound guard before believing a lane — it is forty
+seconds against seven minutes, and it answers *box or tree* on its own.
 
 **What the count means is defined once, in
 [`tests/README.md`](tests/README.md#what-the-fast-lane-count-means)**, and a reading
@@ -256,6 +264,17 @@ went from 15,362 rows and 41 MB to 366,236 rows and 1.11 GB in those three days 
 and seven guards each read the whole of it. So: re-measure after a **merge**, not
 only after writing tests, and suspect the stores first when the digit moves on
 its own.
+
+**And a lane can be priced by its own test count, which is the one that hides.**
+`tmp_path_factory.mktemp` numbers a directory by listing the whole basetemp, and
+`tests/conftest.py`'s autouse sidecar fixture called it once per test — so
+basetemp grew an entry per test and every later test read all of them. Quadratic
+in the size of the suite, **12.86 s of a 119.92 s lane**, and it never appeared
+in a durations list because it was 3 ms on every test rather than seconds on one.
+No reading in the log could have caught it either: it grew *with* the lane
+instead of stepping when something landed. So the two questions above — **which
+store grew**, **which derivation is paid twice** — now have a third beside them:
+**what is paid once per test**. `tests/README.md` carries the measurements.
 
 **And suspect the disk after anything that moves hundreds of thousands of paths.**
 On 2026-08-30 the lane nearly doubled right after 194,058 levelled colormap

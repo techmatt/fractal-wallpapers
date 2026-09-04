@@ -171,6 +171,41 @@ And what is left, which is the list to read before touching this again:
 release sidecar through `intake.read_scores` once, and a test that merges twice
 pays for two. That is what the door does in production and it is not a bug.
 
+### A cost paid once per test scales with the suite, and hides from every reading
+
+**The framing above is right about the slow lane and was wrong about the fast
+one.** Profiled on its own for the first time on 2026-09-04, the fast lane's top
+sixty were **49.7 s of 119.92 s** and the other 3,505 tests were **70.2 s between
+them** — a broad tax, which is exactly what the paragraph above says never
+happens here. Most of it was one line.
+
+`tmp_path_factory.mktemp` is `numbered=True`, and pytest numbers a new directory
+by iterating the whole basetemp for the highest suffix already there.
+`conftest.no_signature_sidecar` is autouse, so it called that once per test:
+basetemp grew an entry per test and every later test read all of them. Quadratic
+in the number of tests.
+
+Measured synthetically, every test also taking `tmp_path`, fresh basetemp each
+run:
+
+| 3,500 tests | clock |
+| --- | --- |
+| `mktemp` per test | **43.27 s** |
+| the path taken off one session directory | **15.12 s** |
+| that, and an O(1) `tmp_path` override | **5.38 s** |
+
+The scaling is what proves it is the listing rather than the directory: 2,000
+trivial tests cost 5.4 s of it and 4,000 cost 19.7 s — twice the tests, 3.6x the
+price. On the real lane it was **12.86 s of 119.92 s**.
+
+**It could not have been found from this log.** A store that grows steps the
+digit on the day it grows; this grew three milliseconds at a time, with the
+suite, and every reading in the log priced it as part of whatever else landed
+that week. It never reached a durations list either, for the same reason. So the
+question to ask of a lane, beside *which store grew* and *which derivation is
+paid twice*, is **what does every test pay** — and the way to ask it is to sum a
+`--durations=0 --durations-min=0` run by file, which is how this one was found.
+
 ### A derivation paid twice is the thing to look for
 
 `served_locations.build` is the one to remember, because it was not a test
@@ -247,7 +282,29 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
-The **fast** lane read **122.97 s over 3,565, 116 deselected** at the re-mode leg,
+The **fast** lane read **98.78 s over 3,565, 116 deselected, nothing skipped** at
+the temporary-directory fix, 2026-09-04 — the same 3,565 as the reading below and
+**21.14 s under** the 119.92 s taken on that tree, the same afternoon, before
+anything was touched. Both figures are this session's, so the comparison is one
+box in one hour rather than one entry against another. Three parts, measured
+apart: the temporary directories **12.86 s** (the section above), `test_depth`'s
+fixture scale about **7 s**, and one shared parser for the nested-verb pin
+**2.5 s**. Nothing was deleted, nothing moved lanes, and the one guard whose
+assertion was in the way — that three engines buy three times the plan — kept its
+band and was given back the wide world it needs, because the population binds
+before the clock does and at 120 places it reads 1.45x.
+
+**The slow lane could not be re-read that day and the failed attempt is the
+useful part.** It came back 7:00 against the re-mode leg's 6:31, right after the
+fast lane had fallen a fifth — which no change here can do, since the slow lane
+runs every fast test too. A website run had the box at 65% CPU.
+`test_autolevel_identity` settled it: thirty-odd engine renders, untouchable by
+any of this, reading **31.08 s / 34.24 s / 32.31 s** across the three runs. A
+tenth either way on an invariant guard is the whole of the anomaly. **Re-run one
+untouched engine-bound guard before believing a lane** — forty seconds against
+seven minutes, and it answers *box or tree* by itself.
+
+It read **122.97 s over 3,565, 116 deselected** at the re-mode leg,
 idle, 2026-09-04 — twenty-seven tests more than the reading below it and 2.68 s
 over it, which is about a tenth of a second a test and the ordinary shape. Twenty
 of the twenty-seven are `test_remode.py`, all of them arithmetic over a fake

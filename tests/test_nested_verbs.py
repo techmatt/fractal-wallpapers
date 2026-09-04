@@ -655,12 +655,29 @@ def curate_steps(parser):
     return next(a for a in curating._actions if isinstance(a, argparse._SubParsersAction))
 
 
+@pytest.fixture(scope="module")
+def parser():
+    """One parser for the whole pinned set below.
+
+    `build_parser` imports nineteen modules and assembles every subparser, which
+    is **34.8 ms** on this machine — measured in-process, a hundred builds after
+    a warm one. The guard below is seventy-one cases and built one apiece, so the
+    pin cost 2.5 s to answer a question about spelling.
+
+    Shared rather than rebuilt because `parse_args` does not touch the parser: it
+    walks the actions and fills a fresh `Namespace`. Any guard here that wants a
+    parser it can mutate, or one built after a patch, calls `build_parser` itself
+    — and three below do.
+    """
+    return cli.build_parser()
+
+
 @pytest.mark.parametrize("line,handler,expected", LINES, ids=[line for line, _, _ in LINES])
-def test_a_nested_verb_resolves_to_the_namespace_it_always_did(line, handler, expected) -> None:
+def test_a_nested_verb_resolves_to_the_namespace_it_always_did(line, handler, expected, parser):
     """The pin. Written against the parser that spelled every second verb as a
     positional inside one parser, and unchanged since: same spelling, same flags,
     same values, same handler."""
-    parsed = cli.build_parser().parse_args(shlex.split(line))
+    parsed = parser.parse_args(shlex.split(line))
 
     assert parsed.handler is getattr(cli, handler), f"`{line}` resolved to another handler"
     held = vars(parsed)

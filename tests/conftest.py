@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import functools
 import hashlib
+import itertools
 import re
 import subprocess
 from types import SimpleNamespace
@@ -226,8 +227,56 @@ def pytest_sessionfinish(session, exitstatus) -> None:
     session.exitstatus = pytest.ExitCode.TESTS_FAILED
 
 
+# --------------------------------------------------------------------------- #
+# Temporary directories, numbered by a counter rather than by a listing.
+# --------------------------------------------------------------------------- #
+#: The serial every temporary name in this file is numbered off.
+#:
+#: `tmp_path_factory.mktemp` is `numbered=True`, and pytest numbers a new
+#: directory by **iterating the whole basetemp** for the highest suffix already
+#: there. One call per test is therefore quadratic in the test count: basetemp
+#: grows an entry per test and every later call reads all of them. It is the one
+#: cost in this suite that scales with the number of tests rather than with a
+#: store, which is why every reading in [`tests/README.md`]'s log was blind to it
+#: — it grew with the lane instead of stepping when something landed.
+#:
+#: Measured on this machine over a synthetic 3,500-test run, every test also
+#: taking `tmp_path`, fresh basetemp each time: **43.27 s** with `mktemp` per
+#: test, **15.12 s** with the sidecar's path taken off a session directory, and
+#: **5.38 s** with that plus the `tmp_path` override below. The scaling is the
+#: proof it is the scan: 2,000 trivial tests cost 5.4 s of it and 4,000 cost
+#: 19.7 s — twice the tests, 3.6x the price.
+#:
+#: No coverage is traded for any of this. The directories are the same
+#: directories; they are counted rather than searched for.
+_TMP_SERIAL = itertools.count()
+
+
+@pytest.fixture
+def tmp_path(request, tmp_path_factory):
+    """`tmp_path`, with pytest's directory listing replaced by [`_TMP_SERIAL`].
+
+    An override of pytest's own fixture, which is supported and is the only
+    place this is fixable once — the alternative is rewriting the sixteen
+    hundred sites that ask for it. The directory is still named after the test
+    that asked, so a temporary kept after a failure is still readable; what goes
+    is the `iterdir()` of a basetemp that ends a run holding thousands of
+    entries.
+    """
+    stem = re.sub(r"[^A-Za-z0-9_-]", "_", request.node.name)[:30]
+    directory = tmp_path_factory.getbasetemp() / f"{stem}_{next(_TMP_SERIAL)}"
+    directory.mkdir()
+    return directory
+
+
+@pytest.fixture(scope="session")
+def _absent_sidecar_root(tmp_path_factory):
+    """One directory to hang every test's absent sidecar off. See [`_TMP_SERIAL`]."""
+    return tmp_path_factory.mktemp("no_signature_sidecar")
+
+
 @pytest.fixture(autouse=True)
-def no_signature_sidecar(monkeypatch, tmp_path_factory):
+def no_signature_sidecar(monkeypatch, _absent_sidecar_root):
     """No test reads the **real** bound-signature sidecar. Every test, always.
 
     [`curation.signatures`]' store is ~247 MB and [`solve.solve`] consults it on
@@ -243,10 +292,20 @@ def no_signature_sidecar(monkeypatch, tmp_path_factory):
 
     `test_signatures.py` overrides this with its own tmp store — a file's fixture
     runs after this one, so its `monkeypatch.setattr` is the one that stands.
+
+    **A serial name in one session directory, not a directory apiece.** What this
+    owes each test is a private path that does not exist, and a directory was
+    never part of that — it was only how `mktemp` spelled *unique*, at the price
+    [`_TMP_SERIAL`] measures. The parent here exists, so a `signatures.write`
+    through the patch still lands somewhere private and still succeeds, which is
+    exactly what happened before. Nothing in the suite does: the three files that
+    write a sidecar — `test_signatures`, [`test_ledger_tracking`] and
+    [`test_candidate_ledger`] — each replace this patch with their own store
+    first. The uniqueness stays anyway, because it costs a counter.
     """
     from fractal_wallpapers.curation import signatures
 
-    nowhere = tmp_path_factory.mktemp("no_signature_sidecar") / signatures.SIDECAR_NAME
+    nowhere = _absent_sidecar_root / f"{next(_TMP_SERIAL)}_{signatures.SIDECAR_NAME}"
     monkeypatch.setattr(signatures, "sidecar_path", lambda: nowhere)
 
 
