@@ -7,6 +7,17 @@ verdicts on **places** — is this worth rendering — one row per location.
 does this colouring of that place work — one row per picture, because a place
 appears in them many times at many recipes and the verdicts differ.
 
+`spiral/` is a fourth store and a different kind of question. Those three ask how
+*good* something is, all on one 1–4 scale; an **attribute** store asks what a
+place *is*, in named classes, and exists to be counted rather than maximized — a
+share cap in the solve, a probe on the neutral embeddings. It keys on the
+location like `labels/` does, it carries `class` and deliberately carries **no**
+`score` field, and its writer refuses a row that has one: every quality reader
+here keys on `score`, so an attribute written as `1` and `2` would read as a
+corpus of tiers the day somebody pooled the stores by field name. Its own README
+says how the reservation in its `eval_split.jsonl` differs from a finished
+store's pin.
+
 Those two are named after the two judges that used to read them, and since
 2026-08-23 one judge reads both. **The stores did not merge and are not renamed**:
 a store is a corpus, these are two populations with two blind sheets and two

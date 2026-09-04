@@ -1,4 +1,4 @@
-Collecting human taste: the labeling rig and the two stores it writes to.
+Collecting human taste: the labeling rig and the stores it writes to.
 
 ```
 store.py          the location records: the paths, the one writer, the one reader
@@ -7,6 +7,7 @@ groups.py         which locations would leak into each other, and are held out t
 split.py          the seeded draw over those groups, shipped as data
 pins.py           the evaluation pin, asserted on the location coordinate
 finished.py       the finished-render stores: one per judge, keyed on the picture
+attributes.py     the location-attribute stores: named classes, never a tier
 sheets.py         THE generator: two row sources, one cut, one manifest, one page
 server.py         serve one sheet, to one browser, on the first free port at or above
 page.html         the page: the row's pictures, the sheet's tiers, one export
@@ -24,11 +25,54 @@ label build --from-ledger artifacts/walk/walk.jsonl --batch NAME
 label build --from-plan artifacts/places.jsonl --batch NAME
 label build --from-plan artifacts/promotion.jsonl --head strange_render --batch NAME
 label build --from-plan <plan> --head smooth_render --batch NAME --order-by top
+label build --from-plan <plan> --head spiral --batch NAME
 label sheets
 label serve --sheet artifacts/sheet
 label ingest --sheet artifacts/sheet --labeler matt --write
+label pin --head spiral --from-plan <plan> --batch NAME --reserve N --seed S --write
 label show
 label split --write
+```
+
+## The third kind of sheet: a location attribute
+
+`--head` names a store rather than a judge, and one of the stores it can name is
+not a judge at all. An **attribute** sheet asks what a place *is* — `spiral` or
+`not_spiral` — in named classes rather than on the 1–4 scale, and the page shows
+exactly those two buttons. Three things about it differ from every other sheet
+and each of them is what a base-rate read needs:
+
+* **No judge reads the page.** There is no scoring pass, no suggestion from a
+  head and no score order. A page ordered by a quality head measures the head as
+  much as the attribute.
+* **The order is a seeded shuffle**, so position carries no information. The
+  sweep button says so in its own confirmation on a shuffled page, because
+  "everything below here is already right" is a claim about a sorted one.
+* **A prefill, where a plan states one, is a hint and says so.** The manifest
+  carries `prefill_note` and the page prints it instead of its own two sentences
+  about a head's decode or an incumbent verdict — a labeler who reads a
+  similarity hint as a model's tier is being told the wrong thing.
+
+The page still casts **numbers**, because a drop is one number per unit for every
+store there is and a second export shape would be a second answer to what a drop
+is. The manifest carries `classes` and `words`, so a sheet on disk says what its
+ones and twos meant, and `label ingest` turns the number into a class once, at
+the seam. Nothing downstream of that ever sees the ordinal.
+
+### Reserving part of a sitting
+
+`label pin` draws a seeded uniform sample of a plan's own units and writes them
+to the attribute store's `eval_split.jsonl` **before the sitting starts**. It
+exists because `eval_only` is a flag on a batch: a sitting that reserves a fifth
+of itself has no second batch to hang it on, and putting the reserved units in
+one would print a different batch name on their cards and tell the labeler which
+ones they were. Reserving is not withholding — the verdicts are collected like
+any others and the ingest does not assert the pin. What the pin forbids is
+training on them.
+
+```
+fractal-wallpapers label pin --head spiral --from-plan artifacts/pool_draw/spiral_500/plan.jsonl \
+    --batch <batch> --reserve 100 --seed <seed> --write
 ```
 
 ## Serving a sheet to label

@@ -96,10 +96,20 @@ def test_every_sheet_names_a_drop_the_rig_will_accept() -> None:
     names a label STORE. The two finished-render stores kept their names when the
     two judges became one, so the rig checks drops rather than the model roster:
     validating against the roster would refuse `strange_render.json`, which is
-    still exactly where a strange verdict goes."""
+    still exactly where a strange verdict goes. An attribute store has no model on
+    the roster at all, which is the same point one step further.
+
+    Asserted as a ROUND TRIP rather than as a list. A drop name the ingest cannot
+    route is a page that saves an hour of work into a file nothing reads, and a
+    store with no drop name is a sheet whose page cannot save at all — a literal
+    set catches the second and neither catches the first."""
+    from fractal_wallpapers.labeling import attributes, intake
+
     assert sheets.LOCATION_HEAD in server.DROPS
     assert all(head in server.DROPS for head in sheets.FINISHED_RUBRIC)
-    assert set(server.DROPS) == {"location", *finished.HEADS}
+    assert set(server.DROPS) == {"location", *finished.HEADS, *attributes.NAMES}
+    for name in server.DROPS:
+        assert intake.records_for(name).head == name, f"{name} saves where nothing ingests"
 
 
 def test_the_page_takes_its_export_name_from_the_head_and_the_sheet() -> None:

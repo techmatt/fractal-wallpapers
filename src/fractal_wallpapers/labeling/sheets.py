@@ -111,7 +111,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from fractal_wallpapers import engine
-from fractal_wallpapers.labeling import finished, store
+from fractal_wallpapers.labeling import attributes, finished, store
 from fractal_wallpapers.paths import colormap_dir
 
 #: The schema every sheet manifest and row carries.
@@ -343,6 +343,18 @@ class Source:
     #: The stated rule that answers a unit instead of serving it, or `None` for a
     #: source where nothing is settled. See [`Screen`].
     screen: object = None
+    #: `{ordinal: what that button says}`, for a source whose tiers are not the
+    #: 1..4 quality scale. Empty leaves the page on its own words, which is what
+    #: every quality sheet wants.
+    words: dict = field(default_factory=dict)
+    #: The named classes the ordinals stand for, where a sheet casts on something
+    #: other than a tier. Carried onto the manifest so a drop can be read back
+    #: into a store without the store being asked what its own page meant.
+    classes: tuple = ()
+    #: What a prefill on THIS page is, in the page's own words. The two the page
+    #: knows — a head's decode, and an incumbent verdict — are the only two a
+    #: quality sheet has; a source whose suggestion is neither says so here.
+    prefill_note: str = ""
 
 
 @dataclass
@@ -916,6 +928,165 @@ def finished_source(
 
 
 # --------------------------------------------------------------------------- #
+# The attribute source.
+# --------------------------------------------------------------------------- #
+def attribute_source(
+    name: str,
+    resolution=LABEL_RESOLUTION,
+    supersample: int = LABEL_SUPERSAMPLE,
+    renderer=None,
+    reuse_cache: bool = False,
+) -> Source:
+    """The source that asks what a place IS rather than how good it is.
+
+    A third kind of unit, and it is deliberately a hybrid: the picture is a
+    finished render, judged at the geometry both finished corpora were collected
+    at, while the verdict keys on the **location** — see
+    [`fractal_wallpapers.labeling.attributes`] for why those two come apart.
+
+    Three things separate it from [`finished_source`], and they are the three a
+    base-rate sitting needs:
+
+    * **No judge reads the page.** There is no scoring pass and no score order: a
+      page ordered by a quality head measures the head as much as the attribute,
+      and an attribute is not on that head's scale in the first place.
+    * **The order is a seeded shuffle.** Draw order arrives in blocks of one mode
+      and a block drags a labeler's eye; a shuffle is the only ordering that is a
+      fact about nothing.
+    * **A unit states its own picture, whole.** There is no colormap
+      neighbourhood to draw from here — the plan named the row a seating pass
+      would reach, and re-picking a map under its recipe would keep every knob
+      and change the picture. A unit short of either half is refused rather than
+      completed.
+
+    A prefill, where a plan states one, is the plan's, and it is a hint about
+    similarity rather than any head's verdict. The page is told so in its own
+    words — see [`Source.prefill_note`] — because a labeler who reads a
+    similarity hint as a model's tier is being told the wrong thing.
+    """
+    from fractal_wallpapers.supply.partitions import partition_of_family
+
+    held = attributes.attribute(name)
+    render = render_finished if renderer is None else renderer
+    notes: dict = {"reused_from_cache": 0, "rendered": 0}
+
+    def cut(unit: dict, directory: Path, picture_name: str) -> dict:
+        from fractal_wallpapers.curation import colorize
+
+        if unit.get("recipe") is None or unit.get("colormap") is None:
+            raise SheetError(
+                "an attribute unit states its whole picture — the recipe AND the map it was "
+                "recorded against. This sheet serves the row a seating pass would reach, and "
+                "deriving either half here would serve a picture the pool does not hold."
+            )
+        recipe_ = stated_recipe(unit["recipe"])
+        map_name = colormap(unit["colormap"])
+        join = {
+            "family": unit["family"],
+            "viewport": unit["viewport"],
+            "mode": unit["mode"],
+            "mode_params": unit.get("mode_params") or {},
+            "curve": unit.get("curve") or colorize.CURVE,
+            "colormap": map_name,
+            "recipe": recipe_,
+            "render": {
+                "resolution": list(resolution),
+                "supersample": supersample,
+                "maxiter": int(unit["maxiter"]),
+                "filter": LABEL_FILTER,
+            },
+            "partition": partition_of_family(unit["family"]),
+        }
+        picture = directory / "full" / f"{picture_name}.jpg"
+        leveled = unit.get("leveled")
+        if not picture.is_file() and reuse_cache and leveled is None:
+            # Either finished head's cache: the name is a digest of the whole
+            # engine spec, so a hit is this picture whichever store happens to
+            # hold it, and an attribute sheet has no store of its own to look in.
+            for head in finished.HEADS:
+                cached = cached_picture(head, join)
+                if cached is not None:
+                    picture.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copyfile(cached, picture)
+                    notes["reused_from_cache"] += 1
+                    break
+        if not picture.is_file():
+            render(join, picture, Path(leveled) if leveled else None)
+            notes["rendered"] += 1
+        facts = [
+            f"{join['partition']} · {family_line(unit['family'])}",
+            viewport_line(unit["viewport"], unit["maxiter"]),
+            f"{unit['mode']} · {map_name}" + (" · mirrored" if recipe_["mirror"] else ""),
+        ]
+        facts.extend(str(line) for line in (unit.get("facts") or []))
+        return {
+            "join": join,
+            "section": unit.get("section") or "",
+            "pictures": [
+                {"caption": f"{unit['mode']} · {map_name}", "path": f"full/{picture_name}.jpg"}
+            ],
+            "thumb": f"thumb/{picture_name}.jpg",
+            "facts": facts,
+            "selected_on": unit.get("selected_on") or None,
+            "_picture": picture,
+            "_thumb": directory / "thumb" / f"{picture_name}.jpg",
+        }
+
+    def suggest(rows: list[dict], units: list[dict], log) -> str:
+        pictures = [row.pop("_picture") for row in rows]
+        thumbs = [row.pop("_thumb") for row in rows]
+        for picture, thumb in zip(pictures, thumbs, strict=True):
+            thumbnail(picture, thumb)
+        stated = stated_suggestions(units, held.tiers)
+        log(f"{len(rows)} units, {sum(1 for value in stated if value is not None)} prefilled")
+        for row, unit, incumbent in zip(rows, units, stated, strict=True):
+            row["suggestion"] = None if incumbent is None else int(incumbent)
+            # Whatever the prefill was made of, in the plan's own words. There is
+            # no head reading here, so an empty `columns` is a card with nothing
+            # under the picture — which is what a blind page looks like.
+            row["columns"] = dict(unit.get("columns") or {})
+            # No judge, so no expected tier. Null rather than zero: zero is a
+            # reading and this is the absence of one.
+            row["suggestion_score"] = None
+        return "none"
+
+    def order(rows: list[dict], seed: int) -> tuple[list[int], str]:
+        """A seeded shuffle, sections in the order the plan introduced them."""
+        sections: list[str] = []
+        for row in rows:
+            if row["section"] not in sections:
+                sections.append(row["section"])
+        indices = list(range(len(rows)))
+        random.Random(seed).shuffle(indices)
+        if len(sections) > 1:
+            indices.sort(key=lambda i: sections.index(rows[i]["section"]))
+            return indices, "sections, shuffle"
+        return indices, "shuffle"
+
+    return Source(
+        kind="attribute",
+        head=held.name,
+        cut=cut,
+        suggest=suggest,
+        order=order,
+        tiers=held.tiers,
+        rubric=held.rubric,
+        words=held.word_map(),
+        classes=held.classes,
+        prefill_note=(
+            "the suggestion is a similarity hint — not a head's verdict and not a tier. "
+            "Flip it wherever it is wrong."
+        ),
+        render_record={
+            "resolution": list(resolution),
+            "supersample": supersample,
+            "filter": LABEL_FILTER,
+        },
+        notes=notes,
+    )
+
+
+# --------------------------------------------------------------------------- #
 # The populations.
 # --------------------------------------------------------------------------- #
 def units_from_ledger(path: Path, admitted_only: bool = False) -> list[dict]:
@@ -1175,6 +1346,12 @@ def build(
         "render": source.render_record,
         "built_at": store.now(),
     }
+    if source.words:
+        manifest["words"] = dict(source.words)
+    if source.classes:
+        manifest["classes"] = list(source.classes)
+    if source.prefill_note:
+        manifest["prefill_note"] = source.prefill_note
     if source.notes:
         manifest["cut"] = dict(source.notes)
     if screen is not None:
@@ -1257,6 +1434,7 @@ __all__ = [
     "Sheet",
     "SheetError",
     "Source",
+    "attribute_source",
     "build",
     "colormap",
     "cut_name",

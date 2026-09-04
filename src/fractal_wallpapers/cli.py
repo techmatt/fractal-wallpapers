@@ -19,6 +19,7 @@ from fractal_wallpapers import engine, paths
 from fractal_wallpapers import schedule as schedule_module
 from fractal_wallpapers.curation import manufacture as manufacture_module
 from fractal_wallpapers.labeling import sheets as sheets_module
+from fractal_wallpapers.labeling.attributes import NAMES as ATTRIBUTE_NAMES
 from fractal_wallpapers.labeling.finished import HEADS as FINISHED_HEADS
 from fractal_wallpapers.palettes import color_mass as color_mass_module
 from fractal_wallpapers.palettes import groups as palette_groups
@@ -30,6 +31,12 @@ from fractal_wallpapers.paths import (
     repo_root,
     tracked_name,
 )
+
+#: Every store a sheet may be cut for that is not the location corpus: the two
+#: finished-render judges and the location-attribute stores. One list, because a
+#: `--head` that accepted a store `label ingest` cannot route to is a sheet that
+#: renders for an hour and then has nowhere to land.
+NON_LOCATION_HEADS: tuple[str, ...] = tuple(sorted({*FINISHED_HEADS, *ATTRIBUTE_NAMES}))
 
 WEIGHTS_MANIFEST = Path("models") / "weights.json"
 RELEASE_URL = "https://github.com/techmatt/fractal-wallpapers/releases/download/{tag}/{asset}"
@@ -1456,9 +1463,28 @@ def derive_tau_h(args: argparse.Namespace) -> int:
     return 0
 
 
+def label_stores(head: str):
+    """`(read the registry, write one)` for whichever store `head` names.
+
+    One resolution, so `register` and `ingest` cannot disagree about which store
+    a head is. An empty head is the location corpus, which is the one store that
+    predates the flag.
+    """
+    from fractal_wallpapers.labeling import attributes, finished, store
+
+    if not head:
+        return store.registry, store.register
+    if head in attributes.NAMES:
+        return (lambda: attributes.registry(head)), (
+            lambda registration: attributes.register(head, registration)
+        )
+    return (lambda: finished.registry(head)), (
+        lambda registration: finished.register(head, registration)
+    )
+
+
 def label_register(args: argparse.Namespace) -> int:
     """Register a batch's generation method, before it has any rows."""
-    from fractal_wallpapers.labeling import finished, store
     from fractal_wallpapers.labeling import registry as registry_module
 
     registration = registry_module.Registration(
@@ -1469,11 +1495,11 @@ def label_register(args: argparse.Namespace) -> int:
         eval_only=args.eval_only,
         why=args.why or "",
     )
-    known = finished.registry(args.head) if args.head else store.registry()
-    if args.batch in known:
+    read, write = label_stores(args.head)
+    if args.batch in read():
         print(f"batch {args.batch!r} is already registered; a second row would restate it")
         return 1
-    row = finished.register(args.head, registration) if args.head else store.register(registration)
+    row = write(registration)
     eligible = registry_module.registration_of(row).eval_eligible
     print(json.dumps({**row, "head": args.head or "location", "eval_eligible": eligible}, indent=2))
     return 0
@@ -1481,16 +1507,27 @@ def label_register(args: argparse.Namespace) -> int:
 
 def label_build(args: argparse.Namespace) -> int:
     """Cut a labeling sheet and render every unit of it."""
-    from fractal_wallpapers.labeling import finished, sheets, store
+    from fractal_wallpapers.labeling import attributes, sheets
 
     if args.head and not args.from_plan:
-        print("--head names a finished-render judge, and those sheets are cut from --from-plan")
+        print(
+            "--head names a store other than the location corpus, and those sheets are cut "
+            "from --from-plan"
+        )
         return 1
     if args.reuse_renders and not args.head:
         print("--reuse-renders reads a finished-render cache, so it needs --head")
         return 1
 
-    if args.head:
+    if args.head in attributes.NAMES:
+        units = sheets.units_from_plan(resolve_output(args.from_plan))
+        source = sheets.attribute_source(
+            args.head,
+            resolution=tuple(args.resolution),
+            supersample=args.supersample,
+            reuse_cache=args.reuse_renders,
+        )
+    elif args.head:
         units = sheets.units_from_plan(resolve_output(args.from_plan))
         source = sheets.finished_source(
             args.head,
@@ -1526,7 +1563,7 @@ def label_build(args: argparse.Namespace) -> int:
     # Every batch a row will LAND in, which on a revision sheet is the batch each
     # unit came out of and not the sheet's own name. Checked after the units are
     # read and before a pixel is rendered.
-    known = finished.registry(args.head) if args.head else store.registry()
+    known = label_stores(args.head)[0]()
     unregistered = sorted({unit.get("batch") or args.batch for unit in units} - set(known))
     if unregistered:
         head = f" --head {args.head}" if args.head else ""
@@ -1621,6 +1658,71 @@ def label_ingest(args: argparse.Namespace) -> int:
     )
     print(json.dumps(report, indent=2))
     return 0
+
+
+def label_pin(args: argparse.Namespace) -> int:
+    """Reserve part of an attribute sitting's own units as its evaluation side."""
+    import random
+
+    from fractal_wallpapers.labeling import attributes, sheets, store
+
+    try:
+        units = sheets.units_from_plan(resolve_output(args.from_plan))
+    except sheets.SheetError as refusal:
+        print(refusal)
+        return 1
+    if args.reserve > len(units):
+        print(f"asked to reserve {args.reserve} of {len(units)} units; there are not that many")
+        return 1
+
+    indices = sorted(random.Random(args.seed).sample(range(len(units)), args.reserve))
+    try:
+        rows = [
+            attributes.pin_row({**units[index], "batch": units[index].get("batch") or args.batch})
+            for index in indices
+        ]
+    except attributes.AttributeRefused as refusal:
+        print(refusal)
+        return 1
+    places = {repr(attributes.place_of(row)) for row in rows}
+    if len(places) != len(rows):
+        print(
+            f"{len(rows)} reserved units sit on {len(places)} distinct locations. The pin is "
+            f"asserted on the place, so a duplicate is a unit that reserves nothing."
+        )
+        return 1
+
+    recipe = {
+        "schema": attributes.SCHEMA,
+        "rule": (
+            "a seeded uniform draw over this sitting's own units, taken BEFORE any verdict "
+            "exists. The reservation is intra-batch: `eval_only` is a flag on a batch and a "
+            "second batch would print a second name on the reserved cards, telling the "
+            "labeler which ones they were"
+        ),
+        "attribute": args.head,
+        "batch": args.batch,
+        "seed": args.seed,
+        "plan": tracked_or_given(args.from_plan),
+        "units": len(units),
+        "reserved": len(rows),
+        "realized_eval_share": round(len(rows) / len(units), 4) if units else 0.0,
+        "drawn_at": store.now(),
+    }
+    if not args.write:
+        print(json.dumps({**recipe, "note": "dry run — pass --write to ship the pin"}, indent=2))
+        return 0
+    members, document = attributes.write_pin(args.head, rows, recipe)
+    print(json.dumps({**recipe, "eval_split": str(members), "split": str(document)}, indent=2))
+    return 0
+
+
+def tracked_or_given(path: str) -> str:
+    """A path as a record should carry it: repository-relative where it is inside one."""
+    try:
+        return Path(path).resolve().relative_to(repo_root()).as_posix()
+    except ValueError:
+        return str(path)
 
 
 def label_show(args: argparse.Namespace) -> int:
@@ -4148,6 +4250,25 @@ def curate_reject(args: argparse.Namespace) -> int:
     return 0
 
 
+def curate_pool_draw(args: argparse.Namespace) -> int:
+    """Draw a uniform sample of the pool's locations and write a labeling plan."""
+    from fractal_wallpapers.curation import pool_draw
+
+    try:
+        record = pool_draw.draw(
+            n=args.n,
+            seed=args.seed,
+            directory=resolve_output(args.out),
+            like=args.like or (),
+            gallery=resolve_output(args.gallery) if args.gallery else None,
+        )
+    except pool_draw.DrawRefused as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps(record, indent=2))
+    return 0
+
+
 def curate_below_bar(args: argparse.Namespace) -> int:
     """Draw the glance sheet of every served wallpaper an acting bar would take back.
 
@@ -5554,8 +5675,9 @@ def label_commands(subcommands) -> None:
     registering.add_argument("--method", required=True, help="how the population was drawn")
     registering.add_argument(
         "--head",
-        choices=sorted(FINISHED_HEADS),
-        help="register in a finished-render store instead of the location store",
+        choices=list(NON_LOCATION_HEADS),
+        help="register in a finished-render or location-attribute store instead of the "
+        "location store",
     )
     registering.add_argument(
         "--score-unconditioned",
@@ -5603,8 +5725,8 @@ def label_commands(subcommands) -> None:
     )
     building.add_argument(
         "--head",
-        choices=sorted(FINISHED_HEADS),
-        help="the finished-render judge a --from-plan sheet is cut for",
+        choices=list(NON_LOCATION_HEADS),
+        help="the finished-render judge, or the location attribute, a --from-plan sheet is cut for",
     )
     building.add_argument(
         "--admitted-only",
@@ -5713,6 +5835,31 @@ def label_commands(subcommands) -> None:
     ingesting.add_argument("--labeler", required=True, help="who cast the verdicts")
     ingesting.add_argument("--write", action="store_true", help="append; otherwise print the plan")
     ingesting.set_defaults(handler=label_ingest)
+
+    pinning = steps.add_parser(
+        "pin",
+        help="reserve part of an attribute sitting's own units as its evaluation side",
+        description=(
+            "A seeded uniform draw over a plan's units, written to the attribute store's own "
+            "`eval_split.jsonl` BEFORE the sitting starts. It exists because `eval_only` is a "
+            "flag on a BATCH and a sitting that reserves a fifth of itself has no second batch "
+            "to hang it on — putting the reserved units in one would print a different batch "
+            "name on their cards and tell the labeler exactly which ones they were. Reserving "
+            "is not withholding: the verdicts on these places are collected like any others, "
+            "and what the pin forbids is TRAINING on them."
+        ),
+    )
+    pinning.add_argument(
+        "--head", required=True, choices=list(ATTRIBUTE_NAMES), help="the attribute store"
+    )
+    pinning.add_argument("--from-plan", required=True, help="the sitting's plan")
+    pinning.add_argument(
+        "--batch", required=True, help="the batch a unit that names none falls back to"
+    )
+    pinning.add_argument("--reserve", type=int, required=True, help="how many units to reserve")
+    pinning.add_argument("--seed", type=int, required=True, help="the reservation's seed")
+    pinning.add_argument("--write", action="store_true", help="ship it; otherwise print it")
+    pinning.set_defaults(handler=label_pin)
 
     showing = steps.add_parser("show", help="print what the store currently says, resolved")
     showing.set_defaults(handler=label_show)
@@ -7652,6 +7799,7 @@ def curate_commands(subcommands) -> None:
     from fractal_wallpapers.curation import headroom as headroom_module
     from fractal_wallpapers.curation import hunt as hunt_module
     from fractal_wallpapers.curation import mine as mine_module
+    from fractal_wallpapers.curation import pool_draw as pool_draw_module
     from fractal_wallpapers.curation import release as release_module
     from fractal_wallpapers.curation import rules as rules_module
     from fractal_wallpapers.curation import run as run_module
@@ -9426,6 +9574,44 @@ def curate_commands(subcommands) -> None:
         "--ephemeral", action="store_true", help="read the run's ephemeral record store"
     )
     rejecting.set_defaults(handler=curate_reject)
+
+    drawing_pool = steps.add_parser(
+        "pool-draw",
+        help="draw a uniform sample of the pool's locations as a labeling plan",
+        description=(
+            "The unaimed draw. Every other sheet this project cuts is aimed at a band, a "
+            "mode or the top of a queue, and those measure a correction; this one measures a "
+            "BASE RATE and so cannot be aimed at anything. The population is every location "
+            "holding at least one candidate row that clears its own mode's bar in "
+            "`headroom.bars`, read fresh — the same set the census counts as supply. Each "
+            "drawn location is represented by the best-ranked clearing row a seating pass "
+            "would reach first, so the card carries the picture this project would actually "
+            "ship from that place. It writes a finished-render sheet plan and the record of "
+            "the draw, and it writes nothing into any label store. It HOLDS THE POOL."
+        ),
+    )
+    drawing_pool.add_argument("--n", type=int, required=True, help="how many locations to draw")
+    drawing_pool.add_argument(
+        "--seed", type=int, required=True, help="the draw's seed, recorded with it"
+    )
+    drawing_pool.add_argument(
+        "--out",
+        default=str(Path("artifacts") / "pool_draw"),
+        help="where the plan and its record are written (default: artifacts/pool_draw)",
+    )
+    drawing_pool.add_argument(
+        "--like",
+        action="append",
+        metavar="ALIAS",
+        help="a gallery seat whose neutral embedding seeds the page's prefill, repeatable. "
+        f"Under {pool_draw_module.MINIMUM_SEEDS} resolving, the sheet ships unprefilled and "
+        "the record says which were lost",
+    )
+    drawing_pool.add_argument(
+        "--gallery",
+        help="the tentative gallery directory the --like aliases are resolved against",
+    )
+    drawing_pool.set_defaults(handler=curate_pool_draw)
 
     glancing = steps.add_parser(
         "below-bar",

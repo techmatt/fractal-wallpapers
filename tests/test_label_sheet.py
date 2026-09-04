@@ -499,6 +499,120 @@ def finished_sheet(tmp_path, units, probabilities=None, **kwargs):
     )
 
 
+def attribute_sheet(tmp_path, units, **kwargs):
+    source = sheets.attribute_source("spiral", renderer=picture_stub, **kwargs)
+    return sheets.build(
+        source,
+        units,
+        directory=tmp_path / "attribute_sheet",
+        batch="a_sitting",
+        seed=7,
+        log=lambda _: None,
+    )
+
+
+def test_an_attribute_sheet_says_what_its_ordinals_mean(tmp_path) -> None:
+    """A drop is numbers, so a sheet on disk has to carry the classes they stand for."""
+    sheet = attribute_sheet(tmp_path, [finished_unit(index) for index in range(4)])
+    assert sheet.manifest["kind"] == "attribute"
+    assert sheet.manifest["head"] == "spiral"
+    assert sheet.manifest["tiers"] == [1, 2]
+    assert sheet.manifest["classes"] == ["spiral", "not_spiral"]
+    assert sheet.manifest["words"] == {"1": "spiral", "2": "not a spiral"}
+    assert sheet.manifest["scorer"] == "none"
+    assert "not a tier" in sheet.manifest["prefill_note"]
+
+
+def test_an_attribute_sheet_is_shuffled_and_carries_no_head_reading(tmp_path) -> None:
+    """No judge reads this page, so there is no expected tier and no score order."""
+    sheet = attribute_sheet(tmp_path, [finished_unit(index) for index in range(12)])
+    assert sheet.manifest["order"] == "shuffle"
+    assert all(row["suggestion_score"] is None for row in sheet.rows)
+    assert all(row["columns"] == {} for row in sheet.rows)
+    assert all(row["suggestion"] is None for row in sheet.rows)
+    # The shuffle is the seed's, so the same plan under the same seed is the
+    # same page — and it is not the plan's own order.
+    again = sheets.build(
+        sheets.attribute_source("spiral", renderer=picture_stub),
+        [finished_unit(index) for index in range(12)],
+        directory=tmp_path / "again",
+        batch="a_sitting",
+        seed=7,
+        log=lambda _: None,
+    )
+    frames = [row["join"]["viewport"]["center_re"] for row in sheet.rows]
+    assert [row["join"]["viewport"]["center_re"] for row in again.rows] == frames
+    assert frames != [f"0.{index}" for index in range(12)]
+
+
+def test_an_attribute_unit_carries_the_plan_prefill_and_the_number_behind_it(tmp_path) -> None:
+    units = [
+        finished_unit(index, suggestion=1 + index % 2, columns={"cos_to_seeds": 0.5 + index / 100})
+        for index in range(6)
+    ]
+    sheet = attribute_sheet(tmp_path, units)
+    assert sorted(row["suggestion"] for row in sheet.rows) == [1, 1, 1, 2, 2, 2]
+    assert all("cos_to_seeds" in row["columns"] for row in sheet.rows)
+    assert sheet.manifest["suggested_by"] == "plan"
+
+
+def test_an_attribute_unit_that_states_no_map_is_refused(tmp_path) -> None:
+    """The plan named the row a seating pass would reach; deriving half of it is a
+    different picture."""
+    unit = finished_unit(0)
+    unit.pop("colormap")
+    with pytest.raises(sheets.SheetError, match="states its whole picture"):
+        attribute_sheet(tmp_path, [unit])
+
+
+def test_an_attribute_sheet_ingests_as_classes(tmp_path, monkeypatch) -> None:
+    """The whole seam, end to end: a page of numbers becomes a store of classes."""
+    import json
+
+    from fractal_wallpapers.labeling import attributes, intake
+    from fractal_wallpapers.labeling import registry as registry_module
+
+    monkeypatch.setattr(attributes, "repo_root", lambda: tmp_path / "store")
+    attributes.register(
+        "spiral",
+        registry_module.Registration(batch="a_sitting", method="a draw, for a test"),
+    )
+    sheet = attribute_sheet(tmp_path, [finished_unit(index) for index in range(3)])
+    export = tmp_path / "drop.json"
+    export.write_text(
+        json.dumps({"u0001": {"score": 1}, "u0002": {"score": 2}, "u0003": {"score": 1}}),
+        encoding="utf-8",
+    )
+    report = intake.run(sheet=sheet.directory, labels=export, labeler="matt", write=True)
+    assert report["written"] == 3
+    assert report["verdicts"] == {"spiral": 2, "not_spiral": 1}
+    stored = attributes.resolved("spiral").cast()
+    assert [row["class"] for row in stored].count("spiral") == 2
+    assert all("score" not in row for row in stored), "an ordinal reached the store"
+    # The picture the labeler saw travels whole, keyed on the place.
+    assert stored[0]["render"]["colormap"] == sheets.CANONICAL_COLORMAP
+    assert stored[0]["render"]["resolution"] == list(sheets.LABEL_RESOLUTION)
+
+
+def test_an_export_outside_the_page_s_own_buttons_is_refused(tmp_path, monkeypatch) -> None:
+    """A three on a two-button page is not a verdict anybody could have meant."""
+    import json
+
+    from fractal_wallpapers.labeling import attributes, intake
+    from fractal_wallpapers.labeling import registry as registry_module
+
+    monkeypatch.setattr(attributes, "repo_root", lambda: tmp_path / "store")
+    attributes.register(
+        "spiral",
+        registry_module.Registration(batch="a_sitting", method="a draw, for a test"),
+    )
+    sheet = attribute_sheet(tmp_path, [finished_unit(0)])
+    export = tmp_path / "drop.json"
+    export.write_text(json.dumps({"u0001": {"score": 3}}), encoding="utf-8")
+    with pytest.raises(intake.IntakeError, match=r"casts \[3\]"):
+        intake.run(sheet=sheet.directory, labels=export, labeler="matt", write=True)
+
+
 def test_a_plan_unit_carries_its_own_recipe_into_the_join(tmp_path) -> None:
     """A revision sheet re-serves a picture the store already holds, and a knob
     re-derived from defaults is a different picture and a different identity."""

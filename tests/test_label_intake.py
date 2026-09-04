@@ -218,7 +218,10 @@ def test_the_store_takes_the_corpus_scale_and_not_the_shipped_model_s(tmp_path, 
         sheet=stem, labels=an_export(tmp_path, {"u0001": 4}), labeler="matt", write=True
     )
     assert report["written"] == 1
-    assert report["tiers"] == {"1": 0, "2": 0, "3": 0, "4": 1}
+    # `verdicts`, not `tiers`: the block is keyed by what the STORE records, which
+    # is a tier here and a named class in an attribute store. See
+    # `intake.Records.verdict_of`.
+    assert report["verdicts"] == {"1": 0, "2": 0, "3": 0, "4": 1}
     assert [row["score"] for row in finished.resolved("strange_render").scored()] == [4]
 
 
@@ -234,9 +237,20 @@ def test_the_writer_itself_takes_a_four_for_the_strange_head(tmp_path, head_stor
 
 
 def test_a_score_off_the_scale_entirely_is_still_refused(tmp_path, head_store) -> None:
+    """Twice over, and the two refusals are different claims.
+
+    The ingest refuses it at the seam, naming the buttons the page actually had —
+    which is the message somebody with a broken drop needs, and it fires before a
+    single row is built. The WRITER refuses it too, and that is the guarantee that
+    survives a caller who never came through here.
+    """
     stem = a_sheet(tmp_path)
-    with pytest.raises(finished.FinishedError, match="one scale"):
+    with pytest.raises(intake.IntakeError, match=r"casts \[5\]"):
         intake.run(sheet=stem, labels=an_export(tmp_path, {"u0001": 5}), labeler="matt", write=True)
+    join = a_join()
+    join.pop("partition")
+    with pytest.raises(finished.FinishedError, match="one scale"):
+        finished.render_row(head=HEAD, batch="a_batch", score=5, recipe_=join.pop("recipe"), **join)
 
 
 # --------------------------------------------------------------------------- #

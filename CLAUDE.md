@@ -185,6 +185,13 @@ rather than a store, hiding one call deep inside production code rather than in 
 test — every merge test in `tests/test_ledger_tracking.py` pays 4.5-10 s of the same
 read today.
 
+It read **170.58 s over 3,396** at the spiral attribute store, idle, 2026-09-03 —
+4.1% over the reading below across thirty-five more tests, of which thirty-one are
+new guards over a store that did not exist that morning. A fourth label store,
+a fourth `--head`, and the lane did not notice: an attribute store is four tracked
+files and a hundred pinned rows, which is nothing beside the corpora the seven
+ledger guards already sweep.
+
 It read **163.85 s over 3,361** at the `--draw-cells` build, idle, 2026-09-03 —
 1.9% over the reading below across twenty more tests, taken right after a
 ten-minute near-band leg merged 4,204 candidates and the prune took the ledger

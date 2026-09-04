@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "rule": "a seeded uniform draw over this sitting's own units, taken BEFORE any verdict exists. The reservation is intra-batch: `eval_only` is a flag on a batch and a second batch would print a second name on the reserved cards, telling the labeler which ones they were",
+  "attribute": "spiral",
+  "batch": "spiral_500_20260903",
+  "seed": 20260903,
+  "plan": "artifacts/pool_draw/spiral_500/plan.jsonl",
+  "units": 500,
+  "reserved": 100,
+  "realized_eval_share": 0.2,
+  "drawn_at": "2026-09-04T00:24:59Z"
+}
