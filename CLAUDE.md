@@ -26,13 +26,11 @@ live name answers out of a comment about a different one, confidently and wrongl
 
 **A citation names a heading and a file, never a line number.** Write
 `curation/GALLERY.md`'s *What a pass costs is one store*, not `§1487` or
-`GALLERY.md:1487`. A line number is not an anchor: it is correct until the next edit
-to the file above it and then it is silently wrong, pointing at a real line that says
-something else — which is worse than dangling, because nothing looks broken. Two
-sites carried `§3709` into `curation/README.md`; by the time the split found them the
-number had drifted to a different paragraph and neither citation had ever been
-reported as stale. A heading survives every edit that does not rename it, and a
-rename is a `git grep` away from being repointed.
+`GALLERY.md:1487`. A line number is correct until the next edit to the file above it
+and then it is silently wrong, pointing at a real line that says something else —
+worse than dangling, because nothing looks broken, which is how `curation/README.md`
+carried two stale ones undetected. A heading survives every edit that does not
+rename it, and a rename is a `git grep` away from being repointed.
 
 **The rule stands and no test here enforces it**: the guard is the website's,
 `builder/vocabulary.py` in the `fractal-website` checkout, swept by its
@@ -48,34 +46,31 @@ These were decided once, at the first commit, because each is expensive to rever
 - **Everything runnable is a subcommand** of `fractal-wallpapers` (see `cli/`).
   There is no `scripts/` directory and there never will be one. One module per
   command group, each holding its handlers and its parser together, and
-  `cli/__init__.py` is the list of them plus `main`. The `_commands` suffix on
-  those module names is load-bearing: eight top-level commands are also handler
-  names, a submodule is set as an attribute of its package, and an attribute is
-  one `__getattr__` never sees — so `cli/render.py` would shadow `cli.render`
-  for good. Handler names resolve through `__getattr__`, never re-exported, for
-  the reason `2dc6a8b` gives.
+  `cli/__init__.py` is the list of them plus `main`. The **`_commands` suffix is
+  load-bearing**: eight top-level commands are also handler names, and a submodule
+  set as an attribute of its package is one `__getattr__` never sees, so
+  `cli/render.py` would shadow `cli.render` for good. Handler names resolve
+  through `__getattr__`, never re-exported, for the reason `2dc6a8b` gives.
 - **Records are JSONL**: UTF-8, one JSON object per line, carrying an integer
   `schema` field from the very first row. A label row carries its full join — the
   label *and* the complete render parameters in the same row — so a labeled example
   is never split across files. Every random draw is seeded, and the seed is recorded.
 - **Git history stays text.** `tests/test_history_purity.py` fails the build if a
-  tracked file is binary-by-nature or exceeds 1 MiB. It keeps two allowlists and
-  they are not interchangeable: `ALLOWLIST` excuses a file from both rules and is
-  empty, `LARGE_TEXT_ALLOWLIST` excuses a *prefix* from the size rule alone and
-  still holds it to being text. The only entry is `data/palette_choice/rows/`,
-  the palette head's distillation corpus, on Matt's call. Adding to either is a
-  decision, not a fix.
+  tracked file is binary-by-nature or exceeds 1 MiB. Its two allowlists are not
+  interchangeable: `ALLOWLIST` excuses a file from both rules and is empty;
+  `LARGE_TEXT_ALLOWLIST` excuses a *prefix* from the size rule alone and still
+  holds it to being text, its only entry being `data/palette_choice/rows/` on
+  Matt's call. Adding to either is a decision, not a fix.
 - **`.gitignore` keeps its shape**: `scratch/` and `artifacts/` (runtime output),
   `models/**/*.pt` (fetched weights, living beside their tracked metadata), and
   toolchain noise. Do not interleave tracked and ignored content beyond that — a
   tracked file inside an ignored tree is how these rules rot. **There is exactly
   one hole and it is deliberate**, decided in `SET_twin_tau_0p65_and_geometry_gate`:
-  a tentative gallery's three *text* files come through
-  (`artifacts/curation/tentative/<stamp>/{gallery.jsonl,manifest.json,index.html}`),
-  because the site's figures name wallpapers by the IDs in them and a clone that
-  cannot resolve those IDs cannot rebuild the site. The pictures stay ignored, the
-  un-ignore names the three files one by one rather than by pattern, and
-  `.gitignore` carries the whole reasoning. It is not an oversight to tidy up.
+  a tentative gallery's three *text* files
+  (`artifacts/curation/tentative/<stamp>/{gallery.jsonl,manifest.json,index.html}`)
+  come through, because a clone that cannot resolve the IDs the site's figures name
+  cannot rebuild the site. The pictures stay ignored, the un-ignore names the three
+  files one by one rather than by pattern, and it is not an oversight to tidy up.
 - **Weights come from GitHub Releases, not LFS.** `fractal-wallpapers fetch-weights`
   reads `models/weights.json` (head → release tag `weights-vN`, asset name, sha256),
   downloads into `models/<head>/`, and verifies the hash before keeping the file.
@@ -86,63 +81,51 @@ These were decided once, at the first commit, because each is expensive to rever
   code. Windows-specific process handling (job objects, priority classes) lives in
   `src/fractal_wallpapers/process_control.py` and nowhere else. A batch subcommand
   takes a **manifest file**, never hundreds of paths as arguments — a Windows
-  command line overflows long before the batch does. Anything writing a tracked
-  text file opens it `newline="\n"`: `.gitattributes` normalizes what git
-  stores, and this is what stops a Windows run dirtying every line of a file it
-  rewrote. **The drift this prevents is invisible to `git status`** — under
-  `* text=auto eol=lf` a CRLF worktree file still commits as LF, so `git diff`
-  comes back empty while every line waits to change at once. Twenty tracked
-  files had drifted before anything looked. `tests/test_line_endings.py` is the
-  guard, `git ls-files --eol` is the only detector that works here (Git Bash's
-  `grep` reports a CR on every line of a pure-LF file), and checkout is not the
-  cause: a fresh clone comes out LF throughout despite `core.autocrlf=true` in
-  the system git config.
-- **Where a file under `artifacts/` belongs is a three-way decision, and it is
-  made once per subtree.** *Hot* (`artifacts/`) is what a live command in the loop
-  reads: the pool's pictures and rows, the sidecars, the current records. Its file
-  count is the pool's and is not a target to drive down. *Archive*
-  (`E:\FractalStorage`, `storage archive <name>`) is finished bulk worth keeping
-  that nothing reads routinely — training material, finished legs, look sheets —
-  and it must be restored before reuse. *Delete* is everything regenerable from
-  what is hot and everything unreferenced; if nothing will want a thing back, its
-  builder goes with it. The unit of the first two is a **top-level name**, so a
-  subtree that has to move on its own gets promoted to one first — `curation`
-  itself can never move, because it is the live pool.
+  command line overflows long before the batch does.
+- **Anything writing a tracked text file opens it `newline="\n"`**, which is what
+  stops a Windows run dirtying every line of a file it rewrote. **The drift is
+  invisible to `git status`**: under `* text=auto eol=lf` a CRLF worktree file
+  commits as LF anyway, so `git diff` is empty while every line waits to change at
+  once. `tests/test_line_endings.py` is the guard and `git ls-files --eol` the only
+  detector that works here — Git Bash's `grep` reports a CR on every line of a
+  pure-LF file.
+- **Where a file under `artifacts/` belongs is a three-way decision, made once per
+  subtree.** *Hot* (`artifacts/`) is what a live command in the loop reads, and its
+  file count is not a target to drive down. *Archive* (`E:\FractalStorage`,
+  `storage archive <name>`) is finished bulk nothing reads routinely, restored
+  before reuse. *Delete* is everything regenerable from what is hot and everything
+  unreferenced — if nothing will want a thing back, its builder goes with it. The
+  unit of the first two is a **top-level name**, so a subtree that has to move on
+  its own is promoted to one first; `curation` can never move, being the live pool.
 - **A picture with no ledger row is garbage, and there is a sweep for it.**
-  `curate candidate-ledger orphans` lists by default and deletes with `--apply`.
-  Run it after any killed leg and periodically. **An unmerged leg is listed and
-  never swept unread**: it is real work with no row anywhere, so it is taken only
+  `curate candidate-ledger orphans` lists by default and deletes with `--apply`;
+  run it after any killed leg and periodically. **An unmerged leg is listed and
+  never swept unread** — it is real work with no row anywhere, so it is taken only
   when somebody reads the listing and names it (`--leg <name>`, or
   `--include-unmerged` for all of them).
-- **The render pool is three workers at below-normal priority.** That is the
-  standard shape of every leg that drives the engine — a measure pass, a sheet
-  build, a hunt, a mine — and it is a rule about this machine rather than a
-  tuning knob: more than three `fractal-engine.exe` at once, or any of them at
-  normal priority, makes the desktop unusable while the leg runs. `engine.run`
-  spawns below-normal by construction through
-  [`process_control.child_priority_flags`], so the priority half is not
-  something a caller has to remember; the worker count is the caller's and
-  three is the number.
+- **The render pool is three workers at below-normal priority.** That is the shape
+  of every leg that drives the engine — a measure pass, a sheet build, a hunt, a
+  mine — and it is a rule about this machine, not a tuning knob: more than three
+  `fractal-engine.exe` at once, or any at normal priority, makes the desktop
+  unusable while the leg runs. `engine.run` spawns below-normal through
+  [`process_control.child_priority_flags`], so only the count is the caller's.
 - **ONE POOL-HOLDING PROCESS PER BOX.** Anything that loads the candidate pool —
   `curate growth`, `curate solve run`, `curate solve record`, and the slow test lane
-  counts as one — never runs concurrently with another on the same machine. The
-  pool is hundreds of megabytes read whole and held whole; two of them at once is
-  the box swapping rather than two legs finishing sooner, and a lane sharing the
-  machine with one is a lane whose wall-clock guards start failing for a reason
-  that is not in the code.
+  counts as one — never runs concurrently with another on the same machine. The pool
+  is hundreds of megabytes read whole and held whole, so two at once is the box
+  swapping rather than two legs finishing sooner.
 - **Search the source with `git grep`, never `grep -r` from the root.** This checkout
-  carries a hundred gigabytes and four hundred thousand files of untracked
-  `artifacts/`, plus `.venv/`, `models/` and `engine/target/`, against under two
-  thousand tracked files. A recursive grep reads all of it and takes tens of minutes;
-  `git grep` walks the index and answers in a fraction of a second. `rg` is fine too —
-  it honours `.gitignore` — but `grep --include=*` does not, and that is the trap.
+  carries a hundred gigabytes and four hundred thousand untracked files against under
+  two thousand tracked ones, so a recursive grep takes tens of minutes where the index
+  answers in a fraction of a second. `rg` is fine too — it honours `.gitignore` — but
+  `grep --include=*` does not, and that is the trap.
 - **The base install stays torch-free on the `fetch-weights` path.** `pip install
   -e .` buys the engine, the walk, the supply engine and the labeling rig; the
   `models` extra is two gigabytes of CUDA wheels a clone that only renders should
   never pay for. `fetch-weights --check` has to run on that install, so its whole
-  import graph is stdlib — which is why `models/roster.py` exists apart from
-  `ship`. `tests/test_base_install.py` proves it in a subprocess with those
-  imports refused, because every machine that runs the suite has torch.
+  import graph is stdlib — which is why `models/roster.py` exists apart from `ship`.
+  `tests/test_base_install.py` proves it in a subprocess with those imports refused,
+  because every machine that runs the suite has torch.
 
 ## Checks to run before committing
 
@@ -163,153 +146,78 @@ bug rather than as the environment it is.
 
 CI runs the same thing on Ubuntu and Windows. The Python suite's walk tests need
 a **release** engine (`cargo build --release --manifest-path engine/Cargo.toml`)
-and skip themselves without one. They skip only because each of them asks
-whether the engine is built through a `try`/`except FileNotFoundError` —
-`engine.engine_path` **raises** rather than returning None, so a guard that
-asks it bare (`not engine.engine_path().is_file()`) explodes while pytest is
-still collecting and interrupts the **whole lane**, not just its own file.
-`tests/test_palette_strip.py` was that guard once. So `cargo clean` costs a
-rebuild *and* the fast lane until you do it.
+and skip themselves without one, so `cargo clean` costs a rebuild *and* the fast
+lane until you do it. **A guard that asks whether the engine is built asks through
+`try`/`except FileNotFoundError`**: `engine.engine_path` **raises** rather than
+returning None, so a guard that asks it bare (`not engine.engine_path().is_file()`)
+explodes while pytest is still collecting and interrupts the **whole lane**, not
+just its own file.
 
 ### The two lanes
 
-`python -m pytest` runs the **fast lane**, about three minutes. `python -m pytest
---slow` runs every test there is, about six and a half, and that is
-what CI runs and what runs before a checkpoint. The fast lane is for the
-edit-run loop and nothing else.
+`python -m pytest` runs the **fast lane**; `python -m pytest --slow` runs every
+test there is, and that is what CI runs and what runs before a checkpoint. The
+fast lane is for the edit-run loop and nothing else.
 
-Both are measured, not estimated, and **the readings live in
-[`tests/README.md`](tests/README.md#the-lanes-readings-in-order)** — every one this
-lane has taken, with what the machine was doing at the time. They are there and not
-here because this file is loaded into every session in this repository and a
-chronological log is not a rule. What stays here is the current figure and the rules
-the log produced.
+Both are measured, not estimated. The **fast** lane is **98.78 s over the 3,565 it
+holds, 116 deselected**, on this machine, 2026-09-04, on a `.[dev,models]` install
+with a release engine built. The **slow** lane is **6:31 over 3,681, nothing
+skipped**, same machine, same day. Every reading this lane has taken is in
+[`tests/README.md`](tests/README.md#the-lanes-readings-in-order), with what the box
+was doing at the time — they are there and not here because this file loads into
+every session and a chronological log is not a rule. What stays here is the current
+figure and the rules the log produced.
 
-The fast lane is **98.78 s over the 3,565 it holds**, 116 deselected, on this
-machine, 2026-09-04, at the temporary-directory fix — the same 3,565 as the
-reading it replaces, and **21.14 s under** the 119.92 s this session measured on
-that tree before touching it. Nothing was deleted and nothing moved lanes. Three
-parts, measured apart: the temporary directories **12.86 s**, [`test_depth`]'s
-fixture scale about **7 s**, and one shared parser for the nested-verb pin
-**2.5 s**. The slow lane's last trustworthy reading is the re-mode leg's **6:31
-over 3,681, nothing skipped**; this session could not better it, for the reason
-the next paragraph gives.
-
-**A slow reading taken beside a website run is not a reading, and this session
-has the receipt.** The lane read 7:00 against that 6:31 right after the fast lane
-had fallen a fifth — a shape no change in this repository can make, since the
-slow lane runs every fast test too. The discriminator was
-`test_autolevel_identity`, thirty-odd engine renders that none of these changes
-can reach: **31.08 s before, 34.24 s in the contaminated run, 32.31 s re-run on
-its own**. A tenth either way on an invariant guard is the whole of the anomaly.
-Re-run one untouched, engine-bound guard before believing a lane — it is forty
-seconds against seven minutes, and it answers *box or tree* on its own.
-
-**What the count means is defined once, in
-[`tests/README.md`](tests/README.md#what-the-fast-lane-count-means)**, and a reading
-is comparable only against another taken on a `.[dev,models]` install with a release
-engine built. Selected and deselected both, or neither — the clock alone has been
-written down here twice and both times it was the count that settled the argument.
-
-**The 118.50 s this figure came off was a third off, and not an optimisation.** The
-same tree at
-`9a62672`, measured the same evening on the same idle box, is **177.48 s** over the
-same tests. The difference is three test files that had been reading this machine's
-**real** 67k-row supply sidecar and its real expressed readout on every test, because
-they redirected the ledger store per accessor and no accessor list named those two.
-Redirecting at the tier roots instead moved them, and the price went with them. So the
-figure is a lane that stopped pricing data it was never meant to read — and the rule
-that follows is the one below about redirecting at the roots.
-
-**The 57 that would not reproduce were an interpreter with no `torch`, and the lane
-now says so out loud.** Masking `torch` and `timm` reproduces the whole logged reading
-to the unit — 3,369 passed / 14 skipped / 109 deselected. A module-level
-`pytest.importorskip` does not skip a module's tests, it stops the module being
-collected at all, so eight torch-gated files took 65 fast tests and 5 slow ones out of
-the totals and left eight "skipped" behind. The tree was never the variable and
-`test_colormaps.py` never was either. `conftest` prints a red line naming the missing
-import now, because the whole failure was that nothing on screen said the suite had
-shrunk. **A count is not stable across interpreters, only across installs**, which is
-why the standing figure names the install it was taken on.
-
-**Its first reading that session was 300.7 s and the extra 135 s was a defect, not the
-box.** That run also failed `test_training_resume.py` on a CUDA OOM with six other
-processes holding the GPU, which made "measure it on an idle machine" the obvious
-diagnosis and the wrong one. The cost was `hunt.recorded_prices` walking the leg
-records and parsing a `sequence.jsonl` per band — 0.65 s a band, 3.35 s for the five
-`depth.DRAWS`, and `depth.plan` asks for all five, so every guard that plans a leg paid
-it. Caching it took the lane back to flat. So the rules below about suspecting the
-disk, the stores and the load are right and they are **not** the first thing to reach
-for: a lane that moves right after code landed is the code until measured otherwise,
-and the cheap check is to re-run one slow file with a profile rather than to re-run the
-whole lane hoping for a quieter box.
-
-**The lane does not merely slow beside a render leg on this box — it dies.** Run twice while
-the leg's three engines held the pool, it was killed at 77% with no summary and no traceback
-both times. That is the commit-charge ceiling `models/render/README.md` documents (the leg's
-parent holds ~3.3 GB and each of three workers ~0.9 GB), not the wall-clock guard the
-paragraph below describes. Run the lane after the leg, never beside it.
-
-Measure it on an **idle** machine, and take that literally. The same lane sharing
-this one with a render leg crawled to 41% in the time it normally takes to
-finish, and under load
-`test_twins.py::test_the_channel_only_ever_hands_over_what_nobody_has_walked`
-**fails** rather than merely slows — it runs a refill loop against a wall clock.
-A red there on a busy box is worth re-running alone before it is worth reading.
-
-**A lane that slows with no test added is a lane pricing data rather than code**,
-and this one has done it twice. It was 160 s on 2026-08-26 and **18:07** on
-2026-08-29 over the same tests, because `artifacts/curation/candidate_ledger/`
-went from 15,362 rows and 41 MB to 366,236 rows and 1.11 GB in those three days —
-and seven guards each read the whole of it. So: re-measure after a **merge**, not
-only after writing tests, and suspect the stores first when the digit moves on
-its own.
-
-**And a lane can be priced by its own test count, which is the one that hides.**
-`tmp_path_factory.mktemp` numbers a directory by listing the whole basetemp, and
-`tests/conftest.py`'s autouse sidecar fixture called it once per test — so
-basetemp grew an entry per test and every later test read all of them. Quadratic
-in the size of the suite, **12.86 s of a 119.92 s lane**, and it never appeared
-in a durations list because it was 3 ms on every test rather than seconds on one.
-No reading in the log could have caught it either: it grew *with* the lane
-instead of stepping when something landed. So the two questions above — **which
-store grew**, **which derivation is paid twice** — now have a third beside them:
-**what is paid once per test**. `tests/README.md` carries the measurements.
-
-**And suspect the disk after anything that moves hundreds of thousands of paths.**
-On 2026-08-30 the lane nearly doubled right after 194,058 levelled colormap
-directories came off `artifacts/` — the stores got *smaller* — and came back on its
-own hours later with nothing reverted. Suspected NTFS metadata settling after a bulk
-small-directory delete; never proven, and the reason to re-run a slow lane before
-believing one. The whole episode is in
-[`tests/README.md`](tests/README.md#the-lanes-readings-in-order).
-
-Two rules came out of that and `tests/README.md` argues both. **The candidate
-ledger is read once a session**, through `conftest.tracked_ledger`; a test that
-calls `candidate_ledger.read()` itself is a test adding forty seconds to the
-lane. And **a guard that sweeps it takes a budget rather than the store** — the
-two that did not had each lost their own docstring's cost estimate by an order of
-magnitude, and both now state the constant, the measurement behind it, and an
-assertion that the budget was filled. That is the one place this suite trades
-coverage for time, it is written down at each site, and it is not a licence
-elsewhere: the rule below still stands.
-
-A test earns `@pytest.mark.slow` by costing about a second or more of **real
-work** — a render through the engine, a training loop, or a sweep of a store:
-the render cache, the tracked pool, the distillation corpus. Arithmetic stays in
-the fast lane however much of it there is. **A slow guard moves lanes; it is
-never deleted or weakened to make a lane faster** — the tests are this project's
-memory and every pin in them was bought by an incident.
-
-The fast lane prints how many tests it held back, on every run that holds any
-back. That line is the point of the arrangement rather than a decoration: a lane
-that went quiet would be a set of guards nobody would notice had stopped
-running. `tests/conftest.py` owns the marker, the flag and the line.
-
-One trap worth knowing before marking anything: several of these guards share a
-cached derivation, so moving one to the slow lane can simply hand its cost to
-whichever sibling reads the cache next. Measure the fast lane after marking, not
-before — a mark that bought nothing is a guard given up for nothing.
+- **A reading is comparable only against one taken on the same install**, and
+  [`tests/README.md`](tests/README.md#what-the-fast-lane-count-means) defines the
+  count once: selected and deselected both, or neither. **A count is not stable
+  across interpreters** — a module-level `pytest.importorskip` stops a module being
+  collected at all rather than skipping its tests, so an interpreter without `torch`
+  silently runs a smaller suite; `conftest` prints a red line naming the missing
+  import.
+- **Measure on an idle machine, and take that literally.** Beside a render leg the
+  lane does not merely slow, it is killed outright on commit charge, so **run the
+  lane after a leg, never beside it**. Short of that,
+  `test_twins.py::test_the_channel_only_ever_hands_over_what_nobody_has_walked`
+  **fails** rather than slows under load, because it runs a refill loop against a
+  wall clock — a red there on a busy box is worth re-running alone before it is
+  worth reading.
+  [`tests/README.md`](tests/README.md#a-lane-sharing-the-box-with-a-render-leg) has
+  the measurements.
+- **Re-run one untouched, engine-bound guard before believing a lane.** Forty
+  seconds against seven minutes, and it answers *box or tree* on its own: a tenth
+  either way on an invariant guard means the box.
+- **A lane that moves right after code landed is the code until measured
+  otherwise**, and the cheap check is one slow file re-run under a profile rather
+  than the whole lane re-run hoping for a quieter box. Reaching for the box first
+  has cost a session:
+  [`tests/README.md`](tests/README.md#a-lane-that-moves-right-after-code-landed-is-the-code-until-measured-otherwise).
+- **When a lane moves with no test added, ask three questions**: **which store
+  grew**, **which derivation is paid twice**, and **what is paid once per test**.
+  Re-measure after a **merge**, not only after writing tests. And suspect the
+  **disk** after anything that moves hundreds of thousands of paths.
+- **A fixture that redirects a store redirects it at the tier roots, never per
+  accessor.** An accessor list is a list something will be missing from, and what it
+  misses is this machine's real store, read at full size on every test.
+- **The candidate ledger is read once a session**, through `conftest.tracked_ledger`.
+  A test that calls `candidate_ledger.read()` itself adds forty seconds to the lane.
+- **A guard that sweeps the ledger takes a budget rather than the store**, and states
+  the constant, the measurement behind it, and an assertion that the budget was
+  filled. That is the one place this suite trades coverage for time, it is written
+  down at each site, and it is not a licence elsewhere.
+- **A test earns `@pytest.mark.slow` by costing about a second or more of real
+  work** — a render through the engine, a training loop, or a sweep of a store.
+  Arithmetic stays in the fast lane however much of it there is. **A slow guard
+  moves lanes; it is never deleted or weakened to make a lane faster** — the tests
+  are this project's memory and every pin in them was bought by an incident.
+- **Measure the fast lane after marking, not before.** Several of these guards share
+  a cached derivation, so moving one to the slow lane can hand its cost to whichever
+  sibling reads the cache next, and a mark that bought nothing is a guard given up
+  for nothing.
+- **The fast lane prints how many tests it held back**, on every run that holds any
+  back. That line is the point of the arrangement rather than a decoration: a lane
+  that went quiet would be a set of guards nobody would notice had stopped running.
+  `tests/conftest.py` owns the marker, the flag and the line.
 
 ## Standing prompt contract
 
@@ -338,10 +246,8 @@ Each prompt in this project ends the same way:
   by-explicit-path rule above is necessary and it is *not* sufficient: it governs
   what a commit adds and says nothing about what the index already holds, so a
   prompt that has staged a **deletion** has it swept into whatever the other prompt
-  commits next. That is not hypothetical — `915ede6` carries `seating.py`,
-  `test_seating.py` and the old `test_solve.py`, deleted by a prompt that was still
-  running, under a message about something else entirely. Nothing was lost and the
-  history is wrong anyway, which is the cheap version of this failure.
+  commits next. `915ede6` is what that looks like — three files deleted by a prompt
+  that was still running, carried under a message about something else entirely.
 
 ### Staging a prompt
 
