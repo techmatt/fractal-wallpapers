@@ -211,6 +211,25 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+It read **118.50 s over 3,383** at the manifest guard, idle, 2026-09-04 — against
+**177.48 s over the same 3,383**, measured the same evening on the same idle box by
+checking `9a62672` back out into the tree and running it. A third off, and none of it
+an optimisation: `test_ledger_tracking`, `test_candidate_ledger.isolated` and
+`test_hunt` redirected the ledger store **per accessor**, and no accessor list named
+the supply sidecar or the expressed readout that `prune` reads through `rank_key`. All
+three had been reading this machine's real 67k-row supply and its real coverage vector
+on every test, and would have failed outright on a clone that has neither. Redirecting
+at the tier roots moved those two as well; they are written empty now, and the 59
+seconds went with them. The three commits before it — the durables split and the three
+top-level layering fixes, 49 modules of largest SCC down to 44 — moved the lane from
+177.48 s to **175.40 s**, which is to say not at all, which is what an import-graph
+change should cost.
+
+⚠ **The reading below does not reproduce and has not been edited.** `9a62672` collects
+**3,375 selected / 3,484 total** today and runs 3,369 passed / 14 skipped; the line
+below records 3,440. Nothing since has added or removed a test — HEAD collects the same
+3,375. The 57 are unaccounted for.
+
 It read **170.30 s over 3,440** at the `cli` split, idle, 2026-09-04 — 0.9% over the
 reading below, across two more collected tests, one of which is the guard this split
 added: that no two modules of the package define one name and no module is named after
