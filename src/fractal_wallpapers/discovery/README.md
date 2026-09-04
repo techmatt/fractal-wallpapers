@@ -78,6 +78,25 @@ a minute for 788 rows and left the sidecar at 91,272 rows; `curate embed` wrote
 **663** vectors in 49.5 s and left the store complete over 29,083 admitted
 locations with 0 missing.
 
+**A reframing row's `image` does not name a picture that still exists, and the
+score step re-renders every row because of it.** `screen_rungs` names each frame
+by its position in its own `engine.screen` batch, but that position restarts at
+zero on every `_draw` call while the frames directory is one directory for the
+whole leg — so the file on disk is whichever nucleus was drawn last under that
+name. Measured on `reframe_g5`: **1,604 rows share 107 distinct `image` names**,
+one of them claimed by 45 rows. Nothing downstream is misled, and that is luck
+rather than design: `curation.intake` looks for a reusable gate render under
+`<run>/views/` and this channel writes `<run>/rungs/`, so the name never resolves
+and the row is drawn again. `reframe_g7`'s merge is the measurement — `"gate": 0,
+"cached": 0, "rendered": 486`.
+
+**Making the names unique is not obviously the fix.** Nine rungs kept for a whole
+leg is on the order of a gigabyte of hot `artifacts/` that only a contact sheet
+would ever open, which is the *delete* column of the three-way rule. Anything
+wanting a leg's frames re-draws the few it shows from the row's own `viewport` and
+`maxiter` through `engine.screen` — one process for 128 of them, on the leg that
+found this.
+
 **A leg continues every earlier leg by default, and neither flag below is
 something a supervisor has to remember any more.** Both used to be: a `--prior`
 that named too few legs wrote duplicate rows, and a missing `--reprobe` on a spent
@@ -155,6 +174,23 @@ the legs ran. A leg launched now reads *saturated* with 1,518 roots and 3,253
 promotions still on its continuation queue, which is the whole point — the queue
 is not the constraint, the neighbourhoods are.
 
+**And on 2026-09-04 that reading was wrong, because the queue had been refilled
+under it.** `reframe_g7` was launched at those 1,518 roots under `--no-reprobe`
+against the saturated default, and 20 minutes of them returned 488 locations and
+128 head-q4 at **9.4 s per head-q4** — the cheapest the channel has been. The
+split says why: of the 912 roots it fired, the 277 from the **location** store
+returned **nothing at all** (they are `reframe_g6`'s barren roots, offered again
+because a root that returns nothing never enters `fired`), while the 635 from the
+**finished** stores returned 0.769 locations each — `reframe_g1`'s 0.750 on its
+own first pass, on ground the channel had never touched. Its re-discovery share
+came back at **23.9%**, so `g7` is now the chain's latest leg and the next leg
+will not re-probe.
+
+The rule that follows is about the clause and not about this leg: **saturation is
+a reading about neighbourhoods, and a widening of `supply.proven` puts new
+neighbourhoods on the queue that the reading cannot see.** After a store is
+unioned in, the clause is stale until one leg has fired at what it added.
+
 The threshold is drawn between the last productive leg and the first spent one,
 and the five legs are the only measurement behind it (`re-discovery`, newest
 last): **13.5%** (792 new, 1,056 seeds), **56.7%**, **68.8%**, **77.5%** (1,607
@@ -215,6 +251,20 @@ and the strict interior — because a single end-share number cannot tell "the p
 came off the ends" from "the pile moved outward with the ladder", which is exactly
 what happened last time. Read `ends.old_ends.share` against the 37.3% above.
 
+**Answered on 2026-09-04, and the pile did come off: `old_ends.share` is 21.1%**
+over `reframe_g7`'s 488 picks, against 37.3 / 37.3 / 37.8% on the three five-rung
+legs. That is the extension doing the thing the three-rung-to-five-rung move did
+not — draining the old ends rather than moving the pile outward. `reframe_g6`'s
+0.0% was seven picks and said nothing.
+
+**What it also says is that 128x is now the wall.** The new ends took **42.0%**,
+about double the ~22% a flat pick over nine rungs would leave there, and it is
+one-sided: the picks run **2.7 / 4.9 / 9.4 / 12.9 / 13.1 / 10.9 / 11.7 / 13.9 /
+20.5%** outward from 8x, so the outermost rung is the single most picked, and it
+carries **50 of the 128 head-q4** (39%). The inner end bought nothing at all — 8x
+took 13 picks and no head-q4, 12x took 24 and two. The next ladder question is
+therefore at the outer end alone, and the two inner rungs are candidates to drop.
+
 **No guard is what stops the ladder at 128x.** `width_over_root_scale` fires past
 `operators.MAX_WIDTH`, and the largest atom over those 6,590 rows has a window
 scale of 8.5e-3 — so the first rung that guard would refuse is **352x**. It has
@@ -222,7 +272,10 @@ never fired in any reframe leg. (An earlier revision of this section said the
 outer two rungs "draw about 790 fewer frames" for that reason; they do not, and
 the 790 was generation 1's 792 rows, drawn before 48x and 64x existed.) What
 stops the ladder at 128x is that the body is 14-23 px there — past it the picture
-is a speck in a field. The guard that does bite is at the *other* end, the f64
+is a speck in a field. **The head does not agree**: given the rung on 2026-09-04
+it picked 128x more often than any other and scored q4 there more often than at
+any other, so the judgement is one the ladder is now measurably paying for. The
+guard that does bite is at the *other* end, the f64
 spacing wall on the deepest atoms: 8x is offerable on 99.7% of those rows and 12x
 on 99.8%, against 99.8% for 16x itself, and a rung the wall refuses is simply not
 drawn for that nucleus.
