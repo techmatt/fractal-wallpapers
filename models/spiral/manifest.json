@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "attribute": "spiral",
+  "positive": "spiral",
+  "shipped": "neutral_dinov2",
+  "probes": {
+    "neutral_dinov2": {
+      "file": "neutral_dinov2.json",
+      "reads": "DINOv2 ViT-S/14 on the location's neutral render",
+      "regime": {
+        "picture": "neutral render",
+        "encoder": "vit_small_patch14_dinov2.lvd142m",
+        "stamp": "fd00dec0c46a",
+        "colormap": "twilight_shifted",
+        "resolution": [
+          448,
+          252
+        ],
+        "supersample": 1,
+        "mode": "smooth",
+        "curve": "linear",
+        "mirror": false
+      },
+      "dim": 384,
+      "threshold": 0.5,
+      "lambda": 0.3,
+      "train_rows": 400,
+      "train_positives": 106
+    }
+  }
+}

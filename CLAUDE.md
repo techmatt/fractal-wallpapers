@@ -185,6 +185,14 @@ rather than a store, hiding one call deep inside production code rather than in 
 test — every merge test in `tests/test_ledger_tracking.py` pays 4.5-10 s of the same
 read today.
 
+It read **167.53 s over 3,405** at the spiral probe, idle, 2026-09-03 — nine more
+tests than the reading below and **1.8% under** it, taken right after the spiral
+store's first sitting landed: 500 verdicts, 472 KB of rows, and the store went
+from four tracked files to five. The nine new guards are 3.0 s of it. A label
+store's *first drop* is the growth this lane has historically noticed, and it did
+not notice this one — five hundred rows is three orders off the ledger the seven
+ledger guards sweep, which is the thing that actually prices this lane.
+
 It read **170.58 s over 3,396** at the spiral attribute store, idle, 2026-09-03 —
 4.1% over the reading below across thirty-five more tests, of which thirty-one are
 new guards over a store that did not exist that morning. A fourth label store,
