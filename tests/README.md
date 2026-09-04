@@ -38,6 +38,25 @@ cost to whichever sibling reads the cache next. Three of the first round's marks
 bought nothing until their partner was marked too. Measure the fast lane after
 marking, not before.
 
+## A lane sharing the box with a render leg
+
+`CLAUDE.md` states the rule — run the lane on an idle machine, and after a leg
+rather than beside one. This is what was measured to get it.
+
+**Beside a leg the lane does not merely slow, it dies.** Run twice while a leg's
+three engines held the pool, it was killed at **77%** with no summary and no
+traceback both times. That is the commit charge rather than any guard: the leg's
+parent holds ~3.3 GB and each of three workers ~0.9 GB, against a box whose commit
+limit `models/render/README.md` works through for the trainer under *The band, and
+the study that adopted it*.
+
+**Short of dying it crawls, and one guard turns red rather than slow.** The same
+lane sharing this box with a leg reached 41% in the time it normally takes to
+finish, and under load
+`test_twins.py::test_the_channel_only_ever_hands_over_what_nobody_has_walked`
+**fails** — it runs a refill loop against a wall clock. A red there on a busy box
+is worth re-running alone before it is worth reading.
+
 ## What "the fast-lane count" means
 
 One definition, because three sessions on one tree wrote down three totals and
@@ -216,11 +235,36 @@ gallery build. It is a pure function of `rows` and `rows` does not move under th
 filter, so hoisting it is the same answer for a thousandth of the work. Nothing
 about the test suite made that visible — a profile of one 10s test did.
 
+### A lane that moves right after code landed is the code until measured otherwise
+
+The three questions above — which store grew, which derivation is paid twice,
+what does every test pay — are all questions about the *box and the stores*, and
+reaching for them first has cost this project a session. On 2026-09-04 the fast
+lane read **300.7 s** where it had been reading about 165, and the same run
+failed `test_training_resume.py` on a CUDA OOM with six other processes holding
+the GPU. "Measure it on an idle machine" was the obvious diagnosis and the wrong
+one.
+
+The extra **135 s** was `hunt.recorded_prices` walking the leg records and
+parsing a `sequence.jsonl` per band — 0.65 s a band, 3.35 s for the five
+`depth.DRAWS`, and `depth.plan` asks for four of them, so every guard that plans
+a leg paid it. Caching it took the lane back to flat;
+`curation/LEGS.md`'s *The two phoenix planes are declared in SECONDS now, and the
+price is per band* carries the memo and the `forget_recorded_prices` rule that
+goes with it.
+
+So the cheap check when a lane moves right after a commit is **to re-run one slow
+file under a profile**, not to re-run the whole lane hoping for a quieter box.
+
 ### The candidate ledger is the thing that grows
 
 It went from 15,362 rows and 41 MB on 2026-08-26 to **366,236 rows and 1.11 GB on
 2026-08-29** — 24x in three days, and it grew with every mine, hunt and depth leg.
-One `candidate_ledger.read()` of that file was 21.9s, `read_scores()` 4.2s,
+**The lane went with it: 160 s on the 26th, 18:07 on the 29th, over the same
+tests**, because seven guards each read the whole of it. That is the clearest
+case this log holds of a lane pricing data rather than code, and it is why the
+standing advice is to re-measure after a **merge** and not only after writing a
+test. One `candidate_ledger.read()` of that file was 21.9s, `read_scores()` 4.2s,
 `present_pictures()` 13.0s and laying the pool out over them 13.4s, so a cold
 `headroom.population()` was about 46 seconds.
 
@@ -281,6 +325,15 @@ repository and a chronological log is not a rule. The rules the log produced
 stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
+
+It read **104.29 s over 3,565, 116 deselected, nothing skipped** at the `CLAUDE.md`
+tidy, 2026-09-04 — the same 3,565 as the reading below and **5.51 s over it**, on a
+diff of three tracked `.md` files and no code at all. It is recorded rather than
+explained: the standing rule is to ask when the digit moves with no test added, and
+here nothing the lane prices changed, so what is left is the box. 5.6% is at the top
+of the spread this log has carried between adjacent readings of an unchanged tree
+(3% and 1% are the two below it), which is worth knowing the next time a reading of
+this size is taken for a signal.
 
 The **fast** lane read **98.78 s over 3,565, 116 deselected, nothing skipped** at
 the temporary-directory fix, 2026-09-04 — the same 3,565 as the reading below and

@@ -243,6 +243,13 @@ killed *shell* does not kill the fit it launched, so an abandoned attempt goes o
 holding its 9 GiB and the next launch fails for a reason that looks like the first
 one; check for a live `fractal-wallpapers renders deploy fit` before relaunching.
 
+**A render leg lives under the same ceiling and it is what usually holds it.** The
+leg's parent holds ~3.3 GB and each of its three workers ~0.9 GB, about 6 GB
+together, so a leg and a trainer at once is the same arithmetic as two trainers.
+The test suite loses to it outright: run beside a leg the slow lane is killed at
+77% with no summary and no traceback, which `tests/README.md`'s *A lane sharing
+the box with a render leg* measures.
+
 Both render caches have to be **hot** first — `storage restore renders`, 5.08 GiB
 over 10,558 files, 77 s off the archive at 137 files/s.
 
