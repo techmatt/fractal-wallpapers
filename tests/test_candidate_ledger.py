@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pytest
 
-from fractal_wallpapers.curation import candidate_ledger, recipes, release
+from fractal_wallpapers.curation import candidate_ledger, intake, recipes, release
 from fractal_wallpapers.models import renders
 
 BAND = "49d4f43b200904c5967df788308834be163698081d85802df978554261aa63a1"
@@ -643,6 +643,55 @@ def test_a_row_with_no_colour_ask_carries_the_two_fields_it_always_carried():
         "k": 10,
     }, "an empty narrowing is not a narrowing"
     assert candidate_ledger.hunt_block(None) == {"seconds": None, "k": None}
+
+
+def test_the_colour_ask_survives_a_merge_and_the_whole_store_rewrite_that_deleted_it_once(
+    isolated, monkeypatch
+):
+    """**The memory of `449643d`.** Both `ASKED_FOR` fields are on the row after the
+    door has written it *and* after the whole-store rewrite has read every row and
+    written a new file — which is the exact pair of steps that took `drawn_for` off
+    on 2026-08-29 and left 3,042 aimed rows unfilterable for good.
+
+    The store-wide rewrite is [`candidate_ledger.prune`] now: `449643d`'s `retain`
+    projected each row through a declared field set and is gone, and `prune` streams
+    and filters instead. That is why this is a behavioural guard over the two doors
+    and not another assertion about `hunt_block` — the field set that dropped
+    `drawn_for` was declared in a function no test could have caught it in, and the
+    next such function will be a different one.
+
+    `merge` runs `prune` inside it, so the second call is the rewrite taken on its
+    own: a store already at the rule is a fixed point, and a stamp that only survives
+    the merge would still be lost the next time anything rewrites the file.
+    """
+    # The location score store is this machine's real 428,000-row one and the
+    # fixture does not redirect it: `_prune_ranks` reads it to build a rank
+    # feature, at ~7.5 s a prune and twice here. Nothing in this guard is about
+    # the ranking — an unranked row is kept anyway at K=3 with one row in the
+    # store — so it is stubbed rather than swept. See `tests/README.md` on the
+    # rule that a guard takes a budget rather than a store.
+    monkeypatch.setattr(intake, "read_scores", lambda *_a, **_k: {})
+
+    stamped = a_row()
+    stamped["hunt"] = candidate_ledger.hunt_block(
+        {
+            "seconds": 0.41,
+            "k": 12,
+            "drawn_for": "light_vivid_teal",
+            "drawn_cells": ["light_vivid_lime", "dark_vivid_lime"],
+        }
+    )
+    ask = {field: stamped["hunt"][field] for field in candidate_ledger.ASKED_FOR}
+    assert set(ask) == set(candidate_ledger.ASKED_FOR), "the fixture must carry both"
+
+    candidate_ledger.merge([stamped], [], log=lambda *_: None)
+    (merged,) = candidate_ledger.read()
+    assert {field: merged["hunt"].get(field) for field in candidate_ledger.ASKED_FOR} == ask
+
+    record = candidate_ledger.prune(log=lambda *_: None)
+    assert record["rows_kept"] == 1, "the rewrite must have read and written this row"
+    (rewritten,) = candidate_ledger.read()
+    assert {field: rewritten["hunt"].get(field) for field in candidate_ledger.ASKED_FOR} == ask
 
 
 def test_a_recipe_read_back_off_a_stored_row_recomputes_the_row_s_own_key():

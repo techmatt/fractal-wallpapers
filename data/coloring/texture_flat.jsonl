@@ -34,6 +34,7 @@
 {"schema": 1, "field": "0a0ccd62fb90f42f", "flat": true, "mode": "itinerary", "partition": "multibrot5", "resolution": [640, 360], "supersample": 2, "width": "0.0000000028604857922399397"}
 {"schema": 1, "field": "0a30618b56fd7962", "flat": true, "mode": "itinerary", "partition": "julia:multibrot3", "resolution": [640, 360], "supersample": 2, "width": "0.0774383902459456"}
 {"schema": 1, "field": "0a30ebd55c73070c", "flat": false, "mode": "itinerary", "partition": "julia:multibrot5", "resolution": [640, 360], "supersample": 2, "width": "0.784552629976848"}
+{"schema": 1, "field": "0a6afb21cd81722b", "flat": true, "mode": "itinerary", "partition": "multibrot4", "resolution": [1280, 720], "supersample": 2, "width": "0.0000003917558645991134"}
 {"schema": 1, "field": "0a85ac86a0e52e27", "flat": false, "mode": "itinerary", "partition": "julia:mandelbrot", "resolution": [640, 360], "supersample": 2, "width": "0.6615603435362781"}
 {"schema": 1, "field": "0aadcf7bd3a0595a", "flat": false, "mode": "itinerary", "partition": "julia:multibrot4", "resolution": [640, 360], "supersample": 2, "width": "0.499493754005301"}
 {"schema": 1, "field": "0b39a49afa641449", "flat": false, "mode": "itinerary", "partition": "julia:multibrot3", "resolution": [640, 360], "supersample": 2, "width": "1.8629000184674873"}
@@ -114,6 +115,7 @@
 {"schema": 1, "field": "1bb089d55aada462", "flat": false, "mode": "itinerary", "partition": "julia:multibrot5", "resolution": [640, 360], "supersample": 2, "width": "0.0605010142679698"}
 {"schema": 1, "field": "1bc4d4f216e7148b", "flat": true, "mode": "itinerary", "partition": "multibrot3", "resolution": [640, 360], "supersample": 2, "width": "0.000000004416450519258497"}
 {"schema": 1, "field": "1bc8e515841ba84d", "flat": true, "mode": "itinerary", "partition": "julia:multibrot5", "resolution": [640, 360], "supersample": 2, "width": "0.018566004997920996"}
+{"schema": 1, "field": "1bec56f0fc9f261c", "flat": false, "mode": "itinerary", "partition": "julia:multibrot5", "resolution": [1280, 720], "supersample": 2, "width": "0.49299307427627004"}
 {"schema": 1, "field": "1c091ecfb3334d98", "flat": false, "mode": "itinerary", "partition": "julia:mandelbrot", "resolution": [640, 360], "supersample": 2, "width": "0.0018674090862966447"}
 {"schema": 1, "field": "1c133dfc86ec9550", "flat": false, "mode": "itinerary", "partition": "julia:mandelbrot", "resolution": [640, 360], "supersample": 2, "width": "0.19667799633473734"}
 {"schema": 1, "field": "1c1f143dbcc2c784", "flat": false, "mode": "itinerary", "partition": "julia:multibrot5", "resolution": [640, 360], "supersample": 2, "width": "0.14530694477661182"}
@@ -152,6 +154,7 @@
 {"schema": 1, "field": "21925900ea7b486d", "flat": true, "mode": "itinerary", "partition": "julia:mandelbrot", "resolution": [640, 360], "supersample": 2, "width": "0.002817008668612719"}
 {"schema": 1, "field": "21dab39e47611527", "flat": true, "mode": "itinerary", "partition": "mandelbrot", "resolution": [1280, 720], "supersample": 2, "width": "0.00032837345351803825"}
 {"schema": 1, "field": "22698072966f6cc4", "flat": true, "mode": "itinerary", "partition": "multibrot3", "resolution": [640, 360], "supersample": 2, "width": "0.0000015417384900580186"}
+{"schema": 1, "field": "228a8acd0164d371", "flat": false, "mode": "itinerary", "partition": "phoenix", "resolution": [1280, 720], "supersample": 2, "width": "0.01145927143578431"}
 {"schema": 1, "field": "22fba2745ec5cd32", "flat": false, "mode": "itinerary", "partition": "julia:multibrot4", "resolution": [640, 360], "supersample": 2, "width": "0.12915582984115573"}
 {"schema": 1, "field": "2310592d8715ed81", "flat": true, "mode": "itinerary", "partition": "julia:multibrot3", "resolution": [1280, 720], "supersample": 2, "width": "0.0774383902459456"}
 {"schema": 1, "field": "2349f2854e5a5d00", "flat": true, "mode": "itinerary", "partition": "julia:multibrot3", "resolution": [1280, 720], "supersample": 2, "width": "0.2647167134081438"}
@@ -194,6 +197,7 @@
 {"schema": 1, "field": "2b62fbf0a7deb522", "flat": true, "mode": "itinerary", "partition": "mandelbrot", "resolution": [640, 360], "supersample": 2, "width": "0.000003395031322796886"}
 {"schema": 1, "field": "2b7c17f1deb2dede", "flat": true, "mode": "itinerary", "partition": "multibrot3", "resolution": [640, 360], "supersample": 2, "width": "0.00000003956235591102334"}
 {"schema": 1, "field": "2bad131b9410f635", "flat": true, "mode": "itinerary", "partition": "mandelbrot", "resolution": [1280, 720], "supersample": 2, "width": "0.0000003936068120894732"}
+{"schema": 1, "field": "2bcb8f193d641df9", "flat": false, "mode": "itinerary", "partition": "phoenix:classic", "resolution": [1280, 720], "supersample": 2, "width": "0.038336127386803524"}
 {"schema": 1, "field": "2be1fabd5bc6c577", "flat": false, "mode": "itinerary", "partition": "julia:multibrot5", "resolution": [640, 360], "supersample": 2, "width": "1.4389270670098564"}
 {"schema": 1, "field": "2c70c9d78003977c", "flat": false, "mode": "itinerary", "partition": "julia:multibrot5", "resolution": [640, 360], "supersample": 2, "width": "1.2139041434386841"}
 {"schema": 1, "field": "2c96664171cca11a", "flat": true, "mode": "itinerary", "partition": "multibrot4", "resolution": [640, 360], "supersample": 2, "width": "0.0001782789478694153"}
@@ -221,6 +225,7 @@
 {"schema": 1, "field": "2fd301e3ea5bba12", "flat": false, "mode": "itinerary", "partition": "julia:multibrot3", "resolution": [640, 360], "supersample": 2, "width": "0.1634839641730272"}
 {"schema": 1, "field": "2fe10ee47df7cb13", "flat": true, "mode": "itinerary", "partition": "mandelbrot", "resolution": [640, 360], "supersample": 2, "width": "0.000018420938384213853"}
 {"schema": 1, "field": "2fef85cee9a6bfc4", "flat": true, "mode": "itinerary", "partition": "mandelbrot", "resolution": [640, 360], "supersample": 2, "width": "0.00009559126627481109"}
+{"schema": 1, "field": "301cf8cf52d619b1", "flat": true, "mode": "itinerary", "partition": "mandelbrot", "resolution": [1280, 720], "supersample": 2, "width": "0.00000005573641794874919"}
 {"schema": 1, "field": "3020aaf592c24f09", "flat": true, "mode": "itinerary", "partition": "julia:multibrot3", "resolution": [640, 360], "supersample": 2, "width": "0.07076191735396506"}
 {"schema": 1, "field": "302d350bcecd8386", "flat": false, "mode": "itinerary", "partition": "phoenix", "resolution": [640, 360], "supersample": 2, "width": "0.0021867877308887882"}
 {"schema": 1, "field": "3069444ec244ca5d", "flat": true, "mode": "itinerary", "partition": "julia:multibrot5", "resolution": [1280, 720], "supersample": 2, "width": "0.007056805706347153"}
@@ -254,6 +259,7 @@
 {"schema": 1, "field": "35debd7402544207", "flat": false, "mode": "itinerary", "partition": "julia:multibrot5", "resolution": [1280, 720], "supersample": 2, "width": "0.04213800805361383"}
 {"schema": 1, "field": "35e8bf2c99cac607", "flat": false, "mode": "itinerary", "partition": "phoenix", "resolution": [640, 360], "supersample": 2, "width": "0.6791172052476295"}
 {"schema": 1, "field": "36284d08cb8df2cc", "flat": true, "mode": "itinerary", "partition": "multibrot4", "resolution": [640, 360], "supersample": 2, "width": "0.000012807046729617056"}
+{"schema": 1, "field": "363afa515ed8b3e7", "flat": true, "mode": "itinerary", "partition": "phoenix:classic", "resolution": [1280, 720], "supersample": 2, "width": "0.0008885801550246824"}
 {"schema": 1, "field": "3640b1f685217794", "flat": true, "mode": "itinerary", "partition": "julia:multibrot5", "resolution": [1280, 720], "supersample": 2, "width": "0.016339877686089188"}
 {"schema": 1, "field": "364d9b79c0871f88", "flat": true, "mode": "itinerary", "partition": "julia:multibrot5", "resolution": [640, 360], "supersample": 2, "width": "0.0022095803069019206"}
 {"schema": 1, "field": "36603b9e47474466", "flat": true, "mode": "itinerary", "partition": "multibrot4", "resolution": [640, 360], "supersample": 2, "width": "0.000000092587827945626"}
@@ -435,6 +441,8 @@
 {"schema": 1, "field": "5c713df317074c52", "flat": true, "mode": "itinerary", "partition": "multibrot3", "resolution": [640, 360], "supersample": 2, "width": "0.000000043715310425406175"}
 {"schema": 1, "field": "5c84d83a2808d305", "flat": false, "mode": "itinerary", "partition": "julia:multibrot4", "resolution": [1280, 720], "supersample": 2, "width": "0.46480727031495245"}
 {"schema": 1, "field": "5ca5aabb71f11ba7", "flat": false, "mode": "itinerary", "partition": "julia:multibrot3", "resolution": [640, 360], "supersample": 2, "width": "0.07601407191618785"}
+{"schema": 1, "field": "5cc099b62edf6d87", "flat": true, "mode": "itinerary", "partition": "multibrot3", "resolution": [1280, 720], "supersample": 2, "width": "0.000000025826885162927472"}
+{"schema": 1, "field": "5ccd1f54c0f8a339", "flat": false, "mode": "itinerary", "partition": "phoenix", "resolution": [1280, 720], "supersample": 2, "width": "0.022803572922856123"}
 {"schema": 1, "field": "5cd7c426ba656ae5", "flat": true, "mode": "itinerary", "partition": "multibrot3", "resolution": [640, 360], "supersample": 2, "width": "0.000000009743763358585019"}
 {"schema": 1, "field": "5cefe7b3777b770b", "flat": false, "mode": "itinerary", "partition": "multibrot3", "resolution": [1280, 720], "supersample": 2, "width": "0.0006249827631244199"}
 {"schema": 1, "field": "5d038ebfc1edf5b6", "flat": true, "mode": "itinerary", "partition": "multibrot3", "resolution": [1280, 720], "supersample": 2, "width": "0.0000005280891623590015"}
@@ -548,6 +556,7 @@
 {"schema": 1, "field": "75c458f806eda2df", "flat": true, "mode": "itinerary", "partition": "phoenix", "resolution": [640, 360], "supersample": 2, "width": "0.02258009201665303"}
 {"schema": 1, "field": "75c6b5cfdfc638cd", "flat": true, "mode": "itinerary", "partition": "julia:multibrot3", "resolution": [640, 360], "supersample": 2, "width": "0.03255536117355029"}
 {"schema": 1, "field": "75e53ae5f8a4d0b9", "flat": false, "mode": "itinerary", "partition": "julia:multibrot4", "resolution": [640, 360], "supersample": 2, "width": "0.021171857732434216"}
+{"schema": 1, "field": "761a8f88faaba6e0", "flat": true, "mode": "itinerary", "partition": "multibrot3", "resolution": [1280, 720], "supersample": 2, "width": "0.00000026861130655075135"}
 {"schema": 1, "field": "766d1b0cabce73f6", "flat": true, "mode": "itinerary", "partition": "multibrot3", "resolution": [640, 360], "supersample": 2, "width": "0.00005657036702777717"}
 {"schema": 1, "field": "767a91feb7e2b134", "flat": false, "mode": "itinerary", "partition": "phoenix", "resolution": [640, 360], "supersample": 2, "width": "0.7787290342056077"}
 {"schema": 1, "field": "7685a5aec352bb95", "flat": true, "mode": "itinerary", "partition": "julia:multibrot4", "resolution": [640, 360], "supersample": 2, "width": "0.0011630569317263879"}
@@ -581,6 +590,7 @@
 {"schema": 1, "field": "7bbcf1c16d57ad15", "flat": false, "mode": "itinerary", "partition": "julia:multibrot5", "resolution": [640, 360], "supersample": 2, "width": "0.3978986407203302"}
 {"schema": 1, "field": "7bd1a3a48e6935f8", "flat": true, "mode": "itinerary", "partition": "julia:mandelbrot", "resolution": [640, 360], "supersample": 2, "width": "0.07884615958490683"}
 {"schema": 1, "field": "7be615c0df217db5", "flat": true, "mode": "itinerary", "partition": "mandelbrot", "resolution": [640, 360], "supersample": 2, "width": "0.00011872343432055654"}
+{"schema": 1, "field": "7c206a760b7268e5", "flat": false, "mode": "itinerary", "partition": "multibrot4", "resolution": [1280, 720], "supersample": 2, "width": "0.0000048262177726830806"}
 {"schema": 1, "field": "7c637824c07ef3f2", "flat": false, "mode": "itinerary", "partition": "julia:multibrot4", "resolution": [640, 360], "supersample": 2, "width": "0.10810580456471836"}
 {"schema": 1, "field": "7d25bdd72959e644", "flat": false, "mode": "itinerary", "partition": "phoenix", "resolution": [640, 360], "supersample": 2, "width": "0.36780292201613596"}
 {"schema": 1, "field": "7d8db35dd0ff32ec", "flat": false, "mode": "itinerary", "partition": "julia:mandelbrot", "resolution": [640, 360], "supersample": 2, "width": "0.1762620887859376"}
@@ -594,6 +604,7 @@
 {"schema": 1, "field": "7fcbc9be72673da2", "flat": true, "mode": "itinerary", "partition": "phoenix", "resolution": [640, 360], "supersample": 2, "width": "0.019853102485759833"}
 {"schema": 1, "field": "7fe7741b2be15ffb", "flat": true, "mode": "itinerary", "partition": "multibrot3", "resolution": [640, 360], "supersample": 2, "width": "0.00009823255459127802"}
 {"schema": 1, "field": "800164f1573b5a4c", "flat": true, "mode": "itinerary", "partition": "multibrot4", "resolution": [640, 360], "supersample": 2, "width": "0.000000014828440912431714"}
+{"schema": 1, "field": "80128d4e18a8cf86", "flat": true, "mode": "itinerary", "partition": "phoenix:classic", "resolution": [1280, 720], "supersample": 2, "width": "0.0003734629094930846"}
 {"schema": 1, "field": "8068bd4654fa38ba", "flat": false, "mode": "itinerary", "partition": "julia:multibrot5", "resolution": [640, 360], "supersample": 2, "width": "0.023729107874808628"}
 {"schema": 1, "field": "807ad0b8f5633565", "flat": true, "mode": "itinerary", "partition": "mandelbrot", "resolution": [640, 360], "supersample": 2, "width": "0.00001575167763334566"}
 {"schema": 1, "field": "809cc0ccdd35f818", "flat": false, "mode": "itinerary", "partition": "julia:mandelbrot", "resolution": [640, 360], "supersample": 2, "width": "0.0957841179640048"}
@@ -616,6 +627,7 @@
 {"schema": 1, "field": "8490c0182772d7f7", "flat": false, "mode": "itinerary", "partition": "julia:multibrot3", "resolution": [640, 360], "supersample": 2, "width": "0.025789497405347347"}
 {"schema": 1, "field": "84af2be68cfc7b0c", "flat": false, "mode": "itinerary", "partition": "julia:multibrot5", "resolution": [640, 360], "supersample": 2, "width": "0.12312718748306777"}
 {"schema": 1, "field": "84c6ecffdb2536bd", "flat": true, "mode": "itinerary", "partition": "julia:mandelbrot", "resolution": [640, 360], "supersample": 2, "width": "0.0007806911317900286"}
+{"schema": 1, "field": "850deb5422656f54", "flat": true, "mode": "itinerary", "partition": "phoenix:classic", "resolution": [1280, 720], "supersample": 2, "width": "0.012815506111529422"}
 {"schema": 1, "field": "850f839ebd142d47", "flat": false, "mode": "itinerary", "partition": "julia:mandelbrot", "resolution": [640, 360], "supersample": 2, "width": "0.0841888483953249"}
 {"schema": 1, "field": "854cc589f20828bb", "flat": true, "mode": "itinerary", "partition": "multibrot5", "resolution": [640, 360], "supersample": 2, "width": "0.00000014304098218798962"}
 {"schema": 1, "field": "856cb67ad9e06ba9", "flat": true, "mode": "itinerary", "partition": "julia:multibrot4", "resolution": [640, 360], "supersample": 2, "width": "0.0974188735789786"}
@@ -653,6 +665,7 @@
 {"schema": 1, "field": "8bd24e1de25a8e2d", "flat": false, "mode": "itinerary", "partition": "phoenix", "resolution": [640, 360], "supersample": 2, "width": "0.4085805279941816"}
 {"schema": 1, "field": "8c63b1e46360ae81", "flat": true, "mode": "itinerary", "partition": "julia:multibrot3", "resolution": [1280, 720], "supersample": 2, "width": "0.0774383902459456"}
 {"schema": 1, "field": "8c8227b2d2f3913c", "flat": true, "mode": "itinerary", "partition": "julia:mandelbrot", "resolution": [640, 360], "supersample": 2, "width": "0.15096902266265905"}
+{"schema": 1, "field": "8cb9442edd417a9c", "flat": false, "mode": "itinerary", "partition": "phoenix:classic", "resolution": [1280, 720], "supersample": 2, "width": "0.03565121393396539"}
 {"schema": 1, "field": "8d0c7faf3047873a", "flat": true, "mode": "itinerary", "partition": "multibrot4", "resolution": [640, 360], "supersample": 2, "width": "0.0001042776526354018"}
 {"schema": 1, "field": "8d4c14aced8b73ff", "flat": false, "mode": "itinerary", "partition": "multibrot4", "resolution": [640, 360], "supersample": 2, "width": "0.003468435395081782"}
 {"schema": 1, "field": "8d52cd934bb0fc83", "flat": false, "mode": "itinerary", "partition": "multibrot5", "resolution": [640, 360], "supersample": 2, "width": "0.0000002530965722357728"}
@@ -831,6 +844,7 @@
 {"schema": 1, "field": "b0c08038cf18b1ee", "flat": true, "mode": "itinerary", "partition": "mandelbrot", "resolution": [640, 360], "supersample": 2, "width": "0.0000006119000448823924"}
 {"schema": 1, "field": "b14bc258488725f1", "flat": true, "mode": "itinerary", "partition": "julia:mandelbrot", "resolution": [640, 360], "supersample": 2, "width": "0.0020901140602243694"}
 {"schema": 1, "field": "b1c7ebd2ddcce249", "flat": true, "mode": "itinerary", "partition": "julia:mandelbrot", "resolution": [640, 360], "supersample": 2, "width": "0.09468185318084908"}
+{"schema": 1, "field": "b2488e8981d6671f", "flat": true, "mode": "itinerary", "partition": "multibrot4", "resolution": [1280, 720], "supersample": 2, "width": "0.00000011118451315866789"}
 {"schema": 1, "field": "b25d4aae598d7d1e", "flat": true, "mode": "itinerary", "partition": "mandelbrot", "resolution": [640, 360], "supersample": 2, "width": "0.0000000027759931765510768"}
 {"schema": 1, "field": "b271c6082d460c60", "flat": true, "mode": "itinerary", "partition": "mandelbrot", "resolution": [640, 360], "supersample": 2, "width": "0.000663149104049794"}
 {"schema": 1, "field": "b38bf0d0c2fbfeb8", "flat": true, "mode": "itinerary", "partition": "multibrot4", "resolution": [1280, 720], "supersample": 2, "width": "0.000012937498821234"}
@@ -863,6 +877,7 @@
 {"schema": 1, "field": "b9ee708c60fe6422", "flat": true, "mode": "itinerary", "partition": "multibrot5", "resolution": [640, 360], "supersample": 2, "width": "0.0001040519818673875"}
 {"schema": 1, "field": "bab00abcd91eefa2", "flat": true, "mode": "itinerary", "partition": "multibrot5", "resolution": [640, 360], "supersample": 2, "width": "0.000009463338813224563"}
 {"schema": 1, "field": "bad1c2cd082829a3", "flat": false, "mode": "itinerary", "partition": "julia:multibrot5", "resolution": [640, 360], "supersample": 2, "width": "0.11582887905315402"}
+{"schema": 1, "field": "baf4a28b2d150434", "flat": false, "mode": "itinerary", "partition": "julia:multibrot3", "resolution": [1280, 720], "supersample": 2, "width": "0.09791281936424606"}
 {"schema": 1, "field": "baf9b5a82acdacb9", "flat": false, "mode": "itinerary", "partition": "julia:multibrot5", "resolution": [1280, 720], "supersample": 2, "width": "0.4768550223838562"}
 {"schema": 1, "field": "bb0d03a4a33adfe0", "flat": false, "mode": "itinerary", "partition": "julia:multibrot3", "resolution": [640, 360], "supersample": 2, "width": "0.08029490109768847"}
 {"schema": 1, "field": "bb4180e764e80948", "flat": false, "mode": "itinerary", "partition": "julia:multibrot5", "resolution": [1280, 720], "supersample": 2, "width": "0.011483892558045614"}
@@ -937,6 +952,7 @@
 {"schema": 1, "field": "c9db89193304dbeb", "flat": true, "mode": "itinerary", "partition": "mandelbrot", "resolution": [640, 360], "supersample": 2, "width": "0.000008739184831250307"}
 {"schema": 1, "field": "c9fb3f7d8443be07", "flat": false, "mode": "itinerary", "partition": "phoenix", "resolution": [640, 360], "supersample": 2, "width": "0.028300044826860483"}
 {"schema": 1, "field": "ca15f30f98f2bb50", "flat": true, "mode": "itinerary", "partition": "julia:multibrot4", "resolution": [640, 360], "supersample": 2, "width": "0.0008070533488128073"}
+{"schema": 1, "field": "ca5db60443b80ff6", "flat": true, "mode": "itinerary", "partition": "multibrot4", "resolution": [1280, 720], "supersample": 2, "width": "0.00000022794157847749423"}
 {"schema": 1, "field": "ca7f0451a3c6a02e", "flat": false, "mode": "itinerary", "partition": "julia:multibrot5", "resolution": [640, 360], "supersample": 2, "width": "0.046182503140273"}
 {"schema": 1, "field": "caa63aa16db90704", "flat": true, "mode": "itinerary", "partition": "multibrot3", "resolution": [640, 360], "supersample": 2, "width": "0.000000023879139648575185"}
 {"schema": 1, "field": "cac89bfcd260cdde", "flat": true, "mode": "itinerary", "partition": "julia:multibrot5", "resolution": [640, 360], "supersample": 2, "width": "0.05489138278614803"}
@@ -1013,6 +1029,7 @@
 {"schema": 1, "field": "da519495eb41f055", "flat": false, "mode": "itinerary", "partition": "julia:mandelbrot", "resolution": [640, 360], "supersample": 2, "width": "0.08389548625311154"}
 {"schema": 1, "field": "da6ef66a227a5f4e", "flat": true, "mode": "itinerary", "partition": "mandelbrot", "resolution": [640, 360], "supersample": 2, "width": "0.00000005877796896025652"}
 {"schema": 1, "field": "dae6ebf06757789a", "flat": true, "mode": "itinerary", "partition": "julia:multibrot3", "resolution": [640, 360], "supersample": 2, "width": "0.025381317634535747"}
+{"schema": 1, "field": "db97fe20e4310646", "flat": false, "mode": "itinerary", "partition": "julia:multibrot3", "resolution": [1280, 720], "supersample": 2, "width": "0.35201943995115476"}
 {"schema": 1, "field": "dba136e3c0c30bc0", "flat": false, "mode": "itinerary", "partition": "multibrot3", "resolution": [640, 360], "supersample": 2, "width": "0.000006259801058276883"}
 {"schema": 1, "field": "dba170925bb16228", "flat": false, "mode": "itinerary", "partition": "phoenix", "resolution": [640, 360], "supersample": 2, "width": "0.1885912364056631"}
 {"schema": 1, "field": "dbb4bc7dfe3bd735", "flat": true, "mode": "itinerary", "partition": "julia:mandelbrot", "resolution": [1280, 720], "supersample": 2, "width": "0.010869909203329399"}
@@ -1030,6 +1047,7 @@
 {"schema": 1, "field": "de1b8c48f3e6e1be", "flat": true, "mode": "itinerary", "partition": "multibrot4", "resolution": [640, 360], "supersample": 2, "width": "0.0000007936900665130464"}
 {"schema": 1, "field": "debe2955fb78fd8d", "flat": false, "mode": "itinerary", "partition": "julia:multibrot3", "resolution": [640, 360], "supersample": 2, "width": "0.05568525488048373"}
 {"schema": 1, "field": "ded3c1bb3672036a", "flat": false, "mode": "itinerary", "partition": "julia:multibrot5", "resolution": [1280, 720], "supersample": 2, "width": "1.056261157949947"}
+{"schema": 1, "field": "dfc31010d0f4e566", "flat": true, "mode": "itinerary", "partition": "multibrot4", "resolution": [1280, 720], "supersample": 2, "width": "0.0000010682842700077392"}
 {"schema": 1, "field": "dfe9dbc35c42d651", "flat": false, "mode": "itinerary", "partition": "julia:multibrot5", "resolution": [640, 360], "supersample": 2, "width": "0.2103650413139819"}
 {"schema": 1, "field": "e01560e8f6362833", "flat": true, "mode": "itinerary", "partition": "multibrot3", "resolution": [640, 360], "supersample": 2, "width": "0.0013019168653764927"}
 {"schema": 1, "field": "e028aaf0773fa295", "flat": true, "mode": "itinerary", "partition": "mandelbrot", "resolution": [640, 360], "supersample": 2, "width": "0.00016792564967546894"}
@@ -1045,6 +1063,7 @@
 {"schema": 1, "field": "e39a30c124b9472b", "flat": false, "mode": "itinerary", "partition": "multibrot5", "resolution": [640, 360], "supersample": 2, "width": "0.0011733924307090484"}
 {"schema": 1, "field": "e3acdca7b57112b8", "flat": true, "mode": "itinerary", "partition": "julia:multibrot4", "resolution": [640, 360], "supersample": 2, "width": "0.0010249110832782791"}
 {"schema": 1, "field": "e4078dc452f74af5", "flat": false, "mode": "itinerary", "partition": "phoenix", "resolution": [640, 360], "supersample": 2, "width": "1.7599398674554791"}
+{"schema": 1, "field": "e4331633cf04a110", "flat": true, "mode": "itinerary", "partition": "phoenix:classic", "resolution": [1280, 720], "supersample": 2, "width": "0.000006609376199233673"}
 {"schema": 1, "field": "e4608ca9e2dd3a17", "flat": false, "mode": "itinerary", "partition": "phoenix", "resolution": [640, 360], "supersample": 2, "width": "0.0006723781020213695"}
 {"schema": 1, "field": "e463c2acf96c9c30", "flat": false, "mode": "itinerary", "partition": "julia:multibrot3", "resolution": [640, 360], "supersample": 2, "width": "0.46032886190891475"}
 {"schema": 1, "field": "e47940ba24d36fd0", "flat": false, "mode": "itinerary", "partition": "phoenix", "resolution": [1280, 720], "supersample": 2, "width": "0.05804377603877889"}
@@ -1071,6 +1090,7 @@
 {"schema": 1, "field": "e881f2f055d92c5e", "flat": false, "mode": "itinerary", "partition": "julia:multibrot4", "resolution": [640, 360], "supersample": 2, "width": "0.0448568130284337"}
 {"schema": 1, "field": "e8f2758a77fd0baf", "flat": true, "mode": "itinerary", "partition": "multibrot4", "resolution": [640, 360], "supersample": 2, "width": "0.000000534944942503083"}
 {"schema": 1, "field": "e9469cc8bc76fb33", "flat": true, "mode": "itinerary", "partition": "multibrot3", "resolution": [640, 360], "supersample": 2, "width": "0.0000000698685496352803"}
+{"schema": 1, "field": "e958c71c86550562", "flat": false, "mode": "itinerary", "partition": "julia:mandelbrot", "resolution": [1280, 720], "supersample": 2, "width": "0.7938924918300916"}
 {"schema": 1, "field": "e97296a5117f7c5d", "flat": false, "mode": "itinerary", "partition": "julia:multibrot4", "resolution": [640, 360], "supersample": 2, "width": "0.18798837353340095"}
 {"schema": 1, "field": "e99de6a45b7917b7", "flat": true, "mode": "itinerary", "partition": "mandelbrot", "resolution": [640, 360], "supersample": 2, "width": "0.00000010863693446968627"}
 {"schema": 1, "field": "e9a5ffc1b40ff473", "flat": false, "mode": "itinerary", "partition": "julia:multibrot5", "resolution": [640, 360], "supersample": 2, "width": "0.3125517494522789"}
@@ -1091,6 +1111,7 @@
 {"schema": 1, "field": "ebab3fc5b748fecc", "flat": true, "mode": "itinerary", "partition": "multibrot5", "resolution": [640, 360], "supersample": 2, "width": "0.000007213133539869595"}
 {"schema": 1, "field": "ebae30a3f4106736", "flat": true, "mode": "itinerary", "partition": "multibrot4", "resolution": [640, 360], "supersample": 2, "width": "0.000020176262475009356"}
 {"schema": 1, "field": "ebb673513a250a4e", "flat": true, "mode": "itinerary", "partition": "julia:multibrot4", "resolution": [640, 360], "supersample": 2, "width": "0.006983651603498207"}
+{"schema": 1, "field": "ebbef4daf14fe813", "flat": true, "mode": "itinerary", "partition": "multibrot5", "resolution": [1280, 720], "supersample": 2, "width": "0.00000006755508175406188"}
 {"schema": 1, "field": "ebefcc8d970fbf29", "flat": false, "mode": "itinerary", "partition": "julia:mandelbrot", "resolution": [1280, 720], "supersample": 2, "width": "0.5257870613871481"}
 {"schema": 1, "field": "ec3fd0f8574821e6", "flat": true, "mode": "itinerary", "partition": "phoenix", "resolution": [1280, 720], "supersample": 2, "width": "0.026702666269311445"}
 {"schema": 1, "field": "ec5cdabb76d8f19d", "flat": true, "mode": "itinerary", "partition": "mandelbrot", "resolution": [640, 360], "supersample": 2, "width": "0.000000517094835699091"}
@@ -1118,6 +1139,7 @@
 {"schema": 1, "field": "f0924de8cdc76748", "flat": false, "mode": "itinerary", "partition": "julia:multibrot5", "resolution": [1280, 720], "supersample": 2, "width": "0.3125517494522789"}
 {"schema": 1, "field": "f0eb8d0d34c934b2", "flat": true, "mode": "itinerary", "partition": "multibrot3", "resolution": [640, 360], "supersample": 2, "width": "0.0002362678441198507"}
 {"schema": 1, "field": "f111c1c5661180af", "flat": true, "mode": "itinerary", "partition": "mandelbrot", "resolution": [640, 360], "supersample": 2, "width": "0.0000159448354708717"}
+{"schema": 1, "field": "f122c37c69b3be96", "flat": false, "mode": "itinerary", "partition": "julia:multibrot5", "resolution": [1280, 720], "supersample": 2, "width": "0.4725461172676363"}
 {"schema": 1, "field": "f1a84f147a39c859", "flat": true, "mode": "itinerary", "partition": "julia:multibrot5", "resolution": [640, 360], "supersample": 2, "width": "0.03611749849865526"}
 {"schema": 1, "field": "f21599b46199ae5c", "flat": false, "mode": "itinerary", "partition": "multibrot4", "resolution": [640, 360], "supersample": 2, "width": "0.00009185852333601295"}
 {"schema": 1, "field": "f250d16affdb96ef", "flat": false, "mode": "itinerary", "partition": "julia:multibrot5", "resolution": [1280, 720], "supersample": 2, "width": "0.04650438670410246"}
@@ -1127,6 +1149,7 @@
 {"schema": 1, "field": "f28c38da764897f3", "flat": true, "mode": "itinerary", "partition": "multibrot3", "resolution": [640, 360], "supersample": 2, "width": "0.0002837755943983489"}
 {"schema": 1, "field": "f2c029d6ffc28bfb", "flat": false, "mode": "itinerary", "partition": "julia:multibrot4", "resolution": [640, 360], "supersample": 2, "width": "1.071494227588754"}
 {"schema": 1, "field": "f31044ff9dffce7b", "flat": false, "mode": "itinerary", "partition": "julia:multibrot5", "resolution": [640, 360], "supersample": 2, "width": "0.6112578333945857"}
+{"schema": 1, "field": "f342b03d6f6075f2", "flat": true, "mode": "itinerary", "partition": "multibrot4", "resolution": [1280, 720], "supersample": 2, "width": "0.00000003834699468970557"}
 {"schema": 1, "field": "f3bb669cab3bd5e5", "flat": false, "mode": "itinerary", "partition": "julia:multibrot4", "resolution": [640, 360], "supersample": 2, "width": "0.12237331176561389"}
 {"schema": 1, "field": "f41513b6bdcda6ef", "flat": true, "mode": "itinerary", "partition": "mandelbrot", "resolution": [640, 360], "supersample": 2, "width": "0.000027454967356481345"}
 {"schema": 1, "field": "f418185dbee40b8f", "flat": true, "mode": "itinerary", "partition": "multibrot5", "resolution": [640, 360], "supersample": 2, "width": "0.0000000000888364912216871"}

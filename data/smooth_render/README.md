@@ -39,6 +39,15 @@ labels, and spent the moment it enters a training split. The pin is asserted on
 the **location**, so a later batch that re-renders a pinned place under a fresh
 identifier cannot spend it by not naming it.
 
+**Thirteen rows in here are revisions of `strange_render` originals**, appended
+2026-09-03, which is why this store reads 6,193 rows against the 6,180 the batch
+arithmetic below gives. Each is an `itinerary` render whose modulate texture measured
+flat at label geometry — so the picture is the smooth field spent by rank bit for bit
+and the verdict is this judge's — carried over under its own batch with a `revision`
+block naming the original's file, line and recorded time. The originals stay in the
+other store; see `data/strange_render/README.md` for why a register entry alone could
+not do this. None sits at a place this store's pinned set holds.
+
 **A verdict cast on a pinned location never reaches these rows.** The pin is asserted
 on the location and `blind_minibrot` is derived from the pinned places, so `label
 ingest` withholds such a verdict before it writes rather than growing a blind sheet

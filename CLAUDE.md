@@ -173,6 +173,18 @@ both times. That is the commit-charge ceiling `models/render/README.md` document
 parent holds ~3.3 GB and each of three workers ~0.9 GB), not the wall-clock guard the
 paragraph below describes. Run the lane after the leg, never beside it.
 
+It read **170.45 s over 3,362** at the texture-route tidy, idle, 2026-09-03 — 4.0%
+over the reading below across **one** more test. The new guard is 1.49 s of that and
+the rest is data: the same session put 13 revision rows and 13 crops into
+`smooth_render` and 23 entries into the texture register. Worth having because the
+guard was **13.88 s** before one stub — `candidate_ledger.prune` reaches
+`intake.read_scores`, which the ledger's isolation fixture does not redirect, so a
+three-row store in `tmp_path` still swept this machine's real 428,000-row location
+score store, twice. That is `tests/README.md`'s rule about a guard taking a budget
+rather than a store, hiding one call deep inside production code rather than in the
+test — every merge test in `tests/test_ledger_tracking.py` pays 4.5-10 s of the same
+read today.
+
 It read **163.85 s over 3,361** at the `--draw-cells` build, idle, 2026-09-03 —
 1.9% over the reading below across twenty more tests, taken right after a
 ten-minute near-band leg merged 4,204 candidates and the prune took the ledger
