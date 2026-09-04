@@ -21,7 +21,7 @@ import pytest
 from tests.test_candidate_ledger import decision, isolated  # noqa: F401  (a fixture)
 
 from fractal_wallpapers import cli
-from fractal_wallpapers.curation import candidate_ledger, recipes, tentative
+from fractal_wallpapers.curation import candidate_ledger, colorize, recipes, tentative
 
 
 def seat(key: str, **over) -> dict:
@@ -33,6 +33,7 @@ def seat(key: str, **over) -> dict:
         "location": f"place-of-{key}",
         "partition": "mandelbrot",
         "mode": "smooth",
+        "mode_params": {},
         "kind": "strange_render",
         "palette_group": "map:viridis",
         "cells": ["dark_vivid_green", "light_muted_lime"],
@@ -40,6 +41,10 @@ def seat(key: str, **over) -> dict:
         "p_ge4": 0.9,
         "p_ge3": 0.95,
         "above_bar": True,
+        # A place nobody has scored, which is what `None` means here and is why it
+        # is not `False` — see the comment on the column in [`solve._seated`].
+        "spiral": False,
+        "p_spiral": None,
         "picture": f"artifacts/curation/depth/a_leg/pictures/{key}.jpg",
     }
     row.update(over)
@@ -163,6 +168,73 @@ def test_a_seat_with_no_dominant_colour_records_null_rather_than_a_guess():
 
     assert rows[0]["cell"] is None and rows[0]["hue_family"] is None
     assert tentative.counts_of(rows, "hue_family") == {"null": 1}
+
+
+def test_the_seat_this_file_builds_is_the_seat_solve_actually_writes():
+    """Every guard below reads a hand-built seat, so the hand-built shape has to be
+    the real one. `solve._seated` is the only writer of a seat and the columns here
+    are read straight off it — a field added there and not here would leave this
+    file testing a record that no longer exists."""
+    from fractal_wallpapers.curation import solve
+
+    real = solve._seated(
+        solve.Candidate(
+            key="k0",
+            location="place-of-k0",
+            partition="mandelbrot",
+            mode="direct_trap_multiply",
+            group="map:viridis",
+            kind="strange_render",
+            cells=("dark_vivid_green",),
+            families=("green",),
+            score=0.9,
+            p_ge3=0.95,
+            picture="artifacts/p.jpg",
+            mode_params={"opacity": 0.6},
+        ),
+        "general_pool",
+        rank=0.5,
+    )
+
+    assert set(seat("k0")) == set(real), "the hand-built seat and the written one differ"
+    assert real["mode_params"] == {"opacity": 0.6}, "the settings reach the record at all"
+
+
+def test_a_seated_settings_cell_round_trips_through_the_spelling_a_roster_uses():
+    """The column exists so a settings cell is visible in the record at all.
+
+    Without it `direct_trap_multiply@opacity=0.6` and the bare mode are one row
+    here and telling them apart needs a join to the ledger on `key`. The
+    round-trip is the property that matters: whatever a leg named on its roster
+    has to come back out of the record as the same pair."""
+    rows = tentative.rows_of(
+        record_of(
+            seat("k0", mode="direct_trap_multiply", mode_params={"opacity": 0.6}),
+            seat("k1"),
+        )
+    )
+
+    held = {row["key"]: row for row in rows}
+    assert held["k0"]["mode"] == "direct_trap_multiply", "the mode stays a catalogue name"
+    assert held["k0"]["mode_params"] == {"opacity": 0.6}
+    assert held["k1"]["mode_params"] == {}, "a bare seat is an empty cell, not a missing one"
+
+    spelled = colorize.spelled(held["k0"]["mode"], held["k0"]["mode_params"])
+    assert spelled == "direct_trap_multiply@opacity=0.6"
+    assert colorize.roster_entry(spelled) == ("direct_trap_multiply", {"opacity": 0.6})
+
+
+def test_a_seat_written_before_the_settings_column_existed_reads_as_bare():
+    """Forward only: nothing tracked was rewritten when the column arrived, so a
+    record from before it has to mean the same thing as a bare seat rather than
+    raising or reading as `None`."""
+    old = seat("k0")
+    del old["mode_params"]
+
+    rows = tentative.rows_of(record_of(old))
+
+    assert rows[0]["mode_params"] == {}
+    assert colorize.spelled(rows[0]["mode"], rows[0]["mode_params"]) == "smooth"
 
 
 def test_the_centered_flag_is_joined_off_the_walk_ledgers_and_not_off_the_seat():

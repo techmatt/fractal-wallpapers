@@ -1845,6 +1845,19 @@ and were filled by the backfill register, where `texture_flat.flat_for` answers
 `true` for all eight and `false` for the ten it was never asked to probe. Both
 routes agree, and `routed_mode_of` answers `smooth` for all eighteen.
 
+**The row's `mode_params` are the recipe's and its `mode` is the routed one, and
+they are deliberately not taken from the same place.** A seat carries the settings
+the picture was actually rendered under — `recipe.mode_params`, off the ledger row
+`solve.pool` built the candidate from — so `direct_trap_multiply` at `opacity=0.6`
+is a different gallery row from the bare mode instead of being indistinguishable
+from it. The pairing is only ever a spelling and never a claim that a roster named
+that pair: on the eighteen routed seats above, the mode says `smooth` while the
+settings belong to the `itinerary` recipe underneath. A reader that needs the
+catalogue mode joins to the ledger on `key`, exactly as this section already says.
+The field is **forward only** — every record written before it carries no
+`mode_params`, and an absent one reads as `{}`, which is also what a bare seat
+writes, so nothing tracked was rewritten and the two spellings are one row.
+
 **The 0 is wired in three places.** A weight-0 mode is out of
 the **labeling rosters** and the **default mining rosters** (both through
 `colorize.modes_for`, `mine._accepted_modes` and `hunt.plan`, so the mode draw, the

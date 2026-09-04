@@ -14,7 +14,7 @@ from __future__ import annotations
 import pytest
 
 from fractal_wallpapers import paths
-from fractal_wallpapers.curation import rules, solve
+from fractal_wallpapers.curation import colorize, rules, solve
 
 
 @pytest.fixture(autouse=True)
@@ -79,6 +79,31 @@ def quiet(*_args, **_rest) -> None:
 # --------------------------------------------------------------------------- #
 # The five exclusions.
 # --------------------------------------------------------------------------- #
+def test_a_candidate_carries_the_recipes_own_settings_and_not_the_routed_modes():
+    """The settings are a fact about how the picture was made.
+
+    `mode` is what the row COUNTS as and can be routed away from the recipe;
+    `mode_params` is off the recipe and is never routed, so a seat can always be
+    spelled as the `(mode, settings)` pair a leg named. A recipe with no settings
+    gives `{}` rather than `None`, which is what the gallery row means by bare."""
+    rows = [
+        ledger_row(
+            "varied", recipe={"mode": "direct_trap_multiply", "mode_params": {"opacity": 0.6}}
+        ),
+        ledger_row("bare", recipe={"mode": "smooth"}),
+    ]
+    scores = [score_row("varied"), score_row("bare")]
+
+    candidates, _refused = solve.pool(rows=rows, scores=scores, artifact=ARTIFACT, log=quiet)
+
+    held = {c.key: c for c in candidates}
+    assert held["varied"].mode_params == {"opacity": 0.6}
+    assert held["bare"].mode_params == {}
+    assert colorize.spelled(held["varied"].mode, held["varied"].mode_params) == (
+        "direct_trap_multiply@opacity=0.6"
+    )
+
+
 def test_pool_refuses_a_rejected_row_and_says_so():
     """A person's rejection travels on the ledger row so the leg honours it."""
     rows = [ledger_row("a"), ledger_row("b", rejected={"by": "matt"})]
