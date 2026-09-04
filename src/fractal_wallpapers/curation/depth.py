@@ -1184,6 +1184,10 @@ def build_plan(
     floor_modes: list | None = None,
     floor_untried: list | None = None,
     floor_places: list | None = None,
+    # Spelled `near_named` and not `near_places`, which is what the flag is
+    # called: the draw it narrows is [`near_places`], and a parameter of that
+    # name would shadow the function for the whole of this one.
+    near_named: list | None = None,
     floor_seats: int = 10,
     floor_width: int = FLOOR_WIDTH,
     workers: int = 1,
@@ -1368,8 +1372,38 @@ def build_plan(
     # the marginal candidate stops paying is therefore not the same number for
     # the two of them, and a run sized off a measurement may say so.
     near_width = int(width if near_width is None else near_width)
+    # **The near band's named population, and the mirror of `--floor-places`.**
+    # Unnarrowed, the near-band draw takes every place sitting between the two
+    # bars — which is a population built out of the whole history of this pool,
+    # 3,450 places on 2026-09-04 — so a leg meaning *the places tonight opened*
+    # had no way to say so. It matters more here than anywhere else the draw
+    # picks its own places, because a near-band pass over a place already at
+    # `RETAIN_PER_PAIR` is ranked out as it lands: `draw_cells_smoke` kept 9.7%
+    # of what it made. Narrowed here rather than inside [`near_places`] so that a
+    # manifest naming nothing this run can afford is refused against the manifest.
+    near_pool = best_field
+    if near_named:
+        wanted = {str(one) for one in near_named}
+        absent = wanted - set(near_pool)
+        near_pool = {key: held for key, held in near_pool.items() if key in wanted}
+        log(
+            f"[depth] --near-places: {len(near_pool):,} of {len(wanted):,} named place(s) "
+            f"hold a candidate in a mode this run can afford"
+        )
+        if absent:
+            log(
+                f"[depth] {len(absent):,} named place(s) hold no candidate in one of "
+                f"{len(roster)} roster mode(s): skipped"
+            )
+        if not near_pool and want.get(NEAR):
+            raise DepthRefused(
+                f"none of the {len(wanted):,} place(s) in --near-places holds a candidate in a "
+                f"mode this run can afford, so the near band has no incumbent to hold. The "
+                f"draw reads the best FIELD candidate per place over --modes; a manifest of "
+                f"places opened only in modes this leg is not running is the usual cause."
+            )
     near = (
-        near_places(best_field, world["by_key"], seed, max(1, want[NEAR] // max(1, near_width)))
+        near_places(near_pool, world["by_key"], seed, max(1, want[NEAR] // max(1, near_width)))
         if want.get(NEAR)
         else []
     )
@@ -1562,6 +1596,8 @@ def build_plan(
         "floor_untried": list(floor_untried or []),
         "floor_places_named": len(floor_places or []),
         "floor_population": len(floor_pool),
+        "near_places_named": len(near_named or []),
+        "near_population": len(near_pool),
         "roster": roster,
         "breadth_roster": [colorize.spelled(mode, settings) for mode, settings in breadth],
         "mode_policy": mode_policy.record(),
@@ -1796,6 +1832,7 @@ def run(
     floor_modes: list | None = None,
     floor_untried: list | None = None,
     floor_places: list | None = None,
+    near_named: list | None = None,
     floor_width: int = FLOOR_WIDTH,
     floor_seats: int = 10,
     workers: int = DEFAULT_WORKERS,
@@ -1861,6 +1898,7 @@ def run(
         floor_modes=floor_modes,
         floor_untried=floor_untried,
         floor_places=floor_places,
+        near_named=near_named,
         floor_width=floor_width,
         floor_seats=floor_seats,
         workers=workers,

@@ -580,6 +580,42 @@ def test_the_floor_draw_stands_on_places_that_already_cleared_the_seating_bar():
 
 
 # --------------------------------------------------------------------------- #
+# The near band's named population.
+# --------------------------------------------------------------------------- #
+NEAR_ONLY = {depth.NEAR: 1.0, depth.RANKED: 0.0, depth.FLAT: 0.0, depth.FLOOR: 0.0}
+
+
+def test_the_near_band_stands_only_on_the_places_a_manifest_names():
+    """The one thing `--near-places` says, and the reason it exists.
+
+    Unnarrowed the draw takes every place sitting between the bars, which is the
+    whole history of the pool; a leg meaning *the places this night opened* had no
+    way to say so, and a near-band pass over a place already at the retention keep
+    is ranked out as it lands.
+    """
+    plan, shape = build_a_plan(shares=NEAR_ONLY, near_named=["seated-1", "seated-3"])
+    stood_on = {shot.location for shot in plan if shot.arm == depth.NEAR}
+    assert stood_on == {"seated-1", "seated-3"}
+    assert (shape["near_places_named"], shape["near_population"]) == (2, 2)
+
+
+def test_an_unnarrowed_near_band_still_takes_the_whole_pool_between_the_bars():
+    """Sparse and unsaid it does nothing at all, which is what every other test
+    in this file is taken under."""
+    _plan, shape = build_a_plan(shares=NEAR_ONLY)
+    assert shape["near_places_named"] == 0
+    assert shape["near_population"] == shape["near_band_pool"] == 6
+
+
+def test_a_near_manifest_naming_nothing_this_run_can_hold_is_refused():
+    """Not dropped to a wider draw. A manifest of places opened only in modes this
+    leg is not running would otherwise plan a near band over places nobody chose,
+    and report its rate over that population."""
+    with pytest.raises(depth.DepthRefused, match="--near-places"):
+        build_a_plan(shares=NEAR_ONLY, near_named=["nowhere", "nowhere-else"])
+
+
+# --------------------------------------------------------------------------- #
 # The matched pair: one band cut, one partition mix, no ranked draw to lean on.
 # --------------------------------------------------------------------------- #
 MATCHED_SHARES = {depth.NEAR: 0.0, depth.RANKED: 0.0, depth.FLAT: 0.5, depth.AIMED: 0.5}

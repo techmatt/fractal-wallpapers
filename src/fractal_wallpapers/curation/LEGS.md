@@ -457,6 +457,32 @@ population nobody chose.
 A file and never arguments, on the standing rule — this population is hundreds of
 places long and a Windows command line overflows a long way before it does.
 
+### `--near-places` is the same thing for the near band, added 2026-09-04
+
+`--near-places FILE` takes the identical manifest and narrows the **near-band**
+draw's population: the places whose best candidate in a roster mode sits between
+the two bars. Unsaid, that population is the whole history of this pool — **3,450
+places on 2026-09-04** — so a leg meaning *the places this night opened* could not
+say it, and three flags away from being able to.
+
+It matters more than the floor draw's version, because the near band is the one
+arm whose yield is decided by what is already at the place. A pass over a place
+already holding `RETAIN_PER_PAIR` rows in that mode is ranked out as it lands:
+`draw_cells_smoke` kept **440 of 4,525 rows, 9.7%**, against a fresh place's
+prune-free zero. So the difference between an aimed near band and an unaimed one
+is smaller than the difference between a near band over tonight's places and one
+over everybody's.
+
+A named place holding no candidate in a mode this run can afford is counted and
+named rather than dropped — it means the place was opened only in modes this leg
+is not running — and a manifest that leaves none is **refused**, on
+`--floor-places`' reason: a leg that quietly planned a near band over a population
+nobody chose would report its rate over that one.
+
+The parameter under it is `near_named` and not `near_places`, which is what the
+flag is called. `build_plan` calls [`near_places`] to take the draw, and a
+parameter of that name would shadow the function for the whole of it.
+
 ### `--draw-maps` is the palette twin of it, and it is a draw filter and nothing else
 
 `--draw-maps FILE` is a maps **manifest** — a JSONL of `{"schema": 1, "map": ...}`
@@ -871,6 +897,34 @@ And a partition that drew nothing is now reported as a **zero** rather than bein
 absent from the record: `dtm_breadth2` ran `phoenix: 0` and its `depth.json` has
 no phoenix key at all, so a partition a leg deliberately left out cannot be told
 from one that did not exist when the leg ran.
+
+⚠ **The ruling has never acted, measured 2026-09-04, and it is not the conversion
+that is wrong.** Every leg since it landed has drawn under the standing *turn*
+weights while its record reported `seconds_share` as though the shares were
+spent. `build_plan` resolves the standing table into `partition_weights` and then
+hands **that** to [`draw_weights.by_band`] as `overrides` — so `converted`'s last
+loop, the one that lets a leg aimed at a phoenix plane keep its explicit turn
+weight, fires for all ten registered partitions and writes the turn weights back
+over each band's own conversion. The record says so plainly once you know where to
+look: `weight_conversion.<band>.converted` is `{}` and `overridden` lists every
+partition, while `partition_weights_by_band` reads 0.25 for both phoenix planes on
+every band. What it costs: `rare_a` spent **24.9% of its engine seconds on
+`phoenix:classic` against a declared 3%** (144 candidates at **35.75 s** each) and
+**4.8% on `phoenix` against a declared 15%** — eight times over on one plane and
+three times under on the other. Priced off that leg's own bands the ruling wants
+`phoenix` at **3.40** turns and `phoenix:classic` at **0.0205**.
+
+The change is one line — keep the caller's own overrides apart from the resolved
+table and pass those — and it is **not** a one-line decision: it moves five tests
+in `tests/test_depth.py` that pin the pre-ruling behaviour, one of them
+(`test_the_standing_table_downweights_phoenix_in_the_plan_the_leg_actually_takes`)
+pinning the 0.25 the ruling exists to replace. It was written and reverted on the
+night it was found rather than landed unmeasured beside a mining leg.
+
+Note also that `by_band` writes `{"converted": True, ..., **how}` and `how`
+carries its own `converted` key, so the boolean is overwritten by the detail dict
+on every band. A reader asking "did this band convert?" gets `{}` — falsy, and
+right by accident today only because nothing converts.
 
 **`--floor-untried` is the opened-but-shallow population.** The floor draw stands on
 `proven_places` — a location already over the seating bar — and this narrows that to
