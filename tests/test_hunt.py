@@ -19,7 +19,7 @@ import json
 
 import pytest
 
-from fractal_wallpapers.curation import candidate_ledger, flatness, hunt, recipes
+from fractal_wallpapers.curation import candidate_ledger, hunt, recipes
 from fractal_wallpapers.supply.partitions import ALL_PARTITIONS, CLASSIC_PHOENIX
 
 # --------------------------------------------------------------------------- #
@@ -578,24 +578,25 @@ def a_ledger_row(key: str = "aaaa") -> dict:
 
 def test_merging_a_hunt_twice_writes_the_same_ledger(monkeypatch, tmp_path):
     """The ledger upserts by recipe, so a partial and a finished hunt merge alike."""
+    from fractal_wallpapers import paths
+
     monkeypatch.setattr(hunt, "hunt_dir", lambda name: tmp_path / str(name))
-    monkeypatch.setattr(candidate_ledger.store, "rows_path", lambda: tmp_path / "ledger.jsonl")
-    monkeypatch.setattr(candidate_ledger.store, "scores_path", lambda: tmp_path / "scores.jsonl")
-    # The copies and the manifests too: `candidate_ledger.merge` records what it
-    # wrote, and an unredirected one lands on this machine's real archive tier
-    # and in the tracked history. `tests/test_ledger_tracking.py` owns that rule.
-    monkeypatch.setattr(
-        candidate_ledger.store, "backup_path", lambda name: tmp_path / f"copy-{name}"
-    )
+    # Redirected at the TIER ROOTS rather than per accessor. The ledger's two row
+    # files, the flatness sidecar and the durable copies all resolve through a
+    # root already, so setting the two moves every one of them — including the
+    # supply sidecar and the expressed readout, which the prune reads and which
+    # a per-accessor list never named. `manifest_dir` is the one that has no root
+    # to set, because it is the tracked half; `conftest`'s session guard covers
+    # what a fixture misses there.
+    root = tmp_path / "artifacts"
+    (root / "curation" / candidate_ledger.store.UNIT).mkdir(parents=True)
+    monkeypatch.setenv(paths.HOT_ROOT_VARIABLE, str(root))
+    monkeypatch.setenv(paths.ARCHIVE_ROOT_VARIABLE, "")
     monkeypatch.setattr(candidate_ledger.store, "manifest_dir", lambda: tmp_path / "manifests")
-    # And the flatness sidecar, which is the fourth and the one a caller forgets,
-    # because it is reached through another module. `merge` prunes now, and a
-    # prune rewrites all three of the store's files against one set of keys — so
-    # a sidecar left pointing at the real store would be rewritten to hold the
-    # keys of this temporary one. `candidate_ledger.prune` refuses a store spread
-    # over two directories rather than doing it, and this is the redirect that
-    # refusal asks for.
-    monkeypatch.setattr(flatness, "sidecar_path", lambda: tmp_path / flatness.SIDECAR_NAME)
+    (root / "curation" / "supply_scores.jsonl").touch()
+    expressed = root / "curation" / "expressed"
+    expressed.mkdir(parents=True)
+    (expressed / "expressed.json").write_text(json.dumps({"thin": []}), encoding="utf-8")
     (tmp_path / "one").mkdir()
     hunt.rows_path("one").write_text(
         json.dumps(a_ledger_row()) + "\n",
@@ -608,11 +609,11 @@ def test_merging_a_hunt_twice_writes_the_same_ledger(monkeypatch, tmp_path):
         newline="\n",
     )
     first = hunt.merge("one", log=lambda *_: None)
-    written = (tmp_path / "ledger.jsonl").read_bytes()
+    written = candidate_ledger.rows_path().read_bytes()
     second = hunt.merge("one", log=lambda *_: None)
     assert (first["ledger"]["rows"], first["ledger"]["new"]) == (1, 1)
     assert (second["ledger"]["rows"], second["ledger"]["new"]) == (1, 0)
-    assert (tmp_path / "ledger.jsonl").read_bytes() == written
+    assert candidate_ledger.rows_path().read_bytes() == written
 
 
 def test_merging_a_hunt_that_made_nothing_is_refused_rather_than_reported(monkeypatch, tmp_path):

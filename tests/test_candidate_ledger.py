@@ -260,37 +260,44 @@ def test_the_row_records_both_keys_and_never_reconciles_them():
 def isolated(tmp_path, monkeypatch):
     """The ledger and its sidecar in a temporary directory, and nothing else touched.
 
-    Five paths and not two. A backfill goes through [`candidate_ledger.merge`],
-    which records what it wrote — so an unredirected copy lands on this machine's
-    real archive tier and an unredirected manifest lands in the tracked history.
-    `tests/test_ledger_tracking.py` owns the rule that makes recording part of the
-    write; this is what keeps it inside `tmp_path`.
+    **Redirected at the tier roots**, not per accessor. Every path this needs to
+    move already resolves through one: the two row files and both sidecars
+    through `paths.under("curation", …)`, the durable copies off
+    `hot_root()`/`archive_root()`. Setting the two roots moves all of them at
+    once — including the ones nobody enumerated, which is the point. A backfill
+    goes through [`candidate_ledger.merge`], the merge prunes, and the prune
+    reads the supply sidecar and the expressed readout; the accessor list named
+    neither, so those two were being read off this machine's real tree. They are
+    written empty here.
 
-    The **flatness sidecar** is the fifth, and it is redirected for the same
-    reason as the other four rather than a new one: `merge` fills it now, and
-    `flatness.sidecar_path()` resolves through `store_root()` — which this fixture
-    does not move, because it moves the two row files directly. Without the
-    redirect a synthetic three-row merge would upsert into this machine's real
-    hundred-thousand-row sidecar.
+    **`manifest_dir` is still patched, and it is the exception that proves the
+    rule.** It resolves off `repo_root()` rather than off a tier, so there is no
+    root to set — and that is exactly the path the candidate-ledger split
+    overwrote in the tracked history. The session guard in `conftest` is what
+    covers it now.
 
-    The **reduced-signature sidecar** is the sixth and resolves the same way.
-    `merge` does not fill that one, only mirrors it, so the cost of forgetting it
-    is 68.6 MB copied into `tmp_path` per merge rather than a corrupted store —
-    still not something a unit test should do.
+    `signatures.sidecar_path` is patched to *undo* the autouse
+    `no_signature_sidecar` fixture: the roots cannot reach a function that has
+    already been replaced.
     """
-    from fractal_wallpapers.curation import flatness, signatures
+    from fractal_wallpapers import paths
+    from fractal_wallpapers.curation import signatures
 
-    monkeypatch.setattr(candidate_ledger.store, "rows_path", lambda: tmp_path / "rows.jsonl")
-    monkeypatch.setattr(candidate_ledger.store, "scores_path", lambda: tmp_path / "scores.jsonl")
-    monkeypatch.setattr(
-        candidate_ledger.store, "backup_path", lambda name: tmp_path / f"copy-{name}"
-    )
+    root = tmp_path / "artifacts"
+    (root / "curation").mkdir(parents=True)
+    monkeypatch.setenv(paths.HOT_ROOT_VARIABLE, str(root))
+    monkeypatch.setenv(paths.ARCHIVE_ROOT_VARIABLE, "")
     monkeypatch.setattr(candidate_ledger.store, "manifest_dir", lambda: tmp_path / "manifests")
     monkeypatch.setattr(
         candidate_ledger.rebuild, "_picture_of", lambda source: tmp_path / "nothing.jpg"
     )
-    monkeypatch.setattr(flatness, "sidecar_path", lambda: tmp_path / "flatness.jsonl")
-    monkeypatch.setattr(signatures, "sidecar_path", lambda: tmp_path / signatures.SIDECAR_NAME)
+    store = root / "curation" / candidate_ledger.store.UNIT
+    store.mkdir(parents=True)
+    monkeypatch.setattr(signatures, "sidecar_path", lambda: store / signatures.SIDECAR_NAME)
+    (root / "curation" / "supply_scores.jsonl").touch()
+    expressed = root / "curation" / "expressed"
+    expressed.mkdir(parents=True)
+    (expressed / "expressed.json").write_text(json.dumps({"thin": []}), encoding="utf-8")
     return tmp_path
 
 
@@ -340,9 +347,9 @@ def test_a_second_backfill_over_an_unchanged_pool_writes_the_same_bytes(isolated
         lambda: [{**decision(), "_store": candidate_ledger.FROM_GALLERY}],
     )
     candidate_ledger.backfill(log=lambda *_: None)
-    once = (isolated / "rows.jsonl").read_bytes()
+    once = candidate_ledger.rows_path().read_bytes()
     candidate_ledger.backfill(log=lambda *_: None)
-    assert (isolated / "rows.jsonl").read_bytes() == once
+    assert candidate_ledger.rows_path().read_bytes() == once
 
 
 def test_the_sidecar_folds_two_spellings_of_one_artifact_onto_one(monkeypatch):
@@ -973,7 +980,9 @@ def test_a_prune_reads_the_store_through_the_accessors_and_never_off_the_root(
     assert record["rows_read"] == 3, "the prune read past the redirect, or read nothing at all"
     assert record["rows_kept"] == 3
     assert len(candidate_ledger.read()) == 3
-    assert candidate_ledger.rows_path().parent == isolated
+    assert candidate_ledger.rows_path().parent == isolated / "artifacts" / "curation" / (
+        candidate_ledger.store.UNIT
+    )
 
 
 # --------------------------------------------------------------------------- #

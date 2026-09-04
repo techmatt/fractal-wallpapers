@@ -68,6 +68,40 @@ the root at its own `tmp_path` cannot have this read an empty tree and report
 every picture missing. It skips where the ledger has not been backfilled, which
 is every machine but Matt's — CI included, so none of this costs CI anything.
 
+## Redirecting a store: at the roots, never per accessor
+
+There are exactly two roots and everything under `artifacts/` resolves through
+one of them. `paths.HOT_ROOT_VARIABLE` and `paths.ARCHIVE_ROOT_VARIABLE` are the
+whole redirect: the candidate ledger's two row files, the flatness and signature
+sidecars, the supply sidecar, the expressed readout and every durable copy all
+address a root, so setting the two moves all of them at once. **Set them with
+`monkeypatch.setenv` and redirect nothing else you do not have to.**
+
+A per-accessor redirect is complete only against the call graph on the day it was
+written, and this suite has now been bitten by that twice.
+
+* The candidate-ledger split left `flatness.durable()` on the real tree while the
+  store's own manifest was redirected, and overwrote
+  `data/curation/candidate_ledger/{flatness,signatures}.manifest.json` with
+  one-row counts off a temporary ledger. A person noticed.
+* Moving the three fixtures to the roots on 2026-09-04 immediately showed the
+  other half of it: `test_ledger_tracking`, `test_candidate_ledger.isolated` and
+  `test_hunt` had all been reading **this machine's real supply sidecar and real
+  expressed readout** through the prune, because no accessor list named them.
+  Those tests would have failed on a fresh clone, where neither file exists; they
+  write both empty now and are hermetic for the first time.
+
+**One accessor still has to be patched, and it is the tracked half.**
+`candidate_ledger.store.manifest_dir()` resolves off `repo_root()`, not off a
+tier, and there is no root to set because `repo_root` is imported *by value* into
+three dozen modules. That is the one path a fixture can miss while looking
+complete — so `conftest` hashes every git-tracked `*manifest.json` at session
+start, re-hashes at session finish, and fails the run naming any that moved
+(`pytest_sessionfinish`). 20 files, 104 KB; the cost does not show up against a
+three-minute lane. `signatures.sidecar_path` is patched in those fixtures for an
+unrelated reason: to undo the autouse `no_signature_sidecar`, which the roots
+cannot reach because the function has already been replaced.
+
 ## Where the time goes
 
 The lane is a handful of tests and never a broad tax, and that is measurable

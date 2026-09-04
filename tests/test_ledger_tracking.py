@@ -23,7 +23,8 @@ from pathlib import Path
 
 import pytest
 
-from fractal_wallpapers.curation import candidate_ledger
+from fractal_wallpapers import paths
+from fractal_wallpapers.curation import candidate_ledger, durability
 
 #: The package this guard reads. Every module of it, not a list that can go stale.
 #: Three parents, not two: `candidate_ledger` is a package now, so its `__file__`
@@ -114,30 +115,53 @@ def a_row(key: str = "aaaa", place: str = "place-a", **over) -> dict:
     }
 
 
-def redirect(monkeypatch, live, copies, manifests) -> None:
-    """Point the whole store at a temporary one. **All five names, every time.**
+def redirect(monkeypatch, root, manifests):
+    """Point the whole store at a temporary tree, **at the tier roots**.
 
-    The two reached through another module are the ones a caller forgets, and
-    `merge` touches both: it fills and prunes `flatness.sidecar_path`, and it
-    mirrors `signatures.sidecar_path`. A test that redirected three of the four
-    rewrote this machine's real flatness sidecar to hold the keys of a temporary
-    ledger. `candidate_ledger.prune` refuses a store whose three files are in more
-    than one directory now, so the same mistake is a raise rather than a loss;
-    this is what makes the redirect one thing to get right rather than five.
+    Returns `(live, copies)` — where the store's files and their durable copies
+    now resolve — because the tests assert against both.
 
-    The signature sidecar has no such raise behind it, and its failure is quieter
-    and larger: `merge` only ever *copies* it, so an unredirected one would put
-    68.6 MB of this machine's real store into `tmp_path` on every merge in this
-    file rather than corrupt anything.
+    This used to patch five accessors, and the reason it does not any more is the
+    defect the session guard in `conftest` exists for. Every one of those paths
+    already resolves through a **root**: the live files and both sidecars through
+    `paths.under("curation", …)`, the copies off `hot_root()`/`archive_root()`.
+    Setting the two roots redirects all four at once, and it redirects the ones
+    nobody thought of too — a redirect written per accessor is complete only
+    against the call graph on the day it was written, which is exactly how
+    `flatness.sidecar_path` came to be forgotten and this machine's real sidecar
+    came to be rewritten with a temporary ledger's keys.
+
+    **Two accessors are still patched and each is patched for its own reason.**
+    `manifest_dir` resolves off `repo_root()` rather than off a tier, so there is
+    no root to set: that is the tracked half, and it is the half the guard in
+    `conftest` covers. `signatures.sidecar_path` is patched to *undo* the autouse
+    `no_signature_sidecar` fixture, which points it at a path that does not exist
+    for every test in the suite — the roots cannot reach a function that has been
+    replaced, and the two tests below are the ones that mean to read it.
     """
-    from fractal_wallpapers.curation import flatness, signatures
+    from fractal_wallpapers.curation import signatures
 
-    monkeypatch.setattr(candidate_ledger.store, "rows_path", lambda: live / "rows.jsonl")
-    monkeypatch.setattr(candidate_ledger.store, "scores_path", lambda: live / "scores.jsonl")
-    monkeypatch.setattr(flatness, "sidecar_path", lambda: live / flatness.SIDECAR_NAME)
-    monkeypatch.setattr(signatures, "sidecar_path", lambda: live / signatures.SIDECAR_NAME)
-    monkeypatch.setattr(candidate_ledger.store, "backup_path", lambda name: copies / name)
+    monkeypatch.setenv(paths.HOT_ROOT_VARIABLE, str(root))
+    monkeypatch.setenv(paths.ARCHIVE_ROOT_VARIABLE, "")
     monkeypatch.setattr(candidate_ledger.store, "manifest_dir", lambda: manifests)
+
+    live = root / "curation" / candidate_ledger.store.UNIT
+    copies = root / durability.BACKUP_UNIT / candidate_ledger.store.UNIT
+    live.mkdir(parents=True, exist_ok=True)
+    # And the two stores the prune reads that the five accessor patches never
+    # redirected: the supply sidecar (`intake`) and the expressed readout
+    # (`rank_key.thin_cells`). Redirecting at the root redirects those too, which
+    # is how it came out that every test in this file had been reading THIS
+    # MACHINE's real 67k-row supply and its real coverage vector — and would have
+    # failed on a fresh clone, where neither file exists. Empty is the honest
+    # fixture: none of these synthetic keys was ever in either store.
+    (root / "curation").mkdir(parents=True, exist_ok=True)
+    (root / "curation" / "supply_scores.jsonl").touch()
+    expressed = root / "curation" / "expressed"
+    expressed.mkdir(parents=True, exist_ok=True)
+    (expressed / "expressed.json").write_text(json.dumps({"thin": []}), encoding="utf-8")
+    monkeypatch.setattr(signatures, "sidecar_path", lambda: live / signatures.SIDECAR_NAME)
+    return live, copies
 
 
 def test_the_door_records_both_files_and_says_what_it_recorded(monkeypatch, tmp_path) -> None:
@@ -148,10 +172,9 @@ def test_the_door_records_both_files_and_says_what_it_recorded(monkeypatch, tmp_
     to this machine's real archive tier and to the history. That is not
     hypothetical: it is what the first shape of this change did.
     """
-    live, copies, manifests = tmp_path / "live", tmp_path / "copy", tmp_path / "manifests"
-    for directory in (live, copies, manifests):
-        directory.mkdir()
-    redirect(monkeypatch, live, copies, manifests)
+    manifests = tmp_path / "manifests"
+    manifests.mkdir()
+    live, copies = redirect(monkeypatch, tmp_path / "artifacts", manifests)
 
     row = a_row()
     report = candidate_ledger.merge(
@@ -175,10 +198,9 @@ def test_a_second_merge_of_the_same_rows_leaves_the_manifest_saying_the_same_thi
     monkeypatch, tmp_path
 ) -> None:
     """The upsert is idempotent, so the record of it has to be as well."""
-    live, copies, manifests = tmp_path / "live", tmp_path / "copy", tmp_path / "manifests"
-    for directory in (live, copies, manifests):
-        directory.mkdir()
-    redirect(monkeypatch, live, copies, manifests)
+    manifests = tmp_path / "manifests"
+    manifests.mkdir()
+    live, copies = redirect(monkeypatch, tmp_path / "artifacts", manifests)
 
     rows = [a_row()]
     scores = [{"key": "aaaa|art|640x360ss2", "recipe_key": "aaaa"}]
@@ -215,7 +237,7 @@ def test_the_one_door_fills_the_flatness_sidecar_as_well_as_the_two_files(
 
     from fractal_wallpapers.curation import flatness
 
-    redirect(monkeypatch, tmp_path, tmp_path, tmp_path / "manifests")
+    redirect(monkeypatch, tmp_path / "artifacts", tmp_path / "manifests")
 
     def _row() -> dict:
         return a_row(picture="artifacts/one.jpg", colour={"cells": [], "families": []})
@@ -255,10 +277,9 @@ def test_the_door_records_the_flatness_sidecar_with_the_other_two(tmp_path, monk
 
     from fractal_wallpapers.curation import flatness
 
-    live, copies, manifests = tmp_path / "live", tmp_path / "copy", tmp_path / "manifests"
-    for directory in (live, copies, manifests):
-        directory.mkdir()
-    redirect(monkeypatch, live, copies, manifests)
+    manifests = tmp_path / "manifests"
+    manifests.mkdir()
+    live, copies = redirect(monkeypatch, tmp_path / "artifacts", manifests)
 
     picture = tmp_path / "one.jpg"
     Image.new("RGB", (64, 64), (30, 90, 160)).save(picture)
@@ -290,10 +311,9 @@ def test_the_door_mirrors_the_reduced_signature_sidecar_too(tmp_path, monkeypatc
     """
     from fractal_wallpapers.curation import signatures
 
-    live, copies, manifests = tmp_path / "live", tmp_path / "copy", tmp_path / "manifests"
-    for directory in (live, copies, manifests):
-        directory.mkdir()
-    redirect(monkeypatch, live, copies, manifests)
+    manifests = tmp_path / "manifests"
+    manifests.mkdir()
+    live, copies = redirect(monkeypatch, tmp_path / "artifacts", manifests)
     monkeypatch.setattr("fractal_wallpapers.paths.rehome", lambda _name: None)
     signatures.write([signatures.row("aaaa", "artifacts/one.jpg", signatures.pack([0.0] * 4))])
 
@@ -314,10 +334,9 @@ def test_a_checkout_that_never_swept_signatures_merges_without_one(tmp_path, mon
     one, so it exists by the time the save reaches it. Nothing in a merge writes
     this one at all.
     """
-    live, copies, manifests = tmp_path / "live", tmp_path / "copy", tmp_path / "manifests"
-    for directory in (live, copies, manifests):
-        directory.mkdir()
-    redirect(monkeypatch, live, copies, manifests)
+    manifests = tmp_path / "manifests"
+    manifests.mkdir()
+    live, copies = redirect(monkeypatch, tmp_path / "artifacts", manifests)
     monkeypatch.setattr("fractal_wallpapers.paths.rehome", lambda _name: None)
 
     report = candidate_ledger.merge([a_row()], [], log=lambda *_a, **_k: None)
@@ -363,10 +382,9 @@ def test_a_merge_that_swept_nothing_records_an_empty_sidecar_rather_than_none(
     reaches it, empty. The conditional in `merge` is therefore a guard against
     [`durability.save`]'s refusal and not the ordinary path.
     """
-    live, copies, manifests = tmp_path / "live", tmp_path / "copy", tmp_path / "manifests"
-    for directory in (live, copies, manifests):
-        directory.mkdir()
-    redirect(monkeypatch, live, copies, manifests)
+    manifests = tmp_path / "manifests"
+    manifests.mkdir()
+    live, copies = redirect(monkeypatch, tmp_path / "artifacts", manifests)
     monkeypatch.setattr("fractal_wallpapers.paths.rehome", lambda _name: None)
 
     report = candidate_ledger.merge([a_row()], [], log=lambda *_a, **_k: None)
