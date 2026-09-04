@@ -3460,8 +3460,40 @@ def curate_candidate_ledger(args: argparse.Namespace) -> int:
     return 0
 
 
-def curate_gallery(args: argparse.Namespace) -> int:
-    """Record a solve as a tentative gallery, browse it, or resolve one of its IDs."""
+#: The `curate solve` flags that only `run` reads. A record is `run` with nothing
+#: changed — that is the whole claim it makes — so a record handed one of these
+#: would not be reproducible from `curate solve run`, and the failure would be
+#: silent: the flag dropped on the floor, the stamp written anyway. Named rather
+#: than inferred, because a flag added to `run` should not quietly become a flag a
+#: record accepts. What is left is what a record passes through: `--n`, `--key`,
+#: `--no-swap`, `--swap-seconds`, `--spiral-cap`, and its own `--solve-name`.
+RUN_ONLY_SOLVE_FLAGS = (
+    "allow_unranked",
+    "draw_seed",
+    "explain_seats_of",
+    "flat_floor",
+    "group_cap",
+    "locations",
+    "mode_floor",
+    "name",
+    "neutral_radius",
+    "no_diversity",
+    "no_preselection",
+    "no_render",
+    "no_sheet",
+    "release_regime",
+    "rows_per_seat",
+    "sheet_out",
+    "target",
+    "themed",
+    "themed_cap",
+    "themed_radius",
+    "workers",
+)
+
+
+def curate_recorded_solve(args: argparse.Namespace) -> int:
+    """Record a solve under a stamp that never moves, browse one, or resolve an ID."""
     from fractal_wallpapers.curation import tentative
 
     if args.what == "list":
@@ -3479,7 +3511,7 @@ def curate_gallery(args: argparse.Namespace) -> int:
         return 0
 
     if args.what == "record":
-        return _curate_gallery_record(args)
+        return _record_a_solve(args)
 
     # `browse <stamp>` and `browse --stamp <stamp>` are one command, because a
     # reader who has just seen a stamp printed will type it either way and the
@@ -3508,7 +3540,7 @@ def curate_gallery(args: argparse.Namespace) -> int:
     return 0 if all(held["found"] for held in answers) else 1
 
 
-def _curate_gallery_record(args: argparse.Namespace) -> int:
+def _record_a_solve(args: argparse.Namespace) -> int:
     """The production solve, run once and recorded under a stamp that never moves."""
     from fractal_wallpapers.curation import solve, tentative
 
@@ -3517,12 +3549,13 @@ def _curate_gallery_record(args: argparse.Namespace) -> int:
     # per-mode render-cost table read off every ledger row — and this handler has
     # never looked at that table. Streaming instead is 5.1 s and one fewer
     # whole-ledger copy.
+    seats = args.n if args.n is not None else tentative.RECORDED_SEATS
     candidates, refused = solve.pool()
     try:
         order, coverage = solve.ranking_for(candidates, args.key)
         record = solve.solve(
             candidates,
-            n=args.n,
+            n=seats,
             order=order,
             coverage=coverage,
             key=args.key,
@@ -3539,7 +3572,7 @@ def _curate_gallery_record(args: argparse.Namespace) -> int:
     # `record` path is derived from this name, so it keeps pointing at the solve
     # that chose those seats.
     stamp = tentative.stamp_now()
-    name = args.solve_name or f"tentative_n{args.n}_{stamp}"
+    name = args.solve_name or f"tentative_n{seats}_{stamp}"
     print(f"{display_path(solve.write_record(name, record))}")
     try:
         directory = tentative.write(
@@ -3556,9 +3589,25 @@ def _curate_gallery_record(args: argparse.Namespace) -> int:
 
 
 def curate_solve(args: argparse.Namespace) -> int:
-    """Choose the gallery: a stratified view, a greedy seed, and swaps to exhaustion."""
-    from fractal_wallpapers.curation import ceiling, solve
+    """Choose the gallery, or record one: a stratified view, a greedy seed, and swaps."""
+    from fractal_wallpapers.curation import candidate_ledger, ceiling, solve
     from fractal_wallpapers.curation import release as release_module
+
+    if args.what != "run":
+        # The defaults come from a bare parse of the same verb rather than from a
+        # table here: a table would be a second copy of every default in the
+        # parser, and the first one to drift would refuse a flag nobody set.
+        bare = build_parser().parse_args(["curate", "solve", args.what])
+        named = sorted(
+            flag for flag in RUN_ONLY_SOLVE_FLAGS if getattr(args, flag) != getattr(bare, flag)
+        )
+        if named:
+            spelled = ", ".join(f"--{flag.replace('_', '-')}" for flag in named)
+            print(f"`curate solve {args.what}` does not read {spelled}.")
+            return 1
+        return curate_recorded_solve(args)
+    if args.n is None:
+        args.n = candidate_ledger.FIRST_SOLVE
 
     try:
         targets = dict(ceiling.parse_target(text) for text in (args.target or ()))
@@ -3813,7 +3862,7 @@ def curate_flatness(args: argparse.Namespace) -> int:
         ]
         print(f"[flatness] every ledger row with a picture on disk: {len(candidates):,}")
     else:
-        # `solve.pool` and not `headroom.population` — see `curate gallery record`.
+        # `solve.pool` and not `headroom.population` — see `curate solve record`.
         candidates, _ = solve.pool()
     if args.what == "coverage":
         print(json.dumps(flatness.coverage(candidates), indent=2))
@@ -3843,7 +3892,7 @@ def curate_signatures(args: argparse.Namespace) -> int:
         print(json.dumps(durability.restore(durable, force=args.force), indent=2))
         return 0
 
-    # `solve.pool` and not `headroom.population` — see `curate gallery record`.
+    # `solve.pool` and not `headroom.population` — see `curate solve record`.
     candidates, _ = solve.pool()
     kept = headroom.clearing(candidates)
     print(f"[signatures] the clearing pool: {len(kept):,} candidate(s)")
@@ -3882,7 +3931,7 @@ def curate_distinct(args: argparse.Namespace) -> int:
     from fractal_wallpapers.curation import distinct, headroom, solve
     from fractal_wallpapers.paths import rehome
 
-    # `solve.pool` and not `headroom.population` — see `curate gallery record`.
+    # `solve.pool` and not `headroom.population` — see `curate solve record`.
     candidates, _ = solve.pool()
     kept = headroom.clearing(candidates)
     best: dict = {}
@@ -8538,90 +8587,6 @@ def curate_commands(subcommands) -> None:
     )
     ledger_store.set_defaults(handler=curate_candidate_ledger)
 
-    browsing = steps.add_parser(
-        "gallery",
-        help="a solve recorded under a stamp, and a local page for referring to its pictures",
-        description=(
-            "A TENTATIVE GALLERY: the production solve, recorded once under a UTC stamp that "
-            "is never written over, so a person can point at a picture and be understood. "
-            "`record` runs the solve and writes `gallery.jsonl` (one row per seat, carrying "
-            "the ledger recipe key that IS the ID, a short alias, the mode, the partition, "
-            "the dominant colour cell and hue family, `centered`, the rank and P(>=4), the "
-            "seat order and the stored picture), `manifest.json` beside it, and the page. "
-            "`browse` writes that page again: one self-contained HTML file, no server, "
-            "opened from the file system, filtering on every column and copying an ID to "
-            "the clipboard on a click. `resolve` turns an ID or alias back into a row, a "
-            "recipe and a location. The seats a record names are a PROTECTION CLASS in "
-            "`curate candidate-ledger prune` — an ID that stopped resolving would take its "
-            "picture with it, and nothing would notice."
-        ),
-    )
-    browsing.add_argument(
-        "what",
-        choices=["record", "browse", "resolve", "list"],
-        help="run the solve and record it; write the page again; look one ID up; or list "
-        "every recorded gallery on this machine",
-    )
-    browsing.add_argument(
-        "id",
-        nargs="*",
-        help="with `resolve`: the IDs or aliases to look up, as arguments or as one "
-        "comma-separated list. With `browse`: the stamp, which `--stamp` also names",
-    )
-    browsing.add_argument(
-        "--stamp",
-        help="which recorded gallery to browse or resolve against (default the newest). "
-        "Ignored by `record`, which always writes a new one",
-    )
-    browsing.add_argument(
-        "--n",
-        type=int,
-        default=tentative_module.RECORDED_SEATS,
-        help=f"with `record`: how many wallpapers to seat (default "
-        f"{tentative_module.RECORDED_SEATS}). The "
-        "solve is `curate solve run` with nothing changed — same pool, same bars, same "
-        "rules, same objective — so a recorded gallery is reproducible from its manifest",
-    )
-    browsing.add_argument(
-        "--solve-name",
-        help="with `record`: what to call the solve's own output directory under "
-        "artifacts/curation/solve (default `tentative_n<N>_<stamp>`, the tentative "
-        "record's own stamp, so successive records at the same N coexist)",
-    )
-    browsing.add_argument(
-        "--key",
-        choices=list(solve_module.KEYS),
-        default=solve_module.DEFAULT_KEY,
-        help=f"with `record`: the sort key the solve is walked in (default "
-        f"{solve_module.DEFAULT_KEY})",
-    )
-    browsing.add_argument(
-        "--no-swap",
-        action="store_true",
-        help="with `record`: take the greedy seed and stop, skipping the improvement loop",
-    )
-    browsing.add_argument(
-        "--spiral-cap",
-        type=float,
-        default=None,
-        metavar="SHARE",
-        help="with `record`: cap the share of seats sitting at a location the spiral probe calls a "
-        "spiral: at most ceil(SHARE * seats filled), the same spelling a colour target "
-        "is stated in. The verdict comes off `curate spiral-scores` at the cut "
-        "models/spiral/manifest.json carries, and a location with NO score counts "
-        "toward nothing — unknown is not not_spiral. Unsaid, NO cap runs and the "
-        "`spiral` refusal column is zero by construction; 1.0 runs the cap and lets it "
-        "not bind, which is the spelling for a record that should say so",
-    )
-    browsing.add_argument(
-        "--swap-seconds",
-        type=float,
-        default=None,
-        metavar="SECONDS",
-        help="with `record`: a wall budget for the swap loop alone. The seed always runs",
-    )
-    browsing.set_defaults(handler=curate_gallery)
-
     solving = steps.add_parser(
         "solve",
         help="choose the gallery: a stratified view, a greedy seed, and 1-swap improvement",
@@ -8641,24 +8606,60 @@ def curate_commands(subcommands) -> None:
             "one already seated. Everything else is counted with the shortfall recorded: no "
             "fallback leg, no least-violating rescue, unfilled beats padded. The REJECTION "
             "LEDGER is the product. The exact solve this replaced is RETIRED: it was "
-            "measured infeasible at n=1000 against a thirty-minute bar."
+            "measured infeasible at n=1000 against a thirty-minute bar. "
+            "A RECORD is that same solve, run once and kept: `record` writes the seats "
+            "under a UTC stamp that is never written over, so a person can point at a "
+            "picture and be understood. `run` rewrites `--name` every time, which is a "
+            "decision rather than a handle. A record writes `gallery.jsonl` (one row per "
+            "seat, carrying the ledger recipe key that IS the ID, a short alias, the mode, "
+            "the partition, the dominant colour cell and hue family, `centered`, the rank "
+            "and P(>=4), the seat order and the stored picture), `manifest.json` beside it, "
+            "and a self-contained page. `browse` writes that page again; `resolve` turns an "
+            "ID or alias back into a row, a recipe and a location; `list` names every record "
+            "on this machine. The seats a record names are a PROTECTION CLASS in `curate "
+            "candidate-ledger prune` — an ID that stopped resolving would take its picture "
+            "with it, and nothing would notice."
         ),
     )
     solving.add_argument(
         "what",
-        choices=["run"],
-        help="choose one gallery. The `sweep` and `truncate` experiments went with the "
-        "exact solver they were experiments on",
+        choices=["run", "record", "browse", "resolve", "list"],
+        help="choose one gallery; record one under a stamp that never moves; write a "
+        "record's page again; look one ID up; or list every record on this machine. The "
+        "`sweep` and `truncate` experiments went with the exact solver they were "
+        "experiments on",
+    )
+    solving.add_argument(
+        "id",
+        nargs="*",
+        help="with `resolve`: the IDs or aliases to look up, as arguments or as one "
+        "comma-separated list. With `browse`: the stamp, which `--stamp` also names",
+    )
+    solving.add_argument(
+        "--stamp",
+        help="with `browse` and `resolve`: which record to read (default the newest). "
+        "Ignored by `record`, which always writes a new one",
     )
     solving.add_argument(
         "--n",
         type=int,
-        default=candidate_ledger_module.FIRST_SOLVE,
-        help=f"how many wallpapers to seat (default {candidate_ledger_module.FIRST_SOLVE})",
+        default=None,
+        help=f"how many wallpapers to seat. TWO DEFAULTS, because the two verbs seat for "
+        f"different reasons: {candidate_ledger_module.FIRST_SOLVE} for `run`, which is the "
+        f"size a leg is read at, and {tentative_module.RECORDED_SEATS} for `record`, which "
+        f"is the size a record is kept at",
+    )
+    solving.add_argument(
+        "--solve-name",
+        help="with `record`: what to call the solve's own output directory under "
+        "artifacts/curation/solve (default `tentative_n<N>_<stamp>`, the record's own "
+        "stamp, so successive records at the same N coexist)",
     )
     solving.add_argument(
         "--name",
-        help="what to call this pass's output directory (default `n<N>`)",
+        help="with `run`: what to call this pass's output directory (default `n<N>`). A "
+        "`record` names its solve directory with `--solve-name` instead, because it writes "
+        "two things and they are stamped together",
     )
     solving.add_argument(
         "--target",

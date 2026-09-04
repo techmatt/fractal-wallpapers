@@ -100,7 +100,7 @@ These were decided once, at the first commit, because each is expensive to rever
   something a caller has to remember; the worker count is the caller's and
   three is the number.
 - **ONE POOL-HOLDING PROCESS PER BOX.** Anything that loads the candidate pool —
-  `curate growth`, `curate solve`, `curate gallery record`, and the slow test lane
+  `curate growth`, `curate solve run`, `curate solve record`, and the slow test lane
   counts as one — never runs concurrently with another on the same machine. The
   pool is hundreds of megabytes read whole and held whole; two of them at once is
   the box swapping rather than two legs finishing sooner, and a lane sharing the
@@ -310,3 +310,28 @@ is a plan that may have been overtaken.
 `C:\Code\fractal-maker` is the **read-only** extraction source for this rewrite:
 read from it freely, never write to it. Code arriving from there gets renamed to fit
 the naming rule and cleaned before it lands here — nothing is copied wholesale.
+
+### What goes with it
+
+Scaffolding that only ever reads the source project. Each ran, each wrote what it
+was for, and none of it is reachable from a clone with no sibling checkout — so
+each goes at publication, with its test and its subcommand.
+
+- `src/fractal_wallpapers/labeling/corpus_import.py` (`import-labels`, with
+  `tests/test_corpus_import.py`) — the location corpus brought across through the
+  source's own sidecar and amendment rules. The store it wrote is tracked; the
+  reader of the source is not needed again.
+- `src/fractal_wallpapers/labeling/finished_import.py` (`import-finished`; no test
+  file of its own, exercised through `tests/test_modes.py`) — the same for the two
+  finished-render corpora. It calls `library_import`, so the two go together.
+- `src/fractal_wallpapers/palettes/library_import.py` (with
+  `tests/test_library_import.py`) — colormaps converted out of the source's pooled
+  library, because an imported row names maps this repository did not hold. **Two
+  live callers first**: `palettes/authored_import.py` and `models/palette_sets.py`
+  both reach for it, so deleting it means answering what those do instead.
+- `src/fractal_wallpapers/models/acceptance.py`'s extraction path —
+  `INCUMBENT_SCORES`, `INCUMBENT_MANIFEST`, `beside`, `ExtractionSourceGone`,
+  `extraction_source` — reads `fractal-maker` and `fractal-maker-artifacts` beside
+  this checkout to write a bar the first time. **Only the extraction half goes**:
+  every *read* of a bar already runs against the vendored yardstick, which is
+  tracked and stays.

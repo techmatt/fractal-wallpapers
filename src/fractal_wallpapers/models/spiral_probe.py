@@ -68,14 +68,23 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from fractal_wallpapers.labeling import attributes
 from fractal_wallpapers.paths import repo_root
 
 #: The schema every probe document carries.
 SCHEMA = 1
 
+#: THE attribute this probe answers, taken from the store that owns the name
+#: rather than spelled again here. Everything that names the attribute below —
+#: the document's own field, the split's default, the directory the artifacts
+#: live in — reads this, so the probe cannot end up fitted on one store and
+#: shipped under another's name.
+ATTRIBUTE = attributes.SPIRAL.name
+
 #: The class the probe's probability is the probability *of*. The other class is
-#: everything else, and the store's own tuple is what says what those are.
-POSITIVE = "spiral"
+#: everything else, and the store's own tuple is what says what those are — so it
+#: is read from the tuple, in the order the page's buttons already stand for.
+POSITIVE = attributes.classes(ATTRIBUTE)[0]
 
 #: The ridge grid the penalty is chosen from, per training row. Scaled by the row
 #: count at use, so a fit on a hundred rows and one on four hundred are asking the
@@ -212,8 +221,16 @@ def features(records: list[dict], feature_set: str = SHIPPED, *, directory=None,
 
 
 def probe_dir() -> Path:
-    """Where the tracked probes and their manifest live."""
-    return repo_root() / "models" / "spiral"
+    """Where the tracked probes and their manifest live.
+
+    Named for the attribute, and the name comes from the store rather than from a
+    literal here. `models/spiral` holds coefficients and `data/spiral` holds
+    verdicts, so this is not the corpus and never was — but one directory named
+    after the other is exactly the pair a rename would break in silence, and
+    `tests/test_attribute_store.py`'s choke point reads a store's name in a path
+    as a second addresser of it whichever tree the path is under.
+    """
+    return repo_root() / "models" / ATTRIBUTE
 
 
 def probe_path(feature_set: str) -> Path:
@@ -408,7 +425,7 @@ def fit(
     intercept, coefficients = fit_ridge((features - mean) / deviation, target, lam * len(target))
     return {
         "schema": SCHEMA,
-        "attribute": "spiral",
+        "attribute": ATTRIBUTE,
         "positive": POSITIVE,
         "feature_set": feature_set,
         "dim": int(features.shape[1]),
@@ -481,7 +498,7 @@ def write_manifest(documents: list[dict], extra: dict | None = None) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     document = {
         "schema": SCHEMA,
-        "attribute": "spiral",
+        "attribute": ATTRIBUTE,
         "positive": POSITIVE,
         "shipped": SHIPPED,
         "probes": {
@@ -506,7 +523,7 @@ def write_manifest(documents: list[dict], extra: dict | None = None) -> Path:
 # --------------------------------------------------------------------------- #
 # The split.
 # --------------------------------------------------------------------------- #
-def split(name: str = "spiral") -> tuple[list[dict], list[dict]]:
+def split(name: str = ATTRIBUTE) -> tuple[list[dict], list[dict]]:
     """`(train, evaluation)` — the store's cast rows, cut on its own pin.
 
     The pin is asserted on the training side here, so no caller can build the
@@ -514,8 +531,6 @@ def split(name: str = "spiral") -> tuple[list[dict], list[dict]]:
     [`fractal_wallpapers.labeling.attributes.assert_pin_holds`] on why the
     assertion belongs to whoever builds a split rather than to the ingest.
     """
-    from fractal_wallpapers.labeling import attributes
-
     keys = attributes.pinned(name)
     rows = attributes.resolved(name).cast()
     train = [row for row in rows if attributes.place_of(row) not in keys]
@@ -546,6 +561,7 @@ def records_of(rows: list[dict]) -> list[dict]:
 
 
 __all__ = [
+    "ATTRIBUTE",
     "FEATURE_SETS",
     "FOLDS",
     "FOLD_SEED",

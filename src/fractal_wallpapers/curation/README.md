@@ -93,10 +93,10 @@ fractal-wallpapers curate solve run --n 20 --no-render # THE gallery leg: decide
 fractal-wallpapers curate solve run --n 150            # the gallery, then the pictures
 fractal-wallpapers curate solve run --n 1000 --no-render   # ~6 min, scaled not measured
 fractal-wallpapers curate solve run --n 2000 --no-render   # the planning size, 10 min
-fractal-wallpapers curate gallery record                   # THAT solve, recorded. ~9 min
-fractal-wallpapers curate gallery browse <stamp>           # the page again, off the rows
-fractal-wallpapers curate gallery resolve <alias>,<alias>  # an ID back to a recipe
-fractal-wallpapers curate gallery list                     # every record on this machine
+fractal-wallpapers curate solve record                     # THAT solve, recorded. ~9 min
+fractal-wallpapers curate solve browse <stamp>             # the page again, off the rows
+fractal-wallpapers curate solve resolve <alias>,<alias>    # an ID back to a recipe
+fractal-wallpapers curate solve list                       # every record on this machine
 fractal-wallpapers curate manufacture --step register --write          # BEFORE anything
 fractal-wallpapers curate manufacture --oversample 2.5                 # plan, build, select
 fractal-wallpapers curate manufacture --step verify --sheet artifacts/<sheet>
@@ -104,7 +104,9 @@ fractal-wallpapers curate manufacture --step verify --sheet artifacts/<sheet>
 
 ## The pre-solver gallery pass, and what took its place
 
-**Deleted on 2026-08-28**, ruled at ckpt 87. `curate gallery` was the second
+**Deleted on 2026-08-28**, ruled at ckpt 87. The command was spelled `curate
+gallery` — a spelling this project no longer has, and **not** today's `curate
+solve record`, which is a solve and not a draw. It was the second
 phase: a quality-weighted farthest-point draw over the neutral embeddings picked
 N locations, each chosen point bought a small judged attempt on its own
 neighbourhood, and a sequential walk seated the winners under two floors, the
@@ -126,7 +128,7 @@ It was briefly two legs — a sequential `curate seat` and an exact `curate solv
 and that pair is gone too. `curate seat` is retired; the exact solve is retired;
 the one leg behind `curate solve` is the section below.
 
-Three commands went with the phase: `curate gallery`, `curate draw` (its step-4
+Three commands went with the phase: `curate gallery` itself, `curate draw` (its step-4
 point draw alone) and `curate on-demand` (the reconciliation of a pass's
 extra-pick log with its attempt store, which had already run on every pass it was
 written for). `curate gallery-store` stays, because the four passes' attempt rows
@@ -1485,7 +1487,7 @@ hundred and fifty thousand of them; a record carrying all of it would be some fo
 times the size of the one carrying the decisions. So the block is absent unless
 somebody asked for it, and it holds exactly the keys they asked about.
 
-## `curate gallery` — a solve recorded under a name, and a browser over it
+## `curate solve record` — a solve recorded under a stamp, and a browser over it
 
 ```
 src/fractal_wallpapers/curation/tentative.py   the store, the aliases, the page
@@ -1496,18 +1498,24 @@ artifacts/curation/solve/tentative_n<N>_<stamp>/     that record's own solve, un
 ```
 
 ```
-fractal-wallpapers curate gallery record                  # the production solve, recorded
-fractal-wallpapers curate gallery record --n 150          # a smaller one
-fractal-wallpapers curate gallery browse <stamp>          # write the page again
-fractal-wallpapers curate gallery resolve 49616c4b,a71f   # an ID or alias back to a recipe
-fractal-wallpapers curate gallery list                    # every record on this machine
+fractal-wallpapers curate solve record                    # the production solve, recorded
+fractal-wallpapers curate solve record --n 150            # a smaller one
+fractal-wallpapers curate solve browse <stamp>            # write the page again
+fractal-wallpapers curate solve resolve 49616c4b,a71f     # an ID or alias back to a recipe
+fractal-wallpapers curate solve list                      # every record on this machine
 ```
+
+**Renamed 2026-09-04, and there was an unrelated `curate gallery` before it.** These
+four verbs were spelled `curate gallery <verb>` until this file documented that name
+twice — once as the pre-solver draw deleted 2026-08-28, once as this — so they moved
+under `curate solve`, whose leg they already were. Only the verb changed: the stamps,
+the rows and `artifacts/curation/tentative/` are where they were.
 
 A solve record is a **decision**, and `curate solve run --name n1000` rewrites it every
 time it is run. It is not something a person can point at. To say "use this wallpaper and
 that one" a reader needs a stable handle per picture, a page showing the pictures beside
 their handles, and a guarantee that the picture is still on disk next week. A
-**tentative gallery** is that: `record` runs `curate solve` with nothing changed — same
+**tentative gallery** is that: `record` runs `curate solve run` with nothing changed — same
 pool, same bars, same rules, same objective, same draw seed — and writes the seats under
 a UTC stamp that is **never written over**, because the IDs in it are what a figure
 prompt names.
@@ -1536,7 +1544,7 @@ were always stamped — so nothing a figure prompt names was lost.
 
 **`index.html` is the standing debug tool for figure selection** — open the stamp's page
 and filter by mode, cell, hue family or partition to find the wallpaper a figure wants,
-then `curate gallery resolve <alias>` to turn what you picked back into a recipe.
+then `curate solve resolve <alias>` to turn what you picked back into a recipe.
 
 **Three files a stamp are TRACKED, and the pictures are not.** `gallery.jsonl`,
 `manifest.json` and `index.html`, through a narrow un-ignore in `.gitignore` that names

@@ -177,6 +177,11 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+It read **168.70 s over 3,438** at the census follow-ups, idle, 2026-09-04 — the same
+3,438 as the reading below, 1.2% apart, which is noise and not a figure to restate.
+The commit renamed a command, moved twenty-five run directories into a map and
+re-routed one constant; none of it added or removed a test, and the lane says so.
+
 It read **166.63 s over 3,438** fast and **7:14 over 3,552** slow at the `run_layout`
 extraction, idle, 2026-09-04. The fast lane is flat — 0.5% over the reading below
 across one more test, which is the packaging guard. The **slow** figure is the one

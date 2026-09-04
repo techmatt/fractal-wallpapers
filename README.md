@@ -95,8 +95,8 @@ name that never moves.
 ```
 fractal-wallpapers curate headroom                     # what is short, and what one more costs
 fractal-wallpapers curate solve run --n 150            # decide, then render the seats
-fractal-wallpapers curate gallery record               # THAT solve, recorded
-fractal-wallpapers curate gallery browse <stamp>       # the page, off the rows
+fractal-wallpapers curate solve record                 # THAT solve, recorded
+fractal-wallpapers curate solve browse <stamp>         # the page, off the rows
 ```
 
 ## Putting the regenerable tree on another disk

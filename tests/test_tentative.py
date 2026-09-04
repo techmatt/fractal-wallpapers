@@ -312,16 +312,16 @@ def test_every_tile_names_its_picture_relatively_and_carries_the_full_id(store):
 
 
 def test_browse_takes_its_stamp_from_the_argument_a_reader_just_read(store, capsys):
-    """`curate gallery browse <stamp>` is how the record's own output spells it, so
+    """`curate solve browse <stamp>` is how the record's own output spells it, so
     the positional has to BE the stamp. It was ignored for one afternoon and
     `--stamp` was the only spelling that worked, which is not an error a reader can
     see: the command succeeded and rebuilt the newest record's page instead."""
     tentative.write(record_of(seat("k0")), stamp="20260901T000000Z", log=quiet)
     tentative.write(record_of(seat("k1")), stamp="20260902T000000Z", log=quiet)
 
-    args = cli.build_parser().parse_args(["curate", "gallery", "browse", "20260901T000000Z"])
-    assert args.handler is cli.curate_gallery
-    assert cli.curate_gallery(args) == 0
+    args = cli.build_parser().parse_args(["curate", "solve", "browse", "20260901T000000Z"])
+    assert args.handler is cli.curate_solve
+    assert cli.curate_solve(args) == 0
 
     assert tentative.page_path("20260901T000000Z").is_file()
     assert not tentative.page_path("20260902T000000Z").is_file(), (
@@ -336,10 +336,10 @@ def test_two_different_stamps_are_a_refusal_rather_than_a_silent_choice(store):
     tentative.write(record_of(seat("k0")), stamp="20260901T000000Z", log=quiet)
 
     args = cli.build_parser().parse_args(
-        ["curate", "gallery", "browse", "20260901T000000Z", "--stamp", "20260902T000000Z"]
+        ["curate", "solve", "browse", "20260901T000000Z", "--stamp", "20260902T000000Z"]
     )
 
-    assert cli.curate_gallery(args) == 1
+    assert cli.curate_solve(args) == 1
 
 
 def test_resolving_a_name_the_record_does_not_hold_is_a_non_zero_exit(store):
@@ -347,9 +347,9 @@ def test_resolving_a_name_the_record_does_not_hold_is_a_non_zero_exit(store):
     typo answers for the rest — and the status is what a script reads."""
     tentative.write(record_of(seat("k0")), log=quiet)
 
-    args = cli.build_parser().parse_args(["curate", "gallery", "resolve", "k0,not-an-id"])
+    args = cli.build_parser().parse_args(["curate", "solve", "resolve", "k0,not-an-id"])
 
-    assert cli.curate_gallery(args) == 1
+    assert cli.curate_solve(args) == 1
 
 
 # --------------------------------------------------------------------------- #

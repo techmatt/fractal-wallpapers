@@ -9,3 +9,7 @@ its blind sheet are the evidence of what was decided. Nothing fetches them.
 The two LABEL STORES those names also belong to did not merge and are not
 renamed — see `data/README.md`. A name here that is not on the roster names a
 corpus or a retired judge, never something that ships.
+
+`render/` carries twenty-five run directories and a name does not say which band
+it realizes. [`render/RUNS.md`](render/RUNS.md) is the index: one line per
+directory, to the band or role it belongs to.
