@@ -529,9 +529,30 @@ def add_commands(subcommands) -> None:
             "if one is there, so a killed run continues rather than restarting."
         ),
     )
-    production.add_argument("--seed", type=int, default=0, help="run seed (default: 0)")
-    production.add_argument("--batch", type=int, default=8, help="node slots per batch")
-    harvest_clock = production.add_mutually_exclusive_group()
+    # Nine groups over forty-five flags, and six of them carry the titles `walk`
+    # uses for the same flags: a harvest IS a walk with an economics layer over
+    # it, and reading the two helps side by side should say so.
+    clock = production.add_argument_group("the run and its clock")
+    reserved = production.add_argument_group(
+        "the release leg the clock reserves for",
+        "read only with --finish-by, which turns a release ceiling into minutes it "
+        "holds back; none of it is passed to `curate run`",
+    )
+    roots = production.add_argument_group("where roots come from")
+    budget = production.add_argument_group("how far each walk runs")
+    gate_render = production.add_argument_group(
+        "the frame the gates read",
+        "a scored run refuses any other geometry and any other map: the head reads "
+        "this frame as a tile",
+    )
+    operators = production.add_argument_group("the reframing operators")
+    economics = production.add_argument_group("how the clock is divided")
+    written = production.add_argument_group("what it reads and writes")
+    scoring = production.add_argument_group("the gates and the scoring")
+
+    clock.add_argument("--seed", type=int, default=0, help="run seed (default: 0)")
+    clock.add_argument("--batch", type=int, default=8, help="node slots per batch")
+    harvest_clock = clock.add_mutually_exclusive_group()
     harvest_clock.add_argument(
         "--minutes",
         type=float,
@@ -547,7 +568,14 @@ def add_commands(subcommands) -> None:
         "re-score, the ledger load and a margin, converted from wall to ACTIVE minutes. "
         "The derived plan is printed at startup and written into the run summary",
     )
-    production.add_argument(
+    # `--batches` is grouped with the clock rather than left where it sat, four
+    # flags down among the release reservation: it is the other way to stop a
+    # run, and a stop condition printing under a heading about the release leg
+    # reads like one.
+    clock.add_argument(
+        "--batches", type=int, help="stop after this many batches, whatever the clock says"
+    )
+    reserved.add_argument(
         "--release-slots",
         type=int,
         default=curation_run.DEFAULT_N,
@@ -555,7 +583,7 @@ def add_commands(subcommands) -> None:
         f"{curation_run.DEFAULT_N}, the diagnostic release a run keeps). Read only with "
         f"--finish-by, which reserves this many pictures at the measured rate",
     )
-    production.add_argument(
+    reserved.add_argument(
         "--strange-share",
         type=float,
         default=curation_run.STRANGE_SHARE,
@@ -564,14 +592,14 @@ def add_commands(subcommands) -> None:
         f"three terms that turn a release ceiling into a colorize attempt count, and the "
         f"reservation has to be for the night that will actually be run",
     )
-    production.add_argument(
+    reserved.add_argument(
         "--strange-modes",
         type=int,
         default=None,
         help="modes the strange judge will draw at each location (default: curation's own). "
         "Read only with --finish-by, for the same reason as --strange-share",
     )
-    production.add_argument(
+    reserved.add_argument(
         "--release-workers",
         type=int,
         default=schedule_module.RELEASE_WORKERS,
@@ -580,22 +608,51 @@ def add_commands(subcommands) -> None:
         f"release on record was measured at). Read only with --finish-by; it reserves "
         f"the clock, it does not pass anything to `curate run`",
     )
-    production.add_argument(
-        "--batches", type=int, help="stop after this many batches, whatever the clock says"
-    )
-    production.add_argument(
+    # The four root channels in one place. `--seeds` and `--no-twins` were a
+    # screen apart from the two that name a channel outright, and the question
+    # all four answer - where does the next root come from - is one question.
+    roots.add_argument(
         "--seeds",
         help="a JSONL seed file for the parameter planes, which have no sampler "
         "(default: the tracked plane seed pool, data/discovery/plane_seed_pool.jsonl)",
     )
-    production.add_argument(
+    roots.add_argument(
+        "--no-twins",
+        action="store_true",
+        help="do not derive Julia parameters from admitted parameter-plane locations; the "
+        "three higher-degree Julia partitions then have no channel at all and say so",
+    )
+    roots.add_argument(
+        "--root-channel",
+        action="append",
+        dest="root_channels",
+        choices=[proven_default("CHANNEL"), sampler_default("CHANNEL")],
+        help=f"draw roots from this channel as well as the partition's own pool; "
+        f"repeatable. {proven_default('CHANNEL')!r} roots the walk at every location a human "
+        f"has scored a keeper, interleaved with the pool rather than replacing it — on the "
+        f"dynamical partitions at the labelled viewport, which is a frame their `c`-pools "
+        f"cannot express. {sampler_default('CHANNEL')!r} draws viewports over a PINNED "
+        f"plane's own home view at a ladder of scales and keeps the ones the structural "
+        f"gates pass, which is the only way a plane with no free parameter gets a fresh "
+        f"place at all",
+    )
+    roots.add_argument(
+        "--sampler-rungs",
+        type=int,
+        default=sampler_default("RUNGS"),
+        help=f"octaves in from the home width the viewport sampler draws over, each rung a "
+        f"2^k x 2^k jittered grid at width home/2^k (default: {sampler_default('RUNGS')}, "
+        f"which is {sum(4**k for k in range(1, sampler_default('RUNGS') + 1))} frames). Read "
+        f"only with --root-channel {sampler_default('CHANNEL')}",
+    )
+    budget.add_argument(
         "--root-expansions",
         type=int,
         default=walk_default("root_expansions"),
         help=f"expansions any one root may pay for, its reframings included "
         f"(default: {walk_default('root_expansions')})",
     )
-    production.add_argument(
+    budget.add_argument(
         "--pinned-root-expansions",
         type=int,
         default=walk_default("pinned_root_expansions"),
@@ -605,30 +662,28 @@ def add_commands(subcommands) -> None:
         f"productive roots hit the ordinary cap while still finding "
         f"(default: {walk_default('pinned_root_expansions')})",
     )
-    production.add_argument("--candidates", type=int, default=4, help="candidates drawn per node")
-    production.add_argument(
+    budget.add_argument("--candidates", type=int, default=4, help="candidates drawn per node")
+    gate_render.add_argument(
         "--node-width",
         type=int,
         default=384,
         help="node render width in pixels. A scored run refuses anything but the node "
         "regime's own width: the head reads that frame as a tile",
     )
-    production.add_argument(
-        "--partition",
-        action="append",
-        choices=list(ALL_PARTITIONS),
-        help="keep the books for this partition alone (repeatable; default: every one). A "
-        "run told one partition allocates its whole clock there, and its census, price "
-        "and refill census cover that partition only",
+    gate_render.add_argument(
+        "--colormap",
+        default="twilight_shifted",
+        help="colormap the gate renders are drawn through. A scored run refuses any map "
+        "but the tile pool's floor palette: the head reads the gate render as a tile",
     )
-    production.add_argument(
+    operators.add_argument(
         "--probe",
         type=float,
         default=None,
         help="probability the reframing probe fires on an admission (default: "
         f"{WalkLimits.probe_probability})",
     )
-    production.add_argument(
+    operators.add_argument(
         "--refine-per-walk",
         type=int,
         default=None,
@@ -641,7 +696,7 @@ def add_commands(subcommands) -> None:
         "readers prefer, never as an edit; nothing feeds back into this walk's reward or "
         f"descent (default: {WalkLimits.refine_per_walk}; 0 disables the leg)",
     )
-    production.add_argument(
+    operators.add_argument(
         "--refine-margin",
         type=float,
         default=None,
@@ -650,7 +705,7 @@ def add_commands(subcommands) -> None:
         "on P(>=4). The gallery pass's own default unless said otherwise, so a scan taken here "
         "and a scan taken at a pass are the same decision",
     )
-    harvest_neighborhood = production.add_mutually_exclusive_group()
+    harvest_neighborhood = operators.add_mutually_exclusive_group()
     harvest_neighborhood.add_argument(
         "--neighborhood",
         dest="neighborhood",
@@ -665,39 +720,50 @@ def add_commands(subcommands) -> None:
         help="fire only the snap and the lateral step, and pay neither the "
         "neighbourhood enumeration's clock nor its frontier",
     )
-    production.add_argument(
+    # `--partition` heads the economics rather than sitting among the walk flags,
+    # where it was: naming one partition does not change how a walk runs, it
+    # hands that partition the whole clock.
+    economics.add_argument(
+        "--partition",
+        action="append",
+        choices=list(ALL_PARTITIONS),
+        help="keep the books for this partition alone (repeatable; default: every one). A "
+        "run told one partition allocates its whole clock there, and its census, price "
+        "and refill census cover that partition only",
+    )
+    economics.add_argument(
         "--floor",
         type=float,
         default=0.05,
         help="the share of the clock every partition floors at (default: 0.05)",
     )
-    production.add_argument(
+    economics.add_argument(
         "--discount",
         type=float,
         help="what an unlabelled machine-scored find is worth against the deficit "
         "(default: 0.2); 0 reproduces the labels-only deficit exactly",
     )
-    production.add_argument("--prices", help="a cost-to-find seed table other than the shipped one")
-    production.add_argument(
+    economics.add_argument("--prices", help="a cost-to-find seed table other than the shipped one")
+    economics.add_argument(
         "--low-water", type=int, default=8, help="a partition below this many nodes is starved"
     )
-    production.add_argument(
+    economics.add_argument(
         "--cooldown", type=int, default=10, help="batches a partition waits between refills"
     )
-    production.add_argument(
+    economics.add_argument(
         "--refill-share",
         type=float,
         default=0.25,
         help="share of the loop's clock refills may spend (default: 0.25)",
     )
-    production.add_argument(
+    economics.add_argument(
         "--lineage-cap",
         type=int,
         default=0,
         help="admissions any one lineage may book before the walk stops expanding it "
         "(default: 0, no cap). The hard stop that stands above the soft discount below",
     )
-    production.add_argument(
+    economics.add_argument(
         "--lineage-discount",
         type=float,
         default=novelty_default("DISCOUNT_K"),
@@ -706,14 +772,14 @@ def add_commands(subcommands) -> None:
         f"{novelty_default('DISCOUNT_K')}; 0 turns the discount off). In the contest only - "
         f"the exploration share is never priced",
     )
-    production.add_argument(
+    economics.add_argument(
         "--lineage-discount-floor",
         type=float,
         default=novelty_default("DISCOUNT_FLOOR"),
         help=f"the floor that discount never falls below "
         f"(default: {novelty_default('DISCOUNT_FLOOR')})",
     )
-    production.add_argument(
+    economics.add_argument(
         "--exploration-floor",
         type=float,
         default=novelty_default("SHARE_FLOOR"),
@@ -721,76 +787,41 @@ def add_commands(subcommands) -> None:
         f"an admission from, which the share never falls below "
         f"(default: {novelty_default('SHARE_FLOOR')})",
     )
-    production.add_argument(
+    economics.add_argument(
         "--exploration-start",
         type=float,
         default=novelty_default("SHARE_START"),
         help=f"what that share opens at before it has priced itself "
         f"(default: {novelty_default('SHARE_START')})",
     )
-    production.add_argument(
+    economics.add_argument(
         "--exploration-ema",
         type=float,
         default=novelty_default("SHARE_EMA"),
         help=f"per-served-batch smoothing weight for the share's self-pricing "
         f"(default: {novelty_default('SHARE_EMA')})",
     )
-    production.add_argument(
+    economics.add_argument(
         "--no-exploration",
         action="store_true",
         help="allocate the whole post-floor batch by deficit; no protected share",
     )
-    production.add_argument(
+    economics.add_argument(
         "--no-saturation",
         action="store_true",
         help="do not read earlier runs' ledgers; every place ranks as untouched",
     )
-    production.add_argument(
-        "--no-twins",
-        action="store_true",
-        help="do not derive Julia parameters from admitted parameter-plane locations; the "
-        "three higher-degree Julia partitions then have no channel at all and say so",
-    )
-    production.add_argument(
-        "--root-channel",
-        action="append",
-        dest="root_channels",
-        choices=[proven_default("CHANNEL"), sampler_default("CHANNEL")],
-        help=f"draw roots from this channel as well as the partition's own pool; "
-        f"repeatable. {proven_default('CHANNEL')!r} roots the walk at every location a human "
-        f"has scored a keeper, interleaved with the pool rather than replacing it — on the "
-        f"dynamical partitions at the labelled viewport, which is a frame their `c`-pools "
-        f"cannot express. {sampler_default('CHANNEL')!r} draws viewports over a PINNED "
-        f"plane's own home view at a ladder of scales and keeps the ones the structural "
-        f"gates pass, which is the only way a plane with no free parameter gets a fresh "
-        f"place at all",
-    )
-    production.add_argument(
-        "--sampler-rungs",
-        type=int,
-        default=sampler_default("RUNGS"),
-        help=f"octaves in from the home width the viewport sampler draws over, each rung a "
-        f"2^k x 2^k jittered grid at width home/2^k (default: {sampler_default('RUNGS')}, "
-        f"which is {sum(4**k for k in range(1, sampler_default('RUNGS') + 1))} frames). Read "
-        f"only with --root-channel {sampler_default('CHANNEL')}",
-    )
-    production.add_argument(
+    written.add_argument(
         "--ledgers",
         default="artifacts",
         help="where earlier runs' ledgers live (default: artifacts)",
     )
-    production.add_argument(
-        "--colormap",
-        default="twilight_shifted",
-        help="colormap the gate renders are drawn through. A scored run refuses any map "
-        "but the tile pool's floor palette: the head reads the gate render as a tile",
-    )
-    production.add_argument(
+    written.add_argument(
         "--out-dir",
         default=str(Path("artifacts") / "harvest"),
         help="the run directory (default: artifacts/harvest)",
     )
-    production.add_argument(
+    written.add_argument(
         "--foci",
         action="store_true",
         help="record each expanded node's kept focus set beside its candidates: where the "
@@ -799,8 +830,8 @@ def add_commands(subcommands) -> None:
         "ledger it always wrote - the set is read either way and this decides only whether "
         "it is kept",
     )
-    grace_flag(production)
-    scoring_flags(production)
+    grace_flag(scoring)
+    scoring_flags(scoring)
     production.set_defaults(handler=harvest)
 
     checking = subcommands.add_parser(

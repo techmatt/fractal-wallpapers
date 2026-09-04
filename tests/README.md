@@ -211,6 +211,19 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+It read **122.05 s over 3,442** at the help grouping, idle, 2026-09-04 — 3.55 s over
+the reading below, across the two guards that prompt added, which is what a change that
+only regroups `--help` text should cost. **The collection count is the interesting
+half.** With those two guards stashed the tree collects **3,440** — the `cli` split's
+figure, three entries down — and not the **3,383** the reading below records, though
+none of the three commits between them adds a test function. So the 57 the warning
+below calls unaccounted for came back, on an unchanged suite, pointing the other way:
+that warning says `9a62672` and HEAD both collected 3,375 the evening it was written,
+and HEAD collects 3,440 today, twice in a row. `tests/test_colormaps.py` parametrizes
+over the colormaps on disk and is the one collection here that data could move — it is
+902 today and `data/palettes` has held 912 tracked JSONs across all four commits, so it
+is not that. Left unexplained rather than edited.
+
 It read **118.50 s over 3,383** at the manifest guard, idle, 2026-09-04 — against
 **177.48 s over the same 3,383**, measured the same evening on the same idle box by
 checking `9a62672` back out into the tree and running it. A third off, and none of it
