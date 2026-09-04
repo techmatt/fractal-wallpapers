@@ -146,8 +146,10 @@ back to the records.
 
 ## Which engine build drew a picture
 
-`engine.py` is the only door to the renderer. `engine_fingerprint.py` is the
-answer to a question that door could not be asked: *which build*.
+`engine.py` is the only door to the renderer. `engine_spec.py` is what the door
+is handed — the one derivation of the JSON spec from a row, plus the palette
+recipe that goes in it. `engine_fingerprint.py` is the answer to a question the
+door could not be asked: *which build*.
 
 A cached picture outlives the run that made it. A view is addressed by a digest
 of its own recipe — the family, the viewport, the geometry, the coloring — and
@@ -156,9 +158,17 @@ right name has never been evidence that today's engine made it. Every judge in
 this project reads cached pictures.
 
 The build is named by **what it draws**: six pinned probes over four family
-kinds and six modes at the node regime, rendered through `renders.spec_of` — the
-production path, not a second way to ask for pixels — and digested to sixteen hex
-characters. Byte-identity of output is already this engine's contract (native
+kinds and six modes at the node regime, rendered through `engine_spec.spec_of` —
+the production path, not a second way to ask for pixels — and digested to sixteen
+hex characters. That derivation is at the floor rather than in `models/renders.py`,
+where it lived until 2026-09-04, for exactly this reason: a fingerprint that has
+to reach *up* into the render cache and the label store to name the production
+path is a fingerprint whose module sits inside their import cycle, and it did —
+`engine_fingerprint` was one of five modules the layering fixes took out of a
+49-module one. `renders.spec_of`, `renders.coloring_of`, `renders.catalog` and
+`finished.recipe` all still resolve; they are imported from here.
+
+Byte-identity of output is already this engine's contract (native
 &equiv; wasm), so a digest of output *is* the build identity, and it needs no
 build system. It is preferred over a source revision because it also catches a
 rebuild from unchanged source and a moved mode catalog. About 0.35 s, cached per

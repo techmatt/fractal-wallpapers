@@ -41,9 +41,9 @@ def test_an_advisory_refuses_to_annotate_against_a_head_it_was_not_set_against(
 ) -> None:
     manifest = tmp_path / "weights.json"
     manifest.write_text(json.dumps({"schema": 1, "heads": {"h": {"sha256": "abc"}}}))
-    from fractal_wallpapers.models import ship
+    from fractal_wallpapers.models import roster
 
-    monkeypatch.setattr(ship, "manifest_path", lambda: manifest)
+    monkeypatch.setattr(roster, "manifest_path", lambda: manifest)
     advisory = floors.Advisory("h_release", 0.5, "h", "abc", "for a test")
     assert advisory.annotates(0.9) is True
 
@@ -55,9 +55,9 @@ def test_an_advisory_refuses_to_annotate_against_a_head_it_was_not_set_against(
 def test_an_advisory_is_tri_state_so_a_crash_is_not_a_bad_wallpaper(tmp_path, monkeypatch) -> None:
     manifest = tmp_path / "weights.json"
     manifest.write_text(json.dumps({"schema": 1, "heads": {"h": {"sha256": "abc"}}}))
-    from fractal_wallpapers.models import ship
+    from fractal_wallpapers.models import roster
 
-    monkeypatch.setattr(ship, "manifest_path", lambda: manifest)
+    monkeypatch.setattr(roster, "manifest_path", lambda: manifest)
     advisory = floors.Advisory("h_release", 0.5, "h", "abc", "for a test")
     assert advisory.annotates(None) is None
     assert advisory.annotates(0.1) is False
@@ -78,9 +78,9 @@ def test_an_advisory_cannot_remove_a_row() -> None:
 def test_an_unshipped_head_has_no_scale_for_a_cut_to_live_on(tmp_path, monkeypatch) -> None:
     manifest = tmp_path / "weights.json"
     manifest.write_text(json.dumps({"schema": 1, "heads": {}}))
-    from fractal_wallpapers.models import ship
+    from fractal_wallpapers.models import roster
 
-    monkeypatch.setattr(ship, "manifest_path", lambda: manifest)
+    monkeypatch.setattr(roster, "manifest_path", lambda: manifest)
     with pytest.raises(floors.HeadStampMismatch):
         floors.live_stamp("location")
 
@@ -195,13 +195,13 @@ def test_a_head_flip_refuses_every_seating_decision_until_the_bar_is_restated(
     refuses, and the refusal names both artifacts.
     """
     from fractal_wallpapers.curation import budget
-    from fractal_wallpapers.models import ship
+    from fractal_wallpapers.models import roster
 
     manifest = tmp_path / "weights.json"
     manifest.write_text(
         json.dumps({"schema": 1, "heads": {floors.SCORING_HEAD: {"sha256": "def"}}})
     )
-    monkeypatch.setattr(ship, "manifest_path", lambda: manifest)
+    monkeypatch.setattr(roster, "manifest_path", lambda: manifest)
     with pytest.raises(floors.HeadStampMismatch, match="re-state the cut"):
         floors.release_cut(budget.STRANGE).acts(0.99)
 
@@ -212,9 +212,9 @@ def test_a_bar_seats_nothing_without_a_score_while_the_record_keeps_the_third_st
     """The comparison stays tri-state; the seating decision cannot have one."""
     manifest = tmp_path / "weights.json"
     manifest.write_text(json.dumps({"schema": 1, "heads": {"h": {"sha256": "abc"}}}))
-    from fractal_wallpapers.models import ship
+    from fractal_wallpapers.models import roster
 
-    monkeypatch.setattr(ship, "manifest_path", lambda: manifest)
+    monkeypatch.setattr(roster, "manifest_path", lambda: manifest)
     bar = floors.Bar("h_release", 0.5, "h", "abc", "for a test")
     assert bar.clears(None) is None
     assert bar.acts(None) is False
@@ -226,9 +226,9 @@ def test_a_bar_refuses_to_seat_against_a_head_it_was_not_set_against(tmp_path, m
     """A bar is a point on one head's scale, and it says nothing on another's."""
     manifest = tmp_path / "weights.json"
     manifest.write_text(json.dumps({"schema": 1, "heads": {"h": {"sha256": "abc"}}}))
-    from fractal_wallpapers.models import ship
+    from fractal_wallpapers.models import roster
 
-    monkeypatch.setattr(ship, "manifest_path", lambda: manifest)
+    monkeypatch.setattr(roster, "manifest_path", lambda: manifest)
     bar = floors.Bar("h_release", 0.5, "h", "abc", "for a test")
     assert bar.acts(0.9) is True
 
@@ -279,9 +279,9 @@ def test_the_junk_floor_refuses_after_a_location_flip(tmp_path, monkeypatch) -> 
     """
     manifest = tmp_path / "weights.json"
     manifest.write_text(json.dumps({"schema": 1, "heads": {"location": {"sha256": "def"}}}))
-    from fractal_wallpapers.models import ship
+    from fractal_wallpapers.models import roster
 
-    monkeypatch.setattr(ship, "manifest_path", lambda: manifest)
+    monkeypatch.setattr(roster, "manifest_path", lambda: manifest)
     with pytest.raises(floors.HeadStampMismatch, match="re-state the cut"):
         floors.passes_junk_floor(0.9)
     with pytest.raises(floors.HeadStampMismatch, match="re-state the cut"):

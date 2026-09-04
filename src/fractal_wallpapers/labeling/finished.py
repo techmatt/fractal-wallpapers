@@ -94,6 +94,7 @@ import json
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from fractal_wallpapers.engine_spec import recipe
 from fractal_wallpapers.labeling import registry as registry_module
 from fractal_wallpapers.labeling import store
 from fractal_wallpapers.paths import repo_root
@@ -336,31 +337,6 @@ def check(head: str, row: dict, extend: bool = False) -> dict:
             f"from. Write it to {routed}."
         )
     return row
-
-
-def recipe(
-    gamma: float = 1.0,
-    cycles: float = 1.0,
-    phase: float = 0.0,
-    reverse: bool = False,
-    mirror: bool = False,
-    transfer: dict | None = None,
-    rolloff: dict | None = None,
-) -> dict:
-    """The palette pass, in the shape the engine reads and a row records.
-
-    One object, spelled once: the render cache hands it to the engine verbatim,
-    so a row and the picture made from it cannot describe different recipes.
-    """
-    return {
-        "gamma": float(gamma),
-        "cycles": float(cycles),
-        "phase": float(phase),
-        "reverse": bool(reverse),
-        "mirror": bool(mirror),
-        "transfer": transfer or {"kind": "value"},
-        "rolloff": rolloff or {"kind": "none"},
-    }
 
 
 def render_row(

@@ -129,7 +129,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from fractal_wallpapers.models import head, metrics, scoring, train
-from fractal_wallpapers.models.roster import HEADS
+from fractal_wallpapers.models.roster import HEADS, manifest_path
 from fractal_wallpapers.paths import repo_root, tracked_name
 
 #: The schema of the weights manifest.
@@ -381,11 +381,6 @@ def shipment_for(name: str) -> Shipment:
         load=scoring.load,
         evaluation=_location_evaluation,
     )
-
-
-def manifest_path() -> Path:
-    """The tracked manifest `fetch-weights` reads."""
-    return repo_root() / "models" / "weights.json"
 
 
 def shipped_path(name: str = "location", run: str | None = None) -> Path:

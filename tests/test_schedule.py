@@ -20,6 +20,7 @@ from datetime import datetime
 import pytest
 
 from fractal_wallpapers import schedule
+from fractal_wallpapers.curation import records
 
 EVENING = datetime(2026, 8, 22, 23, 0)
 
@@ -75,7 +76,7 @@ def test_a_finish_time_that_is_not_a_time_refuses(text: str) -> None:
 
 def test_the_span_is_the_reservations_plus_the_harvest_and_nothing_else() -> None:
     """The arithmetic closes, which is the only property a reservation has."""
-    plan = schedule.plan("07:00", 80, ATTEMPTS_AT_80, now=EVENING, rate=(24.9, "a fixture"))
+    plan = schedule.plan("07:00", 80, ATTEMPTS_AT_80, (24.9, "a fixture"), now=EVENING)
     assert plan.span == pytest.approx(8 * 3600)
     terms = (plan.release, plan.curation, plan.rescore, plan.ledger_load, plan.margin, plan.room)
     assert sum(terms) == pytest.approx(plan.span)
@@ -87,9 +88,9 @@ def test_the_release_reservation_is_the_ceiling_times_the_measured_rate() -> Non
     on record under-filled it, so this over-reserves whenever the release comes up
     short. An over-reserved release leg finishes early; an under-reserved one runs
     past the time somebody has to be awake for."""
-    plan = schedule.plan("07:00", 80, ATTEMPTS_AT_80, now=EVENING, rate=(24.9, "a fixture"))
+    plan = schedule.plan("07:00", 80, ATTEMPTS_AT_80, (24.9, "a fixture"), now=EVENING)
     assert plan.release == pytest.approx(80 * 24.9)
-    bigger = schedule.plan("07:00", 160, 2 * ATTEMPTS_AT_80, now=EVENING, rate=(24.9, "a fixture"))
+    bigger = schedule.plan("07:00", 160, 2 * ATTEMPTS_AT_80, (24.9, "a fixture"), now=EVENING)
     assert bigger.release == pytest.approx(2 * plan.release)
 
 
@@ -105,7 +106,7 @@ def test_the_release_rate_is_read_off_the_most_recent_tracked_run(tracked_runs) 
         "newer",
         {"run": "newer", "finished": "2026-08-21T23:00:00", "release": RUN10_RELEASE},
     )
-    rate, source = schedule.release_rate(4)
+    rate, source = schedule.release_rate(4, records.latest_release_leg())
     assert rate == pytest.approx(1370.2 / 55)
     assert "newer" in source
     # A run that stopped before its release leg measured nothing, and skipping it
@@ -128,7 +129,7 @@ def test_a_run_that_never_released_is_skipped_rather_than_believed(tracked_runs)
             "release": {"rows": 0, "seconds": 0.0, "workers": 4},
         },
     )
-    rate, source = schedule.release_rate(4)
+    rate, source = schedule.release_rate(4, records.latest_release_leg())
     assert rate == pytest.approx(1370.2 / 55)
     assert "released" in source
 
@@ -136,7 +137,7 @@ def test_a_run_that_never_released_is_skipped_rather_than_believed(tracked_runs)
 def test_with_no_release_on_record_the_written_down_rate_says_so(tracked_runs) -> None:
     """A fresh clone has no measurement, and the plan has to say which of the two
     it reserved off — a night reserved on the fallback is a different night."""
-    rate, source = schedule.release_rate(schedule.RELEASE_WORKERS)
+    rate, source = schedule.release_rate(schedule.RELEASE_WORKERS, records.latest_release_leg())
     assert rate == pytest.approx(schedule.RELEASE_SECONDS_PER_PICTURE)
     assert "no tracked run" in source
 
@@ -149,8 +150,8 @@ def test_the_rate_is_scaled_to_the_worker_count_this_night_will_run(tracked_runs
         "run",
         {"run": "run", "finished": "2026-08-21T23:00:00", "release": RUN10_RELEASE},
     )
-    at_four, _ = schedule.release_rate(4)
-    at_eight, _ = schedule.release_rate(8)
+    at_four, _ = schedule.release_rate(4, records.latest_release_leg())
+    at_eight, _ = schedule.release_rate(8, records.latest_release_leg())
     assert at_eight == pytest.approx(at_four / 2)
 
 
@@ -158,7 +159,7 @@ def test_the_rest_of_curate_run_is_reserved_and_not_left_to_the_release_leg() ->
     """The colorize leg runs between the harvest and the release pass. A night that
     reserved the release alone would spend a quarter of an hour of the release's
     own reservation before the first full-resolution render started."""
-    plan = schedule.plan("07:00", 80, ATTEMPTS_AT_80, now=EVENING, rate=(24.9, "a fixture"))
+    plan = schedule.plan("07:00", 80, ATTEMPTS_AT_80, (24.9, "a fixture"), now=EVENING)
     assert plan.curation == pytest.approx(plan.attempts * schedule.CURATION_SECONDS_PER_ATTEMPT)
     assert plan.curation > 0
     assert plan.record()["release_attempts"] == plan.attempts
@@ -175,8 +176,8 @@ def test_the_attempt_count_is_handed_in_rather_than_restated_here() -> None:
     assert not hasattr(schedule, "MODES_PER_STRANGE_LOCATION")
     assert not hasattr(schedule, "STRANGE_SHARE")
 
-    doubled = schedule.plan("07:00", 80, 2 * ATTEMPTS_AT_80, now=EVENING, rate=(24.9, "f"))
-    plain = schedule.plan("07:00", 80, ATTEMPTS_AT_80, now=EVENING, rate=(24.9, "f"))
+    doubled = schedule.plan("07:00", 80, 2 * ATTEMPTS_AT_80, (24.9, "f"), now=EVENING)
+    plain = schedule.plan("07:00", 80, ATTEMPTS_AT_80, (24.9, "f"), now=EVENING)
     assert doubled.curation == pytest.approx(2 * plain.curation)
     assert doubled.active_minutes < plain.active_minutes
 
@@ -207,7 +208,7 @@ def test_the_command_line_derives_the_attempt_count_through_curation_itself() ->
 def test_active_minutes_are_fewer_than_the_wall_they_came_from() -> None:
     """`--minutes` counts active time. A derivation that handed it wall minutes
     would over-book the clock by exactly the overhead the ratio exists to name."""
-    plan = schedule.plan("07:00", 80, ATTEMPTS_AT_80, now=EVENING, rate=(24.9, "a fixture"))
+    plan = schedule.plan("07:00", 80, ATTEMPTS_AT_80, (24.9, "a fixture"), now=EVENING)
     assert plan.active_minutes < plan.room / 60.0
     assert plan.ratio > 1.0
 
@@ -223,9 +224,9 @@ def test_the_ratio_is_chosen_by_whether_the_night_draws_its_own_views() -> None:
     assert gate < drawing
     assert why_drawing != why_gate
 
-    cheap = schedule.plan("07:00", 80, ATTEMPTS_AT_80, now=EVENING, rate=(24.9, "a fixture"))
+    cheap = schedule.plan("07:00", 80, ATTEMPTS_AT_80, (24.9, "a fixture"), now=EVENING)
     dear = schedule.plan(
-        "07:00", 80, ATTEMPTS_AT_80, now=EVENING, rate=(24.9, "a fixture"), renders_views=True
+        "07:00", 80, ATTEMPTS_AT_80, (24.9, "a fixture"), now=EVENING, renders_views=True
     )
     assert cheap.active_minutes > dear.active_minutes
     assert cheap.record()["active_to_wall_basis"] == why_gate
@@ -235,8 +236,8 @@ def test_the_ratio_is_chosen_by_whether_the_night_draws_its_own_views() -> None:
 def test_the_closing_rescore_scales_with_what_the_harvest_will_find() -> None:
     """It re-reads the run's own gate survivors, so a fixed tail keeps drifting as
     the nights get longer: run10 reserved 2 minutes and spent 4.7."""
-    short = schedule.plan("01:00", 4, 24, now=EVENING, rate=(24.9, "a fixture"))
-    long = schedule.plan("07:00", 4, 24, now=EVENING, rate=(24.9, "a fixture"))
+    short = schedule.plan("01:00", 4, 24, (24.9, "a fixture"), now=EVENING)
+    long = schedule.plan("07:00", 4, 24, (24.9, "a fixture"), now=EVENING)
     assert long.rescore > short.rescore
     assert long.rescore / long.active_minutes == pytest.approx(short.rescore / short.active_minutes)
     # And it is solved for rather than iterated to: the terms still close.
@@ -249,7 +250,7 @@ def test_a_span_the_reservations_do_not_fit_in_refuses_with_them_named() -> None
     sized — and the reservations are the interesting half of the refusal."""
     with pytest.raises(schedule.Unschedulable) as refusal:
         schedule.plan(
-            "07:00", 80, ATTEMPTS_AT_80, now=datetime(2026, 8, 23, 6, 0), rate=(24.9, "a fixture")
+            "07:00", 80, ATTEMPTS_AT_80, (24.9, "a fixture"), now=datetime(2026, 8, 23, 6, 0)
         )
     said = str(refusal.value)
     assert "release" in said and "margin" in said and "80 slots" in said
@@ -258,9 +259,7 @@ def test_a_span_the_reservations_do_not_fit_in_refuses_with_them_named() -> None
 def test_the_record_carries_every_term_the_readout_has_to_subtract() -> None:
     """A night that lands late is attributable to the term that was reserved wrong
     only if the terms are on the record next to what they actually cost."""
-    record = schedule.plan(
-        "07:00", 80, ATTEMPTS_AT_80, now=EVENING, rate=(24.9, "the fixture")
-    ).record()
+    record = schedule.plan("07:00", 80, ATTEMPTS_AT_80, (24.9, "the fixture"), now=EVENING).record()
     assert set(record["reserved_minutes"]) == {
         "release",
         "curation",
@@ -281,9 +280,7 @@ def test_the_record_carries_every_term_the_readout_has_to_subtract() -> None:
 
 def test_the_printed_plan_states_the_derivation_rather_than_the_answer() -> None:
     lines = "\n".join(
-        schedule.plan(
-            "07:00", 80, ATTEMPTS_AT_80, now=EVENING, rate=(24.9, "run9's own leg")
-        ).lines()
+        schedule.plan("07:00", 80, ATTEMPTS_AT_80, (24.9, "run9's own leg"), now=EVENING).lines()
     )
     assert "07:00" in lines
     assert "ACTIVE" in lines
@@ -310,7 +307,13 @@ def test_run10s_own_night_re_derived_under_the_terms_that_replaced_its_own(
         {"run": "run10", "finished": "2026-08-22T05:36:04", "release": RUN10_RELEASE},
     )
     launch = datetime(2026, 8, 21, 23, 18, 58)
-    plan = schedule.plan("07:00", 80, ATTEMPTS_AT_80, now=launch)
+    plan = schedule.plan(
+        "07:00",
+        80,
+        ATTEMPTS_AT_80,
+        schedule.release_rate(schedule.RELEASE_WORKERS, records.latest_release_leg()),
+        now=launch,
+    )
 
     assert plan.record()["release_seconds_per_picture"] == pytest.approx(24.91, abs=0.01)
     assert "run10" in plan.release_rate_source
@@ -336,6 +339,6 @@ def test_a_record_with_no_finish_stamp_is_older_than_every_stamped_one(tracked_r
         {"run": "recent", "finished": "2026-01-01T00:00:00", "release": RUN10_RELEASE},
     )
     # `ancient` is the newer file on disk and the older run on the record.
-    rate, source = schedule.release_rate(4)
+    rate, source = schedule.release_rate(4, records.latest_release_leg())
     assert "recent" in source
     assert rate == pytest.approx(1370.2 / 55)

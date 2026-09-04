@@ -525,7 +525,11 @@ minutes inside its finish-by on terms that had each stopped being true:
   `release.workers`, scaled to `--release-workers`). It halved — 41.9 s to 24.9 —
   the night `artifacts/curation` came off the archive and back onto NVMe. The
   written-down 41.9 is the fallback for a clone with no release on record, and the
-  plan prints which of the two it used;
+  plan prints which of the two it used. **The leg is read by the caller, not by
+  `schedule`**: `schedule.release_rate(workers, leg)` takes the row and
+  `schedule.plan` takes the resulting `(seconds, source)` pair, so a module that is
+  arithmetic about a night imports nothing from the record store above it. The one
+  production caller reads `records.latest_release_leg()` and hands it over;
 * the **closing re-score** scales with what the harvest will find, since it
   re-reads the run's own gate survivors: 7.13 ms a row at 124.7 rows an active
   minute. That dependence is circular and `schedule.plan` solves it rather than

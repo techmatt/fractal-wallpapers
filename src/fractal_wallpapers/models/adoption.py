@@ -472,7 +472,7 @@ def adopt(
     otherwise surface as a refusal at the first comparison of the next run, with
     the manifest already moved.
     """
-    from fractal_wallpapers.models import regime_flips, ship
+    from fractal_wallpapers.models import regime_flips, roster, ship
 
     staged = candidate_record(head)
     priced = restatement(head)
@@ -491,7 +491,7 @@ def adopt(
         )
     agreed = _agrees(head, priced)
 
-    retiring = json.loads(ship.manifest_path().read_text(encoding="utf-8"))["heads"][head]
+    retiring = json.loads(roster.manifest_path().read_text(encoding="utf-8"))["heads"][head]
     retired = cuts.live_stamp(head)
     shipment = ship.promote(name=head, tag=tag, run=staged["run"])
     landed = shipment["manifest_entry"]["sha256"]
