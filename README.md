@@ -26,6 +26,12 @@ activating:
 A bare `python -m fractal_wallpapers.cli` runs only inside that venv; from a system Python it
 fails with `No module named 'fractal_wallpapers'`. Prefer the entry point.
 
+**The package lives under `src/` and is importable only through the editable install** —
+that is what every command and every path in this README assumes. An interpreter that
+does not carry it needs `PYTHONPATH=src` set from the checkout root instead; `pytest`
+is the one thing that never needs either, because `pythonpath = ["src"]` in
+`pyproject.toml` puts it on the path for the suite whatever interpreter runs it.
+
 Fetch the trained judges before anything that scores:
 
 ```
