@@ -637,6 +637,21 @@ def refuse_impossible_walk(args: argparse.Namespace) -> str | None:
     return None
 
 
+def device_flag(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
+    """Where a head runs, on every command that loads one.
+
+    Thirty-two commands take this and every one of them meant the same thing, but
+    it was written out thirty-two times and the sentence had already drifted two
+    ways — half said `(default)` after `auto` and half did not, for one flag with
+    one default. That is what a copied `add_argument` costs: nothing at all until
+    somebody edits one of them, and then a difference in `--help` that reads like
+    a difference in behaviour. One definition, like [`scoring_flags`] and
+    [`ledger_flags`].
+    """
+    parser.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
+    return parser
+
+
 def grace_flag(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     """The expansion grace, on every command that walks.
 
@@ -674,7 +689,7 @@ def scoring_flags(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
         f"(default: {scoring.DEFAULT_WORKERS}; 1 renders in this process). A walk draws "
         f"none — it scores the gate render — so this reaches a re-score alone",
     )
-    parser.add_argument("--device", default="auto", help="cuda, cpu, or auto")
+    device_flag(parser)
     parser.add_argument(
         "--no-scoring",
         action="store_true",
@@ -5425,7 +5440,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="worker processes rendering the views the head reads (default: 1, which "
         "renders in this process; one render already spends the whole machine)",
     )
-    reading_locations.add_argument("--device", default="auto", help="cuda, cpu, or auto")
+    device_flag(reading_locations)
     reading_locations.set_defaults(handler=score_locations)
 
     seeding = subcommands.add_parser(
@@ -6026,7 +6041,7 @@ def render_commands(subcommands) -> None:
         help="train one seed of the head that ships",
     )
     deploy_fitting.add_argument("--seed", type=int, required=True, help="which seed's split")
-    deploy_fitting.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
+    device_flag(deploy_fitting)
     deploy_fitting.add_argument("--epochs", type=int, help="override the epoch ceiling")
     deploy_fitting.add_argument(
         "--workers",
@@ -6107,7 +6122,7 @@ def render_commands(subcommands) -> None:
     )
     dose_fitting.add_argument("--point", required=True, help="which dose point")
     dose_fitting.add_argument("--fold", type=int, required=True, help="which part of the deal")
-    dose_fitting.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
+    device_flag(dose_fitting)
     dose_fitting.add_argument("--epochs", type=int, help="override the epoch ceiling")
     dose_fitting.set_defaults(handler=renders_dose_fit)
 
@@ -6121,7 +6136,7 @@ def render_commands(subcommands) -> None:
     )
     dose_reading.add_argument("--point", required=True, help="which dose point")
     dose_reading.add_argument("--fold", type=int, required=True, help="which part of the deal")
-    dose_reading.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
+    device_flag(dose_reading)
     dose_reading.set_defaults(handler=renders_dose_read)
 
     dose_curve = dosings.add_parser(
@@ -6181,7 +6196,7 @@ def render_commands(subcommands) -> None:
     grade_fitting.add_argument("--arm", required=True, help="which arm: A or B")
     grade_fitting.add_argument("--fold", type=int, required=True, help="which part of the deal")
     grade_fitting.add_argument("--seed", type=int, required=True, help="the run's seed")
-    grade_fitting.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
+    device_flag(grade_fitting)
     grade_fitting.add_argument("--epochs", type=int, help="override the epoch ceiling")
     grade_fitting.set_defaults(handler=renders_grade_fit)
 
@@ -6197,7 +6212,7 @@ def render_commands(subcommands) -> None:
     grade_reading.add_argument("--fold", type=int, required=True, help="which part of the deal")
     grade_reading.add_argument("--seed", type=int, required=True, help="the run's seed")
     grade_reading.add_argument("--rule", help="one stopping rule, or both if omitted")
-    grade_reading.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
+    device_flag(grade_reading)
     grade_reading.set_defaults(handler=renders_grade_read)
 
     grade_readout = gradings.add_parser(
@@ -6283,7 +6298,7 @@ def render_commands(subcommands) -> None:
         ),
     )
     training.add_argument("--head", required=True, help="which judge")
-    training.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
+    device_flag(training)
     training.add_argument("--epochs", type=int, help="override the recipe's epoch count")
     training.add_argument("--seed", type=int, help="override the recipe's seed")
     training.add_argument(
@@ -6326,7 +6341,7 @@ def render_commands(subcommands) -> None:
     )
     reading.add_argument("--which", default="best", choices=["best", "last"])
     reading.add_argument("--side", default="eval", choices=["eval", "train"])
-    reading.add_argument("--device", default="auto")
+    device_flag(reading)
     reading.add_argument("--run", help="the named training run to score")
     reading.set_defaults(handler=judge_score)
 
@@ -6360,7 +6375,7 @@ def render_commands(subcommands) -> None:
     shipping.add_argument("--head", required=True, help="which judge")
     shipping.add_argument("--which", default="best", choices=["best", "last"])
     shipping.add_argument("--tag", default="weights-v1", help="the release tag to name")
-    shipping.add_argument("--device", default="auto")
+    device_flag(shipping)
     shipping.add_argument("--run", help="the named training run to ship")
     shipping.add_argument(
         "--force", action="store_true", help="ship a judge whose acceptance read failed"
@@ -6388,7 +6403,7 @@ def render_commands(subcommands) -> None:
     # not available. `tests/test_base_install.py` is what says so.
     glancing.add_argument("--rows", type=int, help="rows per column (default: the module's, 12)")
     glancing.add_argument("--out", help="where the page lands (default: scratch/)")
-    glancing.add_argument("--device", default="auto")
+    device_flag(glancing)
     glancing.set_defaults(handler=judge_glance)
 
     drawing = steps.add_parser(
@@ -6752,7 +6767,7 @@ def palette_commands(subcommands) -> None:
             "the vector being distilled — and never on a rank statistic."
         ),
     )
-    training.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
+    device_flag(training)
     training.add_argument("--epochs", type=int, help="override the recipe's epoch count")
     training.add_argument("--seed", type=int, help="override the recipe's seed")
     training.add_argument(
@@ -6779,7 +6794,7 @@ def palette_commands(subcommands) -> None:
     )
     reading.add_argument("--source", required=True, help="the source repository's root")
     reading.add_argument("--which", default="best", choices=["best", "last"])
-    reading.add_argument("--device", default="auto")
+    device_flag(reading)
     reading.add_argument("--run", help="the named training run to score")
     reading.set_defaults(handler=palette_score)
 
@@ -6806,7 +6821,7 @@ def palette_commands(subcommands) -> None:
     )
     shipping.add_argument("--which", default="best", choices=["best", "last"])
     shipping.add_argument("--tag", default="weights-v1", help="the release tag to name")
-    shipping.add_argument("--device", default="auto")
+    device_flag(shipping)
     shipping.add_argument("--run", help="the named training run to ship")
     shipping.add_argument(
         "--force", action="store_true", help="ship a head whose acceptance read failed"
@@ -7032,7 +7047,7 @@ def head_commands(subcommands) -> None:
     registering.set_defaults(handler=head_preregister)
 
     training = with_head(steps.add_parser("train", help="train a head on the built tiles"))
-    training.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
+    device_flag(training)
     training.add_argument("--epochs", type=int, help="override the recipe's epoch count")
     training.add_argument("--seed", type=int, help="override the recipe's seed")
     training.add_argument(
@@ -7071,7 +7086,7 @@ def head_commands(subcommands) -> None:
     )
     reading.add_argument("--which", default="best", choices=["best", "last"])
     reading.add_argument("--side", default="eval", choices=["eval", "train"])
-    reading.add_argument("--device", default="auto")
+    device_flag(reading)
     reading.add_argument("--run", help="the named training run to score (default: the head's own)")
     reading.add_argument(
         "--regime",
@@ -7098,7 +7113,7 @@ def head_commands(subcommands) -> None:
         )
     )
     auditing.add_argument("--which", default="best", choices=["best", "last"])
-    auditing.add_argument("--device", default="auto")
+    device_flag(auditing)
     auditing.add_argument("--run", help="the named training run to audit (default: the head's own)")
     auditing.set_defaults(handler=head_audit)
 
@@ -7123,7 +7138,7 @@ def head_commands(subcommands) -> None:
         choices=sorted(FINISHED_HEADS),
         help="which finished-render judge to fit",
     )
-    flooring.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
+    device_flag(flooring)
     flooring.add_argument(
         "--bootstrap",
         type=int,
@@ -7166,7 +7181,7 @@ def head_commands(subcommands) -> None:
     )
     shipping.add_argument("--which", default="best", choices=["best", "last"])
     shipping.add_argument("--tag", default="weights-v1", help="the release tag to name")
-    shipping.add_argument("--device", default="auto")
+    device_flag(shipping)
     shipping.add_argument("--run", help="the named training run to ship (default: the head's own)")
     shipping.add_argument(
         "--force", action="store_true", help="ship a head whose acceptance read failed"
@@ -7376,7 +7391,7 @@ def regime_commands(subcommands) -> None:
         )
     )
     staging.add_argument("--which", default="best", choices=["best", "last"])
-    staging.add_argument("--device", default="auto")
+    device_flag(staging)
     staging.add_argument(
         "--run", help="the run to stage (default: the seed the bar's selection rule chose)"
     )
@@ -7438,7 +7453,7 @@ def regime_commands(subcommands) -> None:
             "view already spends the whole machine, and every fan-out arm measures slower)"
         ),
     )
-    reading.add_argument("--device", default="auto")
+    device_flag(reading)
     reading.set_defaults(handler=flip_score)
 
     judging_flips = with_head(
@@ -7467,7 +7482,7 @@ def regime_commands(subcommands) -> None:
             ),
         )
     )
-    restating.add_argument("--device", default="auto")
+    device_flag(restating)
     restating.add_argument(
         "--force", action="store_true", help="overwrite a restatement nothing has flipped against"
     )
@@ -7893,7 +7908,7 @@ def curate_commands(subcommands) -> None:
             ),
         )
     )
-    reading.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
+    device_flag(reading)
     reading.add_argument("--limit", type=int, help="score only this many locations")
     reading.add_argument(
         "--key-file",
@@ -8046,7 +8061,7 @@ def curate_commands(subcommands) -> None:
         help="re-read locations this engine build has already amended. Off by default, "
         "which is what makes an interrupted refresh cheap to finish",
     )
-    redrawing.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
+    device_flag(redrawing)
     redrawing.set_defaults(handler=curate_redraw)
 
     embedding_step = steps.add_parser(
@@ -8063,7 +8078,7 @@ def curate_commands(subcommands) -> None:
             "this. Exits non-zero when the store does not cover the admitted population."
         ),
     )
-    embedding_step.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
+    device_flag(embedding_step)
     embedding_step.add_argument(
         "--sample",
         type=int,
@@ -8226,7 +8241,7 @@ def curate_commands(subcommands) -> None:
             "sha. Rows judged by a retired head gain the cutpoints it never had."
         ),
     )
-    rereading.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
+    device_flag(rereading)
     rereading.set_defaults(handler=curate_rescore)
 
     remaking = steps.add_parser(
@@ -8344,7 +8359,7 @@ def curate_commands(subcommands) -> None:
         default=3,
         help="worker processes for the full-resolution pass (1 is the serial path)",
     )
-    running.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
+    device_flag(running)
     running.add_argument(
         "--ephemeral",
         action="store_true",
@@ -9264,7 +9279,7 @@ def curate_commands(subcommands) -> None:
         action="store_true",
         help="derive the frame index off the scan record again before planning",
     )
-    hunting.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
+    device_flag(hunting)
     hunting.set_defaults(handler=curate_hunt)
 
     mine_step = steps.add_parser(
@@ -9337,7 +9352,7 @@ def curate_commands(subcommands) -> None:
         default=mine_module.DEFAULT_SEED,
         help=f"the seed every draw here is taken under (default {mine_module.DEFAULT_SEED})",
     )
-    mine_step.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
+    device_flag(mine_step)
     mine_step.set_defaults(handler=curate_mine)
 
     depth_step = steps.add_parser(
@@ -9598,7 +9613,7 @@ def curate_commands(subcommands) -> None:
         "dump the same field. A plan with fewer location blocks than workers runs on "
         "fewer and the record says so",
     )
-    depth_step.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
+    device_flag(depth_step)
     depth_step.set_defaults(handler=curate_depth)
 
     shrinkage_step = steps.add_parser(
@@ -9638,7 +9653,7 @@ def curate_commands(subcommands) -> None:
         f"process and runs once over everything they made",
     )
     shrinkage_step.add_argument("--seed", type=int, default=0, help="the sample's seed")
-    shrinkage_step.add_argument("--device", default="auto", help="cuda, cpu, or auto (default)")
+    device_flag(shrinkage_step)
     shrinkage_step.set_defaults(handler=curate_shrinkage)
 
     retention_step = steps.add_parser(
@@ -9999,7 +10014,7 @@ def curate_commands(subcommands) -> None:
         "this machine's render pool). A group is built by rendering, so this is the locked "
         "three and not a tuning knob",
     )
-    manufacturing.add_argument("--device", default="auto", help="cuda, cpu, or auto")
+    device_flag(manufacturing)
     manufacturing.add_argument(
         "--knob-sample",
         type=int,

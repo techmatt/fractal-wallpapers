@@ -177,6 +177,15 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+It read **166.63 s over 3,438** fast and **7:14 over 3,552** slow at the `run_layout`
+extraction, idle, 2026-09-04. The fast lane is flat — 0.5% over the reading below
+across one more test, which is the packaging guard. The **slow** figure is the one
+worth having: it had not been re-run since the viewport sampler, where it read 6:27
+over 3,388, so this is 12% more clock over 4.8% more tests. Every reading between
+those two was a fast-lane reading, which is how a slow lane drifts a tenth without
+anybody seeing it. Re-run the slow lane on its own schedule, not only when the fast
+one moves.
+
 Both are measured, not estimated. The fast lane is **142.06 s over the 3,307 it
 holds**, of 3,423 there are — on this machine, idle, 2026-09-02, at the commit
 that gave the depth record its autolevel stamp. It read **140.12 s over 3,302**

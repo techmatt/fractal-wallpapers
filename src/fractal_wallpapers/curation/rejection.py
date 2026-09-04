@@ -74,8 +74,14 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from fractal_wallpapers.curation import floors, records, selection, served_locations, sheet
-from fractal_wallpapers.curation import run as run_module
+from fractal_wallpapers.curation import (
+    floors,
+    records,
+    run_layout,
+    selection,
+    served_locations,
+    sheet,
+)
 from fractal_wallpapers.paths import repo_root
 
 #: The slug a retroactive bar rejection records. One value, because there is one
@@ -463,7 +469,7 @@ def redraw(run: str, log=print) -> Path:
     directory, and it is regenerated rather than patched — a page edited to drop
     a row is a page that can disagree with the record it came from.
     """
-    directory = run_module.run_dir(run)
+    directory = run_layout.run_dir(run)
     rows = records.read_decisions(records.RELEASE, run)
     page = sheet.from_records(
         run,

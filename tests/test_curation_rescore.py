@@ -13,8 +13,7 @@ import json
 
 import pytest
 
-from fractal_wallpapers.curation import durability, gallery_store, records, rescore
-from fractal_wallpapers.curation import run as run_module
+from fractal_wallpapers.curation import durability, gallery_store, records, rescore, run_layout
 
 
 def released(run: str, candidate: str, head: str, **scores) -> dict:
@@ -40,7 +39,7 @@ def test_the_picture_is_the_candidate_render_and_not_the_release_png() -> None:
     row = released("run9", "0007", "smooth_render")
     where = rescore.picture_of(row)
     assert where.name == "0007.jpg"
-    assert where.parent == run_module.run_dir("run9") / rescore.PICTURES
+    assert where.parent == run_layout.run_dir("run9") / rescore.PICTURES
     assert where.parent.name == "pictures"
 
 
@@ -51,7 +50,7 @@ def test_a_gallery_seat_reads_the_picture_of_the_run_that_made_it() -> None:
     row["source"] = {"run": "run9", "candidate": "0007", "key": "run9|release|0007"}
     where = rescore.picture_of(row)
     assert where.name == "0007.jpg"
-    assert where.parent == run_module.run_dir("run9") / rescore.PICTURES
+    assert where.parent == run_layout.run_dir("run9") / rescore.PICTURES
 
 
 @pytest.fixture

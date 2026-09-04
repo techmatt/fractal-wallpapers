@@ -48,8 +48,7 @@ from __future__ import annotations
 import html
 from pathlib import Path
 
-from fractal_wallpapers.curation import records, rejection, sheet
-from fractal_wallpapers.curation import run as run_module
+from fractal_wallpapers.curation import records, rejection, run_layout, sheet
 
 #: The long edge of a thumbnail here. Wider than the release sheet's, because
 #: that page is a contact grid of many small cards and this one is a single
@@ -76,7 +75,7 @@ def _cell(row: dict, floor: float, ruling: dict | None = None) -> dict:
         "score": score,
         "floor": float(floor),
         "below_by": float(floor) - score,
-        "picture": (run_module.run_dir(str(row.get("run"))) / str(picture)) if picture else None,
+        "picture": (run_layout.run_dir(str(row.get("run"))) / str(picture)) if picture else None,
         "ruling": ruling,
     }
 

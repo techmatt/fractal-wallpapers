@@ -187,14 +187,13 @@ def finished() -> list[dict]:
     on record, and what a bar would do to it today says nothing about what
     colours it holds.
     """
-    from fractal_wallpapers.curation import records
-    from fractal_wallpapers.curation import run as run_module
+    from fractal_wallpapers.curation import records, run_layout
 
     rows = []
     for row in records.read_decisions(records.RELEASE):
         if row.get("verdict") != records.RELEASED:
             continue
-        picture = run_module.run_dir(row["run"]) / str(row["picture"]).replace("\\", "/")
+        picture = run_layout.run_dir(row["run"]) / str(row["picture"]).replace("\\", "/")
         if not picture.is_file():
             raise ExpressedError(
                 f"{row['key']} reads `released` and its picture is not at {picture}. "

@@ -58,6 +58,7 @@ palette_coverage  how many maps can put a swatch on a real share of an image
 expressed  how much of the codebook the finished collection expresses
 manufacture  forcing the rare swatches onto good places, and the sheets that ask
 checks     the two claims only a re-render can settle
+run_layout where a run's regenerable files go, and at what size it draws them
 run        the wiring, and nothing else
 ```
 
@@ -5125,7 +5126,7 @@ mode count in `schedule` — three copies that were correct only while all three
 the originals were fixed.
 
 Everything **a run** makes at full size is **2560x1440 supersample 4** —
-`run.RELEASE_RESOLUTION` and `run.RELEASE_SUPERSAMPLE`, one geometry for every
+`run_layout.RELEASE_RESOLUTION` and `run_layout.RELEASE_SUPERSAMPLE`, one geometry for every
 partition, every mode and every head, so nothing about a release row's cost or
 its bytes depends on which slot it took.
 

@@ -95,7 +95,12 @@ from fractal_wallpapers.curation import (
 from fractal_wallpapers.curation import (
     budget as budget_module,
 )
-from fractal_wallpapers.paths import tracked_name, under
+from fractal_wallpapers.curation.run_layout import (
+    RELEASE_RESOLUTION,
+    RELEASE_SUPERSAMPLE,
+    run_dir,
+)
+from fractal_wallpapers.paths import tracked_name
 
 #: The share of a release's slots the strange judge fills, and the default the
 #: whole path reads. A policy about what a release looks like rather than a
@@ -124,10 +129,6 @@ STRANGE_SHARE = 0.6
 DEFAULT_N = 10
 DEFAULT_SEED = 0
 
-#: What a release picture is rendered at.
-RELEASE_RESOLUTION = (2560, 1440)
-RELEASE_SUPERSAMPLE = 4
-
 #: The schema of the sidecar that fixes a run's shape at its entry.
 PLAN_SCHEMA = 1
 
@@ -140,11 +141,6 @@ SHAPE = ("n", "seed", "strange_share", "modes", "attempts", "ledgers", "ephemera
 
 class RunRefused(RuntimeError):
     """A run cannot start or continue as asked, and guessing would cost records."""
-
-
-def run_dir(run: str) -> Path:
-    """Where a run's pictures and caches live. Ignored, and regenerable."""
-    return under("curation", "runs", str(run))
 
 
 def curate(
@@ -1086,8 +1082,6 @@ __all__ = [
     "DEFAULT_N",
     "DEFAULT_SEED",
     "PLAN_SCHEMA",
-    "RELEASE_RESOLUTION",
-    "RELEASE_SUPERSAMPLE",
     "release_verdict",
     "SHAPE",
     "STRANGE_SHARE",
@@ -1097,5 +1091,4 @@ __all__ = [
     "completed_rows",
     "curate",
     "head_stamps",
-    "run_dir",
 ]
