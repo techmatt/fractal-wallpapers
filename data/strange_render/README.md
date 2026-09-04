@@ -94,6 +94,25 @@ population never reads them and cannot spend its instrument on them. A future
 batch that re-rendered one of those three places for the smooth store would be
 trespassing, and `intake`'s pin check is what would catch it.
 
+**Thirteen more were found on 2026-09-03 and they are the first that leave.** They
+were never measured, not measured false: the register is keyed on the geometry, so the
+entry a candidate earns at 640x360 ss2 is not the one a 1280x720 ss2 label row looks
+up, and 23 of the 224 textured rows in here had no entry at all. `finished.append`
+extends the register at ingest now; these 23 predate it, and probing all of them at
+their own geometry returned **13 flat**, taking the resolved count from 107 to **120 of
+224**. Nine came in with `judge_band_20260903` and four with `phoenix_classic_20260903`,
+both training-side in both stores, and none of the thirteen stands at any pinned place.
+
+**And these thirteen also carry a revision row in `smooth_render`, which the 107 do
+not.** `finished.resolved` decides a row's kind by which store's directory it was read
+from and never asks the register, so appending an entry moves what
+`finished_train.population` trains on and moves nothing a reader of the store sees.
+Each of the thirteen therefore got a new row over there — the same verdict, the same
+render identity, its own batch, plus a `revision` block naming this store's file, line
+and recorded time. **The originals are untouched and this store's row count did not
+move.** The 107 stay on the older arrangement, so the two halves of one population are
+read two different ways; extending the revision to them is a decision and not a repair.
+
 **The newest batch buys the modes with the fewest keepers.** `under_seen_modes`,
 2026-08-27: 504 verdicts, 56 on each of nine modes, drawn as the render judge's own
 unfiltered top of each mode over the whole candidate ledger. All 504 route here —

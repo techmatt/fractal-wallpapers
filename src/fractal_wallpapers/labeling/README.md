@@ -370,6 +370,35 @@ row by `finished_train.population` over both stores, and a default that rendered
 miss would turn a corpus read into a render leg, silently, on a machine that may
 already be running one.
 
+**The 23 already in the store were probed on 2026-09-03 and 13 of them measured FLAT.**
+The forward fix repairs the next ingest and nothing already written, so the misses were
+measured at their own geometry through `coloring.texture_flat.extend_with` and the
+entries appended. That fixes one reader and not the other, and the split is the thing
+to know: `finished_train.population` asks `routes_to`, so the appended entries drop
+those rows out of the strange head's training population on their own — but
+**`finished.resolved` decides a row's kind by which store's directory it was read from**
+and never consults the register at all, so no measurement can re-attribute a row that is
+already on disk. Each flat row therefore got a **revision row** in the smooth store: the
+same verdict and the same render identity under its own batch — both batches were
+already registered in both stores with identical flags — carrying a `revision` block
+naming the strange original's file, line and recorded time. The originals stay exactly
+where they are, none was modified, deleted or re-keyed, and the strange store's row
+count did not move. None of the thirteen sits at a pinned place and
+`finished.assert_pin_holds` was asserted on both heads before and after.
+
+**120 of the 224 are flat and only 13 carry a revision.** The other **107** were
+measured before this and are the accepted older arrangement — excluded from the strange
+head's training by `population` and invisible to the smooth head — mostly
+`itinerary_promotion` (59) and `sparse_mode_head_top` (40). So the two halves of one
+population are now read two different ways, and extending the revision to the 107 is a
+decision rather than a repair.
+
+**Budget an ingest's probes by the partition and not by a constant.** The 23 cost
+**435.9 s** between them, not the ~40 s a flat 1.7 s a probe predicts: the `judge_band`
+rows ran 1.3-6.0 s each and the `phoenix:classic` rows ran **27-111 s**, because that
+plane's admitted places carry 12k-22k iterations. A sheet cut from a deep partition can
+put minutes of render inside what reads as a record write.
+
 **`--reuse-renders` misses every pool row, and it is not a near miss.** Candidates are
 rendered at 640x360 ss2 and a finished sheet serves 1280x720 ss2; the cache keys a picture
 by a digest of the whole engine spec, so the geometry alone makes it a different name.

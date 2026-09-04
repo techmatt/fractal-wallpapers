@@ -3578,6 +3578,13 @@ population: that leg's ranked arm spanned the whole rank range, so it and its un
 control covered one population and could not differ. A's fitted slope over ten bands
 is an odds ratio of **0.837 a band**, 0.626 clearing at band 0 to 0.252 at band 9.
 
+**The near band has no unconditioned control from this era, and the one of record is
+`mine_diverse_0903_d2`.** It is the leg a `--draw-cells` near-band arm is read against
+— same seed, same `--near-width` — but it was itself narrowed, by a hand-cut open-cell
+manifest of **416 maps**, so a comparison against it prices a sharp colour cut against a
+coarse one and never against base rate. The two share 28 of 163 places. Read a lift over
+it as a lift over another narrowing.
+
 **A pilot prices an arm's pooled rate and not its modes.** B's 40-place pilot read
 `smooth_angle_min` and `smooth_mean_angle` at 1 clearing candidate in 160 each — and
 over 1,725 each they returned 51 and 40. At a ~1% rate a 160-candidate sample expects
@@ -3617,6 +3624,17 @@ which is not an argument against width, because the discarded rows are the ones 
 wider draw beat, and the clear rate they measured survives in `sequence.jsonl`. It is
 an argument for knowing the number first: `--floor-width 4` is one over the keep and
 costs a quarter of an arm's pictures for nothing, where `3` is free.
+
+**The arithmetic holds only where the pairs are fresh, and on the near band they are
+not.** A near-band pass deepens (location, mode) pairs that are *already* at
+`RETAIN_PER_PAIR`, so every row it makes competes against three ranked incumbents
+rather than against its own siblings, and the loss is a fact about the incumbents
+instead of a function of `per_pair`. Measured 2026-09-03 on `draw_cells_smoke`: of the
+4,525 rows the leg and its pilot made, **440 survived the merge — 9.7%** — and the
+ledger went 194,037 -> 198,241 -> **194,114**, net +77 for ten minutes of leg. So a
+near-band leg is a poor instrument for moving a thin cell's *stock*, whatever its
+palettes are aimed at; what it moves is pool quality, because the prune drops the
+weakest and keeps the leg's best.
 
 ### A scratch driver that drives a render pool needs a `__main__` guard
 
@@ -4085,6 +4103,12 @@ population. Read them as **per engine**, which is what `--rate` is:
   eligibility filters on the roster, so a two-mode roster saw **25** places and the full
   six-mode field roster sees **798** — 32x, at the same width. Mining also *consumes* the
   pool: 798 fell to 645 in one leg as places were primed past the upper bar.
+* **The near band's 10.378 candidates a wall second is a FIRST pass over freshly opened
+  places, and it does not survive retention on a worked pool.** That leg met each
+  (location, mode) pair with room under `RETAIN_PER_PAIR`; a later pass over the same
+  pairs is competing with ranked incumbents and keeps about a tenth of what it renders
+  — see *Retention discard is arithmetic* above. Read the row as candidates bought, and
+  price rows **kept** off the leg's own merge.
 * **The near band cannot be aimed at a mode.** `plan_held_mode` holds the *incumbent's*
   mode, so the mix is whatever the primed places already are. One 35,306-candidate leg
   spent 26,954 of them on `smooth` and `exp_smoothing` and 480 on `curvature` and
@@ -4411,6 +4435,25 @@ does not. `mine1h`'s pilots measured wall/spent at 1.28 where the legs came in a
 unlike shapes concurrently: a k=40 pilot sharing the machine with a dump-heavy k=3
 pilot came out 42% dear, and a composite pilot including the cheap
 `direct_trap_lines` under-priced a leg that dropped it by 89%.
+
+**The clear rate is the other per-candidate rate, and the thin colour cells are where
+it was last read.** Over the **169,082 candidates on the ledger 2026-09-03** (21,299
+clearing, each against its own mode's `headroom.bars` rule, nothing re-scored), the
+five cells thinnest in a 2,000-seat solve:
+
+| cell | delivered | clearing | clear% | carriers | maps >= .10 |
+|---|--:|--:|--:|--:|--:|
+| `light_vivid_magenta` | 3,207 | 501 | **15.6** | 49 | 78 |
+| `dark_vivid_lime` | 2,506 | 158 | 6.3 | 24 | 41 |
+| `dark_vivid_yellow` | 2,050 | 186 | 9.1 | 26 | 87 |
+| `light_vivid_lime` | 3,034 | 130 | **4.3** | 62 | 86 |
+| `light_vivid_cyan` | 2,548 | 179 | 7.0 | 47 | 73 |
+
+against a **ledger-wide 12.6%**. Every one of them has 24+ carriers in the library and
+2,050+ rendered candidates on record, so the library can make those colours and the
+draw does make them — the ceiling is the **judge**, and `light_vivid_magenta` clears
+*above* base rate and is a seating loss rather than a supply one. `--draw-cells` moves
+`delivered` and cannot move `clear%`.
 
 **Rates in other units live elsewhere and never belong in this table.** A gallery
 release is priced per **row** (3.5 s/row on gallery4's 249 winners at 1280x720 ss2
