@@ -8,7 +8,8 @@ wallpapers and a durable account of why those and not the others.
 
 ```
 binding    which ledgers this curation reads, declared once and never guessed
-durability a file kept on two disks under a tracked manifest, and the run guard
+durability a file kept on two disks under a tracked manifest: save, check, restore
+durables   which files those are, and the three a run refuses to start without
 rescore    the accumulated pool, read again through the heads shipped now
 amend      re-reading a location whose standing score was read off a picture nobody has
 floors     every number that removes a picture, in one file
@@ -2562,7 +2563,7 @@ frame it already carries, which was already the majority case.
 **It is registered as a durable, and it is the guarded file whose loss is
 silent.** `curate frames save|check|restore`, a copy under
 `<archive>/curation_backup/frames.jsonl`, a tracked manifest at
-`data/curation/hunt_frames.manifest.json`, and a place in `durability.guarded()`
+`data/curation/hunt_frames.manifest.json`, and a place in `durables.guarded()`
 so `curate run` refuses without it. Recorded 2026-09-02: **28,090 rows,
 18,115,525 bytes**, sha `8c5341114dee`, **19,041 of them adopted** — all at margin
 2.0, spread over nine partitions and none of them `phoenix:classic`. The manifest
@@ -5751,7 +5752,8 @@ twice and counted before every run.** `artifacts/curation/supply_scores.jsonl` i
 the location head's read of the standing supply — 67,586 rows as of 2026-08-22 —
 and it is not regenerable from the checkout, because `curate score` rebuilds it
 from the walk ledgers and those are under the regenerable tree too.
-[`durability`](durability.py) owns what follows from that: a copy on the archive
+[`durability`](durability.py) owns the mechanism and [`durables`](durables.py) the
+list — the split is the note below. What follows is: a copy on the archive
 tier under its own top-level name (`artifacts/curation_backup/`, a *copy* rather
 than a `storage archive` move, which is why it cannot share the `curation` name
 the tiers arbitrate), a tracked manifest at
@@ -5785,6 +5787,21 @@ that date have one now: `score_amendments.jsonl` (`curate amendments`) and
 `artifacts/curation/hunt/frames.jsonl` (`curate frames`), and the guard at the top
 of `curate run` covers all three of the supply, the amendment and the frame
 index.
+
+**The mechanism and the list are two modules, and the split closed an import
+cycle.** [`durability`](durability.py) knows what a `Durable` is and how one is
+saved, checked and restored; it names no file. [`durables`](durables.py) holds the
+sidecar's own paths and `guarded()` — the three a run refuses to start without.
+The old shape had `guarded()` reaching from inside `durability` **up** into
+`amend` and `hunt`, two modules that import it, through imports written inside the
+function body. That is a floor module holding a list of its own callers, and it
+kept `durability` and `gallery_store` inside the largest import cycle in the tree:
+breaking it took the tree's biggest strongly-connected component from **49 modules
+to 47**. The zero-argument calls went with it — `durability.save()` meaning the
+sidecar was the same accident from the other end, a mechanism whose default
+argument was one caller's file — so `save`, `check`, `restore`, `read_manifest`
+and `write_manifest` all take their `Durable` now, and `durables.sidecar()` is
+spelled at the call site like every other one.
 
 **A run name is claimed once.** A `curate run` whose name already has a
 `run_plan.json` refuses: continuing an interrupted run is `--resume`, and it is a

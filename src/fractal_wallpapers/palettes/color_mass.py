@@ -709,7 +709,7 @@ def check_sweep_log(log=print) -> dict:
 
     `missing` is the **resting state** for this one, not an alarm: the log is
     archived on purpose and the hot copy is meant to be gone. Nothing guards on
-    it — `durability.guard` refuses over the supply sidecar and nothing else — so
+    it — `durables.guard` refuses over the supply sidecar and nothing else — so
     a checkout with no local copy is a checkout that has not needed one.
     """
     from fractal_wallpapers.curation import durability

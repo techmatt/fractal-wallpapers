@@ -255,7 +255,7 @@ def frames_backup_path() -> Path:
     """The durable copy of the index: the archive tier where there is one, hot where not.
 
     Off a root rather than through [`under`], for the reason
-    [`curation.durability.backup_path`] states: `under()` resolves to whichever
+    [`curation.durables.backup_path`] states: `under()` resolves to whichever
     tier the subtree is already on, which for a copy that has never been written
     is the hot one, beside the original it is supposed to survive.
     """

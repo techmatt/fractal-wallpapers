@@ -287,7 +287,7 @@ under `<archive>/curation_backup/palette_mass_sweep/`, a tracked manifest at
 It is insurance and nothing reads it: re-deriving it is 8.7 h over pictures that were
 censused and deleted, and it is the only thing that would let the map be re-cut on other
 terms — excluding the noisy modes, weighting the panel differently, rolling to families.
-`check` reporting `missing` is its **resting state**, not an alarm; `durability.guard`
+`check` reporting `missing` is its **resting state**, not an alarm; `durables.guard`
 refuses over the supply sidecar and nothing else.
 
 ## `dominance` — what colour a picture is, and `pixel_clouds` — whether two are one picture
