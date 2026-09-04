@@ -88,6 +88,7 @@ from dataclasses import field as dataclass_field
 from datetime import UTC, datetime
 from pathlib import Path
 
+from fractal_wallpapers.curation import augment as augment_module
 from fractal_wallpapers.curation import (
     candidate_ledger,
     ceiling,
@@ -242,6 +243,19 @@ SWAP_DROPS = 8
 #: a rule is the reason.
 PRECHECK_REMOVALS = 256
 
+#: **Whether the augmenting-chain stage runs, unasked. ON**, Matt's ruling of
+#: 2026-09-04 off the chains sheet.
+#:
+#: It is the only stage that can raise the seat count — a 1-swap conserves it, so
+#: tier 1 was frozen at the seed until this landed. On the pool of that day it
+#: took the gallery from **716 to 750 at n=750** and **911 to 1000 at n=1000**,
+#: both to exhaustion, and 1,621 to 1,930 at n=2000 on its budget.
+#:
+#: A record that does not name the flag ran WITH it, and is not comparable to one
+#: taken before this default existed. `--augment off` is the way back and is what
+#: the identity pin runs under. See [`curation.augment`].
+DEFAULT_AUGMENT = True
+
 #: How many improvement passes before the loop stops and says so. A backstop and
 #: not an operating parameter: the loop's own stopping rule is a pass that takes
 #: no swap, and every pass takes at least one swap or is the last.
@@ -293,6 +307,9 @@ LEGS = {
     "sort key, with every counted ceiling applied as it goes",
     "swap": "the 1-swap improvement loop: this seat replaced another one on a strict "
     "lexicographic improvement",
+    "augment": "the augmenting chain: one seat was ejected and TWO were inserted in its "
+    "room, which is how the seat count moves at all — a 1-swap conserves it. See "
+    "curation.augment",
 }
 
 
@@ -1459,6 +1476,9 @@ def solve(
     preselected: tuple | None = None,
     explain: set | frozenset | list | None = None,
     spiral_cap: float | None = DEFAULT_SPIRAL_CAP,
+    augment_chains: bool = DEFAULT_AUGMENT,
+    augment_depth: int = augment_module.DEFAULT_DEPTH,
+    augment_seconds: float | None = augment_module.DEFAULT_SECONDS,
     log=print,
 ) -> dict:
     """One gallery, chosen. The record is the return value; nothing is written.
@@ -1711,6 +1731,36 @@ def solve(
         else {"of": "not run: this pass was asked for the seed alone", "swaps": 0, "taken": []}
     )
 
+    # The augmenting chain, then the swap loop AGAIN. The order is the whole
+    # design: the chain is the only stage that can raise the seat count, and it
+    # buys seats by the strict tier order, which means it is free to give back
+    # shortfall, worst seat and sum to do it. A 1-swap cannot lose a seat and
+    # accepts only strict improvement, so running it over the augmented gallery
+    # can only recover part of that price — never spend more of it.
+    augmented = {"of": "not run: this pass was asked for no augmenting chains", "gained": 0}
+    reswapped = {"of": "not run: no augmenting chain was applied", "swaps": 0, "taken": []}
+    if augment_chains:
+        augmented = augment_module.run(
+            gallery,
+            viewed.rows,
+            depth=augment_depth,
+            seconds=augment_seconds,
+            log=log,
+        )
+        if swap and augmented.get("gained"):
+            reswapped = improve(
+                gallery,
+                viewed.rows,
+                drops=drops,
+                deadline=None if seconds is None else time.monotonic() + float(seconds),
+                log=log,
+            )
+            reswapped["of"] = (
+                "the 1-swap loop again, over the augmented gallery. It cannot lose a seat, "
+                "so what it reports is how much of the chain stage's price on tiers 2 to 4 "
+                "comes back"
+            )
+
     # The ledger is taken against the **finished** gallery and not against the
     # moving state the seed happened to test each row under, which is what the
     # sequential leg this replaced could only do. The four counted rules are
@@ -1760,13 +1810,21 @@ def solve(
             key,
             theme,
             spiral_cap,
+            augment_chains,
+            augment_depth,
+            augment_seconds,
         ),
         "objective": {
             "of": OBJECTIVE,
             "tiers": ["seats", "shortfall", "worst", "sum"],
             "rank_quantity": "rank_key" if order is not None else JUDGE_KEY,
             "seed": seeded.get("objective"),
+            "after_the_swap_loop": swapped.get("objective"),
+            "after_the_augment": augmented.get("objective_after"),
             "final": gallery.objective.record(),
+            "read_as": "seed -> swap loop -> augmenting chains -> swap loop again. Only the "
+            "chain stage can move tier 1, and it pays for seats in the three tiers beneath; "
+            "the second swap loop is what recovers part of that without losing a seat",
             "above_q4_bar": sum(1 for row in seated_rows if row["p_ge4"] >= Q4_BAR),
             "q4_bar": Q4_BAR,
             "q4_basis": Q4_BASIS,
@@ -1826,6 +1884,8 @@ def solve(
         "view": viewed.record(),
         "seed": seeded,
         "swaps": swapped,
+        "augment": augmented,
+        "swaps_after_the_augment": reswapped,
         "population": {
             "candidates": len(candidates),
             "clearing": len(cleared),
@@ -1924,6 +1984,9 @@ def _config(
     key: str,
     theme: str | None = None,
     spiral_cap: float | None = None,
+    augment_chains: bool = DEFAULT_AUGMENT,
+    augment_depth: int = augment_module.DEFAULT_DEPTH,
+    augment_seconds: float | None = augment_module.DEFAULT_SECONDS,
 ) -> dict:
     return {
         "n": n,
@@ -1936,13 +1999,27 @@ def _config(
         # produces too. `None` here means no cap ran.
         "spiral_cap": None if spiral_cap is None else float(spiral_cap),
         "spiral_cap_default": DEFAULT_SPIRAL_CAP,
+        # On `config` for the spiral cap's reason: this block is what
+        # [`tentative.manifest`] carries WHOLE into the tracked manifest, and the
+        # `augment` block beside it is not tracked at all. A gallery that cannot
+        # say whether the chain stage ran is a gallery whose seat count cannot be
+        # compared with any other.
+        "augment": bool(augment_chains),
+        "augment_default": DEFAULT_AUGMENT,
+        "augment_depth": int(augment_depth),
+        "augment_seconds": None if augment_seconds is None else float(augment_seconds),
+        "augment_is": "augmenting chains — one seat ejected and two inserted in its room. "
+        "THE ONLY STAGE THAT RAISES THE SEAT COUNT: a 1-swap conserves it. On since "
+        "2026-09-04, so a record that does not name the flag ran WITH it and is not "
+        "comparable to one taken before that",
         "theme": None if theme is None else str(theme),
-        "method": "a stratified view, a greedy seed, and 1-swap improvement to exhaustion. "
-        "ANYTIME: the gallery is valid from its first seat and nothing here claims "
-        "optimality. The exact solve it replaced is retired",
+        "method": "a stratified view, a greedy seed, 1-swap improvement to exhaustion, "
+        "augmenting chains, then the 1-swap loop again. ANYTIME at every stage: the gallery "
+        "is valid from its first seat and nothing here claims optimality. The exact solve "
+        "it replaced is retired",
         "objective": OBJECTIVE,
         "order": "the mandated demands from their own subpools, scarcest first; then the "
-        "general pool by the rank key; then swaps",
+        "general pool by the rank key; then swaps; then augmenting chains; then swaps again",
         "bars": {name: block["rule"] for name, block in sorted(table["modes"].items())},
         "bars_are": "the pool definition. curation.headroom.bars: P(>=4) for a mode with "
         "enough places above it, P(>=3) for one without"
@@ -2015,10 +2092,20 @@ def _seated(candidate, why: str, rank: float | None = None) -> dict:
 
 
 def leg_of(seated_for: str) -> str:
-    """Which of [`LEGS`] placed a seat, off the `seated_for` the leg stamped."""
+    """Which of [`LEGS`] placed a seat, off the `seated_for` the leg stamped.
+
+    **The fall-through is `mandate` and every named leg has to be listed above it.**
+    A mandate stamps its own demand's name (`mode_floor:<mode>`, `target:<cell>`),
+    so the tail cannot be enumerated and the default has to be the scarcity leg —
+    which means a leg added without a branch here is silently reported as one. The
+    augment stage placed 89 of 1000 seats the day it landed and every one of them
+    would have been attributed to scarcity; [`attribution`] is the mining list, so
+    that is a wrong instruction to whatever makes candidates next, not a cosmetic
+    slip.
+    """
     held = str(seated_for)
-    if held == "swap":
-        return "swap"
+    if held in ("swap", "augment"):
+        return held
     return "general_pool" if held == "general_pool" else "mandate"
 
 

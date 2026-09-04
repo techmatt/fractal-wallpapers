@@ -243,7 +243,7 @@ It needs `numpy` and `pillow`, which is the `solve` extra (`pip install -e
 head either — every score it reads is off the ledger's sidecar — so a machine that
 chooses a gallery needs neither the CUDA wheels nor a MIP.
 
-### The four steps
+### The six steps
 
 1. **The view** (`curation.view`). The pool above its per-mode bars and past the
    neutral pre-selection, thinned to what one pass may reach. **Two layers, and
@@ -271,10 +271,61 @@ chooses a gallery needs neither the CUDA wheels nor a MIP.
    demands from their own subpools scarcest first, then the ranked walk.
 4. **1-swap improvement.** One seat out, one candidate in, accepted only on strict
    lexicographic improvement, until a full pass finds none. No 2-swaps.
+5. **Augmenting chains** (`curation.augment`), `--augment on` unasked. One seat
+   out and **two** in — the only stage that can move tier 1, because a 1-swap
+   conserves the seat count and every unfilled seat was therefore the seed's.
+6. **1-swap improvement again**, over the augmented gallery. It cannot lose a
+   seat, so what it recovers is part of what step 5 spent.
 
-**It is anytime.** The gallery is valid from its first seat, so a clock, a `Ctrl-C`
-or a pass cap leaves an answer rather than nothing. That is the whole reason it
-replaced a method that had no answer at all until it had a proof.
+**It is anytime at every step.** The gallery is valid from its first seat, so a
+clock, a `Ctrl-C` or a pass cap leaves an answer rather than nothing. That is the
+whole reason it replaced a method that had no answer at all until it had a proof.
+
+### The augmenting chain — the stage that raises the seat count
+
+A **level-preserving** move is exactly a 1-swap; the **terminal** move is a free
+insert. So a chain of depth `k` is `(k-1)` swaps then one insert, and it is worth
+**+1 seat**. Depth 2 is eject one and insert two; depth 3 is one more eject/insert
+pair. `--augment-depth` takes 2 (default) or 3.
+
+**What it reclaims is the colour the greedy overspends.** `READ_solve_bound` priced
+the greedy at 1.96 cells a seat against an integer program's 1.80; the chains eject
+3- and 4-cell seats and insert 1- and 2-cell rows. At n=750 every one of the 34
+ejections was a 3- or 4-cell seat and 67 of the 68 entering rows were one-cell, for
+a net colour footprint of −51.
+
+**It is accepted by tier 1 alone, and it pays in the three tiers beneath.** A +1
+chain wins the seat count strictly, so nothing below can refuse it — that is the
+tier order working as ruled, not a hole in it. On the pool of 2026-09-04, before →
+after the whole leg: at **n=750** 716 → 750 with the worst seat and the shortfall
+both untouched; at **n=1000** 911 → 1000 with the worst seat 0.188159 → 0.093308
+and the shortfall 0 → 3; at **n=2000** 1,621 → 1,930 with 0 → 13. The entering rows
+sit around a 0.31 median rank key against 0.50 for the seats they displace — two
+weaker wallpapers for one better one. Step 6 exists to buy back what it can.
+
+**The seat count is carried by the stage and not by `rules.State`.** `refuses`
+answers "may this sit beside the seated" and `n` is not one of its rules: the seed
+carries `gallery.full` itself and the swap loop never needs to. This is the first
+caller that *raises* the count. Unguarded at a rung where the pool fills, it took
+94 chains and reported **194 seats of 100**, every one legal under every rule
+`rules.py` holds. `augment.FULL` is spelled apart from `rules.RULES` because `n` is
+the leg's budget and never a fact about the wallpaper.
+
+**The diversity rule is asked once per candidate, not once per trial.**
+`Twins.within` answers against the seated set as it stands, and ejecting only ever
+removes rows from that answer — so `c` is admitted after ejecting `E` exactly when
+`near[c] ⊆ E`. That turns the one expensive rule into set arithmetic. The asking is
+**lazy**: only the rows every counted rule already admits are asked up front,
+because the inversion is built from them (1,645 of 11,407 insertable at n=1000);
+the rest are asked the first time a chain reaches one.
+
+**`--augment-seconds` is a budget on the stage alone** and it stops at a chain
+boundary, never inside one. The default is 300 s, which is a measurement: the
+search exhausts in 1.0 s at n=750 and 5.8 s at n=1000, so it never binds at the
+shipping rungs, while n=2000 ran 574 s without exhausting and there it binds and is
+meant to. **The readout says which happened** — `exhaustive` on the depth block is
+the difference between *no chain of depth ≤ 2 exists* and *none was found in the
+time given*, and the blockage block is only interpretable beside it.
 
 ### The objective, and why nothing guards a met demand
 

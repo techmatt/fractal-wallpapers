@@ -25,6 +25,7 @@ import pytest
 from tests.test_headroom import candidate
 
 from fractal_wallpapers.curation import (
+    augment,
     candidate_ledger,
     ceiling,
     distinct,
@@ -606,7 +607,16 @@ def test_a_seat_the_scarcity_leg_placed_is_attributed_to_the_mode_floor_and_not_
     assert placed["thin_weak"] == ("mandate", "mode_floor:stripe")
     assert solve.leg_of("general_pool") == "general_pool"
     assert solve.leg_of("swap") == "swap"
-    assert set(record["attribution"]["legs"]) == {"mandate", "general_pool", "swap"}
+    # `augment` has to be here and not in the fall-through: a mandate stamps its
+    # own demand's name, so `leg_of` cannot enumerate that tail and defaults to
+    # it — which means any named leg without a branch is reported as scarcity.
+    assert solve.leg_of("augment") == "augment"
+    assert set(record["attribution"]["legs"]) == {
+        "mandate",
+        "general_pool",
+        "swap",
+        "augment",
+    }
 
 
 def test_the_bottom_quartile_is_a_quarter_of_the_SEATS_and_names_its_legs():
@@ -1557,7 +1567,12 @@ def test_a_seating_refuses_a_candidate_whose_picture_vanishes_mid_pass(monkeypat
     assert [seat["key"] for seat in record["seated"]] == ["a"]
     assert record["rejection"]["reasons"]["picture_unreadable"] == 1
     assert "twin" not in record["rejection"]["reasons"]  # it was never called one
-    assert record["diversity"]["refused_without_a_picture_on_disk"] == 1
+    # TWICE, and the counter is the whole pass's rather than the seed's: the
+    # augmenting stage offers the same row again — every counted rule admits it,
+    # so it is in `augment.Index.free_now` — and fails closed on it again. What
+    # matters is that both stages refuse it rather than admit it untested.
+    assert record["diversity"]["refused_without_a_picture_on_disk"] == 2
+    assert record["augment"]["diversity_rule"]["unreadable"] == 1
 
 
 def test_a_seat_with_no_picture_is_not_held_and_cannot_refuse_anything():
@@ -2272,3 +2287,164 @@ def test_a_pass_asked_to_explain_nothing_records_no_explanation_block():
     record = solve.solve(deep_and_shallow(), n=2, floor=1, key=solve.JUDGE_KEY, log=quiet)
     assert "explained" not in record["rejection"]
     assert record["rejection"]["reasons"], "the aggregate is always there"
+
+
+# --------------------------------------------------------------------------- #
+# The augmenting chain.
+# --------------------------------------------------------------------------- #
+def augmentable():
+    """A pool where the greedy overspends colour and a chain can buy the seat back.
+
+    Two cells, each with an allowance of one at this `n`. The best row carries
+    BOTH, so the greedy seats it and both cells are spent on one seat; two
+    one-cell rows are then refused for a colour the gallery is not using well.
+    Ejecting the greedy pick and inserting both of them is +1 seat, and it is the
+    whole mechanism the stage exists for — the same one that reclaimed 51 cells of
+    colour at n=750 on the real pool.
+    """
+    return [
+        candidate("greedy", score=0.99, location="one", cells=("red", "blue")),
+        candidate("cheap_red", score=0.90, location="two", cells=("red",)),
+        candidate("cheap_blue", score=0.89, location="three", cells=("blue",)),
+    ]
+
+
+#: The spelling `augmentable` is solved under: a target on each cell so the two
+#: allowances are the binding rule, and no pre-selection so the pool is the pool.
+AUGMENTABLE = dict(n=3, radius=None, key=solve.JUDGE_KEY)
+
+
+def test_the_augmenting_chain_buys_a_seat_the_swap_loop_provably_cannot():
+    """Tier 1 is frozen under a 1-swap, and this is the stage that unfreezes it.
+
+    The same pool, the same rules, the same objective — the only difference is
+    whether the chain stage runs. A 1-swap conserves the seat count by
+    construction, so the `off` arm cannot reach the seat the `on` arm takes
+    however long it is left running.
+    """
+    without = solve.solve(augmentable(), augment_chains=False, log=quiet, **AUGMENTABLE)
+    with_chains = solve.solve(augmentable(), augment_chains=True, log=quiet, **AUGMENTABLE)
+    assert with_chains["filled"] > without["filled"]
+    assert with_chains["augment"]["gained"] == with_chains["filled"] - without["filled"]
+    chain = with_chains["augment"]["chains"][0]
+    assert (len(chain["out"]), len(chain["in"]), chain["depth"]) == (1, 2, 2)
+    # The mechanism, pinned: one colour-expensive seat out, two cheap ones in.
+    assert chain["out"][0]["footprint"] > max(row["footprint"] for row in chain["in"])
+
+
+def test_the_chain_stage_never_seats_above_n():
+    """PLANTED: `rules.State` carries no seat count and this stage raises one.
+
+    `refuses` answers "may this sit beside the seated" and `n` is not one of its
+    rules — the seed carries `gallery.full` itself and the swap loop never needs
+    to, because a 1-swap conserves the count. Unguarded, this stage took 94 chains
+    on a gallery that was already full and reported **194 seats of 100**, every one
+    legal under every rule `rules.py` holds. So the ceiling is asserted on a pool
+    that FILLS, where each of those chains is one the rules would otherwise allow.
+    """
+    pool = [candidate(f"c{at:02d}", score=0.9 - at / 100) for at in range(40)]
+    for size in (1, 2, 5):
+        record = solve.solve(
+            pool, n=size, radius=None, key=solve.JUDGE_KEY, augment_chains=True, log=quiet
+        )
+        assert record["filled"] == size, "this pool fills the rung"
+        assert len(record["seated"]) == size
+        assert record["augment"]["gained"] == 0, "a full gallery has no seat to buy"
+        assert record["augment"]["counts"]["accepted"] == 0
+
+
+def test_a_seat_the_chain_placed_is_attributed_to_the_chain_and_not_to_scarcity():
+    """`leg_of` falls through to `mandate` because a mandate stamps its own
+    demand's name, so a named leg WITHOUT a branch is reported as the scarcity
+    leg — and `attribution` is the mining list, so that is a wrong instruction to
+    whatever makes candidates next rather than a cosmetic slip."""
+    record = solve.solve(augmentable(), log=quiet, **AUGMENTABLE)
+    placed = {row["key"]: (row["leg"], row["seated_for"]) for row in record["seated"]}
+    entered = {row["key"] for chain in record["augment"]["chains"] for row in chain["in"]}
+    assert entered, "this pool augments"
+    for key in entered:
+        assert placed[key] == ("augment", "augment")
+
+
+def test_the_augment_flags_are_on_the_config_block_a_manifest_carries():
+    """`tentative.manifest` carries `config` WHOLE and the `augment` block is not
+    tracked at all, so a tracked gallery that cannot say whether the chain stage
+    ran is a gallery whose seat count compares to nothing."""
+    record = solve.solve([candidate("a")], n=20, key=solve.JUDGE_KEY, log=quiet)
+    config = record["config"]
+    assert config["augment"] is True
+    assert config["augment_default"] is solve.DEFAULT_AUGMENT is True
+    assert config["augment_depth"] == augment.DEFAULT_DEPTH
+    assert config["augment_seconds"] == augment.DEFAULT_SECONDS
+    off = solve.solve([candidate("a")], n=20, key=solve.JUDGE_KEY, augment_chains=False, log=quiet)
+    assert off["config"]["augment"] is False
+
+
+def test_the_incumbent_spelling_is_bit_identical_with_the_chain_stage_off():
+    """The identity pin, and it GAINS `--augment off` rather than being replaced.
+
+    Everything the 2026-08-28 and 2026-09-04 rulings changed stays reachable by
+    flag, and this is the spelling that reaches all of it: the identity cap, the
+    judge's own key, no spiral cap, and now no augmenting chains.
+    """
+    pool = [candidate(f"c{at:02d}", score=0.9 - at / 100) for at in range(30)]
+    spelling = dict(
+        n=12, group_cap=ceiling.IDENTITY, key=solve.JUDGE_KEY, spiral_cap=None, radius=None
+    )
+    incumbent = solve.solve(pool, augment_chains=False, log=quiet, **spelling)
+    again = solve.solve(pool, augment_chains=False, log=quiet, **spelling)
+    assert [row["key"] for row in incumbent["seated"]] == [row["key"] for row in again["seated"]]
+    assert incumbent["objective"]["final"] == again["objective"]["final"]
+    assert incumbent["augment"]["gained"] == 0
+    assert incumbent["config"]["augment"] is False
+    assert incumbent["config"]["spiral_cap"] is None
+    assert incumbent["config"]["ceiling"]["group_cap_rule"] == ceiling.IDENTITY
+
+
+def test_the_augmented_pass_is_bit_identical_run_twice():
+    """The second identity pin, on the stage that ships ON.
+
+    The chain search walks stores it mutates as it goes — the twin answers, the
+    inversion those are filed into, and a seat work-list that goes stale as it is
+    walked. "Same pool, same seats in the same order, same chains" is the property
+    a bookkeeping slip in any of the three breaks, and the objective alone would
+    not catch it: a pass that took different chains to the same tiers is a
+    different pass.
+    """
+    one = solve.solve(augmentable(), log=quiet, **AUGMENTABLE)
+    two = solve.solve(augmentable(), log=quiet, **AUGMENTABLE)
+    assert [row["key"] for row in one["seated"]] == [row["key"] for row in two["seated"]]
+    assert one["objective"]["final"] == two["objective"]["final"]
+    assert one["augment"]["counts"] == two["augment"]["counts"]
+    shape = [
+        (chain["depth"], [row["key"] for row in chain["in"]], [row["key"] for row in chain["out"]])
+        for chain in one["augment"]["chains"]
+    ]
+    assert shape == [
+        (chain["depth"], [row["key"] for row in chain["in"]], [row["key"] for row in chain["out"]])
+        for chain in two["augment"]["chains"]
+    ]
+
+
+def test_the_swap_loop_runs_again_after_the_chains_and_cannot_lose_a_seat():
+    """The stage order is the design: chains buy seats by giving back tiers 2 to 4,
+    and the second swap loop is the only thing that buys any of it back. A 1-swap
+    conserves the seat count, so it can never spend more of the price."""
+    record = solve.solve(augmentable(), log=quiet, **AUGMENTABLE)
+    after_chains = record["objective"]["after_the_augment"]
+    final = record["objective"]["final"]
+    assert after_chains is not None
+    assert final["seats"] == after_chains["seats"], "a 1-swap conserves the seat count"
+    assert final["shortfall"] <= after_chains["shortfall"]
+    assert "swaps_after_the_augment" in record
+
+
+def test_a_pass_asked_for_no_chains_says_so_on_the_record():
+    """A block that is absent and a block that says it did not run are different
+    records, and only one of them is readable a month later."""
+    record = solve.solve(
+        [candidate("a")], n=20, key=solve.JUDGE_KEY, augment_chains=False, log=quiet
+    )
+    assert record["augment"]["gained"] == 0
+    assert "not run" in record["augment"]["of"]
+    assert "not run" in record["swaps_after_the_augment"]["of"]

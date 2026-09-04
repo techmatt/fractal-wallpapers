@@ -570,6 +570,9 @@ def _record_a_solve(args: argparse.Namespace) -> int:
             swap=not args.no_swap,
             seconds=args.swap_seconds,
             spiral_cap=args.spiral_cap,
+            augment_chains=args.augment == "on",
+            augment_depth=args.augment_depth,
+            augment_seconds=args.augment_seconds,
         )
     except solve.SolveRefused as refusal:
         print(refusal)
@@ -671,6 +674,9 @@ def curate_solve(args: argparse.Namespace) -> int:
             spiral_cap=args.spiral_cap,
             swap=not args.no_swap,
             seconds=args.swap_seconds,
+            augment_chains=args.augment == "on",
+            augment_depth=args.augment_depth,
+            augment_seconds=args.augment_seconds,
             explain=explain,
         )
     except solve.SolveRefused as refusal:
@@ -1793,6 +1799,7 @@ def solve_flags_a_record_keeps(*, demands, search):
     carries twenty-six flags — and `record` at six does not, so a record hands
     the same parser twice.
     """
+    from fractal_wallpapers.curation import augment as augment_module
     from fractal_wallpapers.curation import solve as solve_module
 
     demands.add_argument(
@@ -1836,6 +1843,40 @@ def solve_flags_a_record_keeps(*, demands, search):
         help="a wall budget for the SWAP LOOP alone. The seed always runs to completion, "
         "so what this stops is improvement rather than the answer, and the gallery it "
         "stops on is valid. Unset is until a full pass finds no improving swap",
+    )
+    search.add_argument(
+        "--augment",
+        choices=("on", "off"),
+        default="on" if solve_module.DEFAULT_AUGMENT else "off",
+        help="the augmenting-chain stage: eject one seat, insert TWO in its room. THE ONLY "
+        "STAGE THAT RAISES THE SEAT COUNT — a 1-swap conserves it, so tier 1 was frozen at "
+        "the greedy seed until this landed. ON unasked (Matt's ruling, 2026-09-04), so a "
+        "record that does not name this ran WITH it and is not comparable to one taken "
+        "before. It fills the gallery at n=750 and n=1000 on the pool of that day, and it "
+        "PAYS for the seats in the three tiers beneath — the swap loop runs again after it "
+        "to buy back what it can. `off` is the incumbent leg",
+    )
+    search.add_argument(
+        "--augment-depth",
+        type=int,
+        choices=(2, 3),
+        default=augment_module.DEFAULT_DEPTH,
+        help="how long a chain may be: 2 is one ejection and two inserts, 3 is one more "
+        f"eject/insert pair. Unasked, {augment_module.DEFAULT_DEPTH}, and that is a "
+        "measurement — at n=2000 depth 3 bought 15 seats against depth 2's 294 and spent a "
+        "whole second budget doing it, and at the smaller rungs the gallery was already "
+        "full before depth 3 was asked anything",
+    )
+    search.add_argument(
+        "--augment-seconds",
+        type=float,
+        default=augment_module.DEFAULT_SECONDS,
+        metavar="SECONDS",
+        help="a wall budget for the AUGMENT STAGE alone. The stage is anytime and stops at "
+        "a chain boundary, never inside one, so the gallery it stops on is valid. Unasked, "
+        f"{augment_module.DEFAULT_SECONDS:g}s: the search exhausts in 1.0s at n=750 and "
+        "5.8s at n=1000, so it never binds at the shipping rungs, and n=2000 ran 574s "
+        "without exhausting, so there it binds and is meant to",
     )
 
 
