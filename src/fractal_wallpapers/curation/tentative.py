@@ -43,7 +43,12 @@ file is refused under `file://`.
 
 `schema` (int, [`SCHEMA`]); `seat` (int, the seat's place in the solve's own walk);
 `key` (text, the ledger recipe key — **the ID**); `alias` (text); `mode` and
-`partition` (text, off the seat); `cell` and `hue_family` (text, the *leading*
+`partition` (text, off the seat); `mode_params` (dict, the seat's own colouring
+settings off `recipe.mode_params`, so a `direct_trap_multiply` at `opacity=0.6` and
+a bare one are two rows here — `{}` is a bare seat, and it is also what a record
+written before this field existed means, so an absent one needs no rewrite;
+[`colorize.spelled`] turns the pair into the one string a roster names it by, and
+[`colorize.roster_entry`] reads that back); `cell` and `hue_family` (text, the *leading*
 dominant colour cell and hue family, which is what a person means by "the green
 one"); `cells` and `families` (lists, every name the picture is dominant in,
 because dominance is thresholded and one picture carries more than one);
@@ -227,6 +232,13 @@ def rows_of(record: dict, centered: frozenset | None = None) -> list[dict]:
                 "key": key,
                 "alias": named[key],
                 "mode": held.get("mode"),
+                # The seat's own settings, so `direct_trap_multiply@opacity=0.6`
+                # and the bare mode are two rows here rather than one. FORWARD
+                # ONLY: a record written before this carries no such field, and
+                # `{}` is what a reader takes an absent one to mean — which is
+                # also what a bare seat writes, so the two are the same row and
+                # nothing tracked has to be rewritten to say so.
+                "mode_params": dict(held.get("mode_params") or {}),
                 "partition": held.get("partition"),
                 "cell": cells[0] if cells else None,
                 "hue_family": families[0] if families else None,

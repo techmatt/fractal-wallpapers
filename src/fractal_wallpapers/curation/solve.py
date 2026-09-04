@@ -84,6 +84,7 @@ import json
 import math
 import time
 from dataclasses import dataclass
+from dataclasses import field as dataclass_field
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -292,6 +293,17 @@ class Candidate:
     #: `P(spiral)`, or `None` where the place has no score. For the record and the
     #: tentative gallery's columns; a rule reads [`spiral`].
     p_spiral: float | None = None
+    #: The mode's own settings, off `recipe.mode_params` on the ledger row —
+    #: [`hunt.Try.mode_params`]'s member, same name and same meaning. Carried so a
+    #: recorded gallery row can spell the seat's `(mode, settings)` pair; **no rule
+    #: reads it**, and the objective cannot see it.
+    #:
+    #: It is off the recipe while [`mode`] is the ROUTED mode, so the two are not
+    #: guaranteed to be a pair the roster ever named — see the routed-mode section
+    #: of `curation/GALLERY.md`. That is the right way round: the settings are a
+    #: fact about how the picture was made, and routing is a fact about what it
+    #: counts as.
+    mode_params: dict = dataclass_field(default_factory=dict)
 
     @property
     def above_bar(self) -> bool:
@@ -370,6 +382,10 @@ def pool(
                 "location": str((row.get("location") or {}).get("key")),
                 "partition": str(row.get("partition")),
                 "mode": mode,
+                # Off the recipe and NOT off the routed mode above: these are the
+                # settings the picture was rendered under, whatever the row now
+                # counts as.
+                "mode_params": dict(recipe.get("mode_params") or {}),
                 "group": str(recipe.get("palette_group")),
                 "cells": tuple(colour.get("cells") or ()),
                 "families": tuple(colour.get("families") or ()),
@@ -429,6 +445,7 @@ def pool(
                 location=held["location"],
                 partition=held["partition"],
                 mode=held["mode"],
+                mode_params=held["mode_params"],
                 group=held["group"],
                 kind=str(reading.get("head")),
                 cells=held["cells"],
@@ -1868,6 +1885,7 @@ def _seated(candidate, why: str, rank: float | None = None) -> dict:
         "location": candidate.location,
         "partition": candidate.partition,
         "mode": candidate.mode,
+        "mode_params": dict(candidate.mode_params),
         "kind": candidate.kind,
         "palette_group": candidate.group,
         "cells": list(candidate.cells),
