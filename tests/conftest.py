@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import functools
 import hashlib
+import re
 import subprocess
 from types import SimpleNamespace
 
@@ -78,15 +79,53 @@ def pytest_collection_modifyitems(config, items) -> None:
     config.stash[HELD_BACK] = len(held)
 
 
+#: Every module that skipped WHOLE at collection, `{nodeid: the import it wanted}`.
+#:
+#: A module-level `pytest.importorskip` does not skip its tests — it stops the
+#: module being collected at all, so its tests are absent from the collected total
+#: rather than counted and skipped. Eight modules gate on `torch` that way and five
+#: more on `PIL`, all of them extras `pip install -e .[dev]` does not buy, and the
+#: whole block leaves a single "skipped" apiece behind it.
+#:
+#: **That is how a lane reading gets written down that nothing can reproduce.** The
+#: 3,383 in `tests/README.md`'s log was this: an interpreter with no `torch`, 65
+#: fast tests and 5 slow ones short of the same tree on a full install, and nothing
+#: on screen said so. Same argument as the deselect line below — a guard that goes
+#: quiet is a guard nobody notices going missing.
+SKIPPED_WHOLE: dict[str, str] = {}
+
+#: What `importorskip` says when the module is not there, as pytest spells it.
+WANTED = re.compile(r"could not import [\x27\"]([^\x27\"]+)[\x27\"]")
+
+
+def pytest_collectreport(report) -> None:
+    """Remember a module that skipped before it could be collected."""
+    if report.outcome != "skipped" or not report.nodeid.endswith(".py"):
+        return
+    reason = str(report.longrepr[2] if isinstance(report.longrepr, tuple) else report.longrepr)
+    found = WANTED.search(reason)
+    SKIPPED_WHOLE[report.nodeid] = found.group(1) if found else reason
+
+
 def pytest_terminal_summary(terminalreporter, exitstatus, config) -> None:
     held = config.stash.get(HELD_BACK, 0)
-    if not held:
+    if held:
+        tests = "test" if held == 1 else "tests"
+        terminalreporter.write_sep(
+            "=",
+            f"{held} slow {tests} not run - `python -m pytest --slow` runs everything",
+            yellow=True,
+            bold=True,
+        )
+    if not SKIPPED_WHOLE:
         return
-    tests = "test" if held == 1 else "tests"
+    modules = "module" if len(SKIPPED_WHOLE) == 1 else "modules"
+    missing = ", ".join(sorted(set(SKIPPED_WHOLE.values())))
     terminalreporter.write_sep(
         "=",
-        f"{held} slow {tests} not run - `python -m pytest --slow` runs everything",
-        yellow=True,
+        f"{len(SKIPPED_WHOLE)} test {modules} NOT COLLECTED - no {missing}. The count "
+        f"above is short and is not comparable to a `.[dev,models]` install",
+        red=True,
         bold=True,
     )
 
