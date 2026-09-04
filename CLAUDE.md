@@ -24,6 +24,16 @@ transfer; rename on the way in.
 `<head>.<sheet>.json`, not the name of a drop that exists — otherwise a grep for a
 live name answers out of a comment about a different one, confidently and wrongly.
 
+**A citation names a heading and a file, never a line number.** Write
+`curation/GALLERY.md`'s *What a pass costs is one store*, not `§1487` or
+`GALLERY.md:1487`. A line number is not an anchor: it is correct until the next edit
+to the file above it and then it is silently wrong, pointing at a real line that says
+something else — which is worse than dangling, because nothing looks broken. Two
+sites carried `§3709` into `curation/README.md`; by the time the split found them the
+number had drifted to a different paragraph and neither citation had ever been
+reported as stale. A heading survives every edit that does not rename it, and a
+rename is a `git grep` away from being repointed.
+
 **The rule stands and no test here enforces it**: the guard is the website's,
 `builder/vocabulary.py` in the `fractal-website` checkout, swept by its
 `builder/checks.py`.
