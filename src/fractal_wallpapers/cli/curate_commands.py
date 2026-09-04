@@ -1,4 +1,32 @@
-"""`curate`: the candidate pool, the solver, and everything read over them."""
+"""`curate`: the candidate pool, the solver, and everything read over them.
+
+## Why this is one file of 3,800 lines and not three
+
+Asked again once `curation/`'s README had been split into a taxonomy this could
+have borrowed — the stores (`README.md`), the gallery (`GALLERY.md`), the legs that
+drive the render pool (`LEGS.md`) — and the answer is still no, for a mechanical
+reason rather than a taste one.
+
+**Registration order is `--help`.** `argparse` prints the 41 verbs in the order
+they are added, in the usage line and again in the body, so moving one to sit
+beside its kin changes the surface. A three-way cut therefore has to be contiguous
+in registration order already, and it is not: `LEGS.md`'s verbs are `hunt`,
+`mine`, `depth`, `shrinkage` (26-29), then `pool-draw` (32), then `manufacture`
+(40). Nine store verbs sit inside those gaps — `retention` and `reject` between
+`shrinkage` and `pool-draw`, and `below-bar`, `repeats`, `retire-repeats`,
+`parity`, `replay`, `colors`, `coverage` between `pool-draw` and `manufacture`.
+`README.md`'s own verbs are 1-18 and would split into three runs for the same
+reason.
+
+Only `GALLERY.md`'s block is clean (`solve`, `growth`, `headroom`, `flatness`,
+`rank-key`, `distinct`, 19-25, with `signatures` at 23 the one genuinely arguable
+verb — it is a durable sidecar by kind and a gallery instrument by use).
+
+So the cut costs a reordered `--help` or an `add_commands` that interleaves three
+modules' registrations to fake the old order, and neither is worth a smaller file.
+`modes_commands.py` is the precedent going the other way: it is 30 lines and its
+own module *because* it sits alone between two groups. A decision, not a fix.
+"""
 
 from __future__ import annotations
 
