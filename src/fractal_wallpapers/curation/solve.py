@@ -1030,9 +1030,12 @@ def mandates(rows, demands: list, rank) -> list:
     infeasibility. Where the mode floors ask for most of the gallery — as the flat
     one-per-mode did at `n = 20`, eighteen of twenty seats over eleven modes that
     can field a handful of places between them — a walk down the ranked list
-    spends its first seats on `smooth` and `exp_smoothing`, which have thousands
-    of candidates each, and then reports that fifteen modes could not be seated.
-    Every one of them could have been.
+    spent its first seats on `smooth` and `exp_smoothing`, the two modes the pool
+    then held thousands of candidates in, and then reported that fifteen modes
+    could not be seated. Every one of them could have been. (`exp_smoothing` is
+    weight 0 since 2026-09-04 and has no row in the pool at all now; the shape of
+    the pathology is the point and it does not depend on which two modes are the
+    plentiful ones.)
 
     So the demands are seated from their **own subpools first, scarcest first**,
     and only what is left over is drawn from the general pool by rank. The order

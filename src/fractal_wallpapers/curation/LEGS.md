@@ -615,12 +615,14 @@ measured*, [`MEASUREMENTS.md`](MEASUREMENTS.md). The estimate was
 21% low. What no depth run reports is still what a composite *clears*: these three
 legs are unmerged, and their clear rates are the pilot's own.)
 
-**That roster is five modes now, and it was six.** `smooth`, `tia`, `stripe`,
-`exp_smoothing`, `curvature`. Two of the seven production field modes —
-`trap_circle` and `gaussian_int` — are `mode_policy` weight 0, and they were two of
+**That roster is four modes now, and it was six.** `smooth`, `tia`, `stripe`,
+`curvature`. Three of the seven production field modes — `trap_circle`,
+`gaussian_int` and, since 2026-09-04, `exp_smoothing` — are `mode_policy` weight 0,
+and the first two were two of
 the cheapest things a depth run could render. (This paragraph said *four* and named
 `curvature` as a third weight-0 mode until 2026-09-01; `curvature` moved 0 → 1 on
-2026-08-29 and `mode_policy`'s own docstring carries the ruling.) A depth leg is
+2026-08-29 and `mode_policy`'s own docstring carries the ruling. It said *five* and
+listed `exp_smoothing` until 2026-09-04.) A depth leg is
 still a narrower instrument than the one the curves were measured on; size one off
 a fresh rate rather than off `dc1`'s.
 
@@ -699,7 +701,7 @@ which is the whole bottom of the score ordering. A reject autopsy taken afterwar
 an autopsy of the survivors and cannot be anything else.
 
 **The `mode_floor` arm escapes the roster, by design.** `deficient_modes` iterates
-`mine._accepted_modes()` — all fourteen — and `plan_floor` never intersects its
+`mine._accepted_modes()` — all thirteen — and `plan_floor` never intersects its
 modes with `roster`; `test_the_floor_draw_holds_the_place_and_moves_the_mode` pins
 that with `threads` and `itinerary`. What bounds it instead is `--floor-seats`,
 and at its default of 10 the census returns **`{}` on today's ledger**: every
@@ -997,7 +999,7 @@ holds for prices.** "Do not put a composite on a roster beside field modes" is a
 *pricing*: `plan_cycled_modes` cycles uniformly, so the dear modes take an equal
 count and most of the seconds, and one `--rate` is then a mean over per-candidate
 costs that differ by an order of magnitude. A leg that wants **breadth at a place**
-— see it eleven ways rather than three of fourteen — accepts exactly that, and pays
+— see it nine ways rather than three of thirteen — accepts exactly that, and pays
 for it two ways: the mean rate is measured on the same mixture by the leg's own
 pilot, and the arm gets its **own leg with its own wall budget** rather than a share
 of a shared plan. That is the general answer to *a share of counts is not a share of

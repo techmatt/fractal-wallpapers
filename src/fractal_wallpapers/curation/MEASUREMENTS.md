@@ -92,6 +92,13 @@ per win on those two modes, so the four places are about 201 render-seconds, ~67
 of wall clock over the three-worker pool. The estimator is the unconditioned
 ledger-wide rate and an aimed leg beats it.
 
+**Both of those two are asked for 32 rather than 30 since 2026-09-04.** Dropping
+`exp_smoothing` took the strange roster to 12 over a total weight of 19, and both
+modes are among the three that take a spare seat from the largest remainder. Read
+against the same holdings the shortfall on those two roughly doubles, and the
+instruction is the same one, only larger. The table above is the 2026-08-31 census
+and has not been re-taken.
+
 `palette_group_cap` used to be short beside it there and **was not really short at
 all** — see the note under *The group cap was a second spelling* in
 [`GALLERY.md`](GALLERY.md).
@@ -160,12 +167,22 @@ cell with.
   keeps paying for, so the seat-side name says `SEAT`. The knob is the floor's
   denominator and nothing else: no rule asks a finished gallery whether it realized
   the share.
-* Over the **13 accepted strange modes** — `accepted()` less `smooth`, read from
-  `colorize.modes_for(budget.STRANGE)` — `2·promoted + 1·normal` sums to 20 and
+* Over the **12 accepted strange modes** — `accepted()` less `smooth`, read from
+  `colorize.modes_for(budget.STRANGE)` — `2·promoted + 1·normal` sums to 19 and
   distributes the strange budget fully. Each mode's floor is **half** its share, so
   the floors sum to exactly half the budget and the other half is the gallery's to
   spend on whatever is strongest. At `n = 1000`: budget 600, floors summing to 300,
-  30 a promoted mode and 15 a normal one.
+  **16 a normal mode and 31 or 32 a promoted one**.
+* **The floors stopped being one integer a weight class on 2026-09-04**, and that
+  is the largest-remainder rule working rather than failing. It was 13 modes over
+  a total weight of 20, and 300 divides by 20; `exp_smoothing` went to weight 0 and
+  left 12 modes over 19, which does not divide, so the three modes with the
+  largest fractional remainders — `smooth_mean_angle`, `smooth_angle_min`,
+  `itinerary`, ties broken by weight then name — take a spare seat each and read 32
+  against the other four promoted modes' 31. The sum is still exactly 300. **A
+  reader comparing a mode's floor across two galleries has to read the record's own
+  `mode_floors` block** rather than reconstructing it from a weight, which was
+  possible while the division was clean and is not any more.
 * The halves are fractional, so they are integerized by **largest remainder**, ties
   by weight then by name. That is deliberately *not* `supply.apportion`'s rule,
   which is largest-*deficit* sequencing and whose subject is every prefix of a batch
@@ -243,25 +260,35 @@ own wall budget and its own pilot, 88,022 candidates in 40,825 s of render wall
 | C | 5 field, width 40 | never-opened, non-centered | 45,675 | 1,146 | 0.585 → 0.618 | 23.0% (20) |
 | D | 5 field, aimed at 6 thin cells | never-opened, top half | 13,340 | 544 | 0.567 → 0.575 | 6.3% (5) |
 
-**Arm A's roster is now declared and it is ten, not eleven.** It ran out of a
+**Arm A's roster is now declared and it is nine, not eleven.** It ran out of a
 scratch driver, and this table was the only record of what it drew — a roster
 nothing tracks is a roster every ruling about it has to be remembered rather than
 read. `depth.centered_modes()` is it: `dear_modes()` plus `CENTERED_FIELD`
-(`smooth`, `exp_smoothing`), less `CENTERED_EXCLUDED`. Before, the eleven above:
+(`smooth`, `exp_smoothing`), less `CENTERED_EXCLUDED`, and less whatever
+`mode_policy` weights 0 — which since 2026-09-04 is `exp_smoothing` itself, so the
+cheap half of this arm is `smooth` alone. Before, the eleven above:
 `smooth_mean_angle`, `smooth_angle_min`, `smooth_stripe`, `smooth_curvature`,
 `direct_trap_screen`, `direct_trap_multiply`, `direct_trap_lines`, `threads`,
-`itinerary`, `smooth`, `exp_smoothing`. After, those ten less
+`itinerary`, `smooth`, `exp_smoothing`. After, those eleven less
 **`direct_trap_lines`** — Matt's ruling of 2026-09-02, off the eye-check sheet
 `8ce5def` reports: every `direct_trap_lines` seat in the newest n=2000 baseline
 read against every centered candidate clearing the mode's own bar, and the verdict
-is that it is not a centered mode.
+is that it is not a centered mode — and less `exp_smoothing`, which is a standing
+rather than a roster ruling and is applied by asking the weight.
 
-**That is one arm's draw and nothing else.** The mode is still `mode_policy`
-weight 1, still on `dear_modes()`, still drawn by every other leg, and its seat
-floor is unmoved; every row, picture and label already taken in it stands. A
-roster says where an arm spends and a weight says what a mode is worth, and
-`tests/test_depth.py` pins the two apart so the next roster ruling does not read
-as a demotion.
+**That is one arm's draw and nothing else — for `direct_trap_lines`.** That mode is
+still `mode_policy` weight 1, still on `dear_modes()`, still drawn by every other
+leg, and its seat floor is unmoved; every row, picture and label already taken in
+it stands. A roster says where an arm spends and a weight says what a mode is
+worth, and `tests/test_depth.py` pins the two apart so the next roster ruling does
+not read as a demotion.
+
+**`exp_smoothing` is the other kind of departure, and it is why the two are pinned
+apart.** It leaves this arm because it leaves *every* arm: weight 0 is a standing,
+not a roster ruling, and `centered_modes()` applies it by asking
+`mine._accepted_modes()` rather than by editing `CENTERED_FIELD`. Until 2026-09-04
+it did not ask, and this was the one roster in the tree where a weight-0 mode
+would have gone on being drawn after every other draw had dropped it.
 
 **It closed every mode floor at n=2000**: the census went from `mode_floors` short by
 56 to `nothing provably short`. `smooth_mean_angle` 35 → 78 seats, `smooth_angle_min`
