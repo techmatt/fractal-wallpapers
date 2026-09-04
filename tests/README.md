@@ -247,6 +247,15 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+The **fast** lane read **120.29 s over 3,538, 116 deselected** at the solve
+speedups, idle, 2026-09-04 — six tests more than the reading below it and 1.12 s
+under it. The six are the identity pins on the three changes, and the reading is
+worth having precisely because it does **not** move: all three speedups are in a
+pass over the real candidate pool, and the fast lane never builds one. A lane that
+had got faster here would have meant a guard stopped running, not that the solve
+got quicker. The wall clock those changes did move is in
+`curation/GALLERY.md`'s *Three prunes in the swap loop, and all three are sound*.
+
 The **slow** lane read **6:54 (414.76 s) over 3,648, nothing skipped** at the
 `exp_smoothing` drop, idle, 2026-09-04 — seventy-four tests more than the reading
 below and seven hundredths of a second over it, which is the closest two readings of

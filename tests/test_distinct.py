@@ -40,6 +40,88 @@ def store(keys):
 
 
 # --------------------------------------------------------------------------- #
+# The pre-selection walk.
+# --------------------------------------------------------------------------- #
+def legacy_suppress(order, radius, rows):
+    """The walk as it was spelled before the contiguous block: a fancy index per row.
+
+    Kept here and nowhere else, because the claim the change rests on is that two
+    BLAS calls over the same float32 values return the same bytes. That is a claim
+    about a kernel, and a kernel picks by shape and stride — so it is checked
+    against the retired spelling rather than asserted in a comment.
+    """
+    radius = float(radius)
+    order = [str(key) for key in order]
+    keys, matrix = distinct.matrix_for(order, rows)
+    at = {key: index for index, key in enumerate(keys)}
+    held_rows: list = []
+    kept: set = set()
+    refused: list = []
+    unembedded: list = []
+    for key in order:
+        index = at.get(key)
+        if index is None:
+            unembedded.append(key)
+            kept.add(key)
+            continue
+        if held_rows:
+            gaps = 1.0 - (matrix[held_rows] @ matrix[index])
+            nearest_at = int(numpy.argmin(gaps))
+            if float(gaps[nearest_at]) < radius:
+                refused.append(
+                    {
+                        "location": key,
+                        "lost_to": keys[held_rows[nearest_at]],
+                        "distance": round(float(gaps[nearest_at]), 6),
+                    }
+                )
+                continue
+        held_rows.append(index)
+        kept.add(key)
+    return {"kept": kept, "refused": refused, "unembedded": unembedded, "asked": order}
+
+
+def embedded(matrix):
+    """A neutral-embedding store carrying one descriptor per place, in key order."""
+    from fractal_wallpapers.curation import embeddings
+
+    return [{"key": f"p{at:04d}", "vector": embeddings.pack(row)} for at, row in enumerate(matrix)]
+
+
+@pytest.mark.parametrize("radius", [0.002, 0.02, 0.2])
+def test_the_contiguous_block_walks_exactly_the_walk_the_fancy_index_walked(radius):
+    """The whole of the pre-selection change: same kept set, same refusals, same
+    distances to the recorded digit, same place named as having taken each one."""
+    rng = numpy.random.default_rng(7)
+    raw = rng.standard_normal((320, 384)).astype(numpy.float32)
+    matrix = raw / numpy.linalg.norm(raw, axis=1, keepdims=True)
+    # A third of the places are near-duplicates of an earlier one, so the walk has
+    # refusals to make rather than keeping everything it is offered.
+    for at in range(0, 320, 3):
+        matrix[at] = matrix[max(0, at - 1)] + 0.01 * matrix[at]
+        matrix[at] /= numpy.linalg.norm(matrix[at])
+    rows = embedded(matrix)
+    order = [row["key"] for row in rows]
+
+    mine = distinct.suppress(order, radius=radius, rows=rows)
+    theirs = legacy_suppress(order, radius, rows)
+    assert mine["kept"] == theirs["kept"]
+    assert mine["refused"] == theirs["refused"]
+    assert mine["unembedded"] == theirs["unembedded"]
+    assert 0 < len(mine["refused"]) < len(order), "the walk has to actually refuse things"
+
+
+def test_a_place_with_no_descriptor_is_kept_and_never_enters_the_block():
+    """The block is sized by the descriptors and walked by the offer order, so a
+    place the store has never seen must not consume a row of it."""
+    rows = embedded(ring(3, spread=2.0))
+    order = [*(row["key"] for row in rows), "no_descriptor"]
+    answer = distinct.suppress(order, radius=0.02, rows=rows)
+    assert answer["unembedded"] == ["no_descriptor"]
+    assert "no_descriptor" in answer["kept"]
+
+
+# --------------------------------------------------------------------------- #
 # The join, reported first.
 # --------------------------------------------------------------------------- #
 def test_the_join_counts_what_the_store_cannot_see():

@@ -388,7 +388,7 @@ population, 4,496 places after the neutral pre-selection: the sidecar answers **
 75 s and the sidecar's edge there is far smaller than it was. That sweep used to build
 every one of them and throw them away.
 
-### Two prunes in the swap loop, and both are sound
+### Three prunes in the swap loop, and all three are sound
 
 **The first is on the walk.** A pass goes down the view in rank order and stops at
 the worst seated value. Nothing below it can be in an improving swap: a 1-swap does
@@ -435,6 +435,37 @@ candidate — the weakest by the leg's own key inside the set whose departure wo
 admit it. It is about which removals are offered and never about which are
 accepted.
 
+**The third is the same set SCORED, and it is exact rather than a bound.** What
+survives `hopeless` is a candidate with *some* releasable seat worth less than
+itself, which is necessary for an improving swap and nowhere near sufficient —
+tier 2 sits above the two tiers that comparison is about, and a removal's effect on
+the shortfall has nothing to do with its value. So every counted removal is put
+through `Gallery.after_swap`, the same arithmetic the loop below uses, and a
+candidate that no counted removal improves is settled without a picture. Sound in
+one line: `narrowed` returns a **subset** of the counted set, so if nothing in the
+counted set beats the objective, nothing in the narrowed set does either.
+
+**The eight-weakest shortcut looks equivalent and is not.** Scoring only
+`weakest(counted, SWAP_DROPS)` was the first spelling and it is unsound: a removal
+that takes a met demand short loses tier 2 whatever it is worth, so the eight
+weakest can all lose there while a ninth wins on tier 4 — and the narrowing can
+drop those eight out of `leaving`, putting the ninth inside the offered set. The
+whole counted set is scanned for that reason, and `solve.PRECHECK_REMOVALS` (256)
+bounds the **cost** and never the argument: a candidate the four counted rules all
+admit has an empty requirement list, which intersects to every seated key, so those
+— the ones the diversity rule alone refuses — are left to the old path rather than
+scored a seat at a time against the single picture the scan is trying to save.
+`test_the_eight_weakest_removals_are_not_enough_to_settle_a_candidate` is the pin on
+why, and `test_the_scored_prune_takes_the_same_swaps_in_the_same_order` on the
+identity.
+
+**Measured on the pool of 2026-09-04**, one item at a time on an idle box, at the
+same seats and the same swap sequence at both rungs: the swap loop goes **170.39 s
+to 36.33 s at n=2000** (4.7x) and **14.06 s to 6.38 s at n=1000** (2.2x), settling
+5,706 and 1,749 candidates by scoring. Signatures made fall **10,105 to 2,844** and
+**1,256 to 884**. The whole pass, pool read and pre-selection aside, goes 230.83 s
+to 96.17 s and 34.11 s to 26.31 s.
+
 ### What a pass costs is one store
 
 `rules.Twins.reduced_of` keeps **one reduced signature per candidate for the life
@@ -450,6 +481,17 @@ than that cache cannot afford: measured before this store existed, **24,969
 signatures for an 8,704-row view — 2.9 decodes a row** — and a pass cost the same
 whether it took forty-seven swaps or none.
 
+**And the path a signature is made from is resolved once per key, not once per
+decode.** `rules.clouds_for.path_of` is asked every time a signature is made, and
+both halves of it are dear: `paths.rehome` resolves the tier settings and the
+subtree, and `is_file` is a stat against a tree holding hundreds of thousands of
+files. Measured under `cProfile` on the n=2000 pass of
+`READ_solve_bound_and_profile_0904`, it was **41.1 s of a 411 s call** — a tenth of
+the leg re-deriving a path the pool had already proved present. A dictionary for
+the life of the pass closes it, and it is worth **14 s of 216 s at n=2000** on its
+own and nothing measurable at n=1000. It is worth **less** beside the scored prune
+than in front of it, because the prune is what stopped the decodes happening.
+
 **The bounded cache under it is `rules.SIGNATURE_CACHE` and it is 2048, which is
 256 MiB a solve process.** It was 256 — 32 MiB — until `PROFILE_solve_large_n`
 measured what that cost. A swap pass re-tests about 870 of the same rows on every
@@ -460,6 +502,35 @@ charge against the **one pool-holding process per box** rule in the root
 `CLAUDE.md` — the pool itself is the hundreds of megabytes that rule is about, and
 this now sits beside it in the same process. Two solves at once was already
 forbidden; this is one more reason.
+
+**2048 was too small at n=2000 and the scored prune fixed it instead.** Simulated
+2026-09-04 by replaying one n=2000 pass's own `Clouds.of` / `hold` / `let_go`
+sequence — a replay, checked against the pass it came from before it was believed,
+and a `hold` promotes a name **out** of the LRU while a `let_go` hands it back, so
+a simulation of the bounded store alone would price a cache that does not exist:
+
+| entries | MiB | decodes before the scored prune | after it |
+|---|---|---|---|
+| **2,048 (shipped)** | **256** | **10,105** | **2,844** |
+| 4,096 | 512 | 4,341 | 2,844 |
+| 8,192 | 1,024 | 4,341 | 2,844 |
+| 16,384 | 2,048 | 4,341 | 2,844 |
+
+Before the prune the pass touched 4,423 distinct pictures and decoded 10,105 of
+them, so **5,764 of those decodes were the cache thrashing** and 4,096 entries
+would have bought about 95 s for another 256 MiB. After it the pass touches 2,844,
+of which 1,660 are seats promoted out of the LRU, and the 1,184 left fit inside
+2,048 with room — every decode is a picture the pass had never read, and the curve
+is **flat at every size**. So the prune did not merely make the cache question
+cheaper to answer, it removed it: raising `SIGNATURE_CACHE` now buys exactly
+nothing, and the constant stays at 2048 on that evidence rather than by default.
+
+**A miss rate quoted as `made / (made + hits)` cannot answer this question**, and
+`READ_solve_bound_and_profile_0904` read one that way and called the cache
+undersized on it. That ratio counts a picture's *first* read as a miss, so it can
+never fall below the compulsory rate — 15.3% here — and it is 15.4% after the
+prune, when nothing is being evicted at all. What separates a cache that is too
+small from one that has simply not seen the picture is the replay above.
 
 Two smaller changes landed with it and neither is a knob. `Twins.hold` no longer
 decodes a seat's full cloud when it sits down — the bound settles 99.77% of a
@@ -1638,6 +1709,31 @@ when the store was last built. Measured 2026-08-27 over the 1,427 clearing place
 425 near pairs touch 250 of them (17.5%), and the greedy refuses **139 places, 9.7%**
 — the suppression keeps one of each cluster, so the share refused is not the share
 touched. In rows that is 600 of 5,924.
+
+**The walk is quadratic in places, and it was the pool that grew rather than the
+code that slowed.** `READ_solve_bound_and_profile_0904` read the pre-selection at
+22.52 s against about 12 s a fortnight earlier and could not say which it was. The
+walk asks each offered place for its distance to every place already kept, and the
+retired spelling gathered those kept rows with a fancy index — which **copies**: at
+8,740 places over 384 columns that is tens of gigabytes of memcpy in a pass.
+Measured 2026-09-04 on one pool, the same walk truncated to a share of its places:
+
+| places offered | fancy index | contiguous block |
+|---|---|---|
+| 2,185 | 1.64 s | 0.86 s |
+| 4,370 | 5.28 s | 1.05 s |
+| 6,555 | 11.44 s | 1.30 s |
+| **8,740** | **20.22 s** | **1.61 s** |
+
+Four times the places is **12.3x** the time on the old spelling — an exponent of
+1.81 — and **1.9x** on the new one, which is sub-linear because what is left is the
+store read. So there was no regression to find: `places_asked` went 6,982 on
+2026-09-02 to 9,314 on 2026-09-04, and 1.334 squared is 1.78. Writing the kept
+descriptors into one preallocated block and reading a contiguous prefix of it takes
+the shipped pool's walk from **21.02 s to 1.69 s** with the same kept set, the same
+refusals and the same distances. `tests/test_distinct.py` pins the two spellings
+against each other at three radii, because "the same values" is a claim about a BLAS
+kernel and not something to assume.
 
 The premise the whole decoupling rests on is that far in the neutral descriptor
 implies far in the coloured pixels, and it is **measured** rather than assumed: this

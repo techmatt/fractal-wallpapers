@@ -1801,6 +1801,70 @@ def test_the_prune_does_not_change_the_answer():
     assert fast == slow.objective.record()
 
 
+def test_the_scored_prune_takes_the_same_swaps_in_the_same_order():
+    """The third prune decides whether a picture is OPENED and never what is seated.
+
+    So the two settings have to agree on the whole sequence and not merely on the
+    objective the exhaustive walk pins below: a prune that reordered the swaps
+    would land on the same tiers by luck and be a different loop.
+    """
+    clouds = Signatures({f"c{at:02d}": at / 40 for at in range(16)} | {"weak": 0.99})
+    rows = [candidate(f"c{at:02d}", score=0.9 - at / 100) for at in range(16)]
+    rows += [candidate("weak", score=0.05)]
+    ordered = sorted(rows, key=solve.ranking(None))
+
+    taken = {}
+    for name, bound in (("scored", solve.PRECHECK_REMOVALS), ("shipped", 0)):
+        state = rules.State(ceiling.Rule(), 5, diversity=rules.Twins(clouds))
+        state.rule.group_cap = 100
+        gallery = solve.Gallery(state, None, [])
+        by_key = {row.key: row for row in rows}
+        for key in ("weak", "c07", "c08", "c09", "c10"):
+            gallery.seat(by_key[key], "general_pool")
+        held = solve.PRECHECK_REMOVALS
+        solve.PRECHECK_REMOVALS = bound
+        try:
+            taken[name] = solve.improve(gallery, ordered, log=quiet)
+        finally:
+            solve.PRECHECK_REMOVALS = held
+        taken[name + "_seats"] = list(gallery.state.seated)
+
+    assert taken["scored"]["taken"] == taken["shipped"]["taken"]
+    assert taken["scored"]["objective"] == taken["shipped"]["objective"]
+    assert taken["scored_seats"] == taken["shipped_seats"]
+
+
+def test_the_eight_weakest_removals_are_not_enough_to_settle_a_candidate():
+    """Why the prune scans the WHOLE counted set and not `weakest(counted, drops)`.
+
+    Tier 2 sits above the two tiers a value comparison is about, and a removal's
+    effect on the shortfall has nothing to do with what it is worth. Here every
+    seat weaker than the arriving row holds a mode floor on its own, so each of
+    them loses tier 2 — and the one removal that improves the gallery is worth
+    MORE than all of them. A prune that scored only the weakest few would refuse a
+    swap the loop takes.
+    """
+    floors = {f"m{at:02d}": 1 for at in range(8)}
+    rows = [candidate(f"held{at}", score=0.10 + at / 100, mode=f"m{at:02d}") for at in range(8)]
+    rows.append(candidate("spare", score=0.50))
+    arriving = candidate("arriving", score=0.60)
+    gallery = seated_by_hand(
+        rows + [arriving], n=9, keep=[*(f"held{at}" for at in range(8)), "spare"], floors=floors
+    )
+    counted = gallery.state.counted_removals(arriving)
+    assert len(counted) == 9, "nothing counted refuses it, so every seat could leave"
+
+    # The eight weakest all hold a floor of their own: taking one out is a tier-2
+    # loss, and the tiers below cannot pay for it.
+    current = gallery.objective
+    weakest = gallery.weakest(counted, solve.SWAP_DROPS)
+    assert weakest == [f"held{at}" for at in range(8)]
+    assert not any(gallery.after_swap(out, arriving).beats(current) for out in weakest)
+    # The ninth is worth more than all of them and is the swap the loop takes.
+    assert gallery.after_swap("spare", arriving).beats(current)
+    assert any(gallery.after_swap(out, arriving).beats(current) for out in counted)
+
+
 def test_weakest_offers_every_seat_because_refusing_one_is_the_objectives_job():
     """What a swap may give back is decided by `after_swap`, not by hiding a seat
     from it. This asked a `protected` set per candidate while the worst seat
