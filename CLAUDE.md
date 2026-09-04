@@ -190,6 +190,23 @@ fifteen more tests than the reading below and **1.4% under** it. The thirteen ne
 guards cost 1.4 s between them: they decide two defaults off ledgers that are two
 rows each in `tmp_path`, and neither reads a store. Nothing grew this session.
 
+It read **165.85 s over 3,437** at the spiral share cap, idle, 2026-09-04 — 0.6%
+over the reading below across **23 more tests**, which is thirty-one new guards over a
+new location store, a new solve rule and the seconds-share conversion costing this lane
+nothing.
+
+**Its first reading that session was 300.7 s and the extra 135 s was a defect, not the
+box.** That run also failed `test_training_resume.py` on a CUDA OOM with six other
+processes holding the GPU, which made "measure it on an idle machine" the obvious
+diagnosis and the wrong one. The cost was `hunt.recorded_prices` walking the leg
+records and parsing a `sequence.jsonl` per band — 0.65 s a band, 3.35 s for the five
+`depth.DRAWS`, and `depth.plan` asks for all five, so every guard that plans a leg paid
+it. Caching it took the lane back to flat. So the paragraphs below about suspecting the
+disk, the stores and the load are right and they are **not** the first thing to reach
+for: a lane that moves right after code landed is the code until measured otherwise,
+and the cheap check is to re-run one slow file with a profile rather than to re-run the
+whole lane hoping for a quieter box.
+
 It read **164.85 s over 3,414** at the `render_cv` delete, idle, 2026-09-04 — 0.2%
 under the reading below across **six fewer** tests, which is `test_render_cv.py`'s six
 fast guards going with the harness. Worth having only for what it says about the two

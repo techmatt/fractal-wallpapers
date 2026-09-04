@@ -282,13 +282,25 @@ class Candidate:
     score: float
     p_ge3: float
     picture: str
+    #: Whether the spiral probe calls this candidate's **place** a spiral, joined
+    #: at pool construction off [`curation.spiral_scores`]. `False` covers both
+    #: "the probe says no" and "nobody has scored it", which is deliberate and is
+    #: only safe because the cap is the sole reader: an unscored location counts
+    #: toward nothing, and no rule anywhere may read this as `not_spiral`. The
+    #: probability itself is on [`p_spiral`] for the record and never for a rule.
+    spiral: bool = False
+    #: `P(spiral)`, or `None` where the place has no score. For the record and the
+    #: tentative gallery's columns; a rule reads [`spiral`].
+    p_spiral: float | None = None
 
     @property
     def above_bar(self) -> bool:
         return self.score >= Q4_BAR
 
 
-def pool(rows=None, scores=None, artifact=None, log=print) -> tuple[list[Candidate], dict]:
+def pool(
+    rows=None, scores=None, artifact=None, spirals=None, log=print
+) -> tuple[list[Candidate], dict]:
     """`(candidates, what was refused)` — everything this leg may seat.
 
     Five exclusions, each a fact about the candidate rather than a quality bar. A
@@ -369,6 +381,39 @@ def pool(rows=None, scores=None, artifact=None, log=print) -> tuple[list[Candida
             "`fractal-wallpapers curate candidate-ledger backfill` first."
         )
     present = candidate_ledger.present_pictures(projected)
+    # The spiral verdict is a fact about a PLACE, so it is joined here, once, off
+    # the location-keyed store — the shape `tentative`'s `centered` column already
+    # uses, and for the same reason: nothing under the candidate ledger carries it,
+    # and a rule that asked per candidate would ask the same question thirty-two
+    # times a location. A missing store is no cap and not an error: `spiral` is
+    # then False everywhere and `spiral_scores` is what the operator runs.
+    from fractal_wallpapers.curation import spiral_scores
+
+    # A PARAMETER and not an unconditional read, for `tests/README.md`'s rule: a
+    # store reached from inside production code is a store a test's isolation
+    # fixture cannot redirect, and every guard that builds a three-row pool in
+    # `tmp_path` would sweep this machine's real one instead. That is the
+    # `candidate_ledger.prune` -> `intake.read_scores` failure, and it cost 4.5-10 s
+    # a test before somebody found it. 0.184 s over 40,734 rows today, and it grows
+    # with the store.
+    # Unsaid, the store is read — but only when this call is reading the LEDGER
+    # too. A caller that handed in its own `rows` is building its own pool, and a
+    # pool of synthetic locations has no rows in the real store to find; reading it
+    # would be 0.184 s of nothing, once per guard, growing with the store.
+    if spirals is not None:
+        scored = dict(spirals)
+    elif rows is None:
+        scored = spiral_scores.by_key()
+    else:
+        scored = {}
+    line = spiral_scores.cut_at()
+    if scored:
+        log(f"[solve] {len(scored):,} location(s) carry a spiral score; the cut is {line:g}")
+    else:
+        log(
+            "[solve] no spiral score store: every location reads as UNKNOWN and the share "
+            "cap can refuse nothing. `fractal-wallpapers curate spiral-scores build`"
+        )
     out: list[Candidate] = []
     for held in projected:
         if held["key"] not in present:
@@ -391,6 +436,8 @@ def pool(rows=None, scores=None, artifact=None, log=print) -> tuple[list[Candida
                 score=float(reading["p_ge4"]),
                 p_ge3=float(reading.get("p_ge3") or 0.0),
                 picture=held["picture"],
+                spiral=scored.get(held["location"], -1.0) >= line,
+                p_spiral=scored.get(held["location"]),
             )
         )
     out.sort(key=lambda candidate: (-candidate.score, candidate.key))
@@ -654,10 +701,17 @@ class Demand:
     share: float | None = None
 
     def wanted(self, filled: int) -> int:
-        """How many seats this demand asks for, given how many got filled."""
+        """How many seats this demand asks for, given how many got filled.
+
+        Through [`ceiling.share_of`] and not a second `math.ceil` here, so that a
+        colour target and the spiral share cap cannot drift apart about what "a
+        share of the realized seats" means. They point opposite ways — a target is
+        a floor under the quantity and a cap is a ceiling over it — which is
+        exactly why they have to be the same quantity.
+        """
         if self.seats is not None:
             return int(self.seats)
-        return int(math.ceil(float(self.share) * max(0, int(filled))))
+        return ceiling.share_of(float(self.share), filled)
 
     def taken(self, state) -> set:
         """Which seated keys count towards this demand. The axis store, by name."""
@@ -1304,6 +1358,7 @@ def solve(
     seconds: float | None = None,
     preselected: tuple | None = None,
     explain: set | frozenset | list | None = None,
+    spiral_cap: float | None = None,
     log=print,
 ) -> dict:
     """One gallery, chosen. The record is the return value; nothing is written.
@@ -1525,7 +1580,14 @@ def solve(
                 "signature(s) from the sidecar"
             )
         twins = rules.Twins(rules.clouds_for(viewed.rows), reduced=held_signatures)
-    state = rules.State(rule, n, diversity=twins)
+    state = rules.State(rule, n, diversity=twins, spiral_cap=spiral_cap)
+    if spiral_cap is not None:
+        held_spirals = sum(1 for candidate in viewed.rows if candidate.spiral)
+        log(
+            f"[solve] the spiral share cap is {spiral_cap:g}: at most "
+            f"ceil({spiral_cap:g} x seats filled) of the seats may be spiral locations, "
+            f"off {len(viewed.rows):,} view row(s) of which {held_spirals:,} are"
+        )
     demands = demands_for(held_floors, rule.targets)
     gallery = Gallery(state, order, demands)
 
@@ -1661,6 +1723,7 @@ def solve(
         "attribution": placement,
         "shortfalls": _shortfalls(gallery, rule, modes, n, held_floors, cleared, refused),
         "rules": state.record(),
+        "spiral": _spiral_block(gallery, cleared, kept, viewed.rows, spiral_cap),
         "diversity": None if twins is None else twins.record(),
         "diversity_refusals": dict(sorted(state.refused_for.items())),
         "expand": expand(viewed, gallery, refused),
@@ -1681,6 +1744,53 @@ def solve(
         f"{'of ' + str(flat) if flat is not None else 'set per mode'}"
     )
     return record
+
+
+def _spiral_block(gallery, cleared, kept, viewed, cap: float | None) -> dict:
+    """The share the cap acts on, at every stage of the funnel it narrows.
+
+    Four populations and not one, because the interesting number is a *comparison*:
+    the pool's spiral share is the supply rate, the gallery's is what the rules
+    left, and the gap between them is what the diversity rule was already doing
+    before any cap existed. A block reporting the seated share alone would make a
+    cap look like it had done work the pre-selection had already done.
+
+    `unknown` is counted apart at every stage rather than folded into `not_spiral`,
+    because a share whose denominator quietly includes unscored places is a share
+    that drifts as the store fills.
+    """
+    from fractal_wallpapers.curation import spiral_scores
+    from fractal_wallpapers.models import spiral_probe
+
+    def counted(rows) -> dict:
+        rows = list(rows)
+        known = [row for row in rows if row.p_spiral is not None]
+        spiral = [row for row in known if row.spiral]
+        return {
+            "rows": len(rows),
+            "scored": len(known),
+            "unknown": len(rows) - len(known),
+            "spiral": len(spiral),
+            # Over the SCORED rows, which is the only denominator that means
+            # anything: an unscored place is not a place the probe called flat.
+            "share_of_scored": round(len(spiral) / len(known), 4) if known else None,
+        }
+
+    seated = gallery.state.candidates()
+    return {
+        "cap": cap,
+        "cut": spiral_scores.cut_at(),
+        "cut_from": tracked_name(spiral_probe.manifest_path()),
+        "allowance": gallery.state.spiral_allowance(),
+        "clearing_pool": counted(cleared),
+        "after_the_preselection": counted(kept),
+        "in_the_view": counted(viewed),
+        "seated": counted(seated),
+        "read": "a cap acts on the SEATED share; the other three are what it acted on. The "
+        "gap between `clearing_pool` and `seated` under no cap at all is the diversity rule "
+        "and the colour allowance already suppressing spirals below their supply rate, and "
+        "it is the number a cap has to be argued against — not the pool's own share",
+    }
 
 
 def _config(
@@ -1765,6 +1875,12 @@ def _seated(candidate, why: str, rank: float | None = None) -> dict:
         "p_ge4": round(candidate.score, 6),
         "p_ge3": round(candidate.p_ge3, 6),
         "above_bar": candidate.above_bar,
+        # The place's spiral verdict and the probability behind it. `None` is a
+        # place nobody has scored, and it is written as `None` rather than as
+        # `false` so a reader of the record can tell the two apart — which is the
+        # whole asymmetry the cap depends on.
+        "spiral": candidate.spiral,
+        "p_spiral": None if candidate.p_spiral is None else round(candidate.p_spiral, 6),
         "picture": candidate.picture,
     }
 

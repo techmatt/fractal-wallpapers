@@ -83,11 +83,18 @@ from fractal_wallpapers.curation import ceiling
 #: admitted. A rule that reads pixels must fail closed — admitting means the
 #: diversity rule silently stops applying to exactly the candidates nothing can
 #: check, and that has put untested rows in a shipped gallery before.
+#:
+#: `spiral` sits **last among the counted rules**, and the placement is the
+#: measurement. A candidate refused here is one every colour rule already
+#: admitted, so the column counts seats the share cap cost and not seats the
+#: allowance would have refused anyway. Put first it would mask `cell_allowance`
+#: and read as far more expensive than it is.
 RULES = (
     "location",
     "group_cap",
     "cell_allowance",
     "family_allowance",
+    "spiral",
     "picture_unreadable",
     "twin",
 )
@@ -758,11 +765,16 @@ class State:
     asks [`requirements`] and never has to copy it.
     """
 
-    def __init__(self, rule: ceiling.Rule, n: int, diversity=None):
+    def __init__(self, rule: ceiling.Rule, n: int, diversity=None, spiral_cap: float | None = None):
         self.rule = rule
         self.n = int(n)
         #: The diversity rule, or `None` where a caller asked for none.
         self.diversity = diversity
+        #: What share of the realized seats may be spiral locations, or `None`
+        #: for no cap. `1.0` is the same thing as `None` arithmetically and is
+        #: spelled by a caller who wants the record to say the cap ran and did
+        #: not bind; `None` is spelled by one who did not ask for a cap at all.
+        self.spiral_cap = None if spiral_cap is None else float(spiral_cap)
         #: `{key: (candidate, why it was seated)}`, in the order seated.
         self.seated: dict = {}
         #: `{location: the one key seated there}`. One wallpaper per location is
@@ -775,6 +787,11 @@ class State:
         self.families: dict = {}
         self.groups: dict = {}
         self.modes: dict = {}
+        #: `{key: True}` for each seat whose LOCATION the spiral probe called a
+        #: spiral. Not an axis in [`_axes`]: the others are keyed by a value off
+        #: the candidate and this one is a single set, so it is held and swept by
+        #: hand in [`seat`] and [`unseat`] rather than given a one-key store.
+        self.spirals: dict = {}
         #: `{rule: how many times it was the reason}`, over every candidate tested.
         self.refusals: dict = {name: 0 for name in rules_for(diversity)}
         #: `{key: what the diversity rule said it was too close to}`, for the record.
@@ -813,6 +830,8 @@ class State:
         for store, values in self._axes(candidate):
             for value in values:
                 store.setdefault(value, {})[key] = True
+        if getattr(candidate, "spiral", False):
+            self.spirals[key] = True
         if self.diversity is not None:
             self.diversity.hold(key)
 
@@ -826,6 +845,7 @@ class State:
                 store[value].pop(key, None)
                 if not store[value]:
                     del store[value]
+        self.spirals.pop(key, None)
         if self.diversity is not None:
             self.diversity.drop(key)
         return candidate
@@ -833,6 +853,45 @@ class State:
     def counts(self, store: dict) -> dict:
         """`{value: how many seats carry it}` off one of the axis stores."""
         return {value: len(keys) for value, keys in store.items()}
+
+    # ------------------------------------------------------------------ #
+    # The spiral share cap.
+    # ------------------------------------------------------------------ #
+    def spiral_allowance(self) -> int | None:
+        """How many spiral seats this gallery may hold. `None` where no cap runs.
+
+        `ceil(X * (filled + 1))` — [`ceiling.share_of`], the one spelling a colour
+        target is also stated in, evaluated at **the seat count the gallery would
+        have**. That `+ 1` is the same warm-up [`ceiling`]'s `floor(k*t*n) + 1`
+        carries and it is load-bearing: against `filled` alone the first seat of an
+        empty gallery is refused for taking 100% of nothing, and a cap that cannot
+        seat a spiral first is a cap that reorders the gallery rather than sizing it.
+
+        One spelling covers the swap loop too, and that is worth checking rather
+        than assuming. A valid gallery has `spirals <= ceil(X * filled)`. A swap
+        takes one seat out and puts one in, so `filled` does not move: if this
+        candidate needs a seated spiral to leave, the gallery after the trade holds
+        the same count it held before and is valid by the same inequality. So the
+        test [`counted_refusal`] applies and the requirement
+        [`counted_requirements`] records are the same arithmetic, not two.
+        """
+        if self.spiral_cap is None:
+            return None
+        return ceiling.share_of(self.spiral_cap, self.filled + 1)
+
+    def refuses_as_spiral(self, candidate) -> bool:
+        """Whether the cap is what stands between this candidate and a seat.
+
+        **A candidate whose location has no score is never refused here.** Unknown
+        is not `not_spiral` and it is not `spiral` either: a place nobody has
+        scored counts toward nothing, so it can neither fill the cap nor be
+        stopped by it. `curation.spiral_scores` argues why that asymmetry is the
+        safe one.
+        """
+        allowance = self.spiral_allowance()
+        if allowance is None or not getattr(candidate, "spiral", False):
+            return False
+        return len(self.spirals) + 1 > allowance
 
     # ------------------------------------------------------------------ #
     # The rules.
@@ -855,6 +914,8 @@ class State:
         for family in candidate.families:
             if len(self.families.get(family, ())) + 1 > self.rule.allowed(family, self.n):
                 return "family_allowance"
+        if self.refuses_as_spiral(candidate):
+            return "spiral"
         return None
 
     def refuses(self, candidate) -> str | None:
@@ -906,6 +967,10 @@ class State:
         for family in candidate.families:
             if len(self.families.get(family, ())) + 1 > self.rule.allowed(family, self.n):
                 wanted.append(set(self.families.get(family, ())))
+        if self.refuses_as_spiral(candidate):
+            # One seated spiral has to go. See [`spiral_allowance`] on why the
+            # post-swap gallery is valid under the same inequality.
+            wanted.append(set(self.spirals))
         return wanted
 
     def requirements(self, candidate) -> list | None:
@@ -990,6 +1055,7 @@ class State:
                 "the palette group cap",
                 "the per-cell allowance",
                 "the per-family allowance",
+                *(["the spiral share cap"] if self.spiral_cap is not None else []),
             ],
             "no_fallback": "nothing is seated by relaxing a rule it failed, and no seat is "
             "padded. Unfilled beats padded",
@@ -1001,6 +1067,22 @@ class State:
             "family_share": ceiling.FAMILY_SHARE,
             "allowance": "floor(k * t * n) + 1",
             "targets": dict(sorted(self.rule.targets.items())),
+            "spiral_cap": self.spiral_cap,
+            "spiral_cap_is": (
+                "no spiral share cap ran; every location was seatable whatever the probe "
+                "said about it, and the `spiral` refusal column is zero by construction"
+                if self.spiral_cap is None
+                else (
+                    f"at most ceil({self.spiral_cap:g} * seats filled) seats may sit at a "
+                    f"location the spiral probe calls a spiral. A share of the REALIZED "
+                    f"count, ceiling.share_of, which is the one spelling a colour target "
+                    f"is stated in. The verdict is off curation.spiral_scores at the cut "
+                    f"models/spiral/manifest.json carries, and a location with NO score "
+                    f"counts toward nothing: unknown is not not_spiral"
+                )
+            ),
+            "spiral_seats": len(self.spirals),
+            "spiral_allowance": self.spiral_allowance(),
             "diversity": None
             if self.diversity is None
             else {

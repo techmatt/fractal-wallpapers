@@ -22,7 +22,7 @@
         "mirror": false
       },
       "dim": 384,
-      "threshold": 0.5,
+      "threshold": 0.3,
       "lambda": 0.3,
       "train_rows": 400,
       "train_positives": 106

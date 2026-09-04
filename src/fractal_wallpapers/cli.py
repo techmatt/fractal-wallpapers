@@ -3157,6 +3157,36 @@ def curate_embeddings(args: argparse.Namespace) -> int:
     return 0
 
 
+def curate_spiral_scores(args: argparse.Namespace) -> int:
+    """Score every embedded location through the shipped spiral probe, or keep the store."""
+    from fractal_wallpapers.curation import durability, spiral_scores
+
+    if args.what == "build":
+        try:
+            report = spiral_scores.build(limit=args.limit)
+        except spiral_scores.StoreRefused as refusal:
+            print(refusal)
+            return 1
+        print(json.dumps(report, indent=2))
+        return 0
+
+    which = spiral_scores.store()
+    doing = {
+        "save": lambda: durability.save(which),
+        "check": lambda: durability.check(which),
+        "restore": lambda: durability.restore(which, force=args.force),
+    }[args.what]
+    try:
+        report = doing()
+    except durability.DurableLost as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps(report, indent=2))
+    if args.what == "check" and report.get("verdict") in {"short", "missing"}:
+        return 1
+    return 0
+
+
 def curate_neighbours(args: argparse.Namespace) -> int:
     """The cheap sanity read: nearest neighbours by cosine, with their pictures."""
     from fractal_wallpapers.curation import embeddings
@@ -3483,6 +3513,7 @@ def _curate_gallery_record(args: argparse.Namespace) -> int:
             key=args.key,
             swap=not args.no_swap,
             seconds=args.swap_seconds,
+            spiral_cap=args.spiral_cap,
         )
     except solve.SolveRefused as refusal:
         print(refusal)
@@ -3571,6 +3602,7 @@ def curate_solve(args: argparse.Namespace) -> int:
             themed_cap=args.themed_cap,
             rows_per_seat=args.rows_per_seat,
             draw_seed=args.draw_seed,
+            spiral_cap=args.spiral_cap,
             swap=not args.no_swap,
             seconds=args.swap_seconds,
             explain=explain,
@@ -6874,12 +6906,18 @@ def spiral_read(args: argparse.Namespace) -> int:
             {
                 "locations": len(records),
                 "feature_set": document_set,
+                # The standing sweep UNIONED with the probe's own cut, so the acting
+                # threshold is always one of the columns and a cut that already sits
+                # on a sweep point collapses deliberately rather than by accident:
+                # spelled `(0.3, document["threshold"], 0.7)`, a threshold of 0.3
+                # silently reported two columns where a reader saw three.
                 "at": {
                     str(cut): {
                         "spiral": int((probability >= cut).sum()),
                         "share": round(float((probability >= cut).mean()), 4),
+                        "acting": cut == float(document["threshold"]),
                     }
-                    for cut in (0.3, document["threshold"], 0.7)
+                    for cut in sorted({0.3, 0.5, 0.7, float(document["threshold"])})
                 },
                 "wrote": str(out) if out is not None else None,
             },
@@ -8076,6 +8114,42 @@ def curate_commands(subcommands) -> None:
     )
     embedding_store.set_defaults(handler=curate_embeddings)
 
+    spiral_store = steps.add_parser(
+        "spiral-scores",
+        help="P(spiral) per location: build the store, or record, check and restore it",
+        description=(
+            "One row per location, keyed on the location key, saying what the shipped "
+            "spiral probe makes of the place. `build` is NOT a render leg: the probe reads "
+            "DINOv2 over the neutral render and the embedding store already holds that "
+            "vector for every admitted location, so scoring one is a 384-column dot product "
+            "and the whole store scores in under two seconds. It is also run automatically "
+            "at the end of `curate embed`, so a newly admitted location arrives with a "
+            "score rather than being drawable before it has one. A location with NO row "
+            "here reads as UNKNOWN everywhere and counts toward nothing: unknown is never "
+            "not_spiral. The reader is `curate solve --spiral-cap`."
+        ),
+    )
+    spiral_store.add_argument(
+        "what",
+        choices=["build", "check", "save", "restore"],
+        help="score every embedded location the store does not hold; or check the live "
+        "store against the manifest, save a fresh copy and manifest, or restore the copy",
+    )
+    spiral_store.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        metavar="N",
+        help="with `build`: score at most this many outstanding locations",
+    )
+    spiral_store.add_argument(
+        "--force",
+        action="store_true",
+        help="with `restore`: overwrite a live store that holds MORE rows than the manifest "
+        "records. Those rows are locations nobody has saved yet",
+    )
+    spiral_store.set_defaults(handler=curate_spiral_scores)
+
     neighbouring = steps.add_parser(
         "neighbours",
         help="nearest neighbours by cosine in the embedding store, with their pictures",
@@ -8512,6 +8586,19 @@ def curate_commands(subcommands) -> None:
         help="with `record`: take the greedy seed and stop, skipping the improvement loop",
     )
     browsing.add_argument(
+        "--spiral-cap",
+        type=float,
+        default=None,
+        metavar="SHARE",
+        help="with `record`: cap the share of seats sitting at a location the spiral probe calls a "
+        "spiral: at most ceil(SHARE * seats filled), the same spelling a colour target "
+        "is stated in. The verdict comes off `curate spiral-scores` at the cut "
+        "models/spiral/manifest.json carries, and a location with NO score counts "
+        "toward nothing — unknown is not not_spiral. Unsaid, NO cap runs and the "
+        "`spiral` refusal column is zero by construction; 1.0 runs the cap and lets it "
+        "not bind, which is the spelling for a record that should say so",
+    )
+    browsing.add_argument(
         "--swap-seconds",
         type=float,
         default=None,
@@ -8718,6 +8805,19 @@ def curate_commands(subcommands) -> None:
         f"`{ceiling_module.IDENTITY}` is ceiling.GROUP_CAP = {ceiling_module.GROUP_CAP}, one "
         f"seat a map. It is a COUNT under either rule: the same-group DISTANCE row the exact "
         f"solve carried is retired and not merged",
+    )
+    solving.add_argument(
+        "--spiral-cap",
+        type=float,
+        default=None,
+        metavar="SHARE",
+        help="cap the share of seats sitting at a location the spiral probe calls a "
+        "spiral: at most ceil(SHARE * seats filled), the same spelling a colour target "
+        "is stated in. The verdict comes off `curate spiral-scores` at the cut "
+        "models/spiral/manifest.json carries, and a location with NO score counts "
+        "toward nothing — unknown is not not_spiral. Unsaid, NO cap runs and the "
+        "`spiral` refusal column is zero by construction; 1.0 runs the cap and lets it "
+        "not bind, which is the spelling for a record that should say so",
     )
     solving.add_argument(
         "--key",

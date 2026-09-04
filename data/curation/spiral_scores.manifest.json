@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "path": "artifacts/curation/spiral_scores.jsonl",
+  "copy": "artifacts/curation_backup/spiral_scores.jsonl",
+  "rows": 40734,
+  "bytes": 10891804,
+  "sha256": "402e692a50fb08b3604d669c4f8bd534645ef384acd6394f91d4229940ce0d8f",
+  "stamp": "bf03db95ce61",
+  "probe_digest": "0489738e8335",
+  "probe": "neutral_dinov2",
+  "shares": {
+    "0.3": {
+      "spiral": 13491,
+      "share": 0.3312
+    },
+    "0.5": {
+      "spiral": 11756,
+      "share": 0.2886
+    },
+    "0.7": {
+      "spiral": 10288,
+      "share": 0.2526
+    }
+  },
+  "mean_probability": 0.3023,
+  "acting_cut": 0.3,
+  "recorded": "2026-09-03",
+  "why_not_tracked": "one row per admitted location and it grows by an append every time a harvest adds admissions, so it tracks the embedding store's size rather than a fixed one. The manifest is what the history keeps: the row count, the bytes, the sha256, both provenances every score was read under, and the share called spiral at each cut the sweep reports."
+}

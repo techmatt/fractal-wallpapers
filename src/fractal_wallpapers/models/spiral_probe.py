@@ -88,7 +88,21 @@ FOLD_SEED = 20260903
 
 #: Where the probability is cut when a probe is asked for a verdict rather than a
 #: number. A share cap will sweep this; it is the default and not a constant.
-THRESHOLD = 0.5
+#:
+#: **0.3, ruled 2026-09-04, erring toward calling a place a spiral.** It was 0.5
+#: at the fit. `PROBE_spiral_fit`'s threshold sweep on the pinned 100 is what
+#: moved it: precision is flat at ~0.96 across 0.3 / 0.5 / 0.7 and only recall
+#: moves, so the lower cut buys six points of recall for nothing. A share cap is
+#: the reader, and a cap wants the wider class — a spiral it fails to call is a
+#: seat the cap does not count, which is the error that lets the gallery fill with
+#: the thing the cap exists to limit.
+#:
+#: **Moving it does not move the fit.** [`choose_lambda`] cross-validates on AUC
+#: precisely so the ridge does not follow the cut; the `accuracy` column it reports
+#: beside each lambda does follow it, so the `lambda_grid` in an already-written
+#: probe holds accuracies at the cut it was fitted under. `models/spiral/README.md`
+#: says so rather than a re-fit refreshing a column nothing selects on.
+THRESHOLD = 0.3
 
 #: The place-side feature sets, and the picture each is read off. A seated set is
 #: not in here on purpose — see the module docstring.
