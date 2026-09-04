@@ -201,13 +201,21 @@ def active_to_wall(renders_views: bool) -> tuple[float, str]:
     return ACTIVE_TO_WALL_SCORING_GATE_RENDERS, "the judge scores the gate renders"
 
 
-def release_rate(workers: int = RELEASE_WORKERS) -> tuple[float, str]:
+def release_rate(workers: int, leg: dict | None) -> tuple[float, str]:
     """`(seconds per picture, where it came from)` at `workers` worker processes.
 
-    Read off the most recent tracked run's own release leg, because this is the
-    term that moved most and moved for a reason no constant could carry: run9
-    measured 41.9 s with `artifacts/curation` on the archive and run10 measured
-    24.9 s with it on NVMe, same code, same geometry.
+    Derived from a tracked run's own release leg — `{run, seconds, rows, workers}`,
+    or `None` where no run has finished one — because this is the term that moved
+    most and moved for a reason no constant could carry: run9 measured 41.9 s with
+    `artifacts/curation` on the archive and run10 measured 24.9 s with it on NVMe,
+    same code, same geometry.
+
+    **The leg is handed in rather than read here.** This module is arithmetic about
+    a night and it is at the floor: `supply.ledgers` and the harvest command reach
+    it, and reaching `curation.records` for one row put the record store on that
+    arrow. `records.latest_release_leg()` is the caller's call — which is also the
+    honest shape, because the reading and the arithmetic over it are two things and
+    only one of them is a fact about the schedule.
 
     Scaled between worker counts as a straight inverse, which is the only rule
     the record supports and is stated rather than hidden: run10 realized 2.81x
@@ -215,10 +223,7 @@ def release_rate(workers: int = RELEASE_WORKERS) -> tuple[float, str]:
     off its measured point and a night that reserves at some other worker count
     is reserving on an extrapolation. There is a measurement at four.
     """
-    from fractal_wallpapers.curation import records
-
     workers = max(1, int(workers))
-    leg = records.latest_release_leg()
     if leg is None:
         return RELEASE_SECONDS_PER_PICTURE * RELEASE_WORKERS / workers, (
             f"the written-down rate: no tracked run has finished a release row "
@@ -324,19 +329,21 @@ def plan(
     finish_by: str,
     release_slots: int,
     attempts: int,
+    rate: tuple[float, str],
     now: datetime | None = None,
     *,
     renders_views: bool = False,
     release_workers: int = RELEASE_WORKERS,
-    rate: tuple[float, str] | None = None,
     curation_rate: float = CURATION_SECONDS_PER_ATTEMPT,
     ledger_load: float = LEDGER_LOAD_SECONDS,
     margin: float = MARGIN_SECONDS,
 ) -> Plan:
     """The harvest's active-minute budget, derived from when the night must end.
 
-    `attempts` is the colorize count the curation leg will actually plan, handed
-    in rather than derived here. It used to be `4n` scaled by this module's own
+    `rate` is `(seconds per picture, where it came from)` — [`release_rate`] over
+    a leg the caller read, for the reason that function states. `attempts` is the
+    colorize count the curation leg will actually plan, handed in rather than
+    derived here. It used to be `4n` scaled by this module's own
     copies of the attempt multiplier, the strange share and the modes each head
     draws — three numbers restated from curation, pinned by the suite, and pinned
     to the wrong thing the moment the mode table became a **parameter** of a run
@@ -360,7 +367,7 @@ def plan(
     slots = max(0, int(release_slots))
     workers = max(1, int(release_workers))
     ratio, basis = active_to_wall(renders_views)
-    rate_seconds, rate_source = release_rate(workers) if rate is None else rate
+    rate_seconds, rate_source = rate
 
     release = slots * float(rate_seconds)
     attempts = max(0, int(attempts))

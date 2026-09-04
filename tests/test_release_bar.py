@@ -28,9 +28,9 @@ def bar(tmp_path, monkeypatch):
     """A live acting bar at 0.5 on a head named `h`, with a movable manifest."""
     manifest = tmp_path / "weights.json"
     manifest.write_text(json.dumps({"schema": 1, "heads": {"h": {"sha256": "abc"}}}))
-    from fractal_wallpapers.models import ship
+    from fractal_wallpapers.models import roster
 
-    monkeypatch.setattr(ship, "manifest_path", lambda: manifest)
+    monkeypatch.setattr(roster, "manifest_path", lambda: manifest)
     return floors.Bar("h_release", 0.5, "h", "abc", "for a test")
 
 

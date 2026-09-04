@@ -775,10 +775,19 @@ the base install, because rendering fractals, walking the plane, running the
 supply engine and collecting labels all work without them.
 
 One exception, and it is the reason the exception is written down: `roster` is
-the tuple of head names and nothing else, stdlib-only on purpose, because
-`fetch-weights --check` runs on the base install and has to know which heads a
-complete release carries. `ship` imports the roster from there. Any other module
-here that a base install can import is an accident, not a second exception.
+stdlib-only on purpose, because `fetch-weights --check` runs on the base install.
+It holds the tuple of head names — which heads a complete release carries — and
+`manifest_path()`, the tracked `models/weights.json` that lists them. `ship`
+imports both from there. Any other module here that a base install can import is
+an accident, not a second exception.
+
+`manifest_path` moved here on 2026-09-04 and the move fixed a duplication rather
+than only a layering: `ship.manifest_path()` was one derivation of that path and
+`cli.weights_commands` carried a second, `Path("models") / "weights.json"` of its
+own, precisely because the command that needs it most could not reach `ship`
+without pulling torch onto its own stdlib-only path. There is one derivation now,
+and `fractal_wallpapers.cuts` — which every module stating a floor reaches — reads
+which artifact is shipped through it instead of importing the training stack.
 
 ## What a score becomes, and the figure of it
 

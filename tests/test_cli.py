@@ -393,8 +393,13 @@ def test_the_teacher_is_never_assumed_to_be_here() -> None:
 
 
 def test_weights_manifest_is_valid_and_versioned() -> None:
-    manifest_path = cli.repo_root() / cli.WEIGHTS_MANIFEST
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    """Through `roster`, which is the one derivation of this path since the
+    layering fix — `cli.weights_commands` used to carry a second one of its own,
+    because reaching `ship` for it would have put torch on the stdlib-only
+    `fetch-weights --check` path."""
+    from fractal_wallpapers.models import roster
+
+    manifest = json.loads(roster.manifest_path().read_text(encoding="utf-8"))
     assert manifest["schema"] == 1
     assert isinstance(manifest["heads"], dict)
 

@@ -8,12 +8,8 @@ import json
 import urllib.request
 from pathlib import Path
 
-from fractal_wallpapers.paths import (
-    repo_root,
-)
-
-WEIGHTS_MANIFEST = Path("models") / "weights.json"
-
+from fractal_wallpapers.models.roster import manifest_path
+from fractal_wallpapers.paths import repo_root, tracked_name
 
 RELEASE_URL = "https://github.com/techmatt/fractal-wallpapers/releases/download/{tag}/{asset}"
 
@@ -83,13 +79,12 @@ def check_weights(manifest: dict) -> int:
 
 def fetch_weights(args: argparse.Namespace) -> int:
     """Download each head's weights from GitHub Releases and verify its sha256."""
-    manifest_path = repo_root() / WEIGHTS_MANIFEST
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest = json.loads(manifest_path().read_text(encoding="utf-8"))
     if args.check:
         return check_weights(manifest)
     heads = manifest.get("heads", {})
     if not heads:
-        print(f"no weights listed in {WEIGHTS_MANIFEST.as_posix()}; nothing to fetch")
+        print(f"no weights listed in {tracked_name(manifest_path())}; nothing to fetch")
         return 0
 
     for head, entry in sorted(heads.items()):

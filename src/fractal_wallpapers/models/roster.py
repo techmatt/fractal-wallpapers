@@ -12,9 +12,23 @@ So the roster lives here and `ship` imports it, rather than the other way
 around. The dependency arrow points from the heavy module to the light one,
 which is the only direction that keeps the check runnable where it is run — and
 this is the one module under `models/` that a base install can import.
+
+[`manifest_path`] is here for the same argument and it arrived later, by the same
+route. The file it names is the one `--check` reads, and it had **two**
+derivations: `ship.manifest_path()` and a `Path("models") / "weights.json"` of
+`cli.weights_commands`' own — because reaching for `ship` from the stdlib-only
+path is exactly what the roster exists to avoid, so the command that needs it
+most could not use it. It is one function here, `ship` imports it beside `HEADS`,
+and [`fractal_wallpapers.cuts`] reads it without importing the training stack:
+naming which artifact is shipped right now is a question about the manifest, not
+about the code that writes it.
 """
 
 from __future__ import annotations
+
+from pathlib import Path
+
+from fractal_wallpapers.paths import repo_root
 
 #: Every head this project trains, and therefore every head a release has to
 #: carry. A release cut from a manifest that is missing one is a clone that
@@ -28,4 +42,10 @@ from __future__ import annotations
 #: data. They are gone from the roster because a roster names what ships.
 HEADS = ("location", "render", "palette")
 
-__all__ = ["HEADS"]
+
+def manifest_path() -> Path:
+    """The tracked manifest `fetch-weights` reads: which artifact each head ships."""
+    return repo_root() / "models" / "weights.json"
+
+
+__all__ = ["HEADS", "manifest_path"]

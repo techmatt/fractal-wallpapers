@@ -85,6 +85,8 @@ import tempfile
 from functools import cache
 from pathlib import Path
 
+from fractal_wallpapers import engine_spec
+
 #: The schema every stamp row carries.
 SCHEMA = 1
 
@@ -273,8 +275,6 @@ def probe_row(probe: dict) -> dict:
     what the engine is told. The fingerprint is a fingerprint of the *production
     path*, not of a second way to ask for pixels.
     """
-    from fractal_wallpapers.labeling import finished
-
     return {
         "family": probe["family"],
         "viewport": probe["viewport"],
@@ -282,7 +282,7 @@ def probe_row(probe: dict) -> dict:
         "mode_params": {},
         "curve": "linear",
         "colormap": COLORMAP,
-        "recipe": finished.recipe(mirror=False),
+        "recipe": engine_spec.recipe(mirror=False),
         "render": {
             "resolution": list(RESOLUTION),
             "supersample": SUPERSAMPLE,
@@ -344,14 +344,13 @@ def _digest(binary: str, count: int) -> str:
 def _mark(binary: str, index: int) -> str:
     """One probe's bytes, digested. Drawn at most once per (build, probe)."""
     from fractal_wallpapers import engine
-    from fractal_wallpapers.models import renders
 
     del binary  # The cache key. The engine resolves its own binary below.
     probe = PROBES[index]
     with tempfile.TemporaryDirectory(prefix="engine-fingerprint-") as where:
         output = Path(where) / f"probe{index}.jpg"
         try:
-            engine.run("render", renders.spec_of(probe_row(probe), output))
+            engine.run("render", engine_spec.spec_of(probe_row(probe), output))
         except (RuntimeError, OSError) as failure:
             raise FingerprintError(
                 f"probe {index} ({probe['family']['kind']} through {probe['mode']}) would "

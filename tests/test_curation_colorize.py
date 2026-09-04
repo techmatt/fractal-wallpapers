@@ -212,14 +212,14 @@ def a_pinned_colormap_dir():
     rather than the checkout. Every name in this section goes through it — a
     perturbation compared against a pinned base while itself reading the real
     directory would differ for the wrong reason and pass whatever happened."""
-    from fractal_wallpapers.models import renders
+    from fractal_wallpapers import engine_spec
 
-    original = renders.colormap_dir
-    renders.colormap_dir = lambda: DIGEST_COLORMAP_DIR
+    original = engine_spec.colormap_dir
+    engine_spec.colormap_dir = lambda: DIGEST_COLORMAP_DIR
     try:
         yield
     finally:
-        renders.colormap_dir = original
+        engine_spec.colormap_dir = original
 
 
 def a_field_name(family, viewport, maxiter, changes=None) -> str:

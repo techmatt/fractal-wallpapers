@@ -175,10 +175,17 @@ def live_stamp(head: str) -> str:
     Call time rather than import time, so a test can move the manifest and see
     the refusal, and so a long run that outlives a re-ship reads the re-ship
     rather than its own start-up snapshot.
-    """
-    from fractal_wallpapers.models import ship
 
-    manifest = json.loads(ship.manifest_path().read_text(encoding="utf-8"))
+    Through [`models.roster`] and not through `ship`. This module is the
+    vocabulary of a cut — json and a dataclass — and every module that states a
+    floor reaches it; importing `ship` for one path put the whole training stack
+    on that arrow and held `cuts`, and `supply.currency` behind it, inside the
+    tree's largest import cycle. Which artifact is shipped is a question about
+    the manifest, not about the code that writes it.
+    """
+    from fractal_wallpapers.models import roster
+
+    manifest = json.loads(roster.manifest_path().read_text(encoding="utf-8"))
     entry = (manifest.get("heads") or {}).get(head)
     if not entry or not entry.get("sha256"):
         raise HeadStampMismatch(
