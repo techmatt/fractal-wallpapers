@@ -94,6 +94,41 @@ def test_the_fallback_is_read_on_p_ge3_and_not_on_the_default_column():
     assert len(headroom.clearing(pool, read)) == 43
 
 
+def test_the_hoisted_rule_is_the_one_the_table_reports_and_answers_off_the_roster():
+    """`rule_of` and `clears` came out of `bars`'s loop on 2026-09-04 so that a
+    caller about a mode the roster no longer holds could reach the rule instead of
+    restating it — `curation.remode` is that caller. Two claims, and the second is
+    the whole point of the extraction:
+
+    the hoisted pair agrees with the table row by row, on both columns; and it
+    answers for a mode `bars` refuses to name at all, which is any mode
+    `mode_policy` weights 0."""
+    high = [candidate(f"high{at}", score=0.9) for at in range(3)]
+    low = [candidate(f"low{at}", score=0.1, p_ge3=0.8) for at in range(40)]
+    pool = high + low
+    read = headroom.bars(pool)
+    rule = read["modes"]["smooth"]["rule"]
+    assert headroom.rule_of(pool) == rule == headroom.FALLBACK_COLUMN
+    assert headroom.rule_of(clearing_pool(headroom.FALLBACK_LOCATIONS)) == (headroom.DEFAULT_COLUMN)
+    assert headroom.rule_of(pool, relaxed=True) == headroom.FALLBACK_COLUMN
+    # Row for row against the table's own answer, which is what says the loop
+    # still computes what it computed.
+    assert [held.key for held in headroom.clearing(pool, read)] == [
+        held.key for held in pool if headroom.clears(held, rule)
+    ]
+    # And off the roster. A niche mode is absent from `bars["modes"]`, so
+    # `clearing` drops its rows and the table has no rule to give — while
+    # `rule_of` answers about the rows themselves.
+    niche = mode_policy.niche()[0]
+    stranded = clearing_pool(headroom.FALLBACK_LOCATIONS, mode=niche)
+    off = headroom.bars(stranded)
+    assert niche not in off["modes"] and off["off_roster"][niche] == len(stranded)
+    assert headroom.clearing(stranded, off) == []
+    assert headroom.rule_of(stranded) == headroom.DEFAULT_COLUMN
+    assert all(headroom.clears(held, headroom.rule_of(stranded)) for held in stranded)
+    assert headroom.clears(stranded[0], None) is False, "no rule never clears"
+
+
 def test_a_mode_the_fallback_does_not_rescue_is_still_flagged_thin():
     pool = [candidate(f"c{at}", score=0.1, p_ge3=0.8) for at in range(4)]
     read = headroom.bars(pool)

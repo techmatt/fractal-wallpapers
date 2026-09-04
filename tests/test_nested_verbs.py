@@ -20,7 +20,7 @@ what stops a flag added to `curate solve run` from quietly becoming a flag
 `curate solve record` accepts — a record that took a flag it does not read would
 not be reproducible from the `run` it claims to be, and the failure would be
 silent. `curate_commands.RUN_ONLY_SOLVE_FLAGS` was a runtime check for exactly
-that on one group; the parser enforces it on all sixteen now, and this says so.
+that on one group; the parser enforces it on all seventeen now, and this says so.
 """
 
 from __future__ import annotations
@@ -409,6 +409,29 @@ LINES: tuple[tuple[str, str, dict], ...] = (
     ),
     ("curate depth merge --name d1", "curate_depth", {"what": "merge", "name": "d1"}),
     ("curate depth sheet --name d1", "curate_depth", {"what": "sheet", "name": "d1"}),
+    # The re-mode leg. `plan` and `run` name the mode pair; the other two do not,
+    # so a merge cannot be told a mode its own rows disagree with.
+    (
+        "curate remode plan --name r1 --from-mode exp_smoothing --to-mode smooth",
+        "curate_remode",
+        {"what": "plan", "name": "r1", "from_mode": "exp_smoothing", "to_mode": "smooth"},
+    ),
+    (
+        "curate remode run --name r1 --from-mode exp_smoothing --to-mode smooth "
+        "--budget 1800 --workers 3 --device cuda",
+        "curate_remode",
+        {
+            "what": "run",
+            "name": "r1",
+            "from_mode": "exp_smoothing",
+            "to_mode": "smooth",
+            "budget": 1800.0,
+            "workers": 3,
+            "device": "cuda",
+        },
+    ),
+    ("curate remode merge --name r1", "curate_remode", {"what": "merge", "name": "r1"}),
+    ("curate remode read --name r1", "curate_remode", {"what": "read", "name": "r1"}),
 )
 
 #: Every nested group, its verbs in registration order, and the flags each verb
@@ -600,6 +623,15 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
         "merge": ("--name",),
         "sheet": ("--name",),
     },
+    # The mode pair is on `plan` and `run` and on neither of the other two: a
+    # merge reads the rows the run already wrote and a read reads its record, so
+    # a mode named there would be a flag that could disagree with the leg.
+    "remode": {
+        "plan": ("--name", "--from-mode", "--to-mode"),
+        "run": ("--name", "--from-mode", "--to-mode", "--budget", "--workers", "--device"),
+        "merge": ("--name",),
+        "read": ("--name",),
+    },
 }
 
 
@@ -638,7 +670,7 @@ def test_a_nested_verb_resolves_to_the_namespace_it_always_did(line, handler, ex
 
 
 def test_every_nested_verb_is_a_real_subparser() -> None:
-    """Sixteen groups and sixty-five verbs, and no group left spelling its verb as
+    """Seventeen groups and sixty-nine verbs, and no group left spelling its verb as
     a positional `choices=` argument. The two are not interchangeable: a positional
     takes the whole group's flags, so `--help` at the group is every verb's flags at
     once and a flag on the wrong verb is accepted and silently ignored."""
@@ -648,7 +680,7 @@ def test_every_nested_verb_is_a_real_subparser() -> None:
         f"nested groups the surface table does not name: {sorted(set(groups) - set(SURFACE))}; "
         f"named but not nested: {sorted(set(SURFACE) - set(groups))}"
     )
-    assert sum(len(verbs) for verbs in SURFACE.values()) == 65
+    assert sum(len(verbs) for verbs in SURFACE.values()) == 69
     for name, action in groups.items():
         assert list(action.choices) == list(SURFACE[name]), (
             f"`curate {name}` registers its verbs in another order, and the order is the "
@@ -666,7 +698,7 @@ def test_a_nested_verb_carries_only_the_flags_its_handler_reads() -> None:
     handed a flag it does not read would not be reproducible from the run it claims
     to be, and the failure would be silent — the flag dropped on the floor and the
     stamp written anyway. `curate_commands.RUN_ONLY_SOLVE_FLAGS` was a runtime
-    check for that on one group. The parser enforces it on all sixteen now."""
+    check for that on one group. The parser enforces it on all seventeen now."""
     groups = nested_groups(cli.build_parser())
 
     wrong = {}

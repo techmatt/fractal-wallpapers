@@ -185,16 +185,17 @@ here because this file is loaded into every session in this repository and a
 chronological log is not a rule. What stays here is the current figure and the rules
 the log produced.
 
-The fast lane is **120.29 s over the 3,538 it holds**, on this machine, idle,
-2026-09-04, at the solve speedups — six tests more than the nested-subparser split
-and 1.12 s **under** its 121.41 s, which is noise in the clock and not the speedups:
-the three that landed are in a pass over the real pool and the fast lane never runs
-one. The slow lane is **6:54 over
-3,648, nothing skipped**,
-on this machine, idle, 2026-09-04, at the `exp_smoothing` drop — seventy-four tests
-more than the line-ending guard's 6:54 over 3,574 and seven hundredths of a second
-over it. All seventy-four are the nested-subparser split's, already priced in the
-fast lane; the slow lane's clock did not notice them.
+The fast lane is **122.97 s over the 3,565 it holds**, on this machine, idle,
+2026-09-04, at the re-mode leg — twenty-seven tests more than the solve speedups'
+120.29 s and 2.68 s over it, about a tenth of a second a test. The slow lane is
+**6:31 over 3,681, nothing skipped**, on this machine, idle, 2026-09-04, at the
+same commit — thirty-three tests more than the `exp_smoothing` drop's 6:54 over
+3,648 and **24 s under it**. That is the first slow reading to fall while gaining
+tests, and the cause is the solve speedups of `4300e4b` rather than anything the
+re-mode leg did: this lane holds guards that run a solve pass, and that pass got
+faster. **A lane that gets cheaper with no test removed is benign only when
+something it prices got faster** — the rule below about suspecting a defect is
+about a lane getting *slower*, and this reading is its counter-example.
 
 **What the count means is defined once, in
 [`tests/README.md`](tests/README.md#what-the-fast-lane-count-means)**, and a reading

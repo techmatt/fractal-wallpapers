@@ -299,13 +299,20 @@ def present_pictures(rows=None) -> set:
 # --------------------------------------------------------------------------- #
 # The other direction: pictures on disk that no record names.
 # --------------------------------------------------------------------------- #
-#: The five subtrees under `curation` that hold pool pictures. Swept 2026-09-02
-#: over 177,993 rows: `depth` 158,628 - `runs` 11,875 - `mine` 4,566 -
-#: `reframe_draw` 2,283 - `hunt` 641, and **no row points anywhere else at all**.
+#: The subtrees under `curation` that hold pool pictures. Swept 2026-09-02 over
+#: 177,993 rows: `depth` 158,628 - `runs` 11,875 - `mine` 4,566 -
+#: `reframe_draw` 2,283 - `hunt` 641, and **no row pointed anywhere else at all**.
 #: The list is written down rather than discovered per call because it is what
 #: bounds [`orphans`] — a sweep that found its own subtrees would follow the tree
 #: wherever it grew.
-POOL_SUBTREES = ("depth", "runs", "mine", "reframe_draw", "hunt")
+#:
+#: **`remode` joined on 2026-09-04 and adding one here is half of shipping a leg.**
+#: [`curation.remode`] keeps its renders under `remode/<leg>/pictures`, and a
+#: subtree absent from this tuple is not merely unswept: `orphans` enumerates
+#: these names and no others, so a killed leg's pictures would sit on disk with no
+#: row anywhere and nothing in the project able to find them. `tests/test_remode.py`
+#: pins the membership for that reason rather than as a spelling check.
+POOL_SUBTREES = ("depth", "runs", "mine", "reframe_draw", "hunt", "remode")
 
 
 #: What every leg calls the directory it keeps its candidates in. [`orphans`]

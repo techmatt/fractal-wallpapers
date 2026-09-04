@@ -172,6 +172,18 @@ WEIGHTS = (NICHE, NORMAL, PROMOTED)
 #: engine's coloring, the field dump, every ledger row and every label taken in it
 #: stand, exactly as for the five above; the mode still renders by name and a leg
 #: naming it in `--modes` still draws it. What ends is buying more of it.
+#:
+#: **What weight 0 also does, and none of the six paragraphs above says it: it
+#: strands places.** A row in a niche mode leaves [`solve.pool`], so a location
+#: whose only clearing candidate was in that mode stops being a location a gallery
+#: can reach — 574 of them here, and 17 seats at `n = 1000`. That is a cost of
+#: every ruling on this table and not of this one, and it is repairable:
+#: [`curation.remode`] re-renders the stranded rows in a mode the project still
+#: buys, at the same recipe, and merges the twins as ordinary candidates. It is a
+#: re-render and never a re-label — a recipe key digests the engine spec, so a row
+#: claiming a mode it was not drawn in names a picture nobody made. See
+#: `curation/LEGS.md`'s *`curate remode` — buying back what a weight-0 ruling
+#: stranded*.
 MODE_POLICY: dict[str, int] = {
     # --- 0: niche ---
     "trap_circle": NICHE,

@@ -1616,6 +1616,133 @@ refused leaves both columns rather than scoring zero in one.
 not a truth. What it removes is the *selection*, by drawing the noise again after
 the winner was chosen.
 
+## `curate remode` — buying back what a weight-0 ruling stranded
+
+Every other leg here spends supply on places the pool has not reached. This one
+spends it on places the pool **used to** reach and stopped, and the thing that
+stopped it was a ruling rather than a shortage.
+
+A [`mode_policy`](GALLERY.md) weight of 0 leaves a mode's material standing — its
+ledger rows, its pictures and its labels all keep — and takes every row of it out
+of `solve.pool`. Those two facts together have a consequence the ruling does not
+state: **a place whose only clearing candidate was in the ruled-out mode stops
+being a place a gallery can reach at all.** When `exp_smoothing` went niche on
+2026-09-04 that was **574 places** and 17 seats at `n = 1000`. The material was
+not deleted and it was not usable either.
+
+```
+fractal-wallpapers curate remode plan  --name r1 --from-mode exp_smoothing --to-mode smooth
+fractal-wallpapers curate remode run   --name r1 --from-mode exp_smoothing --to-mode smooth
+fractal-wallpapers curate remode merge --name r1
+fractal-wallpapers curate remode read  --name r1
+```
+
+```
+src/fractal_wallpapers/curation/remode.py            the population, the twin, the leg
+artifacts/curation/remode/<name>/rows.jsonl          ledger rows, appended as each lands
+artifacts/curation/remode/<name>/scores.jsonl        sidecar rows, likewise
+artifacts/curation/remode/<name>/sequence.jsonl      one row per twin, with its stamp
+artifacts/curation/remode/<name>/pictures/<key>.jpg  the twin renders, named by recipe
+artifacts/curation/remode/<name>/remode.json         the record: population, plan, carry
+```
+
+**The twin is one `replace` on the stored recipe, and everything else is held
+because it is never named.** `remode.twin` reads the recipe back through
+`recipes.of_record` and moves three members: the mode; `mode_params`, emptied,
+because `renders.FIELD_IDENTITY` holds it and the target's settings space is not
+the source's; and the autolevel stamp, **re-derived** through
+`recipes.live_stamp` rather than copied, because whether the operator applies at
+all is a function of the mode's *kind* — a `field` to `direct` twin has to drop
+it. The frame, the cap, the regime, the curve, the map, the seven palette knobs
+and the palette group are carried by not being mentioned, so a member added to
+`recipes.Recipe` tomorrow is carried too.
+
+**No framing lookup, and that is the point rather than an omission.** A framing
+index answers *where should a fresh candidate be drawn*; adopting a refinement
+here would move the frame and make the twin a different picture at a different
+place. `remode.frame_of` reads the source row's own viewport and cap, and
+`tests/test_remode.py` reads the function's source to keep a future edit from
+adding one.
+
+**Nothing is re-labelled, and it would have been cheaper.** The paired eye check
+behind the `exp_smoothing` ruling found the two arms to be the same picture at
+98.7% of 914 seats with the judge unable to order them apart, so moving the mode
+field on the stranded rows and keeping their scores was arithmetically
+defensible and free. It is refused because a **recipe key is a digest of the
+engine spec**: a row claiming a mode it was not rendered in names a picture
+nobody made, and every reader that re-derives a picture from a row would
+disagree with the disk, silently. Each twin is rendered and judged on its own
+merits like any candidate, and one that comes back under the bar is a row that
+merged and does not clear.
+
+### The bar is read twice, on two different populations
+
+`plan` reports both and they are different questions. The **source rule** is
+which column the retired mode's own rows cleared on, and it selects the
+population — `headroom.rule_of`, which is `headroom.bars`'s own test hoisted out
+of its loop precisely so a mode the roster no longer holds can be asked about.
+The **target rule** is which column the target mode clears on in the pool the
+twins are about to join, read off `solve.pool` through `headroom.bars`, and every
+twin's `clears` is read against that. A clearing rate taken against the leg's own
+output would move with the leg's own yield.
+
+### What bounds what it can give back, and it is the retention rule
+
+Three counts come out of `read` and **the row count is the least interesting**.
+Rows made is what the engine drew; rows clearing is the population a gallery
+sees; places that regain a clearing row is the figure the ruling's cost was
+stated in — and that one is bounded by neither of the others. Every twin lands on
+`(location, target mode)`, where `candidate_ledger.RETAIN_PER_PAIR` keeps three
+ranked **within the pair** by the fitted rank key, so a place already holding
+three better-ranked rows in the target mode absorbs its twin and gives nothing
+back. `merge` reports the prune's verdict beside its own row count for that
+reason.
+
+### What the first leg bought, measured
+
+`smooth_twins`, 2026-09-04, `exp_smoothing` → `smooth`, the whole clearing
+population and no sampling:
+
+| | |
+|---|--:|
+| `exp_smoothing` rows in the ledger | 22,603 |
+| of them clearing, at 2,318 places | **3,647** |
+| twins already in the ledger, skipped | 45 |
+| twins rendered, 0 failed | **3,602** |
+| of them clearing `smooth`'s own bar | **3,463 (96.1%)** |
+| surviving the retention rule | **3,152** |
+| stranded places that regained a clearing row | **546 of 574** |
+| render wall / engine seconds / concurrency | 732 s / 2,153 s / 2.94 |
+
+**Two of those rows are the ones to read.** 3,463 twins cleared and only **3,152**
+survived — the other 311 were absorbed by `RETAIN_PER_PAIR` at places already
+holding three better-ranked `smooth` rows, which is the retention rule working and
+not a loss. And the places figure reconciles by two independent routes: clearing
+places in accepted modes went **8,740 → 9,286**, and `574 − 28 still stranded =
+546`. The 28 that stay stranded are places whose twin did not clear.
+
+**The 96.1% is a carry rate and not a mode comparison.** Every source is in the
+plan because it cleared, so the 139 twins that fell below the bar are all the
+crossings there are — a downward-only count by construction. The paired `delta`
+has a mean of **−0.0098** and a median of **−0.0010** for the same reason: a
+source selected on a high noisy reading has a twin that regresses, which is
+`shrinkage`'s winner's curse arriving by another route. Neither number is evidence
+about `smooth` against `exp_smoothing`; the unselected comparison is
+`EVAL_exp_smoothing_0904`'s.
+
+### Three workers, cut at the location, and the sharing is worth less here
+
+The standard shape: `depth.run`'s parent-resolves-and-writes arrangement, three
+engines below normal, blocks cut at the location so one dumped field serves every
+map at a place. The saving is real but **thinner than on a draw** — a retired
+mode's clearing rows sit about one and a half to a place, not forty — so price
+this leg nearer the k=1 end of `MEASUREMENTS.md`'s table than the k=40 end.
+
+Its subtree is in `candidate_ledger.POOL_SUBTREES`, which is half of shipping a
+leg here: `curate candidate-ledger orphans` enumerates those names and no others,
+so a subtree missing from the tuple leaves a killed run's pictures on disk with no
+row anywhere and nothing able to find them.
+
 ## `curate manufacture` — the one population here that is made rather than found
 
 Everything else in this stage spends supply. This makes some. `expressed` counted

@@ -614,7 +614,9 @@ def test_the_focus_report_is_off_on_both_commands_that_walk() -> None:
 
 def test_both_gallery_changes_are_the_default_and_the_incumbent_is_still_reachable() -> None:
     """Flipped on 2026-08-28. `curate solve run` with no flag now chooses under the
-    proportional palette-group cap and the fitted rank key."""
+    proportional palette-group cap and the fitted rank key. A third default joined
+    them on 2026-09-04 — the spiral share cap — so the incumbent invocation carries
+    a third flag: it solved with NO cap, and saying nothing no longer means that."""
     from fractal_wallpapers.curation import ceiling, solve
 
     parse = cli.build_parser().parse_args
@@ -622,14 +624,58 @@ def test_both_gallery_changes_are_the_default_and_the_incumbent_is_still_reachab
     assert unflagged.handler is cli.curate_solve
     assert unflagged.group_cap == solve.DEFAULT_GROUP_CAP == ceiling.PROPORTIONAL
     assert unflagged.key == solve.DEFAULT_KEY == solve.RANK_KEY
+    assert unflagged.spiral_cap == solve.DEFAULT_SPIRAL_CAP == 0.10
     incumbent = parse(
-        ["curate", "solve", "run", "--n", "150", "--group-cap", "identity", "--key", "p_ge4"]
+        [
+            "curate",
+            "solve",
+            "run",
+            "--n",
+            "150",
+            "--group-cap",
+            "identity",
+            "--key",
+            "p_ge4",
+            "--spiral-cap",
+            "none",
+        ]
     )
     assert (incumbent.group_cap, incumbent.key) == (ceiling.IDENTITY, solve.JUDGE_KEY)
+    assert incumbent.spiral_cap is None, "the incumbent gallery solved uncapped"
     with pytest.raises(SystemExit):
         parse(["curate", "solve", "run", "--group-cap", "whatever_matt_meant"])
     with pytest.raises(SystemExit):
         parse(["curate", "solve", "run", "--key", "whatever_matt_meant"])
+
+
+def test_the_spiral_cap_keeps_no_cap_a_zero_cap_and_a_slack_cap_apart() -> None:
+    """Three answers and not two. `none` is no cap at all; `0` is a cap whose
+    allowance is zero, so no spiral may be seated; `1.0` is a cap that runs and
+    does not bind, which is what a record that should say it ran one is spelled
+    with. A float flag with a sentinel could not hold the three apart, which is
+    why `--spiral-cap` takes a converter."""
+    from fractal_wallpapers.curation import solve
+
+    parse = cli.build_parser().parse_args
+
+    def cap(*named):
+        return parse(["curate", "solve", "run", "--n", "150", *named]).spiral_cap
+
+    assert cap() == solve.DEFAULT_SPIRAL_CAP
+    assert cap("--spiral-cap", "none") is None
+    assert cap("--spiral-cap", "off") is None
+    assert cap("--spiral-cap", "NONE") is None, "a reader will type it either way"
+    assert cap("--spiral-cap", "0") == 0.0, "a zero cap is not the same as no cap"
+    assert cap("--spiral-cap", "1.0") == 1.0
+    assert cap("--spiral-cap", "0.25") == 0.25
+    # `record` reads the same flag off the same container, so it cannot drift.
+    assert parse(["curate", "solve", "record", "--n", "1000"]).spiral_cap == (
+        solve.DEFAULT_SPIRAL_CAP
+    )
+    with pytest.raises(SystemExit):
+        parse(["curate", "solve", "run", "--spiral-cap", "banana"])
+    with pytest.raises(SystemExit):
+        parse(["curate", "solve", "run", "--spiral-cap", "-1"])
 
 
 def test_the_release_leg_is_on_by_default_and_carries_the_shipping_regime() -> None:

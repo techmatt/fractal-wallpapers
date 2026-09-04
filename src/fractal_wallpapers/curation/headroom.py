@@ -298,9 +298,7 @@ def bars(candidates, relaxed: bool = False) -> dict:
         above3 = [c for c in mine if c.p_ge3 >= FALLBACK_BAR]
         places4 = {c.location for c in above4}
         places3 = {c.location for c in above3}
-        rule = DEFAULT_COLUMN if len(places4) >= FALLBACK_LOCATIONS else FALLBACK_COLUMN
-        if relaxed:
-            rule = FALLBACK_COLUMN
+        rule = rule_of(mine, relaxed=relaxed)
         clearing = above4 if rule == DEFAULT_COLUMN else above3
         out[mode] = {
             "rule": rule,
@@ -341,15 +339,48 @@ def bars(candidates, relaxed: bool = False) -> dict:
     }
 
 
+def rule_of(candidates, relaxed: bool = False) -> str:
+    """Which column **one mode's** rows clear on: [`DEFAULT_COLUMN`], or
+    [`FALLBACK_COLUMN`] where too few distinct places reach the first.
+
+    [`bars`]'s own test, taken out of its loop so it can be asked about a single
+    mode's rows. That matters for a mode the roster does not hold: `bars` iterates
+    [`mode_policy.accepted`] and drops everything else into `off_roster`, so a
+    caller asking about a mode just ruled **niche** could not reach the rule at
+    all. [`curation.remode`] is that caller, and it exists because of exactly such
+    a ruling — a mode leaving the roster is what strands the rows it re-renders.
+
+    A restated bar would be a second bar, and the two would agree until one of
+    them was edited. Takes anything carrying `score`, `p_ge3` and `location`,
+    which is what [`solve.Candidate`] and [`remode.Source`] have in common.
+    """
+    if relaxed:
+        return FALLBACK_COLUMN
+    places = {held.location for held in candidates if held.score >= DEFAULT_BAR}
+    return DEFAULT_COLUMN if len(places) >= FALLBACK_LOCATIONS else FALLBACK_COLUMN
+
+
+def clears(candidate, rule: str | None) -> bool:
+    """Whether one candidate clears its mode's bar under `rule`. `None` never clears.
+
+    The other half of [`clearing`], hoisted for [`rule_of`]'s reason and one of
+    its own: the column and its height move together, so a site that picked the
+    column and then reached for a constant could read a `P(>=3)` value against the
+    `P(>=4)` bar. Here they cannot come apart.
+    """
+    if rule is None:
+        return False
+    column = candidate.score if rule == DEFAULT_COLUMN else candidate.p_ge3
+    return column >= (DEFAULT_BAR if rule == DEFAULT_COLUMN else FALLBACK_BAR)
+
+
 def clearing(candidates, table: dict | None = None) -> list:
     """Every candidate that clears its own mode's bar. The census's whole population."""
     read = bars(candidates) if table is None else table
     keep = []
     for candidate in candidates:
         rule = (read["modes"].get(candidate.mode) or {}).get("rule")
-        column = candidate.score if rule == DEFAULT_COLUMN else candidate.p_ge3
-        bar = DEFAULT_BAR if rule == DEFAULT_COLUMN else FALLBACK_BAR
-        if rule is not None and column >= bar:
+        if clears(candidate, rule):
             keep.append(candidate)
     return keep
 
@@ -931,7 +962,9 @@ __all__ = [
     "bars",
     "census",
     "clearing",
+    "clears",
     "population",
+    "rule_of",
     "render_cost",
     "twin_bound",
     "write_record",

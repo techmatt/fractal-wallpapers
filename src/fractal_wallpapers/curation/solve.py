@@ -178,6 +178,26 @@ DEFAULT_KEY = RANK_KEY
 #: it. Below `1 / ceiling.GROUP_CAP_RATE` seats the two produce the same cap.
 DEFAULT_GROUP_CAP = ceiling.PROPORTIONAL
 
+#: **What share of the seats may sit at a spiral location, unasked**: a tenth.
+#: Matt's ruling, 2026-09-04. It was `None` until then, so every record on this
+#: machine that does not name the flag ran **uncapped** and is not comparable with
+#: one that ran under this — `curate solve list` is the reader, and the two
+#: tracked galleries of 2026-09-04 after `20260904T023748Z` are the uncapped ones.
+#:
+#: The evidence, off `20260904T023748Z`, the first capped gallery: the cap cost
+#: **27 seats** of 1000 at `n = 1000` (914 against 941), met every demand, and
+#: bound to the last seat — `ceil(0.10 x 914) = 92` allowed and exactly 92 taken.
+#: What it acted on is a pool that was **27.75%** spiral on its clearing rows and
+#: a gallery that was already **26.4%** before any cap existed, so the diversity
+#: rule and the colour allowance were suppressing spirals by a point and a half
+#: and no more. A tenth is under half of what the gallery was doing on its own,
+#: which is why this is a ruling rather than a tuning.
+#:
+#: `None` is still typeable and still means **no cap at all**, which is a
+#: different record from `1.0`: at 1.0 the cap runs and does not bind, and the
+#: `spiral` refusal column says so. Unasked, this is what runs.
+DEFAULT_SPIRAL_CAP = 0.10
+
 #: How many of the refused the contact sheet shows beside the seated, per rule.
 #: Enough that a rule's refusals are a sample rather than an anecdote, few enough
 #: that the page is one page.
@@ -1438,7 +1458,7 @@ def solve(
     seconds: float | None = None,
     preselected: tuple | None = None,
     explain: set | frozenset | list | None = None,
-    spiral_cap: float | None = None,
+    spiral_cap: float | None = DEFAULT_SPIRAL_CAP,
     log=print,
 ) -> dict:
     """One gallery, chosen. The record is the return value; nothing is written.
@@ -1467,6 +1487,13 @@ def solve(
     touches the pool**: the bars, the clearing rule and the neutral pre-selection
     all read the judge's own columns, so two passes differing in one of them
     differ in the order and in the cap and in nothing else.
+
+    `spiral_cap` is [`DEFAULT_SPIRAL_CAP`] unasked, and that is a **change of
+    2026-09-04**: it was `None`, so a pass that says nothing about it used to run
+    uncapped and now runs at a tenth. `None` is still what a caller spells for no
+    cap and it is not the same record as `1.0` — see the constant. The default
+    lives here rather than only on the flag because a bare call and a typed
+    command must not be two answers to what this leg does.
 
     ## `theme` is the other gallery this leg builds
 
@@ -1721,7 +1748,18 @@ def solve(
         "schema": SCHEMA,
         "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "config": _config(
-            n, rule, modes, table, flat, held_floors, natural, cap_rule, order, key, theme
+            n,
+            rule,
+            modes,
+            table,
+            flat,
+            held_floors,
+            natural,
+            cap_rule,
+            order,
+            key,
+            theme,
+            spiral_cap,
         ),
         "objective": {
             "of": OBJECTIVE,
@@ -1885,9 +1923,19 @@ def _config(
     order: dict | None,
     key: str,
     theme: str | None = None,
+    spiral_cap: float | None = None,
 ) -> dict:
     return {
         "n": n,
+        # **On `config` and not only in the `spiral` block**, because `config` is
+        # the block a tentative gallery's tracked manifest carries whole
+        # ([`tentative.manifest`]) and the `spiral` block is not. Until 2026-09-04
+        # the cap lived only in the untracked solve record, so no tracked gallery
+        # could say whether it had run capped: a reader had to infer it from a zero
+        # in the `spiral` refusal column, which a cap that ran and did not bind
+        # produces too. `None` here means no cap ran.
+        "spiral_cap": None if spiral_cap is None else float(spiral_cap),
+        "spiral_cap_default": DEFAULT_SPIRAL_CAP,
         "theme": None if theme is None else str(theme),
         "method": "a stratified view, a greedy seed, and 1-swap improvement to exhaustion. "
         "ANYTIME: the gallery is valid from its first seat and nothing here claims "
