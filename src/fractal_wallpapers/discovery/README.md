@@ -208,18 +208,18 @@ and `blind_modes`' are excluded as seeds *and* as derived frames. Measured
 2026-08-31: 1,452 pinned places, 1,252 proven parameter-plane locations at tier
 >= 3, **76 of them pinned, 1,176 seeds available** (184 q4, 992 q3).
 
-**The rungs are 8x, 12x, 16x, 24x, 32x, 48x, 64x, 96x and 128x the atom size, and
-they are framings of one location rather than nine locations.** Every rung is
+**The rungs are 16x, 24x, 32x, 48x, 64x, 96x, 128x, 192x and 256x the atom size,
+and they are framings of one location rather than nine locations.** Every rung is
 drawn through `engine.screen` at the node regime, every one is read through the
 location head, one row is written, and its score is the rung the head picked —
 every rung's own reading rides on the row under `reframing.rungs_drawn`. They are
 offered directly rather than walked to: `curation.framing.WIDTH_LADDER` moves
-x1.414 a step and cannot reach 128x from 8x in anything a window that size can
+x1.414 a step and cannot reach 256x from 16x in anything a window that size can
 express. The band that reads as *a minibrot with detail around it* is 50-100 px
 of body at 1280, which is the 32x rung; the walk's widest rung, 16x, lands at
 115-183 px and is a factor of two too tight. The step alternates x1.5 and x1.333
 and the ends continue it rather than inventing a spacing — the whole ladder is
-`{8, 12}` doubled four times.
+`{16, 24}` doubled four times.
 
 **Tested, on 6,590 locations over the night of 2026-09-01: the rate plateaus at
 32x and the pick keeps moving outward anyway.** Head-q4 as a share of what was
@@ -246,10 +246,15 @@ moved it: 32x settled to 23.0% and the new outer end took 19.8%.
 
 **`reframing.end_picks` is the readout that says whether this bought anything**,
 and it rides on every run summary under `ends`. It splits a leg's picks three ways
-— the two new rungs at each end, the two rungs that *were* the ends (16x and 64x),
-and the strict interior — because a single end-share number cannot tell "the pile
-came off the ends" from "the pile moved outward with the ladder", which is exactly
-what happened last time. Read `ends.old_ends.share` against the 37.3% above.
+— the rungs the ladder just gained, the rungs the pile could pile on before they
+arrived, and the strict interior — because a single end-share number cannot tell
+"the pile came off the ends" from "the pile moved outward with the ladder", which
+is exactly what happened last time. Read `ends.old_ends.share` against the 37.3%
+above. `reframing.ENDS_READOUT` is what it is told, and it is a **pair**: two
+rungs were added at each end in 2026-09-01's extension and it read `2`, while
+2026-09-04's move added two at the outer end and removed two at the inner, which
+is `(0, 2)`. So `new_ends` is 192x and 256x, and `old_ends` is 128x — which was
+the ladder's whole reach — beside 16x, which is an end by deletion.
 
 **Answered on 2026-09-04, and the pile did come off: `old_ends.share` is 21.1%**
 over `reframe_g7`'s 488 picks, against 37.3 / 37.3 / 37.8% on the three five-rung
@@ -257,28 +262,62 @@ legs. That is the extension doing the thing the three-rung-to-five-rung move did
 not — draining the old ends rather than moving the pile outward. `reframe_g6`'s
 0.0% was seven picks and said nothing.
 
-**What it also says is that 128x is now the wall.** The new ends took **42.0%**,
-about double the ~22% a flat pick over nine rungs would leave there, and it is
-one-sided: the picks run **2.7 / 4.9 / 9.4 / 12.9 / 13.1 / 10.9 / 11.7 / 13.9 /
-20.5%** outward from 8x, so the outermost rung is the single most picked, and it
-carries **50 of the 128 head-q4** (39%). The inner end bought nothing at all — 8x
-took 13 picks and no head-q4, 12x took 24 and two. The next ladder question is
-therefore at the outer end alone, and the two inner rungs are candidates to drop.
+**What it also said is that 128x was the wall.** The new ends took **42.0%**,
+about double the ~22% a flat pick over nine rungs would leave there, and it was
+one-sided: the picks ran **2.7 / 4.9 / 9.4 / 12.9 / 13.1 / 10.9 / 11.7 / 13.9 /
+20.5%** outward from 8x, so the outermost rung was the single most picked, and it
+carried **50 of the 128 head-q4** (39%). The inner end bought nothing at all — 8x
+took 13 picks and no head-q4, 12x took 24 and two.
 
-**No guard is what stops the ladder at 128x.** `width_over_root_scale` fires past
-`operators.MAX_WIDTH`, and the largest atom over those 6,590 rows has a window
-scale of 8.5e-3 — so the first rung that guard would refuse is **352x**. It has
-never fired in any reframe leg. (An earlier revision of this section said the
-outer two rungs "draw about 790 fewer frames" for that reason; they do not, and
-the 790 was generation 1's 792 rows, drawn before 48x and 64x existed.) What
-stops the ladder at 128x is that the body is 14-23 px there — past it the picture
-is a speck in a field. **The head does not agree**: given the rung on 2026-09-04
-it picked 128x more often than any other and scored q4 there more often than at
-any other, so the judgement is one the ladder is now measurably paying for. The
-guard that does bite is at the *other* end, the f64
-spacing wall on the deepest atoms: 8x is offerable on 99.7% of those rows and 12x
-on 99.8%, against 99.8% for 16x itself, and a rung the wall refuses is simply not
-drawn for that nucleus.
+**So on 2026-09-04 the ladder moved rather than grew: 8x and 12x off, 192x and
+256x on, still nine rungs.** Two rungs of a nine-rung ladder returning two head-q4
+between them over 488 picks is the ladder paying for a width nobody wants, and the
+same leg said the head was still reaching outward when it ran out of rungs. What
+that costs is nothing — a rung swapped for a rung is the same eight framings a
+location — and what it buys is two widths that had never been drawn at the end the
+head was pushing against.
+
+**Answered by `reframe_g8` the same day, and the head turned over at 192x.**
+Head-q4 as a share of what was drawn had risen at *every* rung the ladder had ever
+offered, 2.5 / 3.3 / 5.8 / 6.0 / 6.4 / 8.8 / **10.2%** outward to 128x on g7. Over
+g8's 251 locations it reads 1.6 / 3.6 / 4.4 / 8.0 / 6.4 / 8.4 / 8.8 / **9.6** /
+8.8%: the peak is 192x and 256x is below it, which is the first turnover this
+chain has produced and the reason 256x is where the ladder stops. The ends came
+in nearly flat too — `new_ends.share` **25.5%** against g7's 42.0%, `old_ends`
+**17.5%** against 21.1%, and the ~22% a flat pick over nine rungs would leave —
+so the outward move drained the end that 128x had become. It did not empty it:
+256x is still the single most *picked* rung at 16.3%, exactly as 128x was, which
+is the pile moving outward with the ladder for the second time.
+
+**A guard is now in sight at the outer end, which it was not at 128x.**
+`width_over_root_scale` fires past `operators.MAX_WIDTH`, and the largest atom over
+those 6,590 rows has a window scale of 8.5e-3 — so the first rung that guard would
+refuse is **352x**. It has never fired in any reframe leg, g8 included. (An earlier
+revision of this section said the outer two rungs "draw about 790 fewer frames" for
+that reason; they do not, and the 790 was generation 1's 792 rows, drawn before 48x
+and 64x existed.) At 128x that left a factor of 2.8 and the stop was a judgement
+alone; at 256x it leaves **1.38**, so this ladder cannot be doubled again whatever
+the pictures say. The other guard, the f64 spacing wall on the deepest atoms, bit
+at the end that was just dropped: 8x was offerable on 99.7% of those rows and 12x
+on 99.8%, against 99.8% for 16x itself. The new rungs are the *most* offerable the
+ladder has — 192x and 256x were drawn on all 251 of g8's nuclei where 16x and 24x
+reached 248 — and what rises outward instead is the gate's refusal rate, 242 of 248
+surviving at 16x against 228 of 251 at 256x.
+
+**And the pictures at the outer end are minibrots, which is what nobody had
+checked.** The standing argument against every outward move is that a body of ten
+pixels is a speck in a field rather than a subject; the standing answer was that a
+width nobody has read cannot be argued about. `scratch/ladder_0904/`'s contact
+sheet reads it: all **27** head-q4 picks at 192x and 256x have the atom's interior
+at the centre of the frame, none is a filament frame, and the bodies measure
+**8-16 px at 192x and 6-11 px at 256x** at release geometry — the eleven-atom
+scaling holding to within a pixel. So the head is picking real minibrots, very
+small ones, and whether a person wants them is the question a labelled sheet still
+owes. **`interior_fraction` cannot answer it and must not be used to**: read as an
+equivalent disc it puts g7's 16x bodies at a median 132 px, inside the recorded
+115-183, but its 128x median is 27 px against a true 14-23 with a tail to 909 —
+because a wide frame's interior is mostly *other* atoms, which is a fact about
+these frames worth knowing on its own.
 
 **Cost of the four new rungs: about 6% of a leg.** A framing is free of Newton
 solves — `operators._snap` charges the solve to the first framing and marks the
@@ -312,8 +351,9 @@ of the standard per-location draw over the head-q4 nuclei surviving
 `PRESELECT_RADIUS`, top-down: **2,286 candidates over 762 of the 1,252 places**,
 15.62% clearing raw `P(>=4) >= 0.50` against a fresh breadth draw's 1.72% at the
 same cost a candidate, and 38.1% of places producing at least one such row. Per the
-rung the head picked — over the five-rung ladder those legs ran, so 8x, 12x, 96x
-and 128x have no column here and the next leg's is the first that will:
+rung the head picked — over the five-rung ladder those legs ran, so every rung the
+ladder has gained since is missing a column here and a later draw is what fills
+them:
 
 | rung | 16x | 24x | 32x | 48x | 64x |
 |---|---|---|---|---|---|
@@ -328,12 +368,14 @@ and not a controlled comparison: the rung on each row is the one the head *chose
 for that place, so a rung column is partly a column about which places chose it.
 The `reframe_nuclei` sheet is still what settles it against a person's verdict.
 
-It is also the standing argument *against* the outward half of the extension: the
-render judge was already falling away at 64x when the ladder stopped there, so 96x
-and 128x are drawn into a declining region on this evidence. They are drawn
-anyway, because the location head's own pick had not turned over at 64x and a
-width nobody has read cannot be argued about. `ends.new_ends` split by end is what
-answers it.
+It is also the standing argument *against* every outward move the ladder has made
+since: the render judge was already falling away at 64x when the ladder stopped
+there, so 96x, 128x and now 192x and 256x are drawn into a declining region on
+this evidence. They are drawn anyway, because the location head's own pick had not
+turned over at 64x — and on 2026-09-04 it had not turned over at 128x either — and
+a width nobody has read cannot be argued about. The two readouts that answer it
+are `ends.new_ends` split by end, and a person's verdict on the contact sheet the
+outer rungs are cut into.
 
 **The seed snap scans to period 256**, over `operators.MAX_PERIOD`'s 64.
 Measured on 60 generation-1 seeds: 64 found 24 nuclei in 5.1 s, 128 found 30 in
@@ -427,6 +469,21 @@ leg's yield comes off `matt_q3` and the queue order works against a leg that wil
 not run to the end. Those 84 are also why the `fired` set cannot answer this: a
 root that returned nothing is on no row, so a rule asking whether every proven
 root had fired would have called this leg unconverged.
+
+**What that costs, measured on 2026-09-04: a barren root re-offered is worth a
+thirteenth of a fresh one, and `reframe_g8` spent 46% of its seeds on them.** The
+1,263 roots g8 was offered as "never fired" were two populations — **657** that
+`reframe_g7` had consumed and got nothing from, invisible in `fired` for exactly
+the reason above, and **783** nothing had ever touched. Re-fired under a different
+`--seed`, so a different ring of random probes, the 657 returned **10 roots, 15
+locations and 7 head-q4**: 0.023 locations a root against the fresh half's 0.301.
+Not nothing — `expand_neighborhood` probes at random and a second pass does find
+atoms the first missed, which is the whole premise of `--reprobe` — but a
+thirteenth, and at 0.84 s a root it was about nine minutes of a twenty-minute leg.
+**Recording the roots a leg consumed, rather than only those it wrote rows off,
+is what would let a continuation skip them**, and nothing does that today: the
+count is reconstructible only by rebuilding both queues, which is what
+`scratch/ladder_0904/barren.py` had to do.
 
 **Record and rank, never gate.** Every derived nucleus is scored and written
 whatever the head said. Neutral pre-selection distinctness (`curation.distinct`,
@@ -565,9 +622,9 @@ that is where 9,432 of their 14,109 `interior_cap` refusals sit.
 it for the head's own 640 px view:
 
 ```text
-framing        2x       4x       8x      16x      32x      64x     128x
-body px      ~1050  460-740  230-370  115-183   57-92    28-45    14-22
-interior   .50-.75  .16-.24  .04-.06  .01-.02    ~.003    ~.001    ~.000
+framing        2x       4x       8x      16x      32x      64x     128x     256x
+body px      ~1050  460-740  230-370  115-183   57-92    28-45    14-22     7-11
+interior   .50-.75  .16-.24  .04-.06  .01-.02    ~.003    ~.001    ~.000    ~.000
 ```
 
 The 2× frame is half interior or more and is refused by `Gates.interior_cap`
