@@ -141,7 +141,13 @@ def durable(pass_id: str) -> durability.Durable:
         ),
         save_command=f"fractal-wallpapers curate gallery-store save --pass {pass_id}",
         restore_command=f"fractal-wallpapers curate gallery-store restore --pass {pass_id}",
-        rebuild_command=f"fractal-wallpapers curate gallery --pass {pass_id}",
+        # There is no rebuild, and the string has to say so rather than name a
+        # command the CLI no longer has: `curate gallery` was the pass that made
+        # these rows and it was retired on 2026-08-28 with the phase.
+        rebuild_command=(
+            "there is no rebuild — `curate gallery`, the pass that made these attempts, was "
+            "retired on 2026-08-28 and the four passes it ran are history. Restore the copy"
+        ),
         facts=_facts,
     )
 
@@ -313,8 +319,11 @@ def refuse_old_layout(pass_id: str) -> None:
         f"{found['gate_dir']} and {len(found['passed_over']):,} passed-over release row(s) "
         f"in the history. Attempt rows now live in {store_path(pass_id)}, untracked and "
         f"described by {manifest_path(pass_id)}, and the release store keeps the winners "
-        f"alone. Run `fractal-wallpapers curate gallery --pass {pass_id} --migrate` to move "
-        f"them, which reads and writes records only and renders nothing."
+        f"alone. [`migrate`] below moves them — records only, nothing rendered. It is a "
+        f"function and not a subcommand because the pass it served, `curate gallery`, was "
+        f"retired on 2026-08-28: the four passes are history and every one of them was "
+        f"moved before it became history, so this refusal fires only over records restored "
+        f"from before the split."
     )
 
 

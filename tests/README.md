@@ -177,6 +177,15 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+It read **170.30 s over 3,440** at the `cli` split, idle, 2026-09-04 — 0.9% over the
+reading below, across two more collected tests, one of which is the guard this split
+added: that no two modules of the package define one name and no module is named after
+a name the package must resolve. The reading is worth the line for the same reason the
+ledger split's was: 10,181 lines became twenty-two modules, every handler now reached
+through a `__getattr__` instead of off the module, `build_parser` builds by importing
+nineteen modules rather than running one function, and the lane did not notice. The
+slow lane was not re-run and its **7:14 over 3,552** stands.
+
 It read **168.70 s over 3,438** at the census follow-ups, idle, 2026-09-04 — the same
 3,438 as the reading below, 1.2% apart, which is noise and not a figure to restate.
 The commit renamed a command, moved twenty-five run directories into a map and

@@ -149,8 +149,11 @@ UNRENDERED = "unrendered"
 #: pictures now — enough to see that the path works and that the heads are
 #: reading the material sensibly, and not a claim about what is worth shipping,
 #: which is a decision over the whole accumulated pool rather than over one run's
-#: fraction of it. The **gallery pass** — `curate gallery`, the second phase —
-#: writes [`GALLERY`].
+#: fraction of it. The **gallery pass** — the second phase — writes [`GALLERY`].
+#: That pass was `curate gallery` and it was retired on 2026-08-28 with the phase,
+#: so the four passes that ran are what carry this value and nothing writes it
+#: now; choosing over the whole pool is `curate solve`, which keeps its own
+#: records rather than release rows.
 #:
 #: `gallery` was taken until 2026-08-22 by `deep.budget`, which used it for the
 #: **evaluation** frames a deep walk books; that is what those frames are and

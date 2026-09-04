@@ -27,9 +27,10 @@ enforced where the population to enforce it over actually exists.
 So this index is read by the collection-level passes — `curate repeats`,
 `curate retire-repeats`, the rejection path. Nothing in `curate run` reads it.
 
-**The gallery pass does not read it either, and that is not the same exemption.**
-A run is excused because it has the wrong population; `curate gallery` has
-exactly the right one and is excused because of what a *pass* is. Each pass
+**The gallery pass did not read it either, and that is not the same exemption.**
+A run is excused because it has the wrong population; the pass — `curate gallery`,
+retired on 2026-08-28, whose four runs are what this section is about — had
+exactly the right one and was excused because of what a *pass* is. Each pass
 chooses the whole gallery at once and **supersedes** the previous one rather than
 adding to it, so a pass that refused every place the last pass shipped could not
 re-choose its own gallery — and a pass that refused every place a run's
@@ -183,9 +184,10 @@ def current_pass(rows) -> str | None:
     that must never become the collection — it would supersede a gallery that has
     pictures with one that has none — so the rows are put through
     [`records.served`] here, and a pass is only a candidate if something survives
-    it. `curate gallery --pass <id>` without the flag later makes the pictures and
-    lifts the rows to `released`, and the pass becomes eligible then and not
-    before.
+    it. Re-running the pass without the flag made the pictures and lifted the rows
+    to `released`, and the pass became eligible then and not before — `curate
+    gallery --pass <id>`, while that command existed; it was retired on 2026-08-28
+    and no run can be finished this way now, so an `unrendered` pass stays one.
 
     Until a third pass this was invisible: gallery2 ran `--no-full-size`, so only
     one pass had ever rendered its seats. The moment two passes both had
