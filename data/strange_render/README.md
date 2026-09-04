@@ -113,6 +113,29 @@ and recorded time. **The originals are untouched and this store's row count did 
 move.** The 107 stay on the older arrangement, so the two halves of one population are
 read two different ways; extending the revision to them is a decision and not a repair.
 
+**That decision was taken on 2026-09-04 and the two halves are now one.** Every
+remaining flat-textured row here has a revision row in `smooth_render`, on the ruling
+that the arrangement should not depend on which sitting happened to find a row. The
+outstanding population was **110** rather than the 107 the earlier note quotes — the
+107 had already netted off three rows this store cannot move — and it split
+59 `itinerary_promotion`, 41 `sparse_mode_head_top`, 6 `manufactured_rare_colors`,
+4 `p_ge4_calibration_strange`. **107 were carried over and three were reported and
+skipped**: `sparse_mode_head_top` lines 504, 505 and 515 stand at places pinned to the
+**smooth** store's evaluation side, so a revision row would train that judge on its own
+instrument. They stay here, flat and unrevised, and that is the correct end state rather
+than an unfinished one.
+
+So this store holds **123** flat-textured rows of 224, **120** of which are revised into
+`smooth_render` and three of which never will be. Its own count did not move: 5,614 rows
+before and after, no original modified, deleted or re-keyed, and `assert_pin_holds`
+asserted on both heads either side.
+
+Three batches — `itinerary_promotion`, `sparse_mode_head_top` and
+`p_ge4_calibration_strange` — had no registration in `smooth_render` and were registered
+there with their flags copied verbatim, which is what keeps the eval side and the
+provenance of a carried row identical to the original's. `manufactured_rare_colors` was
+already registered in both, identically.
+
 **The newest batch buys the modes with the fewest keepers.** `under_seen_modes`,
 2026-08-27: 504 verdicts, 56 on each of nine modes, drawn as the render judge's own
 unfiltered top of each mode over the whole candidate ledger. All 504 route here —

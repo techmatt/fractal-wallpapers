@@ -39,14 +39,23 @@ labels, and spent the moment it enters a training split. The pin is asserted on
 the **location**, so a later batch that re-renders a pinned place under a fresh
 identifier cannot spend it by not naming it.
 
-**Thirteen rows in here are revisions of `strange_render` originals**, appended
-2026-09-03, which is why this store reads 6,193 rows against the 6,180 the batch
-arithmetic below gives. Each is an `itinerary` render whose modulate texture measured
+**One hundred and twenty rows in here are revisions of `strange_render` originals** —
+thirteen appended 2026-09-03 and the remaining 107 on 2026-09-04 — which is why this
+store reads **6,300** rows against the 6,180 the batch arithmetic below gives. Each is an `itinerary` render whose modulate texture measured
 flat at label geometry — so the picture is the smooth field spent by rank bit for bit
 and the verdict is this judge's — carried over under its own batch with a `revision`
 block naming the original's file, line and recorded time. The originals stay in the
 other store; see `data/strange_render/README.md` for why a register entry alone could
-not do this. None sits at a place this store's pinned set holds.
+not do this. **None sits at a place this store's pinned set holds, and three candidates
+were skipped for exactly that** — `sparse_mode_head_top` lines 504, 505 and 515, whose
+places are pinned to this store's evaluation side, so carrying them would have trained
+this judge on its own instrument. They stay in the other store, unrevised.
+
+The 2026-09-04 pass registered `itinerary_promotion`, `sparse_mode_head_top` and
+`p_ge4_calibration_strange` here, with their `strange_render` flags copied verbatim so a
+carried row's eval side and provenance are the original's. `manufactured_rare_colors` was
+already registered in both. 104 crops were copied across and three were already present
+under the same name, `renders.job_name` being head-independent.
 
 **A verdict cast on a pinned location never reaches these rows.** The pin is asserted
 on the location and `blind_minibrot` is derived from the pinned places, so `label
