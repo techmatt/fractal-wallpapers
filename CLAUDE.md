@@ -89,7 +89,14 @@ These were decided once, at the first commit, because each is expensive to rever
   command line overflows long before the batch does. Anything writing a tracked
   text file opens it `newline="\n"`: `.gitattributes` normalizes what git
   stores, and this is what stops a Windows run dirtying every line of a file it
-  rewrote.
+  rewrote. **The drift this prevents is invisible to `git status`** — under
+  `* text=auto eol=lf` a CRLF worktree file still commits as LF, so `git diff`
+  comes back empty while every line waits to change at once. Twenty tracked
+  files had drifted before anything looked. `tests/test_line_endings.py` is the
+  guard, `git ls-files --eol` is the only detector that works here (Git Bash's
+  `grep` reports a CR on every line of a pure-LF file), and checkout is not the
+  cause: a fresh clone comes out LF throughout despite `core.autocrlf=true` in
+  the system git config.
 - **Where a file under `artifacts/` belongs is a three-way decision, and it is
   made once per subtree.** *Hot* (`artifacts/`) is what a live command in the loop
   reads: the pool's pictures and rows, the sidecars, the current records. Its file
@@ -180,8 +187,11 @@ the log produced.
 
 The fast lane is **119.86 s over the 3,458 it holds**, on this machine, idle,
 2026-09-04, at the seconds-share fix — four tests more than the rare-cell mine and
-0.56 s over it, which is noise. The slow lane's **7:14 over 3,552** stands from the
-`run_layout` extraction and has not been re-run since.
+0.56 s over it, which is noise. The slow lane is **6:54 over 3,574, nothing skipped**,
+on this machine, idle, 2026-09-04, at the line-ending guard — twenty-two tests more
+than the `run_layout` extraction's 7:14 over 3,552 and twenty seconds under it, so
+flat. Two of the twenty-two are that guard; the other twenty arrived with the merges
+between the two readings.
 
 **What the count means is defined once, in
 [`tests/README.md`](tests/README.md#what-the-fast-lane-count-means)**, and a reading

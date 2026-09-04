@@ -247,6 +247,15 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+The **slow** lane read **6:54 (414.69 s) over 3,574, nothing skipped** at the
+line-ending guard, idle, 2026-09-04 — the first slow reading since the `run_layout`
+extraction's 7:14 over 3,552, twenty-two tests later and twenty seconds under it. Two
+of the twenty-two are `test_line_endings.py`; the other twenty came in with the merges
+between the two readings. The guard costs ~1.1 s, one `git ls-files --eol` sweep of the
+tree shared by both its tests, which is what puts it in this lane rather than the fast
+one. Nothing here moved the digit: a slow lane flat across twenty-two added tests is
+the expected shape, and it is recorded because the figure above it had gone stale.
+
 It read **119.86 s over 3,458, 114 deselected, nothing skipped** at the seconds-share
 fix, idle, 2026-09-04 — four tests more than the reading below and 0.56 s over it,
 which is noise. Three of the four are the ruling's own guards and the fourth pins
