@@ -155,29 +155,39 @@ def add_commands(subcommands) -> None:
             "gate that refused it or a thumbnail if none did."
         ),
     )
-    search.add_argument(
+    roots = search.add_argument_group("where it starts")
+    budget = search.add_argument_group("how far it runs")
+    gate_render = search.add_argument_group(
+        "the frame the gates read",
+        "a scored run refuses any other geometry and any other map: the head reads "
+        "this frame as a tile",
+    )
+    operators = search.add_argument_group("the reframing operators")
+    written = search.add_argument_group("what it writes")
+    scoring = search.add_argument_group("the gates and the scoring")
+    roots.add_argument(
         "--family",
         choices=["mandelbrot", "multibrot", "julia", "phoenix"],
         default="julia",
         help="which family to walk (default: julia, the one with a tracked c-pool)",
     )
-    search.add_argument("--degree", type=int, default=2, help="exponent d, for multibrot and julia")
-    search.add_argument(
+    roots.add_argument("--degree", type=int, default=2, help="exponent d, for multibrot and julia")
+    roots.add_argument(
         "--seeds",
         help="JSONL file of root locations: one {family, viewport} object per line",
     )
-    search.add_argument("--roots", type=int, help="use only this many of the available roots")
-    search.add_argument("--seed", type=int, default=0, help="run seed (default: 0)")
-    search.add_argument("--batch", type=int, default=8, help="nodes expanded per batch")
-    search.add_argument("--batches", type=int, default=4, help="batches to run")
-    search.add_argument(
+    roots.add_argument("--roots", type=int, help="use only this many of the available roots")
+    budget.add_argument("--seed", type=int, default=0, help="run seed (default: 0)")
+    budget.add_argument("--batch", type=int, default=8, help="nodes expanded per batch")
+    budget.add_argument("--batches", type=int, default=4, help="batches to run")
+    budget.add_argument(
         "--root-expansions",
         type=int,
         default=walk_default("root_expansions"),
         help=f"expansions any one root may pay for, its reframings included "
         f"(default: {walk_default('root_expansions')})",
     )
-    search.add_argument(
+    budget.add_argument(
         "--pinned-root-expansions",
         type=int,
         default=walk_default("pinned_root_expansions"),
@@ -185,21 +195,31 @@ def add_commands(subcommands) -> None:
         f"therefore no second root to answer a dead lineage with "
         f"(default: {walk_default('pinned_root_expansions')})",
     )
-    search.add_argument("--candidates", type=int, default=4, help="candidates drawn per node")
-    search.add_argument(
+    budget.add_argument("--candidates", type=int, default=4, help="candidates drawn per node")
+    gate_render.add_argument(
         "--node-width",
         type=int,
         default=384,
         help="node render width in pixels. A scored run refuses anything but the node "
         "regime's own width: the head reads that frame as a tile",
     )
-    search.add_argument(
+    # `--colormap` is grouped here rather than beside `--out-dir`, where it used to
+    # sit: it and `--node-width` are one decision — the geometry and the map a
+    # scored run is pinned to — and reading them a screen apart is how a run gets
+    # started at the tile pool's width through some other palette.
+    gate_render.add_argument(
+        "--colormap",
+        default="twilight_shifted",
+        help="colormap the gate renders are drawn through. A scored run refuses any map "
+        "but the tile pool's floor palette: the head reads the gate render as a tile",
+    )
+    operators.add_argument(
         "--probe",
         type=float,
         default=0.25,
         help="probability the reframing probe fires on an admission (default: 0.25)",
     )
-    search.add_argument(
+    operators.add_argument(
         "--refine-per-walk",
         type=int,
         default=None,
@@ -212,7 +232,7 @@ def add_commands(subcommands) -> None:
         "readers prefer, never as an edit; nothing feeds back into this walk's reward or "
         f"descent (default: {WalkLimits.refine_per_walk}; 0 disables the leg)",
     )
-    search.add_argument(
+    operators.add_argument(
         "--refine-margin",
         type=float,
         default=None,
@@ -221,12 +241,12 @@ def add_commands(subcommands) -> None:
         "on P(>=4). The gallery pass's own default unless said otherwise, so a scan taken here "
         "and a scan taken at a pass are the same decision",
     )
-    search.add_argument(
+    operators.add_argument(
         "--no-reframings",
         action="store_true",
         help="expand only what the walk descends into; fire no reframing operators",
     )
-    neighborhood = search.add_mutually_exclusive_group()
+    neighborhood = operators.add_mutually_exclusive_group()
     neighborhood.add_argument(
         "--neighborhood",
         dest="neighborhood",
@@ -241,18 +261,12 @@ def add_commands(subcommands) -> None:
         help="fire only the snap and the lateral step, and pay neither the "
         "neighbourhood enumeration's clock nor its frontier",
     )
-    search.add_argument(
-        "--colormap",
-        default="twilight_shifted",
-        help="colormap the gate renders are drawn through. A scored run refuses any map "
-        "but the tile pool's floor palette: the head reads the gate render as a tile",
-    )
-    search.add_argument(
+    written.add_argument(
         "--out-dir",
         default=str(Path("artifacts") / "walk"),
         help="where the ledger and thumbnails go (default: artifacts/walk)",
     )
-    search.add_argument(
+    written.add_argument(
         "--foci",
         action="store_true",
         help="record each expanded node's kept focus set beside its candidates: where the "
@@ -261,8 +275,8 @@ def add_commands(subcommands) -> None:
         "ledger it always wrote - the set is read either way and this decides only whether "
         "it is kept",
     )
-    grace_flag(search)
-    scoring_flags(search)
+    grace_flag(scoring)
+    scoring_flags(scoring)
     search.set_defaults(handler=walk)
 
     reframing_leg = subcommands.add_parser(

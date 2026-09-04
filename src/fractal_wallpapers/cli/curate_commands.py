@@ -2405,12 +2405,46 @@ def add_commands(subcommands) -> None:
         help="with `resolve`: the IDs or aliases to look up, as arguments or as one "
         "comma-separated list. With `browse`: the stamp, which `--stamp` also names",
     )
-    solving.add_argument(
+    # Seven groups over twenty-eight flags. The two positionals stay where
+    # argparse puts them: `what` is the verb and every group below is read
+    # through whichever one it names.
+    which_record = solving.add_argument_group(
+        "which record",
+        "`run` rewrites --name every time, which is a decision rather than a "
+        "handle; `record` stamps --solve-name and never writes over it",
+    )
+    pool_size = solving.add_argument_group("how big, and how much of the pool it reaches")
+    demands = solving.add_argument_group(
+        "the demands",
+        "every one of these is counted with its shortfall recorded: unfilled beats "
+        "padded, and no demand is ever met by a fallback leg",
+    )
+    themed = solving.add_argument_group(
+        "a themed gallery",
+        "one dominant colour cell at the relaxed bar; the other two are ignored without --themed",
+    )
+    distinctness = solving.add_argument_group("the distinctness rules")
+    search = solving.add_argument_group("the objective and the search")
+    release_leg = solving.add_argument_group("the release leg and the sheet")
+
+    which_record.add_argument(
         "--stamp",
         help="with `browse` and `resolve`: which record to read (default the newest). "
         "Ignored by `record`, which always writes a new one",
     )
-    solving.add_argument(
+    which_record.add_argument(
+        "--name",
+        help="with `run`: what to call this pass's output directory (default `n<N>`). A "
+        "`record` names its solve directory with `--solve-name` instead, because it writes "
+        "two things and they are stamped together",
+    )
+    which_record.add_argument(
+        "--solve-name",
+        help="with `record`: what to call the solve's own output directory under "
+        "artifacts/curation/solve (default `tentative_n<N>_<stamp>`, the record's own "
+        "stamp, so successive records at the same N coexist)",
+    )
+    pool_size.add_argument(
         "--n",
         type=int,
         default=None,
@@ -2419,19 +2453,41 @@ def add_commands(subcommands) -> None:
         f"size a leg is read at, and {tentative_module.RECORDED_SEATS} for `record`, which "
         f"is the size a record is kept at",
     )
-    solving.add_argument(
-        "--solve-name",
-        help="with `record`: what to call the solve's own output directory under "
-        "artifacts/curation/solve (default `tentative_n<N>_<stamp>`, the record's own "
-        "stamp, so successive records at the same N coexist)",
+    pool_size.add_argument(
+        "--locations",
+        type=int,
+        metavar="COUNT",
+        help="let the pass reach only this many strongest locations, ranked by their best "
+        "candidate. Unset is the whole ledger",
     )
-    solving.add_argument(
-        "--name",
-        help="with `run`: what to call this pass's output directory (default `n<N>`). A "
-        "`record` names its solve directory with `--solve-name` instead, because it writes "
-        "two things and they are stamped together",
+    pool_size.add_argument(
+        "--rows-per-seat",
+        type=int,
+        default=view_module.ROWS_PER_SEAT,
+        metavar="ROWS",
+        help=f"how many view rows each stratum keeps per seat it could contribute "
+        f"(default {view_module.ROWS_PER_SEAT}). Larger reaches more of the pool and costs "
+        "one pixel-cloud signature a row",
     )
-    solving.add_argument(
+    pool_size.add_argument(
+        "--draw-seed",
+        type=int,
+        default=view_module.DRAW_SEED,
+        metavar="SEED",
+        help=f"the seed the view's band-blind stride offsets are drawn under (default "
+        f"{view_module.DRAW_SEED}). It is on the record either way",
+    )
+    pool_size.add_argument(
+        "--allow-unranked",
+        action="store_true",
+        help="choose even though the key cannot read every clearing candidate. Unsaid, "
+        "that is REFUSED: an unreadable row sorts last and cannot win a seat while a "
+        "readable one is left, so a pool holding any is a pass that ignores them silently. "
+        "The usual cause is a leg merged before its pictures were swept, and the fix is "
+        "`curate flatness sweep`. This flag is for the other case — a picture on disk that "
+        "will not decode, which has no reading to take and never will",
+    )
+    demands.add_argument(
         "--target",
         action="append",
         metavar="CELL=FRACTION",
@@ -2442,7 +2498,50 @@ def add_commands(subcommands) -> None:
         "cell's and its family's ceiling allowance, so the demand is not refused by the "
         "ceiling it asked for",
     )
-    solving.add_argument(
+    demands.add_argument(
+        "--mode-floor",
+        type=int,
+        metavar="SEATS",
+        help="an ARTIFICIAL flat mode floor, one number for every accepted mode. Unset is "
+        "the per-mode floor rule, which is the default; `--flat-floor` is the other way "
+        f"off it, floor(n / {solve_module.SEATS_PER_MODE_FLOOR}). A record taken under any "
+        "of the three says which it was",
+    )
+    demands.add_argument(
+        "--flat-floor",
+        action="store_true",
+        help="solve under the FLAT mode floor instead of the per-mode rule — "
+        f"floor(n / {solve_module.SEATS_PER_MODE_FLOOR}) seats for every accepted mode, "
+        "which is what every gallery before 2026-08-31 was seated under. The default is "
+        "curation.mode_policy.seat_floors(n): half each accepted strange mode's share of "
+        "the strange seat budget. Refuses beside `--mode-floor`, which asks for a "
+        "different flat one",
+    )
+    demands.add_argument(
+        "--group-cap",
+        choices=list(ceiling_module.GROUP_CAP_RULES),
+        default=solve_module.DEFAULT_GROUP_CAP,
+        help=f"which palette-group cap to run under. `{ceiling_module.PROPORTIONAL}` is "
+        f"max(1, floor({ceiling_module.GROUP_CAP_RATE:g} * n)) — 1 up to n=40, 3 at n=150, "
+        f"25 at n=1000 — and is THE DEFAULT since 2026-08-28, the ckpt-88 ruling. "
+        f"`{ceiling_module.IDENTITY}` is ceiling.GROUP_CAP = {ceiling_module.GROUP_CAP}, one "
+        f"seat a map. It is a COUNT under either rule: the same-group DISTANCE row the exact "
+        f"solve carried is retired and not merged",
+    )
+    demands.add_argument(
+        "--spiral-cap",
+        type=float,
+        default=None,
+        metavar="SHARE",
+        help="cap the share of seats sitting at a location the spiral probe calls a "
+        "spiral: at most ceil(SHARE * seats filled), the same spelling a colour target "
+        "is stated in. The verdict comes off `curate spiral-scores` at the cut "
+        "models/spiral/manifest.json carries, and a location with NO score counts "
+        "toward nothing — unknown is not not_spiral. Unsaid, NO cap runs and the "
+        "`spiral` refusal column is zero by construction; 1.0 runs the cap and lets it "
+        "not bind, which is the spelling for a record that should say so",
+    )
+    themed.add_argument(
         "--themed",
         metavar="CELL",
         help="choose a THEMED gallery: one dominant colour cell, over a pool of the rows "
@@ -2456,7 +2555,7 @@ def add_commands(subcommands) -> None:
         "otherwise it also sets `--target CELL=1.0`, without which the cell allowance "
         "refuses the theme at nine seats, and `--flat-floor`",
     )
-    solving.add_argument(
+    themed.add_argument(
         "--themed-cap",
         type=int,
         metavar="SEATS",
@@ -2469,7 +2568,7 @@ def add_commands(subcommands) -> None:
         "size, which is why a themed pass gets its own. `--group-cap` still names the "
         "main gallery's rule and a themed pass ignores it. Ignored without `--themed`",
     )
-    solving.add_argument(
+    themed.add_argument(
         "--themed-radius",
         type=float,
         default=rules_module.GEOMETRY_RADIUS,
@@ -2480,33 +2579,7 @@ def add_commands(subcommands) -> None:
         "themed gallery reads as repetitive or as needlessly small. Ignored without "
         "`--themed`",
     )
-    solving.add_argument(
-        "--locations",
-        type=int,
-        metavar="COUNT",
-        help="let the pass reach only this many strongest locations, ranked by their best "
-        "candidate. Unset is the whole ledger",
-    )
-    solving.add_argument(
-        "--mode-floor",
-        type=int,
-        metavar="SEATS",
-        help="an ARTIFICIAL flat mode floor, one number for every accepted mode. Unset is "
-        "the per-mode floor rule, which is the default; `--flat-floor` is the other way "
-        f"off it, floor(n / {solve_module.SEATS_PER_MODE_FLOOR}). A record taken under any "
-        "of the three says which it was",
-    )
-    solving.add_argument(
-        "--flat-floor",
-        action="store_true",
-        help="solve under the FLAT mode floor instead of the per-mode rule — "
-        f"floor(n / {solve_module.SEATS_PER_MODE_FLOOR}) seats for every accepted mode, "
-        "which is what every gallery before 2026-08-31 was seated under. The default is "
-        "curation.mode_policy.seat_floors(n): half each accepted strange mode's share of "
-        "the strange seat budget. Refuses beside `--mode-floor`, which asks for a "
-        "different flat one",
-    )
-    solving.add_argument(
+    distinctness.add_argument(
         "--neutral-radius",
         type=float,
         default=distinct_module.PRESELECT_RADIUS,
@@ -2515,25 +2588,36 @@ def add_commands(subcommands) -> None:
         f"(default {distinct_module.PRESELECT_RADIUS:g}). Geometric distinctness only: it "
         "asks whether two places are the same place, and it is NOT the diversity rule",
     )
-    solving.add_argument(
+    distinctness.add_argument(
         "--no-preselection",
         action="store_true",
         help="choose from the whole clearing pool, with no neutral pre-selection",
     )
-    solving.add_argument(
+    distinctness.add_argument(
         "--no-diversity",
         action="store_true",
         help="choose without the diversity rule, which is the only rule that opens a "
         f"picture. A gallery without it is a bound on a program that does not refuse "
         f"inside {ceiling_module.TAU}, and its record says so",
     )
-    solving.add_argument(
+    search.add_argument(
+        "--key",
+        choices=list(solve_module.KEYS),
+        default=solve_module.DEFAULT_KEY,
+        help="the sort key the pool is walked in AND the quantity the objective is stated "
+        "in. `rank-key` is the fitted form in `curate rank-key` — the location head, both "
+        "judge cutpoints, the calibration stratum and the flatness column — and is THE "
+        "DEFAULT since 2026-08-28, on Matt's acceptance by eye. `p_ge4` is the render judge "
+        "alone. IT MOVES THE ORDER AND THE OBJECTIVE AND NOTHING ELSE: every bar, the "
+        "clearing rule and the neutral pre-selection still read the judge's own columns",
+    )
+    search.add_argument(
         "--no-swap",
         action="store_true",
         help="take the greedy seed and stop. The record still carries the objective, so "
         "this is how a before/after on the swap loop alone is taken",
     )
-    solving.add_argument(
+    search.add_argument(
         "--swap-seconds",
         type=float,
         default=None,
@@ -2542,7 +2626,7 @@ def add_commands(subcommands) -> None:
         "so what this stops is improvement rather than the answer, and the gallery it "
         "stops on is valid. Unset is until a full pass finds no improving swap",
     )
-    solving.add_argument(
+    search.add_argument(
         "--explain-seats-of",
         metavar="NAME",
         help="an earlier solve record whose seats this pass explains ONE AT A TIME, into "
@@ -2554,75 +2638,13 @@ def add_commands(subcommands) -> None:
         "and fifty thousand of them, and a record carrying all of it would be forty times "
         "the size of the one carrying the decisions",
     )
-    solving.add_argument(
-        "--rows-per-seat",
-        type=int,
-        default=view_module.ROWS_PER_SEAT,
-        metavar="ROWS",
-        help=f"how many view rows each stratum keeps per seat it could contribute "
-        f"(default {view_module.ROWS_PER_SEAT}). Larger reaches more of the pool and costs "
-        "one pixel-cloud signature a row",
-    )
-    solving.add_argument(
-        "--draw-seed",
-        type=int,
-        default=view_module.DRAW_SEED,
-        metavar="SEED",
-        help=f"the seed the view's band-blind stride offsets are drawn under (default "
-        f"{view_module.DRAW_SEED}). It is on the record either way",
-    )
-    solving.add_argument(
-        "--allow-unranked",
-        action="store_true",
-        help="choose even though the key cannot read every clearing candidate. Unsaid, "
-        "that is REFUSED: an unreadable row sorts last and cannot win a seat while a "
-        "readable one is left, so a pool holding any is a pass that ignores them silently. "
-        "The usual cause is a leg merged before its pictures were swept, and the fix is "
-        "`curate flatness sweep`. This flag is for the other case — a picture on disk that "
-        "will not decode, which has no reading to take and never will",
-    )
-    solving.add_argument(
-        "--group-cap",
-        choices=list(ceiling_module.GROUP_CAP_RULES),
-        default=solve_module.DEFAULT_GROUP_CAP,
-        help=f"which palette-group cap to run under. `{ceiling_module.PROPORTIONAL}` is "
-        f"max(1, floor({ceiling_module.GROUP_CAP_RATE:g} * n)) — 1 up to n=40, 3 at n=150, "
-        f"25 at n=1000 — and is THE DEFAULT since 2026-08-28, the ckpt-88 ruling. "
-        f"`{ceiling_module.IDENTITY}` is ceiling.GROUP_CAP = {ceiling_module.GROUP_CAP}, one "
-        f"seat a map. It is a COUNT under either rule: the same-group DISTANCE row the exact "
-        f"solve carried is retired and not merged",
-    )
-    solving.add_argument(
-        "--spiral-cap",
-        type=float,
-        default=None,
-        metavar="SHARE",
-        help="cap the share of seats sitting at a location the spiral probe calls a "
-        "spiral: at most ceil(SHARE * seats filled), the same spelling a colour target "
-        "is stated in. The verdict comes off `curate spiral-scores` at the cut "
-        "models/spiral/manifest.json carries, and a location with NO score counts "
-        "toward nothing — unknown is not not_spiral. Unsaid, NO cap runs and the "
-        "`spiral` refusal column is zero by construction; 1.0 runs the cap and lets it "
-        "not bind, which is the spelling for a record that should say so",
-    )
-    solving.add_argument(
-        "--key",
-        choices=list(solve_module.KEYS),
-        default=solve_module.DEFAULT_KEY,
-        help="the sort key the pool is walked in AND the quantity the objective is stated "
-        "in. `rank-key` is the fitted form in `curate rank-key` — the location head, both "
-        "judge cutpoints, the calibration stratum and the flatness column — and is THE "
-        "DEFAULT since 2026-08-28, on Matt's acceptance by eye. `p_ge4` is the render judge "
-        "alone. IT MOVES THE ORDER AND THE OBJECTIVE AND NOTHING ELSE: every bar, the "
-        "clearing rule and the neutral pre-selection still read the judge's own columns",
-    )
-    solving.add_argument(
+    release_leg.add_argument(
         "--no-render",
         action="store_true",
         help="take every decision and make no release picture. The contact sheet falls "
         "back to each seat's candidate render and says which it is showing",
     )
-    solving.add_argument(
+    release_leg.add_argument(
         "--release-regime",
         default=release_module.RELEASE_REGIME.spelled,
         metavar="WxHssN",
@@ -2631,7 +2653,7 @@ def add_commands(subcommands) -> None:
         f"wallpaper ships; {release_module.FORMER_RELEASE_REGIME.spelled} is what the "
         f"first three gallery passes shipped at)",
     )
-    solving.add_argument(
+    release_leg.add_argument(
         "--workers",
         type=int,
         default=release_module.DEFAULT_WORKERS,
@@ -2639,12 +2661,12 @@ def add_commands(subcommands) -> None:
         f"{release_module.DEFAULT_WORKERS}, which is this machine's render pool; each "
         f"spawns below-normal by construction)",
     )
-    solving.add_argument(
+    release_leg.add_argument(
         "--no-sheet",
         action="store_true",
         help="take every decision and build no contact sheet",
     )
-    solving.add_argument(
+    release_leg.add_argument(
         "--sheet-out",
         metavar="PATH",
         help="write the contact sheet there instead of beside the record, which is what a "
@@ -3149,13 +3171,22 @@ def add_commands(subcommands) -> None:
         help="print the plan and render nothing, run it, merge its rows into the ledger, "
         "or redraw the autopsy sheet",
     )
-    depth_step.add_argument(
+    # Five groups over twenty-five flags, cut by what each one steers: the leg,
+    # how the budget is split between the four draws, how wide each goes, what
+    # it may stand on, and what it may colour with.
+    leg = depth_step.add_argument_group("the leg and its clock")
+    draw_shares = depth_step.add_argument_group("the draws and their shares")
+    widths = depth_step.add_argument_group("how wide each draw goes")
+    populations = depth_step.add_argument_group("the modes and places the draws work over")
+    draw_palettes = depth_step.add_argument_group("the palettes the draws may offer")
+
+    leg.add_argument(
         "--name",
         required=True,
         help="what to call this run. Its rows, its pictures, its sequence and its record "
         "live under it, and `merge` names it again",
     )
-    depth_step.add_argument(
+    leg.add_argument(
         "--budget",
         type=float,
         default=depth_module.BUDGET_SECONDS,
@@ -3164,7 +3195,7 @@ def add_commands(subcommands) -> None:
         f"{int(depth_module.BUDGET_SECONDS)}), however many engines are spending it. "
         "Checked before every candidate, so a wide near-band block stops inside itself",
     )
-    depth_step.add_argument(
+    leg.add_argument(
         "--rate",
         type=float,
         metavar="SECONDS",
@@ -3174,23 +3205,50 @@ def add_commands(subcommands) -> None:
         "candidate's cost here being amortised over the width. Read a pilot's "
         "`budget.seconds_per_candidate` — per engine — and never its wall over its count",
     )
-    depth_step.add_argument(
-        "--width",
+    leg.add_argument(
+        "--workers",
         type=int,
-        default=depth_module.WIDTH,
+        default=depth_module.DEFAULT_WORKERS,
         metavar="COUNT",
-        help=f"how many candidates one location is offered (default {depth_module.WIDTH})",
+        help=f"engines this leg renders on (default {depth_module.DEFAULT_WORKERS}, this "
+        "machine's render pool). The unit of work is a LOCATION, because one field is "
+        "dumped per (location, mode) and cutting per candidate would make three workers "
+        "dump the same field. A plan with fewer location blocks than workers runs on "
+        "fewer and the record says so",
     )
-    depth_step.add_argument(
-        "--near-width",
+    draw_shares.add_argument(
+        "--seed",
         type=int,
-        metavar="COUNT",
-        help="how many candidates the NEAR-BAND draw offers one location, where that "
-        "differs from --width. It usually does: a near-band location holds its mode and "
-        "pays one dump over the whole set where a breadth location pays one per mode, so "
-        "the width at which the marginal candidate stops paying is not the same number",
+        default=depth_module.DEFAULT_SEED,
+        help=f"the seed every draw here is taken under (default {depth_module.DEFAULT_SEED})",
     )
-    depth_step.add_argument(
+    draw_shares.add_argument(
+        "--shares",
+        metavar="JSON",
+        help='what share of the budget each draw takes, as JSON, e.g. \'{"near_band": 0.3, '
+        '"ranked_bands": 0.4, "flat": 0.0, "mode_floor": 0.3}\'. Unsaid, the three measuring '
+        "draws take their own shares; the mode-floor and conditioned draws take nothing",
+    )
+    draw_shares.add_argument(
+        "--band-weights",
+        metavar="JSON",
+        help="how many turns a round each rank band gets in the ranked draw, as JSON keyed "
+        'by band name, e.g. \'{"band00": 3, "band09": 0}\'. A band left out gets one turn. '
+        "This is how a production run spends what a measuring run learned; a measuring run "
+        "leaves it alone and every band draws alike",
+    )
+    draw_shares.add_argument(
+        "--partition-weights",
+        metavar="JSON",
+        help="what share of the breadth draw each PARTITION gets, as JSON keyed by "
+        'partition, e.g. \'{"mandelbrot": 3, "julia:mandelbrot": 3}\'. Fractions are '
+        "allowed, and this is MERGED OVER the standing table in curation.draw_weights "
+        "(phoenix and phoenix:classic at 0.25, every other partition at 1.0) rather than "
+        "replacing it, so a leg says what it is changing. A soft lean and never a floor: "
+        "a partition left out keeps its standing weight, nothing is capped, and a "
+        "partition is out of the draw only where a weight of 0 is named here",
+    )
+    draw_shares.add_argument(
         "--bands",
         type=int,
         default=depth_module.RANK_BANDS,
@@ -3198,7 +3256,7 @@ def add_commands(subcommands) -> None:
         help=f"how many equal-count bands the head's rank range inside one partition is "
         f"cut into (default {depth_module.RANK_BANDS})",
     )
-    depth_step.add_argument(
+    draw_shares.add_argument(
         "--top-bands",
         type=int,
         default=None,
@@ -3208,28 +3266,40 @@ def add_commands(subcommands) -> None:
         "draw over the whole of it. The ranked draw is never cut: measuring the curve end "
         "to end is its whole job",
     )
-    depth_step.add_argument(
-        "--seed",
+    draw_shares.add_argument(
+        "--centered",
+        choices=list(depth_module.CENTERED_CHOICES),
+        default=depth_module.CENTERED_ANY,
+        help="what the breadth draws do about the walk ledger's `centered` flag: draw only "
+        "centered locations, only the rest, or (default) every drawable location. The flag "
+        "lives on the walk-ledger row and neither the embedding store nor the supply "
+        "sidecar carries it, so it is joined back at plan time",
+    )
+    widths.add_argument(
+        "--width",
         type=int,
-        default=depth_module.DEFAULT_SEED,
-        help=f"the seed every draw here is taken under (default {depth_module.DEFAULT_SEED})",
+        default=depth_module.WIDTH,
+        metavar="COUNT",
+        help=f"how many candidates one location is offered (default {depth_module.WIDTH})",
     )
-    depth_step.add_argument(
-        "--shares",
-        metavar="JSON",
-        help='what share of the budget each draw takes, as JSON, e.g. \'{"near_band": 0.3, '
-        '"ranked_bands": 0.4, "flat": 0.0, "mode_floor": 0.3}\'. Unsaid, the three measuring '
-        "draws take their own shares; the mode-floor and conditioned draws take nothing",
+    widths.add_argument(
+        "--near-width",
+        type=int,
+        metavar="COUNT",
+        help="how many candidates the NEAR-BAND draw offers one location, where that "
+        "differs from --width. It usually does: a near-band location holds its mode and "
+        "pays one dump over the whole set where a breadth location pays one per mode, so "
+        "the width at which the marginal candidate stops paying is not the same number",
     )
-    depth_step.add_argument(
-        "--band-weights",
-        metavar="JSON",
-        help="how many turns a round each rank band gets in the ranked draw, as JSON keyed "
-        'by band name, e.g. \'{"band00": 3, "band09": 0}\'. A band left out gets one turn. '
-        "This is how a production run spends what a measuring run learned; a measuring run "
-        "leaves it alone and every band draws alike",
+    widths.add_argument(
+        "--floor-width",
+        type=int,
+        default=depth_module.FLOOR_WIDTH,
+        metavar="COUNT",
+        help=f"palettes per (proven location, mode) in the mode-floor draw (default "
+        f"{depth_module.FLOOR_WIDTH})",
     )
-    depth_step.add_argument(
+    populations.add_argument(
         "--modes",
         metavar="MODE",
         nargs="+",
@@ -3244,7 +3314,7 @@ def add_commands(subcommands) -> None:
         "at twelve candidates pays six dumps and three modes pays three. To drop a mode "
         "from breadth alone and keep it on the near band, use --breadth-demoted",
     )
-    depth_step.add_argument(
+    populations.add_argument(
         "--cell",
         metavar="CELL",
         nargs="+",
@@ -3258,36 +3328,7 @@ def add_commands(subcommands) -> None:
         "cannot serve out of this map pool is dropped and named. "
         "Needs a share — pass --shares with a 'conditioned' entry",
     )
-    depth_step.add_argument(
-        "--partition-weights",
-        metavar="JSON",
-        help="what share of the breadth draw each PARTITION gets, as JSON keyed by "
-        'partition, e.g. \'{"mandelbrot": 3, "julia:mandelbrot": 3}\'. Fractions are '
-        "allowed, and this is MERGED OVER the standing table in curation.draw_weights "
-        "(phoenix and phoenix:classic at 0.25, every other partition at 1.0) rather than "
-        "replacing it, so a leg says what it is changing. A soft lean and never a floor: "
-        "a partition left out keeps its standing weight, nothing is capped, and a "
-        "partition is out of the draw only where a weight of 0 is named here",
-    )
-    depth_step.add_argument(
-        "--centered",
-        choices=list(depth_module.CENTERED_CHOICES),
-        default=depth_module.CENTERED_ANY,
-        help="what the breadth draws do about the walk ledger's `centered` flag: draw only "
-        "centered locations, only the rest, or (default) every drawable location. The flag "
-        "lives on the walk-ledger row and neither the embedding store nor the supply "
-        "sidecar carries it, so it is joined back at plan time",
-    )
-    depth_step.add_argument(
-        "--floor-untried",
-        metavar="MODE",
-        nargs="*",
-        help="narrow the mode-floor draw's population to opened locations with NO attempt "
-        "in any of these modes. Given with no mode named, that is every mode a dumped "
-        "field cannot serve — the dear half of the roster — which is the opened-but-shallow "
-        "population: the field is known good and the dear modes have never been asked",
-    )
-    depth_step.add_argument(
+    populations.add_argument(
         "--breadth-demoted",
         metavar="MODE",
         nargs="*",
@@ -3296,7 +3337,7 @@ def add_commands(subcommands) -> None:
         "and this is the one thing a weight cannot say — drop a mode from breadth and keep "
         "its near-band seat. Set it per run, for a mode that pays at depth and not at width",
     )
-    depth_step.add_argument(
+    populations.add_argument(
         "--floor-modes",
         metavar="MODE",
         nargs="+",
@@ -3304,7 +3345,16 @@ def add_commands(subcommands) -> None:
         "own settings (`direct_trap_multiply@opacity=0.6,threshold=0.2`). Unsaid, it serves "
         "every mode the ledger says is short of --floor-seats seats today, worst first",
     )
-    depth_step.add_argument(
+    populations.add_argument(
+        "--floor-untried",
+        metavar="MODE",
+        nargs="*",
+        help="narrow the mode-floor draw's population to opened locations with NO attempt "
+        "in any of these modes. Given with no mode named, that is every mode a dumped "
+        "field cannot serve — the dear half of the roster — which is the opened-but-shallow "
+        "population: the field is known good and the dear modes have never been asked",
+    )
+    populations.add_argument(
         "--floor-places",
         metavar="FILE",
         help='a places MANIFEST — a JSONL of {"schema": 1, "key": ...} rows — naming the '
@@ -3315,7 +3365,15 @@ def add_commands(subcommands) -> None:
         "locations — and that is what a list somebody read off the ledger always is. Keys "
         "the opened pool does not hold are counted and named",
     )
-    depth_step.add_argument(
+    populations.add_argument(
+        "--floor-seats",
+        type=int,
+        default=10,
+        metavar="COUNT",
+        help="how many distinct locations over the seating bar a mode needs before it is "
+        "no longer short (default 10, which is about N/100 at N=1000)",
+    )
+    draw_palettes.add_argument(
         "--draw-maps",
         metavar="FILE",
         help='a maps MANIFEST — a JSONL of {"schema": 1, "map": ...} rows — naming the '
@@ -3329,7 +3387,7 @@ def add_commands(subcommands) -> None:
         "quietly, because a manifest cut against the library and spent against the pool "
         "is a narrowing nobody can read off the record",
     )
-    depth_step.add_argument(
+    draw_palettes.add_argument(
         "--draw-cells",
         nargs="+",
         metavar="CELL",
@@ -3345,7 +3403,7 @@ def add_commands(subcommands) -> None:
         "run is refused. Every row the leg writes is stamped hunt.drawn_cells, because a "
         "colour-narrowed leg is not a base rate",
     )
-    depth_step.add_argument(
+    draw_palettes.add_argument(
         "--draw-cutoff",
         type=float,
         default=None,
@@ -3357,34 +3415,7 @@ def add_commands(subcommands) -> None:
         f"the thinnest cell in this library runs out of the 32-map neighbourhood between "
         f"0.10 and 0.15",
     )
-    depth_step.add_argument(
-        "--floor-width",
-        type=int,
-        default=depth_module.FLOOR_WIDTH,
-        metavar="COUNT",
-        help=f"palettes per (proven location, mode) in the mode-floor draw (default "
-        f"{depth_module.FLOOR_WIDTH})",
-    )
-    depth_step.add_argument(
-        "--floor-seats",
-        type=int,
-        default=10,
-        metavar="COUNT",
-        help="how many distinct locations over the seating bar a mode needs before it is "
-        "no longer short (default 10, which is about N/100 at N=1000)",
-    )
-    depth_step.add_argument(
-        "--workers",
-        type=int,
-        default=depth_module.DEFAULT_WORKERS,
-        metavar="COUNT",
-        help=f"engines this leg renders on (default {depth_module.DEFAULT_WORKERS}, this "
-        "machine's render pool). The unit of work is a LOCATION, because one field is "
-        "dumped per (location, mode) and cutting per candidate would make three workers "
-        "dump the same field. A plan with fewer location blocks than workers runs on "
-        "fewer and the record says so",
-    )
-    device_flag(depth_step)
+    device_flag(leg)
     depth_step.set_defaults(handler=curate_depth)
 
     shrinkage_step = steps.add_parser(

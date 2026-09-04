@@ -738,3 +738,74 @@ def test_every_leg_that_drives_the_engine_defaults_to_the_locked_three() -> None
     assert parse(["curate", "manufacture"]).workers == release.DEFAULT_WORKERS
     assert parse(["curate", "solve", "run"]).workers == release.DEFAULT_WORKERS
     assert parse(["curate", "flatness"]).workers == flatness.WORKERS == 3
+
+
+#: Flags on one command past which its `--help` stops being a list and starts
+#: being a wall. Not a measured constant — it is where the line was drawn when
+#: the five commands over it were grouped, and it is here so the sixth trips
+#: this test rather than shipping flat.
+WALL = 20
+
+
+def commands_and_their_flags():
+    """Every command in the tree, with its optionals and its named groups."""
+    import argparse
+
+    def walk(parser, path):
+        flags = [
+            action
+            for action in parser._actions
+            if not isinstance(action, argparse._SubParsersAction | argparse._HelpAction)
+            and action.option_strings
+        ]
+        named = [
+            group
+            for group in parser._action_groups
+            if group is not parser._optionals and group is not parser._positionals
+        ]
+        yield path, parser, flags, named
+        for action in parser._actions:
+            if isinstance(action, argparse._SubParsersAction):
+                for name, child in action.choices.items():
+                    yield from walk(child, f"{path} {name}")
+
+    return list(walk(cli.build_parser(), "fractal-wallpapers"))
+
+
+def test_a_command_past_the_wall_groups_its_help() -> None:
+    """Twenty flags in one undivided block is a reference nobody reads.
+
+    Five commands were over the line when this was written — `harvest` at 45,
+    `curate solve` at 30, `curate depth` at 26, `walk` at 24, `render` at 20 —
+    and the point of the test is the sixth: a flag added to a flat command that
+    tips it over prints a wall unless somebody names the seams, and nothing but
+    this would say so.
+    """
+    flat = [
+        (path, len(flags))
+        for path, _, flags, named in commands_and_their_flags()
+        if len(flags) >= WALL and not named
+    ]
+    assert not flat, (
+        f"over {WALL} flags and no argument groups: {flat}. Read the flags, find the "
+        f"seams the code already has, and `add_argument_group` them"
+    )
+
+
+def test_a_grouped_command_leaves_no_flag_behind() -> None:
+    """Argparse prints an ungrouped optional in the default `options:` block —
+    above every named group and beside `-h` — so one flag that missed a group on
+    a command whose others all found one does not read as ungrouped. It reads as
+    belonging with `--help`, which is worse than the flat list the grouping was
+    for."""
+    stray = {
+        path: sorted(
+            action.option_strings[0]
+            for action in parser._optionals._group_actions
+            if action.option_strings and action.option_strings[0] != "-h"
+        )
+        for path, parser, _, named in commands_and_their_flags()
+        if named
+    }
+    stray = {path: flags for path, flags in stray.items() if flags}
+    assert not stray, f"grouped commands with flags outside every group: {stray}"

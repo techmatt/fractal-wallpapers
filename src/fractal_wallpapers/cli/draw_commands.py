@@ -379,34 +379,42 @@ def add_commands(subcommands) -> None:
         ),
     )
     location_arguments(draw)
-    draw.add_argument(
+    record_input = draw.add_argument_group(
+        "a record instead of flags",
+        "either one names what the flags above would have spelled out",
+    )
+    record_input.add_argument(
         "--location",
         metavar="FILE",
         help="a location record to render instead of spelling one out: the "
         "{family, viewport, render} object a ledger row, a label row and a release "
         "record all already carry",
     )
-    draw.add_argument(
+    record_input.add_argument(
         "--manifest",
         metavar="FILE",
         help="a JSONL of location records to render, one picture per row, into --out-dir. "
         "A file rather than a list of paths, because a batch is hundreds of rows and a "
         "Windows command line is not",
     )
-    draw.add_argument(
+    written = draw.add_argument_group(
+        "the output",
+        "--out is the single render; the other three are the --manifest batch",
+    )
+    written.add_argument(
         "--out",
         default=str(Path("artifacts") / "render.png"),
         help="output PNG path (default: artifacts/render.png)",
     )
-    draw.add_argument(
+    written.add_argument(
         "--out-dir",
         default=str(Path("artifacts") / "renders"),
         help="where a --manifest run's pictures go (default: artifacts/renders). Each is "
         "named by its row and a digest of its own recipe, and renders.jsonl beside them "
         "is the join back to the records",
     )
-    draw.add_argument("--limit", type=int, help="render only the first N rows of a manifest")
-    draw.add_argument(
+    written.add_argument("--limit", type=int, help="render only the first N rows of a manifest")
+    written.add_argument(
         "--resume",
         action="store_true",
         help="skip a row whose picture is already on disk",
@@ -533,7 +541,11 @@ def add_commands(subcommands) -> None:
         ),
     )
     location_arguments(dump)
-    dump.add_argument(
+    # A group for one flag, because `location_arguments` groups the fourteen it
+    # adds and an ungrouped flag beside them prints under `options:` next to
+    # `-h`, reading like something that got left behind.
+    dump_output = dump.add_argument_group("the output")
+    dump_output.add_argument(
         "--out",
         default=str(Path("artifacts") / "field.f32"),
         help="output field path (default: artifacts/field.f32)",

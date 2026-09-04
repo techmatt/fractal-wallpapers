@@ -168,11 +168,12 @@ here because this file is loaded into every session in this repository and a
 chronological log is not a rule. What stays here is the current figure and the rules
 the log produced.
 
-The fast lane is **118.50 s over the 3,383 it holds**, on this machine, idle,
-2026-09-04, at the manifest-guard commit. The slow lane's **7:14 over 3,552** stands
+The fast lane is **122.05 s over the 3,442 it holds**, on this machine, idle,
+2026-09-04, at the help-grouping commit. The slow lane's **7:14 over 3,552** stands
 from the `run_layout` extraction and has not been re-run since.
 
-**That 118.50 s is a third off and it is not an optimisation.** The same tree at
+**The 118.50 s this figure came off was a third off, and not an optimisation.** The
+same tree at
 `9a62672`, measured the same evening on the same idle box, is **177.48 s** over the
 same tests. The difference is three test files that had been reading this machine's
 **real** 67k-row supply sidecar and its real expressed readout on every test, because
@@ -185,7 +186,11 @@ that follows is the one below about redirecting at the roots.
 split at "170.30 s over 3,440"; that same commit collects **3,375 selected / 3,484
 total** today and runs 3,369 passed / 14 skipped in 177.48 s. The count is 57 short of
 what was written down and nothing since has added or removed a test. Unexplained, left
-in the log rather than edited.
+in the log rather than edited — and at the help grouping it came back: HEAD collects
+**3,440** again, twice in a row, over a suite three commits later that adds no test. So
+**the collected count is not stable between sessions on an unchanged tree**, which is
+the reason to record the count beside the clock and never to reconcile one against a
+reading taken on another day.
 
 **Its first reading that session was 300.7 s and the extra 135 s was a defect, not the
 box.** That run also failed `test_training_resume.py` on a CUDA OOM with six other

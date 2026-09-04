@@ -106,7 +106,16 @@ def write_tracked_json(path: Path, document: dict) -> Path:
     return path
 
 
-def device_flag(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
+#: What the four flag helpers below take. A parser, or one of its argument
+#: groups: `add_argument` is the same call on either, and a command whose help
+#: is grouped hands the group so the shared flag prints under a heading instead
+#: of beside `-h`. Annotated rather than left implicit because the helpers are
+#: called both ways now — `walk` and `harvest` hand a group, twenty-odd other
+#: commands hand the parser.
+FlagContainer = argparse.ArgumentParser | argparse._ArgumentGroup
+
+
+def device_flag(parser: FlagContainer) -> FlagContainer:
     """Where a head runs, on every command that loads one.
 
     Thirty-two commands take this and every one of them meant the same thing, but
@@ -121,7 +130,7 @@ def device_flag(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     return parser
 
 
-def grace_flag(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
+def grace_flag(parser: FlagContainer) -> FlagContainer:
     """The expansion grace, on every command that walks.
 
     One definition for the same reason [`scoring_flags`] is one: a harvest that
@@ -141,7 +150,7 @@ def grace_flag(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     return parser
 
 
-def scoring_flags(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
+def scoring_flags(parser: FlagContainer) -> FlagContainer:
     """The three flags every command that scores locations takes.
 
     One definition, because a walk and the harvest that wraps it have to be able
@@ -203,7 +212,7 @@ def novelty_default(name: str):
     return getattr(novelty, name)
 
 
-def ledger_flags(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
+def ledger_flags(parser: FlagContainer) -> FlagContainer:
     """The two ways an invocation declares which ledgers it is bound to.
 
     One definition, because every curation stage has to declare the binding the
@@ -329,43 +338,56 @@ def location_arguments(draw: argparse.ArgumentParser) -> None:
 
     Shared by `render` and `dump-field`, which describe the same thing and
     differ only in how far down the pipeline they go.
+
+    Grouped, and the groups are made here rather than by each caller: fourteen
+    flags in one block is a wall, and they answer three separate questions —
+    which recurrence, which frame of the plane, and how the count that comes
+    back becomes pixels. Made here, both commands describe a location the same
+    way, and a caller that adds flags of its own adds its own group beside
+    these rather than leaving them stranded in `options:`.
     """
-    draw.add_argument(
+    recurrence = draw.add_argument_group("the recurrence")
+    frame = draw.add_argument_group("the frame")
+    coloring = draw.add_argument_group(
+        "the coloring",
+        "the cap is here because what it bounds is the count the colormap reads",
+    )
+    recurrence.add_argument(
         "--family",
         choices=["mandelbrot", "multibrot", "julia", "phoenix"],
         default="mandelbrot",
         help="which recurrence to iterate (default: mandelbrot)",
     )
-    draw.add_argument(
+    recurrence.add_argument(
         "--degree",
         type=int,
         default=2,
         help="exponent d in z^d + c, for multibrot (3-5) and julia (2-5)",
     )
-    draw.add_argument(
+    recurrence.add_argument(
         "--c",
         nargs=2,
         metavar=("RE", "IM"),
         help="fixed constant c: required for julia, optional for phoenix",
     )
-    draw.add_argument(
+    recurrence.add_argument(
         "--p",
         nargs=2,
         metavar=("RE", "IM"),
         help="phoenix coefficient of z_(n-1) (default: -0.5 0)",
     )
-    draw.add_argument(
+    recurrence.add_argument(
         "--z-prev",
         nargs=2,
         metavar=("RE", "IM"),
         help="phoenix slice coordinate z_(-1) (default: 0 0)",
     )
-    draw.add_argument("--center-re", help="view center, real part (default: the family's home)")
-    draw.add_argument("--center-im", help="view center, imaginary part")
-    draw.add_argument(
+    frame.add_argument("--center-re", help="view center, real part (default: the family's home)")
+    frame.add_argument("--center-im", help="view center, imaginary part")
+    frame.add_argument(
         "--width", help="view width in plane units (default: the family's home width)"
     )
-    draw.add_argument(
+    frame.add_argument(
         "--resolution",
         nargs=2,
         type=int,
@@ -373,17 +395,17 @@ def location_arguments(draw: argparse.ArgumentParser) -> None:
         default=[1920, 1080],
         help="output size in pixels (default: 1920 1080)",
     )
-    draw.add_argument(
+    frame.add_argument(
         "--supersample",
         type=int,
         default=2,
         help="samples per output pixel, per axis (default: 2)",
     )
-    draw.add_argument(
+    coloring.add_argument(
         "--mode",
         help=f"named coloring (default: {DEFAULT_MODE}); see the modes subcommand",
     )
-    draw.add_argument(
+    coloring.add_argument(
         "--discrete",
         nargs="?",
         type=int,
@@ -396,12 +418,12 @@ def location_arguments(draw: argparse.ArgumentParser) -> None:
             "that draws a mode can reach it"
         ),
     )
-    draw.add_argument(
+    coloring.add_argument(
         "--colormap",
         default="twilight_shifted",
         help="colormap name under data/palettes (default: twilight_shifted)",
     )
-    draw.add_argument(
+    coloring.add_argument(
         "--maxiter",
         type=int,
         help="iteration cap; omit to let the depth-aware policy choose",

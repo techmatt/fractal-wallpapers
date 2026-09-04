@@ -14,6 +14,18 @@ submodule as an attribute of its package, which is one `__getattr__` never
 sees. A `cli/render.py` would shadow `cli.render` for good. The suffix makes
 that collision impossible for every group at once instead of by exception.
 
+A command carrying twenty flags or more groups its help with
+`add_argument_group`, and once one flag on a command is grouped they all are —
+argparse prints an ungrouped optional above every named group, beside `-h`,
+where it reads as belonging with `--help` rather than as having missed a
+heading. Group titles are lowercase noun phrases naming what the flags steer,
+and `walk` and `harvest` deliberately share six of them, because a harvest is a
+walk with an economics layer over it. `tests/test_cli.py` holds both halves of
+the rule. The shared flag helpers in [`common`] take a parser OR one of its
+groups, so a grouped command hands the group and an ungrouped one hands the
+parser; `common.location_arguments` is the exception and makes its own three,
+because the fourteen flags it adds are themselves three questions.
+
 Handler names resolve through [`__getattr__`] rather than being re-exported,
 which is the rule the candidate-ledger split arrived at the hard way: written
 eagerly, `from .draw_commands import render as render` makes two independent
