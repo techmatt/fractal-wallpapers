@@ -283,3 +283,8 @@ superseded, not six.
 `bar*.json` and `comparison*.json`, the bars and the reads. `<run>/config.json` and
 `<run>/metrics.json`, each run's recipe and record. `<run>/scores_<kind>.jsonl`,
 that run's read of each sheet with every row carrying its whole join.
+
+And [`RUNS.md`](RUNS.md), which is the index a directory listing is not: one line
+per run directory, to the band or role it belongs to. Twenty-five of them, across
+two deploy bands, three candidates, two variants, an ablation, three mislaunches
+and one retired design.

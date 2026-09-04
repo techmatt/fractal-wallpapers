@@ -144,7 +144,7 @@ def latest() -> str:
     if not held:
         raise TentativeRefused(
             f"no tentative gallery has been recorded on this machine "
-            f"({tracked_name(store_root())}). `curate gallery record` writes one."
+            f"({tracked_name(store_root())}). `curate solve record` writes one."
         )
     return held[-1]
 
