@@ -256,6 +256,16 @@ tree shared by both its tests, which is what puts it in this lane rather than th
 one. Nothing here moved the digit: a slow lane flat across twenty-two added tests is
 the expected shape, and it is recorded because the figure above it had gone stale.
 
+It read **121.41 s over 3,532, 116 deselected, nothing skipped** at the nested-subparser
+split, idle, 2026-09-04 — seventy-four tests more than the reading below and 1.55 s over
+it, which is noise. All seventy-four are `test_nested_verbs.py`, and seventy-one of them
+are one parametrised guard: one representative command line per nested `curate` verb,
+parsed and compared against the namespace it resolved to before the split. Each costs a
+whole `build_parser()`, which is why seventy-four tests are 1.55 s rather than nothing,
+and why they are still fast-lane tests — a parser build reads no store and makes no
+picture. The two extra deselected are not theirs: they are `test_line_endings.py`'s two
+slow guards, which landed between this reading and the one below it.
+
 It read **119.86 s over 3,458, 114 deselected, nothing skipped** at the seconds-share
 fix, idle, 2026-09-04 — four tests more than the reading below and 0.56 s over it,
 which is noise. Three of the four are the ruling's own guards and the fourth pins

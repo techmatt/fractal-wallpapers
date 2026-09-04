@@ -500,38 +500,6 @@ def curate_candidate_ledger(args: argparse.Namespace) -> int:
     return 0
 
 
-#: The `curate solve` flags that only `run` reads. A record is `run` with nothing
-#: changed — that is the whole claim it makes — so a record handed one of these
-#: would not be reproducible from `curate solve run`, and the failure would be
-#: silent: the flag dropped on the floor, the stamp written anyway. Named rather
-#: than inferred, because a flag added to `run` should not quietly become a flag a
-#: record accepts. What is left is what a record passes through: `--n`, `--key`,
-#: `--no-swap`, `--swap-seconds`, `--spiral-cap`, and its own `--solve-name`.
-RUN_ONLY_SOLVE_FLAGS = (
-    "allow_unranked",
-    "draw_seed",
-    "explain_seats_of",
-    "flat_floor",
-    "group_cap",
-    "locations",
-    "mode_floor",
-    "name",
-    "neutral_radius",
-    "no_diversity",
-    "no_preselection",
-    "no_render",
-    "no_sheet",
-    "release_regime",
-    "rows_per_seat",
-    "sheet_out",
-    "target",
-    "themed",
-    "themed_cap",
-    "themed_radius",
-    "workers",
-)
-
-
 def curate_recorded_solve(args: argparse.Namespace) -> int:
     """Record a solve under a stamp that never moves, browse one, or resolve an ID."""
     from fractal_wallpapers.curation import tentative
@@ -634,19 +602,11 @@ def curate_solve(args: argparse.Namespace) -> int:
     from fractal_wallpapers.curation import release as release_module
 
     if args.what != "run":
-        # The defaults come from a bare parse of the same verb rather than from a
-        # table here: a table would be a second copy of every default in the
-        # parser, and the first one to drift would refuse a flag nobody set.
-        from fractal_wallpapers.cli import build_parser
-
-        bare = build_parser().parse_args(["curate", "solve", args.what])
-        named = sorted(
-            flag for flag in RUN_ONLY_SOLVE_FLAGS if getattr(args, flag) != getattr(bare, flag)
-        )
-        if named:
-            spelled = ", ".join(f"--{flag.replace('_', '-')}" for flag in named)
-            print(f"`curate solve {args.what}` does not read {spelled}.")
-            return 1
+        # A flag `run` reads and this verb does not is refused BY THE PARSER, at
+        # the verb: each of the five is its own subparser and carries only what
+        # its handler reads. This used to be a list of run-only flags compared
+        # against a bare re-parse of the same verb, which was the same rule
+        # enforced a step too late — after argparse had already accepted the line.
         return curate_recorded_solve(args)
     if args.n is None:
         args.n = candidate_ledger.FIRST_SOLVE
@@ -1023,11 +983,6 @@ def curate_hunt(args: argparse.Namespace) -> int:
     from fractal_wallpapers.curation import hunt
 
     try:
-        order = dict(_work_order(text) for text in (args.work_order or ()))
-    except ValueError as refusal:
-        print(refusal)
-        return 1
-    try:
         if args.what == "frames":
             path, rows = hunt.build_frames()
             print(f"{display_path(path)} — {rows:,} frame(s)")
@@ -1039,6 +994,13 @@ def curate_hunt(args: argparse.Namespace) -> int:
             record = json.loads(hunt.record_path(args.name).read_text(encoding="utf-8"))
             print(f"{display_path(hunt.contact_sheet(args.name, record))}")
             return 0
+        # Below the three that return, because --work-order is `plan`'s and
+        # `run`'s and the other three verbs do not carry it to read.
+        try:
+            order = dict(_work_order(text) for text in (args.work_order or ()))
+        except ValueError as refusal:
+            print(refusal)
+            return 1
         if args.what == "plan":
             if args.rebuild_frames:
                 hunt.frames(rebuild=True)
@@ -1706,861 +1668,21 @@ def curate_expressed(args: argparse.Namespace) -> int:
     return 0
 
 
-def add_commands(subcommands) -> None:
-    """The last stage: harvest supply in, released wallpapers out."""
-    from fractal_wallpapers.curation import below_bar as below_bar_module
-    from fractal_wallpapers.curation import budget as budget_module
-    from fractal_wallpapers.curation import candidate_ledger as candidate_ledger_module
-    from fractal_wallpapers.curation import ceiling as ceiling_module
-    from fractal_wallpapers.curation import colors as colors_module
-    from fractal_wallpapers.curation import depth as depth_module
-    from fractal_wallpapers.curation import distinct as distinct_module
-    from fractal_wallpapers.curation import embeddings as embeddings_module
-    from fractal_wallpapers.curation import flatness as flatness_module
-    from fractal_wallpapers.curation import growth as growth_module
-    from fractal_wallpapers.curation import headroom as headroom_module
-    from fractal_wallpapers.curation import hunt as hunt_module
-    from fractal_wallpapers.curation import mine as mine_module
-    from fractal_wallpapers.curation import pool_draw as pool_draw_module
-    from fractal_wallpapers.curation import release as release_module
-    from fractal_wallpapers.curation import rules as rules_module
-    from fractal_wallpapers.curation import run as run_module
-    from fractal_wallpapers.curation import shrinkage as shrinkage_module
-    from fractal_wallpapers.curation import signatures as signatures_module
+def solve_flags_a_record_keeps(*, demands, search):
+    """The four flags `curate solve run` and `curate solve record` both read.
+
+    A record IS a run, taken once and kept, so the flags it accepts are the ones
+    it can pass straight through. Written once for [`common.device_flag`]'s
+    reason and this one besides: a record that took a flag it did not read would
+    not be reproducible from the `run` it claims to be, and the drift would show
+    up as two `--help` texts describing one flag two ways.
+
+    Two containers rather than one parser, because `run` groups its help — it
+    carries twenty-six flags — and `record` at six does not, so a record hands
+    the same parser twice.
+    """
     from fractal_wallpapers.curation import solve as solve_module
-    from fractal_wallpapers.curation import tentative as tentative_module
-    from fractal_wallpapers.curation import view as view_module
-    from fractal_wallpapers.palettes import dominance as dominance_module
 
-    curating = subcommands.add_parser(
-        "curate",
-        help="make a release: score the supply, colorize, select, render at full size",
-        description=(
-            "The end-to-end path. Every step is bound to the ledgers it reads — name them "
-            "with --ledger, or name the harvest that wrote them with --harvest; nothing "
-            "defaults to all of them. `score` reads the bound ledgers through the location "
-            "head into a sidecar this stage owns, upserting one binding's rows without "
-            "touching another's and never rewriting a ledger; `plan` prints the offer and "
-            "the budget it implies without making a picture; and `run` does the whole thing, "
-            "records its binding in its own plan, and records every decision."
-        ),
-    )
-    steps = curating.add_subparsers(dest="step", required=True)
-
-    reading = ledger_flags(
-        steps.add_parser(
-            "score",
-            help="read the harvest ledgers through the location head",
-            description=(
-                "Reads each gate-surviving location through the head, at the regime its own "
-                "ledger row names: a walk's gate render where the row's recorded digest still "
-                "describes it, the deploy view already on disk for the standing stock. No "
-                "deploy-geometry render is ever demanded for a row that was not scored at one. "
-                "Resumable in both halves: a picture already on disk is not re-made."
-            ),
-        )
-    )
-    device_flag(reading)
-    reading.add_argument("--limit", type=int, help="score only this many locations")
-    reading.add_argument(
-        "--key-file",
-        metavar="PATH",
-        help="score only the locations this key manifest names, out of the bound ledgers "
-        "(`curate reach --write` writes one). Like --limit it is a partial pass, so it "
-        "upserts what it looked at and clears nothing",
-    )
-    reading.set_defaults(handler=curate_score)
-
-    sidecar = steps.add_parser(
-        "sidecar",
-        help="the supply sidecar's durability: record it, check it, restore it",
-        description=(
-            "artifacts/curation/supply_scores.jsonl is the head's read of the standing "
-            "supply and the one file under the regenerable tree that the checkout cannot "
-            "regenerate — the ledgers it reads are under that tree too. It is too big and "
-            "too churny to track, so what the history keeps is a manifest: the row count, "
-            "the byte count, the sha256 and the per-ledger split. `save` writes a copy to "
-            "the archive tier and records it; `check` reads the live file against the "
-            "manifest; `restore` brings the copy back, counted before it is believed."
-        ),
-    )
-    sidecar.add_argument(
-        "what",
-        choices=["check", "save", "restore"],
-        help="check the live file against the manifest, save a fresh copy and manifest, "
-        "or restore the copy",
-    )
-    sidecar.add_argument(
-        "--force",
-        action="store_true",
-        help="with `restore`: overwrite a live sidecar that holds MORE rows than the "
-        "manifest records. Those rows are a harvest nobody has saved yet",
-    )
-    sidecar.set_defaults(handler=curate_sidecar)
-
-    amendments = steps.add_parser(
-        "amendments",
-        help="the score amendment's durability: record it, check it, restore it",
-        description=(
-            "artifacts/curation/score_amendments.jsonl is what `curate redraw` writes: one "
-            "append-only row per (location, engine build) re-reading a standing seating "
-            "score off a view drawn again for it. Every reader of a seating score overlays "
-            "it, so losing it does not shrink the supply — it silently puts the supply back "
-            "on the numbers the re-read corrected. Rebuilding it is `curate redraw` over "
-            "the whole supply, about ninety thousand renders, and only on a machine whose "
-            "engine still fingerprints the same. So the bytes go to the archive tier and "
-            "the history keeps the manifest: the row count, the byte count, the sha256 and "
-            "the per-build split."
-        ),
-    )
-    amendments.add_argument(
-        "what",
-        choices=["check", "save", "restore"],
-        help="check the live amendment against the manifest, save a fresh copy and "
-        "manifest, or restore the copy",
-    )
-    amendments.add_argument(
-        "--force",
-        action="store_true",
-        help="with `restore`: overwrite a live amendment that holds MORE rows than the "
-        "manifest records. Those rows are a redraw nobody has saved yet",
-    )
-    amendments.set_defaults(handler=curate_amendments)
-
-    frames = steps.add_parser(
-        "frames",
-        help="the hunt frame index's durability: record it, check it, restore it",
-        description=(
-            "artifacts/curation/hunt/frames.jsonl is the frame every mining leg draws a "
-            "location at, looked up through `hunt.frame_for`. It was cut from a 97.8 MiB "
-            "pool-wide refinement scan that no job in this repository builds and that was "
-            "deleted on 2026-09-02, so `curate hunt frames` refuses and there is no rebuild "
-            "at any price — this file is the only copy of those frame choices. Losing it is "
-            "silent by design: a location it has no row for draws at the frame it already "
-            "carries. So the bytes go to the archive tier, the history keeps the manifest, "
-            "and `curate run` refuses to start without it."
-        ),
-    )
-    frames.add_argument(
-        "what",
-        choices=["check", "save", "restore"],
-        help="check the live index against the manifest, save a fresh copy and manifest, "
-        "or restore the copy",
-    )
-    frames.add_argument(
-        "--force",
-        action="store_true",
-        help="with `restore`: overwrite a live index that holds MORE rows than the manifest "
-        "records. There is no job that appends to this file, so that is a state to explain "
-        "rather than one to overwrite",
-    )
-    frames.set_defaults(handler=curate_frames)
-
-    mass_sweep = steps.add_parser(
-        "mass-sweep",
-        help="the colour-mass sweep log's durability: record it, check it, restore it",
-        description=(
-            "artifacts/curation/palette_mass_sweep/rows.jsonl is the 25.7 MB experiment log "
-            "the tracked colour-mass map was cut from: one row per (palette group, mode, "
-            "location) with its 48-cell vector, its recipe and whether autolevel acted. It "
-            "is insurance rather than a record anything reads — what production reads is "
-            "the map under data/palettes/color_mass/ — and it is the only thing that would "
-            "let the map be re-cut on other terms. Re-deriving it is 8.7 h of wall over "
-            "27,053 renders whose pictures were deleted, so the bytes go to the archive "
-            "tier and the history keeps the manifest."
-        ),
-    )
-    mass_sweep.add_argument(
-        "what",
-        choices=["check", "save", "restore"],
-        help="check the live log against the manifest, save a fresh copy and manifest, "
-        "or restore the archived copy",
-    )
-    mass_sweep.add_argument(
-        "--force",
-        action="store_true",
-        help="with `restore`: overwrite a live log that holds MORE rows than the manifest records",
-    )
-    mass_sweep.set_defaults(handler=curate_mass_sweep)
-
-    redrawing = steps.add_parser(
-        "redraw",
-        help="re-render every stale location view and amend the score read off it",
-        description=(
-            "A standing seating score is a reading of a picture, and the sidecar row names "
-            "which picture. For tens of thousands of rows that name no longer describes "
-            "anything: the view was drawn at a geometry the read no longer uses, under a "
-            "recipe whose digest has since moved, or by an engine build nobody wrote down — "
-            "and the build is not in the digest, so nothing before this could ask. This "
-            "re-renders every stale view at the node regime, reads it through the shipped "
-            "location head, and appends the result to an APPEND-ONLY amendment keyed by "
-            "(location key, engine fingerprint). The sidecar is never edited. Every reader "
-            "of a seating score prefers the amendment from the moment it lands. Serial "
-            "(the engine threads inside one render) at about 0.03 s a view, so a whole "
-            "supply is the best part of an hour; idempotent and resumable."
-        ),
-    )
-    redrawing.add_argument(
-        "--limit",
-        type=int,
-        help="stop after this many stale locations. A smoke leg, not a scoping flag: the "
-        "amendment is append-only, so a limited pass amends a prefix and leaves the rest "
-        "stale rather than declaring them current",
-    )
-    redrawing.add_argument(
-        "--no-resume",
-        action="store_true",
-        help="re-read locations this engine build has already amended. Off by default, "
-        "which is what makes an interrupted refresh cheap to finish",
-    )
-    device_flag(redrawing)
-    redrawing.set_defaults(handler=curate_redraw)
-
-    embedding_step = steps.add_parser(
-        "embed",
-        help="one DINOv2 vector per admitted location, from a neutral render",
-        description=(
-            "The gallery pass picks locations by how far apart they look, so every location "
-            "the judge admits over the junk floor needs one picture that says nothing about "
-            "a coloring nobody has chosen yet: the NEUTRAL RENDER, this location's smooth "
-            "field through one fixed cyclic map at one fixed small geometry. A frozen DINOv2 "
-            "reads a unit vector off it and the vector is kept forever, keyed by the exact "
-            "location key. Incremental and idempotent: what is already stored is subtracted "
-            "before anything is drawn, so a later harvest's admissions are a second run of "
-            "this. Exits non-zero when the store does not cover the admitted population."
-        ),
-    )
-    device_flag(embedding_step)
-    embedding_step.add_argument(
-        "--sample",
-        type=int,
-        help="embed a stratified draw of this many outstanding locations rather than all of "
-        "them, spread over the partitions in proportion to their supply. The pilot",
-    )
-    embedding_step.add_argument(
-        "--limit", type=int, help="stop after this many locations; a prefix, not a sample"
-    )
-    embedding_step.add_argument(
-        "--seed",
-        type=int,
-        default=embeddings_module.SAMPLE_SEED,
-        help=f"the seed --sample draws under (default: {embeddings_module.SAMPLE_SEED})",
-    )
-    embedding_step.add_argument(
-        "--unit-seconds",
-        type=float,
-        default=embeddings_module.UNIT_SECONDS,
-        help=f"kill one neutral render that runs past this and carry on "
-        f"(default: {embeddings_module.UNIT_SECONDS:g})",
-    )
-    embedding_step.set_defaults(handler=curate_embed)
-
-    embedding_store = steps.add_parser(
-        "embeddings",
-        help="the embedding store's durability: record it, check it, restore it",
-        description=(
-            "The vectors cost a pass of the encoder over every admitted location and their "
-            "input lives under the regenerable tree, so the store gets what the supply "
-            "sidecar gets: a copy on the archive tier, a tracked manifest carrying the row "
-            "count, the bytes, the sha256 and the frozen choices every vector was made "
-            "under, and a restore that counts before it believes. The neutral JPEGs are not "
-            "copied: every row carries the join its own picture re-renders from."
-        ),
-    )
-    embedding_store.add_argument(
-        "what",
-        choices=["check", "save", "restore"],
-        help="check the live store against the manifest, save a fresh copy and manifest, "
-        "or restore the copy",
-    )
-    embedding_store.add_argument(
-        "--force",
-        action="store_true",
-        help="with `restore`: overwrite a live store that holds MORE rows than the manifest "
-        "records. Those rows are admissions nobody has saved yet",
-    )
-    embedding_store.set_defaults(handler=curate_embeddings)
-
-    spiral_store = steps.add_parser(
-        "spiral-scores",
-        help="P(spiral) per location: build the store, or record, check and restore it",
-        description=(
-            "One row per location, keyed on the location key, saying what the shipped "
-            "spiral probe makes of the place. `build` is NOT a render leg: the probe reads "
-            "DINOv2 over the neutral render and the embedding store already holds that "
-            "vector for every admitted location, so scoring one is a 384-column dot product "
-            "and the whole store scores in under two seconds. It is also run automatically "
-            "at the end of `curate embed`, so a newly admitted location arrives with a "
-            "score rather than being drawable before it has one. A location with NO row "
-            "here reads as UNKNOWN everywhere and counts toward nothing: unknown is never "
-            "not_spiral. The reader is `curate solve --spiral-cap`."
-        ),
-    )
-    spiral_store.add_argument(
-        "what",
-        choices=["build", "check", "save", "restore"],
-        help="score every embedded location the store does not hold; or check the live "
-        "store against the manifest, save a fresh copy and manifest, or restore the copy",
-    )
-    spiral_store.add_argument(
-        "--limit",
-        type=int,
-        default=None,
-        metavar="N",
-        help="with `build`: score at most this many outstanding locations",
-    )
-    spiral_store.add_argument(
-        "--force",
-        action="store_true",
-        help="with `restore`: overwrite a live store that holds MORE rows than the manifest "
-        "records. Those rows are locations nobody has saved yet",
-    )
-    spiral_store.set_defaults(handler=curate_spiral_scores)
-
-    neighbouring = steps.add_parser(
-        "neighbours",
-        help="nearest neighbours by cosine in the embedding store, with their pictures",
-        description=(
-            "The sanity read, and it does not settle anything by itself: it names the "
-            "neutral JPEGs of a few random locations and of whatever the store says is "
-            "nearest to each, so a person can open them and see whether near means alike."
-        ),
-    )
-    neighbouring.add_argument("-k", type=int, default=3, help="neighbours per row (default: 3)")
-    neighbouring.add_argument("--sample", type=int, default=10, help="rows to read (default: 10)")
-    neighbouring.add_argument(
-        "--seed",
-        type=int,
-        default=embeddings_module.SAMPLE_SEED,
-        help=f"the seed the rows are drawn under (default: {embeddings_module.SAMPLE_SEED})",
-    )
-    neighbouring.set_defaults(handler=curate_neighbours)
-
-    reaching = steps.add_parser(
-        "reach",
-        help="which judged locations the gallery pass cannot select, and why",
-        description=(
-            "The gallery pass selects over the ADMITTED population — every location the "
-            "location judge puts over the junk floor — and the accumulated pool is a "
-            "different set. A judged location outside the admitted one cannot be chosen, "
-            "however good the wallpaper somebody already made of it, and there are two ways "
-            "for that to happen: today's head reads it below the junk floor, which is a "
-            "judgement, or the supply sidecar has no row for it at all, which is not a "
-            "judgement about anything. The second is a location whose ledger was never "
-            "scored into the sidecar."
-        ),
-    )
-    reaching.add_argument(
-        "--keys", action="store_true", help="print every location key, not only the counts"
-    )
-    reaching.add_argument(
-        "--write",
-        metavar="PATH",
-        help="write the locations with NO sidecar row at all as a key manifest, which "
-        "`curate score --key-file` reads back. The other cause - below the junk floor - is a "
-        "judgement and not a gap, so it is never written here",
-    )
-    reaching.set_defaults(handler=curate_reach)
-
-    naming_ledgers = steps.add_parser(
-        "ledgers",
-        help="which walk ledger each released row names, and whether it still resolves",
-        description=(
-            "Provenance, not a repair. A released row carries its whole join and re-renders "
-            "from itself, so a row whose ledger has gone is still a wallpaper somebody can "
-            "rebuild — what it cannot be is re-OFFERED, because an intake starts from "
-            "ledgers. Resolution goes through the same tier funnel every reader uses, so a "
-            "ledger that has merely been archived reads as present."
-        ),
-    )
-    naming_ledgers.add_argument(
-        "--write",
-        action="store_true",
-        help="write the tracked provenance record as well as printing it",
-    )
-    naming_ledgers.set_defaults(handler=curate_ledgers)
-
-    rereading = steps.add_parser(
-        "rescore",
-        help="read every candidate the pool holds through today's finished-render heads",
-        description=(
-            "Not `score`, which reads LOCATIONS through the location head over the walk "
-            "ledgers. This reads the accumulated pool's own candidate renders — "
-            "pictures/NNNN.jpg, 640x360, the picture each gate decision was taken on — "
-            "through whichever finished-render head owns each row, at the artifact shipped "
-            "now. The run's own scores are left exactly as they are, as that night's "
-            "provenance; the reading lands in a `scores_current` block carrying the head "
-            "sha. Rows judged by a retired head gain the cutpoints it never had."
-        ),
-    )
-    device_flag(rereading)
-    rereading.set_defaults(handler=curate_rescore)
-
-    remaking = steps.add_parser(
-        "re-render",
-        help="put back every pool candidate render the pool names and the disk does not have",
-        description=(
-            "The pool's pictures live under the regenerable tree, and `rescore` refuses "
-            "outright while one of them is missing — a reading of most of the pool is not a "
-            "reading of the pool. This is the repair that refusal points at. Each row's "
-            "recipe is rebuilt from the join the row carries, and it is rendered only if "
-            "the recipe the RENDER PATH derives digests to the same name: the same pixels, "
-            "not similar ones, because every reading the pool holds was taken on the pixels "
-            "that used to be there. A row that will not reproduce is recorded and skipped. "
-            "Writes no row, no reading and no manifest."
-        ),
-    )
-    remaking.add_argument(
-        "--workers",
-        type=int,
-        default=candidate_ledger_module.RE_RENDER_WORKERS,
-        metavar="COUNT",
-        help="how many engines to drive at once (default "
-        f"{candidate_ledger_module.RE_RENDER_WORKERS}, this machine's render pool). More "
-        "than three, or any of them at normal priority, makes the desktop unusable",
-    )
-    remaking.add_argument(
-        "--limit",
-        type=int,
-        help="stop after this many pictures, taken as WHOLE (location, mode) pairs. What a "
-        "pilot prices the whole leg off",
-    )
-    remaking.set_defaults(handler=curate_re_render)
-
-    def with_shape(parser, defaults=True):
-        # A run takes `None` where `plan` takes a number: a resumed run reads its
-        # shape back out of its own sidecar, and a flag that defaulted to 6 here
-        # could not be told from a flag that asked for 6.
-        parser.add_argument(
-            "-n",
-            type=int,
-            default=run_module.DEFAULT_N if defaults else None,
-            help=f"release slots to fill (default: {run_module.DEFAULT_N}, or the resumed "
-            f"run's own). A run's release is a DIAGNOSTIC — enough pictures to see that the "
-            f"path works — and not a claim about what is worth shipping, which is a decision "
-            f"over the whole accumulated pool",
-        )
-        parser.add_argument(
-            "--strange-share",
-            type=float,
-            default=run_module.STRANGE_SHARE if defaults else None,
-            help=f"share of the slots the strange judge fills "
-            f"(default: {run_module.STRANGE_SHARE:g})",
-        )
-        parser.add_argument(
-            "--strange-modes",
-            type=int,
-            default=None,
-            help=f"modes the strange judge draws at each location it pays for "
-            f"(default: {budget_module.MODES_PER_LOCATION[budget_module.STRANGE]}). The "
-            f"smooth judge always draws one: the smooth coloring is the only mode it owns "
-            f"and a second draw would render the same picture",
-        )
-        parser.add_argument(
-            "--attempts", type=int, help="cap the total colorize attempts; omit for the multiple"
-        )
-        return parser
-
-    planning = with_shape(
-        ledger_flags(
-            steps.add_parser(
-                "plan",
-                help="print the offer and the budget it implies, making nothing",
-            )
-        )
-    )
-    planning.set_defaults(handler=curate_plan)
-
-    running = with_shape(
-        ledger_flags(
-            steps.add_parser(
-                "run",
-                help="make a release and record every decision",
-                description=(
-                    "Full resolution is the expensive part — measure one before asking for "
-                    "many. Nothing is padded or backfilled: a judge that cannot fill its "
-                    "quota under the slot and supply caps, the acting bar, and the "
-                    "one-wallpaper-per-location rule ships fewer, and says so. "
-                    "A long run wants --wall-budget: it stops cleanly at the last unit it "
-                    "can afford rather than finding out afterwards, and --resume continues "
-                    "an interrupted one from what it finished."
-                ),
-            )
-        ),
-        defaults=False,
-    )
-    naming = running.add_mutually_exclusive_group(required=True)
-    naming.add_argument("--run", help="the name this run's records carry")
-    naming.add_argument(
-        "--resume",
-        metavar="RUN",
-        help="continue an interrupted run: its finished attempts and release renders are "
-        "skipped, and its shape is read back from its own plan rather than from these flags",
-    )
-    running.add_argument("--seed", type=int, help="run seed (default: 0)")
-    running.add_argument(
-        "--wall-budget",
-        type=float,
-        metavar="SECONDS",
-        help="stop cleanly rather than start a unit of work that would overrun this. Covers "
-        "the whole run, intake through the last release render",
-    )
-    running.add_argument(
-        "--workers",
-        type=int,
-        default=3,
-        help="worker processes for the full-resolution pass (1 is the serial path)",
-    )
-    device_flag(running)
-    running.add_argument(
-        "--ephemeral",
-        action="store_true",
-        help="redirect the WHOLE record store under scratch/. A rehearsal that writes the "
-        "durable store adds rows a later calibration pass cannot tell from a release's",
-    )
-    running.add_argument(
-        "--skip-release",
-        action="store_true",
-        help="reuse the full-resolution pictures already on disk instead of rendering "
-        "(with --resume: the pictures are this run's own, from before it was interrupted)",
-    )
-    running.add_argument(
-        "--deep",
-        action="store_true",
-        help="hold this run to the deep mode's hung-unit ceilings instead of the shallow "
-        "ones. A deep release frame was measured at 607s against a shallow distribution "
-        "whose median is 87.8s, and the backstop only ever raises itself off units a run "
-        "has FINISHED - so a deep row killed at the shallow colorize ceiling never teaches "
-        "the run that its class is slow",
-    )
-    running.set_defaults(handler=curate_run)
-
-    pass_store = steps.add_parser(
-        "gallery-store",
-        help="a gallery pass's attempt store: record it, check it, restore it",
-        description=(
-            "A pass makes locations x heads x draws attempts per slot and each one is a pool "
-            "row carrying its whole join — 1,120 rows at n=50 and ten times that at n=500, "
-            "at about 3.8 KB a row. They live under the regenerable tree rather than in the "
-            "history, so they get what the supply sidecar and the embedding store get: a "
-            "copy on the archive tier, a tracked manifest carrying the row count, the bytes, "
-            "the sha256 and the population the attempts were made over, and a restore that "
-            "counts before it believes."
-        ),
-    )
-    pass_store.add_argument(
-        "what",
-        choices=["check", "save", "restore"],
-        help="check the live store against the manifest, save a fresh copy and manifest, "
-        "or restore the copy",
-    )
-    pass_store.add_argument(
-        "--pass",
-        dest="pass_id",
-        required=True,
-        help="which pass's store, by id",
-    )
-    pass_store.add_argument(
-        "--force",
-        action="store_true",
-        help="with `restore`: overwrite a live store that holds MORE rows than the manifest "
-        "records. Those rows are attempts nobody has saved yet",
-    )
-    pass_store.set_defaults(handler=curate_gallery_store)
-
-    ledger_store = steps.add_parser(
-        "candidate-ledger",
-        help="the durable cache of every candidate ever rendered: build it, census it, keep it",
-        description=(
-            "One row per RECIPE — the frame that was rendered, the mode, the map and every "
-            "palette knob, the regime, and the sha256 of the autolevel band the picture was "
-            "levelled onto — carrying the location it stands on, the colour it turned out "
-            "to be, and where its picture is. It admits everything and filters nothing: a "
-            "floor is a reading of a judge and both move, the recipe and the pixels do not. "
-            "Scores live in a sidecar keyed on (recipe, judge artifact, regime), so a judge "
-            "adoption invalidates scores and nothing else. `backfill` reads the two decision "
-            "stores and renders nothing; `census` is the fill over the axes a constraint "
-            "acts on, and which of them is thin. `orphans` is the other direction and the "
-            "backstop under `prune`: a KILLED leg never reaches `merge`, so its pictures "
-            "are on disk with no row ever written for them and no prune can free them. A "
-            "leg that HAS merged is decided by the ledger alone; one that has not is "
-            "skipped and listed for a person, never swept. It is a dry run unless "
-            "`--apply` says otherwise."
-        ),
-    )
-    ledger_store.add_argument(
-        "what",
-        choices=[
-            "backfill",
-            "census",
-            "check",
-            "orphans",
-            "pictures",
-            "prune",
-            "re-render",
-            "save",
-            "score",
-            "restore",
-        ],
-        help="build the ledger from what already exists, take the coverage census, check "
-        "the live files against their manifests, sweep the pool subtrees for pictures no "
-        "record names, report which rows name a picture that is no longer on disk, bring "
-        "the store back to the retention rule, put back the pictures the rows still name, "
-        "save a fresh copy and manifests, read every picture through the judge shipped now, "
-        "or restore the copies",
-    )
-    ledger_store.add_argument(
-        "--keep",
-        type=int,
-        default=candidate_ledger_module.RETAIN_PER_PAIR,
-        help="with `prune`: how many rows one (location, mode) pair keeps, ranked by the "
-        f"shipped rank key (default: {candidate_ledger_module.RETAIN_PER_PAIR}). Four "
-        "protections keep a row outside the rank whatever it says, and a picture is kept "
-        "if and only if its row is",
-    )
-    ledger_store.add_argument(
-        "--workers",
-        type=int,
-        default=candidate_ledger_module.RE_RENDER_WORKERS,
-        metavar="COUNT",
-        help="with `re-render`: how many engines to drive at once (default "
-        f"{candidate_ledger_module.RE_RENDER_WORKERS}, this machine's render pool). More "
-        "than three, or any of them at normal priority, makes the desktop unusable",
-    )
-    ledger_store.add_argument(
-        "--limit",
-        type=int,
-        help="with `re-render` and `score`: stop after this many pictures. What a pilot "
-        "prices the whole leg off",
-    )
-    ledger_store.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="with `prune`: read, decide, and touch nothing. THE dry run — there is no "
-        "second command that says what a prune would do",
-    )
-    ledger_store.add_argument(
-        "--apply",
-        action="store_true",
-        help="with `orphans`: actually delete what the sweep found. The default is the dry "
-        "run, which is the opposite way round from `prune` and deliberately so — a prune "
-        "decides about rows it can see, and this decides about files nothing wrote down. "
-        "Read the `unmerged` list first: those legs are skipped either way",
-    )
-    ledger_store.add_argument(
-        "--leg",
-        action="append",
-        metavar="NAME",
-        help="with `orphans`: also sweep this UNMERGED leg, which the sweep otherwise only "
-        "lists. Repeatable, and takes the name as the listing prints it or just its last "
-        "component. A named leg is swept under the same rule as a merged one — what the "
-        "ledger names is kept, the rest goes — so a killed leg loses everything and a "
-        "backfilled `runs` leg loses only the renders nothing decided about",
-    )
-    ledger_store.add_argument(
-        "--include-unmerged",
-        action="store_true",
-        help="with `orphans`: sweep every unmerged leg the listing holds, as though each "
-        "had been named. The listing stays the default precisely so that this is a "
-        "sentence somebody typed after reading it",
-    )
-    ledger_store.add_argument(
-        "--recolour",
-        action="store_true",
-        help="with `backfill`: read every picture's colour again instead of carrying the "
-        "reading already on record. About twenty milliseconds a picture",
-    )
-    ledger_store.add_argument(
-        "--n",
-        type=int,
-        default=candidate_ledger_module.FIRST_SOLVE,
-        help=f"with `census`: how many wallpapers the feasibility read is taken against "
-        f"(default {candidate_ledger_module.FIRST_SOLVE})",
-    )
-    ledger_store.add_argument(
-        "--out",
-        metavar="PATH",
-        help="with `census`: write the census there instead of printing it",
-    )
-    ledger_store.add_argument(
-        "--force",
-        action="store_true",
-        help="with `restore`: overwrite live files that hold MORE rows than the manifests "
-        "record. Those rows are recipes nobody has saved yet",
-    )
-    ledger_store.set_defaults(handler=curate_candidate_ledger)
-
-    solving = steps.add_parser(
-        "solve",
-        help="choose the gallery: a stratified view, a greedy seed, and 1-swap improvement",
-        description=(
-            "ONE leg, one pool, one command. A per-pass stratified VIEW over the pool above "
-            "its per-mode bars — one row per place plus each place's best row per (kind, "
-            "mode, cell) stratum, then either the whole stratum or a band-blind slice of it, "
-            "never a top-by-score cut. A GREEDY SEED in the seating order this project "
-            "already had: the mandated demands from their own subpools scarcest first, then "
-            "the ranked walk. Then 1-SWAP IMPROVEMENT — one seat out, one candidate in, "
-            "accepted only on strict lexicographic improvement, to exhaustion. ANYTIME: the "
-            "gallery is valid from its first seat, so a clock or a Ctrl-C leaves an answer. "
-            "The objective is lexicographic and strict: seats filled, then the worst seated "
-            "score, then the shortfall against the mode floors and any colour target, then "
-            "the sum — all in the FITTED rank key. TWO HARD RULES: one wallpaper per "
-            "location, and the diversity rule, which refuses a picture within ceiling.TAU of "
-            "one already seated. Everything else is counted with the shortfall recorded: no "
-            "fallback leg, no least-violating rescue, unfilled beats padded. The REJECTION "
-            "LEDGER is the product. The exact solve this replaced is RETIRED: it was "
-            "measured infeasible at n=1000 against a thirty-minute bar. "
-            "A RECORD is that same solve, run once and kept: `record` writes the seats "
-            "under a UTC stamp that is never written over, so a person can point at a "
-            "picture and be understood. `run` rewrites `--name` every time, which is a "
-            "decision rather than a handle. A record writes `gallery.jsonl` (one row per "
-            "seat, carrying the ledger recipe key that IS the ID, a short alias, the mode, "
-            "the partition, the dominant colour cell and hue family, `centered`, the rank "
-            "and P(>=4), the seat order and the stored picture), `manifest.json` beside it, "
-            "and a self-contained page. `browse` writes that page again; `resolve` turns an "
-            "ID or alias back into a row, a recipe and a location; `list` names every record "
-            "on this machine. The seats a record names are a PROTECTION CLASS in `curate "
-            "candidate-ledger prune` — an ID that stopped resolving would take its picture "
-            "with it, and nothing would notice."
-        ),
-    )
-    solving.add_argument(
-        "what",
-        choices=["run", "record", "browse", "resolve", "list"],
-        help="choose one gallery; record one under a stamp that never moves; write a "
-        "record's page again; look one ID up; or list every record on this machine. The "
-        "`sweep` and `truncate` experiments went with the exact solver they were "
-        "experiments on",
-    )
-    solving.add_argument(
-        "id",
-        nargs="*",
-        help="with `resolve`: the IDs or aliases to look up, as arguments or as one "
-        "comma-separated list. With `browse`: the stamp, which `--stamp` also names",
-    )
-    # Seven groups over twenty-eight flags. The two positionals stay where
-    # argparse puts them: `what` is the verb and every group below is read
-    # through whichever one it names.
-    which_record = solving.add_argument_group(
-        "which record",
-        "`run` rewrites --name every time, which is a decision rather than a "
-        "handle; `record` stamps --solve-name and never writes over it",
-    )
-    pool_size = solving.add_argument_group("how big, and how much of the pool it reaches")
-    demands = solving.add_argument_group(
-        "the demands",
-        "every one of these is counted with its shortfall recorded: unfilled beats "
-        "padded, and no demand is ever met by a fallback leg",
-    )
-    themed = solving.add_argument_group(
-        "a themed gallery",
-        "one dominant colour cell at the relaxed bar; the other two are ignored without --themed",
-    )
-    distinctness = solving.add_argument_group("the distinctness rules")
-    search = solving.add_argument_group("the objective and the search")
-    release_leg = solving.add_argument_group("the release leg and the sheet")
-
-    which_record.add_argument(
-        "--stamp",
-        help="with `browse` and `resolve`: which record to read (default the newest). "
-        "Ignored by `record`, which always writes a new one",
-    )
-    which_record.add_argument(
-        "--name",
-        help="with `run`: what to call this pass's output directory (default `n<N>`). A "
-        "`record` names its solve directory with `--solve-name` instead, because it writes "
-        "two things and they are stamped together",
-    )
-    which_record.add_argument(
-        "--solve-name",
-        help="with `record`: what to call the solve's own output directory under "
-        "artifacts/curation/solve (default `tentative_n<N>_<stamp>`, the record's own "
-        "stamp, so successive records at the same N coexist)",
-    )
-    pool_size.add_argument(
-        "--n",
-        type=int,
-        default=None,
-        help=f"how many wallpapers to seat. TWO DEFAULTS, because the two verbs seat for "
-        f"different reasons: {candidate_ledger_module.FIRST_SOLVE} for `run`, which is the "
-        f"size a leg is read at, and {tentative_module.RECORDED_SEATS} for `record`, which "
-        f"is the size a record is kept at",
-    )
-    pool_size.add_argument(
-        "--locations",
-        type=int,
-        metavar="COUNT",
-        help="let the pass reach only this many strongest locations, ranked by their best "
-        "candidate. Unset is the whole ledger",
-    )
-    pool_size.add_argument(
-        "--rows-per-seat",
-        type=int,
-        default=view_module.ROWS_PER_SEAT,
-        metavar="ROWS",
-        help=f"how many view rows each stratum keeps per seat it could contribute "
-        f"(default {view_module.ROWS_PER_SEAT}). Larger reaches more of the pool and costs "
-        "one pixel-cloud signature a row",
-    )
-    pool_size.add_argument(
-        "--draw-seed",
-        type=int,
-        default=view_module.DRAW_SEED,
-        metavar="SEED",
-        help=f"the seed the view's band-blind stride offsets are drawn under (default "
-        f"{view_module.DRAW_SEED}). It is on the record either way",
-    )
-    pool_size.add_argument(
-        "--allow-unranked",
-        action="store_true",
-        help="choose even though the key cannot read every clearing candidate. Unsaid, "
-        "that is REFUSED: an unreadable row sorts last and cannot win a seat while a "
-        "readable one is left, so a pool holding any is a pass that ignores them silently. "
-        "The usual cause is a leg merged before its pictures were swept, and the fix is "
-        "`curate flatness sweep`. This flag is for the other case — a picture on disk that "
-        "will not decode, which has no reading to take and never will",
-    )
-    demands.add_argument(
-        "--target",
-        action="append",
-        metavar="CELL=FRACTION",
-        help="demand that at least this share of the REALIZED seats be dominant in this "
-        "colour cell. A demand and not a row: it is seated from its own subpool by the "
-        "scarcity leg, it counts in the third objective tier, and a target the pool cannot "
-        "meet is a recorded shortfall rather than a refusal. The target also raises that "
-        "cell's and its family's ceiling allowance, so the demand is not refused by the "
-        "ceiling it asked for",
-    )
-    demands.add_argument(
-        "--mode-floor",
-        type=int,
-        metavar="SEATS",
-        help="an ARTIFICIAL flat mode floor, one number for every accepted mode. Unset is "
-        "the per-mode floor rule, which is the default; `--flat-floor` is the other way "
-        f"off it, floor(n / {solve_module.SEATS_PER_MODE_FLOOR}). A record taken under any "
-        "of the three says which it was",
-    )
-    demands.add_argument(
-        "--flat-floor",
-        action="store_true",
-        help="solve under the FLAT mode floor instead of the per-mode rule — "
-        f"floor(n / {solve_module.SEATS_PER_MODE_FLOOR}) seats for every accepted mode, "
-        "which is what every gallery before 2026-08-31 was seated under. The default is "
-        "curation.mode_policy.seat_floors(n): half each accepted strange mode's share of "
-        "the strange seat budget. Refuses beside `--mode-floor`, which asks for a "
-        "different flat one",
-    )
-    demands.add_argument(
-        "--group-cap",
-        choices=list(ceiling_module.GROUP_CAP_RULES),
-        default=solve_module.DEFAULT_GROUP_CAP,
-        help=f"which palette-group cap to run under. `{ceiling_module.PROPORTIONAL}` is "
-        f"max(1, floor({ceiling_module.GROUP_CAP_RATE:g} * n)) — 1 up to n=40, 3 at n=150, "
-        f"25 at n=1000 — and is THE DEFAULT since 2026-08-28, the ckpt-88 ruling. "
-        f"`{ceiling_module.IDENTITY}` is ceiling.GROUP_CAP = {ceiling_module.GROUP_CAP}, one "
-        f"seat a map. It is a COUNT under either rule: the same-group DISTANCE row the exact "
-        f"solve carried is retired and not merged",
-    )
     demands.add_argument(
         "--spiral-cap",
         type=float,
@@ -2573,65 +1695,6 @@ def add_commands(subcommands) -> None:
         "toward nothing — unknown is not not_spiral. Unsaid, NO cap runs and the "
         "`spiral` refusal column is zero by construction; 1.0 runs the cap and lets it "
         "not bind, which is the spelling for a record that should say so",
-    )
-    themed.add_argument(
-        "--themed",
-        metavar="CELL",
-        help="choose a THEMED gallery: one dominant colour cell, over a pool of the rows "
-        "that cell's dominance block claims, at the RELAXED bar — P(>=3) >= "
-        f"{headroom_module.FALLBACK_BAR} for every accepted mode rather than the per-mode "
-        "rule, because a single-cell pool is q3-grade material and at the per-mode bars "
-        "there is no pool. It also swaps the diversity rule for geometry-only "
-        f"distinctness at rules.GEOMETRY_RADIUS ({rules_module.GEOMETRY_RADIUS:g}) in the "
-        "neutral descriptor: the pixel-cloud twin test is over a picture's COLOUR cloud, "
-        "so a themed pool is a near-duplicate pool under exactly it. Unless you name them "
-        "otherwise it also sets `--target CELL=1.0`, without which the cell allowance "
-        "refuses the theme at nine seats, and `--flat-floor`",
-    )
-    themed.add_argument(
-        "--themed-cap",
-        type=int,
-        metavar="SEATS",
-        help="the palette-group cap a THEMED pass runs under, overriding the computed "
-        f"one. Unset is ceiling.themed_group_cap: ceil({ceiling_module.THEMED_CAP_SHARE} x "
-        "n / P), twice the even share across the P palette groups that can field the "
-        f"theme, where P counts the groups fielding {ceiling_module.THEMED_CAP_PLACES} or "
-        "more distinct PLACES in the themed pool. The main gallery's cap is a share of `n` "
-        "alone and was measured as the BINDING rule over a themed pool at every shipping "
-        "size, which is why a themed pass gets its own. `--group-cap` still names the "
-        "main gallery's rule and a themed pass ignores it. Ignored without `--themed`",
-    )
-    themed.add_argument(
-        "--themed-radius",
-        type=float,
-        default=rules_module.GEOMETRY_RADIUS,
-        metavar="COSINE",
-        help=f"the radius the themed diversity rule refuses inside (default "
-        f"{rules_module.GEOMETRY_RADIUS:g}). A SETTING and not a law — it was read off the "
-        "themed pools' own nearest-neighbour distributions and is the number to move if a "
-        "themed gallery reads as repetitive or as needlessly small. Ignored without "
-        "`--themed`",
-    )
-    distinctness.add_argument(
-        "--neutral-radius",
-        type=float,
-        default=distinct_module.PRESELECT_RADIUS,
-        metavar="COSINE",
-        help="the neutral pre-selection radius applied at pool construction "
-        f"(default {distinct_module.PRESELECT_RADIUS:g}). Geometric distinctness only: it "
-        "asks whether two places are the same place, and it is NOT the diversity rule",
-    )
-    distinctness.add_argument(
-        "--no-preselection",
-        action="store_true",
-        help="choose from the whole clearing pool, with no neutral pre-selection",
-    )
-    distinctness.add_argument(
-        "--no-diversity",
-        action="store_true",
-        help="choose without the diversity rule, which is the only rule that opens a "
-        f"picture. A gallery without it is a bound on a program that does not refuse "
-        f"inside {ceiling_module.TAU}, and its record says so",
     )
     search.add_argument(
         "--key",
@@ -2659,559 +1722,46 @@ def add_commands(subcommands) -> None:
         "so what this stops is improvement rather than the answer, and the gallery it "
         "stops on is valid. Unset is until a full pass finds no improving swap",
     )
-    search.add_argument(
-        "--explain-seats-of",
-        metavar="NAME",
-        help="an earlier solve record whose seats this pass explains ONE AT A TIME, into "
-        "`rejection.explained`: every key it seated comes back either `seated` or with the "
-        "rule that refused it here. The aggregate beside it says which rules cost this pass "
-        "its seats; this says what happened to a named picture, which is the question a "
-        "before/after sheet asks and the only one the aggregate cannot answer. Named rather "
-        "than automatic because the refusal map is one entry per candidate over a hundred "
-        "and fifty thousand of them, and a record carrying all of it would be forty times "
-        "the size of the one carrying the decisions",
-    )
-    release_leg.add_argument(
-        "--no-render",
-        action="store_true",
-        help="take every decision and make no release picture. The contact sheet falls "
-        "back to each seat's candidate render and says which it is showing",
-    )
-    release_leg.add_argument(
-        "--release-regime",
-        default=release_module.RELEASE_REGIME.spelled,
-        metavar="WxHssN",
-        help=f"the geometry the release leg renders at (default "
-        f"{release_module.RELEASE_REGIME.spelled}, which is what every leg that ships a "
-        f"wallpaper ships; {release_module.FORMER_RELEASE_REGIME.spelled} is what the "
-        f"first three gallery passes shipped at)",
-    )
-    release_leg.add_argument(
-        "--workers",
-        type=int,
-        default=release_module.DEFAULT_WORKERS,
-        help=f"worker processes the release leg renders over (default "
-        f"{release_module.DEFAULT_WORKERS}, which is this machine's render pool; each "
-        f"spawns below-normal by construction)",
-    )
-    release_leg.add_argument(
-        "--no-sheet",
-        action="store_true",
-        help="take every decision and build no contact sheet",
-    )
-    release_leg.add_argument(
-        "--sheet-out",
-        metavar="PATH",
-        help="write the contact sheet there instead of beside the record, which is what a "
-        "before/after over several variants wants — one directory of sheets to look at",
-    )
-    solving.set_defaults(handler=curate_solve)
 
-    growing = steps.add_parser(
-        "growth",
-        help="what N candidates' worth of mining buys, at every gallery size",
-        description=(
-            "A re-runnable instrument. The history was never snapshotted, so the curve is "
-            "read off the pool as it stands: draw a fraction of the VISITS that made it — "
-            "a visit is (location, leg), never a row, because drawing rows would be the "
-            "same history with the depth arm switched off — and solve the gallery over "
-            "what those visits produced. Every rung is solved by production's own "
-            "`curate solve run`, at the same bars, floors, allowances and objective; "
-            "restricting the pool is the only difference, and the restriction is in "
-            "memory and never touches the ledger. A subsample that cannot fill n is a "
-            "FINDING, not an error. Each run writes a new stamped folder and overwrites "
-            "none, so re-running after each mining leg accumulates a chronological series."
-        ),
-    )
-    growing.add_argument(
-        "what",
-        choices=["run", "plot"],
-        help="`run` sweeps the rungs and writes a stamped folder; `plot` draws a finished "
-        "one into scratch/",
-    )
-    growing.add_argument(
-        "stamp",
-        nargs="?",
-        help="with `plot`: which stamped run to draw",
-    )
-    growing.add_argument(
-        "--name",
-        help="what to call this run's stamped folder (default: the UTC clock, to the "
-        "second). A folder that already exists is refused rather than overwritten",
-    )
-    growing.add_argument(
-        "--fraction",
-        type=int,
-        action="append",
-        metavar="DENOMINATOR",
-        help="a rung, named by the DENOMINATOR of the fraction of visits it draws — `8` "
-        f"is one visit in eight, `1` is the whole pool (default "
-        f"{list(growth_module.DENOMINATORS)})",
-    )
-    growing.add_argument(
-        "--n",
-        type=int,
-        action="append",
-        help=f"a gallery size to solve at (default {list(growth_module.SIZES)}). 2000 comes "
-        "back the moment the pool can seat it",
-    )
-    growing.add_argument(
-        "--seed",
-        type=int,
-        action="append",
-        help=f"a draw seed for the rungs below the whole pool (default "
-        f"{list(growth_module.SEEDS)}). The whole pool is not drawn and takes none",
-    )
-    growing.add_argument(
-        "--swap-seconds",
-        type=float,
-        help="a wall budget for each solve's swap loop. Unset is production, which is "
-        "unbounded — set it and the rows are no longer comparable with an unbudgeted run",
-    )
-    growing.set_defaults(handler=curate_growth)
 
-    headroom_step = steps.add_parser(
-        "headroom",
-        help="census what each selection constraint needs, what the ledger holds, and "
-        "what one more would cost",
-        description=(
-            "O(rows) necessary conditions over the candidate ledger, at several gallery "
-            "sizes. No solver: a slow solve that reports `there are no light greens at "
-            "all` spent twenty minutes on a fact one pass over the rows already knew. "
-            "Counts are DISTINCT LOCATIONS and never rows, because one wallpaper per "
-            "location is absolute. Each row says what it needs at n, what the pool holds, "
-            "the slack, and the marginal cost of buying one more — estimated off the "
-            "ledger's own realized attempt-to-success rate times the realized per-mode "
-            "render cost. A short row is provable infeasibility; a row with slack is NOT "
-            "a claim that the selection is possible. The census is taken over the pool the "
-            "seating will see, neutral pre-selection included. One block is not arithmetic "
-            "and is opt-in: `--twin`."
-        ),
-    )
-    headroom_step.add_argument(
-        "--n",
-        type=int,
-        action="append",
-        metavar="SEATS",
-        help="census at this gallery size; repeatable. Unset is the whole ladder "
-        f"({', '.join(str(size) for size in headroom_module.LADDER)})",
-    )
-    headroom_step.add_argument(
-        "--name",
-        default="latest",
-        help="what to call this census's output directory (default `latest`)",
-    )
-    headroom_step.add_argument(
-        "--neutral-radius",
-        type=float,
-        default=distinct_module.PRESELECT_RADIUS,
-        metavar="COSINE",
-        help="the neutral pre-selection the census is taken over "
-        f"(default {distinct_module.PRESELECT_RADIUS:g}). A place closer than this to a "
-        "place already kept is refused before anything is counted",
-    )
-    headroom_step.add_argument(
-        "--no-preselection",
-        action="store_true",
-        help="census the whole clearing pool, with no neutral pre-selection. The only way "
-        "to read a schema 1 census against this one",
-    )
-    headroom_step.add_argument(
-        "--flat-floor",
-        action="store_true",
-        help="bound the FLAT mode floor instead of the per-mode rule — "
-        f"floor(n / {solve_module.SEATS_PER_MODE_FLOOR}) seats for every accepted mode, at "
-        "every rung. The default is curation.mode_policy.seat_floors(n), which is what an "
-        "unflagged `curate seat` and an unflagged `curate solve run` are floored by, so an "
-        "unflagged census bounds the gallery they would build. The block says which it ran "
-        "under",
-    )
-    headroom_step.add_argument(
-        "--twin",
-        action="store_true",
-        help="also count the twin constraint: every twin pair among the population's "
-        "strongest picture per place, found exactly, and the bounds it puts on how many "
-        "mutually non-twin places the pool holds. MINUTES — one pixel-cloud signature per "
-        "place plus the pairs the sound bound cannot settle — which is why it is opt-in. "
-        "The sweep is written beside the census as `twins.json`",
-    )
-    headroom_step.add_argument(
-        "--twin-from",
-        metavar="PATH",
-        help="count the twin constraint off a sweep already taken — the `twins.json` a "
-        "`--twin` run wrote. Re-reading a census at a different ladder is arithmetic and "
-        "should not cost the sweep again",
-    )
-    headroom_step.set_defaults(handler=curate_headroom)
+#: `--workers` on the two sidecar sweeps, which read it identically.
+SWEEP_WORKERS = (
+    "how many processes decode at once (default {count}, the render pool's number and for "
+    "the same reason: this should not make the desktop unusable while it runs)"
+)
 
-    flatness_step = steps.add_parser(
-        "flatness",
-        help="the dead-space column, swept over the pool into a sidecar beside the scores",
-        description=(
-            "Tile each picture into 16-pixel cells, fit a plane to every cell, and count "
-            "the cells with nothing left over — a candidate that is mostly dead space is a "
-            "candidate with less in it. The plane term is what makes it more than a "
-            "variance screen: a smooth ramp across a cell is not detail. It ranks "
-            "BACKWARDS on its own (AUC 0.407 smooth / 0.480 strange) and earns its place "
-            "on top of the judge on both kinds, which is why it is a column of the fitted "
-            "rank key and never a bar. One row per recipe key in a sidecar beside "
-            "`scores.jsonl`; NO LEDGER ROW IS EDITED. About 7.5 ms a picture, incremental "
-            "— a store already swept costs one read and no decodes."
-        ),
-    )
-    flatness_step.add_argument(
-        "what",
-        nargs="?",
-        default="sweep",
-        choices=["sweep", "coverage", "save", "check", "restore"],
-        help="read every pool candidate the sidecar does not hold, report how much of the "
-        "pool it can answer for, or save, check and restore the sidecar against its manifest",
-    )
-    flatness_step.add_argument(
-        "--workers",
-        type=int,
-        default=flatness_module.WORKERS,
-        metavar="N",
-        help=f"how many processes decode at once (default {flatness_module.WORKERS}, the "
-        "render pool's number and for the same reason: this should not make the desktop "
-        "unusable while it runs)",
-    )
-    flatness_step.add_argument(
-        "--all",
-        action="store_true",
-        help="sweep every ledger row whose picture is on disk rather than the pool. The "
-        "pool excludes a row a person rejected and a row off the candidate regime, and "
-        "the rank key has to be FITTED on some of those — a label row is a label row "
-        "whatever the pool later did with its recipe",
-    )
-    flatness_step.add_argument(
-        "--recompute",
-        action="store_true",
-        help="re-read every candidate rather than only the ones with no row yet",
-    )
-    flatness_step.add_argument(
-        "--force",
-        action="store_true",
-        help="with `restore`: overwrite a live sidecar holding MORE rows than the manifest",
-    )
-    flatness_step.set_defaults(handler=curate_flatness)
+#: `--all` on `curate flatness`, which the group, `sweep` and `coverage` all take.
+SWEEP_EVERY_ROW = (
+    "sweep every ledger row whose picture is on disk rather than the pool. The pool "
+    "excludes a row a person rejected and a row off the candidate regime, and the rank key "
+    "has to be FITTED on some of those — a label row is a label row whatever the pool later "
+    "did with its recipe"
+)
 
-    signatures_step = steps.add_parser(
-        "signatures",
-        help="the diversity rule's bound signature, swept over the clearing pool into a "
-        "sidecar beside the scores",
-        description=(
-            "The gallery leg screens a candidate against the seated pictures with a sound "
-            "lower bound read off a REDUCED pixel-cloud signature — four blocks of "
-            "quantiles by 256 directions, 4 KiB against the metric's 128. Making "
-            "one costs a JPEG decode, about 16.8 ms, and it was ~100% of the leg before "
-            "the prunes. It is the same number every time, so this sweeps it once into a "
-            "sidecar and every later solve reads it instead of deriving it. One row per "
-            "recipe key; NO LEDGER ROW IS EDITED. Incremental, and a row is stale when the "
-            "recipe's picture is not the picture the row was read from — never on a clock."
-        ),
-    )
-    signatures_step.add_argument(
-        "what",
-        nargs="?",
-        default="sweep",
-        choices=["sweep", "coverage", "save", "check", "restore"],
-        help="read every clearing candidate the sidecar cannot answer for, report how "
-        "much of the pool it can answer for, or save, check and restore the sidecar "
-        "against its manifest",
-    )
-    signatures_step.add_argument(
-        "--workers",
-        type=int,
-        default=signatures_module.WORKERS,
-        metavar="N",
-        help=f"how many processes decode at once (default {signatures_module.WORKERS}, the "
-        "render pool's number and for the same reason: this should not make the desktop "
-        "unusable while it runs)",
-    )
-    signatures_step.add_argument(
-        "--recompute",
-        action="store_true",
-        help="re-read every candidate rather than only the ones the sidecar cannot answer "
-        "for. What to run after changing anything about the reduction itself",
-    )
-    signatures_step.add_argument(
-        "--force",
-        action="store_true",
-        help="with `restore`: overwrite a live sidecar holding MORE rows than the manifest",
-    )
-    signatures_step.set_defaults(handler=curate_signatures)
 
-    rank_key_step = steps.add_parser(
-        "rank-key",
-        help="the fitted sort key a seating may rank on instead of the judge alone",
-        description=(
-            "Fit the form `rank_key_fit` selected — the location head's P(>=4), the render "
-            "judge at both cutpoints, the calibration stratum and the flatness column — "
-            "over every human label row that joins the candidate ledger, with SHARED "
-            "weights over both stores because per-kind bought +0.000 [-.011,+.012] on "
-            "smooth. Five folds at 20% grouped on lineage and assigned ONCE over the "
-            "pooled corpus, since 96 groups span both stores. It ships two tracked files: "
-            "the coefficients with their standardization constants, and EVERY LABEL ROW "
-            "THE FIT CONSUMED — the store, the batch, the file and line, the tier, the "
-            "lineage group and the fold. A selection rule fit on human labels is a "
-            "category no eligibility guard covers, so the record is the guard."
-        ),
-    )
-    rank_key_step.add_argument(
-        "what",
-        nargs="?",
-        default="fit",
-        choices=["fit", "show"],
-        help="re-fit the key and rewrite both tracked files, or print the shipped one",
-    )
-    rank_key_step.set_defaults(handler=curate_rank_key)
+#: `--seed` on `curate mine`, which `plan`, `run` and `bench` all take.
+MINE_SEED = "the seed every draw here is taken under (default {seed})"
 
-    distinct_step = steps.add_parser(
-        "distinct",
-        help="the neutral pre-selection read: which places are visibly different places",
-        description=(
-            "The instrument the pre-selection radius was set off. The join FIRST — how many of "
-            "the pool's locations have a neutral descriptor and how many do not, because "
-            "a lossy pre-filter is a finding rather than a detail to work around — then "
-            "the nearest-neighbour distribution, then the near pairs at each candidate "
-            "radius as a sheet. NO RADIUS IS CHOSEN: the sheet is the instrument and the "
-            "choice is a person's. The premise the whole decoupling rests on — that far "
-            "in the neutral descriptor implies far in the coloured pixels — is MEASURED "
-            "against the pixel-cloud metric over a stratified sample, because a "
-            "correlated proxy is not a prune and this project has shipped one that was. It "
-            "does not hold, which is why there are TWO rules: this radius asks whether two "
-            "places are the same place, and the twin test in `seat` asks whether two "
-            "pictures are one wallpaper."
-        ),
-    )
-    distinct_step.add_argument(
-        "--name",
-        default="latest",
-        help="what to call this read's output directory (default `latest`)",
-    )
-    distinct_step.add_argument(
-        "--out",
-        metavar="PATH",
-        help="where the near-pair sheet goes (default beside the record)",
-    )
-    distinct_step.add_argument(
-        "--premise-pairs",
-        type=int,
-        default=distinct_module.PREMISE_PAIRS,
-        metavar="PAIRS",
-        help="how many pairs the premise check measures "
-        f"(default {distinct_module.PREMISE_PAIRS}). Two pixel-cloud signatures a pair at "
-        "about a tenth of a second each, cached per picture",
-    )
-    distinct_step.add_argument(
-        "--no-premise",
-        action="store_true",
-        help="the join, the distribution and the sheet, and measure no pixel cloud",
-    )
-    distinct_step.add_argument(
-        "--no-sweep",
-        action="store_true",
-        help="the scatter but not the exact twin sweep. The sweep is one signature per "
-        "picture plus the pairs the sound bound cannot settle, which is minutes over a "
-        "pool of a thousand places — and it is the half that decides the design",
-    )
-    distinct_step.set_defaults(handler=curate_distinct)
 
-    hunting = steps.add_parser(
-        "hunt",
-        help="render candidates into the ledger's two shortages: fresh places, and one colour",
-        description=(
-            "The proposal side of propose-then-solve, aimed rather than opportunistic. The "
-            "UNCONDITIONAL leg buys breadth — locations from the admitted pool that carry no "
-            "ledger recipe at all, a shallow spread each, the palette stratified across the "
-            "codebook's cells instead of picked by the palette head, whose argmax is what "
-            "left the ledger at a quarter as much green as red. The CONDITIONED leg buys one "
-            "colour: the maps come from the tracked carrier table for the cell a solve came "
-            "up short in and the palette head is never asked, because it is offered those "
-            "carriers as often as anything else and takes them at 0.17x the base rate. "
-            "Everything renders at the frame the pool-wide refinement scan chose, looked up "
-            "rather than recomputed. Rows land as candidates land, so a killed hunt is a "
-            "usable partial; `merge` is what folds them into the ledger."
-        ),
-    )
-    hunting.add_argument(
-        "what",
-        choices=["plan", "run", "merge", "sheet", "frames"],
-        help="print the plan and render nothing, run the hunt, merge a hunt's rows into the "
-        "ledger, redraw a hunt's contact sheet, or rebuild the frame index off the scan",
-    )
-    hunting.add_argument(
-        "--name",
-        required=True,
-        help="what to call this hunt. Its rows, its pictures and its record live under it, "
-        "and `merge` names it again",
-    )
-    hunting.add_argument(
-        "--budget",
-        type=float,
-        default=hunt_module.BUDGET_SECONDS,
-        metavar="SECONDS",
-        help=f"how long the hunt may spend RENDERING (default {int(hunt_module.BUDGET_SECONDS)}). "
-        "Not the wall clock: the frame lookup, the plan and the merge sit outside it. "
-        "Enforced at the candidate boundary, so nothing is started that cannot finish",
-    )
-    hunting.add_argument(
-        "--unconditional",
-        type=int,
-        default=0,
-        metavar="COUNT",
-        help="how many breadth candidates to plan. The budget still decides how many are "
-        "made; this is the size of the plan the budget is spent against",
-    )
-    hunting.add_argument(
-        "--conditioned",
-        type=int,
-        default=0,
-        metavar="COUNT",
-        help="how many candidates to plan against --cell. Needs --cell",
-    )
-    hunting.add_argument(
-        "--cell",
-        help="the codebook cell the conditioned leg aims at, e.g. dark_vivid_lime. Its maps "
-        "are drawn from the tracked carrier table, weighted by mean share",
-    )
-    hunting.add_argument(
-        "--work-order",
-        action="append",
-        default=[],
-        metavar="PARTITION=WEIGHT",
-        help="how the conditioned leg spreads over the partitions, repeatable — a solve's "
-        "shortage list says where the pool's carriers of that colour already stand, and "
-        "this is that list. Absent, the leg spreads evenly like the breadth one",
-    )
-    hunting.add_argument(
-        "--per-location",
-        type=int,
-        default=hunt_module.PER_LOCATION,
-        metavar="COUNT",
-        help=f"how many candidates one location is given (default {hunt_module.PER_LOCATION}). "
-        "Shallow on purpose: a gallery seats one wallpaper per location, so a fourth "
-        "candidate at a fresh place is worth more than a ninth at a stocked one",
-    )
-    hunting.add_argument(
-        "--seed",
-        type=int,
-        default=hunt_module.DEFAULT_SEED,
-        help=f"the seed every draw here is taken under (default {hunt_module.DEFAULT_SEED})",
-    )
-    hunting.add_argument(
-        "--rebuild-frames",
-        action="store_true",
-        help="derive the frame index off the scan record again before planning",
-    )
-    device_flag(hunting)
-    hunting.set_defaults(handler=curate_hunt)
+def depth_leg_flags(parser, *, device: bool):
+    """The twenty-four flags that describe a depth leg, in five argument groups.
 
-    mine_step = steps.add_parser(
-        "mine",
-        help="price a PRIMED location three ways, and profile what one candidate costs",
-        description=(
-            "A measurement pass over the unchanged render loop. A location is PRIMED when "
-            "it holds at least one candidate the render judge scores at or above the bar, "
-            "derived at read time off the score sidecar and stored in no row. Three arms "
-            "are woven together so a budget that runs out truncates all of them alike: "
-            "DEEPEN adds palettes at a place that already showed something, holding the "
-            "frame and the mode, and reports what the k-th palette is worth; "
-            "BREADTH-RANKED opens never-opened admitted locations top-down on the location "
-            "head's rank WITHIN partition, never pooled across one; BREADTH-FLAT opens "
-            "them with no quality conditioning, matched to the ranked arm's per-partition "
-            "counts, and is the base rate that says whether the rank bought anything. "
-            "Candidates land as candidates land and `merge` folds them into the ledger, "
-            "and a stopwatch on each stage lands beside them."
-        ),
-    )
-    mine_step.add_argument(
-        "what",
-        choices=["plan", "run", "merge", "bench", "sheet"],
-        help="print the plan and render nothing, run the mine, merge its rows into the "
-        "ledger, price the loop against the cheaper shapes it could have had, or redraw "
-        "the autopsy sheet",
-    )
-    mine_step.add_argument(
-        "--name",
-        required=True,
-        help="what to call this mine. Its rows, its pictures, its profile and its record "
-        "live under it, and `merge` names it again",
-    )
-    mine_step.add_argument(
-        "--budget",
-        type=float,
-        default=mine_module.BUDGET_SECONDS,
-        metavar="SECONDS",
-        help=f"how long the mine may spend RENDERING (default "
-        f"{int(mine_module.BUDGET_SECONDS)}). Enforced at the candidate boundary",
-    )
-    mine_step.add_argument(
-        "--rate",
-        type=float,
-        metavar="SECONDS",
-        help="seconds a candidate, measured on THIS mine's target population, which is "
-        "what sizes the arms. Required by `plan` and `run` and by nothing else. Take it "
-        "off a short run first and pass the figure that run reported — a rate carried in "
-        "from another pass prices another population",
-    )
-    mine_step.add_argument(
-        "--k",
-        type=int,
-        default=mine_module.DEEPEN_K,
-        metavar="COUNT",
-        help=f"how many fresh palettes the DEEPEN arm offers one location (default "
-        f"{mine_module.DEEPEN_K}). Wide enough that the marginal clear rate can die",
-    )
-    mine_step.add_argument(
-        "--per-location",
-        type=int,
-        default=mine_module.PER_LOCATION,
-        metavar="COUNT",
-        help=f"how many candidates a breadth arm gives one location (default "
-        f"{mine_module.PER_LOCATION}), the same on both so they differ only in the draw",
-    )
-    mine_step.add_argument(
-        "--seed",
-        type=int,
-        default=mine_module.DEFAULT_SEED,
-        help=f"the seed every draw here is taken under (default {mine_module.DEFAULT_SEED})",
-    )
-    device_flag(mine_step)
-    mine_step.set_defaults(handler=curate_mine)
+    `plan` and `run` take all of them and only `run` takes `--device`, on the
+    same rule [`hunt_draw_flags`] states: a plan is the run with the rendering
+    left out, so a flag the two did not share would be a plan pricing a leg
+    nobody can run. Grouped because twenty-five flags in one undivided block is
+    a reference nobody reads, and cut by what each group steers: the leg, how
+    the budget is split between the four draws, how wide each goes, what it may
+    stand on, and what it may colour with.
+    """
+    from fractal_wallpapers.curation import depth as depth_module
+    from fractal_wallpapers.palettes import dominance as dominance_module
 
-    depth_step = steps.add_parser(
-        "depth",
-        help="buy width at one place, and measure what it buys against the head's rank",
-        description=(
-            "Forty candidates a location on the modes a dumped field can serve, over three "
-            "draws woven together so a budget that runs out truncates all of them alike. "
-            "NEAR-BAND deepens a place whose best FIELD candidate already sits between the "
-            "two bars, holding the incumbent's mode so only the palette moves. "
-            "RANKED-BANDS opens never-opened locations across the WHOLE of the location "
-            "head's rank range inside each partition, in equal-count bands, which is the "
-            "curve the earlier passes are two points on. FLAT opens them with no quality "
-            "conditioning, matched on partition. Every candidate is written to the "
-            "sequence file in the order it was made, so a cumulative curve at any width "
-            "below the one reached is arithmetic rather than another run. Field modes "
-            "only: a composite at this width is about 175s a location."
-        ),
-    )
-    depth_step.add_argument(
-        "what",
-        choices=["plan", "run", "merge", "sheet"],
-        help="print the plan and render nothing, run it, merge its rows into the ledger, "
-        "or redraw the autopsy sheet",
-    )
-    # Five groups over twenty-five flags, cut by what each one steers: the leg,
-    # how the budget is split between the four draws, how wide each goes, what
-    # it may stand on, and what it may colour with.
-    leg = depth_step.add_argument_group("the leg and its clock")
-    draw_shares = depth_step.add_argument_group("the draws and their shares")
-    widths = depth_step.add_argument_group("how wide each draw goes")
-    populations = depth_step.add_argument_group("the modes and places the draws work over")
-    draw_palettes = depth_step.add_argument_group("the palettes the draws may offer")
+    leg = parser.add_argument_group("the leg and its clock")
+    draw_shares = parser.add_argument_group("the draws and their shares")
+    widths = parser.add_argument_group("how wide each draw goes")
+    populations = parser.add_argument_group("the modes and places the draws work over")
+    draw_palettes = parser.add_argument_group("the palettes the draws may offer")
 
     leg.add_argument(
         "--name",
@@ -3461,8 +2011,1621 @@ def add_commands(subcommands) -> None:
         f"the thinnest cell in this library runs out of the 32-map neighbourhood between "
         f"0.10 and 0.15",
     )
-    device_flag(leg)
+    if device:
+        device_flag(leg)
+
+
+def mine_draw_flags(holder):
+    """The five flags that describe a mine's draw, which `plan` and `run` share.
+
+    Same rule as [`hunt_draw_flags`]: a plan is the run with the rendering left
+    out, so the two describe the same draw or the plan is pricing another one.
+    `bench` takes `--seed` alone, which is why that help string is a constant.
+    """
+    from fractal_wallpapers.curation import mine as mine_module
+
+    holder.add_argument(
+        "--budget",
+        type=float,
+        default=mine_module.BUDGET_SECONDS,
+        metavar="SECONDS",
+        help=f"how long the mine may spend RENDERING (default "
+        f"{int(mine_module.BUDGET_SECONDS)}). Enforced at the candidate boundary",
+    )
+    holder.add_argument(
+        "--rate",
+        type=float,
+        metavar="SECONDS",
+        help="seconds a candidate, measured on THIS mine's target population, which is "
+        "what sizes the arms. Required by `plan` and `run` and by nothing else. Take it "
+        "off a short run first and pass the figure that run reported — a rate carried in "
+        "from another pass prices another population",
+    )
+    holder.add_argument(
+        "--k",
+        type=int,
+        default=mine_module.DEEPEN_K,
+        metavar="COUNT",
+        help=f"how many fresh palettes the DEEPEN arm offers one location (default "
+        f"{mine_module.DEEPEN_K}). Wide enough that the marginal clear rate can die",
+    )
+    holder.add_argument(
+        "--per-location",
+        type=int,
+        default=mine_module.PER_LOCATION,
+        metavar="COUNT",
+        help=f"how many candidates a breadth arm gives one location (default "
+        f"{mine_module.PER_LOCATION}), the same on both so they differ only in the draw",
+    )
+    holder.add_argument(
+        "--seed",
+        type=int,
+        default=mine_module.DEFAULT_SEED,
+        help=MINE_SEED.format(seed=mine_module.DEFAULT_SEED),
+    )
+
+
+def hunt_draw_flags(holder):
+    """The seven flags that describe a hunt's draw, which `plan` and `run` share.
+
+    `plan` IS the run with the rendering left out — it prints the shape the
+    budget would be spent against — so the two take the same description of what
+    to draw and differ in `--budget` and `--device`, which only a run spends.
+    One definition so the two cannot drift into describing different draws.
+    """
+    from fractal_wallpapers.curation import hunt as hunt_module
+
+    holder.add_argument(
+        "--unconditional",
+        type=int,
+        default=0,
+        metavar="COUNT",
+        help="how many breadth candidates to plan. The budget still decides how many are "
+        "made; this is the size of the plan the budget is spent against",
+    )
+    holder.add_argument(
+        "--conditioned",
+        type=int,
+        default=0,
+        metavar="COUNT",
+        help="how many candidates to plan against --cell. Needs --cell",
+    )
+    holder.add_argument(
+        "--cell",
+        help="the codebook cell the conditioned leg aims at, e.g. dark_vivid_lime. Its maps "
+        "are drawn from the tracked carrier table, weighted by mean share",
+    )
+    holder.add_argument(
+        "--work-order",
+        action="append",
+        default=[],
+        metavar="PARTITION=WEIGHT",
+        help="how the conditioned leg spreads over the partitions, repeatable — a solve's "
+        "shortage list says where the pool's carriers of that colour already stand, and "
+        "this is that list. Absent, the leg spreads evenly like the breadth one",
+    )
+    holder.add_argument(
+        "--per-location",
+        type=int,
+        default=hunt_module.PER_LOCATION,
+        metavar="COUNT",
+        help=f"how many candidates one location is given (default {hunt_module.PER_LOCATION}). "
+        "Shallow on purpose: a gallery seats one wallpaper per location, so a fourth "
+        "candidate at a fresh place is worth more than a ninth at a stocked one",
+    )
+    holder.add_argument(
+        "--seed",
+        type=int,
+        default=hunt_module.DEFAULT_SEED,
+        help=f"the seed every draw here is taken under (default {hunt_module.DEFAULT_SEED})",
+    )
+    holder.add_argument(
+        "--rebuild-frames",
+        action="store_true",
+        help="derive the frame index off the scan record again before planning",
+    )
+
+
+def keeping_verbs(verbs, *, noun: str, force: str, order=("check", "save", "restore")):
+    """`check`, `save`, `restore` — the three verbs every durable store shares.
+
+    Seven groups spell them and only the noun and the order move, so they are
+    written once here for the reason [`common.device_flag`] gives: a copied
+    `add_argument` costs nothing until somebody edits one of them, and then
+    `--help` carries a difference that reads like a difference in behaviour.
+
+    A REAL subparser per verb rather than one `choices=` positional, which is
+    what every one of them did before: a positional puts the whole group's flags
+    on every verb, so `--force` was accepted by `check` and dropped on the floor,
+    and `--help` at the group was every verb's flags at once with nothing saying
+    which belonged to which.
+
+    Takes the subparsers action rather than the parser, because three of the
+    groups register another verb first — `spiral-scores` builds, `flatness` and
+    `signatures` sweep — and the registration order is the `--help` surface.
+    """
+    for name in order:
+        if name == "check":
+            verbs.add_parser("check", help=f"check the live {noun} against the manifest")
+        elif name == "save":
+            verbs.add_parser("save", help="save a fresh copy and manifest")
+        else:
+            restoring = verbs.add_parser(
+                "restore", help="restore the archived copy, counted before it is believed"
+            )
+            restoring.add_argument("--force", action="store_true", help=force)
+    return verbs
+
+
+def add_commands(subcommands) -> None:
+    """The last stage: harvest supply in, released wallpapers out."""
+    from fractal_wallpapers.curation import below_bar as below_bar_module
+    from fractal_wallpapers.curation import budget as budget_module
+    from fractal_wallpapers.curation import candidate_ledger as candidate_ledger_module
+    from fractal_wallpapers.curation import ceiling as ceiling_module
+    from fractal_wallpapers.curation import colors as colors_module
+    from fractal_wallpapers.curation import distinct as distinct_module
+    from fractal_wallpapers.curation import embeddings as embeddings_module
+    from fractal_wallpapers.curation import flatness as flatness_module
+    from fractal_wallpapers.curation import growth as growth_module
+    from fractal_wallpapers.curation import headroom as headroom_module
+    from fractal_wallpapers.curation import hunt as hunt_module
+    from fractal_wallpapers.curation import mine as mine_module
+    from fractal_wallpapers.curation import pool_draw as pool_draw_module
+    from fractal_wallpapers.curation import release as release_module
+    from fractal_wallpapers.curation import rules as rules_module
+    from fractal_wallpapers.curation import run as run_module
+    from fractal_wallpapers.curation import shrinkage as shrinkage_module
+    from fractal_wallpapers.curation import signatures as signatures_module
+    from fractal_wallpapers.curation import solve as solve_module
+    from fractal_wallpapers.curation import tentative as tentative_module
+    from fractal_wallpapers.curation import view as view_module
+
+    curating = subcommands.add_parser(
+        "curate",
+        help="make a release: score the supply, colorize, select, render at full size",
+        description=(
+            "The end-to-end path. Every step is bound to the ledgers it reads — name them "
+            "with --ledger, or name the harvest that wrote them with --harvest; nothing "
+            "defaults to all of them. `score` reads the bound ledgers through the location "
+            "head into a sidecar this stage owns, upserting one binding's rows without "
+            "touching another's and never rewriting a ledger; `plan` prints the offer and "
+            "the budget it implies without making a picture; and `run` does the whole thing, "
+            "records its binding in its own plan, and records every decision."
+        ),
+    )
+    steps = curating.add_subparsers(dest="step", required=True)
+
+    reading = ledger_flags(
+        steps.add_parser(
+            "score",
+            help="read the harvest ledgers through the location head",
+            description=(
+                "Reads each gate-surviving location through the head, at the regime its own "
+                "ledger row names: a walk's gate render where the row's recorded digest still "
+                "describes it, the deploy view already on disk for the standing stock. No "
+                "deploy-geometry render is ever demanded for a row that was not scored at one. "
+                "Resumable in both halves: a picture already on disk is not re-made."
+            ),
+        )
+    )
+    device_flag(reading)
+    reading.add_argument("--limit", type=int, help="score only this many locations")
+    reading.add_argument(
+        "--key-file",
+        metavar="PATH",
+        help="score only the locations this key manifest names, out of the bound ledgers "
+        "(`curate reach --write` writes one). Like --limit it is a partial pass, so it "
+        "upserts what it looked at and clears nothing",
+    )
+    reading.set_defaults(handler=curate_score)
+
+    sidecar = steps.add_parser(
+        "sidecar",
+        help="the supply sidecar's durability: record it, check it, restore it",
+        description=(
+            "artifacts/curation/supply_scores.jsonl is the head's read of the standing "
+            "supply and the one file under the regenerable tree that the checkout cannot "
+            "regenerate — the ledgers it reads are under that tree too. It is too big and "
+            "too churny to track, so what the history keeps is a manifest: the row count, "
+            "the byte count, the sha256 and the per-ledger split. `save` writes a copy to "
+            "the archive tier and records it; `check` reads the live file against the "
+            "manifest; `restore` brings the copy back, counted before it is believed."
+        ),
+    )
+    sidecar.set_defaults(handler=curate_sidecar)
+    keeping_verbs(
+        sidecar.add_subparsers(dest="what", required=True),
+        noun="file",
+        force="overwrite a live sidecar that holds MORE rows than the manifest records. "
+        "Those rows are a harvest nobody has saved yet",
+    )
+
+    amendments = steps.add_parser(
+        "amendments",
+        help="the score amendment's durability: record it, check it, restore it",
+        description=(
+            "artifacts/curation/score_amendments.jsonl is what `curate redraw` writes: one "
+            "append-only row per (location, engine build) re-reading a standing seating "
+            "score off a view drawn again for it. Every reader of a seating score overlays "
+            "it, so losing it does not shrink the supply — it silently puts the supply back "
+            "on the numbers the re-read corrected. Rebuilding it is `curate redraw` over "
+            "the whole supply, about ninety thousand renders, and only on a machine whose "
+            "engine still fingerprints the same. So the bytes go to the archive tier and "
+            "the history keeps the manifest: the row count, the byte count, the sha256 and "
+            "the per-build split."
+        ),
+    )
+    amendments.set_defaults(handler=curate_amendments)
+    keeping_verbs(
+        amendments.add_subparsers(dest="what", required=True),
+        noun="amendment",
+        force="overwrite a live amendment that holds MORE rows than the manifest records. "
+        "Those rows are a redraw nobody has saved yet",
+    )
+
+    frames = steps.add_parser(
+        "frames",
+        help="the hunt frame index's durability: record it, check it, restore it",
+        description=(
+            "artifacts/curation/hunt/frames.jsonl is the frame every mining leg draws a "
+            "location at, looked up through `hunt.frame_for`. It was cut from a 97.8 MiB "
+            "pool-wide refinement scan that no job in this repository builds and that was "
+            "deleted on 2026-09-02, so `curate hunt frames` refuses and there is no rebuild "
+            "at any price — this file is the only copy of those frame choices. Losing it is "
+            "silent by design: a location it has no row for draws at the frame it already "
+            "carries. So the bytes go to the archive tier, the history keeps the manifest, "
+            "and `curate run` refuses to start without it."
+        ),
+    )
+    frames.set_defaults(handler=curate_frames)
+    keeping_verbs(
+        frames.add_subparsers(dest="what", required=True),
+        noun="index",
+        force="overwrite a live index that holds MORE rows than the manifest records. There "
+        "is no job that appends to this file, so that is a state to explain rather than one "
+        "to overwrite",
+    )
+
+    mass_sweep = steps.add_parser(
+        "mass-sweep",
+        help="the colour-mass sweep log's durability: record it, check it, restore it",
+        description=(
+            "artifacts/curation/palette_mass_sweep/rows.jsonl is the 25.7 MB experiment log "
+            "the tracked colour-mass map was cut from: one row per (palette group, mode, "
+            "location) with its 48-cell vector, its recipe and whether autolevel acted. It "
+            "is insurance rather than a record anything reads — what production reads is "
+            "the map under data/palettes/color_mass/ — and it is the only thing that would "
+            "let the map be re-cut on other terms. Re-deriving it is 8.7 h of wall over "
+            "27,053 renders whose pictures were deleted, so the bytes go to the archive "
+            "tier and the history keeps the manifest."
+        ),
+    )
+    mass_sweep.set_defaults(handler=curate_mass_sweep)
+    keeping_verbs(
+        mass_sweep.add_subparsers(dest="what", required=True),
+        noun="log",
+        force="overwrite a live log that holds MORE rows than the manifest records",
+    )
+
+    redrawing = steps.add_parser(
+        "redraw",
+        help="re-render every stale location view and amend the score read off it",
+        description=(
+            "A standing seating score is a reading of a picture, and the sidecar row names "
+            "which picture. For tens of thousands of rows that name no longer describes "
+            "anything: the view was drawn at a geometry the read no longer uses, under a "
+            "recipe whose digest has since moved, or by an engine build nobody wrote down — "
+            "and the build is not in the digest, so nothing before this could ask. This "
+            "re-renders every stale view at the node regime, reads it through the shipped "
+            "location head, and appends the result to an APPEND-ONLY amendment keyed by "
+            "(location key, engine fingerprint). The sidecar is never edited. Every reader "
+            "of a seating score prefers the amendment from the moment it lands. Serial "
+            "(the engine threads inside one render) at about 0.03 s a view, so a whole "
+            "supply is the best part of an hour; idempotent and resumable."
+        ),
+    )
+    redrawing.add_argument(
+        "--limit",
+        type=int,
+        help="stop after this many stale locations. A smoke leg, not a scoping flag: the "
+        "amendment is append-only, so a limited pass amends a prefix and leaves the rest "
+        "stale rather than declaring them current",
+    )
+    redrawing.add_argument(
+        "--no-resume",
+        action="store_true",
+        help="re-read locations this engine build has already amended. Off by default, "
+        "which is what makes an interrupted refresh cheap to finish",
+    )
+    device_flag(redrawing)
+    redrawing.set_defaults(handler=curate_redraw)
+
+    embedding_step = steps.add_parser(
+        "embed",
+        help="one DINOv2 vector per admitted location, from a neutral render",
+        description=(
+            "The gallery pass picks locations by how far apart they look, so every location "
+            "the judge admits over the junk floor needs one picture that says nothing about "
+            "a coloring nobody has chosen yet: the NEUTRAL RENDER, this location's smooth "
+            "field through one fixed cyclic map at one fixed small geometry. A frozen DINOv2 "
+            "reads a unit vector off it and the vector is kept forever, keyed by the exact "
+            "location key. Incremental and idempotent: what is already stored is subtracted "
+            "before anything is drawn, so a later harvest's admissions are a second run of "
+            "this. Exits non-zero when the store does not cover the admitted population."
+        ),
+    )
+    device_flag(embedding_step)
+    embedding_step.add_argument(
+        "--sample",
+        type=int,
+        help="embed a stratified draw of this many outstanding locations rather than all of "
+        "them, spread over the partitions in proportion to their supply. The pilot",
+    )
+    embedding_step.add_argument(
+        "--limit", type=int, help="stop after this many locations; a prefix, not a sample"
+    )
+    embedding_step.add_argument(
+        "--seed",
+        type=int,
+        default=embeddings_module.SAMPLE_SEED,
+        help=f"the seed --sample draws under (default: {embeddings_module.SAMPLE_SEED})",
+    )
+    embedding_step.add_argument(
+        "--unit-seconds",
+        type=float,
+        default=embeddings_module.UNIT_SECONDS,
+        help=f"kill one neutral render that runs past this and carry on "
+        f"(default: {embeddings_module.UNIT_SECONDS:g})",
+    )
+    embedding_step.set_defaults(handler=curate_embed)
+
+    embedding_store = steps.add_parser(
+        "embeddings",
+        help="the embedding store's durability: record it, check it, restore it",
+        description=(
+            "The vectors cost a pass of the encoder over every admitted location and their "
+            "input lives under the regenerable tree, so the store gets what the supply "
+            "sidecar gets: a copy on the archive tier, a tracked manifest carrying the row "
+            "count, the bytes, the sha256 and the frozen choices every vector was made "
+            "under, and a restore that counts before it believes. The neutral JPEGs are not "
+            "copied: every row carries the join its own picture re-renders from."
+        ),
+    )
+    embedding_store.set_defaults(handler=curate_embeddings)
+    keeping_verbs(
+        embedding_store.add_subparsers(dest="what", required=True),
+        noun="store",
+        force="overwrite a live store that holds MORE rows than the manifest records. Those "
+        "rows are admissions nobody has saved yet",
+    )
+
+    spiral_store = steps.add_parser(
+        "spiral-scores",
+        help="P(spiral) per location: build the store, or record, check and restore it",
+        description=(
+            "One row per location, keyed on the location key, saying what the shipped "
+            "spiral probe makes of the place. `build` is NOT a render leg: the probe reads "
+            "DINOv2 over the neutral render and the embedding store already holds that "
+            "vector for every admitted location, so scoring one is a 384-column dot product "
+            "and the whole store scores in under two seconds. It is also run automatically "
+            "at the end of `curate embed`, so a newly admitted location arrives with a "
+            "score rather than being drawable before it has one. A location with NO row "
+            "here reads as UNKNOWN everywhere and counts toward nothing: unknown is never "
+            "not_spiral. The reader is `curate solve --spiral-cap`."
+        ),
+    )
+    spiral_store.set_defaults(handler=curate_spiral_scores)
+    # `build` first, then the three keeping verbs, which is the order they
+    # registered in before the split and so the order `--help` prints.
+    spiral_verbs = spiral_store.add_subparsers(dest="what", required=True)
+    building_spirals = spiral_verbs.add_parser(
+        "build", help="score every embedded location the store does not hold"
+    )
+    building_spirals.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        metavar="N",
+        help="score at most this many outstanding locations",
+    )
+    spiral_verbs.add_parser("check", help="check the live store against the manifest")
+    spiral_verbs.add_parser("save", help="save a fresh copy and manifest")
+    restoring_spirals = spiral_verbs.add_parser(
+        "restore", help="restore the archived copy, counted before it is believed"
+    )
+    restoring_spirals.add_argument(
+        "--force",
+        action="store_true",
+        help="overwrite a live store that holds MORE rows than the manifest records. Those "
+        "rows are locations nobody has saved yet",
+    )
+
+    neighbouring = steps.add_parser(
+        "neighbours",
+        help="nearest neighbours by cosine in the embedding store, with their pictures",
+        description=(
+            "The sanity read, and it does not settle anything by itself: it names the "
+            "neutral JPEGs of a few random locations and of whatever the store says is "
+            "nearest to each, so a person can open them and see whether near means alike."
+        ),
+    )
+    neighbouring.add_argument("-k", type=int, default=3, help="neighbours per row (default: 3)")
+    neighbouring.add_argument("--sample", type=int, default=10, help="rows to read (default: 10)")
+    neighbouring.add_argument(
+        "--seed",
+        type=int,
+        default=embeddings_module.SAMPLE_SEED,
+        help=f"the seed the rows are drawn under (default: {embeddings_module.SAMPLE_SEED})",
+    )
+    neighbouring.set_defaults(handler=curate_neighbours)
+
+    reaching = steps.add_parser(
+        "reach",
+        help="which judged locations the gallery pass cannot select, and why",
+        description=(
+            "The gallery pass selects over the ADMITTED population — every location the "
+            "location judge puts over the junk floor — and the accumulated pool is a "
+            "different set. A judged location outside the admitted one cannot be chosen, "
+            "however good the wallpaper somebody already made of it, and there are two ways "
+            "for that to happen: today's head reads it below the junk floor, which is a "
+            "judgement, or the supply sidecar has no row for it at all, which is not a "
+            "judgement about anything. The second is a location whose ledger was never "
+            "scored into the sidecar."
+        ),
+    )
+    reaching.add_argument(
+        "--keys", action="store_true", help="print every location key, not only the counts"
+    )
+    reaching.add_argument(
+        "--write",
+        metavar="PATH",
+        help="write the locations with NO sidecar row at all as a key manifest, which "
+        "`curate score --key-file` reads back. The other cause - below the junk floor - is a "
+        "judgement and not a gap, so it is never written here",
+    )
+    reaching.set_defaults(handler=curate_reach)
+
+    naming_ledgers = steps.add_parser(
+        "ledgers",
+        help="which walk ledger each released row names, and whether it still resolves",
+        description=(
+            "Provenance, not a repair. A released row carries its whole join and re-renders "
+            "from itself, so a row whose ledger has gone is still a wallpaper somebody can "
+            "rebuild — what it cannot be is re-OFFERED, because an intake starts from "
+            "ledgers. Resolution goes through the same tier funnel every reader uses, so a "
+            "ledger that has merely been archived reads as present."
+        ),
+    )
+    naming_ledgers.add_argument(
+        "--write",
+        action="store_true",
+        help="write the tracked provenance record as well as printing it",
+    )
+    naming_ledgers.set_defaults(handler=curate_ledgers)
+
+    rereading = steps.add_parser(
+        "rescore",
+        help="read every candidate the pool holds through today's finished-render heads",
+        description=(
+            "Not `score`, which reads LOCATIONS through the location head over the walk "
+            "ledgers. This reads the accumulated pool's own candidate renders — "
+            "pictures/NNNN.jpg, 640x360, the picture each gate decision was taken on — "
+            "through whichever finished-render head owns each row, at the artifact shipped "
+            "now. The run's own scores are left exactly as they are, as that night's "
+            "provenance; the reading lands in a `scores_current` block carrying the head "
+            "sha. Rows judged by a retired head gain the cutpoints it never had."
+        ),
+    )
+    device_flag(rereading)
+    rereading.set_defaults(handler=curate_rescore)
+
+    remaking = steps.add_parser(
+        "re-render",
+        help="put back every pool candidate render the pool names and the disk does not have",
+        description=(
+            "The pool's pictures live under the regenerable tree, and `rescore` refuses "
+            "outright while one of them is missing — a reading of most of the pool is not a "
+            "reading of the pool. This is the repair that refusal points at. Each row's "
+            "recipe is rebuilt from the join the row carries, and it is rendered only if "
+            "the recipe the RENDER PATH derives digests to the same name: the same pixels, "
+            "not similar ones, because every reading the pool holds was taken on the pixels "
+            "that used to be there. A row that will not reproduce is recorded and skipped. "
+            "Writes no row, no reading and no manifest."
+        ),
+    )
+    remaking.add_argument(
+        "--workers",
+        type=int,
+        default=candidate_ledger_module.RE_RENDER_WORKERS,
+        metavar="COUNT",
+        help="how many engines to drive at once (default "
+        f"{candidate_ledger_module.RE_RENDER_WORKERS}, this machine's render pool). More "
+        "than three, or any of them at normal priority, makes the desktop unusable",
+    )
+    remaking.add_argument(
+        "--limit",
+        type=int,
+        help="stop after this many pictures, taken as WHOLE (location, mode) pairs. What a "
+        "pilot prices the whole leg off",
+    )
+    remaking.set_defaults(handler=curate_re_render)
+
+    def with_shape(parser, defaults=True):
+        # A run takes `None` where `plan` takes a number: a resumed run reads its
+        # shape back out of its own sidecar, and a flag that defaulted to 6 here
+        # could not be told from a flag that asked for 6.
+        parser.add_argument(
+            "-n",
+            type=int,
+            default=run_module.DEFAULT_N if defaults else None,
+            help=f"release slots to fill (default: {run_module.DEFAULT_N}, or the resumed "
+            f"run's own). A run's release is a DIAGNOSTIC — enough pictures to see that the "
+            f"path works — and not a claim about what is worth shipping, which is a decision "
+            f"over the whole accumulated pool",
+        )
+        parser.add_argument(
+            "--strange-share",
+            type=float,
+            default=run_module.STRANGE_SHARE if defaults else None,
+            help=f"share of the slots the strange judge fills "
+            f"(default: {run_module.STRANGE_SHARE:g})",
+        )
+        parser.add_argument(
+            "--strange-modes",
+            type=int,
+            default=None,
+            help=f"modes the strange judge draws at each location it pays for "
+            f"(default: {budget_module.MODES_PER_LOCATION[budget_module.STRANGE]}). The "
+            f"smooth judge always draws one: the smooth coloring is the only mode it owns "
+            f"and a second draw would render the same picture",
+        )
+        parser.add_argument(
+            "--attempts", type=int, help="cap the total colorize attempts; omit for the multiple"
+        )
+        return parser
+
+    planning = with_shape(
+        ledger_flags(
+            steps.add_parser(
+                "plan",
+                help="print the offer and the budget it implies, making nothing",
+            )
+        )
+    )
+    planning.set_defaults(handler=curate_plan)
+
+    running = with_shape(
+        ledger_flags(
+            steps.add_parser(
+                "run",
+                help="make a release and record every decision",
+                description=(
+                    "Full resolution is the expensive part — measure one before asking for "
+                    "many. Nothing is padded or backfilled: a judge that cannot fill its "
+                    "quota under the slot and supply caps, the acting bar, and the "
+                    "one-wallpaper-per-location rule ships fewer, and says so. "
+                    "A long run wants --wall-budget: it stops cleanly at the last unit it "
+                    "can afford rather than finding out afterwards, and --resume continues "
+                    "an interrupted one from what it finished."
+                ),
+            )
+        ),
+        defaults=False,
+    )
+    naming = running.add_mutually_exclusive_group(required=True)
+    naming.add_argument("--run", help="the name this run's records carry")
+    naming.add_argument(
+        "--resume",
+        metavar="RUN",
+        help="continue an interrupted run: its finished attempts and release renders are "
+        "skipped, and its shape is read back from its own plan rather than from these flags",
+    )
+    running.add_argument("--seed", type=int, help="run seed (default: 0)")
+    running.add_argument(
+        "--wall-budget",
+        type=float,
+        metavar="SECONDS",
+        help="stop cleanly rather than start a unit of work that would overrun this. Covers "
+        "the whole run, intake through the last release render",
+    )
+    running.add_argument(
+        "--workers",
+        type=int,
+        default=3,
+        help="worker processes for the full-resolution pass (1 is the serial path)",
+    )
+    device_flag(running)
+    running.add_argument(
+        "--ephemeral",
+        action="store_true",
+        help="redirect the WHOLE record store under scratch/. A rehearsal that writes the "
+        "durable store adds rows a later calibration pass cannot tell from a release's",
+    )
+    running.add_argument(
+        "--skip-release",
+        action="store_true",
+        help="reuse the full-resolution pictures already on disk instead of rendering "
+        "(with --resume: the pictures are this run's own, from before it was interrupted)",
+    )
+    running.add_argument(
+        "--deep",
+        action="store_true",
+        help="hold this run to the deep mode's hung-unit ceilings instead of the shallow "
+        "ones. A deep release frame was measured at 607s against a shallow distribution "
+        "whose median is 87.8s, and the backstop only ever raises itself off units a run "
+        "has FINISHED - so a deep row killed at the shallow colorize ceiling never teaches "
+        "the run that its class is slow",
+    )
+    running.set_defaults(handler=curate_run)
+
+    pass_store = steps.add_parser(
+        "gallery-store",
+        help="a gallery pass's attempt store: record it, check it, restore it",
+        description=(
+            "A pass makes locations x heads x draws attempts per slot and each one is a pool "
+            "row carrying its whole join — 1,120 rows at n=50 and ten times that at n=500, "
+            "at about 3.8 KB a row. They live under the regenerable tree rather than in the "
+            "history, so they get what the supply sidecar and the embedding store get: a "
+            "copy on the archive tier, a tracked manifest carrying the row count, the bytes, "
+            "the sha256 and the population the attempts were made over, and a restore that "
+            "counts before it believes."
+        ),
+    )
+    pass_store.set_defaults(handler=curate_gallery_store)
+    # Its own three rather than [`keeping_verbs`]: every verb here names a pass,
+    # because unlike the five stores that share that helper this one keeps a
+    # store per gallery pass rather than a single file.
+    pass_verbs = pass_store.add_subparsers(dest="what", required=True)
+    for named, purpose in (
+        ("check", "check the live store against the manifest"),
+        ("save", "save a fresh copy and manifest"),
+        ("restore", "restore the archived copy, counted before it is believed"),
+    ):
+        keeping_a_pass = pass_verbs.add_parser(named, help=purpose)
+        keeping_a_pass.add_argument(
+            "--pass",
+            dest="pass_id",
+            required=True,
+            help="which pass's store, by id",
+        )
+        if named == "restore":
+            keeping_a_pass.add_argument(
+                "--force",
+                action="store_true",
+                help="overwrite a live store that holds MORE rows than the manifest records. "
+                "Those rows are attempts nobody has saved yet",
+            )
+
+    ledger_store = steps.add_parser(
+        "candidate-ledger",
+        help="the durable cache of every candidate ever rendered: build it, census it, keep it",
+        description=(
+            "One row per RECIPE — the frame that was rendered, the mode, the map and every "
+            "palette knob, the regime, and the sha256 of the autolevel band the picture was "
+            "levelled onto — carrying the location it stands on, the colour it turned out "
+            "to be, and where its picture is. It admits everything and filters nothing: a "
+            "floor is a reading of a judge and both move, the recipe and the pixels do not. "
+            "Scores live in a sidecar keyed on (recipe, judge artifact, regime), so a judge "
+            "adoption invalidates scores and nothing else. `backfill` reads the two decision "
+            "stores and renders nothing; `census` is the fill over the axes a constraint "
+            "acts on, and which of them is thin. `orphans` is the other direction and the "
+            "backstop under `prune`: a KILLED leg never reaches `merge`, so its pictures "
+            "are on disk with no row ever written for them and no prune can free them. A "
+            "leg that HAS merged is decided by the ledger alone; one that has not is "
+            "skipped and listed for a person, never swept. It is a dry run unless "
+            "`--apply` says otherwise."
+        ),
+    )
+    ledger_store.set_defaults(handler=curate_candidate_ledger)
+    ledger_verbs = ledger_store.add_subparsers(dest="what", required=True)
+
+    filling = ledger_verbs.add_parser("backfill", help="build the ledger from what already exists")
+    filling.add_argument(
+        "--recolour",
+        action="store_true",
+        help="read every picture's colour again instead of carrying the reading already on "
+        "record. About twenty milliseconds a picture",
+    )
+
+    censusing = ledger_verbs.add_parser("census", help="take the coverage census")
+    censusing.add_argument(
+        "--n",
+        type=int,
+        default=candidate_ledger_module.FIRST_SOLVE,
+        help=f"how many wallpapers the feasibility read is taken against "
+        f"(default {candidate_ledger_module.FIRST_SOLVE})",
+    )
+    censusing.add_argument(
+        "--out",
+        metavar="PATH",
+        help="write the census there instead of printing it",
+    )
+
+    ledger_verbs.add_parser("check", help="check the live files against their manifests")
+
+    sweeping = ledger_verbs.add_parser(
+        "orphans", help="sweep the pool subtrees for pictures no record names"
+    )
+    sweeping.add_argument(
+        "--apply",
+        action="store_true",
+        help="actually delete what the sweep found. The default is the dry run, which is "
+        "the opposite way round from `prune` and deliberately so — a prune decides about "
+        "rows it can see, and this decides about files nothing wrote down. Read the "
+        "`unmerged` list first: those legs are skipped either way",
+    )
+    sweeping.add_argument(
+        "--leg",
+        action="append",
+        metavar="NAME",
+        help="also sweep this UNMERGED leg, which the sweep otherwise only lists. "
+        "Repeatable, and takes the name as the listing prints it or just its last "
+        "component. A named leg is swept under the same rule as a merged one — what the "
+        "ledger names is kept, the rest goes — so a killed leg loses everything and a "
+        "backfilled `runs` leg loses only the renders nothing decided about",
+    )
+    sweeping.add_argument(
+        "--include-unmerged",
+        action="store_true",
+        help="sweep every unmerged leg the listing holds, as though each had been named. "
+        "The listing stays the default precisely so that this is a sentence somebody typed "
+        "after reading it",
+    )
+
+    ledger_verbs.add_parser(
+        "pictures", help="report which rows name a picture that is no longer on disk"
+    )
+
+    pruning = ledger_verbs.add_parser("prune", help="bring the store back to the retention rule")
+    pruning.add_argument(
+        "--keep",
+        type=int,
+        default=candidate_ledger_module.RETAIN_PER_PAIR,
+        help="how many rows one (location, mode) pair keeps, ranked by the "
+        f"shipped rank key (default: {candidate_ledger_module.RETAIN_PER_PAIR}). Four "
+        "protections keep a row outside the rank whatever it says, and a picture is kept "
+        "if and only if its row is",
+    )
+    pruning.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="read, decide, and touch nothing. THE dry run — there is no second command "
+        "that says what a prune would do",
+    )
+
+    remaking_pictures = ledger_verbs.add_parser(
+        "re-render", help="put back the pictures the rows still name"
+    )
+    remaking_pictures.add_argument(
+        "--workers",
+        type=int,
+        default=candidate_ledger_module.RE_RENDER_WORKERS,
+        metavar="COUNT",
+        help="how many engines to drive at once (default "
+        f"{candidate_ledger_module.RE_RENDER_WORKERS}, this machine's render pool). More "
+        "than three, or any of them at normal priority, makes the desktop unusable",
+    )
+    remaking_pictures.add_argument(
+        "--limit",
+        type=int,
+        help="stop after this many pictures. What a pilot prices the whole leg off",
+    )
+
+    ledger_verbs.add_parser("save", help="save a fresh copy and manifests")
+
+    rejudging = ledger_verbs.add_parser(
+        "score", help="read every picture through the judge shipped now"
+    )
+    rejudging.add_argument(
+        "--limit",
+        type=int,
+        help="stop after this many pictures. What a pilot prices the whole leg off",
+    )
+
+    putting_back = ledger_verbs.add_parser(
+        "restore", help="restore the archived copies, counted before they are believed"
+    )
+    putting_back.add_argument(
+        "--force",
+        action="store_true",
+        help="overwrite live files that hold MORE rows than the manifests record. Those "
+        "rows are recipes nobody has saved yet",
+    )
+
+    solving = steps.add_parser(
+        "solve",
+        help="choose the gallery: a stratified view, a greedy seed, and 1-swap improvement",
+        description=(
+            "ONE leg, one pool, one command. A per-pass stratified VIEW over the pool above "
+            "its per-mode bars — one row per place plus each place's best row per (kind, "
+            "mode, cell) stratum, then either the whole stratum or a band-blind slice of it, "
+            "never a top-by-score cut. A GREEDY SEED in the seating order this project "
+            "already had: the mandated demands from their own subpools scarcest first, then "
+            "the ranked walk. Then 1-SWAP IMPROVEMENT — one seat out, one candidate in, "
+            "accepted only on strict lexicographic improvement, to exhaustion. ANYTIME: the "
+            "gallery is valid from its first seat, so a clock or a Ctrl-C leaves an answer. "
+            "The objective is lexicographic and strict: seats filled, then the worst seated "
+            "score, then the shortfall against the mode floors and any colour target, then "
+            "the sum — all in the FITTED rank key. TWO HARD RULES: one wallpaper per "
+            "location, and the diversity rule, which refuses a picture within ceiling.TAU of "
+            "one already seated. Everything else is counted with the shortfall recorded: no "
+            "fallback leg, no least-violating rescue, unfilled beats padded. The REJECTION "
+            "LEDGER is the product. The exact solve this replaced is RETIRED: it was "
+            "measured infeasible at n=1000 against a thirty-minute bar. "
+            "The seats a record names are a PROTECTION CLASS in `curate "
+            "candidate-ledger prune` — an ID that stopped resolving would take its picture "
+            "with it, and nothing would notice. The `sweep` and `truncate` experiments went "
+            "with the exact solver they were experiments on."
+        ),
+    )
+    solving.set_defaults(handler=curate_solve)
+    solve_verbs = solving.add_subparsers(dest="what", required=True)
+
+    running_solve = solve_verbs.add_parser(
+        "run",
+        help="choose one gallery, render its seats and cut its sheet",
+        description=(
+            "The solve itself, under whatever this invocation asks for. `run` rewrites "
+            "`--name` every time, which is a decision rather than a handle — a solve worth "
+            "pointing at later is a `record`."
+        ),
+    )
+    # Seven groups over twenty-six flags. Every flag here is one `run` reads and
+    # `record` does not: a record is `run` with nothing changed, which is the
+    # whole claim it makes, so a record that took one of these would not be
+    # reproducible from the `curate solve run` it names. That used to be a
+    # runtime check against a list; it is the parser's now.
+    which_record = running_solve.add_argument_group(
+        "what to call it",
+        "`run` rewrites --name every time; `record` stamps --solve-name and never writes over it",
+    )
+    pool_size = running_solve.add_argument_group("how big, and how much of the pool it reaches")
+    demands = running_solve.add_argument_group(
+        "the demands",
+        "every one of these is counted with its shortfall recorded: unfilled beats "
+        "padded, and no demand is ever met by a fallback leg",
+    )
+    themed = running_solve.add_argument_group(
+        "a themed gallery",
+        "one dominant colour cell at the relaxed bar; the other two are ignored without --themed",
+    )
+    distinctness = running_solve.add_argument_group("the distinctness rules")
+    search = running_solve.add_argument_group("the objective and the search")
+    release_leg = running_solve.add_argument_group("the release leg and the sheet")
+
+    which_record.add_argument(
+        "--name",
+        help="what to call this pass's output directory (default `n<N>`). A `record` names "
+        "its solve directory with `--solve-name` instead, because it writes two things and "
+        "they are stamped together",
+    )
+    pool_size.add_argument(
+        "--n",
+        type=int,
+        default=None,
+        help=f"how many wallpapers to seat (default "
+        f"{candidate_ledger_module.FIRST_SOLVE}, the size a leg is read at). A `record` "
+        f"seats {tentative_module.RECORDED_SEATS} by default instead, which is the size a "
+        f"record is kept at",
+    )
+    pool_size.add_argument(
+        "--locations",
+        type=int,
+        metavar="COUNT",
+        help="let the pass reach only this many strongest locations, ranked by their best "
+        "candidate. Unset is the whole ledger",
+    )
+    pool_size.add_argument(
+        "--rows-per-seat",
+        type=int,
+        default=view_module.ROWS_PER_SEAT,
+        metavar="ROWS",
+        help=f"how many view rows each stratum keeps per seat it could contribute "
+        f"(default {view_module.ROWS_PER_SEAT}). Larger reaches more of the pool and costs "
+        "one pixel-cloud signature a row",
+    )
+    pool_size.add_argument(
+        "--draw-seed",
+        type=int,
+        default=view_module.DRAW_SEED,
+        metavar="SEED",
+        help=f"the seed the view's band-blind stride offsets are drawn under (default "
+        f"{view_module.DRAW_SEED}). It is on the record either way",
+    )
+    pool_size.add_argument(
+        "--allow-unranked",
+        action="store_true",
+        help="choose even though the key cannot read every clearing candidate. Unsaid, "
+        "that is REFUSED: an unreadable row sorts last and cannot win a seat while a "
+        "readable one is left, so a pool holding any is a pass that ignores them silently. "
+        "The usual cause is a leg merged before its pictures were swept, and the fix is "
+        "`curate flatness sweep`. This flag is for the other case — a picture on disk that "
+        "will not decode, which has no reading to take and never will",
+    )
+    demands.add_argument(
+        "--target",
+        action="append",
+        metavar="CELL=FRACTION",
+        help="demand that at least this share of the REALIZED seats be dominant in this "
+        "colour cell. A demand and not a row: it is seated from its own subpool by the "
+        "scarcity leg, it counts in the third objective tier, and a target the pool cannot "
+        "meet is a recorded shortfall rather than a refusal. The target also raises that "
+        "cell's and its family's ceiling allowance, so the demand is not refused by the "
+        "ceiling it asked for",
+    )
+    demands.add_argument(
+        "--mode-floor",
+        type=int,
+        metavar="SEATS",
+        help="an ARTIFICIAL flat mode floor, one number for every accepted mode. Unset is "
+        "the per-mode floor rule, which is the default; `--flat-floor` is the other way "
+        f"off it, floor(n / {solve_module.SEATS_PER_MODE_FLOOR}). A record taken under any "
+        "of the three says which it was",
+    )
+    demands.add_argument(
+        "--flat-floor",
+        action="store_true",
+        help="solve under the FLAT mode floor instead of the per-mode rule — "
+        f"floor(n / {solve_module.SEATS_PER_MODE_FLOOR}) seats for every accepted mode, "
+        "which is what every gallery before 2026-08-31 was seated under. The default is "
+        "curation.mode_policy.seat_floors(n): half each accepted strange mode's share of "
+        "the strange seat budget. Refuses beside `--mode-floor`, which asks for a "
+        "different flat one",
+    )
+    demands.add_argument(
+        "--group-cap",
+        choices=list(ceiling_module.GROUP_CAP_RULES),
+        default=solve_module.DEFAULT_GROUP_CAP,
+        help=f"which palette-group cap to run under. `{ceiling_module.PROPORTIONAL}` is "
+        f"max(1, floor({ceiling_module.GROUP_CAP_RATE:g} * n)) — 1 up to n=40, 3 at n=150, "
+        f"25 at n=1000 — and is THE DEFAULT since 2026-08-28, the ckpt-88 ruling. "
+        f"`{ceiling_module.IDENTITY}` is ceiling.GROUP_CAP = {ceiling_module.GROUP_CAP}, one "
+        f"seat a map. It is a COUNT under either rule: the same-group DISTANCE row the exact "
+        f"solve carried is retired and not merged",
+    )
+    themed.add_argument(
+        "--themed",
+        metavar="CELL",
+        help="choose a THEMED gallery: one dominant colour cell, over a pool of the rows "
+        "that cell's dominance block claims, at the RELAXED bar — P(>=3) >= "
+        f"{headroom_module.FALLBACK_BAR} for every accepted mode rather than the per-mode "
+        "rule, because a single-cell pool is q3-grade material and at the per-mode bars "
+        "there is no pool. It also swaps the diversity rule for geometry-only "
+        f"distinctness at rules.GEOMETRY_RADIUS ({rules_module.GEOMETRY_RADIUS:g}) in the "
+        "neutral descriptor: the pixel-cloud twin test is over a picture's COLOUR cloud, "
+        "so a themed pool is a near-duplicate pool under exactly it. Unless you name them "
+        "otherwise it also sets `--target CELL=1.0`, without which the cell allowance "
+        "refuses the theme at nine seats, and `--flat-floor`",
+    )
+    themed.add_argument(
+        "--themed-cap",
+        type=int,
+        metavar="SEATS",
+        help="the palette-group cap a THEMED pass runs under, overriding the computed "
+        f"one. Unset is ceiling.themed_group_cap: ceil({ceiling_module.THEMED_CAP_SHARE} x "
+        "n / P), twice the even share across the P palette groups that can field the "
+        f"theme, where P counts the groups fielding {ceiling_module.THEMED_CAP_PLACES} or "
+        "more distinct PLACES in the themed pool. The main gallery's cap is a share of `n` "
+        "alone and was measured as the BINDING rule over a themed pool at every shipping "
+        "size, which is why a themed pass gets its own. `--group-cap` still names the "
+        "main gallery's rule and a themed pass ignores it. Ignored without `--themed`",
+    )
+    themed.add_argument(
+        "--themed-radius",
+        type=float,
+        default=rules_module.GEOMETRY_RADIUS,
+        metavar="COSINE",
+        help=f"the radius the themed diversity rule refuses inside (default "
+        f"{rules_module.GEOMETRY_RADIUS:g}). A SETTING and not a law — it was read off the "
+        "themed pools' own nearest-neighbour distributions and is the number to move if a "
+        "themed gallery reads as repetitive or as needlessly small. Ignored without "
+        "`--themed`",
+    )
+    distinctness.add_argument(
+        "--neutral-radius",
+        type=float,
+        default=distinct_module.PRESELECT_RADIUS,
+        metavar="COSINE",
+        help="the neutral pre-selection radius applied at pool construction "
+        f"(default {distinct_module.PRESELECT_RADIUS:g}). Geometric distinctness only: it "
+        "asks whether two places are the same place, and it is NOT the diversity rule",
+    )
+    distinctness.add_argument(
+        "--no-preselection",
+        action="store_true",
+        help="choose from the whole clearing pool, with no neutral pre-selection",
+    )
+    distinctness.add_argument(
+        "--no-diversity",
+        action="store_true",
+        help="choose without the diversity rule, which is the only rule that opens a "
+        f"picture. A gallery without it is a bound on a program that does not refuse "
+        f"inside {ceiling_module.TAU}, and its record says so",
+    )
+    solve_flags_a_record_keeps(demands=demands, search=search)
+    search.add_argument(
+        "--explain-seats-of",
+        metavar="NAME",
+        help="an earlier solve record whose seats this pass explains ONE AT A TIME, into "
+        "`rejection.explained`: every key it seated comes back either `seated` or with the "
+        "rule that refused it here. The aggregate beside it says which rules cost this pass "
+        "its seats; this says what happened to a named picture, which is the question a "
+        "before/after sheet asks and the only one the aggregate cannot answer. Named rather "
+        "than automatic because the refusal map is one entry per candidate over a hundred "
+        "and fifty thousand of them, and a record carrying all of it would be forty times "
+        "the size of the one carrying the decisions",
+    )
+    release_leg.add_argument(
+        "--no-render",
+        action="store_true",
+        help="take every decision and make no release picture. The contact sheet falls "
+        "back to each seat's candidate render and says which it is showing",
+    )
+    release_leg.add_argument(
+        "--release-regime",
+        default=release_module.RELEASE_REGIME.spelled,
+        metavar="WxHssN",
+        help=f"the geometry the release leg renders at (default "
+        f"{release_module.RELEASE_REGIME.spelled}, which is what every leg that ships a "
+        f"wallpaper ships; {release_module.FORMER_RELEASE_REGIME.spelled} is what the "
+        f"first three gallery passes shipped at)",
+    )
+    release_leg.add_argument(
+        "--workers",
+        type=int,
+        default=release_module.DEFAULT_WORKERS,
+        help=f"worker processes the release leg renders over (default "
+        f"{release_module.DEFAULT_WORKERS}, which is this machine's render pool; each "
+        f"spawns below-normal by construction)",
+    )
+    release_leg.add_argument(
+        "--no-sheet",
+        action="store_true",
+        help="take every decision and build no contact sheet",
+    )
+    release_leg.add_argument(
+        "--sheet-out",
+        metavar="PATH",
+        help="write the contact sheet there instead of beside the record, which is what a "
+        "before/after over several variants wants — one directory of sheets to look at",
+    )
+
+    recording = solve_verbs.add_parser(
+        "record",
+        help="run that same solve once and keep it under a stamp that never moves",
+        description=(
+            "A RECORD is `run` with nothing changed, which is the whole claim it makes: it "
+            "writes the seats under a UTC stamp that is never written over, so a person can "
+            "point at a picture and be understood. It writes `gallery.jsonl` (one row per "
+            "seat, carrying the ledger recipe key that IS the ID, a short alias, the mode, "
+            "the partition, the dominant colour cell and hue family, `centered`, the rank "
+            "and P(>=4), the seat order and the stored picture), `manifest.json` beside it, "
+            "and a self-contained page. It reads the flags below and no others — every one "
+            "`run` carries and this does not is a flag a record could not pass through, so "
+            "naming it here is refused rather than dropped on the floor."
+        ),
+    )
+    recording.add_argument(
+        "--solve-name",
+        help="what to call the solve's own output directory under "
+        "artifacts/curation/solve (default `tentative_n<N>_<stamp>`, the record's own "
+        "stamp, so successive records at the same N coexist)",
+    )
+    recording.add_argument(
+        "--n",
+        type=int,
+        default=None,
+        help=f"how many wallpapers to seat (default {tentative_module.RECORDED_SEATS}, the "
+        f"size a record is kept at, where a `run` reads a leg at "
+        f"{candidate_ledger_module.FIRST_SOLVE})",
+    )
+    solve_flags_a_record_keeps(demands=recording, search=recording)
+
+    browsing = solve_verbs.add_parser(
+        "browse", help="write a record's page again, off the rows it already holds"
+    )
+    browsing.add_argument(
+        "id",
+        nargs="*",
+        metavar="STAMP",
+        help="the stamp, which `--stamp` also names. A reader who has just seen one printed "
+        "will type it either way, and the cost of taking only one spelling is a page "
+        "silently written for a DIFFERENT record",
+    )
+    browsing.add_argument(
+        "--stamp",
+        help="which record to write again (default the newest)",
+    )
+
+    resolving = solve_verbs.add_parser(
+        "resolve", help="turn an ID or alias back into a row, a recipe and a location"
+    )
+    resolving.add_argument(
+        "id",
+        nargs="*",
+        help="the IDs or aliases to look up, as arguments or as one comma-separated list, "
+        "so one invocation answers a whole figure prompt",
+    )
+    resolving.add_argument(
+        "--stamp",
+        help="which record to look them up in (default the newest)",
+    )
+
+    solve_verbs.add_parser("list", help="name every record on this machine")
+
+    growing = steps.add_parser(
+        "growth",
+        help="what N candidates' worth of mining buys, at every gallery size",
+        description=(
+            "A re-runnable instrument. The history was never snapshotted, so the curve is "
+            "read off the pool as it stands: draw a fraction of the VISITS that made it — "
+            "a visit is (location, leg), never a row, because drawing rows would be the "
+            "same history with the depth arm switched off — and solve the gallery over "
+            "what those visits produced. Every rung is solved by production's own "
+            "`curate solve run`, at the same bars, floors, allowances and objective; "
+            "restricting the pool is the only difference, and the restriction is in "
+            "memory and never touches the ledger. A subsample that cannot fill n is a "
+            "FINDING, not an error. Each run writes a new stamped folder and overwrites "
+            "none, so re-running after each mining leg accumulates a chronological series."
+        ),
+    )
+    growing.set_defaults(handler=curate_growth)
+    growth_verbs = growing.add_subparsers(dest="what", required=True)
+    sweeping_rungs = growth_verbs.add_parser(
+        "run", help="sweep the rungs and write a stamped folder"
+    )
+    drawing_a_curve = growth_verbs.add_parser(
+        "plot", help="draw a finished stamped run into scratch/"
+    )
+    drawing_a_curve.add_argument(
+        "stamp",
+        nargs="?",
+        help="which stamped run to draw. Unnamed, the stamps this machine holds are printed",
+    )
+    sweeping_rungs.add_argument(
+        "--name",
+        help="what to call this run's stamped folder (default: the UTC clock, to the "
+        "second). A folder that already exists is refused rather than overwritten",
+    )
+    sweeping_rungs.add_argument(
+        "--fraction",
+        type=int,
+        action="append",
+        metavar="DENOMINATOR",
+        help="a rung, named by the DENOMINATOR of the fraction of visits it draws — `8` "
+        f"is one visit in eight, `1` is the whole pool (default "
+        f"{list(growth_module.DENOMINATORS)})",
+    )
+    sweeping_rungs.add_argument(
+        "--n",
+        type=int,
+        action="append",
+        help=f"a gallery size to solve at (default {list(growth_module.SIZES)}). 2000 comes "
+        "back the moment the pool can seat it",
+    )
+    sweeping_rungs.add_argument(
+        "--seed",
+        type=int,
+        action="append",
+        help=f"a draw seed for the rungs below the whole pool (default "
+        f"{list(growth_module.SEEDS)}). The whole pool is not drawn and takes none",
+    )
+    sweeping_rungs.add_argument(
+        "--swap-seconds",
+        type=float,
+        help="a wall budget for each solve's swap loop. Unset is production, which is "
+        "unbounded — set it and the rows are no longer comparable with an unbudgeted run",
+    )
+
+    headroom_step = steps.add_parser(
+        "headroom",
+        help="census what each selection constraint needs, what the ledger holds, and "
+        "what one more would cost",
+        description=(
+            "O(rows) necessary conditions over the candidate ledger, at several gallery "
+            "sizes. No solver: a slow solve that reports `there are no light greens at "
+            "all` spent twenty minutes on a fact one pass over the rows already knew. "
+            "Counts are DISTINCT LOCATIONS and never rows, because one wallpaper per "
+            "location is absolute. Each row says what it needs at n, what the pool holds, "
+            "the slack, and the marginal cost of buying one more — estimated off the "
+            "ledger's own realized attempt-to-success rate times the realized per-mode "
+            "render cost. A short row is provable infeasibility; a row with slack is NOT "
+            "a claim that the selection is possible. The census is taken over the pool the "
+            "seating will see, neutral pre-selection included. One block is not arithmetic "
+            "and is opt-in: `--twin`."
+        ),
+    )
+    headroom_step.add_argument(
+        "--n",
+        type=int,
+        action="append",
+        metavar="SEATS",
+        help="census at this gallery size; repeatable. Unset is the whole ladder "
+        f"({', '.join(str(size) for size in headroom_module.LADDER)})",
+    )
+    headroom_step.add_argument(
+        "--name",
+        default="latest",
+        help="what to call this census's output directory (default `latest`)",
+    )
+    headroom_step.add_argument(
+        "--neutral-radius",
+        type=float,
+        default=distinct_module.PRESELECT_RADIUS,
+        metavar="COSINE",
+        help="the neutral pre-selection the census is taken over "
+        f"(default {distinct_module.PRESELECT_RADIUS:g}). A place closer than this to a "
+        "place already kept is refused before anything is counted",
+    )
+    headroom_step.add_argument(
+        "--no-preselection",
+        action="store_true",
+        help="census the whole clearing pool, with no neutral pre-selection. The only way "
+        "to read a schema 1 census against this one",
+    )
+    headroom_step.add_argument(
+        "--flat-floor",
+        action="store_true",
+        help="bound the FLAT mode floor instead of the per-mode rule — "
+        f"floor(n / {solve_module.SEATS_PER_MODE_FLOOR}) seats for every accepted mode, at "
+        "every rung. The default is curation.mode_policy.seat_floors(n), which is what an "
+        "unflagged `curate seat` and an unflagged `curate solve run` are floored by, so an "
+        "unflagged census bounds the gallery they would build. The block says which it ran "
+        "under",
+    )
+    headroom_step.add_argument(
+        "--twin",
+        action="store_true",
+        help="also count the twin constraint: every twin pair among the population's "
+        "strongest picture per place, found exactly, and the bounds it puts on how many "
+        "mutually non-twin places the pool holds. MINUTES — one pixel-cloud signature per "
+        "place plus the pairs the sound bound cannot settle — which is why it is opt-in. "
+        "The sweep is written beside the census as `twins.json`",
+    )
+    headroom_step.add_argument(
+        "--twin-from",
+        metavar="PATH",
+        help="count the twin constraint off a sweep already taken — the `twins.json` a "
+        "`--twin` run wrote. Re-reading a census at a different ladder is arithmetic and "
+        "should not cost the sweep again",
+    )
+    headroom_step.set_defaults(handler=curate_headroom)
+
+    flatness_step = steps.add_parser(
+        "flatness",
+        help="the dead-space column, swept over the pool into a sidecar beside the scores",
+        description=(
+            "Tile each picture into 16-pixel cells, fit a plane to every cell, and count "
+            "the cells with nothing left over — a candidate that is mostly dead space is a "
+            "candidate with less in it. The plane term is what makes it more than a "
+            "variance screen: a smooth ramp across a cell is not detail. It ranks "
+            "BACKWARDS on its own (AUC 0.407 smooth / 0.480 strange) and earns its place "
+            "on top of the judge on both kinds, which is why it is a column of the fitted "
+            "rank key and never a bar. One row per recipe key in a sidecar beside "
+            "`scores.jsonl`; NO LEDGER ROW IS EDITED. About 7.5 ms a picture, incremental "
+            "— a store already swept costs one read and no decodes."
+        ),
+    )
+    # The VERB IS OPTIONAL here and `sweep` is what a bare `curate flatness`
+    # means, so the group carries the sweep's flags as well as `sweep` does:
+    # `curate flatness --workers 2` and `curate flatness sweep --workers 2` are
+    # both lines somebody types and both have to keep working. The verb's copy
+    # takes `default=argparse.SUPPRESS`, which is load-bearing rather than tidy —
+    # argparse parses a subparser into its own namespace and then copies the
+    # WHOLE of it over the parent's, so a plain re-declaration would put the
+    # default back over the value the group had already taken. `--force` is
+    # `restore`'s alone and is on no other verb and not on the group.
+    flatness_verbs = flatness_step.add_subparsers(dest="what", required=False)
+    flatness_step.set_defaults(handler=curate_flatness, what="sweep")
+    flatness_step.add_argument(
+        "--workers",
+        type=int,
+        default=flatness_module.WORKERS,
+        metavar="N",
+        help=SWEEP_WORKERS.format(count=flatness_module.WORKERS),
+    )
+    flatness_step.add_argument("--all", action="store_true", help=SWEEP_EVERY_ROW)
+    flatness_step.add_argument(
+        "--recompute",
+        action="store_true",
+        help="re-read every candidate rather than only the ones with no row yet",
+    )
+
+    sweeping_flatness = flatness_verbs.add_parser(
+        "sweep", help="read every pool candidate the sidecar does not hold"
+    )
+    sweeping_flatness.add_argument(
+        "--workers",
+        type=int,
+        default=argparse.SUPPRESS,
+        metavar="N",
+        help=SWEEP_WORKERS.format(count=flatness_module.WORKERS),
+    )
+    sweeping_flatness.add_argument(
+        "--all", action="store_true", default=argparse.SUPPRESS, help=SWEEP_EVERY_ROW
+    )
+    sweeping_flatness.add_argument(
+        "--recompute",
+        action="store_true",
+        default=argparse.SUPPRESS,
+        help="re-read every candidate rather than only the ones with no row yet",
+    )
+    covering_flatness = flatness_verbs.add_parser(
+        "coverage", help="report how much of the pool the sidecar can answer for"
+    )
+    covering_flatness.add_argument(
+        "--all", action="store_true", default=argparse.SUPPRESS, help=SWEEP_EVERY_ROW
+    )
+    keeping_verbs(
+        flatness_verbs,
+        noun="sidecar",
+        force="overwrite a live sidecar holding MORE rows than the manifest",
+        order=("save", "check", "restore"),
+    )
+
+    signatures_step = steps.add_parser(
+        "signatures",
+        help="the diversity rule's bound signature, swept over the clearing pool into a "
+        "sidecar beside the scores",
+        description=(
+            "The gallery leg screens a candidate against the seated pictures with a sound "
+            "lower bound read off a REDUCED pixel-cloud signature — four blocks of "
+            "quantiles by 256 directions, 4 KiB against the metric's 128. Making "
+            "one costs a JPEG decode, about 16.8 ms, and it was ~100% of the leg before "
+            "the prunes. It is the same number every time, so this sweeps it once into a "
+            "sidecar and every later solve reads it instead of deriving it. One row per "
+            "recipe key; NO LEDGER ROW IS EDITED. Incremental, and a row is stale when the "
+            "recipe's picture is not the picture the row was read from — never on a clock."
+        ),
+    )
+    #: `--recompute` here and on `curate flatness` are two different sentences,
+    #: which is why they are not one constant: this one is about the reduction.
+    recomputing = (
+        "re-read every candidate rather than only the ones the sidecar cannot answer for. "
+        "What to run after changing anything about the reduction itself"
+    )
+    # The verb is optional and the group carries the sweep's flags, for the
+    # reason `curate flatness` above gives at length.
+    signature_verbs = signatures_step.add_subparsers(dest="what", required=False)
+    signatures_step.set_defaults(handler=curate_signatures, what="sweep")
+    signatures_step.add_argument(
+        "--workers",
+        type=int,
+        default=signatures_module.WORKERS,
+        metavar="N",
+        help=SWEEP_WORKERS.format(count=signatures_module.WORKERS),
+    )
+    signatures_step.add_argument("--recompute", action="store_true", help=recomputing)
+
+    sweeping_signatures = signature_verbs.add_parser(
+        "sweep", help="read every clearing candidate the sidecar cannot answer for"
+    )
+    sweeping_signatures.add_argument(
+        "--workers",
+        type=int,
+        default=argparse.SUPPRESS,
+        metavar="N",
+        help=SWEEP_WORKERS.format(count=signatures_module.WORKERS),
+    )
+    sweeping_signatures.add_argument(
+        "--recompute", action="store_true", default=argparse.SUPPRESS, help=recomputing
+    )
+    signature_verbs.add_parser(
+        "coverage", help="report how much of the pool the sidecar can answer for"
+    )
+    keeping_verbs(
+        signature_verbs,
+        noun="sidecar",
+        force="overwrite a live sidecar holding MORE rows than the manifest",
+        order=("save", "check", "restore"),
+    )
+
+    rank_key_step = steps.add_parser(
+        "rank-key",
+        help="the fitted sort key a seating may rank on instead of the judge alone",
+        description=(
+            "Fit the form `rank_key_fit` selected — the location head's P(>=4), the render "
+            "judge at both cutpoints, the calibration stratum and the flatness column — "
+            "over every human label row that joins the candidate ledger, with SHARED "
+            "weights over both stores because per-kind bought +0.000 [-.011,+.012] on "
+            "smooth. Five folds at 20% grouped on lineage and assigned ONCE over the "
+            "pooled corpus, since 96 groups span both stores. It ships two tracked files: "
+            "the coefficients with their standardization constants, and EVERY LABEL ROW "
+            "THE FIT CONSUMED — the store, the batch, the file and line, the tier, the "
+            "lineage group and the fold. A selection rule fit on human labels is a "
+            "category no eligibility guard covers, so the record is the guard."
+        ),
+    )
+    # Optional verb, and `fit` is the one that does the work. Neither takes a
+    # flag, so there is nothing to carry on the group but the default itself.
+    rank_key_verbs = rank_key_step.add_subparsers(dest="what", required=False)
+    rank_key_step.set_defaults(handler=curate_rank_key, what="fit")
+    rank_key_verbs.add_parser("fit", help="re-fit the key and rewrite both tracked files")
+    rank_key_verbs.add_parser("show", help="print the shipped key")
+
+    distinct_step = steps.add_parser(
+        "distinct",
+        help="the neutral pre-selection read: which places are visibly different places",
+        description=(
+            "The instrument the pre-selection radius was set off. The join FIRST — how many of "
+            "the pool's locations have a neutral descriptor and how many do not, because "
+            "a lossy pre-filter is a finding rather than a detail to work around — then "
+            "the nearest-neighbour distribution, then the near pairs at each candidate "
+            "radius as a sheet. NO RADIUS IS CHOSEN: the sheet is the instrument and the "
+            "choice is a person's. The premise the whole decoupling rests on — that far "
+            "in the neutral descriptor implies far in the coloured pixels — is MEASURED "
+            "against the pixel-cloud metric over a stratified sample, because a "
+            "correlated proxy is not a prune and this project has shipped one that was. It "
+            "does not hold, which is why there are TWO rules: this radius asks whether two "
+            "places are the same place, and the twin test in `seat` asks whether two "
+            "pictures are one wallpaper."
+        ),
+    )
+    distinct_step.add_argument(
+        "--name",
+        default="latest",
+        help="what to call this read's output directory (default `latest`)",
+    )
+    distinct_step.add_argument(
+        "--out",
+        metavar="PATH",
+        help="where the near-pair sheet goes (default beside the record)",
+    )
+    distinct_step.add_argument(
+        "--premise-pairs",
+        type=int,
+        default=distinct_module.PREMISE_PAIRS,
+        metavar="PAIRS",
+        help="how many pairs the premise check measures "
+        f"(default {distinct_module.PREMISE_PAIRS}). Two pixel-cloud signatures a pair at "
+        "about a tenth of a second each, cached per picture",
+    )
+    distinct_step.add_argument(
+        "--no-premise",
+        action="store_true",
+        help="the join, the distribution and the sheet, and measure no pixel cloud",
+    )
+    distinct_step.add_argument(
+        "--no-sweep",
+        action="store_true",
+        help="the scatter but not the exact twin sweep. The sweep is one signature per "
+        "picture plus the pairs the sound bound cannot settle, which is minutes over a "
+        "pool of a thousand places — and it is the half that decides the design",
+    )
+    distinct_step.set_defaults(handler=curate_distinct)
+
+    hunting = steps.add_parser(
+        "hunt",
+        help="render candidates into the ledger's two shortages: fresh places, and one colour",
+        description=(
+            "The proposal side of propose-then-solve, aimed rather than opportunistic. The "
+            "UNCONDITIONAL leg buys breadth — locations from the admitted pool that carry no "
+            "ledger recipe at all, a shallow spread each, the palette stratified across the "
+            "codebook's cells instead of picked by the palette head, whose argmax is what "
+            "left the ledger at a quarter as much green as red. The CONDITIONED leg buys one "
+            "colour: the maps come from the tracked carrier table for the cell a solve came "
+            "up short in and the palette head is never asked, because it is offered those "
+            "carriers as often as anything else and takes them at 0.17x the base rate. "
+            "Everything renders at the frame the pool-wide refinement scan chose, looked up "
+            "rather than recomputed. Rows land as candidates land, so a killed hunt is a "
+            "usable partial; `merge` is what folds them into the ledger."
+        ),
+    )
+    hunting.set_defaults(handler=curate_hunt)
+    hunt_verbs = hunting.add_subparsers(dest="what", required=True)
+    planning_hunt = hunt_verbs.add_parser("plan", help="print the plan and render nothing")
+    running_hunt = hunt_verbs.add_parser("run", help="run the hunt")
+    merging_hunt = hunt_verbs.add_parser("merge", help="merge a hunt's rows into the ledger")
+    hunt_sheet = hunt_verbs.add_parser("sheet", help="redraw a hunt's contact sheet")
+    hunt_frames = hunt_verbs.add_parser("frames", help="rebuild the frame index off the scan")
+    # --name first on every one of the five, and REQUIRED on every one of the
+    # five: it was required by the group before the split, so `curate hunt
+    # frames --name h1` is a line that works and a `frames` that had dropped the
+    # flag would refuse it. `frames` does not read it, and says so.
+    for a_hunt in (planning_hunt, running_hunt, merging_hunt, hunt_sheet, hunt_frames):
+        a_hunt.add_argument(
+            "--name",
+            required=True,
+            help="what to call this hunt. Its rows, its pictures and its record live under "
+            "it, and `merge` names it again"
+            + ("; `frames` names one and reads nothing off it" if a_hunt is hunt_frames else ""),
+        )
+    hunt_draw_flags(planning_hunt)
+    running_hunt.add_argument(
+        "--budget",
+        type=float,
+        default=hunt_module.BUDGET_SECONDS,
+        metavar="SECONDS",
+        help=f"how long the hunt may spend RENDERING (default {int(hunt_module.BUDGET_SECONDS)}). "
+        "Not the wall clock: the frame lookup, the plan and the merge sit outside it. "
+        "Enforced at the candidate boundary, so nothing is started that cannot finish",
+    )
+    hunt_draw_flags(running_hunt)
+    device_flag(running_hunt)
+
+    mine_step = steps.add_parser(
+        "mine",
+        help="price a PRIMED location three ways, and profile what one candidate costs",
+        description=(
+            "A measurement pass over the unchanged render loop. A location is PRIMED when "
+            "it holds at least one candidate the render judge scores at or above the bar, "
+            "derived at read time off the score sidecar and stored in no row. Three arms "
+            "are woven together so a budget that runs out truncates all of them alike: "
+            "DEEPEN adds palettes at a place that already showed something, holding the "
+            "frame and the mode, and reports what the k-th palette is worth; "
+            "BREADTH-RANKED opens never-opened admitted locations top-down on the location "
+            "head's rank WITHIN partition, never pooled across one; BREADTH-FLAT opens "
+            "them with no quality conditioning, matched to the ranked arm's per-partition "
+            "counts, and is the base rate that says whether the rank bought anything. "
+            "Candidates land as candidates land and `merge` folds them into the ledger, "
+            "and a stopwatch on each stage lands beside them."
+        ),
+    )
+    mine_step.set_defaults(handler=curate_mine)
+    mine_verbs = mine_step.add_subparsers(dest="what", required=True)
+    planning_mine = mine_verbs.add_parser("plan", help="print the plan and render nothing")
+    running_mine = mine_verbs.add_parser("run", help="run the mine")
+    merging_mine = mine_verbs.add_parser("merge", help="merge its rows into the ledger")
+    benching = mine_verbs.add_parser(
+        "bench", help="price the loop against the cheaper shapes it could have had"
+    )
+    mine_sheet = mine_verbs.add_parser("sheet", help="redraw the autopsy sheet")
+    # --name first and required on all five, as it was on the group before the
+    # split; `merge`, `bench` and `sheet` read it and `bench` writes beside it.
+    for a_mine in (planning_mine, running_mine, merging_mine, benching, mine_sheet):
+        a_mine.add_argument(
+            "--name",
+            required=True,
+            help="what to call this mine. Its rows, its pictures, its profile and its record "
+            "live under it, and `merge` names it again",
+        )
+    mine_draw_flags(planning_mine)
+    mine_draw_flags(running_mine)
+    device_flag(running_mine)
+    benching.add_argument(
+        "--seed",
+        type=int,
+        default=mine_module.DEFAULT_SEED,
+        help=MINE_SEED.format(seed=mine_module.DEFAULT_SEED),
+    )
+
+    depth_step = steps.add_parser(
+        "depth",
+        help="buy width at one place, and measure what it buys against the head's rank",
+        description=(
+            "Forty candidates a location on the modes a dumped field can serve, over three "
+            "draws woven together so a budget that runs out truncates all of them alike. "
+            "NEAR-BAND deepens a place whose best FIELD candidate already sits between the "
+            "two bars, holding the incumbent's mode so only the palette moves. "
+            "RANKED-BANDS opens never-opened locations across the WHOLE of the location "
+            "head's rank range inside each partition, in equal-count bands, which is the "
+            "curve the earlier passes are two points on. FLAT opens them with no quality "
+            "conditioning, matched on partition. Every candidate is written to the "
+            "sequence file in the order it was made, so a cumulative curve at any width "
+            "below the one reached is arithmetic rather than another run. Field modes "
+            "only: a composite at this width is about 175s a location."
+        ),
+    )
     depth_step.set_defaults(handler=curate_depth)
+    depth_verbs = depth_step.add_subparsers(dest="what", required=True)
+    planning_depth = depth_verbs.add_parser("plan", help="print the plan and render nothing")
+    depth_leg_flags(planning_depth, device=False)
+    running_depth = depth_verbs.add_parser("run", help="run the leg")
+    depth_leg_flags(running_depth, device=True)
+    # `merge` and `sheet` name a leg and read nothing else off the plan: --name
+    # was required by the group before the split, so both keep taking it.
+    for a_leg, purpose in (
+        ("merge", "merge its rows into the ledger"),
+        ("sheet", "redraw the autopsy sheet"),
+    ):
+        finished = depth_verbs.add_parser(a_leg, help=purpose)
+        finished.add_argument(
+            "--name",
+            required=True,
+            help="what to call this run. Its rows, its pictures, its sequence and its record "
+            "live under it, and `merge` names it again",
+        )
 
     shrinkage_step = steps.add_parser(
         "shrinkage",
