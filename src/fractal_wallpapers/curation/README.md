@@ -21,7 +21,14 @@ mode_policy  what standing each production mode has, as one table with one owner
 framing    where a location's attempts are framed, decided before they render
 recipes    what decides a candidate's pixels, as one value with one key
 draw_weights  what a partition is worth in a breadth draw, in one table
-candidate_ledger  every recipe ever rendered, one row each, with its colour
+candidate_ledger/ every recipe ever rendered, one row each, with its colour
+  store      the two files, the tiers, the manifests, and reading rows out of them
+  rows       one row and the blocks it carries, as shape with no store behind it
+  rerender   putting back a picture the row names, and reading a score onto it
+  sweep      the retention rule, the orphan backstop, and the one delete verb
+  door       THE door: `merge` — upsert, record, prune, and every leg comes through it
+  rebuild    `backfill`: built out of the two decision stores that predate the ledger
+  inventory  `census` and `feasibility`: what the pool holds, and what a solve can get
 flatness   how much of a finished picture is dead space, as a column beside the scores
 retention  which candidates are worth the disk, and the counts that survive the rest
 hunt       render on purpose: breadth where the ledger is thin, colour where a solve was short
@@ -332,7 +339,7 @@ a durable store of every picture named.
 
 ```
 src/fractal_wallpapers/curation/recipes.py            the type, the key, and `of_record`
-src/fractal_wallpapers/curation/candidate_ledger.py   the store, the backfill, the census
+src/fractal_wallpapers/curation/candidate_ledger/     the store, the rebuild, the inventory
 artifacts/curation/candidate_ledger/rows.jsonl        one row per recipe
 artifacts/curation/candidate_ledger/scores.jsonl      ...and its scores
 artifacts/curation/candidate_ledger/flatness.jsonl    ...and its dead-space column

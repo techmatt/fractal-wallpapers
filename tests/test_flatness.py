@@ -77,7 +77,7 @@ def test_a_picture_smaller_than_one_cell_reads_none(tmp_path):
 # --------------------------------------------------------------------------- #
 @pytest.fixture
 def store(tmp_path, monkeypatch):
-    monkeypatch.setattr(candidate_ledger, "store_root", lambda: tmp_path)
+    monkeypatch.setattr(candidate_ledger.store, "store_root", lambda: tmp_path)
     return tmp_path
 
 

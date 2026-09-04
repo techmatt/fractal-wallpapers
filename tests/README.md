@@ -182,6 +182,14 @@ It read **168.70 s over 3,438** at the census follow-ups, idle, 2026-09-04 — t
 The commit renamed a command, moved twenty-five run directories into a map and
 re-routed one constant; none of it added or removed a test, and the lane says so.
 
+It read **167.79 s over 3,439** at the candidate-ledger split, idle, 2026-09-04 — 0.7%
+over the reading below across the one test the split added, which is the guard that no
+module of the package is named after something it exports. Worth the line because of what
+the reading is *of*: 2,738 lines became a package of seven modules and a resolving
+`__init__`, every name now reached through a `__getattr__` rather than off the module
+directly, and the lane did not notice. The slow lane was not re-run and its **7:14 over
+3,552** stands.
+
 It read **166.63 s over 3,438** fast and **7:14 over 3,552** slow at the `run_layout`
 extraction, idle, 2026-09-04. The fast lane is flat — 0.5% over the reading below
 across one more test, which is the packaging guard. The **slow** figure is the one

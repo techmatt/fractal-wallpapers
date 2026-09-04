@@ -323,7 +323,7 @@ def test_the_census_counts_a_flat_modulate_as_smooth(monkeypatch):
         {**_ledger_row("b", flat=False), "provenance": {}},
         {**_ledger_row("c", mode="smooth"), "provenance": {}},
     ]
-    monkeypatch.setattr(candidate_ledger, "feasibility", lambda *a, **k: {})
+    monkeypatch.setattr(candidate_ledger.inventory, "feasibility", lambda *a, **k: {})
     taken = candidate_ledger.census(rows=rows, log=lambda *_: None)
     assert taken["modes"]["recipes"][colorize.SMOOTH_MODE] == 2
     assert taken["modes"]["recipes"][MODULATE] == 1

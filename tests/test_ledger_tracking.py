@@ -26,22 +26,33 @@ import pytest
 from fractal_wallpapers.curation import candidate_ledger
 
 #: The package this guard reads. Every module of it, not a list that can go stale.
-SOURCE = Path(candidate_ledger.__file__).resolve().parent.parent
+#: Three parents, not two: `candidate_ledger` is a package now, so its `__file__`
+#: is a directory deeper than it was and the old spelling quietly resolved to
+#: `curation/` — this guard still passing, over a fraction of the tree it means.
+SOURCE = Path(candidate_ledger.__file__).resolve().parent.parent.parent
 
-#: The store's own module, which is where the two writers are allowed to be called.
-OWNER = Path(candidate_ledger.__file__).resolve()
+#: Where the two writers may be called: the module that defines them, and the
+#: door. `door.merge` reaching for `store.write` IS the recording writer — that is
+#: the arrangement this file exists to hold, not an exception to it.
+OWNER = {
+    Path(candidate_ledger.store.__file__).resolve(),
+    Path(candidate_ledger.door.__file__).resolve(),
+    Path(candidate_ledger.rerender.__file__).resolve(),
+}
 
-#: A call to either raw writer, however the module was imported. Both spellings
-#: this package uses — `candidate_ledger.write(...)` and a `from ... import`ed
-#: bare `write(...)` cannot both be caught by one pattern, so the guard asks for
-#: the qualified one and a second test pins that nothing imports them bare.
-CALLS = re.compile(r"\bcandidate_ledger\.write(?:_scores)?\s*\(")
+#: A call to either raw writer, in either spelling the tree uses: qualified
+#: through the package from outside it (`candidate_ledger.write(...)`), and
+#: through the store module from inside (`store.write(...)`). The second is new
+#: with the split and is the one a fresh module of the package would reach for.
+#: A `from ... import`ed bare `write(...)` cannot be caught by the same pattern,
+#: so a second test pins that nothing imports them bare.
+CALLS = re.compile(r"\b(?:candidate_ledger|store)\.write(?:_scores)?\s*\(")
 
 BARE_IMPORT = re.compile(r"^\s*from .*candidate_ledger import .*\bwrite\b", re.MULTILINE)
 
 
 def modules() -> list[Path]:
-    return sorted(path for path in SOURCE.rglob("*.py") if path.resolve() != OWNER)
+    return sorted(path for path in SOURCE.rglob("*.py") if path.resolve() not in OWNER)
 
 
 def test_the_two_raw_writers_are_called_nowhere_but_the_store_itself() -> None:
@@ -54,6 +65,19 @@ def test_the_two_raw_writers_are_called_nowhere_but_the_store_itself() -> None:
     assert offenders == {}, (
         "these call the ledger's raw writers instead of candidate_ledger.merge, so the rows "
         f"they add are never recorded in the tracked manifests: {offenders}"
+    )
+    # `rescore` is the third module allowed to hold one, and the exemption is only
+    # safe while it records what it wrote. The rule this file is about is not
+    # "merge is the only writer" but "nothing writes without recording", and the
+    # split is what first made the difference visible: the old sweep skipped the
+    # whole ledger module, so this call has always been here and was never read.
+    import inspect
+
+    recording = inspect.getsource(candidate_ledger.rescore)
+    assert "store.write_scores(" in recording
+    assert "durability.save(store.durable_scores()" in recording, (
+        "rescore writes the score sidecar; a rescore that stopped recording it would put "
+        "the manifest behind the file with nothing saying so"
     )
 
 
@@ -108,12 +132,12 @@ def redirect(monkeypatch, live, copies, manifests) -> None:
     """
     from fractal_wallpapers.curation import flatness, signatures
 
-    monkeypatch.setattr(candidate_ledger, "rows_path", lambda: live / "rows.jsonl")
-    monkeypatch.setattr(candidate_ledger, "scores_path", lambda: live / "scores.jsonl")
+    monkeypatch.setattr(candidate_ledger.store, "rows_path", lambda: live / "rows.jsonl")
+    monkeypatch.setattr(candidate_ledger.store, "scores_path", lambda: live / "scores.jsonl")
     monkeypatch.setattr(flatness, "sidecar_path", lambda: live / flatness.SIDECAR_NAME)
     monkeypatch.setattr(signatures, "sidecar_path", lambda: live / signatures.SIDECAR_NAME)
-    monkeypatch.setattr(candidate_ledger, "backup_path", lambda name: copies / name)
-    monkeypatch.setattr(candidate_ledger, "manifest_dir", lambda: manifests)
+    monkeypatch.setattr(candidate_ledger.store, "backup_path", lambda name: copies / name)
+    monkeypatch.setattr(candidate_ledger.store, "manifest_dir", lambda: manifests)
 
 
 def test_the_door_records_both_files_and_says_what_it_recorded(monkeypatch, tmp_path) -> None:

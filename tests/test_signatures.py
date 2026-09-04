@@ -29,7 +29,7 @@ def sidecar_in_a_tmp_store(tmp_path, monkeypatch):
     `None` for anything outside them, so a tmp picture has to be resolved as
     itself — `test_flatness` patches it for the same reason.
     """
-    monkeypatch.setattr(signatures.candidate_ledger, "store_root", lambda: tmp_path)
+    monkeypatch.setattr(signatures.candidate_ledger.store, "store_root", lambda: tmp_path)
     # Overrides `conftest.no_signature_sidecar`, which points every other test at a
     # store that does not exist. A file fixture runs after the autouse one, so this
     # is the setattr that stands.

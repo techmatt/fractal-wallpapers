@@ -62,9 +62,10 @@ count, the sha256 and — the ledger's own column — the runs, the partitions a
 the distinct locations the rows stand on. `curate candidate-ledger backfill`
 builds them from the two decision stores without rendering anything, `census`
 reads the fill over the axes a solver's constraints act on, and
-`save|check|restore` keeps them. The module is
-[`curation.candidate_ledger`](../../src/fractal_wallpapers/curation/candidate_ledger.py),
-and the type its rows are keyed by is
+`save|check|restore` keeps them. The module is the package
+[`curation.candidate_ledger`](../../src/fractal_wallpapers/curation/candidate_ledger/),
+whose `store` half is what a reader of these files wants, and the type its rows
+are keyed by is
 [`curation.recipes`](../../src/fractal_wallpapers/curation/recipes.py).
 
 **A gallery pass writes into two of these and not into the other two.** Its
