@@ -623,7 +623,7 @@ def test_the_hunt_block_keeps_the_seconds_the_draw_and_the_colour_ask():
     spelled again.
 
     **The seventh was `drawn_for` and taking it off was wrong.** It is the exact
-    separator `curation/README.md` tells a census to drop before reading an
+    separator `curation/GALLERY.md` tells a census to drop before reading an
     unconditioned rate, but that reader has a person on the end of it rather than a
     call site, so the 2026-08-29 trace-of-readers cut could not see it. The store
     was rewritten in the same commit and the aimed rows already in it lost the

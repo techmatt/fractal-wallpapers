@@ -415,7 +415,7 @@ Three things a rate off these rows would get wrong.
 the render judge's pick among the three that place was offered, so the eight modes
 on the strange page stand on eight disjoint sets of places and cannot be
 differenced against each other. The leg's own per-mode rates, over the full 103
-candidates rather than the 35 winners, are in `curation/README.md`.
+candidates rather than the 35 winners, are in `curation/MEASUREMENTS.md`.
 
 **The whole batch sits below the judge's own q4 bar.** Not one of the 103
 candidates cleared `P(>=4) >= 0.50` and the leg's maximum is **0.371**, so the

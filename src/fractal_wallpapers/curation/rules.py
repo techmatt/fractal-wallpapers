@@ -146,7 +146,7 @@ TWIN_NEIGHBOURS = 1
 #: would have been 1 GiB at the 1024 directions the metric used to run at, which is
 #: why the number could not have been this before that came down). That is a real
 #: cost on the one-pool-holding-process rule and it is written down in
-#: `curation/README.md` beside it.
+#: `curation/GALLERY.md` beside it.
 SIGNATURE_CACHE = 2048
 
 #: The radius the **themed** diversity rule refuses inside, in [`distinct.METRIC`].

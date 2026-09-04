@@ -251,7 +251,7 @@ location ledger's ratings alone and a framing is an attribute rather than an
 admission ticket, so the channel's **7,686** never-opened places are in the
 ordinary pool and draw at the frame they already carry. `reframe_q4` (below) is
 the location-list draw that was needed before that; see
-`curation/README.md`'s *What bounds the minable population*.
+`curation/LEGS.md`'s *What bounds the minable population*.
 
 **Drawn as wallpapers, the q4 slice clears at nine times the breadth rate, and the
 rung question comes back with an answer.** `reframe_q4` (2026-09-01) spent an hour
