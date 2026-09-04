@@ -906,7 +906,7 @@ def run(
         stages.write = colorize_module().tick() - write_at
         stages.overhead = max(0.0, (colorize_module().tick() - loop) - stages.total())
         spent += stages.total()
-        price.add(unit.partition, stages.total())
+        price.add(unit.partition, stages.total(), band=unit.arm)
         known.add(key)
         counts["made"] += 1
         counts["autolevel_acted"] += int(result["acted"])

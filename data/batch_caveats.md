@@ -206,6 +206,16 @@ setting. The unconfounded design exists and is `scratch/dtm_variants/variants/`:
 with no export path, so it has no verdicts on it**, and none of its 20 places is on
 the labelled sheet. Serving it is what would settle the cell question.
 
+**The cell stays in the production roster, ruled by Matt 2026-09-04.** A settings
+cell leaves the roster only at **zero clears**, and this one is not near zero: over
+all 1,023 rows carrying both knobs above their catalogued defaults, **80 clear the
+pool bar (7.8%)** and 20 clear the primed bar 0.90 (2.0%), which is the best of the
+five cells at the pool bar — `TIDY_render_cv_and_two_reads`, read over the whole
+candidate ledger rather than over this page. The mean tier 1.93 above is the labels'
+verdict on a *conditioned* population, and the paragraph above it says why that
+number cannot be differenced against another cell's. So the two readings do not
+disagree, and the one that decides a roster is the clear rate.
+
 **And the page was swept.** The last override is at position 164 of 188; the final
 24 rows are the head's own 1s restated, and every one of the batch's 24 tier-1
 verdicts is in that suffix. The correction rate is 47.9% over the page and 54.9%

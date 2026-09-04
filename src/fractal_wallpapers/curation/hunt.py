@@ -84,6 +84,7 @@ of a cheap location, and the residual is per-partition rather than random.
 
 from __future__ import annotations
 
+import functools
 import hashlib
 import itertools
 import json
@@ -173,6 +174,15 @@ PRIOR_SECONDS = 3.1
 #: How many candidates a partition has to have cost before this run prices it off
 #: its own measurements instead of off [`PRIOR_SECONDS`].
 PRICE_AFTER = 3
+
+#: How much of [`Price.ema`] one freshly served candidate replaces. A tenth: the
+#: within-leg spread on a dear partition is wide — `phoenix:classic` ran a median
+#: 26.2 s against a max of 280 on one leg — so a fast EMA would swing the turn
+#: weight on a single deep frame. At 0.1 the average has a memory of about ten
+#: candidates, which is long enough to ignore one tail and short enough to catch
+#: the machine moving, which is the thing that actually happened between `pc1` and
+#: `pc20m`.
+EMA_ALPHA = 0.1
 
 #: Where a partition's price is read on its own measurements: **the dearest of
 #: them**. The budget question is *can this one finish*, and a mean answers a
@@ -912,13 +922,47 @@ class Price:
     power of maxiter fits both ends.
     """
 
-    def __init__(self, prior: float = PRIOR_SECONDS, after: int = PRICE_AFTER):
+    def __init__(
+        self,
+        prior: float = PRIOR_SECONDS,
+        after: int = PRICE_AFTER,
+        seeded: dict | None = None,
+        band: str | None = None,
+    ):
         self.prior = float(prior)
         self.after = int(after)
         self.seen: dict = {}
+        #: The band every `add` is filed under when the caller names none. A leg
+        #: whose draws are all one kind sets it once here instead of at every site.
+        self.band = None if band is None else str(band)
+        #: `{(partition, band): [seconds]}`. The band split is the whole reason
+        #: this class is not one number a partition — see [`banded`].
+        self.by_band: dict = {}
+        #: `{(partition, band): seconds a candidate}`, an exponential moving
+        #: average over this leg's own served candidates, seeded from the last
+        #: recorded leg **of the same band**. This is what a seconds share is
+        #: converted through, and it is deliberately not [`of`]: that one is a
+        #: reserve and takes the worst case, and a reserve is the wrong number to
+        #: size a share with.
+        self.ema: dict = dict(seeded or {})
+        #: What the EMA started at, kept so the record can say whether a leg
+        #: inherited a price or discovered its own.
+        self.seeded: dict = dict(seeded or {})
 
-    def add(self, partition: str, seconds: float) -> None:
-        self.seen.setdefault(str(partition), []).append(float(seconds))
+    def _cell(self, partition: str, band: str | None) -> tuple:
+        return (str(partition), self.band if band is None else str(band))
+
+    def add(self, partition: str, seconds: float, band: str | None = None) -> None:
+        """One served candidate, at its price. Files it pooled **and** by band."""
+        seconds = float(seconds)
+        self.seen.setdefault(str(partition), []).append(seconds)
+        cell = self._cell(partition, band)
+        self.by_band.setdefault(cell, []).append(seconds)
+        # The EMA is the whole point of updating during the leg rather than after
+        # it: a price carried in from another leg is a guess about this machine on
+        # this day, and `pc20m` measured that guess wrong by 52% six hours later.
+        held = self.ema.get(cell)
+        self.ema[cell] = seconds if held is None else (1.0 - EMA_ALPHA) * held + EMA_ALPHA * seconds
 
     def of(self, partition: str) -> float:
         """What to reserve for one more candidate of this partition."""
@@ -930,20 +974,172 @@ class Price:
             return max(everything)
         return max(measured)
 
+    @staticmethod
+    def _spread(values: list) -> dict:
+        ordered = sorted(values)
+        return {
+            "candidates": len(ordered),
+            "seconds": round(sum(ordered), 2),
+            "mean": round(sum(ordered) / len(ordered), 3),
+            "median": round(ordered[len(ordered) // 2], 3),
+            "min": round(ordered[0], 3),
+            "max": round(ordered[-1], 3),
+        }
+
     def table(self) -> dict:
-        """The per-partition price table: the thing that sizes the next budget."""
+        """The per-partition price table: the thing that sizes the next budget.
+
+        `share` is the realized share of this leg's **engine seconds**, which is
+        the quantity `curation.draw_weights.SECONDS_SHARE` is denominated in — so
+        a leg says in its own record whether the ruling it ran under came true,
+        rather than somebody deriving it from a `price` block afterwards.
+
+        `bands` is the split the next leg seeds from, and the pooled numbers above
+        it are kept for continuity with every record already written. **Read the
+        band and not the pooled figure when sizing a leg**: `phoenix:classic` reads
+        1.2-1.5 s in the near band and 17-31 s on a deep breadth arm, and the
+        pooled 12.41 s describes neither.
+        """
+        total = sum(sum(values) for values in self.seen.values())
         out: dict = {}
         for name, values in sorted(self.seen.items()):
-            ordered = sorted(values)
-            out[name] = {
-                "candidates": len(ordered),
-                "seconds": round(sum(ordered), 2),
-                "mean": round(sum(ordered) / len(ordered), 3),
-                "median": round(ordered[len(ordered) // 2], 3),
-                "min": round(ordered[0], 3),
-                "max": round(ordered[-1], 3),
+            block = self._spread(values)
+            block["share"] = round(sum(values) / total, 4) if total else None
+            block["bands"] = {
+                band: {
+                    **self._spread(held),
+                    "share": round(sum(held) / total, 4) if total else None,
+                    "ema": round(self.ema[(partition, band)], 3),
+                    "seeded_from": (
+                        None
+                        if (partition, band) not in self.seeded
+                        else round(self.seeded[(partition, band)], 3)
+                    ),
+                }
+                for (partition, band), held in sorted(
+                    self.by_band.items(), key=lambda item: (str(item[0][1]), item[0][0])
+                )
+                if partition == name
             }
+            out[name] = block
         return out
+
+    def banded(self, band: str | None = None) -> dict:
+        """`{partition: seconds a candidate}` for one band — the next leg's seed.
+
+        The EMA and not the mean, so the figure handed forward is the one this leg
+        ended on rather than the one it averaged over a machine that was busy for
+        the first half of it.
+        """
+        band = self.band if band is None else str(band)
+        return {partition: value for (partition, held), value in self.ema.items() if held == band}
+
+
+def forget_recorded_prices() -> None:
+    """Drop [`recorded_prices`]'s memo. For a guard that redirects the tree."""
+    recorded_prices.cache_clear()
+
+
+def _priced_from_sequence(path, band: str) -> dict:
+    """`{partition: mean seconds}` for one arm, off a leg's per-candidate rows.
+
+    The retroactive read. Mean and not median: a share of the clock is a sum, and
+    the mean is the only average that reconstructs one.
+    """
+    import json
+
+    path = Path(path)
+    if not path.is_file():
+        return {}
+    held: dict = {}
+    with path.open(encoding="utf-8") as handle:
+        for line in handle:
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            if str(row.get("arm")) != str(band):
+                continue
+            seconds = row.get("seconds")
+            if seconds is None:
+                continue
+            held.setdefault(str(row.get("partition")), []).append(float(seconds))
+    return {name: sum(values) / len(values) for name, values in held.items() if values}
+
+
+@functools.cache
+def recorded_prices(band: str, unit: str = "depth", newest: int = 40) -> tuple[dict, dict]:
+    """`(prices, provenance)` — the newest recorded leg that priced this BAND.
+
+    A leg seeds its price from the last leg of the **same band** and never from
+    the last leg full stop. `TIDY_render_cv_and_two_reads` measured why on nine
+    legs: `phoenix:classic` runs 17-31 s a candidate on the deep breadth arms and
+    1.2-1.5 s in the near band, an order of magnitude on one plane under one
+    weight, because a near-band re-render is shallow. A breadth leg that inherited
+    a near-band price would ask for roughly twenty times the turns the ruling
+    wants, and it would do it silently, since every number involved is a plausible
+    number of seconds.
+
+    Empty where nothing has priced the band. That is not an error and the caller
+    is expected to pilot instead — see [`curation.draw_weights.converted`], which
+    refuses rather than converting a share against a price it does not have.
+
+    Records written before the band split carry no `bands` block; they are read
+    for their pooled figure only when the caller asks for the band they were taken
+    under, and skipped otherwise. An old record cannot say which band it was, so
+    guessing would reintroduce exactly the mixing this function exists to stop.
+
+    **Cached, and it has to be.** This walks the leg records and parses a
+    `sequence.jsonl` of a few thousand rows for each band it cannot answer from a
+    `bands` block — 0.65 s a band, 3.35 s for the five [`curation.depth.DRAWS`],
+    and `depth.plan` asks for all five. Uncached that is 3.35 s per plan call
+    charged to every guard that plans a leg, which is `tests/README.md`'s rule
+    about production code reaching a store. The answer cannot change inside one
+    leg: a leg reads it before it renders and the records it reads are finished
+    ones. A test that redirects the tree calls [`forget_recorded_prices`] first.
+    """
+    root = under("curation", unit)
+    if not root.is_dir():
+        return {}, {"leg": None, "why": f"no {unit} records on this machine"}
+    records = sorted(
+        (path for path in root.glob(f"*/{unit}.json") if path.is_file()),
+        key=lambda path: path.stat().st_mtime,
+        reverse=True,
+    )[: int(newest)]
+    for path in records:
+        try:
+            held = json.loads(path.read_text(encoding="utf-8")).get("price") or {}
+        except (OSError, json.JSONDecodeError):
+            continue
+        prices = {
+            name: float(block["bands"][band]["ema"])
+            for name, block in held.items()
+            if isinstance(block, dict) and str(band) in (block.get("bands") or {})
+        }
+        source = "the record's own banded price"
+        if not prices:
+            # A record written before the band split has one pooled number a
+            # partition, which is exactly the figure that must not be inherited.
+            # Its `sequence.jsonl` carries `arm`, `partition` and `seconds` per
+            # row, though, so the band price is *derivable* rather than lost —
+            # and deriving it is what stops this feature having a cold start in
+            # which no band is ever priced because no leg has run under the code
+            # that prices bands.
+            prices = _priced_from_sequence(path.parent / "sequence.jsonl", band)
+            source = "derived from the leg's sequence.jsonl"
+        if prices:
+            return prices, {
+                "leg": path.parent.name,
+                "record": str(path),
+                "band": str(band),
+                "partitions": len(prices),
+                "source": source,
+            }
+    return {}, {
+        "leg": None,
+        "band": str(band),
+        "why": f"none of the newest {len(records)} {unit} record(s) priced the {band!r} "
+        f"band. This leg's own pilot has to set the price",
+    }
 
 
 # --------------------------------------------------------------------------- #
@@ -1263,7 +1459,7 @@ def run(
             log(f"[hunt] {key} failed: {failure!r}")
             continue
         spent += result["seconds"]
-        price.add(intent.partition, result["seconds"])
+        price.add(intent.partition, result["seconds"], band=intent.leg)
         known.add(key)
         counts["made"] += 1
         counts["autolevel_acted"] += int(result["acted"])
@@ -1595,8 +1791,11 @@ __all__ = [
     "PER_LOCATION",
     "FIELDS",
     "PICTURES",
+    "EMA_ALPHA",
     "PRICE_AFTER",
     "PRIOR_SECONDS",
+    "forget_recorded_prices",
+    "recorded_prices",
     "RECORD_NAME",
     "ROWS_NAME",
     "SCHEMA",

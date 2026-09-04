@@ -1212,6 +1212,18 @@ def build_plan(
     # leg actually ran. `--partition-weights` is merged over it rather than
     # replacing it — see [`curation.draw_weights.table`].
     partition_weights = draw_weights.table(partition_weights)
+    # **And then once per BAND**, because the standing table is now denominated in
+    # engine seconds and a second is not the same size on every arm. Each draw runs
+    # under its own conversion, seeded from the last recorded leg of its own band;
+    # a band nothing has priced falls back to the turn weights above and the record
+    # says so. See [`curation.draw_weights.by_band`].
+    banded_weights, weight_working = draw_weights.by_band(
+        sorted(world["pools"]), DRAWS, overrides=partition_weights, log=log
+    )
+
+    def weights_for(draw: str) -> dict:
+        return banded_weights.get(draw, partition_weights)
+
     roster = list(roster if roster is not None else field_modes())
     if not roster:
         raise DepthRefused(
@@ -1368,7 +1380,7 @@ def build_plan(
             seed,
             max(1, want[RANKED] // max(1, width)),
             weights=band_weights,
-            partition_weights=partition_weights,
+            partition_weights=weights_for(RANKED),
         )
         if want.get(RANKED)
         else []
@@ -1401,13 +1413,13 @@ def build_plan(
         }
     else:
         flat_want = spread_over_partitions(
-            matched, max(1, want.get(FLAT, 0) // max(1, width)), partition_weights
+            matched, max(1, want.get(FLAT, 0) // max(1, width)), weights_for(FLAT)
         )
         aimed_want = spread_over_partitions(
-            matched, max(1, want.get(AIMED, 0) // max(1, width)), partition_weights
+            matched, max(1, want.get(AIMED, 0) // max(1, width)), weights_for(AIMED)
         )
     flat = (
-        flat_places(matched, picked, seed + 1, flat_want, partition_weights)
+        flat_places(matched, picked, seed + 1, flat_want, weights_for(FLAT))
         if want.get(FLAT)
         else []
     )
@@ -1421,7 +1433,7 @@ def build_plan(
             picked | {str(row["key"]) for row in flat},
             seed + 2,
             aimed_want,
-            partition_weights,
+            weights_for(AIMED),
         )
         if want.get(AIMED)
         else []
@@ -1539,6 +1551,13 @@ def build_plan(
         "drawn_from": {name: len(held) for name, held in sorted(pools.items())},
         "partition_weights": dict(partition_weights),
         "partition_weights_default": draw_weights.table(),
+        # What each band actually drew under, and the arithmetic that got there.
+        # The seconds shares are the ruling; these are what they came to today.
+        "seconds_share": dict(draw_weights.SECONDS_SHARE),
+        "partition_weights_by_band": {
+            band: dict(sorted(held.items())) for band, held in sorted(banded_weights.items())
+        },
+        "weight_conversion": weight_working,
         "floor_untried": list(floor_untried or []),
         "floor_places_named": len(floor_places or []),
         "floor_population": len(floor_pool),
@@ -1933,7 +1952,10 @@ def run(
         hunt._append(rows_file, stored)
         hunt._append(scores_file, scored)
         spent += stages.total()
-        price.add(shot.partition, stages.total())
+        # Banded on the ARM, which is what the price is actually a fact about: a
+        # near-band re-render and a deep breadth frame on one partition are an
+        # order of magnitude apart, so one number a partition prices neither.
+        price.add(shot.partition, stages.total(), band=shot.arm)
         counts["made"] += 1
         counts["autolevel_acted"] += int(result["acted"])
         row = {

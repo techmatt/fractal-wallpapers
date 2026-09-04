@@ -449,7 +449,27 @@ class Rule:
         return int(math.ceil(self.targets[cell] * int(n)))
 
 
+def share_of(share: float, seats: int) -> int:
+    """`ceil(share * seats)` — a share of the REALIZED seat count, in one place.
+
+    The one spelling of "some fraction of the gallery that actually got filled",
+    and it now has three readers: [`curation.solve.Demand.wanted`] for a colour
+    target, and [`curation.rules.State`] for the spiral share cap, in both
+    directions — a target is a floor under this quantity and a cap is a ceiling
+    over it, and they must not be able to disagree about what the quantity is.
+
+    A share of the realized count and never of `n`, for [`solve.target_rule`]'s
+    measured reason: this leg does not promise `n` seats, so a demand denominated
+    in seats nobody is promising to fill reports nothing at all when the answer
+    comes back under-filled. The same argument is why a cap is not denominated in
+    `n` either — a cap against 1000 while 941 fill is a cap that is 6% looser than
+    the number somebody wrote down.
+    """
+    return int(math.ceil(float(share) * max(0, int(seats))))
+
+
 __all__ = [
+    "share_of",
     "CELL_SHARE",
     "FAMILY_SHARE",
     "GROUP_CAP",

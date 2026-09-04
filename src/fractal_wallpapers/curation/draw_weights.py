@@ -74,10 +74,130 @@ DOWNWEIGHTED: dict[str, float] = {
     "phoenix:classic": 0.25,
 }
 
+#: What share of a breadth leg's **engine seconds** a partition is owed, ruled by
+#: Matt 2026-09-04 on the nine-leg read above. This is the table that acts;
+#: [`DOWNWEIGHTED`] is the turn weight it replaced and is kept only so a record
+#: can say what the draw used to do.
+#:
+#: **A share of seconds is not a share of turns, and the gap is the whole point.**
+#: A turn buys a *place*; what a place costs is a fact about the partition and the
+#: arm, and at 0.25 turn weight `phoenix:classic` was still taking 24.0% of the
+#: clock for 2.94% of the turns. Declaring the seconds instead means the ruling
+#: survives the price moving, which it does — by an order of magnitude between
+#: arms and by a third between two legs six hours apart.
+#:
+#: A partition **not** in here keeps its turn weight and shares out whatever
+#: seconds the declared ones leave, which is what makes this additive rather than
+#: a second scheduler: eight partitions carry on doing exactly what they did.
+SECONDS_SHARE: dict[str, float] = {
+    "phoenix:classic": 0.03,
+    "phoenix": 0.15,
+}
+
 #: The longest round [`turns_of`] will build, per partition. A weight table of
 #: 1.0 against 0.001 would otherwise ask for a thousand turns a round and a draw
 #: whose round is longer than the leg is a draw nobody can read a prefix of.
 MAX_TURNS = 32
+
+#: The smallest turn weight a conversion will hand back. A declared share divided
+#: by a price this project has actually measured lands around 0.07; the floor is
+#: three times smaller than that and exists for the pathological seed — a price
+#: read off a leg that drew four candidates of a dear partition and hit the tail.
+#: Below this the partition is one turn in [`MAX_TURNS`] and cannot go lower, so a
+#: bad price starves it rather than deleting it, which is [`table`]'s standing rule.
+MIN_CONVERTED_WEIGHT = 0.02
+
+
+class PriceMissing(RuntimeError):
+    """A seconds share was declared for a partition nothing has priced."""
+
+
+def converted(
+    names, prices: dict, overrides: dict | None = None, weights: dict | None = None
+) -> tuple[dict[str, float], dict]:
+    """`(turn weights, the arithmetic)` — declared seconds shares, priced into turns.
+
+    `prices` is `{partition: seconds a candidate}` **for one band**, off the last
+    recorded leg of that band. Mixing bands here is the one way to get this badly
+    wrong: `phoenix:classic` reads 1.2-1.5 s in the near band and 17-31 s on a deep
+    breadth arm, so a breadth leg seeded from a near-band price would ask for
+    twenty times the turns the ruling wants. [`curation.hunt.Price.seed_for`] is
+    what keeps them apart and it refuses rather than guessing.
+
+    The arithmetic, and it is one line of algebra. A partition drawing `w` turns at
+    `p` seconds a candidate spends `w * p` of the clock, so seconds share
+    `s = w*p / sum(w*p)`. Hold every undeclared partition at its turn weight, let
+    them share the `1 - sum(declared)` of the clock nobody claimed, and the total
+    follows: `U = sum(undeclared w*p) / (1 - sum(declared s))`. Then each declared
+    partition wants `w = s * U / p`.
+
+    Returns the weights **and** the working, because a table that silently turned
+    3% into 0.078 is a table nobody can check. The second value goes on the run
+    record.
+    """
+    held = dict(table(overrides) if weights is None else weights)
+    wanted = {name: float(SECONDS_SHARE[name]) for name in SECONDS_SHARE if name in set(names)}
+    working = {
+        "declared": dict(sorted(wanted.items())),
+        "prices": {name: round(float(value), 4) for name, value in sorted(dict(prices).items())},
+        "converted": {},
+        "how": "w = s * U / p, where U = sum(undeclared w*p) / (1 - sum declared s). A "
+        "partition with no declared share keeps its turn weight and shares the rest",
+    }
+    if not wanted:
+        working["how"] = "no partition in this draw declares a seconds share: the table is "
+        "its turn weights, unchanged"
+        return held, working
+
+    missing = sorted(name for name in wanted if not float(dict(prices).get(name) or 0.0) > 0.0)
+    if missing:
+        raise PriceMissing(
+            f"{missing} declare a seconds share and nothing in this band has priced them. "
+            f"Take a pilot on this band first and pass its price, or the ruling cannot be "
+            f"expressed as turns: a share of the clock is meaningless without what a "
+            f"candidate costs."
+        )
+
+    claimed = sum(wanted.values())
+    if not 0.0 < claimed < 1.0:
+        raise PriceMissing(
+            f"the declared seconds shares sum to {claimed:g}, which leaves "
+            f"{1 - claimed:g} of the clock for every other partition. A share table has to "
+            f"leave room for the draw it is leaning."
+        )
+
+    undeclared = sum(
+        held.get(name, DEFAULT_WEIGHT) * float(dict(prices).get(name) or 0.0)
+        for name in names
+        if name not in wanted
+    )
+    if undeclared <= 0.0:
+        raise PriceMissing(
+            "no undeclared partition in this draw carries a price, so there is no clock to "
+            "take a share OF. A seconds share is a share of a leg, not of one partition."
+        )
+    unit = undeclared / (1.0 - claimed)
+
+    out = dict(held)
+    for name, share in sorted(wanted.items()):
+        price = float(dict(prices)[name])
+        weight = max(MIN_CONVERTED_WEIGHT, share * unit / price)
+        out[name] = weight
+        working["converted"][name] = {
+            "seconds_share": share,
+            "seconds_per_candidate": round(price, 4),
+            "turn_weight": round(weight, 4),
+            "was": DOWNWEIGHTED.get(name, DEFAULT_WEIGHT),
+            "floored": weight == MIN_CONVERTED_WEIGHT,
+        }
+    # A caller's explicit `--partition-weights` still wins, and it wins LAST: a leg
+    # aimed at a phoenix plane says so by turn weight and must not have the ruling
+    # silently put back over the top of it.
+    for name, weight in dict(overrides or {}).items():
+        out[str(name)] = float(weight)
+        working["converted"].pop(str(name), None)
+        working.setdefault("overridden", []).append(str(name))
+    return out, working
 
 
 def table(overrides: dict | None = None) -> dict[str, float]:
@@ -96,6 +216,53 @@ def table(overrides: dict | None = None) -> dict[str, float]:
     for name, weight in dict(overrides or {}).items():
         out[str(name)] = float(weight)
     return out
+
+
+def by_band(names, bands, overrides: dict | None = None, unit: str = "depth", log=print):
+    """`({band: weights}, working)` — one converted table per band a leg will draw.
+
+    A leg takes several draws and they are not one price. So the seconds shares are
+    converted **once per band**, each against the last recorded leg that priced that
+    band, and each draw then runs under its own turn weights. A band nothing has
+    priced falls back to the standing turn weights and the record says the fallback
+    happened — [`SECONDS_SHARE`] cannot be expressed as turns without a price, and
+    inventing one is how a breadth arm ends up running at a near-band's numbers.
+    """
+    from fractal_wallpapers.curation import hunt
+
+    standing = table(overrides)
+    out: dict = {}
+    working: dict = {}
+    for band in sorted({str(one) for one in bands}):
+        prices, provenance = hunt.recorded_prices(band, unit=unit)
+        if not prices:
+            out[band] = dict(standing)
+            working[band] = {
+                "converted": False,
+                "why": provenance.get("why"),
+                "weights": dict(standing),
+                "fallback": "the standing turn weights. This band has no recorded price, so "
+                "the declared seconds shares cannot be turned into turns; pilot the band and "
+                "the next leg seeds from it",
+            }
+            log(f"[weights] {band}: no recorded price — standing turn weights")
+            continue
+        try:
+            weights, how = converted(names, prices, overrides, weights=standing)
+        except PriceMissing as refusal:
+            out[band] = dict(standing)
+            working[band] = {"converted": False, "why": str(refusal), "weights": dict(standing)}
+            log(f"[weights] {band}: {refusal}")
+            continue
+        out[band] = weights
+        working[band] = {"converted": True, "seeded_from": provenance, **how}
+        told = ", ".join(
+            f"{name} {block['seconds_share']:.0%} at {block['seconds_per_candidate']:g}s "
+            f"-> {block['turn_weight']:.4g} turns"
+            for name, block in sorted(how["converted"].items())
+        )
+        log(f"[weights] {band}: seeded from {provenance['leg']} — {told}")
+    return out, working
 
 
 def turns_of(names, weights: dict | None, floor: int = 0) -> dict[str, int]:
@@ -168,6 +335,11 @@ def tallied(names, drawn: dict) -> dict[str, int]:
 
 __all__ = [
     "DEFAULT_WEIGHT",
+    "MIN_CONVERTED_WEIGHT",
+    "PriceMissing",
+    "SECONDS_SHARE",
+    "by_band",
+    "converted",
     "DOWNWEIGHTED",
     "MAX_TURNS",
     "order",

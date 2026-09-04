@@ -25,9 +25,26 @@ fractal-wallpapers spiral read --locations <records.jsonl> --out <probabilities.
 `fit` cuts the store on its own pin, asserts the pin on the training side, chooses
 the ridge by 5-fold cross-validation over the 400 and writes the probe and the
 manifest. `read` renders each location at the probe's regime, encodes it and
-reports the share called `spiral` at 0.3, the probe's own threshold, and 0.7 —
+reports the share called `spiral` at 0.3, 0.5, 0.7 and the probe's own threshold —
 because a cap acts on a share. Both take `--pictures` to draw somewhere other
 than the neutral render store.
+
+## The cut is 0.3, and it moved after the fit
+
+Ruled 2026-09-04, erring toward calling a place a spiral. It was **0.5** when the
+probe was fitted. The threshold sweep below is what moved it: precision is flat at
+~0.96 across 0.3 / 0.5 / 0.7 and only recall moves, so the lower cut buys six
+points of recall for nothing, and the reader is a **share cap** — a spiral it fails
+to call is a seat the cap does not count, which is the error that lets a gallery
+fill with the thing the cap exists to limit.
+
+**Moving the cut did not move the fit, and no re-fit was taken.** `choose_lambda`
+cross-validates on AUC exactly so the ridge does not follow the threshold. What
+*does* follow it is the `accuracy` column reported beside each lambda, so
+`neutral_dinov2.json`'s `lambda_grid` accuracies are readings **at the 0.5 cut the
+probe was fitted under**. They select nothing — `max` is taken on AUC — and they
+are left as the record of what that fit saw rather than refreshed to match a cut
+chosen afterwards.
 
 ## A spiral is a property of the PLACE, and the numbers say so
 

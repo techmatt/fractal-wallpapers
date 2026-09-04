@@ -233,6 +233,12 @@ def rows_of(record: dict, centered: frozenset | None = None) -> list[dict]:
                 "cells": cells,
                 "families": families,
                 "centered": str(held.get("location")) in centered,
+                # Joined at record time like `centered`, and off the seat rather
+                # than off a second store read: `solve` already did the location
+                # join, so re-reading it here would be a second answer to one
+                # question. `None` is a place with no score and is not `false`.
+                "spiral": held.get("spiral"),
+                "p_spiral": held.get("p_spiral"),
                 "rank": held.get("rank"),
                 "p_ge4": held.get("p_ge4"),
                 "location": held.get("location"),
@@ -330,6 +336,7 @@ def manifest_of(
             "cell": counts_of(rows, "cell"),
             "partition": counts_of(rows, "partition"),
             "centered": counts_of(rows, "centered"),
+            "spiral": counts_of(rows, "spiral"),
         },
     }
 
@@ -572,6 +579,7 @@ _PAGE = """<!doctype html>
     <fieldset id="f-cell"><legend>colour cell</legend></fieldset>
     <fieldset id="f-partition"><legend>partition</legend></fieldset>
     <fieldset id="f-centered"><legend>centered</legend></fieldset>
+    <fieldset id="f-spiral"><legend>spiral</legend></fieldset>
     <fieldset><legend>find &amp; sort</legend>
       <input type="search" id="q" placeholder="ID or alias" size="18">
       <select id="sort">
@@ -594,7 +602,7 @@ _PAGE = """<!doctype html>
 <div id="empty" hidden>Nothing matches these filters.</div>
 <script>
 const ROWS = __ROWS__;
-const FACETS = ["mode", "hue_family", "cell", "partition", "centered"];
+const FACETS = ["mode", "hue_family", "cell", "partition", "centered", "spiral"];
 // `cells` and `families` are lists because dominance is thresholded: a picture
 // can be dominant in several, and filtering on the leading one alone would hide
 // a green picture from the green filter whenever teal happened to lead it.

@@ -477,9 +477,35 @@ def build(
     path.parent.mkdir(parents=True, exist_ok=True)
     lock = train.claim(path.parent, name=LOCK_NAME)
     try:
-        return _fill(path, choices, limit, device, sample, seed, unit_seconds, leg, log)
+        report = _fill(path, choices, limit, device, sample, seed, unit_seconds, leg, log)
     finally:
         lock.unlink(missing_ok=True)
+    report["spiral_scores"] = _score_spirals(log)
+    return report
+
+
+def _score_spirals(log=print) -> dict:
+    """Score whatever this leg just embedded, so a new location arrives with a P(spiral).
+
+    **Here rather than in a leg of its own**, because the expensive half is already
+    paid: [`curation.spiral_scores`] reads the vectors this store just wrote and
+    turns each into a probability with a 384-column dot product. The whole store
+    scores in under two seconds, so a batch of new admissions is free, and the
+    alternative — a location that is drawable before it is scored — is a location
+    the gallery's share cap silently does not count.
+
+    Imported here and not at module scope: `spiral_scores` reads this store, so the
+    two would import each other. It is also the one thing in this path that could
+    fail on a machine with no probe, and a failed score must not lose an embedding
+    leg that has already appended its rows.
+    """
+    from fractal_wallpapers.curation import spiral_scores
+
+    try:
+        return spiral_scores.build(log=log)
+    except (spiral_scores.StoreRefused, FileNotFoundError, OSError) as refusal:
+        log(f"[embed] the spiral score did not land: {refusal}")
+        return {"scored": None, "why": str(refusal)}
 
 
 def _fill(path, choices, limit, device, sample, seed, unit_seconds, leg, log) -> dict:

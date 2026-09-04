@@ -3084,6 +3084,26 @@ fractal-wallpapers curate depth sheet --name d1                             # re
 
 ### A roster entry is a mode, or a mode with its own settings
 
+**The five `direct_trap_multiply` cells are all in the production roster**, ruled
+2026-09-04. The bare mode plus four settings cells — `@opacity=0.4`,
+`@opacity=0.6`, `@threshold=0.2` and `@opacity=0.6,threshold=0.2` — and the last of
+them is in on the same rule as the rest: **a settings cell leaves only at zero
+clears.** Over every candidate-ledger row carrying both knobs above their catalogued
+defaults, 1,023 rows at 869 places, **80 clear the pool bar (7.8%)** and 20 clear
+the primed bar (2.0%); it is the best of the five at the pool bar. The label sheet
+reads it worst — mean tier 1.93 against 2.92-2.95 — and `data/batch_caveats.md`'s
+ARGMAX-PER-PLACE entry is why those two facts do not contradict: the cells there
+stand on four disjoint, judge-selected populations, so a cell's human rate cannot
+be differenced against another's. The clear rate is over the whole ledger and is
+what decides a roster.
+
+**Nothing in code ever excluded it**, which is worth stating so nobody goes looking
+for the switch: a roster is what a leg passes in `--modes` / `--floor-modes`, the
+standing rosters ([`depth.dear_modes`], [`depth.centered_modes`]) derive from
+`mode_policy`'s **bare mode names**, and no settings cell appears in
+[`depth.CENTERED_EXCLUDED`] or anywhere else. The reinstatement is a ruling about
+what legs should draw, recorded here and in the caveat, and not a code change.
+
 `--modes` and `--floor-modes` take `direct_trap_multiply@opacity=0.6,threshold=0.2`
 as readily as `smooth`. **The mode stays a catalog name and the settings ride
 beside it**, which is the whole discipline: `mode_policy.check` refuses unless its
@@ -3511,6 +3531,55 @@ get none of a release is *retired* from the registry, which is the rule
 --partition-weights '{"mandelbrot": 3}'           # a release-mix lean, phoenix still 0.25
 --partition-weights '{"phoenix": 0}'              # out of THIS leg's draw, by explicit ask
 ```
+
+### The two phoenix planes are declared in SECONDS now, and the price is per band
+
+Ruled 2026-09-04: **`phoenix:classic` 3% of a breadth leg's engine seconds,
+`phoenix` 15%.** `draw_weights.SECONDS_SHARE` is the table that acts and
+`DOWNWEIGHTED`'s turn weights are kept only so a record can say what the draw used
+to do. A turn buys a *place*; what a place costs is a fact about the partition and
+the arm, so declaring turns pinned the wrong quantity — at 0.25 turn weight
+`phoenix:classic` was still taking 24.0% of the clock for 2.94% of the turns.
+
+`draw_weights.converted` does the algebra, and it is one line: a partition drawing
+`w` turns at `p` seconds a candidate spends `w·p`, so holding every undeclared
+partition at its turn weight to share the `1 − Σs` nobody claimed gives
+`U = Σ(undeclared w·p) / (1 − Σs)` and `w = s·U/p`.
+
+**The price is keyed on `(partition, band)` and a band never inherits another's.**
+This is the part that matters more than the conversion. Measured over nine legs,
+`phoenix:classic` runs 17–31 s a candidate on the deep breadth arms and 1.2–1.5 s
+in the near band — one plane, one weight, an order of magnitude apart, because a
+near-band re-render is shallow. What the ruling comes to today, per band:
+
+| band | seeded from | `phoenix:classic` | `phoenix` |
+|---|---|--:|--:|
+| `near_band` | `draw_cells_smoke` | 1.470 s → **0.0778** | 0.383 s → **1.4923** |
+| `ranked_bands` | `mine_diverse_0903_c` | 11.571 s → **0.0537** | 2.255 s → **1.3789** |
+| `flat` | `mine_diverse_0903_c` | 11.319 s → **0.0637** | 0.897 s → **4.0194** |
+| `mode_floor` | `mine_diverse_0903_c` | 21.086 s → **0.0343** | 3.313 s → **1.0912** |
+| `conditioned` | — | refused: nothing has priced this band |
+
+Two readings worth carrying. **`phoenix` proper is not a dear partition** — its price
+is inside the field on every band — so 15% of the clock *raises* it from 0.25 to
+between 1.0 and 4.0; the quarter was starving a partition that costs what everything
+else costs. And **`phoenix:classic` wants 0.034 to 0.078 depending only on the band**,
+which is why one number a partition cannot express this ruling at all.
+
+A band nothing has priced is not converted: `converted` raises `PriceMissing` rather
+than inventing a price, `by_band` falls back to the standing turn weights, and the
+record says which happened. Seeding reads `depth.json`'s `price` block, and where a
+record predates the band split it is derived from that leg's own `sequence.jsonl`,
+which carries `arm`, `partition` and `seconds` per row — so there is no cold start.
+`hunt.recorded_prices` is **cached** (0.65 s a band, 3.35 s for the five, and
+`depth.plan` asks for all five); a guard that redirects the tree calls
+`hunt.forget_recorded_prices()` first.
+
+Within a leg the price is an EMA at `hunt.EMA_ALPHA` = 0.1 over that leg's own served
+candidates — a memory of about ten, short enough to catch the machine moving (`pc1` →
+`pc20m` was 34% in six hours) and long enough to ignore one 280 s frame. Every leg
+record reports the realized seconds share per partition and per band, so the next leg
+never guesses.
 
 **The override is merged over the table rather than replacing it**, so a leg says
 what it is changing: a leg leaning toward the release mix cannot silently
@@ -4960,6 +5029,39 @@ deliberately not what the page printed under the picture.
 over, by location quality and by a passing score, so a correction rate measured
 on it bounds what a correction rate could be and is never a base rate about the
 pool.
+
+## `P(spiral)` rides on the same vector, and costs a dot product
+
+`artifacts/curation/spiral_scores.jsonl` — one row per location, keyed on the
+location key, saying what `models/spiral`'s shipped probe makes of the place. It
+is `curation.spiral_scores`, its durable manifest is
+`data/curation/spiral_scores.manifest.json`, and the reader is the gallery's share
+cap (`curate solve --spiral-cap`, `rules.State.spiral_allowance`).
+
+**The cost line: about 40 microseconds a location, and no render at all.** The
+whole store — 40,734 locations, 10.9 MB — scores in **1.6 s** on the CPU. That is
+because the probe's feature set *is* the neutral-render DINOv2 vector the embedding
+store above already holds, so scoring a location is a 384-column dot product rather
+than the ~0.05 s a render-and-encode costs. A location the embedding store has not
+reached does need its picture drawn, and `spiral_scores.score_records` is that path
+at the measured 0.051 s each — but on the pool as it stands that path has never
+been needed: the first capped solve found **0 unknown locations over all 21,544
+clearing candidates**, because the embedding store's admitted population is a
+superset of the pool's.
+
+Scoring runs at the end of `curate embed`, so a newly admitted location arrives
+with a score instead of being drawable before it has one.
+
+**The fp16 packing is not a caveat.** The store's vectors are `float16` and the
+probe was fitted on `float32`; measured over the labeled 500, the round trip moves
+`P(spiral)` by at most 1.3e-4 (mean 1.2e-5) and flips no verdict at 0.3, 0.5 or
+0.7.
+
+**A location with no row reads as unknown, and unknown counts toward nothing** —
+it can neither fill the cap nor be refused by it. That asymmetry is deliberate and
+is the one thing a reader here must not "simplify": a place nobody has scored and a
+place the probe called flat are different facts, and conflating them would stop the
+cap acting on exactly the locations nothing had looked at.
 
 ## The gallery pass needs a distance, so every admitted location has a vector
 
