@@ -25,12 +25,15 @@ going missing, so the count is printed on every run that deselects anything.
 from __future__ import annotations
 
 import functools
+import hashlib
+import subprocess
 from types import SimpleNamespace
 
 import pytest
 
 from fractal_wallpapers.labeling import registry as registry_module
 from fractal_wallpapers.labeling import store
+from fractal_wallpapers.paths import repo_root
 
 # --------------------------------------------------------------------------- #
 # The slow lane.
@@ -86,6 +89,102 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config) -> None:
         yellow=True,
         bold=True,
     )
+
+
+# --------------------------------------------------------------------------- #
+# The tracked manifests, held still for the length of a session.
+# --------------------------------------------------------------------------- #
+#: The suffix every tracked manifest's name ends in. `durability.save` writes one
+#: on every save, and *which* one it writes is decided by a `Durable` the caller
+#: assembled out of accessors — so a fixture that redirects a durable's live file
+#: and its copy but not its manifest writes `tmp_path` counts into the history,
+#: and nothing says so.
+#:
+#: **That is not hypothetical.** During the candidate-ledger split an intermediate
+#: `__init__` re-exported `manifest_dir` eagerly, which made two bindings of one
+#: function; the redirect moved the store's and left `flatness.durable()` on the
+#: real tree, and `data/curation/candidate_ledger/{flatness,signatures}` were
+#: overwritten with one-row counts off a temporary ledger. A person noticed.
+#:
+#: Discovered through `git ls-files` rather than listed, because a hand list goes
+#: stale the first time a durable is added. **20 files, 104 KB** as of 2026-09-04;
+#: hashing them twice a session does not show up against a three-minute lane.
+MANIFEST_SUFFIX = "manifest.json"
+
+MANIFESTS_AT_START = pytest.StashKey[dict]()
+
+
+def tracked_manifests() -> dict:
+    """`{repo-relative name: sha256}` for every tracked manifest, right now.
+
+    `git ls-files` and not a walk, for the reason `CLAUDE.md` gives: this checkout
+    carries a hundred gigabytes of untracked `artifacts/` and a recursive walk of
+    it takes minutes. The index answers in milliseconds.
+    """
+    listing = subprocess.run(
+        ["git", "ls-files", "-z"],
+        cwd=repo_root(),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if listing.returncode != 0:
+        return {}
+    found = {}
+    # `chr(0)` rather than an escape: this is the separator `-z` writes, and a
+    # literal one in the source is a null byte in a tracked text file.
+    for name in listing.stdout.split(chr(0)):
+        if not name.endswith(MANIFEST_SUFFIX):
+            continue
+        path = repo_root() / name
+        if path.is_file():
+            found[name] = hashlib.sha256(path.read_bytes()).hexdigest()
+    return found
+
+
+def pytest_sessionstart(session) -> None:
+    session.config.stash[MANIFESTS_AT_START] = tracked_manifests()
+
+
+def pytest_sessionfinish(session, exitstatus) -> None:
+    """Fail the session over a tracked manifest this run rewrote, and name it.
+
+    A **backstop**, not a substitute for redirecting properly. The fixtures that
+    exercise a durable redirect at the tier roots, which is where the live file
+    and the copy resolve from; a manifest resolves off `repo_root()` instead and
+    there is no root to redirect it at, because `repo_root` is imported by value
+    into three dozen modules. So the manifest is the one path a fixture can miss
+    while looking complete, and this catches the one it missed.
+
+    It names the file and the command that puts it back, because a manifest
+    written out of a `tmp_path` store is a wrong count in the history and the next
+    `durability.check` believes it.
+
+    A hook rather than a session-scoped fixture, so that it brackets collection
+    too; and reported straight to the terminal reporter rather than through
+    `pytest_terminal_summary`, so it does not depend on which of the two pytest
+    runs first.
+    """
+    before = session.config.stash.get(MANIFESTS_AT_START, None)
+    if not before:
+        return
+    after = tracked_manifests()
+    moved = sorted(name for name in set(before) | set(after) if before.get(name) != after.get(name))
+    if not moved:
+        return
+    reporter = session.config.pluginmanager.get_plugin("terminalreporter")
+    if reporter is not None:
+        reporter.write_sep("=", "TRACKED MANIFESTS REWRITTEN BY THIS RUN", red=True, bold=True)
+        for name in moved:
+            reporter.write_line(f"  {name}")
+        reporter.write_line("")
+        reporter.write_line(
+            "A test wrote a tracked manifest instead of a redirected one, so the history now "
+            "records a count that came out of a temporary store. Put them back with "
+            f"`git checkout -- {' '.join(moved)}`, then find the fixture: it is redirecting a "
+            "durable's live file and its copy without redirecting its manifest."
+        )
+    session.exitstatus = pytest.ExitCode.TESTS_FAILED
 
 
 @pytest.fixture(autouse=True)
