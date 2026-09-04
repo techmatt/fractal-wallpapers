@@ -178,10 +178,10 @@ here because this file is loaded into every session in this repository and a
 chronological log is not a rule. What stays here is the current figure and the rules
 the log produced.
 
-The fast lane is **119.30 s over the 3,454 it holds**, on this machine, idle,
-2026-09-04, at the rare-cell mine — three tests more than the wrapup and flat against
-it, taken after a night that grew the candidate ledger 8.6%. The slow lane's **7:14
-over 3,552** stands from the `run_layout` extraction and has not been re-run since.
+The fast lane is **119.86 s over the 3,458 it holds**, on this machine, idle,
+2026-09-04, at the seconds-share fix — four tests more than the rare-cell mine and
+0.56 s over it, which is noise. The slow lane's **7:14 over 3,552** stands from the
+`run_layout` extraction and has not been re-run since.
 
 **What the count means is defined once, in
 [`tests/README.md`](tests/README.md#what-the-fast-lane-count-means)**, and a reading

@@ -844,11 +844,23 @@ near-band re-render is shallow. What the ruling comes to today, per band:
 
 | band | seeded from | `phoenix:classic` | `phoenix` |
 |---|---|--:|--:|
-| `near_band` | `draw_cells_smoke` | 1.470 s → **0.0778** | 0.383 s → **1.4923** |
-| `ranked_bands` | `mine_diverse_0903_c` | 11.571 s → **0.0537** | 2.255 s → **1.3789** |
-| `flat` | `mine_diverse_0903_c` | 11.319 s → **0.0637** | 0.897 s → **4.0194** |
-| `mode_floor` | `mine_diverse_0903_c` | 21.086 s → **0.0343** | 3.313 s → **1.0912** |
-| `conditioned` | — | refused: nothing has priced this band |
+| `ranked_bands` | `rare_a2` | 25.419 s → **0.0411** | 2.817 s → **1.8521** |
+| `flat` | `rare_a2` | 12.616 s → **0.0553** | 0.658 s → **5.3046** |
+| `conditioned` | — | not asked: it draws under `flat`'s table |
+
+(Reseeded 2026-09-04 off `rare_a2`. The reading it replaces, off
+`mine_diverse_0903_c`, was `ranked_bands` 11.571 s → 0.0537 and `flat` 11.319 s →
+0.0637 for `phoenix:classic`, and 2.255 s → 1.3789 / 0.897 s → 4.0194 for `phoenix`
+— the same shape at a cheaper measured price, which is what a seed moving looks
+like. `near_band` was `draw_cells_smoke`'s 1.470 s → 0.0778 and 0.383 s → 1.4923.)
+
+**The `conditioned` band is no longer asked for a price**, and that is not a
+convenience. It is the flat draw with its palette ask changed and nothing else, so
+it draws under `flat`'s converted table. Asked for its own price it refused on every
+leg — nothing has ever priced that band — and the arm then took the standing turn
+weights while its own control ran a conversion, which is a control drawn from a
+different partition mix than the arm it controls. `matched_mix_agrees` on the record
+is what catches it.
 
 Two readings worth carrying. **`phoenix` proper is not a dear partition** — its price
 is inside the field on every band — so 15% of the clock *raises* it from 0.25 to
@@ -862,8 +874,12 @@ record says which happened. Seeding reads `depth.json`'s `price` block, and wher
 record predates the band split it is derived from that leg's own `sequence.jsonl`,
 which carries `arm`, `partition` and `seconds` per row — so there is no cold start.
 `hunt.recorded_prices` is **cached** (0.65 s a band, 3.35 s for the five, and
-`depth.plan` asks for all five); a guard that redirects the tree calls
-`hunt.forget_recorded_prices()` first.
+`depth.plan` asks for four of them); a guard that redirects the tree calls
+`hunt.forget_recorded_prices()` first. **A guard that asserts a partition table has
+to seat a price as well**, and none of them did until 2026-09-04: the seed is this
+checkout's own `artifacts/` on a working machine and nothing at all on a clone, so
+every plan test in `tests/test_depth.py` was asserting a table that depended on
+whose box it ran on. `priced_bands` there pins one now, for the whole module.
 
 Within a leg the price is an EMA at `hunt.EMA_ALPHA` = 0.1 over that leg's own served
 candidates — a memory of about ten, short enough to catch the machine moving (`pc1` →
@@ -898,33 +914,60 @@ absent from the record: `dtm_breadth2` ran `phoenix: 0` and its `depth.json` has
 no phoenix key at all, so a partition a leg deliberately left out cannot be told
 from one that did not exist when the leg ran.
 
-⚠ **The ruling has never acted, measured 2026-09-04, and it is not the conversion
-that is wrong.** Every leg since it landed has drawn under the standing *turn*
-weights while its record reported `seconds_share` as though the shares were
-spent. `build_plan` resolves the standing table into `partition_weights` and then
-hands **that** to [`draw_weights.by_band`] as `overrides` — so `converted`'s last
-loop, the one that lets a leg aimed at a phoenix plane keep its explicit turn
-weight, fires for all ten registered partitions and writes the turn weights back
-over each band's own conversion. The record says so plainly once you know where to
-look: `weight_conversion.<band>.converted` is `{}` and `overridden` lists every
-partition, while `partition_weights_by_band` reads 0.25 for both phoenix planes on
-every band. What it costs: `rare_a` spent **24.9% of its engine seconds on
-`phoenix:classic` against a declared 3%** (144 candidates at **35.75 s** each) and
-**4.8% on `phoenix` against a declared 15%** — eight times over on one plane and
-three times under on the other. Priced off that leg's own bands the ruling wants
-`phoenix` at **3.40** turns and `phoenix:classic` at **0.0205**.
+⚠ **The ruling did not act for its first two days, and TWO things were stopping it.**
+Both are fixed as of 2026-09-04; this is here because the shape of each is the shape
+of the next one like it.
 
-The change is one line — keep the caller's own overrides apart from the resolved
-table and pass those — and it is **not** a one-line decision: it moves five tests
-in `tests/test_depth.py` that pin the pre-ruling behaviour, one of them
-(`test_the_standing_table_downweights_phoenix_in_the_plan_the_leg_actually_takes`)
-pinning the 0.25 the ruling exists to replace. It was written and reverted on the
-night it was found rather than landed unmeasured beside a mining leg.
+**One: the conversion was being thrown away.** `build_plan` resolved the standing
+table into `partition_weights` and then handed **that** to [`draw_weights.by_band`]
+as `overrides` — so `converted`'s last loop, the one that lets a leg aimed at a
+phoenix plane keep its explicit turn weight, fired for all ten registered
+partitions and wrote the turn weights back over each band's own conversion. The
+record said so on every leg and nobody read it: `weight_conversion.<band>.converted`
+`{}`, `overridden` naming every partition, `partition_weights_by_band` reading 0.25
+for both planes. What it cost: `rare_a` spent **24.9% of its engine seconds on
+`phoenix:classic` against a declared 3%** — 144 candidates at **35.75 s** each — and
+**4.8% on `phoenix` against a declared 15%**. What reaches `by_band` now is what a
+caller named and nothing else.
 
-Note also that `by_band` writes `{"converted": True, ..., **how}` and `how`
-carries its own `converted` key, so the boolean is overwritten by the detail dict
-on every band. A reader asking "did this band convert?" gets `{}` — falsy, and
-right by accident today only because nothing converts.
+**Two: the round was laid out by TURN, so no draw ever saw the lean.**
+`_weighted_order` built the round first-turn-of-every-cell, then second, and so on.
+Every (partition, band) cell therefore got one place before any cell got two — and a
+ranked draw of 265 places out of a 1,690-turn round never reaches the second pass.
+Measured on `rare_a`'s own plan: `phoenix:classic` at **one turn against
+mandelbrot's seventeen** still took 10 places of the first 265 against mandelbrot's
+30. A 17:1 table drawing 3:1 is not a table. It is exactly the failure
+[`draw_weights.order`] was written to prevent one axis up, and this section had
+claimed for two days that every prefix leaned. It does now: each cell's k-th turn
+sits at `(k + (band + 0.5)/bands) / turns` and the round is sorted on it. **The band
+offset is load-bearing** — without it a one-turn cell sits at exactly 0.5, the
+middle of the round, and all ten of a thin partition's band cells sit there
+together, so a draw taking the first sixth of the round saw *none* of it.
+
+**What the two together come to, `rare_a`'s settings, plan-only, no render:**
+
+| band | | `phoenix` (15%) | `phoenix:classic` (3%) |
+|---|---|--:|--:|
+| `ranked_bands` | before | 2.5% | 22.2% |
+| `ranked_bands` | after | **14.7%** | **5.3%** |
+| `flat` | before | 0.8% | 15.7% |
+| `flat` | after | 5.7% | **6.5%** |
+
+Projected against the prices each band was converted at, which is the only
+self-consistent way to read it — projecting one leg's weights against another
+leg's prices is how you get a 41% that means nothing.
+
+**`phoenix:classic` lands above its 3% and that is the design, ruled by Matt on the
+day.** A partition's floor is **one place per draw**, not its share: `turns_of`
+scales the table so the smallest positive weight buys one turn, and a weight is
+never a gate. At 265 places and 25.4 s a candidate, one place is 5.3% — over the
+declaration, and the declaration is what sizes the draw rather than what caps it.
+The bar is that it is no longer a **third** of the leg. On the small `flat` arm one
+place is 6.5% for the same reason and the same answer.
+
+`phoenix` under-shoots on `flat` (5.7% against 15%) because that arm is 88 places
+and stock and rounding bind before the weight does. A share is a share of a draw
+big enough to express it.
 
 **`--floor-untried` is the opened-but-shallow population.** The floor draw stands on
 `proven_places` — a location already over the seating bar — and this narrows that to

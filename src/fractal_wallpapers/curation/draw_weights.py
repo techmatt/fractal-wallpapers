@@ -255,7 +255,11 @@ def by_band(names, bands, overrides: dict | None = None, unit: str = "depth", lo
             log(f"[weights] {band}: {refusal}")
             continue
         out[band] = weights
-        working[band] = {"converted": True, "seeded_from": provenance, **how}
+        # `how` carries its own `converted` — the per-partition working, which is
+        # what a reader wants and what is truthy exactly when a band converted.
+        # A `"converted": True` beside it was silently overwritten by that dict on
+        # every band, so the boolean this line used to set never survived the merge.
+        working[band] = {"seeded_from": provenance, **how}
         told = ", ".join(
             f"{name} {block['seconds_share']:.0%} at {block['seconds_per_candidate']:g}s "
             f"-> {block['turn_weight']:.4g} turns"
