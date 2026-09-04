@@ -16,6 +16,59 @@ def test_every_runnable_thing_is_a_subcommand() -> None:
         parser.parse_args([])
 
 
+def test_one_module_defines_each_name_and_no_module_is_named_like_one() -> None:
+    """The two halves of what makes `cli.<handler>` resolve to ONE object.
+
+    `__getattr__` scans the group modules in order and hands back the first
+    match, so a name defined in two of them would resolve by scan order and a
+    caller would never know which it got. And a submodule is set as an attribute
+    of its package by the import system — an attribute `__getattr__` never sees —
+    so a module named for a handler shadows that handler permanently. Eight
+    commands are also handler names (`render`, `screen`, `walk`, `reframe`,
+    `recolor`, `census`, `harvest`, `modes`), which is why the modules carry a
+    `_commands` suffix rather than the bare group name.
+    """
+    import ast
+    from pathlib import Path
+
+    #: The one name every group is meant to define. `build_parser` reaches it on
+    #: the module object it just imported, never through the package, so it is
+    #: the single name a scan is never asked to disambiguate.
+    shared = {"add_commands"}
+
+    package = Path(cli.__file__).parent
+    defined: dict[str, str] = {}
+    clashes = []
+    for module in sorted(package.glob("*.py")):
+        if module.name in ("__init__.py", "__main__.py"):
+            continue
+        tree = ast.parse(module.read_text(encoding="utf-8"))
+        for node in tree.body:
+            names = []
+            if isinstance(node, ast.FunctionDef | ast.ClassDef):
+                names = [node.name]
+            elif isinstance(node, ast.Assign):
+                names = [t.id for t in node.targets if isinstance(t, ast.Name)]
+            elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+                names = [node.target.id]
+            for name in names:
+                if name in shared:
+                    continue
+                if name in defined and defined[name] != module.stem:
+                    clashes.append(f"{name}: {defined[name]} and {module.stem}")
+                defined[name] = module.stem
+
+    assert not clashes, (
+        f"two modules define one name, so __getattr__ picks by scan order: {clashes}"
+    )
+
+    shadowed = sorted(m.stem for m in package.glob("*.py") if m.stem in defined)
+    assert not shadowed, (
+        f"these modules are named for a name the package must resolve, and would "
+        f"shadow it for good: {shadowed}"
+    )
+
+
 def test_fetch_weights_is_registered() -> None:
     args = cli.build_parser().parse_args(["fetch-weights"])
     assert args.handler is cli.fetch_weights
@@ -621,11 +674,16 @@ def test_no_handler_materialises_the_ledger_for_a_cost_table_it_discards() -> No
     every ledger row, so a handler that wants only the candidates and reaches it
     anyway buys one whole-ledger copy — 5.1 s and 177,993 rows — for a table it
     throws away. Five sites did; `curate headroom` is the one that reads the table.
-    Source-level because the alternative is a fixture that loads the real pool."""
-    import inspect
-    import re
+    Source-level because the alternative is a fixture that loads the real pool.
 
-    source = inspect.getsource(cli)
+    Over the whole package rather than one module: `cli` is a directory now, and
+    `inspect.getsource` on a package reads `__init__.py` alone — which holds no
+    handler at all, so the guard would pass by having nothing left to look at."""
+    import re
+    from pathlib import Path
+
+    package = Path(cli.__file__).parent
+    source = "\n".join(m.read_text(encoding="utf-8") for m in sorted(package.glob("*.py")))
     binds = re.findall(r"^\s*(.*)=\s*headroom\.population\(", source, re.MULTILINE)
     assert binds, "the census handler still reaches it; this guard has lost its subject"
     for bound in binds:

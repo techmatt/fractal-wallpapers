@@ -3798,8 +3798,9 @@ weakest and keeps the leg's best.
 Windows spawns worker processes by re-importing the entry module, so a driver with
 top-level code that reaches `depth.run` re-enters itself in every worker and the pool
 dies with `BrokenProcessPool` **after** the population read and the plan — a minute or
-two in, with nothing rendered. `curate depth` is safe because `cli.py` has the guard;
-anything under `scratch/` needs its own.
+two in, with nothing rendered. `curate depth` is safe because `cli/__main__.py` has the
+guard and no module in `cli/` runs anything at import; anything under `scratch/` needs
+its own.
 
 **It is every entry to a spawning pool, not just `depth.run`, and the other failure
 mode is worse than a `BrokenProcessPool`.** `solve.render_seats` — reusable for an

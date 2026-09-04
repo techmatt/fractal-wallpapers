@@ -35,8 +35,15 @@ These were decided once, at the first commit, because each is expensive to rever
 - **Rust makes every pixel; Python never renders.** Python reaches the engine only
   through `src/fractal_wallpapers/engine.py`. No other module shells out to the
   binary or computes image data itself.
-- **Everything runnable is a subcommand** of `fractal-wallpapers` (see `cli.py`).
-  There is no `scripts/` directory and there never will be one.
+- **Everything runnable is a subcommand** of `fractal-wallpapers` (see `cli/`).
+  There is no `scripts/` directory and there never will be one. One module per
+  command group, each holding its handlers and its parser together, and
+  `cli/__init__.py` is the list of them plus `main`. The `_commands` suffix on
+  those module names is load-bearing: eight top-level commands are also handler
+  names, a submodule is set as an attribute of its package, and an attribute is
+  one `__getattr__` never sees — so `cli/render.py` would shadow `cli.render`
+  for good. Handler names resolve through `__getattr__`, never re-exported, for
+  the reason `2dc6a8b` gives.
 - **Records are JSONL**: UTF-8, one JSON object per line, carrying an integer
   `schema` field from the very first row. A label row carries its full join — the
   label *and* the complete render parameters in the same row — so a labeled example
