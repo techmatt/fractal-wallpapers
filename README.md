@@ -66,7 +66,7 @@ fractal-wallpapers label ingest --sheet artifacts/sheet --labeler matt --write
 **Find good renderings of places already found** — the same location at other
 modes, palettes and depths, priced against what the extra candidates buy. Three
 legs, same shape: plan, run, merge. See
-[curation](src/fractal_wallpapers/curation/README.md).
+[the legs](src/fractal_wallpapers/curation/LEGS.md).
 
 ```
 fractal-wallpapers curate hunt  run --name h1 --budget 1200    # breadth where the ledger is thin

@@ -315,7 +315,7 @@ def hunt_block(named: dict | None) -> dict:
     ever read.
 
     **`drawn_for` was one of the seven and should not have been, and the store
-    carries the hole.** `curation/README.md` names `hunt.drawn_for` as the exact
+    carries the hole.** `curation/GALLERY.md` names `hunt.drawn_for` as the exact
     separator a census drops before reading an unconditioned rate — but that is a
     reader with a person on the end of it, not a call site, and the 2026-08-29
     trace-of-readers cut found no code reading it and took it off. The whole store

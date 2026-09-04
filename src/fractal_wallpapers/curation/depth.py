@@ -311,9 +311,10 @@ def centered_modes() -> list[str]:
     one mode the sheet ruled off it. Ten now.
 
     Declared here rather than left to whichever driver runs the leg, because it
-    *was* left there: the arm ran out of a scratch file, `curation/README.md`'s
-    table is the only record of what it drew, and a ruling about a roster nothing
-    tracks is a ruling that has to be remembered rather than read. The derivation
+    *was* left there: the arm ran out of a scratch file, `curation/MEASUREMENTS.md`'s
+    *What the four knobs bought* is the only record of what it drew, and a ruling
+    about a roster nothing tracks is a ruling that has to be remembered rather than
+    read. The derivation
     is kept — a mode added to the engine's catalogue and given a weight joins the
     dear half without an edit here — and only the exclusion is written out.
     """
