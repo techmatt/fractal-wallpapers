@@ -24,6 +24,13 @@ The answer exists to be **counted** — it feeds a share cap in the solve and a
 linear probe on the neutral embeddings — and never to be maximized. There is no
 floor here, no tier, and nothing that pools with a quality corpus.
 
+The probe is `models/spiral/`, fitted by `fractal-wallpapers spiral fit` on this
+store's training side and read on its pinned side by whoever reports. It reads
+DINOv2 on the location's **neutral render** rather than on the seated picture the
+verdict was cast from, and that choice was measured here: on 2026-09-03 the
+place-side reading beat the picture-side one by 8.8 points of balanced accuracy
+on the pinned 100. See that directory's README for the whole table.
+
 **The guard is an absent field.** A row carries `class` and no `score` key at
 all, and the writer refuses one that carries a `score`. That is deliberate rather
 than tidy: every quality reader in this repository keys on `score`, so a store
@@ -80,6 +87,11 @@ the evaluation side is a whole batch cut blind.
 9,086 locations holding at least one candidate row clearing its own mode's bar in
 `headroom.bars`, one unit each, represented by the best-ranked clearing row a
 seating pass would reach first. 100 of them are reserved, at the same seed.
+
+Ingested 2026-09-03: 500 verdicts, 500 locations, nothing superseded and nothing
+unkeyed. **The base rate is 140 of 500 `spiral`, 28.0%** — 106 of the 400
+training rows (26.5%) and 34 of the 100 pinned (34.0%). Read that as a rate about
+the places a gallery could seat, for the reason the paragraph below gives.
 
 It is registered `score_unconditioned: false`, and that is the flag failing
 closed rather than a criticism of the draw: the draw *among* the 500 is uniform
