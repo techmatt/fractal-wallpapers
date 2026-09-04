@@ -7,16 +7,16 @@ have borrowed — the stores (`README.md`), the gallery (`GALLERY.md`), the legs
 drive the render pool (`LEGS.md`) — and the answer is still no, for a mechanical
 reason rather than a taste one.
 
-**Registration order is `--help`.** `argparse` prints the 41 verbs in the order
+**Registration order is `--help`.** `argparse` prints the 42 verbs in the order
 they are added, in the usage line and again in the body, so moving one to sit
 beside its kin changes the surface. A three-way cut therefore has to be contiguous
 in registration order already, and it is not: `LEGS.md`'s verbs are `hunt`,
-`mine`, `depth`, `shrinkage` (26-29), then `pool-draw` (32), then `manufacture`
-(40). Nine store verbs sit inside those gaps — `retention` and `reject` between
-`shrinkage` and `pool-draw`, and `below-bar`, `repeats`, `retire-repeats`,
-`parity`, `replay`, `colors`, `coverage` between `pool-draw` and `manufacture`.
-`README.md`'s own verbs are 1-18 and would split into three runs for the same
-reason.
+`mine`, `depth`, `shrinkage`, `remode` (26-30), then `pool-draw` (33), then
+`manufacture` (41). Nine store verbs sit inside those gaps — `retention` and
+`reject` between `remode` and `pool-draw`, and `below-bar`, `repeats`,
+`retire-repeats`, `parity`, `replay`, `colors`, `coverage` between `pool-draw`
+and `manufacture`. `README.md`'s own verbs are 1-18 and would split into three
+runs for the same reason.
 
 Only `GALLERY.md`'s block is clean (`solve`, `growth`, `headroom`, `flatness`,
 `rank-key`, `distinct`, 19-25, with `signatures` at 23 the one genuinely arguable
@@ -1153,6 +1153,80 @@ def curate_shrinkage(args: argparse.Namespace) -> int:
     return 0
 
 
+def curate_remode(args: argparse.Namespace) -> int:
+    """Read the population, render a retired mode's rows again, merge them, read back."""
+    from fractal_wallpapers.curation import remode
+
+    try:
+        if args.what == "merge":
+            print(json.dumps(remode.merge(args.name), indent=2))
+            return 0
+        if args.what == "read":
+            print(json.dumps(remode.read(args.name)["carry"], indent=2))
+            return 0
+        if args.what == "plan":
+            # The plan step renders nothing and holds the pool, which is what
+            # makes it the honest place to verify a count before spending an hour
+            # of engine on it. It resolves every twin, so `already_in_ledger` here
+            # is exactly what the run would skip.
+            world = remode.population(args.from_mode)
+            rule = remode.target_rule(args.to_mode)
+            units, shape = remode.plan_of(world["clearing"], args.to_mode, world["known"])
+            blocks = remode.blocks_of(units)
+            readout = {
+                "from_mode": args.from_mode,
+                "to_mode": args.to_mode,
+                "source_rule": world["rule"],
+                "target_rule": rule,
+                "population": {
+                    "ledger_rows": world["ledger_rows"],
+                    "in_mode": world["in_mode"],
+                    "refused": world["refused"],
+                    "clearing": len(world["clearing"]),
+                    "clearing_locations": len({source.location for source in world["clearing"]}),
+                },
+                "plan": shape,
+                "location_blocks": len(blocks),
+                "by_partition": _remode_partitions(units),
+            }
+            print(json.dumps(readout, indent=2))
+            return 0
+        record = remode.run(
+            args.name,
+            from_mode=args.from_mode,
+            to_mode=args.to_mode,
+            budget=args.budget,
+            workers=args.workers,
+            device=args.device,
+        )
+    except remode.RemodeRefused as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps({**record["counts"], **record["budget"]}, indent=2))
+    print(json.dumps(record["carry"], indent=2))
+    print(f"\nrecord {display_path(remode.record_path(args.name))}")
+    return 0
+
+
+def _remode_partitions(units: list) -> dict:
+    """Twins and places per partition, off a resolved plan.
+
+    On the plan and not only on the record, because it is what a leg is priced
+    off: `phoenix:classic` reads 35 s a candidate against `smooth`'s 0.34
+    elsewhere (see `curation/MEASUREMENTS.md`), so a count that did not separate
+    the planes would size this leg by more than an order of magnitude.
+    """
+    out: dict = {}
+    for unit, _source, _recipe, _key in units:
+        cell = out.setdefault(str(unit.partition), {"twins": 0, "locations": set()})
+        cell["twins"] += 1
+        cell["locations"].add(unit.location)
+    return {
+        name: {"twins": cell["twins"], "locations": len(cell["locations"])}
+        for name, cell in sorted(out.items(), key=lambda item: -item[1]["twins"])
+    }
+
+
 def curate_depth(args: argparse.Namespace) -> int:
     """Plan a depth run, run one, merge it, or redraw its autopsy sheet."""
     from fractal_wallpapers.curation import depth
@@ -1668,6 +1742,44 @@ def curate_expressed(args: argparse.Namespace) -> int:
     return 0
 
 
+#: What `--spiral-cap` takes to mean **no cap at all**, beside a share.
+#:
+#: Needed because the default moved. While `solve.DEFAULT_SPIRAL_CAP` was `None`
+#: an uncapped pass was spelled by saying nothing, and `type=float` was enough;
+#: now that a tenth runs unasked, the other answer has to be typeable or it
+#: becomes unreachable from the command line — which would strand the incumbent
+#: gallery, the one invocation `curation/GALLERY.md` pins as having solved without
+#: a cap. Two spellings and not one because a reader will reach for either.
+NO_SPIRAL_CAP = ("none", "off")
+
+
+def spiral_cap_value(text: str):
+    """`--spiral-cap`'s argument: a share, or a word meaning there is no cap.
+
+    **`0` is not the spelling for no cap and must not become one.** A cap of zero
+    is a gallery that may seat no spiral location at all, which is a third
+    answer — the cap runs, its allowance is zero, and the `spiral` refusal column
+    fills up. Keeping the three apart is the whole reason this is a converter
+    rather than a float with a sentinel.
+    """
+    held = str(text).strip().lower()
+    if held in NO_SPIRAL_CAP:
+        return None
+    try:
+        share = float(held)
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            f"{text!r} is neither a share nor {' nor '.join(NO_SPIRAL_CAP)}"
+        ) from None
+    if share < 0:
+        raise argparse.ArgumentTypeError(
+            f"{share:g} is not a share. A cap below zero refuses every candidate the rule "
+            f"reaches; `0` is the spelling for a gallery that may seat no spiral, and "
+            f"`{NO_SPIRAL_CAP[0]}` is the spelling for no cap at all"
+        )
+    return share
+
+
 def solve_flags_a_record_keeps(*, demands, search):
     """The four flags `curate solve run` and `curate solve record` both read.
 
@@ -1685,16 +1797,19 @@ def solve_flags_a_record_keeps(*, demands, search):
 
     demands.add_argument(
         "--spiral-cap",
-        type=float,
-        default=None,
+        type=spiral_cap_value,
+        default=solve_module.DEFAULT_SPIRAL_CAP,
         metavar="SHARE",
         help="cap the share of seats sitting at a location the spiral probe calls a "
         "spiral: at most ceil(SHARE * seats filled), the same spelling a colour target "
         "is stated in. The verdict comes off `curate spiral-scores` at the cut "
         "models/spiral/manifest.json carries, and a location with NO score counts "
-        "toward nothing — unknown is not not_spiral. Unsaid, NO cap runs and the "
-        "`spiral` refusal column is zero by construction; 1.0 runs the cap and lets it "
-        "not bind, which is the spelling for a record that should say so",
+        f"toward nothing — unknown is not not_spiral. Unsaid, {solve_module.DEFAULT_SPIRAL_CAP:g} "
+        f"runs (Matt's ruling, 2026-09-04; it was NO cap before that, so a record on "
+        f"this machine that does not name the flag ran uncapped). "
+        f"`{NO_SPIRAL_CAP[0]}` runs no cap at all and is what the incumbent gallery is "
+        "spelled with; 1.0 runs the cap and lets it not bind, which is the spelling for "
+        "a record that should say so",
     )
     search.add_argument(
         "--key",
@@ -2173,6 +2288,7 @@ def add_commands(subcommands) -> None:
     from fractal_wallpapers.curation import mine as mine_module
     from fractal_wallpapers.curation import pool_draw as pool_draw_module
     from fractal_wallpapers.curation import release as release_module
+    from fractal_wallpapers.curation import remode as remode_module
     from fractal_wallpapers.curation import rules as rules_module
     from fractal_wallpapers.curation import run as run_module
     from fractal_wallpapers.curation import shrinkage as shrinkage_module
@@ -3666,6 +3782,77 @@ def add_commands(subcommands) -> None:
     shrinkage_step.add_argument("--seed", type=int, default=0, help="the sample's seed")
     device_flag(shrinkage_step)
     shrinkage_step.set_defaults(handler=curate_shrinkage)
+
+    remode_step = steps.add_parser(
+        "remode",
+        help="re-render a retired mode's clearing rows in a mode the project still buys",
+        description=(
+            "A mode_policy weight of 0 leaves a mode's material standing and takes every "
+            "row of it out of solve.pool, so a place whose only clearing candidate was in "
+            "that mode stops being a place a gallery can reach - 574 of them when "
+            "exp_smoothing was ruled niche. This renders the SAME recipe again with the "
+            "mode moved: same frame, same cap, same map, same palette knobs, and the "
+            "autolevel stamp re-derived for the target mode's kind. Nothing is re-labelled "
+            "and no source row is touched - a recipe key is a digest of the engine spec, so "
+            "a row claiming a mode it was not rendered in would name a picture nobody made. "
+            "Each twin is judged on its own render by the shipped judge and a twin below "
+            "the bar is a row that merged and does not clear. Three counts come out and the "
+            "row count is the least interesting: what the retention rule bounds is places "
+            "that regain a clearing row, because every twin lands on (location, target "
+            "mode) where only three survive ranked within the pair."
+        ),
+    )
+    remode_step.set_defaults(handler=curate_remode)
+    remode_verbs = remode_step.add_subparsers(dest="what", required=True)
+    planning_remode = remode_verbs.add_parser(
+        "plan", help="read the population and price it, rendering nothing"
+    )
+    running_remode = remode_verbs.add_parser("run", help="render the twins")
+    merging_remode = remode_verbs.add_parser("merge", help="merge its rows into the ledger")
+    reading_remode = remode_verbs.add_parser("read", help="a finished leg's readout")
+    # --name first and required on all four, the shape every leg group here has.
+    for a_leg in (planning_remode, running_remode, merging_remode, reading_remode):
+        a_leg.add_argument(
+            "--name",
+            required=True,
+            help="what to call this leg. Its rows, its pictures, its fields and its record "
+            "live under it, and `merge` names it again",
+        )
+    # The mode pair is on `plan` and `run` and on neither of the other two: a
+    # merge reads the rows the run already wrote, and a read reads its record, so
+    # a mode named there would be a flag that could disagree with the leg.
+    for a_render in (planning_remode, running_remode):
+        a_render.add_argument(
+            "--from-mode",
+            required=True,
+            metavar="MODE",
+            help="the mode whose clearing rows get rendered again. Usually one "
+            "mode_policy has just weighted 0, which is what strands them",
+        )
+        a_render.add_argument(
+            "--to-mode",
+            required=True,
+            metavar="MODE",
+            help="the mode to render them in. Refused unless mode_policy accepts it - a "
+            "twin in a second weight-0 mode would be stranded exactly as its source is",
+        )
+    running_remode.add_argument(
+        "--budget",
+        type=float,
+        default=remode_module.BUDGET_SECONDS,
+        metavar="SECONDS",
+        help=f"wall seconds of RENDERING (default {remode_module.BUDGET_SECONDS:.0f}). The "
+        f"population read sits outside it, and what it truncates is whole locations",
+    )
+    running_remode.add_argument(
+        "--workers",
+        type=int,
+        default=remode_module.WORKERS,
+        metavar="COUNT",
+        help=f"render workers (default {remode_module.WORKERS}, this machine's pool). A plan "
+        f"with fewer location blocks than workers runs on one worker a block",
+    )
+    device_flag(running_remode)
 
     retention_step = steps.add_parser(
         "retention",

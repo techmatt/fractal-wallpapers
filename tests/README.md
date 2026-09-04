@@ -247,7 +247,26 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
-The **fast** lane read **120.29 s over 3,538, 116 deselected** at the solve
+The **fast** lane read **122.97 s over 3,565, 116 deselected** at the re-mode leg,
+idle, 2026-09-04 — twenty-seven tests more than the reading below it and 2.68 s
+over it, which is about a tenth of a second a test and the ordinary shape. Twenty
+of the twenty-seven are `test_remode.py`, all of them arithmetic over a fake
+ledger wired at `candidate_ledger.stream`/`stream_scores`; the leg itself renders
+3,602 pictures and **none of that is in this lane**, which is the arrangement
+working rather than a gap.
+
+The **slow** lane read **6:31 (390.59 s) over 3,681, nothing skipped** at the same
+commit, idle, 2026-09-04 — thirty-three tests more than the reading below and
+**24 s under it**, which is the first slow reading to drop while gaining tests.
+The cause is not this drop's work: it is `4300e4b`'s three solve speedups, which
+took the n=2000 pass from 275 s to 119 s, and the slow lane holds guards that run
+a pass. So a lane that got cheaper here is a lane pricing *code that got faster* —
+the one benign reason for the digit to fall, and the opposite of the two occasions
+it rose on its own. Worth recording because the standing rule is to suspect a
+defect when the lane moves with no test added: that rule is about a lane getting
+*slower*, and this is the counter-example.
+
+It read **120.29 s over 3,538, 116 deselected** at the solve
 speedups, idle, 2026-09-04 — six tests more than the reading below it and 1.12 s
 under it. The six are the identity pins on the three changes, and the reading is
 worth having precisely because it does **not** move: all three speedups are in a

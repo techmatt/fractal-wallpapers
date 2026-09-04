@@ -223,6 +223,37 @@ def test_an_unflagged_seating_now_takes_the_proportional_cap_and_the_fitted_key(
     assert incumbent["config"]["sort_key"] == "p_ge4"
 
 
+def test_the_spiral_cap_a_solve_ran_under_is_on_the_config_block_a_manifest_carries():
+    """The cap moved onto `config` on 2026-09-04, and the reason is what `config`
+    is: `tentative.manifest` carries that block WHOLE into the tracked
+    `manifest.json`, and the `spiral` block beside it is not tracked at all. So
+    until this landed, a tracked gallery could not say whether it had run capped —
+    a reader had to infer it from a zero in the `spiral` refusal column, which is
+    exactly what a cap that ran and did not bind also produces.
+
+    `None` on the block means no cap ran, and it is written rather than omitted:
+    an absent key and an uncapped pass would read the same to anything joining two
+    records together."""
+    import inspect
+
+    capped = solve.solve([candidate("a")], n=150, key=solve.JUDGE_KEY, log=quiet)
+    assert capped["config"]["spiral_cap"] == solve.DEFAULT_SPIRAL_CAP == 0.10
+    assert capped["config"]["spiral_cap_default"] == solve.DEFAULT_SPIRAL_CAP
+    assert capped["spiral"]["cap"] == solve.DEFAULT_SPIRAL_CAP, "still in its own block too"
+    uncapped = solve.solve([candidate("a")], n=150, key=solve.JUDGE_KEY, spiral_cap=None, log=quiet)
+    assert uncapped["config"]["spiral_cap"] is None
+    assert uncapped["config"]["spiral_cap_default"] == solve.DEFAULT_SPIRAL_CAP, (
+        "what it would have run had nobody said otherwise, so a record that opted out "
+        "still says what it opted out of"
+    )
+    # The parameter default and the flag default are one constant. A library call
+    # and a typed command that disagreed about the cap would be two answers to
+    # what this leg does, which is the failure DEFAULT_GROUP_CAP already prevents.
+    assert inspect.signature(solve.solve).parameters["spiral_cap"].default == (
+        solve.DEFAULT_SPIRAL_CAP
+    )
+
+
 def test_the_judge_key_resolves_to_no_order_and_an_unknown_key_is_refused():
     """[`ranking_for`] is the one place a seating pays for its key, and it is the
     one place a name that is not a key is caught — before a pool is walked."""

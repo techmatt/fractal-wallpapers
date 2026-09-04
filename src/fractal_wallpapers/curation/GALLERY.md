@@ -229,7 +229,8 @@ fractal-wallpapers curate solve run --n 2000 --no-render     # THE planning size
 fractal-wallpapers curate solve run --n 150 --no-swap        # the greedy seed alone
 fractal-wallpapers curate solve run --n 150 --swap-seconds 300   # a clock on the loop only
 fractal-wallpapers curate solve run --n 150 --flat-floor     # the pre-2026-08-31 mode floor
-fractal-wallpapers curate solve run --n 150 --group-cap identity --key p_ge4   # the incumbent
+fractal-wallpapers curate solve run --n 150 --group-cap identity --key p_ge4 --spiral-cap none  # the incumbent
+fractal-wallpapers curate solve run --n 150 --spiral-cap none     # no spiral share cap at all
 fractal-wallpapers curate solve run --n 150 --sheet-out <path>    # the sheet, elsewhere
 fractal-wallpapers curate solve run --n 20 --target dark_vivid_lime=1.0   # a colour demand
 fractal-wallpapers curate solve run --n 20 --locations 40    # only the 40 best places
@@ -1322,11 +1323,17 @@ at `n = 150`. `curate solve run` with no flag now seats the proportional cap on 
 key; the walk every earlier gallery took is two named flags away and the record says
 which rule and which key it ran under, by name, either way.
 
+**A third default joined them on 2026-09-04 and the incumbent line grew a third
+flag with it** — see *The spiral share cap is a tenth by default* below. An
+invocation that means the pre-flip gallery has to say `--spiral-cap none`, because
+saying nothing no longer means no cap.
+
 ```
-curate solve run --n 150                                  # proportional + rank-key
-curate solve run --n 150 --group-cap identity --key p_ge4 # the incumbent, whole
+curate solve run --n 150                                  # proportional + rank-key + 0.10
+curate solve run --n 150 --group-cap identity --key p_ge4 --spiral-cap none  # the incumbent, whole
 curate solve run --n 150 --group-cap {identity,proportional}  # the palette-group cap
 curate solve run --n 150 --key {rank-key,p_ge4}           # the sort key
+curate solve run --n 150 --spiral-cap {SHARE,none}        # the spiral share cap
 curate solve run --n 150 --sheet-out <path>               # the contact sheet, elsewhere
 curate solve run --n 150 [--release-regime WxHssN] [--workers 3]
 ```
@@ -1335,6 +1342,38 @@ curate solve run --n 150 [--release-regime WxHssN] [--workers 3]
 `solve.ranking_for` is the one place a pass pays for its key — it reads the
 flatness sidecar and the location scores, once per pool. `seat(order=...)` overrides
 it, which is what a sweep seating one pool four ways passes.
+
+### The spiral share cap is a tenth by default
+
+**`solve.DEFAULT_SPIRAL_CAP = 0.10` since 2026-09-04. Matt's ruling.** It was
+`None`, which means **every solve record on this machine that does not name the
+flag ran uncapped** and is not comparable with one that ran under this. Of the
+tracked tentative galleries, `20260904T023748Z` is the only capped one; the two
+after it — `20260904T080248Z` and `20260904T134242Z` — ran uncapped, and the three
+before it carry no spiral block at all because the store did not exist yet.
+
+What the cap costs and what it acts on, off `20260904T023748Z`, which is the first
+gallery that ran one: **27 seats of 1000** at `n = 1000` (914 against 941), every
+demand still met, 14 of 14 modes represented, and it **bound to the last seat** —
+`ceil(0.10 x 914) = 92` allowed and exactly 92 taken. The population it narrowed
+was 27.75% spiral on the clearing rows and the gallery was **already 26.4%** before
+any cap existed, so the diversity rule and the colour allowance between them were
+suppressing spirals by about a point and a half. A tenth is under half of what the
+gallery was doing unaided, which is why this is a ruling and not a tuning.
+
+**Three answers and not two, so `0` is not the spelling for `none`.** `none` (or
+`off`) runs no cap at all and the `spiral` refusal column is zero by construction;
+`1.0` runs the cap and lets it not bind, which is what a record that should *say*
+it ran a cap is spelled with; `0` runs a cap whose allowance is zero, so no spiral
+may be seated at all and the refusal column fills. `curate_commands.spiral_cap_value`
+is the converter that keeps the three apart.
+
+**The cap is on the record's `config` block as of the same day**, beside `n` and
+the bars, and not only in the `spiral` block it was in. `config` is what a
+tentative gallery's tracked `manifest.json` carries whole, and the `spiral` block
+is not tracked at all — so until this moved, a tracked gallery could not say
+whether it had run capped. A reader had to infer it from a zero in the refusal
+column, which is exactly what a cap that ran and did not bind also produces.
 
 **The flag is the seating's, and `curate solve` has no equivalent.** There the cap is a
 *generated pairwise row* and never a counted one: `solve.Pairs.rule_for` asks a same-group

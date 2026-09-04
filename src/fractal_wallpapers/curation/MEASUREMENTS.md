@@ -413,6 +413,18 @@ that leg's contention: three engines cost about 1.6–1.8x per candidate over on
 | 56.92 | 9 dear + `smooth` + `exp_smoothing`, **`phoenix:classic`** | 3 | 22 | 09-02 | 16 cand / 20 blocks | `pc_pilot` |
 | 53.54 | the same roster, same plane | 3 | 11 | 09-02 | 103 cand / 13 blocks | `pc1` |
 | 35.28 | the same roster, same plane, width 3 | 3 | 3 | 09-03 | 103 cand / 35 blocks | `pc20m` |
+| 0.5978 | `smooth`, a re-mode leg at **k ≈ 1.6** | 3 | 1–2 | 09-04 | 3,602 cand / 2,302 places | `smooth_twins` |
+
+**The last row is the shape a `curate remode` leg has, and it is the one leg here
+whose width is not a knob.** Its plan is *every* clearing row of the retired mode,
+so `k` is however many of them happen to sit at a place — 3,602 twins over 2,302
+locations, about 1.6 — and a dumped field is amortised over that and no more. At
+**0.5978 s a candidate** it reads between this table's `smooth` k=1 bench (0.673,
+one engine) and its k=12 leg (0.3433, three engines), which is where a rate with
+almost nothing to share should sit. Concurrency was **2.94 of three workers**, the
+highest on this table, because a block is a dump plus one or two recolours and no
+worker sat behind a long visit. So: **price a re-mode leg at the k=1 end**, and do
+not read a shared-field saving into it.
 
 **The two 09-02 rows are the same roster as arm A at 17x its price, and the plane
 is the whole difference.** Arm A ran nine dear modes plus `smooth` and

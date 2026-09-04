@@ -105,6 +105,8 @@ __all__ = [
     "MADE_IT",
     "ROWS_NAME",
     "ALL_UNMERGED",
+    "PICTURES_NAME",
+    "POOL_SUBTREES",
     "SCHEMA",
     "SCORES_NAME",
     "UNIT",

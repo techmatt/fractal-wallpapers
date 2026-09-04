@@ -310,6 +310,12 @@ def row_of(
         "fraction": round(1.0 / int(denominator), 8),
         "seed": None if seed is None else int(seed),
         "n": asked,
+        # The spiral share cap this rung solved under, `None` for no cap. A growth
+        # curve is a series and this leg takes `solve.solve`'s default, which
+        # became a cap on 2026-09-04 — so a row taken after that date is not
+        # comparable with one taken before it, and every row now says which it is
+        # rather than leaving a reader to date it.
+        "spiral_cap": record["config"]["spiral_cap"],
         "visits": int(drawn),
         "visits_available": int(available),
         "candidates": int(record["population"]["candidates"]),

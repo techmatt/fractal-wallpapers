@@ -10,7 +10,7 @@ wallpapers and a durable account of why those and not the others.
 README.md        the architecture, the stores, and the module index below
 GALLERY.md       the colour ceiling, `solve`, `headroom`, `mode_policy`, `growth`
 LEGS.md          the legs that spend the pool: `pool-draw`, `hunt`, `mine`, `depth`,
-                 `shrinkage`, `manufacture`
+                 `shrinkage`, `remode`, `manufacture`
 MEASUREMENTS.md  every dated reading, and the historical per-candidate rate table
 ```
 
@@ -44,6 +44,7 @@ hunt       render on purpose: breadth where the ledger is thin, colour where a s
 mine       price a PRIMED location three ways, and profile what one candidate costs
 depth      buy width at one place, and measure what it buys against the head's rank
 shrinkage  re-read a candidate set's winner at label geometry, and price the winner's curse
+remode     a retired mode's clearing rows, rendered again in a mode still bought
 headroom   what each selection constraint needs, holds, and costs to buy — no solver
 growth     what more mining buys, at every gallery size — measured by subsampling the pool
 growth_plot  six pictures of one growth sweep. Matplotlib, scratch only, legibility only
@@ -107,9 +108,9 @@ fractal-wallpapers curate signatures sweep              # the bound signatures, 
 fractal-wallpapers curate signatures coverage          # how much of the pool the sidecar can answer for
 fractal-wallpapers curate solve run --n 20 --no-render # THE gallery leg: decide, render nothing
 fractal-wallpapers curate solve run --n 150            # the gallery, then the pictures
-fractal-wallpapers curate solve run --n 1000 --no-render   # ~6 min, scaled not measured
-fractal-wallpapers curate solve run --n 2000 --no-render   # the planning size, 10 min
-fractal-wallpapers curate solve record                     # THAT solve, recorded. ~9 min
+fractal-wallpapers curate solve run --n 1000 --no-render   # 53 s MEASURED, 2026-09-04
+fractal-wallpapers curate solve run --n 2000 --no-render   # THE planning size, ~2.5 min
+fractal-wallpapers curate solve record                     # THAT solve, recorded, + the page
 fractal-wallpapers curate solve browse <stamp>             # the page again, off the rows
 fractal-wallpapers curate solve resolve <alias>,<alias>    # an ID back to a recipe
 fractal-wallpapers curate solve list                       # every record on this machine
@@ -117,6 +118,16 @@ fractal-wallpapers curate manufacture --step register --write          # BEFORE 
 fractal-wallpapers curate manufacture --oversample 2.5                 # plan, build, select
 fractal-wallpapers curate manufacture --step verify --sheet artifacts/<sheet>
 ```
+
+**The two solve figures above were `~6 min` and `10 min` and both were stale by
+about 7x.** Measured on this machine, idle, 2026-09-04, over a 164,052-candidate
+pool: `--n 1000 --no-render --no-sheet` is **53 s** end to end, of which the pool
+read is 17 s and the solve itself 31 s; the `--n 2000` solve half measures 122 s,
+so that line is about two and a half minutes on the same overhead. The old
+figures predate the three speedups of `4300e4b` — which took the n=2000 pass from
+275 s to 119 s — and the `~6 min` had said "scaled not measured" since it was
+written. A figure nobody measured is a figure that goes stale without anything
+looking wrong, which is why these two now name the day and the pool.
 
 ## Three different things are called a ledger
 
@@ -937,7 +948,12 @@ way the dedup does.
 location key, saying what `models/spiral`'s shipped probe makes of the place. It
 is `curation.spiral_scores`, its durable manifest is
 `data/curation/spiral_scores.manifest.json`, and the reader is the gallery's share
-cap (`curate solve --spiral-cap`, `rules.State.spiral_allowance`).
+cap (`curate solve --spiral-cap`, `rules.State.spiral_allowance`). **That cap runs
+by default since 2026-09-04** at `solve.DEFAULT_SPIRAL_CAP = 0.10`, so this store
+is now on the path of every solve rather than only of one that asked; a solve with
+no store reads every location as UNKNOWN and the cap can refuse nothing, which is
+no cap by a second route. The ruling and what it costs are in
+[`GALLERY.md`](GALLERY.md)'s *The spiral share cap is a tenth by default*.
 
 **The cost line: about 40 microseconds a location, and no render at all.** The
 whole store — 40,734 locations, 10.9 MB — scores in **1.6 s** on the CPU. That is
