@@ -185,9 +185,11 @@ here because this file is loaded into every session in this repository and a
 chronological log is not a rule. What stays here is the current figure and the rules
 the log produced.
 
-The fast lane is **121.41 s over the 3,532 it holds**, on this machine, idle,
-2026-09-04, at the nested-subparser split — seventy-four tests more than the
-seconds-share fix and 1.55 s over it, which is noise. The slow lane is **6:54 over
+The fast lane is **120.29 s over the 3,538 it holds**, on this machine, idle,
+2026-09-04, at the solve speedups — six tests more than the nested-subparser split
+and 1.12 s **under** its 121.41 s, which is noise in the clock and not the speedups:
+the three that landed are in a pass over the real pool and the fast lane never runs
+one. The slow lane is **6:54 over
 3,648, nothing skipped**,
 on this machine, idle, 2026-09-04, at the `exp_smoothing` drop — seventy-four tests
 more than the line-ending guard's 6:54 over 3,574 and seven hundredths of a second

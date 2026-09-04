@@ -255,13 +255,28 @@ def clouds_for(candidates, cache: int | None = None):
     from fractal_wallpapers.paths import rehome
 
     pictures = {candidate.key: candidate.picture for candidate in candidates}
+    #: `key -> the resolved path, or None`. Kept for the life of the pass, because
+    #: this is asked once per signature MADE and both halves of it are dear:
+    #: [`paths.rehome`] resolves the tier settings and the subtree, and `is_file`
+    #: is a stat against a tree holding hundreds of thousands of files. Measured on
+    #: the n=2000 pass of `READ_solve_bound_and_profile_0904`, it was 41.1 s of a
+    #: 411 s call — a tenth of the leg spent re-deriving a path the pool had
+    #: already proved present. A picture that vanishes mid-pass is not a case this
+    #: has to answer: the pass would be reading a store somebody is deleting under
+    #: it, and the diversity rule's answer would already be undefined.
+    resolved: dict = {}
 
     def path_of(name):
-        held = pictures.get(str(name))
-        if not held:
-            return None
-        where = Path(rehome(held))
-        return where if where.is_file() else None
+        key = str(name)
+        if key in resolved:
+            return resolved[key]
+        held = pictures.get(key)
+        where = None
+        if held:
+            found = Path(rehome(held))
+            where = found if found.is_file() else None
+        resolved[key] = where
+        return where
 
     return pixel_clouds.Clouds(path_of, cache=int(SIGNATURE_CACHE if cache is None else cache))
 

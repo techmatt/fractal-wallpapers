@@ -203,6 +203,25 @@ BOTTOM_QUARTILE = 0.25
 #: in this neighbourhood, which is what the record says.
 SWAP_DROPS = 8
 
+#: How large a removal set is still worth **scoring** before a picture is opened.
+#:
+#: The swap loop's last cheap question, and it is exact rather than a bound: every
+#: seat that could leave for a candidate is in its COUNTED removal set, because the
+#: diversity rule can only narrow that set. So a candidate for which *no* member of
+#: the counted set improves the objective cannot be improved by any member of the
+#: narrowed one either, and the picture the narrowing would have opened buys
+#: nothing. See [`improve`] for the whole argument.
+#:
+#: The size bound is about cost and never about soundness. A candidate the four
+#: counted rules all admit has an EMPTY requirement list, and an empty list
+#: intersects to every seated key — so the scan would be one `after_swap` a seat
+#: against the single picture it is trying to save. Those candidates are exactly
+#: the ones the diversity rule alone refuses, 5,341 of them at n=2000, and they are
+#: left to the old path. 256 is over the per-cell allowance at both shipping sizes
+#: (42 at n=1000, 84 at n=2000), which is what the counted set actually holds when
+#: a rule is the reason.
+PRECHECK_REMOVALS = 256
+
 #: How many improvement passes before the loop stops and says so. A backstop and
 #: not an operating parameter: the loop's own stopping rule is a pass that takes
 #: no swap, and every pass takes at least one swap or is the last.
@@ -1150,17 +1169,42 @@ def improve(
     — and it tightens on its own, because every swap that improves tier 2 raises
     the value the next pass stops at.
 
+    ## The third prune, which is exact rather than a bound
+
+    [`Gallery.hopeless`] settles a candidate by comparing it to the *weakest* seat
+    its counted rules would release. What is left after it is a candidate that has
+    some releasable seat worth less than itself — which is necessary for an
+    improving swap and nowhere near sufficient, because tier 2 sits above the two
+    tiers that comparison is about and a removal's effect on the shortfall has
+    nothing to do with its value.
+
+    So the counted removals are **scored**, with the same [`Gallery.after_swap`]
+    the loop below uses. The argument is one line: `narrowed` returns a **subset**
+    of the counted set, so if no member of the counted set beats the current
+    objective, no member of the narrowed set does either, and the picture the
+    narrowing would open cannot change the answer. Nothing about which swaps are
+    accepted moves — this decides only whether the diversity rule is *asked*.
+
+    **The 8-weakest shortcut is not sound and was measured before it was rejected.**
+    Scoring only [`Gallery.weakest`]`(counted, drops)` looks equivalent and is not:
+    a removal that takes a met demand short loses tier 2 whatever it is worth, so
+    the eight weakest can all lose there while a ninth wins on tier 4 — and the
+    narrowing can drop those eight out of `leaving`, putting the ninth inside the
+    shipped loop's offered set. The whole counted set is scanned for that reason,
+    and [`PRECHECK_REMOVALS`] bounds the cost rather than the argument.
+
     ## What it costs
 
     Per candidate: an intersection of the **counted** rules' requirement sets,
     which is dictionary lookups; then [`Gallery.hopeless`], which is one more
-    lookup; and only for what survives both, the diversity rule's one vectorized
-    pass. The candidate's own reduced signature is made once and kept for the life
-    of the pass, so a second pass over the same row costs no pixels at all.
+    lookup; then the scored removals above, which are arithmetic over counts; and
+    only for what survives all three, the diversity rule's one vectorized pass. The
+    candidate's own reduced signature is made once and kept for the life of the
+    pass, so a second pass over the same row costs no pixels at all.
 
-    Those three together are what makes a pass that finds nothing cheap. Before
-    them a pass cost the same whether it took forty-seven swaps or none, because
-    every row in the view was decoded again on every pass.
+    Those four together are what makes a pass that finds nothing cheap. Before them
+    a pass cost the same whether it took forty-seven swaps or none, because every
+    row in the view was decoded again on every pass.
 
     No 2-swaps. A 2-swap neighbourhood is the square of this one and this project
     has not measured that it buys anything; when it does, it is a separate ruling.
@@ -1170,6 +1214,7 @@ def improve(
     by_tier: dict = {}
     walked = 0
     skipped = 0
+    priced = 0
     stopped = "a full pass found no improving swap"
     at_pass = 0
     try:
@@ -1207,10 +1252,18 @@ def improve(
                     # Settled by arithmetic alone, so no picture is opened for it.
                     skipped += 1
                     continue
+                current = gallery.objective
+                if len(counted) <= PRECHECK_REMOVALS and not any(
+                    gallery.after_swap(out_key, candidate).beats(current) for out_key in counted
+                ):
+                    # Nothing the COUNTED rules would let leave improves the
+                    # objective, and the narrowed set is a subset of it — so no
+                    # picture can change this answer. See the third prune below.
+                    priced += 1
+                    continue
                 leaving = gallery.state.narrowed(candidate, counted)
                 if not leaving:
                     continue
-                current = gallery.objective
                 best, best_out = None, None
                 for out_key in gallery.weakest(leaving, drops):
                     found = gallery.after_swap(out_key, candidate)
@@ -1256,7 +1309,14 @@ def improve(
         "second_prune": "and per candidate, against the weakest seat its own COUNTED rules "
         "would let leave — see solve.Gallery.hopeless. Sound by the same argument, and it "
         "is what keeps a hopeless candidate from ever costing a pixel-cloud signature",
-        "settled_before_opening_a_picture": skipped,
+        "third_prune": "and then the counted removals are SCORED, which settles the rest of "
+        "them exactly rather than by a bound: the narrowed set is a subset of the counted "
+        "one, so a candidate no counted removal improves cannot be improved by a narrowed "
+        "removal either, and the picture buys nothing. Asked only where the counted set is "
+        f"at most solve.PRECHECK_REMOVALS ({PRECHECK_REMOVALS}) seats — see the constant",
+        "settled_before_opening_a_picture": skipped + priced,
+        "settled_by_the_value_bound": skipped,
+        "settled_by_scoring_the_counted_removals": priced,
         "drops_tried_per_candidate": int(drops),
         "drops_are": "the weakest seated by the leg's own key, inside the set of seats "
         "whose departure would admit the candidate. Every one of them is offered: what a "

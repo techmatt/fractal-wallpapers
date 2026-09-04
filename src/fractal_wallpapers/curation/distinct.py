@@ -288,7 +288,18 @@ def suppress(order, radius: float = PRESELECT_RADIUS, rows=None) -> dict:
     order = [str(key) for key in order]
     keys, matrix = matrix_for(order, rows)
     at = {key: index for index, key in enumerate(keys)}
-    held_rows: list = []
+    # The kept descriptors are written into ONE preallocated block and the walk
+    # reads a contiguous prefix of it. The obvious spelling — `matrix[held_rows] @
+    # matrix[index]` over a growing list of row numbers — is a fancy index, and a
+    # fancy index COPIES: at 9,314 places over 7,702 kept at 384 columns that is
+    # about 55 GB of memcpy in a pass, and it is why this walk is quadratic in
+    # wall clock and not merely in arithmetic. The dot products are the same
+    # products in the same order over the same contiguous float32 rows; the block
+    # is only where they are read from. `tests/test_distinct.py` pins that the two
+    # spellings agree exactly, because "the same values" is a claim about a BLAS
+    # kernel and not something to assume.
+    held = numpy.empty((len(keys), matrix.shape[1]), dtype=matrix.dtype)
+    held_keys: list = []
     kept: set = set()
     refused: list = []
     unembedded: list = []
@@ -298,19 +309,20 @@ def suppress(order, radius: float = PRESELECT_RADIUS, rows=None) -> dict:
             unembedded.append(key)
             kept.add(key)
             continue
-        if held_rows:
-            gaps = 1.0 - (matrix[held_rows] @ matrix[index])
+        if held_keys:
+            gaps = 1.0 - (held[: len(held_keys)] @ matrix[index])
             nearest_at = int(numpy.argmin(gaps))
             if float(gaps[nearest_at]) < radius:
                 refused.append(
                     {
                         "location": key,
-                        "lost_to": keys[held_rows[nearest_at]],
+                        "lost_to": held_keys[nearest_at],
                         "distance": round(float(gaps[nearest_at]), 6),
                     }
                 )
                 continue
-        held_rows.append(index)
+        held[len(held_keys)] = matrix[index]
+        held_keys.append(keys[index])
         kept.add(key)
     return {"kept": kept, "refused": refused, "unembedded": unembedded, "asked": order}
 
