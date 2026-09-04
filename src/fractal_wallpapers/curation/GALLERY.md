@@ -1023,14 +1023,18 @@ exactly once. Every supply figure in both modules is a count of `location.key`.
 
 A candidate is supply only if it is worth seating. The default is `solve.Q4_BAR` on
 raw `P(>=4)` — 0.50, the same bar the gallery record counts its seats against.
-Six of the **fourteen** modes `mode_policy` accepts have fewer than twenty-five
+Six of the **fourteen** modes `mode_policy` accepted then had fewer than twenty-five
 distinct locations clearing that, so those fall back to `P(>=3) >= 0.50` and the
 table **says which rule each mode landed on**: a mode censused under a lower bar is
 not comparable to one censused under the default. The roster is `accepted()` and not
 the engine's nineteen — a weight-0 mode has no row in the pool to bar. The reading
 was taken on 2026-08-30 over the same fourteen: `tail_itinerary` was briefly a
 fifteenth and was never in it, and it is weight 0 as of 2026-08-31, so the roster
-the reading was taken over is the roster again.
+the reading was taken over was the roster again. **It is thirteen since
+2026-09-04**, when `exp_smoothing` went to weight 0 — it was one of the eight on
+the default bar, so the current split of that same reading is seven on the
+default and six on the fallback. Nothing was re-measured; a mode leaving the
+roster takes its row out of the pool and its bar with it.
 Which mode is on which bar is the last column of the capability table under
 `mode_policy` below, and is not restated here.
 
@@ -1053,7 +1057,9 @@ modes are weight-0 and have no row in the pool to bar at all. The reading on
 2026-08-30 is **eight on the default, six on the fallback, four with no bar** — the
 last column of the capability table under `mode_policy` below. `tail_itinerary` is
 a fifth with no bar and was never read: it arrived after that reading and was ruled
-weight 0 before it had a candidate in the pool.
+weight 0 before it had a candidate in the pool. `exp_smoothing` is a **sixth** with
+no bar as of 2026-09-04 and *was* read, on the default — so the eight is seven now
+and the table below is the place to read it off rather than this paragraph.
 
 ### The census is a covering condition, stated in one direction
 
@@ -1087,7 +1093,7 @@ sum over accepted modes of min(that mode's floor, its distinct clearing location
 ```
 
 which is not the count of modes holding anything — those two agree only while every
-floor is one, and under this rule the thirteen strange floors are not one number.
+floor is one, and under this rule the twelve strange floors are not one number.
 `smooth` is floored at zero by construction (the rule concerns the strange side), so
 a pool of nothing but `smooth` reads supply 0 against a demand of 45 at `n = 150`.
 
@@ -1190,7 +1196,11 @@ the five accepted **shareable** modes run 0.217 s (`tia`) to 0.269 s
 (`exp_smoothing`), and the nine accepted **non-shareable** ones run 0.947 s
 (`direct_trap_lines`) to **5.64 s** (`smooth_stripe`) — a median-of-medians of
 2.52 s against 0.239 s, **10.6x**, and the dearest mode is **16.9x** the
-ledger-wide median.
+ledger-wide median. (`exp_smoothing` went to weight 0 on 2026-09-04 and was the
+**dearest** of the shareable five, so the accepted shareable half is four now and
+its top end is lower than the 0.269 quoted here. That moves the gap wider rather
+than narrower, so nothing this paragraph concludes turns on it and the reading
+has not been re-taken.)
 
 **This is not a corner case, because the modes the pool is short of are exactly
 the dear ones.** The four mode floors short at n=1000 — `smooth_angle_min` 6,
@@ -1805,7 +1815,7 @@ path, so the promotion costs nothing; each comes back with one command, e.g.
 
 `curation/mode_policy.py` is the only place a mode's standing is written.
 `MODE_POLICY` maps every one of the engine's nineteen **production** modes to a
-weight in `{0, 1, 2}` — five niche, seven normal, seven promoted — and
+weight in `{0, 1, 2}` — six niche, six normal, seven promoted — and
 `mode_policy.check()` refuses unless the table and the engine's catalog name the
 same roster.
 
@@ -1911,7 +1921,7 @@ and re-deriving it is `python -c` over those four names, never a measurement.
 | `smooth` | field | yes | yes | 1 normal | `P(>=4)` |
 | `tia` | field | yes | yes | 2 promoted | `P(>=4)` |
 | `stripe` | field | yes | yes | 2 promoted | `P(>=4)` |
-| `exp_smoothing` | field | yes | yes | 1 normal | `P(>=4)` |
+| `exp_smoothing` | field | yes | yes | **0 niche** | none |
 | `curvature` | field | yes | yes | 1 normal | `P(>=4)` |
 | `gaussian_int` | field | yes | yes | **0 niche** | none |
 | `trap_circle` | field | yes | yes | **0 niche** | none |
@@ -1930,8 +1940,14 @@ and re-deriving it is `python -c` over those four names, never a measurement.
 
 Nineteen modes over **four** kinds, not three: `itinerary` and `tail_itinerary`
 are the `modulate`s. Seven field · six composite · four direct · two modulate.
-Five niche, seven normal, seven promoted; thirteen carry the autolevel operator
+Six niche, six normal, seven promoted; thirteen carry the autolevel operator
 and seven are shareable.
+
+**Three of the seven field modes are niche**, which is why the shareable column
+and the weight column have to be read together: shareable says a dumped field can
+serve the mode, and weight says whether anything will ask. `exp_smoothing` is the
+newest of the three and the only mode on this table demoted for **duplication** —
+see `mode_policy`'s own paragraph on it.
 
 `tail_itinerary` is the same address as `itinerary` read off the **end** of the
 orbit rather than the start, so every capability column is the modulate's and not

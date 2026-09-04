@@ -98,6 +98,20 @@ full cache while the trainer refuses. `renders verify` re-derives a seeded sampl
 and compares, and `renders ship` will not stage anything until `renders accept`
 has written a verdict — a `FAIL` needs `--force` and a sentence about why.
 
+**A JPEG re-encode floor measured through PIL is ~27x too high unless you pass
+`subsampling=0`.** The engine writes quality 90 at **4:4:4** chroma
+(`JPEG_QUALITY`, `engine/src/resample.rs`); PIL drops to 4:2:0 at that quality
+and keeps 4:4:4 only from 95, so a floor taken by re-encoding through PIL is
+mostly chroma decimation and not the codec. Measured on gallery material at 640x360
+on 2026-09-04: **4.68 mean absolute channel difference against a real 0.169**, and
+4.68 sits just under the website's `SEAT_TOLERANCE = 6.0` — which would make any
+real difference between two renders read as compression noise. `verify`'s own
+`recompression_floor` re-encodes the same way at `JPEG_FLOOR_QUALITY = 75` and
+reads **7.36** on that material; there the inflation is *lenient* rather than
+wrong, since `closer_than_a_recompression` only gets easier to satisfy against a
+generous floor. Anywhere a floor is used to argue that a difference is **not**
+real, pass `subsampling=0`.
+
 **Budget a whole cache at about two and a quarter seconds a picture, and build it
 with ONE engine.** Measured 2026-08-30 over the 10,552-picture plan both stores
 now carry, on adjacent hundred-job slices of the shuffled plan: **2.11 s serially

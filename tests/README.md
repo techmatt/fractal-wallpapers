@@ -247,7 +247,18 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
-The **slow** lane read **6:54 (414.69 s) over 3,574, nothing skipped** at the
+The **slow** lane read **6:54 (414.76 s) over 3,648, nothing skipped** at the
+`exp_smoothing` drop, idle, 2026-09-04 — seventy-four tests more than the reading
+below and seven hundredths of a second over it, which is the closest two readings of
+this lane have ever landed. All seventy-four are the nested-subparser split's
+`test_nested_verbs.py`, which the fast lane had already priced at 1.55 s; the slow
+lane's own clock did not notice them. The drop itself added no test, moved one to a
+derived floor and one to a derived colormap count, and changed nothing measurable —
+which is the point of recording it: a roster ruling that shrinks the accepted modes
+from fourteen to thirteen does **not** show up as a lane that got cheaper, because
+what the guards read is the stores and the stores did not move.
+
+It read **6:54 (414.69 s) over 3,574, nothing skipped** at the
 line-ending guard, idle, 2026-09-04 — the first slow reading since the `run_layout`
 extraction's 7:14 over 3,552, twenty-two tests later and twenty seconds under it. Two
 of the twenty-two are `test_line_endings.py`; the other twenty came in with the merges

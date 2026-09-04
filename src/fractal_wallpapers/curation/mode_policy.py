@@ -67,11 +67,12 @@ WEIGHTS = (NICHE, NORMAL, PROMOTED)
 #: and a figure quoted off one basis beside sixteen quoted off the other is a
 #: ranking nobody can read. Two numbers here said `rows` and meant renders.
 #:
-#: Four of the five at 0 are the modes a round of human labels could not make a
+#: Four of the six at 0 are the modes a round of human labels could not make a
 #: case for: `gaussian_int` 7 fours in 296 renders (2.4%), `smooth_trap_circle` 10
 #: in 256 (3.9%), `trap_circle` 12 in 260 (4.6%) and `direct_trap_ring` 20 in 342
-#: (5.8%). The fifth, `tail_itinerary`, was ruled on pictures rather than on
-#: labels and its paragraph is at the bottom.
+#: (5.8%). The other two were ruled on pictures rather than on labels —
+#: `tail_itinerary` on a contact sheet and `exp_smoothing` on a paired eye check
+#: against `smooth` — and their paragraphs are at the bottom.
 #:
 #: **The cut is not a pure ranking on that rate and cannot be read as one.**
 #: `direct_trap_multiply` (2.0%) and `direct_trap_lines` (2.8%) are accepted and read
@@ -118,8 +119,9 @@ WEIGHTS = (NICHE, NORMAL, PROMOTED)
 #: `threads` 21.6%, `smooth_angle_min` 18.9% and `smooth_mean_angle` 17.6%; the 107
 #: that left read 26.2% and are the smooth judge's. Its tier-3-or-better is
 #: unmoved — 54.2% recorded against 54.3% after — so the split is entirely in where
-#: the fours sat. It is still above every weight-1 mode (`exp_smoothing`, the best
-#: of them, is 14.7%), so nothing here is obviously wrong; what is gone is the claim
+#: the fours sat. It is still above every weight-1 mode as the table stood that day
+#: (`exp_smoothing`, the best of them then and weight 0 since 2026-09-04, is 14.7%),
+#: so nothing here is obviously wrong; what is gone is the claim
 #: that it is the top of the seventeen, which is the sentence the 1 → 2 was written
 #: on. **Moving the weight is a ruling and not a repair**, and this figure is
 #: recorded so that whoever takes it is taking it on a number that is about the
@@ -147,6 +149,29 @@ WEIGHTS = (NICHE, NORMAL, PROMOTED)
 #: material standing — and the engine still renders `tail_itinerary` by name for
 #: anybody who asks. The ruling is written here so the question does not reopen
 #: the next time somebody reads the provisional paragraph above it.
+#:
+#: **`exp_smoothing` is 0. Matt's ruling, 2026-09-04, off a paired eye check.**
+#: It is the only mode here demoted for being a *duplicate* rather than for being
+#: weak: it was the strongest weight-1 mode on the tier-4 rate (14.7%) and it is
+#: out anyway. 914 gallery seats were rendered twice, once through each mode at
+#: the seat's own recipe, and the two arms are the same picture at **902 of them
+#: (98.7%)** under the website's `SEAT_TOLERANCE = 6.0` — median pair distance
+#: 2.41 against a measured codec floor of 0.169 — with **34 of 34** of its own
+#: seats inside the tolerance. The judge cannot order the two apart either:
+#: Pearson r on `P(>=4)` is 0.99729, the median delta +0.0001, and at the
+#: `P(>=4) = 0.50` gate the arms land on opposite sides 11 times in 914,
+#: **5 one way and 6 the other**, which is the shape of noise and not of a mode
+#: difference. On its own 34 seats there are no crossings at all. Where the two
+#: do come apart it is varied `phoenix` — 11 of that partition's 35 seats and one
+#: `mandelbrot` account for every pair at or over the tolerance, while the pinned
+#: `phoenix:classic` plane is the *most* identical partition on the record. So a
+#: seat spent here is a seat that could have been `smooth`, and the gallery is
+#: better off spending it on a mode that shows something else.
+#:
+#: **Nothing is deleted and none of it is re-keyed.** The catalogue entry, the
+#: engine's coloring, the field dump, every ledger row and every label taken in it
+#: stand, exactly as for the five above; the mode still renders by name and a leg
+#: naming it in `--modes` still draws it. What ends is buying more of it.
 MODE_POLICY: dict[str, int] = {
     # --- 0: niche ---
     "trap_circle": NICHE,
@@ -154,9 +179,9 @@ MODE_POLICY: dict[str, int] = {
     "smooth_trap_circle": NICHE,
     "direct_trap_ring": NICHE,
     "tail_itinerary": NICHE,
+    "exp_smoothing": NICHE,
     # --- 1: normal ---
     "smooth": NORMAL,
-    "exp_smoothing": NORMAL,
     "curvature": NORMAL,
     "smooth_curvature": NORMAL,
     "direct_trap_screen": NORMAL,
@@ -368,7 +393,7 @@ def seat_floors(n: int, share: float = STRANGE_SEAT_SHARE) -> dict[str, int]:
     first and the leftover seats to the largest fractional remainders, ties by
     weight then by name so the answer is a pure function of `n`. Truncating each
     mode's half instead would quietly lose a seat per mode with a remainder, which
-    over thirteen modes is most of them.
+    over twelve modes is most of them.
 
     Note this is **not** the rule [`supply.apportion`] uses. That one is
     largest-*deficit* sequencing, and its subject is every prefix of a batch that

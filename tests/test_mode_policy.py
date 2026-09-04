@@ -105,7 +105,15 @@ def test_no_wired_roster_offers_a_niche_mode():
     """The point of the table. The old constants were read by one leg; a mode
     weighted 0 has to be out of the mode draw, out of both mining rosters, out of
     the depth roster and out of the mode floors — or a standing is a footnote
-    again."""
+    again.
+
+    **The centered roster is on this list because it once was not.**
+    `depth.CENTERED_FIELD` is the only roster in the tree written out by name, and
+    until 2026-09-04 it was unioned in after the gate rather than passed through
+    it, so `exp_smoothing` would have gone on being drawn by that one arm after
+    every other draw had dropped it. A list of rosters that omits the one roster
+    that is not derived is the list that proves the least.
+    """
     from fractal_wallpapers.curation import budget, colorize, depth, mine
 
     out = set(mode_policy.niche())
@@ -115,6 +123,8 @@ def test_no_wired_roster_offers_a_niche_mode():
         "the strange draw": colorize.modes_for(budget.STRANGE),
         "the mine": mine._accepted_modes(),
         "the depth roster": depth.field_modes(),
+        "the dear half of it": depth.dear_modes(),
+        "the centered roster": depth.centered_modes(),
     }
     for where, roster in rosters.items():
         assert not out & set(roster), f"{where} can still draw {out & set(roster)}"
@@ -339,16 +349,25 @@ def test_one_leg_is_floored_by_one_rule_and_the_demands_carry_it():
 
 
 @needs_engine
-def test_the_ruled_out_modes_are_the_five_and_tail_itinerary_is_one_of_them():
-    """The rider, so the ruling is not carried by a docstring alone.
+def test_the_ruled_out_modes_are_the_six_and_the_two_picture_rulings_are_in_them():
+    """The rider, so neither ruling is carried by a docstring alone.
 
     `tail_itinerary` was seated provisionally at 1 to buy itself a contact sheet.
     It got one and Matt ruled it not gallery-worthy — the frequency of address
     changes is too abrupt — so it is 0, out of the draws and out of the gallery,
     with its catalog entry and every picture it has already made untouched.
+
+    `exp_smoothing` is the other one ruled on pictures, and the only mode here
+    demoted for being a **duplicate** rather than for being weak: it was the
+    strongest weight-1 mode on the tier-4 rate and it is out anyway, because at
+    98.7% of a 914-seat gallery it renders the same picture as `smooth` and the
+    judge cannot order the two apart. Same treatment as the five: nothing deleted,
+    nothing re-keyed, and a leg naming it in `--modes` still draws it.
     """
-    assert mode_policy.weight_of("tail_itinerary") == mode_policy.NICHE
-    assert mode_policy.is_accepted("tail_itinerary") is False
-    assert len(mode_policy.accepted()) == 14
-    assert len(mode_policy.strange_modes()) == 13
-    assert "tail_itinerary" not in mode_policy.seat_floors(1000)
+    for name in ("tail_itinerary", "exp_smoothing"):
+        assert mode_policy.weight_of(name) == mode_policy.NICHE
+        assert mode_policy.is_accepted(name) is False
+        assert name not in mode_policy.seat_floors(1000)
+    assert len(mode_policy.niche()) == 6
+    assert len(mode_policy.accepted()) == 13
+    assert len(mode_policy.strange_modes()) == 12

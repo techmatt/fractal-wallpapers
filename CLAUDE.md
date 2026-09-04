@@ -188,11 +188,11 @@ the log produced.
 The fast lane is **121.41 s over the 3,532 it holds**, on this machine, idle,
 2026-09-04, at the nested-subparser split — seventy-four tests more than the
 seconds-share fix and 1.55 s over it, which is noise. The slow lane is **6:54 over
-3,574, nothing skipped**,
-on this machine, idle, 2026-09-04, at the line-ending guard — twenty-two tests more
-than the `run_layout` extraction's 7:14 over 3,552 and twenty seconds under it, so
-flat. Two of the twenty-two are that guard; the other twenty arrived with the merges
-between the two readings.
+3,648, nothing skipped**,
+on this machine, idle, 2026-09-04, at the `exp_smoothing` drop — seventy-four tests
+more than the line-ending guard's 6:54 over 3,574 and seven hundredths of a second
+over it. All seventy-four are the nested-subparser split's, already priced in the
+fast lane; the slow lane's clock did not notice them.
 
 **What the count means is defined once, in
 [`tests/README.md`](tests/README.md#what-the-fast-lane-count-means)**, and a reading

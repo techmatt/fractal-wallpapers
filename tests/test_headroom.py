@@ -281,14 +281,19 @@ def test_the_floor_block_counts_places_towards_the_floor_and_not_modes():
     floor is one — at n=500 it read one row per mode against a demand in the
     hundreds, and called a pool short that is nowhere near it.
     """
-    # One strange mode, three places, against a floor of fifteen at n=500.
+    # One strange mode, three places, against a floor in the teens at n=500. The
+    # floor is READ rather than written down: it is `seat_floors`' arithmetic over
+    # whatever the roster currently is, and it moved from 15 to 16 the day
+    # `exp_smoothing` went to weight 0 and left the strange budget dividing by 19
+    # instead of 20. What is under test is that supply counts places against it.
     read = headroom.census(clearing_pool(3, mode="stripe"), ladder=(500,), log=lambda *_: None)
     block = read["curve"]["500"]["blocks"]["mode_floors"]
-    assert block["floors"]["stripe"] == mode_policy.seat_floors(500)["stripe"] == 15
+    floor = mode_policy.seat_floors(500)["stripe"]
+    assert block["floors"]["stripe"] == floor > 3, "the floor must outrun the three places"
     # The floor is asked of the modes a gallery may seat, not of the whole
     # production roster: a mode weighted 0 has no row in the pool to meet it with.
     assert block["needs"] == sum(mode_policy.seat_floors(500).values()) == 150
-    # Three of the fifteen `stripe` is asked for, and nothing from anybody else.
+    # Three of what `stripe` is asked for, and nothing from anybody else.
     assert block["supply"] == 3
     assert block["modes_holding_anything"] == 1
     assert block["short"] is True

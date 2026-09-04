@@ -287,6 +287,15 @@ def dear_modes() -> list[str]:
 #: cheap incumbent and the cheap alternative to it rather than as a roster of their
 #: own — they cost one dump between all their palettes and the nine cost a render
 #: each.
+#:
+#: **Membership here is a nomination and not a standing.** This is the one roster
+#: in the tree written out by name, so it is the one that could outlive a weight-0
+#: ruling; [`centered_modes`] therefore passes the whole thing through
+#: [`mine._accepted_modes`], the same gate [`field_modes`] and [`dear_modes`]
+#: already derive from. `exp_smoothing` is the case that proved it: weight 0 since
+#: 2026-09-04, still named here because this tuple records what arm A drew, and out
+#: of the roster because the gate is asked. So the arm is `smooth` alone on the
+#: cheap half now.
 CENTERED_FIELD: tuple[str, ...] = ("smooth", "exp_smoothing")
 
 #: What the centered roster does **not** draw, and why. `direct_trap_lines` is off
@@ -306,9 +315,10 @@ CENTERED_EXCLUDED: tuple[str, ...] = ("direct_trap_lines",)
 def centered_modes() -> list[str]:
     """The roster a leg over the **centered** population draws.
 
-    [`dear_modes`] plus [`CENTERED_FIELD`], less [`CENTERED_EXCLUDED`] — the
-    eleven-mode roster arm A ran overnight on 2026-09-01/02 at width 22, minus the
-    one mode the sheet ruled off it. Ten now.
+    [`dear_modes`] plus [`CENTERED_FIELD`], less [`CENTERED_EXCLUDED`] and less
+    whatever [`curation.mode_policy`] weights 0 — the eleven-mode roster arm A ran
+    overnight on 2026-09-01/02 at width 22, minus the one mode the sheet ruled off
+    it and minus `exp_smoothing`. Nine now.
 
     Declared here rather than left to whichever driver runs the leg, because it
     *was* left there: the arm ran out of a scratch file, `curation/MEASUREMENTS.md`'s
@@ -317,9 +327,19 @@ def centered_modes() -> list[str]:
     read. The derivation
     is kept — a mode added to the engine's catalogue and given a weight joins the
     dear half without an edit here — and only the exclusion is written out.
+
+    **The weight gate is asked of the whole roster, not of half of it.**
+    [`dear_modes`] already derives from [`mine._accepted_modes`] and
+    [`CENTERED_FIELD`] does not, so before 2026-09-04 a mode ruled 0 left every
+    other draw in the tree and stayed on this one — the only place in the tree
+    where that was possible. It is asked here, at the same spelling the mine, the
+    depth roster and the mode draw all read, rather than by editing the tuple:
+    a nomination that the standing has overtaken should stop being drawn without
+    anyone having to remember that this file exists.
     """
     roster = [*dear_modes(), *CENTERED_FIELD]
-    return [mode for mode in roster if mode not in CENTERED_EXCLUDED]
+    buying = set(mine._accepted_modes())
+    return [mode for mode in roster if mode not in CENTERED_EXCLUDED and mode in buying]
 
 
 @functools.cache

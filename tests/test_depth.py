@@ -1357,16 +1357,19 @@ def test_the_worker_hands_the_whole_stamp_back_and_not_just_the_boolean(monkeypa
 # The centered roster: what an arm over the centered population draws.
 # --------------------------------------------------------------------------- #
 def test_the_centered_roster_is_the_dear_half_and_two_field_modes_less_the_ruling():
-    """The eleven arm A ran, minus the one the eye-check sheet took off it.
+    """The eleven arm A ran, minus the one the eye-check sheet took off it and
+    minus whatever the standing table has since stopped buying.
 
     Pinned as a derivation and not as a list of names, so a mode that arrives in
     the engine's catalogue and is given a weight joins it without an edit — the
     only thing written out is the exclusion, which is a ruling.
     """
+    from fractal_wallpapers.curation import mine as mine_module
+
     roster = depth.centered_modes()
-    assert set(roster) == (set(depth.dear_modes()) | set(depth.CENTERED_FIELD)) - set(
-        depth.CENTERED_EXCLUDED
-    )
+    assert set(roster) == (
+        (set(depth.dear_modes()) | set(depth.CENTERED_FIELD)) - set(depth.CENTERED_EXCLUDED)
+    ) & set(mine_module._accepted_modes())
     assert len(roster) == len(set(roster)), "a cycled roster must not draw a mode twice a turn"
     for mode in depth.CENTERED_FIELD:
         assert colorize.shareable(mode), "the cheap half of this roster is the shareable half"
@@ -1387,10 +1390,21 @@ def test_direct_trap_lines_is_off_the_centered_draw_and_nothing_else():
 
 def test_every_mode_the_centered_roster_names_is_one_the_project_still_buys():
     """`CENTERED_FIELD` is written out, so it can outlive a weight-0 ruling that
-    took one of its members out of every other draw. This is what would catch it."""
+    took one of its members out of every other draw. This is what caught it.
+
+    `exp_smoothing` is the case: ruled weight 0 on 2026-09-04, still named in
+    `CENTERED_FIELD` because that tuple records what arm A drew, and out of the
+    roster because `centered_modes` asks the same gate the mine and the depth
+    roster already read. The nomination and the standing are pinned apart here on
+    purpose — the fix was to ask the gate, not to edit the tuple.
+    """
     from fractal_wallpapers.curation import mine as mine_module
+    from fractal_wallpapers.curation import mode_policy
 
     assert set(depth.centered_modes()) <= set(mine_module._accepted_modes())
+    assert "exp_smoothing" in depth.CENTERED_FIELD, "the record of what arm A drew stands"
+    assert mode_policy.weight_of("exp_smoothing") == mode_policy.NICHE
+    assert "exp_smoothing" not in depth.centered_modes()
 
 
 def test_a_place_with_one_dear_attempt_is_out_of_the_untried_population():
@@ -1812,19 +1826,29 @@ def test_draw_cells_narrows_every_arm_including_the_near_band():
 
 
 def test_the_cell_filter_composes_with_the_maps_manifest_and_both_apply():
-    """Two filters, one pool. A leg that gave both meant the intersection."""
+    """Two filters, one pool. A leg that gave both meant the intersection.
+
+    The size of the overlap is **taken from the pool rather than written down**:
+    `color_mass.delivering` reads the max over `mode_policy.accepted()`, so how
+    many maps deliver a cell moves whenever the standing table does — this asked
+    for 40 and got 38 the day `exp_smoothing` went to weight 0. What is under test
+    is that the answer is the intersection and neither cut alone, which is a
+    property of the composition and not of the roster's size.
+    """
     cell = "dark_vivid_lime"
     pool = colorize.pool(11)
     serves = color_mass.delivering([cell], within=pool)
     # A manifest holding the cell's maps and a hundred that do not carry it, so the
     # two cuts disagree and the plan can only be drawn from where they agree.
     others = [name for name in pool if name not in set(serves)][:100]
-    manifest = serves[: colorize.CANDIDATES + 8] + others
+    overlap = serves[: colorize.CANDIDATES + 8]
+    assert len(overlap) > colorize.CANDIDATES, "the manifest, not the cutoff, must bind"
+    manifest = overlap + others
     plan, shape = build_a_plan(draw_maps=manifest, draw_cells=[cell])
     assert shape["maps_after_the_manifest"] == len(manifest)
-    assert shape["maps_drawn_from"] == colorize.CANDIDATES + 8
+    assert shape["maps_drawn_from"] == len(overlap) < len(manifest)
     assert shape["maps_narrowed"] is True and shape["cells_narrowed"] is True
-    assert {shot.colormap for shot in plan} <= set(serves[: colorize.CANDIDATES + 8])
+    assert {shot.colormap for shot in plan} <= set(overlap)
 
 
 def test_a_cell_cut_that_cannot_serve_a_neighbourhood_is_refused():
