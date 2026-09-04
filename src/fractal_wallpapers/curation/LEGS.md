@@ -1723,7 +1723,12 @@ places in accepted modes went **8,740 → 9,286**, and `574 − 28 still strande
 
 **The 96.1% is a carry rate and not a mode comparison.** Every source is in the
 plan because it cleared, so the 139 twins that fell below the bar are all the
-crossings there are — a downward-only count by construction. The paired `delta`
+crossings there are — a downward-only count by construction. `read` reports the
+crossings both ways all the same, and **`crossed_up` is zero by construction and is
+read as an assertion rather than as a result**: a non-zero one means a source that
+did not clear reached the plan, which is a defect in `remode.population` and not a
+finding about a mode. A reader who takes the pair as a symmetry test has read a
+selection effect as evidence. The paired `delta`
 has a mean of **−0.0098** and a median of **−0.0010** for the same reason: a
 source selected on a high noisy reading has a twin that regresses, which is
 `shrinkage`'s winner's curse arriving by another route. Neither number is evidence
