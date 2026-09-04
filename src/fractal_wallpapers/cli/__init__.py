@@ -14,6 +14,22 @@ submodule as an attribute of its package, which is one `__getattr__` never
 sees. A `cli/render.py` would shadow `cli.render` for good. The suffix makes
 that collision impossible for every group at once instead of by exception.
 
+A command whose second word is a VERB spells it as a real `add_subparsers`, never
+as a `choices=` positional inside one parser. The two look alike from the command
+line and are not alike: a positional puts the whole group's flags on every verb,
+so `curate sidecar check --force` was accepted and dropped on the floor, `curate
+solve record` accepted twenty-two flags a record cannot pass through, and `--help`
+at the group printed every verb's flags at once with nothing saying which belonged
+to which. Sixteen groups and sixty-five verbs were spelled that way and none are
+now; `tests/test_nested_verbs.py` holds the surface and the pin. The verb's dest is
+`what` and the handler is `set_defaults` on the GROUP parser, so one handler still
+serves a whole group and resolves to one binding through [`__getattr__`]. Where the
+verb is optional — `curate flatness`, `curate signatures`, `curate rank-key` all
+have a default verb that does the work — the group carries that verb's flags too
+and the verb re-declares them with `default=argparse.SUPPRESS`, because argparse
+copies a subparser's whole namespace over the parent's and a plain re-declaration
+would overwrite what the parent had already taken.
+
 A command carrying twenty flags or more groups its help with
 `add_argument_group`, and once one flag on a command is grouped they all are —
 argparse prints an ungrouped optional above every named group, beside `-h`,

@@ -1242,11 +1242,11 @@ key; the walk every earlier gallery took is two named flags away and the record 
 which rule and which key it ran under, by name, either way.
 
 ```
-curate solve run --n 150                                    proportional + rank-key
-curate solve run --n 150 --group-cap identity --key p_ge4   the incumbent, whole
-curate solve run --n 150 --group-cap {identity,proportional}   the palette-group cap
-curate solve run --n 150 --key {rank-key,p_ge4}             the sort key
-curate solve run --n 150 --sheet-out <path>                 the contact sheet, elsewhere
+curate solve run --n 150                                  # proportional + rank-key
+curate solve run --n 150 --group-cap identity --key p_ge4 # the incumbent, whole
+curate solve run --n 150 --group-cap {identity,proportional}  # the palette-group cap
+curate solve run --n 150 --key {rank-key,p_ge4}           # the sort key
+curate solve run --n 150 --sheet-out <path>               # the contact sheet, elsewhere
 curate solve run --n 150 [--release-regime WxHssN] [--workers 3]
 ```
 
