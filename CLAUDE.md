@@ -372,6 +372,10 @@ each goes at publication, with its test and its subcommand.
   library, because an imported row names maps this repository did not hold. **Two
   live callers first**: `palettes/authored_import.py` and `models/palette_sets.py`
   both reach for it, so deleting it means answering what those do instead.
+- `src/fractal_wallpapers/cli/import_commands.py` — the parsers and handlers for
+  both of the above, and nothing else. The `cli` split made the two commands one
+  file precisely so this is a file deletion plus its name in `cli/__init__.py`'s
+  module list, rather than surgery inside a module that has other work to do.
 - `src/fractal_wallpapers/models/acceptance.py`'s extraction path —
   `INCUMBENT_SCORES`, `INCUMBENT_MANIFEST`, `beside`, `ExtractionSourceGone`,
   `extraction_source` — reads `fractal-maker` and `fractal-maker-artifacts` beside
