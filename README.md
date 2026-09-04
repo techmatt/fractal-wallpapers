@@ -34,7 +34,72 @@ Fetch the trained judges before anything that scores:
 
 To hand a built sheet to a labeler, see [the labeling rig](src/fractal_wallpapers/labeling/README.md#serving-a-sheet-to-label).
 
-### Putting the regenerable tree on another disk
+## The five loops
+
+There are about a hundred and fifty subcommands and they serve five jobs. Each
+block below is the spine of one; every step has its own `--help`, and the package
+README it links to is where the reasoning lives.
+
+**Find new places**, so the candidate ledger has somewhere new to render — a walk
+over parameter space, scored by the location head, and the frames worth keeping
+folded in. See [discovery](src/fractal_wallpapers/discovery/README.md) and
+[supply](src/fractal_wallpapers/supply/README.md).
+
+```
+fractal-wallpapers census                              # what each partition is owed
+fractal-wallpapers harvest --finish-by 07:00           # the production loop, all night
+fractal-wallpapers reframe --minutes 20 --out-dir artifacts/reframe_g1
+fractal-wallpapers curate score --harvest artifacts/reframe_g1
+fractal-wallpapers curate embed                        # a vector per admitted location
+```
+
+**Collect human taste**, which is what every judge here is trained on. See
+[the labeling rig](src/fractal_wallpapers/labeling/README.md).
+
+```
+fractal-wallpapers label register --batch NAME --method "how the population was drawn"
+fractal-wallpapers label build --from-plan artifacts/places.jsonl --batch NAME
+fractal-wallpapers label serve --sheet artifacts/sheet
+fractal-wallpapers label ingest --sheet artifacts/sheet --labeler matt --write
+```
+
+**Find good renderings of places already found** — the same location at other
+modes, palettes and depths, priced against what the extra candidates buy. Three
+legs, same shape: plan, run, merge. See
+[curation](src/fractal_wallpapers/curation/README.md).
+
+```
+fractal-wallpapers curate hunt  run --name h1 --budget 1200    # breadth where the ledger is thin
+fractal-wallpapers curate mine  run --name m1 --rate <measured> --budget 7200
+fractal-wallpapers curate depth run --name d1 --rate 0.35 --budget 5400
+fractal-wallpapers curate <leg> merge --name <name>            # fold into the ledger
+fractal-wallpapers curate candidate-ledger census              # what is still thin
+```
+
+**Train a judge** and ship it, against a bar written down before the candidate
+exists. See [models](src/fractal_wallpapers/models/README.md).
+
+```
+fractal-wallpapers tiles build                                 # or `renders build`, per head
+fractal-wallpapers head preregister                            # the bar, first
+fractal-wallpapers head train --run seed0_all_regimes --seed 0
+fractal-wallpapers head score --run seed0_all_regimes
+fractal-wallpapers head accept                                 # the band, against the bar
+fractal-wallpapers head ship
+fractal-wallpapers fetch-weights                               # what a fresh clone runs
+```
+
+**Choose a gallery** out of everything the ledger holds, and record it under a
+name that never moves.
+
+```
+fractal-wallpapers curate headroom                     # what is short, and what one more costs
+fractal-wallpapers curate solve run --n 150            # decide, then render the seats
+fractal-wallpapers curate gallery record               # THAT solve, recorded
+fractal-wallpapers curate gallery browse <stamp>       # the page, off the rows
+```
+
+## Putting the regenerable tree on another disk
 
 Everything a run can always make again — tile caches, location views, render
 caches, the pictures a study looked at — lands under `artifacts/`, which grows to

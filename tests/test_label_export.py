@@ -21,6 +21,7 @@ from pathlib import Path
 import pytest
 
 from fractal_wallpapers.labeling import finished, intake, server, sheets, store
+from fractal_wallpapers.paths import repo_root
 
 PAGE = Path(server.PAGE).read_text(encoding="utf-8")
 CONTROL = Path(server.CONTROL).read_text(encoding="utf-8")
@@ -189,3 +190,44 @@ def test_a_static_server_still_gets_the_named_download(drop, serving) -> None:
     base = serving(http.server.SimpleHTTPRequestHandler)
     status, _ = put(base, "/labels/smooth_render.json", {"u0001": {"score": 3}})
     assert status in (405, 501), "a dumb static server refuses the save, and the page downloads"
+
+
+def test_every_asset_the_package_serves_is_declared_as_package_data() -> None:
+    """A file the package opens off `__file__` has to be in the wheel.
+
+    `page.html` was declared here and `export_control.js` was not, for three
+    weeks. Both are opened the same way — `Path(__file__).with_name(...)` in
+    `server` — and the page pulls the second with a `<script src>`, so an
+    installed checkout served a page whose exports had lost their naming. The
+    failure is invisible from inside the rig: a `<script>` that 404s reports to
+    the browser console and to nothing else, and the editable install every
+    machine here runs never has the missing file to miss.
+
+    So this asserts the *rule* rather than the two names. Every tracked file
+    under the package that is not Python and not prose is a file something has
+    to open at runtime, and every one of them must be named in
+    `[tool.setuptools.package-data]` for the package it lives in. The next
+    asset anyone adds, in any package, is caught rather than remembered.
+    """
+    import tomllib
+
+    root = repo_root()
+    project = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))
+    package_data = project["tool"]["setuptools"]["package-data"]
+    declared = {
+        f"{package.removeprefix('fractal_wallpapers.').replace('.', '/')}/{name}"
+        for package, names in package_data.items()
+        for name in names
+    }
+    package_root = root / "src" / "fractal_wallpapers"
+    assets = {
+        path.relative_to(package_root).as_posix()
+        for path in package_root.rglob("*")
+        if path.is_file() and path.suffix not in {".py", ".md", ".pyc"}
+    }
+    missing = sorted(assets - declared)
+    assert not missing, (
+        f"{missing} are opened out of the installed package but are not in "
+        "pyproject.toml's [tool.setuptools.package-data], so a non-editable "
+        "install would not have them"
+    )

@@ -60,6 +60,34 @@ picture is 448x252: DINOv2 tiles its input into 14-pixel patches, so the frame
 goes in whole rather than through whichever resize the transform happened to
 carry.
 
+**And a fifth thing reads a store without being a judge of a picture at all.**
+`spiral_probe` fits and reads the location-*attribute* store — `spiral` or
+`not_spiral`, named classes rather than a tier — so `curation.spiral_scores` can
+give a gallery cap a share to act on. It ships nothing through `ship`, has no
+floor, and its `--head` names a store the labeling rig cuts sheets for; see
+[the labeling rig](../labeling/README.md#the-third-kind-of-sheet-a-location-attribute).
+
+**The rest of what is here is the machinery around a retrain, and it is named
+here because the prose below describes the studies without naming the modules
+that ran them.** For the render judge, four modules stand in a chain:
+`render_folds` owns the fittable corpus and the lineage deal every held-out read
+is drawn on; `render_grade` graded three recipe changes and adopted nothing;
+`render_dose` read a label-quantity curve off the same deal; and `render_deploy`
+is the one that trains a whole corpus and produces the artifact that ships.
+`render_glance` lays one batch's rows under two heads' orderings for an eye.
+`render_acceptance` is the bar the joint candidate is read against, and
+`release_floor` fits the two per-kind floors that sit on the head it produces.
+For the location head, `regime_acceptance` judges a candidate trained across
+regimes against its own pre-registered bar, and `regime_flips` is the render leg
+that re-reads the pool when one is adopted.
+
+A note for anyone retiring a band: **`render_grade` is doing double duty.**
+`render_dose` imports its `STOP_SHARE`, `STOP_SEED`, `EPOCHS`, `PATIENCE`,
+`SHIPPED_RULE`, `CHECKPOINTS`, `sides_for`, `rank_key_columns`, `key_readings`
+and `key_delta`, so the concluded comparison and the shared fitting machinery are
+one file. Deleting the band takes the machinery with it, which is the shape that
+made the CV harness's delete cost three live consumers.
+
 **The render cache is a precondition, and it answers off the corpus.** `renders
 plan` lays the jobs out and `renders build` makes them, but `renders.missing` —
 which is what says whether a trainer may start — is derived from the **store's

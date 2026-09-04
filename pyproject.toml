@@ -68,9 +68,16 @@ namespaces = true
 
 # The labeling rig's page is an asset of the package that serves it, not a
 # resource the server looks up on disk: an installed checkout has to be able to
-# hand a browser the same page a working tree does.
+# hand a browser the same page a working tree does. **Both** files, and the
+# second one was missing here until 2026-09-04: `page.html` pulls
+# `export_control.js` with a `<script src>` and `server.CONTROL` opens it off
+# `__file__`, so a non-editable install served a page whose exports lost their
+# naming — silently, because a `<script>` that 404s fails in the browser console
+# and nowhere the rig can see. `tests/test_label_export.py` now holds every
+# non-Python file in the package to being declared here, so the next asset
+# anyone adds in any package is caught rather than remembered.
 [tool.setuptools.package-data]
-"fractal_wallpapers.labeling" = ["page.html"]
+"fractal_wallpapers.labeling" = ["page.html", "export_control.js"]
 
 [tool.ruff]
 line-length = 100

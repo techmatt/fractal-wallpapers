@@ -10,24 +10,38 @@ wallpapers and a durable account of why those and not the others.
 binding    which ledgers this curation reads, declared once and never guessed
 durability a file kept on two disks under a tracked manifest, and the run guard
 rescore    the accumulated pool, read again through the heads shipped now
+amend      re-reading a location whose standing score was read off a picture nobody has
 floors     every number that removes a picture, in one file
 neutral    the one picture a location is EMBEDDED from, and its frozen recipe
 embeddings one DINOv2 vector per admitted location, keyed and kept forever
 intake     the ranked offer, best first per partition
 budget     how many pictures to make, and for which judge
 colorize   a candidate set of maps, the head's pick, a render, a verdict
+mode_policy  what standing each production mode has, as one table with one owner
 framing    where a location's attempts are framed, decided before they render
 recipes    what decides a candidate's pixels, as one value with one key
 draw_weights  what a partition is worth in a breadth draw, in one table
 candidate_ledger  every recipe ever rendered, one row each, with its colour
+flatness   how much of a finished picture is dead space, as a column beside the scores
+retention  which candidates are worth the disk, and the counts that survive the rest
+hunt       render on purpose: breadth where the ledger is thin, colour where a solve was short
+mine       price a PRIMED location three ways, and profile what one candidate costs
+depth      buy width at one place, and measure what it buys against the head's rank
+shrinkage  re-read a candidate set's winner at label geometry, and price the winner's curse
 headroom   what each selection constraint needs, holds, and costs to buy — no solver
+growth     what more mining buys, at every gallery size — measured by subsampling the pool
+growth_plot  six pictures of one growth sweep. Matplotlib, scratch only, legibility only
 pool_draw  the UNAIMED draw: N pool locations at random, one seat-ranked picture each
 view       what one pass may reach: strata, and band-blind slices of them
 rules      one spelling per selection rule, over incremental state
+rank_key   the fitted sort key a seating may rank on, instead of the judge's `P(>=4)`
 signatures the diversity rule's bound signature, swept once into a sidecar
+distinct   which places are visibly different places, decided before any colour
+ceiling    the colour ceiling, and the targets that are the same feature with the sign flipped
+spiral_scores  `P(spiral)` per location, so a gallery cap has a share to act on
+served_locations  every location the collection has already released a wallpaper of
 solve      THE gallery leg: the view, a greedy seed, and 1-swap improvement
 tentative  one solve recorded under a stamp, with IDs, aliases and a browser
-distinct   which places are visibly different places, decided before any colour
 selection  top-N per judge, under the slot and supply caps, the location rule
            — and the bar
 gallery_store  four retired passes' attempt rows and pass records, still read
@@ -37,6 +51,11 @@ records    what the run decided, and out of what population
 rejection  taking a released row back afterwards, without losing what the run did
 below_bar  the glance sheet of what an acting bar would take back, to rule off
 sheet      the same thing laid out for a person to disagree with
+colors     the colour census: what colours this project can make, picks, keeps and labels
+color_sheets  what a colour cell actually looks like, so an eye can rule on it
+swatch_frequency  every swatch, what it looks like, and how often the pool is it
+palette_coverage  how many maps can put a swatch on a real share of an image
+expressed  how much of the codebook the finished collection expresses
 manufacture  forcing the rare swatches onto good places, and the sheets that ask
 checks     the two claims only a re-render can settle
 run        the wiring, and nothing else
