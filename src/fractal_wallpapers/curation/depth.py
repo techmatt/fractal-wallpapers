@@ -630,11 +630,30 @@ def _weighted_order(cells: list, weights: dict | None, partitions: dict | None =
     # others: 0.25 is a quarter of a turn on its own and one turn against four.
     per_partition = draw_weights.turns_of({name for name, _at in cells}, partitions)
     turns = {key: _cell_turns(weights, per_partition, key) for key in cells}
-    out: list = []
-    for turn in range(max(1, max(turns.values(), default=1))):
-        for key in cells:
-            if turn < turns[key]:
-                out.append(key)
+    # **Interleaved, and it was blocked by TURN until 2026-09-04.** The round used
+    # to be laid out first-turn-of-every-cell, then second, and so on, which gives
+    # every cell one place before any cell gets two — so a draw shorter than the
+    # round is very nearly unweighted however the table reads. Measured on
+    # `rare_a`'s own plan: `phoenix:classic` at **1 turn against mandelbrot's 17**
+    # still took 10 places of the first 265 against mandelbrot's 30, and the
+    # seconds ruling it was carrying could not move it off ~32% of the clock.
+    # `draw_weights.order` is the one copy of the fix and this is the same
+    # arithmetic over (partition, band) cells: each cell's k-th turn sits at
+    # `(k + 0.5) / turns`, so every PREFIX of the round leans the way the round
+    # does. That is what [`LEGS.md`]'s standing draw-weight section has claimed
+    # all along.
+    # The band index spreads a partition's own cells inside each turn. Without it
+    # a one-turn cell sits at exactly 0.5 — the middle of the round — and all ten
+    # of a thin partition's band cells sit there together, so a draw taking the
+    # first sixth of the round sees none of it at all rather than its share.
+    bands = 1 + max((at for _name, at in cells), default=0)
+    placed = [
+        ((at + (band + 0.5) / bands) / turns[key], key)
+        for key in cells
+        for band in [key[1]]
+        for at in range(turns[key])
+    ]
+    out = [key for _at, key in sorted(placed, key=lambda item: (item[0], item[1]))]
     return out or list(cells)
 
 
@@ -1216,18 +1235,41 @@ def build_plan(
     # every arm below draws under one table and the record reports the table the
     # leg actually ran. `--partition-weights` is merged over it rather than
     # replacing it — see [`curation.draw_weights.table`].
+    #
+    # **The caller's own overrides are kept apart, and that is load-bearing.**
+    # [`draw_weights.converted`] writes `overrides` back over the conversion last,
+    # so that a leg aimed at a phoenix plane by turn weight is not silently
+    # re-leaned by the seconds ruling. Handing it the *resolved* table named every
+    # registered partition as an explicit ask, so every band restored its turn
+    # weights over its own conversion and the ruling of 2026-09-04 acted on no leg
+    # at all for two days: `rare_a` spent **24.9% of its clock on
+    # `phoenix:classic` against a declared 3%**, and its record read
+    # `converted: {}` with all ten partitions listed as overridden. What reaches
+    # `by_band` now is what a caller named and nothing else.
+    asked_weights = dict(partition_weights or {})
     partition_weights = draw_weights.table(partition_weights)
     # **And then once per BAND**, because the standing table is now denominated in
     # engine seconds and a second is not the same size on every arm. Each draw runs
     # under its own conversion, seeded from the last recorded leg of its own band;
     # a band nothing has priced falls back to the turn weights above and the record
     # says so. See [`curation.draw_weights.by_band`].
+    #
+    # **The aimed arm is not a band of its own here, and that is the design.** It
+    # is the flat draw with its palette ask changed and nothing else, so it draws
+    # under `flat`'s converted table. Asked for a `conditioned` price it refuses
+    # on every leg — nothing has ever priced that band — and the arm would then
+    # take the standing turn weights while its own control ran a conversion,
+    # which is a control drawn from a different partition mix than the arm it
+    # controls. `matched_mix_agrees` is what catches it.
     banded_weights, weight_working = draw_weights.by_band(
-        sorted(world["pools"]), DRAWS, overrides=partition_weights, log=log
+        sorted(world["pools"]),
+        [one for one in DRAWS if one != AIMED],
+        overrides=asked_weights,
+        log=log,
     )
 
     def weights_for(draw: str) -> dict:
-        return banded_weights.get(draw, partition_weights)
+        return banded_weights.get(FLAT if draw == AIMED else draw, partition_weights)
 
     roster = list(roster if roster is not None else field_modes())
     if not roster:
@@ -1588,7 +1630,11 @@ def build_plan(
         "partition_weights_default": draw_weights.table(),
         # What each band actually drew under, and the arithmetic that got there.
         # The seconds shares are the ruling; these are what they came to today.
-        "seconds_share": dict(draw_weights.SECONDS_SHARE),
+        # **Declared, and named so.** What a leg *spent* is `price` on the record,
+        # under `seconds_share_realised`. The two were one word until 2026-09-04,
+        # when a report read the declared table off a plan and called it the share
+        # the leg took — on a leg that had spent 24.9% against a declared 3%.
+        "seconds_share_declared": dict(draw_weights.SECONDS_SHARE),
         "partition_weights_by_band": {
             band: dict(sorted(held.items())) for band, held in sorted(banded_weights.items())
         },
@@ -2149,6 +2195,13 @@ def run(
             "pilot measures. Wall a candidate is this over `concurrency`",
         },
         "price": price.table(),
+        # **What the leg SPENT, beside what it declared.** `plan.seconds_share_declared`
+        # is the ruling; this is the outcome, read off the same `price` table one
+        # level up so a reader does not have to know that `price.<partition>.share`
+        # is denominated in seconds. The two were one word until 2026-09-04 and a
+        # report took the declared table for the spent one on a leg that ran
+        # `phoenix:classic` at 24.9% against a declared 3%.
+        "seconds_share_realised": realised_shares(price.table()),
         "profile": clock.table(),
         "curves": curves(made),
         "hit_rate": hit_rate(made, shape.get("cell")),
@@ -2470,6 +2523,44 @@ def dominant_and_clearing(made: list, cell: str | None, table: dict) -> dict | N
         if aimed.get("renders_per_win") and flat.get("renders_per_win")
         else None
     )
+    return out
+
+
+def realised_shares(table: dict) -> dict:
+    """`{partition: share of the leg's engine seconds}`, and the same per band.
+
+    The counterpart of [`draw_weights.SECONDS_SHARE`], which is a **declaration**.
+    A share a leg was told to spend and a share it did spend are different numbers
+    and were spelled with one word until `rare_a` spent 24.9% of its clock on
+    `phoenix:classic` against a declared 3% and a report read the declaration as
+    the outcome.
+
+    Derived and never measured again: [`hunt.Price.table`] already sums the leg's
+    own served candidates per `(partition, band)`, so this is that table read at
+    one level rather than a second pass over the sequence.
+    """
+    out: dict = {"of": "this leg's engine seconds, as it spent them", "partitions": {}, "bands": {}}
+    banded: dict = {}
+    for name, held in sorted(dict(table).items()):
+        if not isinstance(held, dict) or "share" not in held:
+            continue
+        out["partitions"][name] = held.get("share")
+        for band, block in sorted(dict(held.get("bands") or {}).items()):
+            banded.setdefault(band, {})[name] = block.get("share")
+    out["bands"] = banded
+    out["declared"] = dict(draw_weights.SECONDS_SHARE)
+    out["against_the_declaration"] = {
+        name: {
+            "declared": float(share),
+            "realised": out["partitions"].get(name),
+            "over_by": (
+                round(out["partitions"][name] / float(share), 2)
+                if out["partitions"].get(name) and float(share)
+                else None
+            ),
+        }
+        for name, share in sorted(draw_weights.SECONDS_SHARE.items())
+    }
     return out
 
 

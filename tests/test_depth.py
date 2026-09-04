@@ -23,6 +23,42 @@ from fractal_wallpapers.palettes import color_mass, dominance
 
 PARTITIONS = ("mandelbrot", "phoenix", "julia:mandelbrot")
 
+#: What a candidate costs in each partition, for every band a plan here takes.
+#: `phoenix` is the only one of the three that declares a seconds share, and it is
+#: **dear** here — a deep breadth arm's price for a phoenix plane, which is where
+#: the ruling of 2026-09-04 was measured. `CHEAP_PHOENIX` is the same table with
+#: that one number moved, which is the other half of the ruling.
+FIXTURE_PRICES = {"mandelbrot": 4.0, "julia:mandelbrot": 2.0, "phoenix": 20.0}
+CHEAP_PHOENIX = {**FIXTURE_PRICES, "phoenix": 0.5}
+
+
+def seat_prices(monkeypatch, prices):
+    """Make every band price out at `prices`, whatever this machine has recorded."""
+    monkeypatch.setattr(
+        hunt,
+        "recorded_prices",
+        lambda band, unit="depth", newest=40: (
+            dict(prices),
+            {"leg": "a fixture", "band": band, "source": "tests/test_depth.py"},
+        ),
+    )
+
+
+@pytest.fixture(autouse=True)
+def priced_bands(monkeypatch):
+    """Every plan in this module converts against ONE fixture price table.
+
+    `draw_weights.by_band` seeds each band off the newest recorded leg of that
+    band, which is this checkout's own `artifacts/` on a working machine and
+    nothing at all on a clone — so a plan guard that did not pin the price
+    asserted a different partition table depending on whose box it ran on, and
+    said nothing about it. It went unnoticed for as long as it did because the
+    conversion was being thrown away anyway: every band drew under the standing
+    turn weights whatever the prices said. Pinned here, once, for the module.
+    """
+    hunt.forget_recorded_prices()
+    seat_prices(monkeypatch, FIXTURE_PRICES)
+
 
 # --------------------------------------------------------------------------- #
 # Material.
@@ -1042,6 +1078,33 @@ def test_a_partition_weight_buys_more_turns_and_starves_nobody():
     assert min(tally.values()) > 0, "and it is a weight, not a floor: nobody is starved"
 
 
+def test_every_prefix_of_the_round_leans_the_way_the_whole_round_does():
+    """The round was laid out by TURN until 2026-09-04, and a draw never sees a
+    whole round.
+
+    First-turn-of-every-cell, then second, and so on: every cell got one place
+    before any cell got two, so a draw shorter than the round came out very nearly
+    unweighted however the table read. It is the exact failure
+    `draw_weights.order` was written to prevent one axis up, and it is why the
+    seconds ruling could not move `phoenix:classic` off a third of `rare_a`'s
+    clock while carrying a turn weight of 1 against 17.
+
+    Pinned on the prefix and not on the round, because the round is what was
+    already right.
+    """
+    cells = [(name, band) for name in ("mandelbrot", "phoenix") for band in range(10)]
+    order = depth._weighted_order(cells, None, {"mandelbrot": 8.0, "phoenix": 1.0})
+    whole = sum(1 for name, _band in order if name == "mandelbrot") / len(order)
+    for cut in (0.1, 0.25, 0.5):
+        prefix = order[: int(len(order) * cut)]
+        held = sum(1 for name, _band in prefix if name == "mandelbrot") / len(prefix)
+        assert held == pytest.approx(whole, abs=0.06), (
+            f"the first {cut:.0%} of the round is {held:.0%} mandelbrot against the "
+            f"round's own {whole:.0%} — a leg that stops inside the round is drawing "
+            f"under a table nobody declared"
+        )
+
+
 def test_the_band_axis_and_the_partition_axis_multiply():
     """They say different things — a band weight is measured, a partition weight
     is declared — so one must not quietly override the other."""
@@ -1062,23 +1125,95 @@ def test_the_band_axis_and_the_partition_axis_multiply():
     assert tally["mandelbrot"] > tally["phoenix"]
 
 
-def test_the_standing_table_downweights_phoenix_in_the_plan_the_leg_actually_takes():
-    """Ruled 2026-09-02 on `dtm_variants`: `phoenix:classic` took 51.5% of that
-    leg's clock for 5.3% of its candidates, and `phoenix` a further 12.0%. The
-    weight is read off the PLAN and not off the declared table — a design the
-    launch does not read is not the design.
+def test_the_seconds_ruling_reaches_the_plan_the_leg_actually_takes():
+    """Ruled 2026-09-04, and inert until 2026-09-04: the declared share of the
+    ENGINE SECONDS is converted, per band, at that band's own price.
+
+    This replaces a pin on the standing quarter. The quarter is still the table a
+    leg inherits, still what an unpriced band falls back to and still what an
+    explicit weight is merged over; what it is no longer is what a priced band
+    draws under. `phoenix` at 20 s a candidate against 4 and 2 wants
+    `0.15 * U / 20` turns with `U = (1*4 + 1*2) / (1 - 0.15)` — **0.0529**, a
+    fifth of the quarter it replaces, because the quarter was never denominated
+    in the thing being rationed.
     """
     from fractal_wallpapers.curation import draw_weights
 
     _plan, shape = build_a_plan()
-    assert shape["partition_weights"] == draw_weights.table(), "the leg inherits the default"
+    assert shape["partition_weights"] == draw_weights.table(), (
+        "the leg still inherits the standing TURN table, which is what an unpriced "
+        "band falls back to and what an explicit weight is merged over"
+    )
+    for band in (depth.RANKED, depth.FLAT):
+        weights = shape["partition_weights_by_band"][band]
+        assert weights["phoenix"] == pytest.approx(0.0529, abs=1e-4), weights
+        assert weights["mandelbrot"] == 1.0, "an undeclared partition keeps its turn weight"
+        spent = {name: weights[name] * FIXTURE_PRICES[name] for name in PARTITIONS}
+        share = spent["phoenix"] / sum(spent.values())
+        assert share == pytest.approx(draw_weights.SECONDS_SHARE["phoenix"], abs=1e-4), (
+            f"the whole point of the conversion is that this comes out at the declared "
+            f"share of the clock, and it came out at {share}"
+        )
     ranked = shape["ranked_by_partition"]
     assert ranked["phoenix"] > 0, "a weight is never a gate"
     assert ranked["phoenix"] * 2 < ranked["mandelbrot"], (
-        f"phoenix drew {ranked} against a quarter weight on an equally stocked pool"
+        f"a partition dear enough to want 0.0529 turns draws far fewer places: {ranked}"
     )
     flat = shape["flat_wanted_by_partition"]
     assert flat["phoenix"] * 2 < flat["mandelbrot"], "and the matched control leans with it"
+
+
+def test_the_same_ruling_raises_a_declared_partition_that_turns_out_to_be_cheap(monkeypatch):
+    """The half of the ruling a turn weight could not express at all.
+
+    `phoenix` proper is not a dear partition — its price is inside the field on
+    every band — so 15% of the clock lifts it ABOVE an undeclared partition rather
+    than below it, and the standing quarter was starving something that costs what
+    everything else costs. Same table, same declaration, one price moved.
+    """
+    seat_prices(monkeypatch, CHEAP_PHOENIX)
+    _plan, shape = build_a_plan()
+    weights = shape["partition_weights_by_band"][depth.RANKED]
+    assert weights["phoenix"] == pytest.approx(2.1176, abs=1e-4), weights
+    assert weights["phoenix"] > weights["mandelbrot"], (
+        "a cheap declared partition is RAISED by the ruling, which is the direction "
+        "no single turn weight could ever have carried"
+    )
+    assert shape["ranked_by_partition"]["phoenix"] > shape["ranked_by_partition"]["mandelbrot"]
+
+
+def test_a_plan_that_names_no_partition_overrides_none_of_them():
+    """The defect this all came from, pinned at the record.
+
+    `build_plan` resolves the standing table for its own use and used to hand THAT
+    to `by_band` as the caller's overrides, so `converted`'s last loop — the one
+    that lets an aimed leg keep an explicit turn weight — fired for all ten
+    registered partitions and wrote the turn weights back over every band's
+    conversion. The record said so and nobody read it: `converted: {}` with
+    `overridden` naming every partition, on every leg since the ruling landed.
+    """
+    _plan, shape = build_a_plan()
+    for band in (depth.RANKED, depth.FLAT):
+        working = shape["weight_conversion"][band]
+        assert working.get("overridden", []) == [], (
+            f"{band} reports {working.get('overridden')} overridden on a plan that named "
+            f"no partition at all"
+        )
+        assert working["converted"], f"{band} converted nothing: {working}"
+        assert set(working["converted"]) == {"phoenix"}
+
+
+def test_a_plan_that_names_one_partition_overrides_exactly_that_one():
+    """The rule the last loop is FOR, which is why it is not simply deleted: a leg
+    aimed at a partition says so by turn weight and the ruling must not put itself
+    back over the top of that."""
+    _plan, shape = build_a_plan(partition_weights={"mandelbrot": 3})
+    working = shape["weight_conversion"][depth.RANKED]
+    assert working["overridden"] == ["mandelbrot"]
+    assert set(working["converted"]) == {"phoenix"}, (
+        "the partition the caller named leaves the conversion, and no other does"
+    )
+    assert shape["partition_weights_by_band"][depth.RANKED]["mandelbrot"] == 3.0
 
 
 def test_a_named_partition_weight_draws_that_partition_at_full_weight_again():

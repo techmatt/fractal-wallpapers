@@ -247,6 +247,11 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+It read **119.86 s over 3,458, 114 deselected, nothing skipped** at the seconds-share
+fix, idle, 2026-09-04 — four tests more than the reading below and 0.56 s over it,
+which is noise. Three of the four are the ruling's own guards and the fourth pins
+that every prefix of a weighted round leans the way the round does.
+
 It read **119.30 s over 3,454, 114 deselected, nothing skipped** at the rare-cell mine,
 idle, 2026-09-04 — three tests more than the reading below, all three the guards on
 `curate depth --near-places`, and 2.5 s under it. Flat, and taken after four render
