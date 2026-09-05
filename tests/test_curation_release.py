@@ -144,6 +144,55 @@ def test_a_row_that_raises_is_a_recorded_row(monkeypatch) -> None:
     assert "no such location" in result.error
 
 
+def test_a_rows_mode_settings_reach_the_render_rather_than_being_dropped(monkeypatch) -> None:
+    """A `direct_trap_multiply` at `opacity=0.6` and a bare one are two different
+    pictures — the settings are in the recipe key — and until 2026-09-04 the task
+    had nowhere to carry them, so every release render of a varied seat was the
+    **bare** mode under the varied seat's name. Silent, because the bare picture
+    is a perfectly good picture of something else. Twelve of the thousand seats in
+    `20260904T233233Z` are varied, which is how it was found."""
+    from fractal_wallpapers.curation import colorize
+
+    seen: dict = {}
+
+    def render(row, mode, colormap, cyclic, output, **rest):
+        seen.update(rest)
+        return Path(output), None
+
+    monkeypatch.setattr(colorize, "render", render)
+    varied = release.Task(
+        id="a",
+        row={},
+        colormap="x",
+        mode="direct_trap_multiply",
+        output="a.png",
+        geometry={},
+        mode_params={"opacity": 0.6},
+    )
+    assert release.render_task(varied).ok
+    assert seen["mode_params"] == {"opacity": 0.6}
+    # And a task that says nothing still renders, with nothing said.
+    release.render_task(task("b"))
+    assert seen["mode_params"] == {}
+
+
+def test_every_builder_of_a_task_reads_the_mode_settings_off_the_recipe() -> None:
+    """Four builders and one omission is a wrong picture, so the claim is about all
+    of them at once rather than about the one this was found through."""
+    import inspect
+
+    from fractal_wallpapers.curation import run, solve
+
+    for module in (checks, run, solve):
+        source = inspect.getsource(module)
+        built = source.count("release.Task(")
+        assert built, f"{module.__name__} no longer builds a release task"
+        assert source.count("mode_params=") >= built, (
+            f"{module.__name__} builds {built} release task(s) and names `mode_params` on "
+            f"fewer — a task without it renders the bare mode under the varied seat's name"
+        )
+
+
 def test_a_stamp_only_comes_back_when_there_is_one_to_write() -> None:
     with_stamp = release.Result("a", True, {"autolevel": {"acted": True}}, 0.0, None, True)
     without = release.Result("b", True, {"autolevel": None}, 0.0, None, False)

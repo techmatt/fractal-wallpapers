@@ -87,6 +87,7 @@ def tasks_of(run: str, rows: list[dict], directory: Path) -> list[release.Task]:
                 },
                 colormap=recipe["colormap"],
                 mode=recipe["mode"],
+                mode_params=dict(recipe.get("mode_params") or {}),
                 output=str(Path(directory) / f"{row['candidate']}.png"),
                 geometry={
                     **regime_of_row(row).geometry(),

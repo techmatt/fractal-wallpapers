@@ -1169,6 +1169,136 @@ leg, which are on the solve record and not on a row; and any picture the prune h
 already swept before the record existed, which shows as a "no picture on this disk" tile
 and which the resolver reports as `picture_on_disk: false`.
 
+## `curate votes build` — the folder friends open, and what it prices
+
+```
+src/fractal_wallpapers/curation/votes.py   the encoder, the builder, the page
+artifacts/votes/<stamp>/full/sNNNN.jpg     2560x1440, the picture a click opens
+artifacts/votes/<stamp>/thumbs/sNNNN.jpg   512x288, downscaled from the full, never the candidate
+artifacts/votes/<stamp>/index.html         the viewer, one file, openable over file://
+artifacts/votes/<stamp>/README.txt         the paragraph the friends read
+artifacts/votes/<stamp>.zip                what actually gets sent
+```
+
+**`artifacts/votes/` and not `artifacts/curation/votes/`, deliberately.** `--out` takes
+any directory and the module fixes none, but a kit is a gigabyte or two of finished bulk
+that nothing in the loop reads once it has been sent — archive tier by the three-way rule
+in `CLAUDE.md`, and the unit of an archive is a **top-level name** under `artifacts/`.
+Inside `curation` it could never move on its own, because `curation` is the live pool and
+can never move at all.
+
+```
+# the whole record, at the defaults
+fractal-wallpapers curate votes build <stamp> --out artifacts/votes/<stamp>
+# forty seats first, so the viewer can be tried before a leg of hours
+fractal-wallpapers curate votes build --out artifacts/votes/<stamp>_n40 --limit 40
+# cheaper to make and smaller to send, and it shows
+fractal-wallpapers curate votes build --out artifacts/votes/cheap --ss 2 --quality 80
+```
+
+A recorded gallery is a decision this project took. A voting kit is that decision handed
+to people who are not here, and what comes back is one small JSON file per person:
+`{viewer, record, name, order_seed, votes: {<recipe key>: 1 | 2}, pages_visited,
+exported_at}`. **There is no ingest yet and the schema is the contract** — the votes have
+to exist before anything reads them, and `votes.VIEWER` names the shape so a friend's
+copy of a kit outlives this checkout's memory of what wrote it.
+
+**A filename carries the seat's position and nothing else.** No rank, no key, no mode: a
+friend who can read a rank off a filename has been told the answer. The join lives in the
+page, which embeds the index-to-recipe-key list as JSON, and the export carries the
+recipe key — the ID that survives every later merge.
+
+**Every seat is rendered again and the thumbnail comes off that render.** The stored
+candidate is 640x360, the size the judges read, and it is far too small to vote on;
+a grid of candidate thumbnails over a fullscreen of fresh renders would be showing people
+one picture and asking about another. The two are different sizes under different
+autolevel curves, because the release path measures its own curve at the frame it is
+rendering. Nothing in a kit replays a candidate curve, so `depth.levelling_of`'s
+three-way answer is a question about the 640x360 picture and never about this one.
+
+**Twelve seats of `20260904T233233Z` were being rendered as the wrong picture, and it was
+not this module's bug.** `release.Task` had no `mode_params`, so every release-size render
+in the tree dropped them: a `direct_trap_multiply` at `opacity=0.6` came out as the bare
+mode under the varied seat's name. Silent, because the bare picture is a perfectly good
+picture of something else. The field is on the task from 2026-09-04 and all four builders
+— `solve.render_seats`, `checks.tasks_of`, `run`'s release leg, `votes.render_fulls` —
+read it off the recipe; `tests/test_curation_release.py` holds both halves, the value
+reaching `colorize.render` and every builder naming it. **The solve's own release renders
+under `artifacts/curation/solve/tentative_n1000_20260904T233233Z/release/` predate the fix
+and those twelve are wrong there.**
+
+### What a kit costs, measured
+
+`scratch/votes_pilot` on 2026-09-04, six seats spanning the record's candidate-byte
+distribution with a distinct mode at each — `smooth`, `threads`, `smooth_stripe`,
+`smooth_angle_min`, `smooth_mean_angle`, `smooth_curvature`, 106 to 204 KiB of candidate.
+
+**To make, on the locked three workers**: **13.9 s a picture at 2560x1440 ss2** and
+**54.2 s at ss4** — leg wall clock over rows, which is the number a leg is sized off, not
+the per-row mean (28.0 s and 106.8 s, inflated by concurrency). Sample-linear as ever: the
+ratio is 3.9x for 4x the field samples, and it lines up with the 1280x720ss2 leg's 3.5 s
+a row.
+
+**Those two numbers are a floor and not a price, and the reason is how the six were
+picked.** They span the *candidate byte* distribution, which is the right axis for the
+encoding question and the wrong one for the timing question: they came out at a median
+viewport width of **10^-2.1** against the record's **10^-4.6**, so the pilot priced the
+shallow half of a pool where **31% of seats sit below 1e-6** and depth is what buys
+iterations. The honest price is the forty-seat kit's, drawn in seat order and therefore
+depth-representative: **76.2 s a picture at ss4**, a 3,047 s leg over forty rows of
+47.3 s to 642.9 s, forty made and none killed. That is **1.4x the pilot's ss4 figure**,
+and it puts a thousand seats at **21.2 h at ss4** and about **5.4 h at ss2** — the
+second derived through the pilot's own 3.90x ratio rather than measured, because
+nothing has run a deep ss2 leg. Price a kit off a sample drawn in **seat order**, never
+off one drawn on a picture's own properties.
+
+**The pilot's byte prediction held even though its timing did not**, which is the shape
+to expect: JPEG size is a fact about the picture and the six spanned that distribution on
+purpose. It predicted 1,022 KiB a full at q85/4:2:0/ss4 and the forty came in at
+**1,077 KiB mean, 1,438 KiB max** — within 5%. So a thousand seats is **1.13 GB**, off a
+45.2 MB kit at forty.
+
+**The thumbnails cost nothing and the fulls are the whole zip.** 2.0 MB for forty, so
+50 MB at a thousand against 1.13 GB of fulls. And the zip **stores** the JPEGs rather
+than deflating them: rebuilt both ways over the same forty, deflate bought 0.1 MB of
+45.3 and would spend minutes of CPU doing it at a thousand.
+
+**To send**: every cell of the quality x chroma grid puts a thousand fulls between
+**0.88 and 2.88 GB**, at ss4:
+
+| quality | 4:4:4 | 4:2:0 |
+| --- | --- | --- |
+| 80 | 1.11 GB | 0.88 GB |
+| 85 | 1.35 GB | **1.05 GB** |
+| 90 | 1.74 GB | 1.31 GB |
+| 95 | 2.58 GB | 1.82 GB |
+
+**The zip is the constraint and quality does not fix it.** The whole quality axis moves
+the total by a factor of two and the floor is still most of a gigabyte, because a fractal
+at 2560x1440 is high-entropy everywhere. Only the frame or the seat count would move it,
+and both are Matt's call. The thumbnails are not the problem: 512x288 at q85 is about
+20 KiB, so a thousand of them is ~20 MB.
+
+**The supersample is the only decision on that sheet a person can see.** ss2 against ss4
+is a mean absolute difference of **6.28** over the six seats, **4.81** after fitting to
+1080p — against **3.71 to 6.09** for the entire quality axis from q95 to q80 inside the
+busiest crop. So dropping to ss2 to save eleven hours costs *more* picture than dropping
+five quality steps does, and it costs it as aliasing rather than as softness; the crops
+show it plainly on `smooth_mean_angle`. Hence the defaults: **ss4, q85, 4:2:0**, one to
+buy the picture and two to pay for it. ss4 is also 10% smaller in bytes at every cell,
+because supersampling removes exactly the noise a JPEG spends most on.
+
+**The busy crops are found rather than guessed**: `flatness`'s own per-16-pixel plane fit,
+summed over a 512x288 window with a summed-area table, and the window is chosen once off
+the ss4 render and reused for every regime — a window found per regime would put the two
+crops in different places, and the sheet's last row is a claim they are the same crop.
+
+**The fast lane drives the whole builder without an engine.** `votes.render_fulls` is the
+seam and it is replaced, but `arrived` is called on this side of it, so the encode, the
+downscale, the page and the zip are all exercised. `tests/test_votes.py` names candidate
+pictures that do not exist on disk at all, so a kit that reached for one could not be
+built there rather than quietly shipping the wrong picture.
+
 ## `curate headroom` — the upper bound the gallery leg is measured against
 
 The leg above is minutes and it is the wrong instrument for one question. Before

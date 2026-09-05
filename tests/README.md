@@ -57,6 +57,21 @@ finish, and under load
 **fails** — it runs a refill loop against a wall clock. A red there on a busy box
 is worth re-running alone before it is worth reading.
 
+**But it survived beside `curate votes build`, and the difference is the parent
+rather than the engines.** 2026-09-04, on Matt's say-so: **339.71 s over 3,589,
+116 deselected, nothing skipped, all green** — `test_twins` included — beside a
+forty-seat kit's three engines at below-normal. Three and a half times the idle
+reading and not a death, because the thing that kills the lane is **commit
+charge** and a votes build's parent holds almost nothing: it reaches its recipes
+through `candidate_ledger.by_key`, which streams the ledger and keeps a few
+hundred rows, where a solve's release leg is still holding the pool it selected
+from. So the question to ask of a leg before sharing the box with it is what its
+**parent** holds, not how many workers it has.
+
+**It is still not a timing.** The same suite on the same install read **99.51 s**
+an hour later once that leg had finished — so beside a leg it survives and tells
+you nothing about the tests, which is why the rule stands unchanged.
+
 ## What "the fast-lane count" means
 
 One definition, because three sessions on one tree wrote down three totals and
@@ -325,6 +340,21 @@ repository and a chronological log is not a rule. The rules the log produced
 stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
+
+It read **99.51 s over 3,589, 116 deselected, nothing skipped** at the voting kit,
+2026-09-04 — **ten tests more** than the reading below and **3.34 s over** its
+96.17 s, on an idle box once the forty-seat kit's leg had finished. The ten are six
+kit guards, two on the release task's mode settings, and two nested-verb lines, and
+the 3.34 s is where you would put it: the kit guards render nothing —
+`votes.render_fulls` is replaced — but each encodes two 2560x1440 JPEGs and
+downscales one, which is about 0.4 s of Pillow apiece and the rest is arithmetic.
+The most expensive fast-lane guards in this suite are now picture guards that never
+open the engine.
+
+**The same lane read 339.71 s an hour earlier, run beside that leg on Matt's
+say-so** — three and a half times, all green, `test_twins` included. That reading
+is in *A lane sharing the box with a render leg* above, where it says something
+about legs rather than about tests.
 
 It read **96.17 s over 3,579, 116 deselected, nothing skipped** at the publication
 ruling, 2026-09-04 — **six tests more** than the reading below and **1.44 s under**

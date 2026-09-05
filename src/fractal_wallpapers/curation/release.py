@@ -199,6 +199,16 @@ class Task:
     is submitted and carried across so the **worker** imposes it. A deadline the
     parent could only impose by waiting is not a deadline for the thing that is
     already stuck.
+
+    `mode_params` is the coloring's own settings, and it is on the task because it
+    is in the recipe key: a `direct_trap_multiply` at `opacity=0.6` and a bare one
+    are two different pictures ([`colorize.render`]). It was missing here until
+    2026-09-04, so every release render of a varied seat was the **bare** mode
+    under the varied seat's name — twelve of the thousand in
+    `20260904T233233Z`, and the failure is silent because the bare picture is a
+    perfectly good picture of something else. Defaulted rather than required, so
+    a caller with nothing to say still builds a task; every builder in the tree
+    reads it off the recipe now.
     """
 
     id: str
@@ -208,6 +218,7 @@ class Task:
     output: str
     geometry: dict
     timeout: float | None = None
+    mode_params: dict = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -253,6 +264,7 @@ def render_task(task: Task) -> Result:
                 palette_sets.cyclic(),
                 Path(task.output),
                 render_geometry=task.geometry,
+                mode_params=task.mode_params,
             )
             return Result(
                 task.id,

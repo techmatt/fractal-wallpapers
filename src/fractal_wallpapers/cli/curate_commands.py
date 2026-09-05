@@ -612,6 +612,26 @@ def _record_a_solve(args: argparse.Namespace) -> int:
     return 0
 
 
+def curate_votes(args: argparse.Namespace) -> int:
+    """Build the folder Matt's friends open, out of a recorded gallery."""
+    from fractal_wallpapers.curation import tentative, votes
+
+    try:
+        manifest = votes.build(
+            stamp=args.stamp,
+            out=args.out,
+            limit=args.limit,
+            quality=args.quality,
+            chroma=args.chroma,
+            supersample=args.ss,
+        )
+    except (votes.VotesRefused, tentative.TentativeRefused) as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps(manifest, indent=2))
+    return 0
+
+
 def curate_solve(args: argparse.Namespace) -> int:
     """Choose the gallery, or record one: a stratified view, a greedy seed, and swaps."""
     from fractal_wallpapers.curation import candidate_ledger, ceiling, solve
@@ -2350,6 +2370,7 @@ def add_commands(subcommands) -> None:
     from fractal_wallpapers.curation import solve as solve_module
     from fractal_wallpapers.curation import tentative as tentative_module
     from fractal_wallpapers.curation import view as view_module
+    from fractal_wallpapers.curation import votes as votes_module
 
     curating = subcommands.add_parser(
         "curate",
@@ -3323,6 +3344,72 @@ def add_commands(subcommands) -> None:
     )
 
     solve_verbs.add_parser("list", help="name every record on this machine")
+
+    voting = steps.add_parser(
+        "votes",
+        help="build the folder friends open to vote on a recorded gallery",
+        description=(
+            "A recorded gallery as something a person who is not here can rate. Every "
+            "seat is rendered again at "
+            f"{votes_module.FRAME[0]}x{votes_module.FRAME[1]} through the release path — "
+            "the stored candidate is 640x360 and far too small to vote on — the thumbnail "
+            "is a downscale of that render and never of the candidate, and the folder is "
+            "zipped with a self-contained page that opens by double-clicking. A filename "
+            "carries the seat's position and nothing else: no rank, no key, no mode. What "
+            "comes back is one small JSON file per person, keyed by recipe key, in the "
+            f"shape {votes_module.VIEWER} fixes."
+        ),
+    )
+    voting.set_defaults(handler=curate_votes)
+    votes_verbs = voting.add_subparsers(dest="what", required=True)
+    building_votes = votes_verbs.add_parser(
+        "build",
+        help="render, encode and zip a voting kit for one record",
+        description=(
+            "Resumable at the seat: one whose two JPEGs are already there is not rendered "
+            "again, so a killed leg picks up where it stopped. --ss is the flag worth "
+            "thinking about and it is the only one anybody can see: measured at 76.2 s a "
+            "picture on three workers, 1,000 seats is 21 h at ss4 against about 5 at ss2, "
+            "and the whole quality axis moves the picture less than that choice does. "
+            "GALLERY.md's `curate votes build` has the sheet those came off."
+        ),
+    )
+    building_votes.add_argument(
+        "stamp",
+        nargs="?",
+        help="the recorded gallery to build a kit from (default the newest published)",
+    )
+    building_votes.add_argument(
+        "--out",
+        required=True,
+        metavar="DIR",
+        help="the directory to build the kit in. It is zipped to <DIR>.zip beside itself",
+    )
+    building_votes.add_argument(
+        "--limit",
+        type=int,
+        help="build the first N seats only, in seat order. A kit to try before a long leg",
+    )
+    building_votes.add_argument(
+        "--quality",
+        type=int,
+        default=votes_module.QUALITY,
+        help=f"JPEG quality for both the fulls and the thumbnails (default {votes_module.QUALITY})",
+    )
+    building_votes.add_argument(
+        "--chroma",
+        choices=sorted(votes_module.SUBSAMPLING),
+        default=votes_module.CHROMA,
+        help=f"chroma subsampling, passed rather than left to Pillow "
+        f"(default {votes_module.CHROMA})",
+    )
+    building_votes.add_argument(
+        "--ss",
+        type=int,
+        choices=(2, 4),
+        default=votes_module.SUPERSAMPLE,
+        help=f"the field supersample under the frame (default {votes_module.SUPERSAMPLE})",
+    )
 
     growing = steps.add_parser(
         "growth",

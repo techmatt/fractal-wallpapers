@@ -20,7 +20,7 @@ what stops a flag added to `curate solve run` from quietly becoming a flag
 `curate solve record` accepts — a record that took a flag it does not read would
 not be reproducible from the `run` it claims to be, and the failure would be
 silent. `curate_commands.RUN_ONLY_SOLVE_FLAGS` was a runtime check for exactly
-that on one group; the parser enforces it on all seventeen now, and this says so.
+that on one group; the parser enforces it on all eighteen now, and this says so.
 """
 
 from __future__ import annotations
@@ -202,6 +202,26 @@ LINES: tuple[tuple[str, str, dict], ...] = (
         {"what": "resolve", "id": ["k0,not-an-id"], "stamp": None},
     ),
     ("curate solve list", "curate_solve", {"what": "list"}),
+    (
+        "curate votes build 20260101T000000Z --out kit --limit 40 --quality 92 --chroma 444 --ss 4",
+        "curate_votes",
+        {
+            "what": "build",
+            "stamp": "20260101T000000Z",
+            "out": "kit",
+            "limit": 40,
+            "quality": 92,
+            "chroma": "444",
+            "ss": 4,
+        },
+    ),
+    # The stamp is optional and means the newest published record, which is the
+    # spelling a reader who has just recorded one will type.
+    (
+        "curate votes build --out kit",
+        "curate_votes",
+        {"what": "build", "stamp": None, "out": "kit", "limit": None},
+    ),
     (
         "curate growth run --name g1 --fraction 8 --n 150 --seed 7 --swap-seconds 60",
         "curate_growth",
@@ -514,6 +534,7 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
         "resolve": ("--stamp",),
         "list": (),
     },
+    "votes": {"build": ("--out", "--limit", "--quality", "--chroma", "--ss")},
     "growth": {
         "run": ("--name", "--fraction", "--n", "--seed", "--swap-seconds"),
         "plot": (),
@@ -693,7 +714,7 @@ def test_a_nested_verb_resolves_to_the_namespace_it_always_did(line, handler, ex
 
 
 def test_every_nested_verb_is_a_real_subparser() -> None:
-    """Seventeen groups and sixty-nine verbs, and no group left spelling its verb as
+    """Eighteen groups and seventy verbs, and no group left spelling its verb as
     a positional `choices=` argument. The two are not interchangeable: a positional
     takes the whole group's flags, so `--help` at the group is every verb's flags at
     once and a flag on the wrong verb is accepted and silently ignored."""
@@ -703,7 +724,7 @@ def test_every_nested_verb_is_a_real_subparser() -> None:
         f"nested groups the surface table does not name: {sorted(set(groups) - set(SURFACE))}; "
         f"named but not nested: {sorted(set(SURFACE) - set(groups))}"
     )
-    assert sum(len(verbs) for verbs in SURFACE.values()) == 69
+    assert sum(len(verbs) for verbs in SURFACE.values()) == 70
     for name, action in groups.items():
         assert list(action.choices) == list(SURFACE[name]), (
             f"`curate {name}` registers its verbs in another order, and the order is the "
@@ -721,7 +742,7 @@ def test_a_nested_verb_carries_only_the_flags_its_handler_reads() -> None:
     handed a flag it does not read would not be reproducible from the run it claims
     to be, and the failure would be silent — the flag dropped on the floor and the
     stamp written anyway. `curate_commands.RUN_ONLY_SOLVE_FLAGS` was a runtime
-    check for that on one group. The parser enforces it on all seventeen now."""
+    check for that on one group. The parser enforces it on all eighteen now."""
     groups = nested_groups(cli.build_parser())
 
     wrong = {}

@@ -755,6 +755,7 @@ def _release(selected, by_key, directory, workers, skip, log, leg=None):
                 },
                 colormap=row["colormap"],
                 mode=row["mode"],
+                mode_params=dict(row.get("mode_params") or {}),
                 output=str(picture),
                 geometry={**geometry, "maxiter": int(by_key[row["key"]]["maxiter"])},
             )

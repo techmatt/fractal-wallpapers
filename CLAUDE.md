@@ -174,11 +174,11 @@ just its own file.
 test there is, and that is what CI runs and what runs before a checkpoint. The
 fast lane is for the edit-run loop and nothing else.
 
-Both are measured, not estimated. The **fast** lane is **96.17 s over the 3,579 it
+Both are measured, not estimated. The **fast** lane is **99.51 s over the 3,589 it
 holds, 116 deselected**, on this machine, 2026-09-04, on a `.[dev,models]` install
 with a release engine built. The **slow** lane is **6:31 over 3,681, nothing
-skipped**, same machine, same day — that one predates the six publication guards,
-so it is six short of what it would read now. Every reading this lane has taken is in
+skipped**, same machine, same day — that one predates the publication guards and
+the voting kit's, so it is sixteen short of what it would read now. Every reading this lane has taken is in
 [`tests/README.md`](tests/README.md#the-lanes-readings-in-order), with what the box
 was doing at the time — they are there and not here because this file loads into
 every session and a chronological log is not a rule. What stays here is the current
