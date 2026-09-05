@@ -113,11 +113,10 @@ rungs, which is one atom in two seats. A chain that names only its last link
 forgets everything before it: measured 2026-09-01, a fourth leg handed only the
 third's ledger wrote **192 of its 302 rows** on atoms the first leg already held.
 `--prior` hands the new leg the atom keys the chain found (they seed `seen`), the
-proven root ids it consumed (off the queue), every seed id it fired at, and its
-admitted rows as this leg's promotions, deduplicated on the atom at the better
-class. Note that "consumed" is read off the rows, so a root that produced nothing
-is invisible and is fired again — which is wanted, because the seed snap's ceiling
-has moved since, and which is also why convergence is not detected from it.
+proven root ids it consumed (off the queue), every seed id it fired at, its fire
+history per root and ladder (*A root that was fired and got nothing*, below), and
+its admitted rows as this leg's promotions, deduplicated on the atom at the better
+class.
 
 * **A leg is found by its header row, never by its name.** Every ledger under both
   tiers is opened, one line each, and kept if that line is `kind:
@@ -164,15 +163,21 @@ both computed and both on the record under `reprobe_because`:
   and *not* of the queue.
 
 **Queue exhaustion is an honest floor and a useless trigger, which is why the
-second clause exists.** A root that was consumed and returned nothing appears in
-no row, so it lands in neither the `fired` nor the `spent` set and a plain
-continuation offers it again; the fifth leg's 84 `matt_q4` seeds all returned
-nothing and are all still on the queue today. Measured 2026-09-03 over the five
-legs on this machine: **635 of 2,153 proven roots are in `fired`**, and 977 of
-that gap is simply the label store having grown from 1,176 roots to 2,153 since
-the legs ran. A leg launched now reads *saturated* with 1,518 roots and 3,253
-promotions still on its continuation queue, which is the whole point — the queue
-is not the constraint, the neighbourhoods are.
+second clause exists.** A root that was consumed and returned nothing used to
+appear in no row, so it landed in neither the `fired` nor the `spent` set and a
+plain continuation offered it again; the fifth leg's 84 `matt_q4` seeds all
+returned nothing and were all still on the queue afterwards. Measured 2026-09-03
+over the five legs on this machine: **635 of 2,153 proven roots are in `fired`**,
+and 977 of that gap is simply the label store having grown from 1,176 roots to
+2,153 since the legs ran. A leg launched then read *saturated* with 1,518 roots
+and 3,253 promotions still on its continuation queue, which is the whole point —
+the queue is not the constraint, the neighbourhoods are.
+
+Since 2026-09-05 the barren half is recorded (*A root that was fired and got
+nothing*, below) and the plain queue shortens as the chain fires. That closes the
+invisibility and **not** this clause: the same fire rows say the queue is
+thousands deep, so exhaustion stays the rare trigger and saturation stays the
+useful one.
 
 **And on 2026-09-04 that reading was wrong, because the queue had been refilled
 under it.** `reframe_g7` was launched at those 1,518 roots under `--no-reprobe`
@@ -180,11 +185,11 @@ against the saturated default, and 20 minutes of them returned 488 locations and
 128 head-q4 at **9.4 s per head-q4** — the cheapest the channel has been. The
 split says why: of the 912 roots it fired, the 277 from the **location** store
 returned **nothing at all** (they are `reframe_g6`'s barren roots, offered again
-because a root that returns nothing never enters `fired`), while the 635 from the
-**finished** stores returned 0.769 locations each — `reframe_g1`'s 0.750 on its
-own first pass, on ground the channel had never touched. Its re-discovery share
-came back at **23.9%**, so `g7` is now the chain's latest leg and the next leg
-will not re-probe.
+because at the time a root that returned nothing never entered `fired`), while the
+635 from the **finished** stores returned 0.769 locations each — `reframe_g1`'s
+0.750 on its own first pass, on ground the channel had never touched. Its
+re-discovery share came back at **23.9%**, so `g7` is now the chain's latest leg
+and the next leg will not re-probe.
 
 The rule that follows is about the clause and not about this leg: **saturation is
 a reading about neighbourhoods, and a widening of `supply.proven` puts new
@@ -197,6 +202,91 @@ last): **13.5%** (792 new, 1,056 seeds), **56.7%**, **68.8%**, **77.5%** (1,607
 new in 168 minutes — not a leg to skip re-probing for), **93.0%** (seven new for
 576 seeds). The floor of 100 consumed seeds is there because a leg that fired at
 nine and found nothing new is not a measurement of anything.
+
+### A root that was fired and got nothing
+
+**Every seed a leg fires gets a row, whatever the firing returned.** It is a
+`reframing_fire` row in the same `walk.jsonl`, written per seed-batch rather than
+at close, so a leg killed at hour six of eight has recorded everything it spent up
+to the kill. Nothing downstream sees it: the supply union reads `kind:
+"candidate"` and this is a fifth kind beside the header, the candidates, the
+refinements and the summary.
+
+**The problem it closes was silent and expensive.** A candidate row is written
+where something is found, so for the channel's first eight legs a root that was
+*fired and returned nothing* left no trace at all — it landed in neither the
+`fired` set nor the `spent` one, and the next plain continuation offered it again
+at the **front** of the queue, ahead of every root nothing had ever paid for.
+`reframe_g8` spent a large share of its seeds re-firing `reframe_g7`'s barren
+roots that way, and `g7` itself re-fired `g6`'s 277.
+
+**Consumed is fired, converged, and zero locations.** Matt's ruling of
+2026-09-05, and the other outcomes on the row exist to keep it honest — the five
+are `productive`, `barren`, `no_converge`, `not_drawn` and `undefined`, and only
+`barren` takes a root off the queue:
+
+* `no_converge` — Newton did not settle at the seed, or the period scan found no
+  candidate at all. Both move when `--seed-max-period` does, so the leg learned
+  nothing about the place. The refusals that mean this are named once in
+  `reframing.UNRESOLVED`; everything else an operator says — a nucleus outside the
+  seed view, a framing over `operators.MAX_WIDTH`, a probe that kept handing back
+  the parent — is a *fact about the geometry* and fires the same way again, which
+  is what makes a seed that returned only those barren rather than unresolved.
+* `not_drawn` — atoms were found and their `engine.screen` batch crashed twice, so
+  nothing was ever read. A leg failure, not an answer about the root.
+* `undefined` — the seed's family has no parameter-plane degree. Unreachable from
+  the seed query, which serves the parameter planes alone.
+
+A seed the leg never reached before the clock simply has no row, which is how
+"not reached" is spelled: absence.
+
+**Consumed is relative to the ladder, and the ladder is on the header row.** A
+barren verdict at nine rungs is not a verdict at eleven, so each fire is scoped to
+the operator set, the rung span and the period ceiling it ran under —
+`reframing.ladder_of`, read off `kind: "reframing_run"`, which has carried
+`operators`, `rungs` and `seed_max_period` since the channel shipped. That is why
+there is no ladder on the fire row and no second store beside the ledger: the
+ladder is already written down once per leg, and `prior_run`'s one parse of a leg
+answers both questions at once.
+
+`reframing.covers` is what says one ladder already answers another, and it is
+about **reach** rather than about how many rungs there are: the operator set has
+to contain the operator set, the ceiling has to be at least as high, and the rung
+span has to contain the rung span. A rung added *between* two the ladder already
+had has not looked anywhere new and does not re-open a barren root; a rung added
+past the end has. The move it is the shape of is 2026-09-04's — `{8..128}` to
+`{16..256}` reaches further out, so every root `g7` fired barren is offered to a
+leg on the new ladder exactly once.
+
+**One more fire under `--reprobe`, and not two.** The count is per `(root,
+ladder)`: a plain continuation allows one barren fire, `--reprobe` allows two, and
+two barren fires under one ladder spend the pair for re-probing too. A root that
+ever produced a location is bounded by nothing, which is the whole of what
+re-probing is for — `expand_neighborhood` probes at random, so a second pass at a
+neighbourhood that paid is a different sample of it.
+
+**A re-offered root is fired last.** It keeps its own class on its row — the
+source is what a person cast, and this decides where it is fired rather than what
+it is — but `reframing.queued` sorts it behind every unfired seed whatever that
+class is, so a short leg's clock goes to what nothing has paid for yet. The queue
+is therefore: unfired `matt_q4`, unfired `matt_q3`, unfired `head_q4`, unfired
+`head_keeper`, then the re-offered ones in the same order.
+
+**Nothing was backfilled, and the ledgers are why.** A leg's record says which
+roots produced something and cannot say which of the rest it *reached* before the
+clock ran out: the summary row carries `seeds_consumed` as a count, the queue it
+was drawn from was ordered off a label store that has grown since, and no row
+names a seed the leg fired at and got nothing from. Where a record cannot tell
+"fired barren" from "not reached", the rule is to write nothing — so all seven
+legs on this machine contribute **0** fire rows, every root on the queue reads
+`unknown`, and the first fire rows are the next leg's. What each leg *can* still
+say is on the record either way: `prior_run`'s `ladders` names the four distinct
+ladders the chain has run under, and `fires_recorded` is 0 until a leg writes some.
+
+**Where to read it.** A run's summary carries `fires` — the ladder, its key, and
+the outcome tally — and the seed query carries `ladder_rule`: how many offered
+seeds have a barren history, how many a covering ladder consumed, how many are
+re-offered because the ladder grew, and how many have no fire record at all.
 
 **Seeds are `proven` roots, q3 and q4, parameter planes only, minus every eval
 pin.** Off `supply.proven` rather than a second query over the label store; the
