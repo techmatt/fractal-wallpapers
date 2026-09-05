@@ -73,7 +73,7 @@ the bake; what is on disk here is one of four stop counts, and no map ships at
 
 ```text
  33 stops   156 maps        257 stops   334 maps
- 34 stops    36 maps        512 stops   375 maps
+ 34 stops    36 maps        512 stops   495 maps
 ```
 
 The 512s are what `authored_import` densifies an OKLCH brief to; the rest arrived
@@ -119,7 +119,7 @@ and inverting are two different questions and only the second one has an answer.
 
 Nine hundred maps are not nine hundred choices. `groups.jsonl` says which of them
 are near enough that picking between them is picking nothing — **65 groups over
-143 of the 901 maps, the largest holding 6** — and
+143 of the 901 maps it was cut over, the largest holding 6** — and
 `fractal-wallpapers palettes groups` regenerates it. The metric is M1: the sliced
 Wasserstein-1 distance between two maps' 4096-position **unfolded** Oklab clouds
 read through the engine's own bake, with `a` and `b` scaled by 4 so a hue
@@ -139,18 +139,28 @@ off for one run. A group's `canonical` member — the one carrying the most
 finished-render label rows — is what a record or a figure *names*; it is
 deliberately not what the pool draws.
 
-**The three counts, and none of them is the same number.** The **library** is 901
-maps — every file in this directory. The **candidate pool** is 900: `pool.json`
+**The three counts, and none of them is the same number.** The **library** is 1,021
+maps — every file in this directory. The **candidate pool** is 1,020: `pool.json`
 next door, the library less `blue_orange`, the one sequential map held back for the
 tile floor and the labeler's vivid render. What a colorize actually **draws** from
-is 822, because 143 of the 900 collapse into 65 groups and each group stands one
-member up (`757 singletons + 65 = 822`). The count is seed-independent — a
+is 942, because 143 of the 1,020 collapse into 65 groups and each group stands one
+member up (`877 singletons + 65 = 942`). The count is seed-independent — a
 different `--seed` stands a different member up, never a different number of them
-— so 822 is the width of the drawable pool for every run with the collapse on.
+— so 942 is the width of the drawable pool for every run with the collapse on.
+
+**The 143 and the 65 are the table's, not the library's**, and the table was cut
+over the 901 maps here on 2026-08-25: `classic-pairs-2026-09`'s 120 arrived after
+it and are singletons until somebody re-cuts. Fifteen pairs sit at or under the
+cut that the table has never seen — ten of a new map against a shipped one,
+nearest 0.0313, five inside the drop, nearest 0.0257 — and they are listed in
+that ingest's report rather than merged, because over-admission is the standing
+ruling and what leaves is Matt's call.
 
 Regenerating the table is not cheap: `fractal-wallpapers palettes groups` is
 **about five minutes** — 279 s measured on this repository's own machine for the
-901 × 901 distance matrix, 1,024 projection directions at 128 quantiles each, plus
+901 × 901 distance matrix of the day, and it grows with the square of the library —
+the 1,021 × 1,021 M1 alone measured 268 s on 2026-09-05 — 1,024 projection
+directions at 128 quantiles each, plus
 the linkage — and it rewrites `groups.jsonl` when it finishes. It reproduces: the
 same run re-derived 65 groups over 143 maps against the shipped file exactly.
 

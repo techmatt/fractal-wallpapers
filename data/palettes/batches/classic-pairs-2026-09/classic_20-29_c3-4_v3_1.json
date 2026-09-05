@@ -1,0 +1,1585 @@
+[
+ {
+  "name": "Oxblood Procession",
+  "mood": "one rose family only, oxblood to blush, driven to true black and a cool white flare; drama is the value sweep inside a single hue",
+  "architecture": "mono-temperature-ramp",
+  "skeleton": "peak-late",
+  "value_key": "low",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.06,
+     0.02,
+     5
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.12,
+    "oklch": [
+     0.3,
+     0.115,
+     6
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.32,
+    "oklch": [
+     0.5,
+     0.14,
+     4
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.52,
+    "oklch": [
+     0.7,
+     0.082,
+     2
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.7,
+    "oklch": [
+     0.86,
+     0.055,
+     3
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.8,
+    "oklch": [
+     0.97,
+     0.006,
+     3
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.9,
+    "oklch": [
+     0.87,
+     0.045,
+     4
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.06,
+     0.02,
+     5
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Blush Vault",
+  "mood": "the same rose family kept pale, with a single deep oxblood trough as the event; no white anywhere, the light end is tinted blush",
+  "architecture": "near-monochrome-spark",
+  "skeleton": "inverted-arc",
+  "value_key": "high",
+  "complexity": 3,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.845,
+     0.05,
+     3
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.2,
+    "oklch": [
+     0.78,
+     0.08,
+     2
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.36,
+    "oklch": [
+     0.58,
+     0.112,
+     4
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.48,
+    "oklch": [
+     0.285,
+     0.128,
+     6
+    ],
+    "role": "accent"
+   },
+   {
+    "pos": 0.62,
+    "oklch": [
+     0.56,
+     0.118,
+     3
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.8,
+    "oklch": [
+     0.75,
+     0.082,
+     1
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.845,
+     0.05,
+     3
+    ],
+    "role": "field"
+   }
+  ]
+ },
+ {
+  "name": "Slate Ladder",
+  "mood": "a single cool blue-grey family from charcoal to pewter, chroma peaking at the steel mid; no white, the top is a tinted silver",
+  "architecture": "mono-temperature-ramp",
+  "skeleton": "no-cliff",
+  "value_key": "low",
+  "complexity": 3,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.06,
+     0.012,
+     260
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.16,
+    "oklch": [
+     0.3,
+     0.03,
+     261
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.38,
+    "oklch": [
+     0.48,
+     0.062,
+     259
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.58,
+    "oklch": [
+     0.62,
+     0.028,
+     262
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.8,
+    "oklch": [
+     0.845,
+     0.02,
+     258
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.06,
+     0.012,
+     260
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Pewter Bloom",
+  "mood": "the same cool grey ladder with a saturated steel-blue spark low down and a true white flare late; drama is chroma against neutral",
+  "architecture": "near-monochrome-spark",
+  "skeleton": "double-peak",
+  "value_key": "mid",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.24,
+     0.022,
+     261
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.14,
+    "oklch": [
+     0.42,
+     0.07,
+     259
+    ],
+    "role": "accent"
+   },
+   {
+    "pos": 0.28,
+    "oklch": [
+     0.62,
+     0.026,
+     262
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.44,
+    "oklch": [
+     0.34,
+     0.03,
+     260
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.6,
+    "oklch": [
+     0.8,
+     0.035,
+     258
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.69,
+    "oklch": [
+     0.975,
+     0.006,
+     258
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.78,
+    "oklch": [
+     0.86,
+     0.022,
+     259
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.24,
+     0.022,
+     261
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Umber & Ember",
+  "mood": "deep umber and bright tan held apart by black and a cream-white flare, with one crisp step between the two browns",
+  "architecture": "duotone-plus",
+  "skeleton": "cliff-in-mids",
+  "value_key": "low",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.05,
+     0.018,
+     45
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.14,
+    "oklch": [
+     0.29,
+     0.048,
+     48
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.34,
+    "oklch": [
+     0.46,
+     0.085,
+     55
+    ],
+    "role": "mid",
+    "segment": "cliff",
+    "width": 0.05
+   },
+   {
+    "pos": 0.42,
+    "oklch": [
+     0.62,
+     0.1,
+     64
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.58,
+    "oklch": [
+     0.8,
+     0.07,
+     72
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.68,
+    "oklch": [
+     0.965,
+     0.01,
+     80
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.78,
+    "oklch": [
+     0.9,
+     0.032,
+     79
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.05,
+     0.018,
+     45
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Turkish Grind",
+  "mood": "an early cream peak then a long walk down umber to a roasted dark; warm all the way, no white in the palette",
+  "architecture": "analogous-drift",
+  "skeleton": "peak-early",
+  "value_key": "mid",
+  "complexity": 3,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.18,
+     0.038,
+     46
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.18,
+    "oklch": [
+     0.62,
+     0.1,
+     64
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.3,
+    "oklch": [
+     0.84,
+     0.048,
+     78
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.5,
+    "oklch": [
+     0.5,
+     0.078,
+     58
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.66,
+    "oklch": [
+     0.285,
+     0.046,
+     48
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.82,
+    "oklch": [
+     0.44,
+     0.07,
+     55
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.18,
+     0.038,
+     46
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Fathom Ice",
+  "mood": "one blue family swept from black through slate to a cyan-lit shallow and a pale ice top; cold throughout, no white",
+  "architecture": "mono-temperature-ramp",
+  "skeleton": "peak-late",
+  "value_key": "low",
+  "complexity": 3,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.05,
+     0.02,
+     230
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.14,
+    "oklch": [
+     0.28,
+     0.07,
+     236
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.34,
+    "oklch": [
+     0.46,
+     0.098,
+     238
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.54,
+    "oklch": [
+     0.6,
+     0.116,
+     229
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.72,
+    "oklch": [
+     0.74,
+     0.09,
+     225
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.86,
+    "oklch": [
+     0.865,
+     0.048,
+     222
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.05,
+     0.02,
+     230
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Harbour Spark",
+  "mood": "muted harbour slate as the body with one vivid cyan spark early and a cool white flare late; two lightness peaks around a dark trough",
+  "architecture": "near-monochrome-spark",
+  "skeleton": "double-peak",
+  "value_key": "mid",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.22,
+     0.055,
+     238
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.14,
+    "oklch": [
+     0.52,
+     0.09,
+     238
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.26,
+    "oklch": [
+     0.66,
+     0.125,
+     229
+    ],
+    "role": "accent"
+   },
+   {
+    "pos": 0.4,
+    "oklch": [
+     0.3,
+     0.06,
+     234
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.56,
+    "oklch": [
+     0.78,
+     0.07,
+     226
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.66,
+    "oklch": [
+     0.975,
+     0.01,
+     224
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.76,
+    "oklch": [
+     0.88,
+     0.045,
+     222
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.22,
+     0.055,
+     238
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Spice Procession",
+  "mood": "crimson to orange to peach walked across a deep black ground, topped by a warm white flare; the dip back into crimson is the second event",
+  "architecture": "analogous-drift",
+  "skeleton": "peak-late",
+  "value_key": "low",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.06,
+     0.03,
+     30
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.12,
+    "oklch": [
+     0.4,
+     0.15,
+     27
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.26,
+    "oklch": [
+     0.66,
+     0.185,
+     43
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.38,
+    "oklch": [
+     0.3,
+     0.11,
+     27
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.52,
+    "oklch": [
+     0.54,
+     0.196,
+     27
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.68,
+    "oklch": [
+     0.82,
+     0.085,
+     66
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.77,
+    "oklch": [
+     0.975,
+     0.01,
+     70
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.86,
+    "oklch": [
+     0.86,
+     0.06,
+     55
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.06,
+     0.03,
+     30
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Ember Terracotta",
+  "mood": "a single heat ramp from smouldering crimson to orange with a crisp step at the mid boundary and a peach glow at the top; no white",
+  "architecture": "mono-temperature-ramp",
+  "skeleton": "cliff-in-mids",
+  "value_key": "mid",
+  "complexity": 3,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.16,
+     0.06,
+     28
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.2,
+    "oklch": [
+     0.44,
+     0.16,
+     27
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.38,
+    "oklch": [
+     0.6,
+     0.195,
+     30
+    ],
+    "role": "anchor",
+    "segment": "cliff",
+    "width": 0.05
+   },
+   {
+    "pos": 0.46,
+    "oklch": [
+     0.68,
+     0.182,
+     43
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.64,
+    "oklch": [
+     0.845,
+     0.082,
+     66
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.84,
+    "oklch": [
+     0.5,
+     0.15,
+     38
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.16,
+     0.06,
+     28
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Coral Nocturne",
+  "mood": "sunset corals and rose-reds pulled down onto a near-black ground; two lit peaks around a dark trough, top end tinted pink not white",
+  "architecture": "analogous-drift",
+  "skeleton": "double-peak",
+  "value_key": "low",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.1,
+     0.045,
+     20
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.16,
+    "oklch": [
+     0.5,
+     0.17,
+     13
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.3,
+    "oklch": [
+     0.76,
+     0.15,
+     38
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.44,
+    "oklch": [
+     0.4,
+     0.13,
+     25
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.6,
+    "oklch": [
+     0.66,
+     0.185,
+     14
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.76,
+    "oklch": [
+     0.845,
+     0.09,
+     19
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.88,
+    "oklch": [
+     0.58,
+     0.14,
+     30
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.1,
+     0.045,
+     20
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Sherbet Flare",
+  "mood": "a pale coral field lit by a true white flare with one deep rose-red plunge as the event; high key, no blacks",
+  "architecture": "near-monochrome-spark",
+  "skeleton": "inverted-arc",
+  "value_key": "high",
+  "complexity": 3,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.8,
+     0.11,
+     32
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.2,
+    "oklch": [
+     0.845,
+     0.089,
+     19
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.3,
+    "oklch": [
+     0.975,
+     0.008,
+     25
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.4,
+    "oklch": [
+     0.84,
+     0.12,
+     37
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.58,
+    "oklch": [
+     0.3,
+     0.14,
+     13
+    ],
+    "role": "accent"
+   },
+   {
+    "pos": 0.78,
+    "oklch": [
+     0.7,
+     0.19,
+     14
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.8,
+     0.11,
+     32
+    ],
+    "role": "field"
+   }
+  ]
+ },
+ {
+  "name": "Neon Causeway",
+  "mood": "violet, magenta and orange at full strength, the violet-to-magenta crossing routed through a white flare and the orange-to-violet through black",
+  "architecture": "triad",
+  "skeleton": "peak-early",
+  "value_key": "low",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.07,
+     0.03,
+     310
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.12,
+    "oklch": [
+     0.42,
+     0.19,
+     308
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.24,
+    "oklch": [
+     0.72,
+     0.12,
+     306
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.34,
+    "oklch": [
+     0.975,
+     0.01,
+     310
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.44,
+    "oklch": [
+     0.72,
+     0.18,
+     8
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.56,
+    "oklch": [
+     0.61,
+     0.232,
+     10
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.72,
+    "oklch": [
+     0.75,
+     0.18,
+     57
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.86,
+    "oklch": [
+     0.42,
+     0.13,
+     50
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.07,
+     0.03,
+     310
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Vice Nightfall",
+  "mood": "the same violet, magenta and orange with no white at all: a cool violet mass against a hot magenta-orange mass, both crossings dived through violet-black",
+  "architecture": "complementary-tension",
+  "skeleton": "double-peak",
+  "value_key": "low",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.09,
+     0.04,
+     308
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.12,
+    "oklch": [
+     0.44,
+     0.192,
+     308
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.26,
+    "oklch": [
+     0.66,
+     0.16,
+     306
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.38,
+    "oklch": [
+     0.14,
+     0.05,
+     315
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.5,
+    "oklch": [
+     0.6,
+     0.23,
+     10
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.66,
+    "oklch": [
+     0.76,
+     0.178,
+     57
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.82,
+    "oklch": [
+     0.38,
+     0.12,
+     45
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.09,
+     0.04,
+     308
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Burnt Boulevard",
+  "mood": "a pure heat sweep from near-black brown through vermilion to a gold glow; one temperature, no reversal and no white",
+  "architecture": "mono-temperature-ramp",
+  "skeleton": "no-cliff",
+  "value_key": "low",
+  "complexity": 3,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.1,
+     0.04,
+     32
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.18,
+    "oklch": [
+     0.385,
+     0.095,
+     35
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.4,
+    "oklch": [
+     0.556,
+     0.172,
+     39
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.62,
+    "oklch": [
+     0.68,
+     0.16,
+     60
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.82,
+    "oklch": [
+     0.815,
+     0.15,
+     83
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.1,
+     0.04,
+     32
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Harvest Wallpaper",
+  "mood": "brown to vermilion to gold on a mid-toned brown field, with a crisp step out of the vermilion and a warm white flare late",
+  "architecture": "analogous-drift",
+  "skeleton": "cliff-in-mids",
+  "value_key": "mid",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.24,
+     0.07,
+     34
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.16,
+    "oklch": [
+     0.4,
+     0.098,
+     35
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.32,
+    "oklch": [
+     0.56,
+     0.17,
+     39
+    ],
+    "role": "anchor",
+    "segment": "cliff",
+    "width": 0.05
+   },
+   {
+    "pos": 0.4,
+    "oklch": [
+     0.7,
+     0.15,
+     55
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.54,
+    "oklch": [
+     0.815,
+     0.148,
+     83
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.68,
+    "oklch": [
+     0.6,
+     0.14,
+     70
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.78,
+    "oklch": [
+     0.975,
+     0.012,
+     80
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.88,
+    "oklch": [
+     0.78,
+     0.115,
+     80
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.24,
+     0.07,
+     34
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Blossom Triad",
+  "mood": "lilac, blossom pink and deep cerise in balance, the lilac-to-pink crossing lit by a white flare and the cerise-to-lilac return taken through a plum dark",
+  "architecture": "triad",
+  "skeleton": "peak-early",
+  "value_key": "mid",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.18,
+     0.055,
+     301
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.14,
+    "oklch": [
+     0.46,
+     0.075,
+     304
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.3,
+    "oklch": [
+     0.7,
+     0.07,
+     306
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.4,
+    "oklch": [
+     0.975,
+     0.01,
+     310
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.5,
+    "oklch": [
+     0.77,
+     0.13,
+     359
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.68,
+    "oklch": [
+     0.53,
+     0.205,
+     6
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.84,
+    "oklch": [
+     0.72,
+     0.15,
+     2
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.18,
+     0.055,
+     301
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Petal Dusk",
+  "mood": "a pale blossom field with a deep cerise plunge as the event and one lilac spark before the loop closes; high key, no blacks and no white",
+  "architecture": "near-monochrome-spark",
+  "skeleton": "inverted-arc",
+  "value_key": "high",
+  "complexity": 3,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.856,
+     0.062,
+     357
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.18,
+    "oklch": [
+     0.78,
+     0.13,
+     358
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.34,
+    "oklch": [
+     0.3,
+     0.148,
+     5
+    ],
+    "role": "accent"
+   },
+   {
+    "pos": 0.5,
+    "oklch": [
+     0.62,
+     0.19,
+     2
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.68,
+    "oklch": [
+     0.81,
+     0.1,
+     356
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.84,
+    "oklch": [
+     0.73,
+     0.068,
+     304
+    ],
+    "role": "accent"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.856,
+     0.062,
+     357
+    ],
+    "role": "field"
+   }
+  ]
+ },
+ {
+  "name": "Indigo Marquee",
+  "mood": "an indigo-periwinkle mass and a gold mass with nothing between them but ink; both crossings dive to near-black, and there is no white",
+  "architecture": "duotone-plus",
+  "skeleton": "double-peak",
+  "value_key": "low",
+  "complexity": 3,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.07,
+     0.03,
+     280
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.12,
+    "oklch": [
+     0.38,
+     0.156,
+     282
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.3,
+    "oklch": [
+     0.63,
+     0.16,
+     273
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.44,
+    "oklch": [
+     0.12,
+     0.04,
+     278
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.6,
+    "oklch": [
+     0.81,
+     0.167,
+     83
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.8,
+    "oklch": [
+     0.42,
+     0.115,
+     78
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.07,
+     0.03,
+     280
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Boulevard Gold",
+  "mood": "cool indigo and periwinkle against warm gold and bronze, bridged by a cool white flare; the gold half carries the second half of the ramp",
+  "architecture": "complementary-tension",
+  "skeleton": "peak-early",
+  "value_key": "mid",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.1,
+     0.035,
+     280
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.1,
+    "oklch": [
+     0.4,
+     0.16,
+     282
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.24,
+    "oklch": [
+     0.66,
+     0.155,
+     273
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.34,
+    "oklch": [
+     0.965,
+     0.012,
+     268
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.44,
+    "oklch": [
+     0.9,
+     0.08,
+     84
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.6,
+    "oklch": [
+     0.81,
+     0.17,
+     82
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.78,
+    "oklch": [
+     0.38,
+     0.105,
+     68
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.88,
+    "oklch": [
+     0.55,
+     0.13,
+     72
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.1,
+     0.035,
+     280
+    ],
+    "role": "ground"
+   }
+  ]
+ }
+]

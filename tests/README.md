@@ -349,6 +349,14 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+It read **107.65 s over 3,757, 116 deselected** fast at `INGEST_new_palettes_0905`,
+2026-09-05, on an idle box. **Every one of the 120 added tests is the colormap
+guard's**: `classic-pairs-2026-09` put 120 files into `data/palettes` and
+`test_colormaps.py` parametrizes over the directory, so `3,637 + 120 = 3,757` with
+no test written. The 2.21 s over the reading below is those 120 well-formedness
+checks and the two carrier and ceiling guards this prompt re-read, and it is the
+one lane movement in this log that is a *data* diff rather than a code one.
+
 It read **105.44 s over 3,637, 116 deselected** fast at `FIX_owed_minor_0905`,
 same day, on an idle box once that prompt's counterfactual solves had finished.
 The fifteen guards added there cost **1.68 s** of it, measured directly rather
@@ -537,7 +545,11 @@ collected total rather than counted. Those eight carry 65 fast tests and 5 slow 
 which is the 57 (65 less the 8 that came back as skips) *and* the 114 → 109 fall in
 the deselected count that made the reading look like a different suite. `def test_` is
 2,556 at every commit from `9a62672` to here and `data/palettes` holds 901 colormaps
-at every one of them, so neither the suite nor `test_colormaps.py` ever moved. The
+at every one of them, so neither the suite nor `test_colormaps.py` ever moved. **The
+second half of that stopped being true on 2026-09-05**: `classic-pairs-2026-09` put
+120 maps in the directory and therefore 120 parametrizations into that module, which
+is the first time in this log the colormap guard has moved a count. A reading across
+a drop is not comparable with one before it, and the drop is the whole difference. The
 lane now prints a red line naming the missing import; before this it went short in
 silence, which is the only reason a reading like that could be written down.
 

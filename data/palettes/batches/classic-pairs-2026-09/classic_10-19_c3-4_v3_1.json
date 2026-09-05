@@ -1,0 +1,1799 @@
+[
+ {
+  "name": "Gilded Moss",
+  "mood": "forest green rises to a white flare then falls through gold into green-black; gold dominant, warm white glow",
+  "architecture": "duotone-plus",
+  "skeleton": "peak-early",
+  "value_key": "mid",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.1,
+     0.025,
+     165
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.14,
+    "oklch": [
+     0.38,
+     0.065,
+     165
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.26,
+    "oklch": [
+     0.66,
+     0.09,
+     160
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.34,
+    "oklch": [
+     0.96,
+     0.01,
+     90
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.42,
+    "oklch": [
+     0.76,
+     0.13,
+     90
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.6,
+    "oklch": [
+     0.8,
+     0.14,
+     90
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.8,
+    "oklch": [
+     0.4,
+     0.1,
+     85
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.9,
+    "oklch": [
+     0.18,
+     0.015,
+     90
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.1,
+     0.025,
+     165
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Moss and Ore",
+  "mood": "green carries the ramp with a pale spring-green glow; gold enters only out of the dark as a second, lower peak; no white",
+  "architecture": "near-monochrome-spark",
+  "skeleton": "double-peak",
+  "value_key": "low",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.06,
+     0.015,
+     165
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.1,
+    "oklch": [
+     0.38,
+     0.065,
+     165
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.24,
+    "oklch": [
+     0.62,
+     0.09,
+     162
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.36,
+    "oklch": [
+     0.82,
+     0.1,
+     158
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.58,
+    "oklch": [
+     0.15,
+     0.015,
+     150
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.66,
+    "oklch": [
+     0.5,
+     0.12,
+     88
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.76,
+    "oklch": [
+     0.78,
+     0.14,
+     90
+    ],
+    "role": "accent"
+   },
+   {
+    "pos": 0.86,
+    "oklch": [
+     0.3,
+     0.06,
+     88
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.06,
+     0.015,
+     165
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Ivory Gilt",
+  "mood": "pale ivory field; gold and green each dip out of it, deep green is the focal dark; ivory is the glow, warm",
+  "architecture": "triad",
+  "skeleton": "inverted-arc",
+  "value_key": "high",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.95,
+     0.019,
+     92
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.15,
+    "oklch": [
+     0.8,
+     0.12,
+     90
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.3,
+    "oklch": [
+     0.72,
+     0.14,
+     90
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.42,
+    "oklch": [
+     0.94,
+     0.019,
+     92
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.55,
+    "oklch": [
+     0.6,
+     0.085,
+     162
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.68,
+    "oklch": [
+     0.3,
+     0.06,
+     165
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.8,
+    "oklch": [
+     0.45,
+     0.07,
+     165
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.9,
+    "oklch": [
+     0.8,
+     0.06,
+     158
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.95,
+     0.019,
+     92
+    ],
+    "role": "field"
+   }
+  ]
+ },
+ {
+  "name": "Bronze Fern",
+  "mood": "green-led; a small cliff inside the green, gold rising out of the dark to a cream-ivory glow; no white",
+  "architecture": "triad",
+  "skeleton": "cliff-in-mids",
+  "value_key": "mid",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.12,
+     0.015,
+     165
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.12,
+    "oklch": [
+     0.38,
+     0.065,
+     165
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.3,
+    "oklch": [
+     0.58,
+     0.09,
+     160
+    ],
+    "role": "mid",
+    "segment": "cliff"
+   },
+   {
+    "pos": 0.34,
+    "oklch": [
+     0.44,
+     0.07,
+     165
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.52,
+    "oklch": [
+     0.16,
+     0.015,
+     165
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.62,
+    "oklch": [
+     0.55,
+     0.12,
+     88
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.76,
+    "oklch": [
+     0.84,
+     0.045,
+     92
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.88,
+    "oklch": [
+     0.7,
+     0.13,
+     90
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.12,
+     0.015,
+     165
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Gold Leaf on Lacquer",
+  "mood": "black ground, gold climbing in two waves to a late white flare; gold dominant, warm white",
+  "architecture": "duotone-plus",
+  "skeleton": "peak-late",
+  "value_key": "low",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.08,
+     0.01,
+     88
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.1,
+    "oklch": [
+     0.3,
+     0.07,
+     85
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.3,
+    "oklch": [
+     0.6,
+     0.12,
+     88
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.5,
+    "oklch": [
+     0.42,
+     0.09,
+     86
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.66,
+    "oklch": [
+     0.76,
+     0.135,
+     88
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.78,
+    "oklch": [
+     0.96,
+     0.012,
+     90
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.86,
+    "oklch": [
+     0.82,
+     0.12,
+     90
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.08,
+     0.01,
+     88
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Ember Gilt",
+  "mood": "single heat sweep black to gold to pale gold and back, no white; drama is the value range within one hue",
+  "architecture": "mono-temperature-ramp",
+  "skeleton": "no-cliff",
+  "value_key": "mid",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.12,
+     0.015,
+     88
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.18,
+    "oklch": [
+     0.48,
+     0.1,
+     86
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.34,
+    "oklch": [
+     0.86,
+     0.09,
+     90
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.5,
+    "oklch": [
+     0.7,
+     0.13,
+     88
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.62,
+    "oklch": [
+     0.52,
+     0.11,
+     86
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.74,
+    "oklch": [
+     0.66,
+     0.125,
+     88
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.88,
+    "oklch": [
+     0.28,
+     0.06,
+     85
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.12,
+     0.015,
+     88
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Oxblood Standard",
+  "mood": "oxblood red mass and a gold mass, joined by a white flare and parted by black; two peaks, neutral-warm white",
+  "architecture": "duotone-plus",
+  "skeleton": "double-peak",
+  "value_key": "mid",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.1,
+     0.025,
+     20
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.26,
+    "oklch": [
+     0.55,
+     0.13,
+     22
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.38,
+    "oklch": [
+     0.96,
+     0.008,
+     20
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.46,
+    "oklch": [
+     0.75,
+     0.12,
+     85
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.6,
+    "oklch": [
+     0.5,
+     0.09,
+     80
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.7,
+    "oklch": [
+     0.14,
+     0.015,
+     20
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.8,
+    "oklch": [
+     0.55,
+     0.13,
+     22
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.9,
+    "oklch": [
+     0.32,
+     0.1,
+     21
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.1,
+     0.025,
+     20
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Claret Ember",
+  "mood": "oxblood across its whole value range with a rose-light glow; gold is a single spark held between two darks; no white",
+  "architecture": "near-monochrome-spark",
+  "skeleton": "peak-early",
+  "value_key": "low",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.05,
+     0.012,
+     20
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.22,
+    "oklch": [
+     0.58,
+     0.14,
+     23
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.32,
+    "oklch": [
+     0.8,
+     0.07,
+     20
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.48,
+    "oklch": [
+     0.4,
+     0.11,
+     20
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.58,
+    "oklch": [
+     0.15,
+     0.015,
+     20
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.66,
+    "oklch": [
+     0.62,
+     0.11,
+     85
+    ],
+    "role": "accent"
+   },
+   {
+    "pos": 0.74,
+    "oklch": [
+     0.18,
+     0.015,
+     20
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.86,
+    "oklch": [
+     0.33,
+     0.1,
+     21
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.05,
+     0.012,
+     20
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Copper Fathom",
+  "mood": "ink navy field with a cobalt lift; copper rises out of black to a cool white flare, falls back through pale blue; navy dominant",
+  "architecture": "complementary-tension",
+  "skeleton": "peak-late",
+  "value_key": "low",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.07,
+     0.03,
+     264
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.3,
+    "oklch": [
+     0.48,
+     0.09,
+     262
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.46,
+    "oklch": [
+     0.28,
+     0.06,
+     264
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.54,
+    "oklch": [
+     0.12,
+     0.015,
+     264
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.62,
+    "oklch": [
+     0.45,
+     0.11,
+     58
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.72,
+    "oklch": [
+     0.66,
+     0.13,
+     60
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.8,
+    "oklch": [
+     0.96,
+     0.012,
+     255
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.88,
+    "oklch": [
+     0.7,
+     0.07,
+     258
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.07,
+     0.03,
+     264
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Burnished Deep",
+  "mood": "copper dominant with a small copper cliff and a pale-copper glow; navy is the cool dark mass; no white",
+  "architecture": "complementary-tension",
+  "skeleton": "cliff-in-mids",
+  "value_key": "mid",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.1,
+     0.015,
+     264
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.12,
+    "oklch": [
+     0.3,
+     0.06,
+     264
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.3,
+    "oklch": [
+     0.14,
+     0.015,
+     264
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.38,
+    "oklch": [
+     0.4,
+     0.1,
+     58
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.5,
+    "oklch": [
+     0.62,
+     0.12,
+     60
+    ],
+    "role": "anchor",
+    "segment": "cliff"
+   },
+   {
+    "pos": 0.54,
+    "oklch": [
+     0.46,
+     0.11,
+     58
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.78,
+    "oklch": [
+     0.84,
+     0.07,
+     62
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.9,
+    "oklch": [
+     0.58,
+     0.12,
+     60
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.1,
+     0.015,
+     264
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Amber Signal",
+  "mood": "charcoal grey field; amber flares early to a warm white then burns down through dark amber back to charcoal",
+  "architecture": "duotone-plus",
+  "skeleton": "peak-early",
+  "value_key": "mid",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.12,
+     0.008,
+     78
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.1,
+    "oklch": [
+     0.34,
+     0.01,
+     78
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.16,
+    "oklch": [
+     0.22,
+     0.01,
+     78
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.26,
+    "oklch": [
+     0.66,
+     0.15,
+     76
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.36,
+    "oklch": [
+     0.96,
+     0.012,
+     78
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.44,
+    "oklch": [
+     0.82,
+     0.16,
+     78
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.7,
+    "oklch": [
+     0.5,
+     0.1,
+     74
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.82,
+    "oklch": [
+     0.3,
+     0.012,
+     78
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.12,
+     0.008,
+     78
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Coal Amber",
+  "mood": "one sweep from black through charcoal into amber and a pale-amber glow, then a fall to dark; no white, no reversal",
+  "architecture": "mono-temperature-ramp",
+  "skeleton": "peak-late",
+  "value_key": "low",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.08,
+     0.008,
+     78
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.12,
+    "oklch": [
+     0.24,
+     0.01,
+     78
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.26,
+    "oklch": [
+     0.36,
+     0.012,
+     78
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.4,
+    "oklch": [
+     0.44,
+     0.07,
+     74
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.56,
+    "oklch": [
+     0.62,
+     0.13,
+     76
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.72,
+    "oklch": [
+     0.8,
+     0.17,
+     78
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.84,
+    "oklch": [
+     0.86,
+     0.12,
+     82
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.94,
+    "oklch": [
+     0.3,
+     0.012,
+     78
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.08,
+     0.008,
+     78
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Brass Tide",
+  "mood": "teal dominant with a light-teal lift into cool white; brass descends into black; teal returns as a second peak",
+  "architecture": "duotone-plus",
+  "skeleton": "double-peak",
+  "value_key": "mid",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.1,
+     0.025,
+     205
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.12,
+    "oklch": [
+     0.44,
+     0.07,
+     205
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.26,
+    "oklch": [
+     0.68,
+     0.09,
+     200
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.36,
+    "oklch": [
+     0.96,
+     0.012,
+     205
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.44,
+    "oklch": [
+     0.72,
+     0.11,
+     89
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.58,
+    "oklch": [
+     0.5,
+     0.08,
+     86
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.66,
+    "oklch": [
+     0.14,
+     0.015,
+     205
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.78,
+    "oklch": [
+     0.55,
+     0.09,
+     205
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.1,
+     0.025,
+     205
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Patina Brass",
+  "mood": "brass dominant, warm pale-brass glow; teal is the cool mass with a small teal cliff; black bridges the two; no white",
+  "architecture": "complementary-tension",
+  "skeleton": "cliff-in-mids",
+  "value_key": "low",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.06,
+     0.015,
+     205
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.24,
+    "oklch": [
+     0.46,
+     0.075,
+     205
+    ],
+    "role": "anchor",
+    "segment": "cliff"
+   },
+   {
+    "pos": 0.28,
+    "oklch": [
+     0.62,
+     0.08,
+     202
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.4,
+    "oklch": [
+     0.16,
+     0.015,
+     205
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.5,
+    "oklch": [
+     0.48,
+     0.08,
+     86
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.64,
+    "oklch": [
+     0.72,
+     0.11,
+     89
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.78,
+    "oklch": [
+     0.85,
+     0.09,
+     90
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.9,
+    "oklch": [
+     0.55,
+     0.09,
+     88
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.06,
+     0.015,
+     205
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Plum Gilding",
+  "mood": "plum lifts to a bright plum then drops to black; gold takes over and climbs late to a warm white; gold dominant",
+  "architecture": "duotone-plus",
+  "skeleton": "peak-late",
+  "value_key": "low",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.07,
+     0.015,
+     323
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.12,
+    "oklch": [
+     0.32,
+     0.11,
+     323
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.24,
+    "oklch": [
+     0.52,
+     0.13,
+     325
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.32,
+    "oklch": [
+     0.13,
+     0.015,
+     323
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.4,
+    "oklch": [
+     0.48,
+     0.1,
+     85
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.58,
+    "oklch": [
+     0.72,
+     0.11,
+     87
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.8,
+    "oklch": [
+     0.96,
+     0.012,
+     87
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.88,
+    "oklch": [
+     0.78,
+     0.11,
+     88
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.07,
+     0.015,
+     323
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Damson and Ore",
+  "mood": "plum family across the full value range with a pale-plum glow; gold is one spark between two darks; no white",
+  "architecture": "near-monochrome-spark",
+  "skeleton": "peak-early",
+  "value_key": "mid",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.12,
+     0.03,
+     323
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.22,
+    "oklch": [
+     0.55,
+     0.13,
+     325
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.32,
+    "oklch": [
+     0.82,
+     0.07,
+     322
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.46,
+    "oklch": [
+     0.42,
+     0.11,
+     323
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.56,
+    "oklch": [
+     0.15,
+     0.015,
+     323
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.64,
+    "oklch": [
+     0.66,
+     0.11,
+     87
+    ],
+    "role": "accent"
+   },
+   {
+    "pos": 0.72,
+    "oklch": [
+     0.16,
+     0.015,
+     323
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.84,
+    "oklch": [
+     0.36,
+     0.1,
+     323
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.12,
+     0.03,
+     323
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Ladder to Ice",
+  "mood": "single ice sweep: ink navy to cobalt to sky to white, then a fast return through cobalt; cool white",
+  "architecture": "mono-temperature-ramp",
+  "skeleton": "peak-late",
+  "value_key": "low",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.06,
+     0.02,
+     264
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.14,
+    "oklch": [
+     0.29,
+     0.065,
+     264
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.32,
+    "oklch": [
+     0.42,
+     0.085,
+     260
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.5,
+    "oklch": [
+     0.54,
+     0.1,
+     258
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.66,
+    "oklch": [
+     0.72,
+     0.08,
+     254
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.84,
+    "oklch": [
+     0.96,
+     0.015,
+     250
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.92,
+    "oklch": [
+     0.55,
+     0.09,
+     258
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.06,
+     0.02,
+     264
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Indigo Rungs",
+  "mood": "navy, cobalt and a pale periwinkle glow; two cobalt peaks around a deep step with a small cliff; no white",
+  "architecture": "analogous-drift",
+  "skeleton": "double-peak",
+  "value_key": "mid",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.14,
+     0.03,
+     264
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.1,
+    "oklch": [
+     0.3,
+     0.065,
+     263
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.24,
+    "oklch": [
+     0.55,
+     0.1,
+     258
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.36,
+    "oklch": [
+     0.83,
+     0.05,
+     252
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.56,
+    "oklch": [
+     0.24,
+     0.05,
+     264
+    ],
+    "role": "mid",
+    "segment": "cliff"
+   },
+   {
+    "pos": 0.6,
+    "oklch": [
+     0.4,
+     0.085,
+     260
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.74,
+    "oklch": [
+     0.68,
+     0.09,
+     255
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.88,
+    "oklch": [
+     0.36,
+     0.07,
+     262
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.14,
+     0.03,
+     264
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Sage Ladder",
+  "mood": "cream field; sage steps down into a deep green trough and back up through sage to cream; warm cream glow, no black",
+  "architecture": "analogous-drift",
+  "skeleton": "inverted-arc",
+  "value_key": "high",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.95,
+     0.02,
+     95
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.14,
+    "oklch": [
+     0.74,
+     0.05,
+     143
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.28,
+    "oklch": [
+     0.56,
+     0.07,
+     148
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.4,
+    "oklch": [
+     0.3,
+     0.06,
+     152
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.52,
+    "oklch": [
+     0.45,
+     0.08,
+     150
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.66,
+    "oklch": [
+     0.74,
+     0.05,
+     143
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.78,
+    "oklch": [
+     0.86,
+     0.035,
+     120
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.9,
+    "oklch": [
+     0.72,
+     0.055,
+     145
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.95,
+     0.02,
+     95
+    ],
+    "role": "field"
+   }
+  ]
+ },
+ {
+  "name": "Fern Ladder",
+  "mood": "one cool sweep black to deep green to sage to a bone-cream glow, then a fall back to black; no white",
+  "architecture": "mono-temperature-ramp",
+  "skeleton": "peak-late",
+  "value_key": "low",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.08,
+     0.02,
+     150
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.16,
+    "oklch": [
+     0.28,
+     0.06,
+     152
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.32,
+    "oklch": [
+     0.44,
+     0.08,
+     150
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.48,
+    "oklch": [
+     0.6,
+     0.07,
+     146
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.64,
+    "oklch": [
+     0.74,
+     0.05,
+     143
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.78,
+    "oklch": [
+     0.84,
+     0.04,
+     108
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.86,
+    "oklch": [
+     0.6,
+     0.07,
+     146
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.94,
+    "oklch": [
+     0.32,
+     0.06,
+     152
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.08,
+     0.02,
+     150
+    ],
+    "role": "ground"
+   }
+  ]
+ }
+]

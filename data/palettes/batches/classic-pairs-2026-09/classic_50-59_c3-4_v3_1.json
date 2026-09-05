@@ -1,0 +1,1585 @@
+[
+  {
+    "name": "Neon Grid",
+    "mood": "electric cyan and hot magenta held apart by the entry's own ink-black; each hue owns half the ramp, black is the only bridge",
+    "architecture": "duotone-plus",
+    "skeleton": "cliff-in-mids",
+    "value_key": "low",
+    "complexity": 3,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.09,
+          0.02,
+          268
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.16,
+        "oklch": [
+          0.42,
+          0.13,
+          209
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.32,
+        "oklch": [
+          0.86,
+          0.15,
+          209
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.5,
+        "oklch": [
+          0.12,
+          0.03,
+          268
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.62,
+        "oklch": [
+          0.69,
+          0.28,
+          338
+        ],
+        "role": "anchor",
+        "segment": "cliff",
+        "width": 0.06
+      },
+      {
+        "pos": 0.78,
+        "oklch": [
+          0.46,
+          0.18,
+          338
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.09,
+          0.02,
+          268
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Chrome Violet Hour",
+    "mood": "magenta carried across the whole value range with one cyan spark past a magenta-tinted white; cool glow, warm-free",
+    "architecture": "near-monochrome-spark",
+    "skeleton": "peak-late",
+    "value_key": "mid",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.16,
+          0.04,
+          268
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.12,
+        "oklch": [
+          0.42,
+          0.19,
+          338
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.3,
+        "oklch": [
+          0.28,
+          0.13,
+          338
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.48,
+        "oklch": [
+          0.72,
+          0.28,
+          338
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.62,
+        "oklch": [
+          0.96,
+          0.015,
+          338
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.72,
+        "oklch": [
+          0.84,
+          0.15,
+          209
+        ],
+        "role": "accent"
+      },
+      {
+        "pos": 0.86,
+        "oklch": [
+          0.17,
+          0.025,
+          268
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.16,
+          0.04,
+          268
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Phosphor Deep",
+    "mood": "one green family from black to full phosphor, no white anywhere; drama is the pure chroma sweep",
+    "architecture": "mono-temperature-ramp",
+    "skeleton": "peak-late",
+    "value_key": "low",
+    "complexity": 3,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.11,
+          0.02,
+          141
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.18,
+        "oklch": [
+          0.24,
+          0.09,
+          141
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.38,
+        "oklch": [
+          0.48,
+          0.18,
+          141
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.6,
+        "oklch": [
+          0.72,
+          0.26,
+          141
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.8,
+        "oklch": [
+          0.87,
+          0.29,
+          141
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.11,
+          0.02,
+          141
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Terminal Flare",
+    "mood": "the same green family twice over with a blown-out white flare as the only non-green event; cool glow",
+    "architecture": "near-monochrome-spark",
+    "skeleton": "double-peak",
+    "value_key": "mid",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.14,
+          0.02,
+          141
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.13,
+        "oklch": [
+          0.55,
+          0.22,
+          141
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.26,
+        "oklch": [
+          0.3,
+          0.12,
+          141
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.44,
+        "oklch": [
+          0.78,
+          0.27,
+          141
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.58,
+        "oklch": [
+          0.97,
+          0.01,
+          141
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.72,
+        "oklch": [
+          0.62,
+          0.24,
+          141
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.88,
+        "oklch": [
+          0.2,
+          0.06,
+          141
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.14,
+          0.02,
+          141
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Arcade Black",
+    "mood": "three neons on black velvet \u2014 pink, electric blue, gold \u2014 every transition dropped through black, no white at all",
+    "architecture": "triad",
+    "skeleton": "no-cliff",
+    "value_key": "low",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.07,
+          0.02,
+          357
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.14,
+        "oklch": [
+          0.66,
+          0.26,
+          357
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.3,
+        "oklch": [
+          0.1,
+          0.02,
+          253
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.44,
+        "oklch": [
+          0.65,
+          0.19,
+          253
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.58,
+        "oklch": [
+          0.09,
+          0.02,
+          95
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.74,
+        "oklch": [
+          0.8,
+          0.17,
+          95
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.88,
+        "oklch": [
+          0.3,
+          0.08,
+          95
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.07,
+          0.02,
+          357
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Neon Pop Flash",
+    "mood": "the same three neons routed through a cool white flare and one black drop; blue leads, gold answers late",
+    "architecture": "triad",
+    "skeleton": "peak-early",
+    "value_key": "mid",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.18,
+          0.05,
+          253
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.12,
+        "oklch": [
+          0.65,
+          0.19,
+          253
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.26,
+        "oklch": [
+          0.97,
+          0.01,
+          253
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.38,
+        "oklch": [
+          0.66,
+          0.26,
+          357
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.52,
+        "oklch": [
+          0.14,
+          0.03,
+          357
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.66,
+        "oklch": [
+          0.89,
+          0.18,
+          95
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.82,
+        "oklch": [
+          0.4,
+          0.11,
+          95
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.92,
+        "oklch": [
+          0.13,
+          0.03,
+          95
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.18,
+          0.05,
+          253
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Ensign",
+    "mood": "navy and signal red split by the flag's own white; a small crisp step off the red into the dark",
+    "architecture": "duotone-plus",
+    "skeleton": "cliff-in-mids",
+    "value_key": "mid",
+    "complexity": 3,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.12,
+          0.04,
+          263
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.18,
+        "oklch": [
+          0.34,
+          0.11,
+          263
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.36,
+        "oklch": [
+          0.96,
+          0.01,
+          263
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.5,
+        "oklch": [
+          0.53,
+          0.21,
+          22
+        ],
+        "role": "anchor",
+        "segment": "cliff",
+        "width": 0.06
+      },
+      {
+        "pos": 0.66,
+        "oklch": [
+          0.26,
+          0.13,
+          22
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.84,
+        "oklch": [
+          0.1,
+          0.03,
+          263
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.12,
+          0.04,
+          263
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Regatta Ice",
+    "mood": "a bleached warm field with red at one end and a deep navy trough as the focal dark; warm white bridges the two masses",
+    "architecture": "complementary-tension",
+    "skeleton": "inverted-arc",
+    "value_key": "high",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.92,
+          0.02,
+          22
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.16,
+        "oklch": [
+          0.62,
+          0.2,
+          22
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.32,
+        "oklch": [
+          0.97,
+          0.01,
+          22
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.46,
+        "oklch": [
+          0.29,
+          0.1,
+          263
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.6,
+        "oklch": [
+          0.2,
+          0.06,
+          263
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.76,
+        "oklch": [
+          0.62,
+          0.12,
+          263
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.88,
+        "oklch": [
+          0.86,
+          0.05,
+          263
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.92,
+          0.02,
+          22
+        ],
+        "role": "field"
+      }
+    ]
+  },
+  {
+    "name": "Pumpkin Cellar",
+    "mood": "a single heat ramp from black through umber and pure orange, topping out in peach rather than white",
+    "architecture": "mono-temperature-ramp",
+    "skeleton": "peak-late",
+    "value_key": "low",
+    "complexity": 3,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.11,
+          0.02,
+          47
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.2,
+        "oklch": [
+          0.26,
+          0.09,
+          47
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.42,
+        "oklch": [
+          0.48,
+          0.16,
+          47
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.64,
+        "oklch": [
+          0.72,
+          0.19,
+          47
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.82,
+        "oklch": [
+          0.88,
+          0.09,
+          47
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.11,
+          0.02,
+          47
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Hollow Lantern",
+    "mood": "the same orange twice, dipping to umber between, with a warm white flare at the top of the second climb",
+    "architecture": "mono-temperature-ramp",
+    "skeleton": "double-peak",
+    "value_key": "mid",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.16,
+          0.03,
+          47
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.12,
+        "oklch": [
+          0.52,
+          0.17,
+          47
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.26,
+        "oklch": [
+          0.3,
+          0.1,
+          47
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.42,
+        "oklch": [
+          0.75,
+          0.2,
+          47
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.56,
+        "oklch": [
+          0.97,
+          0.01,
+          47
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.7,
+        "oklch": [
+          0.66,
+          0.18,
+          47
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.86,
+        "oklch": [
+          0.24,
+          0.07,
+          47
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.16,
+          0.03,
+          47
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Delft Deep",
+    "mood": "ink to cobalt to sky to glaze-white in one unbroken cool sweep; the drama is the ramp itself",
+    "architecture": "mono-temperature-ramp",
+    "skeleton": "no-cliff",
+    "value_key": "low",
+    "complexity": 3,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.08,
+          0.02,
+          262
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.2,
+        "oklch": [
+          0.26,
+          0.09,
+          262
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.42,
+        "oklch": [
+          0.44,
+          0.16,
+          262
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.64,
+        "oklch": [
+          0.68,
+          0.13,
+          262
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.84,
+        "oklch": [
+          0.95,
+          0.035,
+          262
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.08,
+          0.02,
+          262
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Porcelain Field",
+    "mood": "a porcelain-pale field where the deep ink-blue trough is the event, not the light; one hue family throughout",
+    "architecture": "near-monochrome-spark",
+    "skeleton": "inverted-arc",
+    "value_key": "high",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.97,
+          0.01,
+          262
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.16,
+        "oklch": [
+          0.82,
+          0.06,
+          262
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.32,
+        "oklch": [
+          0.6,
+          0.14,
+          262
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.48,
+        "oklch": [
+          0.17,
+          0.05,
+          262
+        ],
+        "role": "accent"
+      },
+      {
+        "pos": 0.62,
+        "oklch": [
+          0.44,
+          0.16,
+          262
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.78,
+        "oklch": [
+          0.72,
+          0.12,
+          262
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.9,
+        "oklch": [
+          0.9,
+          0.04,
+          262
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.97,
+          0.01,
+          262
+        ],
+        "role": "field"
+      }
+    ]
+  },
+  {
+    "name": "Cochineal & Cream",
+    "mood": "oxblood to signal red to coral, closing on warm cream rather than white; a single warm family",
+    "architecture": "mono-temperature-ramp",
+    "skeleton": "peak-late",
+    "value_key": "low",
+    "complexity": 3,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.09,
+          0.02,
+          22
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.2,
+        "oklch": [
+          0.28,
+          0.13,
+          22
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.42,
+        "oklch": [
+          0.53,
+          0.21,
+          22
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.64,
+        "oklch": [
+          0.72,
+          0.15,
+          22
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.84,
+        "oklch": [
+          0.91,
+          0.035,
+          88
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.92,
+        "oklch": [
+          0.42,
+          0.14,
+          22
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.09,
+          0.02,
+          22
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Lacquer & Bone",
+    "mood": "lacquer red worked at four depths with one crisp step in the mids and a bone-white glint late",
+    "architecture": "near-monochrome-spark",
+    "skeleton": "cliff-in-mids",
+    "value_key": "mid",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.15,
+          0.03,
+          22
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.14,
+        "oklch": [
+          0.45,
+          0.19,
+          22
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.28,
+        "oklch": [
+          0.24,
+          0.11,
+          22
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.44,
+        "oklch": [
+          0.66,
+          0.22,
+          22
+        ],
+        "role": "anchor",
+        "segment": "cliff",
+        "width": 0.06
+      },
+      {
+        "pos": 0.56,
+        "oklch": [
+          0.44,
+          0.17,
+          22
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.7,
+        "oklch": [
+          0.98,
+          0.01,
+          88
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.86,
+        "oklch": [
+          0.34,
+          0.15,
+          22
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.15,
+          0.03,
+          22
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Chart & Compass",
+    "mood": "navy and teal against warm sand, routed through ink and through a pale ice-teal \u2014 no white in the inventory",
+    "architecture": "triad",
+    "skeleton": "peak-early",
+    "value_key": "low",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.1,
+          0.03,
+          263
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.16,
+        "oklch": [
+          0.38,
+          0.12,
+          263
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.3,
+        "oklch": [
+          0.14,
+          0.04,
+          263
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.44,
+        "oklch": [
+          0.72,
+          0.13,
+          200
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.58,
+        "oklch": [
+          0.92,
+          0.07,
+          200
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.7,
+        "oklch": [
+          0.88,
+          0.05,
+          84
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.84,
+        "oklch": [
+          0.52,
+          0.06,
+          84
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.1,
+          0.03,
+          263
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Harbour Sand",
+    "mood": "cool navy-and-teal mass set against a warm sand shore, bridged by a cool white; the tension is temperature",
+    "architecture": "complementary-tension",
+    "skeleton": "double-peak",
+    "value_key": "mid",
+    "complexity": 3,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.18,
+          0.06,
+          263
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.18,
+        "oklch": [
+          0.5,
+          0.14,
+          263
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.36,
+        "oklch": [
+          0.97,
+          0.01,
+          263
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.52,
+        "oklch": [
+          0.7,
+          0.14,
+          200
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.7,
+        "oklch": [
+          0.9,
+          0.06,
+          84
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.86,
+        "oklch": [
+          0.6,
+          0.055,
+          84
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.18,
+          0.06,
+          263
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Reef at Midnight",
+    "mood": "lime, turquoise and hot pink each rising out of black and falling back into it; no white anywhere",
+    "architecture": "triad",
+    "skeleton": "peak-early",
+    "value_key": "low",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.09,
+          0.02,
+          128
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.14,
+        "oklch": [
+          0.85,
+          0.19,
+          128
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.28,
+        "oklch": [
+          0.4,
+          0.11,
+          128
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.4,
+        "oklch": [
+          0.11,
+          0.03,
+          195
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.54,
+        "oklch": [
+          0.79,
+          0.13,
+          195
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.68,
+        "oklch": [
+          0.1,
+          0.02,
+          2
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.82,
+        "oklch": [
+          0.67,
+          0.23,
+          2
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.92,
+        "oklch": [
+          0.34,
+          0.14,
+          2
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.09,
+          0.02,
+          128
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Lagoon Neon",
+    "mood": "a bleached high-key lagoon \u2014 lime, turquoise and pink separated by white, with one deep petrol trough as the dark",
+    "architecture": "triad",
+    "skeleton": "no-cliff",
+    "value_key": "high",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.96,
+          0.02,
+          128
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.14,
+        "oklch": [
+          0.85,
+          0.19,
+          128
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.3,
+        "oklch": [
+          0.97,
+          0.01,
+          195
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.44,
+        "oklch": [
+          0.79,
+          0.13,
+          195
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.58,
+        "oklch": [
+          0.3,
+          0.09,
+          195
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.72,
+        "oklch": [
+          0.95,
+          0.015,
+          2
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.86,
+        "oklch": [
+          0.67,
+          0.23,
+          2
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.94,
+        "oklch": [
+          0.97,
+          0.01,
+          2
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.96,
+          0.02,
+          128
+        ],
+        "role": "field"
+      }
+    ]
+  },
+  {
+    "name": "Field at Dusk",
+    "mood": "violet and ochre held apart by black, with sage walking down off the ochre; the light never reaches white",
+    "architecture": "triad",
+    "skeleton": "double-peak",
+    "value_key": "low",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.09,
+          0.02,
+          301
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.16,
+        "oklch": [
+          0.52,
+          0.16,
+          301
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.3,
+        "oklch": [
+          0.3,
+          0.1,
+          301
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.42,
+        "oklch": [
+          0.11,
+          0.02,
+          83
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.56,
+        "oklch": [
+          0.74,
+          0.15,
+          83
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.72,
+        "oklch": [
+          0.73,
+          0.06,
+          129
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.86,
+        "oklch": [
+          0.36,
+          0.035,
+          129
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.09,
+          0.02,
+          301
+        ],
+        "role": "ground"
+      }
+    ]
+  },
+  {
+    "name": "Lavender Bleach",
+    "mood": "a bone-pale field of ochre and sage with the violet plum trough as the focal dark; cool white is the only bridge",
+    "architecture": "triad",
+    "skeleton": "inverted-arc",
+    "value_key": "high",
+    "complexity": 4,
+    "stops": [
+      {
+        "pos": 0.0,
+        "oklch": [
+          0.93,
+          0.02,
+          83
+        ],
+        "role": "field"
+      },
+      {
+        "pos": 0.18,
+        "oklch": [
+          0.75,
+          0.15,
+          83
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.34,
+        "oklch": [
+          0.72,
+          0.06,
+          129
+        ],
+        "role": "mid"
+      },
+      {
+        "pos": 0.5,
+        "oklch": [
+          0.96,
+          0.015,
+          301
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 0.66,
+        "oklch": [
+          0.53,
+          0.16,
+          301
+        ],
+        "role": "anchor"
+      },
+      {
+        "pos": 0.82,
+        "oklch": [
+          0.22,
+          0.08,
+          301
+        ],
+        "role": "ground"
+      },
+      {
+        "pos": 0.92,
+        "oklch": [
+          0.95,
+          0.015,
+          301
+        ],
+        "role": "glow"
+      },
+      {
+        "pos": 1.0,
+        "oklch": [
+          0.93,
+          0.02,
+          83
+        ],
+        "role": "field"
+      }
+    ]
+  }
+]

@@ -110,7 +110,8 @@ GROUP_CAP = 1
 #: What the identity cap was doing beside being a ceiling is the reason to have
 #: both. A cap of one forces an n-seat gallery onto n distinct maps, which pushes
 #: the seating down the map-quality tail by construction; it is also the only
-#: block a census proves short at n=1000, where 822 maps cannot fill 1000 seats.
+#: block a census proves short at n=1000, where 822 maps could not fill 1000 seats
+#: and the 942 of the pool today still cannot.
 #: At 2.5% that ceiling is 20,550 and the block retires — and the cap turns from
 #: slack into something a good-map-seeking key will want to spend, so the
 #: **realized** maximum per map becomes a number to report rather than assume.

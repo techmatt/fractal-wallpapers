@@ -62,7 +62,7 @@ when the rest is gone.
   permutation — it says how much of the pool has been spent at this pair. Change
   the library or the group collapse and the cursor stops naming the same maps,
   which is why the stamp travels with the count rather than being assumed.
-* **`(colormap, mode) -> attempts, successes`.** 822 by 18, bounded and small.
+* **`(colormap, mode) -> attempts, successes`.** 942 by 18, bounded and small.
   This is the "which palettes never work anywhere" signal, and it is the one
   thing a discard genuinely destroys: drop colormap identity with the picture
   and the question stops being askable at all.
@@ -255,7 +255,7 @@ def by_place_mode(rows: list, stamp: str | None = None) -> dict:
 def by_map_mode(rows: list, scores: dict | None = None, bar: float = SUCCESS_BAR) -> dict:
     """`{(colormap, mode): {attempts, scored, successes}}` — which palettes work anywhere.
 
-    822 maps by 18 modes, so bounded at about fifteen thousand rows however many
+    942 maps by 18 modes, so bounded at about seventeen thousand rows however many
     attempts stand behind it. A success is a candidate at or over `bar` on the
     judge the scores were read on; a row with no score counts as an attempt and
     not as a failure, for [`decide`]'s reason, and `scored` is the denominator a

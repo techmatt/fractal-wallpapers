@@ -82,7 +82,7 @@ top decile is 47% of its total. That tail is `cap_lightness`, whose chroma
 bisection calls the gamut bisection inside it — up to 540 sRGB↔Oklab round trips
 over 257 densified stops, each about ninety numpy calls on an array too small
 for any of them to be work rather than dispatch. `densify` and its position
-rounding are cached per map (`_densified`, 1024 slots — the library is 822 maps
+rounding are cached per map (`_densified`, 1024 slots — the drawable pool is 942 maps
 and a run draws from all of it, so a cache sized for a handful hits 0.072 where
 one sized for the library hits 0.983), which took two fifths off a levelled
 candidate; the bisections are untouched, because the only way to make ninety

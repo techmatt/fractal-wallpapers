@@ -347,7 +347,7 @@ of those 138 rows carries `autolevel = null`. It is not the palette fold, which
 runs the other way: forced onto one location, a plain map is *whiter* than the
 same map mirrored, because folding halves how far up the ramp a key reaches. And
 it is not the colormap: Spearman(near-white, the map's mean spent Oklab L) is
-0.101, and restricting to the 143 darkest of 901 maps moves the median 0.434 to
+0.101, and restricting to the 143 darkest of the 901 maps of the day moves the median 0.434 to
 about 0.418. `direct_trap_multiply` already carries twice `direct_trap_screen`'s
 threshold and 1.33x its opacity, and it is still the pale one.
 
@@ -398,7 +398,7 @@ candidate pool itself, whose rows carry no engine at all.
 
 A file in `data/palettes` is **control points**, never a gradient, and it ships at
 one of four resolutions — 33 stops for 156 maps, 34 for 36, 257 for 334, 512 for
-375; 901 files and none at 4096. `Colormap::from_stops_baked` is the only densifier:
+495; 1,021 files and none at 4096. `Colormap::from_stops_baked` is the only densifier:
 the stops are sorted, converted to **OKLab**, interpolated there, and baked into a
 `TABLE_SIZE` (**4096**) entry table of linear-light RGB, regenerated on every load.
 Perceptual interpolation because a gradient interpolated in linear RGB is evenly
@@ -423,7 +423,7 @@ the second-to-last colour held flat. It is applied **before** the OKLab conversi
 so a folded map is a different 4096-entry table and not a different way of reading
 one. Production's rule is `mirror = the map is not cyclic`, owned by
 `models.palette_sets.recipe_for` and read off the gradient rather than off a row: of
-the 900-map candidate pool **155 are sequential and are folded, 745 are cyclic and
+the 1,020-map candidate pool **155 are sequential and are folded, 865 are cyclic and
 are not**, and the engine refuses to fold a cyclic map at all.
 
 **And a fold is why a lopsided field loses nearly all of a map.** The fold sends the

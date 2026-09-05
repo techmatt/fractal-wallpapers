@@ -3,10 +3,12 @@ its output is held to. Nothing here is a colormap and nothing here is read at
 render time.
 
 ```
-generator_prompt.md               the brief
-generator_prompt_focus_color.md   the same brief, aimed at one colour region
-generator_prompt_opener.txt       what to hand a run BEFORE either brief
-validate_palettes.py              the mechanical checker both briefs name
+generator_prompt.md                     the brief
+generator_prompt_focus_color.md         the same brief, aimed at one colour region
+generator_prompt_specific_palettes.md   the same brief, aimed at one named colour pairing
+classic_palettes.json                   the pairings that third brief is conditioned on
+generator_prompt_opener.txt             what to hand a run BEFORE either brief
+validate_palettes.py                    the mechanical checker every brief names
 ```
 
 `generator_prompt_opener.txt` is the order of work rather than a second brief, and
@@ -61,6 +63,37 @@ lands somewhere else without saying so — the run conditioned on dark teal, lim
 green put all twenty of its palettes on the **light** tier instead, and reached 10%
 on none of its dark targets. A focus colour is a request, not a guarantee, and the
 library-footprint census is the only thing that says which one you got.
+
+## Why the specific-palettes brief exists
+
+The third brief conditions on neither a mood nor a colour region but on a **named
+pairing** — `classic_palettes.json`'s sixty entries, each two or three hexes with a
+name people already use for the combination: Teal Orange, Navy Gold, Magenta Cyan.
+Two palettes per entry, and its one hard rule is that the **hue inventory is
+closed**: the entry's own hues within ±15° in OKLCH and nothing else chromatic, so
+the stop budget is spent on lightness and chroma inside those hues rather than on a
+third hue as a bridge. It is the handle for filling out a library along axes a
+person can name, where the focus-colour brief is the handle for filling a hole a
+census found.
+
+Its first drop is `classic-pairs-2026-09`, six runs of twenty. What it produced,
+worth knowing before reusing it:
+
+* **It is clean by construction.** 120 palettes, zero validator errors and zero
+  warnings, zero name collisions against a 901-map library, and all 120 measured
+  cyclic — no `renames.json` was needed at all, which no drop before it managed.
+* **It is not a hole-filler and the census says so.** 445 carrier rows over the 120
+  maps, 3.71 cells a map against the library's 3.57, but the thin cells gained
+  least in relative terms: `light_vivid_teal` +1 on 39, `light_vivid_azure` +2 on
+  52, `light_vivid_cyan` +2 on 47. What it did move is `dark_vivid_yellow` (+11 on
+  26) and `dark_muted_green` (+14 on 44). A named pairing is a request for a
+  *look*, and where that look lands in the codebook is not something the brief
+  controls.
+* **A closed hue inventory does not crowd the library.** Each new map's nearest
+  shipped neighbour runs a median M1 of 0.0575 against the library's own
+  nearest-neighbour median of 0.0554 — the drop sits marginally *further* apart
+  than the library does from itself, and only ten of its 120 have a shipped
+  neighbour at or under `groups.CUT`.
 
 ## Where the output goes
 

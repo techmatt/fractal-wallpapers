@@ -172,10 +172,19 @@ def test_a_target_raises_the_cells_its_carriers_also_deliver() -> None:
 
 
 def test_the_implied_raise_is_read_off_the_tracked_carrier_table() -> None:
-    """And the numbers are the record's, not the wheel's."""
+    """And the numbers are the record's, not the wheel's.
+
+    **The record moves when the library does, and this reading is of the table as
+    it stands.** `dark_vivid_lime` is carried by 27 maps now against 24 before
+    `classic-pairs-2026-09`, and its companion rate on `dark_muted_lime` read
+    0.4211 over the smaller table and reads 0.380952 over this one — a delivery is
+    a (map, field) picture, so three new carriers re-weight the denominator. What
+    is being pinned is that the raise comes off the record at all, which is why the
+    value is exact rather than a band.
+    """
     rule = ceiling.Rule(targets={"dark_vivid_lime": 1.0})
-    assert rule.implied["dark_muted_lime"] == pytest.approx(0.4211, abs=1e-3)
-    assert rule.allowed("dark_muted_lime", 60) == 54, (
+    assert rule.implied["dark_muted_lime"] == pytest.approx(0.380952, abs=1e-3)
+    assert rule.allowed("dark_muted_lime", 60) == 49, (
         "the cell the n=60 lime solve was thirteen short in, at an allowance of three"
     )
     assert rule.allowed("dark_vivid_red", 60) == 3, "an untouched cell keeps the default"

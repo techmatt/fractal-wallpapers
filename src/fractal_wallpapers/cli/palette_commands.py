@@ -25,6 +25,19 @@ def palette_extract(args: argparse.Namespace) -> int:
     return 0
 
 
+def palette_admit(args: argparse.Namespace) -> int:
+    """Recompose the shipped pool for the drops admitted in the source."""
+    from fractal_wallpapers.models import palette_sets
+
+    try:
+        report = palette_sets.admit()
+    except palette_sets.SetsError as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps(report, indent=2, ensure_ascii=False))
+    return 0
+
+
 def palette_plan(args: argparse.Namespace) -> int:
     """Draw the distillation corpus: which places, which maps, in which order."""
     from fractal_wallpapers.models import palette_corpus
@@ -199,6 +212,20 @@ def add_commands(subcommands) -> None:
     )
     extracting.add_argument("--source", required=True, help="the source repository's root")
     extracting.set_defaults(handler=palette_extract)
+
+    admitting = steps.add_parser(
+        "admit",
+        help="recompose the drawable pool for the drops this repository admits",
+        description=(
+            "`palettes ingest` is bake, not offer: a densified map renders immediately and "
+            "is not in the shipped pool, so nothing picks it. This is the offer, and it is "
+            "the half of `extract` that needs no source checkout — the inherited half of "
+            "the pool is the source project's own and is carried from the record, while the "
+            "admitted half is read off each provenance row's drop stamp. Add the drop to "
+            "`palette_sets.ADMITTED_DROPS` first; this writes what that says."
+        ),
+    )
+    admitting.set_defaults(handler=palette_admit)
 
     planning = steps.add_parser(
         "plan",
