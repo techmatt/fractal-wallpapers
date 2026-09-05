@@ -116,6 +116,17 @@ consequence is spelled, and such a render routes as `smooth` wherever a mode or 
 kind is decided — the seating pool, the census, the per-mode bars, the mode floors
 and both label stores.
 
+**"Bit for bit" is measured, not asserted.** All 17 `texture_flat` seats of the
+914 in tentative gallery `20260904T023748Z` were re-rendered two ways on
+2026-09-04 and came back **sha256-identical to the shipped picture on 17 of 17
+both ways** — at the recipe's own mode, `itinerary`, and at `smooth` with
+`transfer: {"kind": "rank"}`. Rendered at `smooth` *without* the rank transfer
+they agree with nothing: median mean absolute channel difference 71.43. The
+recipes themselves carry `transfer: {"kind": "value"}`, which is not a
+contradiction — `coloring.rs`'s `agrees_with` **requires** the transfer left
+unset alongside a modulate, because spending the base by rank is part of what
+the modulate is.
+
 `texture_flat` here is the register for the rows written before the engine
 reported it. It is **tracked**, because the label corpus is tracked and routing
 that differed between two checkouts of one commit would be two corpora wearing one

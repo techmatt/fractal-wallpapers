@@ -182,8 +182,8 @@ DEFAULT_GROUP_CAP = ceiling.PROPORTIONAL
 #: **What share of the seats may sit at a spiral location, unasked**: a tenth.
 #: Matt's ruling, 2026-09-04. It was `None` until then, so every record on this
 #: machine that does not name the flag ran **uncapped** and is not comparable with
-#: one that ran under this — `curate solve list` is the reader, and the two
-#: tracked galleries of 2026-09-04 after `20260904T023748Z` are the uncapped ones.
+#: one that ran under this — a record's own `config.spiral_cap` is the reader, and
+#: `20260904T080248Z` and `20260904T134242Z` are the uncapped tracked galleries.
 #:
 #: The evidence, off `20260904T023748Z`, the first capped gallery: the cap cost
 #: **27 seats** of 1000 at `n = 1000` (914 against 941), met every demand, and

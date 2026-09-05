@@ -1,0 +1,719 @@
+{
+  "schema": 1,
+  "stamp": "20260904T233233Z",
+  "taken_at": "2026-09-04T23:32:37Z",
+  "source_commit": "b00e379fde6fafd3949d21a171071b843f38c1b4",
+  "solve": {
+    "name": "tentative_n1000_20260904T233233Z",
+    "record": "artifacts/curation/solve/tentative_n1000_20260904T233233Z/solve.json",
+    "taken_at": "2026-09-04T23:32:32Z",
+    "seconds": 116.67,
+    "config": {
+      "n": 1000,
+      "spiral_cap": 0.1,
+      "spiral_cap_default": 0.1,
+      "augment": true,
+      "augment_default": true,
+      "augment_depth": 2,
+      "augment_seconds": 300.0,
+      "augment_is": "augmenting chains \u2014 one seat ejected and two inserted in its room. THE ONLY STAGE THAT RAISES THE SEAT COUNT: a 1-swap conserves it. On since 2026-09-04, so a record that does not name the flag ran WITH it and is not comparable to one taken before that",
+      "theme": null,
+      "method": "a stratified view, a greedy seed, 1-swap improvement to exhaustion, augmenting chains, then the 1-swap loop again. ANYTIME at every stage: the gallery is valid from its first seat and nothing here claims optimality. The exact solve it replaced is retired",
+      "objective": "lexicographic and strict, in this order: (1) seats filled, every one above its own mode's bar; (2) the shortfall against every demand \u2014 the mode floors and any colour target \u2014 minimized, and nothing padded; (3) the worst seated score, maximized; (4) the sum. The rank quantity is the fitted rank key and not p_ge4 alone. A filled floor outranks the worst seat by ruling: a demand this pool can meet is met, and the price comes out of the weakest seat rather than out of the roster. Nothing guards a met demand because the order itself keeps it",
+      "order": "the mandated demands from their own subpools, scarcest first; then the general pool by the rank key; then swaps; then augmenting chains; then swaps again",
+      "bars": {
+        "curvature": "p_ge4",
+        "direct_trap_lines": "p_ge4",
+        "direct_trap_multiply": "p_ge4",
+        "direct_trap_screen": "p_ge4",
+        "itinerary": "p_ge4",
+        "smooth": "p_ge4",
+        "smooth_angle_min": "p_ge4",
+        "smooth_curvature": "p_ge4",
+        "smooth_mean_angle": "p_ge4",
+        "smooth_stripe": "p_ge4",
+        "stripe": "p_ge4",
+        "threads": "p_ge4",
+        "tia": "p_ge4"
+      },
+      "bars_are": "the pool definition. curation.headroom.bars: P(>=4) for a mode with enough places above it, P(>=3) for one without",
+      "ceiling": {
+        "k": 2,
+        "cell_share": 0.020833333333333332,
+        "family_share": 0.08333333333333333,
+        "allowance": "floor(k * t * n) + 1",
+        "group_cap": 25,
+        "group_cap_rule": "proportional",
+        "group_cap_from": "max(1, floor(0.025 * n))",
+        "targets": {},
+        "target_rule": "t * the REALIZED seat count: at least ceil(t * seats filled) of the seats dominant in the named cell. A share of the gallery that gets filled, because this leg does not promise n of them. It is a demand and it is soft: a target the pool cannot meet is a recorded shortfall and never a padded seat"
+      },
+      "sort_key": "rank_key",
+      "sort_key_named": "rank-key",
+      "mode_floor": null,
+      "mode_floors": {
+        "smooth": 0,
+        "tia": 31,
+        "stripe": 31,
+        "curvature": 16,
+        "smooth_mean_angle": 32,
+        "smooth_angle_min": 32,
+        "smooth_stripe": 31,
+        "smooth_curvature": 16,
+        "direct_trap_screen": 16,
+        "direct_trap_multiply": 16,
+        "direct_trap_lines": 16,
+        "threads": 31,
+        "itinerary": 32
+      },
+      "mode_floor_rule": "the per-mode floor rule, curation.mode_policy.seat_floors(n): half each accepted strange mode's share of the strange seat budget, summing to half of it. THE DEFAULT \u2014 a pass that named no floor was seated under this",
+      "mode_floor_natural": {
+        "smooth": 0,
+        "tia": 31,
+        "stripe": 31,
+        "curvature": 16,
+        "smooth_mean_angle": 32,
+        "smooth_angle_min": 32,
+        "smooth_stripe": 31,
+        "smooth_curvature": 16,
+        "direct_trap_screen": 16,
+        "direct_trap_multiply": 16,
+        "direct_trap_lines": 16,
+        "threads": 31,
+        "itinerary": 32
+      },
+      "mode_floor_artificial": false,
+      "modes": [
+        "smooth",
+        "tia",
+        "stripe",
+        "curvature",
+        "smooth_mean_angle",
+        "smooth_angle_min",
+        "smooth_stripe",
+        "smooth_curvature",
+        "direct_trap_screen",
+        "direct_trap_multiply",
+        "direct_trap_lines",
+        "threads",
+        "itinerary"
+      ],
+      "mode_policy": {
+        "weights": {
+          "trap_circle": 0,
+          "gaussian_int": 0,
+          "smooth_trap_circle": 0,
+          "direct_trap_ring": 0,
+          "tail_itinerary": 0,
+          "exp_smoothing": 0,
+          "smooth": 1,
+          "curvature": 1,
+          "smooth_curvature": 1,
+          "direct_trap_screen": 1,
+          "direct_trap_multiply": 1,
+          "direct_trap_lines": 1,
+          "tia": 2,
+          "stripe": 2,
+          "threads": 2,
+          "smooth_stripe": 2,
+          "smooth_mean_angle": 2,
+          "smooth_angle_min": 2,
+          "itinerary": 2
+        },
+        "accepted": [
+          "smooth",
+          "tia",
+          "stripe",
+          "curvature",
+          "smooth_mean_angle",
+          "smooth_angle_min",
+          "smooth_stripe",
+          "smooth_curvature",
+          "direct_trap_screen",
+          "direct_trap_multiply",
+          "direct_trap_lines",
+          "threads",
+          "itinerary"
+        ],
+        "niche": [
+          "exp_smoothing",
+          "gaussian_int",
+          "trap_circle",
+          "smooth_trap_circle",
+          "direct_trap_ring",
+          "tail_itinerary"
+        ],
+        "promoted": [
+          "tia",
+          "stripe",
+          "smooth_mean_angle",
+          "smooth_angle_min",
+          "smooth_stripe",
+          "threads",
+          "itinerary"
+        ],
+        "wired": "all three. Weight 0 is out of the labeling rosters, the default mining rosters and gallery emission; 1 and 2 differ at the seat, where `seat_floors` floors a promoted mode at twice a normal one and is the default floor of both the greedy and the solver since 2026-08-31."
+      }
+    }
+  },
+  "pool": {
+    "stamp": "6b44c6636cb1c82f95abb969bfca0627259d62f9bb602b347a27a98a298fe096",
+    "stamp_is": "sha256 over the sorted candidate keys, as `growth.pool_stamp` takes it. Two records carrying the same stamp were chosen over the same pool",
+    "candidates": 164052,
+    "locations": 24155,
+    "reachable_locations": 24155,
+    "refused": {
+      "niche_mode": 47513,
+      "rejected": 44,
+      "off_regime": 0,
+      "no_picture": 0,
+      "picture_absent": 0,
+      "no_score": 0
+    },
+    "ledger_rows": 211609,
+    "ledger_path": "artifacts/curation/candidate_ledger/rows.jsonl"
+  },
+  "seats": {
+    "asked": 1000,
+    "filled": 1000,
+    "shortfall": 0,
+    "recorded": 1000
+  },
+  "shortfalls": {
+    "seats": {
+      "asked": 1000,
+      "filled": 1000,
+      "unfilled": 0
+    },
+    "demands": {
+      "of": "every demand this pass carried, mode floors and colour targets alike. The third objective tier is the sum of the `short` column",
+      "short_total": 0,
+      "rows": [
+        {
+          "demand": "mode_floor:curvature",
+          "axis": "mode",
+          "of": "curvature",
+          "asked": 16,
+          "held": 17,
+          "short": 0
+        },
+        {
+          "demand": "mode_floor:direct_trap_lines",
+          "axis": "mode",
+          "of": "direct_trap_lines",
+          "asked": 16,
+          "held": 16,
+          "short": 0
+        },
+        {
+          "demand": "mode_floor:direct_trap_multiply",
+          "axis": "mode",
+          "of": "direct_trap_multiply",
+          "asked": 16,
+          "held": 16,
+          "short": 0
+        },
+        {
+          "demand": "mode_floor:direct_trap_screen",
+          "axis": "mode",
+          "of": "direct_trap_screen",
+          "asked": 16,
+          "held": 25,
+          "short": 0
+        },
+        {
+          "demand": "mode_floor:itinerary",
+          "axis": "mode",
+          "of": "itinerary",
+          "asked": 32,
+          "held": 32,
+          "short": 0
+        },
+        {
+          "demand": "mode_floor:smooth_angle_min",
+          "axis": "mode",
+          "of": "smooth_angle_min",
+          "asked": 32,
+          "held": 58,
+          "short": 0
+        },
+        {
+          "demand": "mode_floor:smooth_curvature",
+          "axis": "mode",
+          "of": "smooth_curvature",
+          "asked": 16,
+          "held": 45,
+          "short": 0
+        },
+        {
+          "demand": "mode_floor:smooth_mean_angle",
+          "axis": "mode",
+          "of": "smooth_mean_angle",
+          "asked": 32,
+          "held": 40,
+          "short": 0
+        },
+        {
+          "demand": "mode_floor:smooth_stripe",
+          "axis": "mode",
+          "of": "smooth_stripe",
+          "asked": 31,
+          "held": 102,
+          "short": 0
+        },
+        {
+          "demand": "mode_floor:stripe",
+          "axis": "mode",
+          "of": "stripe",
+          "asked": 31,
+          "held": 92,
+          "short": 0
+        },
+        {
+          "demand": "mode_floor:threads",
+          "axis": "mode",
+          "of": "threads",
+          "asked": 31,
+          "held": 198,
+          "short": 0
+        },
+        {
+          "demand": "mode_floor:tia",
+          "axis": "mode",
+          "of": "tia",
+          "asked": 31,
+          "held": 101,
+          "short": 0
+        }
+      ]
+    },
+    "modes": {
+      "floor": null,
+      "floors": {
+        "smooth": 0,
+        "tia": 31,
+        "stripe": 31,
+        "curvature": 16,
+        "smooth_mean_angle": 32,
+        "smooth_angle_min": 32,
+        "smooth_stripe": 31,
+        "smooth_curvature": 16,
+        "direct_trap_screen": 16,
+        "direct_trap_multiply": 16,
+        "direct_trap_lines": 16,
+        "threads": 31,
+        "itinerary": 32
+      },
+      "floors_are": "per mode",
+      "asked": 300,
+      "represented": 13,
+      "of": 13,
+      "per_mode": {
+        "smooth": {
+          "floor": 0,
+          "seated": 258,
+          "short": 0,
+          "clearing": 15003,
+          "refused_by": {
+            "cell_allowance": 10527,
+            "another_place_is_the_same_place": 2677,
+            "location": 1461,
+            "spiral": 36,
+            "twin": 27,
+            "the_view_did_not_reach_it": 12,
+            "the_leg_had_no_seat_left": 5
+          }
+        },
+        "tia": {
+          "floor": 31,
+          "seated": 101,
+          "short": 0,
+          "clearing": 1488,
+          "refused_by": {
+            "cell_allowance": 1070,
+            "location": 194,
+            "another_place_is_the_same_place": 116,
+            "twin": 3,
+            "spiral": 2,
+            "the_leg_had_no_seat_left": 2
+          }
+        },
+        "stripe": {
+          "floor": 31,
+          "seated": 92,
+          "short": 0,
+          "clearing": 1491,
+          "refused_by": {
+            "cell_allowance": 1026,
+            "location": 193,
+            "another_place_is_the_same_place": 172,
+            "spiral": 6,
+            "twin": 2
+          }
+        },
+        "curvature": {
+          "floor": 16,
+          "seated": 17,
+          "short": 0,
+          "clearing": 351,
+          "refused_by": {
+            "cell_allowance": 243,
+            "location": 73,
+            "another_place_is_the_same_place": 14,
+            "spiral": 2,
+            "twin": 2
+          }
+        },
+        "smooth_mean_angle": {
+          "floor": 32,
+          "seated": 40,
+          "short": 0,
+          "clearing": 201,
+          "refused_by": {
+            "cell_allowance": 78,
+            "another_place_is_the_same_place": 42,
+            "location": 40,
+            "spiral": 1
+          }
+        },
+        "smooth_angle_min": {
+          "floor": 32,
+          "seated": 58,
+          "short": 0,
+          "clearing": 237,
+          "refused_by": {
+            "cell_allowance": 95,
+            "location": 51,
+            "another_place_is_the_same_place": 32,
+            "spiral": 1
+          }
+        },
+        "smooth_stripe": {
+          "floor": 31,
+          "seated": 102,
+          "short": 0,
+          "clearing": 352,
+          "refused_by": {
+            "cell_allowance": 119,
+            "location": 102,
+            "another_place_is_the_same_place": 27,
+            "twin": 2
+          }
+        },
+        "smooth_curvature": {
+          "floor": 16,
+          "seated": 45,
+          "short": 0,
+          "clearing": 206,
+          "refused_by": {
+            "cell_allowance": 90,
+            "location": 60,
+            "another_place_is_the_same_place": 10,
+            "twin": 1
+          }
+        },
+        "direct_trap_screen": {
+          "floor": 16,
+          "seated": 25,
+          "short": 0,
+          "clearing": 310,
+          "refused_by": {
+            "cell_allowance": 145,
+            "location": 113,
+            "another_place_is_the_same_place": 25,
+            "twin": 1,
+            "spiral": 1
+          }
+        },
+        "direct_trap_multiply": {
+          "floor": 16,
+          "seated": 16,
+          "short": 0,
+          "clearing": 614,
+          "refused_by": {
+            "cell_allowance": 308,
+            "location": 246,
+            "another_place_is_the_same_place": 41,
+            "twin": 2,
+            "the_view_did_not_reach_it": 1
+          }
+        },
+        "direct_trap_lines": {
+          "floor": 16,
+          "seated": 16,
+          "short": 0,
+          "clearing": 161,
+          "refused_by": {
+            "cell_allowance": 89,
+            "location": 41,
+            "another_place_is_the_same_place": 15
+          }
+        },
+        "threads": {
+          "floor": 31,
+          "seated": 198,
+          "short": 0,
+          "clearing": 664,
+          "refused_by": {
+            "cell_allowance": 259,
+            "location": 155,
+            "another_place_is_the_same_place": 50,
+            "spiral": 1,
+            "twin": 1
+          }
+        },
+        "itinerary": {
+          "floor": 32,
+          "seated": 32,
+          "short": 0,
+          "clearing": 208,
+          "refused_by": {
+            "cell_allowance": 103,
+            "location": 47,
+            "another_place_is_the_same_place": 25,
+            "spiral": 1
+          }
+        }
+      },
+      "starved": [],
+      "starved_count": 0,
+      "starved_are": "a floor above zero that went unfilled. Read `per_mode` for which: a mode with `clearing` above `seated` lost its seats to a rule named in `refused_by`, and one with `clearing` at `seated` had nothing left to seat",
+      "floor_never_needed": [
+        "smooth"
+      ],
+      "floor_never_needed_count": 1,
+      "floor_never_needed_are": "asked for nothing, so they cannot have gone short",
+      "below_the_floor": [],
+      "below_the_floor_count": 0,
+      "counts": {
+        "smooth": 258,
+        "threads": 198,
+        "smooth_stripe": 102,
+        "tia": 101,
+        "stripe": 92,
+        "smooth_angle_min": 58,
+        "smooth_curvature": 45,
+        "smooth_mean_angle": 40,
+        "itinerary": 32,
+        "direct_trap_screen": 25,
+        "curvature": 17,
+        "direct_trap_lines": 16,
+        "direct_trap_multiply": 16
+      }
+    },
+    "cells": {
+      "held": 48,
+      "over_allowance": {},
+      "counts": {
+        "light_muted_rose": 42,
+        "dark_muted_rose": 42,
+        "dark_muted_blue": 42,
+        "light_muted_blue": 42,
+        "dark_muted_red": 42,
+        "dark_muted_orange": 42,
+        "light_muted_orange": 42,
+        "dark_vivid_orange": 42,
+        "light_vivid_red": 42,
+        "light_vivid_orange": 42,
+        "light_muted_azure": 42,
+        "dark_muted_azure": 42,
+        "light_muted_yellow": 42,
+        "light_muted_lime": 42,
+        "dark_muted_purple": 42,
+        "dark_muted_yellow": 42,
+        "light_vivid_yellow": 42,
+        "dark_vivid_blue": 42,
+        "dark_vivid_red": 42,
+        "dark_muted_lime": 42,
+        "dark_muted_cyan": 42,
+        "dark_vivid_azure": 42,
+        "light_muted_green": 42,
+        "dark_vivid_magenta": 42,
+        "dark_vivid_rose": 42,
+        "dark_muted_teal": 42,
+        "dark_muted_green": 42,
+        "light_muted_red": 42,
+        "light_muted_purple": 42,
+        "dark_vivid_purple": 42,
+        "light_muted_cyan": 42,
+        "light_muted_teal": 42,
+        "dark_muted_magenta": 42,
+        "dark_vivid_green": 42,
+        "light_vivid_green": 41,
+        "light_muted_magenta": 40,
+        "light_vivid_rose": 40,
+        "dark_vivid_cyan": 38,
+        "light_vivid_azure": 37,
+        "dark_vivid_teal": 37,
+        "light_vivid_blue": 34,
+        "light_vivid_teal": 33,
+        "light_vivid_purple": 28,
+        "light_vivid_lime": 28,
+        "light_vivid_cyan": 26,
+        "dark_vivid_lime": 24,
+        "dark_vivid_yellow": 22,
+        "light_vivid_magenta": 20
+      }
+    },
+    "families": {
+      "held": 12,
+      "over_allowance": {},
+      "counts": {
+        "blue": 115,
+        "red": 112,
+        "green": 111,
+        "orange": 110,
+        "yellow": 110,
+        "rose": 108,
+        "azure": 108,
+        "teal": 102,
+        "cyan": 101,
+        "magenta": 90,
+        "purple": 84,
+        "lime": 74
+      }
+    },
+    "groups": {
+      "held": 528,
+      "cap": 25,
+      "realized_max": 10,
+      "at_the_cap": 0,
+      "counts": {
+        "map:river-of-light-25": 10,
+        "map:Rose in Ash": 7,
+        "m14": 6,
+        "map:RdPu": 6,
+        "map:cmr.redshift": 6,
+        "map:commons_Mandelbrot_M_E1_BB_99t__C4_90_C3_A0n__E1_BB_90c": 6,
+        "map:paezing": 6,
+        "map:wallhaven_wallhaven-1joljg": 6,
+        "m13": 5,
+        "map:Orchid Furnace": 5,
+        "map:Rose Against Cobalt": 5,
+        "map:Split Lime": 5,
+        "map:ahli": 5,
+        "map:cet_diverging_bwr_55_98_c37": 5,
+        "map:cmr.horizon": 5,
+        "map:cubehelix": 5,
+        "map:sad-eyes-25": 5,
+        "map:torque-25": 5,
+        "map:triglandal": 5,
+        "m23": 4
+      },
+      "over_cap": {}
+    },
+    "refusals_while_choosing": {
+      "cell_allowance": 10902,
+      "location": 1660,
+      "twin": 514,
+      "spiral": 463,
+      "group_cap": 0,
+      "family_allowance": 0,
+      "picture_unreadable": 0
+    },
+    "read": "a shortfall here is `this leg did not find it`, never `the pool does not hold it`. The only infeasibility claims are the census's necessary conditions"
+  },
+  "counts": {
+    "mode": {
+      "smooth": 258,
+      "threads": 198,
+      "smooth_stripe": 102,
+      "tia": 101,
+      "stripe": 92,
+      "smooth_angle_min": 58,
+      "smooth_curvature": 45,
+      "smooth_mean_angle": 40,
+      "itinerary": 32,
+      "direct_trap_screen": 25,
+      "curvature": 17,
+      "direct_trap_lines": 16,
+      "direct_trap_multiply": 16
+    },
+    "hue_family": {
+      "green": 96,
+      "yellow": 93,
+      "red": 92,
+      "rose": 90,
+      "azure": 88,
+      "orange": 87,
+      "blue": 82,
+      "cyan": 82,
+      "teal": 81,
+      "magenta": 74,
+      "purple": 67,
+      "lime": 61,
+      "null": 7
+    },
+    "cell": {
+      "dark_vivid_blue": 34,
+      "light_muted_yellow": 33,
+      "light_muted_green": 30,
+      "dark_vivid_azure": 29,
+      "dark_muted_red": 28,
+      "light_vivid_green": 28,
+      "light_vivid_red": 28,
+      "light_vivid_yellow": 27,
+      "dark_vivid_green": 26,
+      "dark_vivid_magenta": 25,
+      "dark_vivid_orange": 25,
+      "light_muted_cyan": 25,
+      "light_vivid_teal": 25,
+      "dark_muted_azure": 24,
+      "dark_muted_magenta": 24,
+      "light_muted_azure": 24,
+      "dark_vivid_rose": 23,
+      "dark_muted_rose": 22,
+      "light_muted_red": 22,
+      "light_vivid_azure": 22,
+      "dark_muted_cyan": 21,
+      "dark_vivid_purple": 21,
+      "light_muted_magenta": 21,
+      "dark_muted_green": 20,
+      "dark_muted_lime": 20,
+      "dark_muted_orange": 20,
+      "dark_muted_teal": 20,
+      "light_vivid_orange": 20,
+      "light_vivid_rose": 20,
+      "dark_muted_purple": 19,
+      "light_muted_lime": 19,
+      "light_muted_purple": 19,
+      "light_vivid_blue": 19,
+      "light_vivid_cyan": 19,
+      "dark_vivid_red": 18,
+      "light_muted_rose": 18,
+      "light_muted_teal": 18,
+      "dark_muted_yellow": 17,
+      "dark_vivid_yellow": 17,
+      "light_muted_blue": 16,
+      "dark_muted_blue": 15,
+      "light_muted_orange": 14,
+      "light_vivid_lime": 14,
+      "dark_vivid_lime": 12,
+      "dark_vivid_teal": 11,
+      "dark_vivid_cyan": 10,
+      "light_vivid_magenta": 10,
+      "light_vivid_purple": 6,
+      "null": 2
+    },
+    "partition": {
+      "multibrot4": 210,
+      "mandelbrot": 177,
+      "multibrot3": 133,
+      "julia:multibrot3": 95,
+      "julia:multibrot5": 90,
+      "julia:mandelbrot": 88,
+      "multibrot5": 80,
+      "julia:multibrot4": 74,
+      "phoenix": 34,
+      "phoenix:classic": 19
+    },
+    "centered": {
+      "False": 657,
+      "True": 343
+    },
+    "spiral": {
+      "False": 899,
+      "True": 101
+    }
+  }
+}

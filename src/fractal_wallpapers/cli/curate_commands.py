@@ -509,12 +509,25 @@ def curate_recorded_solve(args: argparse.Namespace) -> int:
         if not held:
             print("no tentative gallery has been recorded on this machine.")
             return 1
+        # **Which records a clone gets is the first thing this has to say.** An
+        # unstamped read lands on the newest PUBLISHED stamp, so a reader looking
+        # at this list needs to see why the newest line is not always the default
+        # — otherwise the answer reads as a bug in `browse`.
+        published = set(tentative.published())
         for stamp in held:
             rows = tentative.read_rows(stamp)
             manifest = tentative.read_manifest(stamp)
+            mark = "published" if stamp in published else "unpublished"
             print(
-                f"{stamp}  {len(rows):>5} seat(s) of {manifest['seats']['asked']}, "
-                f"{display_path(tentative.gallery_dir(stamp))}"
+                f"{stamp}  {mark:<11} {len(rows):>5} seat(s) of "
+                f"{manifest['seats']['asked']}, {display_path(tentative.gallery_dir(stamp))}"
+            )
+        if len(published) != len(held):
+            print(
+                f"\n{len(held) - len(published)} unpublished record(s): kept and read by "
+                f"naming the stamp, but not tracked and never what an unstamped read means. "
+                f"Publishing one is Matt's decision — `curation.tentative.PUBLISHED` and the "
+                f"negation lines in `.gitignore` are the list."
             )
         return 0
 

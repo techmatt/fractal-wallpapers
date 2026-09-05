@@ -326,6 +326,16 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+It read **96.17 s over 3,579, 116 deselected, nothing skipped** at the publication
+ruling, 2026-09-04 — **six tests more** than the reading below and **1.44 s under**
+its 97.61 s, taken on an idle box minutes after a 34-minute n=2000 solve leg had
+finished. The six are the publication guards, and every one is arithmetic or a
+handful of synthetic stamps in `tmp_path`; two of them read tracked files off the
+checkout (`.gitignore`, and each published stamp's three names) and neither opens a
+record. A lane that moved *down* while gaining tests is the box being quieter than
+the reading below, not the guards paying for themselves — the honest reading is
+that the six cost nothing measurable.
+
 It read **97.61 s over 3,573, 116 deselected, nothing skipped** at the augmenting
 chain, 2026-09-04 — **eight tests more** than the reading below and **1.17 s under**
 its 98.78 s. The eight are the new stage's guards, and the reading is the answer to

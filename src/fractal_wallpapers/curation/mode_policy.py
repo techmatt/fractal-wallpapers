@@ -444,6 +444,13 @@ def routed_mode(mode: str, texture_flat: bool = False) -> str:
     kind is decided — the seating pool, the census, the per-mode bars, the mode
     floors and the two label stores.
 
+    **The *bit for bit* is measured.** All 17 `texture_flat` seats of the 914 in
+    tentative gallery `20260904T023748Z`, re-rendered on 2026-09-04, came back
+    sha256-identical to the shipped picture on **17 of 17 both ways** — at the
+    recipe's own mode, `itinerary`, and at `smooth` with
+    `transfer: {"kind": "rank"}`. At `smooth` without that transfer they agree
+    with nothing: median mean absolute channel difference 71.43.
+
     **It is a rule about the shape and not about one mode's name.** `itinerary`
     was the only modulate when this was written and `tail_itinerary` is the
     second; neither is named here, and neither needs to be. A degenerate row of
