@@ -2,12 +2,12 @@
   "schema": 1,
   "path": "artifacts/curation/candidate_ledger/flatness.jsonl",
   "copy": "artifacts/curation_backup/candidate_ledger/flatness.jsonl",
-  "rows": 217866,
-  "bytes": 27078779,
-  "sha256": "edeab052cd968d2247586ed621bec6a502d58b72d902a899738ba39bbfd0fded",
+  "rows": 248812,
+  "bytes": 30899635,
+  "sha256": "cd92cdff2174848294412ca57bf653ae2ec5a667a574a47c7a72b5071f4e9e61",
   "column": "flat16_1.0",
   "cell": 16,
   "threshold": 1.0,
-  "recorded": "2026-09-04",
+  "recorded": "2026-09-05",
   "why_not_tracked": "one row per recipe with a picture on disk, which is tens of thousands of rows against a 1 MiB per-file history guard. Same guard, same answer as the rows and the scores."
 }
