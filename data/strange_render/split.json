@@ -5,14 +5,15 @@
   "asserted_on": "the location \u2014 family with every constant, and the viewport \u2014 so a later batch that re-renders a pinned place under a fresh identifier cannot spend the instrument by not naming it",
   "eval_only_batches": [
     "blind_modes",
+    "blind_palettes_20260905",
     "seated_and_head_top"
   ],
-  "renders": 220,
-  "locations": 180,
+  "renders": 320,
+  "locations": 280,
   "tiers": {
-    "1": 75,
-    "2": 77,
-    "3": 41,
-    "4": 27
+    "1": 81,
+    "2": 134,
+    "3": 70,
+    "4": 35
   }
 }

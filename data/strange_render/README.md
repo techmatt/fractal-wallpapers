@@ -217,9 +217,26 @@ place, so no rate off them differences one mode against another; that caveat and
 sitting's numbers are in [`../batch_caveats.md`](../batch_caveats.md) under
 ONE-CARD-A-PLACE.
 
+**And the second blind instrument this store has ever held reads the new library
+level with the shipped one.** `blind_palettes_20260905`, 2026-09-05: 100 verdicts,
+fifty matched pairs, one arm's map out of the 120 of drop `classic-pairs-2026-09`
+and the other's out of the 822 shipped maps, matched pair by pair on mode,
+partition and the location's own score band. Nothing but the library differs. All
+100 resolved with nothing withheld, 100 fresh and 0 revised, moving this store
+from 5,614 rows to **5,714** and from 2,487 locations to **2,587**. Read on the
+boundary it was bought for, `>= 3`: the
+new library **21 of 50 (42%)** against the shipped library's **16 of 50 (32%)**,
+mean tier 2.42 against 2.36. Paired, the new arm is higher on **16** pairs, tied
+on 23 and lower on 11 — a two-sided sign test over the 27 discordant pairs at
+**p = 0.44**. So the honest reading is *at least as good, and fifty pairs cannot
+separate them*: what the sheet rules out is the drop being worse, and it was never
+powered to detect ten points. It is `eval_only` and pinned at the location; it is
+the only unanchored reading this store holds besides `blind_modes`, and there is
+no second one to spend.
+
 **What a registration does not say is in
 [`../batch_caveats.md`](../batch_caveats.md)**: how a live population was actually
-assembled, and what a rate quoted off it without that is wrong about. Nine of this
+assembled, and what a rate quoted off it without that is wrong about. Ten of this
 store's batches have an entry there — including `under_seen_modes`, whose page was
 swept from position 270 and whose last 235 rows are the head's own decode restated
 rather than a verdict.

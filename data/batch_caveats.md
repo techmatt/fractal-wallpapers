@@ -564,11 +564,76 @@ There is no `eval_only` batch, because a second batch name would have printed on
 the reserved cards. Their verdicts are collected like every other and the ingest
 does not assert the pin; what the pin forbids is training on them.
 
+## GLOBAL-ASSIGNMENT — `new_maps_top4_20260905` is four rows a map, not four rows a place
+
+*Registries: both. 480 rows over 480 distinct locations — 241 in
+`smooth_render`, 239 in `strange_render`, under one batch name in two stores.*
+
+The population is the four best pictures of each of the 120 maps of drop
+`classic-pairs-2026-09`, and the word doing the work is **each**. It is not a
+top-480: it is a bipartite assignment that maximises the judge's total expected
+tier subject to **exactly four rows per map, one row per location across the
+whole 480, and at most 60 rows per family**. Three consequences.
+
+**A map's four rows are not that map's four best pictures.** They are its four
+best *at locations no other map took*, and the maps compete: a map whose
+candidates pile up where a stronger map's do gets its later choices. So the
+per-map mean tier this batch will produce is a lower bound on what the map can
+do, and the gap is largest for the maps that lost ties. It is also the reason the
+sheet is worth having — a per-map argmax would have handed one strong place to a
+dozen maps and measured the place.
+
+**A per-location comparison across maps does not exist here, by construction.**
+Every location appears once. There is no place where two maps can be differenced,
+so any map-versus-map reading off this batch is a difference between 120
+populations of four as much as between 120 maps.
+
+**And the mode is the assignment's pick, not a draw.** Each (map, location) edge
+carries the better of that place's four field-mode candidates, so the mode mix —
+`smooth` 241, `stripe` 132, `tia` 96, `curvature` 11 — is the judge's ranking of
+the modes at these places and not a sample of anything. `curvature`'s 11 is a
+statement about `curvature` losing ties, not about a draw that under-served it.
+
+The 600 locations behind it were themselves cut on the judge: every one carries a
+candidate at `P(>=4) >= 0.90` on the live artifact, unpinned, spread over the
+standing partition weights. So this batch conditions on quality twice — the place
+and the picture — and both flags read `score_unconditioned: false, anchored:
+true`. Nothing measured on it is a rate about the world.
+
+## MATCHED-PAIRS — `blind_palettes_20260905` answers one boundary and no other
+
+*Registry: `strange_render/batches.jsonl`. 100 rows, 50 pairs, `eval_only`.*
+
+Fifty pairs of locations, one member drawing its map out of the 120 of drop
+`classic-pairs-2026-09` and the other out of the 822 shipped maps. Everything
+else is matched inside the pair: the same **mode** (one roster —
+`tia`/`stripe`/`curvature`, 17/17/16 in each arm), the same **partition**, and
+the same bucket of the location's own `P(>=4)` to a twentieth. Realised arm means
+0.84966 against 0.85054. The map and the mode are seeded uniform draws and no
+finished-render score is anywhere in the selection.
+
+**The boundary it informs is `P(>=3)`, new library against shipped library, and
+that is the whole of it.** It is 100 rows: a per-mode or per-partition split of
+it is a handful of cards an arm, and a `P(>=4)` read off it is a tail the design
+was not powered for. The two arms draw 44 and 48 distinct maps, so it is also not
+a statement about any one map.
+
+`score_unconditioned` is **false** and the flag is right: the locations are the
+proven pool — places already holding a candidate over the seating bar — so a
+model score is in the population even though nothing chose *among* them. What
+protects this batch is `eval_only`, not the flag.
+
+**Its places were pinned before it had a verdict**, 100 of them, in
+`strange_render/eval_split.jsonl`, and settled into ordinary label rows when the
+sitting landed the same day. See `labeling/README.md`'s *A pin may be written
+BEFORE the sitting* for the arc and for the two guards a reservation holds red
+while it waits.
+
 ---
 
 ### Reading this file from code
 
 Nothing parses it. It is prose beside the registries on purpose: a caveat that a
-reader has to obey is a caveat a reader has to *read*, and encoding these six as
+reader has to obey is a caveat a reader has to *read*, and encoding these as
 flags would invite a downstream check to satisfy the flag and skip the paragraph.
 The registration flags stay the two questions they have always been.

@@ -570,6 +570,33 @@ Two refusals, both of them the design working:
   the palette head asks a 32-map neighbourhood of each anchor and a pool that
   cannot serve one is a head answering a different question.
 
+#### Aiming the whole manifest at ONE DROP is the cheapest coverage there is
+
+A manifest cut to a drop's own maps and spent through the **mode-floor** draw is
+how a leg buys per-map coverage rather than per-cell colour, and the arithmetic is
+worth stating because it is not the arithmetic of the cell filters above. With `L`
+named places, `M` modes and `--floor-width W` out of a manifest of `N` maps, each
+map lands at about `L * (1 - (1 - W/N)^M)` **distinct** locations — the modes are
+drawn independently at a place, which is what makes width cheaper than places.
+`sheet_leg_0905`, 2026-09-05: `L=600`, `M=4` field modes, `W=8`, `N=120` predicts
+145 and realised a **median of 144, a minimum of 119** over the 120 maps.
+
+**Measured price, and it is the cheapest depth leg on this page.** 19,200
+candidates over 600 proven high-band places at `smooth`/`tia`/`stripe`/`curvature`,
+three workers, **3,810 s of render wall** — 19,200 made, 0 failed, 0 stopped for
+budget — at **0.5895 s a candidate per engine** and a concurrency of 2.97. The
+dump is a third of it (33.1%) and the autolevel operator's `measure` another
+30.8%, which is what a leg looks like when every candidate is a recolour: the
+operator acted on **12,480 of 19,200 (65%)**.
+
+⚠ **A forty-place pilot over-priced this leg by 1.7x.** `sheet_pilot` measured
+**1.0022 s a candidate** on 42 places drawn out of the same high band under the
+same roster and the same manifest, and the leg came in at 0.5895. Nothing about
+the method differed; the pilot's 42 places were simply deeper than the 600's
+median. A pilot over tens of places prices *those* places' depth, so read it as
+an upper bound and set `--budget` off it rather than sizing the plan to it — this
+one planned against 9,000 s and spent 3,810.
+
 ### `--draw-cells` is the same filter cut by RULE instead of by hand
 
 `--draw-cells CELL …` narrows the same pool `--draw-maps` narrows, and the two
