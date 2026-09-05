@@ -41,7 +41,7 @@ identifier cannot spend it by not naming it.
 
 **One hundred and twenty rows in here are revisions of `strange_render` originals** —
 thirteen appended 2026-09-03 and the remaining 107 on 2026-09-04 — which is why this
-store reads **6,300** rows against the 6,180 the batch arithmetic below gives. Each is an `itinerary` render whose modulate texture measured
+store reads **6,540** rows against the 6,420 the batch arithmetic below gives. Each is an `itinerary` render whose modulate texture measured
 flat at label geometry — so the picture is the smooth field spent by rank bit for bit
 and the verdict is this judge's — carried over under its own batch with a `revision`
 block naming the original's file, line and recorded time. The originals stay in the
@@ -60,7 +60,9 @@ under the same name, `renders.job_name` being head-independent.
 **A verdict cast on a pinned location never reaches these rows.** The pin is asserted
 on the location and `blind_minibrot` is derived from the pinned places, so `label
 ingest` withholds such a verdict before it writes rather than growing a blind sheet
-by a row that was not cast blind. No drop has yet had one here — the nine the
+by a row that was not cast blind. **`new_maps_top4_20260905` is the first drop to have
+one here** — a single unit, `smooth` on `multibrot4` under `Aurora Curtain`, at a place
+pinned to `seated_and_head_top`. Before it the count was zero, and the nine the
 manufactured rare-colour drop lost were on the *other* store's pin. Its rows at those
 places are stored and are EXCLUDED from training by the strict split, which is a
 different rule and is the trainer's.
@@ -80,6 +82,21 @@ leaves the tiers where they were. The page prefilled 4 on all 123, so its 64.2%
 correction rate is downward disagreement and nothing else. Both readings and the
 other two slices are in [`../batch_caveats.md`](../batch_caveats.md) under
 THREE-SLICES.
+
+**And the newest batch is four pictures of each new map, aimed by this judge.**
+`new_maps_top4_20260905`, 2026-09-05: the smooth half of a two-store sitting over the
+120 maps of drop `classic-pairs-2026-09`. 241 of 241 exported units resolved, **one
+withheld** on the pinned place named above, **240 fresh and 0 revised**, moving this
+store from 6,300 rows to **6,540** and from 3,043 locations to **3,257** — 26 of its
+240 places were already here, the rest are new. Anchored and score-conditioned. The
+page prefilled 4 on 226 of 241 and 3 on 15, so its **83.8%** correction rate is
+downward disagreement and nothing else, and a correction sheet cannot measure this
+judge — the instrument is `blind_palettes_20260905` in the other store. Mean tier
+**2.92**, q3+ 0.797, q4 0.120, and Spearman(score, tier) is **0.295** at label
+geometry against 0.258 on the draw column. What the sitting was bought for is the hue
+read, and it is in the other store's entry because both halves carry it. How the 480
+rows were assigned — four a map, one location apiece, the mode the assignment's pick —
+is in [`../batch_caveats.md`](../batch_caveats.md) under GLOBAL-ASSIGNMENT.
 
 **The source corpus is complete here.** All 4,795 verdicts it holds are in these
 rows, checked on 2026-08-18 by rebuilding each one and looking its key up — not by

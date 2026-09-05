@@ -349,6 +349,18 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+It read **111.54 s over 3,757, 116 deselected** fast at
+`INGEST_new_maps_labels_0905`, 2026-09-05, on a box idle but for the two-store
+ingest that had just finished — no render leg, no probe, the sitting's four modes
+carrying no modulate. **The count did not move and no test was written**: what
+landed is 477 finished-render label rows, 240 in `smooth_render` and 237 in
+`strange_render`, roughly 4% on each store. That is the *which store grew* answer
+to the three questions, and it is where a guard that sweeps either store would pay
+— but **3.57 s over the settled reading is 3.3%, and this log's own same-tree
+spread is 3.8%**, so the movement is not separable from the box at this size and
+is recorded rather than attributed. The slow lane was not run: the diff is label
+rows and two store READMEs.
+
 It read **107.97 s over 3,757, 116 deselected** fast and **6:34 over 3,873,
 nothing skipped** slow at `SHEET_new_palettes_0905`, 2026-09-05, on the same
 `.[dev,models]` install with a release engine. **The slow lane's clock had been
