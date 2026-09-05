@@ -426,6 +426,56 @@ throughout, and the worst seat in the two thin themes stayed at ~0.001
 in near-zero pictures no matter how much supply is thrown at it**, so a themed
 gallery's tail is a rung problem and not a mining one.
 
+## What the themed leg's quality reads, measured 2026-09-05
+
+Every dark theme **fills** n=200, so count is not the readout — quality is. Read at
+the q4 bar over the finished seating:
+
+| theme | seats over the q4 bar, of 200 | median |
+|---|--:|--:|
+| the rich four | 182-192 | — |
+| `dark_vivid_green` | 113 | 0.58 |
+| `dark_vivid_yellow` | 79 | 0.19 |
+
+**Recolouring proven places is the cheapest q4 there is** — **12.8 engine-s a kept
+clear**, against **67 s** to open a fresh place and **165 s** for a full-render mode.
+And it *aims*: a 20-minute arm moved green's median **+0.054** where its controls moved
+**+0.003**. What it cannot buy is a seat in the general gallery, because one-per-location
+holds — it buys quality **inside** a theme, and places still come from breadth. Two
+roster facts off the same legs: `curvature` bought **5% of the clears for 25% of the
+roster**, and a cell exclusion narrows the **offer** rather than the outcome —
+**43% of a restricted leg's rows landed off-list**.
+
+## What the sourcing channels cost in seats, measured
+
+* **Centered share of a solve is mining-invariant, at 0.16-0.23.** It is the one axis
+  the solve amplifies unasked, and no mining arm measured has moved it out of that band.
+* **Centered places clear more often and cost more**: **38% against 30%**, at **2.6x**
+  the cost. An aimed arm buys mode-floor seats and a centered arm buys places.
+* **The viewport sampler's survival is about 10%** on the pinned planes, which is the
+  only root channel a plane with no parameter has.
+* **At the 0.25-turn mix the pinned plane's rows were worth −5 seats at n=1000.** They
+  clear well and land only in cells already at allowance, which is why the phoenix
+  planes are declared in seconds shares now and not in turn weights.
+* ⚠ **Two modes a census prices the same can be 1.9x apart measured.** Allocate per
+  mode; a census price is a starting point and never an allocation.
+* **`light_vivid_purple` is companion-allowance-bound**: the pool holds **28 of 42**
+  and the cell is refused by a full companion cell of the same carriers rather than by
+  its own rule.
+
+## What the label stores and the candidate ledger share, measured
+
+* **The join ceiling is about 12%**, by PLACE and never by key — quote the ratio and
+  never the counts, and remember the rows that *do* join are the selected top.
+* **19.8% of seats sit at a labelled place**, and the four rate there is **38%**
+  `[human n=678]`.
+* **The render judge orders inside its own top in exactly one slice** — the rare-colour
+  one, at **0.45 / 0.49** `[human n=60]`, where the disagreement is colour-shaped:
+  purple and lime read 0.99 to the judge and about 2.7-3.0 to Matt's eye.
+* **The rank key reads `flatness`, so every seating is busier than the pool by
+  construction**: dead space below 0.05 is **24% of the pool and 62% of the seats**.
+  Intentional, Matt's ruling of ckpt 107, and not a defect to correct.
+
 ## Every per-candidate rate this project has measured
 
 ⚠ **These are historical, measured under different conditions, and not comparable

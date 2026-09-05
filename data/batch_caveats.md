@@ -216,6 +216,14 @@ verdict on a *conditioned* population, and the paragraph above it says why that
 number cannot be differenced against another cell's. So the two readings do not
 disagree, and the one that decides a roster is the clear rate.
 
+**The judge is what the settings move, and it moves a long way** [measured]. On
+the *same picture*, matched on place and map, `opacity=0.6 + threshold=0.2` takes
+the render judge's `P(≥4)` from **0.81 to 0.01** while near-white goes 0.36 → 0.00
+and chroma rises 2.1x. Matt's eye is chroma-indifferent over the same batch, so
+that swing is the judge's penalty on the tint and not a reading of the picture —
+which is why a cell's *judge* rate and its *human* rate answer different questions
+here.
+
 **And the page was swept.** The last override is at position 164 of 188; the final
 24 rows are the head's own 1s restated, and every one of the batch's 24 tier-1
 verdicts is in that suffix. The correction rate is 47.9% over the page and 54.9%
@@ -428,6 +436,14 @@ a keeper population.
 no `phoenix:classic` q4 labels — 38 places in the whole project hold a human q3+
 verdict there, 13 of them q4 — so its probabilities on this partition are an
 extrapolation. That is the reason this sitting exists.
+
+**And the plane's labels are split three ways across the stores, so a "how many
+labels are there" answer depends on which store is asked** [measured, ckpt 103].
+The LOCATION store holds **73 rows, 7 of them q3+ and 1 q4**; the finished stores
+hold **`strange_render` 103 rows / 30 q4** and **`smooth_render` 210 rows / 20 q4**
+on the plane. An earlier reading of "one q4 label on the whole plane" was the
+location store alone. What is scarce here is **places, not verdicts** — q3+ places
+went 38 → 72 over this era.
 
 **Four of the six `itinerary` cards are degenerate modulates.** The engine reported
 `texture_flat` at `1280x720ss2` on all four; `texture_flat.KEYED` holds the

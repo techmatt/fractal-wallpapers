@@ -622,6 +622,15 @@ strippable and neither should be: they are what a labeler needs to know which sh
 front of them. A batch named after the thing being tested is how a blind sheet stops being
 blind — `under_seen_modes` names a population, not a mode or a score.
 
+**Two provenance facts about the standing blind instruments, both of which a stored
+row cannot answer on its own.** `blind_minibrot`'s 197 rows are recorded as **186 from
+a single maker production-walk ledger**; the rows carry `batch` alone — 197 of 197 read
+`blind_minibrot` — so that split is the sheet's own history and is not re-derivable
+here. And **`S3` is the only rare-colour read this project has, and it is not blind**:
+60 aimed cards, prefilled, cut as one slice of `judge_band_20260903`. There is no blind
+rare-colour instrument, so every rare-colour rate is a ceiling — see
+[`data/batch_caveats.md`](../../../data/batch_caveats.md)'s *THREE-SLICES* entry.
+
 ## A rule answers the mostly-black frames, and nobody is asked again
 
 A location whose frame is mostly the set's own interior renders mostly black, and that

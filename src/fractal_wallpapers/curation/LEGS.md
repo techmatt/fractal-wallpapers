@@ -1537,7 +1537,9 @@ composite partition **67%** low (1.8397 against 3.0803), every per-mode rate mov
 the same direction, because 180 s reaches only the cheap head of the draw. The field
 pilot, whose 852 candidates were a fifth of its leg, priced it to 0.4%. A low rate
 costs *candidates* and never minutes — `--budget` is wall and the leg stops at it
-either way, booking the shortfall to `counts.stopped_for_budget`.
+either way, booking the shortfall to `counts.stopped_for_budget`. **The fraction is
+about 20% of the leg's candidates**, on the target population, which is what the field
+pilot's fifth was; a short pilot is a **floor** on the rate and never the rate.
 
 **The two draws take their own width, because they are priced apart.** `--near-width`
 overrides `--width` for the near band alone. It usually should: a near-band location
