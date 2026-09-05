@@ -234,6 +234,27 @@ powered to detect ten points. It is `eval_only` and pinned at the location; it i
 the only unanchored reading this store holds besides `blind_modes`, and there is
 no second one to spend.
 
+**The same day's correction sheet says the disagreement over the new maps is
+hue-shaped.** `new_maps_top4_20260905`, 2026-09-05: the strange half of a two-store
+sitting over the same 120 maps, four pictures each. 239 of 239 exported units
+resolved, **two withheld** on places pinned to `seated_and_head_top`, **237 fresh and
+0 revised**, moving this store from 5,714 rows to **5,951** and from 2,587 locations
+to **2,804** — 20 of its 237 places were already here. Anchored and score-conditioned;
+the page prefilled 4 on 218 and 3 on 21, so its **81.6%** correction rate is downward
+disagreement and nothing else. Mean tier 2.69, q3+ 0.527, and Spearman(score, tier) is
+**0.326** at label geometry against 0.342 on the draw column.
+
+The read the sheet was bought for is `P(>=4)` against a person's tier **broken out by
+the map's carrier hue**, over all 480 rows of both stores. Holding the human tier
+fixed, the judge scores the five hues it is known to dislike — green, lime, cyan,
+teal, yellow, 40 of the 120 maps — **below** the other seven at every tier: −0.151 at
+tier 2 (n=59 against 101), −0.066 at tier 3, −0.053 at tier 4. Matt's own tiers barely
+separate the two groups: mean **2.756** against 2.831, q3+ 0.619 against 0.684, and
+17 of 40 disliked-hue maps produced a q4 against 35 of 80. `dark_vivid_green` is the
+extreme cell — 5 maps, mean tier 2.60 and mean `P(>=4)` **0.426** against a 0.85
+sheet-wide. **A correction sheet cannot measure a judge** and an aimed sitting is not
+a base rate, so every rate here is a ceiling on downward disagreement.
+
 **What a registration does not say is in
 [`../batch_caveats.md`](../batch_caveats.md)**: how a live population was actually
 assembled, and what a rate quoted off it without that is wrong about. Ten of this
