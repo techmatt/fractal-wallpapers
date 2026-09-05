@@ -338,7 +338,20 @@ def test_the_page_binds_one_two_and_three_to_clear_up_and_star(
     page = (tmp_path / "kit" / votes.PAGE_NAME).read_text(encoding="utf-8")
     assert 'const BY_KEY = new Map([["1", 0], ["2", 1], ["3", 2]]);' in page
     assert "<small>(2)</small>" in page and "<small>(3)</small>" in page
-    assert "<b>2</b> thumbs-up" in page and "<b>1</b> to take a rating back" in page
+    assert "<b>2</b> thumbs-up" in page and "<b>1</b> average" in page
+
+
+def test_any_of_the_three_keys_closes_the_fullscreen(tmp_path, store, stub_renders) -> None:
+    """Matt's ruling of 2026-09-05, reversing the first reading. That reading was
+    that clearing undoes a decision rather than taking one and should leave the
+    picture up; in the hand Average IS a decision — "this one is ordinary" — and a
+    key that sometimes closed and sometimes did not became the thing to keep track
+    of, which is the objection that produced the three keys to begin with."""
+    built(tmp_path, store)
+    page = (tmp_path / "kit" / votes.PAGE_NAME).read_text(encoding="utf-8")
+    pressing = page.split("function press(")[1].split("\n}")[0]
+    assert "if (open === index) shut();" in pressing
+    assert "&& kind" not in pressing, "Average is still an exception"
 
 
 # --------------------------------------------------------------------------- #
@@ -479,4 +492,5 @@ def test_the_paragraph_the_friends_read_names_the_keys(tmp_path, store, stub_ren
     built(tmp_path, store)
     text = (tmp_path / "kit" / votes.READ_ME).read_text(encoding="utf-8")
     assert "2 for the thumbs-up, 3 for the star" in text
-    assert "1 to take a rating back off" in text
+    assert "1 for an average one" in text
+    assert "Any of the three closes the large picture" in text
