@@ -291,12 +291,33 @@ def test_a_supersample_override_that_is_not_one_is_refused_at_the_flag(text) -> 
         votes.parse_supersample_for(text)
 
 
-def test_an_override_naming_a_supersample_nothing_is_priced_at_is_refused() -> None:
-    """The two cells of the pilot's grid are the two, and the argument for the
-    default is a comparison between them."""
-    assert votes.parse_supersample_for("smooth_mean_angle=4") == ("smooth_mean_angle", 4)
+@pytest.mark.parametrize("supersample", votes.SUPERSAMPLES)
+def test_every_supersample_the_kit_takes_is_one_an_override_can_name(supersample) -> None:
+    """2 and 4 are the priced pair the default's argument is a comparison
+    between; 1 is the debugging cell, minutes rather than hours, for driving the
+    viewer on a kit nobody is sent."""
+    assert votes.parse_supersample_for(f"smooth_mean_angle={supersample}") == (
+        "smooth_mean_angle",
+        supersample,
+    )
+
+
+def test_a_supersample_the_kit_does_not_take_is_refused() -> None:
+    """3 is a cell of the pilot's grid nobody has looked at, and a leg is not the
+    place to discover that."""
     with pytest.raises(votes.VotesRefused):
         votes.parse_supersample_for("smooth_mean_angle=3")
+
+
+def test_the_debugging_supersample_builds_a_whole_kit(tmp_path, store, stub_renders) -> None:
+    """ss1 is a supersample like the others once it is past the flag: one pass,
+    the frame unchanged, and the regime on the manifest and in the seat list, so
+    a kit built to be driven still says what made it."""
+    manifest = built(tmp_path, store, supersample=1)
+    assert [leg["regime"] for leg in stub_renders] == ["2560x1440ss1"]
+    assert manifest["encoding"]["regime"] == "2560x1440ss1"
+    assert manifest["encoding"]["seats_at"] == {"ss1": 2}
+    assert seat_list(tmp_path / "kit") == [{"key": KEYS[0], "ss": 1}, {"key": KEYS[1], "ss": 1}]
 
 
 # --------------------------------------------------------------------------- #
@@ -317,8 +338,139 @@ def test_the_page_binds_one_two_and_three_to_clear_up_and_star(
     page = (tmp_path / "kit" / votes.PAGE_NAME).read_text(encoding="utf-8")
     assert 'const BY_KEY = new Map([["1", 0], ["2", 1], ["3", 2]]);' in page
     assert "<small>(2)</small>" in page and "<small>(3)</small>" in page
-    assert "<small>(1)</small>" not in page, "the old binding is still on screen"
     assert "<b>2</b> thumbs-up" in page and "<b>1</b> to take a rating back" in page
+
+
+# --------------------------------------------------------------------------- #
+# The viewer, 2.0.
+# --------------------------------------------------------------------------- #
+def test_the_fullscreen_bar_offers_all_three_states_in_key_order(
+    tmp_path, store, stub_renders
+) -> None:
+    """Matt's ruling of 2026-09-05: Average, thumbs-up, star, left to right, in
+    the order their keys are in. Average is a **state** and not the absence of
+    one — it is what `1` does, and before 2.0 the only way to reach it with a
+    mouse was to press an already-pressed button, which is why the fullscreen
+    buttons now set rather than toggle."""
+    built(tmp_path, store)
+    page = (tmp_path / "kit" / votes.PAGE_NAME).read_text(encoding="utf-8")
+    bar = page.split('<div id="big"')[1].split("</div>")[0]
+    assert [found.group(1) for found in re.finditer(r'<button data-v="(\d)"', bar)] == [
+        "0",
+        "1",
+        "2",
+    ]
+    assert "Average <small>(1)</small>" in bar
+    assert "Thumbs up <small>(2)</small>" in bar
+    assert "Star <small>(3)</small>" in bar
+
+
+def test_the_thumbs_up_is_gold_and_the_star_is_green_everywhere_a_vote_shows(
+    tmp_path, store, stub_renders
+) -> None:
+    """Two colours named once and read by the tile border, the button that cast
+    the vote and the count strip. A person learns the pair on the first page, so
+    a screen that spelled one of them differently would be teaching a second
+    vocabulary for the same two votes."""
+    built(tmp_path, store)
+    page = (tmp_path / "kit" / votes.PAGE_NAME).read_text(encoding="utf-8")
+    assert "--up: #fbbf24; --star: #16a34a;" in page
+    for rule in (
+        ".tally .up { color: var(--up); }",
+        ".tally .star { color: var(--star); }",
+        ".tile.up { border-color: var(--up); }",
+        ".tile.star { border-color: var(--star); }",
+    ):
+        assert rule in page, rule
+    assert '.bar button.on[data-v="1"] { background: var(--up);' in page
+    assert '.bar button.on[data-v="2"] { background: var(--star);' in page
+    # The old pair, gone rather than shadowed: a stale literal in the sheet is a
+    # colour that comes back the next time somebody edits the rule above it.
+    assert "#4ade80" not in page
+
+
+def test_each_page_button_carries_the_votes_given_on_that_page(
+    tmp_path, store, stub_renders
+) -> None:
+    """Over the viewer's own walk and not over the record — two people's page 3
+    hold different pictures. Zero is drawn rather than left blank: a page nobody
+    opened and a page somebody worked and liked nothing on are the same blank
+    from the outside, and only the first is worth going back to."""
+    built(tmp_path, store)
+    page = (tmp_path / "kit" / votes.PAGE_NAME).read_text(encoding="utf-8")
+    assert "function pageCounts()" in page and "function paintPager()" in page
+    # Counted off `order`, which is the permutation, rather than off KEYS.
+    assert "of order.slice(p * PER_PAGE, (p + 1) * PER_PAGE)" in page
+    # Repainted by the one function every vote goes through, buttons and keys
+    # alike, so a page turned under a fullscreen cannot leave a count behind.
+    assert re.search(r"function setVote\([^)]*\) \{[^}]*paintPager\(\);", page, re.S)
+    assert "count.textContent = String(given);" in page
+
+
+def test_starting_over_asks_twice_and_in_two_different_ways(tmp_path, store, stub_renders) -> None:
+    """An in-page band carrying the count of what would go, then the browser's own
+    dialog. Two steps of the same kind is one habit, and this is the only button
+    in the viewer that destroys work."""
+    built(tmp_path, store)
+    page = (tmp_path / "kit" / votes.PAGE_NAME).read_text(encoding="utf-8")
+    assert '<button id="reset">Start over</button>' in page
+    assert 'id="confirm" hidden' in page
+    # Step one shows the band and touches nothing: the count is read, not the
+    # store written. A first step that already deleted would make the second a
+    # formality.
+    asking = page.split("function askReset()")[1].split("\n}")[0]
+    assert 'document.getElementById("confirm").hidden = false;' in asking
+    assert "removeItem" not in asking
+    # Step two is the browser's own, and it is a guard clause: a refusal returns
+    # before anything is dropped.
+    erasing = page.split("function doReset()")[1].split("\n}")[0]
+    assert "if (!window.confirm(" in erasing and "return;" in erasing
+    assert erasing.index("window.confirm(") < erasing.index("removeItem")
+
+
+def test_starting_over_clears_this_records_names_and_no_others(
+    tmp_path, store, stub_renders
+) -> None:
+    """Every name that has used this browser goes, because the button is for
+    leaving the computer clean — but another kit's folder is somebody else's
+    evening, so the sweep is the record's own prefix.
+
+    Handing the computer to a partner does not need it at all: a name is a slot,
+    so they type theirs and the first person gets theirs back by typing hers."""
+    built(tmp_path, store)
+    page = (tmp_path / "kit" / votes.PAGE_NAME).read_text(encoding="utf-8")
+    assert 'if (key && key.startsWith("votes/" + RECORD)) drop.push(key);' in page
+    assert 'const SLOTS = "votes/" + RECORD + "/";' in page
+    # The remembered name sits BESIDE the slot prefix rather than inside it: a
+    # person actually called "name" would have overwritten it with their votes.
+    assert 'const NAME_KEY = "votes/" + RECORD + ":name";' in page
+    assert "function slot() { return SLOTS + who; }" in page
+
+
+def test_the_paragraph_says_a_second_person_does_not_need_to_erase_anything(
+    tmp_path, store, stub_renders
+) -> None:
+    """The README is the only thing a friend reads before opening anything, so
+    the cheap way to share a computer has to be in it — otherwise the destructive
+    button is the one they find."""
+    built(tmp_path, store)
+    text = (tmp_path / "kit" / votes.READ_ME).read_text(encoding="utf-8")
+    assert "type their own\nname" in text
+    assert "erases every rating on the" in text and "asks you twice" in text
+
+
+def test_the_export_says_which_viewer_a_friend_was_looking_at(
+    tmp_path, store, stub_renders
+) -> None:
+    """2.0, and deliberately not `votes/v2`: telling it from the first version's
+    `votes/v1` is telling two unrelated strings apart. The schema under it is
+    unchanged — same seven fields, same vote values — so the version names the
+    page rather than how to read what came back."""
+    assert votes.VIEWER == "2.0"
+    manifest = built(tmp_path, store)
+    page = (tmp_path / "kit" / votes.PAGE_NAME).read_text(encoding="utf-8")
+    assert manifest["viewer"] == "2.0"
+    assert 'const VIEWER = "2.0";' in page
 
 
 def test_the_paragraph_the_friends_read_names_the_keys(tmp_path, store, stub_renders) -> None:

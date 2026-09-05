@@ -63,6 +63,28 @@ filter and no search: this is the one place in the project where a person is ask
 what they like, and every affordance for finding a particular picture is an
 affordance for voting on something other than the picture in front of them.
 
+**The per-page counts under the pager are the one exception, and they are about
+the person rather than about the pictures.** A page nobody has opened and a page
+somebody worked and liked nothing on are the same blank from the outside, and only
+the first is worth going back to — so each page button carries how many votes that
+viewer has given on it, zero drawn as `0`. It is a count over the *walk* and not
+over the record: two people's page 3 hold different pictures. Nothing in it says
+which picture, which mode, or which vote, so there is still nothing to sort by.
+
+## Two people, one computer
+
+A name is a slot: ratings are kept under `votes/<record>/<name>`, so a partner
+taking a turn types their own name and gets their own walk and their own storage,
+and the first person gets theirs back by typing theirs. **Handing the computer
+over needs nothing destructive**, which is why the *Start over* button is not
+that: it exists for leaving the computer clean, it erases every name's ratings
+for this record, and it asks twice — an in-page band carrying the count of what
+would go, then the browser's own dialog. Two steps of different kinds, because
+two of the same kind is one habit.
+
+It clears this record's keys and not the whole store: another kit's folder on the
+same browser is somebody else's evening.
+
 ## What ingest will be handed, fixed here
 
 `{viewer, record, name, order_seed, votes: {<recipe key>: 1 | 2}, pages_visited,
@@ -86,7 +108,15 @@ from fractal_wallpapers.curation import release, tentative
 #: The shape of an exported label file. It travels on every export and an ingest
 #: reads it before anything else, because the friends' copies of a kit outlive
 #: this checkout's memory of what version wrote them.
-VIEWER = "votes/v1"
+#:
+#: **`"2.0"` from 2026-09-05**, Matt's spelling, and it is deliberately not
+#: `votes/v2`: the first version spelled itself `votes/v1` and an ingest telling
+#: the two apart is telling `"votes/v1"` from `"2.0"`, which is a comparison no
+#: parser can get subtly wrong. What changed under it is the viewer and not the
+#: schema — a v1 export and a 2.0 export carry the same seven fields and the same
+#: vote values, so the version says which page a person was looking at rather
+#: than how to read what came back.
+VIEWER = "2.0"
 
 #: What every seat is rendered at. The frame and not a [`release.Regime`]: the
 #: supersample under it is the caller's, priced by `scratch/votes_pilot`, and the
@@ -106,10 +136,17 @@ FRAME = (2560, 1440)
 #: quality steps does, and it costs it as aliasing rather than as softness.
 SUPERSAMPLE = 4
 
-#: The two supersamples this kit is priced at, and the only two either flag takes.
-#: A third would be a cell of the pilot's grid nobody has looked at, and the whole
-#: argument above is a comparison between these two.
-SUPERSAMPLES = (2, 4)
+#: The supersamples either flag takes. **2 and 4 are the priced pair** — the whole
+#: argument above is a comparison between those two, and they are the cells of the
+#: pilot's grid somebody has looked at.
+#:
+#: **1 is the debugging cell and it is not one of them.** It buys a kit in minutes
+#: rather than hours, which is what makes the friends' flow — paging, voting,
+#: export — something a person can exercise end to end in an afternoon, and it
+#: pays for that in exactly the currency the ss2-against-ss4 measurement says is
+#: the visible one: aliasing. Nothing has priced its bytes or its picture and
+#: nothing should ship from it. A kit at ss1 is for driving, not for sending.
+SUPERSAMPLES = (1, 2, 4)
 
 #: How wide a thumbnail is. 512 at 16:9 is 512x288 -- two of them across a phone,
 #: five across the grid this page lays out, and small enough that a thousand of
@@ -584,7 +621,8 @@ Unzip this folder somewhere and open index.html — it opens in your browser and
 needs nothing installed. Type your name when it asks. You'll see pages of
 pictures. If you like one, click the thumbs-up under it; if you really like one,
 click the star instead. Skip everything else — most of them should be skipped,
-and there's no number you're trying to reach. Click a picture to see it large,
+and there's no number you're trying to reach. Click a picture to see it large —
+the same three choices are buttons underneath it, Average, thumbs-up and star —
 and press Escape to come back. Your choices are saved as you go, so you can close
 the page and come back to it later.
 
@@ -594,6 +632,11 @@ and 1 to take a rating back off.
 
 When you're done, click Export at the top. Your browser will save a small file.
 Send that file back and you're finished.
+
+If somebody else wants a turn on the same computer, they can just type their own
+name — everyone's choices are kept separately, so you won't be in each other's
+way. "Start over" at the top is the other thing: it erases every rating on the
+computer, yours and theirs, and it asks you twice before it does. Export first.
 """
 
 
@@ -607,7 +650,10 @@ _PAGE = """<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>pick the wallpapers you like</title>
 <style>
-  :root { color-scheme: dark; }
+  /* The two vote colours, named once and read everywhere a vote is shown: the
+     tile border, the button that cast it, the count strip. A person learns the
+     pair on the first page and every later screen has to keep the promise. */
+  :root { color-scheme: dark; --up: #fbbf24; --star: #16a34a; --ink: #101216; }
   * { box-sizing: border-box; }
   body { margin: 0; background: #101216; color: #e8eaed;
          font: 14px/1.5 ui-sans-serif, system-ui, "Segoe UI", sans-serif; }
@@ -617,29 +663,57 @@ _PAGE = """<!doctype html>
   header .who { font-weight: 600; }
   header .grow { flex: 1; }
   .tally { font-variant-numeric: tabular-nums; color: #c6cbd3; }
+  .tally .up { color: var(--up); }
+  .tally .star { color: var(--star); }
   .pager { display: flex; gap: 5px; flex-wrap: wrap; }
+  .pager button { display: flex; flex-direction: column; align-items: center;
+                  gap: 1px; line-height: 1.15; min-width: 36px; padding: 4px 9px; }
+  /* Small type, and the only thing it has to do is answer "have I worked this
+     page" across the strip at a glance. So the distinction is brightness and
+     weight rather than a third colour: the two colours above already mean the
+     two votes, and a worked page is not a third kind of vote. */
+  .pager .count { font-size: 10px; font-variant-numeric: tabular-nums;
+                  color: #666e7c; }
+  .pager .count.worked { color: #e8eaed; font-weight: 700; }
   button { background: #262b34; color: #e8eaed; border: 1px solid #39404b;
            border-radius: 5px; padding: 5px 10px; font: inherit; cursor: pointer; }
   button:hover { background: #333a45; }
   button.on { background: #3d5cc4; border-color: #6f8ae8; }
+  /* The confirm band, and it is a band rather than a browser dialog on purpose:
+     the count of what is about to go has to be on screen next to the button that
+     takes it. The second step IS a browser dialog, so the two acts are different
+     in kind and muscle memory cannot carry through both. */
+  #confirm { background: #3b1416; border-bottom: 1px solid #7f1d1d;
+             padding: 9px 14px; display: flex; gap: 10px; align-items: center;
+             flex-wrap: wrap; color: #fecaca; }
+  #confirm b { color: #fff1f2; }
+  button.danger { background: #b91c1c; border-color: #ef4444; color: #fff5f5; }
+  button.danger:hover { background: #dc2626; }
   main { display: grid; gap: 12px; padding: 14px 14px 70px;
          grid-template-columns: repeat(5, minmax(0, 1fr)); }
   @media (max-width: 1100px) { main { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
   @media (max-width: 680px) { main { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   .tile { border: 3px solid transparent; border-radius: 8px; overflow: hidden;
           background: #181b21; }
-  .tile.up { border-color: #4ade80; }
-  .tile.star { border-color: #fbbf24; }
+  .tile.up { border-color: var(--up); }
+  .tile.star { border-color: var(--star); }
   .tile img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover;
               background: #0b0d10; cursor: zoom-in; }
   .bar { display: flex; gap: 6px; padding: 6px; }
   .bar button { flex: 1; padding: 4px 0; font-size: 15px; line-height: 1.2; }
+  /* `data-v="0"` is the neutral, and it keeps the strip's own blue: it is the
+     button that says nothing about the picture, so giving it a vote colour
+     would be the one lie this bar can tell. */
   .bar button.on { background: #3d5cc4; border-color: #6f8ae8; }
+  .bar button.on[data-v="1"] { background: var(--up); border-color: #fcd34d;
+                               color: var(--ink); }
+  .bar button.on[data-v="2"] { background: var(--star); border-color: #22c55e;
+                               color: #f2fdf5; }
   #big { position: fixed; inset: 0; z-index: 5; background: #06070a;
          display: flex; flex-direction: column; align-items: center;
          justify-content: center; gap: 10px; }
   #big img { max-width: 100vw; max-height: calc(100vh - 62px); object-fit: contain; }
-  #big .bar { width: min(420px, 90vw); }
+  #big .bar { width: min(560px, 94vw); }
   #gate { position: fixed; inset: 0; z-index: 9; background: #101216;
           display: grid; place-items: center; padding: 20px; }
   #gate div { max-width: 460px; }
@@ -651,17 +725,27 @@ _PAGE = """<!doctype html>
 </style>
 <header hidden id="strip">
   <span class="who" id="who"></span>
-  <span class="tally" id="tally"></span>
+  <span class="tally"><span class="up" id="tallyup"></span>
+    <span class="star" id="tallystar"></span></span>
   <span class="grow"></span>
   <span class="pager" id="pager"></span>
+  <button id="reset">Start over</button>
   <button id="export">Export</button>
 </header>
+<div id="confirm" hidden>
+  <b>Erase every rating on this computer?</b>
+  <span id="confirmwhat"></span>
+  <span class="grow"></span>
+  <button id="erase" class="danger">Erase everything</button>
+  <button id="keep">Cancel</button>
+</div>
 <main id="grid" hidden></main>
 <div id="big" hidden>
   <img id="bigimg" alt="">
   <div class="bar">
-    <button data-v="1">&#128077; like <small>(2)</small></button>
-    <button data-v="2">&#9733; love <small>(3)</small></button>
+    <button data-v="0">Average <small>(1)</small></button>
+    <button data-v="1">&#128077; Thumbs up <small>(2)</small></button>
+    <button data-v="2">&#9733; Star <small>(3)</small></button>
   </div>
 </div>
 <div id="gate">
@@ -671,6 +755,7 @@ _PAGE = """<!doctype html>
        ones you really like with the star. Skip everything else.</p>
     <p>Keys: <b>2</b> thumbs-up, <b>3</b> star, <b>1</b> to take a rating back
        off — on whichever picture you are pointing at.</p>
+    <p>Click a picture to see it large; the same three are buttons under it.</p>
     <p><input id="name" placeholder="your name" autofocus>
        <button id="start">Start</button></p>
   </div>
@@ -686,7 +771,13 @@ const RECORD = "__RECORD__";
 const VIEWER = "__VIEWER__";
 const PER_PAGE = __PAGE__;
 const PAGES = Math.max(1, Math.ceil(KEYS.length / PER_PAGE));
-const NAME_KEY = "votes/" + RECORD + "/name";
+// Every person's ratings live under SLOTS + their name, and the remembered name
+// lives beside that prefix rather than inside it. A COLON and not a slash, and
+// that is a fix rather than a style: `slot()` joins with "/", so the old
+// `.../name` key was one a person actually called "name" would have overwritten
+// with their votes object. Nothing can type a colon into this position.
+const SLOTS = "votes/" + RECORD + "/";
+const NAME_KEY = "votes/" + RECORD + ":name";
 
 let who = "";
 let votes = {};
@@ -730,7 +821,7 @@ function permutation(count, source) {
   return out;
 }
 
-function slot() { return "votes/" + RECORD + "/" + who; }
+function slot() { return SLOTS + who; }
 
 function save() {
   try {
@@ -749,8 +840,28 @@ function load() {
 function tally() {
   let up = 0, star = 0;
   for (const key in votes) { if (votes[key] === 2) star++; else if (votes[key] === 1) up++; }
-  document.getElementById("tally").textContent =
-    "\\u{1F44D} " + up + " \\u00B7 \\u2605 " + star;
+  document.getElementById("tallyup").textContent = "\\u{1F44D} " + up;
+  document.getElementById("tallystar").textContent = "\\u2605 " + star;
+}
+
+// Votes given on each page of THIS viewer's own walk, thumbs-up and stars
+// together. Over the order and not over the record, because the pages are the
+// permutation's pages: two people's page 3 hold different pictures, and a count
+// read off the record would be a number about somebody else's screen.
+//
+// Recomputed whole on every vote. A thousand seats is a thousand lookups, which
+// is nothing beside the repaint it happens next to, and the alternative — an
+// incremental count kept beside the votes — is a second copy of the truth that
+// can drift from `votes` in exactly the case nobody would notice: a page turned
+// under a fullscreen.
+function pageCounts() {
+  const counts = new Array(PAGES).fill(0);
+  for (let p = 0; p < PAGES; p++) {
+    for (const index of order.slice(p * PER_PAGE, (p + 1) * PER_PAGE)) {
+      if (votes[KEYS[index]]) counts[p]++;
+    }
+  }
+  return counts;
 }
 
 // The kind a key means. 1 clears, 2 is the thumbs-up, 3 is the star — and the
@@ -774,6 +885,11 @@ function setVote(index, kind) {
   save();
   tally();
   paintTile(index);
+  paintPager();
+  // The fullscreen bar is repainted even though a rating closes it, because a
+  // CLEAR does not: somebody who has just pressed 1 on the picture they are
+  // looking at is still looking at it, and the bar has to move to Average.
+  if (open !== null) paintBig(open);
 }
 
 function vote(index, kind) {
@@ -831,10 +947,41 @@ function drawPager() {
   pager.textContent = "";
   for (let p = 0; p < PAGES; p++) {
     const button = document.createElement("button");
-    button.textContent = String(p + 1);
+    button.dataset.p = p;
     if (p === page) button.className = "on";
+    const number = document.createElement("span");
+    number.textContent = String(p + 1);
+    const count = document.createElement("span");
+    count.className = "count";
+    button.appendChild(number);
+    button.appendChild(count);
     button.addEventListener("click", () => drawPage(p));
     pager.appendChild(button);
+  }
+  paintPager();
+}
+
+// Zero is drawn as `0` rather than left blank, and that is the whole point of
+// the strip: a page nobody has voted on and a page somebody worked and liked
+// nothing on look the same from the outside, and only the first is worth going
+// back to. Blank would mean "unknown" and there is nothing unknown here.
+function paintPager() {
+  const counts = pageCounts();
+  for (const button of document.getElementById("pager").querySelectorAll("button")) {
+    const count = button.querySelector(".count");
+    const given = counts[Number(button.dataset.p)] || 0;
+    count.textContent = String(given);
+    count.classList.toggle("worked", given > 0);
+  }
+}
+
+// The three buttons are a radio group and Average is a state rather than an
+// absence, so an unrated picture lights Average — `votes` holds no entry for one,
+// which is why the read is `|| 0` and not the raw value the tiles compare on.
+function paintBig(index) {
+  const kind = votes[KEYS[index]] || 0;
+  for (const button of document.querySelectorAll("#big .bar button")) {
+    button.classList.toggle("on", Number(button.dataset.v) === kind);
   }
 }
 
@@ -842,11 +989,8 @@ function enlarge(index) {
   if (open === null) scrolled = window.scrollY;
   open = index;
   document.getElementById("bigimg").src = "full/" + pad(index) + ".jpg";
-  const big = document.getElementById("big");
-  big.hidden = false;
-  for (const button of big.querySelectorAll("button")) {
-    button.classList.toggle("on", Number(button.dataset.v) === votes[KEYS[index]]);
-  }
+  document.getElementById("big").hidden = false;
+  paintBig(index);
 }
 
 function shut() {
@@ -867,19 +1011,18 @@ function step(by) {
   enlarge(order[next]);
 }
 
-function rate(index, kind) {
-  vote(index, kind);
-  // A vote in fullscreen is a decision taken, so it closes: the next picture is
-  // what somebody who has just decided wants to see.
-  if (open === index) shut();
-}
-
+// The fullscreen bar SETS, exactly as the keys do, and it is the one place a
+// button does not toggle. From 2.0 there is an Average button to un-rate with,
+// so a toggle would be a second way to reach the same state and a worse one: it
+// would make "Thumbs up" mean *un-like* on a picture already liked, which is the
+// ambiguity the three keys were introduced to remove. The grid tiles still
+// toggle, because they have no third button.
 function press(index, kind) {
   setVote(index, kind);
-  // Same rule as the buttons, with the one exception the third key introduces:
-  // CLEARING is undoing a decision rather than taking one, so it leaves the
-  // picture up. Somebody who has just un-rated the thing they are looking at
-  // wants to keep looking at it.
+  // A rating taken in fullscreen closes it: the next picture is what somebody
+  // who has just decided wants to see. CLEARING is the exception, because it is
+  // undoing a decision rather than taking one — somebody who has just un-rated
+  // the thing they are looking at wants to keep looking at it.
   if (open === index && kind) shut();
 }
 
@@ -912,8 +1055,86 @@ function start() {
 }
 
 for (const button of document.querySelectorAll("#big .bar button")) {
-  button.addEventListener("click", () => rate(open, Number(button.dataset.v)));
+  button.addEventListener("click", () => {
+    if (open !== null) press(open, Number(button.dataset.v));
+  });
 }
+
+// --------------------------------------------------------------------------- //
+// Handing the computer over.
+// --------------------------------------------------------------------------- //
+// What this browser is holding for this record, across every name that has used
+// it. Read at the moment of asking rather than kept, because the whole question
+// is what would be lost RIGHT NOW.
+function heldOnThisComputer() {
+  let names = 0, ratings = 0;
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key || !key.startsWith(SLOTS)) continue;
+      names++;
+      const held = JSON.parse(localStorage.getItem(key) || "{}");
+      ratings += Object.keys(held.votes || {}).length;
+    }
+  } catch (e) { /* a private window keeps nothing, so there is nothing to lose */ }
+  return {names: names, ratings: ratings};
+}
+
+// **Somebody else's turn does not need this button.** A different name is a
+// different slot and a different walk already, so handing the laptop to a partner
+// is: Start over, then they type their name. What the button is FOR is leaving the
+// computer clean — and because that is destructive and the handover is not, the
+// count of what goes is put on screen before anything is touched.
+function askReset() {
+  const held = heldOnThisComputer();
+  document.getElementById("confirmwhat").textContent =
+    held.ratings + " rating" + (held.ratings === 1 ? "" : "s") +
+    " from " + held.names + " name" + (held.names === 1 ? "" : "s") +
+    " on this computer. Anything not exported cannot be got back.";
+  document.getElementById("confirm").hidden = false;
+  window.scrollTo(0, 0);
+}
+
+function doReset() {
+  // The browser's own dialog is the SECOND step deliberately: the first was a
+  // button in the page, so a person cannot arrive here by clicking twice in the
+  // same place.
+  if (!window.confirm("Erase every rating on this computer? This cannot be undone.")) return;
+  try {
+    const drop = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      // The record's prefix and not the whole store: another kit's folder is
+      // somebody else's evening and this page has no business clearing it.
+      if (key && key.startsWith("votes/" + RECORD)) drop.push(key);
+    }
+    for (const key of drop) localStorage.removeItem(key);
+  } catch (e) { /* nothing was kept, so nothing needs removing */ }
+  who = "";
+  votes = {};
+  visited = [];
+  order = [];
+  seed = 0;
+  page = 0;
+  open = null;
+  hovered = null;
+  scrolled = 0;
+  document.getElementById("confirm").hidden = true;
+  document.getElementById("big").hidden = true;
+  document.getElementById("strip").hidden = true;
+  document.getElementById("grid").hidden = true;
+  document.getElementById("grid").textContent = "";
+  document.getElementById("gate").hidden = false;
+  const typed = document.getElementById("name");
+  typed.value = "";
+  typed.focus();
+}
+
+document.getElementById("reset").addEventListener("click", askReset);
+document.getElementById("keep").addEventListener("click", () => {
+  document.getElementById("confirm").hidden = true;
+});
+document.getElementById("erase").addEventListener("click", doReset);
 
 document.addEventListener("keydown", (event) => {
   if (document.getElementById("gate").hidden === false) return;

@@ -3430,6 +3430,8 @@ def add_commands(subcommands) -> None:
             "thinking about and it is the only one anybody can see: measured at 76.2 s a "
             "picture on three workers, 1,000 seats is 21 h at ss4 against about 5 at ss2, "
             "and the whole quality axis moves the picture less than that choice does. "
+            "--ss 1 is neither of those: it is the debugging cell, minutes rather than "
+            "hours, for exercising the viewer end to end on a kit nobody is sent. "
             "GALLERY.md's `curate votes build` has the sheet those came off."
         ),
     )
