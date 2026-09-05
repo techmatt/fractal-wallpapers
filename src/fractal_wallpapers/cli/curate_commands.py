@@ -571,18 +571,28 @@ def _record_a_solve(args: argparse.Namespace) -> int:
     # never looked at that table. Streaming instead is 5.1 s and one fewer
     # whole-ledger copy.
     seats = args.n if args.n is not None else tentative.RECORDED_SEATS
+    # A themed record reaches the same two demands `curate solve run --themed`
+    # reaches, through the same helper. Unthemed, both are `None` and every
+    # constant below is the one an unthemed record has always carried, so a
+    # record taken before the themed pass could reach this verb is unchanged.
+    targets, floor = ({}, None) if not args.themed else themed_demands(args.themed, seats)
     candidates, refused = solve.pool()
     try:
         order, coverage = solve.ranking_for(candidates, args.key)
         record = solve.solve(
             candidates,
             n=seats,
+            targets=targets,
+            floor=floor,
             order=order,
             coverage=coverage,
             key=args.key,
             swap=not args.no_swap,
             seconds=args.swap_seconds,
             spiral_cap=args.spiral_cap,
+            theme=args.themed,
+            geometry_radius=args.themed_radius,
+            themed_cap=args.themed_cap,
             augment_chains=args.augment == "on",
             augment_depth=args.augment_depth,
             augment_seconds=args.augment_seconds,
@@ -663,8 +673,11 @@ def curate_solve(args: argparse.Namespace) -> int:
         # solver_design, §Themed), so naming the cell asks for all of it. The two
         # a caller could set alone are DEFAULTS here and never overrides: a themed
         # pass that names its own target or its own floor keeps the one it named.
+        # [`themed_demands`] is where both live, because `curate solve record`
+        # reaches the same two and a second spelling would be a second gallery.
+        wanted, _floor = themed_demands(args.themed, args.n)
         if not targets:
-            targets = {str(args.themed): 1.0}
+            targets = wanted
         if args.mode_floor is None:
             flat_floor = True
     floor = args.mode_floor
@@ -1824,6 +1837,79 @@ def spiral_cap_value(text: str):
     return share
 
 
+def themed_flags(container):
+    """The three flags that name a THEMED gallery, for `run` and for `record`.
+
+    Written once for [`solve_flags_a_record_keeps`]'s reason: a record IS a run
+    taken once and kept, so a themed record has to reach the same decision by the
+    same spelling, and two `--help` texts describing one flag two ways is how that
+    stops being true. `run` hands its own argument group — it carries twenty-six
+    flags and groups them — and `record` at twelve hands the parser itself, which
+    is what `tests/test_cli.py`'s *a grouped command leaves no flag behind* wants:
+    a command with no named groups keeps none.
+    """
+    from fractal_wallpapers.curation import ceiling as ceiling_module
+    from fractal_wallpapers.curation import headroom as headroom_module
+    from fractal_wallpapers.curation import rules as rules_module
+
+    container.add_argument(
+        "--themed",
+        metavar="CELL",
+        help="choose a THEMED gallery: one dominant colour cell, over a pool of the rows "
+        "that cell's dominance block claims, at the RELAXED bar — P(>=3) >= "
+        f"{headroom_module.FALLBACK_BAR} for every accepted mode rather than the per-mode "
+        "rule, because a single-cell pool is q3-grade material and at the per-mode bars "
+        "there is no pool. It also swaps the diversity rule for geometry-only "
+        f"distinctness at rules.GEOMETRY_RADIUS ({rules_module.GEOMETRY_RADIUS:g}) in the "
+        "neutral descriptor: the pixel-cloud twin test is over a picture's COLOUR cloud, "
+        "so a themed pool is a near-duplicate pool under exactly it. Unless you name them "
+        "otherwise it also sets `--target CELL=1.0`, without which the cell allowance "
+        "refuses the theme at nine seats, and `--flat-floor`",
+    )
+    container.add_argument(
+        "--themed-cap",
+        type=int,
+        metavar="SEATS",
+        help="the palette-group cap a THEMED pass runs under, overriding the computed "
+        f"one. Unset is ceiling.themed_group_cap: ceil({ceiling_module.THEMED_CAP_SHARE} x "
+        "n / P), twice the even share across the P palette groups that can field the "
+        f"theme, where P counts the groups fielding {ceiling_module.THEMED_CAP_PLACES} or "
+        "more distinct PLACES in the themed pool. The main gallery's cap is a share of `n` "
+        "alone and was measured as the BINDING rule over a themed pool at every shipping "
+        "size, which is why a themed pass gets its own. `--group-cap` still names the "
+        "main gallery's rule and a themed pass ignores it. Ignored without `--themed`",
+    )
+    container.add_argument(
+        "--themed-radius",
+        type=float,
+        default=rules_module.GEOMETRY_RADIUS,
+        metavar="COSINE",
+        help=f"the radius the themed diversity rule refuses inside (default "
+        f"{rules_module.GEOMETRY_RADIUS:g}). A SETTING and not a law — it was read off the "
+        "themed pools' own nearest-neighbour distributions and is the number to move if a "
+        "themed gallery reads as repetitive or as needlessly small. Ignored without "
+        "`--themed`",
+    )
+
+
+def themed_demands(theme: str, n: int) -> tuple[dict, int]:
+    """The two demands `--themed` sets, as `(targets, floor)`.
+
+    They are DEFAULTS at `run`, which lets a caller name its own `--target` or
+    `--mode-floor` and keep it, and they are the whole rule at `record`, which
+    carries neither flag. Both callers read them here so a themed record and a
+    themed run at one `n` cannot come to two different galleries — which is the
+    only claim a record makes about itself.
+
+    The target is `1.0` and not a share: the allowance is
+    `floor(k * t * n) + 1`, so at `t = 1.0` it is `2n + 1` and cannot bind, and
+    without it the cell's default `1/48` refuses the theme at nine seats.
+    """
+    from fractal_wallpapers.curation import solve as solve_module
+
+    return {str(theme): 1.0}, solve_module.mode_floor(int(n))
+
+
 def solve_flags_a_record_keeps(*, demands, search):
     """The four flags `curate solve run` and `curate solve record` both read.
 
@@ -2368,7 +2454,6 @@ def add_commands(subcommands) -> None:
     from fractal_wallpapers.curation import pool_draw as pool_draw_module
     from fractal_wallpapers.curation import release as release_module
     from fractal_wallpapers.curation import remode as remode_module
-    from fractal_wallpapers.curation import rules as rules_module
     from fractal_wallpapers.curation import run as run_module
     from fractal_wallpapers.curation import shrinkage as shrinkage_module
     from fractal_wallpapers.curation import signatures as signatures_module
@@ -3180,44 +3265,7 @@ def add_commands(subcommands) -> None:
         f"seat a map. It is a COUNT under either rule: the same-group DISTANCE row the exact "
         f"solve carried is retired and not merged",
     )
-    themed.add_argument(
-        "--themed",
-        metavar="CELL",
-        help="choose a THEMED gallery: one dominant colour cell, over a pool of the rows "
-        "that cell's dominance block claims, at the RELAXED bar — P(>=3) >= "
-        f"{headroom_module.FALLBACK_BAR} for every accepted mode rather than the per-mode "
-        "rule, because a single-cell pool is q3-grade material and at the per-mode bars "
-        "there is no pool. It also swaps the diversity rule for geometry-only "
-        f"distinctness at rules.GEOMETRY_RADIUS ({rules_module.GEOMETRY_RADIUS:g}) in the "
-        "neutral descriptor: the pixel-cloud twin test is over a picture's COLOUR cloud, "
-        "so a themed pool is a near-duplicate pool under exactly it. Unless you name them "
-        "otherwise it also sets `--target CELL=1.0`, without which the cell allowance "
-        "refuses the theme at nine seats, and `--flat-floor`",
-    )
-    themed.add_argument(
-        "--themed-cap",
-        type=int,
-        metavar="SEATS",
-        help="the palette-group cap a THEMED pass runs under, overriding the computed "
-        f"one. Unset is ceiling.themed_group_cap: ceil({ceiling_module.THEMED_CAP_SHARE} x "
-        "n / P), twice the even share across the P palette groups that can field the "
-        f"theme, where P counts the groups fielding {ceiling_module.THEMED_CAP_PLACES} or "
-        "more distinct PLACES in the themed pool. The main gallery's cap is a share of `n` "
-        "alone and was measured as the BINDING rule over a themed pool at every shipping "
-        "size, which is why a themed pass gets its own. `--group-cap` still names the "
-        "main gallery's rule and a themed pass ignores it. Ignored without `--themed`",
-    )
-    themed.add_argument(
-        "--themed-radius",
-        type=float,
-        default=rules_module.GEOMETRY_RADIUS,
-        metavar="COSINE",
-        help=f"the radius the themed diversity rule refuses inside (default "
-        f"{rules_module.GEOMETRY_RADIUS:g}). A SETTING and not a law — it was read off the "
-        "themed pools' own nearest-neighbour distributions and is the number to move if a "
-        "themed gallery reads as repetitive or as needlessly small. Ignored without "
-        "`--themed`",
-    )
+    themed_flags(themed)
     distinctness.add_argument(
         "--neutral-radius",
         type=float,
@@ -3317,6 +3365,12 @@ def add_commands(subcommands) -> None:
         f"{candidate_ledger_module.FIRST_SOLVE})",
     )
     solve_flags_a_record_keeps(demands=recording, search=recording)
+    # A THEMED record is the one thing a record could not be. Recording a themed
+    # gallery had to go through `run`, which writes a solve record and never a
+    # stamp — so a themed gallery could be solved and never kept, and the six
+    # themed baselines of 2026-09-05 are what noticed. The three flags are the
+    # same three `run` carries, from the same helper.
+    themed_flags(recording)
 
     browsing = solve_verbs.add_parser(
         "browse", help="write a record's page again, off the rows it already holds"

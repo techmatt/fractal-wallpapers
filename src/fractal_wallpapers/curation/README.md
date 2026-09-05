@@ -114,6 +114,7 @@ fractal-wallpapers curate solve run --n 150            # the gallery, then the p
 fractal-wallpapers curate solve run --n 1000 --no-render   # 53 s MEASURED, 2026-09-04
 fractal-wallpapers curate solve run --n 2000 --no-render   # THE planning size, ~2.5 min
 fractal-wallpapers curate solve record                     # THAT solve, recorded, + the page
+fractal-wallpapers curate solve record --n 200 --themed dark_vivid_green   # a THEMED record
 fractal-wallpapers curate solve browse <stamp>             # the page again, off the rows
 fractal-wallpapers curate solve resolve <alias>,<alias>    # an ID back to a recipe
 fractal-wallpapers curate solve list                       # every record on this machine
@@ -131,6 +132,16 @@ figures predate the three speedups of `4300e4b` — which took the n=2000 pass f
 275 s to 119 s — and the `~6 min` had said "scaled not measured" since it was
 written. A figure nobody measured is a figure that goes stale without anything
 looking wrong, which is why these two now name the day and the pool.
+
+**A THEMED gallery can be recorded, and until 2026-09-05 it could not.** `--themed`
+reached `curate solve run`, which writes a solve record and never a stamp — so a
+themed gallery could be solved and never kept, and the six themed baselines are
+what noticed. `record` now carries the same `--themed`, `--themed-cap` and
+`--themed-radius`, out of one helper with `run`'s, and the cell target and the flat
+floor the flag sets as defaults come from `cli.curate_commands.themed_demands` so
+the two verbs cannot reach two different galleries. A themed record is a record
+like any other: unpublished until Matt names its stamp, and nothing renders — the
+page shows each seat's stored 640x360 candidate.
 
 ## Three different things are called a ledger
 
