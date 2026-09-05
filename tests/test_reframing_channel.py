@@ -884,8 +884,14 @@ def test_the_ledger_is_readable_json_lines_carrying_their_own_join(tmp_path, mon
 # what the defaults are read off.
 
 
-def leg(directory, *, started=None, locations=0, again=0, consumed=0, rows=()):
-    """A leg's ledger, holding the two rows the defaults are decided on."""
+def leg(directory, *, started=None, locations=0, again=0, consumed=0, rows=(), ladder=None):
+    """A leg's ledger, holding the two rows the defaults are decided on.
+
+    `ladder` is the leg's rung set, and the header is where it goes — a fire row
+    names the root and its outcome and nothing about the ladder, because the
+    header already carries one per leg. A leg written without one stands in for
+    every leg on this machine before 2026-09-05.
+    """
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
     header = {
@@ -893,6 +899,10 @@ def leg(directory, *, started=None, locations=0, again=0, consumed=0, rows=()):
         "kind": reframing.RUN_KIND,
         "channel": reframing.CHANNEL,
     }
+    if ladder is not None:
+        header["rungs"] = [float(rung) for rung in ladder]
+        header["operators"] = list(reframing.OPERATORS)
+        header["seed_max_period"] = reframing.SEED_SNAP_MAX_PERIOD
     if started is not None:
         header["started"] = started
     summary = {
@@ -1276,3 +1286,272 @@ def test_continuing_nothing_is_sayable_and_is_the_loudest_thing_a_leg_can_do(
     assert len(out.record["priors_seen"]["omitted"]) == 2
     assert any("WARNING" in line for line in out.lines)
     assert [seed.id for seed in out.fired] == ["root-fired"]
+
+
+# --------------------------------------------------------------------------- #
+# 8. A root that was fired and returned nothing.
+# --------------------------------------------------------------------------- #
+#
+# The channel used to record only what it found, so a root fired barren left no
+# trace at all and the next plain continuation offered it again at the front of
+# the queue. Matt's ruling of 2026-09-05 is what these guard: consumed is fired,
+# converged and zero locations; consumed is relative to the ladder; and a barren
+# root is worth one more fire under `--reprobe` and not two.
+
+#: The ladder `reframe_g7` ran, and the one `reframe_g8` ran after it. The move
+#: reached further out, which is what makes the second one *longer* here.
+SHORT_LADDER = (8.0, 12.0, 16.0, 24.0, 32.0, 48.0, 64.0, 96.0, 128.0)
+LONG_LADDER = reframing.RUNGS
+
+
+def fire_row(seed_id, outcome, *, kind="proven", locations=0, source="matt_q4"):
+    """One `reframing_fire` row, as much of it as the queue reader looks at."""
+    return {
+        "schema": ledger_module.SCHEMA,
+        "kind": reframing.FIRE_KIND,
+        "channel": reframing.CHANNEL,
+        "seed": {"id": seed_id, "kind": kind, "source": source, "tier": 4, "generation": 0},
+        "outcome": outcome,
+        "converged": outcome != reframing.NO_CONVERGE,
+        "locations": locations,
+    }
+
+
+def test_a_barren_root_is_skipped_under_its_ladder_and_offered_once_under_a_longer_one(
+    tiers, monkeypatch
+) -> None:
+    """The ruling, all three clauses, on one root.
+
+    Fired, converged, nothing came of it: the plain continuation under the same
+    ladder does not fire it again. The ladder grows and it is offered exactly
+    once. `--reprobe` is worth one more fire under one ladder and not two.
+    """
+    leg(
+        tiers.hot / "reframe_short",
+        started="2026-09-04T21:00:00Z",
+        ladder=SHORT_LADDER,
+        consumed=200,
+        rows=[fire_row("root-barren", reframing.BARREN)],
+    )
+    # A fresh root beside it, because a plain continuation with *no* seed at all
+    # is the `exhausted` clause and re-probes rather than refusing. What is under
+    # test here is the queue and not that branch.
+    roots = [proven("root-barren"), proven("root-fresh")]
+    same = launched(monkeypatch, tiers.hot.parent, roots, rungs=list(SHORT_LADDER))
+    assert [seed.id for seed in same.fired] == ["root-fresh"], "not fired again under its own"
+    assert same.record["ladder_rule"]["consumed"] == 1
+
+    longer = launched(monkeypatch, tiers.hot.parent, roots, rungs=list(LONG_LADDER))
+    assert {seed.id for seed in longer.fired} == {"root-barren", "root-fresh"}
+    assert longer.record["ladder_rule"]["reoffered"] == 1
+
+    once = launched(
+        monkeypatch,
+        tiers.hot.parent,
+        roots,
+        rungs=list(SHORT_LADDER),
+        reprobe=True,
+    )
+    assert "root-barren" in {seed.id for seed in once.fired}, "one re-probe under the same ladder"
+    leg(
+        tiers.hot / "reframe_short2",
+        started="2026-09-04T22:00:00Z",
+        ladder=SHORT_LADDER,
+        consumed=200,
+        rows=[fire_row("root-barren", reframing.BARREN)],
+    )
+    twice = launched(
+        monkeypatch,
+        tiers.hot.parent,
+        roots,
+        rungs=list(SHORT_LADDER),
+        reprobe=True,
+    )
+    assert [seed.id for seed in twice.fired] == ["root-fresh"], "two barren fires spend it too"
+
+
+def test_a_root_the_ladder_grew_under_is_offered_last_and_not_first(tiers, monkeypatch) -> None:
+    """A re-offered root sorts behind every unfired seed whatever its class.
+
+    Its own class is untouched — the source is what a person cast — so this is a
+    fact about where it is fired and never about what it is. A short leg's clock
+    goes to the roots nothing has been paid for yet.
+    """
+    leg(
+        tiers.hot / "reframe_short",
+        started="2026-09-04T21:00:00Z",
+        ladder=SHORT_LADDER,
+        consumed=200,
+        rows=[fire_row("root-barren-q4", reframing.BARREN)],
+    )
+    out = launched(
+        monkeypatch,
+        tiers.hot.parent,
+        [proven("root-barren-q4", tier=4), proven("root-fresh-q3", tier=3)],
+        rungs=list(LONG_LADDER),
+    )
+    assert {seed.id: seed.reoffered for seed in out.fired} == {
+        "root-barren-q4": True,
+        "root-fresh-q3": False,
+    }
+    assert [seed.id for seed in reframing.queued(out.fired)] == [
+        "root-fresh-q3",
+        "root-barren-q4",
+    ], "a q4 root the chain already paid for goes behind an unfired q3"
+    assert next(seed for seed in out.fired if seed.reoffered).source == "matt_q4"
+
+
+def test_only_a_converged_barren_fire_consumes_a_root(tiers, monkeypatch) -> None:
+    """The other three outcomes are all "the leg learned nothing here".
+
+    A root Newton did not settle on moves when the period ceiling does; a root
+    whose atoms a crashed screen batch cost a verdict was never read at all; an
+    undefined family is not a claim about a place. None of them is a verdict, so
+    none of them takes a root off the queue.
+    """
+    leg(
+        tiers.hot / "reframe_short",
+        started="2026-09-04T21:00:00Z",
+        ladder=SHORT_LADDER,
+        consumed=200,
+        rows=[
+            fire_row("root-unsettled", reframing.NO_CONVERGE),
+            fire_row("root-undrawn", reframing.NOT_DRAWN),
+            fire_row("root-undefined", reframing.UNDEFINED),
+            fire_row("root-barren", reframing.BARREN),
+        ],
+    )
+    out = launched(
+        monkeypatch,
+        tiers.hot.parent,
+        [
+            proven("root-unsettled"),
+            proven("root-undrawn"),
+            proven("root-undefined"),
+            proven("root-barren"),
+        ],
+        rungs=list(SHORT_LADDER),
+    )
+    assert {seed.id for seed in out.fired} == {
+        "root-unsettled",
+        "root-undrawn",
+        "root-undefined",
+    }
+    assert out.record["ladder_rule"]["consumed"] == 1
+
+
+def test_a_leg_that_recorded_no_fires_backfills_nothing_and_changes_nothing(
+    tiers, monkeypatch
+) -> None:
+    """Every leg written before 2026-09-05 is this leg, and none is readable.
+
+    A ledger holding only candidate rows says which roots produced something and
+    cannot say which of the rest were reached before the clock ran out — so the
+    rule is that nothing is written for it, the roots stay `unknown`, and the
+    queue is exactly what it was before this existed.
+    """
+    leg(
+        tiers.hot / "reframe_g7",
+        started="2026-09-04T21:46:31Z",
+        locations=488,
+        consumed=912,
+        rows=[candidate("atom-old", "root-productive")],
+    )
+    out = launched(
+        monkeypatch,
+        tiers.hot.parent,
+        [proven("root-productive"), proven("root-unreached")],
+        rungs=list(LONG_LADDER),
+    )
+    assert [seed.id for seed in out.fired] == ["root-unreached"]
+    assert out.record["ladder_key"] == reframing.ladder_key(out.record["ladder"])
+    assert out.record["ladder_rule"] == {
+        "seeds_barren": 0,
+        "consumed": 0,
+        "reoffered": 0,
+        # The unfired root and the leg's own promotion. `unknown` is over the
+        # whole offered queue, because a promotion with no fire record is the
+        # same gap in the same record as a root with none.
+        "unknown": 2,
+    }
+    assert out.report["prior"]["fires_recorded"] == 0
+
+
+def test_a_reprobe_leg_still_fires_at_every_root_that_paid(tiers, monkeypatch) -> None:
+    """The fire count binds barren roots and never productive ones.
+
+    What `--reprobe` is for is a second random sample of a neighbourhood that
+    returned something, and that is unbounded on purpose — `expand_neighborhood`
+    probes at random, so the second pass is a different sample.
+    """
+    leg(
+        tiers.hot / "reframe_g8",
+        started="2026-09-04T23:00:18Z",
+        ladder=LONG_LADDER,
+        consumed=1440,
+        rows=[
+            candidate("atom-old", "root-paid"),
+            fire_row("root-paid", reframing.PRODUCTIVE, locations=3),
+            fire_row("root-barren", reframing.BARREN),
+        ],
+    )
+    plain = launched(
+        monkeypatch,
+        tiers.hot.parent,
+        [proven("root-paid"), proven("root-barren")],
+        rungs=list(LONG_LADDER),
+    )
+    assert [seed.id for seed in plain.fired] == []
+    again = launched(
+        monkeypatch,
+        tiers.hot.parent,
+        [proven("root-paid"), proven("root-barren")],
+        rungs=list(LONG_LADDER),
+        reprobe=True,
+    )
+    assert {seed.id for seed in again.fired} == {"root-paid", "root-barren"}
+
+
+def test_the_leg_writes_a_fire_row_for_every_seed_it_consumes(tmp_path, monkeypatch) -> None:
+    """One row per seed, whatever the firing returned, and the ladder on the header.
+
+    Written per batch rather than at close, so a leg killed at hour six of eight
+    has recorded everything it spent up to the kill.
+    """
+    drawn(monkeypatch)
+    run = channel(tmp_path, generations=1)
+    report = run.run([ON_AN_ATOM])
+    rows = [
+        row for row in ledger_module.read(run.ledger.path) if row["kind"] == reframing.FIRE_KIND
+    ]
+    assert len(rows) == 1
+    assert rows[0]["seed"]["id"] == ON_AN_ATOM.id
+    assert rows[0]["outcome"] in reframing.OUTCOMES
+    assert rows[0]["locations"] == report["locations"]
+    assert report["fires"]["ladder"]["rungs"] == sorted(reframing.RUNGS)
+    assert sum(report["fires"]["outcomes"].values()) == 1
+
+
+def test_a_ladder_that_reaches_no_further_does_not_re_open_a_barren_root() -> None:
+    """`covers` is about reach and not about how many rungs there are.
+
+    A rung added between two the ladder already had has not looked anywhere new,
+    so it must not reset a fire count; a rung added past the end has. The move it
+    is the shape of is 2026-09-04's, which reached further out.
+    """
+    ran = reframing.ladder_of(
+        {"rungs": SHORT_LADDER, "operators": reframing.OPERATORS, "seed_max_period": 256}
+    )
+    denser = reframing.ladder_of(
+        {"rungs": (*SHORT_LADDER, 40.0), "operators": reframing.OPERATORS, "seed_max_period": 256}
+    )
+    further = reframing.ladder_of(
+        {"rungs": LONG_LADDER, "operators": reframing.OPERATORS, "seed_max_period": 256}
+    )
+    deeper = reframing.ladder_of(
+        {"rungs": SHORT_LADDER, "operators": reframing.OPERATORS, "seed_max_period": 512}
+    )
+    assert reframing.covers(ran, denser), "one more width inside the span is not new reach"
+    assert not reframing.covers(ran, further), "192x and 256x had never been drawn"
+    assert not reframing.covers(ran, deeper), "a higher period ceiling finds atoms the scan missed"
+    assert reframing.ladder_key(ran) != reframing.ladder_key(denser), "the key is the rungs in full"
