@@ -628,7 +628,8 @@ the page and come back to it later.
 
 The keyboard does the same three things to whichever picture you're pointing at,
 or to the large one if you have one open: 2 for the thumbs-up, 3 for the star,
-and 1 to take a rating back off.
+and 1 for an average one. Any of the three closes the large picture, so you can
+go straight on to the next.
 
 When you're done, click Export at the top. Your browser will save a small file.
 Send that file back and you're finished.
@@ -753,8 +754,8 @@ _PAGE = """<!doctype html>
     <h1>Pick the wallpapers you like</h1>
     <p>Type your name, then rate the ones you like with the thumbs-up, and the
        ones you really like with the star. Skip everything else.</p>
-    <p>Keys: <b>2</b> thumbs-up, <b>3</b> star, <b>1</b> to take a rating back
-       off — on whichever picture you are pointing at.</p>
+    <p>Keys: <b>2</b> thumbs-up, <b>3</b> star, <b>1</b> average — on whichever
+       picture you are pointing at. Any of the three closes a large picture.</p>
     <p>Click a picture to see it large; the same three are buttons under it.</p>
     <p><input id="name" placeholder="your name" autofocus>
        <button id="start">Start</button></p>
@@ -874,11 +875,13 @@ function pageCounts() {
 // an object answers yes for `constructor` and every other name on the prototype.
 const BY_KEY = new Map([["1", 0], ["2", 1], ["3", 2]]);
 
-// A key SETS and a button TOGGLES, and that difference is the reason there is a
-// third key at all: a button somebody has already pressed has to un-press, but a
-// key that toggled would make 2 mean "like" on one picture and "un-like" on the
-// next, which is the one thing a person rating a thousand pictures fast must not
-// have to keep track of. `kind` 0 is neutral.
+// A key SETS and a GRID button TOGGLES, and that difference is the reason there
+// is a third key at all: a grid button somebody has already pressed has to
+// un-press, having no neutral of its own, but a key that toggled would make 2
+// mean "like" on one picture and "un-like" on the next, which is the one thing a
+// person rating a thousand pictures fast must not have to keep track of. The
+// fullscreen bar sets like the keys, because from 2.0 it has the third button.
+// `kind` 0 is neutral.
 function setVote(index, kind) {
   const key = KEYS[index];
   if (kind) votes[key] = kind; else delete votes[key];
@@ -886,10 +889,9 @@ function setVote(index, kind) {
   tally();
   paintTile(index);
   paintPager();
-  // The fullscreen bar is repainted even though a rating closes it, because a
-  // CLEAR does not: somebody who has just pressed 1 on the picture they are
-  // looking at is still looking at it, and the bar has to move to Average.
-  if (open !== null) paintBig(open);
+  // The fullscreen bar is not repainted here: every vote taken while it is up
+  // closes it, and `enlarge` paints it on the way in. There is no state in which
+  // an open bar is out of date.
 }
 
 function vote(index, kind) {
@@ -1019,11 +1021,14 @@ function step(by) {
 // toggle, because they have no third button.
 function press(index, kind) {
   setVote(index, kind);
-  // A rating taken in fullscreen closes it: the next picture is what somebody
-  // who has just decided wants to see. CLEARING is the exception, because it is
-  // undoing a decision rather than taking one — somebody who has just un-rated
-  // the thing they are looking at wants to keep looking at it.
-  if (open === index && kind) shut();
+  // **All three close, and Average is not an exception**, Matt's ruling of
+  // 2026-09-05 after driving 2.0. The earlier reading was that clearing undoes a
+  // decision rather than taking one, so it should leave the picture up; in the
+  // hand it is a decision like the others — Average IS the verdict "this one is
+  // ordinary" — and a key that sometimes closed and sometimes did not was the
+  // thing that had to be tracked. One rule: press any of the three and the
+  // fullscreen gives way to the next picture.
+  if (open === index) shut();
 }
 
 document.getElementById("start").addEventListener("click", begin);

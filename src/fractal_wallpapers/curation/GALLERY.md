@@ -1223,9 +1223,12 @@ The mode that decided it is not in the page at all.
 **Three keys, from 2026-09-05: `1` clears, `2` is the thumbs-up, `3` is the star.** The
 **vote values stay 1 and 2** — shifting those to make room for a neutral would invalidate
 every label file already exported against a record, so the key numbering and the vote
-numbering are deliberately apart. A rating taken in fullscreen closes it; a *clear* does
-not, because somebody who has just un-rated the picture they are looking at wants to keep
-looking at it.
+numbering are deliberately apart. **Any of the three closes the fullscreen**, Average
+included — Matt's ruling of 2026-09-05 after driving 2.0, reversing the first reading.
+That reading was that clearing undoes a decision rather than taking one and should leave
+the picture up; in the hand, Average *is* a decision — the verdict "this one is ordinary"
+— and a key that sometimes closed and sometimes did not became the thing to keep track of,
+which is the same objection that produced the three keys in the first place.
 
 **Viewer 2.0 gives the neutral a button, and that is what moved the toggle.** The
 fullscreen bar is three: **Average `(1)` · Thumbs up `(2)` · Star `(3)`**, left to right in
