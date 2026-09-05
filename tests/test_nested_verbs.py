@@ -181,6 +181,18 @@ LINES: tuple[tuple[str, str, dict], ...] = (
             "no_swap": True,
             "swap_seconds": 900.0,
             "spiral_cap": 0.25,
+            "themed": None,
+        },
+    ),
+    (
+        "curate solve record --n 200 --themed dark_vivid_green --themed-cap 4 --themed-radius 0.3",
+        "curate_solve",
+        {
+            "what": "record",
+            "n": 200,
+            "themed": "dark_vivid_green",
+            "themed_cap": 4,
+            "themed_radius": 0.3,
         },
     ),
     # Both spellings of the stamp, because a reader who has just seen one printed
@@ -529,6 +541,9 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
             "--augment",
             "--augment-depth",
             "--augment-seconds",
+            "--themed",
+            "--themed-cap",
+            "--themed-radius",
         ),
         "browse": ("--stamp",),
         "resolve": ("--stamp",),
@@ -734,6 +749,56 @@ def test_every_nested_verb_is_a_real_subparser() -> None:
             f"`curate {name}` names its verb something other than `what`, which is what its "
             f"handler dispatches on"
         )
+
+
+def test_a_themed_record_and_a_themed_run_ask_for_the_same_two_demands() -> None:
+    """`--themed` sets a cell target and a flat floor, and `record` has neither
+    flag to set them with — so the two verbs reach them through one helper or they
+    reach two different galleries. A record's whole claim is that it is a `run`
+    taken once and kept, and a themed record that floored differently would be a
+    stamp nobody could reproduce from the command it names."""
+    from fractal_wallpapers.cli import curate_commands
+    from fractal_wallpapers.curation import ceiling, solve
+
+    targets, floor = curate_commands.themed_demands("dark_vivid_green", 200)
+    assert targets == {"dark_vivid_green": 1.0}
+    assert floor == solve.mode_floor(200)
+
+    # The target is what keeps the cell allowance off the theme: at t=1.0 the
+    # allowance is 2n + 1, and at the cell default of 1/48 it refuses at nine.
+    rule = ceiling.Rule(targets=targets)
+    assert rule.allowed("dark_vivid_green", 200) == 401 > 200
+    assert ceiling.Rule().allowed("dark_vivid_green", 200) == 9
+
+
+def test_a_themed_record_reaches_the_same_three_flags_the_run_carries() -> None:
+    """One helper builds them, so `--help` cannot describe one flag two ways."""
+    groups = nested_groups(cli.build_parser())
+    verbs = groups["solve"].choices
+    themed = ("--themed", "--themed-cap", "--themed-radius")
+    for verb in ("run", "record"):
+        held = {
+            option.option_strings[0]: option
+            for group in verbs[verb]._action_groups
+            for option in group._group_actions
+            if option.option_strings
+        }
+        assert set(themed) <= set(held), f"curate solve {verb} is missing {themed}"
+    for name in themed:
+        run_flag = next(
+            option
+            for group in verbs["run"]._action_groups
+            for option in group._group_actions
+            if option.option_strings and option.option_strings[0] == name
+        )
+        record_flag = next(
+            option
+            for group in verbs["record"]._action_groups
+            for option in group._group_actions
+            if option.option_strings and option.option_strings[0] == name
+        )
+        assert run_flag.help == record_flag.help, f"{name} is described two ways"
+        assert run_flag.default == record_flag.default, f"{name} defaults two ways"
 
 
 def test_a_nested_verb_carries_only_the_flags_its_handler_reads() -> None:
