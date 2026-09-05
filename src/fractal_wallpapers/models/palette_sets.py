@@ -81,7 +81,7 @@ CAP = 32
 #: pick is a map nobody ever sees. Membership is read off each map's provenance
 #: `drop` stamp rather than restated as a list of names here, so admitting a drop
 #: is one line and cannot fall out of step with the maps it names.
-ADMITTED_DROPS = ("rare-colors-2026-08",)
+ADMITTED_DROPS = ("rare-colors-2026-08", "classic-pairs-2026-09")
 
 #: Every source batch the real decisions come from, each a colorize-path run —
 #: one render per location, coloured the way a release run colours it — and each
@@ -350,6 +350,56 @@ def admitted() -> list[str]:
     ]
 
 
+def admit() -> dict:
+    """Recompose the shipped pool for the drops [`ADMITTED_DROPS`] names today.
+
+    [`run`] writes this file too and writes more of it, but it cannot run without
+    the source checkout: the **inherited** half is that project's own production
+    pool, and nothing here derives it. The **admitted** half needs nothing but this
+    repository — it is read off each provenance row's `drop` stamp — so admitting a
+    drop is spelled apart from extracting the sets, and a clone with no sibling
+    checkout can still reproduce the record it ships.
+
+    The inherited half is therefore taken from the record itself, as its own
+    `inherited` count says where it ends, and the two halves are composed exactly
+    the way [`run`] composes them: **inherited first, admitted appended**. That
+    order is load-bearing — `data/palette_choice/split.json` pins the pool size the
+    distillation corpus was drawn from, and a neighbourhood is a function of the
+    whole pool it was taken over, so a drop that pushed into the prefix would
+    silently re-key every hard set the corpus holds.
+    """
+    path = pool_path()
+    if not path.is_file():
+        raise SetsError(f"{path} is missing — extract the pool from the source library first")
+    held = json.loads(path.read_text(encoding="utf-8"))
+    inherited = held["pool"][: held["inherited"]]
+    extra = [name for name in admitted() if name not in set(inherited)]
+    stranded = sorted(set(admitted()) - set(extra))
+    if stranded:
+        raise SetsError(
+            f"{len(stranded)} map(s) of an admitted drop are already in the inherited pool "
+            f"({', '.join(repr(name) for name in stranded[:3])}): a drop that ships a name "
+            f"the source project's own pool holds would be counted in the wrong half."
+        )
+    document = {
+        **held,
+        "pool": inherited + extra,
+        "inherited": len(inherited),
+        "admitted": {"drops": list(ADMITTED_DROPS), "maps": len(extra)},
+    }
+    before = set(held["pool"])
+    path.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8", newline="\n")
+    return {
+        "path": str(path),
+        "drops": list(ADMITTED_DROPS),
+        "pool": len(document["pool"]),
+        "inherited": len(inherited),
+        "admitted": len(extra),
+        "added": sorted(set(document["pool"]) - before),
+        "removed": sorted(before - set(document["pool"])),
+    }
+
+
 def pool() -> dict:
     """The shipped palette pool: the maps a colorize may choose between."""
     path = pool_path()
@@ -432,6 +482,7 @@ __all__ = [
     "SOURCE_BATCHES",
     "SUPERSAMPLE",
     "SetsError",
+    "admit",
     "admitted",
     "candidate_row",
     "cyclic",

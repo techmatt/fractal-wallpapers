@@ -113,11 +113,17 @@ pool.
 
 **Admitted** — every map of a drop named in `palette_sets.ADMITTED_DROPS`, read off
 the `drop` stamp its provenance row carries. A drop is authored to be drawn, and a
-map nothing may pick is a map nobody sees. `rare-colors-2026-08` puts 200 here, so
-the drawable pool is 900 of the library's 901. (The library's odd map out is
-`blue_orange`, the sequential map the tile floor and the labeler's vivid render
-reserve — a standing job outside the colorize draw.)
+map nothing may pick is a map nobody sees. `rare-colors-2026-08` puts 200 here and
+`classic-pairs-2026-09` another 120, so the pool is 1,020 of the library's 1,021.
+(The library's odd map out is `blue_orange`, the sequential map the tile floor and
+the labeler's vivid render reserve — a standing job outside the colorize draw.)
 
-Admitting a drop is one line in `ADMITTED_DROPS`, and re-running `palette-extract`
-keeps it: the writer composes the pool from both parts rather than from the source
-pool alone.
+**Admitting a drop is one line in `ADMITTED_DROPS` and then
+`fractal-wallpapers palette admit`**, which rewrites this file and needs no source
+checkout: the inherited half is carried from the record — nothing here can derive
+the source project's own pool — and the admitted half is read off the drop stamps.
+`palette-extract` writes the same document and keeps the admission too, because
+both writers compose the pool from the two parts rather than from the source pool
+alone. The order is **inherited first, admitted appended**, and it is load-bearing:
+`split.json` pins the pool width the distillation corpus was drawn from, so a drop
+that pushed into the prefix would silently re-key every hard set the corpus holds.

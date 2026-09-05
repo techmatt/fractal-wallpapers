@@ -37,12 +37,24 @@ def test_the_two_maps_the_calibration_named_carry_their_cells() -> None:
     two cells the ceiling was calibrated against — the ones a `--target` would
     draw first. A table that stopped saying this would be a table a green target
     could not be met out of, and nothing else in the pass would notice.
+
+    **What the second half pins is the lead, not the name holding it.** A drop
+    admits maps this calibration never saw, and one out-carrying `Green Vault` is
+    the library getting better at green rather than the guard's subject going
+    away: `classic-pairs-2026-09`'s `Phosphor Deep` reads 0.572 against `Green
+    Vault`'s 0.548 and now stands at the head of the cell. So the assertion is on
+    the number the calibration was read at, and both named maps are still held to
+    their own shares above — which is the half a real regression would move.
     """
     table = carriers.table()
     assert table["dark_vivid_green"]["Green Vault"] == pytest.approx(0.548, abs=0.01)
     assert table["dark_vivid_rose"]["Garnet Tide"] == pytest.approx(0.537, abs=0.01)
-    assert next(iter(table["dark_vivid_green"])) == "Green Vault", "and it leads its cell"
-    assert next(iter(table["dark_vivid_rose"])) == "Garnet Tide"
+    for cell, calibrated in (("dark_vivid_green", 0.548), ("dark_vivid_rose", 0.537)):
+        leader, share = next(iter(table[cell].items()))
+        assert share >= calibrated - 0.01, (
+            f"{cell} is led by {leader} at {share:.3f}, under the {calibrated} the ceiling "
+            f"was calibrated against — a target in this cell has got harder to meet"
+        )
 
 
 def test_a_carrier_row_holds_the_share_on_every_field_and_not_only_where_it_won() -> None:

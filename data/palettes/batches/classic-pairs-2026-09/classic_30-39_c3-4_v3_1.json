@@ -1,0 +1,361 @@
+[
+  {
+    "name": "Aurora Curtain",
+    "mood": "cobalt, teal and lime green walked in order with a single ice-white flare between blue and teal; drama is the value swing inside each cool hue",
+    "architecture": "analogous-drift",
+    "skeleton": "double-peak",
+    "value_key": "low",
+    "complexity": 4,
+    "stops": [
+      {"pos": 0.0, "oklch": [0.07, 0.02, 251], "role": "ground"},
+      {"pos": 0.1, "oklch": [0.32, 0.13, 252], "role": "mid"},
+      {"pos": 0.32, "oklch": [0.62, 0.18, 251], "role": "anchor"},
+      {"pos": 0.42, "oklch": [0.96, 0.012, 240], "role": "glow"},
+      {"pos": 0.52, "oklch": [0.66, 0.13, 181], "role": "anchor"},
+      {"pos": 0.72, "oklch": [0.84, 0.19, 143], "role": "anchor"},
+      {"pos": 0.9, "oklch": [0.24, 0.1, 146], "role": "mid"},
+      {"pos": 1.0, "oklch": [0.07, 0.02, 251], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Aurora Undertow",
+    "mood": "same three cool hues, green-dominant and with no white at all; a pale green glow carries the light and deep ink teal and navy carry the transitions",
+    "architecture": "mono-temperature-ramp",
+    "skeleton": "peak-early",
+    "value_key": "mid",
+    "complexity": 4,
+    "stops": [
+      {"pos": 0.0, "oklch": [0.15, 0.07, 145], "role": "ground"},
+      {"pos": 0.12, "oklch": [0.55, 0.17, 143], "role": "anchor"},
+      {"pos": 0.28, "oklch": [0.8, 0.14, 140], "role": "glow"},
+      {"pos": 0.42, "oklch": [0.52, 0.12, 181], "role": "anchor"},
+      {"pos": 0.58, "oklch": [0.18, 0.08, 182], "role": "mid"},
+      {"pos": 0.72, "oklch": [0.48, 0.16, 251], "role": "anchor"},
+      {"pos": 0.86, "oklch": [0.3, 0.12, 252], "role": "mid"},
+      {"pos": 1.0, "oklch": [0.15, 0.07, 145], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Nebula Flare",
+    "mood": "indigo, violet and magenta on black, climbing to one cold white flare at the far end; drama is pure chroma against a true black field",
+    "architecture": "analogous-drift",
+    "skeleton": "peak-late",
+    "value_key": "low",
+    "complexity": 4,
+    "stops": [
+      {"pos": 0.0, "oklch": [0.06, 0.02, 285], "role": "ground"},
+      {"pos": 0.1, "oklch": [0.4, 0.15, 283], "role": "mid"},
+      {"pos": 0.24, "oklch": [0.22, 0.12, 290], "role": "mid"},
+      {"pos": 0.44, "oklch": [0.52, 0.19, 297], "role": "anchor"},
+      {"pos": 0.74, "oklch": [0.64, 0.21, 339], "role": "anchor"},
+      {"pos": 0.82, "oklch": [0.97, 0.012, 335], "role": "glow"},
+      {"pos": 0.9, "oklch": [0.3, 0.13, 300], "role": "mid"},
+      {"pos": 1.0, "oklch": [0.06, 0.02, 285], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Nebula Veil",
+    "mood": "a pale lilac field with a deep indigo trough as the event and a narrow magenta spark; no white anywhere, the lights are tinted violet",
+    "architecture": "near-monochrome-spark",
+    "skeleton": "inverted-arc",
+    "value_key": "high",
+    "complexity": 4,
+    "stops": [
+      {"pos": 0.0, "oklch": [0.86, 0.06, 297], "role": "field"},
+      {"pos": 0.12, "oklch": [0.74, 0.1, 293], "role": "mid"},
+      {"pos": 0.26, "oklch": [0.48, 0.17, 297], "role": "anchor"},
+      {"pos": 0.34, "oklch": [0.64, 0.21, 339], "role": "accent"},
+      {"pos": 0.44, "oklch": [0.4, 0.15, 295], "role": "mid"},
+      {"pos": 0.56, "oklch": [0.2, 0.11, 286], "role": "anchor"},
+      {"pos": 0.7, "oklch": [0.55, 0.17, 299], "role": "anchor"},
+      {"pos": 0.86, "oklch": [0.89, 0.06, 292], "role": "glow"},
+      {"pos": 1.0, "oklch": [0.86, 0.06, 297], "role": "field"}
+    ]
+  },
+  {
+    "name": "Jungle Canopy",
+    "mood": "one cool green sweep from black through petrol and leaf to lime and a cold green-white; a single ramp, no reversal",
+    "architecture": "mono-temperature-ramp",
+    "skeleton": "peak-late",
+    "value_key": "low",
+    "complexity": 3,
+    "stops": [
+      {"pos": 0.0, "oklch": [0.06, 0.02, 175], "role": "ground"},
+      {"pos": 0.14, "oklch": [0.3, 0.09, 178], "role": "mid"},
+      {"pos": 0.38, "oklch": [0.52, 0.15, 153], "role": "anchor"},
+      {"pos": 0.72, "oklch": [0.72, 0.18, 127], "role": "anchor"},
+      {"pos": 0.8, "oklch": [0.97, 0.02, 120], "role": "glow"},
+      {"pos": 0.9, "oklch": [0.36, 0.12, 150], "role": "mid"},
+      {"pos": 1.0, "oklch": [0.06, 0.02, 175], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Jungle Floor",
+    "mood": "the same three greens with no white and no black; a small cliff inside the teal-to-leaf step and a pale lime glow as the only light",
+    "architecture": "analogous-drift",
+    "skeleton": "cliff-in-mids",
+    "value_key": "mid",
+    "complexity": 4,
+    "stops": [
+      {"pos": 0.0, "oklch": [0.18, 0.07, 177], "role": "ground"},
+      {"pos": 0.14, "oklch": [0.44, 0.11, 178], "role": "anchor"},
+      {"pos": 0.34, "oklch": [0.58, 0.13, 168], "role": "mid", "segment": "cliff", "width": 0.05},
+      {"pos": 0.44, "oklch": [0.4, 0.15, 153], "role": "anchor"},
+      {"pos": 0.6, "oklch": [0.66, 0.16, 140], "role": "anchor"},
+      {"pos": 0.78, "oklch": [0.86, 0.14, 126], "role": "glow"},
+      {"pos": 0.9, "oklch": [0.5, 0.17, 127], "role": "anchor"},
+      {"pos": 1.0, "oklch": [0.18, 0.07, 177], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Boho Cloth",
+    "mood": "terracotta against sage with the entry's own ivory as the light band; two hues, an ivory glow and a deep umber ground, nothing between them",
+    "architecture": "duotone-plus",
+    "skeleton": "double-peak",
+    "value_key": "mid",
+    "complexity": 3,
+    "stops": [
+      {"pos": 0.0, "oklch": [0.16, 0.06, 40], "role": "ground"},
+      {"pos": 0.14, "oklch": [0.42, 0.12, 41], "role": "mid"},
+      {"pos": 0.34, "oklch": [0.3, 0.1, 44], "role": "mid"},
+      {"pos": 0.64, "oklch": [0.66, 0.14, 42], "role": "anchor"},
+      {"pos": 0.72, "oklch": [0.93, 0.035, 84], "role": "glow"},
+      {"pos": 0.84, "oklch": [0.6, 0.08, 129], "role": "anchor"},
+      {"pos": 1.0, "oklch": [0.16, 0.06, 40], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Boho Dust",
+    "mood": "warm terracotta against cool sage on a deep sage ground, bridged by a tinted cream rather than a white; muted, sage-framed, the light kept low",
+    "architecture": "complementary-tension",
+    "skeleton": "no-cliff",
+    "value_key": "low",
+    "complexity": 4,
+    "stops": [
+      {"pos": 0.0, "oklch": [0.1, 0.035, 132], "role": "ground"},
+      {"pos": 0.12, "oklch": [0.34, 0.1, 41], "role": "mid"},
+      {"pos": 0.28, "oklch": [0.58, 0.12, 42], "role": "anchor"},
+      {"pos": 0.44, "oklch": [0.85, 0.05, 84], "role": "glow"},
+      {"pos": 0.58, "oklch": [0.62, 0.075, 129], "role": "anchor"},
+      {"pos": 0.74, "oklch": [0.18, 0.05, 131], "role": "mid"},
+      {"pos": 0.88, "oklch": [0.3, 0.1, 44], "role": "mid"},
+      {"pos": 1.0, "oklch": [0.1, 0.035, 132], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Kiln Triad",
+    "mood": "rust, ochre and olive held in even balance with a cool bone flare at the top; a small cliff inside the rust-to-ochre step",
+    "architecture": "triad",
+    "skeleton": "cliff-in-mids",
+    "value_key": "mid",
+    "complexity": 4,
+    "stops": [
+      {"pos": 0.0, "oklch": [0.16, 0.05, 45], "role": "ground"},
+      {"pos": 0.1, "oklch": [0.34, 0.12, 39], "role": "anchor"},
+      {"pos": 0.3, "oklch": [0.6, 0.16, 40], "role": "anchor", "segment": "cliff", "width": 0.05},
+      {"pos": 0.4, "oklch": [0.44, 0.14, 66], "role": "mid"},
+      {"pos": 0.56, "oklch": [0.76, 0.14, 79], "role": "anchor"},
+      {"pos": 0.68, "oklch": [0.96, 0.015, 230], "role": "glow"},
+      {"pos": 0.82, "oklch": [0.58, 0.1, 121], "role": "anchor"},
+      {"pos": 0.92, "oklch": [0.26, 0.07, 120], "role": "mid"},
+      {"pos": 1.0, "oklch": [0.16, 0.05, 45], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Ochre Loam",
+    "mood": "a single warm mineral ramp, rust to ochre to olive, peaking early on a pale ochre; no white, no black, muted throughout",
+    "architecture": "mono-temperature-ramp",
+    "skeleton": "peak-early",
+    "value_key": "high",
+    "complexity": 3,
+    "stops": [
+      {"pos": 0.0, "oklch": [0.15, 0.05, 45], "role": "ground"},
+      {"pos": 0.12, "oklch": [0.48, 0.125, 39], "role": "anchor"},
+      {"pos": 0.3, "oklch": [0.82, 0.11, 79], "role": "glow"},
+      {"pos": 0.5, "oklch": [0.55, 0.12, 79], "role": "anchor"},
+      {"pos": 0.68, "oklch": [0.4, 0.09, 121], "role": "anchor"},
+      {"pos": 0.84, "oklch": [0.6, 0.085, 120], "role": "mid"},
+      {"pos": 1.0, "oklch": [0.15, 0.05, 45], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Mesa Noon",
+    "mood": "a hot rust mass against a deep teal mass, the two separated by sand rising into a warm white; the tension is the whole palette",
+    "architecture": "complementary-tension",
+    "skeleton": "double-peak",
+    "value_key": "low",
+    "complexity": 4,
+    "stops": [
+      {"pos": 0.0, "oklch": [0.09, 0.03, 34], "role": "ground"},
+      {"pos": 0.1, "oklch": [0.66, 0.16, 36], "role": "anchor"},
+      {"pos": 0.24, "oklch": [0.34, 0.12, 34], "role": "mid"},
+      {"pos": 0.4, "oklch": [0.86, 0.045, 79], "role": "mid"},
+      {"pos": 0.5, "oklch": [0.97, 0.012, 82], "role": "glow"},
+      {"pos": 0.62, "oklch": [0.7, 0.12, 188], "role": "anchor"},
+      {"pos": 0.8, "oklch": [0.4, 0.1, 189], "role": "anchor"},
+      {"pos": 0.92, "oklch": [0.19, 0.07, 190], "role": "mid"},
+      {"pos": 1.0, "oklch": [0.09, 0.03, 34], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Mesa Shadow",
+    "mood": "teal-dominant reading of the same three, peaking early on a pale teal; the rust arrives through an ink-teal dark instead of through white",
+    "architecture": "triad",
+    "skeleton": "peak-early",
+    "value_key": "mid",
+    "complexity": 4,
+    "stops": [
+      {"pos": 0.0, "oklch": [0.17, 0.06, 188], "role": "ground"},
+      {"pos": 0.12, "oklch": [0.52, 0.12, 188], "role": "anchor"},
+      {"pos": 0.28, "oklch": [0.76, 0.09, 187], "role": "glow"},
+      {"pos": 0.42, "oklch": [0.18, 0.05, 190], "role": "mid"},
+      {"pos": 0.56, "oklch": [0.5, 0.125, 34], "role": "anchor"},
+      {"pos": 0.72, "oklch": [0.68, 0.125, 36], "role": "anchor"},
+      {"pos": 0.86, "oklch": [0.72, 0.055, 79], "role": "mid"},
+      {"pos": 1.0, "oklch": [0.17, 0.06, 188], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Mustard Field",
+    "mood": "saturated mustard against olive with the dark brown as the only shadow, climbing to a warm white; two hues plus a hued dark",
+    "architecture": "duotone-plus",
+    "skeleton": "peak-late",
+    "value_key": "high",
+    "complexity": 3,
+    "stops": [
+      {"pos": 0.0, "oklch": [0.44, 0.08, 121], "role": "field"},
+      {"pos": 0.16, "oklch": [0.17, 0.06, 47], "role": "mid"},
+      {"pos": 0.38, "oklch": [0.62, 0.13, 72], "role": "mid"},
+      {"pos": 0.7, "oklch": [0.8, 0.17, 84], "role": "anchor"},
+      {"pos": 0.78, "oklch": [0.96, 0.02, 86], "role": "glow"},
+      {"pos": 0.88, "oklch": [0.66, 0.1, 121], "role": "anchor"},
+      {"pos": 1.0, "oklch": [0.44, 0.08, 121], "role": "field"}
+    ]
+  },
+  {
+    "name": "Olive Cellar",
+    "mood": "the olive-and-umber family across the full value range with mustard as a single narrow spark; the light is a pale olive, never white",
+    "architecture": "near-monochrome-spark",
+    "skeleton": "no-cliff",
+    "value_key": "low",
+    "complexity": 4,
+    "stops": [
+      {"pos": 0.0, "oklch": [0.08, 0.03, 50], "role": "ground"},
+      {"pos": 0.12, "oklch": [0.32, 0.06, 47], "role": "mid"},
+      {"pos": 0.3, "oklch": [0.6, 0.14, 84], "role": "accent"},
+      {"pos": 0.44, "oklch": [0.4, 0.1, 121], "role": "anchor"},
+      {"pos": 0.6, "oklch": [0.64, 0.115, 120], "role": "anchor"},
+      {"pos": 0.76, "oklch": [0.84, 0.075, 118], "role": "glow"},
+      {"pos": 0.88, "oklch": [0.48, 0.13, 84], "role": "anchor"},
+      {"pos": 1.0, "oklch": [0.08, 0.03, 50], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Varnish and Bone",
+    "mood": "a cream field over the sienna-umber family, with a deep umber trough as the event and one cold bone flare; muted, gallery-lit",
+    "architecture": "near-monochrome-spark",
+    "skeleton": "inverted-arc",
+    "value_key": "high",
+    "complexity": 4,
+    "stops": [
+      {"pos": 0.0, "oklch": [0.86, 0.045, 84], "role": "field"},
+      {"pos": 0.14, "oklch": [0.72, 0.055, 58], "role": "mid"},
+      {"pos": 0.3, "oklch": [0.5, 0.1, 45], "role": "anchor"},
+      {"pos": 0.46, "oklch": [0.19, 0.05, 52], "role": "anchor"},
+      {"pos": 0.62, "oklch": [0.44, 0.09, 46], "role": "anchor"},
+      {"pos": 0.78, "oklch": [0.7, 0.055, 60], "role": "mid"},
+      {"pos": 0.9, "oklch": [0.96, 0.008, 240], "role": "glow"},
+      {"pos": 1.0, "oklch": [0.86, 0.045, 84], "role": "field"}
+    ]
+  },
+  {
+    "name": "Umber Ground",
+    "mood": "a single warm ramp from black through umber to sienna and a tinted cream; no white, and one small cliff inside the sienna",
+    "architecture": "mono-temperature-ramp",
+    "skeleton": "cliff-in-mids",
+    "value_key": "low",
+    "complexity": 4,
+    "stops": [
+      {"pos": 0.0, "oklch": [0.07, 0.02, 50], "role": "ground"},
+      {"pos": 0.14, "oklch": [0.3, 0.055, 55], "role": "mid"},
+      {"pos": 0.3, "oklch": [0.52, 0.11, 45], "role": "anchor", "segment": "cliff", "width": 0.05},
+      {"pos": 0.4, "oklch": [0.36, 0.09, 46], "role": "mid"},
+      {"pos": 0.56, "oklch": [0.62, 0.12, 44], "role": "anchor"},
+      {"pos": 0.74, "oklch": [0.85, 0.05, 84], "role": "glow"},
+      {"pos": 0.88, "oklch": [0.44, 0.075, 55], "role": "mid"},
+      {"pos": 1.0, "oklch": [0.07, 0.02, 50], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Formica Neon",
+    "mood": "pure mint and pure pink on black, the cream pushed to a full white flare that carries the jump between them; poster-bright",
+    "architecture": "duotone-plus",
+    "skeleton": "peak-early",
+    "value_key": "low",
+    "complexity": 4,
+    "stops": [
+      {"pos": 0.0, "oklch": [0.07, 0.02, 170], "role": "ground"},
+      {"pos": 0.1, "oklch": [0.58, 0.14, 170], "role": "anchor"},
+      {"pos": 0.24, "oklch": [0.38, 0.1, 172], "role": "mid"},
+      {"pos": 0.34, "oklch": [0.96, 0.025, 88], "role": "glow"},
+      {"pos": 0.46, "oklch": [0.68, 0.16, 5], "role": "anchor"},
+      {"pos": 0.68, "oklch": [0.38, 0.15, 4], "role": "anchor"},
+      {"pos": 0.86, "oklch": [0.14, 0.06, 3], "role": "mid"},
+      {"pos": 1.0, "oklch": [0.07, 0.02, 170], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Counter Chrome",
+    "mood": "mint, pink and cream in balance with the cream held at a tinted mid-light instead of white; the mint and pink meet through a deep teal ink",
+    "architecture": "triad",
+    "skeleton": "double-peak",
+    "value_key": "mid",
+    "complexity": 4,
+    "stops": [
+      {"pos": 0.0, "oklch": [0.18, 0.06, 172], "role": "ground"},
+      {"pos": 0.12, "oklch": [0.58, 0.12, 170], "role": "anchor"},
+      {"pos": 0.24, "oklch": [0.34, 0.08, 173], "role": "mid"},
+      {"pos": 0.4, "oklch": [0.8, 0.075, 169], "role": "anchor"},
+      {"pos": 0.52, "oklch": [0.86, 0.038, 87], "role": "glow"},
+      {"pos": 0.66, "oklch": [0.68, 0.125, 5], "role": "anchor"},
+      {"pos": 0.8, "oklch": [0.44, 0.125, 4], "role": "anchor"},
+      {"pos": 0.92, "oklch": [0.24, 0.07, 6], "role": "mid"},
+      {"pos": 1.0, "oklch": [0.18, 0.06, 172], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Sixties Poster",
+    "mood": "orange to gold to olive at full chroma on black, with one warm white flare at the top of the gold; the hue walk is the drama",
+    "architecture": "analogous-drift",
+    "skeleton": "no-cliff",
+    "value_key": "low",
+    "complexity": 4,
+    "stops": [
+      {"pos": 0.0, "oklch": [0.07, 0.02, 44], "role": "ground"},
+      {"pos": 0.1, "oklch": [0.42, 0.16, 44], "role": "anchor"},
+      {"pos": 0.26, "oklch": [0.68, 0.19, 45], "role": "anchor"},
+      {"pos": 0.42, "oklch": [0.44, 0.14, 56], "role": "mid"},
+      {"pos": 0.6, "oklch": [0.8, 0.17, 81], "role": "anchor"},
+      {"pos": 0.68, "oklch": [0.97, 0.02, 88], "role": "glow"},
+      {"pos": 0.8, "oklch": [0.58, 0.13, 119], "role": "anchor"},
+      {"pos": 1.0, "oklch": [0.07, 0.02, 44], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Sixties Cellar",
+    "mood": "a pale gold field with a deep ember-brown trough as the event, cool olive set against warm orange; muted, no white and no black",
+    "architecture": "complementary-tension",
+    "skeleton": "inverted-arc",
+    "value_key": "high",
+    "complexity": 3,
+    "stops": [
+      {"pos": 0.0, "oklch": [0.86, 0.07, 84], "role": "field"},
+      {"pos": 0.14, "oklch": [0.64, 0.12, 81], "role": "anchor"},
+      {"pos": 0.3, "oklch": [0.18, 0.08, 46], "role": "anchor"},
+      {"pos": 0.46, "oklch": [0.54, 0.125, 44], "role": "anchor"},
+      {"pos": 0.62, "oklch": [0.7, 0.12, 81], "role": "mid"},
+      {"pos": 0.8, "oklch": [0.44, 0.11, 119], "role": "anchor"},
+      {"pos": 1.0, "oklch": [0.86, 0.07, 84], "role": "field"}
+    ]
+  }
+]

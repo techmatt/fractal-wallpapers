@@ -693,7 +693,7 @@ every attempt:
   permutation over the palette pool, so the count is a *cursor* into it — change
   the library or the group collapse and the same count names different maps, which
   is why the stamp travels with it rather than being assumed.
-* `(colormap, mode) -> attempts, scored, successes`. 822 by 18. This is the "which
+* `(colormap, mode) -> attempts, scored, successes`. 942 by 18. This is the "which
   palettes never work anywhere" signal and it is the one thing a discard genuinely
   destroys: drop colormap identity with the picture and the question stops being
   askable. An unscored row is an attempt and not a failure, which is why `scored`
@@ -1933,7 +1933,9 @@ transform is a picture nobody can join back to a render.
 
 **Runtime.** 16 cells x 901 maps, plus the unfolded arm for the 156 sequential
 maps, is 16,912 recolors at about 75 ms each: 21 minutes serial, and about 6 was
-measured at `--workers 6`. That default is **three** since 2026-08-28 — every
+measured at `--workers 6`. It scales with the library and the library is 1,021
+maps since `classic-pairs-2026-09`, so read those figures as a rate rather than
+as a wall clock. That default is **three** since 2026-08-28 — every
 probe is a recolor through the engine, so it is the locked render pool and not a
 tuning knob — which puts it near 9 minutes at the release leg's measured 2.38x
 concurrency gain on three. Re-measure rather than trusting that arithmetic. The panel's own dumps are 56 iteration passes, about 40 seconds.

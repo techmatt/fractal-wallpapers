@@ -486,11 +486,14 @@ def _densified(key: tuple) -> tuple:
     loops over 257 densified stops and together they were two fifths of a
     levelled candidate's curve.
 
-    The size is 1024 because a run draws from the **whole** library — 822 maps,
-    not the thirty this cache was first sized for. Measured on one run's own
-    colormap sequence, a 64-slot cache hit 0.072 of its lookups and a 1024-slot
-    cache hit 0.983: at 64 the sequence evicts a map before it comes round
-    again, which is the cache doing nothing but pay for itself.
+    The size is 1024 because a run draws from the **whole** library — 942 maps
+    since `classic-pairs-2026-09`, 822 when this was sized — not the thirty this
+    cache was first sized for. Measured on one run's own colormap sequence, a
+    64-slot cache hit 0.072 of its lookups and a 1024-slot cache hit 0.983: at 64
+    the sequence evicts a map before it comes round again, which is the cache
+    doing nothing but pay for itself. **The headroom is 82 maps and it was 202**:
+    a pool past 1024 puts the hit rate back down that cliff and says nothing when
+    it does, so the next drop admitted is the one that has to move this number.
 
     The Oklab array is handed back read-only, because it is the cached copy and
     a caller that wrote to it would level every later candidate through a map it

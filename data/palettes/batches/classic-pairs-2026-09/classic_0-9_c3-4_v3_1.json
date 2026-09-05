@@ -1,0 +1,368 @@
+[
+  {
+    "name": "Ember Over Tidewater",
+    "mood": "teal and orange only, true black under and a cold white flare above; teal climbs into the white, orange burns down into the dark - no bridge hue anywhere",
+    "architecture": "duotone-plus",
+    "skeleton": "double-peak",
+    "value_key": "low",
+    "complexity": 4,
+    "stops": [
+      {"pos": 0.0, "oklch": [0.07, 0.018, 210], "role": "ground"},
+      {"pos": 0.12, "oklch": [0.44, 0.10, 208], "role": "anchor"},
+      {"pos": 0.26, "oklch": [0.97, 0.008, 215], "role": "glow"},
+      {"pos": 0.4, "oklch": [0.30, 0.085, 205], "role": "mid"},
+      {"pos": 0.52, "oklch": [0.10, 0.018, 50], "role": "ground"},
+      {"pos": 0.66, "oklch": [0.70, 0.175, 51], "role": "anchor"},
+      {"pos": 0.84, "oklch": [0.30, 0.10, 42], "role": "mid"},
+      {"pos": 1.0, "oklch": [0.07, 0.018, 210], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Tidewater, No Sky",
+    "mood": "the same teal and orange with no white in it - the light is a pale aqua tint, and every hue change hinges on a near-black instead, so the drama is the black hinge and the value swing inside each hue",
+    "architecture": "complementary-tension",
+    "skeleton": "cliff-in-mids",
+    "value_key": "mid",
+    "complexity": 4,
+    "stops": [
+      {"pos": 0.0, "oklch": [0.16, 0.05, 206], "role": "ground"},
+      {"pos": 0.16, "oklch": [0.52, 0.105, 210], "role": "anchor"},
+      {"pos": 0.34, "oklch": [0.80, 0.075, 200], "role": "glow"},
+      {"pos": 0.5, "oklch": [0.34, 0.09, 208], "role": "mid", "segment": "cliff", "width": 0.06},
+      {"pos": 0.62, "oklch": [0.13, 0.018, 220], "role": "ground"},
+      {"pos": 0.74, "oklch": [0.72, 0.165, 52], "role": "anchor"},
+      {"pos": 0.88, "oklch": [0.47, 0.135, 44], "role": "mid"},
+      {"pos": 0.95, "oklch": [0.13, 0.018, 44], "role": "ground"},
+      {"pos": 1.0, "oklch": [0.16, 0.05, 206], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Gold Leaf, Deep Water",
+    "mood": "navy and gold against true black and a warm white; the navy sinks back to black before the gold rises, and returns once out of the white",
+    "architecture": "duotone-plus",
+    "skeleton": "peak-late",
+    "value_key": "low",
+    "complexity": 4,
+    "stops": [
+      {"pos": 0.0, "oklch": [0.05, 0.018, 264], "role": "ground"},
+      {"pos": 0.2, "oklch": [0.33, 0.08, 262], "role": "anchor"},
+      {"pos": 0.42, "oklch": [0.10, 0.018, 264], "role": "ground"},
+      {"pos": 0.62, "oklch": [0.60, 0.115, 88], "role": "anchor"},
+      {"pos": 0.78, "oklch": [0.80, 0.15, 87], "role": "anchor"},
+      {"pos": 0.88, "oklch": [0.96, 0.012, 90], "role": "glow"},
+      {"pos": 0.95, "oklch": [0.55, 0.075, 268], "role": "mid"},
+      {"pos": 1.0, "oklch": [0.05, 0.018, 264], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Midnight Regalia",
+    "mood": "a navy family walked from ink to pale periwinkle with no white in it, and one gold spark struck out of a near-black gate that drops straight back into bronze",
+    "architecture": "near-monochrome-spark",
+    "skeleton": "double-peak",
+    "value_key": "mid",
+    "complexity": 4,
+    "stops": [
+      {"pos": 0.0, "oklch": [0.14, 0.018, 264], "role": "ground"},
+      {"pos": 0.15, "oklch": [0.42, 0.095, 262], "role": "anchor"},
+      {"pos": 0.3, "oklch": [0.68, 0.085, 258], "role": "mid"},
+      {"pos": 0.44, "oklch": [0.86, 0.055, 255], "role": "glow"},
+      {"pos": 0.58, "oklch": [0.30, 0.08, 266], "role": "mid"},
+      {"pos": 0.7, "oklch": [0.11, 0.018, 270], "role": "ground"},
+      {"pos": 0.82, "oklch": [0.78, 0.145, 87], "role": "accent"},
+      {"pos": 0.92, "oklch": [0.22, 0.07, 83], "role": "mid"},
+      {"pos": 1.0, "oklch": [0.14, 0.018, 264], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Cobalt Detonation",
+    "mood": "pure cobalt and pure orange at the gamut edge with true black under and true white at the top; the whole back half is one long orange descent",
+    "architecture": "duotone-plus",
+    "skeleton": "peak-early",
+    "value_key": "low",
+    "complexity": 4,
+    "stops": [
+      {"pos": 0.0, "oklch": [0.06, 0.018, 263], "role": "ground"},
+      {"pos": 0.1, "oklch": [0.50, 0.19, 263], "role": "anchor"},
+      {"pos": 0.22, "oklch": [0.98, 0.005, 250], "role": "glow"},
+      {"pos": 0.36, "oklch": [0.76, 0.175, 59], "role": "anchor"},
+      {"pos": 0.5, "oklch": [0.62, 0.15, 55], "role": "mid"},
+      {"pos": 0.62, "oklch": [0.70, 0.16, 64], "role": "accent"},
+      {"pos": 0.78, "oklch": [0.34, 0.115, 48], "role": "mid"},
+      {"pos": 0.9, "oklch": [0.10, 0.018, 44], "role": "ground"},
+      {"pos": 1.0, "oklch": [0.06, 0.018, 263], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Cobalt Without Daylight",
+    "mood": "a pale peach field with no white in it; the event is the dark - deep umber through a black pivot into a deep cobalt jewel, and the blue climbs back out through a cold pale grey",
+    "architecture": "complementary-tension",
+    "skeleton": "inverted-arc",
+    "value_key": "high",
+    "complexity": 4,
+    "stops": [
+      {"pos": 0.0, "oklch": [0.84, 0.07, 62], "role": "field"},
+      {"pos": 0.14, "oklch": [0.71, 0.15, 58], "role": "anchor"},
+      {"pos": 0.32, "oklch": [0.44, 0.15, 48], "role": "mid"},
+      {"pos": 0.46, "oklch": [0.19, 0.065, 40], "role": "mid"},
+      {"pos": 0.52, "oklch": [0.15, 0.018, 45], "role": "ground"},
+      {"pos": 0.58, "oklch": [0.18, 0.08, 263], "role": "anchor"},
+      {"pos": 0.72, "oklch": [0.46, 0.185, 263], "role": "anchor"},
+      {"pos": 0.86, "oklch": [0.74, 0.019, 252], "role": "mid"},
+      {"pos": 1.0, "oklch": [0.84, 0.07, 62], "role": "field"}
+    ]
+  },
+  {
+    "name": "Regalia & Sulphur",
+    "mood": "violet-black and imperial purple against a sulphur yellow that runs all the way up to a warm white; the purple drops through black before the yellow arrives",
+    "architecture": "duotone-plus",
+    "skeleton": "peak-late",
+    "value_key": "mid",
+    "complexity": 4,
+    "stops": [
+      {"pos": 0.0, "oklch": [0.08, 0.018, 295], "role": "ground"},
+      {"pos": 0.18, "oklch": [0.38, 0.145, 295], "role": "anchor"},
+      {"pos": 0.36, "oklch": [0.16, 0.075, 300], "role": "mid"},
+      {"pos": 0.44, "oklch": [0.09, 0.015, 300], "role": "ground"},
+      {"pos": 0.6, "oklch": [0.86, 0.17, 87], "role": "anchor"},
+      {"pos": 0.74, "oklch": [0.97, 0.02, 95], "role": "glow"},
+      {"pos": 0.88, "oklch": [0.55, 0.13, 90], "role": "mid"},
+      {"pos": 1.0, "oklch": [0.08, 0.018, 295], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Sulphur in the Vault",
+    "mood": "purple carried up to a pale lilac instead of a white, cut down by a small cliff into a near-black, and only then the sulphur yellow - every light in it is tinted",
+    "architecture": "complementary-tension",
+    "skeleton": "cliff-in-mids",
+    "value_key": "low",
+    "complexity": 4,
+    "stops": [
+      {"pos": 0.0, "oklch": [0.07, 0.018, 297], "role": "ground"},
+      {"pos": 0.14, "oklch": [0.30, 0.115, 295], "role": "anchor"},
+      {"pos": 0.28, "oklch": [0.55, 0.14, 300], "role": "anchor"},
+      {"pos": 0.4, "oklch": [0.74, 0.09, 303], "role": "glow"},
+      {"pos": 0.54, "oklch": [0.34, 0.12, 296], "role": "mid", "segment": "cliff", "width": 0.06},
+      {"pos": 0.64, "oklch": [0.13, 0.018, 295], "role": "ground"},
+      {"pos": 0.78, "oklch": [0.82, 0.16, 87], "role": "anchor"},
+      {"pos": 0.9, "oklch": [0.48, 0.115, 84], "role": "mid"},
+      {"pos": 1.0, "oklch": [0.07, 0.018, 297], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Vermilion Chapel",
+    "mood": "vermilion out of true black into a warm white, then a long green field that lifts once before sinking back to deep forest - two hues, nothing between them",
+    "architecture": "duotone-plus",
+    "skeleton": "peak-early",
+    "value_key": "low",
+    "complexity": 3,
+    "stops": [
+      {"pos": 0.0, "oklch": [0.06, 0.019, 23], "role": "ground"},
+      {"pos": 0.12, "oklch": [0.47, 0.175, 23], "role": "anchor"},
+      {"pos": 0.26, "oklch": [0.96, 0.012, 60], "role": "glow"},
+      {"pos": 0.44, "oklch": [0.44, 0.10, 152], "role": "anchor"},
+      {"pos": 0.62, "oklch": [0.55, 0.095, 148], "role": "mid"},
+      {"pos": 0.8, "oklch": [0.16, 0.055, 150], "role": "mid"},
+      {"pos": 1.0, "oklch": [0.06, 0.019, 23], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Oxblood Thicket",
+    "mood": "a green field topped by a pale leaf tint rather than a white, dropping to a near-black hinge from which the red arrives at full strength and dies as oxblood",
+    "architecture": "complementary-tension",
+    "skeleton": "no-cliff",
+    "value_key": "mid",
+    "complexity": 4,
+    "stops": [
+      {"pos": 0.0, "oklch": [0.13, 0.018, 150], "role": "ground"},
+      {"pos": 0.14, "oklch": [0.41, 0.095, 152], "role": "anchor"},
+      {"pos": 0.28, "oklch": [0.63, 0.105, 148], "role": "mid"},
+      {"pos": 0.42, "oklch": [0.80, 0.075, 140], "role": "glow"},
+      {"pos": 0.56, "oklch": [0.36, 0.09, 155], "role": "mid"},
+      {"pos": 0.68, "oklch": [0.11, 0.018, 140], "role": "ground"},
+      {"pos": 0.8, "oklch": [0.48, 0.175, 23], "role": "anchor"},
+      {"pos": 0.9, "oklch": [0.26, 0.10, 20], "role": "mid"},
+      {"pos": 1.0, "oklch": [0.13, 0.018, 150], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Cellar & Yew",
+    "mood": "muted burgundy and yew green held at low chroma, candle-dark, opening only at the very top into a cool bone light",
+    "architecture": "complementary-tension",
+    "skeleton": "peak-late",
+    "value_key": "mid",
+    "complexity": 3,
+    "stops": [
+      {"pos": 0.0, "oklch": [0.09, 0.05, 15], "role": "ground"},
+      {"pos": 0.2, "oklch": [0.36, 0.115, 15], "role": "anchor"},
+      {"pos": 0.38, "oklch": [0.17, 0.018, 10], "role": "ground"},
+      {"pos": 0.56, "oklch": [0.42, 0.07, 155], "role": "anchor"},
+      {"pos": 0.74, "oklch": [0.63, 0.075, 150], "role": "mid"},
+      {"pos": 0.9, "oklch": [0.93, 0.015, 120], "role": "glow"},
+      {"pos": 1.0, "oklch": [0.09, 0.05, 15], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Yew Without Moon",
+    "mood": "a pale sage field with no white and no black in it; the burgundy is a single warm event that falls into an oxblood dark - the dark is the subject",
+    "architecture": "near-monochrome-spark",
+    "skeleton": "inverted-arc",
+    "value_key": "high",
+    "complexity": 3,
+    "stops": [
+      {"pos": 0.0, "oklch": [0.74, 0.055, 150], "role": "field"},
+      {"pos": 0.16, "oklch": [0.55, 0.075, 152], "role": "mid"},
+      {"pos": 0.34, "oklch": [0.19, 0.018, 155], "role": "mid"},
+      {"pos": 0.5, "oklch": [0.34, 0.115, 15], "role": "accent"},
+      {"pos": 0.64, "oklch": [0.16, 0.018, 12], "role": "mid"},
+      {"pos": 0.8, "oklch": [0.45, 0.07, 150], "role": "mid"},
+      {"pos": 1.0, "oklch": [0.74, 0.055, 150], "role": "field"}
+    ]
+  },
+  {
+    "name": "Neon Bramble",
+    "mood": "hot pink and leaf green at full saturation with true black and true white as the only other colours; each hue gets its own black gate",
+    "architecture": "duotone-plus",
+    "skeleton": "peak-early",
+    "value_key": "low",
+    "complexity": 4,
+    "stops": [
+      {"pos": 0.0, "oklch": [0.06, 0.018, 5], "role": "ground"},
+      {"pos": 0.12, "oklch": [0.62, 0.215, 5], "role": "anchor"},
+      {"pos": 0.24, "oklch": [0.98, 0.008, 340], "role": "glow"},
+      {"pos": 0.38, "oklch": [0.67, 0.155, 150], "role": "anchor"},
+      {"pos": 0.52, "oklch": [0.44, 0.12, 148], "role": "mid"},
+      {"pos": 0.66, "oklch": [0.09, 0.018, 150], "role": "ground"},
+      {"pos": 0.8, "oklch": [0.52, 0.185, 3], "role": "accent"},
+      {"pos": 0.9, "oklch": [0.24, 0.09, 0], "role": "mid"},
+      {"pos": 1.0, "oklch": [0.06, 0.018, 5], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Bramble at Dusk",
+    "mood": "the same pink and green with the white taken out - the two light bands are a pale mint and a bright blush, each still carrying its own hue, and the hinge between them is a near-black",
+    "architecture": "complementary-tension",
+    "skeleton": "no-cliff",
+    "value_key": "mid",
+    "complexity": 4,
+    "stops": [
+      {"pos": 0.0, "oklch": [0.15, 0.018, 150], "role": "ground"},
+      {"pos": 0.14, "oklch": [0.55, 0.15, 150], "role": "anchor"},
+      {"pos": 0.28, "oklch": [0.83, 0.10, 145], "role": "glow"},
+      {"pos": 0.42, "oklch": [0.38, 0.115, 152], "role": "mid"},
+      {"pos": 0.55, "oklch": [0.12, 0.018, 150], "role": "ground"},
+      {"pos": 0.68, "oklch": [0.64, 0.21, 5], "role": "anchor"},
+      {"pos": 0.82, "oklch": [0.80, 0.13, 358], "role": "accent"},
+      {"pos": 0.92, "oklch": [0.30, 0.11, 2], "role": "mid"},
+      {"pos": 1.0, "oklch": [0.15, 0.018, 150], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Coral Signal",
+    "mood": "teal rising to a cool white, then coral dropped in on the far side of it and stepped down by a single small cliff",
+    "architecture": "duotone-plus",
+    "skeleton": "cliff-in-mids",
+    "value_key": "mid",
+    "complexity": 3,
+    "stops": [
+      {"pos": 0.0, "oklch": [0.10, 0.018, 195], "role": "ground"},
+      {"pos": 0.2, "oklch": [0.64, 0.105, 195], "role": "anchor"},
+      {"pos": 0.36, "oklch": [0.95, 0.012, 200], "role": "glow"},
+      {"pos": 0.52, "oklch": [0.73, 0.145, 29], "role": "anchor", "segment": "cliff", "width": 0.05},
+      {"pos": 0.66, "oklch": [0.50, 0.135, 25], "role": "mid"},
+      {"pos": 0.78, "oklch": [0.28, 0.105, 22], "role": "mid"},
+      {"pos": 1.0, "oklch": [0.10, 0.018, 195], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Reef Without Sun",
+    "mood": "a teal family from ink to pale aqua with no white in it; the coral is one bright strike out of a near-black and straight back into another",
+    "architecture": "near-monochrome-spark",
+    "skeleton": "peak-late",
+    "value_key": "low",
+    "complexity": 4,
+    "stops": [
+      {"pos": 0.0, "oklch": [0.07, 0.018, 195], "role": "ground"},
+      {"pos": 0.16, "oklch": [0.40, 0.10, 195], "role": "mid"},
+      {"pos": 0.28, "oklch": [0.12, 0.018, 195], "role": "ground"},
+      {"pos": 0.42, "oklch": [0.74, 0.135, 30], "role": "accent"},
+      {"pos": 0.54, "oklch": [0.14, 0.018, 25], "role": "ground"},
+      {"pos": 0.68, "oklch": [0.58, 0.105, 195], "role": "anchor"},
+      {"pos": 0.84, "oklch": [0.82, 0.085, 192], "role": "glow"},
+      {"pos": 1.0, "oklch": [0.07, 0.018, 195], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Ultraviolet Siren",
+    "mood": "magenta, cyan and the entry's violet-black as a triad; magenta explodes into white, cyan cools out of it and falls through black to a plum accent that closes on the violet ground",
+    "architecture": "triad",
+    "skeleton": "peak-early",
+    "value_key": "mid",
+    "complexity": 4,
+    "stops": [
+      {"pos": 0.0, "oklch": [0.19, 0.07, 300], "role": "ground"},
+      {"pos": 0.12, "oklch": [0.60, 0.245, 359], "role": "anchor"},
+      {"pos": 0.24, "oklch": [0.97, 0.01, 330], "role": "glow"},
+      {"pos": 0.38, "oklch": [0.75, 0.13, 205], "role": "anchor"},
+      {"pos": 0.54, "oklch": [0.45, 0.10, 207], "role": "mid"},
+      {"pos": 0.7, "oklch": [0.16, 0.018, 290], "role": "ground"},
+      {"pos": 0.86, "oklch": [0.34, 0.115, 320], "role": "accent"},
+      {"pos": 1.0, "oklch": [0.19, 0.07, 300], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Siren, Lights Out",
+    "mood": "the same triad with the white removed - the top of the magenta is a hot blush, the violet-black itself does all the routing, and the cyan arrives out of the deepest point",
+    "architecture": "triad",
+    "skeleton": "double-peak",
+    "value_key": "mid",
+    "complexity": 4,
+    "stops": [
+      {"pos": 0.0, "oklch": [0.13, 0.018, 300], "role": "ground"},
+      {"pos": 0.13, "oklch": [0.42, 0.15, 340], "role": "mid"},
+      {"pos": 0.26, "oklch": [0.61, 0.24, 359], "role": "anchor"},
+      {"pos": 0.38, "oklch": [0.80, 0.14, 352], "role": "accent"},
+      {"pos": 0.5, "oklch": [0.19, 0.07, 302], "role": "ground"},
+      {"pos": 0.62, "oklch": [0.12, 0.018, 290], "role": "ground"},
+      {"pos": 0.74, "oklch": [0.74, 0.13, 205], "role": "anchor"},
+      {"pos": 0.88, "oklch": [0.40, 0.095, 203], "role": "mid"},
+      {"pos": 1.0, "oklch": [0.13, 0.018, 300], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Rust & Rainlight",
+    "mood": "saturated rust against a low-chroma slate that climbs to a cool white; the warm mass is spent before the cool one begins, and one ember returns as the light dies",
+    "architecture": "complementary-tension",
+    "skeleton": "peak-late",
+    "value_key": "mid",
+    "complexity": 4,
+    "stops": [
+      {"pos": 0.0, "oklch": [0.09, 0.019, 40], "role": "ground"},
+      {"pos": 0.2, "oklch": [0.57, 0.15, 40], "role": "anchor"},
+      {"pos": 0.36, "oklch": [0.26, 0.09, 35], "role": "mid"},
+      {"pos": 0.52, "oklch": [0.15, 0.018, 250], "role": "ground"},
+      {"pos": 0.7, "oklch": [0.54, 0.065, 255], "role": "anchor"},
+      {"pos": 0.86, "oklch": [0.94, 0.015, 250], "role": "glow"},
+      {"pos": 0.94, "oklch": [0.42, 0.06, 42], "role": "mid"},
+      {"pos": 1.0, "oklch": [0.09, 0.019, 40], "role": "ground"}
+    ]
+  },
+  {
+    "name": "Rust in the Slate Vault",
+    "mood": "slate carried across its whole range and topped out at a pale slate rather than a white, cut by a small cliff into black; the rust is the one warm event",
+    "architecture": "near-monochrome-spark",
+    "skeleton": "cliff-in-mids",
+    "value_key": "low",
+    "complexity": 4,
+    "stops": [
+      {"pos": 0.0, "oklch": [0.07, 0.018, 255], "role": "ground"},
+      {"pos": 0.14, "oklch": [0.30, 0.05, 255], "role": "mid"},
+      {"pos": 0.28, "oklch": [0.55, 0.05, 255], "role": "anchor"},
+      {"pos": 0.4, "oklch": [0.72, 0.045, 250], "role": "glow"},
+      {"pos": 0.52, "oklch": [0.36, 0.05, 255], "role": "mid", "segment": "cliff", "width": 0.06},
+      {"pos": 0.62, "oklch": [0.16, 0.018, 258], "role": "ground"},
+      {"pos": 0.76, "oklch": [0.58, 0.15, 40], "role": "accent"},
+      {"pos": 0.88, "oklch": [0.30, 0.105, 35], "role": "mid"},
+      {"pos": 1.0, "oklch": [0.07, 0.018, 255], "role": "ground"}
+    ]
+  }
+]

@@ -177,11 +177,14 @@ just its own file.
 test there is, and that is what CI runs and what runs before a checkpoint. The
 fast lane is for the edit-run loop and nothing else.
 
-Both are measured, not estimated. The **fast** lane is **105.44 s over the 3,637 it
+Both are measured, not estimated. The **fast** lane is **107.65 s over the 3,757 it
 holds, 116 deselected**, on this machine, 2026-09-05, on a `.[dev,models]` install
-with a release engine built. The **slow** lane is **6:11 over 3,716, nothing
-skipped**, same machine, same day, both on an idle box once that day's render leg
-had finished — the slow figure is the older tree's and is due a re-reading. Every reading this lane has taken is in
+with a release engine built. The **slow** lane's last reading is **6:11 over 3,716,
+nothing skipped**, taken on an older and smaller tree and **not re-read since**;
+its count is 3,836 now and its clock is unknown. **`data/palettes` is a
+parametrized guard**, so a drop moves both counts: `classic-pairs-2026-09` added
+120 maps and therefore 120 collected tests with no test written, and a reading
+taken across a drop is not comparable with one taken before it. Every reading this lane has taken is in
 [`tests/README.md`](tests/README.md#the-lanes-readings-in-order), with what the box
 was doing at the time — they are there and not here because this file loads into
 every session and a chronological log is not a rule. What stays here is the current

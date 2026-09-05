@@ -97,9 +97,11 @@ the fourth is a whole subdirectory of them, where that glob cannot reach it at a
 
 `groups` says **which maps are near enough to be one choice**: average linkage over
 M1, the sliced Wasserstein-1 distance between two maps' hue-weighted Oklab clouds
-read through the engine's own bake, cut at `0.039735`. 901 maps, 65 groups, 143
-maps in one. The drawable pool collapses through it — one member per group, drawn
-on the run's seed — and the gallery pass's group cap counts seats per group.
+read through the engine's own bake, cut at `0.039735`. 65 groups over 143 maps,
+cut over the 901 the library held on 2026-08-25. The drawable pool collapses
+through it — one member per group, drawn on the run's seed — and the gallery pass's
+group cap counts seats per group. A map added since is a group of one until the
+table is re-cut, which is a ruling and not a rebuild: see the three counts below.
 
 The cut's **evidence is tracked beside it**: `data/palettes/groups_marks.jsonl`
 holds the forty-six pairs Matt marked SAME or DIFFERENT by eye on 2026-08-25, and
@@ -110,23 +112,31 @@ DIFFERENT, and pay for it by declining two merges a person would have made. Both
 are named in the record's header, and `groups.jsonl`'s `marks` field points at it.
 
 **Library, candidate pool, drawn set — three counts, and none of them is the same
-number.** The **library** is every file in `data/palettes`: **901** maps
+number.** The **library** is every file in `data/palettes`: **1,021** maps
 (`groups.library`). The **candidate pool** is
-`models.palette_sets.pool()["pool"]`, **900** — 700 maps inherited as a *subset* of
+`models.palette_sets.pool()["pool"]`, **1,020** — 700 maps inherited as a *subset* of
 the source project's own 987-map pool (nothing was brought across to round the
-number up) plus the 200 of the one admitted drop. The one library map it does not
+number up) plus the 320 of the two admitted drops. The one library map it does not
 hold is `blue_orange`, which is instrument rather than choice: it is
 `labeling.sheets.VIVID_COLORMAP`, the map a person judges a location from, and half
-of the tile floor's palette expansion in `engine/src/tiles.rs`. What a colorize actually **draws** from is **822**, because
-`colorize.pool` reads that 900 through `groups.collapse`: 143 of them fall in 65
-groups, each group stands one member up and 78 stand down, leaving `757 singletons +
-65 = 822`. The record `colorize.pool_record` writes on every run carries all of it,
+of the tile floor's palette expansion in `engine/src/tiles.rs`. What a colorize actually **draws** from is **942**, because
+`colorize.pool` reads that 1,020 through `groups.collapse`: 143 of them fall in 65
+groups, each group stands one member up and 78 stand down, leaving `877 singletons +
+65 = 942`. The record `colorize.pool_record` writes on every run carries all of it,
 and names the group every absent map stood down for.
 
-**The 822 is seed-independent; which 822 is not.** `collapse` draws the standing
+**The grouping is cut over the library `classic-pairs-2026-09` arrived into, and
+has not been re-cut since.** `groups.jsonl`'s header still reads 901 maps, so the
+drop's 120 are singletons by `group_of`'s fallback and none of them was weighed
+against a shipped map for merging. The pairs a re-cut would weigh are measured and
+in the ingest's report: ten new-against-shipped pairs and five inside the drop sit at
+or under the cut, the nearest of them at 0.0313. Re-cutting is a ruling rather than a rebuild, which is what
+`tests/test_palette_groups.py`'s pinned header says out loud.
+
+**The 942 is seed-independent; which 942 is not.** `collapse` draws the standing
 member with `random.Random(seed).randrange` inside each group, so a different
 `--seed` stands a different member up and never a different *number* of them — two
-seeds a day apart shared 790 of 822 maps. That is Matt's rule and the reason is what
+seeds a day apart shared 790 of 822 maps, read when the pool was 822 wide. That is Matt's rule and the reason is what
 a group means: its members are indistinguishable, so none of them deserves the slot
 permanently, and always taking `groups.canonical` would quietly retire every other
 member of every group while leaving it in the library. `canonical` is what a record
@@ -160,9 +170,9 @@ numbers and is in the history; the field is a megabyte of floats and is not.
 `carriers` answers **which map can make a picture of which colour**: every map in
 the library recoloured onto those three fields and read through `dominance`, one
 row per (map, cell) with the cell's share on all three fields and their mean.
-About 90 seconds for 2,703 recolours, which land under
+About 90 seconds for 3,063 recolours, which land under
 `artifacts/palettes/carriers/` and are kept, so a second run is the census alone.
-3,220 rows over 901 maps, and every one of the 48 chromatic cells has a carrier.
+3,665 rows over 1,021 maps, and every one of the 48 chromatic cells has a carrier.
 
 It is keyed to the **map** and never to the palette group, and that is measured
 rather than preferred: members of one group disagree on their dominant cell in 120
@@ -225,7 +235,14 @@ pairs it never chose found 1,705 and 1,563.
 The bound above says *can*. This says *does*, and it is tracked:
 `data/palettes/color_mass/<mode>.jsonl`, one row per palette group, the **mean chromatic
 share per codebook cell** over every observation of that pair. All **14,796** pairs —
-822 groups by the 18 modes it was measured on — with no hole in that grid. The engine
+822 groups by the 18 modes it was measured on — with no hole in that grid. **The grid
+is complete over what it measured and is now narrower than the pool**: the 120 maps of
+`classic-pairs-2026-09` are groups of one with no row, so `delivering` reads every one
+of them through the **carrier prior** rather than through a measurement of this
+pipeline. They are reachable that way — 20 of the 120 survive a four-thin-cell cut at
+the default bar — and the fallback is exactly what the two-table rule was written for.
+Closing the hole costs a sweep leg; the completeness guard is keyed to what the map
+names and stays green either way. The engine
 ships **19** production modes; `color_mass.UNMEASURED` names the one with no file
 (`tail_itinerary`, catalogued after the sweep) and the completeness guard reads the
 engine's roster *less* that tuple, so a mode added later is a named hole rather than a

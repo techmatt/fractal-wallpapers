@@ -1,0 +1,1698 @@
+[
+ {
+  "name": "Memphis Blackboard",
+  "mood": "cyan, magenta and yellow struck against black, with one white flare as the only bridge; every jump routes through an achromatic",
+  "architecture": "triad",
+  "skeleton": "double-peak",
+  "value_key": "low",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.1,
+     0.015,
+     216
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.1,
+    "oklch": [
+     0.55,
+     0.13,
+     216
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.26,
+    "oklch": [
+     0.78,
+     0.12,
+     212
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.36,
+    "oklch": [
+     0.965,
+     0.01,
+     212
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.46,
+    "oklch": [
+     0.9,
+     0.155,
+     94
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.58,
+    "oklch": [
+     0.8,
+     0.17,
+     92
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.72,
+    "oklch": [
+     0.11,
+     0.015,
+     60
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.86,
+    "oklch": [
+     0.66,
+     0.235,
+     356
+    ],
+    "role": "accent"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.1,
+     0.015,
+     216
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Memphis Chalkline",
+  "mood": "no white anywhere: the same cyan, magenta and yellow separated by hued inks - yellow-black, magenta-black, cyan-black - so the drama is three saturated risings out of three different darks",
+  "architecture": "complementary-tension",
+  "skeleton": "peak-early",
+  "value_key": "mid",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.15,
+     0.015,
+     94
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.16,
+    "oklch": [
+     0.86,
+     0.175,
+     94
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.3,
+    "oklch": [
+     0.62,
+     0.15,
+     88
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.42,
+    "oklch": [
+     0.14,
+     0.015,
+     356
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.58,
+    "oklch": [
+     0.64,
+     0.235,
+     356
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.74,
+    "oklch": [
+     0.16,
+     0.015,
+     216
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.88,
+    "oklch": [
+     0.66,
+     0.13,
+     216
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.15,
+     0.015,
+     94
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Nineties Arcade",
+  "mood": "violet and teal stacked against a white flare, orange falling into a violet-black ground; the white is the only bridge and the value swing is total",
+  "architecture": "triad",
+  "skeleton": "double-peak",
+  "value_key": "low",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.09,
+     0.015,
+     301
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.1,
+    "oklch": [
+     0.47,
+     0.16,
+     301
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.24,
+    "oklch": [
+     0.15,
+     0.015,
+     303
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.36,
+    "oklch": [
+     0.6,
+     0.105,
+     191
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.5,
+    "oklch": [
+     0.97,
+     0.01,
+     196
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.64,
+    "oklch": [
+     0.72,
+     0.19,
+     45
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.88,
+    "oklch": [
+     0.35,
+     0.115,
+     40
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.09,
+     0.015,
+     301
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Nineties Dusk",
+  "mood": "the same teal, violet and orange with no white at all: each hue climbs out of its own ink and falls back, the pale mint at the top still carrying teal chroma",
+  "architecture": "complementary-tension",
+  "skeleton": "no-cliff",
+  "value_key": "mid",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.13,
+     0.015,
+     301
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.14,
+    "oklch": [
+     0.47,
+     0.155,
+     301
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.28,
+    "oklch": [
+     0.17,
+     0.015,
+     305
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.42,
+    "oklch": [
+     0.63,
+     0.105,
+     191
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.56,
+    "oklch": [
+     0.84,
+     0.065,
+     194
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.7,
+    "oklch": [
+     0.16,
+     0.015,
+     196
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.84,
+    "oklch": [
+     0.72,
+     0.19,
+     45
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.13,
+     0.015,
+     301
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Deco Lacquer",
+  "mood": "black lacquer, malachite green and gold leaf; a crisp small-step cliff inside the gold and a white flare above it",
+  "architecture": "duotone-plus",
+  "skeleton": "cliff-in-mids",
+  "value_key": "low",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.1,
+     0.015,
+     85
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.11,
+    "oklch": [
+     0.47,
+     0.1,
+     162
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.28,
+    "oklch": [
+     0.12,
+     0.015,
+     85
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.4,
+    "oklch": [
+     0.73,
+     0.12,
+     85
+    ],
+    "role": "anchor",
+    "segment": "cliff"
+   },
+   {
+    "pos": 0.58,
+    "oklch": [
+     0.52,
+     0.115,
+     80
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.72,
+    "oklch": [
+     0.97,
+     0.01,
+     85
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.86,
+    "oklch": [
+     0.8,
+     0.115,
+     88
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.1,
+     0.015,
+     85
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Deco Malachite",
+  "mood": "green worked across its whole range - ink, bottle, jade, pale patina - with black and a single gold spark struck out of the dark; no white",
+  "architecture": "near-monochrome-spark",
+  "skeleton": "double-peak",
+  "value_key": "low",
+  "complexity": 3,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.09,
+     0.015,
+     162
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.18,
+    "oklch": [
+     0.3,
+     0.075,
+     162
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.38,
+    "oklch": [
+     0.5,
+     0.1,
+     162
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.55,
+    "oklch": [
+     0.78,
+     0.07,
+     166
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.7,
+    "oklch": [
+     0.14,
+     0.015,
+     164
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.85,
+    "oklch": [
+     0.75,
+     0.125,
+     85
+    ],
+    "role": "accent"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.09,
+     0.015,
+     162
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Bauhaus Primary",
+  "mood": "pure red, pure ultramarine and pure yellow at full strength with true black and true white; the primaries never blend, they meet at the extremes",
+  "architecture": "triad",
+  "skeleton": "peak-late",
+  "value_key": "low",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.08,
+     0.015,
+     265
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.1,
+    "oklch": [
+     0.42,
+     0.2,
+     266
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.26,
+    "oklch": [
+     0.22,
+     0.13,
+     262
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.36,
+    "oklch": [
+     0.11,
+     0.015,
+     27
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.48,
+    "oklch": [
+     0.57,
+     0.205,
+     27
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.68,
+    "oklch": [
+     0.7,
+     0.16,
+     32
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.8,
+    "oklch": [
+     0.96,
+     0.01,
+     60
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.9,
+    "oklch": [
+     0.86,
+     0.165,
+     91
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.08,
+     0.015,
+     265
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Bauhaus Workshop",
+  "mood": "a warm red-to-yellow mass against ultramarine, bridged by a red ink instead of white; the cliff is a small step inside the reds",
+  "architecture": "complementary-tension",
+  "skeleton": "cliff-in-mids",
+  "value_key": "mid",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.15,
+     0.015,
+     27
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.16,
+    "oklch": [
+     0.57,
+     0.205,
+     27
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.3,
+    "oklch": [
+     0.68,
+     0.185,
+     32
+    ],
+    "role": "mid",
+    "segment": "cliff"
+   },
+   {
+    "pos": 0.4,
+    "oklch": [
+     0.78,
+     0.175,
+     40
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.52,
+    "oklch": [
+     0.84,
+     0.17,
+     91
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.66,
+    "oklch": [
+     0.55,
+     0.16,
+     85
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.76,
+    "oklch": [
+     0.14,
+     0.015,
+     27
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.9,
+    "oklch": [
+     0.44,
+     0.2,
+     266
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.15,
+     0.015,
+     27
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Y2K Chrome",
+  "mood": "pale sky blue rising to white and settling into silver, then a hot pink struck out of a blue-black; the pink is the single spark",
+  "architecture": "near-monochrome-spark",
+  "skeleton": "peak-early",
+  "value_key": "mid",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.12,
+     0.015,
+     236
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.16,
+    "oklch": [
+     0.45,
+     0.1,
+     236
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.28,
+    "oklch": [
+     0.84,
+     0.075,
+     236
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.4,
+    "oklch": [
+     0.96,
+     0.008,
+     236
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.52,
+    "oklch": [
+     0.8,
+     0.015,
+     236
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.66,
+    "oklch": [
+     0.13,
+     0.06,
+     355
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.8,
+    "oklch": [
+     0.7,
+     0.225,
+     355
+    ],
+    "role": "accent"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.12,
+     0.015,
+     236
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Y2K Bubblegum",
+  "mood": "a pale rose and pale sky field with an indigo ink as the one dark event; no white - the pale ends are tinted rose and tinted sky, and silver sits below them",
+  "architecture": "duotone-plus",
+  "skeleton": "inverted-arc",
+  "value_key": "high",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.87,
+     0.085,
+     358
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.14,
+    "oklch": [
+     0.7,
+     0.225,
+     355
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.3,
+    "oklch": [
+     0.17,
+     0.015,
+     240
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.46,
+    "oklch": [
+     0.5,
+     0.11,
+     238
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.62,
+    "oklch": [
+     0.86,
+     0.075,
+     236
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.76,
+    "oklch": [
+     0.76,
+     0.015,
+     236
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.88,
+    "oklch": [
+     0.6,
+     0.14,
+     358
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.87,
+     0.085,
+     358
+    ],
+    "role": "field"
+   }
+  ]
+ },
+ {
+  "name": "Sorbet Vault",
+  "mood": "the three pastels kept pale at the top and driven deep at the bottom - ink violet and ink jade as the dark events - with a white flare between lavender and mint",
+  "architecture": "triad",
+  "skeleton": "inverted-arc",
+  "value_key": "high",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.88,
+     0.015,
+     58
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.14,
+    "oklch": [
+     0.68,
+     0.12,
+     56
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.24,
+    "oklch": [
+     0.17,
+     0.015,
+     301
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.44,
+    "oklch": [
+     0.81,
+     0.075,
+     301
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.52,
+    "oklch": [
+     0.97,
+     0.012,
+     301
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.6,
+    "oklch": [
+     0.89,
+     0.065,
+     170
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.8,
+    "oklch": [
+     0.18,
+     0.09,
+     172
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.88,
+     0.015,
+     58
+    ],
+    "role": "field"
+   }
+  ]
+ },
+ {
+  "name": "Sorbet Cellar",
+  "mood": "the same mint, lavender and peach with no white: each pastel is paired with a deep version of itself, so the ramp is three rises and three falls",
+  "architecture": "complementary-tension",
+  "skeleton": "no-cliff",
+  "value_key": "mid",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.15,
+     0.015,
+     301
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.15,
+    "oklch": [
+     0.81,
+     0.07,
+     301
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.28,
+    "oklch": [
+     0.45,
+     0.125,
+     303
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.42,
+    "oklch": [
+     0.16,
+     0.015,
+     172
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.56,
+    "oklch": [
+     0.5,
+     0.1,
+     172
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.68,
+    "oklch": [
+     0.87,
+     0.015,
+     170
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.82,
+    "oklch": [
+     0.18,
+     0.09,
+     56
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.92,
+    "oklch": [
+     0.78,
+     0.115,
+     58
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.15,
+     0.015,
+     301
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Blush and Bracken",
+  "mood": "blush pink taken from rose down to near-black and sage taken from pale to bracken, meeting at a white flare",
+  "architecture": "duotone-plus",
+  "skeleton": "peak-early",
+  "value_key": "low",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.09,
+     0.015,
+     18
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.14,
+    "oklch": [
+     0.6,
+     0.14,
+     18
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.28,
+    "oklch": [
+     0.87,
+     0.065,
+     18
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.36,
+    "oklch": [
+     0.97,
+     0.012,
+     18
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.44,
+    "oklch": [
+     0.82,
+     0.062,
+     129
+    ],
+    "role": "field"
+   },
+   {
+    "pos": 0.64,
+    "oklch": [
+     0.28,
+     0.08,
+     130
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.8,
+    "oklch": [
+     0.65,
+     0.065,
+     129
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.09,
+     0.015,
+     18
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Sage Ember",
+  "mood": "sage across its full range with a single blush spark late; the spark is reached through a rose ink rather than through white",
+  "architecture": "near-monochrome-spark",
+  "skeleton": "peak-late",
+  "value_key": "mid",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.13,
+     0.015,
+     129
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.18,
+    "oklch": [
+     0.33,
+     0.08,
+     130
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.34,
+    "oklch": [
+     0.6,
+     0.065,
+     129
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.48,
+    "oklch": [
+     0.4,
+     0.075,
+     132
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.62,
+    "oklch": [
+     0.84,
+     0.055,
+     127
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.76,
+    "oklch": [
+     0.15,
+     0.015,
+     18
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.9,
+    "oklch": [
+     0.86,
+     0.06,
+     18
+    ],
+    "role": "accent"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.13,
+     0.015,
+     129
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Butter Storm",
+  "mood": "sky blue peaking early, dropping to navy, then a white flare opening onto butter and gold; a deep olive-gold closes it",
+  "architecture": "complementary-tension",
+  "skeleton": "double-peak",
+  "value_key": "low",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.09,
+     0.015,
+     238
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.14,
+    "oklch": [
+     0.68,
+     0.1,
+     238
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.28,
+    "oklch": [
+     0.3,
+     0.12,
+     242
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.4,
+    "oklch": [
+     0.97,
+     0.008,
+     240
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.52,
+    "oklch": [
+     0.93,
+     0.11,
+     100
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.66,
+    "oklch": [
+     0.78,
+     0.155,
+     98
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.82,
+    "oklch": [
+     0.24,
+     0.08,
+     96
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.09,
+     0.015,
+     238
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Butter Fathom",
+  "mood": "the blue family from ink-navy through sky to pale sky, then a single saturated butter struck out of the navy; no white, the top of the ramp is a real yellow",
+  "architecture": "near-monochrome-spark",
+  "skeleton": "peak-late",
+  "value_key": "mid",
+  "complexity": 3,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.13,
+     0.015,
+     240
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.18,
+    "oklch": [
+     0.38,
+     0.125,
+     240
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.36,
+    "oklch": [
+     0.72,
+     0.1,
+     238
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.52,
+    "oklch": [
+     0.86,
+     0.065,
+     236
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.72,
+    "oklch": [
+     0.16,
+     0.015,
+     240
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.86,
+    "oklch": [
+     0.88,
+     0.13,
+     100
+    ],
+    "role": "accent"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.13,
+     0.015,
+     240
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Reliquary",
+  "mood": "ultramarine, emerald and crimson held in balance, each entered from a deep ink, with one white flare at the top of the jade",
+  "architecture": "triad",
+  "skeleton": "peak-late",
+  "value_key": "low",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.08,
+     0.015,
+     265
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.1,
+    "oklch": [
+     0.41,
+     0.165,
+     265
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.24,
+    "oklch": [
+     0.16,
+     0.015,
+     268
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.36,
+    "oklch": [
+     0.53,
+     0.11,
+     166
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.5,
+    "oklch": [
+     0.76,
+     0.09,
+     168
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.6,
+    "oklch": [
+     0.97,
+     0.008,
+     168
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.72,
+    "oklch": [
+     0.48,
+     0.175,
+     16
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.88,
+    "oklch": [
+     0.24,
+     0.11,
+     14
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.08,
+     0.015,
+     265
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Reliquary Vespers",
+  "mood": "the cool green-and-blue mass against crimson, every transit made through a hued ink instead of white; the pale jade is the brightest thing in it",
+  "architecture": "complementary-tension",
+  "skeleton": "no-cliff",
+  "value_key": "mid",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.14,
+     0.015,
+     265
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.14,
+    "oklch": [
+     0.42,
+     0.16,
+     265
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.26,
+    "oklch": [
+     0.62,
+     0.13,
+     261
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.4,
+    "oklch": [
+     0.17,
+     0.015,
+     166
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.54,
+    "oklch": [
+     0.54,
+     0.11,
+     166
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.68,
+    "oklch": [
+     0.83,
+     0.015,
+     168
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.82,
+    "oklch": [
+     0.16,
+     0.1,
+     16
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.94,
+    "oklch": [
+     0.5,
+     0.175,
+     16
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.14,
+     0.015,
+     265
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Peacock Regalia",
+  "mood": "violet low and dark, teal rising to a white flare, gold falling away into bronze; the three hues never touch except at black and white",
+  "architecture": "triad",
+  "skeleton": "double-peak",
+  "value_key": "low",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.08,
+     0.015,
+     315
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.1,
+    "oklch": [
+     0.38,
+     0.13,
+     315
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.24,
+    "oklch": [
+     0.15,
+     0.015,
+     318
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.36,
+    "oklch": [
+     0.55,
+     0.09,
+     202
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.48,
+    "oklch": [
+     0.8,
+     0.07,
+     200
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.58,
+    "oklch": [
+     0.97,
+     0.008,
+     200
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.7,
+    "oklch": [
+     0.74,
+     0.15,
+     84
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.9,
+    "oklch": [
+     0.4,
+     0.1,
+     80
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.08,
+     0.015,
+     315
+    ],
+    "role": "ground"
+   }
+  ]
+ },
+ {
+  "name": "Peacock Nocturne",
+  "mood": "gold first and brightest, then teal, then violet, each rising from its own ink; no white - the pale aqua at the top still reads as teal",
+  "architecture": "complementary-tension",
+  "skeleton": "peak-early",
+  "value_key": "mid",
+  "complexity": 4,
+  "stops": [
+   {
+    "pos": 0.0,
+    "oklch": [
+     0.14,
+     0.015,
+     315
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.14,
+    "oklch": [
+     0.75,
+     0.15,
+     84
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.28,
+    "oklch": [
+     0.42,
+     0.105,
+     80
+    ],
+    "role": "mid"
+   },
+   {
+    "pos": 0.42,
+    "oklch": [
+     0.16,
+     0.015,
+     82
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.56,
+    "oklch": [
+     0.56,
+     0.09,
+     202
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 0.7,
+    "oklch": [
+     0.84,
+     0.07,
+     200
+    ],
+    "role": "glow"
+   },
+   {
+    "pos": 0.84,
+    "oklch": [
+     0.15,
+     0.015,
+     204
+    ],
+    "role": "ground"
+   },
+   {
+    "pos": 0.94,
+    "oklch": [
+     0.38,
+     0.13,
+     315
+    ],
+    "role": "anchor"
+   },
+   {
+    "pos": 1.0,
+    "oklch": [
+     0.14,
+     0.015,
+     315
+    ],
+    "role": "ground"
+   }
+  ]
+ }
+]
