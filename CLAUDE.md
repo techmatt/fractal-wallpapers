@@ -71,6 +71,21 @@ These were decided once, at the first commit, because each is expensive to rever
   come through, because a clone that cannot resolve the IDs the site's figures name
   cannot rebuild the site. The pictures stay ignored, the un-ignore names the three
   files one by one rather than by pattern, and it is not an oversight to tidy up.
+- **A tentative record is PUBLISHED only when Matt names it**, his ruling of
+  2026-09-04, and the hole above is per *stamp* because of it: the store is
+  ignored by default and each published stamp is one negation line. Recording a
+  gallery and committing it used to be a single act, which meant a record too
+  large to track was a record that could not be made — an n=2000 record's
+  `gallery.jsonl` and `index.html` are both over `MAX_TRACKED_BYTES`. Now every
+  other record **stays in the store, ignored and kept**; what it does not get is
+  a Durable-class save, check or restore and a place in an archive copy. It is
+  read by naming its stamp, `tentative.latest()` resolves over published stamps
+  only, and `curate solve list` marks each line. **Publication and durability
+  are different questions**: `tentative.protected_keys()` sweeps the whole store
+  published or not, so deleting a record is the only thing that releases its
+  seats to the prune. `tentative.PUBLISHED` and `.gitignore`'s negation lines
+  are one list written twice and `tests/test_tentative.py` holds them to
+  agreeing. **`LARGE_TEXT_ALLOWLIST` was not the answer and was not touched.**
 - **Weights come from GitHub Releases, not LFS.** `fractal-wallpapers fetch-weights`
   reads `models/weights.json` (head → release tag `weights-vN`, asset name, sha256),
   downloads into `models/<head>/`, and verifies the hash before keeping the file.
@@ -159,10 +174,11 @@ just its own file.
 test there is, and that is what CI runs and what runs before a checkpoint. The
 fast lane is for the edit-run loop and nothing else.
 
-Both are measured, not estimated. The **fast** lane is **97.61 s over the 3,573 it
+Both are measured, not estimated. The **fast** lane is **96.17 s over the 3,579 it
 holds, 116 deselected**, on this machine, 2026-09-04, on a `.[dev,models]` install
 with a release engine built. The **slow** lane is **6:31 over 3,681, nothing
-skipped**, same machine, same day. Every reading this lane has taken is in
+skipped**, same machine, same day — that one predates the six publication guards,
+so it is six short of what it would read now. Every reading this lane has taken is in
 [`tests/README.md`](tests/README.md#the-lanes-readings-in-order), with what the box
 was doing at the time — they are there and not here because this file loads into
 every session and a chronological log is not a rule. What stays here is the current

@@ -94,6 +94,34 @@ ALIAS_LENGTH = 8
 #: the reading, and a record cut to what fills is a record that hides it.
 RECORDED_SEATS = 1000
 
+#: **The stamps Matt has published**, oldest first. A published record is tracked
+#: — its three text files come through the hole in `.gitignore` — and it is the
+#: only kind an unstamped read can land on.
+#:
+#: Recording a gallery and publishing one used to be a single act: the hole was
+#: spelled per FILE across every stamp, so every record ever made was committed,
+#: and a record too large to track was a record that could not be made without
+#: breaking `tests/test_history_purity.py`. Matt's ruling of 2026-09-04 split
+#: them. A record is published when he names it; every other record stays in the
+#: store, kept and readable **by naming its stamp**, and what it does not get is a
+#: Durable-class save, check or restore and a place in an archive copy. It keeps
+#: everything else, including its seats: [`protected_keys`] sweeps the whole store
+#: and deleting the record is the only thing that releases them.
+#:
+#: **This list and `.gitignore`'s negation lines are one list written twice**, and
+#: `tests/test_tentative.py` fails if they disagree. Two spellings because git
+#: cannot read a Python tuple and this module must not shell out to git to answer
+#: what an unstamped read means.
+PUBLISHED: tuple[str, ...] = (
+    "20260902T161757Z",
+    "20260902T164622Z",
+    "20260903T234205Z",
+    "20260904T023748Z",
+    "20260904T080248Z",
+    "20260904T134242Z",
+    "20260904T233233Z",
+)
+
 
 class TentativeRefused(RuntimeError):
     """A tentative gallery cannot be recorded, read or browsed."""
@@ -143,10 +171,39 @@ def stamps() -> list[str]:
     return sorted(held.name for held in root.iterdir() if (held / ROWS_NAME).is_file())
 
 
+def published() -> list[str]:
+    """The [`PUBLISHED`] stamps this machine actually holds, oldest first.
+
+    Intersected with the store rather than returned whole, because a clone has
+    every published stamp's three text files but a machine that has never solved
+    holds no pictures for them — and a caller of this wants a record it can read.
+    """
+    held = set(stamps())
+    return [stamp for stamp in PUBLISHED if stamp in held]
+
+
 def latest() -> str:
-    """The newest recorded gallery, which is what an unstamped read means."""
-    held = stamps()
+    """The newest PUBLISHED gallery, which is what an unstamped read means.
+
+    **Published and not merely newest**, Matt's ruling of 2026-09-04. An
+    unstamped read is a reader who has not said which gallery they mean, and the
+    honest default is the newest one a clone could also resolve — otherwise the
+    next experimental record silently becomes the answer for every figure prompt,
+    naming IDs that exist on one machine. An unpublished record is read by naming
+    its stamp, which is the whole way it is reached.
+    """
+    held = published()
     if not held:
+        unpublished = [stamp for stamp in stamps() if stamp not in set(PUBLISHED)]
+        if unpublished:
+            raise TentativeRefused(
+                f"no PUBLISHED tentative gallery on this machine, though "
+                f"{len(unpublished)} unpublished record(s) are in the store "
+                f"({tracked_name(store_root())}): {', '.join(unpublished)}. Name one by "
+                f"its stamp, or publish it — `curation.tentative.PUBLISHED` and the "
+                f"negation lines in `.gitignore` are the list, and adding to it is "
+                f"Matt's decision."
+            )
         raise TentativeRefused(
             f"no tentative gallery has been recorded on this machine "
             f"({tracked_name(store_root())}). `curate solve record` writes one."

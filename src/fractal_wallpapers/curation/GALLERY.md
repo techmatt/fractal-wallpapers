@@ -1119,6 +1119,25 @@ the site's figures name wallpapers by these IDs: a clone that cannot resolve the
 rebuild the site. A fourth file appearing in a stamp is ignored until somebody decides
 otherwise, which is why the un-ignore lists names rather than a pattern.
 
+**Tracked only once Matt PUBLISHES the stamp**, his ruling of 2026-09-04, and the hole is
+per stamp because of it: the store is ignored by default and each published stamp is one
+negation line beside `curation.tentative.PUBLISHED`, which is the same list in code.
+Recording a gallery and committing it were one act until then, so a record too large to
+track was a record that could not be made — an n=2000 record's `gallery.jsonl` and
+`index.html` are **both over the 1 MiB `tests/test_history_purity.py` allows**, at 1.06
+and 1.18 MB for the 1,795 seats of `20260904T234133Z`. Every unpublished record stays in
+the store, kept and read **by naming its stamp**; `tentative.latest()` — what an unstamped
+`browse` or `resolve` means — walks published stamps only, so an experiment can never
+become the default answer for a figure prompt and hand out IDs that exist on one machine.
+`curate solve list` marks every line.
+
+**Publication and durability are different questions, and the protection below is the
+durable one.** An unpublished record is *kept*: `protected_keys` sweeps the whole store
+whatever `PUBLISHED` says, so deleting the record is the only thing that releases its
+seats. What publication buys is a clone; what it does not buy is protection, because that
+was never scarce. What an unpublished record gives up is a Durable-class save, check or
+restore and a place in an archive copy.
+
 **The record is a protection class in the prune.** `candidate_ledger.RETAINED_TENTATIVE`
 joins the four that were already there. It is needed for a sharper reason than the
 release row's: a seat is chosen on the *gallery's* objective, over a view, against the
@@ -1429,9 +1448,13 @@ it, which is what a sweep seating one pool four ways passes.
 **`solve.DEFAULT_SPIRAL_CAP = 0.10` since 2026-09-04. Matt's ruling.** It was
 `None`, which means **every solve record on this machine that does not name the
 flag ran uncapped** and is not comparable with one that ran under this. Of the
-tracked tentative galleries, `20260904T023748Z` is the only capped one; the two
-after it — `20260904T080248Z` and `20260904T134242Z` — ran uncapped, and the three
-before it carry no spiral block at all because the store did not exist yet.
+tracked tentative galleries, two are capped and they are capped for different
+reasons: `20260904T023748Z` named the flag, and `20260904T233233Z` is the first
+record taken after the ruling and did not have to. Between them,
+`20260904T080248Z` and `20260904T134242Z` ran uncapped, and the three before
+`20260904T023748Z` carry no spiral block at all because the store did not exist
+yet. **A record's `config.spiral_cap` is the only thing worth reading here**; the
+dates are what made the list, not what settles it.
 
 What the cap costs and what it acts on, off `20260904T023748Z`, which is the first
 gallery that ran one: **27 seats of 1000** at `n = 1000` (914 against 941), every
@@ -2074,6 +2097,18 @@ engine began reporting the flag and carry its own word; the other eight predate 
 and were filled by the backfill register, where `texture_flat.flat_for` answers
 `true` for all eight and `false` for the ten it was never asked to probe. Both
 routes agree, and `routed_mode_of` answers `smooth` for all eighteen.
+
+**The same shape a record later, and the incident that says why it is worth
+repeating.** On stamp `20260904T023748Z`: **17 of 914 seats**, every one seat
+`smooth` against recipe `itinerary`, every one `texture_flat` — no other seat of
+the 914 disagrees with its recipe, so the disagreeing set is exactly the routed
+one at both sizes. **A leg that read `gallery.mode` and re-rendered at it drew 17
+wrong pictures and reported them as stale files**, a finding that survived until
+the seats were re-rendered at `recipe["mode"]` and came back sha256-identical, 17
+of 17. A reader that renders a seat renders at `recipe["mode"]` on the ledger row
+the `key` names; `gallery.mode` answers which pile the row is *counted* in and is
+not a render instruction. The site does not make the mistake — `picks.wallpaper_row`
+reads `recipe["mode"]` and draws all 17 as `itinerary`.
 
 **The row's `mode_params` are the recipe's and its `mode` is the routed one, and
 they are deliberately not taken from the same place.** A seat carries the settings

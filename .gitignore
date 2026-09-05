@@ -9,12 +9,30 @@ scratch/
 # that a fourth file appearing in a stamp is ignored until somebody decides
 # otherwise. Git will not descend into an excluded DIRECTORY, which is why each
 # level is excluded by its contents (`dir/*`) and then re-included.
+#
+# **The hole is per-stamp and the default is IGNORED**, Matt's ruling of
+# 2026-09-04. It used to be per-file across every stamp, so recording a gallery
+# and committing it were one act and a record too large to track was a record
+# that could not be made without breaking the build. Now a record is PUBLISHED
+# only when Matt names it, which is one negation line below; every other record
+# stays in the store, kept and readable by naming its stamp, with no durability
+# guarantee. `curation.tentative.PUBLISHED` is the same list in code and
+# `tests/test_tentative.py` holds the two to agreeing.
 artifacts/*
 !artifacts/curation/
 artifacts/curation/*
 !artifacts/curation/tentative/
 artifacts/curation/tentative/*
-!artifacts/curation/tentative/*/
+# The published stamps, one line each. Adding one is Matt's decision, not a fix.
+!artifacts/curation/tentative/20260902T161757Z/
+!artifacts/curation/tentative/20260902T164622Z/
+!artifacts/curation/tentative/20260903T234205Z/
+!artifacts/curation/tentative/20260904T023748Z/
+!artifacts/curation/tentative/20260904T080248Z/
+!artifacts/curation/tentative/20260904T134242Z/
+!artifacts/curation/tentative/20260904T233233Z/
+# Inside a published stamp, only the three text files. An unpublished stamp is an
+# excluded directory git never descends into, so these never reach one.
 artifacts/curation/tentative/*/*
 !artifacts/curation/tentative/*/gallery.jsonl
 !artifacts/curation/tentative/*/manifest.json

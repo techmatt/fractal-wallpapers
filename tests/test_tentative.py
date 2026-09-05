@@ -16,6 +16,7 @@ solves, or opens a picture.
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 from tests.test_candidate_ledger import decision, isolated  # noqa: F401  (a fixture)
@@ -81,6 +82,11 @@ def store(tmp_path, monkeypatch):
 
     monkeypatch.setenv(paths.HOT_ROOT_VARIABLE, str(tmp_path / "artifacts"))
     (tmp_path / "artifacts").mkdir()
+    # Every synthetic record is published, because `PUBLISHED` names the stamps of
+    # this machine and a test writes stamps of its own. Without this an unstamped
+    # read would refuse in here for a reason no test in this file is about. The
+    # gate itself is tested below against `PUBLISHED` directly.
+    monkeypatch.setattr(tentative, "published", tentative.stamps)
     return tmp_path / "artifacts"
 
 
@@ -500,3 +506,106 @@ def test_the_protection_is_wired_into_the_prune_and_not_only_declared():
     body = inspect.getsource(candidate_ledger._prune_protections)
     assert "tentative.protected_keys()" in body
     assert "RETAINED_TENTATIVE:" in body
+
+
+# --------------------------------------------------------------------------- #
+# Publication: which records a clone gets, and what an unstamped read means.
+# --------------------------------------------------------------------------- #
+REPO_ROOT = Path(__file__).resolve().parents[1]
+
+#: How `.gitignore` spells one published stamp.
+NEGATION = "!artifacts/curation/tentative/"
+
+
+def negated_stamps() -> list[str]:
+    """The stamps `.gitignore` un-ignores, in the order it names them."""
+    held = []
+    for line in (REPO_ROOT / ".gitignore").read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line.startswith(NEGATION):
+            continue
+        rest = line[len(NEGATION) :]
+        if rest.endswith("/") and "*" not in rest:
+            held.append(rest.rstrip("/"))
+    return held
+
+
+def test_the_published_list_and_the_gitignore_negations_are_one_list():
+    """Two spellings of Matt's ruling, and nothing but this holds them together.
+
+    Git cannot read a Python tuple and `tentative` must not shell out to git to
+    answer what an unstamped read means, so the list is written twice. Drift has
+    a silent failure on each side: a stamp in `PUBLISHED` that git ignores is an
+    ID `latest()` hands out and a clone cannot resolve, and a stamp git tracks
+    that `PUBLISHED` omits is a record shipped to everybody that no unstamped
+    read will ever reach.
+    """
+    assert negated_stamps() == list(tentative.PUBLISHED)
+
+
+def test_every_published_stamp_is_actually_in_the_tree():
+    """A published stamp is tracked, so a clone has its three text files. One
+    named in both lists and absent from the tree is an ID that resolves nowhere."""
+    for stamp in tentative.PUBLISHED:
+        directory = REPO_ROOT / "artifacts" / "curation" / "tentative" / stamp
+        for name in (tentative.ROWS_NAME, tentative.MANIFEST_NAME, tentative.PAGE_NAME):
+            assert (directory / name).is_file(), f"{stamp}/{name} is published and not here"
+
+
+def recorded(directory: Path, stamp: str, key: str) -> None:
+    """One stamp holding one row, which is all `stamps` asks of a gallery."""
+    (directory / stamp).mkdir(parents=True)
+    (directory / stamp / tentative.ROWS_NAME).write_text(
+        json.dumps({"key": key}) + "\n", encoding="utf-8"
+    )
+
+
+def test_an_unstamped_read_lands_on_the_newest_PUBLISHED_record(tentative_store, monkeypatch):
+    """The ruling: recording a gallery does not publish it. An experimental
+    record left in the store must not become the answer for every figure prompt,
+    naming IDs that exist on one machine."""
+    for stamp in ("20260101T000000Z", "20260202T000000Z", "20260303T000000Z"):
+        recorded(tentative_store, stamp, stamp)
+    monkeypatch.setattr(tentative, "PUBLISHED", ("20260101T000000Z", "20260202T000000Z"))
+
+    assert tentative.stamps()[-1] == "20260303T000000Z"
+    assert tentative.latest() == "20260202T000000Z"
+    assert tentative.published() == ["20260101T000000Z", "20260202T000000Z"]
+    # The unpublished one is still READ, by naming it. That is the whole way it
+    # is reached, and it is kept rather than swept.
+    assert tentative.read_rows("20260303T000000Z") == [{"key": "20260303T000000Z"}]
+
+
+def test_a_published_stamp_this_machine_does_not_hold_is_not_offered(tentative_store, monkeypatch):
+    """`published` intersects with the store. A clone has every published stamp's
+    text files, but a machine that has never solved holds no pictures for them —
+    and `latest` answers a reader who is about to read one."""
+    recorded(tentative_store, "20260101T000000Z", "k0")
+    monkeypatch.setattr(tentative, "PUBLISHED", ("20260101T000000Z", "20260909T000000Z"))
+
+    assert tentative.published() == ["20260101T000000Z"]
+    assert tentative.latest() == "20260101T000000Z"
+
+
+def test_an_unpublished_record_is_named_in_the_refusal_rather_than_ignored(
+    tentative_store, monkeypatch
+):
+    """A store holding only unpublished records refuses an unstamped read, and
+    says which stamps are there — otherwise the reader is told nothing has been
+    recorded while looking at a folder full of records."""
+    recorded(tentative_store, "20260303T000000Z", "k0")
+    monkeypatch.setattr(tentative, "PUBLISHED", ())
+
+    with pytest.raises(tentative.TentativeRefused, match="20260303T000000Z"):
+        tentative.latest()
+
+
+def test_the_protection_keeps_an_unpublished_record_too(tentative_store, monkeypatch):
+    """**Publication and durability are different questions**, Matt's ruling. An
+    unpublished record is kept: deleting it is the only thing that releases its
+    seats, so `protected_keys` sweeps the whole store and never `PUBLISHED`."""
+    recorded(tentative_store, "20260101T000000Z", "k0")
+    recorded(tentative_store, "20260303T000000Z", "k1")
+    monkeypatch.setattr(tentative, "PUBLISHED", ("20260101T000000Z",))
+
+    assert tentative.protected_keys() == {"k0", "k1"}
