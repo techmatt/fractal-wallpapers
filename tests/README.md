@@ -72,6 +72,14 @@ from. So the question to ask of a leg before sharing the box with it is what its
 an hour later once that leg had finished — so beside a leg it survives and tells
 you nothing about the tests, which is why the rule stands unchanged.
 
+**And the box's own commit charge drifts upward whether anything runs or not.**
+The kernel leaks about **4 GiB a day**, attributed to no process, and a reboot is
+the only thing that reclaims it — the pagefile was never the cause. What it looks
+like when it has gone too far is a launch dying on `WinError 1455` with nothing
+naming why, which is a fact about uptime rather than about the leg or the lane.
+**Reboot the box before an overnight or any two-job night if its uptime is past a
+week**, and read a lane taken on a box near that limit as the box.
+
 ## What "the fast-lane count" means
 
 One definition, because three sessions on one tree wrote down three totals and

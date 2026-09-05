@@ -203,6 +203,14 @@ new in 168 minutes — not a leg to skip re-probing for), **93.0%** (seven new f
 576 seeds). The floor of 100 consumed seeds is there because a leg that fired at
 nine and found nothing new is not a measurement of anything.
 
+**`reframe_g8` read 57.5%** [measured 2026-09-04], which is below the trigger, so
+the chain's next leg does not re-probe. Two counts stand beside it and neither is
+a rate: **3,616 promotions remain unfired** on the queue, and the **location
+store's 541 roots have been barren since g1-g5** — `fired` cannot say so for the
+legs that ran before the barren half was recorded, which is the whole of what
+*A root that was fired and got nothing* below closes. Both move with every leg;
+read them off the newest run record rather than off this line.
+
 ### A root that was fired and got nothing
 
 **Every seed a leg fires gets a row, whatever the firing returned.** It is a

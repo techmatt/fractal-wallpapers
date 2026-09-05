@@ -254,6 +254,14 @@ stopped obeying between the times somebody remembered it.
 | before, 2026-08-29 | 366,236 | 1,057.3 MiB |
 | after | 122,516 | 150.8 MiB |
 
+**The stress test the size is read against is ten thousand hours.** A durable
+record's size must scale with knowledge gained and never with work done, so
+multiply a store's observed growth by `10,000 h ÷ hours run` and look at the
+answer; if it is absurd, the design is wrong now rather than later. A file read
+in full carries a stated bound, retention that drops the picture drops the row,
+per-render facts go in counters or run records, and a leg's own measurement
+record retires whole rather than being pruned by row.
+
 Re-running the rule over the store is a fixed point: 122,516 of 122,516 rows
 kept, nothing dropped, 18.4 s to decide. The 243,720 rows the rule let go were
 **deleted** rather than archived, with their pictures, on Matt's ruling: everything removed is either retained already
@@ -530,7 +538,10 @@ Every render is at one regime (640x360 ss2), every one still has its picture on
 disk, none is recipe-only, and **no candidate render in any pass or any run
 carries an engine stamp** — `engine_fingerprint` stamps a view directory and
 candidates were never written to one — so the whole backfilled pool is
-pre-stamp material accepted as unknown-engine, by rule.
+pre-stamp material accepted as unknown-engine, by rule. **That population is
+182,132 rows** [measured], the candidate rows written before 2026-09-02; the pin
+guards views only, and Matt's ruling is that pre-stamp material is accepted as
+unknown-engine rather than re-rendered.
 
 **A row written from 2026-09-02 says which build drew it, and nothing acts on
 it.** `candidate_ledger.row` takes the identity digest — `engine_fingerprint`'s

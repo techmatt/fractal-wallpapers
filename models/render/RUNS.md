@@ -52,7 +52,11 @@ on two different slices.
 **The two deploy bands** are `renders deploy`, three seeds each over the corpus as
 it stood. `deploy` shipped weights-v5 out of `deploy_seed1`; `deploy_v6` shipped
 weights-v6 out of `deploy_v6_seed0` on 2026-09-03 and `render.v5.fp16.pt` sits
-beside the shipped artifact so a revert is one act. The first band keeps bare
+beside the shipped artifact so a revert is one act. **v6 puts a flat `1.0000` on
+thousands of rows** [measured, ckpt 103], which is the shape of a gate rather than
+a ranker: two thirds of what it is surest about is a three, and it has no order
+inside its own top on any kind. Read a v6 top-end ordering as absent rather than
+as weak. The first band keeps bare
 `deploy_seed<N>` names because its records are on disk under them; every later band
 prefixes its own. These six split 80/20 over **lineages** with a pinned 598 held
 out, and nothing about a deploy run answers a bar — `deploy_v6` was adopted on

@@ -69,6 +69,12 @@ carries both pre-registered reads *with their verdicts*, because they did not
 agree — the split bar reads FAIL and the stock bar reads PASS — and a record that
 listed two paths would read as "passed both".
 
+**One in-sample line.** Over the q4 nuclei the reframe channel promoted off this
+head's own reads, the head ranks its own picks at a **median `P(≥4)` of 0.843**
+[measured, ckpt 103]. That is an in-sample number and is not evidence the head
+orders the top end — it is the head agreeing with itself about what it liked one
+step ago. Price it against a person's verdicts before believing it.
+
 **One validity line.** The offer-body rank validation that retired curation's
 never-rank-the-mandelbrot-offer rule — ρ = 0.582 over the body, serve-top-down —
 measured the **incumbent's** ranks, through `4b60deb9…`. The candidate's

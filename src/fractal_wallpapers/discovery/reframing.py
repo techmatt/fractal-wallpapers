@@ -21,8 +21,8 @@ proven roots (label store, q3 and q4, parameter planes, pins excluded)
         │  expand_neighborhood      distinct atoms around it
         ▼
    one nucleus                      deduplicated on the atom key, across the run
-        │  8x 12x 16x 24x 32x       the nine rungs, offered directly
-        │  48x 64x 96x 128x
+        │  16x 24x 32x 48x 64x      the nine rungs, offered directly
+        │  96x 128x 192x 256x
         ▼
    engine.screen                    the walk's own gate battery, node regime
         │  the location head over the frames it just drew

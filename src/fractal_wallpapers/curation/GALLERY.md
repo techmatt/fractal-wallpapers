@@ -301,7 +301,9 @@ after the whole leg: at **n=750** 716 → 750 with the worst seat and the shortf
 both untouched; at **n=1000** 911 → 1000 with the worst seat 0.188159 → 0.093308
 and the shortfall 0 → 3; at **n=2000** 1,621 → 1,930 with 0 → 13. The entering rows
 sit around a 0.31 median rank key against 0.50 for the seats they displace — two
-weaker wallpapers for one better one. Step 6 exists to buy back what it can.
+weaker wallpapers for one better one. Step 6 exists to buy back what it can, and at
+n=1000 it buys all of it: the **shortfall goes 3 → 0** on the second swap loop with
+the sum above the incumbent, so only the worst-seated tier pays for the chains.
 
 **The seat count is carried by the stage and not by `rules.State`.** `refuses`
 answers "may this sit beside the seated" and `n` is not one of its rules: the seed
@@ -326,6 +328,13 @@ shipping rungs, while n=2000 ran 574 s without exhausting and there it binds and
 meant to. **The readout says which happened** — `exhaustive` on the depth block is
 the difference between *no chain of depth ≤ 2 exists* and *none was found in the
 time given*, and the blockage block is only interpretable beside it.
+
+**At n=2000 it is a budget question and the exhaustive cost is unknown** — over
+30 minutes, and nothing has run it to the end. What dominates there is the **chain
+search and not the diversity rule**: the search is **40% of augment time at n=2000
+against 91% at n=1000** [measured], so the next speedup at the larger rung is in the
+search rather than in `Twins.within`. The shipped stage seats 1,795 at 300 s and
+1,984 at 1,800 s, neither exhausted and no mode short.
 
 ### The objective, and why nothing guards a met demand
 
@@ -661,6 +670,23 @@ the 0.03809 that stood until 2026-09-05, when he took it to 0.90 of *that* — 0
 eye rather than off a sitting. `curation.ceiling.TAU` carries both moves and what the second
 cost; the sentence above is what the audit said before either was taken and is left as it was
 written.
+
+**What the 2026-09-05 move was read off.** A 200-pair boundary sheet, Matt's eye:
+**88 pairs were ruled too close and all 88 were admitted-side** — pairs the standing
+threshold was letting through — which is 9% of the view. The fit never crossed 0.5 and
+the objective is flat below 0.85x, so 0.90x is a choice inside a flat region and not a
+crossing. At n=1000 τ moves **no seat count** — every candidate fills — and what it
+moves is worst/sum and *which* thousand: **158 seats turned over at 0.90x** [measured].
+⚠ **The twin rule holds back about 34% of the view at τ**; the rejection ledger's twin
+count (41 on that record) undercounts it badly because twin runs last, so read the
+crossing sweep and never the ledger column.
+
+**The colour-and-geometry gate is dead, and was measured rather than dropped**:
+**AUC 0.448** — below chance — so a signature that mixes colour with geometry cannot
+separate the pairs a person calls twins. Two near-white pictures with different
+geometry collapse in a colour signature, which is the mechanism. The shipped test is
+the pixel-cloud metric alone; a themed pass swaps it for the geometry-only `Places`
+rule at radius 0.07, and τ is not in the themed path at all.
 
 **The record is already the refusal log, so an audit like this needs no re-solve.**
 `solve.json`'s `diversity_refusals` carries, per refused candidate, the seat it collided with,
@@ -1203,6 +1229,16 @@ row. Without the class an alias would stop resolving and nothing would say so.
 `tests/test_tentative.py` pins it through a real prune, on `saved_by_a_protection`,
 which counts exactly the protected keys the rank verdict dropped.
 
+⚠ **A third of a gallery's seats cannot be re-derived, and the record is what ships
+because of it.** Measured over two records: **33.4% of seats are
+`acted_unrecoverable`** — **305 of 914** on `20260904T023748Z` and **243 of 1,000** on
+`20260904T233233Z` — because a `depth` row's stored picture is the *levelled* picture
+the judge scored and re-measuring derives a different curve. It is a STEM join; a key
+join loses the `runs` and `reframe_draw` rows and reads lower. Re-rendering is not a
+way out of this, which is why the website ships the stored file and never a re-draw
+(`builder/checks.py`'s `seats`). The reader is `depth.levelling_of`, three-way, off
+`sequence.jsonl`'s whole stamp.
+
 **The page is one file and it opens over `file://`.** The rows are embedded as JSON
 rather than fetched — a `fetch` of a sibling file is refused there — the styling is
 inline, and the only external references are relative paths to the pool's own 640x360
@@ -1738,7 +1774,17 @@ demand still met, 14 of 14 modes represented, and it **bound to the last seat** 
 was 27.75% spiral on the clearing rows and the gallery was **already 26.4%** before
 any cap existed, so the diversity rule and the colour allowance between them were
 suppressing spirals by about a point and a half. A tenth is under half of what the
-gallery was doing unaided, which is why this is a ruling and not a tuning.
+gallery was doing unaided, which is why this is a ruling and not a tuning. The 27
+seats are a **net** figure and the churn under them is larger: **24% of the gallery
+turned over** [measured] to give them back.
+
+**It binds to the last seat at every rung it has been run at**, which is the shape
+rather than the number: **101 of 101, 180 of 180, 199 of 199** allowed and taken,
+beside the 92 of 92 above. `ceil(0.10 x (filled + 1))` is evaluated during a walk
+that fills by scarcity, so the allowance a mandated spiral meets is the allowance at
+*that* seat and not at the finished count — which is why a cap denominated in `n`
+would not bind here. Spirals are a **location** property: the clearing pool runs
+about **28% spiral** and a seating takes **20.8%** of them before any cap.
 
 **Three answers and not two, so `0` is not the spelling for `none`.** `none` (or
 `off`) runs no cap at all and the `spiral` refusal column is zero by construction;
