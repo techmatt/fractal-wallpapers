@@ -544,12 +544,66 @@ def test_the_published_list_and_the_gitignore_negations_are_one_list():
 
 
 def test_every_published_stamp_is_actually_in_the_tree():
-    """A published stamp is tracked, so a clone has its three text files. One
-    named in both lists and absent from the tree is an ID that resolves nowhere."""
+    """A published stamp is tracked, so a clone has its two text files. One named
+    in both lists and absent from the tree is an ID that resolves nowhere."""
     for stamp in tentative.PUBLISHED:
         directory = REPO_ROOT / "artifacts" / "curation" / "tentative" / stamp
-        for name in (tentative.ROWS_NAME, tentative.MANIFEST_NAME, tentative.PAGE_NAME):
+        for name in (tentative.ROWS_NAME, tentative.MANIFEST_NAME):
             assert (directory / name).is_file(), f"{stamp}/{name} is published and not here"
+
+
+def tracked(pattern: str) -> list[str]:
+    """`git ls-files` on one pathspec, from the repository root."""
+    import subprocess
+
+    done = subprocess.run(
+        ["git", "ls-files", "--", pattern],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return [line for line in done.stdout.splitlines() if line.strip()]
+
+
+def test_the_page_is_a_derivation_and_no_stamp_tracks_one():
+    """Matt's ruling of 2026-09-05: a record is `gallery.jsonl` plus the manifest,
+    and `index.html` is a browse view `curate solve browse <stamp>` writes from
+    the rows. It was tracked per published stamp until then, which put 4.1 MB of
+    derivation in the history against the rows' 2.5 MB.
+
+    Both halves are asserted, because either alone passes for the wrong reason: a
+    published stamp still tracks its rows, and NO stamp tracks a page. `.gitignore`
+    and `tentative.PUBLISHED` cannot say the second on their own — an un-ignore
+    stops nothing that git already has in the index, which is why the seven were
+    removed from it by hand and why this guards the index and not the rules.
+    """
+    assert tracked("artifacts/curation/tentative/*/" + tentative.PAGE_NAME) == []
+    rows = tracked("artifacts/curation/tentative/*/" + tentative.ROWS_NAME)
+    assert sorted(Path(name).parent.name for name in rows) == sorted(tentative.PUBLISHED)
+
+
+def test_the_page_is_written_from_the_two_tracked_files_alone(tentative_store):
+    """The claim that makes the page droppable: a stamp holding nothing but the
+    two TRACKED files can write it. That is what a clone has, and it is why
+    `curate solve browse <stamp>` is the answer to an untracked `index.html`."""
+    stamp = "20260905T000000Z"
+    directory = tentative_store / stamp
+    directory.mkdir(parents=True)
+    (directory / tentative.ROWS_NAME).write_text(
+        json.dumps({"key": "abcdef0123456789", "alias": "abcdef01", "picture": "a.jpg"}) + "\n",
+        encoding="utf-8",
+    )
+    (directory / tentative.MANIFEST_NAME).write_text(
+        json.dumps({"seats": {"asked": 1, "filled": 1}}), encoding="utf-8"
+    )
+    assert not (directory / tentative.PAGE_NAME).exists()
+
+    written = tentative.page(stamp, log=lambda *_: None)
+
+    assert written == directory / tentative.PAGE_NAME
+    held = written.read_text(encoding="utf-8")
+    assert "abcdef0123456789" in held and stamp in held
 
 
 def recorded(directory: Path, stamp: str, key: str) -> None:

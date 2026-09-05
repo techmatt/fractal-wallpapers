@@ -66,17 +66,20 @@ These were decided once, at the first commit, because each is expensive to rever
   toolchain noise. Do not interleave tracked and ignored content beyond that — a
   tracked file inside an ignored tree is how these rules rot. **There is exactly
   one hole and it is deliberate**, decided in `SET_twin_tau_0p65_and_geometry_gate`:
-  a tentative gallery's three *text* files
-  (`artifacts/curation/tentative/<stamp>/{gallery.jsonl,manifest.json,index.html}`)
+  a tentative gallery's two *text* files
+  (`artifacts/curation/tentative/<stamp>/{gallery.jsonl,manifest.json}`)
   come through, because a clone that cannot resolve the IDs the site's figures name
-  cannot rebuild the site. The pictures stay ignored, the un-ignore names the three
+  cannot rebuild the site. The pictures stay ignored, the un-ignore names the two
   files one by one rather than by pattern, and it is not an oversight to tidy up.
+  **`index.html` was the third until 2026-09-05** and is not tracked for any stamp:
+  Matt's ruling that a record is its rows plus its manifest and the page is a
+  browse view `curate solve browse <stamp>` regenerates from them.
 - **A tentative record is PUBLISHED only when Matt names it**, his ruling of
   2026-09-04, and the hole above is per *stamp* because of it: the store is
   ignored by default and each published stamp is one negation line. Recording a
   gallery and committing it used to be a single act, which meant a record too
   large to track was a record that could not be made — an n=2000 record's
-  `gallery.jsonl` and `index.html` are both over `MAX_TRACKED_BYTES`. Now every
+  `gallery.jsonl` is over `MAX_TRACKED_BYTES`. Now every
   other record **stays in the store, ignored and kept**; what it does not get is
   a Durable-class save, check or restore and a place in an archive copy. It is
   read by naming its stamp, `tentative.latest()` resolves over published stamps
@@ -174,11 +177,11 @@ just its own file.
 test there is, and that is what CI runs and what runs before a checkpoint. The
 fast lane is for the edit-run loop and nothing else.
 
-Both are measured, not estimated. The **fast** lane is **101.72 s over the 3,600 it
+Both are measured, not estimated. The **fast** lane is **105.44 s over the 3,637 it
 holds, 116 deselected**, on this machine, 2026-09-05, on a `.[dev,models]` install
 with a release engine built. The **slow** lane is **6:11 over 3,716, nothing
 skipped**, same machine, same day, both on an idle box once that day's render leg
-had finished. Every reading this lane has taken is in
+had finished — the slow figure is the older tree's and is due a re-reading. Every reading this lane has taken is in
 [`tests/README.md`](tests/README.md#the-lanes-readings-in-order), with what the box
 was doing at the time — they are there and not here because this file loads into
 every session and a chronological log is not a rule. What stays here is the current

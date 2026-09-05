@@ -84,17 +84,24 @@ from fractal_wallpapers.curation import ceiling
 #: diversity rule silently stops applying to exactly the candidates nothing can
 #: check, and that has put untested rows in a shipped gallery before.
 #:
-#: `spiral` sits **last among the counted rules**, and the placement is the
-#: measurement. A candidate refused here is one every colour rule already
-#: admitted, so the column counts seats the share cap cost and not seats the
-#: allowance would have refused anyway. Put first it would mask `cell_allowance`
-#: and read as far more expensive than it is.
+#: `spiral` and `mode_ceiling` sit **last among the counted rules**, and the
+#: placement is the measurement. A candidate refused at either is one every colour
+#: rule already admitted, so the column counts seats the share cap cost and not
+#: seats the allowance would have refused anyway. Put first, either would mask
+#: `cell_allowance` and read as far more expensive than it is.
+#:
+#: `mode_ceiling` is last of the two for the same argument one level down. The two
+#: caps are near-independent — one reads the location's spiral verdict and the
+#: other the candidate's mode — but a mode the spiral cap is already suppressing
+#: would have its own column inflated by the pairing, and the ceiling is a guard
+#: whose whole reading is *did it bind*. Cheapest true answer last.
 RULES = (
     "location",
     "group_cap",
     "cell_allowance",
     "family_allowance",
     "spiral",
+    "mode_ceiling",
     "picture_unreadable",
     "twin",
 )
@@ -780,7 +787,14 @@ class State:
     asks [`requirements`] and never has to copy it.
     """
 
-    def __init__(self, rule: ceiling.Rule, n: int, diversity=None, spiral_cap: float | None = None):
+    def __init__(
+        self,
+        rule: ceiling.Rule,
+        n: int,
+        diversity=None,
+        spiral_cap: float | None = None,
+        mode_ceilings: dict | None = None,
+    ):
         self.rule = rule
         self.n = int(n)
         #: The diversity rule, or `None` where a caller asked for none.
@@ -790,6 +804,16 @@ class State:
         #: spelled by a caller who wants the record to say the cap ran and did
         #: not bind; `None` is spelled by one who did not ask for a cap at all.
         self.spiral_cap = None if spiral_cap is None else float(spiral_cap)
+        #: `{mode: what share of the realized seats that mode may take}`. Empty is
+        #: no per-mode ceiling at all, which is what every record before
+        #: 2026-09-05 ran under; a mode absent from the mapping is uncapped by
+        #: this rule whatever the others hold. Same shape and same arithmetic as
+        #: [`spiral_cap`] deliberately — one spelling of "a share of the seats
+        #: that actually filled", [`ceiling.share_of`], so a cap and a target
+        #: cannot come to two answers about what the quantity is.
+        self.mode_ceilings = {
+            str(mode): float(share) for mode, share in (mode_ceilings or {}).items()
+        }
         #: `{key: (candidate, why it was seated)}`, in the order seated.
         self.seated: dict = {}
         #: `{location: the one key seated there}`. One wallpaper per location is
@@ -909,6 +933,36 @@ class State:
         return len(self.spirals) + 1 > allowance
 
     # ------------------------------------------------------------------ #
+    # The per-mode ceiling.
+    # ------------------------------------------------------------------ #
+    def mode_allowance(self, mode) -> int | None:
+        """How many seats this mode may take. `None` where no ceiling names it.
+
+        [`spiral_allowance`]'s arithmetic exactly — `ceil(X * (filled + 1))`
+        through [`ceiling.share_of`] — and every word of that method's argument
+        applies here unchanged: the `+ 1` is the warm-up that lets the first seat
+        of an empty gallery be anything, and the swap loop needs no second
+        spelling because a 1-swap does not move `filled`.
+
+        A ceiling is a **guard** and not a target: it is set where a runaway would
+        be, above what the gallery does unaided, and the reading it is there to
+        give is *did it bind*. `mode_ceiling` in the refusal column is that
+        reading, and a zero there is the answer the ruling expects.
+        """
+        share = self.mode_ceilings.get(str(mode))
+        if share is None:
+            return None
+        return ceiling.share_of(share, self.filled + 1)
+
+    def refuses_by_mode_ceiling(self, candidate) -> bool:
+        """Whether the per-mode ceiling is what stands between this candidate and
+        a seat. A mode the ceiling does not name is never refused here."""
+        allowance = self.mode_allowance(candidate.mode)
+        if allowance is None:
+            return False
+        return len(self.modes.get(candidate.mode, ())) + 1 > allowance
+
+    # ------------------------------------------------------------------ #
     # The rules.
     # ------------------------------------------------------------------ #
     def counted_refusal(self, candidate) -> str | None:
@@ -931,6 +985,8 @@ class State:
                 return "family_allowance"
         if self.refuses_as_spiral(candidate):
             return "spiral"
+        if self.refuses_by_mode_ceiling(candidate):
+            return "mode_ceiling"
         return None
 
     def refuses(self, candidate) -> str | None:
@@ -986,6 +1042,10 @@ class State:
             # One seated spiral has to go. See [`spiral_allowance`] on why the
             # post-swap gallery is valid under the same inequality.
             wanted.append(set(self.spirals))
+        if self.refuses_by_mode_ceiling(candidate):
+            # A seat of THIS candidate's own mode has to go, which is the same
+            # set the group cap and the allowances state their requirement in.
+            wanted.append(set(self.modes.get(candidate.mode, ())))
         return wanted
 
     def requirements(self, candidate) -> list | None:
@@ -1071,6 +1131,7 @@ class State:
                 "the per-cell allowance",
                 "the per-family allowance",
                 *(["the spiral share cap"] if self.spiral_cap is not None else []),
+                *(["the per-mode ceiling"] if self.mode_ceilings else []),
             ],
             "no_fallback": "nothing is seated by relaxing a rule it failed, and no seat is "
             "padded. Unfilled beats padded",
@@ -1098,6 +1159,25 @@ class State:
             ),
             "spiral_seats": len(self.spirals),
             "spiral_allowance": self.spiral_allowance(),
+            "mode_ceilings": dict(sorted(self.mode_ceilings.items())),
+            "mode_ceilings_is": (
+                "no per-mode ceiling ran; every mode could take as many seats as the "
+                "other rules left it, and the `mode_ceiling` refusal column is zero by "
+                "construction"
+                if not self.mode_ceilings
+                else "at most ceil(share * seats filled) of the seats may be of the named "
+                "mode. The spiral share cap's own arithmetic, ceiling.share_of, which is "
+                "the one spelling a colour target is stated in. A mode NOT named here is "
+                "not capped by this rule, and a ceiling is a guard rather than a target: "
+                "it is set above what the gallery does unaided, so a zero in the refusal "
+                "column is the reading it is there to give"
+            ),
+            "mode_ceiling_seats": {
+                mode: len(self.modes.get(mode, ())) for mode in sorted(self.mode_ceilings)
+            },
+            "mode_ceiling_allowance": {
+                mode: self.mode_allowance(mode) for mode in sorted(self.mode_ceilings)
+            },
             "diversity": None
             if self.diversity is None
             else {

@@ -845,9 +845,10 @@ Per `solver_design` §Themed, and they are one decision rather than four flags:
   bars against 1,209 at the crossing, `dark_vivid_lime` 266 against 457. At the
   per-mode bars a themed gallery has no pool;
 * the **diversity rule** is `rules.Places` rather than the twin test;
-* the **palette-group cap** is `ceiling.themed_group_cap` — `ceil(2n/P)`, twice
-  the even share across the `P` groups that can field the theme, `P` measured off
-  this pool at solve time. `--themed-cap` names a number instead;
+* the **palette-group cap** is `ceiling.themed_group_cap` — `max(1, floor(0.05 n))`,
+  twice the main gallery's rate. It was `ceil(2n/P)` until 2026-09-05, when the
+  denominator went; `P` is still measured and recorded. `--themed-cap` names a
+  number instead;
 * `--target <cell>=1.0` and `--flat-floor`, which the flag sets as **defaults**
   and not as overrides — a themed pass naming its own target or its own floor
   keeps it. Without the target the cell allowance is `floor(K x (1/48) x n) + 1`
@@ -857,33 +858,69 @@ Rows outside the cell are recorded `not_dominant_in_the_theme`, which is pool
 construction and sits beside `below_its_mode_bar` rather than among the rules:
 the row was not refused a seat, it was never eligible for one.
 
-**Why a themed pass needs its own cap, and what P counts.** The main gallery's
+**Why a themed pass needs its own cap.** The main gallery's
 `max(1, floor(0.025 n))` is a share of `n` alone. Over a pool holding a few dozen
 maps rather than hundreds that is the **binding** rule at every size a themed
 gallery would ship at — measured 2026-09-01, `dark_vivid_lime` seated 38 of 50,
 90 of 150 and 124 of 200 with the cap refusing 300-435 rows against the diversity
 rule's 1-27, and `sum_g min(cap, places g fields)` predicted the whole column.
-Matt's ruling is `ceil(2n/P)`: twice the even share, so a good map may take twice
-its share and no map may take a gallery.
 
-`P` is **groups fielding three or more distinct PLACES** in the pool
-(`ceiling.THEMED_CAP_PLACES`). Places and not rows, because one wallpaper per
-location is absolute. The floor is there because `P` is a **denominator**: a group
-holding one fluke place can never take more than one seat however high the cap
-goes, so counting it prices a capacity that does not exist and tightens the cap on
-the groups doing the work. Measured either way on 2026-09-01: lime 39 groups of
-which 29 clear the floor, green 65 of which 50. **Nothing is dropped from the
-pool** — a sub-floor group still seats, it is only out of the denominator — and
-the capacity it is out of the denominator on behalf of is 13 places (lime) and 17
-(green), the places no group over the floor reaches at all. So the floor moves
-`P` by about a quarter, loosening the cap ~30%, in exchange for pricing at most
-13 or 17 seats.
+**`max(1, floor(0.05 n))` since 2026-09-05. Matt's ruling.** Twice the main
+gallery's rate, on `n` alone, so the two caps are one rule with two numbers.
 
-The cap is computed **after** the bar and the pre-selection, over exactly the rows
-the leg may seat — which is why `solve` sets `rule.group_cap` there rather than
-with the other constants. `ceiling.THEMED` is the rule's name on the record and is
-deliberately **not** in `GROUP_CAP_RULES`: it is not a rule a caller names, it is
-the rule a themed pass has, and it needs a number no flag carries.
+It **replaced `ceil(2n/P)`** — twice the even share across the `P` groups that
+could field the theme, `P` measured off the pool at solve time. What that bought
+was a cap that moved with the pool, so no comparison a themed record takes part in
+was a comparison of one rule: on 2026-09-05's pool the six n=200 themes ran at
+caps of **3 to 8**, and the richer the theme the tighter its cap —
+`dark_vivid_blue` P=164 → 3 against `dark_vivid_yellow` P=51 → 8, which is exactly
+backwards from where the room is wanted. A rate on `n` is a number written down
+once.
+
+**What the move costs, priced before it was taken.** `FIX_owed_minor_0905` ran the
+six `themed_<cell>_n200_after_8h_0905` populations again through the pool-view
+door, one pool, both arms under the per-mode ceiling, `P` read off the pool and
+handed back as `--themed-cap` for the OLD arm so the two differ in the cap alone:
+
+| theme | P | cap | seats over the q4 bar | median | p10 | worst | `group_cap` refusals | seats turned over |
+|---|--:|--:|--:|--:|--:|--:|--:|--:|
+| `dark_vivid_blue` | 164 | 3 → **10** | 195 → **196** | 0.9710 → 0.9704 | 0.782 → 0.753 | 0.0200 → **0.0567** | 968 → **6** | 72 |
+| `dark_vivid_orange` | 138 | 3 → **10** | 189 → **198** | 0.9590 → **0.9710** | 0.746 → **0.797** | 0.0017 → **0.1105** | 664 → **52** | 71 |
+| `dark_vivid_purple` | 100 | 4 → **10** | 193 → 193 | 0.9402 → **0.9579** | 0.757 → **0.788** | 0.0049 → **0.0201** | 1,447 → **35** | 64 |
+| `dark_vivid_rose` | 85 | 5 → **10** | 194 → **196** | 0.9524 → **0.9583** | 0.810 → 0.800 | 0.0434 flat | 434 → **35** | 49 |
+| `dark_vivid_green` | 65 | 7 → **10** | 152 → **155** | 0.8661 flat | 0.0283 flat | 0.0007 flat | 94 → **25** | 15 |
+| `dark_vivid_yellow` | 51 | 8 → **10** | 102 → **109** | 0.5372 → **0.5914** | 0.0105 → 0.0143 | 0.0010 flat | 381 → **223** | 23 |
+
+**All six still fill 200 of 200 and not one loses a seat over the bar.** The cap
+stops being the wall — refusals fall by 42% (yellow) to 99% (blue) — and what
+takes its place is the diversity rule and the supply, which is where a themed
+gallery's limit belongs. The two thin themes move least in seats turned over (15
+and 23) because their caps were already near 10; the four rich ones turn over 49
+to 72 seats each, which is the size of the change and is the number to weigh
+against a themed record's IDs if one is ever published.
+
+**The one place it goes backwards is `p10` on the two richest**, blue 0.782 → 0.753
+and rose 0.810 → 0.800, against every other column flat or better. That is the cap
+doing what a looser cap does: a map good enough to take ten seats takes ten, and
+the tenth is weaker than the seat some other map would have filled. It is under
+four points on a decile of a gallery that gained a seat over the bar, and the
+worst seat went the other way on blue by a factor of three.
+
+`P` is still measured and still on the record — **groups fielding three or more
+distinct PLACES** in the pool (`ceiling.THEMED_CAP_PLACES`) — and it denominates
+nothing now. Places and not rows, because one wallpaper per location is absolute;
+the floor of three is what keeps the reading honest, since a group holding one
+fluke place can never take more than one seat however high the cap goes and
+counting it would report a capacity that does not exist. Measured either way on
+2026-09-01: lime 39 groups of which 29 clear the floor, green 65 of which 50, and
+the places no group over the floor reaches at all are 13 (lime) and 17 (green).
+**Nothing is dropped from the pool** — a sub-floor group still seats.
+
+The cap is set **after** the bar and the pre-selection, with `P` read over exactly
+the rows the leg may seat — which is why `solve` sets `rule.group_cap` there
+rather than with the other constants. `ceiling.THEMED` is the rule's name on the
+record and is deliberately **not** in `GROUP_CAP_RULES`: it is not a rule a caller
+names, it is the rule a themed pass has.
 
 ### The q4 bar is a statistic on the record, and the bars are the pool
 
@@ -1064,7 +1101,7 @@ never a proof that rows can lower an optimum.
 src/fractal_wallpapers/curation/tentative.py   the store, the aliases, the page
 artifacts/curation/tentative/<stamp>/gallery.jsonl   one row per seat
 artifacts/curation/tentative/<stamp>/manifest.json   what pool, what settings, what shortfall
-artifacts/curation/tentative/<stamp>/index.html      the browser, opened by double-clicking
+artifacts/curation/tentative/<stamp>/index.html      the browser, NOT tracked — `browse` writes it
 artifacts/curation/solve/tentative_n<N>_<stamp>/     that record's own solve, under the same stamp
 ```
 
@@ -1115,22 +1152,36 @@ were always stamped — so nothing a figure prompt names was lost.
 
 **`index.html` is the standing debug tool for figure selection** — open the stamp's page
 and filter by mode, cell, hue family or partition to find the wallpaper a figure wants,
-then `curate solve resolve <alias>` to turn what you picked back into a recipe.
+then `curate solve resolve <alias>` to turn what you picked back into a recipe. A record
+writes its page as it lands and `curate solve browse <stamp>` writes it again, which is
+what a clone runs: the page is a derivation and is not tracked.
 
-**Three files a stamp are TRACKED, and the pictures are not.** `gallery.jsonl`,
-`manifest.json` and `index.html`, through a narrow un-ignore in `.gitignore` that names
-them one at a time. It is the one deliberate hole in `artifacts/` and it is there because
-the site's figures name wallpapers by these IDs: a clone that cannot resolve them cannot
-rebuild the site. A fourth file appearing in a stamp is ignored until somebody decides
-otherwise, which is why the un-ignore lists names rather than a pattern.
+**Two files a stamp are TRACKED, and the pictures are not.** `gallery.jsonl` and
+`manifest.json`, through a narrow un-ignore in `.gitignore` that names them one at a
+time. It is the one deliberate hole in `artifacts/` and it is there because the site's
+figures name wallpapers by these IDs: a clone that cannot resolve them cannot rebuild the
+site. A third file appearing in a stamp is ignored until somebody decides otherwise, which
+is why the un-ignore lists names rather than a pattern.
+
+**`index.html` is not one of them, since 2026-09-05.** Matt's ruling: **a record is
+`gallery.jsonl` plus `manifest.json`, and the page is a browse view derived from them.**
+`curate solve browse <stamp>` writes it again from the rows alone, on any clone, so
+tracking it was committing a derivation — 4.07 MB over the seven published stamps against
+their rows' 3.60 MB, and a page rewritten by a `browse` is a diff of its whole body. It was
+tracked until the ruling and left tracking by it; the files themselves stay on disk, and
+`tests/test_tentative.py` holds the index to carrying no page for any stamp. An un-ignore
+cannot say that on its own — it stops nothing git already holds — which is why the seven
+were removed from the index by hand. **No `LARGE_TEXT_ALLOWLIST` entry was added and none
+is implied**: a stamp gets one only when Matt permits it, per stamp.
 
 **Tracked only once Matt PUBLISHES the stamp**, his ruling of 2026-09-04, and the hole is
 per stamp because of it: the store is ignored by default and each published stamp is one
 negation line beside `curation.tentative.PUBLISHED`, which is the same list in code.
 Recording a gallery and committing it were one act until then, so a record too large to
-track was a record that could not be made — an n=2000 record's `gallery.jsonl` and
-`index.html` are **both over the 1 MiB `tests/test_history_purity.py` allows**, at 1.06
-and 1.18 MB for the 1,795 seats of `20260904T234133Z`. Every unpublished record stays in
+track was a record that could not be made — an n=2000 record's `gallery.jsonl` is **over
+the 1 MiB `tests/test_history_purity.py` allows**, at 1.06 MB for the 1,795 seats of
+`20260904T234133Z` (its page was 1.18 MB and is now beside the question). Every
+unpublished record stays in
 the store, kept and read **by naming its stamp**; `tentative.latest()` — what an unstamped
 `browse` or `resolve` means — walks published stamps only, so an experiment can never
 become the default answer for a figure prompt and hand out IDs that exist on one machine.
@@ -1746,6 +1797,79 @@ picture and says so on the card; the candidate render is 640x360 ss2 through the
 unmodified map and the release render is shipping geometry with the autolevel operator
 inside it, so showing one under the other's caption would say something false with every
 field on the card true.
+
+### The per-mode ceiling — `threads` at a fifth, and it is a guard
+
+**`solve.DEFAULT_MODE_CEILINGS = {"threads": 0.20}` since 2026-09-05. Matt's
+ruling.** It is `{}` for every record before that, so a record that does not name
+`config.mode_ceilings` ran with **no per-mode ceiling** and is not comparable with
+one that ran under this.
+
+**It is the spiral share cap's shape, deliberately.** A fraction of the seats
+**filled** rather than of `n`, through `ceiling.share_of` — the one spelling a
+colour target is also stated in — evaluated at `ceil(share x (filled + 1))`, with
+the same `+ 1` warm-up: without it the first seat of an empty gallery is refused
+for taking 100% of nothing. It is a **set** constraint, so the 1-swap loop can
+trade inside a capped mode instead of writing the mode off; and it is counted
+**last**, after `spiral`, so the `mode_ceiling` column counts seats the ceiling
+cost and not seats a colour allowance would have refused anyway. Everything
+`spiral_allowance` argues about why a swap needs no second spelling applies here
+unchanged.
+
+**What it is set against.** The post-8h n=1000 census: `threads` took **187 of
+1,000 seats** on a pool it is 2.5% of — **7.5x a pool-mirror and 6x its own floor
+of 31**, the largest such gap on the roster, against `smooth` at 0.26x its mirror
+on 62.7% of the pool. A fifth is above the 187, so it is a guard against a runaway
+and not a target, and **the reading it gives is the refusal column**.
+
+**It does bind, and the pin says where.** The n=1000 pair was taken over one pool
+in `FIX_owed_minor_0905`, and the uncapped arm reproduces the on-disk
+`tentative_n1000_20260905T153850Z` **key for key** — so the pool had not drifted
+and the two arms differ in the ceiling alone. They are not the same gallery:
+**53 candidates were refused `mode_ceiling` and 71 of the 1,000 seats turned
+over.** The objective is identical on the three tiers that matter — 1,000 seats, 0
+shortfall, worst seat 0.151677 either way — and the capped arm is **better on tier
+4**, sum 589.431 against 590.576.
+
+And what it did to `threads` is the opposite of what a ceiling reads as: **187 →
+190 seats.** The finished gallery never touched the ceiling, whose allowance at
+1,000 filled seats is 201; `stripe` gained 5 and `smooth` lost 4, with eight of
+the thirteen modes moving by 1 to 5 and five not moving at all. So the ceiling did
+not hold a mode down — it perturbed the walk, and the walk found a better gallery.
+That is the shape doing it rather than the number. `ceil(0.20 x (filled + 1))` is
+evaluated **during the walk**, and the walk fills by scarcity — so a mandated
+`threads` seat drawn at seat 40 meets an allowance of 9 whatever the final count
+would have been. The spiral share cap has been binding for the same reason since
+2026-09-04. A ceiling denominated in `n` would not bind here and would also not be
+a ceiling on anything until the gallery was finished.
+
+**Three answers, and `MODE=0` is not the spelling for `none`.**
+`--mode-ceiling none` (or `off`) clears every ceiling to its left and is how the
+uncapped arm of a counterfactual is spelled; `--mode-ceiling threads=0` runs a
+ceiling whose allowance is zero, so `threads` may take no seat at all and the
+column fills. The flag is **repeatable and folds left to right onto the shipped
+ceiling**, so `--mode-ceiling smooth=0.5` adds a second mode and keeps the first.
+A mode no gallery can seat is refused at the flag rather than at the seat, for
+`ceiling.parse_target`'s reason: a ceiling on a misspelt mode can never bind and
+would read on the record as a guard that held.
+
+**On `config`, and on a growth row.** `config` is what a tentative gallery's
+tracked `manifest.json` carries whole, so a tracked gallery can say which ceilings
+ran; a record also carries `mode_ceilings_default`, so a reader of an uncapped
+record does not have to date it. `growth.py` copies the block onto every rung for
+the spiral cap's reason at one remove: a ladder is a series taken over weeks.
+
+**It applies at every `n` and to a themed pass too.** A theme narrows the colour
+and says nothing about the mode, so a runaway is a runaway there as well — it is
+not one of the three things `--themed` swaps. Two of the six themed n=200 reads
+saw it act, at 1 and 10 refusals, and both gained a seat over the q4 bar by it.
+
+**The collision it can have is with a mode floor, and the objective already
+answers it.** At small `n` a fifth of the filled seats is one or two, so a floor
+asking for more goes **SHORT** and `shortfalls.modes.per_mode.<mode>.refused_by`
+names `mode_ceiling`. Unfilled beats padded: nothing is seated by relaxing a rule
+it failed. At the shipping rungs the two are far apart — `threads` floors at 31
+against an allowance of 200 at n=1000.
 
 ### The release leg — the seats at shipping geometry, and no bar anywhere in it
 

@@ -1,14 +1,22 @@
 scratch/
 
 # `artifacts/` is runtime output and stays ignored — with ONE deliberate hole in
-# it, decided in SET_twin_tau_0p65_and_geometry_gate. A tentative gallery's three
+# it, decided in SET_twin_tau_0p65_and_geometry_gate. A tentative gallery's two
 # text files are tracked, because the site's figures name wallpapers by the IDs in
 # them and a clone that cannot resolve those IDs cannot rebuild the site. The
-# PICTURES stay ignored: only `gallery.jsonl`, `manifest.json` and `index.html`
-# come through, and the un-ignore names them one by one rather than by pattern so
-# that a fourth file appearing in a stamp is ignored until somebody decides
-# otherwise. Git will not descend into an excluded DIRECTORY, which is why each
-# level is excluded by its contents (`dir/*`) and then re-included.
+# PICTURES stay ignored: only `gallery.jsonl` and `manifest.json` come through,
+# and the un-ignore names them one by one rather than by pattern so that a third
+# file appearing in a stamp is ignored until somebody decides otherwise. Git will
+# not descend into an excluded DIRECTORY, which is why each level is excluded by
+# its contents (`dir/*`) and then re-included.
+#
+# **`index.html` is NOT one of them**, Matt's ruling of 2026-09-05: a record is
+# its rows and its manifest, and the page is a browse view derived from them.
+# `fractal-wallpapers curate solve browse <stamp>` regenerates it from
+# `gallery.jsonl` on any clone, so tracking it was committing a derivation — and
+# an expensive one, 4.07 MB over the seven published stamps against their rows'
+# 3.60 MB. It was tracked until then and left tracking by this ruling; the files
+# stay on disk.
 #
 # **The hole is per-stamp and the default is IGNORED**, Matt's ruling of
 # 2026-09-04. It used to be per-file across every stamp, so recording a gallery
@@ -31,12 +39,11 @@ artifacts/curation/tentative/*
 !artifacts/curation/tentative/20260904T080248Z/
 !artifacts/curation/tentative/20260904T134242Z/
 !artifacts/curation/tentative/20260904T233233Z/
-# Inside a published stamp, only the three text files. An unpublished stamp is an
+# Inside a published stamp, only the two text files. An unpublished stamp is an
 # excluded directory git never descends into, so these never reach one.
 artifacts/curation/tentative/*/*
 !artifacts/curation/tentative/*/gallery.jsonl
 !artifacts/curation/tentative/*/manifest.json
-!artifacts/curation/tentative/*/index.html
 /labels/
 /local.toml
 models/**/*.pt

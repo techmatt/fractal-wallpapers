@@ -191,6 +191,12 @@ def test_every_builder_of_a_task_reads_the_mode_settings_off_the_recipe() -> Non
             f"{module.__name__} builds {built} release task(s) and names `mode_params` on "
             f"fewer — a task without it renders the bare mode under the varied seat's name"
         )
+    # `release` itself builds none any more, and that is the fix of 2026-09-05:
+    # `parity` was the fifth builder, missed because it rebuilds a task it was
+    # HANDED rather than making one from a record. It re-points instead, so every
+    # field carries — including one added after this was written.
+    assert "Task(" not in inspect.getsource(release.parity)
+    assert "dataclasses.replace(task" in inspect.getsource(release.parity)
 
 
 def test_a_stamp_only_comes_back_when_there_is_one_to_write() -> None:
@@ -400,3 +406,55 @@ def test_a_check_re_derives_the_pixels_the_row_shipped_and_not_todays_default() 
     assert checks.regime_of_row(shipped).spelled == "1280x720ss2"
     task = checks.tasks_of("gallery4", [shipped], Path("out"))[0]
     assert task.geometry == {"resolution": [1280, 720], "supersample": 2, "maxiter": 900}
+
+
+def test_a_varied_seat_renders_the_varied_mode_on_BOTH_parity_arms(monkeypatch, tmp_path) -> None:
+    """`release.parity` was rebuilding each arm's task from six of the seven
+    fields, so a plan carrying `mode_params` was checked as two renders of the
+    BARE mode — which agree with each other perfectly. The check passed by
+    dropping the thing it was checking, which is worse than no check: `curate
+    parity` is what holds the concurrent release path to the serial one, and a
+    varied seat is exactly the row where the two could diverge.
+
+    Both arms are asserted, because the serial one alone would have passed before
+    the fix as well: the bug was in the rebuild, and the rebuild ran per arm.
+    """
+    seen: dict = {}
+
+    def run_pass(tasks, workers, sink, log=None, leg=None):
+        held = list(tasks)
+        seen[workers] = held
+        for one in held:
+            # The parity report hashes what the arm wrote, so the stub writes it.
+            Path(one.output).write_bytes(b"pretend png for " + one.mode_params.__repr__().encode())
+            sink(one, release.Result(one.id, True, {"picture": str(one.output)}, 0.0))
+        return {"rows": len(held), "workers": workers}
+
+    monkeypatch.setattr(release, "run_pass", run_pass)
+
+    varied = release.Task(
+        id="a",
+        row={},
+        colormap="x",
+        mode="direct_trap_multiply",
+        output=str(tmp_path / "a.png"),
+        geometry={"resolution": [8, 8], "supersample": 1},
+        timeout=12.0,
+        mode_params={"opacity": 0.6, "threshold": 0.2},
+    )
+    report = release.parity([varied], workers=3, directory=tmp_path / "parity", log=lambda *_: None)
+
+    assert set(seen) == {1, 3}, "one serial arm and one concurrent arm"
+    for workers, tasks in seen.items():
+        held = tasks[0]
+        assert held.mode_params == {"opacity": 0.6, "threshold": 0.2}, (
+            f"the {workers}-worker arm rendered the bare mode under the varied seat's name"
+        )
+        assert held.mode == "direct_trap_multiply" and held.timeout == 12.0
+        assert held.geometry == varied.geometry and held.row == varied.row
+    # The one field an arm may differ in, and it is the point of the rebuild.
+    assert {Path(tasks[0].output).parent.name for tasks in seen.values()} == {
+        "serial",
+        "concurrent",
+    }
+    assert report["rows"] == 1
