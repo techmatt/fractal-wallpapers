@@ -393,6 +393,27 @@ stand on four disjoint, judge-selected populations, so a cell's human rate canno
 be differenced against another's. The clear rate is over the whole ledger and is
 what decides a roster.
 
+**The head-to-head that caveat says the label sheet cannot give was taken on
+2026-09-05, and the ruling holds.** `night_d` ran all eleven dear-mode entries
+through one floor draw at the same 56 places under one seed, so the five cells stand
+on **one population** and their rates *can* be differenced. Roughly 212 candidates
+each:
+
+| entry | q4 clear rate | engine s a clear |
+|---|--:|--:|
+| `direct_trap_multiply@opacity=0.6,threshold=0.2` | **7.5%** | 49.7 |
+| `direct_trap_multiply@opacity=0.6` | 6.1% | 56.4 |
+| `direct_trap_multiply@opacity=0.4` | 5.2% | 70.4 |
+| `direct_trap_multiply` (shipped) | 3.8% | 94.2 |
+| `direct_trap_multiply@threshold=0.2` | 3.3% | 109.5 |
+
+**Three of the four settings cells outclear the shipped mode and the both-knobs cell
+doubles it**, which is the ledger-wide reading of 2026-09-04 reproduced on a matched
+draw rather than on the whole store. None is anywhere near zero clears, so none
+leaves. `direct_trap_screen` on that same leg is the cheapest mode of the night at
+**17.6 engine s a q4 clear** — cheaper than any recolour — and `direct_trap_lines`
+the second-worst at 3.3%; the direct traps are not one thing.
+
 **Nothing in code ever excluded it**, which is worth stating so nobody goes looking
 for the switch: a roster is what a leg passes in `--modes` / `--floor-modes`, the
 standing rosters ([`depth.dear_modes`], [`depth.centered_modes`]) derive from
@@ -493,6 +514,21 @@ keep so the near band has room, or accept that the near band's value is pool
 *quality* — the prune drops the weakest of the four and keeps the leg's best — and
 not stock.
 
+**The first way out was taken on 2026-09-05 and it does exactly what the arithmetic
+says — no more.** `night_a1` ran **width 8** over the same four modes, 2 a pair
+against a keep of 3, and merged **11,090 of 11,090, prune-free**, leaving one slot
+free at every pair. `night_a2` then took its 1,388 places and netted **+218 rows —
+one per place, which is one per free slot.** It made 8,720 rows to buy those 218,
+kept 556 of them, and **493 of the 556 (88.7%) are q4 clears**: what the extra width
+bought was the *right* three rows in each pair, not more rows. So the two ways out
+are not alternatives after all — **width under the keep buys the near band exactly
+`RETAIN_PER_PAIR - width/modes` rows a pair and the rest of its value is still
+quality.** Size a near band for the quality and count the stock in free slots.
+
+The arm is worth its clock on those terms: at **6.2 engine seconds per KEPT q4
+clear** and **28.4 kept q4 clears a leg minute**, `night_a2` tied the recolour arm as
+the cheapest buy of that night and beat both openers by 5-7x.
+
 **It will also exhaust its population far inside its budget, because the band is
 narrow.** Of `thin_b1`'s 222 places every one held a candidate in a roster mode and
 only **38** sat between the two bars, so the arm planned 912 candidates and finished
@@ -577,6 +613,13 @@ the gap is a fact about the mode's KIND.** Measured over `thin_cells_1h_0905`,
 | `itinerary` | 85% |
 | the three **direct traps**, `direct_trap_multiply`'s four settings cells included | **0–33%** |
 
+**And the control the table wanted was taken on 2026-09-05: an UNAIMED leg puts
+about a third of its rows in those same fifteen cells anyway.** `night_a1`,
+`night_a2` and `night_a3` drew the whole 822-map pool with no `--draw-cells` at all
+and landed **32.4%, 34.0% and 32.9%**; `night_b`, the same three field modes under
+both filters, landed **59.6%** over 51,959 candidates. So the cut is worth **about
+1.8x** on delivery and never more — the 57-59% above is not the filter's doing on
+its own, it is 33 points of base rate plus 26 of aim.
 The five `direct_trap_multiply` cells returned **0, 0, 2, 1 and 1** rows in any
 listed cell out of 46 candidates each, and **not one q4 clear in a listed cell
 between them**. That is [`palettes.color_mass.NOISY_MODES`] acting: their pictures

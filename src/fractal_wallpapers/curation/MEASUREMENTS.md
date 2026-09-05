@@ -401,6 +401,31 @@ is `s/cand` per engine. A seat is an outcome of the whole leg plus a solve; a
 candidate is one 640x360 ss2 render. Mixing them prices a mine off a gallery's
 scarcity.
 
+### A one-hour read cannot resolve the aim in seats. An eight-hour one can
+
+**Measured 2026-09-05, and it reverses a conclusion.** `MINE_thin_cells_1h_0905`
+re-solved six themed n=200 records after an hour aimed at three of them and found
+the three UNAIMED controls moving as many seats as the aimed cells — `dark_vivid_orange`
++4 against `dark_vivid_green` +3 and `dark_vivid_rose` +3 — and concluded that *where
+the aim shows is the median and not the seat count*. Eight hours over the same
+fifteen cells, same six themes, same rig:
+
+| | aimed: green / yellow / rose | controls: blue / purple / orange |
+|---|---|---|
+| seats over the q4 bar, after 1 h | +3 / +7 / +3 | +2 / +1 / +4 |
+| seats over the q4 bar, after 8 h | **+36 / +16 / +9** | **+1 / +1 / −4** |
+
+So the hour was **too short to resolve the difference and not measuring an absence
+of one**. Read a themed seat count off a clock long enough that the aimed cells move
+by more than the controls' noise, which at n=200 is about ±4 seats an hour.
+
+**What eight hours still did not buy is the floor.** All six themes fill 200 of 200
+throughout, and the worst seat in the two thin themes stayed at ~0.001
+(`dark_vivid_green` 0.0001 → 0.0007). The gain is entirely in the middle — median
++0.238 and +0.269 on green and yellow, p10 up on five of six. **A themed n=200 ends
+in near-zero pictures no matter how much supply is thrown at it**, so a themed
+gallery's tail is a rung problem and not a mining one.
+
 ## Every per-candidate rate this project has measured
 
 ⚠ **These are historical, measured under different conditions, and not comparable
@@ -474,6 +499,24 @@ that leg's contention: three engines cost about 1.6–1.8x per candidate over on
 | 1.184 | the same leg re-run on a thinner never-opened pool | 3 | 12 | 09-05 | 1,146 cand / 98 places | `thin_b1b` |
 | 0.4036 | near band, mode held, over one night's own places | 3 | 24 | 09-05 | 912 cand / 38 places | `thin_b2` |
 | 2.996 | **13 dear modes**, incl. the 5 `direct_trap_multiply` cells | 3 | 3 | 09-05 | 605 cand / 16 places | `thin_c` |
+| 1.942 | 4 shareable modes, **breadth** over fresh places | 3 | 8 | 09-05 | 11,090 cand / 1,388 places | `night_a1` |
+| 0.353 | near band, mode held, over one leg's own places | 3 | 40 | 09-05 | 8,720 cand / 218 places | `night_a2` |
+| 1.764 | `night_a1`'s settings on a 1,388-place thinner pool | 3 | 8 | 09-05 | 4,330 cand / 543 places | `night_a3` |
+| 0.515 | **3** shareable modes, floor draw over proven places | 3 | 8 | 09-05 | 51,959 cand / 2,167 places | `night_b` |
+| 8.423 | `smooth_angle_min` + `smooth_mean_angle`, **no sharing** | 3 | 3 | 09-05 | 1,923 cand / 322 places | `night_c` |
+| 4.618 | 11 dear modes, the 5 `direct_trap_multiply` cells included | 3 | 4 | 09-05 | 2,340 cand / 56 places | `night_d` |
+
+**The eight-hour night re-measured the same shapes an order of magnitude wider, and
+two of the five rows above it did not hold.** The breadth/floor gap survives —
+`night_a1` at **1.942** against `night_b`'s **0.515**, 3.8x, on width 8 both sides,
+so the dump really is the whole of it. What did not survive is the dear-mode price:
+`thin_c` put 13 dear modes at **2.996** over 16 places, and the two angle modes alone
+over 322 places read **8.423**, while the 11-mode roster over 56 places read
+**4.618**. A dear-mode rate is a fact about *which* dear modes and about the places,
+not about dearness — size an angle-mode leg off `night_c` and never off `thin_c`.
+`night_a3` reproduces `thin_b1b`'s finding a second time: the same opener settings
+re-run after its own places left the never-opened pool read **1.764** against
+**1.942**, so a breadth rate drifts *down* as a night proceeds, not up.
 
 **The 09-05 rows are one night on one map cut, and the breadth/floor gap is the
 dump and nothing else.** `thin_a` and `thin_b1` run the *same four modes* at
