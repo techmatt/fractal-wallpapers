@@ -479,6 +479,28 @@ is not running — and a manifest that leaves none is **refused**, on
 `--floor-places`' reason: a leg that quietly planned a near band over a population
 nobody chose would report its rate over that one.
 
+⚠ **A near band over a PRUNE-FREE breadth arm's own places is the one shape that
+buys nothing, and the two settings are in direct tension.** A breadth arm sized to
+be prune-free puts exactly `RETAIN_PER_PAIR` rows on every (place, mode) it opens —
+that is what "prune-free" means — and the near band then holds the incumbent's mode,
+so every row it makes lands on a pair that is *already full*. Measured
+2026-09-05: `thin_b1` ran width 12 over four modes, 3 a pair, and merged **2,634 of
+2,634, prune-free**; `thin_b2` then took its 222 places and kept **89 of 912,
+9.8%** — `draw_cells_smoke`'s 9.7% reproduced exactly, on fresh places, with the
+narrowing the flag exists for. Two ways out, and they are choices about the
+*breadth* arm rather than about this one: give the breadth arm a width **under** the
+keep so the near band has room, or accept that the near band's value is pool
+*quality* — the prune drops the weakest of the four and keeps the leg's best — and
+not stock.
+
+**It will also exhaust its population far inside its budget, because the band is
+narrow.** Of `thin_b1`'s 222 places every one held a candidate in a roster mode and
+only **38** sat between the two bars, so the arm planned 912 candidates and finished
+in **129 s of a 600 s cap**. Size a near band off the places that will be *in the
+band*, which is a fraction of the places a leg opened, and have somewhere for the
+unspent clock to go — `rare_cells_0904` and this leg both sent it to a fresh unit of
+the opener arm.
+
 The parameter under it is `near_named` and not `near_places`, which is what the
 flag is called. `build_plan` calls [`near_places`] to take the draw, and a
 parameter of that name would shadow the function for the whole of it.
@@ -543,6 +565,33 @@ else — the cheapest colour a leg can buy. Narrowing only the breadth draws wou
 leave the cheap arm spending its width on the colours the seating is already full
 of. `plan.maps_after_the_manifest` against `plan.maps_drawn_from` says what each of
 the two filters took.
+
+**The filter narrows what is OFFERED and does not control what is DELIVERED, and
+the gap is a fact about the mode's KIND.** Measured over `thin_cells_1h_0905`,
+11,705 candidates on a pool cut to 389 maps of 822 for fifteen vivid cells:
+
+| roster | share of rows landing a listed cell |
+|---|--:|
+| the four shareable **field** modes | **57–59%** |
+| the five **composites** | 52–69% |
+| `itinerary` | 85% |
+| the three **direct traps**, `direct_trap_multiply`'s four settings cells included | **0–33%** |
+
+The five `direct_trap_multiply` cells returned **0, 0, 2, 1 and 1** rows in any
+listed cell out of 46 candidates each, and **not one q4 clear in a listed cell
+between them**. That is [`palettes.color_mass.NOISY_MODES`] acting: their pictures
+are not lookups into their own maps — supersampling and JPEG average colour *after*
+the lookup — so the ramp read the cut is made on does not predict them. **A leg that
+wants a thin cell should not spend its clock on the direct traps**, whatever
+`delivering` says about the maps it offers them; buy those modes' pictures on their
+own terms and let the colour fall where it falls.
+
+**And the cut is one-sided in the other direction too**: `dark_vivid_blue`, the
+richest cell in the library and deliberately excluded from that leg's draw, took
+**1,099 rows — more than any of the three cells the leg was aimed at** — with 43.1%
+of the night's rows landing no listed cell at all. Narrowing the offer moves the
+distribution and never truncates it, so a leg aimed at a thin cell still feeds the
+rich ones and a seating taken after it will show the rich cells moving too.
 
 **Every row a narrowed leg writes is stamped `hunt.drawn_cells`**, on the same
 contamination rule as `drawn_for` above and for a wider reason: `--draw-cells` cuts

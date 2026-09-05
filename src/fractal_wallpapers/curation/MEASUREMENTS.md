@@ -469,6 +469,19 @@ that leg's contention: three engines cost about 1.6–1.8x per candidate over on
 | 53.54 | the same roster, same plane | 3 | 11 | 09-02 | 103 cand / 13 blocks | `pc1` |
 | 35.28 | the same roster, same plane, width 3 | 3 | 3 | 09-03 | 103 cand / 35 blocks | `pc20m` |
 | 0.5978 | `smooth`, a re-mode leg at **k ≈ 1.6** | 3 | 1–2 | 09-04 | 3,602 cand / 2,302 places | `smooth_twins` |
+| 0.5575 | 4 shareable modes, **floor draw** over proven places | 3 | 8 | 09-05 | 6,408 cand / 203 places | `thin_a` |
+| 1.371 | the same 4 modes, **breadth** over fresh places | 3 | 12 | 09-05 | 2,634 cand / 222 places | `thin_b1` |
+| 1.184 | the same leg re-run on a thinner never-opened pool | 3 | 12 | 09-05 | 1,146 cand / 98 places | `thin_b1b` |
+| 0.4036 | near band, mode held, over one night's own places | 3 | 24 | 09-05 | 912 cand / 38 places | `thin_b2` |
+| 2.996 | **13 dear modes**, incl. the 5 `direct_trap_multiply` cells | 3 | 3 | 09-05 | 605 cand / 16 places | `thin_c` |
+
+**The 09-05 rows are one night on one map cut, and the breadth/floor gap is the
+dump and nothing else.** `thin_a` and `thin_b1` run the *same four modes* at
+**0.5575** and **1.371** — 2.5x apart — because a floor draw at width 8 pays one dump
+per eight recolours and a breadth draw at width 12 over four modes pays one per
+three. Width is the knob that moves it and the roster is not. `thin_b1b` is
+`thin_b1`'s own settings re-run after 222 places had left the never-opened pool and
+reads **1.184**, so the 2.5x is the shape rather than that draw's luck.
 
 **The last row is the shape a `curate remode` leg has, and it is the one leg here
 whose width is not a knob.** Its plan is *every* clearing row of the retired mode,
