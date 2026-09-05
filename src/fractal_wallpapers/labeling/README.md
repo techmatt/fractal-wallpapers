@@ -291,6 +291,58 @@ the function rather than assumed. Restoring the rule moved **two rows** across b
 stores, neither of them changing a tier, and put `strange_render` back to 207
 eval-side places.
 
+#### A pin may be written BEFORE the sitting, and one guard reads red while it waits
+
+Registration alone does not pin. A batch registered `eval_only` is on the
+evaluation side by its registration, and until its places are in
+`eval_split.jsonl` nothing stops another batch landing a *training* row on one of
+them — and once that has happened the place is contested and no repair to the pin
+can take it back. So the places of a blind sheet are worth pinning **when the
+sheet is cut**, before a single verdict exists. That is not a new idea here: it is
+what `label pin` does for an attribute sitting, and `spiral_500_20260903`'s 100
+reserved cards were drawn before any verdict existed.
+
+Two things have to be got right, and the leg's own `pin.py` is the worked example
+(`blind_palettes_20260905`, 2026-09-05, 180 → 280 places, 0 contested).
+
+* **`split.json`'s `eval_only_batches` is NOT extended.**
+  `test_finished_store.py::test_the_shipped_stores_hold_what_they_say_they_hold`
+  holds that list equal to the batches of the rows the registry calls pinned, and
+  a reserved batch has no rows yet. The reservation goes in its own key —
+  `reserved_before_the_sitting` — and the name joins `eval_only_batches` when the
+  sitting lands.
+* **Only places carrying no training row may be reserved**, the same rule the
+  contested paragraph above states, and the write is bracketed by
+  `finished.assert_pin_holds` on the store as it stands and again on the store as
+  it reads back. `write_pin` truncates, so the side is rebuilt whole and asserted
+  a superset of the old first.
+
+**And a reservation costs two slow guards until its sitting lands.** Both were
+seen red on 2026-09-05 and both were cleared by finishing the arc:
+
+* `test_finished_train.py::test_the_pin_is_part_of_the_evaluation_side_and_carries_no_training_row`
+  asserts `pinned ⊆ evaluation`, whose failure message is *the instrument is
+  shipped and not being read* — precisely what a reservation is until it is
+  labelled. The assertion the test exists for, **no pinned place carries a
+  training row**, holds throughout.
+* `test_renders.py::test_the_evaluation_side_is_in_the_plan` asserts every pinned
+  place is in that head's render-cache plan, and the plan is derived from the
+  store's rows — so a place with no row cannot be in it.
+
+**The arc that clears them, in order**: reserve → label → `label ingest --write` →
+**settle the pin** → `renders plan` → `renders build`. Settling is the step worth
+naming: the reserved rows are placeholders carrying `score: null`, and once the
+verdicts exist each is swapped for the batch's own stored row at that place, so
+the file holds one shape and `split.json` goes back to
+[`finished_import.pin_document`]'s exact keys — `eval_only_batches` off the
+registry, `renders` / `locations` / `tiers` over the file's own rows, and no
+`reserved_before_the_sitting` left behind. `renders build` skips what it holds, so
+the cost is the new rows alone: **100 crops in 347 s at three workers**, 3.47 s
+each. Both guards then run rather than skip, and pass.
+
+Giving the reservation up is the other way out — delete the reserved rows from
+`eval_split.jsonl` — and it is only right when the sheet will not be labelled.
+
 ## What cutting a sheet costs, and why the number moves so much
 
 A location unit is **two renders at 1280×720 ss2**, and that is the whole bill —
@@ -601,6 +653,46 @@ under the same identity on every levelled row — 107 of 300 here. `judge_band`'
 plans were repaired from `measure.json` and re-verified before the byte-for-byte
 check, which is the check that would have caught it.
 
+**A sheet cut over a leg's OWN rows is cut before the merge, and the number is
+large.** Retention prunes per `(location, mode)` pair at `RETAIN_PER_PAIR` = 3, so
+a leg that put eight palettes on each pair to give a sheet something to choose
+from loses five eighths of them the moment it merges. `sheet_leg_0905`
+(2026-09-05) made 19,200 rows and the merge's prune deleted **16,666 pictures,
+2.599 GiB, and 10,775 levelled colormaps, 1.184 GiB** — the pool grew by 2,534
+net. Every one of those deletions is a row some map's four best might have come
+from, so the order is: cut the sheet, then merge. It is also why the sheet's
+`selected_on` reading is worth carrying: after the merge most of those candidate
+rows no longer exist to be looked up.
+
+**Measured cost of a per-map correction sheet, 2026-09-05, `new_maps_top4_20260905`.**
+480 units at 1280×720 ss2 over 480 *distinct* locations — one location each, so
+nothing shares a field and the dump is paid per unit. Three workers:
+
+| sheet | units | modes | s/unit wall | s/unit work | operator acted |
+|---|---:|---|---:|---:|---:|
+| `smooth_render` | 241 | `smooth` | **0.73** | 2.16 | 171 (71%) |
+| `strange_render` | 239 | `stripe`, `tia`, `curvature` | **6.67** | 19.60 | 124 (52%) |
+| `blind_palettes_20260905` | 100 | the same three | 3.99 | 11.87 | 53 (53%) |
+
+**Nine times, on one geometry, one place population and one machine, and the whole
+of it is the mode.** Both correction sheets were cut out of the same 600 proven
+high-band locations by the same assignment; `smooth` is the field spent by rank
+and the other three carry a texture. This is the mode-mix rule above arriving at
+its cleanest reading yet — estimate a finished sheet by its modes, and never carry
+a `smooth` figure onto a strange page. All three builds reported
+`rendered: 0, reused_from_cache: 0`, and re-rendering from the plan matched byte
+for byte on **23 of 23**, **24 of 24** and **14 of 14** sampled rows, 48 of the 61
+of them levelled.
+
+**Both readings on every row, and the shift is a mean of nothing and a tail of a
+half.** `selected_on` at 640×360 ss2 against `columns` at 1280×720 ss2, over the
+480: mean `P(≥4)` shift **+0.0074** on the smooth sheet and **−0.0156** on the
+strange one, medians +0.0041 and +0.0008 — and single rows moving as far as
+**−0.64** and **+0.40**. Of the 480, 456 cleared the pool bar at candidate
+geometry and 444 still clear it at label geometry. The judge is regime-stable in
+the mean and not per row, which is exactly why both readings travel rather than
+one.
+
 ### A blind page is cut and then stripped
 
 The page renders three things that describe a picture rather than being it, and a sheet
@@ -616,6 +708,24 @@ of any verdict. The `join` stays complete and untouched on every row, which is w
 the ingest a join rather than a lookup. The manifest carries a `withheld` sentence saying
 what came off, because a page with no facts on it and a page whose facts were never cut
 look identical a month later.
+
+**It is five things and not three, and the other two are what `anchored` asks
+about.** `finished_source` also prefills the head's own decode as each row's
+`suggestion` and sorts the page good→bad by its score, and those are exactly the
+two properties a batch registered `anchored: false` is claiming it does not have.
+A page stripped of its facts and still read in the judge's own order, with the
+judge's own tier under every card, is an anchored page with the evidence taken off
+it. So the rewrite also sets **`suggestion: null` and `suggestion_score: null`**
+and **re-orders the rows into a seeded shuffle**, and the manifest's `order`,
+`scorer` and `suggested_by` are corrected to `shuffle` / `none` / `none`.
+
+**Re-ordering after the cut costs no render and is safe to renumber**, which is
+the design rather than luck: the picture is named for its position in the *plan*
+(`cut####`) and the `u0001` id is assigned after the order is fixed, so the join,
+the picture path and the thumbnail all travel with the row and the id encodes the
+page position and nothing else. `blind_palettes_20260905` was cut, stripped and
+renumbered this way on 2026-09-05 — 0 facts, 0 columns, 0 captions, 0 suggestions
+and 100 of 100 joins complete afterwards.
 
 **The batch name is on the page too**, in the section line, and so is `order`. Neither is
 strippable and neither should be: they are what a labeler needs to know which sheet is in

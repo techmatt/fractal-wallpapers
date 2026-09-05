@@ -177,11 +177,11 @@ just its own file.
 test there is, and that is what CI runs and what runs before a checkpoint. The
 fast lane is for the edit-run loop and nothing else.
 
-Both are measured, not estimated. The **fast** lane is **107.65 s over the 3,757 it
-holds, 116 deselected**, on this machine, 2026-09-05, on a `.[dev,models]` install
-with a release engine built. The **slow** lane's last reading is **6:11 over 3,716,
-nothing skipped**, taken on an older and smaller tree and **not re-read since**;
-its count is 3,836 now and its clock is unknown. **`data/palettes` is a
+Both are measured, not estimated. The **fast** lane is **107.97 s over the 3,757 it
+holds, 116 deselected**, and the **slow** lane **6:34 over 3,873, nothing
+skipped** — both on this machine, 2026-09-05, on a `.[dev,models]` install with a
+release engine built. The slow lane's clock had gone unread across an older and
+smaller tree and is current again. **`data/palettes` is a
 parametrized guard**, so a drop moves both counts: `classic-pairs-2026-09` added
 120 maps and therefore 120 collected tests with no test written, and a reading
 taken across a drop is not comparable with one taken before it. Every reading this lane has taken is in

@@ -349,6 +349,23 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+It read **107.97 s over 3,757, 116 deselected** fast and **6:34 over 3,873,
+nothing skipped** slow at `SHEET_new_palettes_0905`, 2026-09-05, on the same
+`.[dev,models]` install with a release engine. **The slow lane's clock had been
+unread since an older and smaller tree** — `CLAUDE.md` carried 6:11 over 3,716 and
+said so — and this is the reading that replaces it: 157 more tests for 23 more
+seconds, which is the fairest evidence this log holds that the count has grown and
+the clock has not. Neither lane moved on the day's work: no test was added, and
+what the day *did* add is 19,200 candidate rows (2,534 net after the prune), 100
+label rows and 100 render crops.
+
+**And the fast lane was read twice, forty minutes apart, at 112.06 s and 107.97 s
+over the identical tree.** The first was taken within the hour after a 64-minute
+render leg and a 580-unit measure pass; the second after the box had been idle
+through a slow lane. 4.1 s, 3.8%, on an unchanged tree — which is the size of the
+"re-run before believing a lane that moves right after a leg" rule, measured
+rather than asserted. The figure carried forward is the settled one.
+
 It read **107.65 s over 3,757, 116 deselected** fast at `INGEST_new_palettes_0905`,
 2026-09-05, on an idle box. **Every one of the 120 added tests is the colormap
 guard's**: `classic-pairs-2026-09` put 120 files into `data/palettes` and
