@@ -534,7 +534,7 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
         "resolve": ("--stamp",),
         "list": (),
     },
-    "votes": {"build": ("--out", "--limit", "--quality", "--chroma", "--ss")},
+    "votes": {"build": ("--out", "--limit", "--quality", "--chroma", "--ss", "--ss-for")},
     "growth": {
         "run": ("--name", "--fraction", "--n", "--seed", "--swap-seconds"),
         "plot": (),

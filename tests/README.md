@@ -341,6 +341,25 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+It read **101.72 s over 3,600, 116 deselected** fast and **6:11 over 3,716, nothing
+skipped** slow at the τ ruling, 2026-09-05, both on an idle box once the n40 kit's
+leg had finished. **2.21 s for eleven more tests**, all of them in `test_votes.py`,
+and the shape is why it is that cheap: five are pure arithmetic over
+`parse_supersample_for` and the other six build a two-seat kit whose renders are
+stubbed, so the only real work is two 2560x1440 encodes and a downscale apiece.
+
+**Count the totals and not the passes when a lane came back red.** The first
+reading of this pair was taken from a run that failed one guard — the nested-verb
+flag table did not yet know about `--ss-for` — and its summary line reads
+`1 failed, 3599 passed`, which was read once here as a total of 3,599 and made the
+lane look one test short of what had been added. **3,599 + 1 + 116 is 3,716**, and
+3,716 is eleven over the reading below's 3,705, which is exactly what was written.
+A red lane still gives a count; it gives it in two numbers.
+
+**The slow lane is the first full reading since 2026-09-04's 6:31 over 3,681**, and
+it is *20 s faster over 35 more tests*. Nothing was marked and no store moved
+between them, so on this file's own rule that is the box rather than the tree.
+
 It read **99.51 s over 3,589, 116 deselected, nothing skipped** at the voting kit,
 2026-09-04 — **ten tests more** than the reading below and **3.34 s over** its
 96.17 s, on an idle box once the forty-seat kit's leg had finished. The ten are six

@@ -36,6 +36,12 @@ from fractal_wallpapers.curation import tentative, votes
 #: Three seats, so `--limit 2` is a real cut rather than the whole record.
 KEYS = ("aaaa0000bbbb1111", "cccc2222dddd3333", "eeee4444ffff5555")
 
+#: One mode each, and the first two differ so that a `--limit 2` cut still holds
+#: two modes — a per-mode supersample override has to be a real split inside the
+#: two-seat kit every other test here builds. The third is a mode the cut never
+#: reaches, which is how an override that fires on nothing is checked.
+MODES = ("smooth", "smooth_mean_angle", "threads")
+
 #: What the stub renders: the left half one colour and the right half another, at
 #: the frame a kit ships. A downscale of this keeps both halves; a crop, a
 #: candidate, or a picture built from anything else does not.
@@ -64,7 +70,7 @@ def store(tmp_path, monkeypatch):
             "seat": index,
             "key": key,
             "alias": key[:8],
-            "mode": "smooth",
+            "mode": MODES[index],
             "mode_params": {},
             "partition": "mandelbrot",
             # A path under the redirected tree that nothing ever writes: a kit
@@ -82,10 +88,18 @@ def store(tmp_path, monkeypatch):
 
 @pytest.fixture
 def stub_renders(monkeypatch):
-    """[`votes.render_fulls`] without an engine, calling `arrived` where it does."""
+    """[`votes.render_fulls`] without an engine, calling `arrived` where it does.
+
+    Yields the list of legs it was driven through — one entry per call, carrying
+    the regime and the keys handed to it — because a per-mode supersample makes
+    the *number* of render passes and their contents part of what a kit is.
+    """
     from PIL import Image
 
+    legs: list[dict] = []
+
     def render_fulls(jobs, staging, regime, workers, arrived, log=print):
+        legs.append({"regime": regime.spelled, "keys": [job["key"] for job in jobs]})
         staging.mkdir(parents=True, exist_ok=True)
         for job in jobs:
             picture = Image.new("RGB", votes.FRAME, LEFT)
@@ -99,6 +113,7 @@ def stub_renders(monkeypatch):
         return {"regime": regime.spelled, "planned": len(jobs), "made": len(jobs), "failed": []}
 
     monkeypatch.setattr(votes, "render_fulls", render_fulls)
+    return legs
 
 
 def built(tmp_path, stamp, **over) -> dict:
@@ -106,10 +121,10 @@ def built(tmp_path, stamp, **over) -> dict:
     return votes.build(stamp=stamp, out=tmp_path / "kit", limit=2, log=lambda _line: None, **over)
 
 
-def seat_list(directory: Path) -> list[str]:
-    """The keys the page embeds, read back the way a reader would have to."""
+def seat_list(directory: Path) -> list[dict]:
+    """The seats the page embeds, read back the way an ingest would have to."""
     page = (directory / votes.PAGE_NAME).read_text(encoding="utf-8")
-    found = re.search(r"^const KEYS = (\[.*\]);$", page, re.MULTILINE)
+    found = re.search(r"^const SEATS = (\[.*\]);$", page, re.MULTILINE)
     assert found, "the page does not embed a seat list"
     return json.loads(found.group(1))
 
@@ -148,7 +163,7 @@ def test_the_page_embeds_the_records_own_keys_in_the_records_own_order(
     the only thing that joins the two. A page carrying anything else is a label
     file nothing can ingest."""
     built(tmp_path, store)
-    assert seat_list(tmp_path / "kit") == list(KEYS[:2])
+    assert [seat["key"] for seat in seat_list(tmp_path / "kit")] == list(KEYS[:2])
 
 
 def test_a_thumbnail_is_a_downscale_of_the_full_render_and_never_of_the_candidate(
@@ -182,6 +197,8 @@ def test_the_kit_names_its_encoding_and_the_frame_it_was_rendered_at(
         "quality": 85,
         "chroma": "444",
         "regime": "2560x1440ss4",
+        "regime_for": {},
+        "seats_at": {"ss4": 2},
     }
     assert manifest["record"] == store
     assert manifest["viewer"] == votes.VIEWER
@@ -200,3 +217,114 @@ def test_a_chroma_nothing_ships_is_refused_rather_than_passed_to_pillow(tmp_path
     """Pillow takes an integer here and would take a wrong one silently."""
     with pytest.raises(votes.VotesRefused):
         votes.build(stamp=store, out=tmp_path / "kit", chroma="422", log=lambda _line: None)
+
+
+# --------------------------------------------------------------------------- #
+# The per-mode supersample.
+# --------------------------------------------------------------------------- #
+def test_a_per_mode_supersample_splits_the_leg_and_renders_the_cheap_pass_first(
+    tmp_path, store, stub_renders
+) -> None:
+    """One render pass per distinct supersample and not one overall, cheapest
+    first — the whole point of the override is that most of a kit is cheap, so
+    the fulls a person can look at have to start landing before the fine pass."""
+    built(tmp_path, store, supersample=2, supersample_for={"smooth_mean_angle": 4})
+    assert [leg["regime"] for leg in stub_renders] == ["2560x1440ss2", "2560x1440ss4"]
+    assert [leg["keys"] for leg in stub_renders] == [[KEYS[0]], [KEYS[1]]]
+
+
+def test_the_page_records_which_supersample_each_seat_was_rendered_at(
+    tmp_path, store, stub_renders
+) -> None:
+    """In the seat list and never in the filename: the filename carries the
+    position and nothing a friend can sort by. A kit whose seats were made at two
+    supersamples and does not say which is which is un-reproducible at the seat."""
+    built(tmp_path, store, supersample=2, supersample_for={"smooth_mean_angle": 4})
+    assert seat_list(tmp_path / "kit") == [
+        {"key": KEYS[0], "ss": 2},
+        {"key": KEYS[1], "ss": 4},
+    ]
+    assert not [path for path in (tmp_path / "kit" / votes.FULLS).iterdir() if "ss" in path.name]
+
+
+def test_the_manifest_says_what_was_overridden_and_what_that_came_to(
+    tmp_path, store, stub_renders
+) -> None:
+    """`regime_for` is what was asked and `seats_at` is what the record's own
+    modes turned it into — an override naming a mode this cut does not hold is
+    legal, and the two blocks together are how it shows up as having fired on
+    nothing."""
+    manifest = built(
+        tmp_path,
+        store,
+        supersample=2,
+        supersample_for={"smooth_mean_angle": 4, "threads": 4},
+    )
+    assert manifest["encoding"]["regime"] == "2560x1440ss2"
+    assert manifest["encoding"]["regime_for"] == {
+        "smooth_mean_angle": "2560x1440ss4",
+        "threads": "2560x1440ss4",
+    }
+    # `threads` is the third seat and `--limit 2` never reaches it.
+    assert manifest["encoding"]["seats_at"] == {"ss2": 1, "ss4": 1}
+    assert [leg["regime"] for leg in manifest["render"]["legs"]] == [
+        "2560x1440ss2",
+        "2560x1440ss4",
+    ]
+    assert manifest["render"]["planned"] == 2 and manifest["render"]["made"] == 2
+
+
+def test_an_override_that_names_no_mode_of_this_record_is_not_an_error(
+    tmp_path, store, stub_renders
+) -> None:
+    """A cut holds whatever modes its first N seats carry, so a mode missing from
+    one cut is the ordinary case. The kit is the unsplit one."""
+    built(tmp_path, store, supersample=2, supersample_for={"itinerary": 4})
+    assert [leg["regime"] for leg in stub_renders] == ["2560x1440ss2"]
+
+
+@pytest.mark.parametrize("text", ["smooth_mean_angle", "smooth_mean_angle=", "=4", "x=four"])
+def test_a_supersample_override_that_is_not_one_is_refused_at_the_flag(text) -> None:
+    """Before anything renders: a misspelt override is one that can never fire,
+    and a twenty-hour leg would discover it at the end."""
+    with pytest.raises(votes.VotesRefused):
+        votes.parse_supersample_for(text)
+
+
+def test_an_override_naming_a_supersample_nothing_is_priced_at_is_refused() -> None:
+    """The two cells of the pilot's grid are the two, and the argument for the
+    default is a comparison between them."""
+    assert votes.parse_supersample_for("smooth_mean_angle=4") == ("smooth_mean_angle", 4)
+    with pytest.raises(votes.VotesRefused):
+        votes.parse_supersample_for("smooth_mean_angle=3")
+
+
+# --------------------------------------------------------------------------- #
+# The three keys.
+# --------------------------------------------------------------------------- #
+def test_the_page_binds_one_two_and_three_to_clear_up_and_star(
+    tmp_path, store, stub_renders
+) -> None:
+    """Matt's ruling of 2026-09-05: 1 clears, 2 is the thumbs-up, 3 is the star.
+    The VOTE values stay 1 and 2, which is what the export carries and what an
+    ingest joins on — shifting those to make room for a "no" would invalidate
+    every label file already exported against a record.
+
+    A key SETS and a button TOGGLES, and the page has to keep the two apart:
+    a key that toggled would make 2 mean "like" on one picture and "un-like" on
+    the next."""
+    built(tmp_path, store)
+    page = (tmp_path / "kit" / votes.PAGE_NAME).read_text(encoding="utf-8")
+    assert 'const BY_KEY = new Map([["1", 0], ["2", 1], ["3", 2]]);' in page
+    assert "<small>(2)</small>" in page and "<small>(3)</small>" in page
+    assert "<small>(1)</small>" not in page, "the old binding is still on screen"
+    assert "<b>2</b> thumbs-up" in page and "<b>1</b> to take a rating back" in page
+
+
+def test_the_paragraph_the_friends_read_names_the_keys(tmp_path, store, stub_renders) -> None:
+    """The README travels with the zip and is the only thing a friend reads before
+    opening anything, so a key binding it does not carry is one nobody finds."""
+    built(tmp_path, store)
+    text = (tmp_path / "kit" / votes.READ_ME).read_text(encoding="utf-8")
+    assert "2 for the thumbs-up, 3 for the star" in text
+    assert "1 to take a rating back off" in text
