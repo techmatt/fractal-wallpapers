@@ -644,6 +644,30 @@ code paths correcting for the population: **field colorings 42.7% cheaper a
 candidate** (54.0% on the 57% the curve fires on), **the whole loop 22.7%**. What
 cannot share a field is 44.5% of candidates and 64.1% of the clock.
 
+### A glance sheet at label geometry is the same sharing, and two numbers move
+
+A hand-cut sheet that asks *what does this map look like* is the sharing turned
+sideways — a few places, every map at each — and it is `colorize.render` with a
+`fields=` directory and `render_geometry` set to `sheets.LABEL_RESOLUTION`, so what
+an eye rules on is the picture the map would ship. `CHECK_dud_maps_0905` cut one
+that way, ten maps at four places: **40 pictures in 11.6 s at three workers**, four
+dumps, and the operator acted on **37 of 40**.
+
+**A field at label geometry is 14.06 MiB, not the 3.5 MiB above.** That figure is
+candidate geometry; 1280×720 at supersample 2 is four times the samples, and
+`FIELDS_KEPT` at 64 would be 900 MB rather than 200. A driver that dumps at label
+geometry sweeps its own `fields/` when it finishes instead of leaving them to
+`sweep_fields`, which is sized for the smaller one.
+
+**Three threads over `colorize.render` buy 1.67×, not 3×**, measured the same day
+on 32 pictures over these four places: 0.569 s a picture serial against 0.341 s at
+three. The engine is a subprocess, so threads are the whole pool and none of
+`LEGS.md`'s *a scratch driver that drives a render pool needs a `__main__` guard*
+applies — but the operator's `measure` stage is Python over a decoded JPEG, and at
+this geometry it is enough of the clock to hold the concurrency under two. More
+than three threads is still the desktop-usability rule and is not the lever; fewer
+places and more maps at each is.
+
 ## `curate retention` — what survives what the rule drops
 
 ```
