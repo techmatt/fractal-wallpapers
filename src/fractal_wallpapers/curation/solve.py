@@ -2739,6 +2739,7 @@ def render_seats(
                 },
                 colormap=recipe["colormap"],
                 mode=recipe["mode"],
+                mode_params=dict(recipe.get("mode_params") or {}),
                 output=str(picture),
                 geometry={**regime.geometry(), "maxiter": int(recipe["maxiter"])},
                 timeout=None if timeout is None else float(timeout),
