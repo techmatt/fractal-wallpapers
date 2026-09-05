@@ -106,7 +106,7 @@ dominance   pro rata: with n seats filled including this one, a colour may hold
             floor(K x t x n) + 1 of them, K = 2, t uniform (1/48 a cell, 1/12 a
             family) unless a --target moved it. Only a candidate DOMINANT in an
             over-allowance colour is refused; carrying some of it is fine
-twin        no picture within 0.03809 of two already-shipped ones
+twin        no picture within 0.034281 of two already-shipped ones
 ```
 
 The pro-rata form is the fix for what a cumulative whole-gallery budget did: that
@@ -654,8 +654,13 @@ pairs sit at the threshold itself and are plainly different pictures.
 Solved at **0.65 τ globally the gallery goes 1,033 → 1,569 seats and the shortfall 68 → 7**,
 four of the five short modes closing outright. Two costs: **500 of the 1,033 seated pictures
 are not in it** — the lexicographic objective reshuffles once there are more seats to fill —
-and it holds **3,795 pairs the shipped threshold would refuse** against zero today. No ruling
-was taken and `TAU` is unchanged.
+and it holds **3,795 pairs the shipped threshold would refuse** against zero today.
+
+**The ruling came the same day**: Matt took `TAU` to 0.65 τ globally on 2026-09-02, which is
+the 0.03809 that stood until 2026-09-05, when he took it to 0.90 of *that* — 0.034281 — by
+eye rather than off a sitting. `curation.ceiling.TAU` carries both moves and what the second
+cost; the sentence above is what the audit said before either was taken and is left as it was
+written.
 
 **The record is already the refusal log, so an audit like this needs no re-solve.**
 `solve.json`'s `diversity_refusals` carries, per refused candidate, the seat it collided with,
@@ -1194,6 +1199,9 @@ fractal-wallpapers curate votes build <stamp> --out artifacts/votes/<stamp>
 fractal-wallpapers curate votes build --out artifacts/votes/<stamp>_n40 --limit 40
 # cheaper to make and smaller to send, and it shows
 fractal-wallpapers curate votes build --out artifacts/votes/cheap --ss 2 --quality 80
+# cheap everywhere but the mode that aliases worst — repeatable, one mode each
+fractal-wallpapers curate votes build --out artifacts/votes/mixed \
+    --ss 2 --ss-for smooth_mean_angle=4 --quality 85 --chroma 420
 ```
 
 A recorded gallery is a decision this project took. A voting kit is that decision handed
@@ -1205,8 +1213,23 @@ copy of a kit outlives this checkout's memory of what wrote it.
 
 **A filename carries the seat's position and nothing else.** No rank, no key, no mode: a
 friend who can read a rank off a filename has been told the answer. The join lives in the
-page, which embeds the index-to-recipe-key list as JSON, and the export carries the
-recipe key — the ID that survives every later merge.
+page, which embeds the seat list as JSON — `{"key": <recipe key>, "ss": <supersample>}`
+per seat, in seat order — and the export carries the recipe key, the ID that survives
+every later merge. **The supersample is in that list and not in the filename**, for the
+same reason: a kit may render one mode finer than the rest, so a kit has to say which
+seat got which, and a filename saying it is a second thing a friend can sort a page by.
+The mode that decided it is not in the page at all.
+
+**Three keys, from 2026-09-05: `1` clears, `2` is the thumbs-up, `3` is the star.** The
+buttons are unchanged and still two. A **key sets and a button toggles**, which is the
+whole reason there is a third key: a button somebody has already pressed has to un-press,
+but a key that toggled would make `2` mean *like* on one picture and *un-like* on the
+next, which is the one thing a person rating a thousand pictures fast must not have to
+track. The **vote values stay 1 and 2** — shifting those to make room for a neutral would
+invalidate every label file already exported against a record, so the key numbering and
+the vote numbering are deliberately apart. A rating taken in fullscreen closes it, as
+before; a *clear* does not, because somebody who has just un-rated the picture they are
+looking at wants to keep looking at it.
 
 **Every seat is rendered again and the thumbnail comes off that render.** The stored
 candidate is 640x360, the size the judges read, and it is far too small to vote on;
@@ -1287,6 +1310,18 @@ five quality steps does, and it costs it as aliasing rather than as softness; th
 show it plainly on `smooth_mean_angle`. Hence the defaults: **ss4, q85, 4:2:0**, one to
 buy the picture and two to pay for it. ss4 is also 10% smaller in bytes at every cell,
 because supersampling removes exactly the noise a JPEG spends most on.
+
+**`--ss-for <mode>=<n>` buys that decision back per mode**, repeatable, and it makes the
+leg **one render pass per distinct supersample rather than one overall**, cheapest first
+so the fulls a person can look at start landing early. Each pass is the locked three
+workers in turn and never two pools at once. It is **per mode and never per seat**: the
+modes are what a person can say a sentence about, and a table with single seats in it
+would be a kit nobody could describe. An override naming a mode the record does not hold
+is **legal, not refused** — a `--limit` cut holds whatever modes its first N seats carry
+— and the manifest's `encoding.regime_for` (what was asked) beside `encoding.seats_at`
+(what the record's modes turned it into) is where one that fired on nothing shows up.
+The two supersamples on `votes.SUPERSAMPLES` are the only two either flag takes, because
+a third is a cell of the pilot's grid nobody has looked at.
 
 **The busy crops are found rather than guessed**: `flatness`'s own per-16-pixel plane fit,
 summed over a 512x288 window with a summed-area table, and the window is chosen once off
@@ -1895,7 +1930,7 @@ an artificial floor of 1 it is 18 modes, one seat each but for `smooth` at 3.
 
 ### The twin test is the diversity rule, and it is the last one
 
-`ceiling.TAU = 0.03809` in the pixel-cloud metric, against every already-seated
+`ceiling.TAU = 0.034281` in the pixel-cloud metric, against every already-seated
 picture, sequentially. It is **not** in the solve and the solve's complexity does not
 change: a rule that reads the seats already taken costs one signature per surviving
 candidate, where a solver carries it as a quadratic family of rows.
@@ -1970,7 +2005,7 @@ twin test. They are near-orthogonal, so one rule cannot be both, and both are pl
 | question | rule | where it acts |
 |---|---|---|
 | the same place? | cosine `distinct.PRESELECT_RADIUS = 0.02` over the neutral descriptors | pool construction, before the walk |
-| one wallpaper? | `ceiling.TAU = 0.03809` in the pixel cloud | set-level, last rule of `curate solve` |
+| one wallpaper? | `ceiling.TAU = 0.034281` in the pixel cloud | set-level, last rule of `curate solve` |
 
 `RADII` stays a set of candidates to look at, and the sheet — near pairs at each
 radius, ordered by distance, as pictures — is the instrument. That is how

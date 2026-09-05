@@ -234,9 +234,9 @@ def test_every_ceiling_constant_is_pinned_at_the_value_it_was_calibrated_to():
     )
     assert ceiling.CELL_SHARE == 1.0 / 48.0, "uniform over the codebook's chromatic cells"
     assert ceiling.FAMILY_SHARE == 1.0 / 12.0, "uniform over its hue families"
-    assert ceiling.TAU == 0.03809, (
-        "Matt 2026-09-02, off AUDIT_twin_refusals_short_modes' sheets and exactly 0.65x "
-        "the 0.0586 read off the twins ladder before it. In the ALL-PIXEL metric"
+    assert ceiling.TAU == 0.034281, (
+        "Matt 2026-09-05, by eye and not off a sitting: exactly 0.90x the 0.03809 set "
+        "2026-09-02, which was 0.65x the 0.0586 read off the twins ladder. ALL-PIXEL metric"
     )
     assert ceiling.TWINS == 2, "one near neighbour is a pair; three of a kind is noticed"
     assert ceiling.GROUP_CAP_RATE == 0.025, "Matt, ckpt 88: 1 up to n=40, 3 at n=150, 25 at n=1000"
@@ -279,13 +279,15 @@ def test_the_two_pixel_cloud_thresholds_stay_the_distance_apart_they_were_set():
     two ever converged the exemption would stop being a real gate.
 
     The **gap** is the pin and the ratio is the reading of it. It was 1.706 while
-    `TAU` was 0.0586; the 2026-09-02 ruling took `TAU` to 0.65x that and left
-    `TAU_GROUP` alone, which moves the ratio to 2.625 and makes the exemption a
-    wider gate than it was rather than a narrower one. So this is re-baselined and
-    the sentence above it is unchanged: what it guards is that they do not converge.
+    `TAU` was 0.0586, 2.625 after the 2026-09-02 ruling took `TAU` to 0.65x that,
+    and 2.917 since the 2026-09-05 ruling took it to 0.90x again. `TAU_GROUP` has
+    not moved through either, so each loosening makes the exemption a wider gate
+    than it was rather than a narrower one. So this is re-baselined a second time
+    and the sentence above it is unchanged: what it guards is that they do not
+    converge.
     """
     assert ceiling.TAU < ceiling.TAU_GROUP
-    assert pytest.approx(2.625, abs=0.001) == ceiling.TAU_GROUP / ceiling.TAU
+    assert pytest.approx(2.917, abs=0.001) == ceiling.TAU_GROUP / ceiling.TAU
 
 
 def test_the_dominance_thresholds_are_pinned_and_the_family_pair_is_twice_the_cell_pair():

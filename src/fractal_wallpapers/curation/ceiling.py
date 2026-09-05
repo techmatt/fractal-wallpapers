@@ -237,12 +237,34 @@ FAMILY_SHARE = 1.0 / 12.0
 
 #: Pixel-cloud distance under which two pictures are the same wallpaper.
 #:
-#: **0.03809 since 2026-09-02** — Matt's ruling off `AUDIT_twin_refusals_short_modes`,
-#: and exactly 0.65 x the 0.0586 it had been. **Globally and as one number**: the
-#: signature is mode-agnostic and so is the rule, so there is no per-mode table here
-#: and there is not to be one.
+#: **0.034281 since 2026-09-05** — Matt's ruling, exactly 0.90 x the 0.03809 it had
+#: been since 2026-09-02, which was itself 0.65 x the 0.0586 read off the twins
+#: ladder before that. **Globally and as one number**: the signature is mode-agnostic
+#: and so is the rule, so there is no per-mode table here, no per-palette one, and
+#: there is not to be one.
 #:
-#: What the audit found. Over `overnight_after`, the n=2000 gallery that closed every
+#: **The 2026-09-05 move was taken by eye, and that is the whole of its provenance.**
+#: `READ_twin_verdicts_and_tau_candidates_0905` priced 0.95x, 0.90x and 0.85x by
+#: counterfactual solve and read the sitting on `labels/twin_verdicts.json` — and the
+#: sitting cannot carry the ruling, because all 88 of its ruled pairs are pairs the
+#: rule ADMITTED. It answers *was the rule right to admit* (9.1% too_close) and says
+#: nothing about whether it was wrong to refuse, which is the half a loosening turns
+#: on: every pair below the threshold went unruled. There is no crossing in it either
+#: — the isotonic fit runs 0.0000-0.1905 over the band and never approaches 0.5. **τ
+#: is a taste dial here and no sitting has located a boundary.** What Matt saw as he
+#: ruled was the old value refusing pairs that are not similar.
+#:
+#: What the move costs, priced before it was taken, on the published record's own
+#: config (`20260904T233233Z`: n=1000, augment on, spiral cap default): the seating
+#: stays full at 1,000 seats with zero shortfall — **the pool is saturated at this
+#: size, so a looser threshold cannot buy a seat and moves only which thousand sit**.
+#: The sum goes 565.73 to 571.71, the worst seat 0.121677 to 0.124222, twin refusals
+#: 520 to 338, and **158 of the thousand seats turn over** against a gallery whose IDs
+#: the site's figures already name. Past about 0.85x the objective goes flat and the
+#: churn keeps climbing, which is what bounds this from below.
+#:
+#: What the 2026-09-02 audit found, kept because it is the reading the number is still
+#: anchored on. Over `overnight_after`, the n=2000 gallery that closed every
 #: census floor and still fell 68 seats short, the pairs the test was refusing stop
 #: reading as duplicates at about 0.65 of the old threshold — read off contact sheets
 #: of refused beside seated, per mode, and corroborated by a statistic nobody used to
@@ -252,10 +274,10 @@ FAMILY_SHARE = 1.0 / 12.0
 #: sat above the new threshold, and all twenty of the farthest-refused pairs sat at the
 #: old one and were plainly different pictures.
 #:
-#: What it costs, measured before it was taken: the n=2000 seating goes 1,033 to 1,569
-#: with the shortfall 68 to 7, and the gallery then holds 3,795 pairs the old threshold
-#: would have refused. Those are the pairs the sheets say are not duplicates, and that
-#: is the whole of the ruling.
+#: What that one cost, measured before it was taken: the n=2000 seating goes 1,033 to
+#: 1,569 with the shortfall 68 to 7, and the gallery then holds 3,795 pairs the 0.0586
+#: threshold would have refused. Those are the pairs the sheets say are not duplicates,
+#: and that is the whole of that ruling.
 #:
 #: **The known failure this does NOT fix** is structural rather than a matter of where
 #: the number sits: two near-white pictures with different geometry collapse in a
@@ -267,7 +289,7 @@ FAMILY_SHARE = 1.0 / 12.0
 #: rejected 14, 0.060 rejected 30. It is a number **in the all-pixel metric** and
 #: cannot be carried to the chromatic-only variant, which runs 5-15% lower at every
 #: percentile that matters.
-TAU = 0.03809
+TAU = 0.034281
 
 #: How many pictures inside [`TAU`] it takes to refuse. **Two**: one near
 #: neighbour is a collection with a pair in it, which is what a gallery of a

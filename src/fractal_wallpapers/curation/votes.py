@@ -48,6 +48,13 @@ the mode. The **export** carries the recipe key, which is the ID that survives
 every later merge ([`curation.tentative`]'s first property), so an ingest written
 months from now joins on something that still names the same picture.
 
+**The supersample goes in the page's seat list for the same reason.** A kit may
+render one mode finer than the rest ([`seat_supersample`]), so the seats are no
+longer all the same picture-making, and a kit that did not record which seat got
+which would be un-reproducible at the seat. It rides in the inlined list beside
+the key rather than in the filename, where it would be a second thing a friend
+can read off a tile and sort by.
+
 ## The order is per-viewer and it is a permutation, not a shuffle of a window
 
 Seeded from the viewer's own name, so reopening the folder resumes the same walk
@@ -98,6 +105,11 @@ FRAME = (2560, 1440)
 #: dropping to ss2 to save fifteen hours costs more picture than dropping five
 #: quality steps does, and it costs it as aliasing rather than as softness.
 SUPERSAMPLE = 4
+
+#: The two supersamples this kit is priced at, and the only two either flag takes.
+#: A third would be a cell of the pilot's grid nobody has looked at, and the whole
+#: argument above is a comparison between these two.
+SUPERSAMPLES = (2, 4)
 
 #: How wide a thumbnail is. 512 at 16:9 is 512x288 -- two of them across a phone,
 #: five across the grid this page lays out, and small enough that a thousand of
@@ -176,12 +188,67 @@ def encode(image, path: Path, quality: int = QUALITY, chroma: str = CHROMA) -> i
 # --------------------------------------------------------------------------- #
 # The seats, and the pictures under them.
 # --------------------------------------------------------------------------- #
-def plan(stamp: str | None = None, limit: int | None = None) -> tuple[str, list[dict]]:
+def parse_supersample_for(text: str) -> tuple[str, int]:
+    """`"smooth_mean_angle=4"` as `(mode, 4)`. Refuses anything else.
+
+    Refuses here rather than at the render, for [`ceiling.parse_target`]'s reason:
+    a misspelt mode is an override that can never fire, and a leg that discovered
+    it after twenty hours would have rendered the whole kit at the default and
+    said nothing about it.
+    """
+    mode, _, spelled = str(text).partition("=")
+    mode = mode.strip()
+    if not _ or not mode:
+        raise VotesRefused(f"--ss-for wants <mode>=<supersample>, not {text!r}")
+    try:
+        supersample = int(spelled)
+    except ValueError:
+        raise VotesRefused(
+            f"{spelled!r} is not a supersample, so {text!r} is not an override."
+        ) from None
+    if supersample not in SUPERSAMPLES:
+        raise VotesRefused(
+            f"{supersample} is not one of the supersamples this kit is priced at, "
+            f"{list(SUPERSAMPLES)}."
+        )
+    return mode, supersample
+
+
+def seat_supersample(mode: str, supersample: int, overrides: dict | None) -> int:
+    """What one seat renders at: its mode's override, or the kit's default.
+
+    **Per mode and never per seat.** The supersample is the one decision in a kit
+    a person can see, and the modes are what a person can say a sentence about —
+    so an override is taken over a whole mode at a time, and a table with single
+    seats in it would be a kit nobody could describe. Which modes are worth the
+    finer render is a judgement off the pictures and is the caller's; nothing
+    here has an opinion about it.
+
+    An override naming a mode the record does not hold is **not** refused, and
+    that is deliberate: a kit cut with `--limit` holds whatever modes the first N
+    seats happen to carry, so a mode missing from one cut is the ordinary case
+    rather than a mistake. The manifest counts the seats at each supersample
+    beside the overrides it was asked for, which is where one that fired on
+    nothing shows up.
+    """
+    return int((overrides or {}).get(str(mode), supersample))
+
+
+def plan(
+    stamp: str | None = None,
+    limit: int | None = None,
+    supersample: int = SUPERSAMPLE,
+    supersample_for: dict | None = None,
+) -> tuple[str, list[dict]]:
     """`(stamp, jobs)` -- the record's seats in seat order, cut to `limit`.
 
-    A job carries the position, the key and the name, and it is what everything
-    below joins on. The record's own row rides along under `row` for the manifest
-    and for nothing the page ever sees.
+    A job carries the position, the key, the name, the mode and the supersample
+    it will be rendered at, and it is what everything below joins on. The
+    supersample is resolved **here** rather than at the render leg so that a job
+    is complete from the moment it exists: the page inlines it, the manifest
+    counts it and the legs group by it, and three readings of one table is three
+    chances for them to disagree. The record's own row rides along under `row` for
+    the manifest and for nothing the page ever sees.
     """
     stamp = tentative.latest() if stamp is None else str(stamp)
     rows = tentative.read_rows(stamp)
@@ -189,10 +256,25 @@ def plan(stamp: str | None = None, limit: int | None = None) -> tuple[str, list[
         raise VotesRefused(f"{stamp} holds no seats to vote on.")
     if limit is not None:
         rows = rows[: max(0, int(limit))]
-    return stamp, [
-        {"index": index, "key": str(row["key"]), "name": seat_name(index), "row": row}
-        for index, row in enumerate(rows)
-    ]
+    jobs = []
+    for index, row in enumerate(rows):
+        # The record's own mode and not the ledger recipe's, because the
+        # supersample has to be decided before any recipe is read: a kit groups
+        # its render legs by mode and `recipes_for` is a lookup inside one of
+        # them. The two agree — the record's row is written off the recipe — and
+        # if they ever did not, the record is what a seat IS.
+        mode = str(row.get("mode") or "")
+        jobs.append(
+            {
+                "index": index,
+                "key": str(row["key"]),
+                "name": seat_name(index),
+                "mode": mode,
+                "ss": seat_supersample(mode, supersample, supersample_for),
+                "row": row,
+            }
+        )
+    return stamp, jobs
 
 
 def recipes_for(jobs: list[dict]) -> dict:
@@ -309,16 +391,24 @@ def cut(png: Path, job: dict, fulls: Path, thumbs: Path, quality: int, chroma: s
 # The folder a friend opens.
 # --------------------------------------------------------------------------- #
 def page(directory: Path, stamp: str, jobs: list[dict]) -> Path:
-    """Write `index.html`. Self-contained, and openable over `file://`."""
-    keys = [job["key"] for job in jobs]
+    """Write `index.html`. Self-contained, and openable over `file://`.
+
+    The inlined seat list is `{"key": ..., "ss": ...}` per seat, in seat order.
+    The key is the join every export is written against; the supersample is what
+    that seat's two JPEGs were actually made at, and the page never reads it —
+    it is there so a kit can say what it is at the seat rather than only in
+    aggregate. **The mode is not in it**: a page carrying the mode is a page a
+    friend can group by, which is the module docstring's whole objection to
+    putting anything but the position in a filename.
+    """
     path = directory / PAGE_NAME
+    seats = [{"key": job["key"], "ss": int(job.get("ss", SUPERSAMPLE))} for job in jobs]
     writing = Path(str(path) + ".writing")
     writing.write_text(
         _PAGE.replace("__RECORD__", html.escape(str(stamp)))
         .replace("__VIEWER__", html.escape(VIEWER))
         .replace("__PAGE__", str(int(PAGE)))
-        .replace("__SEATS__", str(len(keys)))
-        .replace("__KEYS__", json.dumps(keys, ensure_ascii=False)),
+        .replace("__SEATS__", json.dumps(seats, ensure_ascii=False)),
         encoding="utf-8",
         newline="\n",
     )
@@ -370,6 +460,7 @@ def build(
     quality: int = QUALITY,
     chroma: str = CHROMA,
     supersample: int = SUPERSAMPLE,
+    supersample_for: dict | None = None,
     workers: int | None = None,
     log=print,
 ) -> dict:
@@ -378,7 +469,16 @@ def build(
     Resumable at the seat: a seat whose two JPEGs are already there is not
     rendered again, so a killed leg picks up where it stopped and a kit rebuilt at
     another quality has to be built somewhere else -- which is the honest
-    behaviour, because the quality is not in the filename either.
+    behaviour, because the quality is not in the filename either. **A kit rebuilt
+    at another supersample is the same case**, and the resume cannot tell the two
+    apart: the JPEG on disk does not say what made it, so a kit at new
+    supersamples goes in a new directory or the standing seats stay as they were.
+
+    `supersample_for` is `{mode: supersample}`, and it makes the leg **one render
+    pass per distinct supersample** rather than one pass overall. They run
+    cheapest first so the fulls a person can look at start landing early, each is
+    the locked three workers in turn and never two pools at once, and every seat
+    is encoded and its PNG deleted as it arrives regardless of which pass made it.
     """
     if out is None:
         raise VotesRefused("a kit is built into a directory; name one with --out.")
@@ -386,8 +486,9 @@ def build(
         raise VotesRefused(f"{chroma!r} is not a chroma; it is one of {sorted(SUBSAMPLING)}.")
     directory = Path(out)
     workers = release.DEFAULT_WORKERS if workers is None else int(workers)
+    overrides = {str(mode): int(value) for mode, value in (supersample_for or {}).items()}
     regime = release.Regime(FRAME, int(supersample))
-    stamp, jobs = plan(stamp, limit)
+    stamp, jobs = plan(stamp, limit, int(supersample), overrides)
     fulls, thumbs = directory / FULLS, directory / THUMBS
     for where in (fulls, thumbs, directory / STAGING):
         where.mkdir(parents=True, exist_ok=True)
@@ -404,15 +505,31 @@ def build(
     def arrived(job, png):
         sizes.append({"name": job["name"], **cut(png, job, fulls, thumbs, quality, chroma)})
 
+    seats_at = {
+        value: len([job for job in jobs if job["ss"] == value])
+        for value in sorted({job["ss"] for job in jobs})
+    }
     log(
-        f"[votes] {stamp}: {len(jobs)} seat(s), {len(standing)} already encoded, "
-        f"{len(wanted)} to render at {regime.spelled} on {workers} worker(s)"
+        f"[votes] {stamp}: {len(jobs)} seat(s), "
+        f"{', '.join(f'{count} at ss{value}' for value, count in seats_at.items())}, "
+        f"{len(standing)} already encoded, {len(wanted)} to render on {workers} worker(s)"
     )
-    rendered = (
-        render_fulls(wanted, directory / STAGING, regime, workers, arrived, log)
-        if wanted
-        else {"regime": regime.spelled, "planned": 0, "made": 0, "failed": []}
-    )
+    legs = []
+    for value in sorted({job["ss"] for job in wanted}):
+        held = [job for job in wanted if job["ss"] == value]
+        one = release.Regime(FRAME, value)
+        log(f"[votes] rendering {len(held)} seat(s) at {one.spelled}")
+        legs.append(render_fulls(held, directory / STAGING, one, workers, arrived, log))
+    rendered = {
+        "regime": regime.spelled,
+        "planned": sum(int(leg.get("planned", 0)) for leg in legs),
+        "made": sum(int(leg.get("made", 0)) for leg in legs),
+        "failed": [row for leg in legs for row in leg.get("failed", ())],
+        # One entry per supersample the leg actually rendered at, cheapest first.
+        # The aggregate above is what the resume reads and the legs are what a
+        # budget is taken off, so both are here rather than one derived twice.
+        "legs": legs,
+    }
     written = page(directory, stamp, jobs)
     read_me(directory)
     staging = directory / STAGING
@@ -425,7 +542,21 @@ def build(
         "viewer": VIEWER,
         "record": stamp,
         "seats": len(jobs),
-        "encoding": {"quality": int(quality), "chroma": chroma, "regime": regime.spelled},
+        "encoding": {
+            "quality": int(quality),
+            "chroma": chroma,
+            # `regime` is what a seat gets unasked; `regime_for` is the modes told
+            # otherwise; `seats_at` is what the record's own modes turned that
+            # into. An override naming a mode this cut does not hold is legal, and
+            # this is where it shows: `regime_for` names a supersample that
+            # `seats_at` has no entry for.
+            "regime": regime.spelled,
+            "regime_for": {
+                mode: release.Regime(FRAME, value).spelled
+                for mode, value in sorted(overrides.items())
+            },
+            "seats_at": {f"ss{value}": count for value, count in seats_at.items()},
+        },
         "where": str(directory),
         "page": str(written),
         "zip": str(bundle),
@@ -457,13 +588,17 @@ and there's no number you're trying to reach. Click a picture to see it large,
 and press Escape to come back. Your choices are saved as you go, so you can close
 the page and come back to it later.
 
+The keyboard does the same three things to whichever picture you're pointing at,
+or to the large one if you have one open: 2 for the thumbs-up, 3 for the star,
+and 1 to take a rating back off.
+
 When you're done, click Export at the top. Your browser will save a small file.
 Send that file back and you're finished.
 """
 
 
-#: The viewer, as one string with five substitutions: `__KEYS__`, `__RECORD__`,
-#: `__VIEWER__`, `__PAGE__` and `__SEATS__`, all filled by [`page`]. Kept here
+#: The viewer, as one string with four substitutions: `__SEATS__`, `__RECORD__`,
+#: `__VIEWER__` and `__PAGE__`, all filled by [`page`]. Kept here
 #: rather than in a tracked asset file for [`tentative`]'s reason -- a second file
 #: is a second thing to find -- and it is the second and last page this project
 #: writes for a person to drive.
@@ -525,8 +660,8 @@ _PAGE = """<!doctype html>
 <div id="big" hidden>
   <img id="bigimg" alt="">
   <div class="bar">
-    <button data-v="1">&#128077; like <small>(1)</small></button>
-    <button data-v="2">&#9733; love <small>(2)</small></button>
+    <button data-v="1">&#128077; like <small>(2)</small></button>
+    <button data-v="2">&#9733; love <small>(3)</small></button>
   </div>
 </div>
 <div id="gate">
@@ -534,12 +669,19 @@ _PAGE = """<!doctype html>
     <h1>Pick the wallpapers you like</h1>
     <p>Type your name, then rate the ones you like with the thumbs-up, and the
        ones you really like with the star. Skip everything else.</p>
+    <p>Keys: <b>2</b> thumbs-up, <b>3</b> star, <b>1</b> to take a rating back
+       off — on whichever picture you are pointing at.</p>
     <p><input id="name" placeholder="your name" autofocus>
        <button id="start">Start</button></p>
   </div>
 </div>
 <script>
-const KEYS = __KEYS__;
+// One entry per seat, in the record's own seat order: the recipe key an export
+// joins on, and the supersample that seat's pictures were rendered at. Nothing
+// on the page reads `ss` — it is here so a kit says what it is at the seat, and
+// the mode that decided it is deliberately not here.
+const SEATS = __SEATS__;
+const KEYS = SEATS.map((seat) => seat.key);
 const RECORD = "__RECORD__";
 const VIEWER = "__VIEWER__";
 const PER_PAGE = __PAGE__;
@@ -611,12 +753,31 @@ function tally() {
     "\\u{1F44D} " + up + " \\u00B7 \\u2605 " + star;
 }
 
-function vote(index, kind) {
+// The kind a key means. 1 clears, 2 is the thumbs-up, 3 is the star — and the
+// VOTE values are still 1 and 2, which is what the export carries and what an
+// ingest joins on. The two numberings are apart on purpose: adding a key that
+// means "no" could not be done by shifting the votes without invalidating every
+// label file already exported against this record.
+//
+// A Map and not an object literal, because the test is `does this key bind` and
+// an object answers yes for `constructor` and every other name on the prototype.
+const BY_KEY = new Map([["1", 0], ["2", 1], ["3", 2]]);
+
+// A key SETS and a button TOGGLES, and that difference is the reason there is a
+// third key at all: a button somebody has already pressed has to un-press, but a
+// key that toggled would make 2 mean "like" on one picture and "un-like" on the
+// next, which is the one thing a person rating a thousand pictures fast must not
+// have to keep track of. `kind` 0 is neutral.
+function setVote(index, kind) {
   const key = KEYS[index];
-  if (votes[key] === kind) delete votes[key]; else votes[key] = kind;
+  if (kind) votes[key] = kind; else delete votes[key];
   save();
   tally();
   paintTile(index);
+}
+
+function vote(index, kind) {
+  setVote(index, votes[KEYS[index]] === kind ? 0 : kind);
 }
 
 function paintTile(index) {
@@ -713,6 +874,15 @@ function rate(index, kind) {
   if (open === index) shut();
 }
 
+function press(index, kind) {
+  setVote(index, kind);
+  // Same rule as the buttons, with the one exception the third key introduces:
+  // CLEARING is undoing a decision rather than taking one, so it leaves the
+  // picture up. Somebody who has just un-rated the thing they are looking at
+  // wants to keep looking at it.
+  if (open === index && kind) shut();
+}
+
 document.getElementById("start").addEventListener("click", begin);
 document.getElementById("name").addEventListener("keydown", (event) => {
   if (event.key === "Enter") begin();
@@ -750,9 +920,9 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && open !== null) { shut(); return; }
   if (open !== null && event.key === "ArrowRight") { step(1); return; }
   if (open !== null && event.key === "ArrowLeft") { step(-1); return; }
-  if (event.key !== "1" && event.key !== "2") return;
+  if (!BY_KEY.has(event.key)) return;
   const target = open !== null ? open : hovered;
-  if (target !== null) rate(target, Number(event.key));
+  if (target !== null) press(target, BY_KEY.get(event.key));
 });
 
 document.getElementById("export").addEventListener("click", () => {
@@ -788,6 +958,7 @@ __all__ = [
     "PAGE",
     "QUALITY",
     "SUPERSAMPLE",
+    "SUPERSAMPLES",
     "THUMB_WIDTH",
     "VIEWER",
     "VotesRefused",
@@ -796,9 +967,11 @@ __all__ = [
     "cut",
     "encode",
     "page",
+    "parse_supersample_for",
     "plan",
     "read_me",
     "recipes_for",
     "render_fulls",
     "seat_name",
+    "seat_supersample",
 ]

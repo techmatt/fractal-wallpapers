@@ -617,6 +617,10 @@ def curate_votes(args: argparse.Namespace) -> int:
     from fractal_wallpapers.curation import tentative, votes
 
     try:
+        # Parsed before anything is rendered, and last-one-wins on a repeated
+        # mode: `--ss-for` is the flag a twenty-hour leg would otherwise discover
+        # was misspelt at the end of it.
+        overrides = dict(votes.parse_supersample_for(text) for text in (args.ss_for or ()))
         manifest = votes.build(
             stamp=args.stamp,
             out=args.out,
@@ -624,6 +628,7 @@ def curate_votes(args: argparse.Namespace) -> int:
             quality=args.quality,
             chroma=args.chroma,
             supersample=args.ss,
+            supersample_for=overrides,
         )
     except (votes.VotesRefused, tentative.TentativeRefused) as refusal:
         print(refusal)
@@ -3406,9 +3411,18 @@ def add_commands(subcommands) -> None:
     building_votes.add_argument(
         "--ss",
         type=int,
-        choices=(2, 4),
+        choices=votes_module.SUPERSAMPLES,
         default=votes_module.SUPERSAMPLE,
         help=f"the field supersample under the frame (default {votes_module.SUPERSAMPLE})",
+    )
+    building_votes.add_argument(
+        "--ss-for",
+        action="append",
+        metavar="MODE=N",
+        help="render one mode at another supersample, repeatable — `--ss 2 --ss-for "
+        "smooth_mean_angle=4` is a cheap kit with one mode kept fine. The leg becomes one "
+        "render pass per distinct supersample, cheapest first, and each seat's own "
+        "supersample rides in the page's seat list rather than in its filename",
     )
 
     growing = steps.add_parser(
