@@ -1221,15 +1221,53 @@ seat got which, and a filename saying it is a second thing a friend can sort a p
 The mode that decided it is not in the page at all.
 
 **Three keys, from 2026-09-05: `1` clears, `2` is the thumbs-up, `3` is the star.** The
-buttons are unchanged and still two. A **key sets and a button toggles**, which is the
-whole reason there is a third key: a button somebody has already pressed has to un-press,
-but a key that toggled would make `2` mean *like* on one picture and *un-like* on the
-next, which is the one thing a person rating a thousand pictures fast must not have to
-track. The **vote values stay 1 and 2** — shifting those to make room for a neutral would
-invalidate every label file already exported against a record, so the key numbering and
-the vote numbering are deliberately apart. A rating taken in fullscreen closes it, as
-before; a *clear* does not, because somebody who has just un-rated the picture they are
-looking at wants to keep looking at it.
+**vote values stay 1 and 2** — shifting those to make room for a neutral would invalidate
+every label file already exported against a record, so the key numbering and the vote
+numbering are deliberately apart. A rating taken in fullscreen closes it; a *clear* does
+not, because somebody who has just un-rated the picture they are looking at wants to keep
+looking at it.
+
+**Viewer 2.0 gives the neutral a button, and that is what moved the toggle.** The
+fullscreen bar is three: **Average `(1)` · Thumbs up `(2)` · Star `(3)`**, left to right in
+key order, and they **set** rather than toggle, exactly as the keys do. Before 2.0 the only
+way to un-rate with a mouse was to press an already-pressed button, so a button had to
+toggle; with an Average button the toggle becomes a second route to the same state and a
+worse one, because it makes *Thumbs up* mean *un-like* on a picture already liked — the
+one ambiguity the third key exists to remove. **The grid-tile buttons are unchanged and
+still toggle**, having no third button to set neutral with. `viewer` on the export is
+`"2.0"`, and deliberately not `votes/v2`: telling it from the first version's `votes/v1`
+is telling two unrelated strings apart. **The schema under it is unchanged.**
+
+**Two colours, named once and read everywhere a vote shows.** Thumbs-up is the gold the
+star used through v1, `#fbbf24`; the star is a medium-dark green, `#16a34a`. The tile
+border, the button that cast the vote and the two figures in the count strip all read them
+off `--up` and `--star`, so a person learns the pair on the first page and no later screen
+teaches a second vocabulary for the same two votes. The neutral button keeps the strip's
+blue: it is the button that says nothing about the picture, which is the one lie a vote
+colour there would tell.
+
+**Two people on one computer, and the button that is not how you do it.** A name is a
+slot — ratings live under `votes/<record>/<name>` — so a partner taking a turn types their
+own name and gets their own walk and their own storage, and the first person gets hers
+back by typing hers. Nothing has to be destroyed to share a machine, and the README says
+so before it says anything about the button. **`Start over` is for leaving the computer
+clean**: it erases every name's ratings *for this record* and it asks **twice**, an in-page
+band carrying the count of exactly what would go, then the browser's own dialog. Two steps
+of different kinds, because two of the same kind is one habit. The sweep is the record's
+prefix and not the whole store — another kit's folder in the same browser is somebody
+else's evening. A latent collision went with it: the remembered name was kept at
+`votes/<record>/name` and now sits at `votes/<record>:name`, beside the slot prefix rather
+than inside it, because a person actually called *name* would have overwritten it with
+their votes object.
+
+**Each page button carries the votes given on that page**, small type beneath the number,
+thumbs-up and stars together, **zero drawn as `0` rather than left blank**. It is the one
+affordance on the page that is not about the pictures, and it earns that: a page nobody
+opened and a page somebody worked and liked nothing on are the same blank from the outside,
+and only the first is worth going back to. Blank would mean *unknown* and nothing here is
+unknown. The count is over the **walk** and not over the record — two people's page 3 hold
+different pictures — and it names no picture, mode or vote, so there is still nothing to
+sort by.
 
 **Every seat is rendered again and the thumbnail comes off that render.** The stored
 candidate is 640x360, the size the judges read, and it is far too small to vote on;
@@ -1274,6 +1312,16 @@ and it puts a thousand seats at **21.2 h at ss4** and about **5.4 h at ss2** —
 second derived through the pilot's own 3.90x ratio rather than measured, because
 nothing has run a deep ss2 leg. Price a kit off a sample drawn in **seat order**, never
 off one drawn on a picture's own properties.
+
+**ss1 measures 4.9 s a picture and it is sample-linear too**: 250 seats of the same record
+in seat order, a 1,233.9 s leg on the locked three workers, 250 made and none failed,
+2026-09-05. That is **15.6x** the ss4 rate against the 16x the sample count predicts, so
+the fixed cost a seat carries — process spawn, PNG write, two JPEG encodes at 2560x1440 —
+is still under a tenth of the field time even at the cheapest cell. A 250-seat kit is
+**21 minutes**, which is what makes ss1 the cell you drive the viewer on. Its bytes are the
+other half of the trade and they go the wrong way: **1,288 KiB a full**, 20% over ss4's
+1,077 at the same q85/4:2:0, because supersampling removes exactly the noise a JPEG spends
+most on. **342.9 MB zipped at 250 seats** — a kit for driving, not for sending.
 
 **The pilot's byte prediction held even though its timing did not**, which is the shape
 to expect: JPEG size is a fact about the picture and the six spanned that distribution on
@@ -1320,8 +1368,16 @@ would be a kit nobody could describe. An override naming a mode the record does 
 is **legal, not refused** — a `--limit` cut holds whatever modes its first N seats carry
 — and the manifest's `encoding.regime_for` (what was asked) beside `encoding.seats_at`
 (what the record's modes turned it into) is where one that fired on nothing shows up.
-The two supersamples on `votes.SUPERSAMPLES` are the only two either flag takes, because
-a third is a cell of the pilot's grid nobody has looked at.
+`votes.SUPERSAMPLES` is what either flag takes, and **2 and 4 are the priced pair** — the
+argument above is a comparison between exactly those two, and anything else is a cell of
+the pilot's grid nobody has looked at.
+
+**`--ss 1` is on that list and is not one of them.** It is the debugging cell: a kit in
+minutes rather than hours, which is what makes the whole friends' flow — paging, voting,
+export — something a person can drive end to end in an afternoon instead of after a leg.
+It pays for that in the currency the ss2-against-ss4 measurement already named as the
+visible one, aliasing, and nothing has priced its bytes or its picture. **A kit at ss1 is
+for driving, not for sending.**
 
 **The busy crops are found rather than guessed**: `flatness`'s own per-16-pixel plane fit,
 summed over a 512x288 window with a summed-area table, and the window is chosen once off
