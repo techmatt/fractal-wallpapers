@@ -1332,6 +1332,12 @@ def test_the_ceiling_wins_the_collision_and_the_floor_goes_unfilled():
     Three `stripe` candidates in one colour cell whose allowance is one, against a
     floor of three. The seating takes the one the ceiling permits, leaves the
     floor two short, and says so — it does not relax the cell to fill a mandate.
+
+    `mode_ceilings={}` because the collision this pins is the COLOUR ceiling's,
+    and the shipped per-mode ceiling would put a second one in the same pool: at
+    `n = 6` a fifth of the seats filled is one seat until the sixth, so the
+    `threads` floor of two would go short here for a reason this test is not
+    about. That collision is real and pinned on its own in `test_curation_ceiling`.
     """
     pool = [
         candidate(f"s{at}", mode="stripe", score=0.99, cells=("dark_vivid_blue",))
@@ -1342,6 +1348,7 @@ def test_the_ceiling_wins_the_collision_and_the_floor_goes_unfilled():
         pool,
         n=6,
         floor={"stripe": 3, "threads": 2},
+        mode_ceilings={},
         diversity=False,
         radius=None,
         key=solve.JUDGE_KEY,
@@ -2076,7 +2083,9 @@ def test_the_theme_is_read_off_the_rows_own_dominance_block():
 
 def test_a_themed_pass_takes_the_themed_cap_and_measures_P_off_its_own_pool():
     """`P` is read after the bar and the pre-selection, over exactly the rows the
-    leg may seat — not off the ledger, and not off a flag."""
+    leg may seat — not off the ledger, and not off a flag. It denominated the cap
+    until 2026-09-05 and is a reading of the pool now, so the two claims are worth
+    keeping apart: the cap is `max(1, floor(0.05 n))` and P is still measured."""
     pool = [
         candidate(
             f"{group}_{at}",
@@ -2101,8 +2110,8 @@ def test_a_themed_pass_takes_the_themed_cap_and_measures_P_off_its_own_pool():
     theme = record["theme"]
     assert theme["P"] == 4
     assert theme["groups_in_the_pool"] == 5, "the fluke group is in the pool, not in P"
-    assert theme["group_cap"] == ceiling.themed_group_cap(20, 4) == 10
-    assert record["config"]["ceiling"]["group_cap"] == 10
+    assert theme["group_cap"] == ceiling.themed_group_cap(20) == 1
+    assert record["config"]["ceiling"]["group_cap"] == 1
     assert record["config"]["ceiling"]["group_cap_rule"] == ceiling.THEMED
     assert "themed_group_cap" in record["config"]["ceiling"]["group_cap_from"]
 

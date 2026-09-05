@@ -341,6 +341,16 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+It read **105.44 s over 3,637, 116 deselected** fast at `FIX_owed_minor_0905`,
+same day, on an idle box once that prompt's counterfactual solves had finished.
+The fifteen guards added there cost **1.68 s** of it, measured directly rather
+than by difference — `-k` over the fifteen reads 7.03 s against a
+nothing-matches run's 5.35 s of collection, which is the way to price a handful
+of tests when the reading they would be differenced against was taken two
+prompts ago on a different tree. HEAD held 3,622 before them. The slow lane was
+not run: the diff is a rule, a cap, an un-ignore and a task rebuild, all of them
+guarded in the fast lane.
+
 It read **101.72 s over 3,600, 116 deselected** fast and **6:11 over 3,716, nothing
 skipped** slow at the τ ruling, 2026-09-05, both on an idle box once the n40 kit's
 leg had finished. **2.21 s for eleven more tests**, all of them in `test_votes.py`,

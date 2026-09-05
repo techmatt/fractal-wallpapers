@@ -12,6 +12,13 @@ typing, and the few columns a person filters on — `manifest.json` saying what 
 it was taken over and how it did, and `index.html`, a self-contained browser over
 the pool's own 640x360 candidate pictures.
 
+**The record is the rows and the manifest; the page is a derivation of them.**
+Matt's ruling of 2026-09-05, and it is what publication tracks: `gallery.jsonl`
+and `manifest.json` come through the hole in `.gitignore` and `index.html` does
+not. [`page`] rebuilds it from the rows alone — `fractal-wallpapers curate solve
+browse <stamp>` — so a clone that wants the browser runs one command rather than
+carrying 4.07 MB of derived HTML in the history for the seven published stamps.
+
 Nothing here chooses anything. [`curation.solve`] does the choosing and this
 records it, so a change in this module can never move a seat.
 
@@ -77,7 +84,13 @@ SCHEMA = 1
 #: The subtree a recorded gallery's stamped folder lands in.
 UNIT = "tentative"
 
-#: The three files one stamp holds.
+#: The two files one stamp's RECORD is, and the one derived from them.
+#:
+#: Matt's ruling of 2026-09-05 draws the line here: the rows and the manifest are
+#: the record and are what publication tracks, and [`PAGE_NAME`] is a browse view
+#: [`page`] writes from `gallery.jsonl` whenever somebody asks. Before it, all
+#: three were tracked per published stamp, which put a derivation in the history
+#: — 4.07 MB of it against the rows' 3.60 MB.
 ROWS_NAME = "gallery.jsonl"
 MANIFEST_NAME = "manifest.json"
 PAGE_NAME = "index.html"
@@ -95,8 +108,10 @@ ALIAS_LENGTH = 8
 RECORDED_SEATS = 1000
 
 #: **The stamps Matt has published**, oldest first. A published record is tracked
-#: — its three text files come through the hole in `.gitignore` — and it is the
-#: only kind an unstamped read can land on.
+#: — its two text files come through the hole in `.gitignore` — and it is the
+#: only kind an unstamped read can land on. [`PAGE_NAME`] is not one of them: a
+#: record is its rows and its manifest, and [`page`] regenerates the browser from
+#: those on demand.
 #:
 #: Recording a gallery and publishing one used to be a single act: the hole was
 #: spelled per FILE across every stamp, so every record ever made was committed,
@@ -567,6 +582,12 @@ def page(stamp: str | None = None, log=print) -> Path:
     external references are the relative thumbnails. Nothing is fetched and no
     script is loaded from anywhere, because the page is opened over `file://`
     where both fail.
+
+    **Reads `gallery.jsonl` and `manifest.json` and nothing else**, which is what
+    makes the page a derivation rather than part of the record: `curate solve
+    browse <stamp>` writes it again on any clone that has the two tracked files,
+    which is why the page itself is not tracked. `record` calls this too, so a
+    fresh record still lands with its page beside it.
     """
     stamp = latest() if stamp is None else str(stamp)
     directory = gallery_dir(stamp)

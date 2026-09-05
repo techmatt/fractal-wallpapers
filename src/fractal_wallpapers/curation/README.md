@@ -1826,6 +1826,16 @@ against a real plan — `curate parity`, that a concurrently rendered release is
 byte-identical to a serial one, and `curate replay`, that every released picture
 re-derives from its own record.
 
+**A parity arm is the caller's task re-pointed, and that is load-bearing.**
+`release.parity` used to rebuild each arm's `release.Task` from six of its seven
+fields, dropping `mode_params` — so a plan carrying a varied seat was checked as
+two renders of the **bare** mode, which agree with each other perfectly and pass.
+A check that passes by discarding what it is checking is worse than no check, and
+the failure is silent because the bare picture is a perfectly good picture of
+something else. It is `dataclasses.replace(task, output=...)` since 2026-09-05:
+the arm differs from the caller's task in the output path alone, so a field added
+to the task later carries without an edit here.
+
 ## Coverage on pixels
 
 [`palette_coverage`](palette_coverage.py) asks the census's question about

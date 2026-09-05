@@ -124,31 +124,36 @@ PROPORTIONAL = "proportional"
 GROUP_CAP_RULES = (IDENTITY, PROPORTIONAL)
 
 #: The **themed** cap's rule name. Not in [`GROUP_CAP_RULES`] on purpose: it is
-#: not a rule a caller names, it is the rule a themed pass *has*, and it needs a
-#: number no CLI flag carries — how many palette groups the themed pool holds. A
-#: record still has to say which cap ran, so it is spelled here with the others.
+#: not a rule a caller names, it is the rule a themed pass *has*. A record still
+#: has to say which cap ran, so it is spelled here with the others.
 THEMED = "themed"
 
-#: How many seats the themed cap gives one group as a multiple of the even share.
+#: The **themed** cap's rate: a share of `n`, as the main gallery's cap is.
 #:
-#: **Two**, Matt's ruling. `ceil(SHARE * n / P)`: the even share of `n` seats
-#: across the `P` groups that can field the theme, doubled, so a good map may take
-#: twice its share and no map may take a gallery. The main gallery's
-#: [`GROUP_CAP_RATE`] is untouched and is a share of `n` rather than of the pool —
-#: which is exactly why it is the wrong cap for a theme. A themed pool has a few
-#: dozen groups in it against the whole pool's hundreds, so a cap denominated in
-#: `n` alone refuses the theme long before the theme runs out: `dark_vivid_lime`
-#: measured 38 of 50 seats, 90 of 150 and 124 of 200 under it on 2026-09-01, with
-#: the cap refusing 300-435 rows against the diversity rule's 1-27.
-THEMED_CAP_SHARE = 2
+#: **0.05**, Matt's ruling of 2026-09-05 — `max(1, floor(0.05 * n))`, so 10 at
+#: n=200 and 50 at n=1000. **Twice [`GROUP_CAP_RATE`]**, which is the whole of the
+#: argument: a themed pool holds a few dozen palette groups against the whole
+#: pool's hundreds, so the general cap is the binding rule at every shipping size
+#: over a theme, and the themed pass is given room for exactly that and no more.
+#:
+#: It **replaced** `ceil(2n/P)` — twice the even share across the `P` groups that
+#: could field the theme, measured off the pool at solve time. What that bought
+#: was a cap that moved with the pool: two themes at one `n` ran under different
+#: caps, and one theme ran under a different cap after a night's mining than
+#: before it, so a before/after on a theme was never a controlled read. A rate on
+#: `n` is a number written down once, and P stays on the record as a **reading**
+#: of the pool rather than as the denominator of a rule.
+THEMED_GROUP_CAP_RATE = 0.05
 
 #: How many distinct **places** a palette group has to field in the themed pool
 #: before it counts towards `P`.
 #:
-#: **Three.** `P` is a denominator, so every group counted loosens nothing and
-#: tightens the cap on the groups actually doing the work; a group holding one
-#: fluke place can never take more than one seat however high the cap goes, and
-#: counting it prices a capacity that does not exist. Measured on 2026-09-01:
+#: **Three.** `P` was the denominator of the themed cap until 2026-09-05 and is
+#: now a **reading** of the pool the record carries — how many palette groups can
+#: actually field the theme — so the floor is what keeps that reading honest: a
+#: group holding one fluke place can never take more than one seat however high
+#: the cap goes, and counting it would report a capacity that does not exist.
+#: Measured on 2026-09-01:
 #: `dark_vivid_lime` 39 groups of which 29 field three or more, and the ten it
 #: drops hold 13 of the pool's 424 places; `dark_vivid_green` 65 of which 50, the
 #: fifteen dropped holding 20 of 1,097. So the floor moves `P` by a quarter while
@@ -180,10 +185,12 @@ def group_cap(n: int, rule: str = IDENTITY) -> int:
 def capable_groups(candidates, places: int = THEMED_CAP_PLACES) -> dict:
     """`{group: how many distinct places it fields}`, for the groups over the floor.
 
-    The denominator of [`themed_group_cap`], and it counts **places** — one
-    wallpaper per location is absolute, so a group's capacity is the places it can
-    field and never the rows it holds. `places` is the floor a group has to reach
-    before it counts; see [`THEMED_CAP_PLACES`].
+    `P`, which a themed record carries as a reading of its own pool — it was
+    [`themed_group_cap`]'s denominator until 2026-09-05 and no rule is stated in
+    it now. It counts **places** — one wallpaper per location is absolute, so a
+    group's capacity is the places it can field and never the rows it holds.
+    `places` is the floor a group has to reach before it counts; see
+    [`THEMED_CAP_PLACES`].
     """
     held: dict = {}
     for candidate in candidates:
@@ -191,20 +198,19 @@ def capable_groups(candidates, places: int = THEMED_CAP_PLACES) -> dict:
     return {group: len(where) for group, where in sorted(held.items()) if len(where) >= int(places)}
 
 
-def themed_group_cap(n: int, groups: int) -> int:
-    """`ceil(THEMED_CAP_SHARE * n / P)` — the themed cap. **Never below one.**
+def themed_group_cap(n: int) -> int:
+    """`max(1, floor(THEMED_GROUP_CAP_RATE * n))` — the themed cap.
 
-    `groups` is `P`, the count [`capable_groups`] returns. The denominator floors
-    at one, so a pool where **no** group reaches [`THEMED_CAP_PLACES`] gets
-    `SHARE * n` — above `n`, so it cannot bind, which is the honest answer rather
-    than a fallback: in a pool like that no group can take more than two seats by
-    supply, and a cap tighter than the main gallery's would be throwing seats away
-    to enforce something one-per-location already enforces.
+    [`group_cap`]'s [`PROPORTIONAL`] arithmetic at twice its rate, and the
+    `max(1, ...)` is the same argument that one makes: `floor(0.05 * n)` is zero
+    below twenty seats and a cap of zero is a program with no seats in it. So a
+    debug themed gallery at n=10 keeps the identity cap, and a before/after on
+    this has to be taken at n=20 or above.
 
-    The `max(1, ...)` on the result is the same argument [`group_cap`] makes: a
-    cap of zero is a program with no seats in it.
+    It takes `n` alone. The pool it will be applied over is not an argument, which
+    is the point of the 2026-09-05 ruling: see [`THEMED_GROUP_CAP_RATE`].
     """
-    return max(1, int(math.ceil(THEMED_CAP_SHARE * max(0, int(n)) / max(1, int(groups)))))
+    return max(1, int(math.floor(THEMED_GROUP_CAP_RATE * max(0, int(n)))))
 
 
 #: How far apart two pictures of one palette group have to be for the second to
@@ -500,7 +506,7 @@ __all__ = [
     "IDENTITY",
     "THEMED",
     "THEMED_CAP_PLACES",
-    "THEMED_CAP_SHARE",
+    "THEMED_GROUP_CAP_RATE",
     "K",
     "PROPORTIONAL",
     "capable_groups",

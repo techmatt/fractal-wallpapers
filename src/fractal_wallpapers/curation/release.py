@@ -566,7 +566,17 @@ def parity(tasks, workers: int, directory: Path, log=print) -> dict:
     file*, and the only way to know is to make both. Each row is rendered once in
     the parent and once through the pool, into two directories, and every pair is
     compared byte for byte along with the autolevel stamp each produced.
+
+    **Each arm's task is the caller's, re-pointed and not rebuilt.** The four
+    builders in the tree were fixed on 2026-09-04 to carry `mode_params`, and this
+    one was rebuilding a bare task from six of the seven fields — so a plan whose
+    seats carry mode settings was checked as two renders of the *bare* mode, which
+    agree with each other perfectly. A check that passes by dropping the thing it
+    is checking is worse than no check, so the arm now differs from the caller's
+    task in the output path alone: `dataclasses.replace` carries every field
+    forward, including any added after this was written.
     """
+    import dataclasses
     import hashlib
 
     directory = Path(directory)
@@ -575,15 +585,7 @@ def parity(tasks, workers: int, directory: Path, log=print) -> dict:
         where = directory / arm
         where.mkdir(parents=True, exist_ok=True)
         arm_tasks = [
-            Task(
-                id=task.id,
-                row=task.row,
-                colormap=task.colormap,
-                mode=task.mode,
-                output=str(where / Path(task.output).name),
-                geometry=task.geometry,
-            )
-            for task in tasks
+            dataclasses.replace(task, output=str(where / Path(task.output).name)) for task in tasks
         ]
         seen: dict = {}
 

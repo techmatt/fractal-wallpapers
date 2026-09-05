@@ -590,6 +590,7 @@ def _record_a_solve(args: argparse.Namespace) -> int:
             swap=not args.no_swap,
             seconds=args.swap_seconds,
             spiral_cap=args.spiral_cap,
+            mode_ceilings=mode_ceilings_named(args.mode_ceiling),
             theme=args.themed,
             geometry_radius=args.themed_radius,
             themed_cap=args.themed_cap,
@@ -723,6 +724,7 @@ def curate_solve(args: argparse.Namespace) -> int:
             rows_per_seat=args.rows_per_seat,
             draw_seed=args.draw_seed,
             spiral_cap=args.spiral_cap,
+            mode_ceilings=mode_ceilings_named(args.mode_ceiling),
             swap=not args.no_swap,
             seconds=args.swap_seconds,
             augment_chains=args.augment == "on",
@@ -1837,6 +1839,89 @@ def spiral_cap_value(text: str):
     return share
 
 
+#: What `--mode-ceiling` takes to mean **no per-mode ceiling at all**.
+#:
+#: The same two spellings [`NO_SPIRAL_CAP`] takes, and for the same reason: a
+#: ceiling runs unasked, so the way back to a pass with none has to be typeable or
+#: the counterfactual arm of every read of this rule is unreachable from the
+#: command line. Unlike the spiral cap there is no third answer to keep apart — an
+#: empty mapping IS no ceiling, and `MODE=0` is a mode that may take no seat.
+NO_MODE_CEILING = ("none", "off")
+
+
+def mode_ceiling_value(text: str):
+    """`--mode-ceiling`'s argument: `MODE=SHARE`, or a word meaning no ceiling.
+
+    Returns `None` for the word and `(mode, share)` for a pair;
+    [`mode_ceilings_named`] folds a repeated flag's answers into the mapping the
+    solve takes. Refuses here rather than at the seat, [`ceiling.parse_target`]'s
+    argument: a misspelt mode name is a ceiling that can never bind, and a pass
+    that discovered it at seat 900 would report a guard as having held when the
+    guard was never on the mode anybody meant.
+    """
+    from fractal_wallpapers.curation import mode_policy
+
+    held = str(text).strip().lower()
+    if held in NO_MODE_CEILING:
+        return None
+    mode, sep, share = str(text).partition("=")
+    mode = mode.strip()
+    if not sep:
+        raise argparse.ArgumentTypeError(
+            f"--mode-ceiling wants MODE=SHARE or {' or '.join(NO_MODE_CEILING)}, not {text!r}"
+        )
+    if not mode_policy.is_accepted(mode):
+        raise argparse.ArgumentTypeError(
+            f"{mode!r} is not a mode a gallery may seat. A ceiling on one would never "
+            "bind, and would read on the record as a guard that held. One of: "
+            + ", ".join(
+                sorted(name for name in mode_policy.MODE_POLICY if mode_policy.is_accepted(name))
+            )
+        )
+    try:
+        value = float(share)
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            f"{share!r} is not a share, in --mode-ceiling {text!r}"
+        ) from None
+    if value < 0:
+        raise argparse.ArgumentTypeError(
+            f"{value:g} is not a share. A ceiling below zero refuses every candidate of "
+            f"that mode; `{mode}=0` is the spelling for a mode that may take no seat, and "
+            f"`{NO_MODE_CEILING[0]}` is the spelling for no ceiling at all"
+        )
+    return mode, value
+
+
+def _default_mode_ceilings() -> dict:
+    """[`solve.DEFAULT_MODE_CEILINGS`], imported late so building the parser does
+    not pull the solve in. Named apart because the help text and the folder both
+    want it and neither may hold its own copy."""
+    from fractal_wallpapers.curation import solve as solve_module
+
+    return dict(solve_module.DEFAULT_MODE_CEILINGS)
+
+
+def mode_ceilings_named(named) -> dict:
+    """A repeated `--mode-ceiling` folded onto [`solve.DEFAULT_MODE_CEILINGS`].
+
+    Left to right, and the default is where it starts: naming one mode adds to the
+    shipped ceiling rather than replacing it, and `none` clears everything to its
+    left. So `--mode-ceiling none` is the uncapped arm of a counterfactual,
+    `--mode-ceiling threads=0.15` tightens the shipped one, and
+    `--mode-ceiling none --mode-ceiling smooth=0.5` is a pass that caps one other
+    mode and nothing else.
+    """
+    held = _default_mode_ceilings()
+    for value in named or ():
+        if value is None:
+            held.clear()
+        else:
+            mode, share = value
+            held[mode] = share
+    return held
+
+
 def themed_flags(container):
     """The three flags that name a THEMED gallery, for `run` and for `record`.
 
@@ -1871,13 +1956,16 @@ def themed_flags(container):
         type=int,
         metavar="SEATS",
         help="the palette-group cap a THEMED pass runs under, overriding the computed "
-        f"one. Unset is ceiling.themed_group_cap: ceil({ceiling_module.THEMED_CAP_SHARE} x "
-        "n / P), twice the even share across the P palette groups that can field the "
-        f"theme, where P counts the groups fielding {ceiling_module.THEMED_CAP_PLACES} or "
-        "more distinct PLACES in the themed pool. The main gallery's cap is a share of `n` "
-        "alone and was measured as the BINDING rule over a themed pool at every shipping "
-        "size, which is why a themed pass gets its own. `--group-cap` still names the "
-        "main gallery's rule and a themed pass ignores it. Ignored without `--themed`",
+        "one. Unset is ceiling.themed_group_cap: max(1, floor("
+        f"{ceiling_module.THEMED_GROUP_CAP_RATE:g} x n)), twice the main gallery's rate. A "
+        "themed pool holds a few dozen palette groups against the whole pool's hundreds, "
+        "so the general cap was measured as the BINDING rule over a themed pool at every "
+        "shipping size, which is why a themed pass gets its own. It was ceil(2 x n / P) "
+        "until 2026-09-05, where P counted the groups fielding "
+        f"{ceiling_module.THEMED_CAP_PLACES}+ distinct places — a cap that moved with the "
+        "pool, so two themes at one n ran under two caps; P is still measured and recorded "
+        "and denominates nothing. `--group-cap` still names the main gallery's rule and a "
+        "themed pass ignores it. Ignored without `--themed`",
     )
     container.add_argument(
         "--themed-radius",
@@ -1941,6 +2029,29 @@ def solve_flags_a_record_keeps(*, demands, search):
         f"`{NO_SPIRAL_CAP[0]}` runs no cap at all and is what the incumbent gallery is "
         "spelled with; 1.0 runs the cap and lets it not bind, which is the spelling for "
         "a record that should say so",
+    )
+    demands.add_argument(
+        "--mode-ceiling",
+        type=mode_ceiling_value,
+        action="append",
+        default=None,
+        metavar="MODE=SHARE",
+        help="cap the share of seats one MODE may take: at most ceil(SHARE * seats "
+        "filled), the spiral cap's own arithmetic and the same spelling a colour target "
+        "is stated in. REPEATABLE, folded left to right onto the shipped ceiling, and "
+        f"`{NO_MODE_CEILING[0]}` clears everything to its left — which is how the "
+        "uncapped arm of a counterfactual is spelled. Unsaid, "
+        + (
+            ", ".join(
+                f"{mode} {share:g}" for mode, share in sorted(_default_mode_ceilings().items())
+            )
+            or "nothing"
+        )
+        + " runs (Matt's ruling, 2026-09-05; there was NO per-mode ceiling before that, so "
+        "a record on this machine that does not name the flag ran without one). It is a "
+        "GUARD against a runaway rather than a setting expected to bind — `threads` took "
+        "187 of 1,000 seats at 7.5x a pool-mirror on 2026-09-05 — so the reading it gives "
+        "is the `mode_ceiling` refusal column, and a zero there is the expected answer",
     )
     search.add_argument(
         "--key",

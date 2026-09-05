@@ -316,6 +316,12 @@ def row_of(
         # comparable with one taken before it, and every row now says which it is
         # rather than leaving a reader to date it.
         "spiral_cap": record["config"]["spiral_cap"],
+        # The per-mode ceilings the rung solved under, `{}` for none. On the row
+        # for the spiral cap's reason one line up: a ladder is a series taken over
+        # weeks and this rule arrived on 2026-09-05, so a rung says which side of
+        # it was drawn on rather than leaving a reader to date it. Absent on a row
+        # written before the field existed, which is a rung with no ceiling.
+        "mode_ceilings": dict(record["config"].get("mode_ceilings") or {}),
         "visits": int(drawn),
         "visits_available": int(available),
         "candidates": int(record["population"]["candidates"]),

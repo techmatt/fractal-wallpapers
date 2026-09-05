@@ -199,6 +199,26 @@ DEFAULT_GROUP_CAP = ceiling.PROPORTIONAL
 #: `spiral` refusal column says so. Unasked, this is what runs.
 DEFAULT_SPIRAL_CAP = 0.10
 
+#: **The per-mode ceilings this leg runs under unasked**: `threads` at a fifth of
+#: the seats. Matt's ruling, 2026-09-05, and it is a **guard against a runaway
+#: rather than a setting expected to bind**.
+#:
+#: What it is set against, off the post-8h n=1000 census in
+#: `MINE_overnight_8h_0905`: `threads` took **187 of 1,000 seats** on a pool it is
+#: 2.5% of — 7.5x a pool-mirror and 6x its own mode floor of 31 — which is the
+#: largest such gap on the roster, `smooth` being 0.26x its mirror at 62.7% of the
+#: pool. A fifth is above the 187 and under the next round number, so nothing on
+#: today's pool is refused by it and a pool that drifted another 7% in the same
+#: direction would be.
+#:
+#: `{}` is the spelling for **no ceiling at all**, which is what every record
+#: before this ran under, and it is what `--mode-ceiling none` produces. A mode
+#: absent from the mapping is not capped by this rule. The shape is the spiral
+#: cap's, deliberately: a share of the **realized** seat count through
+#: [`ceiling.share_of`], counted last among the counted rules, and on `config` so
+#: a tracked manifest can say which it ran.
+DEFAULT_MODE_CEILINGS: dict = {"threads": 0.20}
+
 #: How many of the refused the contact sheet shows beside the seated, per rule.
 #: Enough that a rule's refusals are a sample rather than an anecdote, few enough
 #: that the page is one page.
@@ -1476,6 +1496,7 @@ def solve(
     preselected: tuple | None = None,
     explain: set | frozenset | list | None = None,
     spiral_cap: float | None = DEFAULT_SPIRAL_CAP,
+    mode_ceilings: dict | None = DEFAULT_MODE_CEILINGS,
     augment_chains: bool = DEFAULT_AUGMENT,
     augment_depth: int = augment_module.DEFAULT_DEPTH,
     augment_seconds: float | None = augment_module.DEFAULT_SECONDS,
@@ -1515,6 +1536,13 @@ def solve(
     lives here rather than only on the flag because a bare call and a typed
     command must not be two answers to what this leg does.
 
+    `mode_ceilings` is [`DEFAULT_MODE_CEILINGS`] unasked — a **change of
+    2026-09-05** by the same argument, and `{}` is what a caller spells for no
+    per-mode ceiling at all. It applies at every `n` and to a **themed** pass too:
+    a theme narrows the colour and says nothing about the mode, so a runaway is a
+    runaway there as well. There is no `None`-means-no-cap third answer here,
+    because there is nothing for a mapping to say that `{}` does not.
+
     ## `theme` is the other gallery this leg builds
 
     Naming a cell makes this a **themed** pass, and it changes three things at
@@ -1527,13 +1555,14 @@ def solve(
     * the diversity rule is [`rules.Places`] at `geometry_radius` instead of the
       pixel-cloud twin test, because a single-cell pool is a near-duplicate pool
       under a metric over colour and the twin test would be refusing the theme;
-    * the palette-group cap is [`ceiling.themed_group_cap`], `ceil(2n/P)` over the
-      `P` groups the themed pool can actually field the theme with, measured off
-      that pool at solve time. The main gallery's `max(1, floor(0.025 n))` is a
-      share of `n` alone, and over a pool holding a few dozen maps rather than
-      hundreds it was the **binding** rule at every shipping size — 90 of 150
-      lime seats, with the cap refusing 360 rows against the diversity rule's 12.
-      `themed_cap` names a number instead;
+    * the palette-group cap is [`ceiling.themed_group_cap`],
+      `max(1, floor(0.05 n))` — twice the main gallery's rate, because over a pool
+      holding a few dozen maps rather than hundreds the general cap was the
+      **binding** rule at every shipping size: 90 of 150 lime seats, with the cap
+      refusing 360 rows against the diversity rule's 12. It was `ceil(2n/P)` until
+      2026-09-05, which moved with the pool and made two themes at one `n`
+      incomparable; `P` is still measured and recorded and no longer denominates
+      anything. `themed_cap` names a number instead;
     * nothing else. The caller still owns the target and the floor rule, and a
       themed pass without `--target <cell>=1.0` is a pass the cell allowance
       refuses at nine seats — see [`ceiling.Rule.allowed`].
@@ -1653,16 +1682,12 @@ def solve(
     else:
         capable = ceiling.capable_groups(kept)
         cap_rule = ceiling.THEMED
-        cap = (
-            ceiling.themed_group_cap(n, len(capable))
-            if themed_cap is None
-            else max(1, int(themed_cap))
-        )
+        cap = ceiling.themed_group_cap(n) if themed_cap is None else max(1, int(themed_cap))
         log(
             f"[solve] themed group cap {cap}: "
             + (
-                f"ceil({ceiling.THEMED_CAP_SHARE} x {n} / P) over P={len(capable)} group(s) "
-                f"fielding {ceiling.THEMED_CAP_PLACES}+ places"
+                f"max(1, floor({ceiling.THEMED_GROUP_CAP_RATE} x {n})), over a pool "
+                f"P={len(capable)} group(s) of which field {ceiling.THEMED_CAP_PLACES}+ places"
                 if themed_cap is None
                 else "named by the caller"
             )
@@ -1707,7 +1732,16 @@ def solve(
                 "signature(s) from the sidecar"
             )
         twins = rules.Twins(rules.clouds_for(viewed.rows), reduced=held_signatures)
-    state = rules.State(rule, n, diversity=twins, spiral_cap=spiral_cap)
+    held_ceilings = {str(mode): float(share) for mode, share in (mode_ceilings or {}).items()}
+    state = rules.State(
+        rule, n, diversity=twins, spiral_cap=spiral_cap, mode_ceilings=held_ceilings
+    )
+    if held_ceilings:
+        log(
+            "[solve] the per-mode ceiling is "
+            + ", ".join(f"{mode} {share:g}" for mode, share in sorted(held_ceilings.items()))
+            + ": at most ceil(share x seats filled) of the seats may be of that mode"
+        )
     if spiral_cap is not None:
         held_spirals = sum(1 for candidate in viewed.rows if candidate.spiral)
         log(
@@ -1810,6 +1844,7 @@ def solve(
             key,
             theme,
             spiral_cap,
+            held_ceilings,
             augment_chains,
             augment_depth,
             augment_seconds,
@@ -1853,16 +1888,19 @@ def solve(
             "pixel-cloud twin test is over a picture's COLOUR cloud, so a single-cell pool "
             "is a near-duplicate pool under exactly it",
             "group_cap": cap,
-            "group_cap_is": f"ceil({ceiling.THEMED_CAP_SHARE} x n / P), twice the even "
-            "share across the palette groups that can field the theme"
+            "group_cap_is": f"max(1, floor({ceiling.THEMED_GROUP_CAP_RATE} x n)), twice "
+            "the main gallery's rate and a share of n alone. It was ceil(2n/P) until "
+            "2026-09-05, so a themed record taken before that ran under a cap its own "
+            "pool set"
             if themed_cap is None
             else "named by the caller, overriding ceiling.themed_group_cap",
             "P": len(capable),
             "P_is": f"palette groups fielding {ceiling.THEMED_CAP_PLACES} or more distinct "
             "PLACES in this pool. Places and not rows, because one wallpaper per location "
             "is absolute; and a floor, because a group holding one fluke place can never "
-            "take more than one seat however high the cap goes, so counting it would price "
-            "a capacity that does not exist and tighten the cap on the groups doing the work",
+            "take more than one seat however high the cap goes, so counting it would report "
+            "a capacity that does not exist. A READING of the pool since 2026-09-05 and no "
+            "longer the cap's denominator",
             "P_places": ceiling.THEMED_CAP_PLACES,
             "groups_in_the_pool": len({candidate.group for candidate in kept}),
             "capable_groups": capable,
@@ -1984,6 +2022,7 @@ def _config(
     key: str,
     theme: str | None = None,
     spiral_cap: float | None = None,
+    mode_ceilings: dict | None = None,
     augment_chains: bool = DEFAULT_AUGMENT,
     augment_depth: int = augment_module.DEFAULT_DEPTH,
     augment_seconds: float | None = augment_module.DEFAULT_SECONDS,
@@ -1999,6 +2038,20 @@ def _config(
         # produces too. `None` here means no cap ran.
         "spiral_cap": None if spiral_cap is None else float(spiral_cap),
         "spiral_cap_default": DEFAULT_SPIRAL_CAP,
+        # On `config` for the spiral cap's reason above, and not only in the
+        # `rules` block: this is what [`tentative.manifest`] carries WHOLE into a
+        # tracked manifest. `{}` means no per-mode ceiling ran, which is every
+        # record before 2026-09-05.
+        "mode_ceilings": {
+            str(mode): float(share) for mode, share in sorted((mode_ceilings or {}).items())
+        },
+        "mode_ceilings_default": dict(sorted(DEFAULT_MODE_CEILINGS.items())),
+        "mode_ceilings_is": "at most ceil(share * seats filled) seats of the named mode — "
+        "ceiling.share_of, the spiral cap's own arithmetic and the one spelling a colour "
+        "target is stated in. A GUARD against a runaway and not a target: it is set above "
+        "what the gallery does unaided, so the reading it gives is the `mode_ceiling` "
+        "refusal column, and a zero there is the expected answer. On since 2026-09-05, so "
+        "a record that does not name it ran with NO per-mode ceiling",
         # On `config` for the spiral cap's reason: this block is what
         # [`tentative.manifest`] carries WHOLE into the tracked manifest, and the
         # `augment` block beside it is not tracked at all. A gallery that cannot
@@ -2037,8 +2090,9 @@ def _config(
             "group_cap_rule": str(group_cap),
             "group_cap_from": {
                 ceiling.IDENTITY: "ceiling.GROUP_CAP",
-                ceiling.THEMED: f"ceiling.themed_group_cap: ceil({ceiling.THEMED_CAP_SHARE}"
-                " * n / P), P measured off this pool — see the `theme` block",
+                ceiling.THEMED: "ceiling.themed_group_cap: max(1, floor("
+                f"{ceiling.THEMED_GROUP_CAP_RATE} * n)), twice the main gallery's rate — "
+                "see the `theme` block",
             }.get(str(group_cap), f"max(1, floor({ceiling.GROUP_CAP_RATE} * n))"),
             "targets": dict(sorted(rule.targets.items())),
             "target_rule": target_rule(),

@@ -24,6 +24,7 @@ else a wrong value could be caught.
 
 from __future__ import annotations
 
+import inspect
 import math
 
 import numpy
@@ -356,7 +357,7 @@ def test_of_block_carries_the_names_and_does_not_re_derive_them():
 
 
 # --------------------------------------------------------------------------- #
-# The themed cap: twice the even share across the groups that can field it.
+# The themed cap: twice the main gallery's rate, on `n` alone.
 # --------------------------------------------------------------------------- #
 class Row:
     """The two fields [`ceiling.capable_groups`] reads off a candidate."""
@@ -379,20 +380,29 @@ def pool_of(sizes: dict) -> list:
     return rows
 
 
-def test_the_themed_cap_is_twice_the_even_share_across_the_capable_groups():
-    assert ceiling.themed_group_cap(150, 29) == 11  # ceil(300 / 29)
-    assert ceiling.themed_group_cap(200, 50) == 8
-    assert ceiling.themed_group_cap(50, 65) == 2
+def test_the_themed_cap_is_twice_the_main_gallerys_rate_on_n_alone():
+    """Matt's ruling of 2026-09-05. It replaced `ceil(2n/P)`, which moved with the
+    pool: two themes at one `n` ran under two caps and one theme ran under two
+    caps either side of a night's mining, so no before/after on a theme was a
+    controlled read."""
+    assert ceiling.THEMED_GROUP_CAP_RATE == 0.05 == 2 * ceiling.GROUP_CAP_RATE
+    assert ceiling.themed_group_cap(200) == 10
+    assert ceiling.themed_group_cap(1000) == 50
+    assert ceiling.themed_group_cap(150) == 7
+    # It takes `n` and nothing else — the pool is not an argument any more, which
+    # is the whole of the ruling.
+    assert list(inspect.signature(ceiling.themed_group_cap).parameters) == ["n"]
 
 
-def test_the_themed_cap_never_reaches_zero_and_never_binds_on_an_incapable_pool():
-    """A cap of zero is a program with no seats in it. And a pool where no group
-    reaches the floor gets a cap above `n`, which cannot bind — the honest answer,
-    because nothing there can take more than two seats by supply anyway and a
-    tighter cap would enforce what one-per-location already does."""
-    assert ceiling.themed_group_cap(10, 1000) == 1
-    assert ceiling.themed_group_cap(0, 29) == 1
-    assert ceiling.themed_group_cap(150, 0) == 300 > 150
+def test_the_themed_cap_never_reaches_zero():
+    """A cap of zero is a program with no seats in it. `floor(0.05 n)` is zero
+    below twenty seats, so a debug themed gallery keeps the identity cap and a
+    before/after on this has to be taken at n=20 or above."""
+    assert ceiling.themed_group_cap(19) == 1
+    assert ceiling.themed_group_cap(20) == 1
+    assert ceiling.themed_group_cap(40) == 2
+    assert ceiling.themed_group_cap(0) == 1
+    assert ceiling.themed_group_cap(-5) == 1
 
 
 def test_P_counts_distinct_places_and_never_rows():
@@ -402,10 +412,9 @@ def test_P_counts_distinct_places_and_never_rows():
     assert capable == {"deep": 5, "flat": 3}
 
 
-def test_a_group_under_the_floor_is_not_in_the_denominator():
-    """P is a denominator: a group that can never take more than one seat prices a
-    capacity that does not exist and tightens the cap on the groups doing the
-    work."""
+def test_a_group_under_the_floor_is_not_counted_in_P():
+    """P is a reading of what the pool can field: a group that can never take more
+    than one seat would report a capacity that does not exist."""
     pool = pool_of({"deep": 9, "two": 2, "one": 1})
     assert set(ceiling.capable_groups(pool)) == {"deep"}
     assert set(ceiling.capable_groups(pool, places=1)) == {"deep", "two", "one"}
@@ -413,8 +422,271 @@ def test_a_group_under_the_floor_is_not_in_the_denominator():
 
 
 def test_the_themed_cap_is_not_a_rule_a_caller_may_name():
-    """It needs a number no flag carries — how many groups the pool holds — so it
-    is spelled for the record and kept out of the two `--group-cap` accepts."""
+    """It is the rule a themed pass HAS rather than one a caller names, so it is
+    spelled for the record and kept out of the two `--group-cap` accepts."""
     assert ceiling.THEMED not in ceiling.GROUP_CAP_RULES
     with pytest.raises(ValueError, match="group cap rule"):
         ceiling.group_cap(150, ceiling.THEMED)
+
+
+def quiet(*_args, **_rest) -> None:
+    """A `log` that says nothing — the solve leg is chatty and this file is not."""
+
+
+# --------------------------------------------------------------------------- #
+# The per-mode ceiling: a share of the FILLED seats, one mode at a time.
+# --------------------------------------------------------------------------- #
+def seated_of(record) -> dict:
+    """`{mode: how many seats it took}` off a finished record."""
+    held: dict = {}
+    for seat in record["seated"]:
+        held[seat["mode"]] = held.get(seat["mode"], 0) + 1
+    return held
+
+
+def test_the_shipped_ceiling_is_threads_at_a_fifth_and_it_is_the_solves_own_default():
+    """Matt's ruling of 2026-09-05. The default lives on `solve` and not only on
+    the flag, for `DEFAULT_SPIRAL_CAP`'s reason: a bare call and a typed command
+    must not be two answers to what this leg does."""
+    from fractal_wallpapers.curation import solve
+
+    assert solve.DEFAULT_MODE_CEILINGS == {"threads": 0.20}
+    assert inspect.signature(solve.solve).parameters["mode_ceilings"].default == (
+        solve.DEFAULT_MODE_CEILINGS
+    )
+    # The number it is set against: `threads` took 187 of 1,000 seats on
+    # 2026-09-05, so a fifth is a GUARD above what the gallery does unaided.
+    assert ceiling.share_of(0.20, 1000) == 200 > 187
+
+
+def test_the_allowance_is_the_spiral_caps_arithmetic_and_not_a_second_spelling():
+    """`ceil(share * (filled + 1))` through `ceiling.share_of`, which is also what
+    a colour target and the spiral share cap are stated in. The `+ 1` is the same
+    warm-up: without it the first seat of an empty gallery is refused for taking
+    100% of nothing."""
+    from fractal_wallpapers.curation import rules
+
+    state = rules.State(ceiling.Rule(), n=100, mode_ceilings={"threads": 0.20})
+    assert state.mode_allowance("threads") == ceiling.share_of(0.20, 1) == 1
+    assert state.mode_allowance("smooth") is None, "a mode the ceiling does not name"
+    assert state.spiral_allowance() is None, "and the two caps are independent"
+
+
+def test_the_ceiling_sits_last_among_the_counted_rules():
+    """The placement IS the measurement: a candidate refused here is one every
+    colour rule already admitted, so the column counts seats the ceiling cost and
+    not seats the allowance would have refused anyway."""
+    from fractal_wallpapers.curation import rules
+
+    assert rules.RULES.index("mode_ceiling") == rules.RULES.index("spiral") + 1
+    counted = rules.RULES[: rules.RULES.index("picture_unreadable")]
+    assert counted[-1] == "mode_ceiling"
+
+
+def test_the_ceiling_refuses_by_mode_and_names_itself_in_the_column():
+    """Twelve `threads` candidates into six seats at a fifth: the ceiling takes
+    the count down to what `ceil(0.20 * (filled + 1))` allows, and the refusals
+    are attributed to it rather than to the rule above it."""
+    from tests.test_headroom import candidate
+
+    from fractal_wallpapers.curation import solve
+
+    pool = [candidate(f"t{at}", mode="threads", score=0.99) for at in range(12)]
+    pool += [candidate(f"s{at}", mode="smooth", score=0.50) for at in range(12)]
+    record = solve.solve(
+        pool, n=6, floor=0, diversity=False, radius=None, key=solve.JUDGE_KEY, log=quiet
+    )
+    assert seated_of(record)["threads"] == 2, "ceil(0.2 * 6) = 2, reached one seat at a time"
+    assert record["rules"]["refusals_while_choosing"]["mode_ceiling"] > 0
+    assert record["rules"]["mode_ceiling_seats"] == {"threads": 2}
+    assert record["rules"]["mode_ceiling_allowance"] == {"threads": 2}
+    # And with no ceiling the same pool seats `threads` everywhere it can.
+    uncapped = solve.solve(
+        pool,
+        n=6,
+        floor=0,
+        mode_ceilings={},
+        diversity=False,
+        radius=None,
+        key=solve.JUDGE_KEY,
+        log=quiet,
+    )
+    assert seated_of(uncapped)["threads"] == 6
+    assert uncapped["rules"]["refusals_while_choosing"]["mode_ceiling"] == 0
+    assert uncapped["rules"]["mode_ceilings"] == {}
+
+
+def test_the_ceiling_is_a_SET_constraint_and_the_swap_loop_reads_it_as_one():
+    """A candidate the ceiling refuses can be seated if one seat of ITS OWN mode
+    leaves, which is the same shape the group cap and the allowances state their
+    requirement in — and is what lets the 1-swap trade inside a capped mode
+    instead of writing it off."""
+    from tests.test_headroom import candidate
+
+    from fractal_wallpapers.curation import rules
+
+    state = rules.State(ceiling.Rule(group_cap=99), n=10, mode_ceilings={"threads": 0.20})
+    state.seat(candidate("t0", mode="threads"), "seeded")
+    wanted = state.counted_requirements(candidate("t1", mode="threads"))
+    assert wanted == [{"t0"}], "one seat of the same mode has to go"
+    assert state.counted_refusal(candidate("t1", mode="threads")) == "mode_ceiling"
+    assert state.counted_refusal(candidate("s0", mode="smooth")) is None
+
+
+def test_a_mode_floor_the_ceiling_cannot_reach_goes_SHORT_rather_than_relaxing():
+    """The collision is real at small `n` and the answer is the one the objective
+    already gives everywhere else: unfilled beats padded. A floor of four
+    `threads` against a fifth of six seats is two short, and the shortfall block
+    says which rule refused."""
+    from tests.test_headroom import candidate
+
+    from fractal_wallpapers.curation import solve
+
+    pool = [candidate(f"t{at}", mode="threads", score=0.99) for at in range(6)]
+    pool += [candidate(f"s{at}", mode="smooth", score=0.50) for at in range(6)]
+    record = solve.solve(
+        pool,
+        n=6,
+        floor={"threads": 4, "smooth": 0},
+        diversity=False,
+        radius=None,
+        key=solve.JUDGE_KEY,
+        log=quiet,
+    )
+    block = record["shortfalls"]["modes"]["per_mode"]["threads"]
+    assert block["seated"] == 2 and block["short"] == 2
+    assert block["refused_by"]["mode_ceiling"] > 0
+
+
+def test_the_ceiling_and_the_default_are_both_on_the_config_a_manifest_carries():
+    """`config` is the block a tentative gallery's TRACKED manifest carries whole,
+    which is the spiral cap's own argument for being there: a record that cannot
+    say whether a rule ran is a record nothing can be compared with."""
+    from tests.test_headroom import candidate
+
+    from fractal_wallpapers.curation import solve
+
+    # `radius=None` for the reason `tests/test_solve.py` keeps an empty embedding
+    # store for: no place here is in the real neutral store, so the pre-selection
+    # would sweep twenty-nine thousand rows to learn it can see none of them —
+    # 1.3 s a call, and this file's claim is about `config` rather than the pool.
+    pool = [candidate("a", mode="smooth", score=0.9)]
+    capped = solve.solve(pool, n=4, radius=None, key=solve.JUDGE_KEY, log=quiet)
+    assert capped["config"]["mode_ceilings"] == {"threads": 0.20}
+    assert capped["config"]["mode_ceilings_default"] == solve.DEFAULT_MODE_CEILINGS
+    uncapped = solve.solve(pool, n=4, mode_ceilings={}, radius=None, key=solve.JUDGE_KEY, log=quiet)
+    assert uncapped["config"]["mode_ceilings"] == {}
+    assert uncapped["config"]["mode_ceilings_default"] == solve.DEFAULT_MODE_CEILINGS, (
+        "a record says what it ran AND what it would have run, so a reader of an "
+        "uncapped record does not have to date it"
+    )
+
+
+def test_a_growth_rung_says_which_side_of_the_ruling_it_was_drawn_on():
+    """A ladder is a series taken over weeks and this rule arrived on 2026-09-05,
+    so a rung carries the ceilings it solved under exactly as it carries the
+    spiral cap."""
+    from fractal_wallpapers.curation import growth
+
+    body = inspect.getsource(growth)
+    assert '"mode_ceilings": dict(record["config"].get("mode_ceilings") or {})' in body
+
+
+def test_the_ceiling_is_in_force_on_a_themed_pass_too():
+    """A theme narrows the COLOUR and says nothing about the mode, so a runaway is
+    a runaway there as well — which is why this is not one of the three things
+    `--themed` swaps."""
+    from tests.test_headroom import candidate
+
+    from fractal_wallpapers.curation import solve
+
+    # One palette group each: the THEMED group cap is `max(1, floor(0.05 n))`,
+    # which is one seat a group at n=6, and a pool sharing one group would come up
+    # short for that reason rather than for this one.
+    pool = [
+        candidate(
+            f"t{at}",
+            mode="threads",
+            score=0.99,
+            p_ge3=0.99,
+            cells=("dark_vivid_lime",),
+            group=f"map:t{at}",
+        )
+        for at in range(12)
+    ]
+    # In the theme too, and weaker, so the seats the ceiling refuses `threads` are
+    # seats something can fill: a ceiling that stalls a gallery for want of any
+    # other candidate would read as binding harder than it does.
+    pool += [
+        candidate(
+            f"s{at}",
+            mode="smooth",
+            score=0.50,
+            p_ge3=0.99,
+            cells=("dark_vivid_lime",),
+            group=f"map:s{at}",
+        )
+        for at in range(12)
+    ]
+    record = solve.solve(
+        pool,
+        n=6,
+        theme="dark_vivid_lime",
+        targets={"dark_vivid_lime": 1.0},
+        floor=0,
+        radius=None,
+        key=solve.JUDGE_KEY,
+        log=quiet,
+    )
+    assert record["config"]["mode_ceilings"] == {"threads": 0.20}
+    assert seated_of(record)["threads"] == 2
+
+
+# --------------------------------------------------------------------------- #
+# `--mode-ceiling`, the counterfactual's flag.
+# --------------------------------------------------------------------------- #
+def folded(*flags) -> dict:
+    """`--mode-ceiling`'s repeated arguments, parsed and folded as a handler does."""
+    from fractal_wallpapers import cli
+    from fractal_wallpapers.cli import curate_commands
+
+    parsed = cli.build_parser().parse_args(["curate", "solve", "run", "--n", "150", *flags])
+    return curate_commands.mode_ceilings_named(parsed.mode_ceiling)
+
+
+def test_the_flag_folds_onto_the_shipped_ceiling_left_to_right():
+    """Repeatable, and `none` clears everything to its left — which is how the
+    uncapped arm of a counterfactual read is spelled."""
+    from fractal_wallpapers.curation import solve
+
+    assert folded() == solve.DEFAULT_MODE_CEILINGS
+    assert folded("--mode-ceiling", "none") == {}
+    assert folded("--mode-ceiling", "threads=0.15") == {"threads": 0.15}
+    assert folded("--mode-ceiling", "smooth=0.5") == {"threads": 0.20, "smooth": 0.5}
+    assert folded("--mode-ceiling", "none", "--mode-ceiling", "smooth=0.5") == {"smooth": 0.5}
+    assert folded("--mode-ceiling", "smooth=0.5", "--mode-ceiling", "none") == {}
+
+
+def test_zero_is_a_ceiling_and_never_the_spelling_for_none():
+    """`ceiling.share_of(0, anything)` is zero, so a mode at 0 may take no seat at
+    all and the refusal column fills. Keeping that apart from `none` is the same
+    distinction `--spiral-cap` draws."""
+    assert folded("--mode-ceiling", "threads=0") == {"threads": 0.0}
+    assert ceiling.share_of(0.0, 1000) == 0
+
+
+def test_a_mode_no_gallery_can_seat_is_refused_at_the_flag_and_not_at_the_seat():
+    """A ceiling on a misspelt mode can never bind and would read on the record as
+    a guard that held — `ceiling.parse_target`'s argument, one rule over."""
+    import argparse
+
+    from fractal_wallpapers.cli import curate_commands
+
+    with pytest.raises(argparse.ArgumentTypeError, match="not a mode"):
+        curate_commands.mode_ceiling_value("thredas=0.2")
+    with pytest.raises(argparse.ArgumentTypeError, match="MODE=SHARE"):
+        curate_commands.mode_ceiling_value("threads")
+    with pytest.raises(argparse.ArgumentTypeError, match="not a share"):
+        curate_commands.mode_ceiling_value("threads=x")
+    with pytest.raises(argparse.ArgumentTypeError, match="not a share"):
+        curate_commands.mode_ceiling_value("threads=-1")
