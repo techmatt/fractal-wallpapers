@@ -699,10 +699,15 @@ def train(
     return record
 
 
-def score(model, paths, transform, where: str, classes: int, recipe: dict):
-    """Every picture through the deploy transform, in the order it was given."""
-    import numpy
-    import torch
+def _pictures(paths, transform, where: str, recipe: dict):
+    """THE loader every reading of a picture goes through: one order, one transform.
+
+    Shared by [`score`] and [`activations`] rather than written twice, because
+    "the activations were taken through the same pass as the score" is the whole
+    claim the second one makes, and two copies of a DataLoader is the shape that
+    claim rots in — a decode, a resize or a batch size that drifted on one side
+    would make the two readings of one picture two different pictures, silently.
+    """
     from PIL import Image
     from torch.utils.data import DataLoader, Dataset
 
@@ -716,26 +721,69 @@ def score(model, paths, transform, where: str, classes: int, recipe: dict):
                 image = opened.convert("RGB")
             return transform(image), index
 
-    model.eval()
-    out = numpy.zeros((len(paths), classes - 1), dtype=numpy.float64)
-    loader = DataLoader(
+    return DataLoader(
         Pictures(),
         batch_size=recipe["batch_size"],
         shuffle=False,
         num_workers=0,
         pin_memory=(where == "cuda"),
     )
+
+
+def score(model, paths, transform, where: str, classes: int, recipe: dict):
+    """Every picture through the deploy transform, in the order it was given."""
+    import numpy
+    import torch
+
+    model.eval()
+    out = numpy.zeros((len(paths), classes - 1), dtype=numpy.float64)
     with torch.no_grad():
-        for pictures, index in loader:
+        for pictures, index in _pictures(paths, transform, where, recipe):
             logits = model(pictures.to(where, non_blocking=True))
             out[index.numpy()] = logits.float().cpu().numpy()
     return head.probabilities(out)
+
+
+def activations(model, paths, transform, where: str, recipe: dict):
+    """Every picture's PENULTIMATE vector, in the order it was given.
+
+    [`score`]'s sibling, through [`_pictures`], and the only difference is where
+    the forward pass stops: `forward_head(forward_features(x), pre_logits=True)`
+    returns the post-`norm_head` vector, and putting the model's own
+    `classifier` on that reproduces the logits [`score`] squashes — exactly,
+    which `tests/test_activations.py` pins rather than this docstring asserting.
+
+    The width is the backbone's `head_hidden_size`, 1,280 on the
+    `mobilenetv4_conv_small` both finished-render judges and the location head
+    are built on. It is **not** `num_features`, which is the conv trunk at 960
+    and is not what the classifier ever sees.
+
+    It takes no `classes`, where [`score`] must: a penultimate vector is the same
+    vector whatever the head above it counts, and a parameter this ignored would
+    be a promise the function does not keep.
+    """
+    import numpy
+    import torch
+
+    model.eval()
+    out = None
+    with torch.no_grad():
+        for pictures, index in _pictures(paths, transform, where, recipe):
+            read = model.forward_head(
+                model.forward_features(pictures.to(where, non_blocking=True)), pre_logits=True
+            )
+            block = read.float().cpu().numpy()
+            if out is None:
+                out = numpy.zeros((len(paths), block.shape[1]), dtype=numpy.float32)
+            out[index.numpy()] = block
+    return numpy.zeros((0, 0), dtype=numpy.float32) if out is None else out
 
 
 __all__ = [
     "INHERITANCE",
     "RECIPE",
     "SCHEMA",
+    "activations",
     "assert_the_pin_holds",
     "checkpoint_path",
     "claim",

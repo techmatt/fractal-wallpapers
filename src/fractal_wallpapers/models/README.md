@@ -555,6 +555,64 @@ shipped artifact's in-sample read, at both `P(≥3)` and `P(≥4)`. The store's 
 scores is a different regime and this judge is not regime-robust. Re-scoring at
 shipping geometry is a separate act and no bar is set on these numbers.
 
+## Ordering the flat top: `renders top-slice`
+
+The judge sorts the whole pool well and the top of it barely at all, and a seating
+walks that top. [`top_slice_probe`](top_slice_probe.py) asks whether the answer is
+already inside the judge: the forward pass ends in a **1,280-wide** vector and the
+classifier reads it through three cutpoint logits, so a ridge probe on that vector
+would find any order the three numbers throw away. The hook it needs is
+[`train.activations`](train.py) — [`train.score`]'s sibling through the same
+loader, stopping at `forward_head(..., pre_logits=True)`; putting the model's own
+`classifier` back on its output reproduces `model(x)` at `|Δ| = 0.0`, which
+`tests/test_activations.py` pins.
+
+```
+fractal-wallpapers renders top-slice run     # score, cut, render, fit, draw
+fractal-wallpapers renders top-slice sheet   # redraw the page from a run that landed
+```
+
+**It adopts nothing** — one regenerable readout and one sheet under
+`artifacts/top_slice_probe`, no score column and no store. The population is
+[`render_folds.pool`] (so the swept rows are out), cut at `P(≥4) ≥ 0.9`, and the
+deal is [`render_folds.assignment`]'s lineage folds carried into
+[`spiral_probe.held_out`] through its `blocks` parameter. Both geometries are
+**rendered**, from one job with the geometry overridden — the ledger's own 640×360
+files are deliberately not reused, because `rank_key.ledger_identity` excludes the
+autolevel stamp and mixing them in would put an unrecorded operator into part of
+one arm.
+
+**The read, 2026-09-06, 1,462 rows over 1,052 lineages, tiers 1/2/3/4 =
+4/106/358/994.** Every figure is out of fold and every delta is **paired** — the
+arm and its baseline resampled on the same lineage draw, because two marginal
+intervals cannot settle a difference of 0.01.
+
+| arm, `tier == 4` | AUC | d vs raw label `P(≥4)` | d vs shipped `rank_key` |
+|---|---|---|---|
+| `label_head`, 1,280 columns | 0.654 | **−0.000 [−0.022, +0.021]** | +0.077 [+0.024, +0.133] |
+| `candidate_head`, 1,280 | 0.641 | −0.013 [−0.039, +0.012] | +0.070 [+0.015, +0.126] |
+| `both_heads`, 2,560 | 0.652 | — | — |
+| `neutral_dinov2`, 384, n=443 | 0.603 | −0.078 [−0.160, +0.001] | +0.020 [−0.061, +0.099] |
+
+Baselines on the same rows: raw label `P(≥4)` **0.654**, raw candidate `P(≥4)`
+**0.639**, the shipped key **0.571** on the 913 rows carrying all five of its
+columns.
+
+**The scalar is already everything the layer has.** A probe on 1,280 columns lands
+on −0.0001 against the one number the classifier makes from them, and the interval
+is tight enough to exclude anything worth shipping. It is not that the probe
+relearned the classifier — its order correlates with the raw scalar at Spearman
+**0.79**, so it is a genuinely different order that happens to be no better. On the
+finer `3 against 4` target the probe is **worse** than the scalar and resolved so:
+−0.022 [−0.041, −0.004] at label geometry, −0.040 [−0.065, −0.015] at candidate
+geometry.
+
+Two side readings that are not null. **The shipped rank key loses to the raw judge
+inside the top slice** — the audit's warning, now on 913 rows with a resolved
+interval instead of on a read that included the key's own training rows. And
+**label geometry orders better than deployment geometry**, 0.654 against 0.639,
+which is the cheap thing on this page: it costs one render each and no fit.
+
 ## Training the head that ships: `renders deploy`
 
 Every band before this one produced fold models and nothing deployable. This is

@@ -355,14 +355,22 @@ def auc(target, score) -> float:
     )
 
 
-def held_out(features, target, lam: float, folds: int = FOLDS, seed: int = FOLD_SEED):
-    """Every row's probability, read by the fold that did not train on it."""
+def held_out(features, target, lam: float, folds: int = FOLDS, seed: int = FOLD_SEED, blocks=None):
+    """Every row's probability, read by the fold that did not train on it.
+
+    `blocks` is a deal somebody else made — each entry the row indices one fold
+    holds out. It is here because [`folds_of`] deals *rows*, and a corpus whose
+    rows come in near-duplicate neighbourhoods needs a deal over those instead:
+    [`fractal_wallpapers.models.render_folds.assignment`] makes one, and a caller
+    that has it should not have to own a second copy of this loop to use it. The
+    default is unchanged, so no existing call site moves.
+    """
     import numpy
 
     features = numpy.asarray(features, dtype=numpy.float64)
     target = numpy.asarray(target, dtype=numpy.float64)
     out = numpy.zeros(len(target))
-    for block in folds_of(len(target), folds, seed):
+    for block in folds_of(len(target), folds, seed) if blocks is None else blocks:
         mask = numpy.ones(len(target), dtype=bool)
         mask[block] = False
         mean, deviation = standardize(features[mask])
@@ -373,18 +381,21 @@ def held_out(features, target, lam: float, folds: int = FOLDS, seed: int = FOLD_
     return out
 
 
-def choose_lambda(features, target, lambdas=LAMBDAS, folds: int = FOLDS, seed: int = FOLD_SEED):
+def choose_lambda(
+    features, target, lambdas=LAMBDAS, folds: int = FOLDS, seed: int = FOLD_SEED, blocks=None
+):
     """`(lambda, readings)` — the ridge, chosen on the training side alone.
 
     Cross-validated on AUC, because the threshold is swept afterwards and a rule
     that picked on accuracy at one cut would choose the ridge that happened to
-    suit that cut.
+    suit that cut. `blocks` is passed straight to [`held_out`] and is there for
+    the same reason it is there.
     """
     import numpy
 
     readings = []
     for lam in lambdas:
-        probability = held_out(features, target, lam, folds, seed)
+        probability = held_out(features, target, lam, folds, seed, blocks)
         readings.append(
             {
                 "lambda": float(lam),
@@ -409,9 +420,14 @@ def fit(
     folds: int = FOLDS,
     seed: int = FOLD_SEED,
     threshold: float = THRESHOLD,
+    blocks=None,
     **provenance,
 ) -> dict:
-    """THE fit: choose the ridge on the training side, then fit on all of it."""
+    """THE fit: choose the ridge on the training side, then fit on all of it.
+
+    `blocks` reaches [`choose_lambda`] and is declared rather than left to
+    `**provenance`, which would have swallowed it into the document as a field.
+    """
     import numpy
 
     features = numpy.asarray(features, dtype=numpy.float64)
@@ -420,7 +436,7 @@ def fit(
         raise ProbeError(f"{features.shape} features against {target.shape} labels")
     if len(numpy.unique(target)) < 2:
         raise ProbeError("a probe needs both classes on the training side")
-    lam, readings = choose_lambda(features, target, lambdas, folds, seed)
+    lam, readings = choose_lambda(features, target, lambdas, folds, seed, blocks)
     mean, deviation = standardize(features)
     intercept, coefficients = fit_ridge((features - mean) / deviation, target, lam * len(target))
     return {
@@ -433,8 +449,9 @@ def fit(
         "train_positives": int(target.sum()),
         "lambda": lam,
         "lambda_grid": readings,
-        "folds": int(folds),
-        "fold_seed": int(seed),
+        "folds": len(blocks) if blocks is not None else int(folds),
+        "fold_seed": None if blocks is not None else int(seed),
+        "fold_unit": "rows dealt by the seed" if blocks is None else "blocks the caller dealt",
         "threshold": float(threshold),
         "mean": [float(value) for value in mean],
         "deviation": [float(value) for value in deviation],

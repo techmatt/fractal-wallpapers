@@ -367,6 +367,66 @@ def renders_grade_autopsy(args: argparse.Namespace) -> int:
     return 0
 
 
+def renders_top_slice_cut() -> float:
+    """The slice's cut, read off the module rather than restated in a help string."""
+    from fractal_wallpapers.models import top_slice_probe
+
+    return top_slice_probe.CUT
+
+
+def renders_top_slice_workers() -> int:
+    """How many engines the candidate-geometry render drives, off the module."""
+    from fractal_wallpapers.models import top_slice_probe
+
+    return top_slice_probe.WORKERS
+
+
+def renders_top_slice_run(args: argparse.Namespace) -> int:
+    """Fit every arm on the judge's flat top slice and draw the sheet."""
+    from fractal_wallpapers.models import top_slice_probe
+
+    document = top_slice_probe.run(
+        device=args.device,
+        cut=args.cut,
+        workers=args.workers,
+        rebuild=args.rebuild,
+    )
+    print(
+        json.dumps(
+            {
+                key: value
+                for key, value in document.items()
+                if key not in ("arms", "targets", "baselines")
+            },
+            indent=2,
+        )
+    )
+    return 0
+
+
+def renders_top_slice_sheet(args: argparse.Namespace) -> int:
+    """Redraw the sheet from a readout and its held-out values."""
+    from fractal_wallpapers.models import top_slice_probe
+
+    if not top_slice_probe.held_out_path().is_file():
+        print(f"{top_slice_probe.held_out_path()} is not there — run the probe first")
+        return 1
+    readings = json.loads(top_slice_probe.held_out_path().read_text(encoding="utf-8"))["readings"]
+    best = max(
+        (entry for entry in readings.values() if entry["target"] == "tier4"),
+        key=lambda entry: entry["auc"],
+    )
+    # The cut comes off the readout rather than the module's default: a page
+    # drawn at 0.9 over a run that cut at 0.99 would carry rows the arm never
+    # scored, and they would simply be missing from the order with no line
+    # saying so.
+    cut = json.loads(top_slice_probe.readout_path().read_text(encoding="utf-8"))["cut"]
+    rows, _ = top_slice_probe.population()
+    page = top_slice_probe.sheet(top_slice_probe.top_slice(rows, cut), best, output=args.out)
+    print(json.dumps({"arm": best["arm"], "auc": best["auc"], "wrote": str(page)}, indent=2))
+    return 0
+
+
 def renders_verify(args: argparse.Namespace) -> int:
     """Compare regenerated pictures against the ones the verdicts were cast on."""
     from fractal_wallpapers.models import renders
@@ -932,6 +992,58 @@ def add_commands(subcommands) -> None:
     )
     grade_autopsy.add_argument("--output", required=True, help="where the page is written")
     grade_autopsy.set_defaults(handler=renders_grade_autopsy)
+
+    probing = steps.add_parser(
+        "top-slice",
+        help="probe the judge's own penultimate layer for an order inside its flat top",
+        description=(
+            "The judge sorts the pool well and the top of it barely at all. This fits a "
+            "linear probe on the 1,280-wide vector one layer before its three cutpoints, "
+            "over the rows it puts at P(>=4) >= 0.9, and reads every arm out of fold "
+            "against the raw judge and the shipped rank key. It ADOPTS NOTHING: one "
+            "regenerable readout and one sheet of pictures, no score column and no store."
+        ),
+    )
+    probings = probing.add_subparsers(dest="probe_step", required=True)
+
+    probe_run = probings.add_parser(
+        "run",
+        help="score the corpus, cut the slice, render it at both geometries, fit every arm",
+        description=(
+            "Each stage caches under `artifacts/top_slice_probe`, so a re-run costs no "
+            "engine and no GPU for anything that already landed. The sheet is written "
+            "whatever the numbers say — a null is worth seeing."
+        ),
+    )
+    device_flag(probe_run)
+    probe_run.add_argument(
+        "--cut",
+        type=float,
+        default=renders_top_slice_cut(),
+        help=f"where the judge's P(>=4) is cut (default {renders_top_slice_cut()})",
+    )
+    probe_run.add_argument(
+        "--workers",
+        type=int,
+        default=renders_top_slice_workers(),
+        help=f"engines the candidate-geometry render drives at once (default "
+        f"{renders_top_slice_workers()}, which is the cache build's measured answer)",
+    )
+    probe_run.add_argument(
+        "--rebuild", action="store_true", help="re-score the whole corpus rather than reusing it"
+    )
+    probe_run.set_defaults(handler=renders_top_slice_run)
+
+    probe_sheet = probings.add_parser(
+        "sheet",
+        help="redraw the sheet from a readout that already ran",
+        description=(
+            "The pictures ordered by the winning arm's held-out value, good to bad. A "
+            "glance sheet: no pin is spent on it and nothing downstream reads it."
+        ),
+    )
+    probe_sheet.add_argument("--out", help="write the page here instead of beside the readout")
+    probe_sheet.set_defaults(handler=renders_top_slice_sheet)
 
     registering = steps.add_parser(
         "preregister",
