@@ -674,6 +674,40 @@ median. A pilot over tens of places prices *those* places' depth, so read it as
 an upper bound and set `--budget` off it rather than sizing the plan to it — this
 one planned against 9,000 s and spent 3,810.
 
+#### What a drop buys at the gallery is read as a PAIR of records, and the reach bounds it
+
+A drop is aimed by the two sections above and read by solving twice over one config —
+once before the leg merges and once after — and comparing the two tentative records.
+`SOLVE_after_new_maps_0905` is the first such pair: seven records a side, a general
+n=1000 and the six themed n=200s, **8 min 51 s** for all seven sequentially.
+
+**Assert the config before reading anything.** τ, the spiral cap, the `threads` ceiling,
+the themed cap and the mode floors all have to be identical, and the assertion is per
+dimension off `config` on each `manifest.json` — a record that does not *name* a knob
+ran without it. The themed group cap is the one that used to move on its own: while it
+was `ceil(2n/P)` the grown pool changed it, so no themed pair taken before 2026-09-05 is
+a comparison of one rule.
+
+⚠ **"One seat per location, so a new-map seat displaced some map" is false in practice.**
+Of `classic-pairs-2026-09`'s 54 general seats, **4** took a place off another row; **33**
+sit at a place the baseline gallery did not hold at all, and 17 were already seats. What
+a drop displaces is a *location*, not a map — the general gallery dropped 99 places and
+took 99 others. Read the pair at the gallery level and quote the same-place pairs as the
+handful they are.
+
+**The reach is what bounds the seat count, and it is the number to quote beside it.**
+Only **508 of the baseline gallery's 1,000 seated places held a new-map row at all** and
+only **412** were touched by the mine, because a floor leg stands on free slots and the
+best places are already three-deep at `smooth`. So a low count means "has not competed at
+the best places yet" and never "loses" — and against the ~508 places where the drop was
+present, 54 seats is about a tenth.
+
+**A leg that clears nothing seats nothing, and the clear rate predicts it.** The mine's
+`curvature` unit cleared **0.29%** at 421.7 engine seconds a clear and its 693 rows took
+**zero** seats across all seven records; `tia` at 8.42% took 49. And a drop reaches the
+solver through **every** leg that ever drew it: `sheet_leg_0905`'s 5,091 surviving rows
+sit at *proven* places and out-seat the mine's 10,121 on three of the six themes.
+
 ### `--draw-cells` is the same filter cut by RULE instead of by hand
 
 `--draw-cells CELL …` narrows the same pool `--draw-maps` narrows, and the two
