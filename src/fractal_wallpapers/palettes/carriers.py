@@ -14,10 +14,16 @@ Every map in the library, recoloured onto the three pinned reference fields
 ([`fractal_wallpapers.palettes.reference_fields`]) and read through
 [`fractal_wallpapers.palettes.dominance`]. A map **carries** a cell on a field
 when that field's picture is dominant in the cell. One row per (map, cell) the
-map carries anywhere, with the cell's share on all three fields and their mean —
-including the fields where it does not carry, because the mean is what the draw
-weights by and a mean over only the wins would rank a map that carries once above
-one that nearly carries three times.
+map carries anywhere, with the cell's share on all three fields — including the
+fields where it does not carry, because the mean the draw weights by is a mean
+over the fields and a mean over only the wins would rank a map that carries once
+above one that nearly carries three times.
+
+**Two members a reader sees are not on disk.** `fields` — which of the three the
+cell was dominant on — and `mean` came off the row on 2026-09-06, and [`fill`]
+puts both back at the read, so nothing above this module knows. See there for the
+derivation and for what it was verified against; [`write`] re-checks it on every
+build, which is the one moment the measured answer exists.
 
 **It is a prior and not a guarantee**, and the size of the gap is on record.
 Green collapses on the `strange` field — 14 maps against 33 on `smooth` — which
@@ -42,11 +48,14 @@ the library and confidently wrong about the rest.
 ## Tracked, small, and regenerable
 
 `data/palettes/carriers.jsonl`: one method row, then one row per (map, cell).
-Around two and a half rows a map, which is a few hundred kilobytes — small
-enough to keep in the history, where a reader of a pass record that names a
-carrier can find out what the pass believed about it. The pictures behind it are
-not: 2,703 recolours land under `artifacts/` and are remade by
-`fractal-wallpapers palettes carriers` in about eighty seconds.
+3,665 rows over 1,021 maps in **690,732 bytes**, which is 65.9% of
+`test_history_purity`'s 1 MiB — small enough to keep in the history, where a
+reader of a pass record that names a carrier can find out what the pass believed
+about it. It grows at 3.71 rows and 685 bytes a map, the marginal rate measured
+across one drop, so the headroom is 522 maps. It was 881,834 bytes and 84.1% until
+the two derived members came off. The pictures behind it are not tracked: 2,703
+recolours land under `artifacts/` and are remade by `fractal-wallpapers palettes
+carriers` in about eighty seconds.
 """
 
 from __future__ import annotations
@@ -69,6 +78,13 @@ RECORD_NAME = "carriers.jsonl"
 #: The two kinds of row: one header, then one per (map, cell).
 METHOD_ROW = "method"
 CARRIER_ROW = "carrier"
+
+#: What a carrier row is **written** with. Everything a reader gets that is not
+#: here is derived at the read — see [`fill`].
+STORED: tuple[str, ...] = ("schema", "kind", "map", "cell", "family", "share")
+
+#: What [`fill`] puts back, in the order a written row used to carry them.
+DERIVED: tuple[str, ...] = ("fields", "mean")
 
 #: Decimals a share is written to. Six, which is the codebook's own rounding and
 #: two more than any decision reads.
@@ -132,13 +148,143 @@ def method(maps: int, rows: int, seconds: float) -> dict:
     }
 
 
+# --------------------------------------------------------------------------- #
+# The two derived members, and the seam they are derived at.
+# --------------------------------------------------------------------------- #
+def fill(rows: list) -> list:
+    """Every carrier row with `fields` and `mean` put back. **The read.**
+
+    Both are functions of `share`, which is the one member of a row that is a
+    measurement, and both used to be stored beside it. They came off on
+    2026-09-06 because the file is tracked and the history guard acts at 1 MiB:
+    they were 191,102 of 881,834 bytes — 21.7% — and the record was at 84.1% of
+    the guard with 189 maps of headroom, which is under two of the drops this
+    library takes.
+
+    * **`mean`** is exactly the mean of the three shares, which is what
+      [`rows_for`] computed.
+    * **`fields`** is which of the three reference fields the cell was dominant
+      on, re-derived by applying [`palettes.dominance`]'s own rule — the one the
+      header carries in prose — to the shares. A cell is dominant on a field when
+      it holds [`dominance.CELL_ALONE`], or when it leads that field's shares and
+      holds [`dominance.CELL_LEAD`].
+
+    **The lead is taken over the map's own rows, and that is exact rather than an
+    approximation.** A cell absent from the table was dominant on no field, so its
+    share is under `CELL_ALONE` on every one of them and under `CELL_LEAD` on the
+    one it might have led — otherwise the rule would have made it a carrier and
+    given it a row. So the largest share among a map's rows on a field is the
+    largest share over all 48 cells whenever the answer can change anything, and
+    where it is not, both readings refuse. Ties break on the cell name, which is
+    [`dominance._dominant`]'s own tiebreak.
+
+    Verified over the whole committed table before either member was dropped:
+    **10,995 of 10,995 (row, field) reads and 3,665 of 3,665 means**, no
+    exception. [`write`] re-checks it on every build, at the one moment the true
+    answer is in hand — see there.
+    """
+    out: list = []
+    by_map: dict[str, list] = {}
+    for row in rows:
+        if row.get("kind") != CARRIER_ROW:
+            continue
+        missing = [
+            klass
+            for klass in reference_fields.CLASSES
+            if (row.get("share") or {}).get(klass) is None
+        ]
+        if missing:
+            # Fail closed. `share` is the one member of a carrier row that is a
+            # measurement, and since the two derived members came off it is also
+            # the only thing the rest of the row is made of — so a row short of it
+            # is not a thin row, it is a row that says nothing. Carried through
+            # instead, it would reach `table` as a `KeyError` on `mean` from
+            # whichever draw happened to want that cell.
+            raise CarrierError(
+                f"carrier row {row.get('map')!r}/{row.get('cell')!r} names no share on "
+                f"{missing}. `fields` and `mean` are derived from the three shares, so a row "
+                f"without them carries no reading at all."
+            )
+        by_map.setdefault(str(row["map"]), []).append(row)
+    leads: dict[tuple[str, str], str] = {}
+    for name, mine in by_map.items():
+        for klass in reference_fields.CLASSES:
+            leader = min(mine, key=lambda row: (-float(row["share"][klass]), str(row["cell"])))
+            leads[(name, klass)] = str(leader["cell"])
+    for row in rows:
+        if row.get("kind") != CARRIER_ROW:
+            out.append(row)
+            continue
+        share = row["share"]
+        fields = [
+            klass
+            for klass in reference_fields.CLASSES
+            if float(share[klass]) >= dominance.CELL_ALONE
+            or (
+                leads[(str(row["map"]), klass)] == str(row["cell"])
+                and float(share[klass]) >= dominance.CELL_LEAD
+            )
+        ]
+        out.append(
+            {
+                **{key: row[key] for key in STORED if key in row},
+                "fields": fields,
+                "mean": round(sum(float(value) for value in share.values()) / len(share), PLACES),
+            }
+        )
+    return out
+
+
+def thin(row: dict) -> dict:
+    """One carrier row as it is stored: [`STORED`] and nothing [`fill`] derives."""
+    if row.get("kind") != CARRIER_ROW:
+        return row
+    return {key: row[key] for key in STORED if key in row}
+
+
 def text_of(rows: list) -> str:
-    """The record as it is written: one JSON object a line, LF, UTF-8."""
-    return "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows)
+    """The record as it is written: one JSON object a line, LF, UTF-8.
+
+    Carrier rows are thinned on the way out, so a caller holding filled rows — a
+    build, or a round-trip through [`read`] — writes the stored shape either way
+    and the file cannot come to hold a derived member for some rows and not
+    others.
+    """
+    return "".join(json.dumps(thin(row), ensure_ascii=False) + "\n" for row in rows)
 
 
 def write(rows: list, directory: Path | None = None) -> Path:
-    """Write the record where a reader of the library will find it."""
+    """Write the record where a reader of the library will find it.
+
+    **The derivation is checked here and nowhere else can check it.** A build
+    holds the true `fields` — read off the picture by [`dominance.of_picture`],
+    not inferred from anything — so this is the one moment the derived answer can
+    be compared against the measured one. A drop whose rounding pushed a share
+    across a threshold would otherwise be a table that reads back subtly wrong
+    with nothing red, and the rows it was wrong about would be exactly the
+    marginal carriers a target leans on.
+
+    A caller handing over already-thinned rows states nothing to check and is not
+    checked; every row that carries `fields` or `mean` is.
+    """
+    disagreed = []
+    for stated, derived in zip(rows, fill(rows), strict=True):
+        if stated.get("kind") != CARRIER_ROW:
+            continue
+        for member in DERIVED:
+            if member in stated and stated[member] != derived[member]:
+                disagreed.append(
+                    f"{stated['map']}/{stated['cell']}.{member}: measured {stated[member]!r}, "
+                    f"derived {derived[member]!r}"
+                )
+    if disagreed:
+        raise CarrierError(
+            f"{len(disagreed)} carrier row(s) do not re-derive from their own shares, so the "
+            f"table would read back saying something the pictures did not: "
+            f"{disagreed[:3]}. `fields` and `mean` are dropped from the record and rebuilt by "
+            f"`carriers.fill`; if the rule they are rebuilt by has moved, that function is "
+            f"what has to move with it."
+        )
     path = record_path(directory)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text_of(rows), encoding="utf-8", newline="\n")
@@ -146,16 +292,20 @@ def write(rows: list, directory: Path | None = None) -> Path:
 
 
 def read(directory: Path | None = None) -> list:
-    """Every row of the tracked record, header first."""
+    """Every row of the tracked record, header first, with the derived members back.
+
+    A reader sees the shape the file used to carry — [`fill`] is applied here, so
+    no consumer of this table knows that two of its columns are not on disk.
+    """
     path = record_path(directory)
     if not path.is_file():
         raise CarrierError(
             f"{path} is not there. `fractal-wallpapers palettes carriers` builds it, "
             "and it is tracked, so a clone has it already."
         )
-    return [
-        json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
-    ]
+    return fill(
+        [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    )
 
 
 #: The parsed table, held per file and invalidated by the file. Keyed on

@@ -1087,6 +1087,203 @@ def attribute_source(
 
 
 # --------------------------------------------------------------------------- #
+# The gallery-grade source.
+# --------------------------------------------------------------------------- #
+def gallery_grade_source(
+    resolution=LABEL_RESOLUTION,
+    supersample: int = LABEL_SUPERSAMPLE,
+    renderer=None,
+    scores=None,
+    reuse_cache: bool = False,
+) -> Source:
+    """The source that asks how good a picture is GIVEN that it cleared the bar.
+
+    A fourth kind of unit and the second blind one. The picture is a finished
+    render at exactly the geometry [`finished_source`] serves, and the verdict
+    keys on that render — so the cut is that one's, knob for knob. What differs is
+    everything a page can tell a labeler, because this head exists to replace an
+    order the render judge cannot supply and a page carrying that order would be
+    asking the labeler to reproduce it:
+
+    * **Nothing is prefilled.** No decode, no incumbent verdict, no sweep. The
+      first sitting on this scale is what creates its anchors, so there is nothing
+      to correct against.
+    * **The order is a seeded shuffle**, never the judge's score. Ordering by the
+      judge would inject the exact ordering this head exists to replace, and at
+      the good end of that judge's scale the order it would inject is mostly
+      noise — see [`ORDERINGS`] for why `P(>=3)` cannot separate two rows up
+      there.
+    * **The card carries nothing.** [`finished_source`] writes `facts`, a
+      per-picture caption and a `columns` block unconditionally; here all three
+      are empty. The mode and the map on a caption are a stratum the labeler can
+      read off the card, and the judge's cutpoints under it are the order in
+      another shape.
+
+    The judge still **reads** every picture, at label geometry, and the reading
+    travels on the row under `reading` — which the page does not render. It is a
+    column and never an order: this store's estimand is conditional on the gate,
+    so a fit that cannot see what the gate said about the picture it is grading
+    cannot express the condition. `scores` hands the readings over ready-made, for
+    a caller that has already taken them.
+
+    A unit states its whole picture, as an attribute unit does: the recipe **and**
+    the map it was recorded against. This sheet re-serves the row a seating pass
+    reached, and deriving either half would serve a picture the pool does not
+    hold.
+    """
+    from fractal_wallpapers.labeling import gallery_grade
+    from fractal_wallpapers.supply.partitions import partition_of_family
+
+    render = render_finished if renderer is None else renderer
+    notes: dict = {"reused_from_cache": 0, "rendered": 0}
+
+    def cut(unit: dict, directory: Path, name: str) -> dict:
+        from fractal_wallpapers.curation import colorize
+
+        if unit.get("recipe") is None or unit.get("colormap") is None:
+            raise SheetError(
+                "a gallery-grade unit states its whole picture — the recipe AND the map it "
+                "was recorded against. This sheet re-serves the row a seating pass reached, "
+                "and deriving either half here would serve a picture the pool does not hold."
+            )
+        recipe_ = stated_recipe(unit["recipe"])
+        map_name = colormap(unit["colormap"])
+        join = {
+            "family": unit["family"],
+            "viewport": unit["viewport"],
+            "mode": unit["mode"],
+            "mode_params": unit.get("mode_params") or {},
+            "curve": unit.get("curve") or colorize.CURVE,
+            "colormap": map_name,
+            "recipe": recipe_,
+            "render": {
+                "resolution": list(resolution),
+                "supersample": supersample,
+                "maxiter": int(unit["maxiter"]),
+                "filter": LABEL_FILTER,
+            },
+            "partition": partition_of_family(unit["family"]),
+        }
+        picture = directory / "full" / f"{name}.jpg"
+        leveled = unit.get("leveled")
+        if not picture.is_file() and reuse_cache and leveled is None:
+            # Either finished head's cache: the name is a digest of the whole
+            # engine spec, so a hit is this picture whichever store holds it, and
+            # this sheet has no cache of its own to look in.
+            for head in finished.HEADS:
+                cached = cached_picture(head, join)
+                if cached is not None:
+                    picture.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copyfile(cached, picture)
+                    notes["reused_from_cache"] += 1
+                    break
+        if not picture.is_file():
+            render(join, picture, Path(leveled) if leveled else None)
+            notes["rendered"] += 1
+        return {
+            "join": join,
+            "section": unit.get("section") or "",
+            # No caption. The mode and the map under the picture are a stratum,
+            # and a labeler grading inside one gate's top must not be able to read
+            # which one off the card.
+            "pictures": [{"caption": "", "path": f"full/{name}.jpg"}],
+            "thumb": f"thumb/{name}.jpg",
+            "facts": [],
+            "selected_on": unit.get("selected_on") or None,
+            # What the draw knew and the picture does not say. Carried through
+            # untouched — nothing here re-derives any of them — and written onto
+            # the store row by `intake`, never rendered by the page.
+            #
+            # `leveled` is the boolean and not the path: the path is a fact about
+            # this machine at this moment, and what a later reader needs is
+            # whether this picture went through the candidate's own levelled
+            # colormap or through the plain map. A candidate whose `<stem>.leveled/`
+            # has been swept renders through the plain map and nothing says so —
+            # see `curation/LEGS.md`'s *`curate pool-draw`* — so the answer belongs
+            # on the row while it is still knowable.
+            "drawn_as": {
+                **{key: unit[key] for key in ("seated", "refusal", "pre_stamp") if key in unit},
+                "leveled": bool(leveled),
+            },
+            "_picture": picture,
+            "_thumb": directory / "thumb" / f"{name}.jpg",
+        }
+
+    def suggest(rows: list[dict], units: list[dict], log) -> str:
+        pictures = [row.pop("_picture") for row in rows]
+        thumbs = [row.pop("_thumb") for row in rows]
+        for picture, thumb in zip(pictures, thumbs, strict=True):
+            thumbnail(picture, thumb)
+        if scores is None:
+            log(f"reading {len(pictures)} picture(s) through the shipped render judge")
+            # The argument names a KIND and not a model — one judge reads both
+            # since 2026-08-23, and [`score_pictures`] loads
+            # [`curation.floors.SCORING_HEAD`] whichever kind it is handed. This
+            # sheet's population spans both kinds and its verdicts land in neither
+            # store, so there is no kind to name; the argument is spent on
+            # `finished.head_of`'s check and nothing else. Passing a name this
+            # module already owns rather than inventing one keeps that check real.
+            probabilities, _classes = score_pictures(finished.HEADS[0], pictures)
+        else:
+            probabilities, _classes = scores
+        for row, probability in zip(rows, probabilities, strict=True):
+            # `reading` and not `columns`: the page renders `columns` under the
+            # picture, and the whole point of this sheet is that it renders
+            # nothing. The judge's opinion is a covariate of the estimand, so it
+            # belongs on the row and nowhere a labeler can see it.
+            row["reading"] = {
+                f"p_ge{index + 2}": round(float(value), 6)
+                for index, value in enumerate(probability)
+            }
+            row["columns"] = {}
+            row["suggestion"] = None
+            # No prefill, so no expected tier. Null rather than zero: zero is a
+            # reading and this is the absence of one.
+            row["suggestion_score"] = None
+        return "none"
+
+    def order(rows: list[dict], seed: int) -> tuple[list[int], str]:
+        """A seeded shuffle, sections in the order the plan introduced them."""
+        sections: list[str] = []
+        for row in rows:
+            if row["section"] not in sections:
+                sections.append(row["section"])
+        indices = list(range(len(rows)))
+        random.Random(seed).shuffle(indices)
+        if len(sections) > 1:
+            indices.sort(key=lambda i: sections.index(rows[i]["section"]))
+            return indices, "sections, shuffle"
+        return indices, "shuffle"
+
+    return Source(
+        kind="gallery_grade",
+        head=gallery_grade.NAME,
+        cut=cut,
+        suggest=suggest,
+        order=order,
+        tiers=gallery_grade.tiers(),
+        rubric=gallery_grade.RUBRIC,
+        words=gallery_grade.words(),
+        # The page knows two kinds of prefill and this page has neither, so it has
+        # to be told: unset, it prints "the suggestion is a head's own decode",
+        # which on a sheet with no suggestion at all is a sentence about a thing
+        # that is not there.
+        prefill_note=(
+            "nothing here is prefilled and nothing is ordered by a head. Every one of these "
+            "already cleared the render judge's bar, and the order that judge would put them "
+            "in is the order this scale exists to replace — so the page is a shuffle and the "
+            "cards say nothing about what made them."
+        ),
+        render_record={
+            "resolution": list(resolution),
+            "supersample": supersample,
+            "filter": LABEL_FILTER,
+        },
+        notes=notes,
+    )
+
+
+# --------------------------------------------------------------------------- #
 # The populations.
 # --------------------------------------------------------------------------- #
 def units_from_ledger(path: Path, admitted_only: bool = False) -> list[dict]:
@@ -1319,6 +1516,13 @@ def build(
                 # sheet that never had a second reading is a column a reader has
                 # to learn to ignore.
                 **({"selected_on": row["selected_on"]} if row.get("selected_on") else {}),
+                # The same rule, for the two a blind page carries and does not
+                # show. `reading` is a head's opinion of the picture this sheet
+                # rendered and `drawn_as` is what the draw knew about the row;
+                # both are the store's and neither is the page's, so they travel
+                # in the row file rather than in `columns`, which the page prints.
+                **({"reading": row["reading"]} if row.get("reading") else {}),
+                **({"drawn_as": row["drawn_as"]} if row.get("drawn_as") else {}),
             }
         )
 

@@ -1,7 +1,7 @@
 Tracked text records that the project is built from: labels, palettes, anchors,
 and the tracked inputs to the training-tile build.
 
-Three label stores, because three questions are being asked. `labels/` holds
+Five label stores, because five questions are being asked. `labels/` holds
 verdicts on **places** — is this worth rendering — one row per location.
 `smooth_render/` and `strange_render/` hold verdicts on **finished pictures** —
 does this colouring of that place work — one row per picture, because a place
@@ -18,8 +18,22 @@ corpus of tiers the day somebody pooled the stores by field name. Its own README
 says how the reservation in its `eval_split.jsonl` differs from a finished
 store's pin.
 
-Those two are named after the two judges that used to read them, and since
-2026-08-23 one judge reads both. **The stores did not merge and are not renamed**:
+`gallery_grade/` is a fifth store and the second one that is not a judge's. It is
+cast on the same four ordinals as the three above and asks a **conditional**
+question: how good is this picture *given* that the render judge already let it
+through. A 1 there is "this does not work"; a 1 here is "genuinely surprised this
+cleared the bar". It exists because the render judge is a gate with no order
+inside its own top, so every choice the solve makes after the bar is made by a
+quantity nobody fitted to it. Three things keep the two scales apart and each is
+asserted rather than intended: the store is not one of `finished.HEADS`, so
+`finished_train.population` dies naming it; a row carries `grade` and its writer
+refuses one carrying `score`, exactly as `spiral/`'s does; and **no batch here can
+ever be eval-eligible** — the population is model-selected twice over, and
+`gallery_grade.register` refuses a registration claiming `score_unconditioned` or
+`eval_only`.
+
+`smooth_render/` and `strange_render/` are named after the two judges that used to
+read them, and since 2026-08-23 one judge reads both. **The stores did not merge and are not renamed**:
 a store is a corpus, these are two populations with two blind sheets and two
 floors, and the names are what every row already written spells. What the names
 select now is a floor, a slot and a mode roster — no longer a model.
@@ -30,7 +44,7 @@ sheet, and `fractal-wallpapers label ingest` resolves what is in it against that
 sheet and appends rows here. Nothing under the drop is tracked: a verdict that
 only exists there is a verdict no store has resolved yet. The naming convention
 and why it is both halves is
-[the labeling rig's](../src/fractal_wallpapers/labeling/README.md#one-ingest-two-stores).
+[the labeling rig's](../src/fractal_wallpapers/labeling/README.md#one-ingest-every-store).
 
 `batch_caveats.md` is what a registration deliberately does not carry: how a live
 population was assembled, where that shapes what its rows can be asked, and what

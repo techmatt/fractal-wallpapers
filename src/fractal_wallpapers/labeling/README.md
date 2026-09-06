@@ -8,6 +8,7 @@ split.py          the seeded draw over those groups, shipped as data
 pins.py           the evaluation pin, asserted on the location coordinate
 finished.py       the finished-render stores: one per judge, keyed on the picture
 attributes.py     the location-attribute stores: named classes, never a tier
+gallery_grade.py  1..4 GIVEN the bar was cleared: an order inside a gate's own top
 sheets.py         THE generator: two row sources, one cut, one manifest, one page
 server.py         serve one sheet, to one browser, on the first free port at or above
 page.html         the page: the row's pictures, the sheet's tiers, one export
@@ -74,6 +75,40 @@ training on them.
 fractal-wallpapers label pin --head spiral --from-plan artifacts/pool_draw/spiral_500/plan.jsonl \
     --batch <batch> --reserve 100 --seed <seed> --write
 ```
+
+## The fourth kind of sheet: a gallery grade
+
+`--head gallery_grade` cuts a page that asks how good a finished picture is **given
+that the render judge already let it through**. The picture is a finished render at
+exactly the geometry `finished_source` serves and the verdict keys on that render, so
+the cut is that one's knob for knob. What differs is everything a page can tell a
+labeler, and each difference is what a conditional estimand needs:
+
+* **Nothing is prefilled** — no decode, no incumbent verdict, no sweep. There is no
+  anchor sheet for this scale, so the first sitting is what creates the anchors.
+* **The order is a seeded shuffle**, never the judge's score. Ordering by the judge
+  would inject the exact ordering this head exists to replace — and at the good end
+  of that judge's scale, which is the whole population here, the order it would
+  inject is mostly noise.
+* **The card carries nothing.** `finished_source` writes `facts`, a per-picture
+  caption and a `columns` block unconditionally; here all three are empty. The mode
+  and the map on a caption are a stratum a labeler can read off the card.
+
+The judge still reads every picture, and the reading travels on the row under
+`reading` — a key `page.html` has never heard of — beside `drawn_as`, which is what
+the draw knew: `seated`, the `refusal` rule for an unseated row, and `pre_stamp`.
+`sheets.build` writes both only where a source set them, like `selected_on`.
+
+```
+fractal-wallpapers label build --head gallery_grade --from-plan <plan> --batch <batch> \
+    --out-dir artifacts/sheet/<batch> --seed 1
+```
+
+**No batch here can ever be eval-eligible.** `gallery_grade.register` refuses one
+claiming `score_unconditioned` or `eval_only`; the population is model-selected twice
+over and there is no side to protect, so this store ships no `eval_split.jsonl` and
+`label pin` does not apply to it. See `data/gallery_grade/README.md` and
+`data/batch_caveats.md`'s *NEVER-AN-INSTRUMENT*.
 
 ## Serving a sheet to label
 
@@ -857,7 +892,7 @@ makes a flip a five-site consequence rather than a one-line one. `models.
 render_glance` is deliberately not on the list: it names `render_train.HEAD`
 directly, because its whole job is reading an incumbent against a candidate.
 
-## One ingest, two stores
+## One ingest, every store
 
 **A page saves to `labels/<head>.<sheet>.json`, and that is the whole
 convention.** The name is the head the sheet was cut for *and* the sheet's own

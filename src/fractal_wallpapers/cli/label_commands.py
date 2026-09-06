@@ -27,7 +27,7 @@ def label_stores(head: str):
     a head is. An empty head is the location corpus, which is the one store that
     predates the flag.
     """
-    from fractal_wallpapers.labeling import attributes, finished, store
+    from fractal_wallpapers.labeling import attributes, finished, gallery_grade, store
 
     if not head:
         return store.registry, store.register
@@ -35,6 +35,8 @@ def label_stores(head: str):
         return (lambda: attributes.registry(head)), (
             lambda registration: attributes.register(head, registration)
         )
+    if head == gallery_grade.NAME:
+        return gallery_grade.registry, gallery_grade.register
     return (lambda: finished.registry(head)), (
         lambda registration: finished.register(head, registration)
     )
@@ -64,7 +66,7 @@ def label_register(args: argparse.Namespace) -> int:
 
 def label_build(args: argparse.Namespace) -> int:
     """Cut a labeling sheet and render every unit of it."""
-    from fractal_wallpapers.labeling import attributes, sheets
+    from fractal_wallpapers.labeling import attributes, gallery_grade, sheets
 
     if args.head and not args.from_plan:
         print(
@@ -80,6 +82,13 @@ def label_build(args: argparse.Namespace) -> int:
         units = sheets.units_from_plan(resolve_output(args.from_plan))
         source = sheets.attribute_source(
             args.head,
+            resolution=tuple(args.resolution),
+            supersample=args.supersample,
+            reuse_cache=args.reuse_renders,
+        )
+    elif args.head == gallery_grade.NAME:
+        units = sheets.units_from_plan(resolve_output(args.from_plan))
+        source = sheets.gallery_grade_source(
             resolution=tuple(args.resolution),
             supersample=args.supersample,
             reuse_cache=args.reuse_renders,
@@ -366,8 +375,8 @@ def add_commands(subcommands) -> None:
     registering.add_argument(
         "--head",
         choices=list(NON_LOCATION_HEADS),
-        help="register in a finished-render or location-attribute store instead of the "
-        "location store",
+        help="register in a finished-render, location-attribute or gallery-grade store "
+        "instead of the location store",
     )
     registering.add_argument(
         "--score-unconditioned",
@@ -416,7 +425,8 @@ def add_commands(subcommands) -> None:
     building.add_argument(
         "--head",
         choices=list(NON_LOCATION_HEADS),
-        help="the finished-render judge, or the location attribute, a --from-plan sheet is cut for",
+        help="the store a --from-plan sheet is cut for: a finished-render judge, a location "
+        "attribute, or the gallery grade",
     )
     building.add_argument(
         "--admitted-only",

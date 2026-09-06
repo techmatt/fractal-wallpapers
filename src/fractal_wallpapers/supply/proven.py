@@ -256,7 +256,7 @@ def derive(
     rows: list[dict] | None = None,
     finished_rows: list[tuple[str, dict]] | None = None,
 ) -> dict:
-    """Build the proven seed set from all three label stores. `{rows, record}`.
+    """Build the proven seed set from the three quality label stores. `{rows, record}`.
 
     Deterministic for a fixed store: no draw, no clock, and a total order that
     does not depend on the order the rows were read in. **One root per place**,
