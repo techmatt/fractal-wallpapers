@@ -835,7 +835,7 @@ leg's writer whenever somebody wants it.
 **Field modes only, and every conclusion is conditional on that.** A composite at
 forty candidates is **212 s a location, measured** — one arm's worth of places would
 eat a ninety-minute budget — so the roster is `depth.field_modes()`: the shareable
-modes `mode_policy` accepts.
+modes `mode_policy` **mines**.
 
 (That sentence read "about 175 s" and was a derivation off a per-candidate rate
 until 2026-09-01, when `audit_comp40` measured the visit directly at **212.1 s mean
@@ -845,14 +845,17 @@ measured*, [`MEASUREMENTS.md`](MEASUREMENTS.md). The estimate was
 21% low. What no depth run reports is still what a composite *clears*: these three
 legs are unmerged, and their clear rates are the pilot's own.)
 
-**That roster is four modes now, and it was six.** `smooth`, `tia`, `stripe`,
-`curvature`. Three of the seven production field modes — `trap_circle`,
-`gaussian_int` and, since 2026-09-04, `exp_smoothing` — are `mode_policy` weight 0,
-and the first two were two of
-the cheapest things a depth run could render. (This paragraph said *four* and named
-`curvature` as a third weight-0 mode until 2026-09-01; `curvature` moved 0 → 1 on
-2026-08-29 and `mode_policy`'s own docstring carries the ruling. It said *five* and
-listed `exp_smoothing` until 2026-09-04.) A depth leg is
+**That roster is three modes now, and it was six.** `smooth`, `tia`, `stripe`.
+Three of the seven production field modes — `trap_circle`, `gaussian_int` and,
+since 2026-09-04, `exp_smoothing` — are `mode_policy` weight 0, and the first two
+were two of the cheapest things a depth run could render. The fourth is
+`curvature`, which is **not** weight 0: it is on `mode_policy.UNMINED` since
+2026-09-06, so the gallery still seats it and no mining leg draws it — see
+[`GALLERY.md`](GALLERY.md)'s *`UNMINED` — out of the mines, in the gallery*. (This
+paragraph said *four* and named `curvature` as a third weight-0 mode until
+2026-09-01; `curvature` moved 0 → 1 on 2026-08-29 and `mode_policy`'s own docstring
+carries the ruling. It said *five* and listed `exp_smoothing` until 2026-09-04, and
+*four modes* naming `curvature` until 2026-09-06.) A depth leg is
 still a narrower instrument than the one the curves were measured on; size one off
 a fresh rate rather than off `dc1`'s.
 
@@ -931,7 +934,8 @@ which is the whole bottom of the score ordering. A reject autopsy taken afterwar
 an autopsy of the survivors and cannot be anything else.
 
 **The `mode_floor` arm escapes the roster, by design.** `deficient_modes` iterates
-`mine._accepted_modes()` — all thirteen — and `plan_floor` never intersects its
+`mine._mined_modes()` — twelve of the thirteen accepted modes, `curvature` being
+`UNMINED` — and `plan_floor` never intersects its
 modes with `roster`; `test_the_floor_draw_holds_the_place_and_moves_the_mode` pins
 that with `threads` and `itinerary`. What bounds it instead is `--floor-seats`,
 and at its default of 10 the census returns **`{}` on today's ledger**: every

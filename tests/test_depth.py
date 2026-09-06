@@ -1301,7 +1301,7 @@ def test_the_dear_modes_are_exactly_what_a_dumped_field_cannot_serve():
     from fractal_wallpapers.curation import colorize
     from fractal_wallpapers.curation import mine as mine_module
 
-    assert set(depth.dear_modes()) | set(depth.field_modes()) == set(mine_module._accepted_modes())
+    assert set(depth.dear_modes()) | set(depth.field_modes()) == set(mine_module._mined_modes())
     assert not (set(depth.dear_modes()) & set(depth.field_modes()))
     for mode in depth.dear_modes():
         assert not colorize.shareable(mode)
@@ -1396,7 +1396,7 @@ def test_the_centered_roster_is_the_dear_half_and_two_field_modes_less_the_rulin
     roster = depth.centered_modes()
     assert set(roster) == (
         (set(depth.dear_modes()) | set(depth.CENTERED_FIELD)) - set(depth.CENTERED_EXCLUDED)
-    ) & set(mine_module._accepted_modes())
+    ) & set(mine_module._mined_modes())
     assert len(roster) == len(set(roster)), "a cycled roster must not draw a mode twice a turn"
     for mode in depth.CENTERED_FIELD:
         assert colorize.shareable(mode), "the cheap half of this roster is the shareable half"
@@ -1428,7 +1428,7 @@ def test_every_mode_the_centered_roster_names_is_one_the_project_still_buys():
     from fractal_wallpapers.curation import mine as mine_module
     from fractal_wallpapers.curation import mode_policy
 
-    assert set(depth.centered_modes()) <= set(mine_module._accepted_modes())
+    assert set(depth.centered_modes()) <= set(mine_module._mined_modes())
     assert "exp_smoothing" in depth.CENTERED_FIELD, "the record of what arm A drew stands"
     assert mode_policy.weight_of("exp_smoothing") == mode_policy.NICHE
     assert "exp_smoothing" not in depth.centered_modes()

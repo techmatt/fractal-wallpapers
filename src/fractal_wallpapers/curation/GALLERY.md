@@ -2519,13 +2519,48 @@ writes, so nothing tracked was rewritten and the two spellings are one row.
 
 **The 0 is wired in three places.** A weight-0 mode is out of
 the **labeling rosters** and the **default mining rosters** (both through
-`colorize.modes_for`, `mine._accepted_modes` and `hunt.plan`, so the mode draw, the
+`colorize.modes_for`, `mine._mined_modes` and `hunt.plan`, so the mode draw, the
 mine, the hunt and `manufacture` all honour it), out of the **depth roster**
 (`depth.field_modes`), and out of **gallery emission** — `solve.pool` refuses the
 row and counts it as `niche_mode`, which is the one pool both the greedy seating
 and the census read. The mode floors in `solve`, `headroom` and
 `candidate_ledger.feasibility` are asked of `accepted()` for the same reason: a
 floor over a mode with no rows in the pool is a mandate nothing could meet.
+
+### `UNMINED` — out of the mines, in the gallery
+
+**A second list beside the weights, and a different axis from them.** `curvature`
+is on it, Matt's ruling of 2026-09-06, and the standing is about **quality**: its
+pictures are rarely good and the gallery only wants a handful, so buying more of
+it buys material the gallery will not seat. It is not recorded as expensive — that
+would invite the wrong repair, which is to make it cheaper and start mining again.
+
+**Why not a weight of 0.** A 0 answers a bigger question than the one that was
+asked. It takes a mode out of `accepted()` and with it `solve.pool`, the seat
+floors, the per-mode bars, the census axis and gallery emission, and it **strands
+places** — 574 locations and 17 seats the last time a mode was ruled 0. The ruling
+here is that the gallery keeps its handful; a 0 would take the handful away.
+
+So an unmined mode is **accepted in every respect but the draw**. `mode_policy.mined()`
+is `accepted()` less `UNMINED`, and it is what `mine._mined_modes`, `hunt.plan`'s
+roster and every `depth` roster derived from them read; everything that asks *may
+this be seated, censused, barred or floored* still asks `accepted()` and cannot
+tell the difference. `depth.deficient_modes` reads `mined()` too, because what it
+answers is what the floor arm should go and buy. `mode_policy.check()` refuses a
+name in `UNMINED` that `accepted()` does not hold, and both `check()` and
+`record()` carry `mined` and `unmined` so a leg read back later can say whether a
+mode was absent because nothing drew it or because nothing could.
+
+**What still draws it**: a leg naming it in `--modes`, and `curate remode` as a
+target — both are somebody naming the mode out loud, and the standing is a default
+rather than a prohibition. `curvature` was a **field** mode, so `depth.field_modes()`
+is three where it was four; the dear nine and `centered_modes()` are unchanged.
+
+**The stock the floor is protected by**, read 2026-09-06 over the pool at the
+per-mode bars with the census's own 0.02 neutral pre-selection: **345 clearing
+locations over 496 rows**, against a floor of **3 at n = 200** and **16 at
+n = 1000**. Fifth-largest stock of the twelve strange modes. That is the number the
+ruling is revisited against, and `curate headroom` is where it is re-read.
 
 **Weights 1 and 2 differ at the seat, and that is the whole of what a 2 buys.**
 There is still no MODE-side cap anywhere — `rules.RULES` has none — but the floor

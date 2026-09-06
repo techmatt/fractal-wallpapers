@@ -294,9 +294,12 @@ not read as a demotion.
 **`exp_smoothing` is the other kind of departure, and it is why the two are pinned
 apart.** It leaves this arm because it leaves *every* arm: weight 0 is a standing,
 not a roster ruling, and `centered_modes()` applies it by asking
-`mine._accepted_modes()` rather than by editing `CENTERED_FIELD`. Until 2026-09-04
+`mine._mined_modes()` rather than by editing `CENTERED_FIELD`. Until 2026-09-04
 it did not ask, and this was the one roster in the tree where a weight-0 mode
-would have gone on being drawn after every other draw had dropped it.
+would have gone on being drawn after every other draw had dropped it. That gate
+now carries a second standing as well: since 2026-09-06 `mine._mined_modes()` is
+`mode_policy.mined()` rather than `accepted()`, so a mode ruled out of the mines
+and left in the gallery leaves this nomination by the same sentence.
 
 **It closed every mode floor at n=2000**: the census went from `mode_floors` short by
 56 to `nothing provably short`. `smooth_mean_angle` 35 → 78 seats, `smooth_angle_min`

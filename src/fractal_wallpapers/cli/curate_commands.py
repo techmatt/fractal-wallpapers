@@ -2283,7 +2283,8 @@ def depth_leg_flags(parser, *, device: bool):
         "a different recipe key and so a different picture beside the shipped one — nothing "
         "re-keys, nothing re-renders and no label is voided. Settings a mode does not take "
         "are refused at plan time. Unsaid, every shareable "
-        "mode curation.mode_policy accepts. Narrowing it is how a run at a small width "
+        "mode curation.mode_policy mines - accepted, less the modes ruled out of the mines "
+        "and left in the gallery. Narrowing it is how a run at a small width "
         "keeps the dump amortised: one field is dumped per (location, mode), so six modes "
         "at twelve candidates pays six dumps and three modes pays three. To drop a mode "
         "from breadth alone and keep it on the near band, use --breadth-demoted",

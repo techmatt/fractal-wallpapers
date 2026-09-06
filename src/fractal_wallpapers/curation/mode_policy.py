@@ -33,6 +33,18 @@ moving a mode between them in Rust would change the catalog the finished-render
 judges were trained against. So a mode the engine tiers niche never appears here
 at all, and [`check`] refuses if one does.
 
+## One more question the weight cannot answer
+
+*Is this worth seating* and *is this worth mining* were the same question until
+2026-09-06, and then they were not: `curvature` is a mode the gallery wants a
+handful of and no leg should buy more of. A weight of 0 would have answered the
+second by giving up the first — it takes a mode out of the pool, the floors and
+the gallery, and strands the places whose only clearing candidate was in it. So
+[`UNMINED`] is a second list beside the weights, read by [`mined`], and it is a
+list rather than a fourth weight because it is a different axis and not a rung on
+this one. Everything else — the pool, the census, the bars, the floors, the
+emission — still reads [`accepted`] and cannot tell the difference.
+
 ## Reading the table is not syncing it
 
 Several places read this — the mode draw, the mine and hunt rosters, the depth
@@ -210,6 +222,52 @@ MODE_POLICY: dict[str, int] = {
 }
 
 
+# --------------------------------------------------------------------------- #
+# A second question, and deliberately not a third weight.
+# --------------------------------------------------------------------------- #
+#: **The accepted modes no mining leg may draw.** A standing about what a *mine*
+#: spends, and about nothing else.
+#:
+#: **`curvature` is here. Matt's ruling, 2026-09-06.** Its pictures are rarely
+#: good and the gallery only wants a handful, so buying more of it is buying
+#: material the gallery will not seat. **The ruling is about quality.** It is not
+#: about price — recording it as expensive would invite the wrong repair later,
+#: which is to make it cheaper and start mining it again.
+#:
+#: ## Why this is not weight 0
+#:
+#: [`NICHE`] answers a bigger question than the one that was asked. A weight-0
+#: mode leaves [`accepted`], and with it [`solve.pool`], the seat floors, the
+#: per-mode bars, the census axis and gallery emission — and it **strands
+#: places**, the cost the table's own docstring spells out at 574 locations and
+#: 17 seats the last time a mode was ruled 0. The ruling here is that the gallery
+#: keeps its handful of `curvature`; a weight of 0 would take the handful away.
+#:
+#: So an unmined mode is **accepted in every respect but the draw**: renderable by
+#: name, in the catalogue, in the pool, in the census, and carrying whatever
+#: [`seat_floors`] gives it. What ends is legs buying more of it unasked.
+#:
+#: ## Why it is not a roster in the mine either
+#:
+#: [`curation.depth.CENTERED_EXCLUDED`] is the precedent for taking a mode off
+#: **one arm's** draw, and it says the right thing about itself: a roster is where
+#: a leg spends and a weight is what a mode is worth. This is neither — it is
+#: every mining leg at once, which is a standing rather than one leg's roster, and
+#: a standing that lived in `mine` would be a second table for `hunt` and `depth`
+#: to disagree with. It is written here for the reason the module docstring gives:
+#: if a mode's standing needs saying anywhere else, it is said by reading this one.
+#:
+#: ## What still draws it
+#:
+#: A caller naming `--modes` is taken as given, here as everywhere — the standing
+#: is a default and not a prohibition — and [`curation.remode`] still accepts it
+#: as a target, because that leg is somebody naming a mode out loud. What no
+#: longer draws it unasked is [`curation.mine`]'s breadth arms,
+#: [`curation.hunt`]'s roster, and every [`curation.depth`] roster derived from
+#: them.
+UNMINED: tuple[str, ...] = ("curvature",)
+
+
 class PolicyRefused(RuntimeError):
     """The table and the engine's catalog do not describe the same roster."""
 
@@ -259,14 +317,37 @@ def promoted() -> list[str]:
 
 
 def accepted() -> list[str]:
-    """**Every mode a draw may pick and a gallery may seat**, in catalog order.
+    """**Every mode a gallery may seat**, in catalog order.
 
     The roster every wired consumer reads. It is the engine's production roster
     less [`niche`], so a mode the engine retires leaves this by itself and a mode
     ruled niche here leaves it without an edit to the engine.
+
+    **It is not what a mining leg draws from** — that is [`mined`], which is this
+    less [`UNMINED`]. The two were one roster until 2026-09-06, and they came
+    apart the first time a mode was ruled out of the mines and left in the
+    gallery. Everything that asks *may this be seated, censused, barred or
+    floored* asks here; only a leg buying more material asks [`mined`].
     """
     out = set(niche())
     return [name for name in _production() if name not in out]
+
+
+def unmined() -> list[str]:
+    """The accepted modes no mining leg draws, in catalog order. See [`UNMINED`]."""
+    held = set(UNMINED)
+    return [name for name in accepted() if name in held]
+
+
+def mined() -> list[str]:
+    """**Every mode a mining leg may draw**, in catalog order: [`accepted`] less [`UNMINED`].
+
+    The roster [`curation.mine`], [`curation.hunt`] and every [`curation.depth`]
+    roster read. Derived rather than listed, so a mode the engine retires or this
+    table rules niche leaves it without a second edit.
+    """
+    held = set(UNMINED)
+    return [name for name in accepted() if name not in held]
 
 
 def is_accepted(mode: str) -> bool:
@@ -288,6 +369,12 @@ def check() -> dict:
     not have, a weight on a mode the engine tiers **niche** — that one is a
     standing written at two layers, which is what the table exists to stop — and a
     weight outside [`WEIGHTS`].
+
+    A fifth, about [`UNMINED`] rather than about the weights: a name in it that
+    [`accepted`] does not hold. Refused rather than ignored, because the whole
+    point of the list is to keep a mode *in* the gallery while taking it out of
+    the mines, and a name that has since been ruled niche or dropped from the
+    catalogue is a ruling that reads as applied and is not.
     """
     from fractal_wallpapers import engine
 
@@ -316,9 +403,18 @@ def check() -> dict:
     bad = sorted(name for name, value in MODE_POLICY.items() if value not in WEIGHTS)
     if bad:
         raise PolicyRefused(f"{bad} carry a weight outside {WEIGHTS}.")
+    stray = sorted(set(UNMINED) - set(accepted()))
+    if stray:
+        raise PolicyRefused(
+            f"{stray} are in UNMINED and are not accepted modes, so the ruling that they "
+            f"stay in the gallery and leave the mines is a ruling about nothing. A mode "
+            f"since weighted 0 or dropped from the catalogue comes out of UNMINED with it."
+        )
     return {
         "production": len(production),
         "accepted": accepted(),
+        "mined": mined(),
+        "unmined": unmined(),
         "niche": niche(),
         "promoted": promoted(),
     }
@@ -490,12 +586,17 @@ def record() -> dict:
     return {
         "weights": dict(MODE_POLICY),
         "accepted": accepted(),
+        "mined": mined(),
+        "unmined": unmined(),
         "niche": niche(),
         "promoted": promoted(),
         "wired": "all three. Weight 0 is out of the labeling rosters, the default mining "
         "rosters and gallery emission; 1 and 2 differ at the seat, where `seat_floors` "
         "floors a promoted mode at twice a normal one and is the default floor of both "
         "the greedy and the solver since 2026-08-31.",
+        "unmined_is": "accepted in every respect but the draw: seated, censused, barred "
+        "and floored like any other mode, and drawn by no mining leg unasked. A standing "
+        "about what a mine spends and not a weight; see UNMINED.",
     }
 
 
@@ -505,12 +606,14 @@ __all__ = [
     "NORMAL",
     "PROMOTED",
     "STRANGE_SEAT_SHARE",
+    "UNMINED",
     "WEIGHTS",
     "PolicyRefused",
     "accepted",
     "at",
     "check",
     "is_accepted",
+    "mined",
     "niche",
     "promoted",
     "record",
@@ -519,5 +622,6 @@ __all__ = [
     "seat_floors",
     "strange_modes",
     "strange_seats",
+    "unmined",
     "weight_of",
 ]

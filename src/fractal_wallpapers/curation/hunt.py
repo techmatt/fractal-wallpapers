@@ -813,10 +813,12 @@ def plan(
     from fractal_wallpapers.palettes import dominance
 
     maps = list(colorize.pool(seed) if pool is None else pool)
-    # The accepted roster, not the engine's production one: a hunt buys more of a
-    # mode, and [`curation.mode_policy`] weight 0 is the ruling that this project
-    # has stopped buying that one. Its existing material stands.
-    roster = tuple(mode_policy.accepted())
+    # The mined roster, not the engine's production one and not `accepted()`
+    # either: a hunt buys more of a mode, and [`curation.mode_policy`] holds two
+    # separate rulings about that — weight 0 for a mode this project has stopped
+    # buying at all, and `UNMINED` for one the gallery still seats and no leg
+    # buys more of. Existing material stands under both.
+    roster = tuple(mode_policy.mined())
     # The breadth leg draws under the standing weight table and the aimed one does
     # not: what a partition costs to render is a fact about a *breadth* draw, and
     # a leg sent at a shortage is already saying which partitions it means. See
