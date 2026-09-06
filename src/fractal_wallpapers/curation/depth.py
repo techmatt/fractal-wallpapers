@@ -1457,8 +1457,15 @@ def build_plan(
     # had no way to say so. It matters more here than anywhere else the draw
     # picks its own places, because a near-band pass over a place already at
     # `RETAIN_PER_PAIR` is ranked out as it lands: `draw_cells_smoke` kept 9.7%
-    # of what it made. Narrowed here rather than inside [`near_places`] so that a
-    # manifest naming nothing this run can afford is refused against the manifest.
+    # of what it made, at the keep of 3. Narrowed here rather than inside
+    # [`near_places`] so that a manifest naming nothing this run can afford is
+    # refused against the manifest.
+    #
+    # **Cut the manifest with `curate candidate-ledger free-slots --out FILE`.**
+    # This narrows to what a manifest names and asks nothing about whether those
+    # places have room; that half is the caller's, it is a subtraction rather
+    # than a scan ([`retention.free_slots`]), and inferring it instead of
+    # computing it is what cost `thin2_b_near` 13,265 renders for 39 kept rows.
     near_pool = best_field
     if near_named:
         wanted = {str(one) for one in near_named}

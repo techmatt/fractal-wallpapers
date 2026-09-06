@@ -1281,8 +1281,8 @@ restore and a place in an archive copy.
 **The record is a protection class in the prune.** `candidate_ledger.RETAINED_TENTATIVE`
 joins the four that were already there. It is needed for a sharper reason than the
 release row's: a seat is chosen on the *gallery's* objective, over a view, against the
-colour rules, and none of that is being in the top three of its own (location, mode)
-pair — so `RETAIN_PER_PAIR` drops these routinely, and it takes the picture with the
+colour rules, and none of that is being in the top `RETAIN_PER_PAIR` of its own
+(location, mode) pair — so the rank drops these routinely, and it takes the picture with the
 row. Without the class an alias would stop resolving and nothing would say so.
 `tests/test_tentative.py` pins it through a real prune, on `saved_by_a_protection`,
 which counts exactly the protected keys the rank verdict dropped.

@@ -349,6 +349,25 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**Two readings a prompt apart, and the second is the first plus this prompt's own
+tests.** `BUILD_ckpt112_retention_freeslots_and_TODOs_0906`, 2026-09-06, idle box,
+`.[dev,models]` with a release engine. Before any edit: `--slow -rs` read **6:46
+over 3,917, 0 skipped**, which reproduces the reading below to the second and
+confirms zero skips is now the resting state rather than one lucky box. After the
+work: **6:52 over 3,923, 0 skipped** slow and **111.47 s over 3,802, 121
+deselected** fast — and 3,802 + 121 is 3,923, the count definition holding again.
+
+**The +6 is entirely this prompt's and every one of them is arithmetic**, so the
+fast lane took all six and the slow lane's 6:46 → 6:52 is noise rather than
+those tests: five free-slot guards in `test_retention.py` and one `LINES` case in
+`test_nested_verbs.py`. **This is the first reading taken across a store that
+SHRANK**, and it moved nothing: the ledger's score sidecar went 574,162 rows to
+284,517 (the two retired judge artifacts dropped, 142 MB) and no slow guard over
+the live store noticed, which is the answer to *which store grew* asked in the
+other direction. `RETAIN_PER_PAIR` moved 3 → 5 in the same commit and no lane
+guard reads the value, only the constant. Compare the next lane against 3,923 and
+zero skips.
+
 **Zero skips, and that is the store condition confirmed rather than argued.**
 `--slow -rs` at `GUARD_score_regime_0906`, 2026-09-06, read **6:45 over 3,917, 0
 skipped** on an idle box, on the same `.[dev,models]` install with a release

@@ -306,7 +306,11 @@ alone, and the grid is what `test_palette_color_mass` holds the map to, so they 
 optional.
 
 **That is 1.84x cheaper than the same panel priced off the 2026-08-26 sweep's own rows**
-(253.6 s a map, 230.4 accepted), and the difference is *not* spread evenly:
+(253.6 s a map, 230.4 accepted), and the difference is *not* spread evenly. **The
+measured figure is the carried price now** — 137.8 s a map over the whole grid,
+125.4 over the accepted 13, population and date on the row in
+[`curation/MEASUREMENTS.md`](../curation/MEASUREMENTS.md)'s *What a `color_mass`
+close costs a map*, which is where a leg should read it from:
 
 | kind | 2026-08-26 | 2026-09-06 | ratio |
 |---|--:|--:|--:|

@@ -654,9 +654,12 @@ plans were repaired from `measure.json` and re-verified before the byte-for-byte
 check, which is the check that would have caught it.
 
 **A sheet cut over a leg's OWN rows is cut before the merge, and the number is
-large.** Retention prunes per `(location, mode)` pair at `RETAIN_PER_PAIR` = 3, so
-a leg that put eight palettes on each pair to give a sheet something to choose
-from loses five eighths of them the moment it merges. `sheet_leg_0905`
+large.** Retention prunes per `(location, mode)` pair at `RETAIN_PER_PAIR`, so a
+leg that puts eight palettes on each pair to give a sheet something to choose from
+loses `(8 - K) / 8` of them the moment it merges. **The measurement below was
+taken at K=3 and the keep is 5 since 2026-09-06**, so the same leg would lose
+three eighths today rather than five — the shape of the warning is unchanged and
+its size is not. `sheet_leg_0905`
 (2026-09-05) made 19,200 rows and the merge's prune deleted **16,666 pictures,
 2.599 GiB, and 10,775 levelled colormaps, 1.184 GiB** — the pool grew by 2,534
 net. Every one of those deletions is a row some map's four best might have come

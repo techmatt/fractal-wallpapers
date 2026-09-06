@@ -46,9 +46,9 @@ and a twin that comes back below the bar is a row that merged and does not clear
 **Places that regain a clearing row** is the only one the ruling's cost was
 stated in, and it is bounded by neither of the others but by the retention rule:
 every twin lands on `(location, target mode)`, where
-[`candidate_ledger.RETAIN_PER_PAIR`] keeps three ranked *within* the pair by the
-fitted rank key — so a place already holding three better-ranked rows in the
-target mode absorbs its twin and gives nothing back. The record reports all three
+[`candidate_ledger.RETAIN_PER_PAIR`] keeps the top few ranked *within* the pair
+by the fitted rank key — so a place already holding a full keep of better-ranked
+rows in the target mode absorbs its twin and gives nothing back. The record reports all three
 and the prune's own verdict beside them.
 """
 
@@ -917,9 +917,10 @@ def merge(name: str, log=print) -> dict:
 
     **The prune is the number to read off this and it is not the merge's row
     count.** Every twin lands on `(location, target mode)`, where
-    [`candidate_ledger.RETAIN_PER_PAIR`] keeps three ranked by the fitted rank
-    key — so a place already holding three better-ranked rows in that mode absorbs
-    its twin and the store comes out the size it went in. `pruned` says how many.
+    [`candidate_ledger.RETAIN_PER_PAIR`] keeps the top few ranked by the fitted
+    rank key — so a place already holding a full keep of better-ranked rows in that
+    mode absorbs its twin and the store comes out the size it went in. `pruned`
+    says how many.
     """
     rows = hunt._read(rows_path(name))
     scores = hunt._read(scores_path(name))

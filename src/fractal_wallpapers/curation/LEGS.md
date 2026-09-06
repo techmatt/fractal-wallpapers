@@ -456,9 +456,11 @@ Four things follow, and each of them is a place this was got wrong first:
   seed, every `taken` key and every plan this project has ever taken is unmoved.
 
 **Retention does not know about any of this, and that is a live hazard.**
-`retention._pair_of` is `(location, mode)` and `RETAIN_PER_PAIR` is 3, so five
+`retention._pair_of` is `(location, mode)` and `RETAIN_PER_PAIR` is 5, so five
 rows at one place — the shipped one and four variants — are one pair, and a prune
-keeps three of them by the shipped rank key. On `direct_trap_multiply` that
+keeps five of them by the shipped rank key. That the keep and the variant count
+now coincide is luck: a sixth variant is one pair again and the prune drops one
+of the six. On `direct_trap_multiply` that
 ranking prefers the *whitest*: Spearman(in-mask chroma, `P(>=4)`) is **-0.269**
 over its clearing rows. So a prune taken before somebody labels a variant sweep
 deletes preferentially the rows the sweep was run to find. A labelled render is
@@ -495,9 +497,12 @@ the plan is then what stops the leg. `sheet_leg_0905` was inside that by acciden
 
 Measured 2026-09-05 over 9,901 proven unpinned places, which is the population
 `--floor-places` is cut from. Retention keeps
-[`candidate_ledger.RETAIN_PER_PAIR`] = 3 rows a (location, mode) pair, so what a
+[`candidate_ledger.RETAIN_PER_PAIR`] rows a (location, mode) pair, so what a
 floor unit can add prune-free is the *free slots* at its own mode's pairs — and
-the four field modes are not remotely alike on that axis:
+the four field modes are not remotely alike on that axis. **The table is at the
+keep of 3 it was measured under**; the keep is 5 since 2026-09-06 and every row
+of it grew, `smooth` most of all in proportion. Re-cut it with
+`curate candidate-ledger free-slots --mode <mode>` rather than scaling it:
 
 | mode | high-band places untried | free slots (proven) | places with one |
 |---|--:|--:|--:|
@@ -614,11 +619,20 @@ of the night's whole 18,464-row prune drop.
 **The rule is `free slot AND not taken`, never `not taken` alone.** A place is
 worth a near-band pass because it has room, and "the floor arm did not take it" is
 evidence of the opposite where the floor arm's own manifest was cut on free slots.
-Both halves are cheap to compute — the free-slot count is already in hand when the
-floor manifests are cut — and the failure is silent at plan time: the draw
-plans, renders and reports a rate, and only the merge says the rows were never
-going to be kept. `merge`'s `kept at K=3` line is the check, and it is worth
-reading after the FIRST near-band unit of a night rather than after the last.
+Both halves are cheap to compute, and since 2026-09-06 the free-slot half is one
+command:
+
+```
+fractal-wallpapers curate candidate-ledger free-slots --mode smooth --min-slots 2     --out scratch/near_places.jsonl
+```
+
+`--out` writes the manifest `--near-places` reads, best-stocked first, so the
+population a leg draws is the one that was counted. **Cut it this way and not by
+subtracting one manifest from another** — that subtraction is what went backwards.
+The failure is silent at plan time: the draw plans, renders and reports a rate,
+and only the merge says the rows were never going to be kept. `merge`'s
+`kept at K=<keep>` line is the check, and it is worth reading after the FIRST
+near-band unit of a night rather than after the last.
 
 The arm is worth its clock on those terms: at **6.2 engine seconds per KEPT q4
 clear** and **28.4 kept q4 clears a leg minute**, `night_a2` tied the recolour arm as
@@ -1264,7 +1278,8 @@ seconds*: run the arms as separate legs and the wall clock is the share.
 ### Retention discard is arithmetic, and no plan prints it
 
 `curate retention` keeps three rows per (location, mode), so what a leg loses at the
-merge is `(per_pair - 3) / per_pair` and nothing else. The same night, three shapes:
+merge is `(per_pair - K) / per_pair` at the shipped keep K and nothing else. The
+same night, three shapes, measured when K was 3:
 
 | arm | width / modes | per pair | rows made | pruned | pictures |
 |---|---|---|---|---|---|
@@ -1281,7 +1296,7 @@ costs a quarter of an arm's pictures for nothing, where `3` is free.
 
 **The arithmetic holds only where the pairs are fresh, and on the near band they are
 not.** A near-band pass deepens (location, mode) pairs that are *already* at
-`RETAIN_PER_PAIR`, so every row it makes competes against three ranked incumbents
+`RETAIN_PER_PAIR`, so every row it makes competes against a full keep of ranked incumbents
 rather than against its own siblings, and the loss is a fact about the incumbents
 instead of a function of `per_pair`. Measured 2026-09-03 on `draw_cells_smoke`: of the
 4,525 rows the leg and its pilot made, **440 survived the merge — 9.7%** — and the
@@ -1293,12 +1308,18 @@ weakest and keeps the leg's best.
 **Which pairs are fresh is a subtraction, and that is the cheap half nobody
 spends.** `retention.decide` keeps `min(K, attempts)`, so a pair holding fewer
 than the keep has never had more — free slots are `K - len(pair)` over the rows
-already in hand, never a scan. **43,255 of 114,744 pairs — 37.7% — hold fewer
-than three on 2026-09-06, for 60,316 free slots.** The number is per *pair*: the
-rows in those pairs are 69,449, 24.4% of the ledger.
+already in hand, never a scan. **`retention.free_slots` is the one spelling and
+`curate candidate-ledger free-slots --out FILE` cuts the manifest**, which is the
+arithmetic the inverted manifest two sections below did without.
+
+At the keep of 3 that was: 43,255 of 114,744 pairs, 37.7%, for 60,316 free slots.
+**At the keep of 5 it is 114,709 pairs — 100.0% — for 289,210 free slots over
+26,442 places**, both read 2026-09-06 over an unmoved store. The number is per
+*pair* and not per row. ⚠ And the flip cost the *unexplored* reading on most of
+them: 70,930 pairs sit at exactly 3 and may have been pruned there at the old
+keep, so only the 43,255 under three are pairs nobody has finished looking at.
 [`README.md`](README.md)'s *The growth law* carries the full statement and the
-three ways the phrasing goes wrong. It is the arithmetic the inverted manifest
-two sections below did without.
+three ways the phrasing goes wrong.
 
 **Pricing a change to the keep is a different question, and only one population
 in the tree can answer it.** A K sweep needs the attempts a pair *lost*, ranked,
@@ -1978,7 +1999,7 @@ Three counts come out of `read` and **the row count is the least interesting**.
 Rows made is what the engine drew; rows clearing is the population a gallery
 sees; places that regain a clearing row is the figure the ruling's cost was
 stated in — and that one is bounded by neither of the others. Every twin lands on
-`(location, target mode)`, where `candidate_ledger.RETAIN_PER_PAIR` keeps three
+`(location, target mode)`, where `candidate_ledger.RETAIN_PER_PAIR` keeps its few
 ranked **within the pair** by the fitted rank key, so a place already holding
 three better-ranked rows in the target mode absorbs its twin and gives nothing
 back. `merge` reports the prune's verdict beside its own row count for that

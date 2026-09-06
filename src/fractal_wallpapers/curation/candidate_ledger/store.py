@@ -19,9 +19,15 @@ They are in a **sidecar**, keyed `(recipe key, judge artifact, regime)`. A judge
 adoption invalidates every score in this project and nothing else — not a
 picture, not a recipe, not a colour — and a store that carried the score on the
 recipe row would have to rewrite every row to say so. The sidecar is also what
-makes an honest comparison possible at all: gallery1's rows and gallery4's rows
-carry numbers read on different artifacts, and the same recipe drawn by both
-appears here twice, once per artifact.
+makes an honest comparison possible at all: a recipe read by two judges appears
+here twice, once per artifact, and the two numbers are two facts rather than one
+overwriting the other.
+
+**It holds ONE artifact today and the key is still right.** The two retired
+judges' rows — 289,645 of 574,162, half the file — were dropped on 2026-09-06
+once the comparisons they backed had been taken; `curation/README.md`'s *The two
+retired artifacts were dropped* has the derivation. The morning after the next
+adoption this is back to two, which is what the key is for.
 
 The backfill measured the other half of that. The 126 duplicate renders make 128
 pairs of byte-identical pictures; 59 of the pairs disagree on `P(>=3)`, and the
@@ -428,13 +434,24 @@ def write_scores(rows) -> tuple[Path, int, int]:
 #: [`curation.rank_key`]. **The** constant: a picture is kept if and only if its
 #: row is, so this bounds the pictures too and there is no second number.
 #:
-#: **Three**, settled on the replay in `PRUNE1_replay_bestk_report.md`: at K=3
+#: **Five** since 2026-09-06, Matt's decision at ckpt 112. It was **three** from
+#: 2026-08-29, settled on the replay in `PRUNE1_replay_bestk_report.md`: at K=3
 #: the solve at n=150 reproduced the full pool's seats exactly, and at K=2 it did
-#: not. It was one of two until 2026-08-29 — `retention.KEEP_PER_PAIR` kept five
+#: not. What raised it is a different question — not whether the keep reproduces
+#: today's seats but which seats a deeper pool would have produced, which the
+#: retained rows cannot show because the rest were pruned before they could
+#: become seats. Simulated over 674,089 attempts, keep 4 costs 1.221x and holds
+#: 99.3% of today's live release seats where keep 5 costs 1.385x and holds 100%;
+#: **retention is not retroactive, so an error toward 4 is permanent** and that
+#: asymmetry is what chose 5.
+#:
+#: It was one of two until 2026-08-29 — `retention.KEEP_PER_PAIR` kept five
 #: **pictures** a pair by raw `P(>=4)`, on a different ranking, and the two were
 #: not nested, so a row in the top three by rank could be sixth by `P(>=4)` and
-#: have lost its picture. That second spelling is gone.
-RETAIN_PER_PAIR = 3
+#: have lost its picture. That second spelling is gone, and the coincidence that
+#: this constant is now also five is exactly that — a coincidence, on the shipped
+#: rank key and over rows rather than pictures.
+RETAIN_PER_PAIR = 5
 
 
 #: Why a row survives [`prune`]. The first is [`retention.RANKED`]; the five
@@ -458,8 +475,8 @@ RETAINED_FITTED = "named_by_the_rank_key_population"
 #: recorded gallery somebody has started referring to pictures by. It protects
 #: for the same reason a live release row does and needs its own class for a
 #: sharper one: a seat is chosen on the gallery's objective, over a view, against
-#: the colour rules, and none of that is being in the top three of its own
-#: (location, mode) pair, so the rank drops these routinely. An ID that stopped
+#: the colour rules, and none of that is being in the top [`RETAIN_PER_PAIR`] of
+#: its own (location, mode) pair, so the rank drops these routinely. An ID that stopped
 #: resolving would take its picture with it and there is no way to notice.
 RETAINED_TENTATIVE = "seated_in_a_tentative_gallery"
 

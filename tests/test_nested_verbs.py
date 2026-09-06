@@ -102,8 +102,8 @@ LINES: tuple[tuple[str, str, dict], ...] = (
         "curate_gallery_store",
         {"what": "restore", "pass_id": "p9", "force": True},
     ),
-    # The candidate ledger: ten verbs, and the group that carried the most flags
-    # none of its verbs shared.
+    # The candidate ledger: eleven verbs, and the group that carried the most
+    # flags none of its verbs shared.
     (
         "curate candidate-ledger backfill --recolour",
         "curate_candidate_ledger",
@@ -115,6 +115,18 @@ LINES: tuple[tuple[str, str, dict], ...] = (
         {"what": "census", "n": 150, "out": "scratch/census.json"},
     ),
     ("curate candidate-ledger check", "curate_candidate_ledger", {"what": "check"}),
+    (
+        "curate candidate-ledger free-slots --keep 3 --mode smooth --min-slots 2 "
+        "--out scratch/near.jsonl",
+        "curate_candidate_ledger",
+        {
+            "what": "free-slots",
+            "keep": 3,
+            "mode": ["smooth"],
+            "min_slots": 2,
+            "out": "scratch/near.jsonl",
+        },
+    ),
     (
         "curate candidate-ledger orphans --apply --leg d7 --include-unmerged",
         "curate_candidate_ledger",
@@ -529,6 +541,7 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
         "backfill": ("--recolour",),
         "census": ("--n", "--out"),
         "check": (),
+        "free-slots": ("--keep", "--mode", "--min-slots", "--out"),
         "orphans": ("--apply", "--leg", "--include-unmerged"),
         "pictures": (),
         "prune": ("--keep", "--dry-run"),
@@ -770,17 +783,18 @@ def test_a_nested_verb_resolves_to_the_namespace_it_always_did(line, handler, ex
 
 
 def test_every_nested_verb_is_a_real_subparser() -> None:
-    """Eighteen groups and seventy-two verbs, and no group left spelling its verb as
-    a positional `choices=` argument. The two are not interchangeable: a positional
-    takes the whole group's flags, so `--help` at the group is every verb's flags at
-    once and a flag on the wrong verb is accepted and silently ignored."""
+    """Eighteen groups and seventy-three verbs, and no group left spelling its verb
+    as a positional `choices=` argument. The two are not interchangeable: a
+    positional takes the whole group's flags, so `--help` at the group is every
+    verb's flags at once and a flag on the wrong verb is accepted and silently
+    ignored."""
     groups = nested_groups(cli.build_parser())
 
     assert set(groups) == set(SURFACE), (
         f"nested groups the surface table does not name: {sorted(set(groups) - set(SURFACE))}; "
         f"named but not nested: {sorted(set(SURFACE) - set(groups))}"
     )
-    assert sum(len(verbs) for verbs in SURFACE.values()) == 72
+    assert sum(len(verbs) for verbs in SURFACE.values()) == 73
     for name, action in groups.items():
         assert list(action.choices) == list(SURFACE[name]), (
             f"`curate {name}` registers its verbs in another order, and the order is the "

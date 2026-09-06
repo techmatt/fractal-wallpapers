@@ -29,10 +29,11 @@ records it, so a change in this module can never move a seat.
 but [`candidate_ledger.prune`] runs inside every merge and drops the rows the
 retention rank let go — with their pictures. A seat in a tentative gallery is
 exactly the kind of row that rank can drop: it won its seat on the *gallery's*
-objective, over a view, against the colour rules, and none of that is being in the
-top three of its own (location, mode) pair. So a recorded gallery is a
-**protection class** in the prune, [`candidate_ledger.RETAINED_TENTATIVE`], the
-way a live release row is. Without it a figure prompt could name an alias whose
+objective, over a view, against the colour rules, and none of that is being in
+the top [`candidate_ledger.RETAIN_PER_PAIR`] of its own (location, mode) pair. So
+a recorded gallery is a **protection class** in the prune,
+[`candidate_ledger.RETAINED_TENTATIVE`], the way a live release row is. Without
+it a figure prompt could name an alias whose
 picture had already been swept, which is the one failure this store exists to
 prevent.
 

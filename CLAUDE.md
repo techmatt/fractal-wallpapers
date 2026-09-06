@@ -177,8 +177,8 @@ just its own file.
 test there is, and that is what CI runs and what runs before a checkpoint. The
 fast lane is for the edit-run loop and nothing else.
 
-Both are measured, not estimated. The **fast** lane is **115.01 s over the 3,796 it
-holds, 121 deselected**, and the **slow** lane **6:45 over 3,917, 0 skipped** —
+Both are measured, not estimated. The **fast** lane is **111.47 s over the 3,802
+it holds, 121 deselected**, and the **slow** lane **6:52 over 3,923, 0 skipped** —
 both on this machine, 2026-09-06, on a `.[dev,models]` install with a release
 engine built. **Zero skips is the normal reading now and 19 was the render cache
 being short** — a **store** condition, not a tree fault, confirmed by the first

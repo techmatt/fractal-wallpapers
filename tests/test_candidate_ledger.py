@@ -1628,7 +1628,9 @@ def test_a_second_regime_under_an_unnamed_read_raises_instead_of_winning_the_row
     """The six `regime=None` callers fail loudly the day a second regime appears.
 
     The sidecar is keyed `(recipe, artifact, regime)` and the artifact half is
-    already exercised — three artifacts on record — while the regime half is
+    already exercised — three artifacts were on record until the two retired ones
+    were dropped on 2026-09-06, and the next adoption puts a second back — while
+    the regime half is
     single-valued only because every writer stamps the recipe's own regime, which
     the recipe key already names. A re-score at shipping geometry is what puts a
     second one on a key. `solve.pool`, `rank_key`, `mine`, `sweep`, `render_grade` and

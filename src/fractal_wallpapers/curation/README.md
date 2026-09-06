@@ -216,6 +216,8 @@ fractal-wallpapers curate candidate-ledger backfill   # from what already exists
 fractal-wallpapers curate candidate-ledger census --n 20 --out scratch/ledger_census.json
 fractal-wallpapers curate candidate-ledger prune      # back to the rule, ~35 s. RUNS FROM `merge`
 fractal-wallpapers curate candidate-ledger prune --dry-run   # THE dry run. Touches nothing
+fractal-wallpapers curate candidate-ledger free-slots --mode smooth --min-slots 2 \
+    --out scratch/near_places.jsonl                   # where a leg has ROOM, and the manifest
 fractal-wallpapers curate candidate-ledger pictures   # rows naming a picture that is not there
 fractal-wallpapers curate candidate-ledger re-render  # ...and put them back. ~1.5 pictures/s
 fractal-wallpapers curate candidate-ledger score      # every picture through the judge shipped NOW
@@ -238,7 +240,9 @@ tree reads a ledger picture through the judge.
 
 It writes **beside** the retired artifact's rows and never over them: a picture
 read by two judges is two facts, and the retired reading is what every
-before-and-after comparison is taken against. Resumable by chunk — 4,096
+before-and-after comparison is taken against. **That is what a retired reading is
+FOR, and it is also what makes it droppable once the comparison has been taken**
+— see *The two retired artifacts were dropped* below. Resumable by chunk — 4,096
 pictures at a time onto `scores.partial.jsonl`, folded into the sidecar in one
 upsert at the end — so a kill costs the chunk in flight.
 
@@ -264,17 +268,44 @@ stopped obeying between the times somebody remembered it.
 K, with no branch on how many the pair holds — so **a pair holding fewer than the
 keep has never had more attempts than it holds.** Nothing was pruned away from
 it. A free slot is therefore `K - len(pair)`, a subtraction over rows already in
-hand, and never a scan of what a leg might once have rendered. Measured over the
-ledger on 2026-09-06: **43,255 of 114,744 (location, mode) pairs — 37.7% — hold
-fewer than three**, which is **60,316 free slots**, 17.5% of the store's
-`3 x 114,744` capacity.
+hand, and never a scan of what a leg might once have rendered.
 
-Three things that phrasing has to keep straight, because each has been got wrong.
-It is 37.7% of **pairs**, not of the pool — the rows sitting in under-K pairs are
-69,449, **24.4%** of the ledger's 284,517. "Attempts" means the ones the **merge
-ever saw**, so a killed leg's renders are outside the arithmetic entirely, which
-is what `curate candidate-ledger orphans` and `repeat_draws`' floor are for. And
-the law is one-sided: **559 pairs hold more than three**, every one of them a
+**`retention.free_slots` is the one spelling of it**, and
+`fractal-wallpapers curate candidate-ledger free-slots` is how a manifest is cut
+from it — `--out` writes the places file `--near-places` and `--floor-places`
+read, so the population a leg draws is the one that was counted rather than one
+re-derived beside it. Nothing sizes an opener or counts a slot by hand any more.
+
+Measured over the ledger on 2026-09-06, at the keep of the day and at the keep
+that replaced it. The store did not move between the two readings; only K did:
+
+| | pairs with room | free slots | places | rows in them | pairs over K |
+|---|--:|--:|--:|--:|--:|
+| K = 3 | 43,255 (37.7%) | 60,316 | 9,426 | 69,449 (24.4%) | 559 |
+| **K = 5** | **114,709 (100.0%)** | **289,210** | **26,442** | 284,335 (99.9%) | **5** |
+
+Over 114,744 pairs, 284,517 rows and 26,442 places. At K=5 the free share of
+`K x pairs` capacity is 50.4% against 17.5% at K=3.
+
+⚠ **The flip cost one reading of a free slot, and the arithmetic is not what
+changed.** Under keep 3, a pair holding fewer than the keep had never had more
+attempts, so *a free slot* also meant *an unexplored pair*. After the flip that
+survives only for a pair holding fewer than **three**: a legacy pair sitting at
+exactly 3 may have been pruned there at the old keep, and those attempts are
+gone — nothing recovers them and nothing should try. The distribution says how
+much of the store this is: **70,930 pairs sit at exactly 3, 61.8% of all pairs**,
+against 17,061 at one and 26,194 at two. So **43,255 of the 114,709 pairs with
+room — 37.7% — still carry the unexplored reading, and the other 71,454 do
+not.** A slot is a row the merge will keep either way, so planning is unaffected
+and every number in the table above is correct; what a free slot is *evidence of*
+is the thing that narrowed.
+
+Three things the phrasing has to keep straight, because each has been got wrong.
+It is a percentage of **pairs**, not of the pool — the two columns are in the
+table for that reason. "Attempts" means the ones the **merge ever saw**, so a
+killed leg's renders are outside the arithmetic entirely, which is what
+`curate candidate-ledger orphans` and `repeat_draws`' floor are for. And the law
+is one-sided: the pairs over K are every one of them a
 `candidate_ledger.RETAINED_REASONS` protection rather than a prune that failed.
 
 This is the rule that would have caught the inverted near-band manifest —
@@ -302,8 +333,15 @@ or re-renderable from a retained recipe, and a second copy nobody could explain
 later is worse than none. What that costs is real and is measured rather than
 assumed — see *what the rule costs* below.
 
-`RETAIN_PER_PAIR` is **three** and it is **the** constant: a picture is kept if
-and only if its row is. It was one of two until 2026-08-29, when
+`RETAIN_PER_PAIR` is **five** and it is **the** constant: a picture is kept if
+and only if its row is. It was **three** from 2026-08-29 until 2026-09-06, when
+Matt raised it at ckpt 111's reading: simulated over 674,089 attempts, keep 4
+holds 99.3% of today's live release seats at 1.221x the rows and keep 5 holds
+100% at 1.385x — and since **retention is not retroactive**, an error toward the
+cheaper keep is permanent while an error toward the dearer one is only disk. The
+flip is not retroactive either: nothing re-ran, nothing was backfilled, no
+existing row changed, and the attempts the old keep pruned stay pruned. It was
+one of two until 2026-08-29, when
 `retention.KEEP_PER_PAIR` kept five *pictures* a pair on a different ranking
 (raw `P(>=4)`, not the rank key). The two were not nested, so a row in the top
 three by rank could be sixth by `P(>=4)` and have lost its picture already — 41
@@ -477,13 +515,44 @@ render each for the 8,382 rows that lack it costs about 48 core-minutes at the
 per-mode medians the ledger's own `hunt.seconds` stamps carry, or roughly 16
 minutes over the standard three-worker pool.
 
+### The two retired artifacts were dropped, 2026-09-06
+
+Matt approved it at ckpt 111 and it ran at ckpt 112. The sidecar held **574,162
+rows over three artifacts**; the two that are not `floors.SCORING_HEAD`'s shipped
+judge were **289,645 rows, 50.45%, 142,024,632 bytes** — and the file went
+281,976,831 -> 139,952,199. The surviving 284,517 is exactly the ledger's row
+count, which is the shape to expect: every recipe carries one reading on the live
+judge and no recipe carries two.
+
+**Nothing read them, re-derived on the day rather than off a note.** Every
+`scores_by_recipe` caller in the tree joins on the live artifact — `remode` and
+`rerender` name it explicitly, the rest take the default — and no test reads a
+real retired sha. The one reader that saw them at all was `mine`'s
+`stale_scores` census, which reports and never gates, and now has nothing to
+report. **And no recipe lost its only reading**: over all four gallery passes,
+`retired-only` recipes were **0** — gallery1 731, gallery2 1,723, gallery3 2,748,
+gallery4 5,292, each fully present on the live judge as well. All seven published
+records browse.
+
+What it costs is the stated principle that a picture read by two judges is two
+facts. The before-and-after comparisons those rows backed have been taken; what
+cannot be taken again is a *new* comparison against those two scales, and
+re-reading 284,517 pictures on a retired judge is about 47 minutes at the rate
+above rather than impossible. `score_amendments.jsonl` was left alone and
+references **no** retired artifact — all 88,571 of its rows carry
+`head: "location"` on one location-judge sha, which is a different head and a
+different store.
+
 **A score is joined on ONE judge artifact, and the join says so.** The sidecar is
 keyed `(recipe key, artifact, regime)` because a number is comparable only inside
 that triple. Both readers that mattered — `mine.population` and `solve.pool` —
 flattened it to the recipe key alone, which is last-row-wins across artifacts:
-two judges' scales in one ordering with nothing anywhere saying so. The store now
-holds **three** artifacts over 574,162 sidecar rows, so that half of the key is
-live: what those joins were right by luck about has since happened.
+two judges' scales in one ordering with nothing anywhere saying so. The store
+held **three** artifacts over 574,162 sidecar rows when that was written, so that
+half of the key was live: what those joins were right by luck about had happened.
+It holds **one** over 284,517 rows since 2026-09-06 — the guard stays, because
+what makes the key right is the next adoption and not the current census, and the
+morning after one this store is back to two.
 `candidate_ledger.scores_by_recipe` is the join now — the live head unless a
 caller names an artifact — and a row read on any other is **omitted**, not
 rescaled. `stale_scores` is the census of what was left behind, so a caller can
@@ -491,7 +560,7 @@ say how much of its population it has no score for. A recipe with no reading on
 the live judge has no score, which is honest and different from having an old one.
 
 **The regime half of that key has no filter, so a second one raises.** All
-574,162 rows are `640x360ss2`, and six production callers — `solve.pool`,
+284,517 rows are `640x360ss2`, and six production callers — `solve.pool`,
 `rank_key`, `mine`, `sweep`, `models/render_grade.py` and `cli/curate_commands`
 — pass no regime at all, so for them the join is last-row-wins across regimes.
 What breaks it is not drift: `regime` is a keyed member of a recipe, so a recipe

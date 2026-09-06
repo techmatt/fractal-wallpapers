@@ -875,6 +875,52 @@ picture; a candidate is 640x360 ss2. Mixing the three is how a leg gets priced a
 order of magnitude wrong.
 
 
+## What a `color_mass` close costs a map, measured 2026-09-06
+
+**The carried price was 253.6 s a map and the measurement is 137.8 — 1.84x high.**
+The measurement wins and this row is it. Read per **MAP**, which is the whole
+18-mode grid over the two-location panel; the per-candidate table above is per
+engine render and the two are not convertible by eye.
+
+| | 2026-08-26, carried | **2026-09-06, measured** | ratio |
+|---|--:|--:|--:|
+| the whole 18-mode grid | 253.6 | **137.8** | 0.54 |
+| the 13 `mode_policy` accepts | 230.4 | **125.4** | 0.54 |
+
+Population: the `classic-pairs-2026-09` drop's **120 maps**, every drawable map
+with no row — 16,537 engine seconds over 5,571 s of wall at this box's three
+workers, 4,320 rows, **zero failures**. The carried figure was priced off the
+2026-08-26 sweep's own rows over the same panel.
+
+**The spread by kind is material and the mean hides it, so it is kept**:
+
+| kind | 08-26 | 09-06 | ratio |
+|---|--:|--:|--:|
+| the seven field modes together | 5.0 | 4.8 | **0.96** |
+| the four direct traps | 48.7 | 24.2 | **0.50** |
+| `threads`, `smooth_trap_circle` | 25.7 | 13.2 | **0.51** |
+| the four big composites | 169.3 | 82.6 | **0.49** |
+| `itinerary` | 4.6 | **13.0** | **2.86** |
+
+Everything that iterates is about **half** what it was and every field mode is
+where it was — the field modes are dominated by the colormap lookup and the
+census, which did not move — so this is what a faster engine looks like from
+here. **`itinerary` went the other way and by more than any mode moved down**,
+which is why the split is carried rather than a single ratio.
+
+⚠ **The two readings are not strictly commensurable.** The 09-06 figure is
+per-render wall inside a three-worker pool, so contention is in it, and it is
+still the smaller number. Five modes are 70% of the bill — `smooth_stripe` 23.1 s
+a map, `smooth_mean_angle` 20.8, `smooth_angle_min` 20.3, `smooth_curvature`
+18.5, `itinerary` 13.0 — nearly all of it at the `mandelbrot` panel location,
+whose cap is 22,794 against `julia:multibrot5`'s 5,467. So a drop of maps that
+lands on a different panel is not priced by this row.
+
+[`palettes/README.md`](../palettes/README.md)'s *`color_mass` — how much of each
+colour a (group, mode) pair actually makes* carries the close in full. This row
+exists because the stale 253.6 survived in a second document for a day, which is
+the failure this file was split out to prevent.
+
 ## What the gallery leg costs at n=150 on this machine
 
 Measured 2026-09-01 over the 100,743-candidate pool, idle machine, `--no-render`:
