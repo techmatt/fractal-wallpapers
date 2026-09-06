@@ -524,8 +524,17 @@ def delete_pictures(named, log=print) -> dict:
     `<stem>.leveled/` beside the JPEG on every acted render, ~76 KiB against the
     picture's ~157 KiB. Unlinking the one and leaving the other is how 206,147 of
     them reached 14.9 GiB — more than the whole candidate pool — and how they
-    would do it again. Nothing reads a candidate's for content and the row
-    re-derives it, so it is regenerable exactly as the picture is.
+    would do it again. The row re-derives it, so it is regenerable exactly as the
+    picture is.
+
+    **That argument is sound HERE and nowhere else.** It holds because the row is
+    being dropped in the same transaction, so nothing can name the candidate
+    again. It is **not** a licence to sweep the pool's colormaps on their own:
+    [`curation.pool_draw`] reads a live candidate's onto every plan unit and
+    [`labeling.sheets`] renders through it, and `LEGS.md`'s *`curate pool-draw`*
+    records what losing one does — a rebuild serves a different picture under the
+    same identity, silently. `curation/README.md`'s *What retention does not
+    reach, and the levelled colormaps swept on 2026-08-30* carries the re-sweep.
 
     The colormap is swept whether or not the JPEG was still there: a row is being
     dropped either way, and a colormap outliving an already-deleted picture is

@@ -746,14 +746,28 @@ candidate, `delete_pictures` unlinks the JPEG and leaves it, and it had reached
 **206,147 directories / 14.93 GiB** — half again what the candidate JPEGs cost. Two
 things were established before deleting any:
 
-* **Nothing reads a candidate's for content.** Every `colormap_dir` override in the
-  package is either the tracked palette directory, or a directory written moments
-  earlier in the same call, or `sheets.render_finished(..., colormaps=unit["leveled"])`
-  — and that unit's name is set by `manufacture` to its own **sheet** subtree. A sweep
-  of every `.jsonl`/`.json` under the tree finds `.leveled` paths named in exactly four
-  places: `manufacture/*/sheet`, `calibration/measure`, `correction/*/screen` and
-  `mode_sheet/measure`. `run._discard_partials` is the only other caller and it only
-  deletes one.
+* **Nothing read a candidate's for content, on the day this was swept.** Every
+  `colormap_dir` override in the package was either the tracked palette directory, or a
+  directory written moments earlier in the same call, or
+  `sheets.render_finished(..., colormaps=unit["leveled"])` — and that unit's name was set
+  by `manufacture` to its own **sheet** subtree. A sweep of every `.jsonl`/`.json` under
+  the tree found `.leveled` paths named in exactly four places: `manufacture/*/sheet`,
+  `calibration/measure`, `correction/*/screen` and `mode_sheet/measure`.
+  `run._discard_partials` is the only other caller and it only deletes one.
+
+  ⚠ **That is no longer true and a re-sweep must not be argued from it.**
+  `curation.pool_draw` landed on 2026-09-03 and `leveled_dir` reads the `.leveled/`
+  **of a pool candidate** onto every plan unit, which `labeling.sheets` then renders
+  through — see [`LEGS.md`](LEGS.md)'s *`curate pool-draw`*, where the failure is
+  written down as the one that gets forgotten: a rebuild after a sweep serves a
+  different picture under the same identity, silently, because the build skips a unit
+  whose picture is already on disk. Re-swept 2026-09-06: **94,485 directories / 7.12 GiB
+  in the pool** against 4,844 / 0.48 GiB everywhere else, and the record scan now finds
+  a **fifth** shape — `pool_draw/spiral_500/plan.jsonl` names 105 of them. Nothing was
+  deleted. The reachable set is not a fixed list either: `pool_draw` takes each
+  location's **best clearing row** by rank, so which candidate is drawable moves with
+  the pool and with the bars. Only 1,483 directories / 0.09 GiB have no ledger row at
+  all, and those are `curate candidate-ledger orphans`' to take with their JPEGs.
 * **They are regenerable, by re-rendering and not by replay.** The file is
   `curved_stops(the map's stops, the curve)`; the map is tracked, and the curve is
   `derive_curve(stats_of(the base render), the tracked band)` whose sha256 is on every
@@ -761,7 +775,13 @@ things were established before deleting any:
   `colorize.render(level=True)`, one candidate render. It is **not** replayable from
   the row, because `recipes.stamp_of` deliberately drops the derived curve: a
   manufacture row carries the whole curve and can be replayed from it, a ledger row
-  cannot.
+  cannot. **What that costs is `dump + paint + measure` and it is measured** — over the
+  674,089 attempts the `depth` legs' `sequence.jsonl` logs hold, `smooth` is 0.273 +
+  0.060 + 0.065 = **0.398 engine-seconds cold and 0.125 amortised** over a (location,
+  mode) pair whose field is dumped once; `stripe` is 1.989 cold. The `repaint` is the
+  only stage a regeneration saves, so re-deriving one is nearly the price of the
+  picture — and it **re-derives rather than reproduces**, which is why a plan that
+  named one cannot be handed a fresh directory and called the same render.
 
 **194,058 directories were swept, 12,089 excluded** — those four named subtrees, the
 released and parity pictures, the label sheets' own `full/` renders, and everything
