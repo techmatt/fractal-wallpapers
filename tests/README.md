@@ -349,6 +349,29 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+It read **114.16 s over 3,763, 116 deselected** fast and **6:03 over 3,879, 19
+skipped** slow at `PRE_CLOSEOUT_wallpapers_0906`, 2026-09-06, on the same
+`.[dev,models]` install with a release engine. **Six tests were written** — the
+`mode_policy.UNMINED` guards — and the counts move by exactly six on both lanes,
+which is the arithmetic doing what it should.
+
+**The 19 skips are the entry.** The reading below says *nothing skipped* and this
+one does not, and the movement is **not** this prompt's: the fast lane skips
+nothing at all here, so all 19 sit inside the 116 slow-only tests, and the six
+added are in `test_mode_policy.py` where none of them is slow. A release engine is
+present, so it is not the usual cause. **Nobody has looked at which 19**, because
+naming them is another slow lane and this prompt had no reason to spend one; it is
+recorded so the next lane to be read is compared against 19 rather than against
+zero, and so that whoever wants the answer knows it costs `--slow -rs` and nothing
+cleverer.
+
+**The slow lane's 6:03 is under the 6:34 below and was taken on a busier box**, so
+it is not evidence of anything getting faster. It ran beside a `cargo test` and in
+the wake of a 269 s palette re-cut, and it *stalled* — 5% in the first five
+minutes, then the remaining 95% in one. A lane whose progress is that lumpy is a
+lane whose total is a poor summary, and the reason the total is quoted anyway is
+that it is what the gate reads.
+
 It read **111.54 s over 3,757, 116 deselected** fast at
 `INGEST_new_maps_labels_0905`, 2026-09-05, on a box idle but for the two-store
 ingest that had just finished — no render leg, no probe, the sitting's four modes
