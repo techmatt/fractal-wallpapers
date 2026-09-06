@@ -242,7 +242,34 @@ of them through the **carrier prior** rather than through a measurement of this
 pipeline. They are reachable that way — 20 of the 120 survive a four-thin-cell cut at
 the default bar — and the fallback is exactly what the two-table rule was written for.
 Closing the hole costs a sweep leg; the completeness guard is keyed to what the map
-names and stays green either way. The engine
+names and stays green either way.
+
+**What that sweep would cost, priced 2026-09-05 off the sweep's own per-render seconds.**
+`artifacts/curation/palette_mass_sweep/cells/` survives on the hot tier and carries a
+`seconds` on every one of its 27,587 rows, so the marginal price of a group is arithmetic
+rather than an estimate: **253.6 s a map** over the whole 18-mode grid and the two-location
+panel, which puts the drop's 120 at **30,438 engine seconds — 8.5 h serial, about 2.9 h at
+this box's three workers**. Three readings worth having before anybody runs it:
+
+* **Only the 13 modes `mode_policy` accepts are read by anything today**, since
+  `delivering` takes its max over those; they are **230.4 s a map**, and the other five
+  buy grid completeness alone.
+* **Five modes are 87% of the bill** — `smooth_stripe` 46.5 s a map, `smooth_angle_min`
+  43.0, `smooth_mean_angle` 42.1, `smooth_curvature` 37.7, `threads` 18.1 — nearly all of
+  it at the `mandelbrot` panel location, where a composite runs 35-42 s a render against a
+  field mode's 0.3-0.4. **The four field modes together are 3.0 s a map**, six minutes for
+  the whole drop, which is the cheap partial nobody has to argue about.
+* **There is nothing to run it with.** The sweep ran out of a disposable `scratch/`,
+  `sweep_log`'s `rebuild_command` is `restore` twice for that reason, and the log is not
+  hot — so closing the hole is writing a leg, restoring the 25.7 MB log from the archive
+  tier, appending, re-cutting and re-stamping the manifest's sha256.
+
+⚠ **The 8.7 h this file used to give for a full re-derivation does not reconcile with the
+log's own numbers**: those 27,587 rows sum to **187,508 s, 52.1 h serial**. The 8.9 h in
+`palette_mass_sweep.manifest.json`'s panel note is what *remained* when the panel was cut
+from three locations to two, not what the whole sweep cost.
+
+The engine
 ships **19** production modes; `color_mass.UNMEASURED` names the one with no file
 (`tail_itinerary`, catalogued after the sweep) and the completeness guard reads the
 engine's roster *less* that tuple, so a mode added later is a named hole rather than a
@@ -301,9 +328,11 @@ per (group, mode, location) with the recipe and the cost, 25.7 MB — is **not t
 not hot**. It gets the `curation.durability` treatment the supply sidecar gets: a copy
 under `<archive>/curation_backup/palette_mass_sweep/`, a tracked manifest at
 `data/curation/palette_mass_sweep.manifest.json`, and `curate mass-sweep save|check|restore`.
-It is insurance and nothing reads it: re-deriving it is 8.7 h over pictures that were
-censused and deleted, and it is the only thing that would let the map be re-cut on other
-terms — excluding the noisy modes, weighting the panel differently, rolling to families.
+It is insurance and nothing reads it: re-deriving it is **52.1 h of engine time** over
+pictures that were censused and deleted — the sum of its own rows' `seconds`, and the
+figure that replaced the 8.7 h above — and it is the only thing that would let the map be
+re-cut on other terms: excluding the noisy modes, weighting the panel differently, rolling
+to families.
 `check` reporting `missing` is its **resting state**, not an alarm; `durables.guard`
 refuses over the supply sidecar and nothing else.
 
