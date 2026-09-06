@@ -602,6 +602,24 @@ are not alternatives after all — **width under the keep buys the near band exa
 `RETAIN_PER_PAIR - width/modes` rows a pair and the rest of its value is still
 quality.** Size a near band for the quality and count the stock in free slots.
 
+⚠⚠ **And there is a way to build that manifest EXACTLY BACKWARDS, which cost a
+whole near-band unit on 2026-09-06.** `thin2_b_near` was given the proven near-band
+places *less the ones the floor arms took*, on the reasoning above — and the floor
+arms had taken every place that **had** a free slot, so what the subtraction left
+was precisely the pairs already at the retention keep. It made **13,265 rows and
+the merge kept 39 — 99.7% pruned**, for 1,392 s of render wall, a tenth of the
+night. Every other unit that night lost under 5%, and the near band alone is 72%
+of the night's whole 18,464-row prune drop.
+
+**The rule is `free slot AND not taken`, never `not taken` alone.** A place is
+worth a near-band pass because it has room, and "the floor arm did not take it" is
+evidence of the opposite where the floor arm's own manifest was cut on free slots.
+Both halves are cheap to compute — the free-slot count is already in hand when the
+floor manifests are cut — and the failure is silent at plan time: the draw
+plans, renders and reports a rate, and only the merge says the rows were never
+going to be kept. `merge`'s `kept at K=3` line is the check, and it is worth
+reading after the FIRST near-band unit of a night rather than after the last.
+
 The arm is worth its clock on those terms: at **6.2 engine seconds per KEPT q4
 clear** and **28.4 kept q4 clears a leg minute**, `night_a2` tied the recolour arm as
 the cheapest buy of that night and beat both openers by 5-7x.
@@ -728,10 +746,14 @@ for failing on modes the leg will not run is a map narrowed away for nothing.
 `--draw-cutoff` defaults to `palettes.dominance.CELL_LEAD` (0.10) rather than to a
 constant of its own, so the filter reads as *this pair is expected to be dominant
 here*. It is also the loosest value that is still a bound at this library: at 0.10
-the thinnest cell (`dark_vivid_lime`) offers 40 maps of the 822-map collapsed pool
-and at 0.15 it offers 28, under `colorize.CANDIDATES`. Narrowing below the
-neighbourhood is refused, and the message names the cutoff because the cutoff is
-the knob that fixes it.
+the thinnest cell (`dark_vivid_lime`) offers **42** maps of the 942-map collapsed
+pool and at 0.15 it offers **32**, which is `colorize.CANDIDATES` exactly and no
+headroom at all. Narrowing below the neighbourhood is refused, and the message
+names the cutoff because the cutoff is the knob that fixes it. *(Read 2026-09-06,
+after `classic-pairs-2026-09` was measured into `color_mass`; before that sweep the
+same two readings were 40 and 28, so 120 maps of measured mass bought the thinnest
+cell two offers at the default bar and four at the tighter one. The 822 the older
+reading names is the pool before the drop, not a different rule.)*
 
 **It reaches the near band, and that is the point.** The near band deepens a place
 whose field is already dumped, so a recolour there costs a colour pass and nothing

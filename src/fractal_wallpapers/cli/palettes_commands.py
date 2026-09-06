@@ -86,12 +86,16 @@ def palettes_color_mass(args: argparse.Namespace) -> int:
 
     try:
         sweep = Path(args.sweep) if args.sweep else color_mass.sweep_log_path()
-        report = color_mass.build(
-            census=Path(args.census),
-            sweep=sweep,
-            floor=args.floor,
-            log=(lambda _line: None) if args.quiet else print,
-        )
+        speak = (lambda _line: None) if args.quiet else print
+        if args.only_new:
+            report = color_mass.extend(sweep=sweep, floor=args.floor, log=speak)
+        else:
+            report = color_mass.build(
+                census=Path(args.census),
+                sweep=sweep,
+                floor=args.floor,
+                log=speak,
+            )
     except (color_mass.ColorMassError, OSError) as refusal:
         print(refusal)
         return 1
@@ -270,6 +274,15 @@ def add_commands(subcommands) -> None:
         help=(
             f"the smallest mean share a cell is stored at (default: "
             f"{color_mass_module.STORED_FLOOR})"
+        ),
+    )
+    massing.add_argument(
+        "--only-new",
+        action="store_true",
+        help=(
+            "cut and APPEND only the pairs whose palette group has no row yet, leaving "
+            "every existing row byte-identical — what a colormap drop needs, and the only "
+            "cut available while the census's own record is not kept"
         ),
     )
     massing.add_argument("--quiet", action="store_true", help="do not print per-mode progress")

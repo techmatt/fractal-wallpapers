@@ -52,6 +52,24 @@ LINES: tuple[tuple[str, str, dict], ...] = (
     ("curate mass-sweep check", "curate_mass_sweep", {"what": "check"}),
     ("curate mass-sweep save", "curate_mass_sweep", {"what": "save"}),
     ("curate mass-sweep restore --force", "curate_mass_sweep", {"what": "restore", "force": True}),
+    # The one durable store with a fifth verb: it is the only one this project can
+    # add to. `extend` renders the panel for the maps the colour-mass map holds no
+    # row for and appends them, which is what a colormap drop needs.
+    (
+        "curate mass-sweep extend --modes smooth --maps meloni --workers 2 --budget 60 "
+        "--workdir w --dry-run --partial",
+        "curate_mass_sweep_extend",
+        {
+            "what": "extend",
+            "modes": ["smooth"],
+            "maps": ["meloni"],
+            "workers": 2,
+            "budget": 60.0,
+            "workdir": "w",
+            "dry_run": True,
+            "partial": True,
+        },
+    ),
     ("curate embeddings check", "curate_embeddings", {"what": "check"}),
     ("curate embeddings save", "curate_embeddings", {"what": "save"}),
     ("curate embeddings restore --force", "curate_embeddings", {"what": "restore", "force": True}),
@@ -474,7 +492,20 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
     "sidecar": {"check": (), "save": (), "restore": ("--force",)},
     "amendments": {"check": (), "save": (), "restore": ("--force",)},
     "frames": {"check": (), "save": (), "restore": ("--force",)},
-    "mass-sweep": {"check": (), "save": (), "restore": ("--force",)},
+    "mass-sweep": {
+        "check": (),
+        "save": (),
+        "restore": ("--force",),
+        "extend": (
+            "--modes",
+            "--maps",
+            "--workers",
+            "--budget",
+            "--workdir",
+            "--dry-run",
+            "--partial",
+        ),
+    },
     "embeddings": {"check": (), "save": (), "restore": ("--force",)},
     "spiral-scores": {
         "build": ("--limit",),
@@ -705,7 +736,7 @@ def parser():
 
     `build_parser` imports nineteen modules and assembles every subparser, which
     is **34.8 ms** on this machine — measured in-process, a hundred builds after
-    a warm one. The guard below is seventy-one cases and built one apiece, so the
+    a warm one. The guard below is seventy-nine cases and built one apiece, so the
     pin cost 2.5 s to answer a question about spelling.
 
     Shared rather than rebuilt because `parse_args` does not touch the parser: it
@@ -731,7 +762,7 @@ def test_a_nested_verb_resolves_to_the_namespace_it_always_did(line, handler, ex
 
 
 def test_every_nested_verb_is_a_real_subparser() -> None:
-    """Eighteen groups and seventy verbs, and no group left spelling its verb as
+    """Eighteen groups and seventy-one verbs, and no group left spelling its verb as
     a positional `choices=` argument. The two are not interchangeable: a positional
     takes the whole group's flags, so `--help` at the group is every verb's flags at
     once and a flag on the wrong verb is accepted and silently ignored."""
@@ -741,7 +772,7 @@ def test_every_nested_verb_is_a_real_subparser() -> None:
         f"nested groups the surface table does not name: {sorted(set(groups) - set(SURFACE))}; "
         f"named but not nested: {sorted(set(SURFACE) - set(groups))}"
     )
-    assert sum(len(verbs) for verbs in SURFACE.values()) == 70
+    assert sum(len(verbs) for verbs in SURFACE.values()) == 71
     for name, action in groups.items():
         assert list(action.choices) == list(SURFACE[name]), (
             f"`curate {name}` registers its verbs in another order, and the order is the "

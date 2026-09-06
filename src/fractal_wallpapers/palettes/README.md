@@ -266,35 +266,68 @@ pairs it never chose found 1,705 and 1,563.
 
 The bound above says *can*. This says *does*, and it is tracked:
 `data/palettes/color_mass/<mode>.jsonl`, one row per palette group, the **mean chromatic
-share per codebook cell** over every observation of that pair. All **14,796** pairs —
-822 groups by the 18 modes it was measured on — with no hole in that grid. **The grid
-is complete over what it measured and is now narrower than the pool**: the 120 maps of
-`classic-pairs-2026-09` are groups of one with no row, so `delivering` reads every one
-of them through the **carrier prior** rather than through a measurement of this
-pipeline. They are reachable that way — 20 of the 120 survive a four-thin-cell cut at
-the default bar — and the fallback is exactly what the two-table rule was written for.
-Closing the hole costs a sweep leg; the completeness guard is keyed to what the map
-names and stays green either way.
+share per codebook cell** over every observation of that pair. All **16,956** pairs —
+942 groups by the 18 modes it was measured on — with no hole in that grid, and
+`test_palette_color_mass` asserts exactly that.
 
-**What that sweep would cost, priced 2026-09-05 off the sweep's own per-render seconds.**
-`artifacts/curation/palette_mass_sweep/cells/` survives on the hot tier and carries a
-`seconds` on every one of its 27,587 rows, so the marginal price of a group is arithmetic
-rather than an estimate: **253.6 s a map** over the whole 18-mode grid and the two-location
-panel, which puts the drop's 120 at **30,438 engine seconds — 8.5 h serial, about 2.9 h at
-this box's three workers**. Three readings worth having before anybody runs it:
+**A colormap drop opens a hole in the grid and a leg closes it.** The 120 maps of
+`classic-pairs-2026-09` landed as groups of one with no row, and `delivering` read every
+one of them through the **carrier prior** — a bound on the ramp rather than a measurement
+of this pipeline — until 2026-09-06. That fallback works and is what the two-table rule
+was written for, but it is not the same instrument: through the prior, **21** of the 120
+survived a four-thin-cell cut (`dark_vivid_green`, `dark_vivid_yellow`, `dark_vivid_lime`,
+`dark_vivid_teal`) at the default bar; measured, **50** do. Over all 21
+`rank_key.thin_cells()` the same cut went **55 → 95**. *(An earlier reading here said
+"20 of the 120" without naming its cells; **409** of the 5,985 four-cell subsets of the
+thin cells read exactly 20 today, so that figure named nothing a reader could reproduce.
+A cut is its cells.)*
 
-* **Only the 13 modes `mode_policy` accepts are read by anything today**, since
-  `delivering` takes its max over those; they are **230.4 s a map**, and the other five
-  buy grid completeness alone.
-* **Five modes are 87% of the bill** — `smooth_stripe` 46.5 s a map, `smooth_angle_min`
-  43.0, `smooth_mean_angle` 42.1, `smooth_curvature` 37.7, `threads` 18.1 — nearly all of
-  it at the `mandelbrot` panel location, where a composite runs 35-42 s a render against a
-  field mode's 0.3-0.4. **The four field modes together are 3.0 s a map**, six minutes for
-  the whole drop, which is the cheap partial nobody has to argue about.
-* **There is nothing to run it with.** The sweep ran out of a disposable `scratch/`,
-  `sweep_log`'s `rebuild_command` is `restore` twice for that reason, and the log is not
-  hot — so closing the hole is writing a leg, restoring the 25.7 MB log from the archive
-  tier, appending, re-cutting and re-stamping the manifest's sha256.
+The leg is [`palettes.mass_sweep`] and it is two commands:
+
+```
+fractal-wallpapers curate mass-sweep extend        render the panel for the maps with no row
+fractal-wallpapers palettes color-mass --only-new  cut those pairs in, and only those
+```
+
+**`--only-new` and not a rebuild, and that is not a preference.** `build` reads both
+measurements and rewrites every file; the census's own per-observation record ran out of
+a disposable `scratch/` and is not kept, so a full rebuild today would silently drop
+15,681 observations and move all 14,796 existing rows. `extend` reads the sweep log
+alone, takes only the groups with no row in any mode's file, and appends — every row that
+was already there comes back byte-identical. A new group's `observations.census` is
+therefore **0**, which is the honest number: the census was read on 2026-08-26 and these
+maps were not in the library that day.
+
+**What that leg costs, MEASURED over the drop's 120 on 2026-09-06**: **137.8 s a map**
+over the whole 18-mode grid and the two-location panel — 16,537 engine seconds, 5,571 s
+of wall at this box's three workers, 4,320 rows, zero failures. The 13 modes
+`mode_policy` accepts are **125.4 s a map** of that; the other five buy grid completeness
+alone, and the grid is what `test_palette_color_mass` holds the map to, so they are not
+optional.
+
+**That is 1.84x cheaper than the same panel priced off the 2026-08-26 sweep's own rows**
+(253.6 s a map, 230.4 accepted), and the difference is *not* spread evenly:
+
+| kind | 2026-08-26 | 2026-09-06 | ratio |
+|---|--:|--:|--:|
+| the seven field modes together | 5.0 | 4.8 | **0.96** |
+| the four direct traps | 48.7 | 24.2 | **0.50** |
+| `threads`, `smooth_trap_circle` | 25.7 | 13.2 | **0.51** |
+| the four big composites | 169.3 | 82.6 | **0.49** |
+| `itinerary` | 4.6 | **13.0** | **2.86** |
+
+Every render that iterates is about **half** what it was and every field mode is where it
+was, which is what a faster engine looks like from here — the field modes are dominated by
+the colormap lookup and the census, which did not move. **`itinerary` is the one that went
+the other way**, and by more than any mode moved down. The two readings are not strictly
+commensurable — this one is per-render wall inside a three-worker pool, so contention is
+in it and it is still the smaller number — which is why a leg sizes off a leg that ran on
+its own population rather than off a table.
+
+**Five modes are still most of the bill**: `smooth_stripe` 23.1 s a map,
+`smooth_mean_angle` 20.8, `smooth_angle_min` 20.3, `smooth_curvature` 18.5,
+`itinerary` 13.0 — 70% between them, nearly all of it at the `mandelbrot` panel location,
+whose cap is 22,794 against `julia:multibrot5`'s 5,467.
 
 ⚠ **The 8.7 h this file used to give for a full re-derivation does not reconcile with the
 log's own numbers**: those 27,587 rows sum to **187,508 s, 52.1 h serial**. The 8.9 h in
