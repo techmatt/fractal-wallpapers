@@ -470,7 +470,16 @@ class Rule:
         return FAMILY_SHARE if name in dominance.families() else CELL_SHARE
 
     def allowed(self, name: str, seats: int) -> int:
-        """`floor(K * t * n) + 1` — how many of the first `n` seats may be this colour."""
+        """`floor(K * t * n) + 1` — how many of the first `n` seats may be this colour.
+
+        **Ask this rather than compute the formula on paper.** The product is
+        taken in binary floating point, so a `k` and an `n` whose exact product
+        lands on an integer lose a seat to the floor: at `k = 2.4`, `n = 1000`
+        and the uniform cell share this is `49.99999999999999`, and the answer is
+        **50** where the arithmetic says 51. Nothing shipped hits it — `k = 2` at
+        the uniform share is `41.67` — and it was found pricing a counterfactual
+        (`curation/MEASUREMENTS.md`'s *What the colour ceiling costs at n=1000*).
+        """
         return int(math.floor(self.k * self.share(name) * max(0, int(seats)))) + 1
 
     def wanted(self, cell: str, n: int) -> int:

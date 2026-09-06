@@ -449,6 +449,62 @@ roster facts off the same legs: `curvature` bought **5% of the clears for 25% of
 roster**, and a cell exclusion narrows the **offer** rather than the outcome —
 **43% of a restricted leg's rows landed off-list**.
 
+## What the colour ceiling costs at n=1000, measured 2026-09-06
+
+`SWEEP_K_allowance_0906`: four n=1000 seatings over one pool, everything but `K`
+identical to `20260906T133236Z`, whose seating the `K = 2` arm **reproduces
+exactly** — the same 1,000 keys in the same order, the same objective, the same
+refusal table. There is no `--k` anywhere in `cli/`; `solve.solve(rule=...)` is
+the override path and it is what the sweep drove.
+
+| K | allowance | cells at it | short | worst | sum | seats moved |
+|---|--:|--:|--:|--:|--:|--:|
+| 2.0 | 42 | 39 | 9 | 0.210413 | 594.78 | — |
+| 2.25 | 47 | 32 | 16 | 0.337511 | 618.30 | 178 |
+| 2.4 | **50** | 27 | 21 | 0.375682 | 628.07 | 215 |
+| 2.5 | 53 | 23 | 25 | 0.401621 | 634.38 | 245 |
+
+**The ceiling is expensive in the objective and it buys muted pictures.** The worst
+seat nearly doubles, 0.2104 → 0.4016, and the sum rises 6.7%, with every rung
+filling all 1,000 seats and meeting every demand. Across the four, cell
+memberships go 1,904 → 2,021 and **all of the growth is muted**: muted 1,008 →
+1,129 while vivid sits at 896 → 892. By leading cell the gallery flips from
+vivid-majority to muted-majority, 509/488 to 471/527.
+
+**Twenty-three of the 48 cells track the allowance exactly** — 42/47/50/53 at every
+rung, which is also the count still pinned at K=2.5. Warm and blue: all four
+`*_orange` and `*_red`, three of four `*_azure`, `*_blue` and `*_purple`, both
+dark `*_rose`, `light_*_yellow`, `dark_vivid_magenta`, `light_muted_cyan`. By hue
+family over the same four rungs, `orange` goes 112 → 137 and `red` 101 → 125,
+against `lime` **83 → 46** and `teal` 106 → 91. The nine cells that were short
+at K=2 mostly get **shorter in absolute seats**, because the headroom is spent
+where the supply is and one-per-location makes each of those seats displace a
+scarce one: `light_vivid_teal` 40 → 18, `dark_vivid_lime` 31 → 12,
+`light_vivid_lime` 31 → 13, `light_vivid_cyan` 29 → 13, `dark_vivid_yellow` 27 →
+14. `light_vivid_magenta` is flat at 18 → 17 and is the pool's floor, not the
+rule's. **So a looser ceiling does not buy the short cells anything; it buys the
+long ones more room, and the short cells pay for it.**
+
+**Nothing else becomes binding.** `cell_allowance` stays the top refusal at every
+rung — 15,021 → 10,697 → 8,782 → 7,985, still 3.6x `location` at K=2.5 — while
+`location` (2,487 → 2,195), `spiral` (518 → 575), `twin` (371 → 405) and
+`mode_ceiling` (52 → 49) barely move, and `group_cap` and `family_allowance` stay
+at **zero** as they always have. What grows instead is
+`the_leg_had_no_seat_left`, 26 → 1,730: the pass stops being colour-bound and
+starts being seat-bound. No family comes near its allowance either (top 137 of
+209 at K=2.5), and the group cap of 25 never fires — the busiest map takes 7-11
+seats at every rung, over 527-539 distinct maps. **The five modes sitting exactly
+on their floor — `curvature`, the three `direct_trap_*`, `itinerary` — do not move
+at any K**, so the ceiling was not what was holding them down.
+
+⚠ **`K = 2.4` gives an allowance of 50, not the 51 the arithmetic says.**
+`floor(k * t * n) + 1` is evaluated in binary floating point and
+`2.4 * (1/48) * 1000` comes out `49.99999999999999`, so the floor loses a seat at
+exactly the boundary. Every `K` whose product lands on an integer has this, and
+`K = 2` does not because `41.67` is nowhere near one. A `K` set for a particular
+allowance should be checked against `ceiling.Rule(k=K).allowed(cell, n)` rather
+than against the formula on paper.
+
 ## What the sourcing channels cost in seats, measured
 
 * **Centered share of a solve is mining-invariant, at 0.16-0.23.** It is the one axis
