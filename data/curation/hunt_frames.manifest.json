@@ -20,6 +20,6 @@
     "multibrot5": 2063,
     "phoenix": 1682
   },
-  "recorded": "2026-09-02",
+  "recorded": "2026-09-05",
   "why_not_tracked": "tens of megabytes of frame rows against a 1 MiB per-file history guard. The manifest is what the history keeps: the row count, the byte count, the sha256, the margin every row was chosen at and how many of them adopted a new framing."
 }

@@ -248,6 +248,29 @@ are `productive`, `barren`, `no_converge`, `not_drawn` and `undefined`, and only
 A seed the leg never reached before the clock simply has no row, which is how
 "not reached" is spelled: absence.
 
+**Two things the first production exercise found, 2026-09-06, and neither is
+fixed.** `reframe_g9` and `g10` are the first legs to write these rows at all.
+
+*A `no_converge` root is re-fired every leg, at full price, for the same answer.*
+`prior_run` counts a fire only for `productive` and `barren`, so an unresolved
+root carries `fires: 0`, `was_barren` is false, and the next leg offers it as
+**fresh** — at the front of the queue, not last. The ruling above says such a root
+"moves when the period ceiling does", and nothing checks whether it moved: under an
+unchanged `--seed-max-period` it cannot. Measured: g9 left 343 unresolved roots,
+g10's whole root queue was those 343, every one returned `no_converge` again, and
+they took 3.9 of g10's 4.4 minutes for zero locations. The `reoffered` flag cannot
+see them either, so a leg's fresh-vs-re-offered split reads 100% fresh while 89% of
+its fires are re-fires.
+
+*A carried promotion is never pin-filtered, and one pinned promotion kills a leg.*
+`reframing.seeds` refuses a proven root an eval pin covers, and counts the
+refusals as `refused_pinned` on its own record — but `prior_run`'s
+`promoted` list is built from earlier legs' candidate rows and goes
+through no such filter, so `Channel.refuse_a_pinned_frame` raises `PinnedPlace`
+when the queue reaches one. It killed g9 at 18.9 of 30 minutes and g10 at 4.4 of
+11, both on the same seed. It is deterministic: no leg can outlive its queue's
+first pinned promotion.
+
 **Consumed is relative to the ladder, and the ladder is on the header row.** A
 barren verdict at nine rungs is not a verdict at eleven, so each fire is scoped to
 the operator set, the rung span and the period ceiling it ran under —
