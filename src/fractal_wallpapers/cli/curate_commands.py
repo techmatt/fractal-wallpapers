@@ -674,11 +674,16 @@ def _sweep_the_ceiling(args: argparse.Namespace) -> int:
     from fractal_wallpapers.curation import k_sweep, solve, tentative
 
     try:
-        rungs = k_sweep.sweep(rungs=args.k or k_sweep.RUNGS, n=args.n)
+        held = k_sweep.sweep(rungs=args.k or k_sweep.RUNGS, n=args.n, control=args.control)
     except (solve.SolveRefused, tentative.TentativeRefused) as refusal:
         print(refusal)
         return 1
-    print(json.dumps(rungs, indent=2))
+    # The tables are on disk and were printed as lines while the sweep ran; what
+    # is worth restating is where each rung landed and whether the control held.
+    print(json.dumps({key: held[key] for key in ("stamp", "n", "k", "readings")}, indent=2))
+    if held.get("control_check") is not None:
+        print(json.dumps(held["control_check"], indent=2))
+        return 0 if held["control_check"]["same_seat_order"] else 1
     return 0
 
 
@@ -3630,6 +3635,17 @@ def add_commands(subcommands) -> None:
         help=f"how many wallpapers each rung seats (default {k_sweep_module.SEATS}, the "
         "size a record is kept at — a counterfactual read at a size no record is kept at "
         "is not comparable with the record it is a counterfactual on)",
+    )
+    sweeping_k.add_argument(
+        "--control",
+        metavar="STAMP",
+        help="an earlier record's stamp the FIRST rung claims to reproduce, compared seat "
+        "for seat: the same keys in the same seat order, the same objective and the same "
+        "refusal table. Unsaid, no check is taken — `the newest n=1000 record` is not a "
+        "claim about anything, so the record a sweep is a counterfactual ON has to be "
+        "named. A first rung that does not reproduce it exits 1, because a control that "
+        "misses is itself the finding and the other rungs are not worth reading until it "
+        "is understood",
     )
 
     browsing = solve_verbs.add_parser(
