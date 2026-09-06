@@ -193,18 +193,36 @@ About 90 seconds for 3,063 recolours, which land under
 reaches it.** 881,834 bytes on 2026-09-06 — **84.1%** of `test_history_purity`'s
 `MAX_TRACKED_BYTES` (1 MiB), which is a plain assertion failure in the **fast**
 lane and nothing at the git level, so it trips at the commit gate rather than at the
-commit. It grows at 3.59 rows and **863 bytes a map**, so the headroom is **193
-maps**: a second 120-map drop lands at 93.9% and the one after it is over.
-**The cheapest relief is dropping `fields` from the carrier rows** — 125 KB, 14% of
-the file, and no information lost, because the list is constant and already on the
-header, which `tests/test_palette_carriers.py` pins. `schema` and `kind` are
-constant per row too and worth another 117 KB together, though `kind` is what tells
-the header from the rows. **What is not available**: the per-field `share` block is
-295 KB and the largest single saving, and it is pinned by
+commit. It grows at **3.71 rows and 878 bytes a map** — the *marginal* rate, measured
+across `classic-pairs-2026-09`: 776,460 → 881,834 bytes and 3,220 → 3,665 rows for
+120 maps. (An earlier reading here said 3.59 and 863, which are the whole file
+divided by its 1,021 maps and so an average over a library that was cheaper per map
+when it was smaller.) The headroom is **189 maps**: a second 120-map drop lands at
+94.1% and the one after it is over.
+**The cheapest relief is dropping `fields` from the carrier rows** — 125,479 bytes,
+14.2% of the file, and no information lost. **Not for the reason given here
+before**: the row's `fields` is *not* the header's constant list of three, it is
+which of them the cell was dominant on, and it takes all seven non-empty subsets
+(1,854 rows on one field, 1,188 on two, 623 on all three). What makes it free is
+that it is **derivable from `share`** by re-applying the dominance rule the header
+carries — largest chromatic cell at ≥ 0.10, or ≥ 0.15 alone — which reproduces it on
+**10,995 of 10,995** (row, field) reads with no exception. `deliveries` is the one
+reader, so it is a writer change plus that one derivation.
+`schema` and `kind` are constant per row and worth another 117,280 together, though
+`kind` is what tells the header from the rows. Two more the earlier reading missed:
+`family` is a pure function of `cell` through `dominance.family_of` (68,951, and
+nothing outside the writer reads it), and `mean` is exactly the mean of the three
+shares to the stored precision on every row (65,623). **`fields` and `mean` alone** are
+191,102 bytes, 21.7%, taking the file to 690,732 at a lighter 685 bytes a map — **523
+maps, 4.4 drops**. All four are 377,333, 42.8%, taking it to 504,501 at 496 bytes a map
+— 1,096 maps, nine drops.
+**What is not available**: the per-field `share` block is 295,606 bytes and the
+largest single saving, and it is pinned by
 `test_a_carrier_row_holds_the_share_on_every_field_and_not_only_where_it_won` — the
-green-collapses-on-`strange` reading is exactly what it holds. Sharding is dearer
-than it looks: `record_path` is one path and `read`/`table` glob nothing, so a shard
-is a reader change as well as a writer one.
+green-collapses-on-`strange` reading is exactly what it holds. It is also what every
+derivation above stands on, so it is the last thing to go rather than the first.
+Sharding is dearer than it looks: `record_path` is one path and `read`/`table` glob
+nothing, so a shard is a reader change as well as a writer one.
 
 It is keyed to the **map** and never to the palette group, and that is measured
 rather than preferred: members of one group disagree on their dominant cell in 120
@@ -388,9 +406,34 @@ The four `NOISY_MODES` — `gaussian_int`, `direct_trap_multiply`, `_ring`, `_sc
 maps, so the ramp bound does not apply to them; what they read is still what the pipeline
 really produces, which is what a ceiling acts on.
 
-**Eighteen files, one per mode, and that is the guard talking.** The whole map is 6.80 MB
+**Eighteen files, one per mode, and that is the guard talking.** The whole map is 7.77 MB
 against `test_history_purity`'s 1 MiB per-file cap, so it splits the way the tracked
-release store splits on partition. Largest file 415 KiB.
+release store splits on partition. Largest file `itinerary.jsonl` at 489,002 bytes
+(477.5 KiB) on 2026-09-06; smallest `direct_trap_multiply.jsonl` at 355,074.
+
+**The split has its own warning line and it was raised on 2026-09-06.**
+`test_palette_color_mass.SPLIT_BYTES` is **786,432** — three quarters of the 1 MiB
+history guard — and it was `GUARD_BYTES // 2`, 524,288, which `itinerary.jsonl` had
+reached **93.3%** of. The number is sized off measured growth, not chosen: a file holds
+exactly one row per drawable group, so it grows only when the library does, and
+`classic-pairs-2026-09`'s 120 maps moved `itinerary.jsonl` 425,148 → 489,002, **532
+bytes a map**. The old line left 35,286 bytes — 66 maps, *half a drop*, so the next drop
+went red. The new one leaves 297,430 — **559 maps, 4.6 drops** — and still sits a
+quarter of a mebibyte (492 maps) under the history guard, so it fires first and with
+room to act. **What it does not fix is the split's own horizon**: `itinerary.jsonl`
+reaches 1 MiB at about **1,051 more maps**, a library of ~2,072 against today's 1,021,
+which is roughly nine 120-map drops. At that point the answer is another axis and not a
+bigger number — the per-mode split has one row per group and no way to shed one.
+
+The **ten-thousand-hour stress test** — [`curation/README.md`](../curation/README.md)'s
+*The stress test the size is read against is ten thousand hours* — reads as absurd here
+and the reading is a category error worth writing down once. Taken literally against the
+leg that wrote those bytes (`curate mass-sweep extend`, 16,537 engine seconds over 4,320
+renders) it is 63,854 × 10,000 ÷ 4.59 h = **139 MB**, or 412 MB against the 93 minutes of
+wall. But the map does not scale with renders at all: `extend` appends only the groups
+with no row and `build` rewrites in place, so ten thousand hours of sweeping today's
+library adds **zero bytes**. The record scales with the library, which is knowledge
+gained, and that is the axis the guard above is sized on.
 
 The sweep log it was cut from — `artifacts/curation/palette_mass_sweep/rows.jsonl`, one row
 per (group, mode, location) with the recipe and the cost, 25.7 MB — is **not tracked and

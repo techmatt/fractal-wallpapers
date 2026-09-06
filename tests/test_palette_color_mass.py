@@ -9,9 +9,10 @@ hand, where a mean over two observations is a number the test can state outright
 Two failures this file exists to catch:
 
 * **the guard.** A tracked file over 1 MiB fails `test_history_purity`, and the
-  whole reason the map is eighteen files rather than one is that it is nearly
-  seven megabytes. That split is a decision, and a rebuild that quietly rejoined
-  it would be a build failure a long way from here.
+  whole reason the map is eighteen files rather than one is that it is 7.77 MB.
+  That split is a decision, and a rebuild that quietly rejoined it would be a
+  build failure a long way from here. [`SPLIT_BYTES`] is the warning line the
+  split is held to, well below the guard so it fires first and with room to act.
 * **a silent hole.** The map is complete — every palette group in every production
   mode — and a row missing from it reads exactly like a pair with no colour.
 """
@@ -30,6 +31,20 @@ from fractal_wallpapers.palettes import color_mass, dominance, groups
 #: understood.
 GUARD_BYTES = 1 << 20
 
+#: The size at which the per-mode split has stopped being enough. Three quarters
+#: of [`GUARD_BYTES`], and sized off measured growth rather than chosen: a file
+#: holds exactly one row per drawable palette group, so it grows only when the
+#: library does. The `classic-pairs-2026-09` drop put 120 maps in and the largest
+#: file, `itinerary.jsonl`, went 425,148 -> 489,002 bytes — **532 bytes a map**.
+#: From 489,002 that leaves 297,430 bytes of headroom, **559 maps** or 4.6 drops
+#: of that size, where half of `GUARD_BYTES` left 35,286 bytes and 66 maps: half a
+#: drop, so the next one would have gone red. It stays a quarter of a mebibyte —
+#: 492 maps, four more drops — below the history guard so it still fires first,
+#: which is the whole point of naming a second number here.
+#:
+#: It was `GUARD_BYTES // 2` until 2026-09-06.
+SPLIT_BYTES = GUARD_BYTES * 3 // 4
+
 
 def files() -> list:
     return sorted(color_mass.record_dir().glob("*.jsonl"))
@@ -40,10 +55,11 @@ def test_the_map_is_committed_and_every_file_is_well_under_the_history_guard() -
     assert written, f"{color_mass.record_dir()} holds no map"
     for path in written:
         size = path.stat().st_size
-        assert size < GUARD_BYTES // 2, (
-            f"{path.name} is {size:,} bytes, over half the {GUARD_BYTES:,}-byte per-file "
-            f"guard. The map splits per mode BECAUSE of that guard; a file this size means "
-            f"the split has stopped being enough and wants another axis, not a bigger file"
+        assert size < SPLIT_BYTES, (
+            f"{path.name} is {size:,} bytes, over the {SPLIT_BYTES:,}-byte warning line "
+            f"below the {GUARD_BYTES:,}-byte per-file history guard. The map splits per "
+            f"mode BECAUSE of that guard; a file this size means the split has stopped "
+            f"being enough and wants another axis, not a bigger file"
         )
 
 
