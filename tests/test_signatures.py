@@ -168,8 +168,10 @@ def test_the_record_says_what_stale_means(tmp_path):
 # What a reader gets.
 # --------------------------------------------------------------------------- #
 def test_for_candidates_keeps_only_the_keys_it_was_asked_for(tmp_path):
-    """The store is ~245 MB and a view is a fraction of it. Holding the rest would
-    put a quarter of a gibibyte behind a pass that will never look at it."""
+    """The store is 253 MB over 44,346 rows (2026-09-06) and a view is a fraction
+    of it. Holding the rest would put a quarter of a gibibyte behind a pass that
+    will never look at it. The ~245 MB this used to cite was the 1024-direction
+    store and read almost right for the wrong reason."""
     rows = [Row(f"k{at}", picture(tmp_path, f"p{at}", seed=30 + at)) for at in range(4)]
     signatures.sweep(rows, workers=1, log=lambda *_: None)
     held = signatures.for_candidates(rows[:2])

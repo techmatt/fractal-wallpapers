@@ -281,6 +281,30 @@ chooses a gallery needs neither the CUDA wheels nor a MIP.
 clock, a `Ctrl-C` or a pass cap leaves an answer rather than nothing. That is the
 whole reason it replaced a method that had no answer at all until it had a proof.
 
+### The record carries the whole reach funnel, so asking how far a solve reached needs no solve
+
+**How much of the pool a pass actually saw is already written down.** Every
+`solve.json` since 2026-08-31 carries a `population` block — `candidates`,
+`clearing`, `after_the_preselection`, `in_the_view`, and the same three at
+location level — which is the funnel from the store to the rows the leg could
+seat, stage by stage. Beside it `diversity` carries the twin rule's own counters:
+`candidates_tested`, `seat_comparisons_settled_by_the_bound` and
+`...by_the_norm_screen`, `full_signatures_fetched`, `signatures_made`,
+`reduced_from_the_sidecar`, and the constants the reduction ran at. `pool` and
+`view` complete it — `refused` by cause, `reachable_locations`, and the view's
+`per_stratum` breakdown.
+
+The consequence is the point: **a question about reach is a read, not a leg.**
+Nothing here needs the pool loaded, which matters under the one-pool-holding-
+process rule — and re-running a solve to find out what an old one reached would
+answer about today's store rather than the one that was there.
+
+⚠ **"Every" needs its date.** 110 of the 121 records under
+`artifacts/curation/solve/` carry both blocks; the 11 that do not are the
+2026-08-26 set and `cc_before` / `cc_after` of 2026-08-31, all of which predate
+them. And `diversity` is `None` by shape when a pass ran with no diversity rule,
+though no record has actually been written that way.
+
 ### The augmenting chain — the stage that raises the seat count
 
 A **level-preserving** move is exactly a 1-swap; the **terminal** move is a free
@@ -420,7 +444,8 @@ reduction constants ride on the row too, so changing either invalidates the stor
 at once.
 
 It is regenerable — **65.4 MB, 11,454 rows, 103 s** over the standard three-worker
-pool with nothing unreadable — and it is mirrored anyway, through a
+pool with nothing unreadable, read 2026-09-01 and **253 MB over 44,346 rows** by
+2026-09-06, the regeneration scaling with it — and it is mirrored anyway, through a
 `durability.Durable` of its own that `merge` saves with the other three. The
 argument that kept it out was size: it was 247 MB and 448 s until
 `pixel_clouds.DIRECTIONS` came down to 256 on 2026-09-01, and a reduced signature
@@ -440,7 +465,7 @@ prunes have already removed nearly all of those. The store is still the right sh
 — it is the read-ahead's benefit without the read-ahead's guess — but the gallery
 leg is not where it shows up, and saying so is cheaper than re-deriving it later.
 
-**Where it does earn its 65.4 MB is `curate headroom --twin`**, which builds one
+**Where it earns its size is `curate headroom --twin`**, which builds one
 reduced signature per place to screen millions of pairs and needs a full cloud only
 for the few thousand survivors — so nothing cancels. Measured over that sweep's own
 population, 4,496 places after the neutral pre-selection: the sidecar answers **all
@@ -530,8 +555,9 @@ to 96.17 s and 34.11 s to 26.31 s.
 ### What a pass costs is one store
 
 `rules.Twins.reduced_of` keeps **one reduced signature per candidate for the life
-of the pass**, unbounded on purpose: 4 KiB a row is 37 MB over the largest view
-this project builds, and the full 128 KiB signatures stay in the bounded
+of the pass**, unbounded on purpose: 4 KiB a row is **80 MB over the largest view
+this project has built** — 19,518 rows, `n1000_after_thin_themes_0906`, 2026-09-06
+— and the full 128 KiB signatures stay in the bounded
 cache underneath. Every question the bound asks reads the reduced form; the full
 one is fetched lazily and only for the candidates whose bound could not settle
 everything — 99.9% of seat comparisons are settled, so most candidates never have
@@ -579,12 +605,31 @@ a simulation of the bounded store alone would price a cache that does not exist:
 
 Before the prune the pass touched 4,423 distinct pictures and decoded 10,105 of
 them, so **5,764 of those decodes were the cache thrashing** and 4,096 entries
-would have bought about 95 s for another 256 MiB. After it the pass touches 2,844,
-of which 1,660 are seats promoted out of the LRU, and the 1,184 left fit inside
-2,048 with room — every decode is a picture the pass had never read, and the curve
-is **flat at every size**. So the prune did not merely make the cache question
-cheaper to answer, it removed it: raising `SIGNATURE_CACHE` now buys exactly
-nothing, and the constant stays at 2048 on that evidence rather than by default.
+would have bought about 95 s for another 256 MiB. **As replayed on 2026-09-04**
+the pass touched 2,844, of which 1,660 were seats promoted out of the LRU, and the
+1,184 left fit inside 2,048 with room — every decode a picture the pass had never
+read, and the curve **flat at every size**. So the prune did not merely make the
+cache question cheaper to answer for the swap loop, it removed it, and the
+constant stays at 2048 on that evidence rather than by default.
+
+⚠ **That replay predates the augmenting chain by three hours and the conclusion
+does not reach the pass that ships now.** The 2,844 was measured on `4300e4b`'s
+solve; `384a78f` shipped the augmenting chain the same afternoon, and it is a
+decode-making stage the scored prune does not cover. The two n=2000 records that
+followed — stamps `20260904T234133Z` and `20260905T001615Z`, neither published —
+make **10,912** and **15,279** full signatures against a **16,112-row view**.
+Their swap loops are bit-identical (`settled_before_opening_a_picture` 34,994,
+`swaps` 289, `candidates_considered` 57,081 in both) and the entire difference is
+the augment budget, 300 s against 1800 s, for 174 seats against 363. So the extra
+decodes are the chain's, not the loop's.
+
+**What that does and does not license.** `signatures_made` counts decodes and no
+counter records distinct pictures, so 10,912 and 15,279 against 16,112 rows are
+**not** evidence that anything was decoded twice — both are under the view size,
+and inferring re-decode from them is the exact mistake the miss-rate paragraph
+below warns about. The honest statement is that the cache question is closed for
+the swap loop and **has not been asked for the chain stage**, and that answering
+it needs a fresh `Clouds.of` / `hold` / `let_go` replay of a pass that has one.
 
 **A miss rate quoted as `made / (made + hits)` cannot answer this question**, and
 `READ_solve_bound_and_profile_0904` read one that way and called the cache

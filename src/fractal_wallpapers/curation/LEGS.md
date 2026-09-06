@@ -1290,6 +1290,34 @@ near-band leg is a poor instrument for moving a thin cell's *stock*, whatever it
 palettes are aimed at; what it moves is pool quality, because the prune drops the
 weakest and keeps the leg's best.
 
+**Which pairs are fresh is a subtraction, and that is the cheap half nobody
+spends.** `retention.decide` keeps `min(K, attempts)`, so a pair holding fewer
+than the keep has never had more — free slots are `K - len(pair)` over the rows
+already in hand, never a scan. **43,255 of 114,744 pairs — 37.7% — hold fewer
+than three on 2026-09-06, for 60,316 free slots.** The number is per *pair*: the
+rows in those pairs are 69,449, 24.4% of the ledger.
+[`README.md`](README.md)'s *The growth law* carries the full statement and the
+three ways the phrasing goes wrong. It is the arithmetic the inverted manifest
+two sections below did without.
+
+**Pricing a change to the keep is a different question, and only one population
+in the tree can answer it.** A K sweep needs the attempts a pair *lost*, ranked,
+and the prune keeps no record of what it dropped. What does is `sequence.jsonl`:
+**94 `depth` legs at 670,487 rows and one `remode` leg (`smooth_twins`) at 3,602
+— 674,089 attempts**, measured 2026-09-06. It alone carries `rank` and
+`rank_fraction`, which is what lets a pair be re-ranked at another K without a
+rescore.
+
+⚠ **`mine` is not as empty as it looks and the distinction is the field list, not
+the file.** Four `mine` legs keep a `profile.jsonl` of **7,260 rows** carrying
+`k`, `p_ge4` and `seconds` — enough to re-price K, and `README.md` already names
+the `sequence.jsonl` / `profile.jsonl` pair together. What those rows lack is
+`rank` and `rank_fraction`. `hunt` and the backfilled `runs` rows really do keep
+no attempt log: `runs`' `candidates.jsonl` has an `attempt` index and **no `k`**,
+so it cannot say how deep a pair went, and `reframe_draw`'s `attempts.jsonl` is
+the same shape. The honest total, if the claim is *any* usable attempt log, is
+**681,349 rows over 99 legs**.
+
 ### A scratch driver that drives a render pool needs a `__main__` guard
 
 Windows spawns worker processes by re-importing the entry module, so a driver with

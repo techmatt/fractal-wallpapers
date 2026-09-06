@@ -216,13 +216,21 @@ def population(from_mode: str, log=print) -> dict:
     )
     live = candidate_ledger.live_artifact()
     keys = {str(row["key"]) for row in held}
-    readings: dict = {}
-    for score in candidate_ledger.stream_scores():
-        if str(score.get("judge_artifact")) != live:
-            continue
-        key = str(score.get("recipe_key"))
-        if key in keys:
-            readings[key] = score
+    # The join every other reader takes, so this leg inherits the second-regime
+    # refusal in [`candidate_ledger.scores_by_recipe`] rather than being the one
+    # site outside it. Fed a generator and not the stream itself: that function
+    # materializes what it is handed, and the sidecar is the 252 MB the paragraph
+    # above promises not to read whole — filtering on `keys` first is what keeps
+    # this a streaming pass. The artifact is named because it is already in hand,
+    # and an unnamed read would go back to the store for it.
+    readings = candidate_ledger.scores_by_recipe(
+        (
+            score
+            for score in candidate_ledger.stream_scores()
+            if str(score.get("recipe_key")) in keys
+        ),
+        artifact=live,
+    )
     present = candidate_ledger.present_pictures(held)
     sources: list = []
     for row in held:

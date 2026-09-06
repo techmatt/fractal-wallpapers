@@ -321,6 +321,19 @@ def rescore(
     [`partial_scores_path`] as they are read, and a re-run skips what that file
     already holds. The sidecar itself is written once, at the end, through the
     same upsert every other writer uses.
+
+    **The skip set is keyed on the recipe alone and is therefore regime-blind.**
+    `held` below holds `recipe_key` filtered by artifact and nothing else, while
+    the reading this pass writes stamps the *recipe's* own regime. That is right
+    for exactly as long as `recipe_key -> regime` is a function — the condition
+    [`rows.scores_by_recipe`] states under *The regime half has no filter to fall
+    back on, so it raises*. The day something scores a picture at a geometry that
+    is not its recipe's, a recipe read only at that other geometry reads here as
+    already done, and this pass leaves it unscored at the geometry the pool joins
+    on — counted into `already_held` and logged as read, which is the shape of it
+    that makes it quiet. Naming the regime here is part of the same fix as naming
+    it at the unnamed read sites, not a separate one. Recorded 2026-09-06 and not
+    fixed: there is one regime in the sidecar today, so nothing is wrong yet.
     """
     import time
 
