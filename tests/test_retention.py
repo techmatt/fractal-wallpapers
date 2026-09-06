@@ -346,3 +346,79 @@ def test_a_row_carrying_no_settings_keeps_the_pair_it_has_always_had():
         "p",
         "smooth",
     )
+
+
+# --------------------------------------------------------------------------- #
+# The free-slot arithmetic.
+# --------------------------------------------------------------------------- #
+def test_free_slots_is_the_keep_less_what_the_pair_holds_and_omits_the_full_ones():
+    """`K - len(pair)`, and a pair with no room is absent rather than zero.
+
+    Absent and not zero because the mapping is *where there is room*: a caller
+    that iterates it is planning, and a full pair carried at zero is a pair a
+    loop can plan onto by forgetting one comparison. That is the shape of the
+    `thin2_b_near` failure — 13,265 rows rendered onto pairs already at the keep,
+    39 kept — expressed in a data structure instead of in a manifest.
+    """
+    rows = (
+        [a_row(f"p-smooth-{at}", place="p", mode="smooth") for at in range(2)]
+        + [a_row(f"q-smooth-{at}", place="q", mode="smooth") for at in range(5)]
+        + [a_row("r-stripe-0", place="r", mode="stripe")]
+    )
+    slots = retention.free_slots(rows, keep=5)
+    assert slots == {("p", "smooth"): 3, ("r", "stripe"): 4}
+    assert ("q", "smooth") not in slots, "a pair at the keep has no room and is not listed"
+
+
+def test_free_slots_defaults_to_the_stores_constant_and_is_not_a_copy_of_its_value():
+    """The same rule the prune will actually apply, read through the same door."""
+    from fractal_wallpapers.curation import candidate_ledger
+
+    keep = candidate_ledger.RETAIN_PER_PAIR
+    rows = [a_row("only", place="p", mode="smooth")]
+    assert retention.free_slots(rows) == {("p", "smooth"): keep - 1}
+    assert retention.free_slots(rows, keep=keep) == retention.free_slots(rows)
+
+
+def test_a_pair_is_the_coloring_and_not_the_bare_mode():
+    """`_pair_of`'s spelling, reached through the arithmetic that plans on it.
+
+    A mode drawn under its own settings is its own pair, so it has its own slots.
+    A free-slot count that flattened the settings away would tell a variant sweep
+    it had no room at a place where it has a whole keep of it.
+    """
+    rows = [
+        a_row("bare", place="p", mode="direct_trap_multiply"),
+        a_row("set", place="p", mode="direct_trap_multiply"),
+    ]
+    rows[1]["recipe"]["mode_params"] = {"opacity": 0.6}
+    slots = retention.free_slots(rows, keep=3)
+    assert len(slots) == 2, "the settings make a second pair, and it has its own room"
+    assert set(slots.values()) == {2}
+
+
+def test_the_free_slot_census_counts_pairs_slots_and_places_apart():
+    """Three numbers that have each been quoted for another. 37.7% of *pairs*
+    held fewer than three on 2026-09-06 while the rows in them were 24.4% of the
+    ledger, and a sentence that says "of the pool" is wrong by half."""
+    rows = [
+        a_row("p-smooth-0", place="p", mode="smooth"),
+        a_row("p-stripe-0", place="p", mode="stripe"),
+        a_row("q-smooth-0", place="q", mode="smooth"),
+    ]
+    census = retention.free_slot_census(rows, keep=3)
+    assert census["pairs_with_room"] == 3
+    assert census["free_slots"] == 6
+    assert census["places_with_room"] == 2, "one place carrying two pairs is one place"
+    assert census["keep"] == 3
+
+
+def test_free_slots_reads_a_stream_once_and_never_scans_for_what_was_pruned():
+    """It is a subtraction over rows in hand, so a generator is enough.
+
+    `decide` keeps `min(K, attempts)` with no branch on how many the pair holds,
+    so a pair under the keep never had more — there is nothing to go and look
+    for, and needing to look would mean the rule had stopped being one-sided.
+    """
+    made = (a_row(f"k{at}", place=f"p{at}", mode="smooth") for at in range(4))
+    assert sum(retention.free_slots(made, keep=2).values()) == 4

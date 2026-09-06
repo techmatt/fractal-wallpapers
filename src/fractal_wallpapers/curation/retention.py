@@ -80,7 +80,7 @@ from fractal_wallpapers.curation import candidate_ledger
 #: The schema every record here carries.
 SCHEMA = 1
 
-#: What the rank says about one row, in the spelling the record uses. The four
+#: What the rank says about one row, in the spelling the record uses. The five
 #: protections are [`candidate_ledger.RETAINED_REASONS`] and are applied there;
 #: this is the ranking's own verdict, and there are only two of them.
 RANKED = "ranked"
@@ -105,14 +105,14 @@ def _pair_of(row: dict) -> tuple:
     `direct_trap_multiply@opacity=0.6` is a different key, a different file and a
     different picture — so it is a different coloring in exactly the sense
     `direct_trap_screen` is, and nobody would ask screen and multiply to compete
-    for one pair's three seats.
+    for one pair's seats.
 
     Sharing a pair is not neutral here, it is directional, and it points the wrong
     way. The rank key ranks within a pair by what the judge thinks, and on
     `direct_trap_multiply` that judge rewards precisely the fault a setting exists
     to fix: Spearman(in-mask chroma, `P(>=4)`) is **-0.269** over its clearing
-    rows. A shared pair would therefore keep the whitest three of five at every
-    place — deleting a variant sweep in the same transaction that admitted it, and
+    rows. A shared pair would therefore keep the whitest few of every variant
+    sweep at every place — deleting a variant sweep in the same transaction that admitted it, and
     hardest at the places that have been mined most, which are the places a sweep
     is aimed at.
 
@@ -120,8 +120,8 @@ def _pair_of(row: dict) -> tuple:
     settings and [`colorize.spelled`] is the bare mode wherever there are none, so
     this re-groups nothing already written. What it costs is bounded and is paid
     only where somebody varies a mode deliberately: such a place keeps
-    [`candidate_ledger.RETAIN_PER_PAIR`] rows per **coloring** rather than three
-    across all of them.
+    [`candidate_ledger.RETAIN_PER_PAIR`] rows per **coloring** rather than one
+    keep across all of them.
     """
     from fractal_wallpapers.curation import colorize
 
@@ -189,6 +189,64 @@ def keep_per_pair() -> int:
     replay that settled it.
     """
     return int(candidate_ledger.RETAIN_PER_PAIR)
+
+
+def free_slots(rows, keep: int | None = None) -> dict:
+    """`{(location key, coloring): slots}` — how many rows a pair can still take.
+
+    **The one spelling of an arithmetic that was being done by hand in leg rigs,
+    and got done backwards once.** `keep - len(pair)`, over the rows already in
+    hand, for every pair the rows name; pairs at or over the keep are left out
+    rather than carried at zero, so the mapping is *where there is room* and a
+    caller cannot accidentally plan onto a full pair by iterating it.
+
+    **It is a subtraction and never a scan**, and that is a property of the rule
+    rather than an optimisation. [`decide`] keeps `min(keep, attempts)` — it sorts
+    a pair and takes the first `keep`, with no branch on how many the pair holds
+    — so a pair holding fewer than the keep has never had more attempts than it
+    holds and nothing was pruned away from it. There is therefore nothing to go
+    looking for.
+
+    ⚠ **The keep moved 3 -> 5 on 2026-09-06 and one reading of this did not
+    survive it.** Under keep 3, a pair holding fewer than the keep had never had
+    more *attempts*, so a free slot also meant an unexplored pair. After the flip
+    that reading holds only for a pair holding fewer than **three**: a legacy pair
+    sitting at exactly 3 may have been pruned there at the old keep, so its two
+    new slots are room rather than evidence that nobody has looked. The
+    arithmetic is unchanged and is still exactly right for planning — a slot is a
+    row the merge will keep either way. What is gone is *free slot therefore
+    unexplored*, and the attempts the old keep pruned are not recoverable.
+    [`README.md`](README.md)'s *The growth law* carries the same caveat.
+
+    `rows` is anything iterable of ledger rows — the stream included, since this
+    reads each row once and holds only the counts.
+    """
+    limit = keep_per_pair() if keep is None else int(keep)
+    held: dict = {}
+    for row in rows:
+        pair = _pair_of(row)
+        held[pair] = held.get(pair, 0) + 1
+    return {pair: limit - count for pair, count in held.items() if count < limit}
+
+
+def free_slot_census(rows, keep: int | None = None) -> dict:
+    """What [`free_slots`] adds up to, in the shape a report and a plan both want.
+
+    Counted apart because the three counts are not each other and each has been
+    quoted for another: **pairs** with room, **slots** across them, and the
+    **places** those pairs stand on. 37.7% of pairs held fewer than three on
+    2026-09-06 while the rows in them were 24.4% of the ledger, and a sentence
+    that says "37.7% of the pool" is wrong by half.
+    """
+    limit = keep_per_pair() if keep is None else int(keep)
+    slots = free_slots(rows, keep=limit)
+    return {
+        "schema": SCHEMA,
+        "keep": limit,
+        "pairs_with_room": len(slots),
+        "free_slots": sum(slots.values()),
+        "places_with_room": len({pair[0] for pair in slots}),
+    }
 
 
 def decide(rows: list, scores: dict | None = None, keep: int | None = None) -> dict:
@@ -477,6 +535,8 @@ __all__ = [
     "by_place_mode",
     "decide",
     "drawn_before",
+    "free_slot_census",
+    "free_slots",
     "keep_per_pair",
     "kept",
     "labeled_renders",

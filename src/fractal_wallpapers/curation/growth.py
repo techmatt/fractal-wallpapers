@@ -58,7 +58,8 @@ at the full pool, which is not drawn); `n` (seats asked for).
 **The effort label** — `visits` and `visits_available` (counts, drawn and
 reachable); `candidates` (count, pool rows the drawn visits carry); `attempts`
 (count, **approximate**: ledger rows in the drawn visits, and retention keeps
-three rows per `(location, mode)`, so this is a floor on what was attempted);
+[`candidate_ledger.RETAIN_PER_PAIR`] rows per `(location, mode)`, so this is a
+floor on what was attempted);
 `mining_seconds` (seconds, **approximate** for the same reason and blind to rows
 written before the leg stamped `hunt.seconds`); `mining_seconds_rows` (count, what
 the seconds were summed over).
@@ -160,8 +161,9 @@ def visits(rows) -> tuple[dict, dict]:
 
     The cost block is the **effort label** the plots put on their legends, and it
     is approximate in two ways that are recorded rather than smoothed over.
-    `rows` counts the ledger rows that survive — retention keeps three per
-    `(location, mode)`, so a visit that drew twelve palettes may show three — and
+    `rows` counts the ledger rows that survive — retention keeps
+    [`candidate_ledger.RETAIN_PER_PAIR`] per `(location, mode)`, so a visit that
+    drew twelve palettes may show the keep and no more — and
     `seconds` is blind to any row written before the leg stamped `hunt.seconds`,
     which is why `timed` is beside it.
     """
@@ -287,6 +289,8 @@ def row_of(
     nothing is re-derived from the pool, so a number on this row and the same
     number on the pass record cannot drift apart.
     """
+    from fractal_wallpapers.curation import retention
+
     seated = record["seated"]
     filled = int(record["filled"])
     asked = int(record["config"]["n"])
@@ -326,8 +330,14 @@ def row_of(
         "visits_available": int(available),
         "candidates": int(record["population"]["candidates"]),
         "attempts": int(spent["attempts"]),
-        "attempts_are": "surviving ledger rows in the drawn visits. Retention keeps three "
-        "rows per (location, mode), so this is a FLOOR on what was attempted",
+        # The keep is READ and not written out as a word: this string lands in a
+        # record, and a record that states a policy constant it did not ask for
+        # is a second spelling that goes stale the day the policy moves.
+        "attempts_are": (
+            f"surviving ledger rows in the drawn visits. Retention keeps "
+            f"{retention.keep_per_pair()} rows per (location, mode), so this is a FLOOR on "
+            f"what was attempted"
+        ),
         "mining_seconds": spent["mining_seconds"],
         "mining_seconds_rows": int(spent["mining_seconds_rows"]),
         "eligible": int(record["population"]["clearing"]),

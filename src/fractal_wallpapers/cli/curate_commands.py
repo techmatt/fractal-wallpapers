@@ -510,6 +510,8 @@ def curate_candidate_ledger(args: argparse.Namespace) -> int:
     """Backfill the candidate ledger, census it, or keep its two files durable."""
     from fractal_wallpapers.curation import candidate_ledger, durability
 
+    if args.what == "free-slots":
+        return _free_slots(args)
     doing = {
         "backfill": lambda: candidate_ledger.backfill(recolour=args.recolour),
         "census": lambda: candidate_ledger.census(n=args.n),
@@ -540,6 +542,73 @@ def curate_candidate_ledger(args: argparse.Namespace) -> int:
         part.get("verdict") in {"short", "missing"} for part in report.values()
     ):
         return 1
+    return 0
+
+
+def _free_slots(args: argparse.Namespace) -> int:
+    """The free-slot census, and the places manifest a near-band leg is cut from.
+
+    **This verb exists because the arithmetic was being done by hand and got done
+    exactly backwards once.** `thin2_b_near` was handed the proven near-band
+    places *less the ones the floor arms took* — and the floor arms had taken
+    every place that HAD a slot, so the subtraction left precisely the pairs
+    already at the keep. It made 13,265 rows and the merge kept 39. The rule is
+    `free slot AND not taken`, never `not taken` alone, and the free-slot half is
+    a subtraction over rows already in hand: [`retention.free_slots`].
+
+    `--out` writes a places manifest in the shape `--near-places` and
+    `--floor-places` read, so the population a leg draws is the one this counted
+    rather than one somebody re-derived beside it.
+    """
+    from fractal_wallpapers.curation import candidate_ledger, depth, retention
+
+    wanted = set(args.mode or ())
+    rows = candidate_ledger.stream()
+    if wanted:
+        rows = (row for row in rows if str((row.get("recipe") or {}).get("mode")) in wanted)
+    slots = retention.free_slots(rows, keep=args.keep)
+    if args.min_slots > 1:
+        slots = {pair: count for pair, count in slots.items() if count >= args.min_slots}
+
+    # Per PLACE and not per pair, because that is what a manifest names. A place
+    # with room in two of its modes is one line here and two entries above, and
+    # reporting the pair count as though it were places is the third of the three
+    # ways `curation/README.md` says this phrasing goes wrong.
+    by_place: dict = {}
+    for (place, _coloring), count in slots.items():
+        by_place[place] = by_place.get(place, 0) + count
+    report = {
+        "schema": retention.SCHEMA,
+        "keep": args.keep if args.keep is not None else retention.keep_per_pair(),
+        "modes": sorted(wanted) or "every mode the ledger holds",
+        "min_slots_per_pair": args.min_slots,
+        "pairs_with_room": len(slots),
+        "free_slots": sum(slots.values()),
+        "places_with_room": len(by_place),
+        "unexplored_reading": (
+            "a pair under THREE has never had more attempts than it holds; a pair at three "
+            "or four may have been pruned there at the old keep of 3. The slots are real "
+            "either way — this is about what they are evidence of, not about the arithmetic"
+        ),
+    }
+    print(json.dumps(report, indent=2))
+    if not args.out:
+        return 0
+    out = Path(args.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    # Best-stocked first, so a manifest truncated to fit a budget keeps the places
+    # with the most room rather than whichever the dict happened to hold first.
+    ordered = sorted(by_place.items(), key=lambda item: (-item[1], item[0]))
+    with out.open("w", encoding="utf-8", newline="\n") as handle:
+        for place, count in ordered:
+            handle.write(
+                json.dumps(
+                    {"schema": depth.PLACES_SCHEMA, "key": place, "free_slots": count},
+                    ensure_ascii=False,
+                )
+                + "\n"
+            )
+    print(f"{display_path(out)}  {len(ordered):,} place(s)")
     return 0
 
 
@@ -3252,6 +3321,44 @@ def add_commands(subcommands) -> None:
 
     ledger_verbs.add_parser("check", help="check the live files against their manifests")
 
+    slots = ledger_verbs.add_parser(
+        "free-slots",
+        help="how much room the retention keep leaves, and the places manifest a leg cuts from",
+    )
+    slots.add_argument(
+        "--keep",
+        type=int,
+        default=None,
+        help=f"count against this keep instead of the shipped "
+        f"{candidate_ledger_module.RETAIN_PER_PAIR}. For pricing a change, not for planning "
+        f"one: a leg draws against the keep the merge will actually apply",
+    )
+    slots.add_argument(
+        "--mode",
+        action="append",
+        metavar="MODE",
+        help="count only pairs in this colouring mode. Repeatable, and it is what sizes ONE "
+        "unit — a mode's free slots are what a floor or near-band unit in that mode can add "
+        "prune-free, and the modes are nowhere near alike on that axis",
+    )
+    slots.add_argument(
+        "--min-slots",
+        type=int,
+        default=1,
+        metavar="N",
+        help="only pairs with at least this much room (default 1). A width-N unit wants "
+        "places that can take N rows, and a place with one slot spends the other N-1 renders "
+        "on rows the merge will drop",
+    )
+    slots.add_argument(
+        "--out",
+        metavar="PATH",
+        help="also write a places manifest there, best-stocked first, in the shape "
+        "--near-places and --floor-places read. Cutting the manifest from this count is the "
+        "whole point: `thin2_b_near` inferred *free slot* from *not taken by a floor arm*, "
+        "which is evidence of the opposite, and spent 13,265 renders to keep 39",
+    )
+
     sweeping = ledger_verbs.add_parser(
         "orphans", help="sweep the pool subtrees for pictures no record names"
     )
@@ -3291,7 +3398,7 @@ def add_commands(subcommands) -> None:
         type=int,
         default=candidate_ledger_module.RETAIN_PER_PAIR,
         help="how many rows one (location, mode) pair keeps, ranked by the "
-        f"shipped rank key (default: {candidate_ledger_module.RETAIN_PER_PAIR}). Four "
+        f"shipped rank key (default: {candidate_ledger_module.RETAIN_PER_PAIR}). Five "
         "protections keep a row outside the rank whatever it says, and a picture is kept "
         "if and only if its row is",
     )
