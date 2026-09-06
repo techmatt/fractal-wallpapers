@@ -57,7 +57,7 @@ Measured over that sweep's own population — 4,496 places after the neutral
 pre-selection, one picture each: the sidecar answers **all 4,496 in 0.7 s**, against
 **429 s** to decode them at the 95 ms a picture that cost at 1024 directions; at 256 it
 is 16.8 ms and the same decode is about 75 s. That is the sweep's whole
-signature-building half, and it is where this store earns its 68.6 MB.
+signature-building half, and it is where this store earns its size.
 
 ## Staleness is the picture's identity and never a clock
 
@@ -78,10 +78,11 @@ every row is stale at once, which is correct and is what [`by_recipe`] enforces.
 It has a [`curation.durability.Durable`] and [`candidate_ledger.merge`] saves it
 beside the rows, the scores and the flatness sidecar. That was not always true, and
 the argument that kept it out was a size the reduction has since undone: the store
-was ~245 MB at 1024 directions, against **68.6 MB** at 256, and a restore that has
-to re-derive it pays minutes over the three-worker pool for bytes the mirror could
-have copied. The pictures are still the durable thing; this is a cache of readings
-off them, kept because copying it is now cheaper than the sweep.
+was ~245 MB at 1024 directions, against **68.6 MB** at 256 when the reduction
+landed, and a restore that has to re-derive it pays minutes over the three-worker
+pool for bytes the mirror could have copied. The pictures are still the durable
+thing; this is a cache of readings off them, kept because copying it is now
+cheaper than the sweep.
 
 **The mirror copies bytes and does not reinterpret them.** Nothing drops a row when
 a constant moves — [`by_recipe`] ignores the wrong-shape rows and the next sweep
@@ -90,6 +91,27 @@ one has moved and the re-sweep has not finished. On 2026-09-01 it held 11,454 ro
 at 4x256 and **182 still at 4x1024**. The manifest therefore counts rows by the
 shape each one *names*, through [`_shapes`], rather than stamping [`shape`] over the
 whole file and calling those 182 something they are not.
+
+## What a row costs, and the figure that is it divided by the wrong denominator
+
+**A stored row is 5,705 B and the store is 253 MB over 44,346 rows**, read
+2026-09-06. That is the JSONL row, not the vector: the vector is 4 KiB
+(`BOUND_BLOCKS x DIRECTIONS x float32`), and base64 plus the staleness members —
+the `picture` and the two reduction constants — are the other 1.39x. Both numbers
+are worth having and they are not interchangeable.
+
+**The ~889 B a row in circulation is this store amortised over the whole ledger,
+and it is not what a signature costs.** 253,008,080 B over the ledger's 284,517
+rows is 889 B; over the 44,346 rows that actually carry a signature it is 5,705 B.
+The sweep covers **15.6%** of the ledger, so the two differ by 6.4x, and the small
+one answers a question nobody asks — every reader of this store pays the large one
+for the rows it can answer for and nothing at all for the rest.
+
+**68.6 MB was never wrong and is not a figure to correct downward.** It was a
+correct reading of an 11,636-row store on 2026-09-01; coverage has since gone to
+44,346 rows against a ledger that also grew, and 4x the rows at the same 5,705 B
+is the whole of the 4x in bytes. The reduction did not regress. Anything reading
+a contradiction between the two numbers is reading two dates.
 """
 
 from __future__ import annotations
@@ -317,11 +339,11 @@ def write(rows) -> tuple[Path, int, int]:
 def for_candidates(candidates, path: Path | None = None) -> dict:
     """`{key: its reduced signature}` for the ones this store can answer for.
 
-    **Only the keys asked for are kept.** The whole store is 68.6 MB and a view is
-    a fraction of it; holding the rest would put the better part of a hundred
-    megabytes behind a pass that will never look at it. A key whose row names a
-    different picture than the candidate does is left out, which is the staleness
-    rule doing its work at read time as well as at sweep time.
+    **Only the keys asked for are kept.** The whole store is 253 MB over 44,346
+    rows (2026-09-06) and a view is a fraction of it; holding the rest would put a
+    quarter of a gibibyte behind a pass that will never look at it. A key whose row
+    names a different picture than the candidate does is left out, which is the
+    staleness rule doing its work at read time as well as at sweep time.
     """
     wanted = {str(held.key): str(held.picture or "") for held in candidates}
     if not wanted:

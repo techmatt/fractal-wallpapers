@@ -194,6 +194,15 @@ of 2026-09-01 served **9,371 of 9,388** signatures from it, and re-deriving all
 it used before that constant moved. Copying 68.6 MB beats 2.8 minutes, so it is
 copied.
 
+**Both halves of that have grown by about 4x and the argument got stronger, not
+weaker.** The store is **253 MB over 44,346 rows** on 2026-09-06 against the
+11,636 rows the paragraph above was written on, so the re-derivation it is being
+weighed against is proportionally longer — the 2.8 minutes is a 2026-09-01 reading
+and has not been re-measured, so do not restate it as one. Copying is still the
+cheap side. `curation/signatures.py`'s *What a row costs, and the figure that is
+it divided by the wrong denominator* carries the per-row number and why 68.6 MB
+was a correct reading rather than an error.
+
 Two things about that copy. It is **conditional** — nothing in a merge fills the
 signature sidecar, so a checkout that has never run `curate signatures sweep` has
 no file to save and the door records `null` rather than refusing. And the manifest
@@ -249,6 +258,29 @@ made.** That sentence is the whole point of the store, and it holds because
 `candidate_ledger.prune` runs inside `candidate_ledger.merge` — THE door every
 leg comes through. A rule that ran anywhere else would be a rule the store
 stopped obeying between the times somebody remembered it.
+
+**The law runs one way, and that is what makes a free slot arithmetic.**
+`retention.decide` keeps `min(K, attempts)` — it sorts a pair and takes the first
+K, with no branch on how many the pair holds — so **a pair holding fewer than the
+keep has never had more attempts than it holds.** Nothing was pruned away from
+it. A free slot is therefore `K - len(pair)`, a subtraction over rows already in
+hand, and never a scan of what a leg might once have rendered. Measured over the
+ledger on 2026-09-06: **43,255 of 114,744 (location, mode) pairs — 37.7% — hold
+fewer than three**, which is **60,316 free slots**, 17.5% of the store's
+`3 x 114,744` capacity.
+
+Three things that phrasing has to keep straight, because each has been got wrong.
+It is 37.7% of **pairs**, not of the pool — the rows sitting in under-K pairs are
+69,449, **24.4%** of the ledger's 284,517. "Attempts" means the ones the **merge
+ever saw**, so a killed leg's renders are outside the arithmetic entirely, which
+is what `curate candidate-ledger orphans` and `repeat_draws`' floor are for. And
+the law is one-sided: **559 pairs hold more than three**, every one of them a
+`candidate_ledger.RETAINED_REASONS` protection rather than a prune that failed.
+
+This is the rule that would have caught the inverted near-band manifest —
+[`LEGS.md`](LEGS.md)'s *`--near-places` is the same thing for the near band* — a
+whole unit spent because *free slot* was inferred from *not taken by a floor arm*
+instead of being subtracted directly.
 
 | | rows | on disk |
 |---|---|---|
@@ -470,8 +502,16 @@ something scores a recipe's picture at a geometry that is not the recipe's, and
 contemplates and calls a separate act. Naming the regime at those six sites is
 the precondition for it; until then a second regime is an **error** rather than
 a feature, and an unnamed read that finds one recipe carrying two raises and
-names both. `curation/remode.py` builds its own flattened join by hand and is
-outside the guard.
+names both. `curation/remode.py` built its own flattened join by hand and was
+outside the guard until 2026-09-06; it now takes `scores_by_recipe` over a
+generator filtered to its own population, which keeps the streaming pass its
+docstring promises and inherits the refusal. **One reader is still blind, and it
+is a writer's skip set rather than a join**: `candidate_ledger/rerender.py`'s
+`rescore` builds its already-read set from `recipe_key` and the artifact alone,
+so under two regimes a recipe read only at the other geometry reads as done and
+is left unscored at the geometry the pool joins on. Recorded there, under *The
+step a judge adoption makes necessary*'s own argument, and not fixed — there is
+one regime in the sidecar, so it is a precondition and not a bug.
 
 **The `colour` block is the reading, and every reader takes it off the row.**
 Every one of the 85,129 rows carries one, so nothing downstream opens a picture

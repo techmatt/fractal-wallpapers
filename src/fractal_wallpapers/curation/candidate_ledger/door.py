@@ -63,7 +63,9 @@ def merge(rows, scores, log=print) -> dict:
     absence silently unranks a merge's whole output was the one file the door did
     not record. The reduced-signature sidecar joined it for the weaker but real
     version of the same reason: nothing here fills it, but a restore without it
-    re-derives 68.6 MB of readings the mirror could have copied. Note what this
+    re-derives a quarter of a gibibyte of readings the mirror could have copied —
+    253 MB over 44,346 rows on 2026-09-06, and growing with the sweep's coverage
+    rather than fixed. Note what this
     does *not* buy: `curate candidate-ledger check` still reads the rows and the
     scores alone, so a short or missing sidecar is not what makes that command
     exit 1. Extending it is a decision about what a build failure is, and it has

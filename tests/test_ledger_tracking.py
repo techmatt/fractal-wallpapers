@@ -304,7 +304,8 @@ def test_the_door_mirrors_the_reduced_signature_sidecar_too(tmp_path, monkeypatc
     """The fourth file of the store, copied rather than left to be re-derived.
 
     It was outside the mirror while the reduction ran at 1024 directions and the
-    store was ~245 MB. At 256 it is 68.6 MB, and a restore that skipped it paid
+    store was ~245 MB. At 256 it was 68.6 MB when that landed and is 253 MB over
+    44,346 rows on 2026-09-06, and a restore that skipped it paid
     minutes of `curate signatures sweep` over the three-worker pool for bytes a
     copy already had. `merge` does not FILL this one — nothing here does — so the
     pin is that a file which is there is mirrored and recorded.
