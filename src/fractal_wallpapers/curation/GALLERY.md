@@ -1182,6 +1182,19 @@ then `curate solve resolve <alias>` to turn what you picked back into a recipe. 
 writes its page as it lands and `curate solve browse <stamp>` writes it again, which is
 what a clone runs: the page is a derivation and is not tracked.
 
+**It is also the eye-check over a whole record**, which is what the *group by* control
+and the full-size view are for. Filtering answers *show me this cell*; grouping cuts the
+whole record into sections in one scroll, which is how 48 cells get looked at without 48
+clicks. **Grouping reads the LEADING cell or family and filtering reads the dominance
+list** — deliberately, and they disagree: a seat dominant in three cells answers three
+filters but stands in one section, so the section counts partition the seats and sum to
+the seat count while the filter counts over-count exactly as the census does. Clicking a
+picture opens it at the size the screen gives, and `←`/`→` step along the drawn order
+with `esc` to close, so a filtered or grouped set is walked without returning to the
+grid. **Selecting is the checkbox beside the alias, not the picture** — the two were one
+gesture while a 224px tile was the only size there was, and a click that both opened and
+selected put a stray ID in the copy tray on every look.
+
 **Two files a stamp are TRACKED, and the pictures are not.** `gallery.jsonl` and
 `manifest.json`, through a narrow un-ignore in `.gitignore` that names them one at a
 time. It is the one deliberate hole in `artifacts/` and it is there because the site's

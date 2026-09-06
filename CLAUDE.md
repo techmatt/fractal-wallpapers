@@ -180,10 +180,12 @@ fast lane is for the edit-run loop and nothing else.
 Both are measured, not estimated. The **fast** lane is **112.44 s over the 3,778 it
 holds, 116 deselected**, and the **slow** lane **5:52 over 3,894, 19 skipped** —
 both on this machine, 2026-09-06, on a `.[dev,models]` install with a release
-engine built. **The 19 skips are unexplained and nobody has named them**: the fast
-lane skips nothing, so they are all inside the 116 slow-only tests, and the reading
-before this one said nothing skipped. Compare the next lane against 19, not zero,
-and `--slow -rs` is what names them. **`data/palettes` is a
+engine built. **The 19 skips are named and they are the render cache being short** —
+`{'smooth_render': 240, 'strange_render': 237}` — not a tree fault: `renders plan`
+then `renders build` fills it and they run. They are all inside the 116 slow-only
+tests, over six `test_render_*` and `test_finished_train` files, and they are a
+**store** condition, so a box with a full cache skips zero. Compare the next lane
+against 19 on this machine, and `--slow -rs` is what names them. **`data/palettes` is a
 parametrized guard**, so a drop moves both counts: `classic-pairs-2026-09` added
 120 maps and therefore 120 collected tests with no test written, and a reading
 taken across a drop is not comparable with one taken before it. Every reading this lane has taken is in

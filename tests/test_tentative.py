@@ -389,6 +389,38 @@ def test_every_tile_names_its_picture_relatively_and_carries_the_full_id(store):
     assert not embedded[0]["src"].startswith("/"), "an absolute path does not travel"
 
 
+def test_the_page_opens_a_picture_full_size_rather_than_selecting_it(store):
+    """A tile is ~224px of a 640x360 candidate, so a look at a thousand seats that
+    can only see tiles cannot judge any of them. The picture click OPENS; the
+    checkbox beside the alias selects. They were one gesture while the tile was the
+    only size there was, and a click that did both would put a stray ID in the tray
+    on every look."""
+    tentative.write(record_of(seat("k0")), log=quiet)
+
+    page = tentative.page(log=quiet).read_text(encoding="utf-8")
+
+    assert 'img.addEventListener("click", () => openAt(' in page
+    assert 'box.addEventListener("change", pick)' in page
+    assert 'event.key === "Escape"' in page, "the view has to close without a mouse"
+    assert 'event.key === "ArrowRight"' in page, "stepping is what makes 1,000 scannable"
+
+
+def test_the_page_groups_on_the_leading_cell_so_the_sections_partition_the_seats(store):
+    """Grouping cuts the seats into sections once each, which needs the LEADING
+    cell and not the dominance list the FILTERS read: a seat dominant in three
+    cells would stand in three sections, the section counts would sum past the
+    seat count, and the full-size view would step through it three times."""
+    tentative.write(record_of(seat("k0"), seat("k1")), log=quiet)
+
+    page = tentative.page(log=quiet).read_text(encoding="utf-8")
+
+    assert '<option value="cell">group by colour cell</option>' in page
+    assert '<option value="mode">group by mode</option>' in page
+    assert "function groupOf(row, facet) {\n  const one = row[facet];" in page, (
+        "grouping must read the single leading value, never PLURAL's list"
+    )
+
+
 def test_browse_takes_its_stamp_from_the_argument_a_reader_just_read(store, capsys):
     """`curate solve browse <stamp>` is how the record's own output spells it, so
     the positional has to BE the stamp. It was ignored for one afternoon and

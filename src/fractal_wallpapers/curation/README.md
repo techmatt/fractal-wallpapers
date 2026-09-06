@@ -116,6 +116,7 @@ fractal-wallpapers curate solve run --n 2000 --no-render   # THE planning size, 
 fractal-wallpapers curate solve record                     # THAT solve, recorded, + the page
 fractal-wallpapers curate solve record --n 200 --themed dark_vivid_green   # a THEMED record
 fractal-wallpapers curate solve browse <stamp>             # the page again, off the rows
+                       # filter, group by mode or cell, click a picture for the full size
 fractal-wallpapers curate solve resolve <alias>,<alias>    # an ID back to a recipe
 fractal-wallpapers curate solve list                       # every record on this machine
 fractal-wallpapers curate manufacture --step register --write          # BEFORE anything

@@ -10,7 +10,8 @@ A **tentative gallery** is that. One stamped folder holds `gallery.jsonl` — on
 row per seat, carrying the ledger recipe key that IS the ID, a short alias for
 typing, and the few columns a person filters on — `manifest.json` saying what pool
 it was taken over and how it did, and `index.html`, a self-contained browser over
-the pool's own 640x360 candidate pictures.
+the pool's own 640x360 candidate pictures — filterable on six facets, groupable on
+four, and opening any picture at the size the screen gives.
 
 **The record is the rows and the manifest; the page is a derivation of them.**
 Matt's ruling of 2026-09-05, and it is what publication tracks: `gallery.jsonl`
@@ -645,20 +646,38 @@ _PAGE = """<!doctype html>
   #tray code { color: #cfd4db; }
   main { display: grid; gap: 10px; padding: 12px 14px 60px;
          grid-template-columns: repeat(auto-fill, minmax(224px, 1fr)); }
+  h2 { grid-column: 1 / -1; margin: 14px 0 0; padding-bottom: 5px; font-size: 12px;
+       font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #9fc2ff;
+       border-bottom: 1px solid #2c313a; }
+  h2:first-child { margin-top: 0; }
+  h2 b { color: #8a939f; font-weight: 400; text-transform: none; letter-spacing: 0; }
   .tile { border: 1px solid #2c313a; border-radius: 6px; overflow: hidden; background: #1b1e24; }
   .tile.picked { border-color: #6f9ef8; box-shadow: 0 0 0 1px #6f9ef8; }
   .tile img { display: block; width: 100%; aspect-ratio: 16/9; object-fit: cover;
-              background: #0e1013; cursor: pointer; }
+              background: #0e1013; cursor: zoom-in; }
   .tile .gone { display: grid; place-items: center; width: 100%; aspect-ratio: 16/9;
                 background: #0e1013; color: #6b7280; cursor: pointer; }
   .meta { padding: 6px 8px 8px; }
   .meta .line { display: flex; justify-content: space-between; gap: 8px; }
+  .pick { vertical-align: -1px; margin-right: 5px; cursor: pointer; }
   .alias { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; color: #9fc2ff;
            cursor: pointer; border-bottom: 1px dotted #47536b; }
   .alias.flash { color: #7ee08a; border-bottom-color: #7ee08a; }
   .dim { color: #8a939f; }
   .num { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; }
   #empty { padding: 24px 14px; color: #8a939f; }
+  /* The full-size view. A candidate picture is 640x360, so `contain` scales it up
+     to whatever the screen gives rather than pinning it at its stored pixels: the
+     point of opening one is judging it larger than a 224px tile, not counting its
+     pixels. Fixed and above everything, because it is opened over `file://` where
+     there is no second window to put it in. */
+  #lb { position: fixed; inset: 0; z-index: 9; background: #0b0d10ee; display: none;
+        grid-template-rows: 1fr auto; cursor: zoom-out; }
+  #lb.open { display: grid; }
+  #lb img { min-width: 0; min-height: 0; width: 100%; height: 100%;
+            object-fit: contain; }
+  #lb .bar { padding: 8px 14px 12px; text-align: center; color: #8a939f; }
+  #lb .bar b { color: #9fc2ff; font-weight: 600; }
 </style>
 <header>
   <h1>tentative gallery __STAMP__ <span>&middot; __SEATS__ of __ASKED__ seat(s) filled
@@ -670,8 +689,15 @@ _PAGE = """<!doctype html>
     <fieldset id="f-partition"><legend>partition</legend></fieldset>
     <fieldset id="f-centered"><legend>centered</legend></fieldset>
     <fieldset id="f-spiral"><legend>spiral</legend></fieldset>
-    <fieldset><legend>find &amp; sort</legend>
+    <fieldset><legend>find, group &amp; sort</legend>
       <input type="search" id="q" placeholder="ID or alias" size="18">
+      <select id="group">
+        <option value="">no grouping</option>
+        <option value="mode">group by mode</option>
+        <option value="cell">group by colour cell</option>
+        <option value="hue_family">group by hue family</option>
+        <option value="partition">group by partition</option>
+      </select>
       <select id="sort">
         <option value="rank">rank, best first</option>
         <option value="seat">seat order</option>
@@ -686,10 +712,13 @@ _PAGE = """<!doctype html>
     <button id="copy">copy selected IDs</button>
     <button id="drop">clear selection</button>
     <span id="says"></span>
+    <span class="dim">click a picture for the full size &middot;
+      <code>&larr;</code> <code>&rarr;</code> step, <code>esc</code> closes</span>
   </div>
 </header>
 <main id="grid"></main>
 <div id="empty" hidden>Nothing matches these filters.</div>
+<div id="lb"><img alt=""><div class="bar"></div></div>
 <script>
 const ROWS = __ROWS__;
 const FACETS = ["mode", "hue_family", "cell", "partition", "centered", "spiral"];
@@ -773,13 +802,14 @@ function tile(row) {
   const pick = () => {
     if (picked.has(row.key)) { picked.delete(row.key); } else { picked.add(row.key); }
     card.classList.toggle("picked", picked.has(row.key));
+    box.checked = picked.has(row.key);
     document.getElementById("picked").textContent = picked.size;
   };
   if (row.src) {
     const img = document.createElement("img");
     img.src = row.src;
     img.loading = "lazy";
-    img.title = "click to select";
+    img.title = "click for the full size";
     img.addEventListener("error", () => {
       const gone = document.createElement("div");
       gone.className = "gone";
@@ -787,9 +817,18 @@ function tile(row) {
       img.replaceWith(gone);
       gone.addEventListener("click", pick);
     });
-    img.addEventListener("click", pick);
+    // The picture opens; the checkbox beside the alias selects. The two were one
+    // gesture while a tile was the only size there was, and a click that both
+    // opened and selected would put a stray ID in the tray on every look.
+    img.addEventListener("click", () => openAt(shown.indexOf(row)));
     card.append(img);
   }
+  const box = document.createElement("input");
+  box.type = "checkbox";
+  box.className = "pick";
+  box.checked = picked.has(row.key);
+  box.title = "select this seat";
+  box.addEventListener("change", pick);
   const meta = document.createElement("div");
   meta.className = "meta";
   const top = document.createElement("div");
@@ -799,12 +838,14 @@ function tile(row) {
   alias.textContent = row.alias;
   alias.title = row.key + " \\u2014 click to copy the full ID";
   alias.addEventListener("click", () => { copy(row.key); flash(alias, "copied"); });
+  const left = document.createElement("span");
+  left.append(box, alias);
   const score = document.createElement("span");
   score.className = "num dim";
   score.title = "rank key / P(\\u22654)";
   score.textContent = (row.rank === null ? NONE : Number(row.rank).toFixed(3)) + " / " +
     (row.p_ge4 === null ? NONE : Number(row.p_ge4).toFixed(3));
-  top.append(alias, score);
+  top.append(left, score);
   const one = document.createElement("div");
   one.className = "dim";
   one.textContent = row.mode + " \\u00b7 " + (row.hue_family || NONE) +
@@ -818,18 +859,97 @@ function tile(row) {
   return card;
 }
 
+// Grouping reads the LEADING cell or family, never the dominance list the filters
+// read. A row dominant in three cells would otherwise stand in three sections, the
+// section counts would sum past the seat count, and stepping would visit it three
+// times. Filter on a cell to see every seat that reaches it; group to cut the
+// seats into sections once each.
+function groupOf(row, facet) {
+  const one = row[facet];
+  return one === null || one === undefined ? NONE : String(one);
+}
+
+//: the drawn order, flattened across sections. `openAt` steps along this and not
+//: along ROWS, so the full-size view walks exactly what the grid is showing.
+let shown = [];
+
 function draw() {
   const held = ROWS.filter(matches);
   const key = document.getElementById("sort").value;
   held.sort((a, b) => key === "seat" ? a.seat - b.seat : (b[key] ?? -1) - (a[key] ?? -1));
-  document.getElementById("grid").replaceChildren(...held.map(tile));
+  const facet = document.getElementById("group").value;
+  const bins = new Map();
+  for (const row of held) {
+    const name = facet ? groupOf(row, facet) : "";
+    if (!bins.has(name)) bins.set(name, []);
+    bins.get(name).push(row);
+  }
+  const order = facet
+    ? [...bins].sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]))
+    : [...bins];
+  const out = [];
+  shown = [];
+  for (const [name, rows] of order) {
+    if (facet) {
+      const head = document.createElement("h2");
+      const n = document.createElement("b");
+      n.textContent = "  " + rows.length + " seat(s)";
+      head.append(document.createTextNode(name), n);
+      out.push(head);
+    }
+    for (const row of rows) { shown.push(row); out.push(tile(row)); }
+  }
+  document.getElementById("grid").replaceChildren(...out);
   document.getElementById("empty").hidden = held.length > 0;
-  document.getElementById("count").textContent = held.length + " of " + ROWS.length + " shown";
+  document.getElementById("count").textContent = held.length + " of " + ROWS.length + " shown" +
+    (facet ? " in " + bins.size + " group(s)" : "");
   document.getElementById("picked").textContent = picked.size;
 }
 
+//: which of [`shown`] the full-size view is on, or -1 when it is closed.
+let at = -1;
+
+function openAt(i) {
+  if (i < 0 || i >= shown.length) return;
+  at = i;
+  const row = shown[at];
+  const view = document.getElementById("lb");
+  view.querySelector("img").src = row.src || "";
+  const where = document.createElement("span");
+  where.textContent = (at + 1) + " of " + shown.length + "  \\u00b7  ";
+  const who = document.createElement("b");
+  who.textContent = row.alias;
+  const what = document.createElement("span");
+  what.textContent = "  \\u00b7  " + row.mode + " \\u00b7 " + (row.cell || NONE) +
+    " \\u00b7 " + row.partition + (row.centered ? " \\u00b7 centered" : "") +
+    " \\u00b7 seat " + row.seat +
+    " \\u00b7 rank " + (row.rank === null ? NONE : Number(row.rank).toFixed(3));
+  view.querySelector(".bar").replaceChildren(where, who, what);
+  view.classList.add("open");
+}
+
+function step(by) {
+  if (at >= 0) openAt(Math.min(shown.length - 1, Math.max(0, at + by)));
+}
+
+function shut() {
+  document.getElementById("lb").classList.remove("open");
+  at = -1;
+}
+
+document.getElementById("lb").addEventListener("click", shut);
+document.addEventListener("keydown", (event) => {
+  if (at < 0) return;
+  if (event.key === "Escape") { shut(); }
+  else if (event.key === "ArrowRight") { step(1); }
+  else if (event.key === "ArrowLeft") { step(-1); }
+  else { return; }
+  event.preventDefault();
+});
+
 document.getElementById("q").addEventListener("input", draw);
 document.getElementById("sort").addEventListener("change", draw);
+document.getElementById("group").addEventListener("change", draw);
 document.getElementById("clear").addEventListener("click", () => {
   for (const facet of FACETS) chosen[facet].clear();
   for (const box of document.querySelectorAll("header input[type=checkbox]")) {
