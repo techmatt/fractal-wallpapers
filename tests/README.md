@@ -349,6 +349,25 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**Zero skips, and that is the store condition confirmed rather than argued.**
+`--slow -rs` at `GUARD_score_regime_0906`, 2026-09-06, read **6:45 over 3,917, 0
+skipped** on an idle box, on the same `.[dev,models]` install with a release
+engine, with the fast lane at **115.01 s over 3,796, 121 deselected** — and
+3,796 + 121 is 3,917, which is the count definition holding. The reading below predicted exactly this — the 19 were the render cache
+being short, so a box with a full cache skips zero — and this is the first lane
+to actually take it. The cache was filled by a prompt that ran between the two
+readings, not by anything here. **It prices them too**: 6:45 against 6:05 is
+those 19 guards *running* — engine renders and a training loop — plus 21 more
+tests, so the skips were hiding roughly forty seconds and every future reading
+on a full cache carries it. A lane that skips 19 again is a short cache, not a
+regression.
+
+The count moved 3,896 to 3,917. **One of the 21 is this prompt's**, and a
+`--collect-only` with its three files stashed read **3,916** at `f1b2c1d`, so the
+other twenty landed in the three commits that went in beside it — 19 of them the
+two new files `test_top_slice_probe.py` and `test_activations.py`, collected
+directly. Compare the next lane against 3,917 and zero skips.
+
 **The 19 slow-lane skips are named, and they are one cause.** `--slow -rs` at
 `SHOW_n1000_gallery_0906`, 2026-09-06, read **6:05 over 3,896, 19 skipped** — the
 3,894 below plus this prompt's two — on an idle box, and every one of the 19 is

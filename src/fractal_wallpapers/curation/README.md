@@ -449,15 +449,29 @@ minutes over the standard three-worker pool.
 keyed `(recipe key, artifact, regime)` because a number is comparable only inside
 that triple. Both readers that mattered — `mine.population` and `solve.pool` —
 flattened it to the recipe key alone, which is last-row-wins across artifacts:
-two judges' scales in one ordering with nothing anywhere saying so. Today the
-store holds **one** artifact and one regime and 0 of 85,129 keys are duplicated,
-so those joins were right by luck; the first adoption is what turns luck into a
-silent wrong answer, and an adoption is a thing this project plans to do.
+two judges' scales in one ordering with nothing anywhere saying so. The store now
+holds **three** artifacts over 574,162 sidecar rows, so that half of the key is
+live: what those joins were right by luck about has since happened.
 `candidate_ledger.scores_by_recipe` is the join now — the live head unless a
 caller names an artifact — and a row read on any other is **omitted**, not
 rescaled. `stale_scores` is the census of what was left behind, so a caller can
 say how much of its population it has no score for. A recipe with no reading on
 the live judge has no score, which is honest and different from having an old one.
+
+**The regime half of that key has no filter, so a second one raises.** All
+574,162 rows are `640x360ss2`, and six production callers — `solve.pool`,
+`rank_key`, `mine`, `sweep`, `models/render_grade.py` and `cli/curate_commands`
+— pass no regime at all, so for them the join is last-row-wins across regimes.
+What breaks it is not drift: `regime` is a keyed member of a recipe, so a recipe
+key already names its own geometry and `recipe_key -> regime` is a function
+while every writer stamps the recipe's own. It stops being one the first time
+something scores a recipe's picture at a geometry that is not the recipe's, and
+**re-scoring at shipping geometry is exactly that** — a thing this tree already
+contemplates and calls a separate act. Naming the regime at those six sites is
+the precondition for it; until then a second regime is an **error** rather than
+a feature, and an unnamed read that finds one recipe carrying two raises and
+names both. `curation/remode.py` builds its own flattened join by hand and is
+outside the guard.
 
 **The `colour` block is the reading, and every reader takes it off the row.**
 Every one of the 85,129 rows carries one, so nothing downstream opens a picture
