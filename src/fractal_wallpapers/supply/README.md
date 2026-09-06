@@ -556,6 +556,14 @@ parameter of a run now.
 **It derives and does not pace** — the active-minute budget is still the only
 backstop, and the margin is real money.
 
+**The standing leg is every partition at once with `--root-channel proven` on**, and
+the examples below that name one `--partition` are the exception rather than the
+shape. No run record stores its argv, so what a leg was launched with is read back
+off recorded values against defaults: `refill.proven` populated is the proven
+channel, `quota.partitions` null is every partition. `harvest_refresh` (2026-09-01)
+and `harvest_smoke_0906` (2026-09-06) are both that shape; `phoenix_classic_supply`
+is the one-partition exception and says so in its own `quota.partitions`.
+
 **The launch prints what each channel can still reach**, one line per partition:
 the pool's size, how much of it the label store put there, what has been drawn, or
 the reason no draw can serve it. run10 opened with 39, 46 and 52 derived parameters
@@ -589,6 +597,7 @@ fractal-wallpapers harvest --finish-by 07:00 --release-slots 20 --release-worker
 fractal-wallpapers harvest --finish-by 07:00 --strange-modes 3    # reserve for that night
 fractal-wallpapers harvest --exploration-floor 0.25 --exploration-start 0.45
 fractal-wallpapers harvest --no-exploration --lineage-discount 0   # neither lever
+fractal-wallpapers harvest --minutes 30 --root-channel proven   # the standing leg: every partition
 fractal-wallpapers harvest --partition mandelbrot --root-channel proven
 fractal-wallpapers harvest --partition phoenix --root-channel proven      # at labelled frames
 fractal-wallpapers harvest --partition phoenix:classic --root-channel proven --root-channel viewport_sampler
