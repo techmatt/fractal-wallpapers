@@ -1612,6 +1612,59 @@ def test_a_rescore_resumes_off_the_chunk_file_it_left_behind(isolated, monkeypat
     assert candidate_ledger.scores_by_recipe(artifact="new")["a"]["p_ge4"] == 0.7
 
 
+def _reading(key: str, regime: str, p_ge4: float) -> dict:
+    """One sidecar row, on one artifact, at the regime named."""
+    return candidate_ledger.score_row(
+        key=key,
+        artifact="live",
+        regime=regime,
+        head="strange_render",
+        read={"p_ge2": 0.9, "p_ge3": 0.8, "p_ge4": p_ge4, "rank_score": 2.4},
+        source={"scores_current": True},
+    )
+
+
+def test_a_second_regime_under_an_unnamed_read_raises_instead_of_winning_the_row():
+    """The six `regime=None` callers fail loudly the day a second regime appears.
+
+    The sidecar is keyed `(recipe, artifact, regime)` and the artifact half is
+    already exercised — three artifacts on record — while the regime half is
+    single-valued only because every writer stamps the recipe's own regime, which
+    the recipe key already names. A re-score at shipping geometry is what puts a
+    second one on a key. `solve.pool`, `rank_key`, `mine`, `sweep`, `render_grade` and
+    `cli/curate_commands` all read with no regime named, so the first row at a
+    second one would silently change what all six return, with no error and no
+    test failing. Naming the regime at those six sites is the fix; this is what
+    holds until then.
+
+    Pure — the rows are passed in and the artifact named, so no store is read.
+    """
+    mixed = [
+        _reading("a", "640x360ss2", 0.7),
+        _reading("a", "1280x720ss2", 0.2),
+        _reading("b", "640x360ss2", 0.5),
+    ]
+
+    with pytest.raises(candidate_ledger.LedgerError) as refusal:
+        candidate_ledger.scores_by_recipe(mixed, artifact="live")
+
+    said = str(refusal.value)
+    assert "a" in said and "640x360ss2" in said and "1280x720ss2" in said, (
+        "the refusal has to name the recipe and both regimes to be actionable"
+    )
+
+    single = [row for row in mixed if row["regime"] == "640x360ss2"]
+    held = candidate_ledger.scores_by_recipe(single, artifact="live")
+    assert {key: row["p_ge4"] for key, row in held.items()} == {"a": 0.7, "b": 0.5}
+
+    # A caller that means one of two regimes says so, and is not checked.
+    named = candidate_ledger.scores_by_recipe(mixed, artifact="live", regime="1280x720ss2")
+    assert {key: row["p_ge4"] for key, row in named.items()} == {"a": 0.2}
+    # And an artifact the mixed rows are not on is empty rather than a refusal:
+    # the guard reads what the join kept, not what the sidecar holds.
+    assert candidate_ledger.scores_by_recipe(mixed, artifact="other") == {}
+
+
 def test_the_prune_s_own_stub_carries_the_mode_s_settings(tmp_path):
     """The 2026-09-02 incident, as the two lines that would have caught it.
 

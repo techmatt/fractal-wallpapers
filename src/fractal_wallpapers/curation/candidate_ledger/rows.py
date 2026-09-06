@@ -194,24 +194,66 @@ def scores_by_recipe(scores=None, artifact: str | None = None, regime: str | Non
     The sidecar is keyed `(recipe key, artifact, regime)` precisely because a
     number is comparable only inside that triple. A join that flattened it to the
     recipe key alone would be last-row-wins across artifacts: two judges' scales
-    in one ordering, with nothing anywhere saying so. Today the store holds one
-    artifact and one regime, so such a join is right by luck; the first adoption
-    is what turns luck into a silent wrong answer, and an adoption is a thing
-    this project plans to do.
+    in one ordering, with nothing anywhere saying so. The store already holds
+    three artifacts, so that half of the key is live and exercised; it is the
+    first adoption that turned luck into a real answer, and an adoption is a
+    thing this project plans to do again.
 
     So the artifact is named — `None` means the live head — and a row read on any
     other is **left out**, counted, and reported by [`stale_scores`]. Omitted and
     not silently rescaled: a recipe with no reading on the live judge has no
     score, which is a different and honest thing from having an old one.
+
+    ## The regime half has no filter to fall back on, so it raises
+
+    Six production callers pass no regime at all — [`solve.pool`],
+    [`rank_key._scores_by_recipe`], [`curation.mine`], [`sweep`],
+    [`models.render_grade`] and `cli/curate_commands` — so for every one of them
+    this join is last-row-wins **across regimes**. It is right today only because
+    the sidecar is single-regime: all 574,162 rows are `640x360ss2`, on all three
+    artifacts.
+
+    What it takes to break is one specific and *planned* leg, not drift.
+    `regime` is a [`recipes.KEYED`] member, so a recipe key already names the
+    geometry it was drawn at, and every writer of a [`score_row`] stamps the
+    recipe's own — which makes `recipe_key -> regime` a function today and the
+    collision below unreachable. It stops being one the moment something reads a
+    recipe's picture at a geometry other than the recipe's, and re-scoring at
+    **shipping** geometry is exactly that: same recipe, same identity, a number
+    that is not comparable with the one already on record. See
+    [`models.render_grade`], which says in as many words that the judge is not
+    regime-robust and that re-scoring at shipping geometry is a separate act.
+
+    Naming the regime at those six sites is the precondition for any second
+    regime in the sidecar, and until that happens **a second regime is an error
+    rather than a feature** — so an unnamed read that finds one recipe carrying
+    two raises and names both, instead of silently changing what all six read. A
+    caller that means two regimes names one of them and is not checked.
+
+    The check rides the join it already does and costs one `dict.get` per kept
+    row: there is nowhere cheaper to notice, because the collision *is* the
+    overwrite.
     """
     read = store.read_scores() if scores is None else list(scores)
     want = store.live_artifact() if artifact is None else str(artifact)
-    return {
-        str(row["recipe_key"]): row
-        for row in read
-        if str(row.get("judge_artifact")) == want
-        and (regime is None or str(row.get("regime")) == str(regime))
-    }
+    out: dict = {}
+    for row in read:
+        if str(row.get("judge_artifact")) != want:
+            continue
+        held = str(row.get("regime"))
+        if regime is not None and held != str(regime):
+            continue
+        key = str(row["recipe_key"])
+        standing = out.get(key)
+        if regime is None and standing is not None and str(standing.get("regime")) != held:
+            raise store.LedgerError(
+                f"recipe {key} carries readings at two regimes on judge artifact {want} — "
+                f"{str(standing.get('regime'))!r} and {held!r} — and this read named "
+                "neither, so which one it returns is whichever the sidecar happens to hold "
+                "last. Name the regime: scores_by_recipe(..., regime=...)."
+            )
+        out[key] = row
+    return out
 
 
 def stale_scores(scores=None, artifact: str | None = None) -> dict:
