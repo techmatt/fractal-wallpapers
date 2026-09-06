@@ -99,6 +99,8 @@ what says that.
 from __future__ import annotations
 
 import json
+import shlex
+import sys
 from pathlib import Path, PurePosixPath
 from typing import Any
 
@@ -207,6 +209,27 @@ def refuse_a_nested_run_directory(path: Path) -> None:
         )
 
 
+def invocation() -> dict:
+    """How this process was launched, as a run header carries it.
+
+    A record that does not say this is a record whose flags have to be inferred
+    from the values it happens to have written, against whatever the defaults
+    were that week. It worked once — `SMOKE_location_run_1h_0906` resolved a
+    standing walk's whole command line off `refill.proven` being populated and
+    `quota.partitions` being null — and it works only while no default moves.
+
+    Three spellings of one fact, because they answer different questions. `argv`
+    is the arguments verbatim, which is what a reader compares against a default.
+    `program` is how the entry point was named, which separates a console-script
+    leg from `python -m` and from a leg a test drove. `line` is the pair joined
+    for pasting; it quotes POSIX-style, which is the shell this project's
+    commands are written for on both platforms.
+    """
+    program = Path(sys.argv[0]).name if sys.argv else ""
+    args = [str(arg) for arg in sys.argv[1:]]
+    return {"program": program, "argv": args, "line": shlex.join([program, *args])}
+
+
 class Ledger:
     """An append-only JSONL record of one walk."""
 
@@ -216,6 +239,35 @@ class Ledger:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._handle = self.path.open("a", encoding="utf-8", newline="\n")
         self.counts: dict[str, int] = {}
+
+    def header(self, kind: str, *, ledgers_read: dict | None = None, **fields: Any) -> dict:
+        """Write a run's first row: what the leg was told, and how it was reached.
+
+        Every leg kind's header comes through here rather than through
+        [`write`], and that is the whole point of the method existing: the
+        invocation and the ledger tiers are facts about *any* run record, so a
+        third leg kind gets them by writing its header the way the first two do
+        rather than by somebody remembering to add two fields.
+
+        `ledgers_read` is what [`supply.ledgers.tiers_read`] returns over the
+        earlier ledgers this leg actually opened, and `None` means it opened
+        none. It matters because two halves of one night can read different
+        populations without saying so — measured 2026-09-06, a harvest read the
+        12 hot ledgers while the reframe leg beside it read 47 across both tiers,
+        and every figure comparing the two halves was comparing populations.
+
+        The header is the first row by construction: a run's configuration is
+        what its rows have to be read against, so a record whose first line is
+        already data is one that can be read wrongly before it can be read at
+        all.
+        """
+        if self.counts:
+            raise ValueError(
+                f"{self.path} already holds {sum(self.counts.values())} row(s) from this "
+                f"process, so this is not its header. A run record's first row is its "
+                f"configuration; write everything else through `write`."
+            )
+        return self.write(kind, **fields, invocation=invocation(), ledgers_read=ledgers_read)
 
     def write(self, kind: str, **fields: Any) -> dict:
         """Append one row. The schema and the kind are stamped here, not by

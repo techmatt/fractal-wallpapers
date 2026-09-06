@@ -2,8 +2,8 @@
 
 The four guards here are the four claims the channel is: an operator's own view
 lands as a **candidate** the supply union reads, an evaluation pin refuses a seed
-*and* a manufactured frame, one nucleus is one location whatever it was drawn at,
-and the rung set is the rung set.
+*and* a manufactured frame *and* a carried promotion, one nucleus is one location
+whatever it was drawn at, and the rung set is the rung set.
 
 Nothing here renders. The engine and the head are stood in for, because what is
 being checked is the channel's bookkeeping and a real gate battery would make
@@ -183,6 +183,50 @@ def test_a_derived_frame_that_lands_on_a_pinned_place_is_refused(tmp_path, monke
     run = channel(tmp_path, pinned={pin})
     with pytest.raises(reframing.PinnedPlace, match="rung"):
         run.run([ON_AN_ATOM])
+
+
+def test_a_carried_promotion_on_a_pinned_place_is_dropped_rather_than_fired_at(
+    tiers, monkeypatch
+) -> None:
+    """The third path, and the one the other two looked like they covered.
+
+    The pin acts twice by design — a **filter** where the seeds are derived and
+    an **assertion** at the seed about to be fired — and the pair above is one of
+    each. But the filter is `reframing.seeds`, which derives the *proven roots*,
+    and the assertion is `Channel.refuse_a_pinned_frame`, which is the same code
+    for a root and a promotion alike. A **carried promotion** is built by
+    `prior_run` out of an earlier leg's own candidate rows and enters the queue
+    without passing the query, so it met no filter, and what met it was the
+    assertion — which ends the leg. `reframe_g9` died at 18.9 of 30 minutes and
+    `g10` at 4.4 of 11, both on the same promotion.
+
+    A place clean when it was written is a place a later leg dies on, because the
+    pin set grows every time somebody labels an evaluation split. So the filter
+    has to be applied to the promotions where they are carried in, and both
+    halves of the pair have to be re-asserted after it: the promotion is gone
+    from the queue, and it is gone because it was refused rather than because
+    the chain forgot it.
+    """
+    leg(
+        tiers.hot / "reframe_g5",
+        started="2026-09-01T12:00:00Z",
+        locations=1,
+        consumed=1,
+        rows=[candidate("atom-pinned", "root-fired")],
+    )
+    promotion = candidate("atom-pinned", "root-fired")
+    place = location_key(promotion["family"], promotion["viewport"])
+
+    refused = launched(monkeypatch, tiers.hot.parent, [proven("root-fresh")], pinned={place})
+    assert [seed.id for seed in refused.carried] == []
+    assert refused.record["carried_refused_pinned"] == 1
+    assert any("evaluation pin" in line for line in refused.lines), "a drop nobody is told about"
+
+    # The control, and the whole of what says the drop was the pin: the same
+    # chain with that place unpinned carries the same promotion to the queue.
+    clean = launched(monkeypatch, tiers.hot.parent, [proven("root-fresh")])
+    assert [seed.id for seed in clean.carried] == ["atom-pinned"]
+    assert clean.record["carried_refused_pinned"] == 0
 
 
 def test_the_seed_query_excludes_pinned_places_rather_than_counting_them(tmp_path) -> None:
@@ -884,13 +928,24 @@ def test_the_ledger_is_readable_json_lines_carrying_their_own_join(tmp_path, mon
 # what the defaults are read off.
 
 
-def leg(directory, *, started=None, locations=0, again=0, consumed=0, rows=(), ladder=None):
+def leg(
+    directory,
+    *,
+    started=None,
+    locations=0,
+    again=0,
+    consumed=0,
+    rows=(),
+    ladder=None,
+    max_period=None,
+):
     """A leg's ledger, holding the two rows the defaults are decided on.
 
     `ladder` is the leg's rung set, and the header is where it goes — a fire row
     names the root and its outcome and nothing about the ladder, because the
     header already carries one per leg. A leg written without one stands in for
-    every leg on this machine before 2026-09-05.
+    every leg on this machine before 2026-09-05. `max_period` is the other half
+    of that header and the half an unresolved fire is scoped to.
     """
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
@@ -902,7 +957,9 @@ def leg(directory, *, started=None, locations=0, again=0, consumed=0, rows=(), l
     if ladder is not None:
         header["rungs"] = [float(rung) for rung in ladder]
         header["operators"] = list(reframing.OPERATORS)
-        header["seed_max_period"] = reframing.SEED_SNAP_MAX_PERIOD
+        header["seed_max_period"] = (
+            reframing.SEED_SNAP_MAX_PERIOD if max_period is None else int(max_period)
+        )
     if started is not None:
         header["started"] = started
     summary = {
@@ -975,6 +1032,25 @@ def test_the_default_chain_is_every_leg_the_ledgers_hold(tiers) -> None:
         f"{paths.ARTIFACTS_NAME}/reframe_g1",
         f"{paths.ARTIFACTS_NAME}/reframe_g2",
     ]
+
+
+def test_the_leg_hands_the_header_which_tiers_its_queue_came_off(tiers, monkeypatch) -> None:
+    """The reading is `discovered_priors`' and it is taken before the channel
+    exists, so it travels to the header rather than being re-derived there.
+
+    Two halves of one night can read different populations without saying so: on
+    2026-09-06 the harvest read the 12 hot ledgers while the reframe leg beside
+    it read 47 across both tiers, and every figure comparing the two was
+    comparing populations.
+    """
+    leg(tiers.hot / "reframe_g5", started="2026-09-01T12:00:00Z")
+    leg(tiers.cold / "reframe_g4", started="2026-09-01T06:00:00Z")
+    out = launched(monkeypatch, tiers.hot.parent, [proven("root-fresh")])
+    read = out.kwargs["ledgers_read"]
+    assert read == out.record["priors_seen"]["ledgers_read"]
+    assert read["ledgers"] == 2
+    assert read["by_tier"] == {paths.ARCHIVE: 1, paths.HOT: 1}
+    assert read["archive_reachable"] is True
 
 
 def test_a_leg_is_recognised_by_its_header_and_never_by_its_name(tiers) -> None:
@@ -1080,15 +1156,19 @@ def proven(name, tier=4):
     )
 
 
-def launched(monkeypatch, tmp_path, roots, **flags):
+def launched(monkeypatch, tmp_path, roots, pinned=frozenset(), **flags):
     """`run` with the head, the engine and the label store stood in for.
 
     What is under test is which seeds the leg is handed and what it wrote down
     about deciding that, so everything downstream of the decision is a recorder.
+
+    `pinned` is the eval-pin set the leg reads. The stand-in for the seed query
+    takes `roots` as given, so this is the pin acting where the query does not
+    reach — on the promotions a `--prior` leg carries in.
     """
     from fractal_wallpapers.labeling import pins as pin_module
 
-    monkeypatch.setattr(pin_module, "every_pinned", lambda: set())
+    monkeypatch.setattr(pin_module, "every_pinned", lambda: set(pinned))
     monkeypatch.setattr(reframing, "seeds", lambda **_k: (list(roots), {}))
     taken = {}
 
@@ -1096,6 +1176,7 @@ def launched(monkeypatch, tmp_path, roots, **flags):
         def __init__(self, **kwargs):
             self.seen = set()
             taken["channel"] = self
+            taken["kwargs"] = kwargs
 
         def run(self, fired, carried=None):
             taken["fired"] = list(fired)
@@ -1115,6 +1196,7 @@ def launched(monkeypatch, tmp_path, roots, **flags):
         record=report["seed_query"],
         fired=taken.get("fired", []),
         carried=taken.get("carried", []),
+        kwargs=taken.get("kwargs", {}),
         lines=lines,
     )
 
@@ -1407,7 +1489,13 @@ def test_only_a_converged_barren_fire_consumes_a_root(tiers, monkeypatch) -> Non
     A root Newton did not settle on moves when the period ceiling does; a root
     whose atoms a crashed screen batch cost a verdict was never read at all; an
     undefined family is not a claim about a place. None of them is a verdict, so
-    none of them takes a root off the queue.
+    none of them takes a root off the queue — `consumed` is one, and it is the
+    barren one.
+
+    Held is not consumed, and the unresolved root is the difference: it is off
+    *this* leg's queue because this leg's period ceiling is the one it already
+    failed under, and the leg that raises the ceiling gets it back. That half is
+    the guard below.
     """
     leg(
         tiers.hot / "reframe_short",
@@ -1432,12 +1520,80 @@ def test_only_a_converged_barren_fire_consumes_a_root(tiers, monkeypatch) -> Non
         ],
         rungs=list(SHORT_LADDER),
     )
-    assert {seed.id for seed in out.fired} == {
-        "root-unsettled",
-        "root-undrawn",
-        "root-undefined",
-    }
+    assert {seed.id for seed in out.fired} == {"root-undrawn", "root-undefined"}
     assert out.record["ladder_rule"]["consumed"] == 1
+    assert out.record["ladder_rule"]["held_unsettled"] == 1
+
+
+def test_an_unresolved_root_is_held_while_the_ceiling_stands_and_fired_last_when_it_moves(
+    tiers, monkeypatch
+) -> None:
+    """The loop this closes, and the two things about it that stay true.
+
+    `fire` snaps at the seed's own centre first and hands the atom it found to
+    the neighbourhood enumeration as its parent, so a seed that returned
+    `no_converge` is one where the deterministic scan failed and the random
+    probing never ran. Under an unchanged `--seed-max-period` the next leg runs
+    the identical scan over the identical orbit and gets the identical answer:
+    `reframe_g9` left 343 unresolved roots, `g10`'s whole root queue was those
+    343, all 343 came back unresolved, and they cost 3.9 of its 4.4 minutes.
+
+    Neither of the two rulings moves. It still does not **consume** — raise the
+    ceiling and the root is offered again, which is why the fire is counted
+    apart from the barren ones. And when it is offered it goes **last**, behind
+    every unfired seed whatever its class, because it is a seed the chain has
+    already paid for: with no fire count at all it sorted to the *front* of
+    `g10`'s queue and was booked as fresh.
+    """
+    leg(
+        tiers.hot / "reframe_g9",
+        started="2026-09-05T21:00:00Z",
+        ladder=LONG_LADDER,
+        max_period=reframing.SEED_SNAP_MAX_PERIOD,
+        consumed=1251,
+        rows=[fire_row("root-unsettled", reframing.NO_CONVERGE)],
+    )
+    # The unresolved root is the better class, so an unflagged queue would fire
+    # it first — which is exactly what g10 did.
+    roots = [proven("root-unsettled", tier=4), proven("root-fresh", tier=3)]
+
+    same = launched(monkeypatch, tiers.hot.parent, roots, rungs=list(LONG_LADDER))
+    assert [seed.id for seed in same.fired] == ["root-fresh"], "the same scan, the same answer"
+    assert same.record["ladder_rule"] == {
+        "seeds_returned_nothing": 1,
+        "consumed": 0,
+        "held_unsettled": 1,
+        "reoffered": 0,
+        "unknown": 1,
+    }
+
+    # A rung is a width the atom is framed at and there is no atom to frame, so
+    # widening the ladder re-opens every barren root and no unresolved one.
+    wider = launched(monkeypatch, tiers.hot.parent, roots, rungs=[*LONG_LADDER, 512.0])
+    assert [seed.id for seed in wider.fired] == ["root-fresh"]
+
+    # Nor does re-probing: it is a second random sample of a neighbourhood, and
+    # this is a seed no neighbourhood was ever reached from.
+    probed = launched(monkeypatch, tiers.hot.parent, roots, rungs=list(LONG_LADDER), reprobe=True)
+    assert [seed.id for seed in probed.fired] == ["root-fresh"]
+
+    higher = launched(
+        monkeypatch,
+        tiers.hot.parent,
+        roots,
+        rungs=list(LONG_LADDER),
+        max_period=reframing.SEED_SNAP_MAX_PERIOD * 2,
+    )
+    assert {seed.id: seed.reoffered for seed in higher.fired} == {
+        "root-unsettled": True,
+        "root-fresh": False,
+    }
+    assert higher.record["ladder_rule"]["held_unsettled"] == 0
+    assert [seed.id for seed in reframing.queued(higher.fired)] == [
+        "root-fresh",
+        "root-unsettled",
+    ], "a q4 root the chain already paid for goes behind an unfired q3"
+    assert next(seed for seed in higher.fired if seed.reoffered).source == "matt_q4"
 
 
 def test_a_leg_that_recorded_no_fires_backfills_nothing_and_changes_nothing(
@@ -1466,8 +1622,9 @@ def test_a_leg_that_recorded_no_fires_backfills_nothing_and_changes_nothing(
     assert [seed.id for seed in out.fired] == ["root-unreached"]
     assert out.record["ladder_key"] == reframing.ladder_key(out.record["ladder"])
     assert out.record["ladder_rule"] == {
-        "seeds_barren": 0,
+        "seeds_returned_nothing": 0,
         "consumed": 0,
+        "held_unsettled": 0,
         "reoffered": 0,
         # The unfired root and the leg's own promotion. `unknown` is over the
         # whole offered queue, because a promotion with no fire record is the

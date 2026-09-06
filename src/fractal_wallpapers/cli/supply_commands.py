@@ -281,6 +281,23 @@ def harvest(args: argparse.Namespace) -> int:
     )
     if args.probe is not None:
         limits.probe_probability = args.probe
+    # A run told which partitions to keep books for keeps them for those alone:
+    # the census, the allocation, the refill census and the served mix all read
+    # this list, so naming one partition is how a leg spends a whole clock there
+    # rather than steering toward it and hoping.
+    partitions = list(args.partition or ALL_PARTITIONS)
+    # Found once, read by three builders. Each of them used to look the ledgers up
+    # for itself, which on an archive root is the same directory walk three times
+    # over — the whole of what `schedule.LEDGER_LOAD_SECONDS` had grown to reserve.
+    #
+    # Before the walk and not after it, because the run's header records which
+    # tiers this population came off and the header is the ledger's first row.
+    # The walk's own file is excluded by name — it is `<run dir>/walk.jsonl`
+    # whether or not the walk has opened it yet — so a leg re-using a killed
+    # leg's --out-dir still does not read itself.
+    ledger_root = resolve_output(args.ledgers)
+    ledger_files = ledgers.ledger_paths(root=ledger_root, exclude=run_dir / ledgers.LEDGER_NAME)
+    print(f"[plan] ledgers: {len(ledger_files)} under {display_path(ledger_root)}")
     walk_run = Walk(
         out_dir=run_dir,
         seed=args.seed,
@@ -290,19 +307,8 @@ def harvest(args: argparse.Namespace) -> int:
         colormap=args.colormap,
         scorer=build_scorer(args),
         report_foci=args.foci,
+        ledgers_read=ledgers.tiers_read(ledger_files, root=ledger_root),
     )
-    # A run told which partitions to keep books for keeps them for those alone:
-    # the census, the allocation, the refill census and the served mix all read
-    # this list, so naming one partition is how a leg spends a whole clock there
-    # rather than steering toward it and hoping.
-    partitions = list(args.partition or ALL_PARTITIONS)
-    # Found once, read by three builders. Each of them used to look the ledgers up
-    # for itself, which on an archive root is the same directory walk three times
-    # over — the whole of what `schedule.LEDGER_LOAD_SECONDS` had grown to reserve.
-    ledger_files = ledgers.ledger_paths(
-        root=resolve_output(args.ledgers), exclude=walk_run.ledger.path
-    )
-    print(f"[plan] ledgers: {len(ledger_files)} under {display_path(resolve_output(args.ledgers))}")
     # The protected exploration share, and the cross-run record of which lineages
     # have ever produced that decides who is in it. Built off the same ledger root
     # the saturation memory reads, minus this run's own file.

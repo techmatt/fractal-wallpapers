@@ -248,28 +248,48 @@ are `productive`, `barren`, `no_converge`, `not_drawn` and `undefined`, and only
 A seed the leg never reached before the clock simply has no row, which is how
 "not reached" is spelled: absence.
 
-**Two things the first production exercise found, 2026-09-06, and neither is
-fixed.** `reframe_g9` and `g10` are the first legs to write these rows at all.
+**Two things the first production exercise found, 2026-09-06, and both are fixed.**
+`reframe_g9` and `g10` are the first legs to write these rows at all, and each
+defect is guarded in `tests/test_reframing_channel.py`.
 
-*A `no_converge` root is re-fired every leg, at full price, for the same answer.*
-`prior_run` counts a fire only for `productive` and `barren`, so an unresolved
-root carries `fires: 0`, `was_barren` is false, and the next leg offers it as
-**fresh** — at the front of the queue, not last. The ruling above says such a root
-"moves when the period ceiling does", and nothing checks whether it moved: under an
-unchanged `--seed-max-period` it cannot. Measured: g9 left 343 unresolved roots,
-g10's whole root queue was those 343, every one returned `no_converge` again, and
-they took 3.9 of g10's 4.4 minutes for zero locations. The `reoffered` flag cannot
-see them either, so a leg's fresh-vs-re-offered split reads 100% fresh while 89% of
-its fires are re-fires.
+*An unresolved root is held while the period ceiling stands.* `prior_run` used to
+count a fire only for `productive` and `barren`, so a `no_converge` root carried
+`fires: 0`, read as never fired, and the next leg offered it as **fresh** — at the
+front of the queue rather than last. Measured: g9 left 343 unresolved roots, g10's
+whole root queue was those 343, every one returned `no_converge` again, and they
+took 3.9 of g10's 4.4 minutes for zero locations. The fire is now counted, under
+`unsettled` and **apart from** `fires`, because the two rulings differ: only barren
+consumes, and an unresolved root is instead refused while the ceiling that produced
+it is the ceiling being offered (`reframing.unsettled_under`). Raise
+`--seed-max-period` and every one of them is offered again — last, behind every
+unfired seed, because `reframing.returned_nothing` is what `reoffered` is and it
+counts a barren fire and an unresolved one alike.
 
-*A carried promotion is never pin-filtered, and one pinned promotion kills a leg.*
-`reframing.seeds` refuses a proven root an eval pin covers, and counts the
-refusals as `refused_pinned` on its own record — but `prior_run`'s
-`promoted` list is built from earlier legs' candidate rows and goes
-through no such filter, so `Channel.refuse_a_pinned_frame` raises `PinnedPlace`
-when the queue reaches one. It killed g9 at 18.9 of 30 minutes and g10 at 4.4 of
-11, both on the same seed. It is deterministic: no leg can outlive its queue's
-first pinned promotion.
+The comparison is `reframing.settles_the_same` and not `covers`, deliberately.
+`fire` snaps at the seed's own centre first and hands that atom to the
+neighbourhood enumeration as its parent, so an unresolved seed is one where the
+deterministic scan failed and the random probing never ran: what can move the
+verdict is the period ceiling and the operator set, and what cannot is the rung
+ladder, because a rung is a width an atom is framed at and there is no atom yet.
+So a leg that widens its rungs and leaves the ceiling alone re-offers every barren
+root and no unresolved one, and `--reprobe` does not re-open them either — a
+re-probe is a second sample of a neighbourhood, and this is a seed no neighbourhood
+was ever reached from. `covers` is now that predicate plus the rung-span
+containment a barren verdict needs.
+
+*A carried promotion is pin-filtered where it is carried in.* `reframing.seeds`
+refuses a proven root an eval pin covers and counts the refusals as
+`refused_pinned` on its own record — but `prior_run`'s `promoted` list is built
+from earlier legs' candidate rows and went through no such filter, so
+`Channel.refuse_a_pinned_frame` raised `PinnedPlace` when the queue reached one. It
+killed g9 at 18.9 of 30 minutes and g10 at 4.4 of 11, both on the same promotion,
+and it was deterministic: no leg could outlive its queue's first pinned promotion.
+`reframing.unpinned` now applies the seed query's rule to the promotions as `run`
+carries them in, counting them as `carried_refused_pinned`; swept 2026-09-06 over
+the whole chain, **16 of 5,842 promotions** are on pinned places. They were clean
+when they were written — the pin set grows every time somebody labels an
+evaluation split — which is why the filter belongs at the carry and not at the
+write.
 
 **Consumed is relative to the ladder, and the ladder is on the header row.** A
 barren verdict at nine rungs is not a verdict at eleven, so each fire is scoped to
@@ -316,8 +336,25 @@ ladders the chain has run under, and `fires_recorded` is 0 until a leg writes so
 
 **Where to read it.** A run's summary carries `fires` — the ladder, its key, and
 the outcome tally — and the seed query carries `ladder_rule`: how many offered
-seeds have a barren history, how many a covering ladder consumed, how many are
-re-offered because the ladder grew, and how many have no fire record at all.
+seeds returned nothing, how many a covering ladder **consumed**, how many are
+**held** because Newton never settled and the ceiling has not moved, how many are
+**re-offered** because the ladder grew, and how many have no fire record at all.
+The four reasons come off `reframing.refusal`, which is the one place the queue's
+rules are written and is what `offerable` is asked through, so the readout cannot
+drift from the queue it describes. That mattered: `ladder_rule` could say only
+"refused" when the re-offering of unresolved roots ran for two legs unnoticed.
+
+**A run's header says how the leg was launched and which ledger tiers it read.**
+`ledger.Ledger.header` is what stamps both, so every leg kind carries them rather
+than one channel remembering to. `invocation` is the argv verbatim plus a
+pasteable line; before it, resolving a standing walk's command line meant inferring
+every flag from recorded values against their defaults, which worked once and works
+only while no default moves. `ledgers_read` is `supply.ledgers.tiers_read` over the
+earlier ledgers the leg actually opened — a count split by tier — because two
+halves of one night can read different populations without saying so: on
+2026-09-06 the harvest read the 12 hot ledgers while the reframe leg beside it read
+47 across both tiers, and every figure comparing the two halves was comparing
+populations.
 
 **Seeds are `proven` roots, q3 and q4, parameter planes only, minus every eval
 pin.** Off `supply.proven` rather than a second query over the label store; the
