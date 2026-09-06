@@ -446,6 +446,7 @@ class Walk:
         scorer: Scorer | None = None,
         colormap: str = "twilight_shifted",
         report_foci: bool = False,
+        ledgers_read: dict | None = None,
     ):
         self.out_dir = Path(out_dir)
         self.seed = int(seed)
@@ -463,6 +464,13 @@ class Walk:
         #: On, it costs one row per expanded node, which against four candidate
         #: rows apiece is a ledger about a quarter larger.
         self.report_foci = bool(report_foci)
+        #: Which earlier ledgers this run's saturation memory, novelty pool and
+        #: twin channel were primed off, by tier ([`supply.ledgers.tiers_read`]).
+        #: `None` for a run that reads none. It is on the header because a leg
+        #: that does not say so is a leg whose figures cannot be compared with
+        #: the one beside it: measured 2026-09-06, a harvest read the 12 hot
+        #: ledgers while the reframe leg beside it read 47 across both tiers.
+        self.ledgers_read = ledgers_read
 
         # Before the header, because this is the claim the run's scores rest on:
         # a walk that scores its own gate renders is asserting they are the tiles
@@ -522,8 +530,12 @@ class Walk:
         # The header goes first, before any root exists: a run's configuration is
         # what its rows have to be read against, and a record whose first line is
         # already data is one that can be read wrongly before it can be read at all.
-        self.ledger.write(
+        # Through `header` and not `write`, which is what puts the invocation and
+        # the ledger tiers on it: both are facts about any run record, and a leg
+        # kind that assembled its own header would have to remember them.
+        self.ledger.header(
             "run",
+            ledgers_read=self.ledgers_read,
             seed=self.seed,
             scorer=self.scorer.name,
             scoring=self.scoring_record(),

@@ -92,3 +92,73 @@ def test_the_writer_and_the_reader_agree_about_the_file_name() -> None:
     """The lookup is by name at a fixed depth, so the two modules agreeing about
     the name is the whole of why anything is found."""
     assert ledgers.LEDGER_NAME is ledger_module.LEDGER_NAME
+
+
+# --------------------------------------------------------------------------- #
+# What a run's first row says about the run.
+# --------------------------------------------------------------------------- #
+#
+# Two facts every leg kind's header carries, and both are here rather than in one
+# channel's tests because `Ledger.header` is what puts them there. Resolving how
+# a standing walk was launched used to mean inferring every flag from recorded
+# values against their defaults, which worked on 2026-09-06 and works only while
+# no default moves; and two halves of that same night read different populations
+# without either saying so.
+
+
+def test_a_run_header_says_how_the_leg_was_launched(tmp_path, monkeypatch) -> None:
+    """The argv, verbatim, on the row a reader reaches first."""
+    monkeypatch.setattr(
+        ledger_module.sys, "argv", ["fractal-wallpapers", "reframe", "--minutes", "30"]
+    )
+    with ledger_module.Ledger(tmp_path / ledgers.LEDGER_NAME) as ledger:
+        row = ledger.header("run", seed=9)
+    assert row["seed"] == 9, "the leg's own fields are untouched"
+    assert row["invocation"]["program"] == "fractal-wallpapers"
+    assert row["invocation"]["argv"] == ["reframe", "--minutes", "30"]
+    assert row["invocation"]["line"] == "fractal-wallpapers reframe --minutes 30"
+
+
+def test_a_run_header_says_which_ledger_tiers_it_read(tree) -> None:
+    """A leg that does not say so is a leg whose figures cannot be compared with
+    the one beside it: on 2026-09-06 a harvest read the 12 hot ledgers while the
+    reframe leg beside it read 47 across both tiers, and every figure comparing
+    the two halves was comparing populations."""
+    make_ledger(tree / "harvest_run3")
+    read = ledgers.tiers_read(ledgers.ledger_paths(), root=tree)
+    with ledger_module.Ledger(tree / "walk_new" / ledgers.LEDGER_NAME) as ledger:
+        row = ledger.header("run", ledgers_read=read, seed=0)
+    assert row["ledgers_read"] == read
+    assert read["ledgers"] == 1
+    assert read["tiers"] == [paths.HOT] and read["by_tier"] == {paths.HOT: 1}
+    assert read["archive_reachable"] is False
+
+
+def test_the_tiers_a_leg_read_are_where_the_files_were_and_not_where_it_looked(
+    tmp_path, monkeypatch
+) -> None:
+    """`ledger_paths` with no root spans both tiers, so "searched" and "read" are
+    different answers and only the second one says what the population was."""
+    hot, cold = tmp_path / "hot", tmp_path / "cold"
+    hot.mkdir()
+    cold.mkdir()
+    monkeypatch.setenv(paths.HOT_ROOT_VARIABLE, str(hot))
+    monkeypatch.setenv(paths.ARCHIVE_ROOT_VARIABLE, str(cold))
+    make_ledger(hot / "harvest_run3")
+    make_ledger(cold / "harvest_run2")
+    read = ledgers.tiers_read(ledgers.ledger_paths())
+    assert read["archive_reachable"] is True
+    assert read["tiers"] == [paths.HOT, paths.ARCHIVE]
+    assert read["by_tier"] == {paths.ARCHIVE: 1, paths.HOT: 1}
+    assert read["root"] is None
+    assert ledgers.tiers_read([])["tiers"] == [], "a leg that read none says none"
+
+
+def test_a_header_is_the_first_row_or_it_is_not_a_header(tmp_path) -> None:
+    """A run's configuration is what its rows have to be read against, so a
+    record whose first line is already data can be read wrongly before it can be
+    read at all."""
+    with ledger_module.Ledger(tmp_path / ledgers.LEDGER_NAME) as ledger:
+        ledger.write("candidate")
+        with pytest.raises(ValueError, match="header"):
+            ledger.header("run", seed=0)

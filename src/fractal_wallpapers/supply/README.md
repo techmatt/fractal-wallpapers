@@ -558,11 +558,18 @@ backstop, and the margin is real money.
 
 **The standing leg is every partition at once with `--root-channel proven` on**, and
 the examples below that name one `--partition` are the exception rather than the
-shape. No run record stores its argv, so what a leg was launched with is read back
-off recorded values against defaults: `refill.proven` populated is the proven
-channel, `quota.partitions` null is every partition. `harvest_refresh` (2026-09-01)
-and `harvest_smoke_0906` (2026-09-06) are both that shape; `phoenix_classic_supply`
-is the one-partition exception and says so in its own `quota.partitions`.
+shape. `harvest_refresh` (2026-09-01) and `harvest_smoke_0906` (2026-09-06) are both
+that shape; `phoenix_classic_supply` is the one-partition exception and says so in
+its own `quota.partitions`.
+
+**A leg written since 2026-09-06 says what it was launched with**, on the `run`
+header's `invocation` — the argv verbatim and a pasteable line — beside
+`ledgers_read`, which says how many earlier ledgers it opened and off which tiers.
+Every leg before that has to be read back off recorded values against whatever the
+defaults were that week: `refill.proven` populated is the proven channel,
+`quota.partitions` null is every partition. That inference resolved the whole of
+this section's command line once and it is not a method that survives a default
+moving.
 
 **The launch prints what each channel can still reach**, one line per partition:
 the pool's size, how much of it the label store put there, what has been drawn, or

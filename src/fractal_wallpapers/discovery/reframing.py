@@ -582,6 +582,36 @@ def seeds(
     }
 
 
+def unpinned(seeds_: list[Seed], pinned: set) -> tuple[list[Seed], int]:
+    """`(the seeds no evaluation pin covers, how many were refused)`.
+
+    [`seeds`] applies this rule to the proven roots as it derives them, off the
+    label rows. This is the same rule applied to a seed that already exists —
+    which is every **carried promotion**, built by [`prior_run`] out of an
+    earlier leg's candidate rows and reaching the queue without passing the
+    query at all. One pinned promotion among thousands is a leg that dies on
+    [`PinnedPlace`] the moment the queue reaches it, and it killed both legs of
+    2026-09-06 on the same seed.
+
+    A seed whose frame has no location key is **kept**, because a key that cannot
+    be computed is not evidence of a pin — which is exactly what
+    [`Channel.refuse_a_pinned_frame`] does with the same case, and the filter and
+    the assertion behind it must not disagree about what they are looking at.
+    """
+    kept: list[Seed] = []
+    refused = 0
+    for seed in seeds_:
+        try:
+            key = location_key(seed.family, seed.viewport)
+        except (KeyError, TypeError, ValueError):
+            key = None
+        if key is not None and key in pinned:
+            refused += 1
+            continue
+        kept.append(seed)
+    return kept, refused
+
+
 # --------------------------------------------------------------------------- #
 # Firing the operators.
 # --------------------------------------------------------------------------- #
@@ -1082,6 +1112,11 @@ def discovered_priors(exclude: Path | None = None, log=print) -> tuple[list[Path
         "tiers": [paths.HOT, paths.ARCHIVE] if tiers.archive_is_reachable else [paths.HOT],
         "archive_reachable": tiers.archive_is_reachable,
         "ledgers_seen": len(every),
+        # The tiers each opened ledger actually came off, as the run header
+        # carries it. `tiers` above says which were *searched*, which is a
+        # different question and the one that answers "was the archive plugged
+        # in"; this says where the population came from.
+        "ledgers_read": union.tiers_read(every),
         "legs": [name for _stamp, name, _path in legs],
         "excluded": None if exclude is None else paths.tracked_name(exclude),
     }
@@ -1251,14 +1286,35 @@ def ladder_key(ladder: dict) -> str:
     )
 
 
+def settles_the_same(older: dict, newer: dict) -> bool:
+    """Whether Newton at a seed under `older` already answers what `newer` asks.
+
+    The half of [`covers`] that is about **reaching an atom at all**, and it is
+    the whole of what an unsettled fire is scoped to. [`fire`] snaps at the
+    seed's own centre first and hands the atom it found to the neighbourhood
+    enumeration as its parent, so a seed [`newton_settled`] says no about is one
+    where the deterministic snap failed and the random probing never ran. What
+    can move that verdict is the period ceiling the snap scans to, and the
+    operator set that does the scanning. What cannot is the rung ladder: a rung
+    is a width the atom is framed at, and there is no atom yet to frame.
+
+    So the rungs are deliberately not asked about here. A leg that widened its
+    ladder and left `--seed-max-period` alone re-offers every barren root and
+    **none** of the unresolved ones, and both of those are right.
+    """
+    reaches = int(older["max_period"]) >= int(newer["max_period"])
+    return reaches and set(older["operators"]) >= set(newer["operators"])
+
+
 def covers(older: dict, newer: dict) -> bool:
-    """Whether a fire under `older` already answers what `newer` would ask.
+    """Whether a barren fire under `older` already answers what `newer` would ask.
 
     Reach, not membership: the rungs inside a span are widths of one atom and a
     ladder that added one between two it already had has not looked anywhere
     new, while a ladder that reached further out has. So the span has to contain
-    the span, the operator set has to contain the operator set, and the period
-    ceiling has to be at least as high.
+    the span, on top of everything [`settles_the_same`] asks — the operator set
+    has to contain the operator set and the period ceiling has to be at least as
+    high.
 
     The move this is the shape of is 2026-09-04's: `{8..128}` to `{16..256}`
     reaches further out, so it does **not** cover, and every root `reframe_g7`
@@ -1269,8 +1325,7 @@ def covers(older: dict, newer: dict) -> bool:
     if not older["rungs"] or not newer["rungs"]:
         return False
     return (
-        set(older["operators"]) >= set(newer["operators"])
-        and int(older["max_period"]) >= int(newer["max_period"])
+        settles_the_same(older, newer)
         and min(older["rungs"]) <= min(newer["rungs"])
         and max(older["rungs"]) >= max(newer["rungs"])
     )
@@ -1315,19 +1370,51 @@ def outcome_of(fired: dict) -> str:
     return BARREN
 
 
-def offerable(entry: dict | None, ladder: dict, *, reprobe: bool) -> bool:
-    """Whether a seed with this fire history is offered under `ladder`.
+def unsettled_under(entry: dict | None, ladder: dict) -> bool:
+    """Whether Newton has already failed at this seed under a ladder that answers `ladder`.
 
-    `entry` is `{ladder key: {"fires", "locations", "ladder"}}` — what
-    [`prior_run`] carries per seed id — and `None` is a seed the chain has never
-    fired, which is always offered.
+    Matt's ruling of 2026-09-05 stands: a [`NO_CONVERGE`] fire does **not**
+    consume a root, because a seed the period scan found nothing at could still
+    converge under a higher ceiling. What it also does not do is earn a second
+    firing under the *same* ceiling — that is the identical scan over the
+    identical orbit, and the answer is the identical one. Measured 2026-09-06:
+    `reframe_g9` left 343 unresolved roots, `reframe_g10`'s whole root queue was
+    those 343, all 343 came back unresolved, and they cost 3.9 of its 4.4
+    minutes for nothing.
 
-    Three rulings, in the order they bite:
+    [`settles_the_same`] is what "the ceiling has not moved" means, so raising
+    `--seed-max-period` offers every one of them again and nothing else does.
+    True under `--reprobe` as well: re-probing is a second random sample of a
+    neighbourhood, and this is a seed no neighbourhood was ever reached from.
+    """
+    if not entry:
+        return False
+    return any(
+        cell["unsettled"] and settles_the_same(cell["ladder"], ladder) for cell in entry.values()
+    )
+
+
+def refusal(entry: dict | None, ladder: dict, *, reprobe: bool) -> str | None:
+    """Why a seed with this fire history is not offered under `ladder`, or `None`.
+
+    `entry` is `{ladder key: {"fires", "unsettled", "locations", "ladder"}}` —
+    what [`prior_run`] carries per seed id — and `None` is a seed the chain has
+    never fired, which is always offered.
+
+    The reason and not merely the verdict, because the seed query's
+    `ladder_rule` readout is the only place anybody sees why a queue is the size
+    it is, and a readout that could say only "refused" was what let the
+    re-offering of unresolved roots run for two legs unnoticed. [`offerable`] is
+    this function asked as a yes or no.
+
+    Four rulings, in the order they bite:
 
     * **A seed that ever produced a location is off the plain queue** and on the
       re-probe one. That is the rule the channel already had, unchanged: what a
       `--reprobe` leg is for is a second random sample of a neighbourhood that
       paid.
+    * **A seed Newton never settled at is off both queues until the period
+      ceiling moves**, which is [`unsettled_under`].
     * **A barren fire is worth one fire under the plain continuation and two
       under `--reprobe`.** The count is per `(seed, ladder)`, so two barren fires
       under one ladder spend the pair for re-probing too.
@@ -1336,24 +1423,43 @@ def offerable(entry: dict | None, ladder: dict, *, reprobe: bool) -> bool:
       the ones under a ladder that already answers this one.
     """
     if entry is None:
-        return True
+        return None
     if any(cell["locations"] for cell in entry.values()):
-        return bool(reprobe)
+        return None if reprobe else "produced"
+    if unsettled_under(entry, ladder):
+        return NO_CONVERGE
     binding = [cell["fires"] for cell in entry.values() if covers(cell["ladder"], ladder)]
-    return max(binding or [0]) < (REPROBE_FIRES if reprobe else 1)
+    if max(binding or [0]) >= (REPROBE_FIRES if reprobe else 1):
+        return BARREN
+    return None
 
 
-def was_barren(entry: dict | None) -> bool:
-    """Whether this seed's whole history is barren fires. What [`Seed.reoffered`] is.
+def offerable(entry: dict | None, ladder: dict, *, reprobe: bool) -> bool:
+    """Whether a seed with this fire history is offered under `ladder`.
+
+    [`refusal`] asked as a yes or no, so the queue and the readout that explains
+    it can never drift apart into two answers.
+    """
+    return refusal(entry, ladder, reprobe=reprobe) is None
+
+
+def returned_nothing(entry: dict | None) -> bool:
+    """Whether this seed's whole history is fires that returned nothing.
+
+    What [`Seed.reoffered`] is, and it is **barren and unresolved alike**: both
+    are a firing the chain paid for and got no location from, and the flag is
+    about where such a seed goes on the queue rather than about which of the two
+    verdicts it earned. An unresolved root that carried no fire count at all
+    sorted to the *front* of `reframe_g10`'s queue for exactly this reason.
 
     Read over every ladder rather than the one being offered: a seed offered
-    again because the ladder grew is still a seed the chain has paid for and got
+    again because a ladder grew is still a seed the chain has paid for and got
     nothing from, and that is what decides where on the queue it goes.
     """
     if not entry:
         return False
     return not any(cell["locations"] for cell in entry.values()) and any(
-        cell["fires"] for cell in entry.values()
+        cell["fires"] or cell["unsettled"] for cell in entry.values()
     )
 
 
@@ -1383,11 +1489,14 @@ def prior_run(directories, log=print) -> dict:
       continuation drops a promotion it already fired; a `--reprobe` leg keeps it,
       because the point of re-probing is a second random sample of one
       neighbourhood.
-    * `history` — `{seed id: {ladder key: {"fires", "locations", "ladder"}}}`,
-      which is the two above with the **barren** half filled in and is what
-      [`offerable`] decides the queue on. `locations` counts candidate rows and
-      so is filled for every leg ever written; `fires` counts [`FIRE_KIND`] rows
-      and is filled only for legs written since 2026-09-05.
+    * `history` — `{seed id: {ladder key: {"fires", "unsettled", "locations",
+      "ladder"}}}`, which is the two above with the **barren** half filled in and
+      is what [`offerable`] decides the queue on. `locations` counts candidate
+      rows and so is filled for every leg ever written; `fires` and `unsettled`
+      count [`FIRE_KIND`] rows and are filled only for legs written since
+      2026-09-05. The two are apart because only `fires` consumes: an unresolved
+      root is held while the period ceiling stands ([`unsettled_under`]) and
+      offered the moment it moves.
     * `promoted` — the chain's admitted rows as seeds, deduplicated on the atom
       and kept at the better class where two legs disagree about one.
 
@@ -1422,7 +1531,7 @@ def prior_run(directories, log=print) -> dict:
 
     def cell(seed_id: str, ladder: dict) -> dict:
         return history.setdefault(str(seed_id), {}).setdefault(
-            ladder_key(ladder), {"fires": 0, "locations": 0, "ladder": ladder}
+            ladder_key(ladder), {"fires": 0, "unsettled": 0, "locations": 0, "ladder": ladder}
         )
 
     for directory in directories:
@@ -1452,11 +1561,18 @@ def prior_run(directories, log=print) -> dict:
             if seed.get("kind") == "proven" and row.get("outcome") == PRODUCTIVE:
                 fired.add(str(seed["id"]))
             # Only a fire the leg got an answer out of counts against the root.
-            # An unsettled Newton, an undrawn batch and an undefined family are
-            # all "the leg learned nothing here", and Matt's ruling is that such
-            # a root stays on the plain queue.
+            # An undrawn batch and an undefined family are both "the leg learned
+            # nothing here", and Matt's ruling is that such a root stays on the
+            # plain queue.
             if row.get("outcome") in (PRODUCTIVE, BARREN):
                 cell(seed["id"], ladder)["fires"] += 1
+            # An unsettled Newton is the third of those and is still not a
+            # verdict — but it is a fire, and a fire that left no trace at all is
+            # what let 343 roots come back at the *head* of the next leg's queue
+            # booked as fresh. Counted apart from `fires` because it must not
+            # consume: what re-opens it is the period ceiling and nothing else.
+            elif row.get("outcome") == NO_CONVERGE:
+                cell(seed["id"], ladder)["unsettled"] += 1
         for row in rows:
             block = row.get("reframing") or {}
             if row.get("atom_key"):
@@ -1502,14 +1618,18 @@ def prior_run(directories, log=print) -> dict:
     # latest leg" is a fact about when the legs ran rather than about how a
     # command line was typed. [`convergence`] reads the last entry.
     per_run.sort(key=lambda leg: (leg["started"], leg["prior"]))
-    barren = [name for name, entry in history.items() if was_barren(entry)]
+    nothing = [name for name, entry in history.items() if returned_nothing(entry)]
+    unsettled = [
+        name for name, entry in history.items() if any(cell["unsettled"] for cell in entry.values())
+    ]
     record = {
         "priors": per_run,
         "nuclei_found": len(found),
         "roots_fired": len(fired),
         "seeds_spent": len(spent),
         "fires_recorded": sum(leg["fires"] for leg in per_run),
-        "seeds_barren": len(barren),
+        "seeds_returned_nothing": len(nothing),
+        "seeds_unsettled": len(unsettled),
         "ladders": sorted({leg["ladder"] for leg in per_run}),
         "promoted": len(promoted),
         "promoted_by_source": by_source(promoted),
@@ -1621,6 +1741,7 @@ class Channel:
         pinned: set | None = None,
         seed_batch: int = SEED_BATCH,
         max_period: int = SEED_SNAP_MAX_PERIOD,
+        ledgers_read: dict | None = None,
         log=print,
     ):
         from fractal_wallpapers.labeling import pins as pin_module
@@ -1633,6 +1754,10 @@ class Channel:
         self.generations = max(1, int(generations))
         self.seed_batch = max(1, int(seed_batch))
         self.max_period = int(max_period)
+        #: Which earlier ledgers this leg's queue was built off, by tier. Carried
+        #: to the header rather than derived there, because the reading is
+        #: [`discovered_priors`]' and was taken before the channel existed.
+        self.ledgers_read = ledgers_read
         self.log = log
         self.rng = random.Random(self.seed)
         self.pinned = pin_module.every_pinned() if pinned is None else set(pinned)
@@ -1769,7 +1894,11 @@ class Channel:
                 "great_cut": money.GREAT_CUT,
             },
         }
-        self.ledger.write(RUN_KIND, **header)
+        # Through [`ledger.Ledger.header`] and not [`write`], which is what puts
+        # the invocation and the ledger tiers on it: both are facts about any run
+        # record, and a leg kind that assembled its own header would have to
+        # remember them.
+        header = self.ledger.header(RUN_KIND, ledgers_read=self.ledgers_read, **header)
         self.log(f"[reframe] {json.dumps(header)}")
 
         pending = queued([*roots, *(carried or [])])
@@ -2165,6 +2294,20 @@ def run(
     earlier = None
     if prior:
         earlier = prior_run(prior, log=log)
+        # The pin, on the promotions as well as on the roots. [`seeds`] applies
+        # it while it derives the roots; a promotion is built out of an earlier
+        # leg's own candidate rows and reaches the queue without passing that
+        # query at all, so one pinned place among thousands used to raise
+        # `PinnedPlace` the moment the queue got to it and end the leg — it
+        # killed both legs of 2026-09-06 on the same seed. Filtered here rather
+        # than in `prior_run`, whose job is to read the ledgers back as they are.
+        earlier["promoted"], refused_pinned = unpinned(earlier["promoted"], pinned)
+        record["carried_refused_pinned"] = refused_pinned
+        if refused_pinned:
+            log(
+                f"[reframe] {refused_pinned} carried promotion(s) land on a place an "
+                f"evaluation pin covers and were dropped from the queue."
+            )
         # The ladder this leg would fire under, which is what a barren verdict on
         # the record is scoped to. Built off the same three fields the header row
         # is about to carry, through the reader the next leg will use.
@@ -2186,7 +2329,7 @@ def run(
                 entry = history.get(seed.id)
                 if not offerable(entry, ladder, reprobe=reprobe):
                     continue
-                out.append(replace(seed, reoffered=True) if was_barren(entry) else seed)
+                out.append(replace(seed, reoffered=True) if returned_nothing(entry) else seed)
             return out
 
         # What a plain continuation would fire at. Both branches are derived
@@ -2213,18 +2356,24 @@ def run(
         record["reprobe_because"] = why
         record["seeds"] = len(found)
         record["sources"] = by_source(found)
-        # What the ladder rule did to this queue, all three states named. A
-        # `consumed` seed was fired barren under a ladder that covers this one; a
-        # `reoffered` one was barren under a shorter ladder and is offered once
-        # more, last on the queue; the rest of the gap between the label store
-        # and `fired` is roots no leg has a fire row for at all, which is every
-        # leg written before 2026-09-05 and is why `unknown` is not zero.
-        barren = [seed for seed in offered if was_barren(history.get(seed.id))]
+        # What the ladder rule did to this queue, every state named, and the two
+        # refusals apart because they are different rulings. A `consumed` seed
+        # was fired barren under a ladder that covers this one and is gone until
+        # the ladder reaches further; a `held_unsettled` one is a seed Newton
+        # never settled at, held while the period ceiling stands and offered the
+        # moment it moves; a `reoffered` one returned nothing under a ladder that
+        # no longer answers and is offered once more, last on the queue. The rest
+        # of the gap between the label store and `fired` is seeds no leg has a
+        # fire row for at all, which is every leg written before 2026-09-05 and
+        # is why `unknown` is not zero. The reasons come off [`refusal`] itself,
+        # so this readout cannot disagree with the queue it describes.
+        why_refused = [refusal(history.get(seed.id), ladder, reprobe=False) for seed in offered]
         record["ladder_rule"] = {
-            "seeds_barren": len(barren),
-            "consumed": sum(
-                1 for seed in barren if not offerable(history.get(seed.id), ladder, reprobe=False)
+            "seeds_returned_nothing": sum(
+                1 for seed in offered if returned_nothing(history.get(seed.id))
             ),
+            "consumed": sum(1 for reason in why_refused if reason == BARREN),
+            "held_unsettled": sum(1 for reason in why_refused if reason == NO_CONVERGE),
             "reoffered": sum(1 for seed in [*found, *carried] if seed.reoffered),
             "unknown": sum(1 for seed in offered if not history.get(seed.id)),
         }
@@ -2249,6 +2398,7 @@ def run(
         pinned=pinned,
         seed_batch=seed_batch,
         max_period=max_period,
+        ledgers_read=discovery.get("ledgers_read"),
         log=log,
     )
     if earlier is not None:
@@ -2397,7 +2547,11 @@ __all__ = [
     "run",
     "screen_rungs",
     "seeds",
+    "refusal",
+    "returned_nothing",
+    "settles_the_same",
     "source_of_tier",
-    "was_barren",
+    "unpinned",
+    "unsettled_under",
     "when",
 ]

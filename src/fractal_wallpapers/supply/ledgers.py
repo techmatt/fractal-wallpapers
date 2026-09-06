@@ -34,7 +34,7 @@ import json
 from pathlib import Path
 
 from fractal_wallpapers.discovery import ledger as ledger_module
-from fractal_wallpapers.paths import Tiers, tracked_name
+from fractal_wallpapers.paths import ARCHIVE, HOT, Tiers, tracked_name
 from fractal_wallpapers.supply import currency as money
 from fractal_wallpapers.supply.location import key_of_row
 
@@ -105,6 +105,41 @@ def _ledger_homes(root: Path | None) -> list[Path]:
     if not root.is_dir():
         return []
     return [root, *sorted(entry for entry in root.iterdir() if entry.is_dir())]
+
+
+def tiers_read(paths_, root: Path | None = None) -> dict:
+    """Which storage tiers a set of ledgers actually came off, for a run header.
+
+    A leg's population is the ledgers it opened, and two legs of one night can
+    open different ones without either saying so: [`ledger_paths`] with no root
+    spans both tiers, while a root inside the hot tree — which is what
+    `--ledgers` defaults to — is hot alone. Measured 2026-09-06, a harvest read
+    12 and the reframe leg beside it read 47, and every figure comparing the two
+    halves was comparing populations.
+
+    So this is a count of what was **read**, split by the tier each file came off,
+    rather than a restatement of what was searched. `archive_reachable` is the
+    other half of it: no archive ledger where the disk is unplugged means the
+    same thing as no archive ledger where there are none, and only this tells
+    them apart.
+    """
+    tiers = Tiers.current()
+    roots = [(HOT, tiers.hot.resolve())]
+    if tiers.archive is not None and tiers.archive_is_reachable:
+        roots.append((ARCHIVE, tiers.archive.resolve()))
+    by_tier: dict[str, int] = {}
+    read = [Path(path) for path in paths_]
+    for path in read:
+        resolved = path.resolve()
+        where = next((name for name, here in roots if resolved.is_relative_to(here)), "elsewhere")
+        by_tier[where] = by_tier.get(where, 0) + 1
+    return {
+        "ledgers": len(read),
+        "tiers": [name for name in (HOT, ARCHIVE) if by_tier.get(name)],
+        "by_tier": {name: by_tier[name] for name in sorted(by_tier)},
+        "archive_reachable": tiers.archive_is_reachable,
+        "root": None if root is None else tracked_name(root),
+    }
 
 
 def rows(path: Path, kind: str | None = None):
@@ -367,4 +402,5 @@ __all__ = [
     "ledger_paths",
     "passes_gates",
     "rows",
+    "tiers_read",
 ]
