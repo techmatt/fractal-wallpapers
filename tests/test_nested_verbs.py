@@ -216,9 +216,9 @@ LINES: tuple[tuple[str, str, dict], ...] = (
     # `--k` repeats, because the rungs of a counterfactual are a list and the
     # shipped one is meant to be named among them as the control.
     (
-        "curate solve k-sweep --k 2 --k 2.5 --n 200",
+        "curate solve k-sweep --k 2 --k 2.5 --n 200 --control 20260901T000000Z",
         "curate_solve",
-        {"what": "k-sweep", "k": [2.0, 2.5], "n": 200},
+        {"what": "k-sweep", "k": [2.0, 2.5], "n": 200, "control": "20260901T000000Z"},
     ),
     # Both spellings of the stamp, because a reader who has just seen one printed
     # will type it either way and the cost of losing one is a page written for a
@@ -585,7 +585,7 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
             "--themed-cap",
             "--themed-radius",
         ),
-        "k-sweep": ("--k", "--n"),
+        "k-sweep": ("--k", "--n", "--control"),
         "browse": ("--stamp",),
         "resolve": ("--stamp",),
         "list": (),

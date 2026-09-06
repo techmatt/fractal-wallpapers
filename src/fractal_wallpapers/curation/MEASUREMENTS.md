@@ -459,7 +459,11 @@ refusal table. There is no `--k` on `run` or `record` and there should not be;
 ([`curation.k_sweep`]) is the leg that drives it. **The four records were deleted
 on 2026-09-06** once Matt decided not to read them — the sweep is to be rerun
 under the changed pool, and the command is what carries it rather than a driver in
-`scratch/`.
+`scratch/`. **Every number in this section was re-derived from a fresh run of that
+command on the same pool and came back identical**, the control rung included, so
+what is written here is what the leg produces and not what a deleted driver once
+said. `curate solve k-sweep --control <stamp>` takes that check itself and exits
+non-zero when the first rung does not reproduce the record it names.
 
 | K | allowance | cells at it | short | worst | sum | seats moved |
 |---|--:|--:|--:|--:|--:|--:|
