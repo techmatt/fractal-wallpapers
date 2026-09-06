@@ -91,7 +91,7 @@ from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
-from fractal_wallpapers.labeling import attributes, finished, pins, store
+from fractal_wallpapers.labeling import attributes, finished, gallery_grade, pins, store
 from fractal_wallpapers.labeling import registry as registry_module
 from fractal_wallpapers.paths import writing_path
 
@@ -284,6 +284,58 @@ def _attribute_row(sheet, unit: str, ordinal: int, labeler: str, recorded_at: st
     )
 
 
+def _gallery_grade_row(sheet, unit: str, ordinal: int, labeler: str, recorded_at: str | None):
+    """One gallery-grade row: the picture, the grade, and what the draw knew.
+
+    The join is [`_finished_row`]'s exactly — same picture, same identity, same
+    partition check — and the verdict lands under `grade` rather than `score`, for
+    the reason [`fractal_wallpapers.labeling.gallery_grade`] gives. Four things
+    beyond the join travel, and none of them was on the card: `seated`, `refusal`,
+    `pre_stamp` and `leveled` come off the plan through the sheet's `drawn_as`
+    block, and `reading` is what the shipped render judge said about the picture
+    this sheet rendered, at label geometry. They are covariates of a conditional
+    estimand — a fit that cannot see the gate cannot express the condition — and
+    every one of them is unrecoverable once the sheet directory is gone.
+    """
+    from fractal_wallpapers.supply.partitions import partition_of_family
+
+    source = sheet.by_unit[unit]
+    join = source["join"]
+    family = join["family"]
+    partition = partition_of_family(family)
+    stated = join.get("partition")
+    if stated is not None and stated != partition:
+        raise IntakeError(
+            f"unit {unit!r} says it is partition {stated!r} and its family is {partition!r}. "
+            f"The family is the join; a disagreeing label on top of it is a second answer."
+        )
+    drawn = dict(source.get("drawn_as") or {})
+    return gallery_grade.grade_row(
+        batch=source["batch"],
+        grade=int(ordinal),
+        family=family,
+        viewport=join["viewport"],
+        mode=join["mode"],
+        mode_params=join["mode_params"],
+        curve=join["curve"],
+        colormap=join["colormap"],
+        recipe_=join["recipe"],
+        render=join["render"],
+        origin=store.HUMAN,
+        labeler=labeler,
+        recorded_at=recorded_at,
+        partition=partition,
+        sheet=sheet.name,
+        unit=unit,
+        seated=bool(drawn.get("seated")),
+        refusal=drawn.get("refusal"),
+        pre_stamp=bool(drawn.get("pre_stamp")),
+        leveled=bool(drawn.get("leveled")),
+        reading=dict(source.get("reading") or {}),
+        **({"selected_on": source["selected_on"]} if source.get("selected_on") else {}),
+    )
+
+
 def _finished_trespass(head: str):
     """`(row) -> bool` for one finished store: does this row trespass on the pin?
 
@@ -355,6 +407,37 @@ def records_for(head: str) -> Records:
             verdict_key="class",
             verdict_of=lambda ordinal: attributes.class_of(head, int(ordinal)),
         )
+    if head == gallery_grade.NAME:
+        return Records(
+            head=head,
+            join_keys=FINISHED_JOIN_KEYS,
+            tiers=gallery_grade.tiers(),
+            key=gallery_grade.render_key,
+            row_of=_gallery_grade_row,
+            registry=gallery_grade.registry,
+            resolved=gallery_grade.resolved,
+            append=lambda rows, known: gallery_grade.append(rows, known=known),
+            # There is no pin here and there never can be: no batch in this store
+            # is eval-eligible, `gallery_grade.register` refuses one that claims
+            # to be, and `gallery_grade.eval_eligible()` is the reading of the
+            # file that says so. So this is not the attribute store's "the pin is
+            # intra-batch and asserted elsewhere" — there is no side to protect
+            # and no elsewhere to assert it in.
+            assert_pin=lambda rows: {
+                "pinned_locations": 0,
+                "checked_rows": len(rows),
+                "ok": True,
+                "asserted": (
+                    "there is nothing to assert: this store has no evaluation side. Its "
+                    "population is model-selected twice over — every row cleared a head's "
+                    "bar and was then chosen or refused by the solve's constraints — so no "
+                    "draw from it can be an instrument, and no batch here may register "
+                    "score_unconditioned or eval_only."
+                ),
+                "eval_eligible_batches": gallery_grade.eval_eligible(),
+            },
+            verdict_key="grade",
+        )
     if head == "location":
         return Records(
             head=head,
@@ -369,7 +452,7 @@ def records_for(head: str) -> Records:
         )
     raise IntakeError(
         f"unknown head {head!r} — a sheet is cut for one store and names it. "
-        f"Known: {sorted({'location', *finished.HEADS, *attributes.NAMES})}"
+        f"Known: {sorted({'location', gallery_grade.NAME, *finished.HEADS, *attributes.NAMES})}"
     )
 
 

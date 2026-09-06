@@ -104,11 +104,13 @@ code{color:#9bb}
 // reading order, a seeded shuffle where there is no opinion at all — and an in-page
 // reshuffle would silently discard that decision.
 // What a button says, per ordinal. The quality scale is the default because
-// three of the four stores cast on it; a sheet whose ordinals stand for named
-// classes rather than tiers ships its own map in the manifest, and then the
-// page prints the class instead of a tier's word. The page still casts numbers
-// either way — the export is one number per unit for every store there is, and
-// turning an ordinal into a class is the store's job at ingest, not the page's.
+// three of the five stores cast on it; a store whose ordinals stand for named
+// classes rather than tiers, OR for tiers that mean something else — a gallery
+// grade is 1..4 conditional on a bar the picture already cleared — ships its own
+// map in the manifest, and then the page prints that instead of a tier's word.
+// The page still casts numbers either way — the export is one number per unit for
+// every store there is, and turning an ordinal into what the store keeps is the
+// store's job at ingest, not the page's.
 const QUALITY_WORD =
   {1:"does not work", 2:"unremarkable", 3:"worth keeping", 4:"the best of those"};
 let WORD = QUALITY_WORD;

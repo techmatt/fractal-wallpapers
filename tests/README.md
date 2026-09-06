@@ -349,6 +349,21 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**A +35 that is entirely one new store's, and the slow lane got *faster*.**
+`BUILD_ckpt112_gallery_grade_sheets_0906`, 2026-09-06, idle box (both lanes run
+after the render legs, never beside them), `.[dev,models]` with a release engine.
+**112.00 s over 3,836, 122 deselected** fast and **6:43 over 3,958, 0 skipped**
+slow. 3,836 + 122 is 3,958, so the count definition holds; the +35 against the
+reading below is exactly the tests written — 28 in a new `test_gallery_grade.py`
+(one of them slow, the choke-point sweep), 6 in `test_palette_carriers.py`, 1 in
+`test_cli.py` — and the fast lane took 34 of them for +0.53 s.
+
+**The slow lane read 6:43 against 6:52 with 35 more tests in it**, which is the
+lane moving the *right* way for once and is worth writing down as noise rather
+than as a win: nothing in this prompt made anything faster, and `carriers.jsonl`
+losing 191 KB is not a store any slow guard sweeps. Nine seconds on a seven-minute
+lane is inside the spread this log already shows.
+
 **Two readings a prompt apart, and the second is the first plus this prompt's own
 tests.** `BUILD_ckpt112_retention_freeslots_and_TODOs_0906`, 2026-09-06, idle box,
 `.[dev,models]` with a release engine. Before any edit: `--slow -rs` read **6:46

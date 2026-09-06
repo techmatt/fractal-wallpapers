@@ -9,6 +9,7 @@ from pathlib import Path
 from fractal_wallpapers import paths
 from fractal_wallpapers.labeling.attributes import NAMES as ATTRIBUTE_NAMES
 from fractal_wallpapers.labeling.finished import HEADS as FINISHED_HEADS
+from fractal_wallpapers.labeling.gallery_grade import NAME as GALLERY_GRADE
 from fractal_wallpapers.paths import (
     StorageRefusal,
     rehome,
@@ -444,7 +445,9 @@ def location_arguments(draw: argparse.ArgumentParser) -> None:
 
 
 #: Every store a sheet may be cut for that is not the location corpus: the two
-#: finished-render judges and the location-attribute stores. One list, because a
-#: `--head` that accepted a store `label ingest` cannot route to is a sheet that
-#: renders for an hour and then has nowhere to land.
-NON_LOCATION_HEADS: tuple[str, ...] = tuple(sorted({*FINISHED_HEADS, *ATTRIBUTE_NAMES}))
+#: finished-render judges, the location-attribute stores, and the gallery-grade
+#: store. One list, because a `--head` that accepted a store `label ingest` cannot
+#: route to is a sheet that renders for an hour and then has nowhere to land.
+NON_LOCATION_HEADS: tuple[str, ...] = tuple(
+    sorted({*FINISHED_HEADS, *ATTRIBUTE_NAMES, GALLERY_GRADE})
+)

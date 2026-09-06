@@ -629,6 +629,87 @@ sitting landed the same day. See `labeling/README.md`'s *A pin may be written
 BEFORE the sitting* for the arc and for the two guards a reservation holds red
 while it waits.
 
+## NEVER-AN-INSTRUMENT — `gallery_grade`'s whole store, `n1000_0906_1/2/3` included
+
+*Registry: `gallery_grade/batches.jsonl`. 1,000 units over three batches, none eval-eligible.*
+
+**This caveat is about the store and not about one batch, and it is the only one
+here that is.** Everything `gallery_grade` can ever hold is drawn from a solved
+gallery record, and a solved record is model-selected twice over: a row is in the
+pool at all only because it cleared its own mode's bar in `curation.headroom.bars`
+— a reading of the render judge — and it is then seated or refused by the solve's
+own constraints, which are the gallery's rules rather than anything about the
+world. So **no draw from this store is a base rate about anything**, at any size,
+however it is stratified, and no slice of it can serve as an evaluation set for
+any head. `gallery_grade.register` refuses a registration carrying
+`score_unconditioned` or `eval_only` for exactly that reason, and
+`gallery_grade.eval_eligible()` is the reading of the file that says the refusal
+held.
+
+That is not a defect. The estimand is *conditional on the gate* by design, so a
+population selected by the gate is the population the question is about. What it
+forbids is reading a rate off it — "x% of the gallery is a 4" is a statement about
+this solve's constraints as much as about the pictures.
+
+### What the three batches are
+
+One thousand rows drawn from the tentative record `20260906T133236Z` (solve
+`n1000_after_thin_themes_0906`, `n = 1000`, pool stamp `b4833fd6`), split into three
+stratified thirds — 334/333/333 — each independently representative on the
+seated/refused split, the kind and the mode, so a sitting that stops after any
+batch still holds a usable population. Seed 20260906.
+
+* **700 seats**, drawn uniformly at random from that record's 1,000.
+* **300 that cleared their mode's bar and were refused a seat**, weighted toward the
+  two *near-neighbour* refusals — all 38 `twin` (a near-duplicate of a seated
+  picture) and 262 `location` (a second row at a place a seat took) — because near
+  neighbours of gallery members are what a ranking head inside the gate's top has
+  to separate. The colour ceiling was to be the remainder and **the remainder came
+  to zero**: the two near-neighbour classes supply 4,496 rows against 300 asked. So
+  `cell_allowance`, which refused 22,258 rows in that solve, is **not represented at
+  all**, and a fit read off these rows says nothing about the pictures the colour
+  rules turned down.
+* The refusal reasons are per-key, off a **counterfactual replay** of that record's
+  own solve through the pool-view door with `explain` over every candidate key. The
+  replay reproduced the record's 1,000 seats exactly and its nine refusal counts to
+  the row, and wrote no solve record.
+
+### Two things a reader has to know before counting anything
+
+**More than one row per location, on purpose.** A `location` refusal is by
+definition a second row at a place a seat took, so 262 of the 300 sit at one of the
+record's own seats and 185 of them sit at a place the 700 also carries. The draw is
+capped at **one refused row per location** — a place contributes at most one of the
+300 — but the union is **815 distinct locations over 1,000 rows**, not 1,000. Any
+per-location statistic has to say which.
+
+**The seated/refused split is 700/300 by construction and is not a rate.** The
+record itself refused 31,596 rows that cleared their bar for its 1,000 seats. This
+population is 70% seated because it was drawn that way.
+
+### The levelled colormap, which is the hazard `pre_stamp` was expected to be
+
+**No row here is pre-stamp and none can be**: measured over all 284,517 candidate
+ledger rows on 2026-09-06, every recipe the autolevel operator acts on carries a
+stamp and every recipe carrying none is a direct-trap kind it never touches. The
+pre-stamp population is the *depth* store's `sequence.jsonl`, a different store.
+
+What does bite is the other half. The operator writes its overriding colormap to
+`<stem>.leveled/` beside the candidate's picture, the plan carries that directory,
+and the sheet renders through it — but the sweep of 2026-08-30 deleted 194,058 of
+them before `curate pool-draw` existed to read one. **373 of the 1,000 rows carry a
+levelled colormap and rendered through it**; 94 more are direct-trap kinds the
+operator never acts on, and the remaining 533 rendered through the plain map. Some
+of those 533 are rows the operator declined — it is in band on most pictures — and
+some are rows whose colormap was swept, and the row itself cannot say which. The
+split by picture age bounds it: **44.6% of the 762 rows made after the sweep carry
+one against 22.9% of the 144 made before it**, so on the order of thirty rows lost
+theirs to that sweep and are being judged through a colouring their candidate score
+was not read on. `leveled` is on every row so a later fit can exclude them; the
+after-the-sweep rate is also well under the 65% act rate `curate mine` recorded on a
+high-band leg, so 44.6% is a floor on how many pictures the operator really touched
+rather than a reading of the operator.
+
 ---
 
 ### Reading this file from code

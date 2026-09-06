@@ -239,15 +239,36 @@ def test_a_pin_names_an_attribute_store_and_nothing_else() -> None:
 
 
 def test_an_attribute_sheet_is_cut_for_a_store_that_is_not_a_judge() -> None:
-    """`--head` names a STORE. Three of the four it accepts are judges' and one is
+    """`--head` names a STORE. Two of the four it accepts are judges' and two are
     not — an attribute is a fact about a place rather than an opinion about it,
-    and the rig routes it by the same flag either way."""
+    and a gallery grade is an opinion conditional on a judge having already
+    spoken. The rig routes all of them by the same flag."""
     parse = cli.build_parser().parse_args
     cut = parse(["label", "build", "--from-plan", "p", "--head", "spiral", "--batch", "b"])
     assert cut.handler is cli.label_build and cut.head == "spiral"
     assert "spiral" in cli.NON_LOCATION_HEADS
     registered = parse(["label", "register", "--batch", "b", "--method", "m", "--head", "spiral"])
     assert registered.handler is cli.label_register and registered.head == "spiral"
+
+
+def test_the_gallery_grade_store_is_one_of_the_heads_a_sheet_may_be_cut_for() -> None:
+    """A `--head` `label ingest` cannot route to is a sheet that renders and lands nowhere.
+
+    So the flag's choices and `intake.records_for`'s branches are one list, and
+    this is the half of it argparse enforces.
+    """
+    from fractal_wallpapers.labeling import gallery_grade
+
+    parse = cli.build_parser().parse_args
+    assert gallery_grade.NAME in cli.NON_LOCATION_HEADS
+    cut = parse(
+        ["label", "build", "--from-plan", "p", "--head", gallery_grade.NAME, "--batch", "b"]
+    )
+    assert cut.handler is cli.label_build and cut.head == gallery_grade.NAME
+    registered = parse(
+        ["label", "register", "--batch", "b", "--method", "m", "--head", gallery_grade.NAME]
+    )
+    assert registered.handler is cli.label_register and registered.head == gallery_grade.NAME
 
 
 def test_the_unaimed_draw_is_a_subcommand_that_names_its_seed() -> None:

@@ -154,9 +154,10 @@ times in three. Run the leg with `--partition <dynamical> --root-channel proven`
 Its **tier floor is `min(currency.CLASS_WEIGHT)`** — the currency's own bottom
 class rather than a fresh cut, which is tier **3**, so what counts as a proven
 place is exactly what counts as a keeper and moving one moves both. It reads
-**all three label stores** — the location store and both finished-render stores,
-`proven.stores()` — unioned and deduplicated on the place, each root credited on
-`provenance.store` to the first store that holds it. It serves
+**the three QUALITY label stores** — the location store and both finished-render
+stores, `proven.stores()`, which is not every label store there is — unioned and
+deduplicated on the place, each root credited on `provenance.store` to the first
+store that holds it. It serves
 **every registered partition**: `proven.SERVED` is `ALL_PARTITIONS`. It excluded
 `phoenix:classic` until 2026-09-02, which left that partition's q3+ labels the
 only ones in the store that became no roots; its queue now interleaves those

@@ -184,42 +184,54 @@ numbers and is in the history; the field is a megabyte of floats and is not.
 
 `carriers` answers **which map can make a picture of which colour**: every map in
 the library recoloured onto those three fields and read through `dominance`, one
-row per (map, cell) with the cell's share on all three fields and their mean.
-About 90 seconds for 3,063 recolours, which land under
-`artifacts/palettes/carriers/` and are kept, so a second run is the census alone.
-3,665 rows over 1,021 maps, and every one of the 48 chromatic cells has a carrier.
+row per (map, cell) with the cell's share on all three fields. About 90 seconds for
+3,063 recolours, which land under `artifacts/palettes/carriers/` and are kept, so a
+second run is the census alone. 3,665 rows over 1,021 maps, and every one of the 48
+chromatic cells has a carrier.
 
-**It is the tracked file closest to the size guard, and the next drop but one
-reaches it.** 881,834 bytes on 2026-09-06 — **84.1%** of `test_history_purity`'s
-`MAX_TRACKED_BYTES` (1 MiB), which is a plain assertion failure in the **fast**
-lane and nothing at the git level, so it trips at the commit gate rather than at the
-commit. It grows at **3.71 rows and 878 bytes a map** — the *marginal* rate, measured
-across `classic-pairs-2026-09`: 776,460 → 881,834 bytes and 3,220 → 3,665 rows for
-120 maps. (An earlier reading here said 3.59 and 863, which are the whole file
+### `fields` and `mean` came off the row on 2026-09-06
+
+They are derived at the read, by `carriers.fill`, and every reader still sees them —
+`read` applies it, so nothing downstream knows two of its columns are not on disk.
+`STORED` is what a row is written with and `DERIVED` is what comes back.
+
+* **`mean`** was exactly the mean of the three shares on every row.
+* **`fields`** is which of the three reference fields the cell was dominant on, and
+  it is **not** the header's constant list of three — it takes all seven non-empty
+  subsets (1,854 rows on one field, 1,188 on two, 623 on all three). What makes it
+  free is that it re-derives from `share` by re-applying the dominance rule the
+  header already carries in prose: largest chromatic cell at ≥ 0.10, or ≥ 0.15
+  alone. **The lead is taken over the map's own rows and that is exact** — a cell
+  absent from the table was dominant on no field, so it is under both thresholds
+  everywhere and cannot displace a lead that changes an answer.
+
+Verified over the whole table before either was dropped: **10,995 of 10,995 (row,
+field) reads and 3,665 of 3,665 means**, no exception. `write` re-checks it on every
+build, which is the one moment the *measured* `fields` is in hand — a drop whose
+rounding pushed a share across a threshold would otherwise read back subtly wrong
+with nothing red, and the rows it was wrong about would be exactly the marginal
+carriers a target leans on.
+
+**This was the tracked file closest to the size guard.** 881,834 bytes before —
+**84.1%** of `test_history_purity`'s `MAX_TRACKED_BYTES` (1 MiB), which is a plain
+assertion failure in the **fast** lane and nothing at the git level, so it trips at
+the commit gate rather than at the commit — and **690,732 after, 65.9%**. It grew at
+**3.71 rows and 878 bytes a map**, the *marginal* rate measured across
+`classic-pairs-2026-09` (776,460 → 881,834 bytes, 3,220 → 3,665 rows, 120 maps); the
+two derived members are 52.14 bytes a row, so the rate is now **685 bytes a map** and
+the headroom **522 maps, 4.3 drops** where it was 189 maps and the next drop but one.
+(An earlier reading here said 3.59 rows and 863 bytes, which are the whole file
 divided by its 1,021 maps and so an average over a library that was cheaper per map
-when it was smaller.) The headroom is **189 maps**: a second 120-map drop lands at
-94.1% and the one after it is over.
-**The cheapest relief is dropping `fields` from the carrier rows** — 125,479 bytes,
-14.2% of the file, and no information lost. **Not for the reason given here
-before**: the row's `fields` is *not* the header's constant list of three, it is
-which of them the cell was dominant on, and it takes all seven non-empty subsets
-(1,854 rows on one field, 1,188 on two, 623 on all three). What makes it free is
-that it is **derivable from `share`** by re-applying the dominance rule the header
-carries — largest chromatic cell at ≥ 0.10, or ≥ 0.15 alone — which reproduces it on
-**10,995 of 10,995** (row, field) reads with no exception. `deliveries` is the one
-reader, so it is a writer change plus that one derivation.
-`schema` and `kind` are constant per row and worth another 117,280 together, though
-`kind` is what tells the header from the rows. Two more the earlier reading missed:
-`family` is a pure function of `cell` through `dominance.family_of` (68,951, and
-nothing outside the writer reads it), and `mean` is exactly the mean of the three
-shares to the stored precision on every row (65,623). **`fields` and `mean` alone** are
-191,102 bytes, 21.7%, taking the file to 690,732 at a lighter 685 bytes a map — **523
-maps, 4.4 drops**. All four are 377,333, 42.8%, taking it to 504,501 at 496 bytes a map
-— 1,096 maps, nine drops.
-**What is not available**: the per-field `share` block is 295,606 bytes and the
-largest single saving, and it is pinned by
+when it was smaller.)
+
+**What is left, and what is not available.** `family` is a pure function of `cell`
+through `dominance.family_of` — 68,951 bytes, nothing outside the writer reads it —
+and is **held in reserve**; `schema` and `kind` are constant per row and worth
+117,280 together, though `kind` is what tells the header from the rows. The per-field
+`share` block is 295,606 bytes and the largest single saving, and it is not
+available: it is pinned by
 `test_a_carrier_row_holds_the_share_on_every_field_and_not_only_where_it_won` — the
-green-collapses-on-`strange` reading is exactly what it holds. It is also what every
+green-collapses-on-`strange` reading is exactly what it holds — and it is what every
 derivation above stands on, so it is the last thing to go rather than the first.
 Sharding is dearer than it looks: `record_path` is one path and `read`/`table` glob
 nothing, so a shard is a reader change as well as a writer one.

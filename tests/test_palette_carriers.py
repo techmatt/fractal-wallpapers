@@ -14,7 +14,13 @@ import json
 import numpy
 import pytest
 
-from fractal_wallpapers.palettes import carriers, dominance, groups, pixel_clouds
+from fractal_wallpapers.palettes import (
+    carriers,
+    dominance,
+    groups,
+    pixel_clouds,
+    reference_fields,
+)
 
 
 def header() -> dict:
@@ -119,6 +125,119 @@ def test_the_committed_rows_are_what_this_code_would_write() -> None:
     assert head["carriers"] == len(rows())
     assert carriers.text_of([head]).endswith("\n")
     assert json.loads(carriers.text_of([head]).strip()) == head
+
+
+# --------------------------------------------------------------------------- #
+# The two members that are derived rather than stored.
+# --------------------------------------------------------------------------- #
+def test_the_file_holds_neither_derived_member_and_a_reader_gets_both() -> None:
+    """`fields` and `mean` came off the row on 2026-09-06 and nothing downstream knows.
+
+    The point of the drop is that it is invisible above `read`: `deliveries` wants
+    `fields` and `table` wants `mean`, and both go on getting them. So the test is
+    on the *bytes* and on what a reader is handed, not on either alone — a `fill`
+    that quietly stopped being applied would leave every consumer raising, and a
+    writer that quietly stopped thinning would put the file back over the guard
+    with every test still green.
+    """
+    on_disk = [
+        json.loads(line)
+        for line in carriers.record_path().read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    stored = [row for row in on_disk if row.get("kind") == carriers.CARRIER_ROW]
+    assert stored, "the committed record holds carrier rows"
+    for member in carriers.DERIVED:
+        assert not any(member in row for row in stored), f"{member} is on disk after all"
+    for row in stored:
+        assert set(row) == set(carriers.STORED)
+    assert all(set(carriers.DERIVED) <= set(row) for row in rows())
+
+
+def test_every_committed_row_re_derives_its_fields_and_its_mean() -> None:
+    """Over every row, and not a sample of them. 10,995 (row, field) reads.
+
+    This is the assertion the drop stands on. `fields` is re-derived by applying
+    `dominance`'s own thresholds to `share` with the lead taken over the map's own
+    rows, and if that reproduction ever failed it would fail on exactly the
+    marginal carriers — a share rounded across `CELL_ALONE` — which are the rows a
+    colour target leans on hardest.
+    """
+    held = rows()
+    again = carriers.fill([carriers.thin(row) for row in held])
+    assert again == held
+    reads = len(held) * len(reference_fields.CLASSES)
+    assert reads > 10_000, f"{reads} (row, field) reads is not the whole table"
+
+
+def test_a_row_whose_measured_fields_disagree_with_the_derivation_is_refused(tmp_path) -> None:
+    """The guard at the build, which is the one moment the measured answer exists.
+
+    `rows_for` reads `fields` off the picture; `fill` infers it from the shares.
+    They agree today over the whole library, and a drop that moved a share across a
+    threshold under rounding would make them disagree silently. `write` is where
+    the two are in the same room.
+    """
+    header_row = carriers.method(maps=1, rows=1, seconds=0.0)
+    row = {
+        "schema": carriers.SCHEMA,
+        "kind": carriers.CARRIER_ROW,
+        "map": "one",
+        "cell": "dark_vivid_green",
+        "family": "green",
+        "share": dict.fromkeys(reference_fields.CLASSES, 0.5),
+        "fields": ["smooth"],
+        "mean": 0.5,
+    }
+    with pytest.raises(carriers.CarrierError, match="do not re-derive"):
+        carriers.write([header_row, row], tmp_path)
+
+
+def test_a_carrier_row_with_no_share_is_refused_rather_than_carried() -> None:
+    """`share` is the only measurement left on the row, so a row without one says nothing."""
+    with pytest.raises(carriers.CarrierError, match="names no share"):
+        carriers.fill(
+            [
+                {
+                    "schema": carriers.SCHEMA,
+                    "kind": carriers.CARRIER_ROW,
+                    "map": "one",
+                    "cell": "dark_vivid_green",
+                    "family": "green",
+                }
+            ]
+        )
+
+
+def test_the_lead_is_taken_over_the_rows_the_table_holds_and_that_is_exact() -> None:
+    """A cell the table does not hold cannot displace a lead that changes an answer.
+
+    It was dominant on no field, so it is under `CELL_ALONE` everywhere and under
+    `CELL_LEAD` on whichever field it led — which is why the derivation can take
+    the lead over a map's own rows instead of over all 48 cells. The check here is
+    that every field a row is derived onto really does clear one of the two
+    thresholds, so a lead read off a short population can never manufacture one.
+    """
+    for row in rows():
+        for klass in row["fields"]:
+            assert row["share"][klass] >= dominance.CELL_LEAD
+        for klass in reference_fields.CLASSES:
+            if row["share"][klass] >= dominance.CELL_ALONE:
+                assert klass in row["fields"]
+
+
+def test_the_record_sits_well_under_the_history_guard_after_the_drop() -> None:
+    """881,834 bytes at 84.1% before, 690,732 at 65.9% after — 522 maps of headroom.
+
+    The guard is `tests/test_history_purity.py`'s `MAX_TRACKED_BYTES`, which is a
+    plain assertion in the fast lane, so this file reaching it trips at the commit
+    gate rather than at the commit. Asserted loosely, at four fifths: the number
+    that matters is that a 120-map drop is nowhere near it, and pinning the exact
+    size would make every drop a two-line edit here.
+    """
+    from tests.test_history_purity import MAX_TRACKED_BYTES
+
+    assert carriers.record_path().stat().st_size < 0.8 * MAX_TRACKED_BYTES
 
 
 # --------------------------------------------------------------------------- #
@@ -336,10 +455,13 @@ def test_a_rebuilt_table_is_picked_up_rather_than_served_from_the_hold(tmp_path)
         "kind": carriers.CARRIER_ROW,
         "map": "one",
         "cell": "dark_vivid_green",
-        "mean": 0.5,
-        "fields": ["smooth"],
+        "family": "green",
+        # The shares and nothing else: `mean` is derived from them at the read,
+        # so the number this test reads back is one it never wrote down.
+        "share": dict.fromkeys(reference_fields.CLASSES, 0.5),
     }
     carriers.write([header, first], tmp_path)
     assert carriers.for_cell("dark_vivid_green", directory=tmp_path) == [("one", 0.5)]
-    carriers.write([header, {**first, "map": "two", "mean": 0.25}], tmp_path)
+    quieter = {**first, "map": "two", "share": dict.fromkeys(reference_fields.CLASSES, 0.25)}
+    carriers.write([header, quieter], tmp_path)
     assert carriers.for_cell("dark_vivid_green", directory=tmp_path) == [("two", 0.25)]
