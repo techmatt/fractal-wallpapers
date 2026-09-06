@@ -349,6 +349,30 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+It read **112.44 s over 3,778, 116 deselected** fast and **5:52 over 3,894, 19
+skipped** slow at `SWEEP_color_mass_and_MINE_thin_themes_0906`, 2026-09-06, on the
+same `.[dev,models]` install with a release engine. **Eight tests were written** —
+seven in `test_palette_mass_sweep.py` and one case added to `test_nested_verbs`'
+`LINES` — and **the counts moved by fifteen**. The other seven are not this
+prompt's and were already in the tree: a stash of this prompt's work and a
+`--collect-only` read the fast lane at **3,770** before any of it, so the 3,763
+above was already seven behind when it was written. Compare the next lane against
+3,778 and 3,894.
+
+**The 19 skips are still the 19** and still unnamed, which is now two readings in
+a row. A lane read at a moving count is a lane whose skips nobody can attribute,
+so the next prompt with a slow lane to spend should spend it with `--slow -rs`.
+
+⚠ **The slow lane has a test that fails by the CLOCK and it fired here.**
+`test_cli.py::test_a_derived_plan_reserves_the_release_the_run_will_actually_ask_for`
+asked `--finish-by 07:00` against the real time of day, and `harvest_minutes`
+refuses a plan whose remaining clock cannot cover its own 29-minute reservation —
+so the test failed at **06:53** for no reason but the hour, and would have failed
+for anyone running the lane in the half hour before seven in the morning. It is
+fixed here: the finish time is three hours from `now`, which fits the reservation
+at every hour. Nothing in that test was ever about seven o'clock. **A red in that
+one file is worth checking the wall clock before it is worth checking the tree.**
+
 It read **114.16 s over 3,763, 116 deselected** fast and **6:03 over 3,879, 19
 skipped** slow at `PRE_CLOSEOUT_wallpapers_0906`, 2026-09-06, on the same
 `.[dev,models]` install with a release engine. **Six tests were written** — the

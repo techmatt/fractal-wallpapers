@@ -9,6 +9,6 @@
   "rows_by_engine": {
     "5d97e76bb16be71d": 88571
   },
-  "recorded": "2026-09-02",
+  "recorded": "2026-09-06",
   "why_not_tracked": "tens of megabytes of re-read scores against a 1 MiB per-file history guard, and it grows by an append every time a build change makes a standing score stale. The manifest is what the history keeps: the row count, the bytes, the sha256, and how many rows each engine build contributed."
 }

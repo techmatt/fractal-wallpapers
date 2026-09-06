@@ -24,13 +24,19 @@ census   15,681 judged pool rows, read where the palette head actually went.
          Production locations, production framing, but the coverage is the
          HEAD'S TASTE: 9,721 of 14,796 pairs at zero, and the thin colours
          stand on five to ten pairs each.
-sweep    27,053 renders over a seeded two-location panel, made to cover the
-         grid the head never visited. Every pair, but two locations.
+sweep    31,374 renders over a seeded two-location panel, made to cover the
+         grid the head never visited. Every pair, but two locations. 27,053 of
+         them are the 2026-08-26 sweep and 4,320 are the drop the leg
+         [`mass_sweep`] measured on 2026-09-06 — the log is appended to when a
+         colormap drop lands and never rewritten.
 ```
 
-The union is what makes the map complete — all 14,796 pairs — and the two counts
-stay apart on every row, because a reader weighting a pair by how much production
-evidence stands behind it needs to know which half it came from.
+The union is what makes the map complete — all **16,956** pairs, 942 groups by
+18 modes — and the two counts stay apart on every row, because a reader weighting
+a pair by how much production evidence stands behind it needs to know which half
+it came from. A group measured by an extension carries `census: 0`, which is not
+a gap: the census was read where the head had been on 2026-08-26 and a map the
+library did not hold that day was not in it.
 
 ## What one row says, and what it deliberately does not
 
@@ -117,8 +123,8 @@ NOISY_MODES = (
 
 #: **Production modes the map holds no rows for, named so the hole is not silent.**
 #:
-#: The map is a *measurement* — 15,681 judged pool rows and a 27,053-render sweep —
-#: taken over the roster of the day. A mode added to the engine's catalog
+#: The map is a *measurement* — 15,681 judged pool rows and a sweep log that
+#: stands at 31,374 renders — taken over the roster of the day. A mode added to the engine's catalog
 #: afterwards has no file and no rows, and a lookup for it reads exactly like a
 #: pair with no colour, which is the failure [`read`] and the completeness guard
 #: exist to prevent. Writing it down here is what turns that into a stated
@@ -127,8 +133,11 @@ NOISY_MODES = (
 #: the engine cannot linger in it.
 #:
 #: Filling one in is not a code change. It is a sweep leg — every palette group at
-#: the new mode over the seeded two-location panel — and then
-#: `fractal-wallpapers palettes color-mass build`.
+#: the new mode over the seeded two-location panel — and then a cut. The leg is
+#: [`palettes.mass_sweep`], reached as `fractal-wallpapers curate mass-sweep
+#: extend --modes <mode>`; the cut that follows it is `fractal-wallpapers
+#: palettes color-mass`. A mode measured for the first time needs the full cut
+#: and not `--only-new`, which appends GROUPS to files that already exist.
 #:
 #: `tail_itinerary` is here because it arrived with the tail address window and
 #: nothing has been rendered in it at scale. Its colour behaviour is not
@@ -243,7 +252,8 @@ def delivers(cell: str, group: str, table: dict, prior: float = 0.0, modes=None)
     The mass map is keyed on `(group, mode)` and the carrier table on the map, so
     the two answer the same question at different keys and only one of them is a
     measurement of the pipeline; `prior` — the group's carrier mean for the cell —
-    is consulted for a group with no mass row at all (one of the 823 today) and
+    is consulted for a group with no mass row at all (one of the 943 today —
+    `blue_orange`, which is instrument rather than choice and is not drawable) and
     never to overrule one that has.
 
     The **max** over `modes` and not the mean, because a run's map pool is shared
@@ -575,6 +585,130 @@ def build(census: Path, sweep: Path, floor: float = STORED_FLOOR, log=print) -> 
     }
 
 
+def extend(sweep: Path, floor: float = STORED_FLOOR, log=print) -> dict:
+    """Cut the pairs the tracked files hold no row for, and append them. Nothing else.
+
+    **What a colormap drop needs, and the only cut available today.** [`build`]
+    reads both measurements and writes every file from scratch; the census's
+    per-observation record ran out of a disposable `scratch/` and is not kept, so
+    a full rebuild now would silently drop 15,681 observations and move all
+    14,796 existing rows. This reads the sweep log alone, takes only the pairs
+    whose **group has no row in any mode's file**, and appends them — every row
+    that was already there comes back byte-identical, which is the property that
+    makes this safe to run against a tracked record.
+
+    A new group's `observations.census` is therefore **0**, and that is the
+    honest number rather than a gap: the census is a reading of 15,681 judged pool
+    rows taken on 2026-08-26, and a map the library did not hold that day was not
+    in it. The header gains an `extensions` entry saying what was appended and
+    when; `sources` is left alone, because it is the provenance of the *build* and
+    a drop did not change what that was cut from.
+
+    Refused for a group that already has a row, in any mode: extending such a
+    group means unioning new observations into means that were taken over the
+    census as well, and the census half cannot be re-read.
+    """
+    from fractal_wallpapers.palettes import codebook
+
+    sweep = Path(sweep)
+    kinds = {entry["swatch"]: entry["kind"] for entry in codebook.swatches()}
+    stored: dict[str, tuple[dict, list[dict]]] = {}
+    for mode in stored_modes():
+        stored[mode] = read_mode(mode)
+    measured = {str(row["group"]) for _method, pairs in stored.values() for row in pairs}
+
+    table: dict[tuple[str, str], dict] = {}
+    read_rows = 0
+    with sweep.open(encoding="utf-8") as handle:
+        for line in handle:
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            if row.get("kind") != "render":
+                continue
+            group = str(row.get("group"))
+            if group in measured:
+                continue
+            if row.get("error"):
+                raise ColorMassError(
+                    f"{sweep} holds a failed render for {group} x {row.get('mode')}: "
+                    f"{row['error']}. A map cut over a file that has one has a hole in it."
+                )
+            cell = _cell(table, (group, str(row["mode"])))
+            cell["sweep"] += 1
+            read_rows += 1
+            chromatic = {
+                name: float(value)
+                for name, value in (row.get("shares") or {}).items()
+                if kinds.get(name) == "hue"
+            }
+            total = sum(chromatic.values())
+            if total > 0.0:
+                _add(cell, {name: value / total for name, value in chromatic.items()})
+            else:
+                cell["colourless"] += 1
+            if row.get("leveled"):
+                cell["levelled"] += 1
+    if not table:
+        raise ColorMassError(
+            f"{sweep} holds no render for a group the map has no row for, so there is "
+            f"nothing to append. Every group it names is already measured."
+        )
+
+    when = _today()
+    written = []
+    for mode in sorted({mode for _group, mode in table}):
+        if mode not in stored:
+            raise ColorMassError(
+                f"{record_path(mode)} is not there, so {mode!r} has no file to extend. "
+                f"A mode measured for the first time is a `build`, not an extension."
+            )
+        method, pairs = stored[mode]
+        fresh, _price = rows_for(mode, table, floor=floor)
+        merged = sorted([*pairs, *fresh], key=lambda row: str(row["group"]))
+        price = {
+            "pairs": len(merged),
+            "cells_stored": sum(len(row["cells"]) for row in merged),
+            "cells_below_floor": method.get("cells_below_floor", 0),
+            "mass_below_floor": method.get("mass_below_floor", 0.0),
+        }
+        history = list(method.get("extensions") or [])
+        history.append(
+            {
+                "when": when,
+                "pairs": len(fresh),
+                "sweep_observations": sum(row["observations"]["sweep"] for row in fresh),
+                "note": (
+                    "groups the map held no row for, cut from the sweep log alone and "
+                    "appended. Every row that was here already is unchanged."
+                ),
+            }
+        )
+        header = {**method, **price, "extensions": history}
+        path = write_mode(mode, [header, *merged], None)
+        written.append(
+            {"mode": mode, "path": tracked_name(path), "pairs": len(fresh), "rows": len(merged)}
+        )
+        log(f"[color-mass] {mode:24} +{len(fresh):4} pair(s)  {len(merged):5} total")
+    return {
+        "schema": SCHEMA,
+        "groups": len({group for group, _mode in table}),
+        "pairs": len(table),
+        "modes": len(written),
+        "sweep_observations": read_rows,
+        "stored_floor": floor,
+        "when": when,
+        "files": written,
+    }
+
+
+def _today() -> str:
+    """Today, as the date every record here stamps."""
+    import datetime
+
+    return datetime.date.today().isoformat()
+
+
 # --------------------------------------------------------------------------- #
 # The sweep log the map was cut from, on the archive tier under a manifest.
 # --------------------------------------------------------------------------- #
@@ -659,10 +793,11 @@ def sweep_log():
     """The sweep log as a [`curation.durability.Durable`] — how it is saved and checked.
 
     It gets the archive treatment the supply sidecar and the gate stores get, and
-    for a reason none of the three share: it is an **experiment log**, finished and
-    not to be added to, and the only thing that would let this map be re-cut on
-    other terms — excluding [`NOISY_MODES`], weighting the panel differently,
-    rolling to families instead of cells. Re-deriving it is **52.1 hours of engine
+    for a reason none of the three share: it is an **experiment log** — appended to
+    by [`palettes.mass_sweep`] when a drop lands and never rewritten — and the only
+    thing that would let this map be re-cut on other terms — excluding
+    [`NOISY_MODES`], weighting the panel differently, rolling to families
+    instead of cells. Re-deriving it is **52.1 hours of engine
     time** over 27,053 renders — its own rows' `seconds`, summed 2026-09-05, which
     is where the 8.7 hours this said before went — and the pictures it read were
     censused and deleted.
@@ -742,6 +877,7 @@ __all__ = [
     "check_sweep_log",
     "delivering",
     "delivers",
+    "extend",
     "measured_modes",
     "method_row",
     "observations",

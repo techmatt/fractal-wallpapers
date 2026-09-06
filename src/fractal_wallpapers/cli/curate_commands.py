@@ -132,6 +132,49 @@ def curate_frames(args: argparse.Namespace) -> int:
     return 0
 
 
+def curate_mass_sweep_extend(args: argparse.Namespace) -> int:
+    """Render the panel for every drawable map with no colour-mass row, and append it."""
+    from fractal_wallpapers import paths
+    from fractal_wallpapers.curation import mode_policy
+    from fractal_wallpapers.palettes import color_mass, mass_sweep
+
+    maps = mass_sweep.unmeasured_maps() if not args.maps else list(args.maps)
+    modes = list(args.modes) if args.modes else list(mode_policy.accepted())
+    print(f"[mass-sweep] {len(maps)} map(s) with no row, {len(modes)} mode(s) offered")
+    if not maps:
+        print("[mass-sweep] nothing to measure; every drawable map has a row")
+        return 0
+    workdir = Path(args.workdir) if args.workdir else paths.under("curation", "palette_mass_sweep")
+    try:
+        rows, report = mass_sweep.run(
+            maps,
+            modes,
+            workdir=Path(workdir) / "extend",
+            workers=args.workers,
+            budget=args.budget,
+        )
+        if report["modes_left"] and not args.partial:
+            # The map is complete over its roster by construction and
+            # `test_palette_color_mass` asserts it — every group in every measured
+            # mode. A budget that cut the tail of the roster would put the new
+            # groups in some files and not others, which is exactly that hole. So
+            # a short run reports its prices and writes nothing.
+            print(
+                f"[mass-sweep] stopped with {len(report['modes_left'])} mode(s) unmeasured "
+                f"({', '.join(report['modes_left'])}); appending would leave the grid with a "
+                f"hole. Nothing written. --partial says do it anyway."
+            )
+            args.dry_run = True
+        if not args.dry_run:
+            report["log"] = mass_sweep.append(rows)
+            report["saved"] = color_mass.save_sweep_log(log=lambda _line: None)
+    except (mass_sweep.MassSweepError, color_mass.ColorMassError, OSError) as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps(report, indent=2))
+    return 0
+
+
 def curate_mass_sweep(args: argparse.Namespace) -> int:
     """Record, check or restore the colour-mass sweep log against its tracked manifest."""
     from fractal_wallpapers.curation import durability
@@ -2682,24 +2725,74 @@ def add_commands(subcommands) -> None:
 
     mass_sweep = steps.add_parser(
         "mass-sweep",
-        help="the colour-mass sweep log's durability: record it, check it, restore it",
+        help="the colour-mass sweep log: extend it, and record, check and restore it",
         description=(
             "artifacts/curation/palette_mass_sweep/rows.jsonl is the 25.7 MB experiment log "
             "the tracked colour-mass map was cut from: one row per (palette group, mode, "
             "location) with its 48-cell vector, its recipe and whether autolevel acted. It "
             "is insurance rather than a record anything reads — what production reads is "
             "the map under data/palettes/color_mass/ — and it is the only thing that would "
-            "let the map be re-cut on other terms. Re-deriving it is 8.7 h of wall over "
-            "27,053 renders whose pictures were deleted, so the bytes go to the archive "
-            "tier and the history keeps the manifest."
+            "let the map be re-cut on other terms. Re-deriving the whole of it is 52.1 h of "
+            "engine time over 27,053 renders whose pictures were deleted — the sum of its "
+            "own rows' `seconds` — so the bytes go to the archive tier and the history "
+            "keeps the manifest. `extend` is the one thing that adds to it: the panel "
+            "rendered for maps the map has no row for, appended."
         ),
     )
     mass_sweep.set_defaults(handler=curate_mass_sweep)
+    sweep_verbs = mass_sweep.add_subparsers(dest="what", required=True)
     keeping_verbs(
-        mass_sweep.add_subparsers(dest="what", required=True),
+        sweep_verbs,
         noun="log",
         force="overwrite a live log that holds MORE rows than the manifest records",
     )
+    extending = sweep_verbs.add_parser(
+        "extend",
+        help="measure the panel for every drawable map the colour-mass map has no row for",
+        description=(
+            "A colormap drop lands as palette groups with no row, reachable only through "
+            "the carrier prior, which is a bound on the ramp rather than a reading of this "
+            "pipeline. This renders the two-location panel for those maps over the modes it "
+            "is given, appends the rows to the log and re-stamps the manifest; "
+            "`fractal-wallpapers palettes color-mass --only-new` is the cut that follows. "
+            "Modes are taken in the order given and a mode is finished or not started, so "
+            "what a budget cuts is the tail of the roster and never half a column. Priced "
+            "off the first sweep's own seconds over both panel locations: the four field "
+            "modes 3.0 s a map together, itinerary and the three direct traps 39.9, threads "
+            "18.1, and the four big composites 169.3."
+        ),
+    )
+    extending.add_argument(
+        # Resolved in the handler, for the reason `palettes color-mass --sweep` is:
+        # `mode_policy.accepted()` reads a record, and building a parser must not
+        # touch a disk — `--help` would raise before argparse said anything.
+        "--modes",
+        nargs="+",
+        default=None,
+        help="the modes to measure, cheapest first (default: every accepted mode)",
+    )
+    extending.add_argument(
+        "--maps", nargs="+", default=None, help="measure these maps instead of every unmeasured one"
+    )
+    extending.add_argument(
+        "--workers", type=int, default=3, help="renders at once (default 3, this box's pool)"
+    )
+    extending.add_argument(
+        "--budget",
+        type=float,
+        default=None,
+        help="wall seconds after which no further mode is started",
+    )
+    extending.add_argument("--workdir", default=None, help="where fields and pictures are made")
+    extending.add_argument(
+        "--dry-run", action="store_true", help="render and price it, append nothing"
+    )
+    extending.add_argument(
+        "--partial",
+        action="store_true",
+        help="append even where the budget left a mode unmeasured, holing the grid",
+    )
+    extending.set_defaults(handler=curate_mass_sweep_extend)
 
     redrawing = steps.add_parser(
         "redraw",

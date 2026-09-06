@@ -469,18 +469,30 @@ def test_a_derived_plan_reserves_the_release_the_run_will_actually_ask_for() -> 
     """`--release-slots` had no default while a release was a number somebody
     chose per night. A run keeps a diagnostic ten now, so the reservation's
     default is that ten — and the colorize term beside it is derived from the
-    night's own shape through `curation.budget` rather than from a constant."""
+    night's own shape through `curation.budget` rather than from a constant.
+
+    **The finish time is three hours from now and not a literal.** It used to be
+    `07:00`, which made this a test that failed for anybody who ran the lane in
+    the half hour before seven in the morning: `harvest_minutes` refuses a plan
+    whose remaining clock cannot cover its own reservation — 29 minutes on this
+    machine — and it refused at 06:53 on 2026-09-06. Nothing here is about a
+    particular hour; what it needs is a finish time far enough out that the
+    reservation fits, and three hours is that at every hour of the day.
+    """
+    import datetime
+
     from fractal_wallpapers.curation import run as run_module
 
+    finish = (datetime.datetime.now() + datetime.timedelta(hours=3)).strftime("%H:%M")
     parse = cli.build_parser().parse_args
-    minutes, plan = cli.harvest_minutes(parse(["harvest", "--finish-by", "07:00"]))
+    minutes, plan = cli.harvest_minutes(parse(["harvest", "--finish-by", finish]))
     assert plan.release_slots == run_module.DEFAULT_N
     assert plan.attempts == cli.curation_attempts(parse(["harvest"]))
 
     # A night that will draw a third strange mode reserves the colorize leg for
     # one, which no copy of the mode table in `schedule` could have done.
     _, wider = cli.harvest_minutes(
-        parse(["harvest", "--finish-by", "07:00", "--strange-modes", "3"])
+        parse(["harvest", "--finish-by", finish, "--strange-modes", "3"])
     )
     assert wider.attempts > plan.attempts
     assert wider.curation > plan.curation
@@ -492,7 +504,7 @@ def test_a_derived_plan_reserves_the_release_the_run_will_actually_ask_for() -> 
     assert (minutes, plan) == (0.0, None)
 
     minutes, plan = cli.harvest_minutes(
-        parse(["harvest", "--finish-by", "07:00", "--release-slots", "80"])
+        parse(["harvest", "--finish-by", finish, "--release-slots", "80"])
     )
     assert plan is not None
     assert minutes == plan.active_minutes

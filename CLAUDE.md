@@ -177,8 +177,8 @@ just its own file.
 test there is, and that is what CI runs and what runs before a checkpoint. The
 fast lane is for the edit-run loop and nothing else.
 
-Both are measured, not estimated. The **fast** lane is **114.16 s over the 3,763 it
-holds, 116 deselected**, and the **slow** lane **6:03 over 3,879, 19 skipped** —
+Both are measured, not estimated. The **fast** lane is **112.44 s over the 3,778 it
+holds, 116 deselected**, and the **slow** lane **5:52 over 3,894, 19 skipped** —
 both on this machine, 2026-09-06, on a `.[dev,models]` install with a release
 engine built. **The 19 skips are unexplained and nobody has named them**: the fast
 lane skips nothing, so they are all inside the 116 slow-only tests, and the reading
