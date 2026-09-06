@@ -413,7 +413,7 @@ def plan_breadth(arm: str, places: list, maps: list, seed: int, per_location: in
     from fractal_wallpapers.palettes import dominance
 
     stratifier = hunt.Stratifier(list(dominance.cells()), maps, seed)
-    roster = tuple(_accepted_modes())
+    roster = tuple(_mined_modes())
     out: list = []
     for row in places:
         key = str(row["key"])
@@ -436,17 +436,23 @@ def plan_breadth(arm: str, places: list, maps: list, seed: int, per_location: in
     return out
 
 
-def _accepted_modes() -> list:
-    """The roster a default mine draws from: production, less what is weighted 0.
+def _mined_modes() -> list:
+    """The roster a default mine draws from: [`curation.mode_policy.mined`].
 
-    [`curation.mode_policy.accepted`] and not `engine.production_modes`, because a
-    mine is the leg that *buys more of* a mode and a niche mode is one this project
-    has decided to stop buying. A caller naming `--modes` is taken as given, here
-    as everywhere: the standing is a default and not a prohibition.
+    Not `engine.production_modes`, because a mine is the leg that *buys more of* a
+    mode and both of the table's exclusions are about exactly that: a niche mode
+    is one this project has stopped buying at all, and an **unmined** one is a
+    mode the gallery still seats and no leg buys more of. A caller naming
+    `--modes` is taken as given, here as everywhere: the standing is a default and
+    not a prohibition.
+
+    Was `_accepted_modes` and read `accepted()` until 2026-09-06, when
+    `curvature` became a mode the gallery keeps and the mines do not draw and the
+    two rosters stopped being the same list.
     """
     from fractal_wallpapers.curation import mode_policy
 
-    return mode_policy.accepted()
+    return mode_policy.mined()
 
 
 def weave(plans: dict, shares: dict | None = None) -> list:
@@ -1214,7 +1220,7 @@ def _bench_picks(world: dict, seed: int, kinds=BENCH_KINDS) -> list:
     from fractal_wallpapers.curation import colorize
 
     wanted: dict = {}
-    for mode in _accepted_modes():
+    for mode in _mined_modes():
         kind = colorize.kind_of(mode)
         if kind in kinds:
             wanted.setdefault(kind, mode)

@@ -253,22 +253,27 @@ def levelling_of(row: dict) -> str:
 # The roster.
 # --------------------------------------------------------------------------- #
 def field_modes() -> list[str]:
-    """Every **accepted** mode a dumped field can serve.
+    """Every **mined** mode a dumped field can serve.
 
     Two filters and neither is spelled here. Whether a coloring has one scalar
     field behind it is [`colorize.shareable`]'s question, because that is the
     engine's word and a mode added to the catalogue must not need an edit here to
-    be drawn; whether a mode is worth spending on at all is
+    be drawn; whether a mode is worth buying more of is
     [`curation.mode_policy`]'s, which is where the ruling that used to be this
     module's `DEMOTED` now lives.
+
+    **Mined and not accepted**, since 2026-09-06: the second filter is
+    [`mode_policy.mined`], which is `accepted()` less the modes ruled out of the
+    mines and left in the gallery. `curvature` is the first, and it was a field
+    mode, so this roster is three where it was four.
     """
     from fractal_wallpapers.curation import colorize
 
-    return [mode for mode in mine._accepted_modes() if colorize.shareable(mode)]
+    return [mode for mode in mine._mined_modes() if colorize.shareable(mode)]
 
 
 def dear_modes() -> list[str]:
-    """Every **accepted** mode a dumped field cannot serve — [`field_modes`]'s complement.
+    """Every **mined** mode a dumped field cannot serve — [`field_modes`]'s complement.
 
     The nine the census keeps finding at or under their seat floors, and the
     reason is the same one that makes them dear: no shared field, so a palette
@@ -278,7 +283,7 @@ def dear_modes() -> list[str]:
     """
     from fractal_wallpapers.curation import colorize
 
-    return [mode for mode in mine._accepted_modes() if not colorize.shareable(mode)]
+    return [mode for mode in mine._mined_modes() if not colorize.shareable(mode)]
 
 
 #: The two **field** modes the centered roster carries beside the dear nine, as
@@ -289,13 +294,18 @@ def dear_modes() -> list[str]:
 #: each.
 #:
 #: **Membership here is a nomination and not a standing.** This is the one roster
-#: in the tree written out by name, so it is the one that could outlive a weight-0
-#: ruling; [`centered_modes`] therefore passes the whole thing through
-#: [`mine._accepted_modes`], the same gate [`field_modes`] and [`dear_modes`]
+#: in the tree written out by name, so it is the one that could outlive a ruling
+#: about what is worth buying; [`centered_modes`] therefore passes the whole thing
+#: through [`mine._mined_modes`], the same gate [`field_modes`] and [`dear_modes`]
 #: already derive from. `exp_smoothing` is the case that proved it: weight 0 since
 #: 2026-09-04, still named here because this tuple records what arm A drew, and out
 #: of the roster because the gate is asked. So the arm is `smooth` alone on the
 #: cheap half now.
+#:
+#: The gate covers both of the table's exclusions and has since it was asked here:
+#: since 2026-09-06 `mine._mined_modes` is `mode_policy.mined()` rather than
+#: `accepted()`, so a mode ruled out of the mines and left in the gallery leaves
+#: this nomination by the same sentence a weight-0 mode does.
 CENTERED_FIELD: tuple[str, ...] = ("smooth", "exp_smoothing")
 
 #: What the centered roster does **not** draw, and why. `direct_trap_lines` is off
@@ -329,7 +339,7 @@ def centered_modes() -> list[str]:
     dear half without an edit here — and only the exclusion is written out.
 
     **The weight gate is asked of the whole roster, not of half of it.**
-    [`dear_modes`] already derives from [`mine._accepted_modes`] and
+    [`dear_modes`] already derives from [`mine._mined_modes`] and
     [`CENTERED_FIELD`] does not, so before 2026-09-04 a mode ruled 0 left every
     other draw in the tree and stayed on this one — the only place in the tree
     where that was possible. It is asked here, at the same spelling the mine, the
@@ -338,7 +348,7 @@ def centered_modes() -> list[str]:
     anyone having to remember that this file exists.
     """
     roster = [*dear_modes(), *CENTERED_FIELD]
-    buying = set(mine._accepted_modes())
+    buying = set(mine._mined_modes())
     return [mode for mode in roster if mode not in CENTERED_EXCLUDED and mode in buying]
 
 
@@ -855,6 +865,12 @@ def deficient_modes(rows: list, scores: dict, floor: int = 10, bar: float = SEAT
     which is the unit the per-mode floor is stated in — a mode with ten clearing
     candidates at one place has one seat and not ten, because a collection seats
     a location once.
+
+    The roster is [`mine._mined_modes`] and not `accepted()`, because what this
+    answers is *what should the floor arm go and buy*. A mode the gallery seats
+    and no leg mines has no shortfall worth reporting here: its stock is a number
+    for `curate headroom` to read and for a person to rule on, not a deficit some
+    leg is meant to close.
     """
     seats: dict = {}
     for row in rows:
@@ -863,7 +879,7 @@ def deficient_modes(rows: list, scores: dict, floor: int = 10, bar: float = SEAT
             continue
         seats.setdefault(mode, set()).add(str((row.get("location") or {})["key"]))
     out: dict = {}
-    for mode in mine._accepted_modes():
+    for mode in mine._mined_modes():
         short = int(floor) - len(seats.get(mode) or ())
         if short > 0:
             out[mode] = short

@@ -121,7 +121,7 @@ def test_no_wired_roster_offers_a_niche_mode():
     rosters = {
         "the smooth draw": colorize.modes_for(budget.SMOOTH),
         "the strange draw": colorize.modes_for(budget.STRANGE),
-        "the mine": mine._accepted_modes(),
+        "the mine": mine._mined_modes(),
         "the depth roster": depth.field_modes(),
         "the dear half of it": depth.dear_modes(),
         "the centered roster": depth.centered_modes(),
@@ -371,3 +371,94 @@ def test_the_ruled_out_modes_are_the_six_and_the_two_picture_rulings_are_in_them
     assert len(mode_policy.niche()) == 6
     assert len(mode_policy.accepted()) == 13
     assert len(mode_policy.strange_modes()) == 12
+
+
+# --------------------------------------------------------------------------- #
+# UNMINED: the second question, and the half of `accepted` that still answers it.
+# --------------------------------------------------------------------------- #
+def test_the_unmined_ruling_and_what_it_leaves_alone() -> None:
+    """`curvature` is out of the mines and in the gallery. Matt's ruling, 2026-09-06.
+
+    The ruling is about **quality** — its pictures are rarely good and the gallery
+    only wants a handful — and the whole of it is that no leg buys more. So this
+    asserts the standing in both directions at once: gone from `mined`, and every
+    other thing an accepted mode has still there. Recording it as a weight of 0
+    would have taken the handful away too, which is the mistake this shape exists
+    to make impossible.
+    """
+    assert mode_policy.UNMINED == ("curvature",)
+    assert mode_policy.unmined() == ["curvature"]
+    assert "curvature" not in mode_policy.mined()
+    assert "curvature" in mode_policy.accepted()
+    assert mode_policy.is_accepted("curvature") is True
+    assert mode_policy.weight_of("curvature") == mode_policy.NORMAL
+    assert "curvature" in mode_policy.strange_modes()
+    assert mode_policy.seat_floors(200)["curvature"] == 3
+    assert mode_policy.seat_floors(1000)["curvature"] == 16
+
+
+def test_mined_is_accepted_less_the_unmined_and_nothing_else() -> None:
+    """Derived, in catalog order, and a partition of `accepted`. A `mined` that
+    was its own list is the second table the module exists to prevent."""
+    assert set(mode_policy.mined()) | set(mode_policy.unmined()) == set(mode_policy.accepted())
+    assert not set(mode_policy.mined()) & set(mode_policy.unmined())
+    order = mode_policy.accepted()
+    assert mode_policy.mined() == [name for name in order if name in set(mode_policy.mined())]
+    assert len(mode_policy.mined()) == 12
+
+
+@needs_engine
+def test_no_mining_roster_can_draw_an_unmined_mode() -> None:
+    """The same sweep the niche ruling gets, over the rosters that **buy**.
+
+    The two lists are honoured at different sets of places on purpose, so this is
+    a different assertion from the niche one and not a copy of it: a mining roster
+    may draw neither, and the seating rosters below still draw an unmined mode.
+    """
+    from fractal_wallpapers.curation import depth, mine
+
+    out = set(mode_policy.unmined())
+    assert out, "there is nothing to exclude, so this proves nothing"
+    buying = {
+        "the mine": mine._mined_modes(),
+        "the depth roster": depth.field_modes(),
+        "the dear half of it": depth.dear_modes(),
+        "the centered roster": depth.centered_modes(),
+    }
+    for where, roster in buying.items():
+        assert not out & set(roster), f"{where} can still draw {out & set(roster)}"
+
+
+@needs_engine
+def test_an_unmined_mode_is_still_drawn_by_everything_that_seats() -> None:
+    """The other half, and the one the niche sweep has no counterpart for.
+
+    `colorize.modes_for` is the two-way split of the roster the seating reads and
+    `seat_floors` is computed off it, so an unmined mode leaving it would take the
+    gallery's handful with it — which is exactly what the ruling refused.
+    """
+    from fractal_wallpapers.curation import budget, colorize
+
+    out = set(mode_policy.unmined())
+    seating = colorize.modes_for(budget.SMOOTH) + colorize.modes_for(budget.STRANGE)
+    assert out <= set(seating), f"{out - set(seating)} left the seating roster"
+    assert out <= set(mode_policy.seat_floors(1000))
+
+
+def test_the_unmined_list_is_checked_against_the_accepted_roster(monkeypatch) -> None:
+    """A name in `UNMINED` that is not accepted is a ruling that reads as applied
+    and is not — the mode is out of the gallery too, which is the opposite of what
+    the list says. `check` refuses rather than ignoring it."""
+    monkeypatch.setattr(mode_policy, "UNMINED", ("trap_circle",))
+    with pytest.raises(mode_policy.PolicyRefused, match="not accepted modes"):
+        mode_policy.check()
+
+
+def test_the_record_says_which_modes_were_mined_and_which_were_only_seated() -> None:
+    """A run's record has to distinguish the two, or a leg read back later cannot
+    say whether a mode was absent because nothing drew it or because nothing
+    could."""
+    read = mode_policy.record()
+    assert read["mined"] == mode_policy.mined()
+    assert read["unmined"] == mode_policy.unmined()
+    assert set(read["mined"]) < set(read["accepted"])

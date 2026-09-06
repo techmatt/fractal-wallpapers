@@ -133,6 +133,21 @@ in the ingest's report: ten new-against-shipped pairs and five inside the drop s
 or under the cut, the nearest of them at 0.0313. Re-cutting is a ruling rather than a rebuild, which is what
 `tests/test_palette_groups.py`'s pinned header says out loud.
 
+**And the ruling is dearer than the pin makes it look, because `color_mass` is keyed
+on the group id.** Read 2026-09-06. A re-cut renumbers: `record` sorts the groups
+tightest-first and numbers them `m01…mNN` in that order, so a merge anywhere in the
+table shifts every id after it. `data/palettes/color_mass/*.jsonl` — 18 tracked
+files, 822 rows each, 65 of them `mNN` and 757 `map:<name>` — would silently be
+keyed to groups that mean something else, and a map merged out of singleton status
+loses the row it had under its own name. **The sources are keyed the same way**: the
+sweep log is one row per `(group, mode, location)`, so re-keying it is not enough
+either — the sweep *measured one member per group*, so a group that gains a member
+was measured without it and two singletons that merge arrive with two rows and no
+rule for combining them. The sweep is `curate mass-sweep restore` away from being
+readable and **52.1 engine hours** away from being re-derivable. So a re-cut is a
+re-cut of the grouping **plus** a re-derivation of the colour-mass map, and only the
+first half is `fractal-wallpapers palettes groups`.
+
 **The 942 is seed-independent; which 942 is not.** `collapse` draws the standing
 member with `random.Random(seed).randrange` inside each group, so a different
 `--seed` stands a different member up and never a different *number* of them — two
@@ -173,6 +188,23 @@ row per (map, cell) with the cell's share on all three fields and their mean.
 About 90 seconds for 3,063 recolours, which land under
 `artifacts/palettes/carriers/` and are kept, so a second run is the census alone.
 3,665 rows over 1,021 maps, and every one of the 48 chromatic cells has a carrier.
+
+**It is the tracked file closest to the size guard, and the next drop but one
+reaches it.** 881,834 bytes on 2026-09-06 — **84.1%** of `test_history_purity`'s
+`MAX_TRACKED_BYTES` (1 MiB), which is a plain assertion failure in the **fast**
+lane and nothing at the git level, so it trips at the commit gate rather than at the
+commit. It grows at 3.59 rows and **863 bytes a map**, so the headroom is **193
+maps**: a second 120-map drop lands at 93.9% and the one after it is over.
+**The cheapest relief is dropping `fields` from the carrier rows** — 125 KB, 14% of
+the file, and no information lost, because the list is constant and already on the
+header, which `tests/test_palette_carriers.py` pins. `schema` and `kind` are
+constant per row too and worth another 117 KB together, though `kind` is what tells
+the header from the rows. **What is not available**: the per-field `share` block is
+295 KB and the largest single saving, and it is pinned by
+`test_a_carrier_row_holds_the_share_on_every_field_and_not_only_where_it_won` — the
+green-collapses-on-`strange` reading is exactly what it holds. Sharding is dearer
+than it looks: `record_path` is one path and `read`/`table` glob nothing, so a shard
+is a reader change as well as a writer one.
 
 It is keyed to the **map** and never to the palette group, and that is measured
 rather than preferred: members of one group disagree on their dominant cell in 120
