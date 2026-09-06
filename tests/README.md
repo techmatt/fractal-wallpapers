@@ -349,6 +349,18 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**The 19 slow-lane skips are named, and they are one cause.** `--slow -rs` at
+`SHOW_n1000_gallery_0906`, 2026-09-06, read **6:05 over 3,896, 19 skipped** — the
+3,894 below plus this prompt's two — on an idle box, and every one of the 19 is
+the **render cache being short**: `{'smooth_render': 240, 'strange_render': 237}`
+against what the guards want, over `test_render_deploy.py` (5), `test_render_dose.py`
+(5), `test_render_grade.py` (3), `test_render_head.py` (3), `test_finished_train.py`
+(2) and `test_renders.py` (1). Not a tree fault and nothing to fix in the suite:
+`renders plan` then `renders build` fills the cache and they run. The reading
+before this one said the skips were unexplained; they are a **store** condition,
+so a clone with a full cache sees 19 fewer skips and no count change. 6:05 against
+5:52 is the two added tests and noise, not a regression.
+
 It read **112.44 s over 3,778, 116 deselected** fast and **5:52 over 3,894, 19
 skipped** slow at `SWEEP_color_mass_and_MINE_thin_themes_0906`, 2026-09-06, on the
 same `.[dev,models]` install with a release engine. **Eight tests were written** —
